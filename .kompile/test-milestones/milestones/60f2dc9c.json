@@ -1,0 +1,15 @@
+{
+  "id" : "60f2dc9c",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da08ad221f665929285a8ffd3dcb6b9be",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "nd4j-api",
+  "totalTests" : 1,
+  "passed" : 1,
+  "notes" : "After rejecting Benchmark 10 repeat_kv bypass candidate, nd4j-api was reinstalled from reverted source to remove candidate optimizer from local Maven artifacts. Log: /tmp/dsp-repeat-kv-revert-nd4j-api-build-20260528.log",
+  "tags" : "dsp,benchmark10,revert,java-build",
+  "timestamp" : "2026-05-28T11:39:54.166588Z"
+}

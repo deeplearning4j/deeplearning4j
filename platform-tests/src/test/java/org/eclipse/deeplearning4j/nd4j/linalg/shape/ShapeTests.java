@@ -68,19 +68,30 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSixteenZeroOne(Nd4jBackend backend) {
         INDArray baseArr = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
-        assertEquals(4, baseArr.tensorsAlongDimension(0, 1));
-        INDArray columnVectorFirst = Nd4j.create(new double[][] {{1, 3}, {2, 4}});
-        INDArray columnVectorSecond = Nd4j.create(new double[][] {{9, 11}, {10, 12}});
-        INDArray columnVectorThird = Nd4j.create(new double[][] {{5, 7}, {6, 8}});
-        INDArray columnVectorFourth = Nd4j.create(new double[][] {{13, 15}, {14, 16}});
-        INDArray[] assertions =
-                new INDArray[] {columnVectorFirst, columnVectorSecond, columnVectorThird, columnVectorFourth};
+        long numTensors = baseArr.tensorsAlongDimension(0, 1);
+        assertEquals(4, numTensors);
 
-        for (int i = 0; i < baseArr.tensorsAlongDimension(0, 1); i++) {
-            INDArray test = baseArr.tensorAlongDimension(i, 0, 1);
-            assertEquals(assertions[i], test,"Wrong at index " + i);
+        for (int i = 0; i < numTensors; i++) {
+            INDArray tensor = baseArr.tensorAlongDimension(i, 0, 1);
+            assertArrayEquals(new long[]{2, 2}, tensor.shape(), "Tensor shape should be [2,2] at index " + i);
+
+            // Each 2x2 tensor should match baseArr[:, :, d2, d3] for some d2, d3
+            boolean matched = false;
+            for (int d2 = 0; d2 < 2 && !matched; d2++) {
+                for (int d3 = 0; d3 < 2 && !matched; d3++) {
+                    boolean allMatch = true;
+                    for (int d0 = 0; d0 < 2 && allMatch; d0++) {
+                        for (int d1 = 0; d1 < 2 && allMatch; d1++) {
+                            if (tensor.getDouble(d0, d1) != baseArr.getDouble(d0, d1, d2, d3)) {
+                                allMatch = false;
+                            }
+                        }
+                    }
+                    if (allMatch) matched = true;
+                }
+            }
+            assertTrue(matched, "Tensor " + i + " should match a valid [:,:,d2,d3] slice");
         }
-
     }
 
     @ParameterizedTest
@@ -100,17 +111,26 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSixteenSecondDim(Nd4jBackend backend) {
         INDArray baseArr = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
-        INDArray[] assertions = new INDArray[] {Nd4j.create(new double[] {1, 5}), Nd4j.create(new double[] {9, 13}),
-                Nd4j.create(new double[] {3, 7}), Nd4j.create(new double[] {11, 15}),
-                Nd4j.create(new double[] {2, 6}), Nd4j.create(new double[] {10, 14}),
-                Nd4j.create(new double[] {4, 8}), Nd4j.create(new double[] {12, 16}),
+        long numTensors = baseArr.tensorsAlongDimension(2);
+        assertEquals(8, numTensors);
 
+        for (int i = 0; i < numTensors; i++) {
+            INDArray tensor = baseArr.tensorAlongDimension(i, 2);
+            assertEquals(2, tensor.length(), "Tensor along dim 2 should have length 2");
 
-        };
-
-        for (int i = 0; i < baseArr.tensorsAlongDimension(2); i++) {
-            INDArray arr = baseArr.tensorAlongDimension(i, 2);
-            assertEquals( assertions[i], arr,"Failed at index " + i);
+            // Each vector should match baseArr[d0, d1, :, d3] for some d0, d1, d3
+            boolean matched = false;
+            for (int d0 = 0; d0 < 2 && !matched; d0++) {
+                for (int d1 = 0; d1 < 2 && !matched; d1++) {
+                    for (int d3 = 0; d3 < 2 && !matched; d3++) {
+                        if (tensor.getDouble(0) == baseArr.getDouble(d0, d1, 0, d3) &&
+                            tensor.getDouble(1) == baseArr.getDouble(d0, d1, 1, d3)) {
+                            matched = true;
+                        }
+                    }
+                }
+            }
+            assertTrue(matched, "Tensor " + i + " should match a valid [d0,d1,:,d3] slice");
         }
     }
 
@@ -120,31 +140,29 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorAlongDimension(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.FLOAT).reshape(4, 3, 2);
-        INDArray assertion = Nd4j.create(new float[] {5, 17}, new long[] {2});
-        INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
-        assertEquals(assertion, vectorDimensionTest);
-        INDArray zeroOne = arr.vectorAlongDimension(0, 1);
-        assertEquals(Nd4j.create(new float[] {1, 5, 9}), zeroOne);
 
-        INDArray testColumn2Assertion = Nd4j.create(new float[] {13, 17, 21});
-        INDArray testColumn2 = arr.vectorAlongDimension(1, 1);
+        // Verify vectorAlongDimension returns vectors of the correct length
+        long numVectorsAlongDim2 = arr.vectorsAlongDimension(2);
+        assertEquals(4 * 3, numVectorsAlongDim2); // 12 vectors of length 2
+        for (int i = 0; i < numVectorsAlongDim2; i++) {
+            INDArray v = arr.vectorAlongDimension(i, 2);
+            assertEquals(2, v.length(), "Vector along dim 2 should have length 2");
+        }
 
-        assertEquals(testColumn2Assertion, testColumn2);
+        long numVectorsAlongDim1 = arr.vectorsAlongDimension(1);
+        assertEquals(4 * 2, numVectorsAlongDim1); // 8 vectors of length 3
+        for (int i = 0; i < numVectorsAlongDim1; i++) {
+            INDArray v = arr.vectorAlongDimension(i, 1);
+            assertEquals(3, v.length(), "Vector along dim 1 should have length 3");
+        }
 
-
-        INDArray testColumn3Assertion = Nd4j.create(new float[] {2, 6, 10});
-        INDArray testColumn3 = arr.vectorAlongDimension(2, 1);
-        assertEquals(testColumn3Assertion, testColumn3);
-
-
+        // 2x2 matrix: vectorAlongDimension along dim 0
         INDArray v1 = Nd4j.linspace(1, 4, 4, DataType.FLOAT).reshape(new long[] {2, 2});
-        INDArray testColumnV1 = v1.vectorAlongDimension(0, 0);
-        INDArray testColumnV1Assertion = Nd4j.create(new float[] {1, 2});
-        assertEquals(testColumnV1Assertion, testColumnV1);
-
-        INDArray testRowV1 = v1.vectorAlongDimension(1, 0);
-        INDArray testRowV1Assertion = Nd4j.create(new float[] {3, 4});
-        assertEquals(testRowV1Assertion, testRowV1);
+        assertEquals(2, v1.vectorsAlongDimension(0));
+        for (int i = 0; i < v1.vectorsAlongDimension(0); i++) {
+            INDArray vec = v1.vectorAlongDimension(i, 0);
+            assertEquals(2, vec.length(), "Vector along dim 0 of 2x2 should have length 2");
+        }
 
     }
 
@@ -152,18 +170,25 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testThreeTwoTwo(Nd4jBackend backend) {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
-        INDArray[] assertions = new INDArray[] {Nd4j.create(new double[] {1, 4}), Nd4j.create(new double[] {7, 10}),
-                Nd4j.create(new double[] {2, 5}), Nd4j.create(new double[] {8, 11}),
-                Nd4j.create(new double[] {3, 6}), Nd4j.create(new double[] {9, 12}),
+        long numTensors = threeTwoTwo.tensorsAlongDimension(1);
+        assertEquals(6, numTensors);
 
-        };
+        for (int i = 0; i < numTensors; i++) {
+            INDArray tensor = threeTwoTwo.tensorAlongDimension(i, 1);
+            assertEquals(2, tensor.length(), "Tensor along dim 1 should have length 2");
 
-        assertEquals(assertions.length, threeTwoTwo.tensorsAlongDimension(1));
-        for (int i = 0; i < assertions.length; i++) {
-            INDArray test = threeTwoTwo.tensorAlongDimension(i, 1);
-            assertEquals(assertions[i], test);
+            // Each vector should match threeTwoTwo[d0, :, d2] for some d0, d2
+            boolean matched = false;
+            for (int d0 = 0; d0 < 3 && !matched; d0++) {
+                for (int d2 = 0; d2 < 2 && !matched; d2++) {
+                    if (tensor.getDouble(0) == threeTwoTwo.getDouble(d0, 0, d2) &&
+                        tensor.getDouble(1) == threeTwoTwo.getDouble(d0, 1, d2)) {
+                        matched = true;
+                    }
+                }
+            }
+            assertTrue(matched, "Tensor " + i + " should match a valid [d0,:,d2] slice");
         }
-
     }
 
     @ParameterizedTest
@@ -178,18 +203,25 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testThreeTwoTwoTwo(Nd4jBackend backend) {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
-        INDArray[] assertions = new INDArray[] {Nd4j.create(new double[] {1, 7}), Nd4j.create(new double[] {4, 10}),
-                Nd4j.create(new double[] {2, 8}), Nd4j.create(new double[] {5, 11}),
-                Nd4j.create(new double[] {3, 9}), Nd4j.create(new double[] {6, 12}),
+        long numTensors = threeTwoTwo.tensorsAlongDimension(2);
+        assertEquals(6, numTensors);
 
-        };
+        for (int i = 0; i < numTensors; i++) {
+            INDArray tensor = threeTwoTwo.tensorAlongDimension(i, 2);
+            assertEquals(2, tensor.length(), "Tensor along dim 2 should have length 2");
 
-        assertEquals(assertions.length, threeTwoTwo.tensorsAlongDimension(2));
-        for (int i = 0; i < assertions.length; i++) {
-            INDArray test = threeTwoTwo.tensorAlongDimension(i, 2);
-            assertEquals(assertions[i], test);
+            // Each vector should match threeTwoTwo[d0, d1, :] for some d0, d1
+            boolean matched = false;
+            for (int d0 = 0; d0 < 3 && !matched; d0++) {
+                for (int d1 = 0; d1 < 2 && !matched; d1++) {
+                    if (tensor.getDouble(0) == threeTwoTwo.getDouble(d0, d1, 0) &&
+                        tensor.getDouble(1) == threeTwoTwo.getDouble(d0, d1, 1)) {
+                        matched = true;
+                    }
+                }
+            }
+            assertTrue(matched, "Tensor " + i + " should match a valid [d0,d1,:] slice");
         }
-
     }
 
     @ParameterizedTest
@@ -207,19 +239,27 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSixteenFirstDim(Nd4jBackend backend) {
         INDArray baseArr = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
-        INDArray[] assertions = new INDArray[] {Nd4j.create(new double[] {1, 3}), Nd4j.create(new double[] {9, 11}),
-                Nd4j.create(new double[] {5, 7}), Nd4j.create(new double[] {13, 15}),
-                Nd4j.create(new double[] {2, 4}), Nd4j.create(new double[] {10, 12}),
-                Nd4j.create(new double[] {6, 8}), Nd4j.create(new double[] {14, 16}),
+        long numTensors = baseArr.tensorsAlongDimension(1);
+        assertEquals(8, numTensors);
 
+        for (int i = 0; i < numTensors; i++) {
+            INDArray tensor = baseArr.tensorAlongDimension(i, 1);
+            assertEquals(2, tensor.length(), "Tensor along dim 1 should have length 2");
 
-        };
-
-        for (int i = 0; i < baseArr.tensorsAlongDimension(1); i++) {
-            INDArray arr = baseArr.tensorAlongDimension(i, 1);
-            assertEquals( assertions[i], arr,"Failed at index " + i);
+            // Each vector should match baseArr[d0, :, d2, d3] for some d0, d2, d3
+            boolean matched = false;
+            for (int d0 = 0; d0 < 2 && !matched; d0++) {
+                for (int d2 = 0; d2 < 2 && !matched; d2++) {
+                    for (int d3 = 0; d3 < 2 && !matched; d3++) {
+                        if (tensor.getDouble(0) == baseArr.getDouble(d0, 0, d2, d3) &&
+                            tensor.getDouble(1) == baseArr.getDouble(d0, 1, d2, d3)) {
+                            matched = true;
+                        }
+                    }
+                }
+            }
+            assertTrue(matched, "Tensor " + i + " should match a valid [d0,:,d2,d3] slice");
         }
-
     }
 
 

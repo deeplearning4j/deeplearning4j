@@ -167,7 +167,9 @@ static void applyPenaltiesLauncher(NDArray* logits, NDArray* inputIds,
         vocabSize = logits->sizeAt(2);
     }
 
-    if (idsRank == 1) {
+    if (idsRank == 0) {
+        seqLen = 1;
+    } else if (idsRank == 1) {
         seqLen = inputIds->sizeAt(0);
     } else {
         seqLen = inputIds->sizeAt(1);
@@ -193,8 +195,14 @@ static void applyPenaltiesLauncher(NDArray* logits, NDArray* inputIds,
     }
 
     auto idsStrides = inputIds->stridesOf();
-    LongType idsRowStride = (idsRank == 1) ? 0 : idsStrides[0];
-    LongType idsElemStride = (idsRank == 1) ? idsStrides[0] : idsStrides[1];
+    LongType idsRowStride = 0;
+    LongType idsElemStride = 0;
+    if (idsRank == 1) {
+        idsElemStride = idsStrides[0];
+    } else if (idsRank == 2) {
+        idsRowStride = idsStrides[0];
+        idsElemStride = idsStrides[1];
+    }
 
     size_t sharedSize = PENALTY_HASH_SIZE * (sizeof(LongType) + sizeof(int));
     int blockSize = 256;

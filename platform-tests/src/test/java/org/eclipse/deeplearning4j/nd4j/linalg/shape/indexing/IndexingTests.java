@@ -175,7 +175,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorGet(Nd4jBackend backend) {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
         /*

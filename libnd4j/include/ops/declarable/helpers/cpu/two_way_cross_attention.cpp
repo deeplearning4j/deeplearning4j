@@ -75,15 +75,21 @@ static void softmaxBackward(NDArray& attnWeights, NDArray& dLdAttnWeights, NDArr
     }
 }
 
-void twoWayCrossAttention(NDArray* tokenQuery, NDArray* tokenKey,
-                              NDArray* tokenValue, NDArray* imageQuery,
-                              NDArray* imageKey, NDArray* imageValue,
-                              NDArray* tokenOutput, NDArray* imageOutput,
-                              double scale, LaunchContext* context) {
+// Process one batch slice for forward pass:
+//   tokenOut = softmax(tokenQ @ imageK^T * scale) @ imageV
+//   imageOut = softmax(imageQ @ tokenK^T * scale) @ tokenV
+static void twoWayCrossAttentionSingle(
+    NDArray* tokenQuery, NDArray* tokenKey, NDArray* tokenValue,
+    NDArray* imageQuery, NDArray* imageKey, NDArray* imageValue,
+    NDArray* tokenOutput, NDArray* imageOutput,
+    double scale) {
+
     // Direction 1: token attends to image
     {
         NDArray* imageKT = imageKey->transpose();
-        std::vector<sd::LongType> logitsShape = {tokenQuery->sizeAt(0), imageKey->sizeAt(0)};
+        sd::LongType tqLen = tokenQuery->sizeAt(0);
+        sd::LongType ikLen = imageKey->sizeAt(0);
+        std::vector<sd::LongType> logitsShape = {tqLen, ikLen};
         NDArray logits('c', logitsShape, tokenQuery->dataType());
         MmulHelper::mmul(tokenQuery, imageKT, &logits);
         delete imageKT;
@@ -95,7 +101,9 @@ void twoWayCrossAttention(NDArray* tokenQuery, NDArray* tokenKey,
     // Direction 2: image attends to token
     {
         NDArray* tokenKT = tokenKey->transpose();
-        std::vector<sd::LongType> logitsShape = {imageQuery->sizeAt(0), tokenKey->sizeAt(0)};
+        sd::LongType iqLen = imageQuery->sizeAt(0);
+        sd::LongType tkLen = tokenKey->sizeAt(0);
+        std::vector<sd::LongType> logitsShape = {iqLen, tkLen};
         NDArray logits('c', logitsShape, imageQuery->dataType());
         MmulHelper::mmul(imageQuery, tokenKT, &logits);
         delete tokenKT;
@@ -105,7 +113,40 @@ void twoWayCrossAttention(NDArray* tokenQuery, NDArray* tokenKey,
     }
 }
 
-void twoWayCrossAttentionBp(
+void twoWayCrossAttention(NDArray* tokenQuery, NDArray* tokenKey,
+                              NDArray* tokenValue, NDArray* imageQuery,
+                              NDArray* imageKey, NDArray* imageValue,
+                              NDArray* tokenOutput, NDArray* imageOutput,
+                              double scale, LaunchContext* context) {
+    int rank = tokenQuery->rankOf();
+
+    if (rank == 2) {
+        // 2D: [seqLen, dim]
+        twoWayCrossAttentionSingle(tokenQuery, tokenKey, tokenValue,
+                                   imageQuery, imageKey, imageValue,
+                                   tokenOutput, imageOutput, scale);
+    } else {
+        // 3D: [batch, seqLen, dim] — iterate over batch
+        sd::LongType batchSize = tokenQuery->sizeAt(0);
+        for (sd::LongType b = 0; b < batchSize; b++) {
+            NDArray tqSlice = tokenQuery->slice(b, 0);
+            NDArray tkSlice = tokenKey->slice(b, 0);
+            NDArray tvSlice = tokenValue->slice(b, 0);
+            NDArray iqSlice = imageQuery->slice(b, 0);
+            NDArray ikSlice = imageKey->slice(b, 0);
+            NDArray ivSlice = imageValue->slice(b, 0);
+            NDArray toSlice = tokenOutput->slice(b, 0);
+            NDArray ioSlice = imageOutput->slice(b, 0);
+
+            twoWayCrossAttentionSingle(&tqSlice, &tkSlice, &tvSlice,
+                                       &iqSlice, &ikSlice, &ivSlice,
+                                       &toSlice, &ioSlice, scale);
+        }
+    }
+}
+
+// Process one batch slice for backward pass
+static void twoWayCrossAttentionBpSingle(
     NDArray* tokenQuery, NDArray* tokenKey, NDArray* tokenValue,
     NDArray* imageQuery, NDArray* imageKey, NDArray* imageValue,
     NDArray* gradTokenOut, NDArray* gradImageOut,
@@ -116,7 +157,9 @@ void twoWayCrossAttentionBp(
     // ---- Direction 1 backward: tokenOut = softmax(tokenQ @ imageK^T * scale) @ imageV ----
     {
         NDArray* imageKT = imageKey->transpose();
-        std::vector<sd::LongType> logitsShape = {tokenQuery->sizeAt(0), imageKey->sizeAt(0)};
+        sd::LongType tqLen = tokenQuery->sizeAt(0);
+        sd::LongType ikLen = imageKey->sizeAt(0);
+        std::vector<sd::LongType> logitsShape = {tqLen, ikLen};
         NDArray logits1('c', logitsShape, tokenQuery->dataType());
         MmulHelper::mmul(tokenQuery, imageKT, &logits1);
         delete imageKT;
@@ -128,7 +171,7 @@ void twoWayCrossAttentionBp(
 
         // dL/dAttnWeights1 = gradTokenOut @ imageV^T
         NDArray* imageVT = imageValue->transpose();
-        std::vector<sd::LongType> attnShape = {tokenQuery->sizeAt(0), imageKey->sizeAt(0)};
+        std::vector<sd::LongType> attnShape = {tqLen, ikLen};
         NDArray dLdAttn1('c', attnShape, tokenQuery->dataType());
         MmulHelper::mmul(gradTokenOut, imageVT, &dLdAttn1);
         delete imageVT;
@@ -158,7 +201,9 @@ void twoWayCrossAttentionBp(
     // ---- Direction 2 backward: imageOut = softmax(imageQ @ tokenK^T * scale) @ tokenV ----
     {
         NDArray* tokenKT = tokenKey->transpose();
-        std::vector<sd::LongType> logitsShape = {imageQuery->sizeAt(0), tokenKey->sizeAt(0)};
+        sd::LongType iqLen = imageQuery->sizeAt(0);
+        sd::LongType tkLen = tokenKey->sizeAt(0);
+        std::vector<sd::LongType> logitsShape = {iqLen, tkLen};
         NDArray logits2('c', logitsShape, imageQuery->dataType());
         MmulHelper::mmul(imageQuery, tokenKT, &logits2);
         delete tokenKT;
@@ -170,7 +215,7 @@ void twoWayCrossAttentionBp(
 
         // dL/dAttnWeights2 = gradImageOut @ tokenV^T
         NDArray* tokenVT = tokenValue->transpose();
-        std::vector<sd::LongType> attnShape = {imageQuery->sizeAt(0), tokenKey->sizeAt(0)};
+        std::vector<sd::LongType> attnShape = {iqLen, tkLen};
         NDArray dLdAttn2('c', attnShape, imageQuery->dataType());
         MmulHelper::mmul(gradImageOut, tokenVT, &dLdAttn2);
         delete tokenVT;
@@ -195,6 +240,80 @@ void twoWayCrossAttentionBp(
         MmulHelper::mmul(dLdLogits2T, imageQuery, &dLdTokenKeyContrib);
         delete dLdLogits2T;
         dLdTokenKey->assign(&dLdTokenKeyContrib);
+    }
+}
+
+void twoWayCrossAttentionBp(
+    NDArray* tokenQuery, NDArray* tokenKey, NDArray* tokenValue,
+    NDArray* imageQuery, NDArray* imageKey, NDArray* imageValue,
+    NDArray* gradTokenOut, NDArray* gradImageOut,
+    NDArray* dLdTokenQuery, NDArray* dLdTokenKey, NDArray* dLdTokenValue,
+    NDArray* dLdImageQuery, NDArray* dLdImageKey, NDArray* dLdImageValue,
+    double scale, LaunchContext* context) {
+
+    int rank = tokenQuery->rankOf();
+
+    if (rank == 2) {
+        // 2D: [seqLen, dim]
+        twoWayCrossAttentionBpSingle(
+            tokenQuery, tokenKey, tokenValue,
+            imageQuery, imageKey, imageValue,
+            gradTokenOut, gradImageOut,
+            dLdTokenQuery, dLdTokenKey, dLdTokenValue,
+            dLdImageQuery, dLdImageKey, dLdImageValue,
+            scale, context);
+    } else {
+        // 3D: [batch, seqLen, dim] — iterate over batch
+        sd::LongType batchSize = tokenQuery->sizeAt(0);
+
+        // Zero-initialize all gradient outputs before accumulation
+        dLdTokenQuery->assign(0.0);
+        dLdTokenKey->assign(0.0);
+        dLdTokenValue->assign(0.0);
+        dLdImageQuery->assign(0.0);
+        dLdImageKey->assign(0.0);
+        dLdImageValue->assign(0.0);
+
+        for (sd::LongType b = 0; b < batchSize; b++) {
+            NDArray tqSlice  = tokenQuery->slice(b, 0);
+            NDArray tkSlice  = tokenKey->slice(b, 0);
+            NDArray tvSlice  = tokenValue->slice(b, 0);
+            NDArray iqSlice  = imageQuery->slice(b, 0);
+            NDArray ikSlice  = imageKey->slice(b, 0);
+            NDArray ivSlice  = imageValue->slice(b, 0);
+            NDArray gtSlice  = gradTokenOut->slice(b, 0);
+            NDArray giSlice  = gradImageOut->slice(b, 0);
+
+            // Allocate per-batch gradient slices
+            NDArray dTQ(tqSlice.shapeInfo(), false, context, true);
+            NDArray dTK(tkSlice.shapeInfo(), false, context, true);
+            NDArray dTV(tvSlice.shapeInfo(), false, context, true);
+            NDArray dIQ(iqSlice.shapeInfo(), false, context, true);
+            NDArray dIK(ikSlice.shapeInfo(), false, context, true);
+            NDArray dIV(ivSlice.shapeInfo(), false, context, true);
+
+            twoWayCrossAttentionBpSingle(
+                &tqSlice, &tkSlice, &tvSlice,
+                &iqSlice, &ikSlice, &ivSlice,
+                &gtSlice, &giSlice,
+                &dTQ, &dTK, &dTV, &dIQ, &dIK, &dIV,
+                scale, context);
+
+            // Write per-batch results into output slices
+            NDArray dLdTQSlice = dLdTokenQuery->slice(b, 0);
+            NDArray dLdTKSlice = dLdTokenKey->slice(b, 0);
+            NDArray dLdTVSlice = dLdTokenValue->slice(b, 0);
+            NDArray dLdIQSlice = dLdImageQuery->slice(b, 0);
+            NDArray dLdIKSlice = dLdImageKey->slice(b, 0);
+            NDArray dLdIVSlice = dLdImageValue->slice(b, 0);
+
+            dLdTQSlice.assign(&dTQ);
+            dLdTKSlice.assign(&dTK);
+            dLdTVSlice.assign(&dTV);
+            dLdIQSlice.assign(&dIQ);
+            dLdIKSlice.assign(&dIK);
+            dLdIVSlice.assign(&dIV);
+        }
     }
 }
 

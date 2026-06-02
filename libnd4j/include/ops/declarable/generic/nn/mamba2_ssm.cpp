@@ -40,7 +40,7 @@
 namespace sd {
 namespace ops {
 
-CUSTOM_OP_IMPL(mamba2_ssm, 5, 2, false, 0, 3) {
+CUSTOM_OP_IMPL(mamba2_ssm, 5, 2, true, 0, 3) {
   auto x  = INPUT_VARIABLE(0);   // [B, L, D]  where D = H * P
   auto A  = INPUT_VARIABLE(1);   // [H]
   auto B  = INPUT_VARIABLE(2);   // [B, L, N]
@@ -54,9 +54,15 @@ CUSTOM_OP_IMPL(mamba2_ssm, 5, 2, false, 0, 3) {
   const int P = INT_ARG(1);  // head_dim
   const int N = INT_ARG(2);  // state_dim
 
-  // Optional inputs
-  NDArray* D_skip  = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
-  NDArray* stateIn = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;
+  // Optional inputs — disambiguated by bArguments:
+  //   bArg(0) = hasD       (D at index 5 when present)
+  //   bArg(1) = hasStateIn (stateIn at index 5 when no D, or index 6 when D is also present)
+  // Fallback: if no bArgs, use legacy width() heuristic for backward compat.
+  bool hasD       = block.numB() > 0 ? B_ARG(0) : (block.width() > 5);
+  bool hasStateIn = block.numB() > 1 ? B_ARG(1) : (block.width() > 6);
+
+  NDArray* D_skip  = hasD       ? INPUT_VARIABLE(5)                 : nullptr;
+  NDArray* stateIn = hasStateIn ? INPUT_VARIABLE(hasD ? 6 : 5)      : nullptr;
 
   // Validate shapes
   REQUIRE_TRUE(x->rankOf() == 3, 0,

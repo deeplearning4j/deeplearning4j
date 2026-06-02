@@ -26,6 +26,7 @@ import org.nd4j.ggml.architecture.ArchitectureConfig;
 import org.nd4j.ggml.architecture.ArchitectureRegistry;
 import org.nd4j.ggml.architecture.GenericArchitecture;
 import org.nd4j.ggml.architecture.LLaMAArchitecture;
+import org.nd4j.ggml.architecture.MistralArchitecture;
 import org.nd4j.ggml.architecture.ModelArchitecture;
 import org.nd4j.ggml.format.GGMLMetadata;
 
@@ -68,9 +69,19 @@ class ArchitectureTest {
         assertTrue(variants.contains("llama"));
         assertTrue(variants.contains("llama2"));
         assertTrue(variants.contains("llama3"));
+        assertTrue(variants.contains("codellama"));
+        // Mistral and Mixtral are now handled by MistralArchitecture, not LLaMAArchitecture
+    }
+
+    @Test
+    @DisplayName("Test MistralArchitecture supported variants")
+    void testMistralVariants() {
+        MistralArchitecture arch = new MistralArchitecture();
+        Set<String> variants = arch.getSupportedVariants();
+
         assertTrue(variants.contains("mistral"));
         assertTrue(variants.contains("mixtral"));
-        assertTrue(variants.contains("codellama"));
+        assertEquals("mistral", arch.getName());
     }
 
     @Test
@@ -83,10 +94,11 @@ class ArchitectureTest {
                 .build();
         assertTrue(arch.canHandle(llamaMetadata));
 
+        // Mistral is now handled by MistralArchitecture, not LLaMAArchitecture
         GGMLMetadata mistralMetadata = GGMLMetadata.builder()
                 .architecture("mistral")
                 .build();
-        assertTrue(arch.canHandle(mistralMetadata));
+        assertFalse(arch.canHandle(mistralMetadata));
 
         GGMLMetadata bertMetadata = GGMLMetadata.builder()
                 .architecture("bert")
@@ -179,7 +191,8 @@ class ArchitectureTest {
 
         ModelArchitecture detected = ArchitectureRegistry.detectArchitecture(metadata);
         assertNotNull(detected);
-        assertEquals("llama", detected.getName()); // Mistral uses LLaMA architecture
+        // Mistral is now handled by its own MistralArchitecture
+        assertEquals("mistral", detected.getName());
     }
 
     @Test

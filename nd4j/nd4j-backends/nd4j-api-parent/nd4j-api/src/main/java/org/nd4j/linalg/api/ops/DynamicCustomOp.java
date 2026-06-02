@@ -1028,6 +1028,41 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 ret = Nd4j.getExecutioner().calculateOutputShape(this, oc);
         }
 
+        // Propagate EMPTY bit: if any input is empty, ensure output shapes carry the EMPTY flag.
+        // Some C++ shape functions (e.g., cast) don't propagate the EMPTY bit from input to output.
+        if (ret != null && !ret.isEmpty()) {
+            boolean anyInputEmpty = false;
+            List<INDArray> inputArraysForEmpty = (oc != null) ? oc.getInputArrays() : inputArguments;
+            if (inputArraysForEmpty != null) {
+                for (INDArray in : inputArraysForEmpty) {
+                    if (in != null && in.isEmpty()) {
+                        anyInputEmpty = true;
+                        break;
+                    }
+                }
+            }
+            if (anyInputEmpty) {
+                List<DataBuffer> fixed = new ArrayList<>(ret.size());
+                boolean changed = false;
+                for (DataBuffer shapeBuffer : ret) {
+                    long[] shapeInfo = shapeBuffer.asLong();
+                    if (!Shape.isEmpty(shapeInfo)) {
+                        // Create a corrected copy with the EMPTY bit set
+                        long[] corrected = Arrays.copyOf(shapeInfo, shapeInfo.length);
+                        int optionsIdx = Shape.shapeInfoLength(corrected) - 3;
+                        corrected[optionsIdx] |= ArrayOptionsHelper.ATYPE_EMPTY_BIT;
+                        fixed.add(Nd4j.getDataBufferFactory().createLong(corrected));
+                        changed = true;
+                    } else {
+                        fixed.add(shapeBuffer);
+                    }
+                }
+                if (changed) {
+                    ret = fixed;
+                }
+            }
+        }
+
         // Cache result with rich signature
         if (oc != null && ret != null && !ret.isEmpty()) {
             outputShapes = ret;

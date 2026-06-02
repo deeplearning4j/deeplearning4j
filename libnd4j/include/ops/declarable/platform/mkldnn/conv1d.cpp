@@ -135,7 +135,9 @@ PLATFORM_IMPL(conv1d, ENGINE_CPU) {
   int sW = INT_ARG(1);
   int pW = INT_ARG(2);
   int dW = INT_ARG(3);
-  bool isNCW = block.numI() > 4 ? (INT_ARG(4) == 1) : true;
+  // Args: [k, s, p, d, paddingMode, isNHWC, wFormat]
+  // INT_ARG(5): 0 = NCW, 1 = NWC  (Java passes !isNCW as the flag)
+  bool isNCW = block.numI() > 5 ? (INT_ARG(5) == 0) : true;
 
   bool hasBias = bias != nullptr;
 
@@ -148,18 +150,12 @@ PLATFORM_IMPL(conv1d, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(conv1d, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto w = INPUT_VARIABLE(1);
-  auto z = OUTPUT_VARIABLE(0);
-
+  // The generic conv1d op delegates to conv2d (which has its own oneDNN platform
+  // impl). This platform implementation has bugs with non-VALID padding modes and
+  // weight format handling, so we disable it and let the generic op handle all
+  // cases by delegating to conv2d, which is correct and well-tested.
   Requirements req("ONEDNN CONV1D OP");
-  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(w->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 3) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(w->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
+  req.expectEq(makeInfoVariable(0, "disabled: use generic conv1d->conv2d path"), 1);
   return req;
 }
 
@@ -300,7 +296,9 @@ PLATFORM_IMPL(conv1d_bp, ENGINE_CPU) {
   int sW = INT_ARG(1);
   int pW = INT_ARG(2);
   int dW = INT_ARG(3);
-  bool isNCW = block.numI() > 4 ? (INT_ARG(4) == 1) : true;
+  // Args: [k, s, p, d, paddingMode, isNHWC, wFormat]
+  // INT_ARG(5): 0 = NCW, 1 = NWC  (Java passes !isNCW as the flag)
+  bool isNCW = block.numI() > 5 ? (INT_ARG(5) == 0) : true;
 
   REQUIRE_TRUE(input->rankOf() == 3, 0, "CONV1D_BP_MKLDNN OP: input rank must be 3, but got rank = %i",
                input->rankOf());
@@ -311,22 +309,11 @@ PLATFORM_IMPL(conv1d_bp, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(conv1d_bp, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto w = INPUT_VARIABLE(1);
-  auto gradO = INPUT_VARIABLE(2);
-  auto gradI = OUTPUT_VARIABLE(0);
-  auto gradW = OUTPUT_VARIABLE(1);
-
+  // Disabled for the same reasons as the forward pass: the mkldnn conv1d_bp
+  // implementation has bugs with argument ordering and weight format handling.
+  // The generic conv1d_bp op delegates to conv2d_bp, which is correct.
   Requirements req("ONEDNN CONV1D_BP OP");
-  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
-      req.expectFalse(makeInfoVariable(w->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
-      req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 3) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(w->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(gradI->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(gradW->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
+  req.expectEq(makeInfoVariable(0, "disabled: use generic conv1d_bp->conv2d_bp path"), 1);
   return req;
 }
 

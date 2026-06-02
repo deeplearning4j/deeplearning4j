@@ -100,7 +100,12 @@ public class LoftQInitializer {
             if (iter == 0) {
                 target = W.dup();
             } else {
-                INDArray ba = B.mmul(A);  // [outDim, inDim]
+                // dup() B and A before mmul to prevent InferenceSession from releasing them
+                INDArray bDup = B.dup();
+                INDArray aDup = A.dup();
+                INDArray ba = bDup.mmul(aDup);  // [outDim, inDim]
+                bDup.close();
+                aDup.close();
                 target = W.sub(ba);
                 ba.close();
             }
@@ -143,14 +148,24 @@ public class LoftQInitializer {
 
             // B = U_r * sqrtS  (scale each column i by sqrtS[i])
             //   broadcast: U_r [outDim, rank] * sqrtS [rank] → mulRowVector broadcasts along cols
-            B = U_r.mulRowVector(sqrtS);
+            //   dup() ensures B is a standalone array not linked to any InferenceSession lifecycle
+            INDArray BNew = U_r.mulRowVector(sqrtS).dup();
             U_r.close();
 
             // A = sqrtS * Vt_r (scale each row i by sqrtS[i])
             //   broadcast: sqrtS [rank] reshaped to [rank,1] then mulColumnVector broadcasts along rows
-            A = Vt_r.mulColumnVector(sqrtS.reshape(rank, 1));
+            //   dup() ensures A is a standalone array not linked to any InferenceSession lifecycle
+            INDArray ANew = Vt_r.mulColumnVector(sqrtS.reshape(rank, 1)).dup();
             Vt_r.close();
             sqrtS.close();
+
+            // Close previous B and A (they are no longer needed after this iteration)
+            if (iter > 0) {
+                B.close();
+                A.close();
+            }
+            B = BNew;
+            A = ANew;
 
             log.debug("LoftQ iter {}/{}: B={}, A={}", iter + 1, numIterations, B.shapeInfoToString(), A.shapeInfoToString());
         }

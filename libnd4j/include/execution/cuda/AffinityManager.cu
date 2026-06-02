@@ -126,8 +126,45 @@ void AffinityManager::syncThreadDeviceId(int deviceId) {
 }
 
 void AffinityManager::setAvailableDevices(const std::vector<int> &devices) {
-  // For CUDA, this can be used to restrict which devices are available
-  // Currently a no-op but could be extended to filter device selection
+  std::lock_guard<std::mutex> lock(_currentMutex);
+  _availableDevices = devices;
+
+  if (_availableDevices.empty()) return;
+
+  int currentDevice = -1;
+  cudaError_t currentErr = cudaGetDevice(&currentDevice);
+  bool currentAllowed = false;
+  if (currentErr == cudaSuccess) {
+    for (auto device : _availableDevices) {
+      if (device == currentDevice) {
+        currentAllowed = true;
+        break;
+      }
+    }
+  } else {
+    cudaGetLastError();
+  }
+
+  if (currentAllowed) {
+    globalThreadToDevice = currentDevice;
+    return;
+  }
+
+  cudaError_t lastErr = cudaSuccess;
+  for (auto device : _availableDevices) {
+    lastErr = cudaSetDevice(device);
+    if (lastErr == cudaSuccess) {
+      globalThreadToDevice = device;
+      cudaGetLastError();
+      return;
+    }
+
+    sd_printf("AffinityManager: WARNING - cudaSetDevice(%d) failed while applying available devices: %s\n",
+              device, cudaGetErrorString(lastErr));
+    cudaGetLastError();
+  }
+
+  throw cuda_exception::build("setAvailableDevices failed to select any configured CUDA device", lastErr);
 }
 
 std::atomic<int> AffinityManager::_lastDevice;  // = std::atomic<int>(initialV);

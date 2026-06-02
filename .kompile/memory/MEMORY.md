@@ -93,3 +93,45 @@
 - [dsp-concurrent-plan-sharing-async-nosync-clean](dsp_concurrent_plan_sharing_async_nosync_clean.md) — [project] Full DspConcurrentPlanSharingTest passes with clean async DSP diagnostics after prealloc event capture fix
 - [dsp-composite-replay-async-nosync-clean](dsp_composite_replay_async_nosync_clean.md) — [project] DspCompositeReplayTest passes cleanly with async-only DSP composite replay diagnostics
 - [fix-dsp-buffer-alias-external-staging-views](fix_dsp_buffer_alias_external_staging_views.md) — [project] Fixed DSP CUDA graph coverage for transparent view aliases of staged external inputs
+- [dsp-benchmark-baseline-250-may28-frozen-verify-failure](dsp_benchmark_baseline_250_may28_frozen_verify_failure.md) — [project] Baseline 250-token DSP benchmark: lateSteady 63.78 tok/s, audit blocked by frozen DataBuffer VERIFY mutation
+- [dsp-verify-frozen-buffer-build-success](dsp_verify_frozen_buffer_build_success.md) — [project] CUDA native build succeeded after VERIFY frozen-buffer diagnostic fix
+- [dsp-merged-segment-replay-verify-fix-pass](dsp_merged_segment_replay_verify_fix_pass.md) — [project] TestDspMergedSegmentReplay#testVerifyModeNoMismatch passed after VERIFY diagnostic no-primary guard
+- [dsp-validation-still-fails-dspvalidateoutputs-frozen-primary](dsp_validation_still_fails_dspvalidateoutputs_frozen_primary.md) — [project] TestDspValidation output staleness still fails in dspValidateOutputs after replay VERIFY fix
+- [dsp-validateoutputs-build-success](dsp_validateoutputs_build_success.md) — [project] CUDA native build succeeded after dspValidateOutputs frozen-output duplicate fix
+- [dsp-validation-validateoutputs-fix-pass](dsp_validation_validateoutputs_fix_pass.md) — [project] TestDspValidation output staleness and multi-step comparison pass after dspValidateOutputs duplicate fix
+- [dsp-training-e2e-loss-zero-still-fails](dsp_training_e2e_loss_zero_still_fails.md) — [project] DspTrainingE2ETest still fails: DSP training loss collapses to zero for optimizer parity cases
+- [dsp_training_mutable_external_inputs_java_build_success](dsp_training_mutable_external_inputs_java_build_success.md) — [project] Java build passed after adding training-only mutable DSP external input marking.
+- [dsp_training_mutable_external_inputs_still_loss_zero](dsp_training_mutable_external_inputs_still_loss_zero.md) — [project] Training-only mutable external input marking did not fix DspTrainingE2ETest loss-zero parity failures.
+- [dsp_training_diag_mutable_staging_active_but_loss_zero](dsp_training_diag_mutable_staging_active_but_loss_zero.md) — [project] DSP training diagnostics show mutable staging active, but loss-zero parity failure remains.
+- [dsp_fqcn_cleanup_java_build_success](dsp_fqcn_cleanup_java_build_success.md) — [project] nd4j-api Java build passed after removing java.util FQCN declarations from DynamicShapePlanExecutor.
+- [dsp_mean_sqerr_replay_friendly_cuda_build_success](dsp_mean_sqerr_replay_friendly_cuda_build_success.md) — [project] CUDA build passed after making mean_sqerr loss reductions device-side/replay-friendly.
+- [dsp_mean_sqerr_replay_friendly_first_test_failed_nan](dsp_mean_sqerr_replay_friendly_first_test_failed_nan.md) — [project] First replay-friendly mean_sqerr test failed with Infinity/NaN in both reference and DSP paths.
+- [dsp_mean_sqerr_count_fix_cuda_build_success](dsp_mean_sqerr_count_fix_cuda_build_success.md) — [project] CUDA build passed after fixing mean_sqerr replay-friendly count denominator.
+- [dsp_mean_sqerr_count_fix_test_failed_buffer_overrun](dsp_mean_sqerr_count_fix_test_failed_buffer_overrun.md) — [project] Mean_sqerr count cast retest failed with scalar output DataBuffer canary corruption.
+- [dsp_mean_sqerr_count_applyscalar_cuda_build_success](dsp_mean_sqerr_count_applyscalar_cuda_build_success.md) — [project] CUDA build passed after replacing count cast with applyScalar in mean_sqerr denominator helper.
+- [dsp_mean_sqerr_count_applyscalar_test_failed_wrong_target_type](dsp_mean_sqerr_count_applyscalar_test_failed_wrong_target_ty.md) — [project] Focused DSP training test failed after mean_sqerr count applyScalar conversion
+- [dsp_mean_sqerr_denominator_constant_build_failed](dsp_mean_sqerr_denominator_constant_build_failed.md) — [project] CUDA rebuild failed after mean_sqerr denominator repair
+- [dsp_mean_sqerr_denominator_lvalue_cuda_build_success](dsp_mean_sqerr_denominator_lvalue_cuda_build_success.md) — [project] CUDA build succeeded after mean_sqerr denominator lvalue fix
+- [dsp_training_parity_mean_sqerr_denominator_pass_but_slot_by_slot](dsp_training_parity_mean_sqerr_denominator_pass_but_slot_by_.md) — [project] Focused DSP training parity passed after mean_sqerr repair, but training still logs slot-by-slot/no-freeze
+- [dsp_training_freeze_semantics_java_build_success](dsp_training_freeze_semantics_java_build_success.md) — [project] nd4j-api build passed after TrainingSession replay semantics edit
+- [dsp_training_freeze_semantics_focused_pass](dsp_training_freeze_semantics_focused_pass.md) — [project] Focused DSP training parity passes with frozen replay semantics enabled
+- [fix-vlm-training-pipeline-test-geometry](fix_vlm_training_pipeline_test_geometry.md) — [project] Aligned TestVlmTrainingPipeline fine-tune config geometry with its synthetic 224x224 encoder.
+- [op-executioner-mean-sum-simple-investigation-2026-05-28](op_executioner_mean_sum_simple_investigation_2026_05_28.md) — [project] Investigated OpExecutionerTests.testMeanSumSimple expected [256] vs [16] in full platform-tests log
+- [fix_native_multi_backend_workspace_spill_metrics](fix_native_multi_backend_workspace_spill_metrics.md) — [project] Root-caused and patched NativeMultiBackendWorkspace CPU spill metric failure in CUDA build
+- [rng-shuffle-native-crash-cluster-2026-05-28](rng_shuffle_native_crash_cluster_2026_05_28.md) — [project] Root causes for CUDA RNG DeclarableOp 0xdeadbe* crashes and CUDA shuffle NDArray::specialBuffer null crashes
+- [dsp_benchmark_current_250_20260528](dsp_benchmark_current_250_20260528.md) — [project] Current 250-token DSP benchmark result after DL4J regression fixes
+- [dsp_benchmark_no_norm_reduction_250_20260528](dsp_benchmark_no_norm_reduction_250_20260528.md) — [project] 250-token no-normalization/no-reduction compile-all config was much slower than OPTIMAL
+- [dsp_benchmark_bisect_graphcapture_allsettings_250_20260528](dsp_benchmark_bisect_graphcapture_allsettings_250_20260528.md) — [project] dsp_benchmark_bisect_graphcapture_allsettings_250_20260528
+- [dsp_benchmark_where_static_output_first_250_20260528](dsp_benchmark_where_static_output_first_250_20260528.md) — [project] dsp_benchmark_where_static_output_first_250_20260528
+- [dsp_benchmark_where_static_output_rejected_250_20260528](dsp_benchmark_where_static_output_rejected_250_20260528.md) — [project] dsp_benchmark_where_static_output_rejected_250_20260528
+- [dsp_benchmark_reshape_copyoffset_view_rejected_250_20260528](dsp_benchmark_reshape_copyoffset_view_rejected_250_20260528.md) — [project] DSP optimization candidate benchmark result rejected
+- [dsp_benchmark_selective_value_dep_unfreeze_rejected_250_20260528](dsp_benchmark_selective_value_dep_unfreeze_rejected_250_2026.md) — [project] DSP optimization candidate benchmark result rejected
+- [dsp_cache_position_inplace_candidate_rejected_20260528](dsp_cache_position_inplace_candidate_rejected_20260528.md) — [project] Synthesized cache_position in-place KV candidate built but regressed VLM 250-token throughput
+- [dsp_benchmark_autoregressive_mask_prune_rejected_20260528](dsp_benchmark_autoregressive_mask_prune_rejected_20260528.md) — [project] Rejected autoregressive_decode.cu post-sample mask unmask removal after 250-token DSP benchmark regression.
+- [dsp_benchmark_onnx_mha_direct_output_rejected_20260528](dsp_benchmark_onnx_mha_direct_output_rejected_20260528.md) — [project] Benchmark 9 direct-output onnx_multi_head_attention decode candidate regressed and was reverted
+- [dsp_benchmark_repeat_kv_bypass_rejected_20260528](dsp_benchmark_repeat_kv_bypass_rejected_20260528.md) — [project] Benchmark 10 repeat_kv bypass candidate rejected due CUDA illegal memory access in 250-token benchmark
+- [triton_hopper_tablegen_dependency_fix_20260528](triton_hopper_tablegen_dependency_fix_20260528.md) — [project] Committed Triton NVHopperTransforms tablegen dependency build fix
+- [lfm2-autoregressive-decode-rank0-sampling-history](lfm2_autoregressive_decode_rank0_sampling_history.md) — [project] Root cause for LFM2.5 sampling failure in Kompile staging: rank-0 token history view in native autoregressive_decode ...
+- [lfm2_autoregressive_decode_rank0_sampling_fix](lfm2_autoregressive_decode_rank0_sampling_fix.md) — [project] Fix for SameDiff LFM2 sampling rank-0 failure
+- [lfm2_rank0_fix_validation_2026_05_31](lfm2_rank0_fix_validation_2026_05_31.md) — [project] Validation results for LFM2 SameDiff sampling rank-0 fix
+- [cuda_init_failover_available_devices_20260602](cuda_init_failover_available_devices_20260602.md) — [project] cuda_init_failover_available_devices_20260602

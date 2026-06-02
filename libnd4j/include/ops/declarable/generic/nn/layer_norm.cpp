@@ -81,12 +81,20 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   const bool isHalf = input->dataType() == DataType::HALF;
   const bool gainContiguous = shape::strideDescendingCAscendingF(gain->shapeInfo());
   const bool biasContiguous = bias == nullptr || shape::strideDescendingCAscendingF(bias->shapeInfo());
+  const bool gainTypeSupported = gain->dataType() == DataType::FLOAT32 ||
+                                 gain->dataType() == DataType::DOUBLE ||
+                                 gain->dataType() == DataType::HALF;
+  const bool biasTypeSupported = bias == nullptr ||
+                                 bias->dataType() == DataType::FLOAT32 ||
+                                 bias->dataType() == DataType::DOUBLE ||
+                                 bias->dataType() == DataType::HALF;
 
 #if defined(SD_CUDA)
   // CUDA fast path: fused kernel for last-dimension normalization
   // If input is non-contiguous (e.g. from permute view), dup to contiguous first —
   // one cudaMemcpy is far cheaper than 8 separate decomposed kernel launches
-  if (lastDimNorm && (isFloat || isDouble || isHalf) && gainContiguous && biasContiguous) {
+  if (lastDimNorm && (isFloat || isDouble || isHalf) && gainContiguous && biasContiguous &&
+      gainTypeSupported && biasTypeSupported) {
     NDArray* inputToUse = input;
     NDArray* contiguousInput = nullptr;
     NDArray* outputToUse = output;
@@ -115,7 +123,10 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   }
 #endif
 
-  if (lastDimNorm && isContiguous && (isFloat || isDouble) && gainContiguous && biasContiguous) {
+  const bool sameParamTypes = gain->dataType() == input->dataType() &&
+                              (bias == nullptr || bias->dataType() == input->dataType());
+  if (lastDimNorm && isContiguous && (isFloat || isDouble) && gainContiguous && biasContiguous &&
+      sameParamTypes) {
     // Fused layer norm: 2 passes instead of 7-8
     // This is a CPU implementation, so we need to sync data from device to host first
     input->syncToHost();

@@ -1,0 +1,15 @@
+{
+  "id" : "09f3331a",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da08ad221f665929285a8ffd3dcb6b9be",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 1,
+  "passed" : 0,
+  "failed" : 1,
+  "notes" : "Candidate synthesized cache_position/in-place KV support benchmark: steady=55.84 tok/s, lateSteady=62.04 tok/s, worse than baseline steady=57.48 lateSteady=64.96. Replay healthy: segments=1 captured=1 replays=245 captureFailures=0. Reverting candidate.",
+  "timestamp" : "2026-05-28T08:52:39.464969Z"
+}

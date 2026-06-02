@@ -53,7 +53,7 @@ public enum GGUFType {
     I32(26, "I32", DataType.INT32, 4, false),
     I64(27, "I64", DataType.INT64, 8, false),
     F64(28, "F64", DataType.DOUBLE, 8, false),
-    BF16(29, "BF16", DataType.BFLOAT16, 2, false);
+    BF16(30, "BF16", DataType.BFLOAT16, 2, false);
 
     private final int id;
     private final String name;

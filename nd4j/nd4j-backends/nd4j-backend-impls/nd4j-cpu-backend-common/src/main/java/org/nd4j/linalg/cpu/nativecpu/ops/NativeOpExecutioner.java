@@ -129,7 +129,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * Returns the instance-specific NativeOps rather than the global singleton.
      */
     protected NativeOps getNativeOps() {
-        return nativeOps != null ? nativeOps : getNativeOps();
+        return nativeOps != null ? nativeOps : Nd4j.getNativeOps();
     }
 
     /**
@@ -1109,13 +1109,25 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (x != null && y != null && z != null) {
             DataBuffer dataBuffer = op.extraArgsDataBuff(z.dataType());
-            getNativeOps().execRandom3(null,op.opNum(),rng.getStatePointer(),xb,yb,zb,dataBuffer.addressPointer());
+            if (dataBuffer instanceof BaseCpuDataBuffer) {
+                ((BaseCpuDataBuffer) dataBuffer).actualizePointerAndIndexer();
+            }
+            Pointer extraArgsPtr3 = dataBuffer != null ? dataBuffer.pointer() : null;
+            getNativeOps().execRandom3(null,op.opNum(),rng.getStatePointer(),xb,yb,zb,extraArgsPtr3);
         } else if (x != null && z != null) {
             DataBuffer dataBuffer = op.extraArgsDataBuff(z.dataType());
-            getNativeOps().execRandom2(null,op.opNum(),rng.getStatePointer(),xb,zb,dataBuffer.addressPointer());
+            if (dataBuffer instanceof BaseCpuDataBuffer) {
+                ((BaseCpuDataBuffer) dataBuffer).actualizePointerAndIndexer();
+            }
+            Pointer extraArgsPtr2 = dataBuffer != null ? dataBuffer.pointer() : null;
+            getNativeOps().execRandom2(null,op.opNum(),rng.getStatePointer(),xb,zb,extraArgsPtr2);
         } else {
             DataBuffer dataBuffer = op.extraArgsDataBuff(z.dataType());
-            getNativeOps().execRandom(null,op.opNum(),rng.getStatePointer(),zb,dataBuffer.addressPointer());
+            if (dataBuffer instanceof BaseCpuDataBuffer) {
+                ((BaseCpuDataBuffer) dataBuffer).actualizePointerAndIndexer();
+            }
+            Pointer extraArgsPtr = dataBuffer != null ? dataBuffer.pointer() : null;
+            getNativeOps().execRandom(null,op.opNum(),rng.getStatePointer(),zb,extraArgsPtr);
         }
 
         if (getNativeOps().lastErrorCode() != 0) {

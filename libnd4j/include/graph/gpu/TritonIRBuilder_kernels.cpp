@@ -226,10 +226,23 @@ void TritonIRBuilder::emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location 
       /*isVolatile=*/false);
 
   // Matrix multiply: acc += dot(A_tile, B_tile)
-  // tt.dot requires A and B to have same element bit width.
+  // tt.dot requires A and B to have same element type.
   // Accumulator is always f32. Tensor cores handle f16/bf16→f32 natively.
+  // When FP16 weight quantization is active, A may be f32 while B is f16.
+  // Truncate the wider operand to the narrower for tensor core compatibility.
+  mlir::Value aForDot = aLoaded.getResult();
+  mlir::Value bForDot = bLoaded.getResult();
+  if (aElemType != bElemType) {
+    if (mlir::isa<mlir::Float32Type>(aElemType) && !mlir::isa<mlir::Float32Type>(bElemType)) {
+      auto aCastType = mlir::RankedTensorType::get({blockM, blockK}, bElemType);
+      aForDot = builder.create<mlir::arith::TruncFOp>(loc, aCastType, aForDot);
+    } else if (!mlir::isa<mlir::Float32Type>(aElemType) && mlir::isa<mlir::Float32Type>(bElemType)) {
+      auto bCastType = mlir::RankedTensorType::get({blockK, blockN}, aElemType);
+      bForDot = builder.create<mlir::arith::TruncFOp>(loc, bCastType, bForDot);
+    }
+  }
   auto dotResult = builder.create<mlir::triton::DotOp>(
-      loc, accType, aLoaded, bLoaded, accIter,
+      loc, accType, aForDot, bForDot, accIter,
       dotPrecision, /*maxNumImpreciseAcc=*/0);
 
   // Yield accumulator for next K-iteration
@@ -548,7 +561,19 @@ void TritonIRBuilder::emitRmsNormLinearKernel(
   auto gammaBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, gammaTileType, gammaExpanded);
 
   // ── Compute x_scaled = x * gamma [blockM, blockK] ──
-  auto xScaled = builder.create<mlir::arith::MulFOp>(loc, xLoaded, gammaBroadcast);
+  // MulFOp requires both operands to have the same type.
+  // If gamma is f16 (FP16 weight quantization), extend to f32 to preserve precision.
+  mlir::Value gammaForMul = gammaBroadcast.getResult();
+  if (gammaElemType != xElemType) {
+    if (mlir::isa<mlir::Float32Type>(xElemType) && !mlir::isa<mlir::Float32Type>(gammaElemType)) {
+      auto gammaCastType = mlir::RankedTensorType::get({blockM, blockK}, xElemType);
+      gammaForMul = builder.create<mlir::arith::ExtFOp>(loc, gammaCastType, gammaForMul);
+    } else if (!mlir::isa<mlir::Float32Type>(xElemType) && mlir::isa<mlir::Float32Type>(gammaElemType)) {
+      auto gammaCastType = mlir::RankedTensorType::get({blockM, blockK}, xElemType);
+      gammaForMul = builder.create<mlir::arith::TruncFOp>(loc, gammaCastType, gammaForMul);
+    }
+  }
+  auto xScaled = builder.create<mlir::arith::MulFOp>(loc, xLoaded, gammaForMul);
 
   // ── Load W tile [blockK, blockN] ──
   auto nConst = builder.create<mlir::arith::ConstantIntOp>(loc, N, 32);
@@ -571,8 +596,18 @@ void TritonIRBuilder::emitRmsNormLinearKernel(
       mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
 
   // ── Accumulate matmul: acc += (x * gamma) @ W ──
+  // tt.dot requires both inputs to have same element type.
+  // xScaled is xElemType (f32), wLoaded is wElemType (f16 if quantized).
+  // Truncate to the narrower type for tensor core compatibility.
+  mlir::Value xForDot = xScaled.getResult();
+  if (xElemType != wElemType) {
+    if (mlir::isa<mlir::Float32Type>(xElemType) && !mlir::isa<mlir::Float32Type>(wElemType)) {
+      auto xCastType = mlir::RankedTensorType::get({blockM, blockK}, wElemType);
+      xForDot = builder.create<mlir::arith::TruncFOp>(loc, xCastType, xForDot);
+    }
+  }
   auto dotResult = builder.create<mlir::triton::DotOp>(
-      loc, accType, xScaled, wLoaded, matmulAccIter,
+      loc, accType, xForDot, wLoaded, matmulAccIter,
       dotPrecision, /*maxNumImpreciseAcc=*/0);
 
   // ── Accumulate Σx² per row: sqAcc += sum_k(x * x) ──
@@ -787,13 +822,22 @@ void TritonIRBuilder::emitGatedMLPKernel(
       mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
 
   // gate_acc += x @ W_gate (reuses same x tile)
+  // tt.dot requires both inputs to have same element type.
+  // If x is f32 and weights are f16 (FP16 quantization), truncate x to match.
+  mlir::Value xForDot = xLoaded.getResult();
+  if (xElemType != wElemType) {
+    if (mlir::isa<mlir::Float32Type>(xElemType) && !mlir::isa<mlir::Float32Type>(wElemType)) {
+      auto xCastType = mlir::RankedTensorType::get({blockM, blockK}, wElemType);
+      xForDot = builder.create<mlir::arith::TruncFOp>(loc, xCastType, xForDot);
+    }
+  }
   auto gateResult = builder.create<mlir::triton::DotOp>(
-      loc, accType, xLoaded, wGateLoaded, gateAccIter,
+      loc, accType, xForDot, wGateLoaded, gateAccIter,
       dotPrecision, /*maxNumImpreciseAcc=*/0);
 
   // up_acc += x @ W_up (reuses same x tile — ONE read, TWO tt.dots)
   auto upResult = builder.create<mlir::triton::DotOp>(
-      loc, accType, xLoaded, wUpLoaded, upAccIter,
+      loc, accType, xForDot, wUpLoaded, upAccIter,
       dotPrecision, /*maxNumImpreciseAcc=*/0);
 
   builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{gateResult, upResult});

@@ -25,6 +25,7 @@
 #include <helpers/DebugHelper.h>
 #include <array/NDArray.h>
 #include <execution/cuda/LaunchDims.h>
+#include <system/common.h>
 #include <types/float16.h>
 
 namespace sd {
@@ -37,18 +38,34 @@ constexpr int WARP_SIZE = 32;
 // Warp-level reduction for sum
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ __forceinline__ T warpReduceSum(T val) {
+SD_DEVICE SD_INLINE T warpReduceSum(T val) {
   for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
     val += __shfl_down_sync(0xffffffff, val, offset);
   }
   return val;
 }
 
+SD_DEVICE SD_INLINE float loadParamAsFloat(const void* ptr, int dtype, LongType index) {
+  if (ptr == nullptr) {
+    return 0.0f;
+  }
+  if (dtype == static_cast<int>(DataType::FLOAT32)) {
+    return reinterpret_cast<const float*>(ptr)[index];
+  }
+  if (dtype == static_cast<int>(DataType::DOUBLE)) {
+    return static_cast<float>(reinterpret_cast<const double*>(ptr)[index]);
+  }
+  if (dtype == static_cast<int>(DataType::HALF)) {
+    return static_cast<float>(reinterpret_cast<const float16*>(ptr)[index]);
+  }
+  return 0.0f;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Block-level reduction for sum using shared memory
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ T blockReduceSum(T val, T* sharedMem) {
+SD_DEVICE T blockReduceSum(T val, T* sharedMem) {
   const int lane = threadIdx.x % WARP_SIZE;
   const int wid = threadIdx.x / WARP_SIZE;
   const int numWarps = (blockDim.x + WARP_SIZE - 1) / WARP_SIZE;
@@ -76,13 +93,15 @@ __device__ T blockReduceSum(T val, T* sharedMem) {
 // Each row is normalized independently
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void layerNormKernel(
+SD_KERNEL void layerNormKernel(
     const T* __restrict__ input,    // [numRows, rowLen]
-    const T* __restrict__ gain,     // [rowLen]
-    const T* __restrict__ bias,     // [rowLen] or nullptr
+    const void* __restrict__ gain,  // [rowLen], may differ from T
+    const void* __restrict__ bias,  // [rowLen] or nullptr, may differ from T
     T* __restrict__ output,         // [numRows, rowLen]
     const LongType numRows,
     const LongType rowLen,
+    const int gainDtype,
+    const int biasDtype,
     const float epsilon) {
 
   // Each block handles one row
@@ -128,15 +147,15 @@ __global__ void layerNormKernel(
     for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
       float val = static_cast<float>(inputRow[i]);
       float normalized = (val - mean) * invStd;
-      float g = static_cast<float>(gain[i]);
-      float b = static_cast<float>(bias[i]);
+      float g = loadParamAsFloat(gain, gainDtype, i);
+      float b = loadParamAsFloat(bias, biasDtype, i);
       outputRow[i] = static_cast<T>(normalized * g + b);
     }
   } else {
     for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
       float val = static_cast<float>(inputRow[i]);
       float normalized = (val - mean) * invStd;
-      float g = static_cast<float>(gain[i]);
+      float g = loadParamAsFloat(gain, gainDtype, i);
       outputRow[i] = static_cast<T>(normalized * g);
     }
   }
@@ -148,11 +167,13 @@ __global__ void layerNormKernel(
 template <typename T>
 void launchLayerNormKernel(
     const T* input,
-    const T* gain,
-    const T* bias,
+    const void* gain,
+    const void* bias,
     T* output,
     LongType numRows,
     LongType rowLen,
+    int gainDtype,
+    int biasDtype,
     float epsilon,
     cudaStream_t stream) {
 
@@ -174,23 +195,23 @@ void launchLayerNormKernel(
   size_t sharedMemSize = numWarps * sizeof(float);
 
   layerNormKernel<T><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
-      input, gain, bias, output, numRows, rowLen, epsilon);
+      input, gain, bias, output, numRows, rowLen, gainDtype, biasDtype, epsilon);
 
   DebugHelper::checkGlobalErrorCode("layerNormKernel failed");
 }
 
 // Explicit instantiations
 template void launchLayerNormKernel<float>(
-    const float*, const float*, const float*, float*,
-    LongType, LongType, float, cudaStream_t);
+    const float*, const void*, const void*, float*,
+    LongType, LongType, int, int, float, cudaStream_t);
 
 template void launchLayerNormKernel<double>(
-    const double*, const double*, const double*, double*,
-    LongType, LongType, float, cudaStream_t);
+    const double*, const void*, const void*, double*,
+    LongType, LongType, int, int, float, cudaStream_t);
 
 template void launchLayerNormKernel<float16>(
-    const float16*, const float16*, const float16*, float16*,
-    LongType, LongType, float, cudaStream_t);
+    const float16*, const void*, const void*, float16*,
+    LongType, LongType, int, int, float, cudaStream_t);
 
 //////////////////////////////////////////////////////////////////////////////
 // Public interface called from layer_norm op
@@ -221,28 +242,30 @@ void layerNormCuda(
 
   auto stream = context->getCudaStream();
   auto dtype = input->dataType();
+  auto gainDtype = gain->dataType();
+  auto biasDtype = bias != nullptr ? bias->dataType() : gainDtype;
 
   if (dtype == DataType::FLOAT32) {
     launchLayerNormKernel<float>(
         reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<const float*>(gain->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const float*>(bias->specialBuffer()) : nullptr,
+        gain->specialBuffer(),
+        bias != nullptr ? bias->specialBuffer() : nullptr,
         reinterpret_cast<float*>(output->specialBuffer()),
-        numRows, rowLen, epsilon, *stream);
+        numRows, rowLen, static_cast<int>(gainDtype), static_cast<int>(biasDtype), epsilon, *stream);
   } else if (dtype == DataType::DOUBLE) {
     launchLayerNormKernel<double>(
         reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<const double*>(gain->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const double*>(bias->specialBuffer()) : nullptr,
+        gain->specialBuffer(),
+        bias != nullptr ? bias->specialBuffer() : nullptr,
         reinterpret_cast<double*>(output->specialBuffer()),
-        numRows, rowLen, epsilon, *stream);
+        numRows, rowLen, static_cast<int>(gainDtype), static_cast<int>(biasDtype), epsilon, *stream);
   } else if (dtype == DataType::HALF) {
     launchLayerNormKernel<float16>(
         reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<const float16*>(gain->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
+        gain->specialBuffer(),
+        bias != nullptr ? bias->specialBuffer() : nullptr,
         reinterpret_cast<float16*>(output->specialBuffer()),
-        numRows, rowLen, epsilon, *stream);
+        numRows, rowLen, static_cast<int>(gainDtype), static_cast<int>(biasDtype), epsilon, *stream);
   } else {
     THROW_EXCEPTION("layerNormCuda: Unsupported data type");
   }

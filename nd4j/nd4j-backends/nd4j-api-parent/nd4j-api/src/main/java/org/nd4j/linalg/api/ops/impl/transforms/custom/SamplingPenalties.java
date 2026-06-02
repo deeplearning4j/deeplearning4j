@@ -51,8 +51,8 @@ import java.util.List;
  * </ul>
  *
  * Inputs:
- *   0: logits    [batch, vocabSize] or [vocabSize] — modified in-place
- *   1: inputIds  [batch, seqLen] or [seqLen] INT64 — prior token IDs
+ *   0: logits    [batch, seqLen, vocabSize], [batch, vocabSize], or [vocabSize] — modified in-place
+ *   1: inputIds  [batch, seqLen], [seqLen], or scalar INT64 — prior token IDs
  *
  * Output:
  *   0: modified logits (same shape as input 0)

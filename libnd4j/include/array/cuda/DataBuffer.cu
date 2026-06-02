@@ -155,11 +155,21 @@ struct ThreadDspCompletionEvent {
     deviceId = -1;
   }
 
-  void ensureForCurrentDevice() {
+  /**
+   * Ensure the completion event exists and belongs to the current CUDA device.
+   * Returns true on success, false if the CUDA context is corrupted (e.g., after
+   * an OOM-triggered illegal memory access). Callers must check the return value
+   * and skip event recording on failure.
+   */
+  bool ensureForCurrentDevice() {
     int currentDevice = -1;
     auto devErr = cudaGetDevice(&currentDevice);
     if (devErr != cudaSuccess) {
-      throwCudaStatus("ThreadDspCompletionEvent: cudaGetDevice failed", devErr);
+      // CUDA context is broken — clear the sticky error and bail.
+      cudaGetLastError();
+      sd_printf("ThreadDspCompletionEvent: cudaGetDevice failed: %s — skipping completion event\n",
+                cudaGetErrorString(devErr));
+      return false;
     }
     if (event != nullptr && deviceId != currentDevice) {
       cudaEventDestroy(event);
@@ -170,10 +180,16 @@ struct ThreadDspCompletionEvent {
     if (event == nullptr) {
       auto eventErr = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
       if (eventErr != cudaSuccess) {
-        throwCudaStatus("ThreadDspCompletionEvent: cudaEventCreateWithFlags failed", eventErr);
+        // Clear the sticky error. This typically happens when a prior op caused
+        // an illegal memory access (error 700) and the CUDA context is unusable.
+        cudaGetLastError();
+        sd_printf("ThreadDspCompletionEvent: cudaEventCreateWithFlags failed: %s — skipping completion event\n",
+                  cudaGetErrorString(eventErr));
+        return false;
       }
       deviceId = currentDevice;
     }
+    return true;
   }
 };
 
@@ -250,11 +266,30 @@ int handleNonPeerFailover(void*& buffer, size_t allocSize, int requestedDevice, 
 
 void dspPublishThreadCompletionEvent(void* streamPtr) {
   if (streamPtr == nullptr) return;
+
+  // Clear any sticky CUDA error from a prior failed op (e.g., OOM during DSP
+  // slot execution). Without this, cudaEventCreateWithFlags / cudaEventRecord
+  // will fail with the propagated error and crash the process.
+  auto stickyErr = cudaGetLastError();
+  if (stickyErr != cudaSuccess) {
+    sd_printf("dspPublishThreadCompletionEvent: cleared sticky CUDA error: %s — skipping completion event\n",
+              cudaGetErrorString(stickyErr));
+    tl_dspCompletionEvent.recorded = false;
+    return;
+  }
+
   cudaStream_t stream = static_cast<cudaStream_t>(streamPtr);
-  tl_dspCompletionEvent.ensureForCurrentDevice();
+  if (!tl_dspCompletionEvent.ensureForCurrentDevice()) {
+    // CUDA context is broken — ensureForCurrentDevice already logged why.
+    return;
+  }
   auto err = cudaEventRecord(tl_dspCompletionEvent.event, stream);
   if (err != cudaSuccess) {
-    throwCudaStatus("dspPublishThreadCompletionEvent: cudaEventRecord failed", err);
+    cudaGetLastError();  // clear
+    sd_printf("dspPublishThreadCompletionEvent: cudaEventRecord failed: %s — skipping\n",
+              cudaGetErrorString(err));
+    tl_dspCompletionEvent.recorded = false;
+    return;
   }
   tl_dspCompletionEvent.recorded = true;
 }
@@ -835,16 +870,41 @@ void DataBuffer::waitForSpecialWriteEvent(void* streamPtr) const {
 }
 
 void DataBuffer::recordSpecialWriteEvent(void* streamPtr) const {
+  // During DSP execution, all ops run on the same tl_dspExecutionStream so
+  // ordering is guaranteed by the stream itself. Per-buffer write events are
+  // unnecessary and dangerous: temporary buffers allocated during device-drift
+  // (cudaGetDevice() returning the wrong device because LaunchContext init
+  // iterates all devices) get _deviceId on device 0 while the DSP stream is on
+  // device 1, causing cudaEventRecord error 400 (invalid resource handle).
+  // Cross-stream sync after DSP completes is handled by
+  // dspPublishThreadCompletionEvent() — same pattern as graph capture mode.
+  if (tl_dspExecutionStream != nullptr) {
+    return;
+  }
+
+  // During CUDA graph capture, per-buffer events are also skipped.
+  if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
+    return;
+  }
+
   cudaStream_t stream = static_cast<cudaStream_t>(streamPtr);
-  int currentDevice = -1;
-  auto devErr = cudaGetDevice(&currentDevice);
+
+  int targetDevice = -1;
+  auto devErr = cudaGetDevice(&targetDevice);
   if (devErr != cudaSuccess) {
     throwCudaStatus("DataBuffer::recordSpecialWriteEvent: cudaGetDevice failed", devErr);
   }
 
   int eventDevice = _writeEventDeviceId.load(std::memory_order_acquire);
-  if (_writeEvent != nullptr && eventDevice != currentDevice) {
-    cudaEventDestroy(reinterpret_cast<cudaEvent_t>(_writeEvent));
+  if (_writeEvent != nullptr && eventDevice != targetDevice) {
+    // Event is on wrong device — destroy on its original device and recreate
+    if (eventDevice >= 0 && eventDevice != targetDevice) {
+      cudaSetDevice(eventDevice);
+      cudaEventDestroy(reinterpret_cast<cudaEvent_t>(_writeEvent));
+      cudaSetDevice(targetDevice);
+    } else {
+      cudaEventDestroy(reinterpret_cast<cudaEvent_t>(_writeEvent));
+    }
     _writeEvent = nullptr;
     _writeEventRecorded.store(false, std::memory_order_release);
     _writeEventDeviceId.store(-1, std::memory_order_release);
@@ -857,7 +917,7 @@ void DataBuffer::recordSpecialWriteEvent(void* streamPtr) const {
       throwCudaStatus("DataBuffer::recordSpecialWriteEvent: cudaEventCreateWithFlags failed", createErr);
     }
     _writeEvent = reinterpret_cast<void*>(evt);
-    _writeEventDeviceId.store(currentDevice, std::memory_order_release);
+    _writeEventDeviceId.store(targetDevice, std::memory_order_release);
   }
 
   auto recordErr = cudaEventRecord(reinterpret_cast<cudaEvent_t>(_writeEvent), stream);
@@ -1680,7 +1740,23 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
   if (bufferDeviceId < 0) {
     bufferDeviceId = _deviceId.load();  // Fallback for legacy code
   }
+  cudaPointerAttributes zeroPtrAttrs;
+  auto zeroAttrRes = cudaPointerGetAttributes(&zeroPtrAttrs, special());
+  if (zeroAttrRes == cudaSuccess && zeroPtrAttrs.type == cudaMemoryTypeDevice) {
+    bufferDeviceId = zeroPtrAttrs.device;
+  } else if (zeroAttrRes != cudaSuccess) {
+    cudaGetLastError();
+  }
   auto currentDeviceId = AffinityManager::currentDeviceId();
+  if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
+    int cudaDeviceId = -1;
+    auto devErr = cudaGetDevice(&cudaDeviceId);
+    if (devErr == cudaSuccess && cudaDeviceId >= 0) {
+      currentDeviceId = cudaDeviceId;
+    } else if (devErr != cudaSuccess) {
+      cudaGetLastError();
+    }
+  }
   bool switchedDevice = false;
 
   if (currentDeviceId != bufferDeviceId) {
@@ -1706,6 +1782,10 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     // Cross-device buffers: skip zero entirely (cross-device nodes break instantiation).
     if (currentDeviceId != bufferDeviceId) {
       // Cross-device during capture: skip zero, op will write correct values
+      DSP_DIAG(MEMORY,
+               "CAPTURE_MEMSET_SKIP_CROSS_DEVICE: buf=%p bytes=%lld currentDev=%d bufferDev=%d stream=%p",
+               special(), (long long)getLenInBytes(), currentDeviceId, bufferDeviceId,
+               (void*)tl_graphCaptureStream);
       if (switchedDevice) {
         cudaSetDevice(currentDeviceId);
       }
@@ -1762,7 +1842,7 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     }
   }
 
-  if (res == cudaSuccess && !(tl_graphExecutionActive && tl_graphCaptureStream != nullptr)) {
+  if (res == cudaSuccess) {
     recordSpecialWriteEvent(stream);
   }
 

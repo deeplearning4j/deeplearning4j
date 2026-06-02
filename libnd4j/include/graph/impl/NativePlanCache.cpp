@@ -32,6 +32,20 @@ namespace sd {
 namespace graph {
 
 // ---------------------------------------------------------------------------
+// Static members
+// ---------------------------------------------------------------------------
+
+std::atomic<bool> NativePlanCache::shutdownInProgress_{false};
+
+void NativePlanCache::setShutdownInProgress(bool inProgress) {
+  shutdownInProgress_.store(inProgress, std::memory_order_release);
+}
+
+bool NativePlanCache::isShutdownInProgress() {
+  return shutdownInProgress_.load(std::memory_order_acquire);
+}
+
+// ---------------------------------------------------------------------------
 // hashShapeInfoContents — content-based hash of placeholder shape-info buffers
 // ---------------------------------------------------------------------------
 
@@ -81,13 +95,29 @@ size_t NativePlanCache::size() const {
 // ---------------------------------------------------------------------------
 
 void NativePlanCache::clear() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  for (auto& entry : lru_) {
-    delete entry.second;
+  // During JVM shutdown, skip all CUDA teardown — the CUDA context may
+  // already be destroyed.  The OS reclaims all memory on process exit.
+  if (isShutdownInProgress()) {
+    return;
   }
-  lru_.clear();
-  map_.clear();
-  pinnedPlans_.clear();
+
+  // Collect all plans under the lock, then delete outside to avoid
+  // running CUDA teardown (platformFreePlanResources) under mutex_.
+  std::vector<NativeDynamicShapePlan*> toDelete;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    toDelete.reserve(lru_.size());
+    for (auto& entry : lru_) {
+      toDelete.push_back(entry.second);
+    }
+    lru_.clear();
+    map_.clear();
+    pinnedPlans_.clear();
+  }
+
+  for (auto* plan : toDelete) {
+    delete plan;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -98,62 +128,78 @@ NativeDynamicShapePlan* NativePlanCache::getOrInsert(
     const Key& key,
     const std::function<NativeDynamicShapePlan*()>& factory) {
 
-  std::lock_guard<std::mutex> lock(mutex_);
+  NativeDynamicShapePlan* result = nullptr;
+  std::vector<NativeDynamicShapePlan*> victims;
 
-  // Cache hit: splice to front (MRU), pin, and return.
-  auto it = map_.find(key);
-  if (it != map_.end()) {
-    lru_.splice(lru_.begin(), lru_, it->second);
-    NativeDynamicShapePlan* plan = it->second->second;
-    pinnedPlans_.insert(plan);
-    DSP_DIAG(EXECUTE, "PLAN_CACHE HIT thread=0x%llx plan=%p shapeHash=0x%llx",
-             (unsigned long long)key.threadId, (void*)plan,
-             (unsigned long long)key.phShapeContentHash);
-    return plan;
-  }
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
 
-  // Cache miss: build a new plan for this thread.
-  // Check if another thread already has a plan with the same structure
-  // (same outputs + shapes + mode, different threadId).  Log lineage
-  // so operators can trace which thread's plan was the "donor" structure.
-  NativeDynamicShapePlan* donorPlan = nullptr;
-  for (auto& entry : lru_) {
-    const Key& existing = entry.first;
-    if (existing.outputSetHash == key.outputSetHash
-        && existing.phShapeContentHash == key.phShapeContentHash
-        && existing.phCount == key.phCount
-        && existing.graphExecutionMode == key.graphExecutionMode
-        && existing.threadId != key.threadId) {
-      donorPlan = entry.second;
-      break;
+    // Cache hit: splice to front (MRU), pin, and return.
+    auto it = map_.find(key);
+    if (it != map_.end()) {
+      lru_.splice(lru_.begin(), lru_, it->second);
+      NativeDynamicShapePlan* plan = it->second->second;
+      pinnedPlans_.insert(plan);
+      DSP_DIAG(EXECUTE, "PLAN_CACHE HIT thread=0x%llx plan=%p shapeHash=0x%llx",
+               (unsigned long long)key.threadId, (void*)plan,
+               (unsigned long long)key.phShapeContentHash);
+      result = plan;
+    } else {
+      // Cache miss: build a new plan for this thread.
+      // Check if another thread already has a plan with the same structure
+      // (same outputs + shapes + mode, different threadId).  Log lineage
+      // so operators can trace which thread's plan was the "donor" structure.
+      NativeDynamicShapePlan* donorPlan = nullptr;
+      for (auto& entry : lru_) {
+        const Key& existing = entry.first;
+        if (existing.outputSetHash == key.outputSetHash
+            && existing.phShapeContentHash == key.phShapeContentHash
+            && existing.phCount == key.phCount
+            && existing.graphExecutionMode == key.graphExecutionMode
+            && existing.threadId != key.threadId) {
+          donorPlan = entry.second;
+          break;
+        }
+      }
+
+      NativeDynamicShapePlan* plan = factory();
+      if (!plan) {
+        return nullptr;
+      }
+
+      if (donorPlan != nullptr) {
+        DSP_DIAG(EXECUTE, "PLAN_CACHE THREAD_DUP thread=0x%llx newPlan=%p donorPlan=%p "
+                 "structure re-deserialized, exec state fresh",
+                 (unsigned long long)key.threadId, (void*)plan, (void*)donorPlan);
+      } else {
+        DSP_DIAG(EXECUTE, "PLAN_CACHE NEW_PLAN thread=0x%llx plan=%p shapeHash=0x%llx "
+                 "(first plan for this structure)",
+                 (unsigned long long)key.threadId, (void*)plan,
+                 (unsigned long long)key.phShapeContentHash);
+      }
+
+      // Insert at MRU (front) and pin.
+      lru_.emplace_front(key, plan);
+      map_[key] = lru_.begin();
+      pinnedPlans_.insert(plan);
+
+      // Enforce count and memory budgets (skips pinned plans).
+      // Victims are returned, NOT deleted under the lock.
+      victims = evictIfOverBudgetLocked();
+
+      result = plan;
     }
+  }  // mutex_ released here
+
+  // Delete evicted plans OUTSIDE the mutex.  Plan destructors call
+  // platformFreePlanResources() which makes CUDA API calls — these must
+  // not run under the cache lock to avoid blocking concurrent lookups
+  // and to prevent CUDA deadlocks.
+  for (auto* victim : victims) {
+    delete victim;
   }
 
-  NativeDynamicShapePlan* plan = factory();
-  if (!plan) {
-    return nullptr;
-  }
-
-  if (donorPlan != nullptr) {
-    DSP_DIAG(EXECUTE, "PLAN_CACHE THREAD_DUP thread=0x%llx newPlan=%p donorPlan=%p "
-             "structure re-deserialized, exec state fresh",
-             (unsigned long long)key.threadId, (void*)plan, (void*)donorPlan);
-  } else {
-    DSP_DIAG(EXECUTE, "PLAN_CACHE NEW_PLAN thread=0x%llx plan=%p shapeHash=0x%llx "
-             "(first plan for this structure)",
-             (unsigned long long)key.threadId, (void*)plan,
-             (unsigned long long)key.phShapeContentHash);
-  }
-
-  // Insert at MRU (front) and pin.
-  lru_.emplace_front(key, plan);
-  map_[key] = lru_.begin();
-  pinnedPlans_.insert(plan);
-
-  // Enforce count and memory budgets (skips pinned plans).
-  evictIfOverBudgetLocked();
-
-  return plan;
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -162,9 +208,25 @@ NativeDynamicShapePlan* NativePlanCache::getOrInsert(
 
 void NativePlanCache::unpinPlan(NativeDynamicShapePlan* plan) {
   if (!plan) return;
-  std::lock_guard<std::mutex> lock(mutex_);
-  pinnedPlans_.erase(plan);
-  evictIfOverBudgetLocked();
+
+  // During shutdown, skip entirely — no eviction, no CUDA teardown.
+  if (isShutdownInProgress()) return;
+
+  std::vector<NativeDynamicShapePlan*> victims;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    pinnedPlans_.erase(plan);
+    victims = evictIfOverBudgetLocked();
+  }  // mutex_ released here
+
+  // Delete evicted plans OUTSIDE the mutex.  Each delete triggers
+  // ~NativeDynamicShapePlan → platformFreePlanResources() which calls
+  // cudaStreamDestroy, cudaFree, cudaGraphExecDestroy.  Running these
+  // under the cache lock caused SIGSEGV when the JVM entered a safepoint
+  // mid-teardown (Pattern A crash) and blocked concurrent cache lookups.
+  for (auto* victim : victims) {
+    delete victim;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -180,7 +242,14 @@ size_t NativePlanCache::pinnedCount() const {
 // evictIfOverBudgetLocked  (must be called with mutex_ held)
 // ---------------------------------------------------------------------------
 
-void NativePlanCache::evictIfOverBudgetLocked() {
+std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() {
+  std::vector<NativeDynamicShapePlan*> victims;
+
+  // During shutdown, skip eviction entirely.
+  if (isShutdownInProgress()) {
+    return victims;
+  }
+
   auto& dsp = sd::Environment::getInstance().dsp();
 
   // Select the correct hard cap based on build type
@@ -212,9 +281,10 @@ void NativePlanCache::evictIfOverBudgetLocked() {
              (unsigned long long)victim->first.outputSetHash,
              (long long)victim->first.phCount,
              (unsigned long long)victim->first.phShapeContentHash);
+    NativeDynamicShapePlan* plan = victim->second;
     map_.erase(victim->first);
-    delete victim->second;
     lru_.erase(victim);
+    victims.push_back(plan);
   }
 
   // ---- 2. Memory-fraction soft cap ----
@@ -256,12 +326,15 @@ void NativePlanCache::evictIfOverBudgetLocked() {
                  (unsigned long long)victim->first.phShapeContentHash,
                  victimCost / (1024 * 1024));
         totalCacheBytes -= victimCost;
+        NativeDynamicShapePlan* plan = victim->second;
         map_.erase(victim->first);
-        delete victim->second;
         lru_.erase(victim);
+        victims.push_back(plan);
       }
     }
   }
+
+  return victims;
 }
 
 }  // namespace graph

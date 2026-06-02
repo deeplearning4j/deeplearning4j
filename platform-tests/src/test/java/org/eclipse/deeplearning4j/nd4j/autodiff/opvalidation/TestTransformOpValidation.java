@@ -1961,7 +1961,8 @@ public class TestTransformOpValidation extends BaseOpValidation {
     private static boolean isBoolBroadcast(String opName) {
         if (opName.startsWith("greater") || opName.startsWith("less") || opName.contains("equals"))
             return true;
-        //Note that "boolean" ops are inherit
+        if (opName.startsWith("boolean_"))
+            return true;
         return false;
     }
 

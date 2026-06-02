@@ -1,0 +1,16 @@
+{
+  "id" : "4503e358",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 3,
+  "passed" : 0,
+  "failed" : 3,
+  "notes" : "After changing mean_sqerr denominator count conversion to applyScalar, focused DSP training parity still fails: mean_sqerr_loss rejects FLOAT target for INT64 applyScalar count conversion. Need fix current single optimization before any benchmark or next change.",
+  "tags" : "dsp,training,mean_sqerr,cuda,test-failure",
+  "timestamp" : "2026-05-27T23:20:25.577201Z"
+}

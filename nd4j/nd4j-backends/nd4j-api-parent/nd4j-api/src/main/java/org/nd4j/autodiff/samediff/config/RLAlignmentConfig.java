@@ -132,8 +132,9 @@ public abstract class RLAlignmentConfig implements Serializable {
         if (policyLogitVariable == null || policyLogitVariable.isEmpty()) {
             throw new IllegalStateException("policyLogitVariable must be specified");
         }
-        if (vocabSize <= 0) {
-            throw new IllegalStateException("vocabSize must be positive, got: " + vocabSize);
+        // vocabSize=0 is allowed: the trainer will infer it from the model's logit variable shape
+        if (vocabSize < 0) {
+            throw new IllegalStateException("vocabSize must be non-negative, got: " + vocabSize);
         }
         if (klCoefficient < 0) {
             throw new IllegalStateException("klCoefficient must be non-negative, got: " + klCoefficient);

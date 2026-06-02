@@ -1,0 +1,16 @@
+{
+  "id" : "67d843ae",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 15,
+  "passed" : 12,
+  "failed" : 3,
+  "notes" : "Training audit still fails after frozen-buffer diagnostics fixes. Three optimizer parity cases fail: SGD/Adam/Nesterovs see DSP final loss 0.0 versus non-DSP refs 1.020806/0.814623/0.201982. Log: /tmp/dsp-training-e2e-after-frozen-fixes.log",
+  "tags" : "dsp,cuda,training,regression",
+  "timestamp" : "2026-05-27T21:44:22.391960Z"
+}

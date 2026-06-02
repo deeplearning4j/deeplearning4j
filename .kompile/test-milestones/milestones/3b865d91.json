@@ -1,0 +1,16 @@
+{
+  "id" : "3b865d91",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da08ad221f665929285a8ffd3dcb6b9be",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 1,
+  "passed" : 0,
+  "failed" : 1,
+  "notes" : "Benchmark 10 repeat_kv bypass candidate failed the required 250-token run. Command: platform-tests/run-benchmark.sh --tokens 250 --skip-audit. JVM aborted before generation with cuda illegal memory access during frozen transition: dspPublishThreadCompletionEvent cudaEventRecord failed 700. Reported steady-state line 62.87 tok/s is invalid due crash. Log: /tmp/dsp-benchmark-repeat-kv-bypass-250-20260528.log",
+  "tags" : "dsp,benchmark10,repeat_kv,benchmark,crash,rejected",
+  "timestamp" : "2026-05-28T11:37:00.159675Z"
+}

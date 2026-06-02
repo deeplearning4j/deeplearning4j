@@ -28,6 +28,7 @@
 #include <cuda_runtime.h>
 #include <helpers/logger.h>
 #include <legacy/cuda/Environment_CudaConfig_cuda.h>
+#include <execution/AffinityManager.h>
 
 namespace sd {
 
@@ -35,6 +36,11 @@ bool Environment_setCudaCurrentDevice_cuda(int deviceId, int deviceCount) {
   if (deviceId >= 0 && deviceId < deviceCount) {
     cudaError_t err = cudaSetDevice(deviceId);
     if (err == cudaSuccess) {
+      // Sync native affinity state so AffinityManager::currentDeviceId()
+      // returns the correct device without an extra cudaGetDevice() call.
+      // Without this, LaunchContext and ContextBuffers may route to the
+      // wrong device's streams/events after a device switch.
+      AffinityManager::syncThreadDeviceId(deviceId);
       return true;
     } else {
       sd_printf("Warning: Failed to set CUDA device to %d, error: %s\n", deviceId, cudaGetErrorString(err));

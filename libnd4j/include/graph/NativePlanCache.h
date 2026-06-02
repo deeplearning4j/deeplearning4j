@@ -23,6 +23,7 @@
 #include <system/common.h>
 #include <graph/NativeDynamicShapePlan.h>
 
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <list>
@@ -105,6 +106,22 @@ class SD_LIB_EXPORT NativePlanCache {
   static uint64_t hashShapeInfoContents(sd::LongType** ptrs, sd::LongType count);
 
   // -------------------------------------------------------------------------
+  // Shutdown guard
+  // -------------------------------------------------------------------------
+
+  /**
+   * Mark the plan cache subsystem as shutting down.  When set, unpinPlan()
+   * and evictIfOverBudgetLocked() skip plan deletion entirely — the OS
+   * reclaims all memory on process exit.  This prevents SIGSEGV from CUDA
+   * API calls (cudaStreamDestroy, cudaFree, cudaGraphExecDestroy) racing
+   * with JVM shutdown tearing down the CUDA context.
+   *
+   * Called from the JVM shutdown hook via setPlanCacheShutdownInProgress().
+   */
+  static void setShutdownInProgress(bool inProgress);
+  static bool isShutdownInProgress();
+
+  // -------------------------------------------------------------------------
   // Construction / destruction
   // -------------------------------------------------------------------------
   NativePlanCache();
@@ -168,12 +185,19 @@ class SD_LIB_EXPORT NativePlanCache {
   // Plans currently in use by a Java executor. Eviction skips these.
   std::unordered_set<NativeDynamicShapePlan*> pinnedPlans_;
 
+  // Process-global shutdown flag.  Set from JVM shutdown hook to prevent
+  // CUDA API calls during context teardown.
+  static std::atomic<bool> shutdownInProgress_;
+
   /**
-   * Evict LRU entries until both the hard-count cap and the memory-fraction
-   * soft cap are satisfied.  Skips pinned plans.
+   * Collect LRU entries that exceed the hard-count cap and memory-fraction
+   * soft cap.  Skips pinned plans.  Returns victims WITHOUT deleting them;
+   * callers must delete outside the mutex to avoid running CUDA teardown
+   * (platformFreePlanResources) under the cache lock.
+   *
    * Must be called with mutex_ already held.
    */
-  void evictIfOverBudgetLocked();
+  std::vector<NativeDynamicShapePlan*> evictIfOverBudgetLocked();
 
   // Rough per-plan memory estimate used for the soft memory budget.
   // TODO: replace with NativeDynamicShapePlan::memoryUsage() once available.

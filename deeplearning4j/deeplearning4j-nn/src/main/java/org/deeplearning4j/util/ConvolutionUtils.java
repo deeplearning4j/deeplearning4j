@@ -131,16 +131,20 @@ public class ConvolutionUtils {
     }
 
     /**
-     * For NCHW we expect:
-     * 4D input with shape [minibatch, inputChannels, inputHeight, inputWidth]
-     * for NHWC:
-     * 4D input with shape [minibatch, inputHeight, inputWidth, inputChannels]
-     * Note this is also tied to convolutions.h weightShape
-     * @param format
-     * @return
+     * Returns the weight format for the given CNN2D data format.
+     * Both NCHW and NHWC use YXIO [kH, kW, iC, oC] so that parameter flat buffers
+     * have the same byte layout regardless of the input data format. This allows
+     * assigning params between NCHW and NHWC networks (e.g. in format-conversion tests)
+     * without changing the kernel values seen by the underlying convolution op.
+     * The C++ conv2d op natively supports wFormat=0 (YXIO) for both NCHW and NHWC input.
+     *
+     * @param format the CNN2D data format (NCHW or NHWC) — ignored, kept for API compatibility
+     * @return always WeightsFormat.YXIO
      */
     public static WeightsFormat getWeightFormat(CNN2DFormat format) {
-        return format == CNN2DFormat.NCHW ? WeightsFormat.YXIO : WeightsFormat.OIYX;
+        // Always YXIO [kH, kW, iC, oC] — same layout for both NCHW and NHWC.
+        // The C++ conv2d op handles both input formats correctly with wFormat=0.
+        return WeightsFormat.YXIO;
     }
 
 

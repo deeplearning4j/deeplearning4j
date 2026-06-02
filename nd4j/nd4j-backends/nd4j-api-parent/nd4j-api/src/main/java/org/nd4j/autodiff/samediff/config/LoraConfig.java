@@ -23,6 +23,8 @@ package org.nd4j.autodiff.samediff.config;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Arrays;
 import java.util.List;
@@ -194,6 +196,7 @@ public class LoraConfig extends PeftConfig {
     }
 
     @Override
+    @JsonIgnore
     public String getSummary() {
         return String.format(
             "LoraConfig(r=%d, alpha=%d, scaling=%.4f, dropout=%.2f, targets=%s, rsLora=%s)",

@@ -129,6 +129,9 @@ public class ChatTemplate {
      */
     private String applyChatML(List<Message> messages, boolean addGenerationPrompt) {
         StringBuilder sb = new StringBuilder();
+        if (template.contains("bos_token") && bosToken != null && !bosToken.isEmpty()) {
+            sb.append(bosToken);
+        }
 
         for (Message msg : messages) {
             sb.append("<|im_start|>").append(msg.getRole()).append("\n");

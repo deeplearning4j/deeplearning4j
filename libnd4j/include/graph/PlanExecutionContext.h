@@ -142,6 +142,7 @@ struct PlanExecutionContext {
   cudaStream_t dspStream = nullptr;        // The DSP execution stream (from caller)
   cudaStream_t lcDefaultStream = nullptr;  // LaunchContext default exec stream
   DspStreamGuard* streamGuard = nullptr;  // Owned, explicit delete in platformEndExecution
+  int deviceId = 0;                        // CUDA device captured at platformBeginExecution
 
   /**
    * Cross-stream sync event for this execution.

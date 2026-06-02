@@ -447,14 +447,21 @@ public class GenerationPipeline implements AutoCloseable {
         // Apply chat template if configured and prompt doesn't already contain template markers
         String effectivePrompt = prompt;
         boolean addSpecialTokens = true;
-        if (config.getChatTemplate() != null && !config.getChatTemplate().isEmpty()
-                && !prompt.contains("<|im_start|>") && !prompt.contains("[INST]")) {
+        boolean promptAlreadyFormatted = prompt.contains("<|im_start|>") || prompt.contains("[INST]");
+        String chatTemplateText = resolveChatTemplate();
+        if (chatTemplateText != null && !chatTemplateText.isEmpty()
+                && !promptAlreadyFormatted) {
             List<ChatTemplate.Message> messages = new ArrayList<>();
             messages.add(ChatTemplate.Message.user(prompt));
-            ChatTemplate chatTemplate = new ChatTemplate(config.getChatTemplate(), "", "");
+            ChatTemplate chatTemplate = new ChatTemplate(
+                    chatTemplateText,
+                    tokenizer.getBosToken(),
+                    tokenizer.getEosToken());
             effectivePrompt = chatTemplate.apply(messages, true);
             addSpecialTokens = false;
             log.debug("Applied chat template, prompt length: {} -> {}", prompt.length(), effectivePrompt.length());
+        } else if (promptAlreadyFormatted) {
+            addSpecialTokens = false;
         }
 
         // Tokenize
@@ -476,6 +483,13 @@ public class GenerationPipeline implements AutoCloseable {
         // Two-model mode: embed tokens externally, then run native decode
         INDArray embeddings = embedTokens(promptTokenIds);
         return generate(embeddings, promptTokenIds, maxNewTokens);
+    }
+
+    private String resolveChatTemplate() {
+        if (config.getChatTemplate() != null && !config.getChatTemplate().isBlank()) {
+            return config.getChatTemplate();
+        }
+        return tokenizer.getChatTemplate();
     }
 
     /**
@@ -2264,7 +2278,21 @@ public class GenerationPipeline implements AutoCloseable {
     public void generateStream(String prompt, int maxNewTokens, Consumer<String> tokenCallback,
                                DecodeOptions options) {
         // Tokenize and embed
-        int[] promptTokenIds = tokenizer.encode(prompt, true).getIds();
+        String effectivePrompt = prompt;
+        boolean addSpecialTokens = true;
+        boolean promptAlreadyFormatted = prompt.contains("<|im_start|>") || prompt.contains("[INST]");
+        String chatTemplateText = resolveChatTemplate();
+        if (chatTemplateText != null && !chatTemplateText.isEmpty() && !promptAlreadyFormatted) {
+            List<ChatTemplate.Message> messages = new ArrayList<>();
+            messages.add(ChatTemplate.Message.user(prompt));
+            effectivePrompt = new ChatTemplate(chatTemplateText, tokenizer.getBosToken(), tokenizer.getEosToken())
+                    .apply(messages, true);
+            addSpecialTokens = false;
+        } else if (promptAlreadyFormatted) {
+            addSpecialTokens = false;
+        }
+
+        int[] promptTokenIds = tokenizer.encode(effectivePrompt, addSpecialTokens).getIds();
         if (promptTokenIds == null || promptTokenIds.length == 0) {
             throw new IllegalArgumentException("Prompt encoding produced no tokens");
         }

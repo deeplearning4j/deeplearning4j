@@ -49,6 +49,7 @@ class SD_LIB_EXPORT CudaDeviceConfig {
   std::atomic<int> _cudaEventLimit{4};
   std::atomic<int> _cudaCachingAllocatorLimit{0};
   std::atomic<int64_t> _cudaPinnedHostLimit{8LL * 1024};
+  std::atomic<int> _cudaSoftLimitPercent{0};  // proactive failover threshold (0=disabled, 1-100)
   std::atomic<bool> _cudaUseUnifiedMemory{false};
   std::atomic<int> _cudaPrefetchSize{0};
   std::atomic<bool> _cudaGraphOptimization{false};
@@ -99,6 +100,8 @@ class SD_LIB_EXPORT CudaDeviceConfig {
   void setCudaPrefetchSize(int sizeInMB);
   int64_t cudaPinnedHostLimit() { return _cudaPinnedHostLimit.load(); }
   void setCudaPinnedHostLimit(int64_t limitInMB);
+  int cudaSoftLimitPercent() { return _cudaSoftLimitPercent.load(); }
+  void setCudaSoftLimitPercent(int percent);
   int cudaCachingAllocatorLimit() { return _cudaCachingAllocatorLimit.load(); }
   void setCudaCachingAllocatorLimit(int limitInMB);
 

@@ -77,6 +77,7 @@ This flag controls the GPU compute capability target. Changing it **invalidates 
 | Raw `__forceinline__` | Platform-specific keyword. | `SD_INLINE` |
 | Raw `#pragma omp` directives | MSVC compatibility issues. | `PRAGMA_OMP_*` macros |
 | `.arr` or `.shape` in model import | Must be variable-based for dynamic shapes. Will break on shape changes. | `sd.shape(..)`, `sd.rank(..)` |
+| Skipping non-peer GPUs in memory failover | NEVER block non-peer devices in CudaMemoryPool or any allocation failover path. Multi-GPU systems without NVLink (e.g. RTX 3070 Ti + RTX 4090) have no peer access but cudaMallocManaged provides correct UVA page migration. Blocking non-peer causes OOM crashes with gigabytes of free GPU memory available. This has been a recurring AI-generated regression. | Use cudaMallocManaged for non-peer devices — UVA handles cross-device access transparently. Peer devices use cudaMallocAsync/cudaMalloc (faster). Both must be candidates in the same failover loop sorted by free memory. |
 | Ad-hoc printf/logging for DSP | Pollutes output, not queryable, not reusable. | DSP diagnostics framework (`DspDiagnostics.h`) |
 | `MALLOC_CHECK_=3` | Unreliable. Does not detect all corruption. Creates false confidence. | Don't rely on it. Use compute-sanitizer or Valgrind. |
 

@@ -73,4 +73,16 @@ public class PaddingFreeBatch {
 
     /** Number of sequences (batch dimension). */
     private int batchSize;
+
+    /**
+     * The original padded sequence length (max_seq_len dimension of the
+     * padded input that was unpadded). Required by {@code toPadded} to
+     * reconstruct the correct padded shape [batch, paddedMaxSeqLen, hidden_dim].
+     * When built from {@link PaddingFreeBatchCollator#collate}, this equals
+     * {@code maxSeqlenInBatch}. When built from
+     * {@link PaddingFreeBatchCollator#fromPadded}, this equals the original
+     * padded tensor's seq_len dimension.
+     */
+    @lombok.Builder.Default
+    private int paddedMaxSeqLen = 0;
 }

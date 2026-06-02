@@ -279,7 +279,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 temp = new BytePointer(buffer);
                 break;
             case BOOL:
-                temp = new BooleanPointer(length());
+                // Boolean values are stored as single bytes (0 or 1).
+                // Read the bytes directly from the ByteBuffer using BytePointer,
+                // exactly like UBYTE/BYTE, so the data is not discarded.
+                temp = new BytePointer(buffer);
                 break;
             case UTF8:
                 temp = new BytePointer(length());

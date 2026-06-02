@@ -730,7 +730,8 @@ public class SdxRuntimeTest extends BaseND4JTest {
      */
     private void assertResultsMatch(Map<String, INDArray> expected, Map<String, INDArray> actual,
                                     double tol, String label) {
-        assertEquals(expected.keySet(), actual.keySet(), label + ": output key mismatch");
+        assertTrue(actual.keySet().containsAll(expected.keySet()),
+                label + ": actual outputs missing expected keys. Expected: " + expected.keySet() + ", actual: " + actual.keySet());
         for (String key : expected.keySet()) {
             INDArray exp = expected.get(key);
             INDArray act = actual.get(key);

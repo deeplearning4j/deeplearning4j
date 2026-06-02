@@ -1,0 +1,16 @@
+{
+  "id" : "72aff8ce",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da0",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "dsp-benchmark-250",
+  "totalTests" : 1,
+  "passed" : 0,
+  "failed" : 1,
+  "notes" : "Rejected one-change DSP optimization candidate. Baseline OPTIMAL 250 was steady=57.48 tok/s, lateSteady=64.96 tok/s. Candidate produced steady=44.30 tok/s, lateSteady=54.38 tok/s, overall=10.71 tok/s; replay health OK (1/1 captured, 245 replays, captureFailures=0), but throughput regressed and target 100 missed.",
+  "tags" : "dsp,benchmark,regression,rejected,selective-value-dep-unfreeze",
+  "timestamp" : "2026-05-28T07:53:31.038731Z"
+}

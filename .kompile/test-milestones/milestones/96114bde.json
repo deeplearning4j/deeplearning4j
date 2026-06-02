@@ -1,0 +1,16 @@
+{
+  "id" : "96114bde",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "libnd4j",
+  "totalTests" : 1,
+  "passed" : 0,
+  "failed" : 1,
+  "notes" : "CUDA rebuild failed in libnd4j after repairing mean_sqerr denominator conversion; need inspect tee/native log for first compiler error before retesting.",
+  "tags" : "dsp,mean_sqerr,cuda,build-failure",
+  "timestamp" : "2026-05-27T23:23:36.496899Z"
+}

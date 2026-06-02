@@ -1,0 +1,16 @@
+{
+  "id" : "9a7e5477",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 15,
+  "passed" : 12,
+  "failed" : 3,
+  "notes" : "DspTrainingE2ETest still fails after training-only mutable external input marking. Same 3 parity failures: SGD/Adam/Nesterovs have DSP final loss 0.0 while reference loss is nonzero. Log: /tmp/dsp-training-e2e-mutable-vars.log",
+  "tags" : "dsp,training,regression,mutable-external-inputs",
+  "timestamp" : "2026-05-27T22:15:14.010049Z"
+}

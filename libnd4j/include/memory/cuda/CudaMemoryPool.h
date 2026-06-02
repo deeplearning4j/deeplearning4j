@@ -223,7 +223,7 @@ class SD_LIB_EXPORT CudaMemoryPool {
    * Register a callback to be invoked when memory pressure is detected.
    * The callback receives detailed information about the allocation failure
    * and can decide whether to allow failover or fail the allocation.
-   * 
+   *
    * @param callback Function to call when memory pressure is detected.
    *                 Return true to allow allocation to proceed with recommended action,
    *                 false to fail the allocation.
@@ -246,6 +246,32 @@ class SD_LIB_EXPORT CudaMemoryPool {
    * Valid only if wasMemoryPressureDetected() returns true.
    */
   const MemoryPressureEvent& getLastMemoryPressureEvent() const { return lastPressureEvent_; }
+
+  // =========================================================================
+  // Proactive Soft Limit
+  // =========================================================================
+
+  /**
+   * Set the proactive soft-limit percentage for device memory usage.
+   * When a device's usage exceeds this threshold, new allocations are
+   * routed to other devices via allocateFailover() BEFORE individual
+   * allocations fail. This prevents cumulative exhaustion from many
+   * small allocations (e.g., DSP slot-by-slot warmup intermediates)
+   * that individually succeed but collectively fill the GPU.
+   *
+   * Set below the SubprocessMemoryWatchdog's gpuStopPercent (typically 75%)
+   * so the pool proactively migrates before the watchdog kills the process.
+   *
+   * @param percent 0 = disabled (default), 1-100 = proactive failover threshold.
+   *                Typical value: 70 (routes at 70% usage, before watchdog's 75%).
+   */
+  void setSoftLimitPercent(int percent);
+
+  /**
+   * Get the current proactive soft-limit percentage.
+   * @return 0 if disabled, otherwise the threshold percentage (1-100).
+   */
+  int getSoftLimitPercent() const { return softLimitPercent_.load(std::memory_order_relaxed); }
 
   // =========================================================================
   // Capture Workspace Range Tracking
@@ -305,6 +331,33 @@ class SD_LIB_EXPORT CudaMemoryPool {
    * @return true if ptr is an interior pointer of an active workspace
    */
   bool isInCaptureWorkspace(void* ptr) const;
+
+  /**
+   * Add a device to the failover exclusion list.
+   * Excluded devices will be skipped during allocateFailover() Steps 2 and 2b.
+   * Used to isolate subprocess memory: e.g., the staging process excludes
+   * device 1 so it never displaces the embedding subprocess's resident pages.
+   * @param deviceId The device to exclude from failover allocation
+   */
+  void addExcludedFailoverDevice(int deviceId);
+
+  /**
+   * Remove a device from the failover exclusion list.
+   * @param deviceId The device to remove from exclusion
+   */
+  void removeExcludedFailoverDevice(int deviceId);
+
+  /**
+   * Clear all device exclusions from the failover list.
+   */
+  void clearExcludedFailoverDevices();
+
+  /**
+   * Check if a device is excluded from failover allocation.
+   * @param deviceId The device to check
+   * @return true if the device is excluded
+   */
+  bool isDeviceExcludedFromFailover(int deviceId) const;
 
   ~CudaMemoryPool();
 
@@ -366,6 +419,11 @@ class SD_LIB_EXPORT CudaMemoryPool {
   MemoryPressureEvent lastPressureEvent_;
   std::mutex pressureEventMutex_;
 
+  // Proactive soft-limit: when device usage exceeds this percentage,
+  // allocate() routes to allocateFailover() before the local allocation
+  // is attempted. 0 = disabled (default).
+  std::atomic<int> softLimitPercent_{0};
+
   // Active capture workspace ranges: basePtr → size.
   // Protected by captureWorkspaceMutex_. Typically 1-4 entries (one per captured segment).
   // Used by free() to skip cudaFreeAsync on interior pointers of capture workspaces.
@@ -380,6 +438,13 @@ class SD_LIB_EXPORT CudaMemoryPool {
   // from reclaiming freed intermediate memory).
   mutable std::mutex directAllocMutex_;
   std::unordered_map<void*, size_t> directAllocations_;
+
+  // Device exclusion list for failover — prevents allocateFailover() from
+  // placing memory on these devices. Used to isolate subprocess memory:
+  // the staging process excludes device 1 so it never displaces the
+  // embedding subprocess's resident pages.
+  std::unordered_set<int> excludedFailoverDevices_;
+  mutable std::mutex exclusionMutex_;
 };
 
 }  // namespace memory

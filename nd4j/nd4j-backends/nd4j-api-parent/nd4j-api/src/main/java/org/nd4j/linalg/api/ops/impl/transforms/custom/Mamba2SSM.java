@@ -77,6 +77,9 @@ public class Mamba2SSM extends DynamicCustomOp {
         this.headDim = headDim;
         this.stateDim = stateDim;
         addIArgument(numHeads, headDim, stateDim);
+        // bArguments tell the C++ op which optional inputs are present:
+        // bArg(0) = hasD, bArg(1) = hasStateIn
+        addBArgument(D != null, stateIn != null);
     }
 
     /**
@@ -98,6 +101,9 @@ public class Mamba2SSM extends DynamicCustomOp {
         this.headDim = headDim;
         this.stateDim = stateDim;
         addIArgument(numHeads, headDim, stateDim);
+        // bArguments tell the C++ op which optional inputs are present:
+        // bArg(0) = hasD, bArg(1) = hasStateIn
+        addBArgument(D != null, stateIn != null);
     }
 
     /**

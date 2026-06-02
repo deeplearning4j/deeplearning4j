@@ -33,6 +33,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -189,12 +190,14 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         SDVariable weights = sd.var("weights", weightsArr);
 
         // Standard convolution using Conv2DConfig
+        // Weights are [outChannels, inChannels, kH, kW] = OIYX format
         Conv2DConfig config = Conv2DConfig.builder()
                 .kH(kH).kW(kW)
                 .sH(1).sW(1)
                 .pH(0).pW(0)
                 .dH(1).dW(1)
                 .dataFormat(Conv2DConfig.NCHW)
+                .weightsFormat(WeightsFormat.OIYX)
                 .build();
 
         SDVariable standardConv = sd.cnn.conv2d("standard_conv", input, weights, config);
@@ -236,12 +239,14 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
             SDVariable input = sd.var("input", inputArr);
             SDVariable weights = sd.var("weights", weightsArr);
 
+            // Weights are [outChannels, inChannels, kH, kW] = OIYX format
             Conv2DConfig config = Conv2DConfig.builder()
                     .kH(kernel).kW(kernel)
                     .sH(1).sW(1)
                     .pH(0).pW(0)
                     .dH(1).dW(1)
                     .dataFormat(Conv2DConfig.NCHW)
+                    .weightsFormat(WeightsFormat.OIYX)
                     .build();
 
             SDVariable conv = sd.cnn.conv2d("conv", input, weights, config);
@@ -282,12 +287,14 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
             SDVariable input = sd.var("input", inputArr);
             SDVariable weights = sd.var("weights", weightsArr);
 
+            // Weights are [outChannels, inChannels, kH, kW] = OIYX format
             Conv2DConfig config = Conv2DConfig.builder()
                     .kH(kH).kW(kW)
                     .sH(stride).sW(stride)
                     .pH(0).pW(0)
                     .dH(1).dW(1)
                     .dataFormat(Conv2DConfig.NCHW)
+                    .weightsFormat(WeightsFormat.OIYX)
                     .build();
 
             SDVariable conv = sd.cnn.conv2d("conv", input, weights, config);
@@ -328,12 +335,14 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
             SDVariable input = sd.var("input", inputArr);
             SDVariable weights = sd.var("weights", weightsArr);
 
+            // Weights are [outChannels, inChannels, kH, kW] = OIYX format
             Conv2DConfig config = Conv2DConfig.builder()
                     .kH(kH).kW(kW)
                     .sH(1).sW(1)
                     .pH(0).pW(0)
                     .dH(dilation).dW(dilation)
                     .dataFormat(Conv2DConfig.NCHW)
+                    .weightsFormat(WeightsFormat.OIYX)
                     .build();
 
             SDVariable conv = sd.cnn.conv2d("conv", input, weights, config);
@@ -375,12 +384,14 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         SDVariable input = sd.var("input", inputArr);
         SDVariable weights = sd.var("weights", weightsArr);
 
+        // Weights are [outChannels, inChannels/groups, kH, kW] = OIYX format
         Conv2DConfig config = Conv2DConfig.builder()
                 .kH(kH).kW(kW)
                 .sH(1).sW(1)
                 .pH(0).pW(0)
                 .dH(1).dW(1)
                 .dataFormat(Conv2DConfig.NCHW)
+                .weightsFormat(WeightsFormat.OIYX)
                 .build();
 
         // Note: SameDiff conv2d doesn't directly support groups in this API
@@ -485,12 +496,14 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         SDVariable input = sd.var("input", inputArr);
         SDVariable weights = sd.var("weights", weightsArr);
 
+        // Weights are [outChannels, inChannels, kH, kW] = OIYX format
         Conv2DConfig config = Conv2DConfig.builder()
                 .kH(kH).kW(kW)
                 .sH(1).sW(1)
                 .pH(0).pW(0)
                 .dH(1).dW(1)
                 .dataFormat(Conv2DConfig.NCHW)
+                .weightsFormat(WeightsFormat.OIYX)
                 .build();
 
         SDVariable conv = sd.cnn.conv2d("conv", input, weights, config);
@@ -527,12 +540,14 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         SDVariable input = sd.var("input", inputArr);
         SDVariable weights = sd.var("weights", weightsArr);
 
+        // Weights are [outChannels, inChannels, 1, 1] = OIYX format
         Conv2DConfig config = Conv2DConfig.builder()
                 .kH(1).kW(1)
                 .sH(1).sW(1)
                 .pH(0).pW(0)
                 .dH(1).dW(1)
                 .dataFormat(Conv2DConfig.NCHW)
+                .weightsFormat(WeightsFormat.OIYX)
                 .build();
 
         // 1x1 convolution (pointwise convolution)
@@ -574,12 +589,14 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         SDVariable weights = sd.var("weights", weightsArr);
         SDVariable bias = sd.var("bias", biasArr);
 
+        // Weights are [outChannels, inChannels, kH, kW] = OIYX format
         Conv2DConfig config = Conv2DConfig.builder()
                 .kH(kH).kW(kW)
                 .sH(1).sW(1)
                 .pH(0).pW(0)
                 .dH(1).dW(1)
                 .dataFormat(Conv2DConfig.NCHW)
+                .weightsFormat(WeightsFormat.OIYX)
                 .build();
 
         SDVariable conv = sd.cnn.conv2d("conv", input, weights, bias, config);

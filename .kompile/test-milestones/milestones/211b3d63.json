@@ -1,0 +1,16 @@
+{
+  "id" : "211b3d63",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da0",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "dsp-build",
+  "totalTests" : 2,
+  "passed" : 2,
+  "failed" : 0,
+  "notes" : "Restore build passed after reverting the rejected selective value-dep producer unfreeze candidate. Installed CUDA/libnd4j artifacts now match reverted source.",
+  "tags" : "dsp,build,cuda,restore,reverted,selective-value-dep-unfreeze",
+  "timestamp" : "2026-05-28T08:10:52.026191Z"
+}

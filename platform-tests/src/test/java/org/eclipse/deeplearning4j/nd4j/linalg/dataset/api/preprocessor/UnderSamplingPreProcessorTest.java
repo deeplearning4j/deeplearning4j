@@ -74,17 +74,17 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
                     new UnderSamplingByMaskingPreProcessor(someTargets[i], shortSeq / 2);
             dToPreProcess = d.copy();
             preProcessor.preProcess(dToPreProcess);
-            INDArray exp = Nd4j.zeros(dToPreProcess.getLabelsMaskArray().shape());
             INDArray lm = dToPreProcess.getLabelsMaskArray();
+            INDArray exp = Nd4j.zeros(lm.dataType(), lm.shape());
             assertEquals(exp, lm);
 
             //change default and check distribution which should be 1-targetMinorityDist
             preProcessor.donotMaskAllMajorityWindows();
             dToPreProcess = d.copy();
             preProcessor.preProcess(dToPreProcess);
-            INDArray percentagesNow = dToPreProcess.getLabelsMaskArray().sum(1).div(shortSeq);
-            assertTrue(Nd4j.valueArrayOf(percentagesNow.shape(), 1 - someTargets[i]).castTo(Nd4j.defaultFloatingPointType()).equalsWithEps(percentagesNow,
-                    tolerancePerc));
+            INDArray percentagesNow = dToPreProcess.getLabelsMaskArray().sum(1).div(shortSeq).castTo(Nd4j.defaultFloatingPointType());
+            INDArray expected = Nd4j.valueArrayOf(percentagesNow.shape(), 1 - someTargets[i]).castTo(Nd4j.defaultFloatingPointType());
+            assertTrue(expected.equalsWithEps(percentagesNow, tolerancePerc));
         }
     }
 
@@ -100,16 +100,16 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
             dToPreProcess = d.copy();
             preProcessor.preProcess(dToPreProcess);
             //all minority classes present  - check that no time steps are masked
-            assertEquals(Nd4j.ones(minibatchSize, shortSeq), dToPreProcess.getLabelsMaskArray());
+            assertEquals(Nd4j.ones(minibatchSize, shortSeq).castTo(Nd4j.defaultFloatingPointType()), dToPreProcess.getLabelsMaskArray().castTo(Nd4j.defaultFloatingPointType()));
 
             //check behavior with override minority - now these are seen as all majority classes
             preProcessor.overrideMinorityDefault();
             preProcessor.donotMaskAllMajorityWindows();
             dToPreProcess = d.copy();
             preProcessor.preProcess(dToPreProcess);
-            INDArray percentagesNow = dToPreProcess.getLabelsMaskArray().sum(1).div(shortSeq);
-            assertTrue(Nd4j.valueArrayOf(percentagesNow.shape(), 1 - someTargets[i])
-                    .castTo(Nd4j.defaultFloatingPointType()).equalsWithEps(percentagesNow,tolerancePerc));
+            INDArray percentagesNow = dToPreProcess.getLabelsMaskArray().sum(1).div(shortSeq).castTo(Nd4j.defaultFloatingPointType());
+            INDArray expected2 = Nd4j.valueArrayOf(percentagesNow.shape(), 1 - someTargets[i]).castTo(Nd4j.defaultFloatingPointType());
+            assertTrue(expected2.equalsWithEps(percentagesNow,tolerancePerc));
         }
     }
 
@@ -139,7 +139,7 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
             INDArray masks = dataSetToPreProcess.getLabelsMaskArray();
             INDArray shouldBeAllZeros =
                     masks.get(NDArrayIndex.interval(0, 3), NDArrayIndex.interval(shortSeq, longSeq));
-            assertEquals(Nd4j.zeros(shouldBeAllZeros.shape()), shouldBeAllZeros);
+            assertEquals(Nd4j.zeros(shouldBeAllZeros.dataType(), shouldBeAllZeros.shape()), shouldBeAllZeros);
 
             //check distribution of masks in window, going backwards from last time step
             for (int j = (int) Math.ceil((double) longSeq / window); j > 0; j--) {
@@ -201,7 +201,7 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
             //check masks are zero where there were no time steps
             INDArray shouldBeAllZeros =
                     masks.get(NDArrayIndex.interval(0, 3), NDArrayIndex.interval(shortSeq, longSeq));
-            assertEquals(Nd4j.zeros(shouldBeAllZeros.shape()), shouldBeAllZeros);
+            assertEquals(Nd4j.zeros(shouldBeAllZeros.dataType(), shouldBeAllZeros.shape()), shouldBeAllZeros);
 
             //check distribution of masks in the window length, going backwards from last time step
             for (int j = (int) Math.ceil((double) longSeq / window); j > 0; j--) {

@@ -1,0 +1,15 @@
+{
+  "id" : "442f6137",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 3,
+  "passed" : 3,
+  "notes" : "Focused DSP training parity test passed after mean_sqerr replay-friendly denominator repair. Log still shows TrainingSession keeping slot-by-slot/no shape freeze for training, so inspect training execution gate before full regression and benchmark.",
+  "tags" : "dsp,training,mean_sqerr,cuda,test-pass",
+  "timestamp" : "2026-05-27T23:41:24.154408Z"
+}

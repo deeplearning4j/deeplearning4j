@@ -326,7 +326,10 @@ SD_INLINE SD_HOST_DEVICE uint32_t RandomGenerator::xoroshiro32(uint64_t index) {
   auto s0 = _rootState._ulong;
   auto s1 = _nodeState._ulong;
 
-  s0 |= ((index + 2) * (s1 + 24243287));
+  // Use XOR instead of OR so that bits can be both set and cleared, giving a
+  // reversible mixing step.  The original |= was a one-way accumulator that
+  // produced systematic bias for small seed values such as 119.
+  s0 ^= ((index + 2) * (s1 + 24243287));
   s1 ^= ((index + 2) * (s0 + 723829));
 
   unsigned long val = s1 ^ s0;

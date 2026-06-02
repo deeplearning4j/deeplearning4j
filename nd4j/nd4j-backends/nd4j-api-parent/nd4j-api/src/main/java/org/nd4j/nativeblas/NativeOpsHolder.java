@@ -125,6 +125,10 @@ public class NativeOpsHolder {
                //   Nd4j.clearTADCache() and Nd4j.clearShapeCache() directly.
                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                    try {
+                       // Set the plan cache shutdown flag FIRST — this prevents unpinPlan()
+                       // and LRU eviction from calling cudaStreamDestroy/cudaFree/cudaGraphExecDestroy
+                       // while the CUDA context is being torn down (SIGSEGV fix).
+                       deviceNativeOps.setPlanCacheShutdownInProgress(true);
                        // Set the shutdown flags - this makes clearTADCache() and clearShapeCache()
                        // safe to call (they will return early without traversing potentially corrupted memory)
                        deviceNativeOps.setTADCacheShutdownInProgress(true);

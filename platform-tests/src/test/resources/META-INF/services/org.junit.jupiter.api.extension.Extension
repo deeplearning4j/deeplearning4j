@@ -1,3 +1,5 @@
 org.eclipse.deeplearning4j.tests.extensions.BackendCheckerExtension
 org.eclipse.deeplearning4j.tests.extensions.TFGraphCheckerExtension
 org.eclipse.deeplearning4j.tests.extensions.DeallocationExtension
+org.eclipse.deeplearning4j.tests.extensions.TestResultRecorderExtension
+org.eclipse.deeplearning4j.tests.extensions.DebugVerboseExtension

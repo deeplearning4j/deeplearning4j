@@ -72,7 +72,12 @@ public class CpuNativeRandom extends NativeRandom {
 
     @Override
     public int nextInt() {
-        return nativeOps.getRandomGeneratorNextInt((OpaqueRandomGenerator)statePointer);
+        // The native relativeInt() uses static_cast<int> on a uint32_t value, which can
+        // produce a negative result when the high bit is set.  Mask to the non-negative
+        // range so the contract "nextInt() returns a non-negative int" is upheld at the
+        // Java level, consistent with the old C++ behaviour and the tests that call
+        // assertTrue(value >= 0).
+        return nativeOps.getRandomGeneratorNextInt((OpaqueRandomGenerator)statePointer) & Integer.MAX_VALUE;
     }
 
     @Override

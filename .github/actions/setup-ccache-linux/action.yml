@@ -120,8 +120,8 @@ runs:
         # Disable PCH: CI runners may have different system header mtimes across restores,
         # which invalidates all PCH-based ccache manifest entries.
         echo "SD_DISABLE_PCH=1" >> $GITHUB_ENV
-        # Temporary: enable logging to diagnose cache hit rate
-        echo "CCACHE_LOGFILE=${HOME}/ccache-debug.log" >> $GITHUB_ENV
+        # ccache debug logging disabled (was temporary diagnostic).
+        # Re-enable with: echo "CCACHE_LOGFILE=${HOME}/ccache-debug.log" >> $GITHUB_ENV
 
         # Add ccache to PATH
         echo "/usr/lib/ccache" >> $GITHUB_PATH

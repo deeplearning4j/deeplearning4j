@@ -1,0 +1,15 @@
+{
+  "id" : "05359596",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da08ad221f665929285a8ffd3dcb6b9be",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "dsp-build",
+  "totalTests" : 1,
+  "passed" : 1,
+  "failed" : 0,
+  "notes" : "Restore build after reverting rejected Where trait refinement. Reactor success: libnd4j SUCCESS, nd4j-cuda-12.9 SUCCESS. Total time 10:40. Installed native artifacts now match reverted source/baseline.",
+  "timestamp" : "2026-05-28T06:47:34.139572Z"
+}

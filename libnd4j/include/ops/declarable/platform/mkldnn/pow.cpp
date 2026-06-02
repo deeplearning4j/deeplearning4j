@@ -94,7 +94,10 @@ PLATFORM_IMPL(Pow, ENGINE_CPU) {
                rank);
 
   float exponent = y->e<float>(0);
-  powScalarMKLDNN(x, z, exponent, 0.0f, 1.0f);
+  // OneDNN eltwise_pow signature: primitive_desc(..., scale, exponent)
+  // scale is the first float arg (alpha in primitive_desc), exponent is second (beta)
+  // So call with alpha=1.0f (scale=1), beta=exponent (the actual power)
+  powScalarMKLDNN(x, z, 1.0f, exponent, 1.0f);
 
   return sd::Status::OK;
 }

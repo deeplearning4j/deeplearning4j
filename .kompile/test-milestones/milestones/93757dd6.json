@@ -1,0 +1,15 @@
+{
+  "id" : "93757dd6",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da08ad221f665929285a8ffd3dcb6b9be",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "dsp-benchmark-250",
+  "totalTests" : 1,
+  "passed" : 0,
+  "failed" : 1,
+  "notes" : "Metrics captured but Maven target gate failed because lateSteady=65.64 tok/s is below target 100. Baseline steady=57.48 lateSteady=64.96; candidate run steady=57.57 lateSteady=65.64, replay health OK (segments=1 captured=1/1 replays=245 capture valid=true), output structurally coherent. Treating as tentative small improvement requiring confirmation before commit.",
+  "timestamp" : "2026-05-28T06:29:35.242586Z"
+}

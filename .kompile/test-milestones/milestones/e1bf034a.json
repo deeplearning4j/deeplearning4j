@@ -1,0 +1,16 @@
+{
+  "id" : "e1bf034a",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 2,
+  "passed" : 1,
+  "failed" : 1,
+  "notes" : "Validation rerun after NativeDynamicShapePlan VERIFY fix: testMultiStepDecodeComparison passed, testOutputStalenessDetection still fails in native dspValidateOutputs with frozen DataBuffer allocatePrimary. This is a separate validation helper path. Log: /tmp/dsp-validation-frozen-fix.log",
+  "tags" : "dsp,cuda,validation,frozen-buffer,regression",
+  "timestamp" : "2026-05-27T21:26:17.721250Z"
+}

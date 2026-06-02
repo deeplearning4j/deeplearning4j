@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.ggml;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.eval.GenerationQualityValidator;
+import org.eclipse.deeplearning4j.llm.config.TokenizerConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
@@ -38,6 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.ggml.architecture.*;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.ggml.convert.ConversionOptions;
+import org.nd4j.ggml.format.GGMLMetadata;
 
 import java.io.File;
 import java.util.List;
@@ -187,6 +189,65 @@ public class TestArchitectureOutputDegeneracy {
                 List.of(ChatTemplate.Message.user("Hello")), true);
         assertTrue(formatted.contains("[INST]"), "Llama2 missing [INST]");
         assertTrue(formatted.contains("Hello"), "Llama2 missing content");
+    }
+
+    @Test
+    @DisplayName("ChatTemplate preserves tokenizer BOS for GGUF ChatML templates")
+    void testChatTemplatePreservesBosToken() {
+        ChatTemplate lfmTemplate = new ChatTemplate(
+                "{{- bos_token -}}{% for message in messages %}<|im_start|>{{ message.role }}\n{{ message.content }}<|im_end|>\n{% endfor %}{% if add_generation_prompt %}<|im_start|>assistant\n{% endif %}",
+                "<|startoftext|>",
+                "<|im_end|>");
+
+        String formatted = lfmTemplate.apply(
+                List.of(
+                        ChatTemplate.Message.system("You are precise."),
+                        ChatTemplate.Message.user("Return JSON.")),
+                true);
+
+        assertTrue(formatted.startsWith("<|startoftext|>"), "GGUF ChatML template must include tokenizer BOS");
+        assertTrue(formatted.contains("<|im_start|>system\nYou are precise.<|im_end|>"), "System message missing");
+        assertTrue(formatted.endsWith("<|im_start|>assistant\n"), "Generation prompt missing");
+    }
+
+    @Test
+    @DisplayName("TokenizerConfig can derive chat template metadata from GGUF tokenizer info")
+    void testTokenizerConfigFromGgufMetadata() {
+        GGMLMetadata.TokenizerInfo tokenizerInfo = GGMLMetadata.TokenizerInfo.builder()
+                .tokens(List.of("<unk>", "<|startoftext|>", "<|im_end|>"))
+                .bosTokenId(1)
+                .eosTokenId(2)
+                .chatTemplate("{{- bos_token -}}<|im_start|>{{ message.role }}")
+                .build();
+
+        TokenizerConfig config = TokenizerConfig.fromGgufMetadata(tokenizerInfo);
+
+        assertNotNull(config, "GGUF tokenizer metadata should produce a config");
+        assertEquals("<|startoftext|>", config.getBosToken(), "BOS token should be resolved through GGUF token ids");
+        assertEquals("<|im_end|>", config.getEosToken(), "EOS token should be resolved through GGUF token ids");
+        assertTrue(config.hasChatTemplate(), "Chat template should come from GGUF metadata");
+    }
+
+    @Test
+    @DisplayName("HuggingFaceTokenizer loads chat template from GGUF sidecar")
+    @EnabledIfSystemProperty(named = "lfm2.tokenizer.dir", matches = ".+")
+    void testHuggingFaceTokenizerLoadsGgufSidecarChatTemplate() throws Exception {
+        File modelDir = new File(System.getProperty("lfm2.tokenizer.dir"));
+        try (Tokenizer tokenizer = HuggingFaceTokenizer.fromDirectory(modelDir)) {
+            assertNotNull(tokenizer.getChatTemplate(), "Tokenizer should expose GGUF sidecar chat template");
+            assertTrue(tokenizer.getChatTemplate().contains("<|im_start|>"), "Expected ChatML markers");
+            assertEquals("<|startoftext|>", tokenizer.getBosToken(), "BOS token should come from GGUF token ids");
+
+            String formatted = tokenizer.applyChatTemplate(
+                    List.of(
+                            ChatTemplate.Message.system("You are precise."),
+                            ChatTemplate.Message.user("Return JSON.")),
+                    true);
+
+            assertTrue(formatted.startsWith("<|startoftext|>"), "Formatted prompt should preserve model BOS");
+            assertTrue(formatted.contains("<|im_start|>system\nYou are precise.<|im_end|>"), "System message missing");
+            assertTrue(formatted.endsWith("<|im_start|>assistant\n"), "Generation prompt missing");
+        }
     }
 
     @Test

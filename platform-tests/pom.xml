@@ -1716,6 +1716,12 @@
                         <!-- DSP freeze/merge -->
                         <nd4j.dsp.freezeMergeSegments>${nd4j.dsp.freezeMergeSegments}</nd4j.dsp.freezeMergeSegments>
                         <nd4j.dsp.freezeRecompile>${nd4j.dsp.freezeRecompile}</nd4j.dsp.freezeRecompile>
+                        <!-- Debug/verbose mode — picked up by DebugVerboseExtension -->
+                        <nd4j.debug>${nd4j.debug}</nd4j.debug>
+                        <nd4j.verbose>${nd4j.verbose}</nd4j.verbose>
+                        <!-- Test result recording -->
+                        <dl4j.test.results.disabled>${dl4j.test.results.disabled}</dl4j.test.results.disabled>
+                        <dl4j.test.results.dir>${dl4j.test.results.dir}</dl4j.test.results.dir>
                     </systemPropertyVariables>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>

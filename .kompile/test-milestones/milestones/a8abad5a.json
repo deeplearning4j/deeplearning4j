@@ -1,0 +1,15 @@
+{
+  "id" : "a8abad5a",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da08ad221f665929285a8ffd3dcb6b9be",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 1,
+  "passed" : 1,
+  "notes" : "Focused MHA rank-4 BHSD GQA K/V correctness check passed: MhaKvConcatRegressionTest#testRawBhsdGqaKvMatchesRepeatedKv. Raw BHSD K/V matched repeated K/V with maxDiff=0.0. Log: /tmp/dsp-repeat-kv-bhsd-test-20260528.log",
+  "tags" : "dsp,benchmark10,repeat_kv,onnx-mha,cuda,test",
+  "timestamp" : "2026-05-28T11:33:46.209881Z"
+}

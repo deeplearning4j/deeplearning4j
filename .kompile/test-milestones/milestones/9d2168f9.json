@@ -1,0 +1,15 @@
+{
+  "id" : "9d2168f9",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da08ad221f665929285a8ffd3dcb6b9be",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "libnd4j/nd4j-cuda-12.9",
+  "totalTests" : 1,
+  "passed" : 1,
+  "notes" : "Benchmark 8 candidate build passed. Change: remove redundant post-sample attention/causal/attn_mask_reformat unmask launches in autoregressive_decode.cu. Command: /home/agibsonccc/dev-apps/mvn/bin/mvn -Pcuda -Dlibnd4j.triton=ON -Dlibnd4j.chip=cuda -Dlibnd4j.buildthreads=12 -Dlibnd4j.log=libnd4j-build.log -pl libnd4j,:nd4j-cuda-12.9 clean install -DskipTests. Log: /tmp/dsp-autoregressive-mask-prune-cuda-build-20260528.log. Build success in 15:05.",
+  "tags" : "build,dsp,benchmark,cuda",
+  "timestamp" : "2026-05-28T09:27:28.089397Z"
+}

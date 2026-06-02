@@ -105,6 +105,7 @@ static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
 // capture workspace allocations that may not replay correctly.
 static thread_local std::vector<NDArray*> tl_castCacheA;
 static thread_local std::vector<NDArray*> tl_castCacheB;
+static thread_local std::vector<NDArray*> tl_retiredCastCache;
 static thread_local size_t tl_castIdxA = 0;
 static thread_local size_t tl_castIdxB = 0;
 static thread_local std::unordered_map<const NDArray*, NDArray*> tl_captureCastReuseA;
@@ -239,8 +240,10 @@ std::pair<size_t, size_t> MmulHelper::getCastCacheHighWaterMark() {
 void MmulHelper::clearCastCache() {
   for (auto* p : tl_castCacheA) delete p;
   for (auto* p : tl_castCacheB) delete p;
+  for (auto* p : tl_retiredCastCache) delete p;
   tl_castCacheA.clear();
   tl_castCacheB.clear();
+  tl_retiredCastCache.clear();
   tl_castIdxA = 0;
   tl_castIdxB = 0;
   tl_captureCastReuseA.clear();
@@ -250,6 +253,34 @@ void MmulHelper::clearCastCache() {
   tl_lastCaptureCastArrayA = nullptr;
   tl_lastCaptureCastArrayB = nullptr;
   tl_ltAlgoCache.clear();
+}
+
+static NDArray* castWithPersistentCache(std::vector<NDArray*>& cache, size_t& index,
+                                        NDArray* source, DataType targetType) {
+  if (index < cache.size()) {
+    NDArray* cached = cache[index];
+    if (cached != nullptr && cached->dataType() == targetType && cached->isSameShape(source)) {
+      index++;
+      cached->assign(source);
+      return cached;
+    }
+
+    if (cached != nullptr) {
+      if (tl_graphExecutionActive || tl_dspReplayActive) {
+        tl_retiredCastCache.push_back(cached);
+      } else {
+        delete cached;
+      }
+    }
+    cached = source->cast(targetType);
+    cache[index++] = cached;
+    return cached;
+  }
+
+  NDArray* cached = source->cast(targetType);
+  cache.push_back(cached);
+  index++;
+  return cached;
 }
 
 // cuBLAS Lt matmul for decoder logits projection: [1,K] x [K,N] -> [1,N]
@@ -895,10 +926,11 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  NDArray* effA = const_cast<NDArray*>(A);
  NDArray* effB = const_cast<NDArray*>(B);
 
- // Use cast cache during graph capture OR gap replay — both need persistent
- // buffers. During gap replay, the cache was populated during capture warmup
- // and indices are reset per step via resetCastCacheIndices().
- bool useCastCache = tl_graphExecutionActive || tl_dspReplayActive;
+ // Use cast cache while DSP owns graph/replay state or the cuBLAS workspace.
+ // Warmup fills the cache, capture records stable cache buffer addresses, and
+ // replay reuses the same buffers after resetCastCacheIndices().
+ bool useCastCache = tl_graphExecutionActive || tl_dspReplayActive ||
+                     tl_cublasGapStreamReady || tl_cublasWorkspacePtr != nullptr;
 
  // NOTE: FP16 autocast for FP32×FP32 matmul REMOVED.
  // Casting FP32 inputs to HALF loses precision on the input data itself,
@@ -928,6 +960,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        tl_castIdxA++;
        effA = tl_lastCaptureCastArrayA;
      } else if (useCastCache && tl_castIdxA < tl_castCacheA.size()
+                && tl_castCacheA[tl_castIdxA]->dataType() == HALF
                 && tl_castCacheA[tl_castIdxA]->isSameShape(effA)) {
        // During capture/replay: reuse persistent buffer, assign launches FLOAT→HALF kernel
        NDArray* cached = tl_castCacheA[tl_castIdxA++];
@@ -936,10 +969,17 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        tl_lastCaptureCastArrayA = cached;
        effA = cached;
      } else {
-       castA = effA->cast(HALF);
-       effA = castA;
-       tl_lastCaptureCastSourceA = nullptr;
-       tl_lastCaptureCastArrayA = nullptr;
+       if (useCastCache) {
+         NDArray* cached = castWithPersistentCache(tl_castCacheA, tl_castIdxA, effA, HALF);
+         tl_lastCaptureCastSourceA = A;
+         tl_lastCaptureCastArrayA = cached;
+         effA = cached;
+       } else {
+         castA = effA->cast(HALF);
+         effA = castA;
+         tl_lastCaptureCastSourceA = nullptr;
+         tl_lastCaptureCastArrayA = nullptr;
+       }
      }
    } else if (aType == HALF && bType == FLOAT32) {
      // Same logic for B: disable shortcut during gap replay
@@ -950,6 +990,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        tl_castIdxB++;
        effB = tl_lastCaptureCastArrayB;
      } else if (useCastCache && tl_castIdxB < tl_castCacheB.size()
+                && tl_castCacheB[tl_castIdxB]->dataType() == HALF
                 && tl_castCacheB[tl_castIdxB]->isSameShape(effB)) {
        NDArray* cached = tl_castCacheB[tl_castIdxB++];
        cached->assign(effB);
@@ -957,10 +998,47 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        tl_lastCaptureCastArrayB = cached;
        effB = cached;
      } else {
-       castB = effB->cast(HALF);
-       effB = castB;
-       tl_lastCaptureCastSourceB = nullptr;
-       tl_lastCaptureCastArrayB = nullptr;
+       if (useCastCache) {
+         NDArray* cached = castWithPersistentCache(tl_castCacheB, tl_castIdxB, effB, HALF);
+         tl_lastCaptureCastSourceB = B;
+         tl_lastCaptureCastArrayB = cached;
+         effB = cached;
+       } else {
+         castB = effB->cast(HALF);
+         effB = castB;
+         tl_lastCaptureCastSourceB = nullptr;
+         tl_lastCaptureCastArrayB = nullptr;
+       }
+     }
+   }
+ }
+
+ // cuBLAS GEMM paths require the buffers passed for A, B and C to match the
+ // descriptor types.  The generic fallback below is type-homogeneous too
+ // (BUILD_SINGLE_SELECTOR_THRICE), so mixed FLOAT32/DOUBLE inputs with DOUBLE
+ // output must be normalized before dispatch.  Otherwise the fallback can
+ // reinterpret a FLOAT32 weight buffer as DOUBLE and produce NaNs.
+ if (cType == DOUBLE && (effA->dataType() != DOUBLE || effB->dataType() != DOUBLE)) {
+   const auto currentAType = effA->dataType();
+   const auto currentBType = effB->dataType();
+   const bool supportedA = currentAType == DOUBLE || currentAType == FLOAT32 || currentAType == HALF;
+   const bool supportedB = currentBType == DOUBLE || currentBType == FLOAT32 || currentBType == HALF;
+   if (supportedA && supportedB) {
+     if (currentAType != DOUBLE) {
+       if (useCastCache) {
+         effA = castWithPersistentCache(tl_castCacheA, tl_castIdxA, effA, DOUBLE);
+       } else {
+         castA = effA->cast(DOUBLE);
+         effA = castA;
+       }
+     }
+     if (currentBType != DOUBLE) {
+       if (useCastCache) {
+         effB = castWithPersistentCache(tl_castCacheB, tl_castIdxB, effB, DOUBLE);
+       } else {
+         castB = effB->cast(DOUBLE);
+         effB = castB;
+       }
      }
    }
  }
@@ -1444,16 +1522,18 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    }
  }
 
- // Mixed-precision path: when A and B have different types (e.g., FLOAT32 × HALF),
- // the batchedGemm custom kernel can't handle it (BUILD_SINGLE_SELECTOR_THRICE assumes
- // all types match). Reshape higher-rank A to 2D and delegate to mmulMxM which has
- // cublasGemmEx support for mixed FLOAT32/HALF inputs.
+ // Mixed-precision path: when A and B have different types, the batchedGemm
+ // custom kernel can't handle it (BUILD_SINGLE_SELECTOR_THRICE assumes all
+ // types match). Reshape higher-rank A to 2D and delegate to mmulMxM, which
+ // normalizes mixed FLOAT32/HALF and FLOAT32/DOUBLE inputs before cuBLAS.
  if (A->dataType() != B->dataType()) {
    const auto aType = A->dataType();
    const auto bType = B->dataType();
    const bool isMixedHalfFloat = ((aType == FLOAT32 && bType == HALF) || (aType == HALF && bType == FLOAT32));
+   const bool isMixedDoubleFloat = ((aType == DOUBLE && bType == FLOAT32) || (aType == FLOAT32 && bType == DOUBLE));
+   const bool isMixedDoubleHalf = ((aType == DOUBLE && bType == HALF) || (aType == HALF && bType == DOUBLE));
 
-   if (isMixedHalfFloat) {
+   if (isMixedHalfFloat || isMixedDoubleFloat || isMixedDoubleHalf) {
      // For [B0, B1, ..., M, K] × [K, N], reshape A to [B0*B1*...*M, K] (2D),
      // call mmulMxM, then result is [B0*B1*...*M, N] which we reshape to C's shape.
      // This works because each row of A is independently multiplied by B.
@@ -1494,6 +1574,7 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
            if (tl_castIdxA < tl_castCacheA.size()) tl_castIdxA++;
            effA2d = reuseIt->second;
          } else if (tl_castIdxA < tl_castCacheA.size()
+                    && tl_castCacheA[tl_castIdxA]->dataType() == HALF
                     && tl_castCacheA[tl_castIdxA]->isSameShape(a2d)) {
            NDArray* cached = tl_castCacheA[tl_castIdxA++];
            cached->assign(a2d);
@@ -1506,6 +1587,7 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
            if (tl_castIdxB < tl_castCacheB.size()) tl_castIdxB++;
            effB2d = reuseIt->second;
          } else if (tl_castIdxB < tl_castCacheB.size()
+                    && tl_castCacheB[tl_castIdxB]->dataType() == HALF
                     && tl_castCacheB[tl_castIdxB]->isSameShape(b2d)) {
            NDArray* cached = tl_castCacheB[tl_castIdxB++];
            cached->assign(b2d);

@@ -758,7 +758,7 @@ void autoregressiveDecodeCuda(
             // Pass a view so the penalty kernel only reads valid tokens.
             if (step > 0) {
                 std::vector<LongType> range = {0, static_cast<LongType>(step)};
-                NDArray* tokensSoFar = (*generatedTokenIds)(range);
+                NDArray* tokensSoFar = (*generatedTokenIds)(range, true);
                 tokenSampleWithPenaltiesCuda(logitsOutput, sampledToken, tokensSoFar,
                                              temperature, topK, topP, 0.0 /*minP*/,
                                              repPenalty, 0.0 /*freqPenalty*/, 0.0 /*presPenalty*/,

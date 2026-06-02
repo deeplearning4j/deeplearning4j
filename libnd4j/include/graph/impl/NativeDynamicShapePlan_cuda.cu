@@ -41,8 +41,6 @@
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <graph/DspStreamGuard.h>
 #include <graph/PlanExecutionContext.h>
-#include <helpers/ConstantShapeHelper.h>
-#include <helpers/ConstantTadHelper.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/cublasHelper.h>
 #include <cublas_v2.h>
@@ -1218,6 +1216,27 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   DSP_DIAG(MEMORY, "platformFreePlanResources: segments=%d slots=%d outputs=%d",
            (int)segments_.size(), numSlots_, totalOutputSlots_);
 
+  // Drain any pending GPU work on the plan's owned stream BEFORE destroying
+  // any resources.  Without this, in-flight kernels or CUDA graph replays
+  // may still reference buffers, streams, or graph handles that are about
+  // to be freed — producing SIGSEGV (use-after-free) or "invalid resource
+  // handle" errors.  This is the root fix for Pattern B crashes where
+  // executeDynamicShapePlan faults on a stale cudaStream_t.
+  if (ownedStream_ != nullptr) {
+    cudaError_t syncErr = cudaStreamSynchronize(*ownedStream_);
+    if (syncErr != cudaSuccess) {
+      // Stream sync can fail if the CUDA context is already destroyed
+      // (e.g., during JVM shutdown) or if a prior async kernel error is
+      // pending.  Clear the sticky error and continue with teardown —
+      // we still need to null out pointers to prevent double-free.
+      // Without cudaGetLastError(), the sticky error propagates to the
+      // next plan's cudaStreamBeginCapture → cascade failure → SIGABRT.
+      cudaGetLastError();
+      DSP_DIAG(MEMORY, "platformFreePlanResources: cudaStreamSynchronize failed: %s (cleared, continuing teardown)",
+               cudaGetErrorString(syncErr));
+    }
+  }
+
   // Free plan-owned CUDA stream
   if (ownedStream_ != nullptr) {
     DSP_DIAG(MEMORY, "platformFreePlanResources: destroying plan-owned stream=%p",
@@ -1232,12 +1251,25 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   // CUDA graph capture records addresses of the old workspace buffers.
   AttentionWorkspace::getInstance()->clear();
 
-  // Free CUDA event used for cross-stream sync
+  // Free CUDA event used for cross-stream sync (on the device it was created on)
   if (executionCompleteEvent_ != nullptr) {
     cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
-    cudaEventDestroy(evt);
+    if (executionCompleteEventDeviceId_ >= 0) {
+      int savedDev;
+      cudaGetDevice(&savedDev);
+      if (savedDev != executionCompleteEventDeviceId_) {
+        cudaSetDevice(executionCompleteEventDeviceId_);
+        cudaEventDestroy(evt);
+        cudaSetDevice(savedDev);
+      } else {
+        cudaEventDestroy(evt);
+      }
+    } else {
+      cudaEventDestroy(evt);
+    }
     delete static_cast<cudaEvent_t*>(executionCompleteEvent_);
     executionCompleteEvent_ = nullptr;
+    executionCompleteEventDeviceId_ = -1;
   }
 
   // Free cached steady-state execution context
@@ -1387,6 +1419,12 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
 
   // Free batched GEMM resources
   freeBatchedGemmResources();
+
+  // Clear any sticky CUDA errors accumulated during teardown.
+  // Without this, the next plan on this thread inherits the error —
+  // cudaStreamBeginCapture fails immediately with the stale error,
+  // the capture abort path can't recover, and the process gets SIGABRT.
+  cudaGetLastError();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1538,6 +1576,13 @@ static void logGpuMemState(const char* label) {
 }
 
 void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, int execCount) {
+  // Clear any sticky CUDA errors from previous plan teardown BEFORE creating
+  // the owned stream.  Without this, cudaStreamCreateWithFlags fails with the
+  // stale error, ownedStream_ stays null, ctx->dspStream inherits the Java
+  // caller's stale stream pointer (from the destroyed previous plan), and
+  // cudaEventRecord in platformEndExecution hits error 400 (invalid handle).
+  cudaGetLastError();
+
   // ── Lazy-create plan-owned CUDA stream ─────────────────────────────────
   // Each plan gets its own stream so that CUDA graph captures (which
   // happen on this stream) don't conflict with Java-side syncToDevice()
@@ -1549,6 +1594,7 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     if (err != cudaSuccess) {
       DSP_DIAG(EXECUTE, "platformBeginExecution: failed to create plan-owned stream: %s (%d)",
                cudaGetErrorString(err), static_cast<int>(err));
+      cudaGetLastError();  // clear this error too
       delete ownedStream_;
       ownedStream_ = nullptr;
     } else {
@@ -1601,6 +1647,13 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   auto* ctx = new PlanExecutionContext();
   ctx->execCount = execCount;
   ctx->frozen = frozen;
+
+  // Capture the CUDA device for this execution. All events and streams
+  // created during this execute() must be on this device. The DspStreamGuard
+  // pins the device via cudaSetDevice and restores on destruction, so even
+  // if an op temporarily switches devices, the guard's destructor restores.
+  cudaGetDevice(&ctx->deviceId);
+
   // Sync decisions use anySegmentNeedsWarmup() — the SINGLE source of truth
   // for whether segments need warmup after invalidateSegmentCaptures.
   bool segWarmup = anySegmentNeedsWarmup();
@@ -1615,7 +1668,9 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   // Resolve CUDA streams and set up DspStreamGuard RAII
   if (stream != nullptr) {
     ctx->dspStream = *static_cast<cudaStream_t*>(stream);
-    ctx->streamGuard = new DspStreamGuard(ctx->dspStream);
+    // Pass deviceId to DspStreamGuard so it pins cudaSetDevice for the
+    // duration of execution and restores the previous device on destruction.
+    ctx->streamGuard = new DspStreamGuard(ctx->dspStream, ctx->deviceId);
 
     // Resolve LC default stream (a real async stream from ContextBuffers,
     // NOT CUDA stream 0). Post-execution ops (KvScatter, assign, mask updates)
@@ -1730,30 +1785,74 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
   // Cross-stream synchronization: make post-execution streams wait for DSP.
   if (stream != nullptr) {
     DSP_DIAG(EXECUTE, "platformEndExecution: frozen=%d execCount=%d syncLevel=%s "
-             "dspStream=%p lcDefault=%p",
+             "dspStream=%p lcDefault=%p deviceId=%d",
              static_cast<int>(ctx->frozen), ctx->execCount, ctx->syncLevelName(),
-             static_cast<void*>(ctx->dspStream), static_cast<void*>(ctx->lcDefaultStream));
+             static_cast<void*>(ctx->dspStream), static_cast<void*>(ctx->lcDefaultStream),
+             ctx->deviceId);
 
-    if (executionCompleteEvent_ == nullptr) {
-      cudaEvent_t evt;
-      cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
-      executionCompleteEvent_ = static_cast<void*>(new cudaEvent_t(evt));
+    // Ensure we're on the correct device before creating/recording events.
+    // An op during slot execution may have temporarily switched devices
+    // (e.g., cross-device memory failover). Events and streams must match.
+    cudaSetDevice(ctx->deviceId);
+
+    // Clear any sticky CUDA error from a failed slot execution (e.g., OOM
+    // causing error 700 — illegal memory access). Without this, every CUDA
+    // call below (cudaEventCreateWithFlags, cudaEventRecord, etc.) would
+    // inherit the sticky error and crash the process.
+    auto stickyErr = cudaGetLastError();
+    bool cudaContextHealthy = (stickyErr == cudaSuccess);
+    if (!cudaContextHealthy) {
+      DSP_DIAG(EXECUTE, "platformEndExecution: cleared sticky CUDA error: %s — skipping event sync",
+               cudaGetErrorString(stickyErr));
     }
-    cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
-    cudaEventRecord(evt, ctx->dspStream);
-    sd::dspPublishThreadCompletionEvent(static_cast<void*>(ctx->dspStream));
-    // Make BOTH CUDA stream 0 AND the LC default stream wait for DSP.
-    // Post-execution ops (KvScatter, assign, etc.) run on the LC default
-    // stream. Without this ordering, they read outputs the DSP stream
-    // hasn't finished writing yet. This is async and applies to warmup,
-    // capture, and replay uniformly.
-    cudaStreamWaitEvent(nullptr, evt, 0);  // CUDA stream 0
-    if (ctx->lcDefaultStream != nullptr && ctx->lcDefaultStream != ctx->dspStream) {
-      cudaStreamWaitEvent(ctx->lcDefaultStream, evt, 0);
-      DSP_DIAG(EXECUTE, "platformEndExecution: lcDefault=%p waiting on DSP=%p",
-               (void*)ctx->lcDefaultStream, (void*)ctx->dspStream);
+
+    if (cudaContextHealthy) {
+      // Re-create executionCompleteEvent_ if it was created on a different device.
+      if (executionCompleteEvent_ != nullptr && executionCompleteEventDeviceId_ != ctx->deviceId) {
+        cudaEvent_t oldEvt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
+        // Destroy on the device it was created on
+        int savedDev;
+        cudaGetDevice(&savedDev);
+        cudaSetDevice(executionCompleteEventDeviceId_);
+        cudaEventDestroy(oldEvt);
+        cudaSetDevice(savedDev);
+        delete static_cast<cudaEvent_t*>(executionCompleteEvent_);
+        executionCompleteEvent_ = nullptr;
+        executionCompleteEventDeviceId_ = -1;
+      }
+
+      if (executionCompleteEvent_ == nullptr) {
+        cudaEvent_t evt;
+        auto createErr = cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
+        if (createErr != cudaSuccess) {
+          cudaGetLastError();  // clear
+          DSP_DIAG(EXECUTE, "platformEndExecution: cudaEventCreateWithFlags failed: %s — skipping event sync",
+                   cudaGetErrorString(createErr));
+          cudaContextHealthy = false;
+        } else {
+          executionCompleteEvent_ = static_cast<void*>(new cudaEvent_t(evt));
+          executionCompleteEventDeviceId_ = ctx->deviceId;
+        }
+      }
     }
-    ctx->recordEventSync();  // Track: event-based ordering at exit
+
+    if (cudaContextHealthy && executionCompleteEvent_ != nullptr) {
+      cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
+      cudaEventRecord(evt, ctx->dspStream);
+      sd::dspPublishThreadCompletionEvent(static_cast<void*>(ctx->dspStream));
+      // Make BOTH CUDA stream 0 AND the LC default stream wait for DSP.
+      // Post-execution ops (KvScatter, assign, etc.) run on the LC default
+      // stream. Without this ordering, they read outputs the DSP stream
+      // hasn't finished writing yet. This is async and applies to warmup,
+      // capture, and replay uniformly.
+      cudaStreamWaitEvent(nullptr, evt, 0);  // CUDA stream 0
+      if (ctx->lcDefaultStream != nullptr && ctx->lcDefaultStream != ctx->dspStream) {
+        cudaStreamWaitEvent(ctx->lcDefaultStream, evt, 0);
+        DSP_DIAG(EXECUTE, "platformEndExecution: lcDefault=%p waiting on DSP=%p",
+                 (void*)ctx->lcDefaultStream, (void*)ctx->dspStream);
+      }
+      ctx->recordEventSync();  // Track: event-based ordering at exit
+    }
   }
 
   // Destroy the per-execution cross-stream sync event.
@@ -1784,10 +1883,26 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     tl_cublasLtDisabled = false;
   }
 
-  // ── TLS STATE ASSERTIONS ─────────────────────────────────────────────────
+  // ── TLS STATE CLEANUP + ASSERTIONS ─────────────────────────────────────
   // Verify thread-local state consistency at execution boundary.
   // These catch state leaks: if any TLS was set during execution but not
   // properly restored, it poisons subsequent non-DSP operations.
+
+  // tl_dspReplayActive MUST be false when execute() returns to Java.
+  // The DspReplayGuard RAII in compositeReplay() should restore it, but if
+  // any code path leaks (exception, longjmp, signal), the guard may not run.
+  // A leaked tl_dspReplayActive=true causes syncToPrimary() to skip D2H
+  // transfers for ALL subsequent DataBuffer reads on this thread — including
+  // the output copy that Java does immediately after execute() returns.
+  // Result: Java reads uninitialized zeros from the host buffer.
+  if (tl_dspReplayActive) {
+    DSP_DIAG(EXECUTE, "TLS_CLEANUP: tl_dspReplayActive=true at platformEndExecution — "
+             "force-resetting (mode=%d execCount=%d). "
+             "DspReplayGuard failed to restore — investigate the leak.",
+             static_cast<int>(graphExecutionMode_), execCount);
+    tl_dspReplayActive = false;
+  }
+
   REQUIRE_TRUE(!tl_graphExecutionActive, 0,
                "TLS LEAK: tl_graphExecutionActive=true at platformEndExecution exit. "
                "A graph capture began but was not properly ended. "
@@ -2251,25 +2366,12 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
     pool.trimPool(deviceId);
     logGpuMemState("STEP-4b-AFTER-MIGRATION-AND-TRIM");
 
-    // Clear shape and TAD caches
-    {
-      auto shapeEntriesBefore = ConstantShapeHelper::getInstance().getCachedEntries();
-      auto tadEntriesBefore = ConstantTadHelper::getInstance().getCachedEntries();
-
-      ConstantShapeHelper::getInstance().clearCache();
-      ConstantTadHelper::getInstance().clearCache();
-
-      auto shapeEntriesAfter = ConstantShapeHelper::getInstance().getCachedEntries();
-      auto tadEntriesAfter = ConstantTadHelper::getInstance().getCachedEntries();
-
-      DSP_DIAG(MEMORY,
-          "Shape/TAD cache clear: shapes %lld->%lld, TADs %lld->%lld",
-          static_cast<long long>(shapeEntriesBefore), static_cast<long long>(shapeEntriesAfter),
-          static_cast<long long>(tadEntriesBefore), static_cast<long long>(tadEntriesAfter));
-
-      pool.trimPool(deviceId);
-      logGpuMemState("STEP-4c-AFTER-CACHE-CLEAR-AND-TRIM");
-    }
+    // Shape/TAD helper caches are process-wide metadata caches. They can back
+    // shape-info pointers on Java-owned arrays that are still alive while a
+    // native plan is being torn down, so a per-plan cleanup path must not clear
+    // them. Trimming the CUDA pool after weight migration is still safe.
+    pool.trimPool(deviceId);
+    logGpuMemState("STEP-4c-AFTER-WEIGHT-MIGRATION-TRIM");
   }
 
   // Invalidate Triton compiled kernel cache

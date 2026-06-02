@@ -37,7 +37,7 @@ public class ScalarTests extends BaseNd4jTestWithBackends {
             if(dataType.isNumerical()) {
                 try {
                     assertNotNull(Nd4j.create(dataType));
-                } catch (UnsupportedOperationException e) {
+                } catch (UnsupportedOperationException | IllegalStateException e) {
                     // Some data types (e.g. FLOAT8) may not be supported by all backends
                 }
             }

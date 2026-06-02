@@ -220,7 +220,7 @@ public class RefusalDirectionFinder {
         // First column of V is the top principal component
         INDArray topComponent;
         if (v.rank() == 2) {
-            topComponent = v.getColumn(0).dup();
+            topComponent = v.getColumn(0, false).dup();
         } else {
             topComponent = v.dup();
         }

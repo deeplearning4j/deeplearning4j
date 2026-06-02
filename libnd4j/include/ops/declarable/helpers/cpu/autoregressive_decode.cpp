@@ -503,7 +503,7 @@ void autoregressiveDecodeCpu(
             // Sampling with repetition penalty.
             // generatedTokenIds is [maxNewTokens] but only 0..step-1 are valid.
             if (step > 0) {
-                NDArray* tokensSoFar = (*generatedTokenIds)({0, step});
+                NDArray* tokensSoFar = (*generatedTokenIds)({0, step}, true);
                 tokenSampleWithPenaltiesCpu(logitsOutput, sampledToken, tokensSoFar,
                                             temperature, topK, topP, 0.0 /*minP*/,
                                             repPenalty, 0.0 /*freqPenalty*/, 0.0 /*presPenalty*/,

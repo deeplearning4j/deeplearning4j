@@ -151,6 +151,19 @@ public class TestSamplingPenaltiesRank3 {
         assertEquals(5.0f, output.getFloat(0, 0), 1e-5f);
     }
 
+    @Test
+    @DisplayName("Repetition penalty accepts scalar token history from one-token native decode views")
+    public void testRepetitionPenaltyScalarInputIds() {
+        INDArray logits = Nd4j.ones(DataType.FLOAT, 1, 1, VOCAB_SIZE).muli(5.0f);
+        INDArray inputIds = Nd4j.scalar(DataType.INT64, 10L);
+
+        INDArray[] results = Nd4j.exec(new SamplingPenalties(logits, inputIds, 2.0, 0.0, 0.0, 0.0));
+        INDArray output = results[0];
+
+        assertEquals(2.5f, output.getFloat(0, 0, 10), 1e-4f);
+        assertEquals(5.0f, output.getFloat(0, 0, 0), 1e-5f);
+    }
+
     // ─── Rank-3 with seqLen > 1 ────────────────────────────────────────
 
     @Test

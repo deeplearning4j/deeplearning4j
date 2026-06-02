@@ -1079,7 +1079,22 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             }
                         }
 
-                        return ExecutionResult.builder().valueOutputs(filteredResults).build();
+                        // If dspAllRequired was augmented with intermediate op outputs for listener
+                        // callbacks, filter filteredResults to only include variables from the original
+                        // allRequired set. Augmented intermediates must not appear in the returned
+                        // ExecutionResult — callers like stackOutputs() would include them in the output
+                        // map, breaking assertions like assertEquals(1, m.size()) in listener tests.
+                        Map<String, SDValue> returnableResults = filteredResults;
+                        if (dspAllRequired != allRequired) {
+                            // dspAllRequired was augmented — filter to original allRequired only
+                            returnableResults = new LinkedHashMap<>();
+                            for (Map.Entry<String, SDValue> entry : filteredResults.entrySet()) {
+                                if (allRequired.contains(entry.getKey())) {
+                                    returnableResults.put(entry.getKey(), entry.getValue());
+                                }
+                            }
+                        }
+                        return ExecutionResult.builder().valueOutputs(returnableResults).build();
                     }
                 } catch (Exception e) {
                     log.error("DynamicShapePlan-based execution failed — no fallback allowed: {}", e.getMessage());

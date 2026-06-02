@@ -264,6 +264,13 @@ public class GGUFHeader {
     }
 
     public Integer getContextLength() {
+        // Try the actual architecture prefix first (e.g. "mistral.context_length", "phi.context_length")
+        String arch = getArchitecture();
+        if (arch != null) {
+            Object val = getMetadata(arch + ".context_length");
+            if (val != null) return ((Number) val).intValue();
+        }
+        // Fall back to known architecture prefixes
         Object val = getMetadata("llama.context_length");
         if (val == null) val = getMetadata("qwen2.context_length");
         if (val == null) val = getMetadata("phi3.context_length");
@@ -271,6 +278,13 @@ public class GGUFHeader {
     }
 
     public Integer getEmbeddingLength() {
+        // Try the actual architecture prefix first
+        String arch = getArchitecture();
+        if (arch != null) {
+            Object val = getMetadata(arch + ".embedding_length");
+            if (val != null) return ((Number) val).intValue();
+        }
+        // Fall back to known architecture prefixes
         Object val = getMetadata("llama.embedding_length");
         if (val == null) val = getMetadata("qwen2.embedding_length");
         if (val == null) val = getMetadata("phi3.embedding_length");
@@ -278,6 +292,13 @@ public class GGUFHeader {
     }
 
     public Integer getBlockCount() {
+        // Try the actual architecture prefix first
+        String arch = getArchitecture();
+        if (arch != null) {
+            Object val = getMetadata(arch + ".block_count");
+            if (val != null) return ((Number) val).intValue();
+        }
+        // Fall back to known architecture prefixes
         Object val = getMetadata("llama.block_count");
         if (val == null) val = getMetadata("qwen2.block_count");
         if (val == null) val = getMetadata("phi3.block_count");

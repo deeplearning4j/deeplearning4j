@@ -111,8 +111,12 @@ static bool slotIsTransparentHostOnlyForGraphCoverage(
     NDArray** externalArrays,
     int numExt,
     int totalOutputSlots) {
-  if (slot.hasOpTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT) ||
-      slot.frozenConstantSlot() ||
+  // Replay-stable host-only classes: shape metadata, constants, fused tails,
+  // and aliasing views/identity below. Constant-generation outputs are
+  // covered by the trait-driven value key when their values affect replay.
+  if (slot.frozenConstantSlot() ||
+      slot.hasOpTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT) ||
+      slot.hasOpTrait(sd::ops::OP_TRAIT_CONSTANT_GENERATION) ||
       slot.fusedChain.isFusedChainTail) {
     return true;
   }
@@ -604,20 +608,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   // ── PRE-CAPTURE MEMORY CHECK ──
-  bool isOomRetry = (seg.exec.captureOomRetries > 0);
-  if (!isOomRetry) {
-    size_t estimatedCaptureBytes = 0;
-    for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
-      NativeSlot& slot = slots_[stepIdx];
-      for (int i = 0; i < slot.wiring.numOutputs; i++) {
-        int slotIdx = slot.wiring.outputSlotIndices[i];
-        if (slotIdx >= 0 && slotIdx < totalOutputSlots_ && outputSlots_[slotIdx] != nullptr) {
-          estimatedCaptureBytes += outputSlots_[slotIdx]->lengthOf() *
-                                   outputSlots_[slotIdx]->sizeOfT();
-        }
+  size_t estimatedCaptureBytes = 0;
+  for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
+    NativeSlot& slot = slots_[stepIdx];
+    for (int i = 0; i < slot.wiring.numOutputs; i++) {
+      int slotIdx = slot.wiring.outputSlotIndices[i];
+      if (slotIdx >= 0 && slotIdx < totalOutputSlots_ && outputSlots_[slotIdx] != nullptr) {
+        estimatedCaptureBytes += outputSlots_[slotIdx]->lengthOf() *
+                                 outputSlots_[slotIdx]->sizeOfT();
       }
     }
+  }
 
+  bool isOomRetry = (seg.exec.captureOomRetries > 0);
+  if (!isOomRetry) {
     size_t gpuFree = 0, gpuTotal = 0;
     cudaMemGetInfo(&gpuFree, &gpuTotal);
 
@@ -677,12 +681,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
 
-  // Allocate capture workspace — adaptive to available GPU memory.
-  // The configured size (default 512MB) is the MAXIMUM. On memory-constrained
-  // GPUs (e.g. 24GB with a 14GB model), we scale down to fit. Before allocating,
-  // trim the memory pool to reclaim cached-but-unused buffers.
+  // Allocate capture workspace. The configured size is the baseline; large
+  // segments can need more temporary capture storage than the fixed default.
+  // Bound growth by the segment working set and then scale down to available
+  // GPU memory if necessary. Before allocating, trim the memory pool to reclaim
+  // cached-but-unused buffers.
   // Dynamic — read config each time so tests can override via system property.
-  size_t MAX_CAPTURE_WORKSPACE = static_cast<size_t>(sd::env_dspCaptureWorkspaceMb()) * 1024ULL * 1024ULL;
+  size_t CONFIGURED_CAPTURE_WORKSPACE = static_cast<size_t>(sd::env_dspCaptureWorkspaceMb()) * 1024ULL * 1024ULL;
   DSP_DIAG_SEG(MEMORY, segIdx, "capture workspace check seg[%d-%d]: ptr=%p bytes=%zu",
                seg.def.startSlot, seg.def.endSlot, seg.exec.replayHandle->getWorkspacePtr(), seg.exec.replayHandle->getWorkspaceBytes());
   if (seg.exec.replayHandle->getWorkspacePtr() == nullptr) {
@@ -699,7 +704,40 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     size_t gpuFree = 0, gpuTotal = 0;
     cudaMemGetInfo(&gpuFree, &gpuTotal);
     size_t headroom = 256ULL * 1024 * 1024;
-    size_t workspaceSize = MAX_CAPTURE_WORKSPACE;
+    size_t workspaceSize = CONFIGURED_CAPTURE_WORKSPACE;
+    if (estimatedCaptureBytes > 0 && CONFIGURED_CAPTURE_WORKSPACE > 0) {
+      size_t adaptiveCeiling = CONFIGURED_CAPTURE_WORKSPACE;
+      if (CONFIGURED_CAPTURE_WORKSPACE <= ((size_t)-1) / 4) {
+        adaptiveCeiling = CONFIGURED_CAPTURE_WORKSPACE * 4;
+      }
+      size_t workingSetWorkspace = estimatedCaptureBytes / 4;
+      if (workingSetWorkspace > adaptiveCeiling) {
+        workingSetWorkspace = adaptiveCeiling;
+      }
+      if (workingSetWorkspace > workspaceSize) {
+        DSP_DIAG_SEG(MEMORY, segIdx,
+                     "capture workspace grown from segment working set: configured=%zuMB "
+                     "workingSet=%zuMB requested=%zuMB ceiling=%zuMB",
+                     CONFIGURED_CAPTURE_WORKSPACE / (1024*1024),
+                     estimatedCaptureBytes / (1024*1024),
+                     workingSetWorkspace / (1024*1024),
+                     adaptiveCeiling / (1024*1024));
+        workspaceSize = workingSetWorkspace;
+      }
+    }
+    if (isOomRetry && CONFIGURED_CAPTURE_WORKSPACE > 0) {
+      size_t retryWorkspace = CONFIGURED_CAPTURE_WORKSPACE;
+      for (int r = 0; r < seg.exec.captureOomRetries && retryWorkspace <= ((size_t)-1) / 2; r++) {
+        retryWorkspace *= 2;
+      }
+      if (retryWorkspace > workspaceSize) {
+        DSP_DIAG_SEG(MEMORY, segIdx,
+                     "capture workspace grown for retry %d/%d: %zuMB -> %zuMB",
+                     seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
+                     workspaceSize / (1024*1024), retryWorkspace / (1024*1024));
+        workspaceSize = retryWorkspace;
+      }
+    }
     if (gpuFree > headroom) {
       size_t availableForWs = gpuFree - headroom;
       if (availableForWs < workspaceSize) {
@@ -707,7 +745,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         DSP_DIAG_SEG(MEMORY, segIdx,
                      "capture workspace scaled down: gpuFree=%zuMB headroom=%zuMB → workspace=%zuMB (max=%zuMB)",
                      gpuFree / (1024*1024), headroom / (1024*1024),
-                     workspaceSize / (1024*1024), MAX_CAPTURE_WORKSPACE / (1024*1024));
+                     workspaceSize / (1024*1024), CONFIGURED_CAPTURE_WORKSPACE / (1024*1024));
       }
     } else {
       // Barely any free memory — use minimum viable workspace (32MB)

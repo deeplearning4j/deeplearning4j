@@ -247,6 +247,19 @@ int executeDynamicShapePlan(
 
     auto status = plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream);
 
+    // ── CRITICAL: clear tl_dspReplayActive at JNI boundary ─────────────────
+    // plan->execute() sets tl_dspReplayActive=true during composite replay of
+    // gap segments (via DspReplayGuard). The RAII guard should restore it to
+    // false when compositeReplay() returns. However, if ANY code path leaks
+    // the flag (exception during gap execution, signal handler, etc.), it
+    // persists on this thread. When Java calls copyBuffer() + syncToPrimary()
+    // to read the output, syncToPrimary() checks tl_dspReplayActive and
+    // early-returns WITHOUT doing the D2H transfer — Java reads uninitialized
+    // zeros from the host buffer.
+    // This defensive clear ensures the flag is always false before we return
+    // to Java, regardless of how execute() exited internally.
+    tl_dspReplayActive = false;
+
     if (status != Status::OK) {
       // Preserve the detailed C++ error message (e.g., "CUDA error after segment [X-Y]: 700 (...")
       // that was set by the plan's execute() — don't overwrite it with a generic message.
@@ -300,6 +313,43 @@ int executeDynamicShapePlan(
       }
     }
 
+    // ── CRITICAL: Block CPU until ALL GPU work completes before returning ──
+    // platformEndExecution() uses syncLevel=EVENT which records a CUDA event on
+    // the DSP stream and makes stream 0 / LC default stream wait — but that is
+    // GPU-side ordering only, it does NOT block the CPU thread.  When this
+    // function returns to Java, the caller immediately reads the output arrays
+    // (via copyBuffer + syncToPrimary, or direct host-buffer reads).  Without a
+    // CPU-blocking sync here, Java reads host buffers before the GPU finishes.
+    //
+    // We sync BOTH the DSP stream (where kernels ran) AND the LC default stream
+    // (where platformEndExecution ordered cross-stream work). Gap ops, Triton
+    // compilation, and cross-stream event waits may issue work to the LC stream
+    // that isn't captured by syncing the DSP stream alone.
+    {
+      // cudaStream is a void* pointing to a cudaStream_t (i.e. cudaStream_t*).
+      // plan->execute() dereferences it the same way: *static_cast<cudaStream_t*>(stream).
+      cudaStream_t dspStream = (cudaStream != nullptr)
+          ? *static_cast<cudaStream_t*>(cudaStream)
+          : *sd::LaunchContext::defaultContext()->getCudaStream();
+      cudaError_t syncErr = cudaStreamSynchronize(dspStream);
+      if (syncErr != cudaSuccess) {
+        char buf[512];
+        snprintf(buf, sizeof(buf),
+                 "executeDynamicShapePlan: cudaStreamSynchronize(dsp) failed: %d (%s)",
+                 static_cast<int>(syncErr), cudaGetErrorString(syncErr));
+        DSP_DIAG(EXECUTE, "%s", buf);
+        cudaGetLastError();
+        setError(static_cast<int>(syncErr), buf);
+        return static_cast<int>(syncErr);
+      }
+
+      // NOTE: LC default stream sync removed — platformEndExecution already makes
+      // LC default wait on DSP via cudaStreamWaitEvent, and DSP sync above ensures
+      // all plan GPU work is done. The Java-side copyBuffer D2D is on the LC stream
+      // and is synced by Nd4j.getExecutioner().commit() in DynamicShapePlanExecutor
+      // after the copy loop, BEFORE returning results to the caller.
+    }
+
     // Write output arrays back to context so Java can read them
     for (int i = 0; i < numOutputs; i++) {
       if (outputPtrs[i] != nullptr) {
@@ -321,6 +371,8 @@ int executeDynamicShapePlan(
     return 0;
   } catch (const std::exception& e) {
     DSP_DIAG(EXECUTE, "executeDynamicShapePlan: exception: %s", e.what());
+    // Clear DSP replay TLS — exception may have bypassed DspReplayGuard destructor
+    tl_dspReplayActive = false;
     // Clear any sticky CUDA errors and ensure stream is not in capture mode
     cudaGetLastError();
     // Set error message for Java side
@@ -435,6 +487,10 @@ void unpinNativePlan(sd::Pointer cacheHandle, sd::Pointer planHandle) {
   auto* cache = reinterpret_cast<sd::graph::NativePlanCache*>(cacheHandle);
   auto* plan  = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
   cache->unpinPlan(plan);
+}
+
+void setPlanCacheShutdownInProgress(bool inProgress) {
+  sd::graph::NativePlanCache::setShutdownInProgress(inProgress);
 }
 
 void clearDynamicShapePlanCaches(sd::Pointer planHandle) {

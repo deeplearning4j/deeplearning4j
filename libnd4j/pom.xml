@@ -171,6 +171,8 @@
         <libnd4j.oom.process.max.mb>0</libnd4j.oom.process.max.mb>
         <!-- Velocity threshold: kill if memory grows faster than this % per 5 seconds -->
         <libnd4j.oom.velocity.threshold>8</libnd4j.oom.velocity.threshold>
+        <!-- Critical threshold: immediate SIGKILL with no grace period. MUST be > oom.memory.threshold -->
+        <libnd4j.oom.critical.threshold>97</libnd4j.oom.critical.threshold>
 
         <!-- JNI Configuration for Java stack trace capture in lifecycle tracking -->
         <libnd4j.build.with.java>ON</libnd4j.build.with.java>
@@ -982,6 +984,8 @@
                                         <argument>${libnd4j.oom.process.max.mb}</argument>
                                         <argument>--oom-velocity-threshold</argument>
                                         <argument>${libnd4j.oom.velocity.threshold}</argument>
+                                        <argument>--oom-critical-threshold</argument>
+                                        <argument>${libnd4j.oom.critical.threshold}</argument>
                                         <argument>--dep-cache</argument>
                                         <argument>${libnd4j.dep.cache}</argument>
                                         <argument>--dep-cache-dir</argument>
@@ -1145,6 +1149,8 @@
                                         <argument>${libnd4j.oom.process.max.mb}</argument>
                                         <argument>--oom-velocity-threshold</argument>
                                         <argument>${libnd4j.oom.velocity.threshold}</argument>
+                                        <argument>--oom-critical-threshold</argument>
+                                        <argument>${libnd4j.oom.critical.threshold}</argument>
                                         <argument>--dep-cache</argument>
                                         <argument>${libnd4j.dep.cache}</argument>
                                         <argument>--dep-cache-dir</argument>
@@ -1358,6 +1364,8 @@
                                         <argument>${libnd4j.oom.process.max.mb}</argument>
                                         <argument>--oom-velocity-threshold</argument>
                                         <argument>${libnd4j.oom.velocity.threshold}</argument>
+                                        <argument>--oom-critical-threshold</argument>
+                                        <argument>${libnd4j.oom.critical.threshold}</argument>
                                         <argument>--dep-cache</argument>
                                         <argument>${libnd4j.dep.cache}</argument>
                                         <argument>--dep-cache-dir</argument>

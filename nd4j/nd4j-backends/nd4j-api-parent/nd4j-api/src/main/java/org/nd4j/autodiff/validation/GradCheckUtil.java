@@ -32,6 +32,7 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -169,9 +170,12 @@ public class GradCheckUtil {
             grad.put(v.name(), ga.dup());
         }
 
-        // Close the gradient map arrays — we've dup'd what we need into `grad`
-        for(INDArray arr : gm.values()) {
-            if(arr != null) arr.close();
+        // Close the gradient map arrays only on GPU backends — we've dup'd what we need into `grad`.
+        // On CPU, these arrays are internal SameDiff state references; closing them corrupts subsequent sd.output() calls.
+        if(Nd4j.getBackendDeviceType() == DeviceType.CUDA_GPU || Nd4j.getBackendDeviceType() == DeviceType.GPU) {
+            for(INDArray arr : gm.values()) {
+                if(arr != null) arr.close();
+            }
         }
         gm.clear();
 
@@ -265,9 +269,12 @@ public class GradCheckUtil {
                 for(INDArray arr : m.values()) {
                     scorePlus += arr.sumNumber().doubleValue();
                 }
-                // Explicitly close output arrays to release GPU memory immediately
-                for(INDArray arr : m.values()) {
-                    if(arr != null) arr.close();
+                // Close output arrays only on GPU backends — on CPU these are internal SameDiff state references
+                // and closing them corrupts subsequent sd.output() calls in the gradient check loop.
+                if(Nd4j.getBackendDeviceType() == DeviceType.CUDA_GPU || Nd4j.getBackendDeviceType() == DeviceType.GPU) {
+                    for(INDArray arr : m.values()) {
+                        if(arr != null) arr.close();
+                    }
                 }
 
                 a.putScalar(idx, orig-eps);
@@ -276,8 +283,10 @@ public class GradCheckUtil {
                 for(INDArray arr : m.values()) {
                     scoreMinus += arr.sumNumber().doubleValue();
                 }
-                for(INDArray arr : m.values()) {
-                    if(arr != null) arr.close();
+                if(Nd4j.getBackendDeviceType() == DeviceType.CUDA_GPU || Nd4j.getBackendDeviceType() == DeviceType.GPU) {
+                    for(INDArray arr : m.values()) {
+                        if(arr != null) arr.close();
+                    }
                 }
 
                 a.putScalar(idx, orig);
@@ -434,8 +443,18 @@ public class GradCheckUtil {
         double maxError = 0.0;
         ActivationGradientCheckListener listener = new ActivationGradientCheckListener();
         sd.setListeners(listener);
+        // ActivationGradientCheckListener modifies activation buffers in opExecution() which
+        // fires MID-EXECUTION in the standard (non-DSP) path, so the perturbation affects
+        // subsequent op computations. In the DSP path, all listener callbacks fire AFTER
+        // the entire plan completes atomically, making the perturbation ineffective and
+        // numerical gradient always 0. Disable DSP for this numerical gradient check loop.
+        boolean dspAutoCompileSaved = sd.isDspAutoCompileEnabled();
+        boolean dspNativeAutoCompileSaved = sd.isDspNativeAutoCompileEnabled();
+        sd.setDspAutoCompileEnabled(false);
+        sd.setDspNativeAutoCompileEnabled(false);
         Random r = new Random(12345);
         int maxPerParam = config.getMaxPerParam();
+        try {
         for(String s : actGrads){
 
             long n = gradientsForAct.get(s).length();
@@ -561,6 +580,11 @@ public class GradCheckUtil {
         }
 
         return totalNFailures == 0;
+        } finally {
+            // Restore DSP flags that were disabled for numerical gradient computation
+            sd.setDspAutoCompileEnabled(dspAutoCompileSaved);
+            sd.setDspNativeAutoCompileEnabled(dspNativeAutoCompileSaved);
+        }
     }
 
     @Builder

@@ -31,8 +31,8 @@ namespace ops {
  * Apply repetition/frequency/presence penalties and min-P filtering to logits.
  *
  * Inputs:
- *   0: logits   [batch, vocabSize] or [vocabSize] — modified in output
- *   1: inputIds [batch, seqLen] or [seqLen] INT64 — prior tokens for penalty computation
+ *   0: logits   [batch, seqLen, vocabSize], [batch, vocabSize], or [vocabSize] — modified in output
+ *   1: inputIds [batch, seqLen], [seqLen], or scalar INT64 — prior tokens for penalty computation
  *
  * Output:
  *   0: penalized logits (same shape and type as input 0)
@@ -54,8 +54,8 @@ CUSTOM_OP_IMPL(sampling_penalties, 2, 1, false, 0, 0) {
                  (long long)logitsRank);
 
     auto idsRank = inputIds->rankOf();
-    REQUIRE_TRUE(idsRank == 1 || idsRank == 2, 0,
-                 "sampling_penalties: inputIds must be rank 1 or 2, got %lld",
+    REQUIRE_TRUE(idsRank == 0 || idsRank == 1 || idsRank == 2, 0,
+                 "sampling_penalties: inputIds must be scalar, rank 1, or rank 2, got %lld",
                  (long long)idsRank);
 
     double repPenalty = block.getTArguments()->size() > 0 ? T_ARG(0) : 1.0;

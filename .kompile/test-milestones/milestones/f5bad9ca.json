@@ -1,0 +1,15 @@
+{
+  "id" : "f5bad9ca",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 1,
+  "passed" : 1,
+  "notes" : "Targeted replay regression passed after NativeDynamicShapePlan.cpp VERIFY host-primary guard. The prior frozen DataBuffer allocatePrimary error is gone; VERIFY logs now skip device-only value dumps. Log: /tmp/dsp-merged-verify-fix.log",
+  "tags" : "dsp,cuda,replay,verify,frozen-buffer",
+  "timestamp" : "2026-05-27T21:24:20.685051Z"
+}

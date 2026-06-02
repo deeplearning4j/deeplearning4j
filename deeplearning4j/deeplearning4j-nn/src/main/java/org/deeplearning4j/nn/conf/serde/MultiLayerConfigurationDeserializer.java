@@ -95,7 +95,6 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
         boolean requiresLegacyLossHandling = requiresLegacyLossHandling(layers);
         ObjectMapper mapper = mapper();
         if(attemptIUpdaterFromLegacy || requiresLegacyRegularizationHandling || requiresLegacyWeightInitHandling) {
-            System.out.println("Legacy mapping");
             JsonLocation endLocation = jp.getCurrentLocation();
             long charOffsetEnd = endLocation.getCharOffset();
             Object sourceRef = endLocation.getSourceRef();

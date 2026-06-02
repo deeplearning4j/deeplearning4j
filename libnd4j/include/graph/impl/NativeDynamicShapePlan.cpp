@@ -3171,6 +3171,10 @@ Status NativeDynamicShapePlan::executeSteadyState(
   }
 
 #ifdef SD_CUDA
+  // Capture the CUDA device for this execution — all events created during
+  // execute() must be on this device to avoid cross-device handle errors.
+  cudaGetDevice(&execCtx->deviceId);
+
   // Save previous DSP stream for RAII-style restore at all exit points
   // tl_dspExecutionStream is declared at file scope via DataBuffer.h (included by DspStreamGuard.h)
   cudaStream_t prevDspStream = tl_dspExecutionStream;
@@ -3292,17 +3296,49 @@ Status NativeDynamicShapePlan::executeSteadyState(
 #ifdef SD_CUDA
   // Event-based completion signal (reuses executionCompleteEvent_)
   if (stream != nullptr) {
-    if (executionCompleteEvent_ == nullptr) {
-      cudaEvent_t evt;
-      cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
-      executionCompleteEvent_ = static_cast<void*>(new cudaEvent_t(evt));
+    // Ensure correct device before event creation/recording (an op may
+    // have temporarily switched devices during slot execution).
+    cudaSetDevice(execCtx->deviceId);
+
+    // Clear any sticky CUDA error before event operations.
+    auto stickyErr = cudaGetLastError();
+    bool cudaContextHealthy = (stickyErr == cudaSuccess);
+
+    if (cudaContextHealthy) {
+      // Re-create executionCompleteEvent_ if it was created on a different device.
+      if (executionCompleteEvent_ != nullptr && executionCompleteEventDeviceId_ != execCtx->deviceId) {
+        cudaEvent_t oldEvt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
+        int savedDev;
+        cudaGetDevice(&savedDev);
+        cudaSetDevice(executionCompleteEventDeviceId_);
+        cudaEventDestroy(oldEvt);
+        cudaSetDevice(savedDev);
+        delete static_cast<cudaEvent_t*>(executionCompleteEvent_);
+        executionCompleteEvent_ = nullptr;
+        executionCompleteEventDeviceId_ = -1;
+      }
+
+      if (executionCompleteEvent_ == nullptr) {
+        cudaEvent_t evt;
+        auto createErr = cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
+        if (createErr != cudaSuccess) {
+          cudaGetLastError();
+          cudaContextHealthy = false;
+        } else {
+          executionCompleteEvent_ = static_cast<void*>(new cudaEvent_t(evt));
+          executionCompleteEventDeviceId_ = execCtx->deviceId;
+        }
+      }
     }
-    cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
-    cudaEventRecord(evt, execCtx->dspStream);
-    sd::dspPublishThreadCompletionEvent(static_cast<void*>(execCtx->dspStream));
-    cudaStreamWaitEvent(nullptr, evt, 0);  // CUDA stream 0
-    if (execCtx->lcDefaultStream != nullptr && execCtx->lcDefaultStream != execCtx->dspStream) {
-      cudaStreamWaitEvent(execCtx->lcDefaultStream, evt, 0);
+
+    if (cudaContextHealthy && executionCompleteEvent_ != nullptr) {
+      cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
+      cudaEventRecord(evt, execCtx->dspStream);
+      sd::dspPublishThreadCompletionEvent(static_cast<void*>(execCtx->dspStream));
+      cudaStreamWaitEvent(nullptr, evt, 0);  // CUDA stream 0
+      if (execCtx->lcDefaultStream != nullptr && execCtx->lcDefaultStream != execCtx->dspStream) {
+        cudaStreamWaitEvent(execCtx->lcDefaultStream, evt, 0);
+      }
     }
 
     // Restore DspStreamGuard

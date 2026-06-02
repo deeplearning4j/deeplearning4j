@@ -117,6 +117,7 @@ public final class PaddingFreeBatchCollator {
                 .indices(indices)
                 .cuSeqlens(cuSeqlens)
                 .maxSeqlenInBatch((int) maxSeqLen)
+                .paddedMaxSeqLen((int) maxSeqLen)
                 .batchSize(batchSize)
                 .build();
     }
@@ -164,13 +165,17 @@ public final class PaddingFreeBatchCollator {
                 ? indices.get(org.nd4j.linalg.indexing.NDArrayIndex.interval(0, totalTokens))
                 : indices;
 
-        int maxSeqLen = (int) maxSeqScal.getLong(0);
+        int maxRealSeqLen = (int) maxSeqScal.getLong(0);
+        // The original padded seq length is the actual dim-1 of the padded input.
+        // This is required so that toPadded can reconstruct the correct [batch, paddedMaxSeqLen, hidden_dim] shape.
+        int origPaddedMaxSeqLen = (int) paddedBatch.size(1);
 
         return PaddingFreeBatch.builder()
                 .unpadded(unpaddedTrimmed)
                 .indices(indicesTrimmed)
                 .cuSeqlens(cuSeqlens)
-                .maxSeqlenInBatch(maxSeqLen)
+                .maxSeqlenInBatch(maxRealSeqLen)
+                .paddedMaxSeqLen(origPaddedMaxSeqLen)
                 .batchSize(batchSize)
                 .build();
     }
@@ -194,7 +199,12 @@ public final class PaddingFreeBatchCollator {
         Preconditions.checkArgument(batch.getIndices() != null, "batch.indices must not be null");
 
         INDArray batchSizeScalar = Nd4j.scalar(DataType.INT64, (long) batch.getBatchSize());
-        INDArray maxSeqLenScalar = Nd4j.scalar(DataType.INT64, (long) batch.getMaxSeqlenInBatch());
+        // Use paddedMaxSeqLen when available (set by fromPadded to preserve the original padded shape).
+        // Fall back to maxSeqlenInBatch for batches built via collate().
+        int seqLenForOutput = batch.getPaddedMaxSeqLen() > 0
+                ? batch.getPaddedMaxSeqLen()
+                : batch.getMaxSeqlenInBatch();
+        INDArray maxSeqLenScalar = Nd4j.scalar(DataType.INT64, (long) seqLenForOutput);
 
         INDArray[] outputs = Nd4j.exec(new PadInput(
                 batch.getUnpadded(),

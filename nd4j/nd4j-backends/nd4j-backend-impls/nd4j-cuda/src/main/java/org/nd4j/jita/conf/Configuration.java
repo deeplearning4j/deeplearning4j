@@ -20,6 +20,7 @@
 
 package org.nd4j.jita.conf;
 
+import org.bytedeco.javacpp.IntPointer;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -501,9 +502,27 @@ public class Configuration implements Serializable {
     }
 
 
-    void updateDevice() {
-        if (!availableDevices.isEmpty())
+    private void publishAvailableDevicesToNative() {
+        if (availableDevices.isEmpty())
             return;
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        IntPointer ptr = new IntPointer(availableDevices.size());
+        try {
+            for (int i = 0; i < availableDevices.size(); i++) {
+                ptr.put(i, availableDevices.get(i));
+            }
+            nativeOps.setAvailableDevices(ptr, availableDevices.size());
+        } finally {
+            ptr.close();
+        }
+    }
+
+    void updateDevice() {
+        if (!availableDevices.isEmpty()) {
+            publishAvailableDevicesToNative();
+            return;
+        }
 
         // Include ALL devices — never permanently ban a GPU just because it had low
         // free memory at JVM startup. Memory pressure is transient; the runtime device
@@ -518,12 +537,14 @@ public class Configuration implements Serializable {
             availableDevices.add(selected);
             log.info("Selected CUDA device [{}] as default (forceSingleGPU={}, detectedDevices={})",
                     selected, forceSingleGPU, detectedDevices.size());
+            publishAvailableDevicesToNative();
             return;
         }
 
         // Add all available devices, starting with the best one (most memory)
         availableDevices.addAll(detectedDevices);
         log.info("Using all {} available CUDA devices, primary device: {}", detectedDevices.size(), detectedDevices.get(0));
+        publishAvailableDevicesToNative();
     }
 
 

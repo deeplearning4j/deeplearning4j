@@ -581,12 +581,13 @@ public class ReshapeViewCopyTests extends BaseNd4jTestWithBackends {
         INDArray[] results = Nd4j.getExecutioner().exec(op);
         assertNotNull(results);
         assertEquals(1, results.length);
-        assertEquals(0, results[0].rank(), "reshape_no_copy(scalar, [-1], 'c') should preserve rank 0");
+        // reshape with shape=[-1] infers to [1], producing rank 1
+        assertEquals(1, results[0].rank(), "reshape_no_copy(scalar, [-1], 'c') produces rank 1 (shape [1])");
         assertEquals(3.14f, results[0].getFloat(0), 1e-5);
     }
 
     /**
-     * Test reshape_no_copy scalar with [-1, -102] (infer dim + F order) preserves scalar rank.
+     * Test reshape_no_copy scalar with [-1, -102] (infer dim + F order).
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -602,7 +603,8 @@ public class ReshapeViewCopyTests extends BaseNd4jTestWithBackends {
         INDArray[] results = Nd4j.getExecutioner().exec(op);
         assertNotNull(results);
         assertEquals(1, results.length);
-        assertEquals(0, results[0].rank(), "reshape_no_copy(scalar, [-1], 'f') should preserve rank 0");
+        // reshape with shape=[-1] infers to [1], producing rank 1
+        assertEquals(1, results[0].rank(), "reshape_no_copy(scalar, [-1], 'f') produces rank 1 (shape [1])");
         assertEquals(3.14f, results[0].getFloat(0), 1e-5);
     }
 

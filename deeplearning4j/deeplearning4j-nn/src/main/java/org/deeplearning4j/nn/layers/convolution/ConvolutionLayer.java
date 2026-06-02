@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -43,6 +44,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
+
+import java.util.Arrays;
 
 
 @Slf4j
@@ -181,6 +184,27 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         long kW = layerConf().getKernelSize()[1];
 
         CNN2DFormat format = ConvolutionUtils.getFormatForLayer(layerConf());
+
+        // Validate input channel count before calling native op so we can give a helpful error message
+        boolean nchw = format == CNN2DFormat.NCHW;
+        int channelDim = nchw ? 1 : 3;
+        if (input.size(channelDim) != inDepth) {
+            String layerName = conf.getLayer().getLayerName();
+            if (layerName == null)
+                layerName = "(not named)";
+            String s = "Cannot do forward pass in ConvolutionLayer (layer name = " + layerName
+                    + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
+                    + " (data format = " + format + ", data input channels = " + input.size(channelDim) + ", "
+                    + (nchw ? "[minibatch,inputDepth,height,width]" : "[minibatch,height,width,inputDepth]") + "="
+                    + Arrays.toString(input.shape()) + "; expected input channels = " + inDepth + ") "
+                    + layerId();
+            int dimIfWrongFormat = nchw ? 3 : 1;
+            if (input.size(dimIfWrongFormat) == inDepth) {
+                // User might have passed NCHW data to a NHWC net, or vice versa?
+                s += "\n" + ConvolutionUtils.NCHW_NHWC_ERROR_MSG;
+            }
+            throw new DL4JInvalidInputException(s);
+        }
 
         Conv2DConfig config = Conv2DConfig.builder()
                 .dH(layerConf().getDilation()[0])

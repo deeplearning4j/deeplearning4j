@@ -7255,69 +7255,82 @@ public class Nd4j {
                 }
             }
 
-            // Create a direct buffer in native order for the native code
-            java.nio.ByteBuffer direct = ByteBuffer.allocateDirect(bufLen);
-            direct.order(java.nio.ByteOrder.nativeOrder());  // Native order for native code
-
-            // If byte orders differ, we need to convert the data
-            if (dataByteBufferOrder != java.nio.ByteOrder.nativeOrder()) {
-                // Read values in source order and write in native order
-                java.nio.ByteBuffer srcBuf = java.nio.ByteBuffer.wrap(bytes).order(dataByteBufferOrder);
-                switch (dtype) {
-                    case DOUBLE:
-                        java.nio.DoubleBuffer srcDouble = srcBuf.asDoubleBuffer();
-                        java.nio.DoubleBuffer dstDouble = direct.asDoubleBuffer();
-                        while (srcDouble.hasRemaining()) {
-                            dstDouble.put(srcDouble.get());
-                        }
-                        break;
-                    case FLOAT:
-                        java.nio.FloatBuffer srcFloat = srcBuf.asFloatBuffer();
-                        java.nio.FloatBuffer dstFloat = direct.asFloatBuffer();
-                        while (srcFloat.hasRemaining()) {
-                            dstFloat.put(srcFloat.get());
-                        }
-                        break;
-                    case LONG:
-                        java.nio.LongBuffer srcLong = srcBuf.asLongBuffer();
-                        java.nio.LongBuffer dstLong = direct.asLongBuffer();
-                        while (srcLong.hasRemaining()) {
-                            dstLong.put(srcLong.get());
-                        }
-                        break;
-                    case INT:
-                        java.nio.IntBuffer srcInt = srcBuf.asIntBuffer();
-                        java.nio.IntBuffer dstInt = direct.asIntBuffer();
-                        while (srcInt.hasRemaining()) {
-                            dstInt.put(srcInt.get());
-                        }
-                        break;
-                    case SHORT:
-                    case HALF:
-                    case BFLOAT16:
-                        java.nio.ShortBuffer srcShort = srcBuf.asShortBuffer();
-                        java.nio.ShortBuffer dstShort = direct.asShortBuffer();
-                        while (srcShort.hasRemaining()) {
-                            dstShort.put(srcShort.get());
-                        }
-                        break;
-                    default:
-                        // For single-byte types, byte order doesn't matter
-                        direct.put(bytes);
-                        break;
+            // UTF-8 arrays need special handling: the serialized bytes are the raw UTF-8 buffer
+            // (header offsets + character data), and we must preserve `numWords` (= number of strings)
+            // so that getString(index) works correctly. Use createUtf8Buffer(byte[], numWords) which
+            // calls new Utf8Buffer(bytes, numWords) and sets the numWords field properly.
+            if (dtype == DataType.UTF8) {
+                try {
+                    dataBuffer = Nd4j.getDataBufferFactory().createUtf8Buffer(bytes, length);
+                } catch (Exception e) {
+                    log.error("Error creating UTF-8 DataBuffer for shape {}", Arrays.toString(shape), e);
+                    throw new RuntimeException("Failed to create UTF-8 data buffer from FlatArray", e);
                 }
             } else {
-                // Same byte order, just copy
-                direct.put(bytes);
-            }
-            direct.rewind();
+                // Create a direct buffer in native order for the native code
+                java.nio.ByteBuffer direct = ByteBuffer.allocateDirect(bufLen);
+                direct.order(java.nio.ByteOrder.nativeOrder());  // Native order for native code
 
-            // Create DataBuffer from the direct buffer
-            try {
-                dataBuffer = Nd4j.createBuffer(direct, dtype, (int) length);
-            } catch (Exception e) {
-                log.error("Error creating DataBuffer from ByteBuffer for dtype {} shape {}", dtype, Arrays.toString(shape), e);
-                throw new RuntimeException("Failed to create data buffer from FlatArray ByteBuffer", e);
+                // If byte orders differ, we need to convert the data
+                if (dataByteBufferOrder != java.nio.ByteOrder.nativeOrder()) {
+                    // Read values in source order and write in native order
+                    java.nio.ByteBuffer srcBuf = java.nio.ByteBuffer.wrap(bytes).order(dataByteBufferOrder);
+                    switch (dtype) {
+                        case DOUBLE:
+                            java.nio.DoubleBuffer srcDouble = srcBuf.asDoubleBuffer();
+                            java.nio.DoubleBuffer dstDouble = direct.asDoubleBuffer();
+                            while (srcDouble.hasRemaining()) {
+                                dstDouble.put(srcDouble.get());
+                            }
+                            break;
+                        case FLOAT:
+                            java.nio.FloatBuffer srcFloat = srcBuf.asFloatBuffer();
+                            java.nio.FloatBuffer dstFloat = direct.asFloatBuffer();
+                            while (srcFloat.hasRemaining()) {
+                                dstFloat.put(srcFloat.get());
+                            }
+                            break;
+                        case LONG:
+                            java.nio.LongBuffer srcLong = srcBuf.asLongBuffer();
+                            java.nio.LongBuffer dstLong = direct.asLongBuffer();
+                            while (srcLong.hasRemaining()) {
+                                dstLong.put(srcLong.get());
+                            }
+                            break;
+                        case INT:
+                            java.nio.IntBuffer srcInt = srcBuf.asIntBuffer();
+                            java.nio.IntBuffer dstInt = direct.asIntBuffer();
+                            while (srcInt.hasRemaining()) {
+                                dstInt.put(srcInt.get());
+                            }
+                            break;
+                        case SHORT:
+                        case HALF:
+                        case BFLOAT16:
+                            java.nio.ShortBuffer srcShort = srcBuf.asShortBuffer();
+                            java.nio.ShortBuffer dstShort = direct.asShortBuffer();
+                            while (srcShort.hasRemaining()) {
+                                dstShort.put(srcShort.get());
+                            }
+                            break;
+                        default:
+                            // For single-byte types, byte order doesn't matter
+                            direct.put(bytes);
+                            break;
+                    }
+                } else {
+                    // Same byte order, just copy
+                    direct.put(bytes);
+                }
+                direct.rewind();
+
+                // Create DataBuffer from the direct buffer
+                try {
+                    dataBuffer = Nd4j.createBuffer(direct, dtype, (int) length);
+                } catch (Exception e) {
+                    log.error("Error creating DataBuffer from ByteBuffer for dtype {} shape {}", dtype, Arrays.toString(shape), e);
+                    throw new RuntimeException("Failed to create data buffer from FlatArray ByteBuffer", e);
+                }
             }
         }
 

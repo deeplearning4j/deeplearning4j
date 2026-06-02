@@ -132,8 +132,12 @@ static bool slotHasOnlyTransparentAliasOutputs(
     NDArray** externalArrays,
     int numExt,
     int totalOutputSlots) {
+  // Replay-stable host-only classes: shape metadata, constants, fused tails,
+  // and aliasing views/identity below. Keep this in sync with CUDA graph
+  // coverage validation.
   if (slot.frozenConstantSlot() ||
       slot.hasOpTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT) ||
+      slot.hasOpTrait(sd::ops::OP_TRAIT_CONSTANT_GENERATION) ||
       slot.fusedChain.isFusedChainTail) {
     return true;
   }

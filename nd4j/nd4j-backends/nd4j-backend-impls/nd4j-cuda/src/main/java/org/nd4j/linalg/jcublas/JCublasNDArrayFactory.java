@@ -93,6 +93,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         functions.put(10, Loader.addressof("cusolverDnDgesvd_bufferSize"));
         functions.put(11, Loader.addressof("cusolverDnSgesvd"));
         functions.put(12, Loader.addressof("cusolverDnDgesvd"));
+        nativeOps.clearLastError();
         nativeOps.initializeFunctions(functions);
 
         if (nativeOps.lastErrorCode() != 0)
@@ -546,50 +547,79 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         val map = ArrayUtil.buildInterleavedVector(rnd, (int) numTads);
 
 
-        // Create a long[][] array for dimensions
-        long[][] dimArray = new long[dimensions.size()][];
-        for (int i = 0; i < dimensions.size(); i++) {
-            dimArray[i] = dimensions.get(i);
-        }
-
-        // Create an INDArray from the long[][] array
-        INDArray dimINDArray = Nd4j.createFromArray(dimArray);
-
-        // Convert the INDArray to OpaqueNDArray
-        OpaqueNDArray dimensionArr = OpaqueNDArray.fromINDArray(dimINDArray);
-
         val extras = new PointerPointer(null, // not used
                 context.getOldStream(), allocator.getDeviceIdPointer());
 
-        // Create an array of OpaqueNDArray
-        OpaqueNDArray[] xOpaqueArray = new OpaqueNDArray[arrays.size()];
-        for (int i = 0; i < arrays.size(); i++) {
-            val array = arrays.get(i);
-
-            //we have to sync manually here as we are calling the method with raw cuda pointers
-            AllocationPoint point = allocator.getAllocationPoint(array);
-            if(point != null && point.isActualOnHostSide()) {
-                AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
-                point.tickDeviceWrite();
+        // Determine if dimension arrays are ragged (different lengths for different arrays).
+        // This happens when features and labels have different ranks (e.g., 4D features + 2D labels).
+        boolean raggedDimensions = false;
+        for (int i = 1; i < dimensions.size(); i++) {
+            if (dimensions.get(i).length != dimensions.get(0).length) {
+                raggedDimensions = true;
+                break;
             }
-
-            xOpaqueArray[i] = OpaqueNDArray.fromINDArray(array);
         }
 
-        // Create OpaqueNDArrayArr from the array of OpaqueNDArray
-        OpaqueNDArrayArr xArr = new OpaqueNDArrayArr(xOpaqueArray);
         INDArray mapArray = Nd4j.createFromArray(map);
         OpaqueNDArray shuffleMap = OpaqueNDArray.fromINDArray(mapArray);
 
-        // Pass xArr for both input and output arrays (in-place shuffle), matching CPU implementation
-        nativeOps.shuffle(extras, xArr, xArr, arrays.size(), dimensionArr, shuffleMap);
+        if (raggedDimensions) {
+            // Shuffle each array individually using the same map so sample order is consistent.
+            for (int i = 0; i < arrays.size(); i++) {
+                val array = arrays.get(i);
 
-        Reference.reachabilityFence(dimINDArray);
-        Reference.reachabilityFence(dimensionArr);
+                AllocationPoint point = allocator.getAllocationPoint(array);
+                if (point != null && point.isActualOnHostSide()) {
+                    AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
+                    point.tickDeviceWrite();
+                }
+
+                OpaqueNDArrayArr singleArr = new OpaqueNDArrayArr(
+                        new OpaqueNDArray[]{OpaqueNDArray.fromINDArray(array)});
+                INDArray dimsINDArray = Nd4j.createFromArray(dimensions.get(i));
+                OpaqueNDArray dimsOpaque = OpaqueNDArray.fromINDArray(dimsINDArray);
+
+                nativeOps.shuffle(extras, singleArr, singleArr, 1, dimsOpaque, shuffleMap);
+
+                Reference.reachabilityFence(dimsINDArray);
+                if (nativeOps.lastErrorCode() != 0)
+                    throw new RuntimeException(nativeOps.lastErrorMessage());
+            }
+        } else {
+            // All dimension arrays have the same length — pass them as a uniform 2D matrix.
+            long[][] dimArray = new long[dimensions.size()][];
+            for (int i = 0; i < dimensions.size(); i++) {
+                dimArray[i] = dimensions.get(i);
+            }
+
+            INDArray dimINDArray = Nd4j.createFromArray(dimArray);
+            OpaqueNDArray dimensionArr = OpaqueNDArray.fromINDArray(dimINDArray);
+
+            OpaqueNDArray[] xOpaqueArray = new OpaqueNDArray[arrays.size()];
+            for (int i = 0; i < arrays.size(); i++) {
+                val array = arrays.get(i);
+
+                AllocationPoint point = allocator.getAllocationPoint(array);
+                if (point != null && point.isActualOnHostSide()) {
+                    AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
+                    point.tickDeviceWrite();
+                }
+
+                xOpaqueArray[i] = OpaqueNDArray.fromINDArray(array);
+            }
+
+            OpaqueNDArrayArr xArr = new OpaqueNDArrayArr(xOpaqueArray);
+
+            nativeOps.shuffle(extras, xArr, xArr, arrays.size(), dimensionArr, shuffleMap);
+
+            Reference.reachabilityFence(dimINDArray);
+            Reference.reachabilityFence(dimensionArr);
+            Reference.reachabilityFence(xOpaqueArray);
+            Reference.reachabilityFence(xArr);
+        }
+
         Reference.reachabilityFence(mapArray);
         Reference.reachabilityFence(shuffleMap);
-        Reference.reachabilityFence(xOpaqueArray);
-        Reference.reachabilityFence(xArr);
         Reference.reachabilityFence(arrays);
 
         if (nativeOps.lastErrorCode() != 0)

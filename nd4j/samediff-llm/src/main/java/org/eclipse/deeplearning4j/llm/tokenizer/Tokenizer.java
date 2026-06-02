@@ -127,6 +127,60 @@ public interface Tokenizer extends AutoCloseable {
     String getToken(int id);
 
     /**
+     * Get the configured chat template for this tokenizer, if one was loaded
+     * from tokenizer_config.json or model metadata.
+     *
+     * @return the chat template string, or null if none is configured
+     */
+    default String getChatTemplate() {
+        return null;
+    }
+
+    /**
+     * Get the BOS token text, if available.
+     *
+     * @return the BOS token text, or an empty string if it cannot be resolved
+     */
+    default String getBosToken() {
+        try {
+            int id = getBosTokenId();
+            return id >= 0 ? getToken(id) : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Get the EOS token text, if available.
+     *
+     * @return the EOS token text, or an empty string if it cannot be resolved
+     */
+    default String getEosToken() {
+        try {
+            int id = getEosTokenId();
+            return id >= 0 ? getToken(id) : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Apply the tokenizer's configured chat template to messages.
+     *
+     * @param messages the conversation messages
+     * @param addGenerationPrompt whether to append the assistant generation prompt
+     * @return formatted chat prompt
+     */
+    default String applyChatTemplate(List<ChatTemplate.Message> messages, boolean addGenerationPrompt) {
+        String template = getChatTemplate();
+        if (template == null || template.isBlank()) {
+            throw new IllegalStateException("Tokenizer does not provide a chat template");
+        }
+        return new ChatTemplate(template, getBosToken(), getEosToken())
+                .apply(messages, addGenerationPrompt);
+    }
+
+    /**
      * Get the full vocabulary mapping.
      *
      * @return map from token strings to token IDs
@@ -167,4 +221,55 @@ public interface Tokenizer extends AutoCloseable {
      * @return true if the tokenizer can be used
      */
     boolean isValid();
+
+    /**
+     * Validate that all token IDs in an encoding are within the vocabulary range.
+     * Throws {@link TokenizerException} if any token ID is out of bounds.
+     *
+     * @param encoding the encoding to validate
+     * @param vocabSize the vocabulary size to validate against (typically from the model's embedding table)
+     * @throws TokenizerException if any token ID >= vocabSize or < 0
+     */
+    default void validateTokenIds(Encoding encoding, int vocabSize) {
+        if (encoding == null || encoding.getIds() == null) return;
+        int[] ids = encoding.getIds();
+        for (int i = 0; i < ids.length; i++) {
+            if (ids[i] < 0 || ids[i] >= vocabSize) {
+                throw new TokenizerException(
+                        "Token ID " + ids[i] + " at position " + i + " is out of vocabulary range [0, " +
+                        vocabSize + "). This typically means the tokenizer vocabulary does not match the model's " +
+                        "embedding table, or the input text contains characters not supported by this model.");
+            }
+        }
+    }
+
+    /**
+     * Check if the encoding has an unusually high proportion of unknown tokens,
+     * which indicates the input text is likely in a language not supported by this model.
+     *
+     * @param encoding the encoding to check
+     * @param threshold the maximum acceptable ratio of UNK tokens (0.0 to 1.0). Recommended: 0.5
+     * @throws TokenizerException if UNK ratio exceeds the threshold
+     */
+    default void validateLanguageSupport(Encoding encoding, double threshold) {
+        if (encoding == null || encoding.getIds() == null || encoding.getIds().length == 0) return;
+        int unkId = getUnkTokenId();
+        if (unkId < 0) return; // No UNK token defined, can't check
+
+        int[] ids = encoding.getIds();
+        int unkCount = 0;
+        for (int id : ids) {
+            if (id == unkId) unkCount++;
+        }
+
+        double unkRatio = (double) unkCount / ids.length;
+        if (unkRatio > threshold) {
+            throw new TokenizerException(
+                    "Input text produced " + unkCount + "/" + ids.length + " unknown tokens (" +
+                    String.format("%.1f%%", unkRatio * 100) + "), exceeding threshold of " +
+                    String.format("%.0f%%", threshold * 100) + ". " +
+                    "This model's tokenizer likely does not support the language of the input text. " +
+                    "Consider using a multilingual model instead.");
+        }
+    }
 }

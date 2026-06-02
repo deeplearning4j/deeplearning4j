@@ -36,6 +36,7 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.weights.IWeightInit;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
@@ -44,6 +45,27 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class KerasConvolution2D extends KerasConvolution {
+
+    /**
+     * Return TF conv2d weights without permuting.
+     *
+     * TensorFlow stores 2D convolution weights as [kH, kW, iC, oC] which is YXIO — the same
+     * format DL4J uses internally for all data formats (NCHW and NHWC).  The base-class
+     * implementation permutes to OIYX [oC, iC, kH, kW] which is no longer correct after the
+     * switch to YXIO-always in ConvolutionParamInitializer.
+     *
+     * @param kerasParamValue raw weight array loaded from the HDF5 file
+     * @return weight array in YXIO [kH, kW, iC, oC] format ready for DL4J
+     */
+    @Override
+    public INDArray getConvParameterValues(INDArray kerasParamValue) throws InvalidKerasConfigurationException {
+        if (this.getDimOrder() == KerasLayer.DimOrder.TENSORFLOW && kerasParamValue.rank() != 5) {
+            // TF 2D weights are already YXIO [kH, kW, iC, oC]; return as-is.
+            return kerasParamValue;
+        }
+        // Theano and 3D TF handled by base class
+        return super.getConvParameterValues(kerasParamValue);
+    }
 
     /**
      * Pass-through constructor from KerasLayer

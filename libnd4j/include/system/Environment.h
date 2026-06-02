@@ -207,6 +207,8 @@ class SD_LIB_EXPORT Environment {
   void setCudaCachingAllocatorLimit(int v) { _cuda.setCudaCachingAllocatorLimit(v); }
   int64_t cudaPinnedHostLimit() { return _cuda.cudaPinnedHostLimit(); }
   void setCudaPinnedHostLimit(int64_t v) { _cuda.setCudaPinnedHostLimit(v); }
+  int cudaSoftLimitPercent() { return _cuda.cudaSoftLimitPercent(); }
+  void setCudaSoftLimitPercent(int v) { _cuda.setCudaSoftLimitPercent(v); }
   bool cudaUseUnifiedMemory() { return _cuda.cudaUseUnifiedMemory(); }
   void setCudaUseUnifiedMemory(bool v) { _cuda.setCudaUseUnifiedMemory(v); }
   int cudaPrefetchSize() { return _cuda.cudaPrefetchSize(); }

@@ -39,8 +39,31 @@ public class Permute extends Transpose {
 
     private long[] reverseDims;
 
+    /**
+     * Normalize negative permutation indices to positive equivalents given the rank.
+     * For example, -1 with rank=3 -> 2, -2 with rank=3 -> 1, etc.
+     */
+    private static long[] normalizePermuteDims(long[] permuteDims, int rank) {
+        if (permuteDims == null || rank <= 0) return permuteDims;
+        boolean hasNegative = false;
+        for (long p : permuteDims) {
+            if (p < 0) { hasNegative = true; break; }
+        }
+        if (!hasNegative) return permuteDims;
+        long[] normalized = new long[permuteDims.length];
+        for (int i = 0; i < permuteDims.length; i++) {
+            normalized[i] = permuteDims[i] < 0 ? permuteDims[i] + rank : permuteDims[i];
+        }
+        return normalized;
+    }
+
     public Permute(SameDiff sameDiff, SDVariable i_v, long... permuteDims) {
         super(sameDiff, i_v);
+        // Normalize negative indices if rank is known from the variable shape
+        long[] shape = i_v.getShape();
+        if (shape != null && shape.length > 0) {
+            permuteDims = normalizePermuteDims(permuteDims, shape.length);
+        }
         this.permuteDims = permuteDims;
         this.reverseDims = new long[permuteDims.length];
         for (int i = 0; i < reverseDims.length; i++) {
@@ -51,6 +74,7 @@ public class Permute extends Transpose {
 
     public Permute(INDArray input, INDArray result, long... permuteDims) {
         super(input, result);
+        permuteDims = normalizePermuteDims(permuteDims, input.rank());
         this.permuteDims = permuteDims;
         this.reverseDims = new long[permuteDims.length];
         for (int i = 0; i < reverseDims.length; i++) {
@@ -65,6 +89,7 @@ public class Permute extends Transpose {
 
     public Permute(INDArray input, long... permuteDims){
         super(input, null);
+        permuteDims = normalizePermuteDims(permuteDims, input.rank());
         this.permuteDims = permuteDims;
         addIArgument(permuteDims);
     }

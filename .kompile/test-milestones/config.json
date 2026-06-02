@@ -23,6 +23,12 @@
       "buildCommand" : "cd /home/agibsonccc/Documents/GitHub/deeplearning4j && /home/agibsonccc/dev-apps/mvn/bin/mvn -Pcpu -Dlibnd4j.triton=ON -Dlibnd4j.buildthreads=12 -Dlibnd4j.log=libnd4j-build.log -pl libnd4j,:nd4j-cpu-backend-common,:nd4j-native clean install -DskipTests 2>&1 | tee cpu-dsp-triton-build-output.log",
       "testCommand" : "cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && ./run-llm-benchmarks.sh --backend cpu --test baseline --models qwen --tokens 20 2>&1 | tee /tmp/qwen-cpu-dsp-qwen-baseline.log",
       "added" : "2026-05-01T04:39:26.917621Z"
+    },
+    "cpu-native-datavec" : {
+      "path" : "platform-tests",
+      "buildCommand" : "cd /home/agibsonccc/Documents/GitHub/deeplearning4j && /home/agibsonccc/dev-apps/mvn/bin/mvn -Pcpu -Dlibnd4j.triton=ON -Dlibnd4j.buildthreads=12 -Dlibnd4j.log=libnd4j-build.log -pl libnd4j,:nd4j-cpu-backend-common,:nd4j-native clean install -DskipTests 2>&1 | tee cpu-build-output.log",
+      "testCommand" : "cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && ./run-datavec-tests.sh -Dbackend.artifactId=nd4j-native 2>&1 | tee /tmp/datavec-cpu-test.log",
+      "added" : "2026-06-02T12:20:22.007167Z"
     }
   },
   "knownRegressions" : [ {

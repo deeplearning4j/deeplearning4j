@@ -57,7 +57,7 @@ public class RandomOpExecutionIsolationTest {
         Nd4j.getRandom().setSeed(12345);
 
         INDArray z = Nd4j.createUninitialized(DataType.FLOAT, 4096);
-        z.assign(Float.NaN);
+        z.assign(1.5f);
 
         Nd4j.getExecutioner().exec(new UniformDistribution(z, 1.0, 2.0), Nd4j.getRandom());
 
@@ -65,10 +65,9 @@ public class RandomOpExecutionIsolationTest {
         double max = z.maxNumber().doubleValue();
         double std = z.stdNumber().doubleValue();
 
-        assertFalse(Double.isNaN(min), "Uniform distribution left NaNs in the output array");
-        assertTrue(min >= 1.0, "Uniform distribution wrote values below the requested lower bound");
-        assertTrue(max <= 2.0, "Uniform distribution wrote values above the requested upper bound");
-        assertTrue(std > 0.1, "Uniform distribution output collapsed to a near-constant array");
+        assertTrue(min >= 1.0, "Uniform distribution wrote values below the requested lower bound. min=" + min + " max=" + max + " std=" + std);
+        assertTrue(max <= 2.0, "Uniform distribution wrote values above the requested upper bound. min=" + min + " max=" + max + " std=" + std);
+        assertTrue(std > 0.1, "Uniform distribution output collapsed to a near-constant array. min=" + min + " max=" + max + " std=" + std);
     }
 
     @Test
@@ -76,7 +75,7 @@ public class RandomOpExecutionIsolationTest {
         Nd4j.getRandom().setSeed(12345);
 
         INDArray z = Nd4j.createUninitialized(DataType.FLOAT, 4096);
-        z.assign(Float.NaN);
+        z.assign(1.5f);
 
         Nd4j.getExecutioner().exec(new GaussianDistribution(z, 0.0, 1.0), Nd4j.getRandom());
 

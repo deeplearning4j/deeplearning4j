@@ -1,0 +1,16 @@
+{
+  "id" : "7060b38d",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da08ad221f665929285a8ffd3dcb6b9be",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "cuda-dsp",
+  "totalTests" : 1,
+  "passed" : 1,
+  "failed" : 0,
+  "notes" : "Restore build after rejecting Benchmark 8 mask-prune candidate passed. libnd4j SUCCESS [10:37], nd4j-cuda-12.9 SUCCESS [01:22], total 12:00, finished 2026-05-28T18:47:47+09:00. Source diff for autoregressive_decode.cu is clean; generated graph/bindings files are clean. Candidate was not committed.",
+  "tags" : "dsp,cuda,build,restore,benchmark8,rejected",
+  "timestamp" : "2026-05-28T09:51:33.542369Z"
+}

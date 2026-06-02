@@ -35,6 +35,7 @@ import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.autodiff.samediff.config.SDValue;
 import org.nd4j.autodiff.samediff.config.SDValueType;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.ExecutionNode;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAG;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
 import org.nd4j.autodiff.samediff.execution.ReplayProfileManager;
@@ -286,6 +287,24 @@ public class TrainingSession extends InferenceSession {
             return builder.buildForwardDAG(allRequired);
         });
 
+        // When listeners are active, augment allRequired with all op output variables so that
+        // the DSP plan returns intermediate arrays needed for per-op listener callbacks.
+        // This mirrors the augmentation done in InferenceSession.output() for the inference path.
+        Set<String> dspAllRequired = allRequired;
+        if (this.listeners != null && !this.listeners.isEmpty()) {
+            dspAllRequired = new LinkedHashSet<>(allRequired);
+            for (ExecutionNode node : dag.getExecutionOrder()) {
+                if (node.getNodeType() == ExecutionNode.ExecutionNodeType.STANDARD_OP
+                        || node.getNodeType() == ExecutionNode.ExecutionNodeType.MULTI_OUTPUT_OP) {
+                    List<String> nodeOutputs = node.getOutputVariables();
+                    if (nodeOutputs != null) {
+                        dspAllRequired.addAll(nodeOutputs);
+                    }
+                }
+            }
+        }
+        final Set<String> finalDspAllRequired = dspAllRequired;
+
         // Enter memory manager scope
         getMmgr().scopeIn();
         try {
@@ -295,7 +314,7 @@ public class TrainingSession extends InferenceSession {
 
             // Execute via DSP — returns null if DSP is unavailable (not compiled, control flow, etc.)
             Map<String, SDValue> results = executeDynamicShapePlanBased(
-                    dag, dspPlaceholders, allRequired, finalEffectiveOutputVars);
+                    dag, dspPlaceholders, finalDspAllRequired, finalEffectiveOutputVars);
             if (results == null) {
                 return false;
             }
@@ -312,6 +331,48 @@ public class TrainingSession extends InferenceSession {
                     log.debug("DSP loss '{}' = {}", entry.getKey(), l);
                 } else {
                     log.warn("DSP loss variable '{}' not found in results (val={})", entry.getKey(), val);
+                }
+            }
+
+            // Fire per-op listener callbacks (preOpExecution, opExecution, activationAvailable)
+            // for each op in the DAG execution order. DSP executes the entire plan natively as
+            // a single unit — listeners must be fired post-execution to match the standard path.
+            // This is the same pattern as InferenceSession.output()'s DSP callback loop.
+            if (this.listeners != null && !this.listeners.isEmpty() && at != null && at.operation() != null) {
+                List<ExecutionNode> execOrder = dag.getExecutionOrder();
+                for (ExecutionNode node : execOrder) {
+                    if (node.getNodeType() != ExecutionNode.ExecutionNodeType.STANDARD_OP
+                            && node.getNodeType() != ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP
+                            && node.getNodeType() != ExecutionNode.ExecutionNodeType.MULTI_OUTPUT_OP) {
+                        continue;
+                    }
+                    SameDiffOp sdOp = sameDiff.getOps().get(node.getOperationName());
+                    if (sdOp == null) {
+                        continue;
+                    }
+                    List<String> outVars = node.getOutputVariables();
+                    INDArray[] outputArrays = new INDArray[outVars != null ? outVars.size() : 0];
+                    if (outVars != null) {
+                        for (int oi = 0; oi < outVars.size(); oi++) {
+                            SDValue val = results.get(outVars.get(oi));
+                            if (val != null && val.getSdValueType() == SDValueType.TENSOR) {
+                                outputArrays[oi] = val.getTensorValue();
+                            }
+                        }
+                    }
+                    for (Listener l : this.listeners) {
+                        if (l.isActive(at.operation())) {
+                            l.preOpExecution(sameDiff, at, sdOp, null);
+                            l.opExecution(sameDiff, at, batch, sdOp, null, outputArrays);
+                            if (outVars != null) {
+                                for (int oi = 0; oi < outVars.size(); oi++) {
+                                    if (outputArrays[oi] != null) {
+                                        l.activationAvailable(sameDiff, at, batch, sdOp, outVars.get(oi), outputArrays[oi]);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

@@ -22,6 +22,8 @@ package org.eclipse.deeplearning4j.llm.tokenizer;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.TokenizerConfig;
+import org.nd4j.ggml.GGMLModelImport;
+import org.nd4j.ggml.format.GGMLMetadata;
 
 import java.io.File;
 import java.util.*;
@@ -182,24 +184,83 @@ public class HuggingFaceTokenizer implements Tokenizer {
             throw new TokenizerException("Tokenizer file not found: " + file.getAbsolutePath());
         }
 
-        // Try to load config from same directory
+        // Try to load config from same directory. If tokenizer_config.json is
+        // absent or incomplete, use GGUF sidecar tokenizer metadata as the
+        // model-owned fallback for chat templates and special token strings.
         TokenizerConfig config = null;
         File parentDir = file.getParentFile();
         if (parentDir != null) {
-            File configFile = new File(parentDir, "tokenizer_config.json");
-            if (configFile.exists()) {
-                try {
-                    config = TokenizerConfig.fromFile(configFile);
-                } catch (Exception e) {
-                    log.warn("Could not load tokenizer_config.json: {}", e.getMessage());
-                }
-            }
+            config = loadTokenizerConfig(parentDir);
+            config = mergeGgufTokenizerMetadata(parentDir, config);
         }
 
         NativeTokenizerImpl impl = NativeTokenizerImpl.fromFile(file.getAbsolutePath());
         log.debug("Created native tokenizer from: {}", file.getAbsolutePath());
 
         return new HuggingFaceTokenizer(impl, config);
+    }
+
+    private static TokenizerConfig loadTokenizerConfig(File parentDir) {
+        File configFile = new File(parentDir, "tokenizer_config.json");
+        if (!configFile.exists()) {
+            return null;
+        }
+        try {
+            return TokenizerConfig.fromFile(configFile);
+        } catch (Exception e) {
+            log.warn("Could not load tokenizer_config.json: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private static TokenizerConfig mergeGgufTokenizerMetadata(File parentDir, TokenizerConfig config) {
+        if (hasCompleteChatTemplateConfig(config)) {
+            return config;
+        }
+
+        File ggufSidecar = findGgufSidecar(parentDir);
+        if (ggufSidecar == null) {
+            return config;
+        }
+
+        try {
+            GGMLMetadata metadata = GGMLModelImport.inspectModel(ggufSidecar);
+            TokenizerConfig ggufConfig = TokenizerConfig.fromGgufMetadata(metadata.getTokenizerInfo());
+            if (ggufConfig == null) {
+                return config;
+            }
+            if (config == null) {
+                log.debug("Loaded tokenizer metadata from GGUF sidecar: {}", ggufSidecar.getAbsolutePath());
+                return ggufConfig;
+            }
+            config.fillMissingFrom(ggufConfig);
+            log.debug("Filled missing tokenizer metadata from GGUF sidecar: {}", ggufSidecar.getAbsolutePath());
+            return config;
+        } catch (Exception e) {
+            log.warn("Could not load tokenizer metadata from GGUF sidecar {}: {}",
+                    ggufSidecar.getAbsolutePath(), e.getMessage());
+            return config;
+        }
+    }
+
+    private static boolean hasCompleteChatTemplateConfig(TokenizerConfig config) {
+        return config != null
+                && config.hasChatTemplate()
+                && !isBlank(config.getBosToken())
+                && !isBlank(config.getEosToken());
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private static File findGgufSidecar(File parentDir) {
+        File[] ggufs = parentDir.listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(".gguf"));
+        if (ggufs == null || ggufs.length == 0) {
+            return null;
+        }
+        Arrays.sort(ggufs, Comparator.comparing(File::getName));
+        return ggufs[0];
     }
 
     /**
@@ -345,6 +406,23 @@ public class HuggingFaceTokenizer implements Tokenizer {
      */
     public TokenizerConfig getConfig() {
         return config;
+    }
+
+    @Override
+    public String getChatTemplate() {
+        return config != null ? config.getChatTemplate() : null;
+    }
+
+    @Override
+    public String getBosToken() {
+        String token = config != null ? config.getBosToken() : null;
+        return token != null ? token : Tokenizer.super.getBosToken();
+    }
+
+    @Override
+    public String getEosToken() {
+        String token = config != null ? config.getEosToken() : null;
+        return token != null ? token : Tokenizer.super.getEosToken();
     }
 
     @Override

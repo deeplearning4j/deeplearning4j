@@ -88,7 +88,6 @@ public interface DataBufferFactory {
      */
      DataBuffer createTypedBuffer(String[] data,DataType dataType);
 
-
     /**
      * Create a double data buffer
      *

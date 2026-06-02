@@ -1,0 +1,15 @@
+{
+  "id" : "c2ba96ee",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da08ad221f665929285a8ffd3dcb6b9be",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "dsp-benchmark-250",
+  "totalTests" : 1,
+  "passed" : 0,
+  "failed" : 1,
+  "notes" : "Rejected candidate. Confirmation metrics steady=54.64 tok/s, lateSteady=62.20 tok/s versus baseline steady=57.48 lateSteady=64.96. Replay health OK (segments=1 captured=1/1 replays=245 capture valid=true), output text coherent. Maven/JUnit failed target assertion because below 100 tok/s. Decision: revert exact source changes and do not commit.",
+  "timestamp" : "2026-05-28T06:31:35.152736Z"
+}

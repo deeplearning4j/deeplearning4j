@@ -3345,12 +3345,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return; //No op
 
         INDArray rowVectorParams = asRowVectorView(params);
-        INDArray paramsViewSource;
         if (this.flattenedParams != null && this.flattenedParams.length() == rowVectorParams.length()) {
             this.flattenedParams.assign(rowVectorParams);
-            paramsViewSource = this.flattenedParams;
-        } else {
-            paramsViewSource = rowVectorParams;
+            return; //Layers already have views into flattenedParams
         }
         int idx = 0;
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -3361,7 +3358,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             long range = layer.numParams();
             if (range <= 0)
                 continue; //Some layers: no parameters (subsampling etc)
-            INDArray get = flatBufferView(paramsViewSource, idx, range + idx);
+            INDArray get = flatBufferView(rowVectorParams, idx, range + idx);
             layer.setParamsViewArray(get);
             layer.setParamTable(layer.conf().getLayer().initializer().init(layer.conf(), get, false));
             idx += range;

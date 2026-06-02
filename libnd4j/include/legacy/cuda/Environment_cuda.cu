@@ -69,17 +69,11 @@ void Environment_initCuda(int& deviceCount,
 
     if (devProperties != nullptr) {
       for (int i = 0; i < devCnt; i++) {
-        err = cudaSetDevice(i);
-        if (err != cudaSuccess) {
-          sd_printf("Environment_initCuda: WARNING - cudaSetDevice(%d) failed: %s\n",
-                    i, cudaGetErrorString(err));
-          continue;
-        }
-
         err = cudaGetDeviceProperties(&devProperties[i], i);
         if (err != cudaSuccess) {
           sd_printf("Environment_initCuda: WARNING - cudaGetDeviceProperties(%d) failed: %s\n",
                     i, cudaGetErrorString(err));
+          cudaGetLastError();
           continue;
         }
 
@@ -109,12 +103,9 @@ void Environment_initCuda(int& deviceCount,
     blasPatch = 0;
   }
 
-  // --- set device 0 ---
-  err = cudaSetDevice(0);
-  if (err != cudaSuccess) {
-    sd_printf("Environment_initCuda: WARNING - cudaSetDevice(0) failed: %s\n",
-              cudaGetErrorString(err));
-  }
+  // Do not force the process back to CUDA device 0 here. Java-side
+  // CudaEnvironment probes memory and publishes the usable device list before
+  // allocations or LaunchContext creation.
 }
 
 // ---------------------------------------------------------------------------

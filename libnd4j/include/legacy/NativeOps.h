@@ -272,6 +272,16 @@ SD_LIB_EXPORT sd::LongType getPinnedHostBytesUsed() ;
 SD_LIB_EXPORT sd::LongType getPinnedHostBytesLimit() ;
 SD_LIB_EXPORT void setPinnedHostBytesLimit(sd::LongType maxBytes) ;
 
+// Proactive soft-limit for memory pool allocation
+SD_LIB_EXPORT void setMemoryPoolSoftLimitPercent(int percent) ;
+SD_LIB_EXPORT int getMemoryPoolSoftLimitPercent() ;
+
+// Device exclusion list for failover allocation
+SD_LIB_EXPORT void addExcludedFailoverDevice(int deviceId) ;
+SD_LIB_EXPORT void removeExcludedFailoverDevice(int deviceId) ;
+SD_LIB_EXPORT void clearExcludedFailoverDevices() ;
+SD_LIB_EXPORT bool isDeviceExcludedFromFailover(int deviceId) ;
+
 SD_LIB_EXPORT sd::Pointer createContext() ;
 SD_LIB_EXPORT sd::Pointer createStream() ;
 SD_LIB_EXPORT sd::Pointer createEvent() ;

@@ -306,6 +306,52 @@ public interface NativeOps {
   */
  void setPinnedHostBytesLimit(long maxBytes);
 
+ /**
+  * Set the proactive soft-limit percentage for GPU memory pool allocation.
+  * When a device's usage exceeds this threshold, new allocations are routed
+  * to other devices via failover BEFORE individual allocations fail.
+  * This prevents cumulative exhaustion from many small allocations
+  * (e.g., DSP warmup intermediates) that individually succeed but
+  * collectively fill the GPU past the watchdog's kill threshold.
+  *
+  * @param percent 0 = disabled (default), 1-100 = proactive failover threshold.
+  *                Typical value: 70 (routes at 70%, before watchdog's 75% stop).
+  */
+ void setMemoryPoolSoftLimitPercent(int percent);
+
+ /**
+  * Get the current proactive soft-limit percentage for GPU memory pool allocation.
+  * @return 0 if disabled, otherwise the threshold percentage (1-100).
+  */
+ int getMemoryPoolSoftLimitPercent();
+
+ /**
+  * Add a device to the failover exclusion list.
+  * Excluded devices are skipped during memory failover allocation (Steps 2 and 2b).
+  * Used to isolate subprocess memory so failover from one process doesn't
+  * displace resident pages of another process on a different device.
+  * @param deviceId The device to exclude from failover
+  */
+ void addExcludedFailoverDevice(int deviceId);
+
+ /**
+  * Remove a device from the failover exclusion list.
+  * @param deviceId The device to un-exclude
+  */
+ void removeExcludedFailoverDevice(int deviceId);
+
+ /**
+  * Clear all device exclusions from the failover list.
+  */
+ void clearExcludedFailoverDevices();
+
+ /**
+  * Check if a device is excluded from failover allocation.
+  * @param deviceId The device to check
+  * @return true if the device is currently excluded
+  */
+ boolean isDeviceExcludedFromFailover(int deviceId);
+
  Pointer createContext();
  Pointer createStream();
  Pointer createEvent();
@@ -1488,6 +1534,22 @@ public interface NativeOps {
   */
  default void unpinNativePlan(Pointer cacheHandle, Pointer planHandle) {
      throw new UnsupportedOperationException("unpinNativePlan not implemented in this backend");
+ }
+
+ /**
+  * Mark the native plan cache subsystem as shutting down.
+  * When set, unpinPlan() and plan eviction skip plan deletion entirely —
+  * the OS reclaims all memory on process exit.
+  *
+  * This prevents SIGSEGV from CUDA API calls (cudaStreamDestroy, cudaFree,
+  * cudaGraphExecDestroy) racing with JVM shutdown tearing down the CUDA context.
+  *
+  * Must be called from the JVM shutdown hook BEFORE DeallocatorService shutdown.
+  *
+  * @param inProgress true to mark shutdown in progress, false otherwise
+  */
+ default void setPlanCacheShutdownInProgress(boolean inProgress) {
+     // No-op default — backends that don't have native plan caches can ignore.
  }
 
  /**

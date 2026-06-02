@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
@@ -136,6 +137,7 @@ public abstract class PeftConfig implements Serializable {
     /**
      * Get a human-readable summary of this configuration.
      */
+    @JsonIgnore
     public String getSummary() {
         return String.format("PeftConfig(type=%s, task=%s, targets=%s)",
                 getPeftType(), taskType, targetModules);

@@ -694,7 +694,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         INDArray updates = Nd4j.ones(DataType.DOUBLE, 5, 10);
         INDArray y = base.scatterAdd(x,indices, updates);
 
-        y = y.getColumn(0);
+        y = y.getColumn(0, false);
         INDArray  y_exp = Nd4j.createFromArray(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0);
         assertEquals(y_exp, y);
     }
@@ -710,7 +710,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         INDArray updates = Nd4j.ones(DataType.DOUBLE, 5, 10).add(1.0);
         INDArray y = base.scatterDiv(x,indices, updates);
 
-        y = y.getColumn(0);
+        y = y.getColumn(0, false);
         INDArray  y_exp = Nd4j.createFromArray(2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0, 2.0);
         assertEquals(y_exp, y);
     }
@@ -726,7 +726,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         INDArray updates = Nd4j.ones(DataType.DOUBLE, 5, 10).add(1.0);
         INDArray y = base.scatterMax(x,indices, updates);
 
-        y = y.getColumn(0);
+        y = y.getColumn(0, false);
         INDArray  y_exp = Nd4j.createFromArray(2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0);
         assertEquals(y_exp, y);
     }
@@ -742,7 +742,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         INDArray updates = Nd4j.ones(DataType.DOUBLE, 5, 10).add(1.0);
         INDArray y = base.scatterMin(x,indices, updates);
 
-        y = y.getColumn(0);
+        y = y.getColumn(0, false);
         INDArray  y_exp = Nd4j.createFromArray(2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0);
         assertEquals(y_exp, y);
     }
@@ -758,7 +758,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         INDArray updates = Nd4j.ones(DataType.DOUBLE, 5, 10).add(1.0);
         INDArray y = base.scatterMul(x,indices, updates);
 
-        y = y.getColumn(0);
+        y = y.getColumn(0, false);
         INDArray  y_exp = Nd4j.createFromArray(2.0, 2.0, 2.0, 4.0, 4.0, 4.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0);
         assertEquals(y_exp, y);
     }
@@ -774,7 +774,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         INDArray updates = Nd4j.ones(DataType.DOUBLE, 5, 10).add(1.0);
         INDArray y = base.scatterSub(x,indices, updates);
 
-        y = y.getColumn(0);
+        y = y.getColumn(0, false);
         INDArray  y_exp = Nd4j.createFromArray(2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 2.0, 0.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 0.0, 2.0);
         assertEquals(y_exp, y);
     }

@@ -1,0 +1,16 @@
+{
+  "id" : "d24f8ec5",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : false,
+  "module" : "platform-tests",
+  "totalTests" : 3,
+  "passed" : 0,
+  "failed" : 3,
+  "notes" : "Diagnostic parity run still failed 3/3. EXECUTE/STREAM_SYNC diagnostics show mutable external staging active (for example STAGING_D2D copied=8 total=8), so loss-zero is not simply unmarked training variables. Log: /tmp/dsp-training-parity-mutable-vars-diag.log",
+  "tags" : "dsp,training,diagnostics,regression",
+  "timestamp" : "2026-05-27T22:16:39.146630Z"
+}

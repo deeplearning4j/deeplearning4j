@@ -1,0 +1,16 @@
+{
+  "id" : "98198b91",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "libnd4j,nd4j-cuda-12.9",
+  "totalTests" : 1,
+  "passed" : 1,
+  "failed" : 0,
+  "notes" : "CUDA native build succeeded after correcting mean_sqerr nonzero-weight denominator to produce a floating scalar count via CountNonZero + cast. Log: /tmp/dsp-mean-sqerr-count-fix-cuda-build.log",
+  "tags" : "dsp,training,cuda-build,mean-sqerr,count-fix",
+  "timestamp" : "2026-05-27T22:58:44.118103Z"
+}

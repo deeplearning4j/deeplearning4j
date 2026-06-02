@@ -1,0 +1,16 @@
+{
+  "id" : "eec6aa8a",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "libnd4j,nd4j-cuda-12.9",
+  "totalTests" : 1,
+  "passed" : 1,
+  "failed" : 0,
+  "notes" : "CUDA native build succeeded after replacing mean_sqerr count cast with applyScalar conversion into floating denominator. Log: /tmp/dsp-mean-sqerr-count-applyscalar-cuda-build.log",
+  "tags" : "dsp,training,cuda-build,mean-sqerr,count-applyscalar",
+  "timestamp" : "2026-05-27T23:15:49.924710Z"
+}

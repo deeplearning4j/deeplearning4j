@@ -71,8 +71,8 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
     };
     samediff::Threads::parallel_for(func, 0, length, 1);
   } else {
-    sd::LongType coords[SD_MAX_RANK];
     auto func = PRAGMA_THREADS_FOR {
+      sd::LongType coords[SD_MAX_RANK];
       PRAGMA_OMP_SIMD
       for (auto i = start; i < stop; i++) {
         INDEX2COORDS(i, xRank, xShape, coords);
@@ -107,8 +107,8 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
   sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
 
   if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-    sd::LongType coords[SD_MAX_RANK];
     auto func = PRAGMA_THREADS_FOR {
+      sd::LongType coords[SD_MAX_RANK];
       PRAGMA_OMP_SIMD
       for (auto i = start; i < stop; i++) {
         INDEX2COORDS(i, xRank, xShape, coords);
@@ -119,8 +119,8 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
     };
     samediff::Threads::parallel_for(func, 0, length, 1);
   } else {
-    sd::LongType coords[SD_MAX_RANK];
     auto func = PRAGMA_THREADS_FOR {
+      sd::LongType coords[SD_MAX_RANK];
       PRAGMA_OMP_SIMD
       for (auto i = start; i < stop; i++) {
         INDEX2COORDS(i, xRank, xShape, coords);
@@ -149,8 +149,8 @@ void RandomFunction<X>::execTransform(sd::Pointer state, void *vz, const sd::Lon
   auto length = shape::length(zShapeInfo);
   sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
 
-  sd::LongType coords[SD_MAX_RANK];
   auto func = PRAGMA_THREADS_FOR {
+    sd::LongType coords[SD_MAX_RANK];
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) {
       INDEX2COORDS(i, zRank, zShape, coords);

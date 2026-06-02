@@ -77,6 +77,13 @@ void CudaMemoryPool::setMemoryPressureCallback(MemoryPressureCallback callback) 
   memoryPressureCallback_ = callback;
 }
 
+void CudaMemoryPool::setSoftLimitPercent(int percent) {
+  if (percent < 0) percent = 0;
+  if (percent > 100) percent = 100;
+  softLimitPercent_.store(percent, std::memory_order_relaxed);
+  sd_printf("CudaMemoryPool: Soft limit set to %d%% (0=disabled)\n", percent);
+}
+
 CudaMemoryPool::CudaMemoryPool() {
   try {
     if (sd::Environment::getInstance().isDebug() || sd::Environment::getInstance().isVerbose()) {
@@ -105,6 +112,18 @@ CudaMemoryPool::CudaMemoryPool() {
     pinnedHostBytesLimit_.store(limit);
     sd_printf("CudaMemoryPool: Pinned host memory limit: %zu bytes (%.1f GB)\n",
               limit, limit / (1024.0 * 1024.0 * 1024.0));
+
+    // Initialize proactive soft-limit from Environment.
+    // Configurable via SD_CUDA_SOFT_LIMIT_PERCENT env var or
+    // Environment::setCudaSoftLimitPercent() from Java. Default is 0 (disabled).
+    // Set to e.g. 70 to proactively route allocations to other devices when
+    // GPU usage exceeds 70%, preventing cumulative exhaustion from many small
+    // allocations (DSP warmup intermediates) before the watchdog kills at 92%.
+    int softLimit = Environment::getInstance().cudaSoftLimitPercent();
+    if (softLimit > 0 && softLimit <= 100) {
+      softLimitPercent_.store(softLimit, std::memory_order_relaxed);
+      sd_printf("CudaMemoryPool: Proactive soft limit: %d%% (from Environment)\n", softLimit);
+    }
 
     initializePeerAccess();
 
@@ -135,7 +154,11 @@ void CudaMemoryPool::initializePeerAccess() {
       int canAccess = 0;
       cudaDeviceCanAccessPeer(&canAccess, i, j);
       if (canAccess) {
-        cudaSetDevice(i);
+        cudaError_t setDeviceErr = cudaSetDevice(i);
+        if (setDeviceErr != cudaSuccess) {
+          cudaGetLastError();
+          continue;
+        }
         cudaError_t err = cudaDeviceEnablePeerAccess(j, 0);
         if (err == cudaSuccess || err == cudaErrorPeerAccessAlreadyEnabled) {
           peerAccessEnabled_[i][j] = true;
@@ -322,6 +345,40 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   auto restoreDevice = [needDeviceRestore, savedDev]() {
     if (needDeviceRestore) cudaSetDevice(savedDev);
   };
+
+  // ─── Proactive soft-limit check ───────────────────────────────────────────
+  // When enabled, check device usage BEFORE attempting local allocation.
+  // If the device is above the soft-limit threshold, route to allocateFailover()
+  // proactively. This prevents cumulative exhaustion from many small allocations
+  // (e.g., DSP slot-by-slot warmup intermediates) that individually succeed
+  // but collectively fill the GPU, racing past the watchdog's kill threshold.
+  //
+  // Skipped during CUDA graph capture (tl_graphExecutionActive) because
+  // failover is impossible during capture — stream sync would break it.
+  int softLimit = softLimitPercent_.load(std::memory_order_relaxed);
+  if (softLimit > 0 && !tl_graphExecutionActive) {
+    size_t freeMem = 0, totalMem = 0;
+    cudaGetLastError();  // clear any sticky error before querying
+    cudaError_t memInfoErr = cudaMemGetInfo(&freeMem, &totalMem);
+    if (memInfoErr == cudaSuccess && totalMem > 0) {
+      double usagePercent = 100.0 * (1.0 - static_cast<double>(freeMem) / static_cast<double>(totalMem));
+      if (usagePercent >= static_cast<double>(softLimit)) {
+        sd_printf("CudaMemoryPool::allocate: Proactive failover — device %d at %.1f%% usage "
+                  "(soft limit %d%%), routing %zu bytes to another device\n",
+                  deviceId, usagePercent, softLimit, size);
+        auto result = allocateFailover(size, deviceId, actualDeviceId);
+        if (result != nullptr) {
+          restoreDevice();
+          return result;
+        }
+        // All other devices also full — fall through to attempt local allocation.
+        // This is the correct behavior: better to try and potentially succeed
+        // (the soft limit is conservative) than to fail without trying.
+        sd_printf("CudaMemoryPool::allocate: Proactive failover found no alternative, "
+                  "attempting local allocation on device %d\n", deviceId);
+      }
+    }
+  }
 
   cudaStream_t allocStream = resolveCaptureStream(stream);
 
@@ -575,14 +632,15 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     cudaGetLastError();  // clear error
   }
 
-  // Step 2: Try other GPU devices (PEER-ACCESSIBLE ONLY).
-  // Only devices with peer access enabled are candidates. Non-peer devices would
-  // require staged D2H+H2D transfers, but the calling code (ops, kernels) will use
-  // the returned pointer directly on the requesting device's stream. Without peer
-  // access, this causes "illegal memory access" (CUDA error 700) that permanently
-  // corrupts the CUDA context. On multi-GPU systems without NVLink/NVSwitch (e.g.,
-  // RTX 3070 Ti + RTX 4090 on separate PCIe slots), peer access is typically not
-  // available and cross-device failover would be fatal.
+  // Step 2: Try ALL other GPU devices with free memory.
+  // IMPORTANT: Do NOT skip non-peer devices. On multi-GPU systems without NVLink
+  // (e.g. RTX 3070 Ti + RTX 4090 on separate PCIe), peer access is unavailable
+  // but cudaMallocManaged provides transparent UVA page migration that works
+  // correctly. Blocking non-peer devices causes unnecessary OOM crashes when
+  // there are gigabytes of free memory on other GPUs.
+  // Peer devices: use cudaMallocAsync/cudaMalloc (fastest, direct P2P).
+  // Non-peer devices: use cudaMallocManaged (UVA page migration, still GPU-speed
+  //   after first touch — far better than pinned host memory).
   int deviceCount = 0;
   cudaGetDeviceCount(&deviceCount);
 
@@ -590,22 +648,18 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   std::vector<DeviceInfo> candidates;
   for (int d = 0; d < deviceCount && d < MAX_DEVICES; d++) {
     if (d == currentDeviceId) continue;
+    if (isDeviceExcludedFromFailover(d)) continue;
 
     bool isPeer = peerAccessEnabled_[currentDeviceId][d];
-    //  Skip non-peer devices entirely. Allocating on a non-peer device
-    // and returning the pointer to the caller causes kernels on the requesting
-    // device to access memory they can't reach, resulting in CUDA error 700.
-    // This was causing 7500+ cross-device failovers and CUDA context corruption
-    // in VLM multi-page scenarios.
-    if (!isPeer) {
+    cudaError_t setDeviceErr = cudaSetDevice(d);
+    if (setDeviceErr != cudaSuccess) {
+      cudaGetLastError();
       continue;
     }
-    cudaSetDevice(d);
 
     // Trim this device's pool before checking free memory. Without trimming,
     // cudaMemGetInfo reports free memory MINUS pool reserved, which can be
-    // much lower than actual available memory. This ensures candidates are
-    // accurately evaluated rather than incorrectly excluded.
+    // much lower than actual available memory.
     if (supported_ && poolInitialized_[d]) {
       trimPool(d);
     }
@@ -618,29 +672,20 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   }
   cudaSetDevice(prevDev);
 
-  // Sort by free memory descending (all candidates are peer-accessible)
+  // Sort: peer devices first (faster access), then by free memory descending
   std::sort(candidates.begin(), candidates.end(), [](const DeviceInfo& a, const DeviceInfo& b) {
+    if (a.isPeer != b.isPeer) return a.isPeer > b.isPeer;  // peers first
     return a.freeMem > b.freeMem;
   });
 
   // MEMORY PRESSURE EVENT: Build and report to callback
-  // Check for non-peer devices with free memory (for managed memory fallback)
-  bool hasNonPeerCandidate = false;
-  for (int d = 0; d < deviceCount && d < MAX_DEVICES; d++) {
-    if (d == currentDeviceId) continue;
-    if (peerAccessEnabled_[currentDeviceId][d]) continue;
-    // Quick check — don't switch devices just to build the event
-    hasNonPeerCandidate = true;
-    break;
-  }
-
   MemoryPressureEvent event;
   event.requestedDeviceId = currentDeviceId;
   event.requestedSize = size;
   event.availableMemory = currentFreeMem;
   event.alternativeDeviceId = candidates.empty() ? -1 : candidates[0].id;
-  event.isPeerAccessible = !candidates.empty();  // peer candidates available
-  event.recommendedAction = (candidates.empty() && !hasNonPeerCandidate) ?
+  event.isPeerAccessible = !candidates.empty() && candidates[0].isPeer;
+  event.recommendedAction = candidates.empty() ?
     MemoryPressureEvent::Action::USE_PINNED_HOST :
     MemoryPressureEvent::Action::FAILOVER;
 
@@ -660,85 +705,64 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
       if (!allowAllocation) {
         sd_printf("CudaMemoryPool::allocateFailover: Callback rejected allocation on device %d\n", currentDeviceId);
         cudaSetDevice(prevDev);
-        return nullptr;  // Callback wants us to fail
+        return nullptr;
       }
     }
   }
 
   for (const auto& candidate : candidates) {
     int d = candidate.id;
-    sd_printf("CudaMemoryPool::allocateFailover: Trying peer device %d (free: %zu bytes) for %zu bytes\n",
-              d, candidate.freeMem, size);
-    cudaSetDevice(d);
+    bool isPeer = candidate.isPeer;
+    sd_printf("CudaMemoryPool::allocateFailover: Trying device %d (%s, free: %zu MB) for %zu bytes\n",
+              d, isPeer ? "peer" : "non-peer/managed", candidate.freeMem / (1024*1024), size);
+    cudaError_t setDeviceErr = cudaSetDevice(d);
+    if (setDeviceErr != cudaSuccess) {
+      cudaGetLastError();
+      continue;
+    }
 
-    // Try pool allocation first on this device
-    void* ptr = nullptr;
-    if (supported_ && poolInitialized_[d]) {
-      cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
+    if (isPeer) {
+      // Peer device: use pool or direct allocation (fastest path)
+      void* ptr = nullptr;
+      if (supported_ && poolInitialized_[d]) {
+        cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
+        if (err == cudaSuccess && ptr != nullptr) {
+          sd_printf("CudaMemoryPool::allocateFailover: Succeeded via pool on peer device %d for %zu bytes\n", d, size);
+          if (actualDeviceId) *actualDeviceId = d;
+          cudaSetDevice(prevDev);
+          return ptr;
+        }
+        cudaGetLastError();
+        ptr = nullptr;
+      }
+
+      cudaError_t err = cudaMalloc(&ptr, size);
       if (err == cudaSuccess && ptr != nullptr) {
-        sd_printf("CudaMemoryPool::allocateFailover: Succeeded via pool on peer device %d for %zu bytes\n",
-                  d, size);
+        sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc on peer device %d for %zu bytes\n", d, size);
+        registerDirectAllocation(ptr, size);
         if (actualDeviceId) *actualDeviceId = d;
         cudaSetDevice(prevDev);
         return ptr;
       }
-      cudaGetLastError();  // clear error
-      ptr = nullptr;
-    }
-
-    // Fall back to cudaMalloc on this device
-    cudaError_t err = cudaMalloc(&ptr, size);
-    if (err == cudaSuccess && ptr != nullptr) {
-      sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc on peer device %d for %zu bytes\n",
-                d, size);
-      registerDirectAllocation(ptr, size);
-      if (actualDeviceId) *actualDeviceId = d;
-      cudaSetDevice(prevDev);
-      return ptr;
-    }
-    cudaGetLastError();  // clear error
-  }
-
-  // Step 2b: Try non-peer devices using managed memory (cudaMallocManaged).
-  // Managed memory uses Unified Virtual Addressing (UVA) — the CUDA driver
-  // migrates pages between devices transparently, even without P2P/NVLink.
-  // This is slower than P2P (PCIe staging) but far better than pinned host memory
-  // which forces ALL accesses through PCIe. Managed memory migrates on first touch
-  // and caches on the accessing device, so repeated access is at full GPU bandwidth.
-  for (int d = 0; d < deviceCount && d < MAX_DEVICES; d++) {
-    if (d == currentDeviceId) continue;
-    if (peerAccessEnabled_[currentDeviceId][d]) continue;  // already tried as peer above
-
-    // Check if this device has enough free memory
-    cudaSetDevice(d);
-    if (supported_ && poolInitialized_[d]) {
-      trimPool(d);
-    }
-    size_t freeMem = 0, totalMem = 0;
-    cudaMemGetInfo(&freeMem, &totalMem);
-    if (freeMem <= size * 1.1) {
       cudaGetLastError();
-      continue;  // Not enough memory on this device
+    } else {
+      // Non-peer device: use cudaMallocManaged for transparent UVA page migration.
+      // The CUDA driver migrates pages between devices on access — no P2P/NVLink
+      // needed. After first touch, data caches on the accessing device at full
+      // GPU bandwidth. This is the correct path for multi-GPU without NVLink.
+      void* ptr = nullptr;
+      cudaError_t err = cudaMallocManaged(&ptr, size, cudaMemAttachGlobal);
+      if (err == cudaSuccess && ptr != nullptr) {
+        cudaMemAdvise(ptr, size, cudaMemAdviseSetPreferredLocation, d);
+        sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMallocManaged on device %d "
+                  "for %zu bytes (UVA accessible from device %d)\n", d, size, currentDeviceId);
+        registerDirectAllocation(ptr, size);
+        if (actualDeviceId) *actualDeviceId = d;
+        cudaSetDevice(prevDev);
+        return ptr;
+      }
+      cudaGetLastError();
     }
-
-    // Use cudaMallocManaged — accessible from any device via page migration
-    void* ptr = nullptr;
-    cudaError_t err = cudaMallocManaged(&ptr, size, cudaMemAttachGlobal);
-    if (err == cudaSuccess && ptr != nullptr) {
-      // Advise the driver to place the memory on the target device initially.
-      // Without this hint, pages start on the allocating device (which we just
-      // switched to) and migrate on first GPU access, adding latency.
-      cudaMemAdvise(ptr, size, cudaMemAdviseSetPreferredLocation, d);
-      sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMallocManaged on non-peer device %d "
-                "for %zu bytes (accessible from device %d via UVA page migration)\n",
-                d, size, currentDeviceId);
-      // Track as managed allocation so free() uses cudaFree (not cudaFreeAsync)
-      registerDirectAllocation(ptr, size);
-      if (actualDeviceId) *actualDeviceId = d;
-      cudaSetDevice(prevDev);
-      return ptr;
-    }
-    cudaGetLastError();  // clear error
   }
   cudaSetDevice(prevDev);
 
@@ -1352,6 +1376,31 @@ void CudaMemoryPool::releaseAll() {
       sd_debug("CudaMemoryPool::releaseAll: Exception during cleanup - possible heap corruption\n", "");
     }
   }
+}
+
+// ─── Device exclusion list for failover ───────────────────────────────────────
+
+void CudaMemoryPool::addExcludedFailoverDevice(int deviceId) {
+  std::lock_guard<std::mutex> lock(exclusionMutex_);
+  excludedFailoverDevices_.insert(deviceId);
+  sd_printf("CudaMemoryPool: Device %d added to failover exclusion list\n", deviceId);
+}
+
+void CudaMemoryPool::removeExcludedFailoverDevice(int deviceId) {
+  std::lock_guard<std::mutex> lock(exclusionMutex_);
+  excludedFailoverDevices_.erase(deviceId);
+  sd_printf("CudaMemoryPool: Device %d removed from failover exclusion list\n", deviceId);
+}
+
+void CudaMemoryPool::clearExcludedFailoverDevices() {
+  std::lock_guard<std::mutex> lock(exclusionMutex_);
+  excludedFailoverDevices_.clear();
+  sd_printf("CudaMemoryPool: Failover exclusion list cleared\n", "");
+}
+
+bool CudaMemoryPool::isDeviceExcludedFromFailover(int deviceId) const {
+  std::lock_guard<std::mutex> lock(exclusionMutex_);
+  return excludedFailoverDevices_.count(deviceId) > 0;
 }
 
 }  // namespace memory

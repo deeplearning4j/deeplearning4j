@@ -52,6 +52,12 @@ void CudaDeviceConfig::setCudaPinnedHostLimit(int64_t limitInMB) {
   if (limitInMB >= 0) _cudaPinnedHostLimit.store(limitInMB);
 }
 
+void CudaDeviceConfig::setCudaSoftLimitPercent(int percent) {
+  if (percent < 0) percent = 0;
+  if (percent > 100) percent = 100;
+  _cudaSoftLimitPercent.store(percent);
+}
+
 void CudaDeviceConfig::setCudaCachingAllocatorLimit(int limitInMB) {
   if (limitInMB >= 0) _cudaCachingAllocatorLimit.store(limitInMB);
 }
@@ -210,14 +216,8 @@ void CudaDeviceConfig::initFromEnvironment() {
     _cudaDeviceCount.store(devCnt);
   }
 
-  // Device selection
-  {
-    int v = readIntEnv("SD_CUDA_DEVICE", -1);
-    if (v >= 0 && v < _cudaDeviceCount.load()) {
-      _cudaCurrentDevice.store(v);
-      sd::Environment_cudaSetDeviceForInit(v);
-    }
-  }
+  // Device selection: handled by Nd4j.getEnvironment().setCudaCurrentDevice()
+  // from Java after backend init. No env var reading here.
 
   // Memory settings
   {
@@ -271,6 +271,10 @@ void CudaDeviceConfig::initFromEnvironment() {
   {
     int64_t v = readInt64Env("SD_CUDA_PINNED_HOST_LIMIT", -1);
     if (v > 0) _cudaPinnedHostLimit.store(v);
+  }
+  {
+    int v = readIntEnv("SD_CUDA_SOFT_LIMIT_PERCENT", -1);
+    if (v >= 0 && v <= 100) _cudaSoftLimitPercent.store(v);
   }
   {
     int v = readBoolEnvTriState("SD_CUDA_USE_UNIFIED_MEMORY");

@@ -1,0 +1,15 @@
+{
+  "id" : "0f6bdba8",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "3d3eaafd5a",
+  "commitShort" : "3d3eaaf",
+  "commitMessage" : "fix: disable Triton on Windows — LLVM headers incompatible with MSVC",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "totalTests" : 1,
+  "passed" : 1,
+  "failed" : 0,
+  "skipped" : 0,
+  "notes" : "Fixed CUDA backend init/failover path so metadata probing does not create contexts on failed GPUs, Java publishes auto-detected available devices to native immediately, LaunchContext initializes only the current device lazily, P2P reports real topology, and non-P2P cross-device transfers remain enabled. Native/backend build and Java backend rebuild passed; focused cross-device binary-op test passed with native device-ID assertions.",
+  "timestamp" : "2026-06-02T08:22:07.747039Z"
+}

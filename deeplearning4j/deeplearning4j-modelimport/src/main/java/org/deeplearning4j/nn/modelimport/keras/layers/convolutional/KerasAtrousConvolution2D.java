@@ -28,10 +28,12 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.weights.IWeightInit;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
@@ -131,6 +133,21 @@ public class KerasAtrousConvolution2D extends KerasConvolution {
             throw new InvalidKerasConfigurationException(
                     "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
         return this.getAtrousConvolution2D().getOutputType(-1, inputType[0]);
+    }
+
+    /**
+     * Return TF atrous conv2d weights without permuting.
+     *
+     * TensorFlow stores 2D atrous (dilated) convolution weights as [kH, kW, iC, oC] (YXIO).
+     * DL4J now uses YXIO for all data formats, so no permutation is needed.
+     */
+    @Override
+    public INDArray getConvParameterValues(INDArray kerasParamValue) throws InvalidKerasConfigurationException {
+        if (this.getDimOrder() == KerasLayer.DimOrder.TENSORFLOW && kerasParamValue.rank() != 5) {
+            // TF 2D weights are already YXIO [kH, kW, iC, oC]; return as-is.
+            return kerasParamValue;
+        }
+        return super.getConvParameterValues(kerasParamValue);
     }
 
 }

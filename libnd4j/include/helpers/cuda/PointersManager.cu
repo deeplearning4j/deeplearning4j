@@ -184,11 +184,11 @@ void PointersManager::synchronize() const {
   // being recorded, not executed, so there's nothing to synchronize.
   if (tl_graphExecutionActive) return;
 
-  // During DSP composite replay, all gap ops run on the unified DSP stream
-  // (tl_dspGapStream). FIFO ordering on a single stream guarantees that each
-  // op's kernels complete before the next op's kernels begin. Per-op
-  // cudaStreamSynchronize is redundant and serializes the GPU pipeline.
-  if (tl_dspReplayActive) return;
+  // DSP composite replay is not CUDA graph capture, so synchronization is
+  // legal here. Callers also use PointersManager::synchronize() as the
+  // post-launch lifetime barrier before releasing temporary NDArrays and
+  // pointer tables; skipping it lets later host cleanup race kernels already
+  // enqueued on the unified gap stream.
 
   if (_context != nullptr) {
     cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());

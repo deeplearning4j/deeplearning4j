@@ -23,6 +23,8 @@ package org.nd4j.autodiff.samediff.config;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Arrays;
 import java.util.List;
@@ -73,6 +75,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LoftQConfig extends LoraConfig {
 
     /**
@@ -143,6 +146,7 @@ public class LoftQConfig extends LoraConfig {
     }
 
     @Override
+    @JsonIgnore
     public String getSummary() {
         return String.format(
             "LoftQConfig(r=%d, alpha=%d, scaling=%.4f, quantBits=%d, quantType=%s, " +

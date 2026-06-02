@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterAdd;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -58,12 +59,14 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
-        int numExamples = (int) input.length();
-        for (int i = 0; i < numExamples; i++) {
-            int idx = input.getInt(i, 0);
-            weightGradients.getRow(idx).addi(delta.getRow(i));
+        long[] indexes = new long[(int) input.length()];
+        for (int i = 0; i < indexes.length; i++) {
+            indexes[i] = input.getInt(i, 0);
         }
 
+        INDArray indices = Nd4j.createFromArray(indexes);
+        ScatterAdd op = new ScatterAdd(weightGradients, indices, delta);
+        Nd4j.getExecutioner().exec(op);
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);

@@ -106,7 +106,16 @@ LaunchContext::LaunchContext(cudaStream_t* cudaStream, cudaStream_t& specialCuda
 
 std::mutex* LaunchContext::deviceMutex() {
   auto deviceId = AffinityManager::currentDeviceId();
-  return _deviceMutexes[deviceId];
+
+  std::lock_guard<std::mutex> lock(_mutex);
+  auto it = _deviceMutexes.find(deviceId);
+  if (it == _deviceMutexes.end() || it->second == nullptr) {
+    auto mutex = new std::mutex();
+    _deviceMutexes[deviceId] = mutex;
+    return mutex;
+  }
+
+  return it->second;
 }
 
 LaunchContext::~LaunchContext() {
@@ -158,23 +167,23 @@ LaunchContext* LaunchContext::defaultContext() {
   auto deviceId = AffinityManager::currentDeviceId();
 
   {
-    // we need this block synchronous, to avoid double initialization etc
+    // Initialize only the current device. Eagerly touching every physical GPU
+    // makes startup fail when a non-selected GPU is temporarily out of memory.
     std::lock_guard<std::mutex> lock(_mutex);
-    if (contexts().empty()) {
-      // create one context per device
-      auto numDevices = AffinityManager::numberOfDevices();
 
-      contexts().resize(numDevices);
-      for (int e = 0; e < numDevices; e++) {
-        _deviceMutexes[e] = new std::mutex();
+    auto requiredSize = static_cast<size_t>(deviceId + 1);
+    if (contexts().size() < requiredSize) {
+      contexts().resize(requiredSize, nullptr);
+    }
 
-        AffinityManager::setCurrentNativeDevice(e);
+    auto mutexIt = _deviceMutexes.find(deviceId);
+    if (mutexIt == _deviceMutexes.end() || mutexIt->second == nullptr) {
+      _deviceMutexes[deviceId] = new std::mutex();
+    }
 
-        contexts().at(e) = new LaunchContext();
-      }
-
-      // don't forget to restore device back again
+    if (contexts().at(deviceId) == nullptr) {
       AffinityManager::setCurrentNativeDevice(deviceId);
+      contexts().at(deviceId) = new LaunchContext();
     }
   }
 

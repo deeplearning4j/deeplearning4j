@@ -33,12 +33,19 @@ import org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarations
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.opdefs.OnnxOpDescriptorLoader
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
+import org.nd4j.shade.protobuf.ByteString
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.RandomAccessFile
 import java.nio.file.Files
 
 class OnnxFrameworkImporter: FrameworkImporter {
+
+    companion object {
+        private val log = LoggerFactory.getLogger(OnnxFrameworkImporter::class.java)
+    }
 
     val onnxImporter = OnnxImportGraph()
     val loader = OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
@@ -54,11 +61,106 @@ class OnnxFrameworkImporter: FrameworkImporter {
     val opDefs = loadedGraphBuilder.build()
 
     fun loadGraph(fileName: String): OnnxIRGraph {
+        val modelFile = File(fileName)
+        val modelDir = modelFile.parentFile
         // Use streaming parsing instead of reading entire file into memory
-        val loadGraph = Files.newInputStream(File(fileName).toPath()).buffered(65536).use { stream ->
+        val loadGraph = Files.newInputStream(modelFile.toPath()).buffered(65536).use { stream ->
             Onnx.ModelProto.parseFrom(stream)
         }
-        return OnnxIRGraph(loadGraph.graph, registry)
+        // Resolve external data tensors — ONNX models can split weights into separate files
+        val resolvedModel = resolveExternalData(loadGraph, modelDir)
+        return OnnxIRGraph(resolvedModel.graph, registry)
+    }
+
+    /**
+     * Resolves ONNX external data tensors by reading weight data from sibling files.
+     *
+     * ONNX models can store tensor data externally (data_location == EXTERNAL) with
+     * key-value pairs in external_data describing the file location, byte offset, and length.
+     * This is common for large models (>2GB) like bge-m3 where model.onnx contains only
+     * the graph structure and model.onnx_data contains the actual weights.
+     *
+     * After resolution, all tensors have their raw_data inlined and data_location set to DEFAULT
+     * so the rest of the import pipeline processes them normally.
+     */
+    private fun resolveExternalData(model: Onnx.ModelProto, modelDir: File?): Onnx.ModelProto {
+        val graph = model.graph
+        val initializers = graph.initializerList
+        val hasExternal = initializers.any { it.dataLocation == Onnx.TensorProto.DataLocation.EXTERNAL }
+        if (!hasExternal) {
+            return model
+        }
+
+        log.info("ONNX model has external data tensors, resolving from directory: {}", modelDir?.absolutePath)
+        val resolvedInitializers = mutableListOf<Onnx.TensorProto>()
+        var resolvedCount = 0
+
+        for (tensor in initializers) {
+            if (tensor.dataLocation == Onnx.TensorProto.DataLocation.EXTERNAL) {
+                resolvedInitializers.add(resolveExternalTensor(tensor, modelDir))
+                resolvedCount++
+            } else {
+                resolvedInitializers.add(tensor)
+            }
+        }
+
+        log.info("Resolved {} external data tensors", resolvedCount)
+
+        // Rebuild graph with resolved initializers
+        val newGraph = Onnx.GraphProto.newBuilder(graph)
+            .clearInitializer()
+            .addAllInitializer(resolvedInitializers)
+            .build()
+
+        return Onnx.ModelProto.newBuilder(model)
+            .setGraph(newGraph)
+            .build()
+    }
+
+    /**
+     * Resolves a single external data tensor by reading its bytes from the referenced file.
+     *
+     * Per the ONNX spec, external_data contains key-value pairs:
+     * - "location" (required): POSIX path relative to model directory
+     * - "offset" (optional): byte offset into the file (default 0)
+     * - "length" (optional): number of bytes to read (default: rest of file from offset)
+     */
+    private fun resolveExternalTensor(tensor: Onnx.TensorProto, modelDir: File?): Onnx.TensorProto {
+        val extData = mutableMapOf<String, String>()
+        for (entry in tensor.externalDataList) {
+            extData[entry.key] = entry.value
+        }
+
+        val location = extData["location"]
+            ?: throw IllegalStateException("External data tensor '${tensor.name}' missing required 'location' key")
+        val offset = extData["offset"]?.toLongOrNull() ?: 0L
+        val length = extData["length"]?.toLongOrNull()
+
+        val dataFile = if (modelDir != null) File(modelDir, location) else File(location)
+        if (!dataFile.exists()) {
+            throw IllegalStateException(
+                "External data file not found: ${dataFile.absolutePath} " +
+                "(referenced by tensor '${tensor.name}')"
+            )
+        }
+
+        log.debug("Reading external data for tensor '{}': file={}, offset={}, length={}",
+            tensor.name, dataFile.name, offset, length ?: "rest-of-file")
+
+        val bytes = RandomAccessFile(dataFile, "r").use { raf ->
+            raf.seek(offset)
+            val readLength = length ?: (raf.length() - offset)
+            val buf = ByteArray(readLength.toInt())
+            raf.readFully(buf)
+            buf
+        }
+
+        // Rebuild the tensor with inlined raw data
+        return Onnx.TensorProto.newBuilder(tensor)
+            .setRawData(ByteString.copyFrom(bytes))
+            .clearExternalData()
+            .setDataLocation(Onnx.TensorProto.DataLocation.DEFAULT)
+            .build()
     }
 
     override fun runImport(

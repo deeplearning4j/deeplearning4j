@@ -55,7 +55,9 @@ static void applyLogitPenalties_(NDArray* logits, NDArray* inputIds,
     }
 
     LongType seqLen;
-    if (idsRank == 1) {
+    if (idsRank == 0) {
+        seqLen = 1;
+    } else if (idsRank == 1) {
         seqLen = inputIds->sizeAt(0);
     } else {
         seqLen = inputIds->sizeAt(1);
@@ -84,8 +86,14 @@ static void applyLogitPenalties_(NDArray* logits, NDArray* inputIds,
         logitsRowOffset = (logitsSeqLen - 1) * logitsStrides[1];
     }
 
-    LongType idsBatchStride = (idsRank == 1) ? 0 : idsStrides[0];
-    LongType idsElemStride = (idsRank == 1) ? idsStrides[0] : idsStrides[1];
+    LongType idsBatchStride = 0;
+    LongType idsElemStride = 0;
+    if (idsRank == 1) {
+        idsElemStride = idsStrides[0];
+    } else if (idsRank == 2) {
+        idsBatchStride = idsStrides[0];
+        idsElemStride = idsStrides[1];
+    }
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto b = start; b < stop; b++) {

@@ -69,6 +69,28 @@ int maxThreads = 512;
 bool allowedP2P = false;
 bool supportedP2P = false;
 
+namespace {
+std::mutex configuredCudaDevicesMutex;
+std::vector<int> configuredCudaDevices;
+
+std::vector<int> p2pDeviceList() {
+  std::lock_guard<std::mutex> lock(configuredCudaDevicesMutex);
+  if (!configuredCudaDevices.empty()) return configuredCudaDevices;
+
+  int devCnt = 0;
+  cudaError_t err = cudaGetDeviceCount(&devCnt);
+  if (err != cudaSuccess) {
+    cudaGetLastError();
+    return {};
+  }
+
+  std::vector<int> devices;
+  devices.reserve(devCnt);
+  for (int i = 0; i < devCnt; i++) devices.push_back(i);
+  return devices;
+}
+}
+
 // TadPack lifetime registry - keeps shared_ptr<TadPack> alive for TadPacks returned to Java
 // Without this, when ConstantTadHelper::tadForDimensions() returns shared_ptr<TadPack>,
 // but tadOnlyShapeInfo() returns raw TadPack*, the local shared_ptr goes out of scope
@@ -282,26 +304,22 @@ BUILD_SINGLE_TEMPLATE(void _printHostBuffer, (OpaqueDataBuffer *buffer, sd::Long
 // moved to NativeOps_reduce.cu and NativeOps_transform.cu for SD_GCC_FUNCTRACE builds
 
 void checkP2P() {
-  int curDevice = 0;
-
-  cudaGetDevice(&curDevice);
-
-  int devCnt = 0;
-  cudaGetDeviceCount(&devCnt);
-
-  if (curDevice < 0 && curDevice > devCnt) curDevice = 0;
+  auto devices = p2pDeviceList();
 
   bool tempSupport = true;
 
-  if (devCnt > 1) {
-    for (int dX = 0; dX < devCnt; dX++) {
-      for (int dY = 0; dY < devCnt; dY++) {
+  if (devices.size() > 1) {
+    for (auto dX : devices) {
+      for (auto dY : devices) {
         if (dX == dY) continue;
 
         int canAccess = 0;
-        cudaSetDevice(dX);
-
-        cudaDeviceCanAccessPeer(&canAccess, dX, dY);
+        auto peerResult = cudaDeviceCanAccessPeer(&canAccess, dX, dY);
+        if (peerResult != cudaSuccess) {
+          cudaGetLastError();
+          tempSupport = false;
+          continue;
+        }
 
         if (!canAccess) {
           tempSupport = false;
@@ -311,8 +329,6 @@ void checkP2P() {
     }
 
     supportedP2P = tempSupport;
-
-    cudaSetDevice(curDevice);
   } else {
     // if we have only 1 device - we say that we support P2P, since all data will be on 1 device
     supportedP2P = true;
@@ -322,51 +338,62 @@ void checkP2P() {
 void enableP2P(bool enable) {
   if (enable == allowedP2P) return;
 
-  int curDevice = 0;
+  auto devices = p2pDeviceList();
+  checkP2P();
 
-  cudaGetDevice(&curDevice);
+  int curDevice = -1;
+  bool restoreDevice = cudaGetDevice(&curDevice) == cudaSuccess;
+  if (!restoreDevice) cudaGetLastError();
 
-  int devCnt = 0;
-  cudaGetDeviceCount(&devCnt);
-
-  if (curDevice < 0 && curDevice > devCnt) curDevice = 0;
-
-  if (devCnt > 1) {
-    for (int dX = 0; dX < devCnt; dX++) {
-      for (int dY = 0; dY < devCnt; dY++) {
+  if (devices.size() > 1 && supportedP2P) {
+    for (auto dX : devices) {
+      for (auto dY : devices) {
         if (dX == dY) continue;
 
         int canAccess = 0;
-        cudaSetDevice(dX);
-
-        cudaDeviceCanAccessPeer(&canAccess, dX, dY);
+        auto peerResult = cudaDeviceCanAccessPeer(&canAccess, dX, dY);
+        if (peerResult != cudaSuccess) {
+          cudaGetLastError();
+          continue;
+        }
 
         if (canAccess) {
+          auto setDeviceResult = cudaSetDevice(dX);
+          if (setDeviceResult != cudaSuccess) {
+            sd_printf("enableP2P: WARNING - cudaSetDevice(%d) failed: %s\n",
+                      dX, cudaGetErrorString(setDeviceResult));
+            cudaGetLastError();
+            continue;
+          }
+
           if (enable) {
-            cudaDeviceEnablePeerAccess(dY, 0);
+            auto peerEnableResult = cudaDeviceEnablePeerAccess(dY, 0);
+            if (peerEnableResult != cudaSuccess && peerEnableResult != cudaErrorPeerAccessAlreadyEnabled) {
+              cudaGetLastError();
+            }
           } else {
-            cudaDeviceDisablePeerAccess(dY);
+            auto peerDisableResult = cudaDeviceDisablePeerAccess(dY);
+            if (peerDisableResult != cudaSuccess && peerDisableResult != cudaErrorPeerAccessNotEnabled) {
+              cudaGetLastError();
+            }
           }
         } else {
           if (sd::Environment::getInstance().isVerbose()) printf("Peer access [%i] -> [%i] isn't possible\n", dX, dY);
         }
       }
     }
-
-    cudaSetDevice(curDevice);
   }
 
   allowedP2P = enable;
 
-  cudaSetDevice(curDevice);
+  if (restoreDevice) {
+    auto restoreResult = cudaSetDevice(curDevice);
+    if (restoreResult != cudaSuccess) cudaGetLastError();
+  }
 }
 
 bool isP2PAvailable() {
-  // Disabled P2P by default - P2P memory access is unreliable across different GPU configurations
-  // Cross-device operations will use explicit migration through host memory instead
-  // P2P can be re-enabled by setting allowedP2P = true and uncommenting the return below
-  // return supportedP2P && allowedP2P;
-  return false;
+  return supportedP2P && allowedP2P;
 }
 
 // initializeDevicesAndFunctions moved to NativeOps_utils.cu for SD_GCC_FUNCTRACE builds
@@ -571,6 +598,30 @@ void setPinnedHostBytesLimit(sd::LongType maxBytes) {
   sd::memory::CudaMemoryPool::getInstance().setPinnedHostBytesLimit(static_cast<size_t>(maxBytes));
 }
 
+void setMemoryPoolSoftLimitPercent(int percent) {
+  sd::memory::CudaMemoryPool::getInstance().setSoftLimitPercent(percent);
+}
+
+int getMemoryPoolSoftLimitPercent() {
+  return sd::memory::CudaMemoryPool::getInstance().getSoftLimitPercent();
+}
+
+void addExcludedFailoverDevice(int deviceId) {
+  sd::memory::CudaMemoryPool::getInstance().addExcludedFailoverDevice(deviceId);
+}
+
+void removeExcludedFailoverDevice(int deviceId) {
+  sd::memory::CudaMemoryPool::getInstance().removeExcludedFailoverDevice(deviceId);
+}
+
+void clearExcludedFailoverDevices() {
+  sd::memory::CudaMemoryPool::getInstance().clearExcludedFailoverDevices();
+}
+
+bool isDeviceExcludedFromFailover(int deviceId) {
+  return sd::memory::CudaMemoryPool::getInstance().isDeviceExcludedFromFailover(deviceId);
+}
+
 sd::Pointer createContext() { return 0L; }
 
 sd::Pointer createStream() {
@@ -618,6 +669,10 @@ int setDevice(int deviceId) {
 void setAvailableDevices(int *devices, int size) {
   std::vector<int> devs;
   for (int i = 0; i < size; i++) devs.push_back(devices[i]);
+  {
+    std::lock_guard<std::mutex> lock(configuredCudaDevicesMutex);
+    configuredCudaDevices = devs;
+  }
   sd::AffinityManager::setAvailableDevices(devs);
 }
 
@@ -650,6 +705,7 @@ sd::LongType getDeviceFreeMemory(int device) {
     err = cudaSetDevice(device);
     if (err != cudaSuccess) {
       sd_debug("getDeviceFreeMemory: cudaSetDevice(%d) failed: %s\n", device, cudaGetErrorString(err));
+      cudaGetLastError();
       return 0;
     }
   }
@@ -696,6 +752,7 @@ sd::LongType getDeviceTotalMemory(int device) {
     err = cudaSetDevice(device);
     if (err != cudaSuccess) {
       sd_debug("getDeviceTotalMemory: cudaSetDevice(%d) failed: %s\n", device, cudaGetErrorString(err));
+      cudaGetLastError();
       return 0;
     }
   }
@@ -1484,4 +1541,3 @@ SD_LIB_EXPORT void clearConstantCache() {
 SD_LIB_EXPORT void clearTadCache() {
     sd::ConstantTadHelper::getInstance().clearCache();
 }
-

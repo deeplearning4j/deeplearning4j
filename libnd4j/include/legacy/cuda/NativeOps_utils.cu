@@ -54,26 +54,21 @@ void initializeDevicesAndFunctions() {
     cudaGetDeviceCount(&devCnt);
     deviceProperties = new cudaDeviceProp[devCnt];
     for (int i = 0; i < devCnt; i++) {
-      cudaSetDevice(i);
-      cudaGetDeviceProperties(&deviceProperties[i], i);
+      auto propertiesResult = cudaGetDeviceProperties(&deviceProperties[i], i);
+      if (propertiesResult != cudaSuccess) {
+        sd_printf("initializeDevicesAndFunctions: WARNING - cudaGetDeviceProperties(%d) failed: %s\n",
+                  i, cudaGetErrorString(propertiesResult));
+        cudaGetLastError();
+        continue;
+      }
 
-      cudaDeviceSetLimit(cudaLimitStackSize, 8192);
-      cudaDeviceSetLimit(cudaLimitMallocHeapSize, 1048576 * 128);
-
-      // Force CUDA context creation and module registration for this device
-      cudaFree(0);
-      cudaDeviceSynchronize();
+      // Keep this phase metadata-only. Forcing context creation or whole-device
+      // synchronization here can fail before Java has selected usable devices.
       cudaGetLastError();
     }
 
-    cudaSetDevice(0);
-    cudaFree(0);
-    cudaDeviceSynchronize();
-    cudaGetLastError();
-
-    checkP2P();
-
-    if (supportedP2P && devCnt > 1) enableP2P(true);  // Enable P2P by default when supported
+    // Cross-device setup is applied later from AtomicAllocator after Java has
+    // detected the usable device list. Startup stays metadata-only here.
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

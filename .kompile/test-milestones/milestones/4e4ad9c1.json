@@ -1,0 +1,15 @@
+{
+  "id" : "4e4ad9c1",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "4a37770da08ad221f665929285a8ffd3dcb6b9be",
+  "commitShort" : "4a37770",
+  "commitMessage" : "fix: stabilize DSP replay and VLM regression fixes",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "dsp-build",
+  "totalTests" : 1,
+  "passed" : 1,
+  "failed" : 0,
+  "notes" : "Build success after clearing OP_TRAIT_DYNAMIC_OUTPUT_SIZE for 3-input Where in native compile/deserialize paths. Reactor: libnd4j SUCCESS, nd4j-cuda-12.9 SUCCESS. Total time 12:40.",
+  "timestamp" : "2026-05-28T06:29:35.189485Z"
+}

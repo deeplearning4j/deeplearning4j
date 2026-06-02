@@ -1196,8 +1196,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 BP_WORKING_MEM,
                 RNN_FF_LOOP_WORKING_MEM,
                 RNN_BP_LOOP_WORKING_MEM,
-                UPDATER_WORKING_MEM,
-                FF_CACHE
+                UPDATER_WORKING_MEM
+                // FF_CACHE intentionally excluded: WS_ALL_LAYERS_ACT is opened and managed
+                // by the caller (e.g. computeGradientAndScore). Closing it here causes
+                // ND4JWorkspaceException when the caller subsequently accesses ACTIVATIONS.
         };
         workspaceMgr.closeWorkspace(toClose);
 
@@ -1878,8 +1880,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             INDArray inputToOutputLayer = activations.get(activations.size() - 1);
             if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null) {
-                inputToOutputLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
-                        .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr);
+                inputToOutputLayer = mgr.dup(ArrayType.ACTIVATIONS,
+                        layerWiseConfigurations.getInputPreProcess(layers.length - 1)
+                        .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr));
                 //Validate activations location
             }
             getOutputLayer().setInput(inputToOutputLayer, mgr);
@@ -2825,8 +2828,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             INDArray inputToOutputLayer = activations.get(activations.size() - 1);
             if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null) {
-                inputToOutputLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
-                        .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr);
+                inputToOutputLayer = mgr.dup(ArrayType.ACTIVATIONS,
+                        layerWiseConfigurations.getInputPreProcess(layers.length - 1)
+                        .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr));
                 //Validate activations location
             }
             getOutputLayer().setInput(inputToOutputLayer, mgr);

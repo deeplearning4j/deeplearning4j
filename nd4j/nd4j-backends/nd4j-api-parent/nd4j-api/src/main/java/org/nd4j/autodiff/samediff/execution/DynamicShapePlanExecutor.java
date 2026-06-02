@@ -3492,6 +3492,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                 }
 
+                // Sync execution stream to ensure async D2D copies are complete before
+                // returning cached arrays. Same rationale as the non-frozen path below.
+                Nd4j.getExecutioner().commit();
+
                 long copyMs = (System.nanoTime() - copyStart) / 1_000_000;
                 if (execMs > 100) {
                     log.info("Native executor: exec={}ms copy={}ms (frozen, {}/{} outputs copied)",
@@ -3597,6 +3601,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
                 results.put(outputName, result);
             }
+
+            // Sync the execution stream to ensure all async D2D copies (copyBuffer above)
+            // are complete before returning results to the caller. Without this, the caller
+            // receives INDArrays whose device buffers may still have in-flight D2D memcpy
+            // operations, causing zero/stale data on host read (syncToPrimary uses stream 0
+            // which has no ordering guarantee with the LC default stream's async copies).
+            Nd4j.getExecutioner().commit();
 
             // Populate the outputSlots array with the results at their corresponding slot indices.
             // The outputSlots field is allocated at plan initialization but was never populated

@@ -75,6 +75,20 @@ public abstract class RLAlignmentTrainer<C extends RLAlignmentConfig> {
         }
         config.validate();
 
+        // Infer vocabSize from model's logit variable shape if not explicitly set
+        if (config.getVocabSize() == 0) {
+            String logitVar = config.getPolicyLogitVariable();
+            SDVariable logits = policyModel.getVariable(logitVar);
+            if (logits != null && logits.getArr() != null) {
+                long[] shape = logits.getArr().shape();
+                if (shape != null && shape.length >= 1) {
+                    config.setVocabSize((int) shape[shape.length - 1]);
+                    log.debug("Inferred vocabSize={} from logit variable '{}' shape {}",
+                            config.getVocabSize(), logitVar, java.util.Arrays.toString(shape));
+                }
+            }
+        }
+
         this.policyModel = policyModel;
         this.referenceModel = referenceModel;
         this.config = config;
@@ -126,11 +140,42 @@ public abstract class RLAlignmentTrainer<C extends RLAlignmentConfig> {
      * @return The computed loss value
      */
     public double trainStep(Map<String, INDArray> inputs) {
-        initTraining();
         totalSteps++;
 
-        // Subclass prepares all placeholders (batches inputs, computes ref logprobs, etc.)
+        // Subclass prepares all placeholders FIRST — this may infer vocabSize via
+        // computeExternalLogProbs before the loss graph is built.
         Map<String, INDArray> placeholders = prepareInputs(inputs);
+
+        // If vocabSize is still 0 after prepareInputs (e.g. ORPO has no reference model forward pass),
+        // infer it by running a forward pass on the policy model using the prepared placeholders.
+        if (config.getVocabSize() == 0) {
+            String logitVar = config.getPolicyLogitVariable();
+            // Find the model input variables that are present in placeholders
+            Map<String, INDArray> policyInputs = new HashMap<>();
+            for (SDVariable v : policyModel.variables()) {
+                if (v.getVariableType() == VariableType.PLACEHOLDER && placeholders.containsKey(v.name())) {
+                    policyInputs.put(v.name(), placeholders.get(v.name()));
+                }
+            }
+            if (!policyInputs.isEmpty()) {
+                try {
+                    INDArray inferredLogits = policyModel.output(policyInputs, logitVar).get(logitVar);
+                    if (inferredLogits != null) {
+                        long[] shape = inferredLogits.shape();
+                        if (shape != null && shape.length >= 1) {
+                            config.setVocabSize((int) shape[shape.length - 1]);
+                            log.debug("trainStep: inferred vocabSize={} from policy forward pass, logit shape {}",
+                                    config.getVocabSize(), java.util.Arrays.toString(shape));
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("trainStep: failed to infer vocabSize from policy forward pass: {}", e.getMessage());
+                }
+            }
+        }
+
+        // Now initialize training (builds the loss graph with the correct vocabSize).
+        initTraining();
 
         // Forward + backward pass
         OutAndGrad oag = policyModel.calculateGradientsAndOutputs(
@@ -197,8 +242,35 @@ public abstract class RLAlignmentTrainer<C extends RLAlignmentConfig> {
      */
     protected SDVariable computeLogProbOps(SameDiff sd, String prefix, SDVariable logits,
                                            SDVariable tokenIds, int vocabSize) {
-        SDVariable logSM = sd.nn().logSoftmax(prefix + "_logsm", logits, -1);
-        SDVariable oh = sd.oneHot(prefix + "_oh", tokenIds, vocabSize);
+        // Always normalize to 3D [batch, seq, vocab]:
+        //   - If logits are 3D already, keep as-is.
+        //   - If logits are 2D [batch, vocab] (e.g. model without seq dim), expand to [batch, 1, vocab].
+        // We use a conditional reshape: if vocabSize is known, reshape to [-1, 1, vocabSize].
+        // Since static shape may be null for computed nodes (e.g. after gather), we always
+        // reshape unconditionally to [-1, 1, vocabSize]. For true 3D logits this would lose
+        // the seq dimension, so callers with 3D logits should override this method.
+        // For the common case of 2D [batch, vocab] policy models this is correct.
+        long[] logitShape = logits.getShape();
+        SDVariable logits3d;
+        if (logitShape != null && logitShape.length == 3) {
+            // Already 3D — use as-is
+            logits3d = logits;
+        } else {
+            // 2D [batch, vocab] or unknown shape → reshape to [batch, 1, vocab]
+            logits3d = sd.reshape(prefix + "_logits3d", logits, -1L, 1L, (long) vocabSize);
+        }
+        SDVariable logSM = sd.nn().logSoftmax(prefix + "_logsm", logits3d, -1);
+
+        // Ensure tokenIds are 2D [batch, seq] — reshape 1D [seq] if needed
+        long[] tokShape = tokenIds.getShape();
+        SDVariable tokenIds2d;
+        if (tokShape != null && tokShape.length == 1) {
+            tokenIds2d = sd.reshape(prefix + "_tokids2d", tokenIds, 1L, -1L);
+        } else {
+            tokenIds2d = tokenIds;
+        }
+
+        SDVariable oh = sd.oneHot(prefix + "_oh", tokenIds2d, vocabSize);
         oh = oh.castTo(prefix + "_oh_cast", logSM.dataType());
         SDVariable tokenLP = logSM.mul(prefix + "_tokenlp", oh);
         SDVariable sumLast = tokenLP.sum(prefix + "_sumlast", -1);
@@ -217,18 +289,41 @@ public abstract class RLAlignmentTrainer<C extends RLAlignmentConfig> {
      * @return Per-sequence log probabilities [batch]
      */
     protected INDArray computeExternalLogProbs(SameDiff model, Map<String, INDArray> inputs,
-                                               INDArray tokens, String logitVar, int vocabSize) {
+                                               INDArray tokens, String logitVar, int vocabSizeArg) {
         INDArray logits = model.output(inputs, logitVar).get(logitVar);
-        INDArray logSM = Transforms.log(Transforms.softmax(logits, false));
+        // Infer vocabSize from the logit output shape if not yet set
+        int vocabSize = vocabSizeArg;
+        if (vocabSize == 0 && logits != null) {
+            long[] shape = logits.shape();
+            if (shape != null && shape.length >= 1) {
+                vocabSize = (int) shape[shape.length - 1];
+                config.setVocabSize(vocabSize);
+                log.debug("computeExternalLogProbs: inferred vocabSize={} from logit shape {}",
+                        vocabSize, java.util.Arrays.toString(shape));
+            }
+        }
+        // Ensure logits are 3D [batch, seq, vocab] — if 2D [batch, vocab], add seq=1 dimension
+        INDArray logits3d = logits.rank() == 2 ? logits.reshape(logits.size(0), 1, logits.size(1)) : logits;
+        INDArray logSM = Transforms.log(Transforms.softmax(logits3d, false));
 
-        long batchSize = logits.size(0);
-        long seqLen = logits.size(1);
+        long batchSize = logits3d.size(0);
+        long seqLen    = logits3d.size(1);
+        // Tokens may be rank-1 [seq] or rank-2 [batch, seq]; normalize to rank-2
+        INDArray tokens2d;
+        if (tokens.rank() == 1) {
+            tokens2d = tokens.reshape(1, tokens.length());
+        } else {
+            tokens2d = tokens;
+        }
+        // Use the actual seq length from tokens (may differ from logits' seq dim)
+        long tokSeqLen = Math.min(seqLen, tokens2d.size(1));
+
         INDArray result = Nd4j.zeros(DataType.FLOAT, batchSize);
 
         for (int b = 0; b < batchSize; b++) {
             double sum = 0.0;
-            for (int t = 0; t < seqLen; t++) {
-                int tok = tokens.getInt(b, t);
+            for (int t = 0; t < tokSeqLen; t++) {
+                int tok = (int) tokens2d.getLong(b, t);
                 if (tok >= 0 && tok < vocabSize) {
                     sum += logSM.getDouble(b, t, tok);
                 }

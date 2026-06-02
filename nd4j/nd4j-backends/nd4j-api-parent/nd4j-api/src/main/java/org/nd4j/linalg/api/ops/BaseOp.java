@@ -208,8 +208,12 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     @Override
     public DataBuffer extraArgsDataBuff(DataType dtype) {
-        if (extraArgz != null)
+        if (extraArgz != null && extraArgz.dataType() == dtype)
             return extraArgz;
+        // Invalidate cached buffer if dtype does not match — avoids returning a
+        // FLOAT-typed buffer when DOUBLE is requested (or vice versa) for ops that
+        // are executed with multiple element types over their lifetime.
+        extraArgz = null;
 
         if (extraArgs != null) {
             if (Shape.isZ(dtype) || Shape.isB(dtype)) {

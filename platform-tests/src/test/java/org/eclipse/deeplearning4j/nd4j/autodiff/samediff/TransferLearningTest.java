@@ -912,7 +912,7 @@ public class TransferLearningTest extends BaseNd4jTestWithBackends {
     @DisplayName("PEFT - PeftType enum coverage")
     public void testPeftTypeEnumCoverage() {
         // Ensure all PEFT types are accessible
-        assertEquals(8, PeftType.values().length);
+        assertEquals(15, PeftType.values().length);
 
         assertNotNull(PeftType.LORA);
         assertNotNull(PeftType.PREFIX_TUNING);

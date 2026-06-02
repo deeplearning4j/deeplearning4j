@@ -43,9 +43,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RealDivOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 @Slf4j
 @NativeTag
@@ -286,7 +285,9 @@ public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
         val op = new RealDivOp(new INDArray[]{x, y}, new INDArray[]{});
         val z = Nd4j.exec(op)[0];
 
-        assertEquals(y, z);
+        assertArrayEquals(y.shape(), z.shape());
+        assertEquals(y.dataType(), z.dataType());
+        assertEquals(0, z.length());
     }
 
 

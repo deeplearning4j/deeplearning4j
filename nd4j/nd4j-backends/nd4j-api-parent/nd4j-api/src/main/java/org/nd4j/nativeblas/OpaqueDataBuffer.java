@@ -873,9 +873,19 @@ public class OpaqueDataBuffer extends Pointer {
     /**
      * Checks if this buffer has been marked for deallocation.
      *
+     * For JavaCPP-created instances (via native pointer wrapping), the markedForDeallocation
+     * field may be null because Java field initializers don't run for JavaCPP-allocated
+     * objects. In that case, fall back to checking explicitlyClosed which IS set correctly
+     * during closeBuffer().
+     *
      * @return true if the buffer has been marked for deallocation
      */
     public boolean isMarkedForDeallocation() {
+        // Check explicitlyClosed first — this is correctly set during closeBuffer()
+        // even for JavaCPP-created instances where markedForDeallocation may be null.
+        if (explicitlyClosed) {
+            return true;
+        }
         if (markedForDeallocation == null) {
             return false;
         }

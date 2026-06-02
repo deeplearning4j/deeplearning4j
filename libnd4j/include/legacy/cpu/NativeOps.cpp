@@ -376,6 +376,30 @@ void setPinnedHostBytesLimit(sd::LongType maxBytes) {
   // no-op for CPU
 }
 
+void setMemoryPoolSoftLimitPercent(int percent) {
+  // no-op for CPU
+}
+
+int getMemoryPoolSoftLimitPercent() {
+  return 0;  // no memory pool on CPU
+}
+
+void addExcludedFailoverDevice(int deviceId) {
+  // no-op for CPU
+}
+
+void removeExcludedFailoverDevice(int deviceId) {
+  // no-op for CPU
+}
+
+void clearExcludedFailoverDevices() {
+  // no-op for CPU
+}
+
+bool isDeviceExcludedFromFailover(int deviceId) {
+  return false;  // no failover on CPU
+}
+
 /**
  * Returns the maximum number open mp threads
  */

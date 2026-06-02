@@ -1,0 +1,15 @@
+{
+  "id" : "1802abe3",
+  "branch" : "ag_new_release_updates_2",
+  "commit" : "2b0da439c69aa3971dad4832d8cd1e16acab6681",
+  "commitShort" : "2b0da43",
+  "commitMessage" : "fix: add fused_mrope and vision_embedding_merge to OpTraitTable",
+  "commitAuthor" : "agibsonccc",
+  "passing" : true,
+  "module" : "platform-tests",
+  "totalTests" : 3,
+  "passed" : 3,
+  "notes" : "Focused DSP training parity passed after enabling training freeze/replay semantics. Logs show first execution frozen=false, then TrainingSession freezes shapes, FROZEN_TRANSITION fires, and subsequent executions run frozen=true. This verifies the requested non-slot-by-slot training behavior for stable batch shapes in the focused gate.",
+  "tags" : "dsp,training,freeze,replay,cuda,test-pass",
+  "timestamp" : "2026-05-27T23:45:39.295236Z"
+}

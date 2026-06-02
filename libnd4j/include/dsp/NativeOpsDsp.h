@@ -1282,4 +1282,22 @@ SD_LIB_EXPORT int ncclGroupStart();
  */
 SD_LIB_EXPORT int ncclGroupEnd();
 
+// ========================
+// Plan Cache Shutdown Guard
+// ========================
+
+/**
+ * Mark the native plan cache subsystem as shutting down.
+ * When set, unpinPlan() and evictIfOverBudgetLocked() skip plan deletion
+ * entirely — the OS reclaims all memory on process exit.
+ *
+ * This prevents SIGSEGV from CUDA API calls (cudaStreamDestroy, cudaFree,
+ * cudaGraphExecDestroy) racing with JVM shutdown tearing down the CUDA context.
+ *
+ * Must be called from the JVM shutdown hook BEFORE DeallocatorService shutdown.
+ *
+ * @param inProgress true to mark shutdown in progress, false otherwise
+ */
+SD_LIB_EXPORT void setPlanCacheShutdownInProgress(bool inProgress);
+
 #endif // NATIVEOPSDSP_H
