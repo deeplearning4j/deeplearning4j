@@ -137,9 +137,8 @@ jobs:
         id: setup-ccache
         uses: ./.github/actions/setup-ccache-linux
         with:
-          cache-suffix: cuda-12.9-${{ matrix.helper }}
-          cache-family: cuda-12.9
-          max-size: '8G'
+          cache-suffix: cuda-12.9
+          max-size: '2G'
 
       - name: Show ccache stats before build
         if: always()
@@ -379,6 +378,7 @@ jobs:
 
       - name: Save ccache (always)
         if: always() && steps.setup-ccache.outputs.save-key != ''
+        continue-on-error: true
         uses: actions/cache/save@v4
         with:
           path: ~/.ccache
