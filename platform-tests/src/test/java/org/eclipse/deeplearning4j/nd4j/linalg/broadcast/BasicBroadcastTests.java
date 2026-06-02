@@ -59,9 +59,11 @@ public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
         SDVariable b = sd.constant(Nd4j.createFromArray(true, true).reshape(1, 2)); // with .reshape(2, 1) or .reshape(2) it doesn't work either
         SDVariable result = sd.math().and(a, b);
         INDArray eval = result.eval();
+        // a = [[true,false],[false,true]], b = [[true,true]] broadcast to [[true,true],[true,true]]
+        // a AND b: [[T&&T,F&&T],[F&&T,T&&T]] = [[true,false],[false,true]]
         assertEquals(Nd4j.createFromArray(new boolean[][] {
                 {true,false},
-                {false,false}
+                {false,true}
         }),eval);
     }
 

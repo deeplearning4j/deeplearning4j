@@ -154,7 +154,9 @@ PLATFORM_CHECK(flatten, ENGINE_CPU) {
   auto z = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN FLATTEN OP");
-  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+  // MKLDNN flatten only handles single-input case; multi-input flatten must use generic implementation
+  req.expectTrue(makeInfoVariable(block.width() == 1, "SINGLE_INPUT"), EXPECTED_TRUE) &&
+      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
   req.logTheSuccess();

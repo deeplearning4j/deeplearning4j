@@ -70,7 +70,7 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
         std::vector<sd::LongType> emptyVec = {};
         NDArray *norm2Result = listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec);
         if (useAverage) {
-          NDArray *divResult = (*norm2Result) / listOfSubArrs.at(i)->lengthOf();
+          NDArray *divResult = (*norm2Result) / z->lengthOf();
           if (divResult->e<double>(0) > clipNorm->e<double>(0)) {
             NDArray *clipDivResult = (*clipNorm) / (*divResult);
             *listOfSubArrs.at(i) *= (*clipDivResult);

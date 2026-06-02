@@ -187,6 +187,9 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D.class,
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DTF.class,
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DDerivative.class,
+                // PixelShuffle must be registered BEFORE DepthToSpace because both use opName "depth_to_space".
+                // The last registration wins in OP_NAME_MAP, so DepthToSpace (the canonical class) must come last.
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PixelShuffle.class,
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace.class,
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D.class,
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp.class,
@@ -371,6 +374,9 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.shape.MergeSum.class,
                 org.nd4j.linalg.api.ops.impl.shape.MeshGrid.class,
                 org.nd4j.linalg.api.ops.impl.shape.OneHot.class,
+                // OnesAs must be registered BEFORE OnesLike because both use opName "ones_as".
+                // The last registration wins in OP_NAME_MAP, so OnesLike (the canonical class) must come last.
+                org.nd4j.linalg.api.ops.impl.shape.OnesAs.class,
                 org.nd4j.linalg.api.ops.impl.shape.OnesLike.class,
                 org.nd4j.linalg.api.ops.impl.shape.ParallelStack.class,
                 org.nd4j.linalg.api.ops.impl.shape.Permute.class,
@@ -770,7 +776,8 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE.class,
                 // Vision-language model ops
                 org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge.class,
-                org.nd4j.linalg.api.ops.impl.transforms.custom.PixelShuffle.class,
+                // Note: PixelShuffle is registered earlier (before DepthToSpace) so DepthToSpace wins
+                // in OP_NAME_MAP for "depth_to_space". Do not re-register PixelShuffle here.
                 // Activation ops
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELUBp.class,
@@ -818,7 +825,8 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample.class,
                 // Shape ops
                 org.nd4j.linalg.api.ops.impl.shape.CreateView.class,
-                org.nd4j.linalg.api.ops.impl.shape.OnesAs.class,
+                // Note: OnesAs is registered earlier (before OnesLike) so OnesLike wins
+                // in OP_NAME_MAP for "ones_as". Do not re-register OnesAs here.
                 // Misc ops
                 org.nd4j.linalg.api.ops.custom.LinearCopy.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.ApplyAlibi.class,

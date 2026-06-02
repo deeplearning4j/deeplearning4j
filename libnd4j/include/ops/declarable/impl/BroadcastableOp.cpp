@@ -62,12 +62,14 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
   };
 
   if (shape::isEmptyConst(x) || shape::isEmptyConst(y)) {
-    // TF semantics: broadcastableOp(empty, anything) -> empty scalar
-    // broadcastableOp(anything, empty) -> empty scalar
-    auto desc = ShapeBuilders::emptyShapeInfo(dtype);
-    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(desc)->primary());
-    return shapeList;
-  } else if (shape::isScalar(x) && shape::isScalar(y)) {
+    // When either operand is empty, compute the broadcast shape and return an
+    // empty array with that shape (not a scalar). E.g.:
+    //   add([1,2], [0,2])  -> shape [0,2]  (length=0, preserves structure)
+    //   add([1,0,1], [1,0,2]) -> shape [1,0,2]
+    // Fall through to the regular broadcast-shape logic below.
+  }
+
+  if (shape::isScalar(x) && shape::isScalar(y)) {
     if (shape::rank(x) >= shape::rank(y)) {
       shapeList->push_back(contiguousShapeFrom(x));
     } else {

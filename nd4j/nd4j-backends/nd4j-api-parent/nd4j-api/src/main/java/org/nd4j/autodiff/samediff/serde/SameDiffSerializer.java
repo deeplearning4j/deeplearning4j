@@ -1671,6 +1671,7 @@ public class SameDiffSerializer {
                 } catch (Exception e) {
                     log.error("Failed to set sub-instances map via reflection", e);
                 }
+
             }
         }
 
@@ -1814,6 +1815,57 @@ public class SameDiffSerializer {
                     }
                 }
             }
+        }
+
+        // 6. Restore gradient links for all variables.
+        // Variable.gradient (the link from a variable to its gradient SDVariable) is NOT
+        // serialized in the FlatBuffer format. After deserialization, all gradient links are null.
+        // This means getGradient() returns null in TrainingSession, causing weight updates to be
+        // skipped entirely for all VARIABLE-type parameters.
+        // By convention, the gradient variable for "w" is named "w-grad". Restore these links here.
+        int gradLinksRestored = 0;
+        for (Map.Entry<String, Variable> entry : sd.getVariables().entrySet()) {
+            String varName = entry.getKey();
+            String gradName = varName + "-grad";
+            if (sd.hasVariable(gradName)) {
+                try {
+                    entry.getValue().setGradient(sd.getVariable(gradName));
+                    gradLinksRestored++;
+                } catch (Exception e) {
+                    log.warn("Failed to restore gradient link for variable '{}'", varName, e);
+                }
+            }
+        }
+        if (gradLinksRestored > 0) {
+            log.info("Restored {} gradient variable links after deserialization.", gradLinksRestored);
+        }
+
+        // 7. Re-bind parent VARIABLE arrays to all sub-instances so they share the same backing buffers.
+        // This must run AFTER all other loading steps (including post-load configuration) to ensure
+        // no subsequent step undoes the sharing.
+        // After deserialization, the parent SD and sub-instances (grad function) have separate array
+        // objects for VARIABLE-type parameters. Training updates the grad function's array in-place
+        // (paramArr.subi(gradArr)), but without sharing, the parent SD's getArrForVarName() still
+        // returns the stale pre-training values.
+        // Calling associateArrayWithVariable on the parent propagates the array reference to all
+        // nested sub-instances (see SameDiff.associateArrayWithVariable lines 1369-1377).
+        if (sd.getSameDiffFunctionInstances() != null && !sd.getSameDiffFunctionInstances().isEmpty()) {
+            int reboundCount = 0;
+            for (Variable v : sd.getVariables().values()) {
+                if (v.getVariable().getVariableType() == VariableType.VARIABLE) {
+                    INDArray arr = sd.getArrForVarName(v.getName());
+                    if (arr != null) {
+                        try {
+                            sd.associateArrayWithVariable(arr, v.getName());
+                            reboundCount++;
+                        } catch (Exception e) {
+                            log.warn("Failed to re-bind array for variable '{}'", v.getName(), e);
+                        }
+                    }
+                }
+            }
+            log.info("Re-bind count: {} VARIABLE arrays to {} sub-instances after deserialization.",
+                    reboundCount, sd.getSameDiffFunctionInstances().size());
         }
 
         log.info("Finished deserializeFromFlatBuffers. Final variable count: {}, Op count: {}, Sub-instances: {}",

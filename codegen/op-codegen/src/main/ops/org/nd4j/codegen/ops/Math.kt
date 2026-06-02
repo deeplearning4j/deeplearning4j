@@ -137,9 +137,8 @@ fun Math() =  Namespace("Math") {
     }
 
     Op("and") {
-        legacy = true
-        javaOpClass = "And"
-        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool"
+        javaOpClass = "LogicalAnd"
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         Input(BOOL, "x") { description = "Input 1" }
         Input(BOOL, "y") { description = "Input 2" }
         Output(BOOL, "output"){ description = "%INPUT_TYPE% with values 0 and 1 based on where the condition is satisfied" }
@@ -1075,11 +1074,11 @@ fun Math() =  Namespace("Math") {
     }
 
     Op("or") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool"
+        javaOpClass = "LogicalOr"
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         Input(BOOL, "x") { description = "Input 1" }
         Input(BOOL, "y") { description = "Input 2" }
         Output(BOOL, "output"){ description = "%INPUT_TYPE% with values 0 and 1 based on where the condition is satisfied" }
-        legacy = true
         Doc(Language.ANY, DocScope.ALL){
             """
                 Boolean OR operation: elementwise (x != 0) || (y != 0)
@@ -1421,8 +1420,8 @@ fun Math() =  Namespace("Math") {
     }
 
     Op("xor") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool"
-        legacy = true
+        javaOpClass = "LogicalXor"
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         Input(BOOL, "x") { description = "Input 1" }
         Input(BOOL, "y") { description = "Input 2" }
         Output(BOOL, "output"){ description = "%INPUT_TYPE% with values 0 and 1 based on where the condition is satisfied" }

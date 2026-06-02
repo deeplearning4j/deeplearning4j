@@ -4698,7 +4698,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray getColumn(long c) {
-        return getColumn(c, false);
+        return getColumn(c, true);
     }
 
     @Override

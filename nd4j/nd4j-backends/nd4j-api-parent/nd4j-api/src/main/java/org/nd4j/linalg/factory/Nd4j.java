@@ -6785,6 +6785,27 @@ public class Nd4j {
     }
 
     /**
+     * Returns true if {@code arr} has C-contiguous (row-major) strides, i.e. the strides exactly
+     * match those of a freshly-allocated C-order array with the same shape.
+     *
+     * <p>This is stronger than {@code arr.ordering() == 'c'}: a view produced by
+     * {@code NDArrayIndex.point(i)} reports ordering 'f' (or 'c') but has non-unit strides and is
+     * NOT C-contiguous in memory.  The native concat fast path uses memcpy and reads raw buffer
+     * positions, so it requires genuine contiguity, not just the ordering flag.</p>
+     */
+    private static boolean isCContiguousND(INDArray arr) {
+        int rank = arr.rank();
+        if (rank == 0) return true;
+        long[] shape  = arr.shape();
+        long[] stride = arr.stride();
+        if (stride[rank - 1] != 1) return false;
+        for (int i = rank - 2; i >= 0; i--) {
+            if (stride[i] != stride[i + 1] * shape[i + 1]) return false;
+        }
+        return true;
+    }
+
+    /**
      * This method stacks vertically examples with the same shape, increasing result dimensionality.
      * I.e. if you provide bunch of 3D tensors, output will be 4D tensor. Alignment is always applied to axis 0.
      *
@@ -6800,7 +6821,15 @@ public class Nd4j {
 
         List<INDArray> reshaped = new ArrayList<>();
         for(INDArray array: arrays) {
-            reshaped.add(array.reshape(array.ordering(), newShape));
+            // If the array is not C-contiguous (e.g., a strided view obtained via
+            // NDArrayIndex.point()), reshape_no_copy creates a view whose shapeInfo
+            // does NOT have the ARRAY_IS_VIEW flag set at the C++ level. The native
+            // concat then incorrectly treats it as a contiguous buffer and uses memcpy,
+            // reading consecutive raw buffer positions instead of the actual strided
+            // element positions. To prevent this, we always dup non-contiguous arrays
+            // to a fresh C-order allocation before reshaping.
+            INDArray contiguous = isCContiguousND(array) ? array : array.dup('c');
+            reshaped.add(contiguous.reshape('c', newShape));
         }
 
         return Nd4j.vstack(reshaped);

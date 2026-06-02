@@ -137,9 +137,12 @@ PLATFORM_IMPL(softmax, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-// Check if data type is supported by OneDNN softmax
+// Check if data type is supported by OneDNN softmax.
+// NOTE: HALF (FP16) is excluded because OneDNN FP16 requires AVX-512-FP16
+// hardware that is not universally available on CPU. HALF inputs fall back
+// to the generic CPU softmax implementation which upcasts to float32 internally.
 static bool isSupportedSoftmaxType(DataType dt) {
-  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16 || dt == DataType::HALF;
+  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16;
 }
 
 PLATFORM_CHECK(softmax, ENGINE_CPU) {
@@ -151,9 +154,9 @@ PLATFORM_CHECK(softmax, ENGINE_CPU) {
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
       req.expectTrue(makeInfoVariable(isSupportedSoftmaxType(x->dataType()), TYPE_MSG_INPUT),
-                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+                     "Must be FLOAT32 or BFLOAT16") &&
       req.expectTrue(makeInfoVariable(isSupportedSoftmaxType(z->dataType()), TYPE_MSG_OUTPUT),
-                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+                     "Must be FLOAT32 or BFLOAT16") &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT),
                    makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT));
   req.logTheSuccess();
@@ -270,11 +273,11 @@ PLATFORM_CHECK(softmax_bp, ENGINE_CPU) {
       req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), makeInfoVariable(dLdz->rankOf(), RANK_MSG_INPUT1)) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
       req.expectTrue(makeInfoVariable(isSupportedSoftmaxType(x->dataType()), TYPE_MSG_INPUT0),
-                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+                     "Must be FLOAT32 or BFLOAT16") &&
       req.expectTrue(makeInfoVariable(isSupportedSoftmaxType(dLdz->dataType()), TYPE_MSG_INPUT1),
-                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+                     "Must be FLOAT32 or BFLOAT16") &&
       req.expectTrue(makeInfoVariable(isSupportedSoftmaxType(dLdx->dataType()), TYPE_MSG_OUTPUT),
-                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+                     "Must be FLOAT32 or BFLOAT16") &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0),
                    makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1)) &&
       req.expect(
