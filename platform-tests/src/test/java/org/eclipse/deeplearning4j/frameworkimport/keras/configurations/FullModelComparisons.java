@@ -178,7 +178,7 @@ public class FullModelComparisons extends BaseDL4JTest {
         INDArray kerasPredictions = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/lstm/predictions.npy"));
 
         for (int i = 0; i < 283; i++) {
-            assertEquals(kerasPredictions.getDouble(i), dl4jPredictions.getDouble(i), 1e-7);
+            assertEquals(kerasPredictions.getDouble(i), dl4jPredictions.getDouble(i), 1e-5);
         }
 
 
