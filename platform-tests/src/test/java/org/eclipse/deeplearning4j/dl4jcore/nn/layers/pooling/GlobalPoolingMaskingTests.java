@@ -173,7 +173,8 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
             //Multiply the input by the mask array, to ensure the 0s in the mask correspond to 0s in the input vector
             // as would be the case in practice...
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 3));
+            // Use element-wise mul with broadcasting: mask [1,1,1,w] broadcasts correctly over input [mb,c,h,w]
+            inToBeMasked.muli(maskArray);
 
 
             net.setLayerMaskArrays(maskArray, null);
@@ -236,7 +237,8 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
             //Multiply the input by the mask array, to ensure the 0s in the mask correspond to 0s in the input vector
             // as would be the case in practice...
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 2));
+            // Use element-wise mul with broadcasting: mask [1,1,h,1] broadcasts correctly over input [mb,c,h,w]
+            inToBeMasked.muli(maskArray);
 
 
             net.setLayerMaskArrays(maskArray, null);
@@ -301,7 +303,8 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
             //Multiply the input by the mask array, to ensure the 0s in the mask correspond to 0s in the input vector
             // as would be the case in practice...
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 3));
+            // Use element-wise mul with broadcasting: mask [mb,1,1,w] broadcasts correctly over input [mb,c,h,w]
+            inToBeMasked.muli(maskArray);
 
 
             net.setLayerMaskArrays(maskArray, null);
@@ -360,7 +363,8 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
             //Multiply the input by the mask array, to ensure the 0s in the mask correspond to 0s in the input vector
             // as would be the case in practice...
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 2));
+            // Use element-wise mul with broadcasting: mask [mb,1,h,1] broadcasts correctly over input [mb,c,h,w]
+            inToBeMasked.muli(maskArray);
 
 
             net.setLayerMaskArrays(maskArray, null);
