@@ -260,7 +260,7 @@ DECLARE_CUSTOM_OP(upsampling3d_bp, 2, 1, false, 0, 0);
  * 0: axis
  */
 #if NOT_EXCLUDED(OP_ismax)
-DECLARE_CONFIGURABLE_OP(ismax, 1, 1, true, 0, -2);
+DECLARE_CUSTOM_OP(ismax, 1, 1, true, 0, -2);
 #endif
 
 /**

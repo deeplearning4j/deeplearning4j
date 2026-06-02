@@ -49,6 +49,7 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/transforms.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <memory/MemoryCounter.h>
 #include <memory/MultiBackendWorkspace.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -377,11 +378,11 @@ void setPinnedHostBytesLimit(sd::LongType maxBytes) {
 }
 
 void setMemoryPoolSoftLimitPercent(int percent) {
-  // no-op for CPU
+  sd::memory::MemoryCounter::getInstance().setSoftLimitPercent(percent);
 }
 
 int getMemoryPoolSoftLimitPercent() {
-  return 0;  // no memory pool on CPU
+  return sd::memory::MemoryCounter::getInstance().getSoftLimitPercent();
 }
 
 void addExcludedFailoverDevice(int deviceId) {

@@ -1305,6 +1305,40 @@ public final class DspHandle {
     public int lastExecConsecutiveUnchangedCount() { return nativeOps().getLastExecConsecutiveUnchangedCount(requireHandle()); }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Buffer coloring
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Whether buffer coloring is currently applied on this plan. */
+    public boolean bufferColoringApplied() { return nativeOps().getPlanBufferColoringApplied(requireHandle()); }
+    /** Number of colors assigned by coloring (0 if not computed). */
+    public int bufferColoringNumColors() { return nativeOps().getPlanBufferColoringNumColors(requireHandle()); }
+    /** Estimated bytes saved by coloring. */
+    public long bufferColoringBytesSaved() { return nativeOps().getPlanBufferColoringBytesSaved(requireHandle()); }
+    /** Color assigned to a specific slot (-1 if uncolored). */
+    public int slotColor(int slotIdx) { return nativeOps().getPlanSlotColor(requireHandle(), slotIdx); }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Buffer pool (static — not plan-specific)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Total bytes currently pooled on the given device. */
+    public static long bufferPoolPooledBytes(int deviceId) {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().getBufferPoolPooledBytes(deviceId);
+    }
+    /** Number of buffers currently in the pool on the given device. */
+    public static int bufferPoolPooledCount(int deviceId) {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().getBufferPoolPooledCount(deviceId);
+    }
+    /** Lifetime acquire count on the given device. */
+    public static long bufferPoolTotalAcquired(int deviceId) {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().getBufferPoolTotalAcquired(deviceId);
+    }
+    /** Lifetime reuse count (acquires satisfied from pool) on the given device. */
+    public static long bufferPoolTotalReused(int deviceId) {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().getBufferPoolTotalReused(deviceId);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Debugger bridge
     // ─────────────────────────────────────────────────────────────────────────
 

@@ -68,6 +68,7 @@ class SD_LIB_EXPORT CoreConfig {
 
   std::atomic<bool> _serializeBlasCallsSet{false};
   std::atomic<int> _openBlasThreads{0};
+  std::atomic<int> _cpuSoftLimitPercent{0};  // proactive memory soft limit (0=disabled, 1-100)
 
  public:
   CoreConfig();
@@ -113,6 +114,10 @@ class SD_LIB_EXPORT CoreConfig {
   void setMaxDeviceMemory(uint64_t maxBytes) { _maxDeviceMemory.store(maxBytes); }
   uint64_t maxPrimaryMemory() { return _maxTotalPrimaryMemory.load(); }
   uint64_t maxSpecialMemory() { return _maxTotalSpecialMemory.load(); }
+
+  // --- CPU soft limit ---
+  int cpuSoftLimitPercent() { return _cpuSoftLimitPercent.load(); }
+  void setCpuSoftLimitPercent(int percent);
 
   // --- BLAS ---
   bool blasFallback() { return _blasFallback; }

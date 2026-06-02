@@ -24,6 +24,7 @@ namespace graph {
 
 PlanDefinition::~PlanDefinition() {
   delete[] requestedOutputSlotIndices_;
+  delete slotLiveness_;
 }
 
 // ── Builder ─────────────────────────────────────────────────────────────────
@@ -54,6 +55,8 @@ PlanDefinition* PlanDefinition::Builder::build() {
   def->hasControlFlow_ = hasControlFlow_;
   def->numLoopRegions_ = numLoopRegions_;
   def->backendPriority_ = std::move(backendPriority_);
+  def->slotLiveness_ = slotLiveness_;
+  slotLiveness_ = nullptr;  // Transfer ownership
   return def;
 }
 

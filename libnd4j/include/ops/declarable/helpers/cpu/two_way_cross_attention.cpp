@@ -128,15 +128,16 @@ void twoWayCrossAttention(NDArray* tokenQuery, NDArray* tokenKey,
     } else {
         // 3D: [batch, seqLen, dim] — iterate over batch
         sd::LongType batchSize = tokenQuery->sizeAt(0);
+        std::vector<sd::LongType> dimsToExclude = {0};
         for (sd::LongType b = 0; b < batchSize; b++) {
-            NDArray tqSlice = tokenQuery->slice(b, 0);
-            NDArray tkSlice = tokenKey->slice(b, 0);
-            NDArray tvSlice = tokenValue->slice(b, 0);
-            NDArray iqSlice = imageQuery->slice(b, 0);
-            NDArray ikSlice = imageKey->slice(b, 0);
-            NDArray ivSlice = imageValue->slice(b, 0);
-            NDArray toSlice = tokenOutput->slice(b, 0);
-            NDArray ioSlice = imageOutput->slice(b, 0);
+            NDArray tqSlice = *(*tokenQuery)(b, dimsToExclude);
+            NDArray tkSlice = *(*tokenKey)(b, dimsToExclude);
+            NDArray tvSlice = *(*tokenValue)(b, dimsToExclude);
+            NDArray iqSlice = *(*imageQuery)(b, dimsToExclude);
+            NDArray ikSlice = *(*imageKey)(b, dimsToExclude);
+            NDArray ivSlice = *(*imageValue)(b, dimsToExclude);
+            NDArray toSlice = *(*tokenOutput)(b, dimsToExclude);
+            NDArray ioSlice = *(*imageOutput)(b, dimsToExclude);
 
             twoWayCrossAttentionSingle(&tqSlice, &tkSlice, &tvSlice,
                                        &iqSlice, &ikSlice, &ivSlice,
@@ -267,22 +268,23 @@ void twoWayCrossAttentionBp(
         sd::LongType batchSize = tokenQuery->sizeAt(0);
 
         // Zero-initialize all gradient outputs before accumulation
-        dLdTokenQuery->assign(0.0);
-        dLdTokenKey->assign(0.0);
-        dLdTokenValue->assign(0.0);
-        dLdImageQuery->assign(0.0);
-        dLdImageKey->assign(0.0);
-        dLdImageValue->assign(0.0);
+        dLdTokenQuery->nullify();
+        dLdTokenKey->nullify();
+        dLdTokenValue->nullify();
+        dLdImageQuery->nullify();
+        dLdImageKey->nullify();
+        dLdImageValue->nullify();
 
+        std::vector<sd::LongType> dimsToExclude = {0};
         for (sd::LongType b = 0; b < batchSize; b++) {
-            NDArray tqSlice  = tokenQuery->slice(b, 0);
-            NDArray tkSlice  = tokenKey->slice(b, 0);
-            NDArray tvSlice  = tokenValue->slice(b, 0);
-            NDArray iqSlice  = imageQuery->slice(b, 0);
-            NDArray ikSlice  = imageKey->slice(b, 0);
-            NDArray ivSlice  = imageValue->slice(b, 0);
-            NDArray gtSlice  = gradTokenOut->slice(b, 0);
-            NDArray giSlice  = gradImageOut->slice(b, 0);
+            NDArray tqSlice  = *(*tokenQuery)(b, dimsToExclude);
+            NDArray tkSlice  = *(*tokenKey)(b, dimsToExclude);
+            NDArray tvSlice  = *(*tokenValue)(b, dimsToExclude);
+            NDArray iqSlice  = *(*imageQuery)(b, dimsToExclude);
+            NDArray ikSlice  = *(*imageKey)(b, dimsToExclude);
+            NDArray ivSlice  = *(*imageValue)(b, dimsToExclude);
+            NDArray gtSlice  = *(*gradTokenOut)(b, dimsToExclude);
+            NDArray giSlice  = *(*gradImageOut)(b, dimsToExclude);
 
             // Allocate per-batch gradient slices
             NDArray dTQ(tqSlice.shapeInfo(), false, context, true);
@@ -300,12 +302,12 @@ void twoWayCrossAttentionBp(
                 scale, context);
 
             // Write per-batch results into output slices
-            NDArray dLdTQSlice = dLdTokenQuery->slice(b, 0);
-            NDArray dLdTKSlice = dLdTokenKey->slice(b, 0);
-            NDArray dLdTVSlice = dLdTokenValue->slice(b, 0);
-            NDArray dLdIQSlice = dLdImageQuery->slice(b, 0);
-            NDArray dLdIKSlice = dLdImageKey->slice(b, 0);
-            NDArray dLdIVSlice = dLdImageValue->slice(b, 0);
+            NDArray dLdTQSlice = *(*dLdTokenQuery)(b, dimsToExclude);
+            NDArray dLdTKSlice = *(*dLdTokenKey)(b, dimsToExclude);
+            NDArray dLdTVSlice = *(*dLdTokenValue)(b, dimsToExclude);
+            NDArray dLdIQSlice = *(*dLdImageQuery)(b, dimsToExclude);
+            NDArray dLdIKSlice = *(*dLdImageKey)(b, dimsToExclude);
+            NDArray dLdIVSlice = *(*dLdImageValue)(b, dimsToExclude);
 
             dLdTQSlice.assign(&dTQ);
             dLdTKSlice.assign(&dTK);

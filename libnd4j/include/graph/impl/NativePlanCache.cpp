@@ -18,6 +18,7 @@
  ******************************************************************************/
 
 #include <graph/NativePlanCache.h>
+#include <graph/DspBufferPool.h>
 #include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
@@ -140,9 +141,17 @@ NativeDynamicShapePlan* NativePlanCache::getOrInsert(
       lru_.splice(lru_.begin(), lru_, it->second);
       NativeDynamicShapePlan* plan = it->second->second;
       pinnedPlans_.insert(plan);
-      DSP_DIAG(EXECUTE, "PLAN_CACHE HIT thread=0x%llx plan=%p shapeHash=0x%llx",
-               (unsigned long long)key.threadId, (void*)plan,
-               (unsigned long long)key.phShapeContentHash);
+      // Reactivate passivated plans — execute path re-warms automatically.
+      if (plan->isPassivated()) {
+        plan->reactivate();
+        DSP_DIAG(EXECUTE, "PLAN_CACHE HIT (reactivated) thread=0x%llx plan=%p shapeHash=0x%llx",
+                 (unsigned long long)key.threadId, (void*)plan,
+                 (unsigned long long)key.phShapeContentHash);
+      } else {
+        DSP_DIAG(EXECUTE, "PLAN_CACHE HIT thread=0x%llx plan=%p shapeHash=0x%llx",
+                 (unsigned long long)key.threadId, (void*)plan,
+                 (unsigned long long)key.phShapeContentHash);
+      }
       result = plan;
     } else {
       // Cache miss: build a new plan for this thread.
@@ -260,8 +269,20 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
 #endif
   const float fraction = dsp.planCacheBudgetFraction();
 
-  // Helper lambda: find oldest unpinned plan (LRU end toward MRU front)
-  auto findVictim = [&]() -> LruList::iterator {
+  // Helper lambda: find oldest unpinned, non-passivated plan (LRU end toward MRU front)
+  auto findPassivationCandidate = [&]() -> LruList::iterator {
+    for (auto it = std::prev(lru_.end()); ; ) {
+      if (pinnedPlans_.count(it->second) == 0 && !it->second->isPassivated()) {
+        return it;
+      }
+      if (it == lru_.begin()) break;
+      --it;
+    }
+    return lru_.end();
+  };
+
+  // Helper lambda: find oldest unpinned plan (for full eviction, includes passivated)
+  auto findEvictionCandidate = [&]() -> LruList::iterator {
     for (auto it = std::prev(lru_.end()); ; ) {
       if (pinnedPlans_.count(it->second) == 0) {
         return it;
@@ -272,9 +293,32 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
     return lru_.end();
   };
 
-  // ---- 1. Hard count cap ----
+  // Helper: compute total cache footprint
+  auto computeCacheBytes = [&]() -> size_t {
+    size_t total = 0;
+    for (auto& entry : lru_) {
+      size_t planBytes = entry.second->estimatedOwnedBytes();
+      total += (planBytes > 0) ? planBytes : kBytesPerPlanEstimate;
+    }
+    return total;
+  };
+
+  // Helper: query free memory
+  auto queryFreeMem = []() -> size_t {
+#ifdef SD_CUDA
+    size_t freeMem = 0, totalMem = 0;
+    cudaError_t err = cudaMemGetInfo(&freeMem, &totalMem);
+    return (err == cudaSuccess) ? freeMem : 0;
+#else
+    return sd::memory::MemoryUtils::getSystemFreeMemoryBytes();
+#endif
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Round 1: Hard count cap — full eviction for plans over max count
+  // ═══════════════════════════════════════════════════════════════════════
   while (static_cast<int>(lru_.size()) > maxPlans) {
-    auto victim = findVictim();
+    auto victim = findEvictionCandidate();
     if (victim == lru_.end()) break;  // all pinned
     DSP_DIAG(MEMORY, "PLAN_CACHE evict LRU (count cap %d): outputSetHash=%llu phCount=%lld contentHash=0x%016llx",
              maxPlans,
@@ -287,30 +331,55 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
     victims.push_back(plan);
   }
 
-  // ---- 2. Memory-fraction soft cap ----
+  // ═══════════════════════════════════════════════════════════════════════
+  // Memory-based eviction (rounds 2-4) — only when budget fraction is set
+  // ═══════════════════════════════════════════════════════════════════════
   if (fraction > 0.0f && !lru_.empty()) {
-    size_t freeMem = 0;
-
-#ifdef SD_CUDA
-    size_t totalMem = 0;
-    cudaError_t err = cudaMemGetInfo(&freeMem, &totalMem);
-    if (err != cudaSuccess) freeMem = 0;
-#else
-    freeMem = sd::memory::MemoryUtils::getSystemFreeMemoryBytes();
-#endif
-
+    size_t freeMem = queryFreeMem();
     if (freeMem > 0) {
       const size_t budgetBytes = static_cast<size_t>(fraction * static_cast<float>(freeMem));
+      size_t totalCacheBytes = computeCacheBytes();
 
-      // Compute actual cache footprint using per-plan estimates
-      size_t totalCacheBytes = 0;
-      for (auto& entry : lru_) {
-        size_t planBytes = entry.second->estimatedOwnedBytes();
-        totalCacheBytes += (planBytes > 0) ? planBytes : kBytesPerPlanEstimate;
+      // ─────────────────────────────────────────────────────────────────
+      // Round 2: Passivation — release GPU intermediates, plan stays in cache
+      // ─────────────────────────────────────────────────────────────────
+      while (totalCacheBytes > budgetBytes) {
+        auto candidate = findPassivationCandidate();
+        if (candidate == lru_.end()) break;  // all pinned or already passivated
+
+        NativeDynamicShapePlan* plan = candidate->second;
+        size_t planBytes = plan->estimatedOwnedBytes();
+        size_t planCost = (planBytes > 0) ? planBytes : kBytesPerPlanEstimate;
+
+        DSP_DIAG(MEMORY, "PLAN_CACHE passivate LRU (memory budget %.1f%% of %zuMB free, "
+                 "cache=%zuMB): plan=%p planBytes=%zuMB",
+                 fraction * 100.0f,
+                 freeMem / (1024 * 1024),
+                 totalCacheBytes / (1024 * 1024),
+                 (void*)plan,
+                 planCost / (1024 * 1024));
+        plan->passivate();
+        totalCacheBytes -= planCost;
       }
 
+      // ─────────────────────────────────────────────────────────────────
+      // Round 3: Pool trim — free pooled buffers from DspBufferPool
+      // ─────────────────────────────────────────────────────────────────
+      if (totalCacheBytes > budgetBytes) {
+        size_t overshoot = totalCacheBytes - budgetBytes;
+        auto& pool = DspBufferPool::forCurrentDevice();
+        size_t poolFreed = pool.trim(overshoot);
+        DSP_DIAG(MEMORY, "PLAN_CACHE pool trim: freed %zuMB from buffer pool (target=%zuMB)",
+                 poolFreed / (1024 * 1024), overshoot / (1024 * 1024));
+        // Re-check: passivated plans now report ~0 bytes, recalculate
+        totalCacheBytes = computeCacheBytes();
+      }
+
+      // ─────────────────────────────────────────────────────────────────
+      // Round 4: Full eviction — delete LRU plans entirely
+      // ─────────────────────────────────────────────────────────────────
       while (totalCacheBytes > budgetBytes && !lru_.empty()) {
-        auto victim = findVictim();
+        auto victim = findEvictionCandidate();
         if (victim == lru_.end()) break;  // all pinned
 
         size_t victimBytes = victim->second->estimatedOwnedBytes();

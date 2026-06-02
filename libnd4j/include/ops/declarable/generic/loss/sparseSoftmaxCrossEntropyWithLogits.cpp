@@ -23,7 +23,6 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
 
-#include <memory>
 #include <ops/declarable/headers/loss.h>
 #include <ops/declarable/generic/helpers/ScatterHelper.h>
 
@@ -63,29 +62,29 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0)
 
   std::vector<LongType> dimension = {-1};
 
-  // Compute log softmax: -log(exp(logits - max) / sum(exp(logits - max)))
-  // NOTE: operator- and reduceAlongDimension return heap-allocated NDArray*.
-  // Use unique_ptr to avoid use-after-free (NDArray copy ctor is shallow).
-  std::unique_ptr<NDArray> maxAlongDim(logits->reduceAlongDimension(reduce::Max, &dimension, true));
+  // Compute -log(softmax(logits)) using raw pointers (unique_ptr is banned in libnd4j).
+  // All operator-(), operator/(), reduceAlongDimension(), and transform() return heap NDArray*.
+  // We delete each intermediate immediately after it is no longer needed.
+  NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
+  NDArray* shiftedLogits = (*logits) - (*maxAlongDim);
+  delete maxAlongDim;
 
-  std::unique_ptr<NDArray> shiftedLogits((*logits) - (*maxAlongDim));
-  maxAlongDim.reset();
-  std::unique_ptr<NDArray> logitsExp(shiftedLogits->transform(transform::Exp, nullptr));
-  shiftedLogits.reset();
+  NDArray* logitsExp = shiftedLogits->transform(transform::Exp, nullptr);
+  delete shiftedLogits;
 
-  std::unique_ptr<NDArray> sumLogitsExp(logitsExp->reduceAlongDimension(reduce::Sum, &dimension, true));
+  NDArray* sumLogitsExp = logitsExp->reduceAlongDimension(reduce::Sum, &dimension, true);
+  NDArray* softmaxRatio = (*logitsExp) / (*sumLogitsExp);
+  delete logitsExp;
+  delete sumLogitsExp;
 
-  std::unique_ptr<NDArray> softmaxRatio((*logitsExp) / (*sumLogitsExp));
-  logitsExp.reset();
-  sumLogitsExp.reset();
-  std::unique_ptr<NDArray> logSoftmaxPtr(softmaxRatio->transform(transform::Log));
-  softmaxRatio.reset();
+  NDArray* logSoftmax = softmaxRatio->transform(transform::Log);
+  delete softmaxRatio;
 
-  // Apply negation: -log(softmax)
-  NDArray logSoftMax = -(*logSoftmaxPtr);  // unary negation returns stack value (safe)
-  logSoftmaxPtr.reset();
+  // Negate in-place: logSoftmax = -log(softmax). Avoids any copy-constructor call.
+  logSoftmax->applyScalar(scalar::Multiply, -1.0, logSoftmax);
 
-  helpers::scatterForLoss(block.launchContext(), *labels, logSoftMax, *output, false);
+  helpers::scatterForLoss(block.launchContext(), *labels, *logSoftmax, *output, false);
+  delete logSoftmax;
 
   return Status::OK;
 }
@@ -160,21 +159,21 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 
 
   std::vector<LongType> dimension = {-1};
 
-  // Compute softmax
-  std::unique_ptr<NDArray> maxAlongDim(logits->reduceAlongDimension(reduce::Max, &dimension, true));
+  // Compute softmax using raw pointers (unique_ptr is banned in libnd4j).
+  NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
+  NDArray* shiftedLogits = (*logits) - (*maxAlongDim);
+  delete maxAlongDim;
 
-  std::unique_ptr<NDArray> shiftedLogits((*logits) - (*maxAlongDim));
-  maxAlongDim.reset();
-  std::unique_ptr<NDArray> softmax(shiftedLogits->transform(transform::Exp));
-  shiftedLogits.reset();
+  NDArray* softmax = shiftedLogits->transform(transform::Exp);
+  delete shiftedLogits;
 
-  std::unique_ptr<NDArray> sumSoftmax(softmax->reduceAlongDimension(reduce::Sum, &dimension, true));
-
+  NDArray* sumSoftmax = softmax->reduceAlongDimension(reduce::Sum, &dimension, true);
   *softmax /= *sumSoftmax;
-  sumSoftmax.reset();
+  delete sumSoftmax;
 
   // dEdp = softmax - 1 (or 0)
-  dLdp->assign(softmax.get());
+  dLdp->assign(softmax);
+  delete softmax;
 
   // subtract unities at appropriate indexes of dLdp array
   helpers::scatterForLoss(block.launchContext(), *labels, *dLdp,

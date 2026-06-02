@@ -609,6 +609,14 @@ void DataBuffer::allocatePrimary() {
     auto deviceId = AffinityManager::currentDeviceId();
     // check if this allocation won't bring us above limit
     if (_workspace == nullptr) {
+      // Proactive soft limit check: reject early if system RAM usage exceeds threshold.
+      // This prevents cumulative exhaustion from many small allocations (e.g. DSP warmup)
+      // that individually succeed but collectively push the system into swap/OOM.
+      if (!memory::MemoryCounter::getInstance().validateSoftLimit(getLenInBytes()))
+        THROW_EXCEPTION(allocation_exception::build("Allocation would breach CPU soft memory limit",
+                                          memory::MemoryCounter::getInstance().allocatedGroup(memory::MemoryType::HOST),
+                                          getLenInBytes()).what());
+
       if (sd::env_isCPU()) {
         // on cpu backend we validate against device 0 for now
         if (!memory::MemoryCounter::getInstance().validate(getLenInBytes()))

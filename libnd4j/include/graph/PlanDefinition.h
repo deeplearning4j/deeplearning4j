@@ -20,6 +20,7 @@
 #define LIBND4J_PLAN_DEFINITION_H
 
 #include <system/common.h>
+#include <graph/DspBufferColorMap.h>
 #include <cstdint>
 #include <atomic>
 #include <string>
@@ -92,6 +93,13 @@ class PlanDefinition {
 
   const std::vector<std::string>& backendPriority() const { return backendPriority_; }
 
+  /**
+   * Slot liveness data (producer/lastConsumer step indices).
+   * Populated by NativePlanCompiler. Used by DspBufferColorMap for
+   * buffer coloring analysis. May be nullptr if liveness was not computed.
+   */
+  const SlotLivenessData* slotLiveness() const { return slotLiveness_; }
+
   // ── Builder (used by NativePlanCompiler / fromSerializedPlan) ──────────
 
   class Builder {
@@ -112,6 +120,9 @@ class PlanDefinition {
     Builder& setBackendPriority(const std::vector<std::string>& p) {
       backendPriority_ = p; return *this;
     }
+    Builder& setSlotLiveness(SlotLivenessData* liveness) {
+      slotLiveness_ = liveness; return *this;
+    }
 
     /**
      * Build the PlanDefinition. Caller receives a ref-counted pointer
@@ -130,6 +141,7 @@ class PlanDefinition {
     bool hasControlFlow_ = false;
     int numLoopRegions_ = 0;
     std::vector<std::string> backendPriority_;
+    SlotLivenessData* slotLiveness_ = nullptr;  // Ownership transferred to PlanDefinition
   };
 
  private:
@@ -158,6 +170,9 @@ class PlanDefinition {
   int numLoopRegions_ = 0;
 
   std::vector<std::string> backendPriority_;
+
+  // Slot liveness data — immutable after construction, owned by PlanDefinition
+  SlotLivenessData* slotLiveness_ = nullptr;
 };
 
 }  // namespace graph

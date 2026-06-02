@@ -2194,6 +2194,35 @@ public final class DspPlanAssertions {
         return org.nd4j.linalg.factory.Nd4j.getNativeOps();
     }
 
+    /**
+     * Assert that buffer coloring is consistent: if applied, numColors > 0
+     * and bytesSaved >= 0. If not applied, numColors == 0.
+     */
+    public static void assertColoringConsistent(DspHandle handle, String context) {
+        boolean applied = handle.bufferColoringApplied();
+        int numColors = handle.bufferColoringNumColors();
+        long bytesSaved = handle.bufferColoringBytesSaved();
+
+        if (applied) {
+            if (numColors <= 0) {
+                throw new AssertionError("DspPlanAssertions.assertColoringConsistent FAILED"
+                        + (context != null ? " [" + context + "]" : "")
+                        + ": coloring applied but numColors=" + numColors);
+            }
+            if (bytesSaved < 0) {
+                throw new AssertionError("DspPlanAssertions.assertColoringConsistent FAILED"
+                        + (context != null ? " [" + context + "]" : "")
+                        + ": coloring applied but bytesSaved=" + bytesSaved);
+            }
+        } else {
+            if (numColors != 0) {
+                throw new AssertionError("DspPlanAssertions.assertColoringConsistent FAILED"
+                        + (context != null ? " [" + context + "]" : "")
+                        + ": coloring not applied but numColors=" + numColors);
+            }
+        }
+    }
+
     private static void fail(String check, String context, String detail,
                              DspDebugger.PlanReport report) {
         StringBuilder sb = new StringBuilder();

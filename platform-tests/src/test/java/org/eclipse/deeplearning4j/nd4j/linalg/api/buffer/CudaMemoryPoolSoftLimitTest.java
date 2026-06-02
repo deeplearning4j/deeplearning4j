@@ -366,18 +366,16 @@ public class CudaMemoryPoolSoftLimitTest extends BaseNd4jTestWithBackends {
     }
 
     // =========================================================================
-    // Soft limit + real allocation integration
+    // Soft limit + real allocation integration (both CPU and CUDA)
     // =========================================================================
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Soft limit does not break normal allocation when set conservatively")
     void testSoftLimitDoesNotBreakNormalAllocation(Nd4jBackend backend) {
-        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
-        assumeTrue(getNumDevices() > 0, "Test requires at least 1 CUDA device");
-
-        // Set soft limit to 70% — typical production value
-        nativeOps.setMemoryPoolSoftLimitPercent(70);
+        // Works on both CPU and CUDA — the soft limit is now unified
+        // Use 95% to avoid hitting the limit during normal test execution
+        nativeOps.setMemoryPoolSoftLimitPercent(95);
 
         // Allocate, compute, verify correctness
         INDArray a = Nd4j.create(DataType.FLOAT, 100, 100);
@@ -395,19 +393,18 @@ public class CudaMemoryPoolSoftLimitTest extends BaseNd4jTestWithBackends {
         b.close();
         c.close();
 
-        log.info("Normal allocation + compute verified correct with soft limit at 70%%");
+        log.info("Normal allocation + compute verified correct with soft limit at 95%% [{}]",
+                isCudaBackend() ? "CUDA" : "CPU");
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Soft limit survives repeated enable/disable cycles")
     void testSoftLimitRepeatedToggle(Nd4jBackend backend) {
-        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
-        assumeTrue(getNumDevices() > 0, "Test requires at least 1 CUDA device");
-
+        // Works on both CPU and CUDA
         for (int cycle = 0; cycle < 10; cycle++) {
-            nativeOps.setMemoryPoolSoftLimitPercent(70);
-            assertEquals(70, nativeOps.getMemoryPoolSoftLimitPercent());
+            nativeOps.setMemoryPoolSoftLimitPercent(95);
+            assertEquals(95, nativeOps.getMemoryPoolSoftLimitPercent());
 
             INDArray arr = Nd4j.create(DataType.FLOAT, 512, 512);
             assertNotNull(arr);
@@ -421,6 +418,31 @@ public class CudaMemoryPoolSoftLimitTest extends BaseNd4jTestWithBackends {
             arr.close();
         }
 
-        log.info("10 enable/disable cycles completed without issues");
+        log.info("10 enable/disable cycles completed without issues [{}]",
+                isCudaBackend() ? "CUDA" : "CPU");
+    }
+
+    // =========================================================================
+    // CPU-specific soft limit tests
+    // =========================================================================
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("CPU: many small allocations succeed with high soft limit")
+    void testCpuManySmallAllocationsWithSoftLimit(Nd4jBackend backend) {
+        // Use high threshold — verifies CPU soft limit doesn't block normal allocations
+        nativeOps.setMemoryPoolSoftLimitPercent(95);
+
+        INDArray[] arrays = new INDArray[100];
+        for (int i = 0; i < arrays.length; i++) {
+            arrays[i] = Nd4j.create(DataType.FLOAT, 256, 256); // ~256KB each
+            assertNotNull(arrays[i], "Allocation " + i + " should succeed");
+        }
+
+        for (INDArray arr : arrays) {
+            arr.close();
+        }
+        log.info("100 small allocations succeeded with CPU soft limit at 95%% [{}]",
+                isCudaBackend() ? "CUDA" : "CPU");
     }
 }

@@ -45,6 +45,8 @@
 #include <graph/SlotBufferOwnership.h>
 #include <graph/PlanDefinition.h>
 #include <graph/ExecutionState.h>
+#include <graph/DspBufferColorMap.h>
+#include <graph/DspBufferPool.h>
 #include <graph/gpu/ViewRecipe.h>
 #include <system/env_functions.h>
 
@@ -1369,6 +1371,25 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int releaseGpuIntermediates();
 
   /**
+   * Passivate this plan: release GPU intermediates to the buffer pool.
+   * The plan stays structurally valid (segments, wiring, definitions)
+   * but holds no GPU memory. On next cache hit, the execute path
+   * re-warms automatically (allocates buffers, recomputes coloring).
+   *
+   * @return bytes freed (approximate)
+   */
+  size_t passivate();
+
+  /**
+   * Clear the passivated flag. Called on cache hit to mark the plan
+   * as needing re-warmup (the execute path handles allocation).
+   */
+  void reactivate();
+
+  /** True if this plan was passivated and has not yet been re-warmed. */
+  bool isPassivated() const;
+
+  /**
    * Get the number of external inputs expected by this plan.
    */
   int getNumExternalInputs() const { return numExternalInputs_; }
@@ -1545,6 +1566,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Used by validation/diagnostic functions to inspect outputs after execution.
    */
   NDArray** getOutputSlots() const { return outputSlots_; }
+
+  // ── Buffer coloring accessors ────────────────────────────────────────
+  DspBufferColorMap& bufferColorMap() { return colorMap_; }
+  const DspBufferColorMap& bufferColorMap() const { return colorMap_; }
 
   /**
    * Get plan segments (for CUDA Graphs integration).
@@ -2244,6 +2269,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int** releaseAtStep_;
   int* releaseAtStepCounts_;
 
+  // Slot liveness data — producer/lastConsumer step indices for buffer coloring.
+  // Populated by NativePlanCompiler, owned by this plan instance.
+  SlotLivenessData* slotLiveness_ = nullptr;
+
   // Requested output mapping
   int* requestedOutputSlotIndices_;
   int numRequestedOutputs_;
@@ -2261,6 +2290,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   //   slotViewOutputs_ → ownership == VIEW_OF_SLOT with parentSlotIdx
   //   per-execute dedup HashSet → O(1) ownership check
   SlotBufferInfo* slotOwnership_;
+
+  // Buffer coloring — compile-time buffer sharing for non-overlapping slots.
+  // Computed after SHAPES_FROZEN, applied to replace per-slot buffers with
+  // shared color buffers.  Ejected on shape change or validation failure.
+  DspBufferColorMap colorMap_;
 
   // Dirty bitmap (generation counter): tracks which output slots were written
   // during the current execution. Used to optimize tickWriteDevice() in steady
@@ -2352,6 +2386,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Tracks why the plan was destroyed/reset (for diagnostics)
   PlanDestructionReason destructionReason_ = PlanDestructionReason::NORMAL_CLOSE;
+
+  // True when GPU intermediates have been released by passivation.
+  // Cleared by reactivate() on next cache hit; execute path re-warms.
+  bool passivated_ = false;
 
   // ── Lifecycle validation ──────────────────────────────────────────────
   // Buffer pointer snapshot captured when shapes freeze. Used to detect
@@ -2893,6 +2931,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void freeBatchedGemmResources() {}
 #endif
 };
+
+inline bool NativeDynamicShapePlan::isPassivated() const { return passivated_; }
 
 }  // namespace graph
 }  // namespace sd

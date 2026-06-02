@@ -59,9 +59,10 @@ enum DspDiagCategory : uint32_t {
   DSP_DIAG_GRAPH_REPLAY    = (1u << 16),  // Graph replay phases (capture, instantiate, launch, address validation)
   DSP_DIAG_SEGMENT_BUCKETS = (1u << 17),  // Invalid segment bucket classification and gap analysis
   DSP_DIAG_LIFECYCLE       = (1u << 18),  // FrozenPlan/SegmentExecutor state transitions (build/seal/replace)
+  DSP_DIAG_COLORING        = (1u << 19),  // Buffer coloring compute/apply/eject/validate + buffer pool events
 
   DSP_DIAG_NONE     = 0u,
-  DSP_DIAG_ALL      = 0x7FFFFu     // All 19 categories
+  DSP_DIAG_ALL      = 0xFFFFFu     // All 20 categories
 };
 
 // ─── Detail level ────────────────────────────────────────────────────────────
@@ -91,7 +92,7 @@ struct DspDiagEvent {
 
 // ─── Per-category aggregate stats ────────────────────────────────────────────
 
-static constexpr int DSP_DIAG_NUM_CATEGORIES = 19;
+static constexpr int DSP_DIAG_NUM_CATEGORIES = 20;
 
 struct DspDiagCategoryStats {
   int64_t eventCount;

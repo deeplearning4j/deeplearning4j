@@ -93,6 +93,12 @@ std::string CoreConfig::homeDirectory() const {
   return "";
 }
 
+void CoreConfig::setCpuSoftLimitPercent(int percent) {
+  if (percent < 0) percent = 0;
+  if (percent > 100) percent = 100;
+  _cpuSoftLimitPercent.store(percent);
+}
+
 std::string CoreConfig::cudaToolkitPath() const {
   const char* cudaPath = std::getenv("CUDA_PATH");
   if (cudaPath != nullptr && cudaPath[0] != '\0') return std::string(cudaPath);
@@ -188,6 +194,11 @@ void CoreConfig::initFromEnvironment() {
   }
   if (readBoolEnv("ND4J_VERBOSE", false)) {
     _verbose.store(true);
+  }
+
+  {
+    int v = readIntEnv("SD_CPU_SOFT_LIMIT_PERCENT", -1);
+    if (v >= 0 && v <= 100) _cpuSoftLimitPercent.store(v);
   }
 }
 

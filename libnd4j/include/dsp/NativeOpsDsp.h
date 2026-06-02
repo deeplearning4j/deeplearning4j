@@ -1300,4 +1300,36 @@ SD_LIB_EXPORT int ncclGroupEnd();
  */
 SD_LIB_EXPORT void setPlanCacheShutdownInProgress(bool inProgress);
 
+// ========================
+// Buffer Coloring Introspection
+// ========================
+
+/** Whether buffer coloring is currently applied on this plan. */
+SD_LIB_EXPORT bool getPlanBufferColoringApplied(sd::Pointer planHandle);
+
+/** Number of colors assigned by coloring (0 if not computed). */
+SD_LIB_EXPORT int getPlanBufferColoringNumColors(sd::Pointer planHandle);
+
+/** Estimated bytes saved by coloring. */
+SD_LIB_EXPORT sd::LongType getPlanBufferColoringBytesSaved(sd::Pointer planHandle);
+
+/** Color assigned to a specific slot (-1 if uncolored). */
+SD_LIB_EXPORT int getPlanSlotColor(sd::Pointer planHandle, int slotIdx);
+
+// ========================
+// Buffer Pool Introspection
+// ========================
+
+/** Total bytes currently pooled on the given device. */
+SD_LIB_EXPORT sd::LongType getBufferPoolPooledBytes(int deviceId);
+
+/** Number of buffers currently in the pool on the given device. */
+SD_LIB_EXPORT int getBufferPoolPooledCount(int deviceId);
+
+/** Lifetime acquire count on the given device. */
+SD_LIB_EXPORT sd::LongType getBufferPoolTotalAcquired(int deviceId);
+
+/** Lifetime reuse count (acquires satisfied from pool) on the given device. */
+SD_LIB_EXPORT sd::LongType getBufferPoolTotalReused(int deviceId);
+
 #endif // NATIVEOPSDSP_H

@@ -28,6 +28,7 @@
  */
 
 #include <dsp/NativeOpsDsp.h>
+#include <graph/DspBufferPool.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
 #include <legacy/NativeOps.h>
@@ -348,6 +349,9 @@ void unpinNativePlan(sd::Pointer cacheHandle, sd::Pointer planHandle) {
 
 void setPlanCacheShutdownInProgress(bool inProgress) {
   sd::graph::NativePlanCache::setShutdownInProgress(inProgress);
+  if (inProgress) {
+    sd::graph::DspBufferPool::destroyAll();
+  }
 }
 
 void clearDynamicShapePlanCaches(sd::Pointer planHandle) {
@@ -1643,4 +1647,45 @@ sd::Pointer dspGetExecutionStream(sd::Pointer planHandle) {
 
 sd::Pointer dspGetDefaultStream() {
   return nullptr;  // No streams on CPU
+}
+
+// ── Buffer coloring introspection ────────────────────────────────────────────
+
+bool getPlanBufferColoringApplied(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return false;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->bufferColorMap().isApplied();
+}
+
+int getPlanBufferColoringNumColors(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->bufferColorMap().numColors();
+}
+
+sd::LongType getPlanBufferColoringBytesSaved(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return static_cast<sd::LongType>(
+      reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->bufferColorMap().estimatedBytesSaved());
+}
+
+int getPlanSlotColor(sd::Pointer planHandle, int slotIdx) {
+  if (planHandle == nullptr) return -1;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->bufferColorMap().colorOf(slotIdx);
+}
+
+// ── Buffer pool introspection ────────────────────────────────────────────────
+
+sd::LongType getBufferPoolPooledBytes(int deviceId) {
+  return static_cast<sd::LongType>(DspBufferPool::forDevice(deviceId).pooledBytes());
+}
+
+int getBufferPoolPooledCount(int deviceId) {
+  return DspBufferPool::forDevice(deviceId).pooledCount();
+}
+
+sd::LongType getBufferPoolTotalAcquired(int deviceId) {
+  return static_cast<sd::LongType>(DspBufferPool::forDevice(deviceId).totalAcquired());
+}
+
+sd::LongType getBufferPoolTotalReused(int deviceId) {
+  return static_cast<sd::LongType>(DspBufferPool::forDevice(deviceId).totalReused());
 }

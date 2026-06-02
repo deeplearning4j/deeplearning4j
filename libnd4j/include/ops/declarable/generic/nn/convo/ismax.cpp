@@ -30,7 +30,7 @@
 namespace sd {
 namespace ops {
 
-CONFIGURABLE_OP_IMPL(ismax, 1, 1, true, 0, -2) {
+CUSTOM_OP_IMPL(ismax, 1, 1, true, 0, -2) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
   auto dimensions = *(block.getIArguments());  // argI
@@ -45,7 +45,13 @@ CONFIGURABLE_OP_IMPL(ismax, 1, 1, true, 0, -2) {
 DECLARE_SYN(IsMax, ismax);
 
 DECLARE_TYPES(ismax) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, DataType::BOOL);
+}
+
+DECLARE_SHAPE_FN(ismax) {
+  auto inShapeInfo = inputShape->at(0);
+  auto outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inShapeInfo, DataType::BOOL, false, block.getWorkspace());
+  return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 }  // namespace ops

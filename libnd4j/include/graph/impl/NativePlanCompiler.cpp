@@ -623,6 +623,18 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
   }
 
+  // ── Step 6b: Persist slot liveness data for buffer coloring ─────────────
+  {
+    auto* liveness = new SlotLivenessData();
+    liveness->totalOutputSlots = totalOutputSlots;
+    liveness->producerStep = new int[totalOutputSlots];
+    liveness->lastConsumerStep = new int[totalOutputSlots];
+    std::copy(slotProducerStep.begin(), slotProducerStep.end(), liveness->producerStep);
+    std::copy(slotLastConsumerStep.begin(), slotLastConsumerStep.end(), liveness->lastConsumerStep);
+    plan->slotLiveness_ = liveness;
+    DSP_DIAG(COMPILE, "Persisted slot liveness data: %d output slots", totalOutputSlots);
+  }
+
   // ── Step 7: Allocate execution state ──────────────────────────────────────
   plan->outputSlots_ = new NDArray*[totalOutputSlots];
   std::memset(plan->outputSlots_, 0, sizeof(NDArray*) * totalOutputSlots);

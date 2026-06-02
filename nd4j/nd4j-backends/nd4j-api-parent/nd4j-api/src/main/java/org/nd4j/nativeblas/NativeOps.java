@@ -2828,4 +2828,32 @@ public interface NativeOps {
   default long getPlanSegmentCapturedInputAddrKey(Pointer planHandle, int segIdx) {
     throw new UnsupportedOperationException("getPlanSegmentCapturedInputAddrKey not implemented");
   }
+
+  // ── Buffer coloring introspection ──────────────────────────────────────────
+
+  /** Whether buffer coloring is currently applied on this plan. */
+  default boolean getPlanBufferColoringApplied(Pointer planHandle) { return false; }
+
+  /** Number of colors assigned by coloring (0 if not computed). */
+  default int getPlanBufferColoringNumColors(Pointer planHandle) { return 0; }
+
+  /** Estimated bytes saved by coloring. */
+  default long getPlanBufferColoringBytesSaved(Pointer planHandle) { return 0; }
+
+  /** Color assigned to a specific slot (-1 if uncolored). */
+  default int getPlanSlotColor(Pointer planHandle, int slotIdx) { return -1; }
+
+  // ── Buffer pool introspection ──────────────────────────────────────────────
+
+  /** Total bytes currently pooled on the given device. */
+  default long getBufferPoolPooledBytes(int deviceId) { return 0; }
+
+  /** Number of buffers currently in the pool on the given device. */
+  default int getBufferPoolPooledCount(int deviceId) { return 0; }
+
+  /** Lifetime acquire count on the given device. */
+  default long getBufferPoolTotalAcquired(int deviceId) { return 0; }
+
+  /** Lifetime reuse count (acquires satisfied from pool) on the given device. */
+  default long getBufferPoolTotalReused(int deviceId) { return 0; }
 }

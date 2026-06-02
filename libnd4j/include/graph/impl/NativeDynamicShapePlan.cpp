@@ -923,6 +923,10 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   }
   delete[] releaseAtStepCounts_;
 
+  // Free slot liveness data
+  delete slotLiveness_;
+  slotLiveness_ = nullptr;
+
   // Free requested output mapping
   delete[] requestedOutputSlotIndices_;
 
@@ -2341,6 +2345,18 @@ Status NativeDynamicShapePlan::execute(
           outputSlots_, totalOutputSlots_,
           lifecycleExternalInputPtrs, numExternalInputs,
           planLifecycle_.toLegacyCode());
+    }
+
+    // ── Buffer coloring validation (debug mode only) ────────────────────
+    if (colorMap_.isApplied() && sd::env_isDebug()) {
+      try {
+        colorMap_.validate(outputSlots_, slotOwnership_, totalOutputSlots_);
+      } catch (const std::exception& e) {
+        DSP_DIAG(MEMORY, "COLORING_EJECTED reason=RUNTIME_DRIFT: %s", e.what());
+        auto& pool = DspBufferPool::forCurrentDevice();
+        colorMap_.eject(outputSlots_, slotOwnership_, planOwnedArrays_, pool);
+        colorMap_.reset();
+      }
     }
   }
 
@@ -3765,6 +3781,33 @@ Status NativeDynamicShapePlan::phaseFreeze() {
   planLifecycle_.compilationDone = false;
   shapePrePassDone_ = false;
 
+  // ── Buffer coloring: compute color assignments ──────────────────────────
+  // Compute at freeze time when ownership is classified and shapes are stable.
+  // apply() happens lazily on the first post-freeze execution (phaseWarmup).
+  if (slotLiveness_ != nullptr && slotOwnership_ != nullptr && outputSlots_ != nullptr) {
+    // Build requested output set
+    std::unordered_set<int> requestedOutputSet;
+    if (requestedOutputSlotIndices_ != nullptr) {
+      for (int i = 0; i < numRequestedOutputs_; i++) {
+        requestedOutputSet.insert(requestedOutputSlotIndices_[i]);
+      }
+    }
+
+    try {
+      colorMap_.compute(*slotLiveness_, outputSlots_, totalOutputSlots_,
+                        slotOwnership_, requestedOutputSet);
+      if (colorMap_.numColoredSlots() > 0) {
+        DSP_DIAG(MEMORY, "phaseFreeze: buffer coloring computed: %d slots -> %d colors, "
+                 "estimated saving %zuMB",
+                 colorMap_.numColoredSlots(), colorMap_.numColors(),
+                 colorMap_.estimatedBytesSaved() / (1024 * 1024));
+      }
+    } catch (const std::exception& e) {
+      DSP_DIAG(MEMORY, "phaseFreeze: buffer coloring failed: %s", e.what());
+      colorMap_.reset();
+    }
+  }
+
   // NOTE: Neither protectedWeightBuffers_ nor outputSlots_ DataBuffers are
   // frozen here. ALL freezing happens at the end of phaseWarmup() after warmup
   // execution completes. Freezing before warmup prevents warmup from executing
@@ -4133,6 +4176,25 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
   replacePlanFrozenRefsForCurrentState(
       "phaseWarmup", protectedWeightBuffers_, outputSlots_, totalOutputSlots_,
       frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
+
+  // ── Buffer coloring: apply color assignments ────────────────────────────
+  // At this point all slot buffers are allocated and frozen. Apply coloring
+  // to replace per-slot buffers with shared color buffers.
+  if (colorMap_.isComputed() && !colorMap_.isApplied() && colorMap_.numColoredSlots() > 0) {
+    try {
+      auto& pool = DspBufferPool::forCurrentDevice();
+      int consolidated = colorMap_.apply(outputSlots_, slotOwnership_,
+                                          planOwnedArrays_, pool);
+      DSP_DIAG(MEMORY, "phaseWarmup: buffer coloring applied: consolidated=%d buffers, "
+               "saved %zuMB", consolidated,
+               colorMap_.estimatedBytesSaved() / (1024 * 1024));
+    } catch (const std::exception& e) {
+      DSP_DIAG(MEMORY, "phaseWarmup: buffer coloring apply failed: %s — ejecting", e.what());
+      auto& pool = DspBufferPool::forCurrentDevice();
+      colorMap_.eject(outputSlots_, slotOwnership_, planOwnedArrays_, pool);
+      colorMap_.reset();
+    }
+  }
 
   return Status::OK;
 }
@@ -4893,6 +4955,24 @@ void NativeDynamicShapePlan::resetSegmentExecutionState() {
   shapePrePassDone_ = false;
 }
 
+// ─── Passivation ────────────────────────────────────────────────────────────
+
+size_t NativeDynamicShapePlan::passivate() {
+  if (passivated_) return 0;
+  size_t bytesBefore = estimatedOwnedBytes();
+  DSP_DIAG(MEMORY, "CACHE_PASSIVATE plan=%p freeing %zuMB to pool", this,
+           bytesBefore / (1024 * 1024));
+  releaseGpuIntermediates();
+  passivated_ = true;
+  return bytesBefore;
+}
+
+void NativeDynamicShapePlan::reactivate() {
+  if (!passivated_) return;
+  DSP_DIAG(MEMORY, "CACHE_REACTIVATE plan=%p", this);
+  passivated_ = false;
+}
+
 // ─── Release GPU intermediates ───────────────────────────────────────────────
 
 
@@ -4905,6 +4985,16 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   const bool hadFrozenRefsOnEntry =
       planLifecycle_.isInFrozenOrReplayState() ||
       hasTrackedPlanFrozenRefs(frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
+
+  // ── Buffer coloring: eject before teardown ─────────────────────────────
+  // Undo coloring so each slot gets its own buffer before the deletion loop.
+  // This prevents the deletion loop from double-freeing shared buffers.
+  if (colorMap_.isApplied()) {
+    auto& pool = DspBufferPool::forCurrentDevice();
+    int restored = colorMap_.eject(outputSlots_, slotOwnership_, planOwnedArrays_, pool);
+    DSP_DIAG(MEMORY, "releaseGpuIntermediates: ejected coloring, restored %d slots", restored);
+    colorMap_.reset();
+  }
 
   // ── Flush deferred slot deletes BEFORE any direct deletion ────────────────
   // writeOutputSlot() defers old-array deletes into tl_deferredSlotDeletes to

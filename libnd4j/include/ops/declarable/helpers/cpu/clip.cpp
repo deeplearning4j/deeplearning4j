@@ -70,7 +70,7 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
         std::vector<sd::LongType> emptyVec = {};
         NDArray *norm2Result = listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec);
         if (useAverage) {
-          NDArray *divResult = (*norm2Result) / z->lengthOf();
+          NDArray *divResult = (*norm2Result) / listOfSubArrs.at(i)->lengthOf();
           if (divResult->e<double>(0) > clipNorm->e<double>(0)) {
             NDArray *clipDivResult = (*clipNorm) / (*divResult);
             *listOfSubArrs.at(i) *= (*clipDivResult);
@@ -99,8 +99,13 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
 
   auto *norm2Ptr = input->reduceAlongDimension(reduce::Norm2, &dimensions);
   auto norm2 = *norm2Ptr;
-  auto *sumsPtr = input->reduceAlongDimension(reduce::Sum, &dimensions);
-  auto sums = *sumsPtr;
+
+  // Compute dot(gradO, input) per TAD: needed for correct gradient formula.
+  // dL/dx_j = (clip/norm)*gradO_j - (clip/norm^3)*x_j*dot(gradO,x)
+  auto *elemwiseProductPtr = (*input) * (*gradO);
+  auto *dotsPtr = elemwiseProductPtr->reduceAlongDimension(reduce::Sum, &dimensions);
+  auto dots = *dotsPtr;
+  delete elemwiseProductPtr;
 
   if (norm2.lengthOf() == 1) {
     const T norm = useAverage ? norm2.e<T>(0) / input->lengthOf() : norm2.e<T>(0);
@@ -108,12 +113,12 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
     auto clipVal = clipNorm->e<T>(0);
 
     if (norm > clipVal) {
-      const T sum = sums.e<T>(0);  // reduce to scalar
+      const T dot = dots.e<T>(0);  // dot(gradO, input) scalar
       const T factor1 = clipVal / norm;
-      const T factor2 = static_cast<T>(1.f) / (norm * norm);  // 1 / (norm*norm*norm)
+      const T factor2 = static_cast<T>(1.f) / (norm * norm);
 
-      auto lambda = LAMBDA_TT(x, y, sum, factor1, factor2) {
-        return factor1 * y * (static_cast<T>(1.f) - factor2 * x * sum);
+      auto lambda = LAMBDA_TT(x, y, dot, factor1, factor2) {
+        return factor1 * y - factor1 * factor2 * x * dot;
       });
 
       input->applyPairwiseLambda<T>(gradO, lambda, gradI);
@@ -136,12 +141,12 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
         if (norm > clipVal) {
           auto inputSubArr = inputSubArrs.at(i);
 
-          const T sum = sums.e<T>(i);  // reduce to scalar
+          const T dot = dots.e<T>(i);  // dot(gradO, input) for this TAD
           const T factor1 = clipVal / norm;
-          const T factor2 = static_cast<T>(1.f) / (norm * norm);  // 1 / (norm*norm*norm)
+          const T factor2 = static_cast<T>(1.f) / (norm * norm);
 
-          auto lambda = LAMBDA_TT(x, y, sum, factor1, factor2) {
-            return factor1 * y * (static_cast<T>(1.f) - factor2 * x * sum);
+          auto lambda = LAMBDA_TT(x, y, dot, factor1, factor2) {
+            return factor1 * y - factor1 * factor2 * x * dot;
           });
 
           inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
@@ -151,9 +156,9 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
     };
     samediff::Threads::parallel_tad(func, 0, gradISubArrs.size());
   }
-  
+
   delete norm2Ptr;
-  delete sumsPtr;
+  delete dotsPtr;
 }
 BUILD_SINGLE_TEMPLATE(void clipByNormBp_,
                       (NDArray *input, NDArray *gradO, NDArray *gradI, const std::vector<sd::LongType>& dimensions,

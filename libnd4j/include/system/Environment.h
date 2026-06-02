@@ -145,6 +145,8 @@ class SD_LIB_EXPORT Environment {
   void setMaxDeviceMemory(uint64_t v) { _core.setMaxDeviceMemory(v); }
   uint64_t maxPrimaryMemory() { return _core.maxPrimaryMemory(); }
   uint64_t maxSpecialMemory() { return _core.maxSpecialMemory(); }
+  int cpuSoftLimitPercent() { return _core.cpuSoftLimitPercent(); }
+  void setCpuSoftLimitPercent(int v) { _core.setCpuSoftLimitPercent(v); }
   bool isUseONEDNN() { return _core.isUseONEDNN(); }
   void setUseONEDNN(bool v) { _core.setUseONEDNN(v); }
   bool isUseMPS() { return _core.isUseMPS(); }

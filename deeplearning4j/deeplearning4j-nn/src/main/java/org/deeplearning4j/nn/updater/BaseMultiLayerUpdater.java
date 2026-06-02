@@ -272,8 +272,14 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
         //First: check if gradient is standard or external...
         //In a MultiLayerNetwork, the INDArray returned by .gradient() is always the standard full view array
-        // hence should be the same object under normal circumstances
-        boolean isExternal = gradient.gradient() != getFlattenedGradientsView();
+        // hence should share the same underlying data buffer under normal circumstances.
+        // Note: gradient.gradient() may reshape the array (rank-2 -> rank-1), creating a new Java object
+        // that is a view of the same DataBuffer. We compare data buffers and lengths to handle this case.
+        INDArray gradArr = gradient.gradient();
+        INDArray flatView = getFlattenedGradientsView();
+        boolean isExternal = gradArr != flatView &&
+                !(flatView != null && gradArr != null &&
+                  gradArr.data() == flatView.data() && gradArr.length() == flatView.length());
 
         //Split up the gradients on a per-layer basis, for pre-apply
         Map<String, Gradient> layerGradients = new HashMap<>();
@@ -319,7 +325,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 continue;
             }
             if (isExternal) {
-                ub.updateExternalGradient(iteration, epoch, gradient.gradient(), getParams());
+                ub.updateExternalGradient(iteration, epoch, gradArr, getParams());
             } else {
                 ub.update(iteration, epoch);
             }
