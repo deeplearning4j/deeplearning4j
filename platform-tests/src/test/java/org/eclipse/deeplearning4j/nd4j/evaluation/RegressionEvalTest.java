@@ -249,6 +249,51 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRegressionEval3dDiag(Nd4jBackend backend) {
+        // Deterministic seed so diagnostic is reproducible
+        Nd4j.getRandom().setSeed(12345);
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
+
+        // Compute the 2D result via vstack (reference path)
+        List<INDArray> rowsP = new ArrayList<>();
+        NdIndexIterator iter = new NdIndexIterator(2, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1])};
+            rowsP.add(prediction.get(idxs));
+        }
+        INDArray p2dVstack = Nd4j.vstack(rowsP);
+
+        // Compute the 2D result via reshapeSameShapeTo2d (eval path)
+        // We replicate its logic: permute [0,2,1], dup 'c', reshape [20,5]
+        INDArray permuted = prediction.permute(0, 2, 1);
+        INDArray dupped = permuted.dup('c');
+        INDArray p2dReshape = dupped.reshape('c', 20, 5);
+
+        System.out.println("=== DIAGNOSTIC: p2dVstack vs p2dReshape ===");
+        System.out.println("p2dVstack shape: " + java.util.Arrays.toString(p2dVstack.shape()) + " order=" + p2dVstack.ordering());
+        System.out.println("p2dReshape shape: " + java.util.Arrays.toString(p2dReshape.shape()) + " order=" + p2dReshape.ordering());
+        System.out.println("Equal: " + p2dVstack.equalsWithEps(p2dReshape, 1e-5));
+
+        INDArray diff = p2dVstack.sub(p2dReshape);
+        System.out.println("Max abs diff: " + diff.amaxNumber());
+        System.out.println("p2dVstack row 0: " + p2dVstack.getRow(0));
+        System.out.println("p2dReshape row 0: " + p2dReshape.getRow(0));
+        System.out.println("p2dVstack row 1: " + p2dVstack.getRow(1));
+        System.out.println("p2dReshape row 1: " + p2dReshape.getRow(1));
+        System.out.println("prediction[0,:,0]: " + prediction.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(0)));
+        System.out.println("prediction[0,:,1]: " + prediction.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(1)));
+
+        // Also check one slice directly
+        INDArray slice = prediction.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(0));
+        System.out.println("slice ordering=" + slice.ordering() + " strides=" + java.util.Arrays.toString(slice.stride()));
+        INDArray sliceReshaped = slice.reshape(slice.ordering(), 1, 5);
+        System.out.println("sliceReshaped ordering=" + sliceReshaped.ordering() + " strides=" + java.util.Arrays.toString(sliceReshaped.stride()) + " offset=" + sliceReshaped.offset());
+        System.out.println("sliceReshaped: " + sliceReshaped);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRegressionEval3d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);

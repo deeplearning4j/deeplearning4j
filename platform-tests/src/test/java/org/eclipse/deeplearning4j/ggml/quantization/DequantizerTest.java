@@ -246,8 +246,8 @@ class DequantizerTest {
     @Test
     @DisplayName("Test getDequantizer throws for unsupported type")
     void testGetDequantizerUnsupported() {
-        // IQ types are not yet implemented, so getDequantizer should throw
+        // Non-quantized float types have no dequantizer registered
         assertThrows(IllegalArgumentException.class,
-            () -> DequantizerFactory.getDequantizer(GGMLDataType.GGML_TYPE_IQ2_XXS));
+            () -> DequantizerFactory.getDequantizer(GGMLDataType.GGML_TYPE_F64));
     }
 }

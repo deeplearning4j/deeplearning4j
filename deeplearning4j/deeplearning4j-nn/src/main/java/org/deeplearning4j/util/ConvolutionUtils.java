@@ -1398,12 +1398,20 @@ public class ConvolutionUtils {
         long[] d;
         if (inMask.size(3) == 1) {
             //[mb,x,y,1] case -> pool mask along height
+            if (convolutionMode == ConvolutionMode.Same && stride[0] == 1) {
+                //Same mode, stride 1 in the relevant dimension -> output height == input height -> no change needed
+                return inMask;
+            }
             k = new long[]{kernel[0], 1};
             s = new long[]{stride[0], 1};
             p = new long[]{padding[0], 0};
             d = new long[]{dilation[0], 1};
         } else if (inMask.size(2) == 1) {
             //[mb,x,1,z] case -> pool mask along width
+            if (convolutionMode == ConvolutionMode.Same && stride[1] == 1) {
+                //Same mode, stride 1 in the relevant dimension -> output width == input width -> no change needed
+                return inMask;
+            }
             k = new long[]{1, kernel[1]};
             s = new long[]{1, stride[1]};
             p = new long[]{0, padding[1]};
@@ -1416,10 +1424,14 @@ public class ConvolutionUtils {
             d = dilation;
         }
 
-        long[] outSize = getOutputSizeLong(inMask.shape(), k, s, p, convolutionMode, d,CNN2DFormat.NCHW); //Also performs validation
+        // Use Truncate (valid) mode with pre-computed padding so the native op output shape matches what we compute here.
+        // getOutputSizeLong already accounts for Same-mode padding by returning the Java-computed padding values,
+        // but passing Same to the native op causes it to recompute padding differently (causing shape mismatches).
+        long[] outSize = getOutputSizeLong(inMask.shape(), k, s, p, ConvolutionMode.Truncate, d, CNN2DFormat.NCHW);
         boolean allEq = true;
         for (int i = 0; i < outSize.length; i++) {
-            if (outSize[i] != inMask.size(i)) {
+            // outSize[0]=H, outSize[1]=W — compare against inMask dims 2 and 3 (not 0 and 1)
+            if (outSize[i] != inMask.size(i + 2)) {
                 allEq = false;
                 break;
             }
@@ -1429,15 +1441,28 @@ public class ConvolutionUtils {
             return inMask;
         }
 
+        // Compute explicit padding for Same mode before switching to Truncate for the pool op
+        long[] effectivePadding = p;
+        if (convolutionMode == ConvolutionMode.Same) {
+            // Re-compute padding that Same mode would apply, then use Truncate with explicit padding
+            long oH = (inMask.size(2) + s[0] - 1) / s[0];
+            long oW = (inMask.size(3) + s[1] - 1) / s[1];
+            long padH = Math.max(0, ((oH - 1) * s[0] + (k[0] - 1) * d[0] + 1 - inMask.size(2)) / 2);
+            long padW = Math.max(0, ((oW - 1) * s[1] + (k[1] - 1) * d[1] + 1 - inMask.size(3)) / 2);
+            effectivePadding = new long[]{padH, padW};
+            // Recompute outSize with the explicit padding in Truncate mode
+            outSize = getOutputSizeLong(inMask.shape(), k, s, effectivePadding, ConvolutionMode.Truncate, d, CNN2DFormat.NCHW);
+        }
+
         long[] outArraySize = new long[]{inMask.size(0), inMask.size(1), outSize[0], outSize[1]};
         INDArray outMask = Nd4j.createUninitialized(inMask.dataType(), outArraySize);
 
         DynamicCustomOp op = new MaxPooling2D(inMask, outMask, Pooling2DConfig.builder()
                 .kH(k[0]).kW(k[1])
                 .sH(s[0]).sW(s[1])
-                .pH(p[0]).pW(p[1])
+                .pH(effectivePadding[0]).pW(effectivePadding[1])
                 .dH(d[0]).dW(d[1])
-                .paddingMode(ConvolutionMode.mapToMode(convolutionMode))
+                .paddingMode(PaddingMode.VALID)
                 .isNHWC(false)
                 .build());
 

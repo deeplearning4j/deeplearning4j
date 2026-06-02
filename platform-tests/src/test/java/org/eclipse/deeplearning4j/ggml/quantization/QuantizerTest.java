@@ -156,7 +156,7 @@ class QuantizerTest {
         Quantizer quantizer = QuantizerFactory.getQuantizer(GGMLDataType.GGML_TYPE_Q4_K);
         assertNotNull(quantizer);
         assertEquals(256, quantizer.getBlockSize());
-        assertEquals(148, quantizer.getBytesPerBlock());
+        assertEquals(144, quantizer.getBytesPerBlock()); // 2 (d) + 2 (dmin) + 12 (scales) + 128 (data)
     }
 
     @Test
@@ -165,7 +165,7 @@ class QuantizerTest {
         Quantizer quantizer = QuantizerFactory.getQuantizer(GGMLDataType.GGML_TYPE_Q5_K);
         assertNotNull(quantizer);
         assertEquals(256, quantizer.getBlockSize());
-        assertEquals(180, quantizer.getBytesPerBlock());
+        assertEquals(176, quantizer.getBytesPerBlock()); // 2 (d) + 2 (dmin) + 12 (scales) + 32 (qh) + 128 (qs)
     }
 
     @Test
@@ -205,10 +205,10 @@ class QuantizerTest {
     @DisplayName("Test Q4_K calculateOutputBytes")
     void testQ4_KCalculateOutputBytes() {
         Quantizer quantizer = QuantizerFactory.getQuantizer(GGMLDataType.GGML_TYPE_Q4_K);
-        // 256 elements = 1 block = 148 bytes
-        assertEquals(148, quantizer.calculateOutputBytes(256));
-        // 512 elements = 2 blocks = 296 bytes
-        assertEquals(296, quantizer.calculateOutputBytes(512));
+        // 256 elements = 1 block = 144 bytes
+        assertEquals(144, quantizer.calculateOutputBytes(256));
+        // 512 elements = 2 blocks = 288 bytes
+        assertEquals(288, quantizer.calculateOutputBytes(512));
     }
 
     // ========== Quantization Tests ==========
@@ -240,7 +240,7 @@ class QuantizerTest {
         float[] data = new float[256];
         byte[] result = quantizer.quantize(data);
         assertNotNull(result);
-        assertEquals(148, result.length);
+        assertEquals(144, result.length); // GGML format: 2+2+12+128
     }
 
     @Test
@@ -392,7 +392,7 @@ class QuantizerTest {
         float[] data = new float[512]; // 2 blocks
         byte[] result = quantizer.quantize(data);
         assertNotNull(result);
-        assertEquals(296, result.length); // 2 * 148 bytes
+        assertEquals(288, result.length); // 2 * 144 bytes
     }
 
     // ========== Edge Cases ==========
@@ -523,7 +523,7 @@ class QuantizerTest {
     void testFactoryCalculateOutputBytes() {
         assertEquals(18, QuantizerFactory.calculateOutputBytes(32, GGMLDataType.GGML_TYPE_Q4_0));
         assertEquals(34, QuantizerFactory.calculateOutputBytes(32, GGMLDataType.GGML_TYPE_Q8_0));
-        assertEquals(148, QuantizerFactory.calculateOutputBytes(256, GGMLDataType.GGML_TYPE_Q4_K));
+        assertEquals(144, QuantizerFactory.calculateOutputBytes(256, GGMLDataType.GGML_TYPE_Q4_K));
     }
 
     // ========== Helper Methods ==========

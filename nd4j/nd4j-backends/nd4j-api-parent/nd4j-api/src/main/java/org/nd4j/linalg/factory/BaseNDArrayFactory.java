@@ -876,6 +876,26 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
+     * Returns true if the given array has C-contiguous (row-major) strides,
+     * i.e. the strides exactly match those of a freshly-allocated C-order array
+     * with the same shape.  Ordering alone is not sufficient: a view (e.g. a
+     * slice) may report ordering=='c' while having non-unit strides.
+     */
+    private static boolean isCContiguous(INDArray arr) {
+        int rank = arr.rank();
+        if (rank == 0) return true;
+        long[] shape  = arr.shape();
+        long[] stride = arr.stride();
+        // Last stride must be 1 for C-contiguous.
+        if (stride[rank - 1] != 1) return false;
+        // Each leading stride must equal the product of the following dimensions.
+        for (int i = rank - 2; i >= 0; i--) {
+            if (stride[i] != stride[i + 1] * shape[i + 1]) return false;
+        }
+        return true;
+    }
+
+    /**
      * concatenate ndarrays along a dimension
      *
      * @param dimension the dimension to concatenate along
@@ -920,18 +940,32 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
         if (dimension == 0 && allC) {
-            int currBuffer = 0;
-            int currBufferOffset = 0;
-            for (int i = 0; i < ret.length(); i++) {
-                ret.data().put(i, toConcat[currBuffer].data()
-                        .getDouble(toConcat[currBuffer].offset() + currBufferOffset++));
-                if (currBufferOffset >= toConcat[currBuffer].length()) {
-                    currBuffer++;
-                    currBufferOffset = 0;
+            // Verify every input array is actually C-contiguous in memory.
+            // ordering()=='c' alone is not sufficient: a view (e.g. a non-unit-stride
+            // slice) also reports ordering=='c' but its elements are not contiguous in
+            // the backing buffer.  Reading raw buffer offsets for such a view produces
+            // wrong data.
+            boolean allContiguous = true;
+            for (INDArray arr : toConcat) {
+                if (!isCContiguous(arr)) {
+                    allContiguous = false;
+                    break;
                 }
             }
+            if (allContiguous) {
+                int currBuffer = 0;
+                int currBufferOffset = 0;
+                for (int i = 0; i < ret.length(); i++) {
+                    ret.data().put(i, toConcat[currBuffer].data()
+                            .getDouble(toConcat[currBuffer].offset() + currBufferOffset++));
+                    if (currBufferOffset >= toConcat[currBuffer].length()) {
+                        currBuffer++;
+                        currBufferOffset = 0;
+                    }
+                }
 
-            return ret;
+                return ret;
+            }
         }
 
         int arrOffset = 0;

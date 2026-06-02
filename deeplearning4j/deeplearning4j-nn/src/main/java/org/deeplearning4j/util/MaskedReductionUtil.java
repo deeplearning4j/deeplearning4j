@@ -79,6 +79,9 @@ public class MaskedReductionUtil {
                 }
 
                 INDArray maskCounts = mask.sum(1);
+                // Guard against zero-count rows to avoid NaN from division by zero
+                // (can occur if mask has all-zero rows, e.g. integer-type masks after truncation)
+                BooleanIndexing.replaceWhere(maskCounts, 1.0, Conditions.equals(0.0));
                 summed.diviColumnVector(maskCounts);
                 return summed;
             case PNORM:
@@ -185,22 +188,13 @@ public class MaskedReductionUtil {
             throw new IllegalStateException("Expected rank 4 mask array: Got array with shape " + Arrays.toString(mask.shape()));
         }
 
+        toReduce = toReduce.castTo(dataType);   //cast input to target dtype (no-op if already correct)
         mask = mask.castTo(dataType);   //no-op if already correct dtype
 
         // [minibatch, channels, h, w] data with a mask array of shape [minibatch, 1, X, Y]
         // where X=(1 or inH) and Y=(1 or inW)
-
-        //General case: must be equal or 1 on each dimension
-        long[] dimensions = new long[4];
-        int count = 0;
-        for(int i = 0; i < 4; i++) {
-            if(toReduce.size(i) == mask.size(i)) {
-                dimensions[count++] = i;
-            }
-        }
-        if(count < 4){
-            dimensions = Arrays.copyOfRange(dimensions, 0, count);
-        }
+        // Use element-wise mul with broadcasting (NumPy-style) to correctly handle masks with
+        // singleton dimensions (e.g. [mb,1,h,w] broadcast over [mb,c,h,w]).
 
         switch (poolingType) {
             case MAX:
@@ -213,28 +207,29 @@ public class MaskedReductionUtil {
                 }
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
-                INDArray withInf = Nd4j.createUninitialized(dataType, toReduce.shape());
-                Nd4j.getExecutioner().exec(new BroadcastAddOp(toReduce, negInfMask, withInf, dimensions));
+                // Use broadcasting add: negInfMask has shape [mb,1,h,w] or similar, toReduce is [mb,c,h,w]
+                INDArray withInf = toReduce.add(negInfMask);
                 //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
 
                 return withInf.max(2, 3);
             case AVG:
             case SUM:
-                INDArray masked = Nd4j.createUninitialized(dataType, toReduce.shape());
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked, dimensions));
+                // Element-wise mul with broadcasting handles singleton dims correctly
+                INDArray masked = toReduce.mul(mask);
 
                 INDArray summed = masked.sum(2, 3);
                 if (poolingType == PoolingType.SUM) {
                     return summed;
                 }
                 INDArray maskCounts = mask.sum(1,2,3);
+                // Guard against zero-count rows to avoid NaN from division by zero
+                BooleanIndexing.replaceWhere(maskCounts, 1.0, Conditions.equals(0.0));
                 summed.diviColumnVector(maskCounts);
                 return summed;
 
             case PNORM:
                 //Similar to average and sum pooling: there's no N term here, so we can just set the masked values to 0
-                INDArray masked2 = Nd4j.createUninitialized(dataType, toReduce.shape());
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked2, dimensions));
+                INDArray masked2 = toReduce.mul(mask);
 
                 INDArray abs = Transforms.abs(masked2, true);
                 Transforms.pow(abs, pnorm, false);

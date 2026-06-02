@@ -144,7 +144,9 @@ class GGMLModelImportTest {
         ConversionOptions options = ConversionOptions.forInference();
 
         assertFalse(options.isForTraining());
-        assertEquals(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16,
+        // forInference() uses FLOAT32 to avoid cumulative precision loss from
+        // FP16 cast ops over many transformer layers (intentional design choice)
+        assertEquals(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT32,
                 options.getQuantizationMode());
     }
 

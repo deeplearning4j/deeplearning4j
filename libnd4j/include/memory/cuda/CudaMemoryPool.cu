@@ -81,7 +81,9 @@ void CudaMemoryPool::setSoftLimitPercent(int percent) {
   if (percent < 0) percent = 0;
   if (percent > 100) percent = 100;
   softLimitPercent_.store(percent, std::memory_order_relaxed);
-  sd_printf("CudaMemoryPool: Soft limit set to %d%% (0=disabled)\n", percent);
+  if (sd::Environment::getInstance().isVerbose()) {
+    sd_printf("CudaMemoryPool: Soft limit set to %d%% (0=disabled)\n", percent);
+  }
 }
 
 CudaMemoryPool::CudaMemoryPool() {
@@ -122,7 +124,9 @@ CudaMemoryPool::CudaMemoryPool() {
     int softLimit = Environment::getInstance().cudaSoftLimitPercent();
     if (softLimit > 0 && softLimit <= 100) {
       softLimitPercent_.store(softLimit, std::memory_order_relaxed);
-      sd_printf("CudaMemoryPool: Proactive soft limit: %d%% (from Environment)\n", softLimit);
+      if (sd::Environment::getInstance().isVerbose()) {
+        sd_printf("CudaMemoryPool: Proactive soft limit: %d%% (from Environment)\n", softLimit);
+      }
     }
 
     initializePeerAccess();
@@ -363,9 +367,11 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     if (memInfoErr == cudaSuccess && totalMem > 0) {
       double usagePercent = 100.0 * (1.0 - static_cast<double>(freeMem) / static_cast<double>(totalMem));
       if (usagePercent >= static_cast<double>(softLimit)) {
-        sd_printf("CudaMemoryPool::allocate: Proactive failover — device %d at %.1f%% usage "
-                  "(soft limit %d%%), routing %zu bytes to another device\n",
-                  deviceId, usagePercent, softLimit, size);
+        if (sd::Environment::getInstance().isVerbose()) {
+          sd_printf("CudaMemoryPool::allocate: Proactive failover — device %d at %.1f%% usage "
+                    "(soft limit %d%%), routing %zu bytes to another device\n",
+                    deviceId, usagePercent, softLimit, size);
+        }
         auto result = allocateFailover(size, deviceId, actualDeviceId);
         if (result != nullptr) {
           restoreDevice();
@@ -374,8 +380,10 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
         // All other devices also full — fall through to attempt local allocation.
         // This is the correct behavior: better to try and potentially succeed
         // (the soft limit is conservative) than to fail without trying.
-        sd_printf("CudaMemoryPool::allocate: Proactive failover found no alternative, "
-                  "attempting local allocation on device %d\n", deviceId);
+        if (sd::Environment::getInstance().isVerbose()) {
+          sd_printf("CudaMemoryPool::allocate: Proactive failover found no alternative, "
+                    "attempting local allocation on device %d\n", deviceId);
+        }
       }
     }
   }

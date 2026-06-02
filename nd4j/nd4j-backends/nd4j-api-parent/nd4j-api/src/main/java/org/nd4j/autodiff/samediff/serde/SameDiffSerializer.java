@@ -49,6 +49,7 @@ import org.nd4j.linalg.exception.ND4JUnknownDataTypeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
@@ -1480,10 +1481,12 @@ public class SameDiffSerializer {
             }
 
             // Instantiate and add the GradientUpdater only if all parts loaded successfully
-            if (stateLoadSuccess && !stateMap.isEmpty()) {
+            IUpdater cfgUpdater = targetSD.getTrainingConfig().getUpdater();
+            boolean isStateless = cfgUpdater != null && cfgUpdater.stateSize(1) == 0;
+            if (stateLoadSuccess && (!stateMap.isEmpty() || isStateless) && cfgUpdater != null) {
                 try {
                     // Use the IUpdater from the target SameDiff's TrainingConfig to instantiate
-                    GradientUpdater gu = targetSD.getTrainingConfig().getUpdater().instantiate(stateMap, false); // Assuming instantiate exists
+                    GradientUpdater gu = cfgUpdater.instantiate(stateMap, false);
                     targetUpdaterMap.put(paramName, gu);
                     loadedCount++;
                     log.info("Loaded updater state for parameter '{}'.", paramName);
@@ -1491,12 +1494,12 @@ public class SameDiffSerializer {
                     log.error("Failed to instantiate GradientUpdater for parameter '{}' from loaded state.", paramName, e);
                     errorCount++;
                 }
-            } else if (!stateMap.isEmpty()) {
+            } else if (!stateMap.isEmpty() && !stateLoadSuccess) {
                 // Log error only if stateMap is not empty but load failed somewhere
                 log.error("Skipping updater state for parameter '{}' due to errors loading constituent arrays.", paramName);
                 errorCount++;
             } else {
-                // stateMap is empty - either no state or all failed/skipped silently
+                // stateMap is empty and updater is stateful - either no state or all failed/skipped silently
                 log.info("No valid updater state entries loaded for parameter '{}'.", paramName);
             }
         } // End loop over updater states in FlatGraph
@@ -1759,7 +1762,8 @@ public class SameDiffSerializer {
                     INDArray stateArr = deserializeSmallNdArrayFromInlineBuffer(faState,key);
                     if (stateArr != null) stateMap.put(key, stateArr);
                 }
-                if (!stateMap.isEmpty() && sd.getTrainingConfig().getUpdater() != null) {
+                if (sd.getTrainingConfig().getUpdater() != null &&
+                        (!stateMap.isEmpty() || sd.getTrainingConfig().getUpdater().stateSize(1) == 0)) {
                     GradientUpdater gu = sd.getTrainingConfig().getUpdater().instantiate(stateMap, false);
                     updaterMap.put(paramName, gu);
                     loadedAnyUpdater = true;

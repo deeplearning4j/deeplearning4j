@@ -30,16 +30,22 @@ import java.nio.ByteOrder;
  * Quantizer for Q4_K format (k-quant).
  * This is the reverse operation of {@link Q4_KDequantizer}.
  *
- * Q4_K is a k-quant format with super-blocks:
- * - Super-block size: 256 elements
- * - Contains 8 sub-blocks of 32 elements each
- * - Per super-block: 2 FP16 scales (d, dmin) = 4 bytes + 12 bytes scales + 4 bytes mins + 128 bytes data
- * - Total: 148 bytes per super-block
+ * Q4_K block layout (from ggml-common.h block_q4_K):
+ * <pre>
+ *   ggml_half d         — super-block scale for quantized scales (2 bytes)
+ *   ggml_half dmin      — super-block scale for quantized mins (2 bytes)
+ *   uint8_t scales[12]  — scales and mins packed with ggml's get_scale_min_k4 packing (12 bytes)
+ *   uint8_t qs[128]     — 4-bit quants (256 / 2) (128 bytes)
+ * </pre>
+ * Total: 144 bytes per super-block of 256 elements.
+ *
+ * The 12-byte scales[] array encodes 8 sub-block scales (6-bit each) and 8 sub-block
+ * mins (6-bit each) using ggml's compact packing (same as in dequantize_row_q4_K).
  */
 public class Q4_KQuantizer implements Quantizer {
 
     private static final int BLOCK_SIZE = 256;
-    private static final int BYTES_PER_BLOCK = 148;
+    private static final int BYTES_PER_BLOCK = 144; // 2 + 2 + 12 + 128
     private static final int SUB_BLOCK_SIZE = 32;
     private static final int NUM_SUB_BLOCKS = 8;
 
@@ -67,118 +73,154 @@ public class Q4_KQuantizer implements Quantizer {
         for (int block = 0; block < numBlocks; block++) {
             int blockStart = block * BLOCK_SIZE;
 
-            // Calculate per-sub-block scales and mins
-            float[] subBlockScales = new float[NUM_SUB_BLOCKS];
+            // Step 1: compute per-sub-block min and scale (range / 15.0)
+            float[] subBlockScales = new float[NUM_SUB_BLOCKS]; // raw ranges
             float[] subBlockMins = new float[NUM_SUB_BLOCKS];
 
             for (int sb = 0; sb < NUM_SUB_BLOCKS; sb++) {
                 int start = blockStart + sb * SUB_BLOCK_SIZE;
                 int end = Math.min(start + SUB_BLOCK_SIZE, floatData.length);
 
-                float minVal = Float.MAX_VALUE;
-                float maxVal = Float.MIN_VALUE;
-
-                for (int i = start; i < end; i++) {
-                    minVal = Math.min(minVal, floatData[i]);
-                    maxVal = Math.max(maxVal, floatData[i]);
-                }
-
                 if (start >= floatData.length) {
-                    minVal = 0;
-                    maxVal = 0;
+                    subBlockMins[sb] = 0;
+                    subBlockScales[sb] = 0;
+                    continue;
                 }
 
-                subBlockMins[sb] = minVal;
-                subBlockScales[sb] = (maxVal - minVal) / 15.0f;
-                if (subBlockScales[sb] == 0) subBlockScales[sb] = 1.0f;
+                float minVal = floatData[start];
+                float maxVal = floatData[start];
+                for (int i = start + 1; i < end; i++) {
+                    if (floatData[i] < minVal) minVal = floatData[i];
+                    if (floatData[i] > maxVal) maxVal = floatData[i];
+                }
+
+                subBlockMins[sb] = -minVal;  // stored as positive value (negated)
+                subBlockScales[sb] = (maxVal - minVal) / 15.0f; // 4-bit range 0..15
             }
 
-            // Find super-block d and dmin (max of sub-block scales/mins)
+            // Step 2: compute super-block d (scale for scales) and dmin (scale for mins)
             float maxScale = 0;
             float maxMin = 0;
             for (int sb = 0; sb < NUM_SUB_BLOCKS; sb++) {
-                maxScale = Math.max(maxScale, subBlockScales[sb]);
-                maxMin = Math.max(maxMin, Math.abs(subBlockMins[sb]));
+                if (subBlockScales[sb] > maxScale) maxScale = subBlockScales[sb];
+                if (subBlockMins[sb] > maxMin) maxMin = subBlockMins[sb];
             }
 
-            float d = maxScale / 63.0f;  // 6-bit scale range
-            float dmin = maxMin / 7.0f;  // 3-bit min magnitude range (sign stored separately)
+            float invMaxScale = (maxScale > 0) ? 63.0f / maxScale : 0.0f;
+            float invMaxMin   = (maxMin > 0)   ? 63.0f / maxMin   : 0.0f;
 
-            if (d == 0) d = 1.0f;
-            if (dmin == 0) dmin = 1.0f;
+            float d    = maxScale / 63.0f;
+            float dmin = maxMin / 63.0f;
 
-            // Write d and dmin as FP16
+            // Step 3: quantize sub-block scales and mins to 6 bits each
+            int[] L = new int[NUM_SUB_BLOCKS]; // quantized scales (0..63)
+            int[] M = new int[NUM_SUB_BLOCKS]; // quantized mins   (0..63)
+            for (int sb = 0; sb < NUM_SUB_BLOCKS; sb++) {
+                L[sb] = (int) Math.min(63, Math.round(subBlockScales[sb] * invMaxScale));
+                M[sb] = (int) Math.min(63, Math.round(subBlockMins[sb] * invMaxMin));
+            }
+
+            // Step 4: pack L[] and M[] into 12 bytes using ggml's get_scale_min_k4 packing.
+            // The packing layout is (from ggml-common.h make_qkx2_quants / set_scale_min_k4):
+            //   bytes[0..3]:  L[0]..L[3] in bits 0..5, upper 2 bits of M[0]..M[3] in bits 6..7
+            //   bytes[4..7]:  M[0]..M[3] in bits 0..5  (lower 6 bits; upper 2 stored in bytes[0..3])
+            //   bytes[8..11]: bottom nibble = lower 4 bits of L[4..7] or M[4..7],
+            //                 top nibble    = upper 2 bits packed
+            // This is the exact inverse of get_scale_min_k4 used in Q4_KDequantizer.
+            //
+            // get_scale_min_k4(j, q):
+            //   j < 4:  sc = q[j] & 63,       m = q[j+4] & 63
+            //   j >= 4: sc = (q[j+4] & 0xF) | ((q[j-4] >> 6) << 4),
+            //           m  = (q[j+4] >> 4)   | ((q[j]   >> 6) << 4)
+            //
+            // Reverse-engineering the packing for L and M:
+            // For j < 4:
+            //   q[j]   = L[j] | ((M[j] & 0x30) << 2)  — lower 6 bits of L[j] + upper 2 bits of M[j] in bits 6-7
+            //   q[j+4] = M[j] & 0x3F                   — lower 6 bits of M[j]
+            // For j in [4..7]:
+            //   scale sc[j] = (q[j+4] & 0xF) | ((q[j-4] >> 6) << 4)
+            //   min   m[j]  = (q[j+4] >> 4)  | ((q[j]   >> 6) << 4)
+            //   => q[j+4] lower nibble = L[j] & 0xF, upper nibble = M[j] & 0xF
+            //   => q[j-4] bits 6-7 = (L[j] >> 4) & 3  -- these are the 2 high bits of the scale
+            //   => q[j]   bits 6-7 = (M[j] >> 4) & 3  -- these are the 2 high bits of the min
+            byte[] scaleBytes = new byte[12];
+
+            // Fill bytes[0..3] and bytes[4..7] for j in [0..3]
+            for (int j = 0; j < 4; j++) {
+                // lower 6 bits of L[j]; upper 2 bits of M[j] go into bits 6-7
+                scaleBytes[j]     = (byte) ((L[j] & 0x3F) | ((M[j] & 0x30) << 2));
+                // lower 6 bits of M[j]
+                scaleBytes[j + 4] = (byte) (M[j] & 0x3F);
+            }
+            // Fill bytes[8..11] for j in [4..7], and update high bits in bytes[j-4] and bytes[j]
+            for (int j = 4; j < 8; j++) {
+                // bytes[j+4] = bytes[8..11]: lower nibble = lower 4 bits of L[j], upper nibble = lower 4 bits of M[j]
+                scaleBytes[j + 4] = (byte) ((L[j] & 0x0F) | ((M[j] & 0x0F) << 4));
+                // Put upper 2 bits of L[j] into bits 6-7 of bytes[j-4]
+                scaleBytes[j - 4] |= (byte) (((L[j] >> 4) & 3) << 6);
+                // Put upper 2 bits of M[j] into bits 6-7 of bytes[j]
+                // but bytes[j] for j in [4..7] means scaleBytes[4..7]
+                scaleBytes[j]     |= (byte) (((M[j] >> 4) & 3) << 6);
+            }
+
+            // Step 5: write d and dmin as FP16
             buffer.putShort(floatToFp16(d));
             buffer.putShort(floatToFp16(dmin));
 
-            // Quantize and pack scales (6-bit each, 12 bytes total for 8 values)
-            int[] quantizedScales = new int[NUM_SUB_BLOCKS];
-            for (int sb = 0; sb < NUM_SUB_BLOCKS; sb++) {
-                quantizedScales[sb] = Math.round(subBlockScales[sb] / d);
-                quantizedScales[sb] = Math.max(0, Math.min(63, quantizedScales[sb]));
-            }
-
-            // Pack 8 x 6-bit scales into 12 bytes (48 bits total, aligned to 12 bytes)
-            byte[] scaleBytes = new byte[12];
-            packScales6Bit(quantizedScales, scaleBytes);
+            // Step 6: write the 12 scale bytes
             buffer.put(scaleBytes);
 
-            // Quantize and pack mins (4-bit each, 4 bytes for 8 values)
-            // Store sign bit + 3-bit magnitude (allowing -7 to +7 range after scaling)
-            byte[] minBytes = new byte[4];
+            // Step 7: quantize all 256 data values and write 128 bytes matching
+            // ggml's dequantize_row_q4_K layout exactly.
+            //
+            // The dequantizer outer loop processes j in {0, 64, 128, 192}, each group of 64.
+            // For group at j (is = j/32 in sub-block index), with qIdx = j/2:
+            //   First 32 elements  (j..j+31):  low  nibbles of qs[qIdx..qIdx+31], scale d1 = d*sc[is]
+            //   Second 32 elements (j+32..j+63): high nibbles of qs[qIdx..qIdx+31], scale d2 = d*sc[is+1]
+            //
+            // So the qs layout is:
+            //   qs[0..31]:   low nibble = element 0..31   (sub-block 0, scale L[0])
+            //                high nibble = element 32..63  (sub-block 1, scale L[1])
+            //   qs[32..63]:  low nibble = element 64..95  (sub-block 2, scale L[2])
+            //                high nibble = element 96..127 (sub-block 3, scale L[3])
+            //   qs[64..95]:  low nibble = element 128..159 (sub-block 4, scale L[4])
+            //                high nibble = element 160..191 (sub-block 5, scale L[5])
+            //   qs[96..127]: low nibble = element 192..223 (sub-block 6, scale L[6])
+            //                high nibble = element 224..255 (sub-block 7, scale L[7])
+
+            // First, quantize all 256 elements into a temp array using sub-block scale/min
+            int[] q = new int[BLOCK_SIZE];
             for (int sb = 0; sb < NUM_SUB_BLOCKS; sb++) {
-                int sign = subBlockMins[sb] < 0 ? 1 : 0;
-                int magnitude = Math.round(Math.abs(subBlockMins[sb]) / dmin);
-                magnitude = Math.max(0, Math.min(7, magnitude));  // 3-bit magnitude (0-7)
-                int quantizedMin = (sign << 3) | magnitude;  // 4 bits: 1 sign + 3 magnitude
-                int byteIdx = sb / 2;
-                int shift = (sb % 2) * 4;
-                minBytes[byteIdx] |= (quantizedMin << shift);
-            }
-            buffer.put(minBytes);
+                float effScale = d * L[sb];
+                float effMin   = dmin * M[sb];
+                float invScale = (effScale > 0) ? 1.0f / effScale : 0.0f;
 
-            // Quantize data (4-bit per value, 128 bytes for 256 values)
-            for (int sb = 0; sb < NUM_SUB_BLOCKS; sb++) {
-                float scale = quantizedScales[sb] * d;
-                float min = subBlockMins[sb];
-                float invScale = scale > 0 ? 1.0f / scale : 1.0f;
-
-                for (int i = 0; i < SUB_BLOCK_SIZE / 2; i++) {
-                    int idx0 = blockStart + sb * SUB_BLOCK_SIZE + i * 2;
-                    int idx1 = idx0 + 1;
-
-                    float val0 = idx0 < floatData.length ? floatData[idx0] : min;
-                    float val1 = idx1 < floatData.length ? floatData[idx1] : min;
-
-                    int q0 = Math.round((val0 - min) * invScale);
-                    int q1 = Math.round((val1 - min) * invScale);
-                    q0 = Math.max(0, Math.min(15, q0));
-                    q1 = Math.max(0, Math.min(15, q1));
-
-                    buffer.put((byte) ((q0 & 0x0F) | ((q1 & 0x0F) << 4)));
+                for (int i = 0; i < SUB_BLOCK_SIZE; i++) {
+                    int idx = blockStart + sb * SUB_BLOCK_SIZE + i;
+                    float val = (idx < floatData.length) ? floatData[idx] : 0;
+                    int qi = (int) Math.round((val + effMin) * invScale);
+                    q[sb * SUB_BLOCK_SIZE + i] = Math.max(0, Math.min(15, qi));
                 }
             }
+
+            // Now pack into qs[128] in dequantizer-expected layout
+            byte[] qs = new byte[128];
+            for (int group = 0; group < 4; group++) {
+                int baseLow  = group * 64;       // start of "low nibble" sub-block in q[]
+                int baseHigh = group * 64 + 32;  // start of "high nibble" sub-block in q[]
+                int qsBase   = group * 32;       // start byte in qs[]
+                for (int l = 0; l < 32; l++) {
+                    qs[qsBase + l] = (byte) ((q[baseLow + l] & 0x0F) | ((q[baseHigh + l] & 0x0F) << 4));
+                }
+            }
+            buffer.put(qs);
         }
 
         return output;
     }
 
-    private void packScales6Bit(int[] scales, byte[] output) {
-        // Pack 8 x 6-bit values into 6 bytes (48 bits)
-        // Simplified packing - fits 8 x 6-bit = 48 bits into first 6 bytes
-        long packed = 0;
-        for (int i = 0; i < 8; i++) {
-            packed |= ((long) (scales[i] & 0x3F)) << (i * 6);
-        }
-        for (int i = 0; i < 6; i++) {
-            output[i] = (byte) ((packed >> (i * 8)) & 0xFF);
-        }
-        // Remaining 6 bytes are padding/unused in simplified implementation
-    }
-
     @Override
     public byte[] quantize(INDArray array) {
-        // Flatten to 1D if needed for toFloatVector()
         INDArray flat = array.isVector() ? array : array.reshape(array.length());
         return quantize(flat.toFloatVector());
     }
