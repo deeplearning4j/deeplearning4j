@@ -332,10 +332,14 @@ SD_INLINE SD_HOST_DEVICE uint32_t RandomGenerator::xoroshiro32(uint64_t index) {
   s0 ^= ((index + 2) * (s1 + 24243287));
   s1 ^= ((index + 2) * (s0 + 723829));
 
-  unsigned long val = s1 ^ s0;
-  int *pHalf = reinterpret_cast<int *>(&val);
+  // Use safe integer truncation instead of reinterpret_cast<int*> to extract
+  // the lower 32 bits. The pointer-aliasing approach is undefined behaviour when
+  // the compiler SIMD-vectorises this loop: &val is a local address that may live
+  // only in a vector register during vectorised execution, making the cast illegal.
+  // Explicit masking produces identical bit patterns and is SIMD-safe.
+  uint32_t lower32 = static_cast<uint32_t>(s1 ^ s0);
 
-  return rotl(*pHalf * 0x9E3779BB, 5) * 5;
+  return rotl(lower32 * 0x9E3779BB, 5) * 5;
 }
 
 SD_INLINE SD_HOST_DEVICE uint64_t RandomGenerator::xoroshiro64(uint64_t index) {

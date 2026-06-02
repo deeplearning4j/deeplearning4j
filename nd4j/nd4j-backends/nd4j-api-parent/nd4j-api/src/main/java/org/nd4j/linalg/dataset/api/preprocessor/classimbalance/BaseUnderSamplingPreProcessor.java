@@ -86,53 +86,12 @@ public abstract class BaseUnderSamplingPreProcessor {
             INDArray calcResult = calculateBernoulli(currentLabel, currentMask, targetDist);
             currentWindowBernoulli.assign(calcResult);
 
-            // Diagnostic: check if last element of bernoullis was written
-            {
-                long rows = bernoullis.size(0);
-                long cols = bernoullis.size(1);
-                float lastVal = bernoullis.getFloat(rows - 1, cols - 1);
-                float viewLastVal = currentWindowBernoulli.getFloat(currentWindowBernoulli.size(0) - 1, currentWindowBernoulli.size(1) - 1);
-                System.out.println("DEBUG adjustMasks: window [" + currentTimeSliceStart + "," + currentTimeSliceEnd + "]"
-                    + " calcResult.shape=" + java.util.Arrays.toString(calcResult.shape())
-                    + " calcResult.isView=" + calcResult.isView()
-                    + " viewShape=" + java.util.Arrays.toString(currentWindowBernoulli.shape())
-                    + " viewStride=" + java.util.Arrays.toString(currentWindowBernoulli.stride())
-                    + " viewOffset=" + currentWindowBernoulli.offset()
-                    + " viewLastVal=" + viewLastVal
-                    + " bernoullis[last]=" + lastVal
-                    + " bernoullis.sum=" + bernoullis.sumNumber());
-            }
-
             currentTimeSliceEnd = currentTimeSliceStart;
         }
 
-        // Diagnostic: check bernoullis with min/max
-        float minB = bernoullis.minNumber().floatValue();
-        float maxB = bernoullis.maxNumber().floatValue();
-        System.out.println("DEBUG before BernoulliDist: sum=" + bernoullis.sumNumber()
-            + " min=" + minB + " max=" + maxB
-            + " shape=" + java.util.Arrays.toString(bernoullis.shape())
-            + " stride=" + java.util.Arrays.toString(bernoullis.stride())
-            + " offset=" + bernoullis.offset()
-            + " isView=" + bernoullis.isView()
-            + " dtype=" + bernoullis.dataType());
-        // Compare: direct BernoulliDist vs ones array
-        INDArray onesForTest = Nd4j.ones(DataType.FLOAT, bernoullis.shape());
-        INDArray testResult = Nd4j.getExecutioner().exec(
-                        new BernoulliDistribution(Nd4j.createUninitialized(DataType.FLOAT, onesForTest.shape()), onesForTest),
-                        Nd4j.getRandom());
-        System.out.println("DEBUG test with fresh ones: result.sum=" + testResult.sumNumber() + " (expected 30000)");
-        INDArray bernResult = Nd4j.getExecutioner().exec(
+        return Nd4j.getExecutioner().exec(
                         new BernoulliDistribution(Nd4j.createUninitialized(DataType.FLOAT, bernoullis.shape()), bernoullis),
                         Nd4j.getRandom());
-        System.out.println("DEBUG after BernoulliDist: result.sum=" + bernResult.sumNumber() + " (expected 30000)");
-        // Also try with bernoullis.dup()
-        INDArray bernDup = bernoullis.dup();
-        INDArray dupResult = Nd4j.getExecutioner().exec(
-                        new BernoulliDistribution(Nd4j.createUninitialized(DataType.FLOAT, bernDup.shape()), bernDup),
-                        Nd4j.getRandom());
-        System.out.println("DEBUG with bernoullis.dup(): sum=" + bernDup.sumNumber() + " result.sum=" + dupResult.sumNumber());
-        return bernResult;
     }
 
     /*
