@@ -53,6 +53,8 @@ public static int selectBestGpu() {
 When `CudaMemoryPool::allocate()` fails on the current device:
 
 ```
+Stage 0: Proactive soft limit check (cudaMemGetInfo usage% >= threshold)
+    ↓ (triggers before actual OOM)
 Stage 1: trimPool(currentDevice) → retry on same device
     ↓ (still fails)
 Stage 2: Try peer-accessible GPUs, sorted by free memory
@@ -64,9 +66,13 @@ Stage 4: cudaMallocHost → pinned host memory (accessible from all GPUs)
 Stage 5: Raise OOM error
 ```
 
+**Stage 0 — Proactive Soft Limit**: Before attempting `cudaMallocAsync`, the allocator checks GPU memory usage via `cudaMemGetInfo`. If usage exceeds the configured soft limit percentage, the allocator skips directly to `allocateFailover()` without waiting for `cudaMallocAsync` to fail. This avoids the expensive trim-retry-fail cascade that occurs at near-capacity. See ADR 0060 for implementation details.
+
 **Critical**: Stage 2 sorts candidates peer-first, then by free memory. Non-P2P GPUs are included but ranked lower because host-staged transfers add latency.
 
 **Critical**: `allocateFailover()` tracks `actualMigrateDevice` — the device where memory was actually allocated. This is stored in the DataBuffer so that `migrate()` and `free()` target the correct device.
+
+**Critical**: NEVER skip non-P2P GPUs during failover. Multi-GPU systems without NVLink (e.g., RTX 3070 Ti + RTX 4090) lack peer access, but `cudaMallocManaged` provides correct UVA page migration. Blocking non-peer devices causes OOM crashes when there is plenty of free GPU memory on other devices.
 
 ### P2P Access Detection and Compute Budget
 
@@ -164,6 +170,54 @@ void ContextBuffers::initialize() {
 
 This prevents the paradox where pool reservations from previous contexts block allocation of new context buffers.
 
+### CPU Memory Soft Limit
+
+The proactive soft limit mechanism extends to the CPU backend, where it serves a similar role: preventing allocations when system memory is under pressure, before the OS OOM killer intervenes.
+
+**Problem**: On CPU, `DataBuffer::allocatePrimary()` calls `aligned_alloc`/`new[]` which either succeeds or triggers the OS OOM killer — there is no graceful failure path. The existing `MemoryCounter` hard limits (`setGroupLimit`) were rarely configured and only checked tracked allocations, missing memory consumed by other processes.
+
+**Solution**: `MemoryCounter::validateSoftLimit()` checks actual system free memory via `/proc/meminfo` (Linux `MemAvailable`) before each allocation:
+
+```cpp
+bool MemoryCounter::validateSoftLimit(LongType numBytes) {
+    int softLimit = _softLimitPercent.load(std::memory_order_relaxed);
+    if (softLimit <= 0) return true;  // disabled
+
+    size_t freeBytes = MemoryUtils::getSystemFreeMemoryBytes();
+    if (freeBytes == 0) return true;  // query failed, don't block
+
+    // Estimate total from free + our tracked HOST usage
+    LongType ourUsage = _groupCounters[HOST];
+    size_t estimatedTotal = freeBytes + static_cast<size_t>(ourUsage > 0 ? ourUsage : 0);
+    double usagePercent = 100.0 * (1.0 - (double)freeBytes / (double)estimatedTotal);
+
+    return usagePercent < (double)softLimit;
+}
+```
+
+**Integration point**: `DataBuffer::allocatePrimary()` calls `validateSoftLimit()` before the existing hard limit check. When the soft limit is breached, an `allocation_exception` is thrown, which the Java layer can catch and handle (e.g., trigger GC, reduce batch size, or fail gracefully).
+
+**Configuration**:
+- `SD_CPU_SOFT_LIMIT_PERCENT` environment variable (0-100, 0=disabled)
+- `Environment::setCpuSoftLimitPercent(int)` programmatic API
+- `NativeOps::setMemoryPoolSoftLimitPercent(int)` / `getMemoryPoolSoftLimitPercent()` — on CPU backend these route to `MemoryCounter` instead of `CudaMemoryPool`
+
+**Key design decisions**:
+- Uses real system free memory (`/proc/meminfo MemAvailable`) rather than only ND4J-tracked counters, because other processes consume memory too.
+- Total memory is estimated as `freeBytes + ourTrackedUsage` to avoid an extra syscall — approximate but sufficient for threshold comparison.
+- All verbose logging guarded by `isVerbose()` since this runs on every primary allocation.
+- The CPU soft limit is stored in `MemoryCounter` (singleton, mutex-protected) rather than `CudaMemoryPool`, since CPU has no per-device pool.
+
+**File stack**:
+```
+CoreConfig.h/cpp          — _cpuSoftLimitPercent field, SD_CPU_SOFT_LIMIT_PERCENT env var
+Environment.h             — cpuSoftLimitPercent() / setCpuSoftLimitPercent() forwarding
+MemoryCounter.h/cpp       — validateSoftLimit(), setSoftLimitPercent(), getSoftLimitPercent()
+MemoryUtils.h/cpp         — getSystemFreeMemoryBytes() (/proc/meminfo reader)
+DataBuffer.cpp            — allocatePrimary() calls validateSoftLimit() before hard limit
+NativeOps.cpp (CPU)       — setMemoryPoolSoftLimitPercent/getMemoryPoolSoftLimitPercent
+```
+
 ## Consequences
 
 ### Advantages
@@ -186,9 +240,14 @@ This prevents the paradox where pool reservations from previous contexts block a
 
 ## References
 
-- CudaMemoryPool.h, CudaMemoryPool.cu
+- CudaMemoryPool.h, CudaMemoryPool.cu — CUDA pool with proactive soft limit
 - CudaAffinityManager.java
-- DeviceMemoryManager.java
+- DeviceMemoryManager.java — `selectDeviceForAllocation()` with `canAllocate()` gating
 - ConstantHelper.cu
 - ContextBuffers.cu
+- MemoryCounter.h/cpp — CPU soft limit via `validateSoftLimit()`
+- MemoryUtils.h/cpp — `getSystemFreeMemoryBytes()` for CPU memory queries
+- DataBuffer.cpp — `allocatePrimary()` soft limit check before hard limit
+- CoreConfig.h/cpp — `_cpuSoftLimitPercent` and `_cudaSoftLimitPercent` fields
+- NativeOps.cpp (CPU and CUDA) — `setMemoryPoolSoftLimitPercent` / `getMemoryPoolSoftLimitPercent`
 - ADR 0060 - CUDA Async Memory Pool

@@ -75,6 +75,36 @@ The CUDA driver maintains an internal pool of reserved memory. Freed blocks are 
 
 **Critical Rule**: When `cudaMallocAsync` fails, we NEVER fall back to `cudaMalloc`. Direct allocations bypass pool statistics tracking (`poolUsed`/`poolReserved`), causing the pool to lose track of memory and leading to cascading allocation failures. All failures go through `allocateFailover()`.
 
+### Proactive Soft Limit (CUDA)
+
+The pool supports a proactive soft limit that triggers failover **before** `cudaMallocAsync` fails. This prevents the cascade of trim-retry-fail cycles that occur when a device is near capacity:
+
+```cpp
+void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream) {
+    int softLimit = softLimitPercent_.load(std::memory_order_relaxed);
+    if (softLimit > 0) {
+        size_t freeMem, totalMem;
+        cudaMemGetInfo(&freeMem, &totalMem);
+        double usagePercent = 100.0 * (1.0 - (double)freeMem / (double)totalMem);
+        if (usagePercent >= (double)softLimit) {
+            // Proactively route to another device before OOM
+            return allocateFailover(size, deviceId);
+        }
+    }
+    // Normal fast path...
+}
+```
+
+**Configuration**:
+- `SD_CUDA_SOFT_LIMIT_PERCENT` environment variable (0-100, 0=disabled)
+- `Environment::setCudaSoftLimitPercent(int)` programmatic API
+- `NativeOps::setMemoryPoolSoftLimitPercent(int)` JNI API from Java
+
+**Key design decisions**:
+- Uses `cudaMemGetInfo` (real driver query) rather than pool statistics, because pool `poolReserved` includes reusable blocks and overstates pressure.
+- All log output is guarded by `isVerbose()` since this check runs on every allocation in the hot path.
+- When the soft limit triggers and the failover device also exceeds the soft limit, the allocation proceeds on that device anyway (one-level proactive check, not recursive).
+
 ### Multi-Device Failover Strategy
 
 When the current device cannot satisfy an allocation:
@@ -151,3 +181,6 @@ This means the pool retains up to 75% of device memory for reuse, even when allo
 - CUDA Memory Management documentation (cudaMallocAsync/cudaFreeAsync)
 - CUDA 11.2 release notes on stream-ordered memory allocation
 - CudaMemoryPool.h, CudaMemoryPool.cu in libnd4j/include/memory/cuda/
+- CoreConfig.h/cpp — `_cudaSoftLimitPercent` field and `SD_CUDA_SOFT_LIMIT_PERCENT` env var
+- Environment.h — `cudaSoftLimitPercent()` / `setCudaSoftLimitPercent()` forwarding
+- ADR 0065 — Multi-GPU Memory Management (failover chain that soft limit triggers into)
