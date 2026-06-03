@@ -5,7 +5,7 @@
 Implemented and actively maintained.
 
 Proposed by: Adam Gibson (January 2025)
-Updated by: Runtime maintainers (March 31, 2026; shape-keyed plan cache April 16, 2026; training support April 17, 2026; disk plan persistence May 24, 2026)
+Updated by: Runtime maintainers (March 31, 2026; shape-keyed plan cache April 16, 2026; training support April 17, 2026; disk plan persistence May 24, 2026; buffer coloring + pooling + passivation June 3, 2026)
 
 ## Context
 
@@ -209,6 +209,14 @@ After step 6:  release slot#3,4  (concat outputs consumed by attention)
 ```
 
 This enables eager memory reclamation within segments -- intermediates are freed as soon as their last consumer finishes, not at end-of-graph.
+
+#### Buffer Coloring and Pooling
+
+Beyond the release schedule (which nullifies slots eagerly), `DspBufferColorMap` (ADR 0094) shares physical GPU memory between non-overlapping slots at compile time. Liveness data (`SlotLivenessData`) persisted during compilation feeds a greedy interval graph coloring algorithm that assigns same-shape, non-overlapping slots to the same physical `DataBuffer`. This reduces intermediate buffer count by 10-20x for large plans.
+
+`DspBufferPool` provides cross-plan buffer reuse: when plan A releases a buffer (via passivation or destruction), plan B can acquire the same physical allocation without `cudaMalloc`. The plan cache integrates passivation as the first eviction tier — LRU plans release GPU intermediates but stay in cache, with re-warming on the next cache hit.
+
+See [ADR 0094](0094%20-%20DSP%20Buffer%20Coloring%20Pooling%20and%20Passivation.md) for the full three-tier architecture.
 
 #### Shape Instability Handling
 

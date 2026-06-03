@@ -208,7 +208,7 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
     # This ensures header-level renames (member variables) are picked up even when
     # ccache's direct-mode manifest incorrectly matches on file stat data.
     case \"\$SOURCE_FILE\" in
-        *NativeDynamicShapePlan.cpp|*NativeDynamicShapePlan_gpubackend.cu|*NativeDynamicShapePlan_slotexec.cpp)
+        *NativeDynamicShapePlan.cpp|*NativeDynamicShapePlan_gpubackend.cu|*NativeDynamicShapePlan_slotexec.cpp|*NativeDynamicShapePlan_cuda_stubs.cpp)
             export CCACHE_RECACHE=1
             ;;
     esac

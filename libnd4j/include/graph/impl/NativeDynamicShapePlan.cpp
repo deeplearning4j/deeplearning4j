@@ -2208,6 +2208,12 @@ Status NativeDynamicShapePlan::execute(
   };
 
   ExternalInputSpecialUseGuard externalInputUseGuard(buildExternalReadList());
+  // On CPU there are no CUDA streams, so cross-stream sync is trivially done.
+  // Mark it here so the phase machine reaches CROSS_STREAM_DONE before we
+  // advance to EXT_INPUTS_DONE.
+  if (!execCtx->isCrossStreamSynced()) {
+    execCtx->markCrossStreamSynced();
+  }
   execCtx->markExtInputsSynced();
 
   // Debug: dump external input at a configured index (ND4J_DSP_TRACE_EXT_INPUT)

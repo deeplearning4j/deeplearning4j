@@ -4,7 +4,7 @@ This directory contains all Architecture Decision Records (ADRs) for the
 Deeplearning4j project. Each ADR documents a significant technical decision,
 its rationale, and its current implementation status.
 
-**Last updated:** 2026-05-23
+**Last updated:** 2026-06-03
 
 ## Status Key
 
@@ -90,6 +90,7 @@ its rationale, and its current implementation status.
 | [0078](0078%20-%20DSP%20Diagnostic%20Framework%20Extensions.md) | DSP Diagnostic Framework Extensions | Accepted | Three new diagnostic categories (STREAM_SYNC, MULTI_DEVICE, GRAPH_REPLAY) with programmatic replay readiness and phase-transition tracking via DspDebugger Java API. |
 | [0079](0079%20-%20NativeDynamicShapePlan%20Structural%20Refactoring.md) | NativeDynamicShapePlan Structural Refactoring | Accepted | Decomposed 18K-line implementation into separate structs for immutable definition vs. mutable state, removing macro indirection and aliased members that caused silent bugs. |
 | [0084](0084%20-%20DSP%20Execution%20State%20Simplification.md) | DSP Execution State Simplification | Accepted | Removed redundant ExecutionPhase enum (collapsed into SegmentLifecycleState) and pruned dead SlotState values to eliminate parallel state machines that diverged silently. |
+| [0094](0094%20-%20DSP%20Buffer%20Coloring%20Pooling%20and%20Passivation.md) | DSP Buffer Coloring, Pooling, and Passivation | Implemented | Three-tier GPU memory reduction: compile-time buffer coloring (non-overlapping slots share physical buffers), per-device buffer pool (cross-plan reuse), and LRU passivation (inactive plans release GPU memory). |
 
 ### DSP Correctness Fixes (Bug-Fix ADRs)
 
@@ -301,3 +302,4 @@ its rationale, and its current implementation status.
 | 0090 | Device Transfer Management Framework | Proposed |
 | 0091 | LlamaCpp/OneDNN/cuDNN Backend Classifiers | Accepted |
 | 0092 | Op Execution Timing Tracker | Accepted |
+| 0094 | DSP Buffer Coloring, Pooling, and Passivation | Implemented |

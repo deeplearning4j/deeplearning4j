@@ -25,6 +25,7 @@
 
 #include <ops/declarable/headers/loss.h>
 #include <ops/declarable/generic/helpers/ScatterHelper.h>
+#include <ops/BroadcastOpsTuple.h>
 
 namespace sd {
 namespace ops {
@@ -62,29 +63,30 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0)
 
   std::vector<LongType> dimension = {-1};
 
-  // Compute -log(softmax(logits)) using raw pointers (unique_ptr is banned in libnd4j).
-  // All operator-(), operator/(), reduceAlongDimension(), and transform() return heap NDArray*.
-  // We delete each intermediate immediately after it is no longer needed.
+  // Compute -log(softmax(logits)) using explicit target arrays to avoid
+  // operator overload return-value issues with NDArray*.
   NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
-  NDArray* shiftedLogits = (*logits) - (*maxAlongDim);
+
+  NDArray shiftedLogits(logits->shapeInfo(), false, block.launchContext());
+  logits->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), maxAlongDim, &shiftedLogits);
   delete maxAlongDim;
 
-  NDArray* logitsExp = shiftedLogits->transform(transform::Exp, nullptr);
-  delete shiftedLogits;
+  NDArray logitsExp(shiftedLogits.shapeInfo(), false, block.launchContext());
+  shiftedLogits.applyTransform(transform::Exp, &logitsExp);
 
-  NDArray* sumLogitsExp = logitsExp->reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray* softmaxRatio = (*logitsExp) / (*sumLogitsExp);
-  delete logitsExp;
+  NDArray* sumLogitsExp = logitsExp.reduceAlongDimension(reduce::Sum, &dimension, true);
+
+  NDArray softmaxRatio(logitsExp.shapeInfo(), false, block.launchContext());
+  logitsExp.applyTrueBroadcast(BroadcastOpsTuple::Divide(), sumLogitsExp, &softmaxRatio);
   delete sumLogitsExp;
 
-  NDArray* logSoftmax = softmaxRatio->transform(transform::Log);
-  delete softmaxRatio;
+  NDArray logSoftmax(softmaxRatio.shapeInfo(), false, block.launchContext());
+  softmaxRatio.applyTransform(transform::Log, &logSoftmax);
 
-  // Negate in-place: logSoftmax = -log(softmax). Avoids any copy-constructor call.
-  logSoftmax->applyScalar(scalar::Multiply, -1.0, logSoftmax);
+  NDArray negLogSoftmax(logSoftmax.shapeInfo(), false, block.launchContext());
+  logSoftmax.applyTransform(transform::Neg, &negLogSoftmax);
 
-  helpers::scatterForLoss(block.launchContext(), *labels, *logSoftmax, *output, false);
-  delete logSoftmax;
+  helpers::scatterForLoss(block.launchContext(), *labels, negLogSoftmax, *output, false);
 
   return Status::OK;
 }
