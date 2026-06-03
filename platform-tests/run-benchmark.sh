@@ -640,6 +640,8 @@ $MVN test \
   -Dvlm.test.pdf.path=pathfinder-mythic.pdf \
   -Dvlm.test.pdf.page=10 \
   -Dvlm.test.configs="$CONFIG" \
+  -Dsd.test.skip.large=false \
+  -Dsd.test.skip.downloads=false \
   $TRITON_FLAG \
   -Dbackend.artifactId=$BACKEND_ARTIFACT \
   $EXTRA_ARGS \

@@ -221,21 +221,17 @@ void NativePlanCache::unpinPlan(NativeDynamicShapePlan* plan) {
   // During shutdown, skip entirely — no eviction, no CUDA teardown.
   if (isShutdownInProgress()) return;
 
-  std::vector<NativeDynamicShapePlan*> victims;
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    pinnedPlans_.erase(plan);
-    victims = evictIfOverBudgetLocked();
-  }  // mutex_ released here
-
-  // Delete evicted plans OUTSIDE the mutex.  Each delete triggers
-  // ~NativeDynamicShapePlan → platformFreePlanResources() which calls
-  // cudaStreamDestroy, cudaFree, cudaGraphExecDestroy.  Running these
-  // under the cache lock caused SIGSEGV when the JVM entered a safepoint
-  // mid-teardown (Pattern A crash) and blocked concurrent cache lookups.
-  for (auto* victim : victims) {
-    delete victim;
-  }
+  // IMPORTANT: unpinPlan does NOT trigger memory-budget eviction.
+  // Running evictIfOverBudgetLocked() here caused a passivation death loop:
+  //   1. Plan executes, gets unpinned
+  //   2. Budget check sees plan's memory > 25% of freeMem → passivates it
+  //   3. passivate() destroys ALL CUDA graphs and resets lifecycle to SLOT_BY_SLOT
+  //   4. reactivate() only clears a flag — restores nothing
+  //   5. Plan must re-warm (4+ executions to reach REPLAYING)
+  //   6. Gets passivated again before reaching REPLAYING → never stabilizes
+  // Memory-budget eviction only fires on getOrInsert() when new plans enter.
+  std::lock_guard<std::mutex> lock(mutex_);
+  pinnedPlans_.erase(plan);
 }
 
 // ---------------------------------------------------------------------------
@@ -293,22 +289,27 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
     return lru_.end();
   };
 
-  // Helper: compute total cache footprint
+  // Helper: compute total cache footprint (only non-passivated plans count)
   auto computeCacheBytes = [&]() -> size_t {
     size_t total = 0;
     for (auto& entry : lru_) {
+      if (entry.second->isPassivated()) continue;  // holds zero GPU memory
       size_t planBytes = entry.second->estimatedOwnedBytes();
       total += (planBytes > 0) ? planBytes : kBytesPerPlanEstimate;
     }
     return total;
   };
 
-  // Helper: query free memory
-  auto queryFreeMem = []() -> size_t {
+  // Helper: query device memory for budget computation.
+  // GPU: uses total device memory (not free — using free memory is self-defeating
+  // because the plan's own allocations reduce freeMem, shrinking the budget).
+  // CPU: uses free system RAM (self-defeating loop doesn't apply — CPU plans
+  // don't hold GPU-like exclusive memory and free RAM is usually abundant).
+  auto queryDeviceMemForBudget = []() -> size_t {
 #ifdef SD_CUDA
     size_t freeMem = 0, totalMem = 0;
     cudaError_t err = cudaMemGetInfo(&freeMem, &totalMem);
-    return (err == cudaSuccess) ? freeMem : 0;
+    return (err == cudaSuccess) ? totalMem : 0;
 #else
     return sd::memory::MemoryUtils::getSystemFreeMemoryBytes();
 #endif
@@ -335,9 +336,9 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
   // Memory-based eviction (rounds 2-4) — only when budget fraction is set
   // ═══════════════════════════════════════════════════════════════════════
   if (fraction > 0.0f && !lru_.empty()) {
-    size_t freeMem = queryFreeMem();
-    if (freeMem > 0) {
-      const size_t budgetBytes = static_cast<size_t>(fraction * static_cast<float>(freeMem));
+    size_t totalDeviceMem = queryDeviceMemForBudget();
+    if (totalDeviceMem > 0) {
+      const size_t budgetBytes = static_cast<size_t>(fraction * static_cast<float>(totalDeviceMem));
       size_t totalCacheBytes = computeCacheBytes();
 
       // ─────────────────────────────────────────────────────────────────
@@ -351,10 +352,10 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
         size_t planBytes = plan->estimatedOwnedBytes();
         size_t planCost = (planBytes > 0) ? planBytes : kBytesPerPlanEstimate;
 
-        DSP_DIAG(MEMORY, "PLAN_CACHE passivate LRU (memory budget %.1f%% of %zuMB free, "
+        DSP_DIAG(MEMORY, "PLAN_CACHE passivate LRU (memory budget %.1f%% of %zuMB total, "
                  "cache=%zuMB): plan=%p planBytes=%zuMB",
                  fraction * 100.0f,
-                 freeMem / (1024 * 1024),
+                 totalDeviceMem / (1024 * 1024),
                  totalCacheBytes / (1024 * 1024),
                  (void*)plan,
                  planCost / (1024 * 1024));
@@ -385,10 +386,10 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
         size_t victimBytes = victim->second->estimatedOwnedBytes();
         size_t victimCost = (victimBytes > 0) ? victimBytes : kBytesPerPlanEstimate;
 
-        DSP_DIAG(MEMORY, "PLAN_CACHE evict LRU (memory budget %.1f%% of %zuMB free, cache=%zuMB): "
+        DSP_DIAG(MEMORY, "PLAN_CACHE evict LRU (memory budget %.1f%% of %zuMB total, cache=%zuMB): "
                  "outputSetHash=%llu phCount=%lld contentHash=0x%016llx planBytes=%zuMB",
                  fraction * 100.0f,
-                 freeMem / (1024 * 1024),
+                 totalDeviceMem / (1024 * 1024),
                  totalCacheBytes / (1024 * 1024),
                  (unsigned long long)victim->first.outputSetHash,
                  (long long)victim->first.phCount,
