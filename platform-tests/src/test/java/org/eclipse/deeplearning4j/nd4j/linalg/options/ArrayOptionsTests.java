@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @Slf4j
 @Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SMOKE)
 public class ArrayOptionsTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest

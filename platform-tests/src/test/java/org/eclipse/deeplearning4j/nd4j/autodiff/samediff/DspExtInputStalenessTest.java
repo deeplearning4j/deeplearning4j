@@ -21,6 +21,7 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.nd4j.common.tests.tags.TagNames;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -54,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - VLM decode end-to-end pattern reproduction
  */
 @Slf4j
+@Tag(TagNames.FULL_CI)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class DspExtInputStalenessTest {
 

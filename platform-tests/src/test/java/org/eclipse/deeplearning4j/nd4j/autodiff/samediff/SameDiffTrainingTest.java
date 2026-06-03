@@ -79,6 +79,7 @@ import org.nd4j.weightinit.impl.ZeroInitScheme;
 @NativeTag
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.FULL_CI)
 public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     @TempDir
     Path testDir;

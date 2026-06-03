@@ -21,7 +21,9 @@
 package org.eclipse.deeplearning4j.ggml.quantization;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.ggml.format.GGMLDataType;
 import org.nd4j.ggml.quantization.Dequantizer;
 import org.nd4j.ggml.quantization.DequantizerFactory;
@@ -34,6 +36,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag(TagNames.FULL_CI)
 @DisplayName("Quantizer Test")
 class QuantizerTest {
 

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -83,6 +84,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 @Slf4j
 @Tag("dsp")
+@Tag(TagNames.FULL_CI)
 @DisplayName("DSP buffer-alias accuracy — op→view aliasing across execution modes")
 public class DspBufferAliasAccuracyTest {
 

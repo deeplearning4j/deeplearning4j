@@ -54,4 +54,9 @@ public class TagNames {
     public final static String DOWNLOADS = "downloads";
     public final static String TENSORFLOW = "tensorflow";
     public final static String ONNX = "onnx";
+
+    // Test tiering tags - for CI pipeline selection
+    public final static String SMOKE = "smoke"; //quick sanity checks (<30s total), safe for low-spec CI
+    public final static String FULL_CI = "full-ci"; //broader validation (<5 min total), DSP lifecycle, evaluation, op basics
+    // Tests without smoke or full-ci tags are implicitly long-running (nightly/weekly)
 }

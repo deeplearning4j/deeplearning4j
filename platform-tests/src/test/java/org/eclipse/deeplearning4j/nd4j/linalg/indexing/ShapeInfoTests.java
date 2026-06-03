@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag(TagNames.NDARRAY_INDEXING)
+@Tag(TagNames.SMOKE)
 @NativeTag
 public class ShapeInfoTests  extends BaseNd4jTestWithBackends  {
 

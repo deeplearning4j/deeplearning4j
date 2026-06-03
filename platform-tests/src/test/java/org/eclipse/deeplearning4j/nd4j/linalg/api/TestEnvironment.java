@@ -32,6 +32,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 @NativeTag
+@Tag(TagNames.SMOKE)
 public class TestEnvironment extends BaseNd4jTestWithBackends {
 
 

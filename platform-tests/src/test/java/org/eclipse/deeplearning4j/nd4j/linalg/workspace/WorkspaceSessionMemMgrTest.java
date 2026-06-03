@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @Tag(TagNames.WORKSPACES)
+@Tag(TagNames.SMOKE)
 @NativeTag
 public class WorkspaceSessionMemMgrTest extends BaseNd4jTestWithBackends {
 

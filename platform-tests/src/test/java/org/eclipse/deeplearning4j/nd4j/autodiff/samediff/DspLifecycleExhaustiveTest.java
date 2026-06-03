@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspHandle;
@@ -53,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Each test is self-contained. No shared state. Each validates a specific property.
  */
 @Slf4j
+@Tag(TagNames.FULL_CI)
 @DisplayName("DSP Lifecycle Exhaustive Tests")
 public class DspLifecycleExhaustiveTest {
 

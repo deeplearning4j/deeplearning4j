@@ -38,7 +38,9 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.primitives.Pair;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -60,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DisplayName("Transfer Learning MLN Isolation Test")
+@Tag(TagNames.SMOKE)
 class TransferLearningMLNIsolationTest extends BaseDL4JTest {
 
     @Test

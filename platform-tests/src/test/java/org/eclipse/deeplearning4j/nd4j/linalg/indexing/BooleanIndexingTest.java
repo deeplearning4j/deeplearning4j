@@ -49,6 +49,7 @@ import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.NDARRAY_INDEXING)
+@Tag(TagNames.FULL_CI)
 @NativeTag
 public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     /*

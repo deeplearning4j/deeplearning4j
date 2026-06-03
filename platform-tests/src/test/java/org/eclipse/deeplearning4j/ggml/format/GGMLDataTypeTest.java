@@ -21,13 +21,16 @@
 package org.eclipse.deeplearning4j.ggml.format;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.ggml.format.GGMLDataType;
 import org.nd4j.linalg.api.buffer.DataType;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("GGMLDataType Test")
+@Tag(TagNames.SMOKE)
 class GGMLDataTypeTest {
 
     @Test

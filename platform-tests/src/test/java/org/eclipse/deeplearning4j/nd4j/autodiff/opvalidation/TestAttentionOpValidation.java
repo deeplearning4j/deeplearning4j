@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @NativeTag
 @Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.FULL_CI)
 @DisplayName("Attention Op Validation Tests")
 public class TestAttentionOpValidation extends BaseOpValidation {
 

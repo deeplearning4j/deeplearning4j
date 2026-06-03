@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
  * @author Adam Gibson
  */
 @Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SMOKE)
 @NativeTag
 public class NDIndexIteratorTest extends BaseNd4jTestWithBackends {
 

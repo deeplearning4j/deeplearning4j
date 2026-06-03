@@ -20,8 +20,10 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.ControlFlow;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -36,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for SameDiff ControlFlow operations (ifCond, whileLoop, etc.)
  * These tests verify the behavior of conditional execution in SameDiff graphs.
  */
+@Tag(TagNames.SMOKE)
 public class ControlFlowTest {
 
     @Test

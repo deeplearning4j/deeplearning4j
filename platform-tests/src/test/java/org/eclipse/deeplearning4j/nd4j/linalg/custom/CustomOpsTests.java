@@ -23,8 +23,10 @@ package org.eclipse.deeplearning4j.nd4j.linalg.custom;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
@@ -71,6 +73,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @NativeTag
+@Tag(TagNames.FULL_CI)
 public class CustomOpsTests extends BaseNd4jTestWithBackends {
 
 

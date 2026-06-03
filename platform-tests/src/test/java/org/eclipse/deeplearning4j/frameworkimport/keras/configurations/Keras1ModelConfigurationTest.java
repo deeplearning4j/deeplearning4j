@@ -38,6 +38,7 @@ import org.nd4j.common.tests.tags.TagNames;
 @DisplayName("Keras 1 Model Configuration Test")
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.KERAS)
+@Tag(TagNames.FULL_CI)
 @NativeTag
 class Keras1ModelConfigurationTest extends BaseDL4JTest {
 

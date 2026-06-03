@@ -21,8 +21,10 @@
 package org.eclipse.deeplearning4j.ggml;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.ggml.GGMLImportException;
@@ -44,6 +46,7 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("GGMLModelImport Test")
+@Tag(TagNames.SMOKE)
 class GGMLModelImportTest {
 
     @TempDir

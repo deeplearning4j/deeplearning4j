@@ -21,7 +21,9 @@ package org.eclipse.deeplearning4j.nd4j.linalg.api.ndarray;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,6 +36,7 @@ import org.nd4j.nativeblas.OpaqueNDArray;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@Tag(TagNames.SMOKE)
 public class OpaqueNDArrayTests extends BaseNd4jTestWithBackends {
 
     @Test

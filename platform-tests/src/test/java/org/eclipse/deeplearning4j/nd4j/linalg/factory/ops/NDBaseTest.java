@@ -37,6 +37,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.FULL_CI)
 @NativeTag
 public class NDBaseTest extends BaseNd4jTestWithBackends {
 

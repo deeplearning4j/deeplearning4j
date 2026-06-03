@@ -88,6 +88,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.SMOKE)
 @NativeTag
 public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 

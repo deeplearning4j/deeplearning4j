@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @NativeTag
 @Tag(TagNames.NDARRAY_INDEXING)
+@Tag(TagNames.FULL_CI)
 public class ShapeTestsC extends BaseNd4jTestWithBackends {
 
     DataType initialType = Nd4j.dataType();

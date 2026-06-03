@@ -21,6 +21,7 @@ package org.eclipse.deeplearning4j.nd4j.linalg.mixed;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.nd4j.common.tests.tags.TagNames;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -68,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *    Regressions that accumulate FP drift are caught by step 20+.
  */
 @Slf4j
+@Tag(TagNames.FULL_CI)
 @DisplayName("DSP Composite Replay Assertions")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class DspCompositeReplayTest {

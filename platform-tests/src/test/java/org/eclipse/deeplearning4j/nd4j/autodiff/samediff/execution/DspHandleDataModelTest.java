@@ -20,7 +20,9 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff.execution;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.execution.DspHandle.CaptureStats;
 import org.nd4j.autodiff.samediff.execution.DspHandle.D2DStatus;
 import org.nd4j.autodiff.samediff.execution.DspHandle.SegmentStepInfo;
@@ -35,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@link CaptureStats}, {@link StepSnapshot}, {@link D2DStatus}, {@link SegmentStepInfo}.
  * No native handle required — pure Java data model tests.
  */
+@Tag(TagNames.SMOKE)
 @DisplayName("DspHandle data model unit tests")
 public class DspHandleDataModelTest {
 

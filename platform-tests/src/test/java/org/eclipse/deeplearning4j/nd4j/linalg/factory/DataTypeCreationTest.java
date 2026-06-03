@@ -32,6 +32,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag(TagNames.RNG)
+@Tag(TagNames.SMOKE)
 @NativeTag
 public class DataTypeCreationTest  extends BaseNd4jTestWithBackends  {
 

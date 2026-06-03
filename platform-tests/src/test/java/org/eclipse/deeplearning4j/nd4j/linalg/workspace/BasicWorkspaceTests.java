@@ -53,6 +53,7 @@ import static org.nd4j.linalg.api.buffer.DataType.DOUBLE;
 
 @Slf4j
 @Tag(TagNames.WORKSPACES)
+@Tag(TagNames.SMOKE)
 @NativeTag
 @Execution(ExecutionMode.SAME_THREAD)
 public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {

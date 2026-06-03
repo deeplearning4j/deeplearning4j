@@ -77,6 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @DisplayName("Keras Model End To End Test")
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.KERAS)
+@Tag(TagNames.FULL_CI)
 @NativeTag
 class KerasModelEndToEndTest extends BaseDL4JTest {
 

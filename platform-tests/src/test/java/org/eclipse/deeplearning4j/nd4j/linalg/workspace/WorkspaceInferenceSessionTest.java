@@ -66,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 @Tag(TagNames.SAMEDIFF)
 @Tag(TagNames.WORKSPACES)
+@Tag(TagNames.FULL_CI)
 public class WorkspaceInferenceSessionTest extends BaseNd4jTestWithBackends {
 
     @Override

@@ -21,7 +21,9 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
@@ -50,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   cd platform-tests && mvn test -Dtest=TestDspShapePrePass 2>&1 | tee /tmp/dsp-shape-prepass.log
  */
 @Slf4j
+@Tag(TagNames.FULL_CI)
 @DisplayName("DSP Shape Pre-Pass Tests")
 public class TestDspShapePrePass {
 

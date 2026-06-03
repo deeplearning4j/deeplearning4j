@@ -22,7 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspHandle;
@@ -47,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * then exercises the DspHandle facade.
  */
 @Slf4j
+@Tag(TagNames.FULL_CI)
 @DisplayName("DspHandle API Tests")
 public class DspHandleTest {
 

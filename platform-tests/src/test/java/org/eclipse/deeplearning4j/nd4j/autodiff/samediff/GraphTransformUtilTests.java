@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 @Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.SMOKE)
 @NativeTag
 public class GraphTransformUtilTests extends BaseNd4jTestWithBackends {
 

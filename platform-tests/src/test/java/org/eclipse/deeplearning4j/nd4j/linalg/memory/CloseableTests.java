@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @NativeTag
 @Tag(TagNames.WORKSPACES)
+@Tag(TagNames.SMOKE)
 public class CloseableTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest

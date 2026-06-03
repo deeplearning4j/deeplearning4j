@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @NativeTag
 @Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.SMOKE)
 public class ONNXPipelineTest extends BaseNd4jTestWithBackends {
 
     @TempDir

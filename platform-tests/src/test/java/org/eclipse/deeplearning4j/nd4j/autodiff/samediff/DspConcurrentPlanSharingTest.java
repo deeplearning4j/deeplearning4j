@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @Slf4j
 @Tag("dsp")
+@Tag(TagNames.FULL_CI)
 @DisplayName("DSP concurrent plan sharing tests")
 public class DspConcurrentPlanSharingTest {
 

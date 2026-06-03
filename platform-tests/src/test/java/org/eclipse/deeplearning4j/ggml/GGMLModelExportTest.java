@@ -21,8 +21,10 @@
 package org.eclipse.deeplearning4j.ggml;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.ggml.GGMLExportException;
 import org.nd4j.ggml.GGMLModelExport;
@@ -38,6 +40,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("GGMLModelExport Test")
+@Tag(TagNames.FULL_CI)
 class GGMLModelExportTest {
 
     @TempDir

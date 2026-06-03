@@ -54,6 +54,7 @@ import java.nio.file.Path;
 @NativeTag
 @Tag(TagNames.JAVA_ONLY)
 @Tag(TagNames.FILE_IO)
+@Tag(TagNames.SMOKE)
 class CrashReportingUtilTest extends BaseDL4JTest {
 
     @Override

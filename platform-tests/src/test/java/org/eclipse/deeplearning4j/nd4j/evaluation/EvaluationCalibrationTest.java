@@ -44,6 +44,7 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Tag(TagNames.EVAL_METRICS)
+@Tag(TagNames.FULL_CI)
 @NativeTag
 public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
 

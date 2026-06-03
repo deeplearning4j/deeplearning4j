@@ -93,6 +93,8 @@
         <!-- Note this will not use the embedded java shell script if forks is set to 0. Uset fork count 0 with address sanitizer only.-->
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
+        <!-- Test tier group filter. Empty = run all tests. Set by -Psmoke or -Pfull-ci profiles. -->
+        <surefire.groups></surefire.groups>
 
         <test.nogc>false</test.nogc>
         <test.prefix></test.prefix>
@@ -1417,6 +1419,27 @@
                 </plugins>
             </build>
         </profile>
+        <!-- Quick sanity tier: ~30s, no GPU needed, no model downloads -->
+        <profile>
+            <id>smoke</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <surefire.groups>smoke</surefire.groups>
+            </properties>
+        </profile>
+
+        <!-- Full CI tier: ~5 min, includes DSP lifecycle, evaluation, op validation basics -->
+        <profile>
+            <id>full-ci</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <surefire.groups>smoke | full-ci</surefire.groups>
+            </properties>
+        </profile>
     </profiles>
 
     <build>
@@ -1619,6 +1642,7 @@
                 </dependencies>
                 <configuration>
                     <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
+                    <groups>${surefire.groups}</groups>
                     <excludedGroups>${excludedTests}</excludedGroups>
                     <trimStackTrace>false</trimStackTrace>
                     <reuseForks>false</reuseForks>
