@@ -109,6 +109,9 @@ endfunction()
 # Adds an ExternalProject_Add_Step that runs post-install.
 function(sd_dep_cache_store dep_name cache_key install_dir ep_target)
     set(_cache_dir "${SD_DEP_CACHE_DIR}/${dep_name}/${cache_key}")
+    # Normalize paths to forward slashes for Windows compatibility in generated scripts
+    string(REPLACE "\\" "/" _cache_dir "${_cache_dir}")
+    string(REPLACE "\\" "/" install_dir "${install_dir}")
     set(_store_script "${CMAKE_BINARY_DIR}/dep_cache_store_${dep_name}.cmake")
     # Write a cmake script that copies install_dir to cache and writes the marker
     file(WRITE "${_store_script}" "
@@ -712,6 +715,10 @@ function(setup_flatbuffers)
     if(SD_DEP_CACHE AND NOT CMAKE_CROSSCOMPILING AND DEFINED _fb_cache_key)
         # Create a store script that gathers flatbuffers artifacts into a staging dir, then caches
         set(_fb_cache_dir "${SD_DEP_CACHE_DIR}/flatbuffers/${_fb_cache_key}")
+        # Normalize paths to forward slashes for Windows compatibility in generated scripts
+        string(REPLACE "\\" "/" _fb_cache_dir "${_fb_cache_dir}")
+        set(_fb_binary_dir "${CMAKE_CURRENT_BINARY_DIR}")
+        string(REPLACE "\\" "/" _fb_binary_dir "${_fb_binary_dir}")
         set(_fb_store_script "${CMAKE_BINARY_DIR}/dep_cache_store_flatbuffers.cmake")
         file(WRITE "${_fb_store_script}" "
             set(_cache_install \"${_fb_cache_dir}/install\")
@@ -721,10 +728,10 @@ function(setup_flatbuffers)
                 file(MAKE_DIRECTORY \"\${_cache_install}/include\")
                 file(MAKE_DIRECTORY \"\${_cache_install}/lib\")
                 execute_process(COMMAND \${CMAKE_COMMAND} -E copy_directory
-                    \"${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include\"
+                    \"${_fb_binary_dir}/flatbuffers-src/include\"
                     \"\${_cache_install}/include\")
                 execute_process(COMMAND \${CMAKE_COMMAND} -E copy_if_different
-                    \"${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/${FLATBUFFERS_LIB_NAME}\"
+                    \"${_fb_binary_dir}/flatbuffers-build/${FLATBUFFERS_LIB_NAME}\"
                     \"\${_cache_install}/lib/${FLATBUFFERS_LIB_NAME}\")
                 file(WRITE \"\${_marker}\" \"cached\")
                 message(STATUS \"DEP-CACHE [flatbuffers] Cache stored successfully\")
