@@ -1,0 +1,96 @@
+name: Setup sccache for Windows
+description: 'Install and configure sccache with GitHub Actions cache backend for distributed per-object caching'
+
+inputs:
+  cache-suffix:
+    description: 'Suffix for sccache GHA version key (e.g., cuda-12.6). Used to partition cache namespaces.'
+    required: false
+    default: ''
+
+outputs:
+  sccache-available:
+    description: 'Whether sccache was successfully set up'
+    value: ${{ steps.verify-sccache.outputs.available }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install sccache
+      continue-on-error: true
+      shell: pwsh
+      run: |
+        $sccacheVersion = "v0.10.0"
+        $sccacheFile = "sccache-${sccacheVersion}-x86_64-pc-windows-msvc"
+        $sccacheUrl = "https://github.com/mozilla/sccache/releases/download/${sccacheVersion}/${sccacheFile}.tar.gz"
+        $installDir = "$env:USERPROFILE\sccache"
+
+        Write-Host "Downloading sccache ${sccacheVersion}..."
+        if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir -Force | Out-Null }
+
+        $tarball = "$env:TEMP\sccache.tar.gz"
+        Invoke-WebRequest -Uri $sccacheUrl -OutFile $tarball -UseBasicParsing
+        tar -xzf $tarball -C $env:TEMP
+        Copy-Item "$env:TEMP\${sccacheFile}\sccache.exe" "$installDir\sccache.exe" -Force
+
+        if (Test-Path "$installDir\sccache.exe") {
+          Write-Host "Installed sccache:"
+          & "$installDir\sccache.exe" --version
+          Add-Content -Path $env:GITHUB_PATH -Value $installDir
+        } else {
+          Write-Host "WARNING: sccache installation failed"
+        }
+
+    - name: Configure sccache GHA backend
+      uses: actions/github-script@v7
+      with:
+        script: |
+          core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
+          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+    - name: Set sccache environment
+      continue-on-error: true
+      shell: pwsh
+      run: |
+        # Enable GitHub Actions cache backend
+        Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
+
+        # Partition cache by suffix
+        $suffix = "${{ inputs.cache-suffix }}" -replace '-+$', ''
+        if ($suffix) {
+          Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_VERSION=$suffix"
+        }
+
+        # sccache as compiler launcher — CMake will pick these up.
+        # Note: on Windows CUDA, CMakeLists.txt may override the CUDA launcher
+        # to chain sccache through nvcc_filter.py if needed.
+        Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_C_COMPILER_LAUNCHER=sccache"
+        Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CXX_COMPILER_LAUNCHER=sccache"
+        Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CUDA_COMPILER_LAUNCHER=sccache"
+
+        # Tell downstream CMake that sccache is available
+        Add-Content -Path $env:GITHUB_ENV -Value "SD_USE_SCCACHE=1"
+
+        # Disable PCH
+        Add-Content -Path $env:GITHUB_ENV -Value "SD_DISABLE_PCH=1"
+
+        # Start sccache server
+        $sccacheExe = "$env:USERPROFILE\sccache\sccache.exe"
+        if (Test-Path $sccacheExe) {
+          & $sccacheExe --start-server 2>$null
+          Write-Host "=== sccache configuration ==="
+          & $sccacheExe --show-stats
+        }
+
+    - name: Verify sccache
+      id: verify-sccache
+      continue-on-error: true
+      shell: pwsh
+      run: |
+        $sccacheExe = "$env:USERPROFILE\sccache\sccache.exe"
+        if ((Test-Path $sccacheExe) -and (& $sccacheExe --show-stats 2>$null)) {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "available=true"
+          Write-Host "sccache is ready"
+        } else {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "available=false"
+          Write-Host "WARNING: sccache not available"
+        }

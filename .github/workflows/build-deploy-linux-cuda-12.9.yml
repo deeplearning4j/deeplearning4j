@@ -127,20 +127,19 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - name: Setup ccache
-        id: setup-ccache
-        uses: ./.github/actions/setup-ccache-linux
+      - name: Setup sccache (distributed per-object cache)
+        id: setup-sccache
+        uses: ./.github/actions/setup-sccache-linux
         with:
           cache-suffix: cuda-12.9
-          max-size: '2G'
 
-      - name: Show ccache stats before build
+      - name: Show sccache stats before build
         if: always()
         continue-on-error: true
         shell: bash
         run: |
-          echo "=== ccache stats before build ==="
-          ccache --show-stats --verbose || ccache -sv || ccache -s
+          echo "=== sccache stats before build ==="
+          sccache --show-stats || true
 
       - name: Set mvn build command based on matrix
         shell: bash
@@ -337,46 +336,15 @@ jobs:
                        eval "${COMMAND}"
           fi
 
-      - name: Show ccache stats after build
+      - name: Show sccache stats after build
         if: always()
         continue-on-error: true
         shell: bash
         run: |
-          echo "=== ccache stats after build ==="
-          ccache --show-stats --verbose || ccache -sv || ccache -s
-
-      - name: Dump ccache diagnostic log (first 200 misses)
-        if: always()
-        continue-on-error: true
-        shell: bash
-        run: |
-          LOG="${HOME}/ccache-debug.log"
-          if [ -f "$LOG" ]; then
-            echo "=== ccache log size ==="
-            wc -l "$LOG"
-            echo ""
-            echo "=== Miss reasons (top 30) ==="
-            grep -i "result: cache_miss" "$LOG" | head -30 || true
-            echo ""
-            echo "=== Preprocessing errors ==="
-            grep -i "preprocessing" "$LOG" | head -20 || true
-            echo ""
-            echo "=== PCH related ==="
-            grep -i "pch\|precompiled" "$LOG" | head -20 || true
-            echo ""
-            echo "=== File not in cache ==="
-            grep -i "not in.*cache\|No such" "$LOG" | head -20 || true
-          else
-            echo "No ccache log file found at $LOG"
-          fi
-
-      - name: Save ccache (always)
-        if: always() && steps.setup-ccache.outputs.save-key != ''
-        continue-on-error: true
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.ccache
-          key: ${{ steps.setup-ccache.outputs.save-key }}
+          echo "=== sccache stats after build ==="
+          sccache --show-stats || true
+          # Stop the sccache server to flush any pending writes
+          sccache --stop-server || true
 
       - name: Publish SDX runtime SDK artifacts
         if: always()

@@ -1,84 +1,116 @@
 cmake_minimum_required(VERSION 3.15)
 
 # ============================================================================
-# CCACHE SETUP - Must be before project() for proper compiler launcher setup
+# COMPILER CACHE SETUP - Must be before project() for proper launcher setup
 # ============================================================================
-# NOTE: ccache is DISABLED for debug and functrace builds due to poor hit rates
-# Debug/functrace flags (-finstrument-functions, -fdebug-info-for-profiling, etc.)
-# cause constant cache invalidation, making ccache overhead > benefit
-# See: Build 265 analysis - 32% hit rate with 55% slower builds
-find_program(CCACHE_PROGRAM ccache)
-# Windows: also try ccache.exe (find_program may need explicit name on some generators)
-if(NOT CCACHE_PROGRAM AND (WIN32 OR CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows"))
-    find_program(CCACHE_PROGRAM ccache.exe)
-endif()
-# Fallback for environments where ccache is not on PATH
-if(NOT CCACHE_PROGRAM)
-    set(_CCACHE_FALLBACK_PATHS
-        "/home/linuxbrew/.linuxbrew/bin"  # Linuxbrew default
-        "/opt/homebrew/bin"               # macOS Apple Silicon
-        "/usr/local/Homebrew/bin"         # macOS Intel (alt)
-        "/usr/local/bin"
-    )
-    # Windows: GitHub Actions setup-ccache-windows installs to %USERPROFILE%\ccache
-    if(WIN32 OR CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-        list(APPEND _CCACHE_FALLBACK_PATHS "$ENV{USERPROFILE}/ccache")
-    endif()
-    find_program(CCACHE_PROGRAM ccache PATHS ${_CCACHE_FALLBACK_PATHS} NO_DEFAULT_PATH)
-    unset(_CCACHE_FALLBACK_PATHS)
+# Supports two cache backends:
+#   1. sccache (preferred for CI) — per-object distributed caching via GHA backend
+#   2. ccache  (fallback/local)  — directory-based caching
+#
+# When SD_USE_SCCACHE=1 is set (by setup-sccache-* CI actions), sccache is used.
+# Otherwise falls back to ccache detection.
 
+# Check for sccache first (set by CI actions via SD_USE_SCCACHE env var)
+set(SD_USE_SCCACHE_VAL "$ENV{SD_USE_SCCACHE}")
+if(SD_USE_SCCACHE_VAL)
+    find_program(SCCACHE_PROGRAM sccache)
+    if(NOT SCCACHE_PROGRAM AND (WIN32 OR CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows"))
+        find_program(SCCACHE_PROGRAM sccache.exe PATHS "$ENV{USERPROFILE}/sccache" NO_DEFAULT_PATH)
+    endif()
+endif()
+
+if(SCCACHE_PROGRAM)
+    message(STATUS "✅ Found sccache: ${SCCACHE_PROGRAM} (distributed per-object caching)")
+
+    # sccache handles all compiler types uniformly — no special Windows CUDA carve-out needed.
+    # Unlike ccache, sccache natively handles nvcc response files and doesn't need
+    # the nvcc_filter.py wrapper or cache size partitioning between C++ and CUDA.
+    set(CMAKE_C_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "C compiler launcher" FORCE)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "C++ compiler launcher" FORCE)
+    # CUDA launcher will be set after project() if needed
+    set(CCACHE_SKIP_REASON "")  # Not skipped — sccache is active
+    set(SD_COMPILER_CACHE "sccache")
+else()
+    # Fall back to ccache
+    # NOTE: ccache is DISABLED for debug and functrace builds due to poor hit rates
+    # Debug/functrace flags (-finstrument-functions, -fdebug-info-for-profiling, etc.)
+    # cause constant cache invalidation, making ccache overhead > benefit
+    # See: Build 265 analysis - 32% hit rate with 55% slower builds
+    find_program(CCACHE_PROGRAM ccache)
+    # Windows: also try ccache.exe (find_program may need explicit name on some generators)
+    if(NOT CCACHE_PROGRAM AND (WIN32 OR CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows"))
+        find_program(CCACHE_PROGRAM ccache.exe)
+    endif()
+    # Fallback for environments where ccache is not on PATH
+    if(NOT CCACHE_PROGRAM)
+        set(_CCACHE_FALLBACK_PATHS
+            "/home/linuxbrew/.linuxbrew/bin"  # Linuxbrew default
+            "/opt/homebrew/bin"               # macOS Apple Silicon
+            "/usr/local/Homebrew/bin"         # macOS Intel (alt)
+            "/usr/local/bin"
+        )
+        # Windows: GitHub Actions setup-ccache-windows installs to %USERPROFILE%\ccache
+        if(WIN32 OR CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            list(APPEND _CCACHE_FALLBACK_PATHS "$ENV{USERPROFILE}/ccache")
+        endif()
+        find_program(CCACHE_PROGRAM ccache PATHS ${_CCACHE_FALLBACK_PATHS} NO_DEFAULT_PATH)
+        unset(_CCACHE_FALLBACK_PATHS)
+
+        if(CCACHE_PROGRAM)
+            message(STATUS "ℹ️  Found ccache via fallback path search: ${CCACHE_PROGRAM}")
+        endif()
+    endif()
     if(CCACHE_PROGRAM)
-        message(STATUS "ℹ️  Found ccache via fallback path search: ${CCACHE_PROGRAM}")
-    endif()
-endif()
-if(CCACHE_PROGRAM)
-    # Check if this is a debug or functrace build
-    set(CCACHE_SKIP_REASON "")
+        # Check if this is a debug or functrace build
+        set(CCACHE_SKIP_REASON "")
 
-    # Note: CMAKE_BUILD_TYPE might not be set yet, so check cache variables too
-    if(DEFINED SD_GCC_FUNCTRACE AND SD_GCC_FUNCTRACE)
-        set(CCACHE_SKIP_REASON "functrace build (instrumentation flags hurt cache hit rate)")
-    elseif(CMAKE_BUILD_TYPE MATCHES "Debug" OR CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
-        set(CCACHE_SKIP_REASON "debug build (debug info flags hurt cache hit rate)")
-    endif()
+        # Note: CMAKE_BUILD_TYPE might not be set yet, so check cache variables too
+        if(DEFINED SD_GCC_FUNCTRACE AND SD_GCC_FUNCTRACE)
+            set(CCACHE_SKIP_REASON "functrace build (instrumentation flags hurt cache hit rate)")
+        elseif(CMAKE_BUILD_TYPE MATCHES "Debug" OR CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
+            set(CCACHE_SKIP_REASON "debug build (debug info flags hurt cache hit rate)")
+        endif()
 
-    if(CCACHE_SKIP_REASON)
-        message(STATUS "⚠️  Ccache DISABLED for ${CCACHE_SKIP_REASON}")
-        message(STATUS "   Reason: Debug/functrace flags cause 60-70% cache miss rate, making ccache slower than no cache")
-        set(CMAKE_C_COMPILER_LAUNCHER "" CACHE STRING "C compiler launcher" FORCE)
-        set(CMAKE_CXX_COMPILER_LAUNCHER "" CACHE STRING "C++ compiler launcher" FORCE)
-    else()
-        message(STATUS "✅ Found ccache: ${CCACHE_PROGRAM}")
-
-        # Use compiler_check=content for reliable cache hits across different build dirs.
-        # file_clone speeds up cache operations on supported filesystems.
-        # IMPORTANT: Do NOT clear sloppiness or override depend_mode here — CI actions
-        # configure these settings before CMake runs. Overriding them causes poor hit rates
-        # (43% instead of 80%+) because nvcc doesn't support depend_mode well.
-        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compiler_check=content ERROR_QUIET)
-        # NOTE: Do NOT set file_clone here — CI actions configure it to false.
-        # file_clone=true causes issues on CI runners with different filesystem layouts.
-
-        # Use FORCE to ensure cache is always updated and avoid inconsistent builds
-        # On Windows CUDA builds: skip C/CXX caching to reserve all cache space for
-        # expensive .cu compilations. GitHub Actions has limited cache storage and .cu
-        # files take 10-100x longer to compile than .cpp files with MinGW.
-        if(WIN32 AND SD_CUDA)
+        if(CCACHE_SKIP_REASON)
+            message(STATUS "⚠️  Ccache DISABLED for ${CCACHE_SKIP_REASON}")
+            message(STATUS "   Reason: Debug/functrace flags cause 60-70% cache miss rate, making ccache slower than no cache")
             set(CMAKE_C_COMPILER_LAUNCHER "" CACHE STRING "C compiler launcher" FORCE)
             set(CMAKE_CXX_COMPILER_LAUNCHER "" CACHE STRING "C++ compiler launcher" FORCE)
-            message(STATUS "Windows CUDA: C/CXX ccache disabled to prioritize .cu file caching")
         else()
-            set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C compiler launcher" FORCE)
-            set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C++ compiler launcher" FORCE)
+            message(STATUS "✅ Found ccache: ${CCACHE_PROGRAM}")
+
+            # Use compiler_check=content for reliable cache hits across different build dirs.
+            # file_clone speeds up cache operations on supported filesystems.
+            # IMPORTANT: Do NOT clear sloppiness or override depend_mode here — CI actions
+            # configure these settings before CMake runs. Overriding them causes poor hit rates
+            # (43% instead of 80%+) because nvcc doesn't support depend_mode well.
+            execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compiler_check=content ERROR_QUIET)
+            # NOTE: Do NOT set file_clone here — CI actions configure it to false.
+            # file_clone=true causes issues on CI runners with different filesystem layouts.
+
+            # Use FORCE to ensure cache is always updated and avoid inconsistent builds
+            # On Windows CUDA builds: skip C/CXX caching to reserve all cache space for
+            # expensive .cu compilations. GitHub Actions has limited cache storage and .cu
+            # files take 10-100x longer to compile than .cpp files with MinGW.
+            if(WIN32 AND SD_CUDA)
+                set(CMAKE_C_COMPILER_LAUNCHER "" CACHE STRING "C compiler launcher" FORCE)
+                set(CMAKE_CXX_COMPILER_LAUNCHER "" CACHE STRING "C++ compiler launcher" FORCE)
+                message(STATUS "Windows CUDA: C/CXX ccache disabled to prioritize .cu file caching")
+            else()
+                set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C compiler launcher" FORCE)
+                set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C++ compiler launcher" FORCE)
+            endif()
+            # CUDA launcher will be set after project() if needed
+            message(STATUS "Ccache enabled (sloppiness/depend_mode deferred to CI action config)")
         endif()
-        # CUDA launcher will be set after project() if needed
-        message(STATUS "Ccache enabled (sloppiness/depend_mode deferred to CI action config)")
+        set(SD_COMPILER_CACHE "ccache")
+    else()
+        message(STATUS "ℹ️  No compiler cache found - install ccache or sccache for faster builds")
+        # Explicitly unset launcher if no cache found
+        set(CMAKE_C_COMPILER_LAUNCHER "" CACHE STRING "C compiler launcher" FORCE)
+        set(CMAKE_CXX_COMPILER_LAUNCHER "" CACHE STRING "C++ compiler launcher" FORCE)
+        set(SD_COMPILER_CACHE "none")
     endif()
-else()
-    message(STATUS "ℹ️  Ccache not found - install with: sudo apt-get install ccache (or brew install ccache)")
-    # Explicitly unset launcher if ccache not found
-    set(CMAKE_C_COMPILER_LAUNCHER "" CACHE STRING "C compiler launcher" FORCE)
-    set(CMAKE_CXX_COMPILER_LAUNCHER "" CACHE STRING "C++ compiler launcher" FORCE)
 endif()
 
 if(WIN32 AND SD_CUDA)
@@ -214,12 +246,23 @@ if(WIN32 AND SD_CUDA)
 endif()
 
 
-# On Windows CUDA: use nvcc_filter.py wrapper to strip MSVC -Fd/-FS flags from
-# response files. CMake's Ninja generator injects -Xcompiler=-Fd<path>\,-FS into
-# .rsp files for CUDA compilation, and the backslash-comma causes nvcc to misparse
-# -FS as an input file ("A single input file is required"). No CMake variable override
-# can prevent this; we must filter at invocation time.
-if(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER)
+# ============================================================================
+# CUDA COMPILER LAUNCHER SETUP (after project())
+# ============================================================================
+# sccache handles nvcc natively — no nvcc_filter.py wrapper needed.
+# ccache needs nvcc_filter.py on Windows to expand response files.
+if(SCCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER)
+    # sccache handles nvcc natively on all platforms, including response files.
+    set(CMAKE_CUDA_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher (sccache)" FORCE)
+    message(STATUS "sccache enabled for CUDA compilation (no nvcc_filter.py needed)")
+
+elseif(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT SCCACHE_PROGRAM)
+    # On Windows CUDA: use nvcc_filter.py wrapper to strip MSVC -Fd/-FS flags from
+    # response files. CMake's Ninja generator injects -Xcompiler=-Fd<path>\,-FS into
+    # .rsp files for CUDA compilation, and the backslash-comma causes nvcc to misparse
+    # -FS as an input file ("A single input file is required"). No CMake variable override
+    # can prevent this; we must filter at invocation time.
+
     # Try find_package first, then fall back to find_program for MSYS2/MinGW
     find_package(Python3 QUIET COMPONENTS Interpreter)
     if(NOT Python3_FOUND)
@@ -267,10 +310,10 @@ if(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER)
     endif()
 endif()
 
-# Configure ccache for CUDA if available
+# Configure ccache for CUDA if available (non-Windows, non-sccache path)
 # On Windows: ccache is chained through nvcc_filter.py (set above) to avoid
 # -Xcompiler flag issues. On Linux/macOS: ccache is used directly as the launcher.
-if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT CCACHE_SKIP_REASON)
+if(CCACHE_PROGRAM AND NOT SCCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT CCACHE_SKIP_REASON)
     if(NOT WIN32)
         # Linux/macOS: use ccache directly as CUDA compiler launcher
         set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher" FORCE)
@@ -298,15 +341,17 @@ if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT CCACHE_SKIP_REASON
 endif()
 
 # Enable smart ccache wrapper that forces recompile for modified files
-# This solves stale cache issues when source files change
-include(SmartCcache)
+# This solves stale cache issues when source files change (only for ccache, not sccache)
+if(NOT SCCACHE_PROGRAM)
+    include(SmartCcache)
+endif()
 
-# Verify ccache configuration for external projects
+# Verify compiler cache configuration for external projects
 if(CMAKE_C_COMPILER_LAUNCHER)
-    if(EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
-        message(STATUS "   Compiler launcher (for external projects): ${CMAKE_C_COMPILER_LAUNCHER}")
-    else()
-        message(WARNING "   Compiler launcher path does not exist: ${CMAKE_C_COMPILER_LAUNCHER}")
+    message(STATUS "   Compiler cache: ${SD_COMPILER_CACHE}")
+    message(STATUS "   C/CXX launcher: ${CMAKE_C_COMPILER_LAUNCHER}")
+    if(SD_CUDA AND CMAKE_CUDA_COMPILER_LAUNCHER)
+        message(STATUS "   CUDA launcher: ${CMAKE_CUDA_COMPILER_LAUNCHER}")
     endif()
 endif()
 

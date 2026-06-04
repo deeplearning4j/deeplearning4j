@@ -94,21 +94,20 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v4
 
-      - name: Setup ccache
-        id: setup-ccache
+      - name: Setup sccache (distributed per-object cache)
+        id: setup-sccache
         continue-on-error: true
-        uses: ./.github/actions/setup-ccache-windows
+        uses: ./.github/actions/setup-sccache-windows
         with:
           cache-suffix: cuda-12.6
-          max-size: '2G'
 
-      - name: Show ccache stats before build
+      - name: Show sccache stats before build
         if: always()
         continue-on-error: true
         shell: cmd
         run: |
-          echo === ccache stats before build ===
-          %USERPROFILE%\ccache\ccache.exe -sv
+          echo === sccache stats before build ===
+          %USERPROFILE%\sccache\sccache.exe --show-stats
 
       - name: Set NVCC Compiler Flags
         shell: powershell
@@ -136,13 +135,14 @@ jobs:
             "C:\Program Files\NVIDIA GPU Computing Toolkit",
             "C:\msys64",
             "$env:USERPROFILE\.m2",
-            "$env:USERPROFILE\ccache"
+            "$env:USERPROFILE\ccache",
+            "$env:USERPROFILE\sccache"
           )
           foreach ($path in $excludePaths) {
             Add-MpPreference -ExclusionPath $path -ErrorAction SilentlyContinue
           }
 
-          $excludeProcesses = @("cl.exe", "nvcc.exe", "ninja.exe", "cmake.exe", "java.exe", "ccache.exe", "python3.exe")
+          $excludeProcesses = @("cl.exe", "nvcc.exe", "ninja.exe", "cmake.exe", "java.exe", "ccache.exe", "sccache.exe", "python3.exe")
           foreach ($proc in $excludeProcesses) {
             Add-MpPreference -ExclusionProcess $proc -ErrorAction SilentlyContinue
           }
@@ -466,21 +466,14 @@ jobs:
               call "%GITHUB_WORKSPACE%\mvn-command.bat"
           )
 
-      - name: Show ccache stats after build
+      - name: Show sccache stats after build
         if: always()
         continue-on-error: true
         shell: cmd
         run: |
-          echo === ccache stats after build ===
-          %USERPROFILE%\ccache\ccache.exe -sv
-
-      - name: Save ccache (always)
-        if: always() && steps.setup-ccache.outputs.save-key != ''
-        continue-on-error: true
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.ccache
-          key: ${{ steps.setup-ccache.outputs.save-key }}
+          echo === sccache stats after build ===
+          %USERPROFILE%\sccache\sccache.exe --show-stats
+          %USERPROFILE%\sccache\sccache.exe --stop-server
 
       - name: Publish SDX runtime SDK artifacts
         if: always()
