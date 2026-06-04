@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 4
+        default: 2
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -186,7 +186,7 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id:  ${{ github.event.inputs.serverId }}
+          server-id:  ${{ github.event.inputs.serverId || 'central' }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}

@@ -51,37 +51,37 @@ jobs:
         helper: [ cudnn, compile, "" ]
         extension: [ "" ]
         include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
+          - mvn_ext: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
+          - debug_enabled: ${{ github.event.inputs.debug_enabled || 'false' }}
             experimental: true
             name: Debug enabled
-          - runs_on: ${{ github.event.inputs.runsOn }}
+          - runs_on: ${{ github.event.inputs.runsOn || 'windows-2022' }}
             experimental: true
             name: OS to run on
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl || '' }}
             experimental: true
             name: OS to run on
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging || '0' }}
             experimental: true
             name: Whether to deploy to release staging or not
-          - release_version: ${{ github.event.inputs.releaseVersion }}
+          - release_version: ${{ github.event.inputs.releaseVersion || '1.0.0-M3' }}
             experimental: true
             name: Release version
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion || '1.0.0-SNAPSHOT' }}
             experimental: true
             name: Snapshot version
-          - server_id: ${{ github.event.inputs.serverId }}
+          - server_id: ${{ github.event.inputs.serverId || 'central' }}
             experimental: true
             name: Server id
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId || '' }}
             experimental: true
             name: The release repository to run on
-          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+          - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '2' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
@@ -259,7 +259,8 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          update: true
+          release: false
+          update: false
           install: >-
             base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch
             mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm
@@ -301,7 +302,7 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id: ${{ github.event.inputs.serverId }}
+          server-id: ${{ github.event.inputs.serverId || 'central' }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
