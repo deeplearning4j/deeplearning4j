@@ -2086,6 +2086,13 @@ case "$OS" in
             export MAKE_COMMAND="ninja -j${MAKEJ}"
             export CC="cl.exe"
             export CXX="cl.exe"
+            # Clear MinGW include paths that MSYS2 MINGW64 shell injects.
+            # These cause MSVC (cl.exe) to pick up GCC-only headers from
+            # C:\msys64\mingw64\include, producing compile errors like
+            # '__asm__' undeclared, 'uintptr_t' redefinition, etc.
+            unset CPATH
+            unset C_INCLUDE_PATH
+            unset CPLUS_INCLUDE_PATH
             PARALLEL="true"
             VERBOSE_ARG="-v"
         else
