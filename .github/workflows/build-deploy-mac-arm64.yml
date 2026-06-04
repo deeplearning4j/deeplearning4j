@@ -113,20 +113,18 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
 
-      - name: Setup ccache
-        id: setup-ccache
-        uses: ./.github/actions/setup-ccache-macos
+      - name: Setup sccache (distributed per-object cache)
+        id: setup-sccache
+        uses: ./.github/actions/setup-sccache-macos
         with:
           cache-suffix: arm64-${{ matrix.helper }}-${{ matrix.extension }}
-          cache-family: arm64
-          max-size: '5G'
 
-      - name: Show ccache stats before build
+      - name: Show sccache stats before build
         if: always()
         shell: bash
         run: |
-          echo "=== ccache stats before build ==="
-          ccache --show-stats --verbose || ccache -sv || ccache -s
+          echo "=== sccache stats before build ==="
+          sccache --show-stats || true
 
       - name: Set mvn build command based on matrix
         shell: bash
@@ -235,62 +233,14 @@ jobs:
                   eval "${COMMAND}"
           fi
 
-      - name: Show ccache stats after build
+      - name: Show sccache stats after build
         if: always()
         continue-on-error: true
         shell: bash
         run: |
-          echo "=== ccache stats after build ==="
-          ccache --show-stats --verbose || ccache -sv || ccache -s
-
-      - name: Dump ccache miss reasons (diagnostic)
-        if: always()
-        continue-on-error: true
-        shell: bash
-        run: |
-          LOG="${HOME}/ccache-debug.log"
-          if [ -f "$LOG" ] && [ -s "$LOG" ]; then
-            echo "=== Log file size ==="
-            ls -lh "$LOG"
-            echo ""
-            echo "=== Result summary ==="
-            grep "Result:" "$LOG" | sed 's/.*Result: //' | sort | uniq -c | sort -rn | head -20
-            echo ""
-            echo "=== First REAL source miss (not CMake test) ==="
-            # Find first cache_miss for a real .cpp/.cu file (not CMake test compiles)
-            grep -n "cache_miss" "$LOG" | while read entry; do
-              line=$(echo "$entry" | cut -d: -f1)
-              start=$((line - 100))
-              [ $start -lt 1 ] && start=1
-              context=$(sed -n "${start},${line}p" "$LOG")
-              # Skip CMake test compiles
-              if echo "$context" | grep -q "CMakeFiles/cmTC_\|TryCompile\|CMakeScratch"; then
-                continue
-              fi
-              echo "=== Cache miss at line $line ==="
-              echo "$context"
-              break
-            done
-            echo ""
-            echo "=== Compiler hash comparison ==="
-            grep "Hash of compiler" "$LOG" | sort -u | head -5
-            echo ""
-            echo "=== Unique manifest hash lookups (first 5 misses) ==="
-            grep "Looking for result" "$LOG" | head -5 || true
-            grep "No manifest" "$LOG" | head -5 || true
-            grep "Looking for.*in local" "$LOG" | head -5 || true
-          elif [ -f "$LOG" ]; then
-            echo "Log file exists but is empty"
-          else
-            echo "No ccache debug log found at $LOG"
-          fi
-
-      - name: Save ccache (always)
-        if: always() && steps.setup-ccache.outputs.save-key != ''
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.ccache
-          key: ${{ steps.setup-ccache.outputs.save-key }}
+          echo "=== sccache stats after build ==="
+          sccache --show-stats || true
+          sccache --stop-server || true
 
       - name: Publish SDX runtime SDK artifacts
         if: always()

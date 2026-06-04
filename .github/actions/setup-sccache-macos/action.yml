@@ -1,9 +1,9 @@
-name: Setup sccache for Linux
+name: Setup sccache for macOS
 description: 'Install and configure sccache with GitHub Actions cache backend for distributed per-object caching'
 
 inputs:
   cache-suffix:
-    description: 'Suffix for sccache GHA version key (e.g., cuda-12.6). Used to partition cache namespaces.'
+    description: 'Suffix for sccache GHA version key (e.g., arm64). Used to partition cache namespaces.'
     required: false
     default: ''
 
@@ -18,55 +18,37 @@ runs:
     - name: Install sccache
       shell: bash
       run: |
-        SCCACHE_VERSION="v0.10.0"
-        ARCH=$(uname -m)
-        if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-          SCCACHE_FILE="sccache-${SCCACHE_VERSION}-aarch64-unknown-linux-musl"
+        if ! command -v sccache &>/dev/null; then
+          echo "Installing sccache via Homebrew..."
+          brew install sccache
         else
-          SCCACHE_FILE="sccache-${SCCACHE_VERSION}-x86_64-unknown-linux-musl"
+          echo "sccache is already installed"
         fi
-        SCCACHE_URL="https://github.com/mozilla/sccache/releases/download/${SCCACHE_VERSION}/${SCCACHE_FILE}.tar.gz"
-        echo "Downloading sccache ${SCCACHE_VERSION} for ${ARCH}..."
-        curl -fsSL "${SCCACHE_URL}" | tar xz -C /tmp
-        sudo mv "/tmp/${SCCACHE_FILE}/sccache" /usr/local/bin/sccache
-        chmod +x /usr/local/bin/sccache
-        echo "Installed sccache:"
         sccache --version
+        echo "sccache location: $(which sccache)"
 
     - name: Configure sccache GHA backend
       uses: actions/github-script@v7
       with:
         script: |
-          // Expose the GitHub Actions cache API tokens to sccache.
-          // These are provided by the runner but not normally available as env vars.
           core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
           core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
     - name: Set sccache environment
       shell: bash
       run: |
-        # Enable GitHub Actions cache backend
         echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
 
-        # Partition cache by suffix to prevent cross-contamination between
-        # CUDA versions, platforms, etc. Changing this value purges the cache.
         SUFFIX=$(echo "${{ inputs.cache-suffix }}" | sed 's/-*$//')
         if [ -n "$SUFFIX" ]; then
           echo "SCCACHE_GHA_VERSION=${SUFFIX}" >> $GITHUB_ENV
         fi
 
-        # sccache as the compiler launcher for CMake
         echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
         echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-        echo "CMAKE_CUDA_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-
-        # Tell downstream CMake that sccache is available (skip ccache setup)
         echo "SD_USE_SCCACHE=1" >> $GITHUB_ENV
-
-        # Disable PCH: CI runners have different system header mtimes across restores
         echo "SD_DISABLE_PCH=1" >> $GITHUB_ENV
 
-        # Start sccache server
         sccache --start-server || true
         echo "=== sccache configuration ==="
         sccache --show-stats
@@ -80,5 +62,5 @@ runs:
           echo "sccache is ready"
         else
           echo "available=false" >> "$GITHUB_OUTPUT"
-          echo "WARNING: sccache not available, build will proceed without distributed caching"
+          echo "WARNING: sccache not available"
         fi

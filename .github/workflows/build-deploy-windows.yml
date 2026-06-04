@@ -102,22 +102,20 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v4
 
-      - name: Setup ccache
-        id: setup-ccache
+      - name: Setup sccache (distributed per-object cache)
+        id: setup-sccache
         continue-on-error: true
-        uses: ./.github/actions/setup-ccache-windows
+        uses: ./.github/actions/setup-sccache-windows
         with:
           cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
-          cache-family: x86_64
-          max-size: '8G'
 
-      - name: Show ccache stats before build
+      - name: Show sccache stats before build
         if: always()
         continue-on-error: true
         shell: cmd
         run: |
-          echo === ccache stats before build ===
-          %USERPROFILE%\ccache\ccache.exe -sv
+          echo === sccache stats before build ===
+          %USERPROFILE%\sccache\sccache.exe --show-stats
 
       - name: Disable Windows Defender real-time monitoring
         continue-on-error: true
@@ -132,13 +130,14 @@ jobs:
             "$env:GITHUB_WORKSPACE",
             "C:\msys64",
             "$env:USERPROFILE\.m2",
-            "$env:USERPROFILE\ccache"
+            "$env:USERPROFILE\ccache",
+            "$env:USERPROFILE\sccache"
           )
           foreach ($path in $excludePaths) {
             Add-MpPreference -ExclusionPath $path -ErrorAction SilentlyContinue
           }
 
-          $excludeProcesses = @("gcc.exe", "g++.exe", "make.exe", "cmake.exe", "java.exe", "ccache.exe")
+          $excludeProcesses = @("gcc.exe", "g++.exe", "make.exe", "cmake.exe", "java.exe", "ccache.exe", "sccache.exe")
           foreach ($proc in $excludeProcesses) {
             Add-MpPreference -ExclusionProcess $proc -ErrorAction SilentlyContinue
           }
@@ -313,7 +312,6 @@ jobs:
           set MSYSTEM=MINGW64
 
           set "MAVEN_OPTS=-Xmx3g -XX:+UseG1GC"
-          set "CCACHE_DIR=%USERPROFILE%\.ccache"
           set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%ProgramFiles%\apache-maven-3.6.3\bin;%PATH%"
           set "CMAKE_BUILD_PARALLEL_LEVEL=4"
 
@@ -326,12 +324,12 @@ jobs:
           where gcc
           where cmake
           where mvn
-          where ccache
+          where sccache
 
           cl
           cmake --version
           call mvn -version
-          ccache -sv
+          sccache --show-stats
           df -h
 
           echo "libnd4j build threads ${{ matrix.build_threads }}"
@@ -359,7 +357,7 @@ jobs:
           )
           set MVN_EXIT=%ERRORLEVEL%
 
-          ccache -sv
+          sccache --show-stats
           df -h
 
           exit /b %MVN_EXIT%
@@ -379,52 +377,14 @@ jobs:
           EXTENSION: ${{ matrix.extension }}
           LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
 
-      - name: Show ccache stats after build
+      - name: Show sccache stats after build
         if: always()
         continue-on-error: true
         shell: cmd
         run: |
-          echo === ccache stats after build ===
-          %USERPROFILE%\ccache\ccache.exe -sv
-
-      - name: Dump ccache miss reasons (diagnostic)
-        if: always()
-        continue-on-error: true
-        shell: bash
-        run: |
-          LOG="$USERPROFILE/ccache-debug.log"
-          if [ -f "$LOG" ] && [ -s "$LOG" ]; then
-            echo "=== Log file size ==="
-            ls -lh "$LOG"
-            echo ""
-            echo "=== Result summary ==="
-            grep "Result:" "$LOG" | sed 's/.*Result: //' | sort | uniq -c | sort -rn | head -20
-            echo ""
-            echo "=== First REAL source miss (not CMake test) ==="
-            grep -n "cache_miss" "$LOG" | while read entry; do
-              line=$(echo "$entry" | cut -d: -f1)
-              start=$((line - 50))
-              [ $start -lt 1 ] && start=1
-              context=$(sed -n "${start},${line}p" "$LOG")
-              if echo "$context" | grep -q "CMakeFiles/cmTC_\|TryCompile\|CMakeScratch"; then
-                continue
-              fi
-              echo "=== Cache miss at line $line ==="
-              echo "$context" | tail -20
-              break
-            done
-          elif [ -f "$LOG" ]; then
-            echo "Log file exists but is empty"
-          else
-            echo "No ccache debug log found at $LOG"
-          fi
-
-      - name: Save ccache (always)
-        if: always() && steps.setup-ccache.outputs.save-key != ''
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.ccache
-          key: ${{ steps.setup-ccache.outputs.save-key }}
+          echo === sccache stats after build ===
+          %USERPROFILE%\sccache\sccache.exe --show-stats
+          %USERPROFILE%\sccache\sccache.exe --stop-server
 
       - name: Publish SDX runtime SDK artifacts
         if: always()

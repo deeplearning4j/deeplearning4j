@@ -95,20 +95,18 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Setup ccache
-        id: setup-ccache
-        uses: ./.github/actions/setup-ccache-linux
+      - name: Setup sccache (distributed per-object cache)
+        id: setup-sccache
+        uses: ./.github/actions/setup-sccache-linux
         with:
           cache-suffix: android-x86_64-${{ matrix.helper }}
-          cache-family: android-x86_64
-          max-size: '5G'
 
-      - name: Show ccache stats before build
+      - name: Show sccache stats before build
         if: always()
         shell: bash
         run: |
-          echo "=== ccache stats before build ==="
-          ccache --show-stats --verbose || ccache -sv || ccache -s
+          echo "=== sccache stats before build ==="
+          sccache --show-stats || true
 
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
@@ -517,19 +515,13 @@ jobs:
               eval "${COMMAND}"
           fi
 
-      - name: Show ccache stats after build
+      - name: Show sccache stats after build
         if: always()
         shell: bash
         run: |
-          echo "=== ccache stats after build ==="
-          ccache --show-stats --verbose || ccache -sv || ccache -s
-
-      - name: Save ccache (always)
-        if: always() && steps.setup-ccache.outputs.save-key != ''
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.ccache
-          key: ${{ steps.setup-ccache.outputs.save-key }}
+          echo "=== sccache stats after build ==="
+          sccache --show-stats || true
+          sccache --stop-server || true
 
       - name: Publish SDX runtime SDK artifacts
         if: always()
