@@ -2082,17 +2082,36 @@ case "$OS" in
     windows*)
         # Do something under Windows NT platform
         if [ "$CHIP" == "cuda" ]; then
-            export CMAKE_COMMAND="cmake -G \"Ninja\""
+            # MSVC (cl.exe) + Ninja for CUDA builds.
+            # CRITICAL: Must NOT use MinGW cmake (/mingw64/bin/cmake) because
+            # it automatically adds /mingw64/include as a system include dir,
+            # causing MSVC to pick up GCC-only headers (corecrt.h, math.h,
+            # stddef.h) from C:\msys64\mingw64\include, which are incompatible
+            # with MSVC. Find the system cmake (Windows-native) and use that.
+            _sys_cmake="cmake"
+            if [ -x "/c/Program Files/CMake/bin/cmake.exe" ]; then
+                _sys_cmake="/c/Program Files/CMake/bin/cmake.exe"
+            elif [ -x "/c/Program Files (x86)/CMake/bin/cmake.exe" ]; then
+                _sys_cmake="/c/Program Files (x86)/CMake/bin/cmake.exe"
+            else
+                # Try to find a non-MinGW cmake on PATH
+                while IFS= read -r -d: _dir; do
+                    if [[ "$_dir" != */mingw64/* ]] && [[ "$_dir" != */mingw32/* ]] && [ -x "$_dir/cmake.exe" ]; then
+                        _sys_cmake="$_dir/cmake.exe"
+                        break
+                    fi
+                done <<< "$PATH:"
+            fi
+            echo "Using cmake for MSVC build: $_sys_cmake"
+            export CMAKE_COMMAND="\"${_sys_cmake}\" -G \"Ninja\""
             export MAKE_COMMAND="ninja -j${MAKEJ}"
             export CC="cl.exe"
             export CXX="cl.exe"
-            # Clear MinGW include paths that MSYS2 MINGW64 shell injects.
-            # These cause MSVC (cl.exe) to pick up GCC-only headers from
-            # C:\msys64\mingw64\include, producing compile errors like
-            # '__asm__' undeclared, 'uintptr_t' redefinition, etc.
+            # Clear MinGW env vars that MSYS2 MINGW64 shell injects
             unset CPATH
             unset C_INCLUDE_PATH
             unset CPLUS_INCLUDE_PATH
+            unset LIBRARY_PATH
             PARALLEL="true"
             VERBOSE_ARG="-v"
         else
