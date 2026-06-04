@@ -1,17 +1,11 @@
 # Workflow for CUDA 12.9 Windows Build
 on:
-  push:
-    branches:
-      - ag_new_release_updates_2
-    paths:
-      - '.github/workflows/build-deploy-linux-cuda-12.9.yml'
-      - '.github/workflows/build-deploy-windows-cuda-12.9.yml'
   workflow_dispatch:
     inputs:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 2
+        default: 4
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false

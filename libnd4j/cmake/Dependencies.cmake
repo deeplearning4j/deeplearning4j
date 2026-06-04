@@ -23,11 +23,11 @@ endif()
 cmake_host_system_information(RESULT AVAILABLE_MEMORY QUERY AVAILABLE_PHYSICAL_MEMORY)
 math(EXPR MEM_BASED_JOBS "${AVAILABLE_MEMORY} / 1000")  # 1GB per job for deps
 
-# Cap at processor count and ensure at least 4
+# Cap at processor count, minimum 1
 if(MEM_BASED_JOBS GREATER NPROC)
     set(DEP_PARALLEL_JOBS ${NPROC})
-elseif(MEM_BASED_JOBS LESS 4)
-    set(DEP_PARALLEL_JOBS 4)
+elseif(MEM_BASED_JOBS LESS 1)
+    set(DEP_PARALLEL_JOBS 1)
 else()
     set(DEP_PARALLEL_JOBS ${MEM_BASED_JOBS})
 endif()
@@ -1653,7 +1653,7 @@ function(setup_triton)
             ${CMAKE_COMMAND} -E env
             "SD_SMART_CCACHE_SEGMENT=triton_llvm"
             "SD_SMART_CCACHE_SHAPE_KEY=${TRITON_LLVM_SHAPE_KEY}"
-            ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel 8
+            ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel ${DEP_PARALLEL_JOBS}
     )
     message(STATUS "   Triton LLVM smart ccache segment=triton_llvm shape=${TRITON_LLVM_SHAPE_KEY}")
 
