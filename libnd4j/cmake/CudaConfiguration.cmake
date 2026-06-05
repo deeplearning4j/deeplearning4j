@@ -479,11 +479,15 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
         # Verbose flags only when requested
         if(SD_VERBOSE_CUDA)
             set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --verbose --ptxas-options=-v --resource-usage")
-            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/showIncludes -Xcompiler=/verbose")
-            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=/VERBOSE -Xlinker=/TIME")
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-showIncludes -Xcompiler=-verbose")
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=-VERBOSE -Xlinker=-TIME")
         endif()
 
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17")
+        # Use hyphen prefix (-std:c++17) not slash (/std:c++17) for all MSVC flags
+        # passed via -Xcompiler. sccache wraps nvcc and misparses slash-prefixed flags
+        # as drive-relative paths on Windows (e.g. /bigobj → D:\bigobj).
+        # MSVC cl.exe accepts both / and - as option prefixes.
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-std:c++17")
 
         if(WIN32 AND NOT CMAKE_CUDA_HOST_COMPILER)
             find_program(CL_IN_PATH cl.exe)
@@ -529,7 +533,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
             unset(CMAKE_CUDA_HOST_COMPILER)
         endif()
 
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17 -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/Zc:preprocessor")
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-std:c++17 -Xcompiler=-bigobj -Xcompiler=-EHsc -Xcompiler=-Zc:preprocessor")
         set(CMAKE_CXX_FLAGS "" PARENT_SCOPE)
     else()
         # Unix/Linux

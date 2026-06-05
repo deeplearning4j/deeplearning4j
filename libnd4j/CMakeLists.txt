@@ -177,7 +177,7 @@ if(WIN32 AND SD_CUDA)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES 0 CACHE STRING "" FORCE)
 
     # 3. Clear per-config CUDA flags that may contain MSVC debug flags
-    set(CMAKE_CUDA_FLAGS_DEBUG "-Xcompiler=/Od" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_FLAGS_DEBUG "-Xcompiler=-Od" CACHE STRING "" FORCE)
     set(CMAKE_CUDA_FLAGS_RELEASE "-DNDEBUG" CACHE STRING "" FORCE)
     set(CMAKE_CUDA_FLAGS_RELWITHDEBINFO "-DNDEBUG" CACHE STRING "" FORCE)
     set(CMAKE_CUDA_FLAGS_MINSIZEREL "-DNDEBUG" CACHE STRING "" FORCE)
@@ -206,8 +206,8 @@ if(WIN32 AND SD_CUDA)
             string(REGEX REPLACE "/FS" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
             # Fix quoted -Xcompiler with spaces: -Xcompiler=" /GR /EHsc" → -Xcompiler=/GR,/EHsc
             # The quotes+spaces break Ninja rsp file parsing (space splits into multiple tokens)
-            # IMPORTANT: Just REMOVE the entire -Xcompiler="..." since we re-add /EHsc via
-            # the custom compile template (separate -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/MD).
+            # IMPORTANT: Just REMOVE the entire -Xcompiler="..." since we re-add -EHsc via
+            # the custom compile template (-Xcompiler=-bigobj -Xcompiler=-EHsc -Xcompiler=-MD).
             # /GR is the default on MSVC and doesn't need to be explicitly set.
             string(REGEX REPLACE "-Xcompiler=\" [^\"]*\"" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
             # Also try without space after =
@@ -219,14 +219,14 @@ if(WIN32 AND SD_CUDA)
         endif()
     endforeach()
 
-    # 5. Custom compile rule with separate -Xcompiler flags.
-    # IMPORTANT: Use separate -Xcompiler per flag (not comma-separated).
-    # sccache decomposes nvcc command lines and passes host compiler flags
-    # individually to cl.exe. Comma-separated -Xcompiler=/bigobj,/EHsc,/MD
-    # gets split incorrectly — cl.exe interprets /bigobj as D:\bigobj (a path).
-    # Separate -Xcompiler flags work correctly with both sccache and plain nvcc.
+    # 5. Custom compile rule with hyphen-prefixed MSVC flags.
+    # IMPORTANT: Use -bigobj (not /bigobj) for all -Xcompiler flags.
+    # sccache wraps nvcc and decomposes the command line. Slash-prefixed MSVC flags
+    # like /bigobj get interpreted as drive-relative paths (D:\bigobj) on Windows.
+    # MSVC cl.exe accepts both / and - as option prefixes, so -bigobj == /bigobj.
+    # Hyphen prefix is sccache-safe and works with plain nvcc too.
     set(CMAKE_CUDA_COMPILE_OBJECT
-            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/MD -o <OBJECT> -c <SOURCE>"
+            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -Xcompiler=-bigobj -Xcompiler=-EHsc -Xcompiler=-MD -o <OBJECT> -c <SOURCE>"
             CACHE STRING "" FORCE)
 
     # Debug: dump ALL variables that could contribute to CUDA compile command
