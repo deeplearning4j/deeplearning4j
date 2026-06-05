@@ -230,7 +230,11 @@ jobs:
 
           else
                   echo "Running build and deploying to snapshots"
-                  eval "${COMMAND}"
+                  for attempt in 1 2 3; do
+                    eval "${COMMAND}" && break
+                    echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in 30s..."
+                    sleep 30
+                  done
           fi
 
       - name: Show sccache stats after build

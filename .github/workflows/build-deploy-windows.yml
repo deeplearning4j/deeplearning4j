@@ -355,6 +355,16 @@ jobs:
                ) else (
                   echo "Running snapshots"
                   call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                  if errorlevel 1 (
+                    echo "::warning::Deploy attempt 1 failed. Retrying in 30s..."
+                    timeout /t 30 /nobreak >nul
+                    call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                    if errorlevel 1 (
+                      echo "::warning::Deploy attempt 2 failed. Retrying in 30s..."
+                      timeout /t 30 /nobreak >nul
+                      call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                    )
+                  )
                )
           )
           set MVN_EXIT=%ERRORLEVEL%

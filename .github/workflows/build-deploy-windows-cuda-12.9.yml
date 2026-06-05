@@ -455,6 +455,16 @@ jobs:
               echo "Running snapshot build..."
               bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.9 "%HELPER%" "%EXTENSION%"
               call "%GITHUB_WORKSPACE%\mvn-command.bat"
+              if errorlevel 1 (
+                echo "::warning::Deploy attempt 1 failed. Retrying in 30s..."
+                timeout /t 30 /nobreak >nul
+                call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                if errorlevel 1 (
+                  echo "::warning::Deploy attempt 2 failed. Retrying in 30s..."
+                  timeout /t 30 /nobreak >nul
+                  call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                )
+              )
           )
 
       - name: Show sccache stats after build
