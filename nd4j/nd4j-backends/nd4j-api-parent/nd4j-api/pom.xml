@@ -36,6 +36,7 @@
     <name>nd4j-api</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <byteunits.version>0.9.1</byteunits.version>
         <neoitertools.version>1.0.0</neoitertools.version>
         <module.name>nd4j.api</module.name>

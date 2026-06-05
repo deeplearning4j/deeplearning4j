@@ -37,6 +37,10 @@
     <name>nd4j-sdx</name>
     <description>SDX standalone runtime — JNA wrapper for libsdx_cpu/libsdx_cuda</description>
 
+    <properties>
+        <skipPublishing>false</skipPublishing>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>net.java.dev.jna</groupId>

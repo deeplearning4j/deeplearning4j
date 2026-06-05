@@ -12,6 +12,7 @@
 
     <name>nd4j-minimizer-preset</name>
     <properties>
+        <skipPublishing>false</skipPublishing>
         <module.name>nd4j.minimal.preset</module.name>
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/minimal/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
     </properties>

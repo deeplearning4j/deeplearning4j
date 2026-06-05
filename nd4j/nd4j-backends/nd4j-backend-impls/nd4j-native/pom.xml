@@ -36,6 +36,7 @@
     <name>nd4j-native</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/cpu/nativecpu/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <module.name>nd4j.cpu</module.name>
 

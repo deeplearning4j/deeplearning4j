@@ -36,6 +36,7 @@
     <name>nd4j-cuda-12.9-preset</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
         <!-- Note there could be different versions of javacpp for different cuda versions. -->
         <cuda.version>12.9</cuda.version>

@@ -234,10 +234,10 @@ jobs:
                 $mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-compile"
                 $libnd4j_download_file_url="windows-cuda-12.6-compile"
           } elseif ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
-                $mvn_ext=" -Dlibnd4j.chip=cuda -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
+                $mvn_ext=" -Dlibnd4j.chip=cuda -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Pcuda -Dlibnd4j.chip=cuda"
                 $libnd4j_download_file_url="windows-cuda-12.6-${{ matrix.extension }}-${{ matrix.helper }}"
            } elseif ( "${{ matrix.helper }}" -ne "" ) {
-                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
+                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda"
                 $libnd4j_download_file_url="windows-cuda-12.6-${{ matrix.helper }}"
            } else {
                   $libnd4j_download_file_url="windows-cuda-12.6"

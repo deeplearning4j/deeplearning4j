@@ -2458,6 +2458,28 @@ function(setup_openvino)
         return()
     endif()
 
+    # OpenVINO Intel CPU plugin requires x86/x86_64 (depends on xbyak JIT, x86 ISAs).
+    # Disable for all non-x86 targets: Android, ARM64, Apple Silicon, cross-compilation.
+    if(CMAKE_CROSSCOMPILING)
+        message(STATUS "OpenVINO disabled (cross-compilation target: Intel CPU plugin is x86-only)")
+        return()
+    endif()
+
+    if(SD_ANDROID_BUILD OR ANDROID)
+        message(STATUS "OpenVINO disabled (Android target: Intel CPU plugin is x86-only)")
+        return()
+    endif()
+
+    if(SD_ARM_BUILD OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64|arm64|ARM64|armv8")
+        message(STATUS "OpenVINO disabled (ARM target: Intel CPU plugin requires x86)")
+        return()
+    endif()
+
+    if(APPLE)
+        message(STATUS "OpenVINO disabled (Apple platform: Intel CPU plugin requires x86 Linux/Windows)")
+        return()
+    endif()
+
     # ── Versions and pinned commits (from OpenVINO 2026.0.0 .gitmodules) ──
     set(OPENVINO_VERSION "2026.0.0")
     # Submodule pinned commits for 2026.0.0

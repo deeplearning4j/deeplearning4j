@@ -145,7 +145,7 @@ import org.nd4j.presets.OpExclusionUtils;
                 @Platform(value = "linux-arm64", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
-                @Platform(extension = {"-cudnn","-"})})
+                @Platform(extension = {"-cudnn","-", "-compile"})})
 public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
     private Logger logger;
     private java.util.Properties properties;

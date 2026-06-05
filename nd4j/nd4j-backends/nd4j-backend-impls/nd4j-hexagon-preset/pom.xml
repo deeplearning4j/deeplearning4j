@@ -35,6 +35,7 @@
     <description>JavaCPP Presets for ND4J Hexagon NPU Backend</description>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <module.name>nd4j.hexagon.preset</module.name>
     </properties>
 

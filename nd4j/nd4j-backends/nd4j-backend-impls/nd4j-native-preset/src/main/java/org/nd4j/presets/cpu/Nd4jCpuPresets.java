@@ -178,7 +178,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 @Platform(value = "android-arm64",
                         preload = { "libnd4jcpu"}),
 
-                @Platform(extension = {"-onednn", "-onednn-avx512","-onednn-avx2", "-","-avx2","-avx512", "-compat"})
+                @Platform(extension = {"-onednn", "-onednn-avx512","-onednn-avx2", "-","-avx2","-avx512", "-compat", "-compile", "-compile-avx2", "-compile-avx512", "-compile-nnapi", "-armcompute", "-nnapi"})
         })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 

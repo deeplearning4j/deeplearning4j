@@ -13,6 +13,7 @@
     <name>nd4j-cpu-backend-common</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Java 9 module name does not allow native-->
         <module.name>nd4j.cpu.backend.common</module.name>

@@ -37,6 +37,7 @@
     <description>JavaCPP Presets for ND4J TPU Backend using PJRT</description>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <module.name>nd4j.tpu.preset</module.name>
     </properties>
 

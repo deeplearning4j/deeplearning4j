@@ -36,6 +36,13 @@
 
     <name>nd4j-backends</name>
 
+    <properties>
+        <!-- Default: skip publishing for POM-only parent modules in the nd4j-backends tree.
+             Parallel CI matrix jobs all deploy these identically, causing 403 races on Sonatype Central.
+             Leaf modules that produce real artifacts override this to false. -->
+        <skipPublishing>true</skipPublishing>
+    </properties>
+
     <modules>
         <module>nd4j-backend-impls</module>
         <module>nd4j-api-parent</module>

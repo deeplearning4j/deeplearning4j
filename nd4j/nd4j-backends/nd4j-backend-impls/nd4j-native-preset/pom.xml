@@ -36,6 +36,7 @@
     <name>nd4j-native-preset</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <module.name>nd4j.cpu.preset</module.name>
     </properties>
 

@@ -35,6 +35,7 @@
     <name>nd4j-native-platform</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <nd4j.backend>nd4j-native</nd4j.backend>
     </properties>
 

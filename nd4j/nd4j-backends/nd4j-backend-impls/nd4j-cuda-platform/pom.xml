@@ -35,6 +35,7 @@
     <name>nd4j-cuda-12.9-platform</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
         <cuda.version>12.9</cuda.version>
         <cudnn.version>9.10</cudnn.version>

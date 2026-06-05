@@ -38,6 +38,7 @@
     <description>SDX standalone runtime — platform-specific native library packaging</description>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <libnd4j.chip>cpu</libnd4j.chip>
         <sdx.native.lib.dir>${project.basedir}/../../../../libnd4j/blasbuild/${libnd4j.chip}/sdx-runtime-sdk/lib</sdx.native.lib.dir>
     </properties>

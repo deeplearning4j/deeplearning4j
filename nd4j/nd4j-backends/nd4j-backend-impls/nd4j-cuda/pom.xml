@@ -37,6 +37,7 @@
     <name>nd4j-cuda-12.9</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <cuda.version>12.9</cuda.version>
         <cudnn.version>9.10</cudnn.version>
         <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
