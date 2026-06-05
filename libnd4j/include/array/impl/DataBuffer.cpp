@@ -596,8 +596,11 @@ size_t DataBuffer::getNumElements()   {
 void DataBuffer::allocatePrimary() {
   // Fast path: if primary buffer already exists, no mutation — skip frozen guard.
   if (_primaryBuffer != nullptr) return;
-  // Actual allocation needed — guard against frozen mutation
-  throwIfFrozen("allocatePrimary");
+  // Allocating HOST (primary) memory does NOT change the device pointer (_specialBuffer)
+  // that frozen DSP plans bake into GPU kernel arguments / CUDA graph replay handles.
+  // Only block mutations that change _specialBuffer (the GPU address).
+  // This allows safe host-side readback of frozen GPU-only buffers (e.g. when a
+  // different plan shares a weight buffer that was frozen by another plan).
 #if defined(SD_GCC_FUNCTRACE)
   // DataBufferLifecycleTracker already captures allocations for leak detection
   if(allocationStackTracePrimary != nullptr) {

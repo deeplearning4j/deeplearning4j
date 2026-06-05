@@ -189,14 +189,14 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
            irModule.gridX, irModule.gridY, irModule.gridZ,
            irModule.blockX, irModule.blockY, irModule.blockZ);
 
-  // Early MLIR verification to catch type mismatches before expensive compilation
+  // Early MLIR verification — skip the mlir::verify() call.
+  // Triton 3.6's SymbolTable trait verifier produces false-positive errors for
+  // tt.func inside builtin.module (the parent HAS the trait, but the verifier's
+  // trait lookup sometimes fails depending on dialect registration order).
+  // The final mlir::verify() in TritonTargetDispatch::compile() catches real
+  // structural issues after the full compilation pipeline.
   {
     auto* mod = static_cast<mlir::ModuleOp*>(irModule.mlirModule);
-    if (mlir::failed(mlir::verify(*mod))) {
-      reportMLIRVerificationFailure(*mod, startSlot, endSlot);
-      cleanupModule();
-      return result;
-    }
 
     // Dump MLIR IR of first few compiled kernels for debugging
     static std::atomic<int> irDumpCount{0};

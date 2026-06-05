@@ -81,6 +81,7 @@
 // MLIR core infrastructure
 #include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/Diagnostics.h>
 #include <mlir/IR/Verifier.h>
 #include <mlir/Pass/PassManager.h>
 #if __has_include(<mlir/Pass/PassInstrumentation.h>)
@@ -854,6 +855,12 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     DspCompilePhaseGuard phase12Guard(compileId, "TTIR_TO_TTGIR", sd::graph::DSP_DIAG_COMPILE);
     {
     mlir::PassManager pm(moduleOp->getContext());
+    // Suppress stderr spam from MLIR's PassManager/Verifier during Triton compilation.
+    // Triton 3.6's TritonToTritonGPU conversion produces transient invalid states
+    // (SymbolTable trait, IsolatedFromAbove) that spam stderr but don't indicate
+    // real failures.  The ScopedDiagnosticHandler installed before pm.run() below
+    // redirects all diagnostics away from stderr.  Real failures are still detected
+    // via the pm.run() return value and the post-pipeline verify.
     if (tritonVerbose) {
 #ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
       pm.addInstrumentation(
@@ -937,22 +944,32 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     pm.addPass(mlir::createSymbolDCEPass());
     pm.addPass(mlir::createCanonicalizerPass());
 
-    if (mlir::failed(pm.run(*moduleOp))) {
-      tritonInProtectedRegion = false;
+    // Install a diagnostic handler to suppress stderr spam from Triton 3.6's
+    // MLIR PassManager (SymbolTable trait, IsolatedFromAbove transient errors).
+    // Real failures are still detected via the pm.run() return value.
+    {
+      auto diagHandler = mlir::ScopedDiagnosticHandler(
+          moduleOp->getContext(),
+          [](mlir::Diagnostic&) -> mlir::LogicalResult {
+            return mlir::success();  // silently consume
+          });
+      if (mlir::failed(pm.run(*moduleOp))) {
+        tritonInProtectedRegion = false;
 #ifdef SD_CUDA
-      cudaGetLastError();  // Clear sticky CUDA errors from failed pass pipeline
+        cudaGetLastError();  // Clear sticky CUDA errors from failed pass pipeline
 #endif
-      // Dump full TTIR to file for diagnosis
-      std::string ttirDumpPath = getTritonDiagDir() + "triton_ttir_dump.txt";
-      FILE* diagFile = fopen(ttirDumpPath.c_str(), "w");
-      if (diagFile) {
-        fprintf(diagFile, "%s", preDump.c_str());
-        fclose(diagFile);
+        // Dump full TTIR to file for diagnosis
+        std::string ttirDumpPath = getTritonDiagDir() + "triton_ttir_dump.txt";
+        FILE* diagFile = fopen(ttirDumpPath.c_str(), "w");
+        if (diagFile) {
+          fprintf(diagFile, "%s", preDump.c_str());
+          fclose(diagFile);
+        }
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: TTIR->TTGIR pass pipeline failed. "
+                  "TTIR dumped to %s (%d bytes)",
+                  ttirDumpPath.c_str(), static_cast<int>(preDump.size()));
+        return result;
       }
-      DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: TTIR->TTGIR pass pipeline failed. "
-                "TTIR dumped to %s (%d bytes)",
-                ttirDumpPath.c_str(), static_cast<int>(preDump.size()));
-      return result;
     }
 
     }
@@ -974,6 +991,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       moduleOp->getContext()->appendDialectRegistry(phase4Registry);
     }
     mlir::PassManager pm(moduleOp->getContext());
+    // Diagnostics suppressed via ScopedDiagnosticHandler below (same rationale as TTIR->TTGIR).
     if (tritonVerbose) {
 #ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
       pm.addInstrumentation(
@@ -1080,25 +1098,33 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       return result;
     }
 
-    if (mlir::failed(pm.run(*moduleOp))) {
-      tritonInProtectedRegion = false;
+    // Install diagnostic handler to suppress stderr spam for TTGIR->LLVM PassManager
+    {
+      auto diagHandler = mlir::ScopedDiagnosticHandler(
+          moduleOp->getContext(),
+          [](mlir::Diagnostic&) -> mlir::LogicalResult {
+            return mlir::success();  // silently consume
+          });
+      if (mlir::failed(pm.run(*moduleOp))) {
+        tritonInProtectedRegion = false;
 #ifdef SD_CUDA
-      cudaGetLastError();  // Clear sticky CUDA errors from failed TTGIR->LLVM lowering
+        cudaGetLastError();  // Clear sticky CUDA errors from failed TTGIR->LLVM lowering
 #endif
-      std::string mlirDump;
-      llvm::raw_string_ostream mlirOS(mlirDump);
-      moduleOp->print(mlirOS);
-      std::string mlirDumpPath = getTritonDiagDir() + "triton_mlir_dump.txt";
-      FILE* diagFile = fopen(mlirDumpPath.c_str(), "a");
-      if (diagFile) {
-        fprintf(diagFile, "=== PHASE 4 FAILED ===\n%s\n=== END ===\n", mlirDump.c_str());
-        fclose(diagFile);
+        std::string mlirDump;
+        llvm::raw_string_ostream mlirOS(mlirDump);
+        moduleOp->print(mlirOS);
+        std::string mlirDumpPath = getTritonDiagDir() + "triton_mlir_dump.txt";
+        FILE* diagFile = fopen(mlirDumpPath.c_str(), "a");
+        if (diagFile) {
+          fprintf(diagFile, "=== PHASE 4 FAILED ===\n%s\n=== END ===\n", mlirDump.c_str());
+          fclose(diagFile);
+        }
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: TTGIR->LLVM pass pipeline failed. "
+                "Module dumped to %s", mlirDumpPath.c_str());
+        return result;
       }
-      fprintf(stderr, "TritonTargetDispatch::compile: TTGIR->LLVM pass pipeline failed. "
-              "Module dumped to %s\n", mlirDumpPath.c_str());
-      return result;
-    }
-    } // closes inner brace from line 876
+    } // closes ScopedDiagnosticHandler scope
+    } // closes inner brace from line 982
   } // phase4Guard destructor fires here, emitting TTGIR_TO_LLVM_DIALECT DONE
 
   // Triton's AllocateSharedMemory pass stores kernel shared memory usage
@@ -1108,14 +1134,26 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   result.globalScratchAlignment = getModuleGlobalScratchAlignment(moduleOp);
 
   // Phase 5: MLIR LLVM dialect -> LLVM IR module
-  // Verify the MLIR module before attempting LLVM translation
-  if (mlir::failed(mlir::verify(*moduleOp))) {
-    tritonInProtectedRegion = false;
+  // Verify the MLIR module before attempting LLVM translation.
+  // Use a diagnostic handler to suppress stderr spam from Triton 3.6's
+  // SymbolTable trait false-positive while still detecting real failures.
+  {
+    bool verifyFailed = false;
+    auto diagHandler = mlir::ScopedDiagnosticHandler(
+        moduleOp->getContext(),
+        [](mlir::Diagnostic&) -> mlir::LogicalResult {
+          // Silently consume all diagnostics (verifier errors go here instead of stderr)
+          return mlir::success();
+        });
+    verifyFailed = mlir::failed(mlir::verify(*moduleOp));
+    if (verifyFailed) {
+      tritonInProtectedRegion = false;
 #ifdef SD_CUDA
-    cudaGetLastError();
+      cudaGetLastError();
 #endif
-    DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: MLIR module verification failed after lowering");
-    return result;
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: MLIR module verification failed after lowering");
+      return result;
+    }
   }
 
   // Register ALL dialect translation interfaces — builtin.module, NVVM, GPU, etc.
