@@ -280,9 +280,6 @@ jobs:
             -DCMAKE_C_FLAGS=-I/usr/include/libdwarf \
             -DCMAKE_CXX_FLAGS=-I/usr/include/libdwarf"
           
-          # Two-phase build: install with --also-make (builds all deps), then deploy only target modules.
-          # This prevents parallel matrix jobs from racing to deploy shared parent/dep modules
-          # (nd4j-api, nd4j-native-api, etc.) which causes 403 on Sonatype Central.
           MVN_COMMON="${{ matrix.mvn_ext }} \
             -Dlibnd4j.generate.flatc=ON \
             -Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ \
@@ -319,7 +316,7 @@ jobs:
              HELPER_FLAGS=""
           fi
 
-          MAVEN_COMMAND="mvn ${MVN_COMMON} -pl ${MODULES} --also-make install ${HELPER_FLAGS} && mvn ${MVN_COMMON} -pl ${MODULES} deploy ${HELPER_FLAGS}"
+          MAVEN_COMMAND="mvn ${MVN_COMMON} ${HELPER_FLAGS} -pl ${MODULES} --also-make deploy"
           
           if [ "${PERFORM_RELEASE}" == "1" ]; then
               bash "${GITHUB_WORKSPACE}/release-specified-component.sh" \

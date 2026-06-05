@@ -243,11 +243,8 @@ jobs:
                   $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.6"
           }
 
-          # Two-phase build: install with --also-make (builds all deps), then deploy only target modules.
-          # This prevents parallel matrix jobs from racing to deploy shared parent/dep modules
-          # (nd4j-api, nd4j-cuda-*-api, etc.) which causes 403 on Sonatype Central.
           $mvn_common="${{ matrix.mvn_ext }} -Pcuda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests $mvn_ext"
-          $command="mvn $mvn_common -pl $modules --also-make install && mvn $mvn_common -pl $modules deploy"
+          $command="mvn $mvn_common -pl $modules --also-make deploy"
 
           $to_write = -join("COMMAND=","$($command)");
           if ( "${{ matrix.libnd4j_file_download }}" -ne "") {

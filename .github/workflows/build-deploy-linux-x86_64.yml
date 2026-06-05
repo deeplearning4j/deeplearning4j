@@ -185,11 +185,7 @@ jobs:
            echo "Building libnd4j from source"
            modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
-          # Two-phase build: install with --also-make (builds all deps), then deploy only target modules.
-          # This prevents 9 parallel matrix jobs from racing to deploy shared parent/dep modules
-          # (nd4j-api, nd4j-native-api, etc.) which causes 403 on Sonatype Central.
-          mvn_common="-X ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu --batch-mode -DskipTests"
-          command="mvn ${mvn_common} -pl ${modules} --also-make install && mvn ${mvn_common} -pl ${modules} deploy"
+          command="mvn -X ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu --also-make --batch-mode deploy -DskipTests"
           if [ "${{ matrix.helper }}" == 'compile' ]; then
                  mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=linux-x86_64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
           elif [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then

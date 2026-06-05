@@ -168,11 +168,7 @@ jobs:
              mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-12.6"
              libnd4j_download_file_url="linux-cuda-12.6-${{ matrix.extension }}-${{ matrix.helper }}"
           fi
-          # Two-phase build: install with --also-make (builds all deps), then deploy only target modules.
-          # This prevents parallel matrix jobs from racing to deploy shared parent/dep modules
-          # (nd4j-api, nd4j-cuda-*-api, etc.) which causes 403 on Sonatype Central.
-          mvn_common="${{ matrix.mvn_ext }} -Pcuda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda -Dlibnd4j.compute='8.6 9.0' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Djavacpp.platform=linux-x86_64 --batch-mode -DskipTests ${mvn_ext}"
-          command="mvn ${mvn_common} -pl ${modules} --also-make clean install && mvn ${mvn_common} -pl ${modules} deploy"
+          command="mvn ${{ matrix.mvn_ext }} -Pcuda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda -Dlibnd4j.compute='8.6 9.0' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Djavacpp.platform=linux-x86_64 --batch-mode -DskipTests ${mvn_ext} -pl ${modules} --also-make deploy"
           echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
       - name: Cache protobuf install
