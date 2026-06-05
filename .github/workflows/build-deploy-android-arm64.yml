@@ -280,27 +280,26 @@ jobs:
             -DCMAKE_C_FLAGS=-I/usr/include/libdwarf \
             -DCMAKE_CXX_FLAGS=-I/usr/include/libdwarf"
           
-          BASE_COMMAND="mvn ${{ matrix.mvn_ext }} \
+          # Two-phase build: install with --also-make (builds all deps), then deploy only target modules.
+          # This prevents parallel matrix jobs from racing to deploy shared parent/dep modules
+          # (nd4j-api, nd4j-native-api, etc.) which causes 403 on Sonatype Central.
+          MVN_COMMON="${{ matrix.mvn_ext }} \
             -Dlibnd4j.generate.flatc=ON \
             -Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ \
             --no-transfer-progress \
             -Posx-aarch64-protoc \
-            -pl ${MODULES} \
             -Pcpu \
             -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \
             -Dhttp.keepAlive=false \
             -Dmaven.wagon.http.pool=false \
             -Dmaven.wagon.http.retryHandler.count=3 \
-            \
             -DskipTestResourceEnforcement=true \
             -Dmaven.javadoc.failOnError=false \
             -Djavacpp.platform=${LIBND4J_CLASSIFIER} \
             -Dlibnd4j.cmake=\"${CMAKE_ARGS}\" \
-            --also-make \
             --batch-mode \
-            deploy \
             -DskipTests"
-          
+
           if [ "${{ matrix.helper }}" == "compile" ]; then
              HELPER_FLAGS="-Dlibnd4j.triton=ON \
                -Djavacpp.platform.extension=-compile \
@@ -319,8 +318,8 @@ jobs:
           else
              HELPER_FLAGS=""
           fi
-          
-          MAVEN_COMMAND="${BASE_COMMAND} ${HELPER_FLAGS}"
+
+          MAVEN_COMMAND="mvn ${MVN_COMMON} -pl ${MODULES} --also-make install ${HELPER_FLAGS} && mvn ${MVN_COMMON} -pl ${MODULES} deploy ${HELPER_FLAGS}"
           
           if [ "${PERFORM_RELEASE}" == "1" ]; then
               bash "${GITHUB_WORKSPACE}/release-specified-component.sh" \

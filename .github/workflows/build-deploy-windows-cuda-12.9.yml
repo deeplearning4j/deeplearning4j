@@ -218,8 +218,7 @@ jobs:
             $modules=":nd4j-cuda-12.9-preset,:nd4j-cuda-12.9,libnd4j,:nd4j-cuda-12.9-platform"
            }
           
-          $command="mvn ${{ matrix.mvn_ext }}  -Pcuda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
-          
+          # Determine helper/extension flags first so they apply to both phases.
           if ( "${{ matrix.helper }}" -eq "compile" ) {
                 $mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=windows-x86_64-cuda-12.9-compile"
                 $libnd4j_download_file_url="windows-cuda-12.9-compile"
@@ -233,16 +232,21 @@ jobs:
                   $libnd4j_download_file_url="windows-cuda-12.9"
                   $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.9"
           }
-          
-          $command2= -join("$($command)","$($mvn_ext)");
-          $to_write = -join("COMMAND=","$($command2)");
+
+          # Two-phase build: install with --also-make (builds all deps), then deploy only target modules.
+          # This prevents parallel matrix jobs from racing to deploy shared parent/dep modules
+          # (nd4j-api, nd4j-cuda-*-api, etc.) which causes 403 on Sonatype Central.
+          $mvn_common="${{ matrix.mvn_ext }} -Pcuda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests $mvn_ext"
+          $command="mvn $mvn_common -pl $modules --also-make install; mvn $mvn_common -pl $modules deploy"
+
+          $to_write = -join("COMMAND=","$($command)");
           if ( "${{ matrix.libnd4j_file_download }}" -ne "") {
               Write-Host "Adding libnd4j download URL to GITHUB_ENV"
               $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$(${{ matrix.libnd4j_file_download }}/$libnd4j_download_file_url)");
               echo $libnd4j_url_to_write | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           }
-          Write-Host "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2) and the libnd4j bootstrap file name to $($libnd4j_download_file_url)"
-          echo $command2 | Out-File -FilePath "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8
+          Write-Host "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command) and the libnd4j bootstrap file name to $($libnd4j_download_file_url)"
+          echo $command | Out-File -FilePath "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8
           echo $to_write | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Install MSYS2 and dependencies

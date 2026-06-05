@@ -252,10 +252,7 @@ jobs:
              modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
 
-          # Base Maven command
-          command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
-
-          # Updated conditional flags for the helper library
+          # Determine helper/extension flags first so they apply to both phases.
           if [ "${{ matrix.helper }}" == "compile" ]; then
              mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
           elif [ "${{ matrix.helper }}" == "onednn" ]; then
@@ -266,8 +263,11 @@ jobs:
           else
              mvn_ext=""
           fi
-
-          command="${command} ${mvn_ext}"
+          # Two-phase build: install with --also-make (builds all deps), then deploy only target modules.
+          # This prevents parallel matrix jobs from racing to deploy shared parent/dep modules
+          # (nd4j-api, nd4j-native-api, etc.) which causes 403 on Sonatype Central.
+          mvn_common="${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --batch-mode -DskipTests ${mvn_ext}"
+          command="mvn ${mvn_common} -pl $modules --also-make install && mvn ${mvn_common} -pl $modules deploy"
           echo "Setting command for helper ${{ matrix.helper }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
 

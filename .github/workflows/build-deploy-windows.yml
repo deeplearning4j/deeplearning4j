@@ -252,7 +252,7 @@ jobs:
             $modules=":nd4j-native-preset,:nd4j-native,libnd4j,:nd4j-native-platform"
           }
           
-          $command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests --also-make"
+          # Determine helper/extension flags first so they apply to both phases.
           if ( "${{ matrix.helper }}" -eq "compile" ) {
              $mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=windows-x86_64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
           } elseif ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
@@ -264,17 +264,22 @@ jobs:
           } else {
              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
           }
-          
+
+          # Two-phase build: install with --also-make (builds all deps), then deploy only target modules.
+          # This prevents parallel matrix jobs from racing to deploy shared parent/dep modules
+          # (nd4j-api, nd4j-native-api, etc.) which causes 403 on Sonatype Central.
+          $mvn_common="${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests $mvn_ext"
+          $command="mvn $mvn_common -pl $modules --also-make install; mvn $mvn_common -pl $modules deploy"
+
           if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
                  echo "Adding libnd4j download"
                  $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$(${{ matrix.libnd4j_file_download }}/$libnd4j_download_file_url)");
                  echo $libnd4j_url_to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
           }
-          
-          $command2 = -join("$($command)","$($mvn_ext)");
-          $to_write = -join("COMMAND=","$($command2)");
-          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2)"
-          echo $command2  | Out-File -FilePath   "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
+
+          $to_write = -join("COMMAND=","$($command)");
+          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command)"
+          echo $command  | Out-File -FilePath   "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
           echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
 
       - name: Set up Java for publishing to OSSRH

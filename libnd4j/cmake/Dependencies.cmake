@@ -865,6 +865,19 @@ function(setup_onednn)
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     )
 
+    # Pass generator to OneDNN so it matches the parent build system
+    if(CMAKE_GENERATOR)
+        list(APPEND ONEDNN_CMAKE_ARGS "-G${CMAKE_GENERATOR}")
+    endif()
+
+    # On Windows/MSYS2, use SEQ runtime instead of OMP — oneDNN's OpenMP.cmake
+    # can't find OpenMP on MinGW and fails at configure time.
+    if(WIN32 OR MINGW OR MSYS)
+        list(REMOVE_ITEM ONEDNN_CMAKE_ARGS "-DDNNL_CPU_RUNTIME=OMP")
+        list(APPEND ONEDNN_CMAKE_ARGS "-DDNNL_CPU_RUNTIME=SEQ")
+        message(STATUS "   OneDNN using SEQ runtime on Windows/MSYS2 (OpenMP not available)")
+    endif()
+
     # Pass compiler launcher (ccache/sccache) to OneDNN build if available
     # Smart ccache multi-element lists can't be passed as FILEPATH; fall back to plain ccache.
     if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}" AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
@@ -2477,6 +2490,11 @@ function(setup_openvino)
 
     if(APPLE)
         message(STATUS "OpenVINO disabled (Apple platform: Intel CPU plugin requires x86 Linux/Windows)")
+        return()
+    endif()
+
+    if(WIN32 OR MINGW OR MSYS OR CYGWIN)
+        message(STATUS "OpenVINO disabled (Windows/MSYS2: ExternalProject TBB/oneDNN build not supported)")
         return()
     endif()
 
