@@ -73,11 +73,6 @@ jobs:
       - name: Clean workspace
         uses: AutoModality/action-clean@v1
 
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-
       - name: Checkout repository
         uses: actions/checkout@v2
 
@@ -327,10 +322,12 @@ jobs:
                 "${RELEASE_REPO_ID}" \
                 "${MAVEN_COMMAND}"
           else
-              for attempt in 1 2 3; do
+              BACKOFF=(0 60 180 300 420)
+              for attempt in 1 2 3 4 5; do
                 eval "${MAVEN_COMMAND}" && break
-                echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in 30s..."
-                sleep 30
+                DELAY=${BACKOFF[$attempt]:-420}
+                echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in ${DELAY}s..."
+                sleep $DELAY
               done
           fi
 

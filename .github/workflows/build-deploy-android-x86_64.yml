@@ -90,11 +90,6 @@ jobs:
     steps:
       - uses: AutoModality/action-clean@v1
 
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-
       - uses: actions/checkout@v4
 
       - name: Setup sccache (distributed per-object cache)
@@ -510,10 +505,12 @@ jobs:
           else
               echo "=== Executing snapshot build ==="
               echo "Command: ${COMMAND}"
-              for attempt in 1 2 3; do
+              BACKOFF=(0 60 180 300 420)
+              for attempt in 1 2 3 4 5; do
                 eval "${COMMAND}" && break
-                echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in 30s..."
-                sleep 30
+                DELAY=${BACKOFF[$attempt]:-420}
+                echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in ${DELAY}s..."
+                sleep $DELAY
               done
           fi
 

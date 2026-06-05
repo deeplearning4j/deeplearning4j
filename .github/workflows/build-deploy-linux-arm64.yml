@@ -69,10 +69,6 @@ jobs:
           - swap_size: ${{ github.event.inputs.swapSize }}
     steps:
       - uses: AutoModality/action-clean@v1
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
@@ -238,10 +234,12 @@ jobs:
           if [ "$PERFORM_RELEASE" == 1 ]; then
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
           else
-              for attempt in 1 2 3; do
+              BACKOFF=(0 60 180 300 420)
+              for attempt in 1 2 3 4 5; do
                 eval "${COMMAND}" && break
-                echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in 30s..."
-                sleep 30
+                DELAY=${BACKOFF[$attempt]:-420}
+                echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in ${DELAY}s..."
+                sleep $DELAY
               done
           fi
       - name: Show sccache stats after build

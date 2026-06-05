@@ -109,11 +109,6 @@ jobs:
       CUDA_PATH: /usr/local/cuda-12.9
       CUDNN_ROOT_DIR: /usr/local/cuda-12.9
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
         with:
@@ -332,10 +327,12 @@ jobs:
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
                    else
                        echo "Running build and deploying to snapshots"
-                       for attempt in 1 2 3; do
+                       BACKOFF=(0 60 180 300 420)
+                       for attempt in 1 2 3 4 5; do
                          eval "${COMMAND}" && break
-                         echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in 30s..."
-                         sleep 30
+                         DELAY=${BACKOFF[$attempt]:-420}
+                         echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in ${DELAY}s..."
+                         sleep $DELAY
                        done
           fi
 

@@ -96,10 +96,6 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 720
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v4
 
       - name: Setup sccache (distributed per-object cache)
@@ -356,13 +352,23 @@ jobs:
                   echo "Running snapshots"
                   call "%GITHUB_WORKSPACE%\mvn-command.bat"
                   if errorlevel 1 (
-                    echo "::warning::Deploy attempt 1 failed. Retrying in 30s..."
-                    timeout /t 30 /nobreak >nul
+                    echo "::warning::Deploy attempt 1 failed. Retrying in 60s..."
+                    timeout /t 60 /nobreak >nul
                     call "%GITHUB_WORKSPACE%\mvn-command.bat"
                     if errorlevel 1 (
-                      echo "::warning::Deploy attempt 2 failed. Retrying in 30s..."
-                      timeout /t 30 /nobreak >nul
+                      echo "::warning::Deploy attempt 2 failed. Retrying in 180s..."
+                      timeout /t 180 /nobreak >nul
                       call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                      if errorlevel 1 (
+                        echo "::warning::Deploy attempt 3 failed. Retrying in 300s..."
+                        timeout /t 300 /nobreak >nul
+                        call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                        if errorlevel 1 (
+                          echo "::warning::Deploy attempt 4 failed. Retrying in 420s..."
+                          timeout /t 420 /nobreak >nul
+                          call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                        )
+                      )
                     )
                   )
                )
