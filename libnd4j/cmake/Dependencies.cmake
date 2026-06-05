@@ -1492,14 +1492,33 @@ function(setup_triton)
                     target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
                 endif()
             else()
-                target_link_libraries(triton_interface INTERFACE
-                    -Wl,--start-group
-                    ${_TRITON_MLIR_LIBS}
-                    ${_TRITON_LLVM_LIBS}
-                    ${_TRITON_MLIR_CAPI_LIBS}
-                    -Wl,--end-group
-                    -lz -lzstd -lrt -ldl -lm -lpthread
-                )
+                # Apple ld and Android lld resolve circular deps automatically (like MSVC).
+                # --start-group/--end-group is GNU ld only.
+                if(APPLE OR ANDROID)
+                    target_link_libraries(triton_interface INTERFACE
+                        ${_TRITON_MLIR_LIBS}
+                        ${_TRITON_LLVM_LIBS}
+                        ${_TRITON_MLIR_CAPI_LIBS}
+                    )
+                else()
+                    target_link_libraries(triton_interface INTERFACE
+                        -Wl,--start-group
+                        ${_TRITON_MLIR_LIBS}
+                        ${_TRITON_LLVM_LIBS}
+                        ${_TRITON_MLIR_CAPI_LIBS}
+                        -Wl,--end-group
+                    )
+                endif()
+                # Platform-appropriate system libs
+                target_link_libraries(triton_interface INTERFACE -lz -lm)
+                if(NOT APPLE AND NOT ANDROID)
+                    target_link_libraries(triton_interface INTERFACE -lzstd -lrt -ldl -lpthread)
+                elseif(APPLE)
+                    target_link_libraries(triton_interface INTERFACE -lzstd -ldl -lpthread)
+                else()
+                    # Android: no -lrt, -lpthread, or -lzstd
+                    target_link_libraries(triton_interface INTERFACE -ldl)
+                endif()
                 if(NOT _TRITON_CPU_ONLY)
                     # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
                     target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
@@ -2035,13 +2054,27 @@ function(setup_triton)
                 target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
             endif()
         else()
-            target_link_libraries(triton_interface INTERFACE
-                -Wl,--start-group
-                ${_TRITON_MLIR_LIBS}
-                ${_TRITON_LLVM_LIBS}
-                -Wl,--end-group
-                -lz -lzstd -lrt -ldl -lm -lpthread
-            )
+            if(APPLE OR ANDROID)
+                target_link_libraries(triton_interface INTERFACE
+                    ${_TRITON_MLIR_LIBS}
+                    ${_TRITON_LLVM_LIBS}
+                )
+            else()
+                target_link_libraries(triton_interface INTERFACE
+                    -Wl,--start-group
+                    ${_TRITON_MLIR_LIBS}
+                    ${_TRITON_LLVM_LIBS}
+                    -Wl,--end-group
+                )
+            endif()
+            target_link_libraries(triton_interface INTERFACE -lz -lm)
+            if(NOT APPLE AND NOT ANDROID)
+                target_link_libraries(triton_interface INTERFACE -lzstd -lrt -ldl -lpthread)
+            elseif(APPLE)
+                target_link_libraries(triton_interface INTERFACE -lzstd -ldl -lpthread)
+            else()
+                target_link_libraries(triton_interface INTERFACE -ldl)
+            endif()
             if(NOT _TRITON_CPU_ONLY)
                 target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
             endif()
@@ -2060,8 +2093,10 @@ function(setup_triton)
             # The glob path above will handle this on rebuild.
         else()
             message(STATUS "Triton: LLVM not yet built, using -l flags for deferred linking")
-            target_link_libraries(triton_interface INTERFACE
-                -Wl,--start-group
+            # Collect all MLIR/LLVM -l flags into a list, then wrap with
+            # --start-group/--end-group only on platforms that need it (GNU ld).
+            # Apple ld and Android lld resolve circular deps automatically.
+            set(_TRITON_DEFERRED_LIBS
                 # === ALL MLIR libraries (Triton 3.6.0 LLVM pin: f6ded0be) ===
                 # AUTO-GENERATED from triton_llvm_install/lib/libMLIR*.a (357 libraries)
                 -lMLIRAffineAnalysis -lMLIRAffineDialect -lMLIRAffineToStandard -lMLIRAffineTransformOps
@@ -2189,9 +2224,21 @@ function(setup_triton)
                 -lLLVMWindowsManifest -lLLVMX86AsmParser -lLLVMX86CodeGen
                 -lLLVMX86Desc -lLLVMX86Disassembler -lLLVMX86Info
                 -lLLVMX86TargetMCA -lLLVMXRay
-                -Wl,--end-group
-                -lz -lzstd -lrt -ldl -lm -lpthread
             )
+            if(APPLE OR ANDROID)
+                target_link_libraries(triton_interface INTERFACE ${_TRITON_DEFERRED_LIBS})
+            else()
+                target_link_libraries(triton_interface INTERFACE
+                    -Wl,--start-group ${_TRITON_DEFERRED_LIBS} -Wl,--end-group)
+            endif()
+            target_link_libraries(triton_interface INTERFACE -lz -lm)
+            if(NOT APPLE AND NOT ANDROID)
+                target_link_libraries(triton_interface INTERFACE -lzstd -lrt -ldl -lpthread)
+            elseif(APPLE)
+                target_link_libraries(triton_interface INTERFACE -lzstd -ldl -lpthread)
+            else()
+                target_link_libraries(triton_interface INTERFACE -ldl)
+            endif()
         endif()
     endif()
 
@@ -2766,12 +2813,16 @@ function(setup_openvino)
     )
 
     # ── Copy TBB cmake config into OpenVINO install so find_package(OpenVINO) can find TBB ──
-    set(_TBB_SRC_CMAKE "${OPENVINO_PREFIX}/tbb_install/lib64/cmake/TBB")
+    # TBB installs cmake config under lib64/ on some distros and lib/ on others.
+    # Use a script step that tries both paths, succeeding if either exists.
     set(_TBB_DST_CMAKE "${OPENVINO_INSTALL_DIR}/runtime/3rdparty/tbb/lib64/cmake/TBB")
     ExternalProject_Add_Step(openvino_external copy_tbb_cmake
         COMMENT "Copying TBB cmake config into OpenVINO install"
         COMMAND ${CMAKE_COMMAND} -E make_directory "${_TBB_DST_CMAKE}"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${_TBB_SRC_CMAKE}" "${_TBB_DST_CMAKE}"
+        COMMAND ${CMAKE_COMMAND}
+            -DTBB_PREFIX=${OPENVINO_PREFIX}/tbb_install
+            -DTBB_DST=${_TBB_DST_CMAKE}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/copy_tbb_cmake.cmake
         DEPENDEES install
     )
 
@@ -2804,16 +2855,22 @@ function(setup_openvino)
             # The install produces: libopenvino.a, libopenvino_intel_cpu_plugin.a,
             # libopenvino_ir_frontend.a, libopenvino_reference.a, plus 3rdparty
             # deps (libdnnl.a, libpugixml.a, libtbb.a, etc.)
-            target_link_libraries(openvino_interface INTERFACE
-                -Wl,--start-group
+            set(_OV_STATIC_LIBS
                 "${_OV_LIB_DIR}/libopenvino.a"
                 "${_OV_LIB_DIR}/libopenvino_intel_cpu_plugin.a"
                 "${_OV_LIB_DIR}/libopenvino_ir_frontend.a"
                 "${_OV_LIB_DIR}/libopenvino_reference.a"
                 "${_OV_LIB_DIR}/libopenvino_shape_inference.a"
-                -Wl,--end-group
-                -lpthread -ldl -lm -lrt
             )
+            if(APPLE)
+                # Apple ld resolves circular deps automatically
+                target_link_libraries(openvino_interface INTERFACE
+                    ${_OV_STATIC_LIBS} -ldl -lm -lpthread)
+            else()
+                target_link_libraries(openvino_interface INTERFACE
+                    -Wl,--start-group ${_OV_STATIC_LIBS} -Wl,--end-group
+                    -lpthread -ldl -lm -lrt)
+            endif()
         endif()
     endif()
 
@@ -2862,9 +2919,14 @@ function(_openvino_create_interface_from_install _install_dir)
             # Glob all .a files
             file(GLOB _OV_ALL_LIBS "${_OV_LIB_DIR}/*.a")
             if(_OV_ALL_LIBS)
-                target_link_libraries(openvino_interface INTERFACE
-                    -Wl,--start-group ${_OV_ALL_LIBS} -Wl,--end-group
-                    -lpthread -ldl -lm -lrt)
+                if(APPLE)
+                    target_link_libraries(openvino_interface INTERFACE
+                        ${_OV_ALL_LIBS} -ldl -lm -lpthread)
+                else()
+                    target_link_libraries(openvino_interface INTERFACE
+                        -Wl,--start-group ${_OV_ALL_LIBS} -Wl,--end-group
+                        -lpthread -ldl -lm -lrt)
+                endif()
             endif()
         endif()
     endif()

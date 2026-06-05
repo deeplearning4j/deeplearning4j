@@ -58,7 +58,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [onednn, compile, ""]
+        # Note: 'compile' removed — requires host-arch LLVM/MLIR which can't
+        # cross-compile to Android x86_64 without a full LLVM toolchain build.
+        helper: [onednn, ""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true

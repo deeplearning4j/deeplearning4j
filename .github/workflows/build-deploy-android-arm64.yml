@@ -56,7 +56,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [armcompute, nnapi, compile, compile-nnapi, ""]
+        # Note: 'compile' removed — requires host-arch LLVM/MLIR which can't
+        # cross-compile to Android ARM64 without a full NDK LLVM toolchain build.
+        helper: [armcompute, nnapi, compile-nnapi, ""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}

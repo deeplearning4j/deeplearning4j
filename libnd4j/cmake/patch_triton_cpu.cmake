@@ -311,4 +311,35 @@ if(EXISTS "${_TARGET_INCL_CMAKE}")
     message(STATUS "  [patch] Stripped Target tablegen")
 endif()
 
-message(STATUS "patch_triton_cpu: done")
+# ══════════════════════════════════════════════════════════════════════════
+# 7. Fix _Float16 on ARM64 — GCC uses __fp16, not _Float16
+# ══════════════════════════════════════════════════════════════════════════
+set(_CPU_RUNTIME "${SOURCE_DIR}/third_party/cpu/runtime/cpu_runtime.cpp")
+if(EXISTS "${_CPU_RUNTIME}")
+    file(READ "${_CPU_RUNTIME}" _rt_content)
+    string(FIND "${_rt_content}" "_Float16" _float16_pos)
+    if(NOT _float16_pos EQUAL -1)
+        string(FIND "${_rt_content}" "PATCHED_FLOAT16" _patched_pos)
+        if(_patched_pos EQUAL -1)
+            # Replace _Float16 with a portable typedef
+            string(REPLACE "_Float16" "fp16_t" _rt_content "${_rt_content}")
+            set(_float16_preamble
+"// PATCHED_FLOAT16: _Float16 is not available on all compilers (e.g. GCC on ARM64).
+// Use a portable typedef.
+#if defined(__clang__) || (defined(__GNUC__) && defined(__x86_64__))
+  typedef _Float16 fp16_t\;
+#elif defined(__GNUC__) && defined(__aarch64__)
+  typedef __fp16 fp16_t\;
+#else
+  #include <cstdint>
+  typedef uint16_t fp16_t\;  // fallback: raw bits
+#endif
+")
+            string(PREPEND _rt_content "${_float16_preamble}")
+            file(WRITE "${_CPU_RUNTIME}" "${_rt_content}")
+            message(STATUS "  [patch] Fixed _Float16 -> fp16_t in cpu_runtime.cpp")
+        endif()
+    endif()
+endif()
+
+message(STATUS "patch_triton_cpu: done (all patches applied)")

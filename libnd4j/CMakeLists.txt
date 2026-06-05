@@ -207,7 +207,7 @@ if(WIN32 AND SD_CUDA)
             # Fix quoted -Xcompiler with spaces: -Xcompiler=" /GR /EHsc" → -Xcompiler=/GR,/EHsc
             # The quotes+spaces break Ninja rsp file parsing (space splits into multiple tokens)
             # IMPORTANT: Just REMOVE the entire -Xcompiler="..." since we re-add /EHsc via
-            # the custom compile template (-Xcompiler=/bigobj,/EHsc,/MD).
+            # the custom compile template (separate -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/MD).
             # /GR is the default on MSVC and doesn't need to be explicitly set.
             string(REGEX REPLACE "-Xcompiler=\" [^\"]*\"" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
             # Also try without space after =
@@ -219,9 +219,14 @@ if(WIN32 AND SD_CUDA)
         endif()
     endforeach()
 
-    # 5. Custom compile rule with comma-separated -Xcompiler flags
+    # 5. Custom compile rule with separate -Xcompiler flags.
+    # IMPORTANT: Use separate -Xcompiler per flag (not comma-separated).
+    # sccache decomposes nvcc command lines and passes host compiler flags
+    # individually to cl.exe. Comma-separated -Xcompiler=/bigobj,/EHsc,/MD
+    # gets split incorrectly — cl.exe interprets /bigobj as D:\bigobj (a path).
+    # Separate -Xcompiler flags work correctly with both sccache and plain nvcc.
     set(CMAKE_CUDA_COMPILE_OBJECT
-            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -Xcompiler=/bigobj,/EHsc,/MD -o <OBJECT> -c <SOURCE>"
+            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/MD -o <OBJECT> -c <SOURCE>"
             CACHE STRING "" FORCE)
 
     # Debug: dump ALL variables that could contribute to CUDA compile command
