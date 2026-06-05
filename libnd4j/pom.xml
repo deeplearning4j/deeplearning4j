@@ -41,6 +41,10 @@
 
 
     <properties>
+        <!-- Skip publishing for this POM-only module. All 9 CPU matrix jobs deploy the
+             same libnd4j:pom:1.0.0-SNAPSHOT, causing 403 races on Sonatype Central.
+             The real native artifacts ship inside nd4j-native JARs with classifiers. -->
+        <skipPublishing>true</skipPublishing>
 
         <!-- Type validation modes -->
         <libnd4j.types.validation.mode>normal</libnd4j.types.validation.mode>

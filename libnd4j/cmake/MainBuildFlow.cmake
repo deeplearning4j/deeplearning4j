@@ -512,6 +512,38 @@ function(configure_cpu_linking main_target_name)
         target_link_libraries(${main_target_name} PUBLIC ${OPENVINO_LIB})
         target_compile_definitions(${main_target_name} PUBLIC HAVE_OPENVINO=1)
         message(STATUS "🔗 Linking OpenVINO CPU graph backend")
+
+        # Bundle TBB shared library alongside libnd4jcpu.so so JavaCPP packaging
+        # can include it in the native jar. libtbb.so.12 is OpenVINO's threading
+        # runtime — it is always a shared library (no static variant in OpenVINO's build).
+        # The pom.xml copy step globs all *.so / *.so.* from CMAKE_BINARY_DIR into
+        # the jar. Without this step, libtbb.so.12 only exists at the absolute build
+        # path that is baked into RUNPATH; after a clean build that path no longer exists.
+        if(NOT WIN32)
+            set(_OV_TBB_SRC_DIR "${CMAKE_BINARY_DIR}/openvino_install/runtime/3rdparty/tbb/lib64")
+            if(EXISTS "${_OV_TBB_SRC_DIR}")
+                # Copy at configure time for the "already built" reuse path
+                file(GLOB _tbb_so_files "${_OV_TBB_SRC_DIR}/libtbb.so*"
+                                        "${_OV_TBB_SRC_DIR}/libtbbmalloc.so*"
+                                        "${_OV_TBB_SRC_DIR}/libtbbmalloc_proxy.so*")
+                foreach(_f ${_tbb_so_files})
+                    get_filename_component(_fname "${_f}" NAME)
+                    if(NOT EXISTS "${CMAKE_BINARY_DIR}/${_fname}")
+                        message(STATUS "  Copying TBB library for bundling: ${_fname}")
+                        execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${_f}" "${CMAKE_BINARY_DIR}/${_fname}")
+                    endif()
+                endforeach()
+            endif()
+            # Also copy at build time (POST_BUILD) for the case where OpenVINO is
+            # built as part of this cmake invocation (ExternalProject path).
+            add_custom_command(TARGET ${main_target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND}
+                    -D_OV_TBB_SRC_DIR=${CMAKE_BINARY_DIR}/openvino_install/runtime/3rdparty/tbb/lib64
+                    -D_DST_DIR=${CMAKE_BINARY_DIR}
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/copy_tbb_libs.cmake"
+                COMMENT "Copying OpenVINO TBB shared libraries to output directory for jar bundling"
+            )
+        endif()
     endif()
 
     # NCCL (Multi-GPU Collective Communications)
@@ -653,6 +685,15 @@ function(create_and_link_library)
                 target_compile_options(${OBJECT_LIB_NAME} PUBLIC
                     $<$<COMPILE_LANGUAGE:CXX>:/openmp:experimental>
                     $<$<COMPILE_LANGUAGE:C>:/openmp:experimental>)
+            elseif(APPLE)
+                # Apple Clang needs -Xclang -fopenmp (bare -fopenmp is unsupported).
+                # OpenMP_CXX_FLAGS is set to "-Xclang -fopenmp" by the Homebrew hints
+                # in configure_cpu_linking(). Use separate_arguments to split the string.
+                separate_arguments(_omp_cxx_flags UNIX_COMMAND "${OpenMP_CXX_FLAGS}")
+                separate_arguments(_omp_c_flags UNIX_COMMAND "${OpenMP_C_FLAGS}")
+                target_compile_options(${OBJECT_LIB_NAME} PUBLIC
+                    $<$<COMPILE_LANGUAGE:CXX>:${_omp_cxx_flags}>
+                    $<$<COMPILE_LANGUAGE:C>:${_omp_c_flags}>)
             else()
                 target_compile_options(${OBJECT_LIB_NAME} PUBLIC
                     $<$<COMPILE_LANGUAGE:CXX>:-fopenmp>
