@@ -62,11 +62,31 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
   };
 
   if (shape::isEmptyConst(x) || shape::isEmptyConst(y)) {
-    // When either operand is empty, compute the broadcast shape and return an
-    // empty array with that shape (not a scalar). E.g.:
-    //   add([1,2], [0,2])  -> shape [0,2]  (length=0, preserves structure)
-    //   add([1,0,1], [1,0,2]) -> shape [1,0,2]
-    // Fall through to the regular broadcast-shape logic below.
+    // When either operand is rank-0 empty, return a rank-0 empty with the correct output dtype.
+    // When both operands have shape dimensions (rank > 0), compute the broadcast shape and
+    // mark it empty so that structural shape info is preserved (e.g. [0,2]).
+    if ((shape::isEmptyConst(x) && shape::rank(x) == 0) ||
+        (shape::isEmptyConst(y) && shape::rank(y) == 0)) {
+      // Rank-0 empty input: return rank-0 empty with correct dtype
+      auto desc = ShapeBuilders::emptyShapeInfo(dtype);
+      shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(desc)->primary());
+      delete[] desc;
+      return shapeList;
+    }
+    // Both inputs have rank > 0 with at least one empty: broadcast shapes and mark empty
+    sd::LongType *newshape = nullptr;
+    ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
+    // evalBroadcastShapeInfo sets EMPTY bit and uses DataTypeUtils::pickPairwiseResultType
+    // for the dtype. Override dtype if needed (e.g. BOOL output for logical ops).
+    if (dtype != ArrayOptions::dataType(newshape)) {
+      int rank = shape::rank(newshape);
+      std::vector<LongType> shapeVec(rank);
+      for (int d = 0; d < rank; d++) shapeVec[d] = shape::shapeOf(newshape)[d];
+      shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype, shapeVec));
+    } else {
+      shapeList->push_back(newshape);
+    }
+    return shapeList;
   }
 
   if (shape::isScalar(x) && shape::isScalar(y)) {

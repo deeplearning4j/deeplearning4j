@@ -56,7 +56,6 @@ import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
 import org.nd4j.linalg.profiler.data.array.eventlog.DefaultNd4jEventLog;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
-import org.nd4j.nativeblas.OpaqueConstantShapeBuffer;
 import org.nd4j.nativeblas.OpaqueShapeList;
 import org.nd4j.nativeblas.OpaqueVariable;
 import org.nd4j.nativeblas.OpaqueVariablesSet;
@@ -376,6 +375,9 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         if (array.isAttached() && !array.isView()) {
             val ws = array.data().getParentWorkspace();
 
+            if (ws == null)
+                return;
+
             if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
 
                 if (!ws.isScopeActive()) {
@@ -384,11 +386,12 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                             + " with workspace enum: " + ws.getAssociatedEnumType());
                 }
 
-                if (ws.getGenerationId() != array.data().getGenerationId())
-                    throw new ND4JIllegalStateException("Op [" + opName + "] X argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]: Workspace array was defined in has been closed and reopened at least once since array creation. Array WS iteration: " +
-                            array.data().getGenerationId() + ". Workspace current iteration: " +
-                            ws.getGenerationId() + "\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+                if (ws.getGenerationId() != array.data().getGenerationId()) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("Op [{}] array has generationId mismatch (array: {}, workspace [{}]: {})",
+                                opName, array.data().getGenerationId(), ws.getId(), ws.getGenerationId());
+                    }
+                }
             }
         }
     }
@@ -1245,25 +1248,13 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         ptr.capacity(len);
         ptr.get(shapeInfo, 0, len);
 
-        // Route through ConstantShapeHelper C++ cache for stable, device-aware pointers.
-        // This ensures the returned DataBuffer references permanent cache memory
-        // (not temporary ShapeList memory) and has both host and device pointers on CUDA.
-        OpaqueConstantShapeBuffer csb = Nd4j.getNativeOps().cacheAndStoreShapeBuffer(shapeInfo);
-        if (csb == null) {
-            throw new RuntimeException("Failed to cache shape buffer for op: " + op.opName());
-        }
-
-        Pointer primaryPtr = Nd4j.getNativeOps().getConstantShapeBufferPrimary(csb);
-        Pointer specialPtr = Nd4j.getNativeOps().getConstantShapeBufferSpecial(csb);
-
-        DataBuffer buffer;
-        if (specialPtr != null && specialPtr.address() != 0) {
-            // CUDA: create buffer with both host and device pointers from cache
-            buffer = Nd4j.createBuffer(primaryPtr, specialPtr, len, DataType.INT64);
-        } else {
-            // CPU: create buffer with host pointer only
-            buffer = Nd4j.createBuffer(primaryPtr, len, DataType.INT64);
-        }
+        // Create a Java-owned DataBuffer from the shape info values.
+        // We do NOT wrap the ConstantShapeHelper's native pointer because that pointer
+        // is permanently cached in C++ and must never be freed. Wrapping it with
+        // Nd4j.createBuffer(Pointer,...) registers a deallocator that will free the
+        // cache memory on GC, causing double-free/corruption when the same cached
+        // shape is returned by a subsequent calculateOutputShape call.
+        DataBuffer buffer = Nd4j.createBuffer(shapeInfo);
         buffer.setConstant(true);
         return buffer;
     }

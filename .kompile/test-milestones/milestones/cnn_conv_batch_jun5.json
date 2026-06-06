@@ -1,0 +1,18 @@
+{
+  "id": "cnn_conv_batch_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "ConvConfigTests,ConvolutionTests,ConvolutionTestsC,DeconvTests,Convolution3DTest,ConvolutionLayerSetupTest,ConvolutionLayerTest,LocallyConnectedLayerTest,CNN3DGradientCheckTest,Conv1DOpTest,Conv1DIsolationTest",
+  "totalTests": 96,
+  "passed": 87,
+  "failed": 2,
+  "errors": 5,
+  "skipped": 2,
+  "failedTests": "ConvolutionLayerTest.testCausal1d (conv1d op exec failure), LocallyConnectedLayerTest (3 errors: WS_LAYER_WORKING_MEM cant borrow from borrowed), Conv1DIsolationTest (1 fail + 1 error)",
+  "notes": "CNN/Conv batch: 11 classes completed. ConvConfigTests (7, pass), ConvolutionTests (26, pass), ConvolutionTestsC (6+2skip, pass), DeconvTests (1, pass), Convolution3DTest (2, pass), ConvolutionLayerSetupTest (13, pass), CNN3DGradientCheckTest (6, pass), Conv1DOpTest (5, pass). Failures: ConvolutionLayerTest testCausal1d (conv1d op error), LocallyConnectedLayerTest (workspace borrow error x3), Conv1DIsolationTest (conv1d issues). CNNGradientCheckTest OOM-crashed during zeroPad tests — needs isolated retest with lower concurrency.",
+  "tags": "cpu,cnn,convolution,gradient-check,workspace-bug",
+  "timestamp": "2026-06-05T09:16:00Z"
+}

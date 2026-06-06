@@ -1,0 +1,28 @@
+{
+  "batch": "BF",
+  "name": "Evaluation tests (nd4j + dl4jcore + llm framework)",
+  "date": "2026-06-05T04:35:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "EmptyEvaluationTests": {"total": 7, "passed": 7, "failed": 0, "errors": 0},
+    "ROCBinaryTest": {"total": 7, "passed": 6, "failed": 0, "errors": 0, "skipped": 1},
+    "RegressionEvalTest_nd4j": {"total": 10, "passed": 10, "failed": 0, "errors": 0},
+    "EvaluationCalibrationTest": {"total": 6, "passed": 6, "failed": 0, "errors": 0},
+    "ROCTest_nd4j": {"total": 20, "passed": 19, "failed": 0, "errors": 0, "skipped": 1},
+    "EvaluationBinaryTest": {"total": 9, "passed": 9, "failed": 0, "errors": 0},
+    "CustomEvaluationTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "EvalTest_nd4j": {"total": 21, "passed": 21, "failed": 0, "errors": 0},
+    "EvalJsonTest_nd4j": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "EvalFrameworkTest": {"total": 39, "passed": 39, "failed": 0, "errors": 0},
+    "RegressionEvalTest_dl4j": {"total": 3, "passed": 3, "failed": 0, "errors": 0},
+    "EvalJsonTest_dl4j": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "ROCTest_dl4j": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "EvaluationToolsTests": {"total": 3, "passed": 3, "failed": 0, "errors": 0},
+    "EvalTest_dl4j": {"total": 0, "passed": 0, "failed": 0, "errors": 0,
+      "note": "JVM SIGABRT crash (exit code 134) starting this class — no tests completed"}
+  },
+  "known_issues": [
+    "EvalTest (dl4jcore) causes JVM SIGABRT crash — same pattern as WorkspaceTests and AsyncMulti"
+  ],
+  "summary": "137 tests run, 135 passed, 0 failures, 0 errors, 2 skipped. JVM crash on EvalTest (dl4jcore) after all other classes completed successfully."
+}

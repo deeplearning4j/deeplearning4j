@@ -1,0 +1,21 @@
+{
+  "id": "conv_pool_tests_jun3",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "uncommitted",
+    "short": "uncommitted"
+  },
+  "commitMessage": "test: ConvolutionLayerTest suite",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-dl4j-convolution-layer",
+  "totalTests": 20,
+  "passed": 19,
+  "failed": 0,
+  "skipped": 0,
+  "errors": 1,
+  "notes": "ConvolutionLayerTest: 19/20 PASS, 1 ERROR. testCausal1d ERROR: Conv1D op execution failed with causal padding mode. Input [1,64,72], kernel [64,64,2]. PoolingLayerTest and Deconvolution2DTest did not run (fork crashed after ConvolutionLayerTest due to CUDA lib loading on CPU backend).",
+  "tags": ["cpu", "nd4j-native", "dl4j-core", "convolution", "conv1d"],
+  "timestamp": "2026-06-03T16:00:00Z",
+  "previousMilestone": "embed_dense_misc_jun3"
+}

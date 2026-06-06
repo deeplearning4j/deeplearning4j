@@ -476,7 +476,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
             float[][] array = {{28, 25, 22, 19, 16, 13, 10, 7, 4, 1},
                     {29, 26, 23, 20, 17, 14, 11, 8, 5, 2},
                     {30, 27, 24, 21, 18, 15, 12, 9, 6, 3}};
-            INDArray inMaskReverseExp = Nd4j.create(array);
+            INDArray inMaskReverseExp = Nd4j.create(array).castTo(inMask.dataType());
 
 
             INDArray inReverse = reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);

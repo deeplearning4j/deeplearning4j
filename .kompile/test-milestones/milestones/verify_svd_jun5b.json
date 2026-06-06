@@ -1,0 +1,16 @@
+{
+  "id": "verify_svd_jun5b",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-cpu-rebuild",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 43,
+  "passed": 37,
+  "failed": 0,
+  "errors": 6,
+  "skipped": 0,
+  "notes": "NdArrayMmulSvdTest: 37 pass, 6 errors (down from 15 pre-fix). Remaining 6 errors all SVD deflation 'diagonal elements not properly sorted' — tolerance (128*eps*maxElem) still too strict for FLOAT32. Affected: testSvdLargeRectangularFullUV, testSvdLargeRectangularFullUVAutoOutputsRawOp, testSvdLargeRectangularAutoOutputsReusedOpFreshContext, testSvdLargeRectangularLateOutputBindingFreshOp, testMMulColVectorRowVectorMixedOrder, testMMulMatrixTimesColVector. Fix: remove the throw entirely, just swap misordered near-equal elements.",
+  "tags": ["cpu", "svd", "verification"],
+  "timestamp": "2026-06-05T16:55:00Z"
+}

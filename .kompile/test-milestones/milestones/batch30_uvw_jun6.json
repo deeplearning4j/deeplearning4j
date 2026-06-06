@@ -1,0 +1,28 @@
+{
+  "id": "batch30_uvw_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-sparsesoftmax-cpu-rebuild",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 26,
+  "passed": 26,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 1,
+  "classes": {
+    "UnifiedProfilerTests": {"run": 1, "pass": 0, "skipped": 1, "notes": "Requires CUDA backend"},
+    "UnderSamplingPreProcessorTest": {"run": 5, "pass": 5},
+    "ValidationUtilTests": {"run": 7, "pass": 7},
+    "WorkspaceSessionMemMgrTest": {"run": 7, "pass": 7},
+    "TensorDot2DeconvTest": {"run": 7, "pass": 7},
+    "WorkspaceInferenceSessionTest": {"run": 0, "pass": 0, "notes": "SIGABRT - native heap corruption during DSP execution"},
+    "VisionTransformerOpsTests": {"run": 0, "pass": 0, "notes": "Not reached due to JVM crash in initial batch"}
+  },
+  "failures": [
+    "WorkspaceInferenceSessionTest: SIGABRT (corrupted size vs. prev_size) during DSP execution — systemic native heap corruption"
+  ],
+  "notes": "5 of 7 classes ran successfully. UnifiedProfilerTests skipped (CUDA-only). WorkspaceInferenceSessionTest crashed with SIGABRT. VisionTransformerOpsTests not reached in initial batch. TensorDot2DeconvTest passed when run in isolation.",
+  "tags": ["cpu", "workspace", "undersampling", "validation", "tensordot", "sigabrt"],
+  "timestamp": "2026-06-06T00:32:00Z"
+}

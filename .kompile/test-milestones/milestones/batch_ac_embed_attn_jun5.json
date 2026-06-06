@@ -1,0 +1,17 @@
+{
+  "batch": "AC",
+  "name": "Embedding, attention, recurrent, and misc layer tests",
+  "date": "2026-06-05T01:38:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "TestSimpleRnn": {"total": 4, "passed": 4, "failed": 0, "errors": 0},
+    "TestTimeDistributed": {"total": 4, "passed": 3, "failed": 0, "errors": 1, "note": "testTimeDistributedDense[2] NWC format input size mismatch (5 vs 10) — pre-existing (same in batch_c Jun 4)"},
+    "BidirectionalTest": {"total": 16, "passed": 16, "failed": 0, "errors": 0},
+    "CenterLossOutputLayerTest": {"total": 2, "passed": 1, "failed": 0, "errors": 0, "skipped": 1},
+    "AttentionLayerTest": {"total": 8, "passed": 0, "failed": 0, "errors": 0, "skipped": 8, "note": "All @Disabled"}
+  },
+  "known_issues": [
+    "TestTimeDistributed.testTimeDistributedDense[2]: pre-existing NWC format input size mismatch"
+  ],
+  "summary": "34 tests run, 24 passed, 0 failures, 1 error (pre-existing), 9 skipped. EmbeddingLayerTest did not resolve — needs full package name."
+}

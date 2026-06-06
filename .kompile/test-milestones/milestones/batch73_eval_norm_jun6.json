@@ -1,0 +1,35 @@
+{
+  "id": "batch73_eval_norm_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 624,
+  "passed": 613,
+  "failed": 5,
+  "errors": 0,
+  "skipped": 6,
+  "classes": {
+    "DecoderMaskedMhaTest": {"run": 13, "pass": 13},
+    "DspFrozenConstantInvariantTest": {"run": 16, "pass": 16},
+    "DspSlotLifecycleAuditTest": {"run": 448, "pass": 448},
+    "EvalTest": {"run": 21, "pass": 21},
+    "MultiNormalizerMinMaxScalerTest": {"run": 6, "pass": 6},
+    "MultiNormalizerStandardizeTest": {"run": 6, "pass": 6},
+    "RegressionEvalTest": {"run": 13, "pass": 13, "notes": "2 packages: nd4j.evaluation(10) + dl4jcore.eval(3)"},
+    "ROCTest": {"run": 21, "pass": 20, "skipped": 1, "notes": "2 packages: nd4j.evaluation(20) + dl4jcore.eval(1)"},
+    "RandomTests": {"run": 59, "pass": 53, "failed": 4, "skipped": 1, "notes": "2 packages: rng(57) + parallelism(2). 4 Bernoulli/RNG sequence failures"},
+    "TensorflowOpMappingTest": {"run": 21, "pass": 16, "failed": 1, "skipped": 4, "notes": "ReverseV2 maps to noop instead of reverse"}
+  },
+  "failures": [
+    "RandomTests#testBernoulliDistribution2: hardcoded RNG sequence mismatch",
+    "RandomTests#testBernoulliDistribution3: hardcoded RNG sequence mismatch",
+    "RandomTests#testAndersonDarling: RNG test failure",
+    "RandomTests#testCrossBackendEquality1: RNG cross-backend equality mismatch",
+    "TensorflowOpMappingTest#testArrayOpMappingTargets: ReverseV2 maps to noop instead of reverse"
+  ],
+  "notes": "10 classes found (some had multiple packages). 613 pass, 5 failures. DspSlotLifecycleAuditTest alone contributes 448 tests. RNG failures are seed-dependent sequence mismatches. TF mapping has ReverseV2->noop bug.",
+  "tags": ["cpu", "dsp", "eval", "normalizer", "rng", "roc", "tensorflow", "mha"],
+  "timestamp": "2026-06-06T04:32:00Z"
+}

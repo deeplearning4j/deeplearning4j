@@ -26,12 +26,20 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseLevel2 extends BaseLevel implements Level2 {
+
+    private static boolean isNanInfCheckEnabled() {
+        OpExecutioner.ProfilingMode mode = Nd4j.getExecutioner().getProfilingMode();
+        return mode == OpExecutioner.ProfilingMode.NAN_PANIC
+                || mode == OpExecutioner.ProfilingMode.INF_PANIC
+                || mode == OpExecutioner.ProfilingMode.ANY_PANIC;
+    }
     /**
      * gemv computes a matrix-vector product using a general matrix and performs one of the following matrix-vector operations:
      * y := alpha*a*x + beta*y  for trans = 'N'or'n';
@@ -50,7 +58,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void gemv(char order, char transA, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
         Nd4j.exec(new Mmul(A, X, Y, alpha, beta, MMulTranspose.builder().transposeA(false).build()));
-        OpExecutionerUtil.checkForAny(Y);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -85,7 +93,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             sgbmv(order, TransA, (int) A.rows(), (int) A.columns(), KL, KU, (float) alpha, A, (int) A.size(0), X, X.stride(-1), (float) beta, Y, Y.stride(-1));
         }
 
-        OpExecutionerUtil.checkForAny(Y);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -110,7 +118,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             sger(order, (int) A.rows(), (int) A.columns(), (float) alpha, X, X.stride(-1), Y, Y.stride(-1), A, (int) A.size(0));
         }
 
-        OpExecutionerUtil.checkForAny(A);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(A);
     }
 
     /**
@@ -141,7 +149,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                             Y, Y.stride(-1));
         }
 
-        OpExecutionerUtil.checkForAny(Y);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -167,7 +175,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             sspmv(order, Uplo, (int) X.length(), (float) alpha, Ap, X, Ap.stride(-1), (float) beta, Y, Y.stride(-1));
         }
 
-        OpExecutionerUtil.checkForAny(Y);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -193,7 +201,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             sspr(order, Uplo, (int) X.length(), (float) alpha, X, X.stride(-1), Ap);
         }
 
-        OpExecutionerUtil.checkForAny(Ap);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(Ap);
     }
 
     /**
@@ -220,7 +228,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             sspr2(order, Uplo, (int) X.length(), (float) alpha, X, X.stride(-1), Y, Y.stride(-1), A);
         }
 
-        OpExecutionerUtil.checkForAny(A);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(A);
     }
 
     /**
@@ -250,7 +258,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                             Y.stride(-1));
         }
 
-        OpExecutionerUtil.checkForAny(Y);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -277,7 +285,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             ssyr(order, Uplo, (int) X.length(), (float) alpha, X, X.stride(-1), A, (int) A.size(0));
         }
 
-        OpExecutionerUtil.checkForAny(A);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(A);
     }
 
     /**
@@ -301,7 +309,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             ssyr2(order, Uplo, (int) X.length(), (float) alpha, X, X.stride(-1), Y, Y.stride(-1), A, (int) A.size(0));
         }
 
-        OpExecutionerUtil.checkForAny(A);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(A);
     }
 
     /**
@@ -379,7 +387,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             stpmv(order, Uplo, TransA, Diag, (int) Ap.length(), Ap, X, X.stride(-1));
         }
 
-        OpExecutionerUtil.checkForAny(X);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(X);
     }
 
     /**
@@ -405,7 +413,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             stpsv(order, Uplo, TransA, Diag, (int) X.length(), Ap, X, X.stride(-1));
         }
 
-        OpExecutionerUtil.checkForAny(X);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(X);
     }
 
     /**
@@ -431,7 +439,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             strmv(order, Uplo, TransA, Diag, (int) X.length(), A, (int) A.size(0), X, X.stride(-1));
         }
 
-        OpExecutionerUtil.checkForAny(X);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(X);
     }
 
     /**
@@ -457,7 +465,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             strsv(order, Uplo, TransA, Diag, (int) A.length(), A, (int) A.size(0), X, X.stride(-1));
         }
 
-        OpExecutionerUtil.checkForAny(X);
+        if (isNanInfCheckEnabled()) OpExecutionerUtil.checkForAny(X);
     }
 
     /*

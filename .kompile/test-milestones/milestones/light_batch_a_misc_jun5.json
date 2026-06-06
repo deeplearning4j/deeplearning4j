@@ -1,0 +1,17 @@
+{
+  "id": "light_batch_a_misc_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "AbstractCacheTest,AbstractElementFactoryTest,AggregableMultiOpTest,AggregatorImplsTest,AsyncIteratorTest,BatchedInferenceObservableTest,ClassPathResourceTest,CSVLineSequenceRecordReaderTest,CSVMultiSequenceRecordReaderTest,DispatchOpTest,MovingWindowMatrixTest,MultiBooleanTest",
+  "totalTests": 46,
+  "passed": 46,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 3,
+  "notes": "Light batch A: 12 misc/data-io classes, all pass on CPU.",
+  "tags": "cpu,light,misc,data-io",
+  "timestamp": "2026-06-05T10:55:00Z"
+}

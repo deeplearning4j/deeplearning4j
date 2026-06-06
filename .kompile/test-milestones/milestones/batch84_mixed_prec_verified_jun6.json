@@ -1,0 +1,21 @@
+{
+  "id": "batch84_mixed_prec_verified_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-isa-fix-rebuild",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 69,
+  "passed": 69,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "jvmCrash": false,
+  "classes": {
+    "TestMixedPrecisionGradientChecks": {"run": 69, "pass": 69, "fail": 0, "errors": 0, "notes": "ALL 69 pass after ISA fix (16 mkldnn files) + test design fixes (BF16 x^2 loss, relu input range). Previously: 9 errors + 3 failures."}
+  },
+  "failures": [],
+  "notes": "Complete fix: 16 mkldnn PLATFORM_CHECK files fixed for runtime ISA detection (dnnl_get_effective_cpu_isa). BF16 gated on AVX512_CORE_BF16, HALF gated on AVX512_CORE_AMX_FP16. Test-side: BF16 numerical stability uses x^2 instead of exp (avoids catastrophic cancellation), relu test uses inputs away from discontinuity.",
+  "tags": ["cpu", "mixed-precision", "isa-detection", "mkldnn", "verified"],
+  "timestamp": "2026-06-06T06:00:00Z"
+}

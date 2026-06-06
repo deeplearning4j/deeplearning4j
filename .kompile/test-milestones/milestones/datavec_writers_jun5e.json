@@ -1,0 +1,31 @@
+{
+  "id": "datavec_writers_jun5e",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-reduce-float-clip-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 46,
+  "passed": 43,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 3,
+  "classes": {
+    "TestSerialization(ndarray)": {"run": 4, "pass": 4},
+    "FileBatchRecordReaderTest(image)": {"run": 1, "pass": 1},
+    "TransformProcessRecordReaderTests": {"run": 2, "pass": 2},
+    "JacksonLineRecordReaderTest": {"run": 2, "pass": 2},
+    "CSVVariableSlidingWindowRecordReaderTest": {"run": 2, "pass": 2},
+    "CSVMultiSequenceRecordReaderTest": {"run": 3, "pass": 0, "skip": 3},
+    "TestSerialization(datavec)": {"run": 2, "pass": 2},
+    "FileBatchRecordReaderTest(api)": {"run": 2, "pass": 2},
+    "LibSvmRecordWriterTest": {"run": 11, "pass": 11},
+    "SVMLightRecordWriterTest": {"run": 11, "pass": 11},
+    "CSVRecordWriterTest": {"run": 1, "pass": 1},
+    "TestJoin(api)": {"run": 3, "pass": 3},
+    "TestJoin(local)": {"run": 2, "pass": 2}
+  },
+  "notes": "Datavec writers/misc batch: 43 pass, 3 skipped (CSVMultiSequence). All writers, joins, and reader variants pass.",
+  "tags": ["cpu", "datavec", "writers", "joins", "misc"],
+  "timestamp": "2026-06-05T19:18:00Z"
+}

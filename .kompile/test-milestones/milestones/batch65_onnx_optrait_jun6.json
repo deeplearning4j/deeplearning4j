@@ -1,0 +1,27 @@
+{
+  "id": "batch65_onnx_optrait_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 579,
+  "passed": 575,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 4,
+  "classes": {
+    "ONNXPipelineTest": {"run": 13, "pass": 9, "skipped": 4},
+    "PaddedVsUnpaddedExecutionTest": {"run": 5, "pass": 5},
+    "OCNNOutputLayerTest": {"run": 2, "pass": 2},
+    "OnnxMultiHeadAttentionTest": {"run": 13, "pass": 13},
+    "OnnxMhaImportKvCacheTest": {"run": 9, "pass": 9},
+    "OpTraitTableEnumerationTest": {"run": 231, "pass": 231},
+    "OpCategoryFrozenShapeTest": {"run": 7, "pass": 7},
+    "OpTraitTableComprehensiveTest": {"run": 299, "pass": 299}
+  },
+  "failures": [],
+  "notes": "All 8 classes found. 575 tests pass, 4 skipped. Clean. OpTraitTable tests alone contribute 530 tests.",
+  "tags": ["cpu", "onnx", "mha", "kv-cache", "op-traits", "pipeline", "padded", "ocnn"],
+  "timestamp": "2026-06-06T03:35:00Z"
+}

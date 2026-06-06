@@ -138,7 +138,8 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
         //Edge case: "vertex" is just an identity activation, for example
         //TODO there may be a cleaner way to do this...
-        if(!actScopedOut && !result.data().getParentWorkspace().getId().equals(wsNameOutput)){
+        MemoryWorkspace parentWs = result.data().getParentWorkspace();
+        if(!actScopedOut && (parentWs == null || !parentWs.getId().equals(wsNameOutput))){
             result = workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
         } else if(actScopedOut && result.isAttached()) {
             result = result.detach();
@@ -229,7 +230,8 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
             //Edge case: "vertex" is just an identity activation, for example
             //TODO there may be a cleaner way to do this...
-            if(!actGradScopedOut && !dLdIns[j].data().getParentWorkspace().getId().equals(wsNameActGrad)){
+            MemoryWorkspace gradWs = dLdIns[j].data().getParentWorkspace();
+            if(!actGradScopedOut && (gradWs == null || !gradWs.getId().equals(wsNameActGrad))){
                 dLdIns[j] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIns[j]);
             } else if(actGradScopedOut && dLdIns[j].isAttached()){
                 dLdIns[j] = dLdIns[j].detach();

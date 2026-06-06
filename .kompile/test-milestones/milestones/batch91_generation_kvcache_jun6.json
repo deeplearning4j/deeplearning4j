@@ -1,0 +1,35 @@
+{
+  "id": "batch91_generation_kvcache_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-isa-fix-rebuild",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 129,
+  "passed": 121,
+  "failed": 5,
+  "errors": 4,
+  "skipped": 0,
+  "jvmCrash": true,
+  "classes": {
+    "TestTtsFineTuning": {"run": 13, "pass": 13},
+    "TestSimPOTrainer": {"run": 6, "pass": 3, "fail": 1, "errors": 2, "notes": "DSP multiply shape mismatch [8,1,10] vs [2,4,10] — graph construction bug in simpo_loss"},
+    "TestRLAlignmentTraining": {"run": 14, "pass": 13, "errors": 1, "notes": "testKTOLoss: DSP multiply shape mismatch — same root cause as SimPO"},
+    "TestCurationPeftDistillationE2E": {"run": 4, "pass": 4},
+    "TestPaddingFreeBatching": {"run": 9, "pass": 9},
+    "TestMLAKVCache": {"run": 25, "pass": 25},
+    "TestTokenEviction": {"run": 36, "pass": 36},
+    "TestQuantizedKvCacheManager": {"run": 9, "pass": 7, "fail": 2, "notes": "INT8 round-trip 10% error (threshold 2%), INT4 round-trip 100% error (threshold 25%) — quantization accuracy issue"},
+    "TestSamplingPenaltiesRank3": {"run": 13, "pass": 13},
+    "TestUnifiedKvCacheManager": {"run": 0, "pass": 0, "notes": "JVM SIGSEGV crash — native heap corruption"}
+  },
+  "failures": [
+    "TestSimPOTrainer: 3 failures — DSP multiply shape mismatch in simpo_loss graph",
+    "TestRLAlignmentTraining.testKTOLoss: DSP multiply shape mismatch in kto_loss graph",
+    "TestQuantizedKvCacheManager: INT8/INT4 round-trip accuracy below threshold",
+    "TestUnifiedKvCacheManager: JVM SIGSEGV crash"
+  ],
+  "notes": "10 classes. 7 fully pass (100/100). SimPO/KTO have multiply broadcast shape bugs. Quantized KV cache has accuracy issues. Unified KV cache crashes JVM.",
+  "tags": ["cpu", "generation", "kvcache", "training", "jvm-crash"],
+  "timestamp": "2026-06-06T07:05:00Z"
+}

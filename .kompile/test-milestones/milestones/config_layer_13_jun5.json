@@ -1,0 +1,17 @@
+{
+  "id": "config_layer_13_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "FrozenLayerWithBackpropTest,FrozenLayerTest,LayerConfigValidationTest,LayerConfigTest,LayerBuilderTest,ElementWiseVertexTest,ShiftVertexTest,MultiLayerNeuralNetConfigurationTest,ComputationGraphConfigurationTest,MultiNeuralNetConfLayerBuilderTest,TestFrozenLayers,ModelSerializerTest,JsonYamlTest",
+  "totalTests": 89,
+  "passed": 75,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 14,
+  "notes": "Layer/Config/Network batch: 13 classes, ALL PASS. FrozenLayerWithBackprop (6, 86s), FrozenLayerTest (6), LayerConfigValidation (6+1skip), LayerConfig (8), LayerBuilder (11), ElementWiseVertexTest (7, 140s gradient checks), ShiftVertexTest (5), MultiLayerNeuralNetConfig (12), ComputationGraphConfig (9), MultiNeuralNetConfLayerBuilder (1), TestFrozenLayers (2), ModelSerializer (13 skipped - needs model files), JsonYamlTest (1). BUILD SUCCESS.",
+  "tags": "cpu,config,layers,frozen,gradient-check,all-pass",
+  "timestamp": "2026-06-05T09:22:00Z"
+}

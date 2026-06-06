@@ -83,6 +83,23 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   std::vector<sd::LongType> gradO2dShape = {oC, bS * oH * oW};
   gradO2d->reshapei('c', gradO2dShape);
 
+  // For SAME/CAUSAL padding modes, recalculate the actual padding used in the forward pass.
+  // The config stores pH/pW=0 for SAME mode; we must recompute from the input/output sizes
+  // so that both im2col (gradW) and col2im (gradI) use the same padding as the forward conv2d.
+  if (paddingMode == 1) {
+    // SAME: centered padding, matching convolutions_conv2d.cpp forward pass logic
+    const LongType eKH = (kH - 1) * dH + 1;
+    const LongType eKW = (kW - 1) * dW + 1;
+    LongType totalPadH = std::max((LongType)0, (oH - 1) * sH + eKH - iH);
+    LongType totalPadW = std::max((LongType)0, (oW - 1) * sW + eKW - iW);
+    pH = totalPadH / 2;
+    pW = totalPadW / 2;
+  } else if (paddingMode == 2) {
+    // CAUSAL: left-only padding
+    pH = (kH - 1) * dH;
+    pW = (kW - 1) * dW;
+  }
+
   // Perform im2col or retrieve from intermediate results
   // Forward pass stores: index 0 = col (owner), index 1 = colP (view with shape {bS, iC, kH, kW, oH, oW})
   NDArray* columns;

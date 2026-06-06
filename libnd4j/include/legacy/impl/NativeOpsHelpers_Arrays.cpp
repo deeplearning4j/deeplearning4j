@@ -112,17 +112,20 @@ const sd::LongType* getOpaqueNDArrayShapeInfo(OpaqueNDArray array) {
 
 void* getOpaqueNDArrayBuffer(OpaqueNDArray array) {
   // Return nullptr for empty arrays or arrays with null buffers
-  // This is expected behavior for empty arrays with shape like [0,1]
-  if(array == nullptr || array->dataBuffer() == nullptr) {
+  // Return nullptr for empty arrays or arrays with null/closed buffers.
+  if(array == nullptr || array->dataBuffer() == nullptr
+     || array->dataBuffer()->isClosed()) {
     return nullptr;
   }
   return array->buffer();
 }
 
 void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
-  // Return nullptr for empty arrays or arrays with null buffers
-  // This is expected behavior for empty arrays with shape like [0,1]
-  if(array == nullptr || array->dataBuffer() == nullptr) {
+  // Return nullptr for empty arrays or arrays with null/closed buffers.
+  // A closed DataBuffer still has a non-null pointer but its GPU memory
+  // has been freed — accessing it would cause cudaMemcpyAsync invalid arg.
+  if(array == nullptr || array->dataBuffer() == nullptr
+     || array->dataBuffer()->isClosed()) {
     return nullptr;
   }
   return array->specialBuffer();
@@ -133,8 +136,12 @@ sd::LongType getShapeInfoLength(OpaqueNDArray array) {
 }
 
 sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) {
-  // Return 0 for empty arrays or arrays with null buffers
-  if(array == nullptr || array->dataBuffer() == nullptr) {
+  // Return 0 for empty arrays or arrays with null/closed buffers.
+  // Views sharing a placeholder's DataBuffer become invalid after the
+  // placeholder is closed. Without this check, getSlotOutput returns
+  // a non-zero length and then copyBuffer crashes on freed GPU memory.
+  if(array == nullptr || array->dataBuffer() == nullptr
+     || array->dataBuffer()->isClosed()) {
     return 0;
   }
   return array->lengthOf();

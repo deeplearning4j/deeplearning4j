@@ -1,0 +1,32 @@
+{
+  "id": "batch57_keras_config_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 71,
+  "passed": 69,
+  "failed": 0,
+  "errors": 2,
+  "skipped": 0,
+  "classes": {
+    "KerasAtrousConvolution1DTest": {"run": 1, "pass": 1},
+    "KerasConvolution2DTest": {"run": 1, "pass": 1},
+    "KerasConvolution1DTest": {"run": 1, "pass": 1},
+    "KerasAtrousConvolution2DTest": {"run": 1, "pass": 1},
+    "KerasBatchNormalizationTest": {"run": 4, "pass": 3, "errors": 1, "notes": "testWithCnn1d2: conv1d op exec failure (channels-first stride issue)"},
+    "KerasBatchNormIsolationTest": {"run": 4, "pass": 4},
+    "KerasAlphaDropoutTest": {"run": 1, "pass": 1},
+    "KerasBidirectionalTest": {"run": 1, "pass": 1},
+    "Keras1ModelConfigurationTest": {"run": 20, "pass": 20},
+    "Keras2ModelConfigurationTest": {"run": 37, "pass": 36, "errors": 1, "notes": "test5982: BidirectionalLayer concat axis 2 on rank-2 tensors"}
+  },
+  "failures": [
+    "KerasBatchNormalizationTest#testWithCnn1d2: conv1d op execution failure (channels-first stride)",
+    "Keras2ModelConfigurationTest#test5982: CONCAT axis 2 out of range [0,1] in BidirectionalLayer"
+  ],
+  "notes": "All 10 classes found. 69 tests pass, 2 errors (pre-existing Keras import issues: conv1d channels-first, bidirectional concat axis).",
+  "tags": ["cpu", "keras", "config", "batchnorm", "convolution", "bidirectional", "model-config"],
+  "timestamp": "2026-06-06T03:00:00Z"
+}

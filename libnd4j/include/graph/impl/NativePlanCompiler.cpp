@@ -236,8 +236,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
                 stepIdx, slot.ident.opName.c_str(), (int)slot.cf.controlFlowType);
     }
 
-    slot.flags.inPlaceFused = false;
-    slot.flags.inPlaceFusedInputIdx = -1;
+    slot.disableInPlaceFusion();
     slot.fusedChain.isFusedChainHead = false;
     slot.fusedChain.fusedChainLength = 0;
     slot.fusedChain.isFusedChainTail = false;
@@ -521,6 +520,17 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       }
     }
 
+    // Build requested output slot set so we never mark in-place when the source
+    // slot is a user-requested output. Without this, chains like mmul→add→sigmoid
+    // all share the same buffer and the final op's values overwrite intermediates.
+    std::unordered_set<int> requestedOutputSlotSet;
+    for (size_t ri = 0; ri < requestedOutputs.size(); ri++) {
+      auto it = varToOutputSlot.find(requestedOutputs[ri]);
+      if (it != varToOutputSlot.end()) {
+        requestedOutputSlotSet.insert(it->second);
+      }
+    }
+
     int aliasCount = 0;
     for (int s = 0; s < numSteps; s++) {
       auto& sl = plan->slots_[s];
@@ -535,7 +545,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       // Input slot must have only this op as consumer (safe to overwrite)
       if (slotConsumerCount[srcSlot] != 1) continue;
       // Skip if this slot is already marked (e.g., from fusion pass)
-      if (sl.flags.inPlaceFused) continue;
+      if (sl.isInPlaceFused()) continue;
+      // Source slot is a user-requested output — must preserve its value
+      if (requestedOutputSlotSet.count(srcSlot)) continue;
       // Skip ops that change dtype. The runtime in-place path validates dtype
       // match (line ~4130), but skipping at compile time avoids wasted attempts.
       // CAST, COMPARISON, and LOGICAL ops all produce a different dtype than input.
@@ -554,13 +566,31 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         }
       }
 
-      sl.flags.inPlaceFused = true;
-      sl.flags.inPlaceFusedInputIdx = 0;
+      sl.enableInPlaceFusion(0);
       aliasCount++;
     }
 
     if (aliasCount > 0) {
       DSP_DIAG(COMPILE, "Buffer aliasing: marked %d unary elementwise ops for in-place execution", aliasCount);
+    }
+
+    // Post-pass: disable ALL in-place fused ops (including those set by FusionPass)
+    // when their source slot is a requested output. The FusionPass doesn't have
+    // access to requestedOutputs, so we must clean up here at compile time.
+    // Without this, chains like mmul→add→sigmoid share one buffer and the final
+    // op overwrites intermediate values that outputAll() needs to return.
+    int disabledForOutput = 0;
+    for (int s = 0; s < numSteps; s++) {
+      auto& sl = plan->slots_[s];
+      int srcSlot = sl.inPlaceSourceSlot();
+      if (srcSlot < 0) continue;
+      if (requestedOutputSlotSet.count(srcSlot)) {
+        sl.disableInPlaceFusion();
+        disabledForOutput++;
+      }
+    }
+    if (disabledForOutput > 0) {
+      DSP_DIAG(COMPILE, "Buffer aliasing: disabled %d in-place ops whose source is a requested output", disabledForOutput);
     }
   }
 
@@ -592,10 +622,22 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0) {
         int extIdx = -(srcIdx + 1);
-        if (extIdx < plan->numExternalInputs_ &&
-            slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
-          plan->externalInputIsVariable_[extIdx] = true;
-          plan->externalInputIsPlaceholder_[extIdx] = true;
+        if (extIdx < plan->numExternalInputs_) {
+          if (slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
+            plan->externalInputIsVariable_[extIdx] = true;
+            plan->externalInputIsPlaceholder_[extIdx] = true;
+          }
+          // NOTE: SOURCE_VARIABLE inputs (trainable weights) are NOT marked
+          // variable here. During inference (generation), weights are constants —
+          // they never change between decode steps. Marking all 297 weights as
+          // variable would cause computeSlotVariableDependency() to mark ALL
+          // decoder slots as variable-dependent, preventing detectFrozenConstants()
+          // from freezing shape/range ops, and causing unnecessary D2D staging
+          // copies in pre-replay sync that corrupt CUDA graph baked-in addresses.
+          //
+          // For training (calculateGradients), the Java side calls
+          // markPlanExternalInputVariable() for weights that the optimizer updates.
+          // This is the correct entry point — it handles invalidation properly.
         }
       }
     }

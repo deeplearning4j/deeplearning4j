@@ -31,6 +31,18 @@ namespace helpers {
 template <typename T>
 static void trace_(NDArray& input, NDArray& output) {
   const int inRank = input.rankOf();
+
+  // For rank-2 input, there is exactly one matrix: the input itself.
+  // allTensorsAlongDimension({0,1}) on a 2D array incorrectly returns N
+  // scalar TADs (one per element) because evalDimsToExclude returns an empty
+  // set when all dimensions are specified.  Handle rank-2 directly.
+  if (inRank == 2) {
+    output.p(0, input.getTrace());
+    return;
+  }
+
+  // For rank > 2, allTensorsAlongDimension({inRank-2, inRank-1}) returns one
+  // [M x N] sub-array per batch index — each sub-array is a 2D matrix slice.
   auto setOfSubArrs = input.allTensorsAlongDimension({inRank - 2, inRank - 1});
 
   auto func = PRAGMA_THREADS_FOR {

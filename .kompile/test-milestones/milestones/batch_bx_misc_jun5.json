@@ -1,0 +1,18 @@
+{
+  "id": "batch_bx_misc_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "DataSetTest,CustomOpsTests,DerivativeTests,IndexingTests,IndexingTestsC,InputValidationTests,LapackTest,Level1Test,Level2Test,Level3Test",
+  "totalTests": 201,
+  "passed": 193,
+  "failed": 1,
+  "errors": 2,
+  "skipped": 5,
+  "failedTests": "IndexingTests.test2dGetPoint (rank expected 1 got 2 for getColumn), CustomOpsTests.isMax4d_2dims (Op [ismax] execution failed), CustomOpsTests.testIsMaxView (Op [ismax] execution failed), DataSetTest JVM crash (exit 134 SIGABRT)",
+  "notes": "10 classes tested. Level1/2/3Test(16), LapackTest(4), IndexingTestsC(30), DerivativeTests(9) all pass clean. IndexingTests has rank reduction issue with getColumn point indexing. CustomOpsTests has ismax failures on CPU. DataSetTest crashed JVM (native SIGABRT). InputValidationTests had 5 skips.",
+  "tags": "cpu,misc,blas,indexing,customops",
+  "timestamp": "2026-06-05T12:15:00Z"
+}

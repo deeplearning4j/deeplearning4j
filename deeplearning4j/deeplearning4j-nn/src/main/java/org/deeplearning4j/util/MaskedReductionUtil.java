@@ -28,7 +28,6 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -124,7 +123,9 @@ public class MaskedReductionUtil {
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(input, negInfMask, withInf, 0, 2));
                 //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
 
-                INDArray isMax = Nd4j.exec(new IsMax(withInf, withInf.ulike(), 2))[0];
+                INDArray isMaxBool = Nd4j.createUninitialized(DataType.BOOL, withInf.shape(), withInf.ordering());
+                Nd4j.exec(new IsMax(withInf, isMaxBool, 2));
+                INDArray isMax = isMaxBool.castTo(withInf.dataType());
 
                 return Nd4j.getExecutioner().exec(new BroadcastMulOp(isMax, epsilon2d, isMax, 0, 1));
             case AVG:
@@ -221,7 +222,17 @@ public class MaskedReductionUtil {
                 if (poolingType == PoolingType.SUM) {
                     return summed;
                 }
-                INDArray maskCounts = mask.sum(1,2,3);
+                // Compute N = number of valid spatial positions per batch item.
+                // mask may have singleton dims (e.g. [mb,1,H,1] or [mb,1,1,W]).
+                // mask.sum(1,2,3) would only count the non-singleton positions.
+                // Instead, broadcast mask to full spatial shape first.
+                long mb0 = toReduce.size(0);
+                long inH = toReduce.size(2), inW = toReduce.size(3);
+                // Broadcast mask to full spatial extent only (not channels) to get correct N.
+                // mask is [mb,1,H,1] or [mb,1,1,W] or [mb,1,H,W] — broadcast to [mb,1,inH,inW]
+                // then sum over dims 1,2,3 to get valid spatial position count per minibatch.
+                INDArray maskExpanded = mask.broadcast(mb0, 1, inH, inW);
+                INDArray maskCounts = maskExpanded.sum(1, 2, 3);
                 // Guard against zero-count rows to avoid NaN from division by zero
                 BooleanIndexing.replaceWhere(maskCounts, 1.0, Conditions.equals(0.0));
                 summed.diviColumnVector(maskCounts);
@@ -245,29 +256,20 @@ public class MaskedReductionUtil {
     public static INDArray maskedPoolingEpsilonCnn(PoolingType poolingType, INDArray input, INDArray mask,
                                                    INDArray epsilon2d, int pnorm, DataType dataType) {
 
-        // [minibatch, channels, h=1, w=X] or [minibatch, channels, h=X, w=1] data
-        // with a mask array of shape [minibatch, X]
-
-        //If masking along height: broadcast dimensions are [0,2]
-        //If masking along width: broadcast dimensions are [0,3]
+        // input: [minibatch, channels, H, W]
+        // mask:  [minibatch, 1, H, 1] or [minibatch, 1, 1, W] (4D, broadcastable over channels)
+        // epsilon2d: [minibatch, channels] (2D gradient from downstream)
 
         mask = mask.castTo(dataType);   //No-op if correct type
 
-        //General case: must be equal or 1 on each dimension
-        long[] dimensions = new long[4];
-        int count = 0;
-        for(int i=0; i<4; i++ ){
-            if(input.size(i) == mask.size(i)){
-                dimensions[count++] = i;
-            }
-        }
-        if(count < 4){
-            dimensions = Arrays.copyOfRange(dimensions, 0, count);
-        }
+        // epsilon2d is [mb, ch]; expand to [mb, ch, 1, 1] so it broadcasts over H and W.
+        long mb = input.size(0);
+        long ch = input.size(1);
+        INDArray epsilonExpanded = epsilon2d.reshape(mb, ch, 1, 1);
 
         switch (poolingType) {
             case MAX:
-                //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
+                // Build withInf: set masked positions to -inf so they can't be the max
                 INDArray negInfMask;
                 if(mask.dataType() == DataType.BOOL){
                     negInfMask = Transforms.not(mask).castTo(dataType);
@@ -276,39 +278,48 @@ public class MaskedReductionUtil {
                 }
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
-                INDArray withInf = Nd4j.createUninitialized(dataType, input.shape());
-                Nd4j.getExecutioner().exec(new BroadcastAddOp(input, negInfMask, withInf, dimensions));
-                //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
+                // NumPy-style broadcast: input[mb,ch,H,W] + negInfMask[mb,1,H,W] -> [mb,ch,H,W]
+                INDArray withInf = input.add(negInfMask);
+                //At this point: all the masked out positions have value -inf, hence can't be the max
 
-                INDArray isMax = Nd4j.exec(new IsMax(withInf, withInf.ulike(), 2, 3))[0];
+                INDArray isMaxBool2 = Nd4j.createUninitialized(DataType.BOOL, withInf.shape(), withInf.ordering());
+                Nd4j.exec(new IsMax(withInf, isMaxBool2, 2, 3));
+                INDArray isMax2 = isMaxBool2.castTo(withInf.dataType());
 
-                return Nd4j.getExecutioner().exec(new BroadcastMulOp(isMax, epsilon2d, isMax, 0, 1));
+                // Multiply isMax by epsilon: broadcast epsilon[mb,ch,1,1] over H,W
+                return isMax2.muli(epsilonExpanded);
+
             case AVG:
             case SUM:
-                //if out = sum(in,dims) then dL/dIn = dL/dOut -> duplicate to each step and mask
+                //if out = sum(in,dims) then dL/dIn = dL/dOut -> duplicate to each spatial position and mask
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut
-                //With masking: N differs for different time series
+                //With masking: N differs for different examples
 
-                INDArray out = Nd4j.createUninitialized(dataType, input.shape(), 'f');
-
-                //Broadcast copy op, then divide and mask to 0 as appropriate
-                Nd4j.getExecutioner().exec(new BroadcastCopyOp(out, epsilon2d, out, 0, 1));
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(out, mask, out, dimensions));
+                // Broadcast epsilon[mb,ch,1,1] to all H,W positions, then zero out masked positions
+                INDArray out = epsilonExpanded.broadcast(input.shape()).dup();
+                // Apply mask via NumPy-style broadcast: out[mb,ch,H,W] * mask[mb,1,H,W]
+                out.muli(mask);
 
                 if (poolingType == PoolingType.SUM) {
                     return out;
                 }
 
-                //Note that with CNNs, current design is restricted to [minibatch, channels, 1, W] ot [minibatch, channels, H, 1]
-                INDArray nEachTimeSeries = mask.sum(1,2,3); //[minibatchSize,tsLength] -> [minibatchSize,1]
-                Nd4j.getExecutioner().exec(new BroadcastDivOp(out, nEachTimeSeries, out, 0));
+                // N per batch item: count of valid spatial positions, accounting for
+                // broadcast expansion of singleton dims in mask (e.g. [mb,1,H,1] or [mb,1,1,W]).
+                // mask.sum(1,2,3) only counts the non-broadcast positions; we must broadcast first.
+                long inH2 = input.size(2), inW2 = input.size(3);
+                // Broadcast mask to full spatial extent only (not channels) to get correct N.
+                INDArray maskExpanded2 = mask.broadcast(mb, 1, inH2, inW2);
+                INDArray nEachBatch = maskExpanded2.sum(1, 2, 3).reshape(mb, 1, 1, 1);
+                BooleanIndexing.replaceWhere(nEachBatch, 1.0, Conditions.equals(0.0));
+                out.divi(nEachBatch);
 
                 return out;
 
             case PNORM:
                 //Similar to average and sum pooling: there's no N term here, so we can just set the masked values to 0
-                INDArray masked2 = Nd4j.createUninitialized(dataType, input.shape());
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(input, mask, masked2, dimensions));
+                // Apply mask via NumPy-style broadcast
+                INDArray masked2 = input.mul(mask);
 
                 INDArray abs = Transforms.abs(masked2, true);
                 Transforms.pow(abs, pnorm, false);
@@ -322,10 +333,14 @@ public class MaskedReductionUtil {
                     numerator = input.mul(absp2);
                 }
 
-                INDArray denom = Transforms.pow(pNorm, pnorm - 1, false);
-                denom.rdivi(epsilon2d);
-                Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(numerator, denom, numerator, 0, 1));
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(numerator, mask, numerator, dimensions)); //Apply mask
+                // denom: pNorm^(p-1), shape [mb,ch]; expand to [mb,ch,1,1]
+                INDArray denom = Transforms.pow(pNorm, pnorm - 1, false).reshape(mb, ch, 1, 1);
+                // epsilonExpanded / denom -> [mb,ch,1,1]
+                INDArray scaledEpsilon = epsilonExpanded.div(denom);
+                // Multiply numerator[mb,ch,H,W] by scaledEpsilon[mb,ch,1,1]
+                numerator.muli(scaledEpsilon);
+                // Apply mask: zero out invalid positions
+                numerator.muli(mask);
 
                 return numerator;
             default:

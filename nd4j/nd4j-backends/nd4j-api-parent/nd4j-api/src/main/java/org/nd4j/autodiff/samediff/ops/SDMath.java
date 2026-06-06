@@ -302,7 +302,7 @@ public class SDMath extends SDOps {
   public SDVariable and(SDVariable x, SDVariable y) {
     SDValidation.validateBool("and", "x", x);
     SDValidation.validateBool("and", "y", y);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalAnd(sd,x, y).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd(sd,x, y).outputVariable();
   }
 
   /**
@@ -319,7 +319,7 @@ public class SDMath extends SDOps {
   public SDVariable and(String name, SDVariable x, SDVariable y) {
     SDValidation.validateBool("and", "x", x);
     SDValidation.validateBool("and", "y", y);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalAnd(sd,x, y).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3731,7 +3731,7 @@ public class SDMath extends SDOps {
   public SDVariable or(SDVariable x, SDVariable y) {
     SDValidation.validateBool("or", "x", x);
     SDValidation.validateBool("or", "y", y);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalOr(sd,x, y).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr(sd,x, y).outputVariable();
   }
 
   /**
@@ -3748,7 +3748,7 @@ public class SDMath extends SDOps {
   public SDVariable or(String name, SDVariable x, SDVariable y) {
     SDValidation.validateBool("or", "x", x);
     SDValidation.validateBool("or", "y", y);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalOr(sd,x, y).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -5543,7 +5543,7 @@ public class SDMath extends SDOps {
   public SDVariable xor(SDVariable x, SDVariable y) {
     SDValidation.validateBool("xor", "x", x);
     SDValidation.validateBool("xor", "y", y);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalXor(sd,x, y).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor(sd,x, y).outputVariable();
   }
 
   /**
@@ -5560,7 +5560,7 @@ public class SDMath extends SDOps {
   public SDVariable xor(String name, SDVariable x, SDVariable y) {
     SDValidation.validateBool("xor", "x", x);
     SDValidation.validateBool("xor", "y", y);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalXor(sd,x, y).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

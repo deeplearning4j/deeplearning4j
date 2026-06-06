@@ -1,0 +1,18 @@
+{
+  "id": "batchB_cpu_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "ImagePreProcessortTest,ImageTilerTest,InMemoryLookupTableTest,InferenceSessionLifecycleTest,JsonSerdeTests,JsonTest,MemoryMgrTest,MemoryTrackerTest,MhaKvConcatRegressionTest,MinMaxStrategyTest",
+  "totalTests": 41,
+  "passed": 39,
+  "failed": 1,
+  "skipped": 2,
+  "failedTests": [
+    "ImageTilerTest.testSplitRectangularImageUsesAspectPreservingPadding: expected <400> but was <512>"
+  ],
+  "notes": "9/10 classes fully pass. ImageTilerTest has 1 failure: testSplitRectangularImageUsesAspectPreservingPadding expects tile height 400 but gets 512 (aspect-preserving padding logic mismatch). InferenceSessionLifecycleTest required clearing corrupt Kotlin incremental cache (LZ4Exception) before passing. InMemoryLookupTableTest 1 skipped. MemoryMgrTest 1 skipped. JsonTest matched 2 classes (dl4jcore + frameworkimport/keras). All other classes clean.",
+  "tags": "cpu,misc",
+  "timestamp": "2026-06-05T14:55:00Z"
+}

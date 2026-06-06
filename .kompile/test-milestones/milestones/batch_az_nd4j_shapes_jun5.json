@@ -1,0 +1,25 @@
+{
+  "batch": "AZ",
+  "name": "ND4J shape, reshape, concat, broadcast, scalar, empty, TAD tests",
+  "date": "2026-06-05T03:24:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "ConcatTests": {"total": 9, "passed": 9, "failed": 0, "errors": 0},
+    "ReshapeTests": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "ReshapeViewCopyTests": {"total": 25, "passed": 25, "failed": 0, "errors": 0},
+    "ScalarTests": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "StaticShapeTests": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "ShapeTests": {"total": 13, "passed": 13, "failed": 0, "errors": 0},
+    "EmptyTests": {"total": 20, "passed": 20, "failed": 0, "errors": 0},
+    "LongShapeTests": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "TADTests": {"total": 4, "passed": 4, "failed": 0, "errors": 0},
+    "ShapeBufferTests": {"total": 3, "passed": 3, "failed": 0, "errors": 0},
+    "NDArrayMathTests": {"total": 9, "passed": 9, "failed": 0, "errors": 0},
+    "BasicBroadcastTests": {"total": 24, "passed": 23, "failed": 1, "errors": 0,
+      "note": "emptyBroadcastTest_3: empty array broadcast [1,0,1]/[1,0,2] produces [1,0,1] instead of [1,0,2] — pre-existing"}
+  },
+  "known_issues": [
+    "Empty array broadcasting: RealDiv on [1,0,1] / [1,0,2] returns shape [1,0,1] — 3rd dim not broadcast"
+  ],
+  "summary": "114 tests run, 113 passed, 1 failure (pre-existing empty broadcast), 0 errors."
+}

@@ -1,0 +1,20 @@
+{
+  "id": "re-enabled-session6b",
+  "branch": "ag_new_release_updates_2",
+  "passing": false,
+  "module": "re-enabled-disabled-tests-session6b",
+  "totalTests": 14,
+  "passed": 12,
+  "failed": 2,
+  "skipped": 0,
+  "notes": "Session 6b: DTypeTests 11/13 pass, 2 errors. YOLO agent changes reverted (constant 1.0 confidence + removed IOU gradients caused near-zero width/height). YOLO test re-running with original code. Fix agents dispatched for the 2 DTypeTests failures.",
+  "testDetails": [
+    {"class": "DTypeTests", "method": "testDtypesModelVsGlobalDtypeCnn1d", "status": "PASS", "fix": "Already passed in session 5a"},
+    {"class": "DTypeTests", "method": "testDtypesModelVsGlobalDtypeCnn", "status": "FAIL", "fix": "ConvolutionLayer workspace mismatch - input in WS_LAYER_WORKING_MEM instead of WS_ALL_LAYERS_ACT. Fix agent dispatched."},
+    {"class": "DTypeTests", "method": "testDtypesModelVsGlobalDtypeRnn", "status": "FAIL", "fix": "BidirectionalLayer params view length 0 after SGD update. Fix agent dispatched."},
+    {"class": "DTypeTests", "method": "other 10 tests", "status": "PASS", "fix": "No fix needed"},
+    {"class": "TestYolo2OutputLayer", "method": "testYoloOverfitting", "status": "RUNNING", "fix": "YOLO agent changes reverted to original IOU-based code. Re-running to establish baseline."}
+  ],
+  "tags": ["cpu", "nd4j-native", "re-enabled", "disabled-tests", "in-progress"],
+  "timestamp": "2026-06-04T10:25:00Z"
+}

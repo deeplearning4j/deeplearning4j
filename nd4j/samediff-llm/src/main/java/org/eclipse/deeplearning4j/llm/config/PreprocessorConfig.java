@@ -117,6 +117,13 @@ public class PreprocessorConfig {
     @JsonProperty("pad_size")
     private ImageSize padSize;
 
+    @JsonProperty("max_image_size")
+    @JsonDeserialize(using = ImageSizeDeserializer.class)
+    private ImageSize maxImageSize;
+
+    @JsonProperty("do_image_splitting")
+    private boolean doImageSplitting = false;
+
     @JsonProperty("padding_mode")
     private String paddingMode;
 
@@ -178,60 +185,76 @@ public class PreprocessorConfig {
                 new File(dir, PROCESSOR_CONFIG_FILE).exists();
     }
 
-    // ==================== Factory Methods ====================
+    // ==================== Loading from model directory ====================
 
-    public static PreprocessorConfig forClip() {
-        PreprocessorConfig config = new PreprocessorConfig();
-        config.setDoResize(true);
-        config.setSize(new ImageSize(224, 224));
-        config.setDoRescale(true);
-        config.setRescaleFactor(1.0 / 255.0);
-        config.setDoNormalize(true);
-        config.setImageMean(new double[]{0.48145466, 0.4578275, 0.40821073});
-        config.setImageStd(new double[]{0.26862954, 0.26130258, 0.27577711});
-        return config;
+    /**
+     * Load the preprocessor config from a model directory.
+     * Looks for preprocessor_config.json or processor_config.json.
+     *
+     * @param modelDir the model directory
+     * @return the loaded config
+     * @throws IOException if no config file found or parsing fails
+     */
+    public static PreprocessorConfig fromModelDirectory(File modelDir) throws IOException {
+        return loadIfExists(modelDir)
+                .orElseThrow(() -> new IOException(
+                        "No preprocessor_config.json or processor_config.json found in: " +
+                        modelDir.getAbsolutePath() +
+                        ". Every VLM model must ship a preprocessor config file."));
     }
 
+    // ==================== Factory Methods ====================
+
+    /**
+     * Creates a default PreprocessorConfig suitable for Vision Transformer (ViT) models.
+     * Uses standard ImageNet normalization (mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5]).
+     * The size must be set separately via {@link #setSize(ImageSize)}.
+     *
+     * @return a new PreprocessorConfig with ViT defaults
+     */
     public static PreprocessorConfig forViT() {
         PreprocessorConfig config = new PreprocessorConfig();
         config.setDoResize(true);
-        config.setSize(new ImageSize(224, 224));
-        config.setDoRescale(true);
-        config.setRescaleFactor(1.0 / 255.0);
         config.setDoNormalize(true);
+        config.setDoRescale(true);
+        // Standard ViT normalization
         config.setImageMean(new double[]{0.5, 0.5, 0.5});
         config.setImageStd(new double[]{0.5, 0.5, 0.5});
-        return config;
-    }
-
-    public static PreprocessorConfig forSmolDocling() {
-        PreprocessorConfig config = new PreprocessorConfig();
-        config.setDoResize(true);
-        config.setSize(new ImageSize(512, 512));
-        config.setDoRescale(true);
-        config.setRescaleFactor(1.0 / 255.0);
-        config.setDoNormalize(true);
-        config.setImageMean(new double[]{0.48145466, 0.4578275, 0.40821073});
-        config.setImageStd(new double[]{0.26862954, 0.26130258, 0.27577711});
         return config;
     }
 
     // ==================== Convenience Methods ====================
 
     public int getTargetHeight() {
+        // For VLMs with tiled image splitting, max_image_size is the tile size
+        if (maxImageSize != null) {
+            if (maxImageSize.getHeight() != null) return maxImageSize.getHeight();
+            if (maxImageSize.getLongestEdge() != null) return maxImageSize.getLongestEdge();
+            if (maxImageSize.getShortestEdge() != null) return maxImageSize.getShortestEdge();
+        }
         if (size != null) {
             if (size.getHeight() != null) return size.getHeight();
             if (size.getShortestEdge() != null) return size.getShortestEdge();
+            if (size.getLongestEdge() != null) return size.getLongestEdge();
         }
-        return 224;
+        throw new IllegalStateException(
+                "PreprocessorConfig has no size set. Load from preprocessor_config.json via fromFile() or fromModelDirectory().");
     }
 
     public int getTargetWidth() {
+        // For VLMs with tiled image splitting, max_image_size is the tile size
+        if (maxImageSize != null) {
+            if (maxImageSize.getWidth() != null) return maxImageSize.getWidth();
+            if (maxImageSize.getLongestEdge() != null) return maxImageSize.getLongestEdge();
+            if (maxImageSize.getShortestEdge() != null) return maxImageSize.getShortestEdge();
+        }
         if (size != null) {
             if (size.getWidth() != null) return size.getWidth();
             if (size.getShortestEdge() != null) return size.getShortestEdge();
+            if (size.getLongestEdge() != null) return size.getLongestEdge();
         }
-        return 224;
+        throw new IllegalStateException(
+                "PreprocessorConfig has no size set. Load from preprocessor_config.json via fromFile() or fromModelDirectory().");
     }
 
     public double[] getMean() {
@@ -243,11 +266,18 @@ public class PreprocessorConfig {
     }
 
     public int getEffectiveSize() {
+        if (maxImageSize != null) {
+            if (maxImageSize.getLongestEdge() != null) return maxImageSize.getLongestEdge();
+            if (maxImageSize.getShortestEdge() != null) return maxImageSize.getShortestEdge();
+            if (maxImageSize.getHeight() != null) return maxImageSize.getHeight();
+        }
         if (size != null) {
             if (size.getShortestEdge() != null) return size.getShortestEdge();
+            if (size.getLongestEdge() != null) return size.getLongestEdge();
             if (size.getHeight() != null) return size.getHeight();
         }
-        return 224;
+        throw new IllegalStateException(
+                "PreprocessorConfig has no size set. Load from preprocessor_config.json via fromFile() or fromModelDirectory().");
     }
 
     public int getEffectiveCropSize() {

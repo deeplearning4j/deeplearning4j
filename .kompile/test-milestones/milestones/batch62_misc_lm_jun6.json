@@ -1,0 +1,31 @@
+{
+  "id": "batch62_misc_lm_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 105,
+  "passed": 88,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 17,
+  "classes": {
+    "MemoryMgrTest": {"run": 10, "pass": 9, "skipped": 1},
+    "MultiNormalizerHybridTest": {"run": 6, "pass": 6},
+    "MultiDataSetTest": {"run": 12, "pass": 12},
+    "MixedDataTypesTests": {"run": 41, "pass": 40, "skipped": 1},
+    "LibNd4jCategoryTests": {"run": 10, "pass": 0, "skipped": 10, "notes": "All sub-suites skipped (native test categories)"},
+    "MaskZeroLayerTest": {"run": 4, "pass": 4},
+    "MultiDataSetSplitterTests": {"run": 10, "pass": 10},
+    "MultiBooleanTest": {"run": 5, "pass": 5},
+    "ModelValidatorTests": {"run": 2, "pass": 2},
+    "MiscTests": {"run": 0, "pass": 0, "notes": "keras.MiscTests SIGABRT exit 134 — systemic native heap corruption. zoo.MiscTests 1 test skipped."}
+  },
+  "failures": [
+    "MiscTests (keras): SIGABRT exit 134 — systemic native heap corruption during Keras model import"
+  ],
+  "notes": "10 class patterns matched. 88 tests pass, 17 skipped. Keras MiscTests JVM crash (systemic SIGABRT). No test code failures.",
+  "tags": ["cpu", "misc", "normalizer", "multidataset", "mixed-types", "memory", "mask-zero", "sigabrt"],
+  "timestamp": "2026-06-06T03:20:00Z"
+}

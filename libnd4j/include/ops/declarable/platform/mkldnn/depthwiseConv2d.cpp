@@ -114,12 +114,20 @@ static void depthwiseConv2dMKLDNN(NDArray* input, NDArray* weights, NDArray* bia
   dnnl::memory::dims wDims = {iC, mC, 1, kH, kW};
   dnnl::memory::dims zDims = {bS, oC, oH, oW};
 
+  // For NHWC arrays: the array has shape [bS, H, W, C] but OneDNN dims are in NCHW order [bS, C, H, W].
+  // setBlockStrides assigns array strides to dims positionally, so we need a permutation that maps
+  // NHWC array dim positions to NCHW OneDNN dim positions: permut[onednn_dim] = nhwc_array_dim
+  const std::vector<int> nhwcPermut = {0, 3, 1, 2};
+
   // memory descriptors for arrays
 
   // input
   dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
   dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xzFormatMkl);
-  onednnUtils::setBlockStrides(*input, x_user_md);
+  if (!isNCHW)
+    onednnUtils::setBlockStrides(*input, x_user_md, nhwcPermut);
+  else
+    onednnUtils::setBlockStrides(*input, x_user_md);
 
   // weights - create with custom strides for permutation (OneDNN 3.x API)
   dnnl::memory::desc w_mkl_md = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
@@ -134,7 +142,10 @@ static void depthwiseConv2dMKLDNN(NDArray* input, NDArray* weights, NDArray* bia
   // output
   dnnl::memory::desc z_mkl_md = dnnl::memory::desc(zDims, zType, dnnl::memory::format_tag::any);
   dnnl::memory::desc z_user_md = dnnl::memory::desc(zDims, zType, xzFormatMkl);
-  onednnUtils::setBlockStrides(*output, z_user_md);
+  if (!isNCHW)
+    onednnUtils::setBlockStrides(*output, z_user_md, nhwcPermut);
+  else
+    onednnUtils::setBlockStrides(*output, z_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -250,12 +261,20 @@ static void depthwiseConv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* g
   dnnl::memory::dims wDims = {iC, mC, 1, kH, kW};
   dnnl::memory::dims zDims = {bS, oC, oH, oW};
 
+  // For NHWC arrays: the array has shape [bS, H, W, C] but OneDNN dims are in NCHW order [bS, C, H, W].
+  // setBlockStrides assigns array strides to dims positionally, so we need a permutation that maps
+  // NHWC array dim positions to NCHW OneDNN dim positions: permut[onednn_dim] = nhwc_array_dim
+  const std::vector<int> nhwcPermut = {0, 3, 1, 2};
+
   // memory descriptors for arrays
 
   // input
   dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
   dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xzFormatMkl);
-  onednnUtils::setBlockStrides(*input, x_user_md);
+  if (!isNCHW)
+    onednnUtils::setBlockStrides(*input, x_user_md, nhwcPermut);
+  else
+    onednnUtils::setBlockStrides(*input, x_user_md);
 
   // weights - create with custom strides for permutation (OneDNN 3.x API)
   dnnl::memory::desc w_mkl_md = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
@@ -266,12 +285,18 @@ static void depthwiseConv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* g
   // gradO
   dnnl::memory::desc gradO_mkl_md = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
   dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xzFormatMkl);
-  onednnUtils::setBlockStrides(*gradO, gradO_user_md);
+  if (!isNCHW)
+    onednnUtils::setBlockStrides(*gradO, gradO_user_md, nhwcPermut);
+  else
+    onednnUtils::setBlockStrides(*gradO, gradO_user_md);
 
   // gradI
   dnnl::memory::desc gradI_mkl_md = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
   dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xzFormatMkl);
-  onednnUtils::setBlockStrides(*gradI, gradI_user_md);
+  if (!isNCHW)
+    onednnUtils::setBlockStrides(*gradI, gradI_user_md, nhwcPermut);
+  else
+    onednnUtils::setBlockStrides(*gradI, gradI_user_md);
 
   // gradW - create with custom strides for permutation (OneDNN 3.x API)
   dnnl::memory::desc gradW_mkl_md = dnnl::memory::desc(wDims, gradWType, dnnl::memory::format_tag::any);
@@ -427,6 +452,12 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
                            const DataType wType = weights->dataType();
                            const DataType zType = output->dataType();
                            const DataType bType = bias != nullptr ? bias->dataType() : zType;
+                           // BF16 requires AVX512_CORE_BF16 ISA at runtime
+                           if (xType == DataType::BFLOAT16 || wType == DataType::BFLOAT16 ||
+                               bType == DataType::BFLOAT16 || zType == DataType::BFLOAT16) {
+                             dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+                             if (isa < dnnl_cpu_isa_avx512_core_bf16) return false;
+                           }
                            return ((xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
                                     bType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
                                    (xType == DataType::BFLOAT16 && wType == DataType::BFLOAT16 &&
@@ -538,6 +569,13 @@ PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
                            const DataType gradIType = gradI->dataType();
                            const DataType gradWType = gradW->dataType();
                            const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
+                           // BF16 requires AVX512_CORE_BF16 ISA at runtime
+                           if (xType == DataType::BFLOAT16 || wType == DataType::BFLOAT16 ||
+                               gradOType == DataType::BFLOAT16 || gradIType == DataType::BFLOAT16 ||
+                               gradWType == DataType::BFLOAT16 || gradBType == DataType::BFLOAT16) {
+                             dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+                             if (isa < dnnl_cpu_isa_avx512_core_bf16) return false;
+                           }
                            return ((xType == DataType::FLOAT32 || xType == DataType::BFLOAT16) &&
                                    (wType == DataType::FLOAT32 || wType == DataType::BFLOAT16) &&
                                    (gradOType == DataType::FLOAT32 || gradOType == DataType::BFLOAT16) &&

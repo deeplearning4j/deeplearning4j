@@ -5321,8 +5321,12 @@ T NDArray::e( sd::LongType i) {
   return static_cast<T>(0);
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT, NDArray::e(sd::LongType), SD_COMMON_TYPES_ALL);
-BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT, NDArray::e(sd::LongType), SD_STRING_TYPES);
 // Explicit instantiations for string types used by StringUtils::setValueForDifferentDataType
+// NOTE: std::string (UTF8) is handled by the explicit specialization at lines ~214-261 which
+// correctly reads string data from the string buffer. DO NOT add a BUILD_SINGLE_UNCHAINED_TEMPLATE
+// for SD_STRING_TYPES here — it would instantiate the generic template body which uses
+// BUILD_SINGLE_PARTIAL_SELECTOR with SD_COMMON_TYPES_ALL (not including UTF8), causing
+// "Unexpected error with data type UTF8 (ID: 50)".
 template SD_LIB_EXPORT std::u16string NDArray::e<std::u16string>(sd::LongType);
 template SD_LIB_EXPORT std::u32string NDArray::e<std::u32string>(sd::LongType);
 
@@ -5700,12 +5704,25 @@ void NDArray::applyScalarArr(sd::scalar::Ops op, NDArray *scalar, NDArray *targe
 
 
 
-  NDArray::prepareSpecialUse({target}, {this, scalar});
+  // When the scalar's type differs from this array's type, the C++ scalar kernel
+  // (NativeOpExecutioner_scalar_floats.cpp) uses BUILD_SINGLE_SELECTOR_THRICE on xType
+  // and reinterprets the scalar buffer as X type. If scalar is INT (4 bytes) but X is
+  // DOUBLE (8 bytes), the reinterpret reads garbage. Cast scalar to match this->dataType().
+  NDArray *castedScalar = nullptr;
+  NDArray *actualScalar = scalar;
+  if (dataType() != scalar->dataType()) {
+    castedScalar = scalar->cast(dataType());
+    actualScalar = castedScalar;
+  }
+
+  NDArray::prepareSpecialUse({target}, {this, actualScalar});
   NativeOpExecutioner::execScalar(
       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(),
-      target->specialBuffer(), target->specialShapeInfo(), scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(),
-      scalar->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
-  NDArray::registerSpecialUse({target}, {this, scalar});
+      target->specialBuffer(), target->specialShapeInfo(), actualScalar->buffer(), actualScalar->shapeInfo(),
+      actualScalar->specialBuffer(), actualScalar->specialShapeInfo(),
+      extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
+  NDArray::registerSpecialUse({target}, {this, actualScalar});
+  if (castedScalar != nullptr) delete castedScalar;
 }
 
 //////////////////////////////////////////////////////////////////////////

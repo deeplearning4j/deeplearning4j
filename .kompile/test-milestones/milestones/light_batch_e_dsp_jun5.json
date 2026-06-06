@@ -1,0 +1,18 @@
+{
+  "id": "light_batch_e_dsp_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "NgramSpeculatorTest,OpTraitTableComprehensiveTest,OpTraitTableEnumerationTest,PaddedVsUnpaddedExecutionTest,PipelineCoreTest,PlanIntrospectionTest,RadixPrefixCacheTest,TestAutoTuner,TestBroadcastElimination,TestHorizontalFusion,TestIdentityAndShapeElimination,TestMemoryAwareScheduling,TestPeepholeAndMatMulOptimizations,TestPeepholeOptimizations,TestRedundancyElimination,TestRematerialization,TestReorderingOptimizations,TestSelectConcatArithmeticOptimizations,TestSqueezeExpandElimination,TestStrengthReduction",
+  "totalTests": 436,
+  "passed": 434,
+  "failed": 2,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "OpTraitTableComprehensiveTest.testDeclaredTraitSubset[126] (rms_norm_linear missing trait bit 0x10), OpTraitTableEnumerationTest.perOpTraitSubsetTests (same)",
+  "notes": "Light batch E: 20 DSP/optimizer classes. 2 failures both for rms_norm_linear missing trait bit 0x10 in OpTraitTable.cpp.",
+  "tags": "cpu,light,dsp,optimizer,op-trait",
+  "timestamp": "2026-06-05T11:05:00Z"
+}

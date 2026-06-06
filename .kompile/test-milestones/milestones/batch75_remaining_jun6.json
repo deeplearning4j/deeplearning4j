@@ -1,0 +1,28 @@
+{
+  "id": "batch75_remaining_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 47,
+  "passed": 47,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "jvmCrash": true,
+  "classes": {
+    "AbliterationWorkflowTest": {"run": 15, "pass": 15},
+    "JDBCRecordReaderTest": {"run": 14, "pass": 14},
+    "MultiBackendWorkspaceIntegrationTest": {"run": 0, "pass": 0, "notes": "JVM crash SIGABRT (exit 134) during test execution - native heap corruption"},
+    "NativeMultiBackendWorkspaceTest": {"run": 11, "pass": 11},
+    "TensorFlowLiteRunnerTests": {"run": 1, "pass": 1},
+    "VlmPageReuseMemoryLeakTest": {"run": 6, "pass": 6}
+  },
+  "failures": [
+    "MultiBackendWorkspaceIntegrationTest: JVM SIGABRT (exit 134) - known systemic native heap corruption issue"
+  ],
+  "notes": "6 classes found. 47 tests pass from 5 classes. MultiBackendWorkspaceIntegrationTest crashes JVM with SIGABRT (native heap corruption). Known systemic issue.",
+  "tags": ["cpu", "abliteration", "jdbc", "workspace", "multi-backend", "tflite", "vlm-memory"],
+  "timestamp": "2026-06-06T04:45:00Z"
+}

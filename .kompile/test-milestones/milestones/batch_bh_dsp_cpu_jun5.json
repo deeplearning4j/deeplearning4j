@@ -1,0 +1,23 @@
+{
+  "batch": "BH",
+  "name": "DSP CPU operations, buffer coloring, training, shape prepass, compilation seal, isolation",
+  "date": "2026-06-05T04:38:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "DspBufferColoringTest": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "DspTrainingE2ETest": {"total": 15, "passed": 15, "failed": 0, "errors": 0},
+    "TestDspShapePrePass": {"total": 13, "passed": 13, "failed": 0, "errors": 0},
+    "DspCpuOperationsTest": {"total": 36, "passed": 36, "failed": 0, "errors": 0},
+    "DspDeepIsolationTest": {"total": 57, "passed": 56, "failed": 0, "errors": 1,
+      "note": "test13_MatmulMixedPrecisionMultiStep[4]: usualGemm type size mismatch for B"},
+    "DspPipelineIsolationTest": {"total": 74, "passed": 73, "failed": 0, "errors": 1,
+      "note": "testN_MatmulTypeCombos[4]: usualGemm type size mismatch for B"},
+    "DspCompilationSealTest": {"total": 5, "passed": 0, "failed": 5, "errors": 0,
+      "note": "All 5 tests expect plan to be sealed after execution — seal not set on CPU"}
+  },
+  "known_issues": [
+    "Mixed-precision matmul (test case [4]) causes usualGemm type size mismatch — DSP doesn't auto-cast properly",
+    "DspCompilationSealTest: compilation seal not set after DSP execution on CPU backend"
+  ],
+  "summary": "205 tests run, 198 passed, 5 failures, 2 errors, 0 skipped."
+}

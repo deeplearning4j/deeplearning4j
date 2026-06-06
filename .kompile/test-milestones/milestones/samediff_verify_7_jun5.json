@@ -1,0 +1,16 @@
+{
+  "id": "samediff_verify_7_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "SameDiffGradientTest+SameDiffGraphBuildTest",
+  "totalTests": 7,
+  "passed": 7,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Verification run: 5 SameDiffGradientTest (testExternalErrorsSimple, testShapeUpdating, testUpdatingGradient, testUpdatingGradientSimple, testSameDiffNoGradForConstantAndPlaceholder) + 2 SameDiffGraphBuildTest (testDoubleUseOfArray, testDuplicateNamePlaceholder). ALL PASS. Confirms agent fixes: DSP ExternalErrorsFunction exclusion, dup shared arrays, placeHolder duplicate check.",
+  "tags": "cpu,samediff,gradient,graph-build,verification,all-pass",
+  "timestamp": "2026-06-05T06:59:00Z"
+}

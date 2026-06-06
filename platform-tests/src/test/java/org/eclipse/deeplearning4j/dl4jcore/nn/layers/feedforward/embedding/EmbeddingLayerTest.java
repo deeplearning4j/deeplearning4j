@@ -58,7 +58,7 @@ import org.junit.jupiter.api.DisplayName;
 @DisplayName("Embedding Layer Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
-class EmbeddingLayerTest extends BaseDL4JTest {
+public class EmbeddingLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Embedding Layer Config")

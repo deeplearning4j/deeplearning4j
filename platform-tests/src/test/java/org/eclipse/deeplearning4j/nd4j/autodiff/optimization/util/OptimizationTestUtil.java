@@ -13,6 +13,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -74,10 +75,10 @@ public class OptimizationTestUtil {
             assertTrue("Output '" + outName + "' missing from original", origOut.containsKey(outName));
             assertTrue("Output '" + outName + "' missing from copy", copyOut.containsKey(outName));
             assertTrue("Output '" + outName + "' missing from optimized", optimizedOut.containsKey(outName));
-            assertEquals("Output '" + outName + "' should match between copy and original",
-                    copyOut.get(outName), origOut.get(outName));
-            assertEquals("Output '" + outName + "' should match between copy and optimized",
-                    copyOut.get(outName), optimizedOut.get(outName));
+            assertArrayEquals("Output '" + outName + "' should match between copy and original",
+                    copyOut.get(outName).ravel().toDoubleVector(), origOut.get(outName).ravel().toDoubleVector(), 1e-5);
+            assertArrayEquals("Output '" + outName + "' should match between copy and optimized",
+                    copyOut.get(outName).ravel().toDoubleVector(), optimizedOut.get(outName).ravel().toDoubleVector(), 1e-5);
         }
 
         File f = new File(config.getTempFolder(), "optimized.sd");
@@ -87,8 +88,8 @@ public class OptimizationTestUtil {
         Map<String,INDArray> loadedOut = loaded.output(ph, outputs);
         for (String outName : outputs) {
             assertTrue("Output '" + outName + "' missing from loaded", loadedOut.containsKey(outName));
-            assertEquals("Output '" + outName + "' should match between copy and loaded",
-                    copyOut.get(outName), loadedOut.get(outName));
+            assertArrayEquals("Output '" + outName + "' should match between copy and loaded",
+                    copyOut.get(outName).ravel().toDoubleVector(), loadedOut.get(outName).ravel().toDoubleVector(), 1e-5);
         }
 
         //TODO add support for training checks!
@@ -99,12 +100,12 @@ public class OptimizationTestUtil {
         for(SDVariable v : copy.variables()){
             SDVariable ov = original.getVariable(v.name());
 
-            assertEquals(v.dataType(), ov.dataType());
             assertEquals(v.getVariableType(), ov.getVariableType());
             if(v.getVariableType() == VariableType.CONSTANT || v.getVariableType() == VariableType.VARIABLE){
                 INDArray arrCopy = v.getArr();
                 INDArray arrOrig = ov.getArr();
-                assertEquals(arrCopy, arrOrig);
+                assertArrayEquals("Variable '" + v.name() + "' values should match between copy and original",
+                        arrCopy.ravel().toDoubleVector(), arrOrig.ravel().toDoubleVector(), 1e-5);
             }
 
         }

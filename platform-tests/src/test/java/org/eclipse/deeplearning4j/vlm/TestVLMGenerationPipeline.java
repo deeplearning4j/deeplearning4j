@@ -160,7 +160,7 @@ public class TestVLMGenerationPipeline {
     // ─── Image processing ───────────────────────────────────────────────
 
     private INDArray processImageThroughVision(BufferedImage image) throws Exception {
-        PreprocessorConfig ppConfig = PreprocessorConfig.forSmolDocling();
+        PreprocessorConfig ppConfig = PreprocessorConfig.fromFile(VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_PREPROCESSOR_CONFIG).getModelFile());
         VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromConfig(ppConfig);
         int targetSize = ppConfig.getTargetHeight();
 
@@ -213,7 +213,7 @@ public class TestVLMGenerationPipeline {
     }
 
     private MergedEmbeddings mergeEmbeddings(BufferedImage image) throws Exception {
-        PreprocessorConfig ppConfig = PreprocessorConfig.forSmolDocling();
+        PreprocessorConfig ppConfig = PreprocessorConfig.fromFile(VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_PREPROCESSOR_CONFIG).getModelFile());
         ImageTiler.SplitImageResult tileResult = ImageTiler.splitImageForVLM(image, ppConfig.getTargetHeight());
 
         INDArray visionEmbeddings = processImageThroughVision(image);
@@ -300,7 +300,7 @@ public class TestVLMGenerationPipeline {
         visionEncoder = null;
 
         // Build GenerationPipeline with preprocessor config
-        PreprocessorConfig ppConfig = PreprocessorConfig.forSmolDocling();
+        PreprocessorConfig ppConfig = PreprocessorConfig.fromFile(VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_PREPROCESSOR_CONFIG).getModelFile());
         GenerationPipelineConfig pipelineConfig = GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)

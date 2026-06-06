@@ -1,0 +1,18 @@
+{
+  "id": "regularization_earlystop_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "GradientCheckTests,TestDropoutGradientCheck,NeuralNetConfigurationTest,TestEarlyStopping,TestEarlyStoppingCompGraph",
+  "totalTests": 23,
+  "passed": 21,
+  "failed": 2,
+  "errors": 0,
+  "skipped": 1,
+  "failedTests": "GradientCheckTests.testEmbeddingLayerPreluSimple(gradient check false), TestDropoutGradientCheck.testDropoutGradient(gradient check false)",
+  "notes": "NeuralNetConfigurationTest 12/12 pass. GradientCheckTests 8/9 (embedding PReLU known issue). TestDropoutGradientCheck 1/2 (dropout gradient check fails). TestEarlyStopping + TestEarlyStoppingCompGraph both CRASHED with SIGABRT exit 134 (native memory issue) — 0 tests counted from those 2 classes. Total from 3 reporting classes: 23 run, 21 pass.",
+  "tags": "cpu,regularization,earlystopping,gradient-check,crash",
+  "timestamp": "2026-06-05T12:30:00Z"
+}

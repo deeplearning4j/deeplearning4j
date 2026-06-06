@@ -1,0 +1,20 @@
+{
+  "id": "re-enabled-session6c",
+  "branch": "ag_new_release_updates_2",
+  "passing": false,
+  "module": "re-enabled-disabled-tests-session6c",
+  "totalTests": 5,
+  "passed": 3,
+  "failed": 2,
+  "skipped": 0,
+  "notes": "Session 6c: Profiler test passes. SameDiffConvBasic passes. SameDiffDenseForward and SameDiffDenseVertex fail with same bias rank issue (rank 2 [1,nOut] vs expected rank 1 [nOut]). Fix agent dispatched for SameDiffDense bias shape.",
+  "testDetails": [
+    {"class": "UnifiedProfilerTests", "method": "testProfiler", "status": "PASS", "fix": "Removed class-level @Disabled, test passes in isolation"},
+    {"class": "TestSameDiffDense", "method": "testSameDiffDenseBasic", "status": "PASS", "fix": "Removed class-level @Disabled"},
+    {"class": "TestSameDiffDense", "method": "testSameDiffDenseForward", "status": "FAIL", "fix": "Bias rank 2 [1,nOut] vs expected rank 1 [nOut] — SameDiffDense test layer bias shape issue. Fix agent dispatched."},
+    {"class": "TestSameDiffConv", "method": "testSameDiffConvBasic", "status": "PASS", "fix": "Removed class-level @Disabled"},
+    {"class": "TestSameDiffDenseVertex", "method": "testSameDiffDenseVertex", "status": "FAIL", "fix": "Same bias rank issue as SameDiffDenseForward — shares SameDiffDense test layer"}
+  ],
+  "tags": ["cpu", "nd4j-native", "re-enabled", "disabled-tests", "in-progress"],
+  "timestamp": "2026-06-04T10:35:00Z"
+}

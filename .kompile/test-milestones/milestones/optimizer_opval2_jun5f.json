@@ -1,0 +1,25 @@
+{
+  "id": "optimizer_opval2_jun5f",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-reduce-float-clip-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 94,
+  "passed": 94,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "TestGraphOptimizerFusions": {"run": 23, "pass": 23},
+    "TestIdentityAndShapeElimination": {"run": 7, "pass": 7},
+    "TestHorizontalFusion": {"run": 5, "pass": 5},
+    "TestRedundancyElimination": {"run": 5, "pass": 5},
+    "TestSqueezeExpandElimination": {"run": 5, "pass": 5},
+    "TestGraphOptimizerAccuracy": {"run": 28, "pass": 28},
+    "TestShapeCacheValidation": {"run": 21, "pass": 21}
+  },
+  "notes": "All 7 optimizer/op validation classes pass: 94 tests, 0 failures. Covers graph optimizer fusions, identity/shape/redundancy/squeeze elimination, horizontal fusion, optimizer accuracy, shape cache validation.",
+  "tags": ["cpu", "samediff", "optimizer", "fusions", "elimination", "accuracy", "shapecache"],
+  "timestamp": "2026-06-05T19:43:00Z"
+}

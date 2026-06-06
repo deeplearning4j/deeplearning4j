@@ -52,9 +52,18 @@ static dnnl::memory::data_type getOneDnnDataType(DataType dt) {
 }
 
 //////////////////////////////////////////////////////////////////////
-// Check if data type is supported by OneDNN batchnorm
+// Check if data type is supported by OneDNN batchnorm (runtime ISA detection)
 static bool isSupportedBatchnormType(DataType dt) {
-  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16 || dt == DataType::HALF;
+  if (dt == DataType::FLOAT32) return true;
+  if (dt == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (dt == DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
+  return false;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -38,6 +38,7 @@ import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.CleanupDiagnostics;
@@ -1079,19 +1080,18 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             }
                         }
 
-                        // If dspAllRequired was augmented with intermediate op outputs for listener
-                        // callbacks, filter filteredResults to only include variables from the original
-                        // allRequired set. Augmented intermediates must not appear in the returned
-                        // ExecutionResult — callers like stackOutputs() would include them in the output
-                        // map, breaking assertions like assertEquals(1, m.size()) in listener tests.
-                        Map<String, SDValue> returnableResults = filteredResults;
-                        if (dspAllRequired != allRequired) {
-                            // dspAllRequired was augmented — filter to original allRequired only
-                            returnableResults = new LinkedHashMap<>();
-                            for (Map.Entry<String, SDValue> entry : filteredResults.entrySet()) {
-                                if (allRequired.contains(entry.getKey())) {
-                                    returnableResults.put(entry.getKey(), entry.getValue());
-                                }
+                        // Filter DSP results to only include the originally requested output variables.
+                        // Both allRequired and dspAllRequired may contain listener-required variables
+                        // (requiredActivations) and intermediate op outputs added for listener callbacks.
+                        // These must NOT appear in the returned ExecutionResult — callers like
+                        // stackOutputs() would include them in the output map, breaking assertions like
+                        // assertEquals(1, m.size()) in listener tests.
+                        // The non-DSP path (lines below) filters to `variables` for the same reason.
+                        Map<String, SDValue> returnableResults = new LinkedHashMap<>();
+                        for (String requestedVar : variables) {
+                            SDValue val = filteredResults.get(requestedVar);
+                            if (val != null) {
+                                returnableResults.put(requestedVar, val);
                             }
                         }
                         return ExecutionResult.builder().valueOutputs(returnableResults).build();
@@ -1453,6 +1453,35 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         if (!executor.isNativePlanCompiled(plan)) {
             executor.compileNativePlan(plan, null, sameDiff.isDspFallbackToAutoIfTritonUnavailable());
+        }
+
+        // Mark SOURCE_VARIABLE external inputs as mutable so that detectFrozenConstants() in
+        // C++ does not classify variable-dependent slots as frozen constants.
+        //
+        // The C++ plan's fromSerializedPlan() initializes externalInputIsVariable_ only for
+        // SOURCE_PLACEHOLDER inputs. SOURCE_VARIABLE inputs (training variables, gradient weight
+        // inputs) are left as false, which causes detectFrozenConstants() (running at executeCount_=1
+        // under EMULATED_REPLAY/SHAPES_FROZEN lifecycle) to treat all variable-dependent slots as
+        // frozen. On subsequent executions (executeCount_>=2) those slots are skipped entirely,
+        // returning the stale first-call output regardless of changed variable values.
+        //
+        // This is particularly visible in gradient computation: if the user assigns new values to a
+        // VARIABLE array between two calculateGradients() calls, the second call returns the same
+        // gradients as the first.
+        {
+            String[] extKeys = plan.getExternalInputKeys();
+            byte[] extSourceTypes = plan.getExternalInputSourceTypes();
+            if (extKeys != null && extSourceTypes != null && extKeys.length > 0) {
+                List<String> variableInputNames = new ArrayList<>();
+                for (int i = 0; i < extKeys.length && i < extSourceTypes.length; i++) {
+                    if (extSourceTypes[i] == DynamicShapeSlot.SOURCE_VARIABLE) {
+                        variableInputNames.add(extKeys[i]);
+                    }
+                }
+                if (!variableInputNames.isEmpty()) {
+                    executor.addMutableExternalInputs(variableInputNames);
+                }
+            }
         }
 
         // DSP replay executes a fixed plan with known shapes, so exact-match allocation has
@@ -2657,6 +2686,31 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             if (op instanceof Invoke) {
                 executeInvokeNode(node, variableValues, (Invoke) op);
+                return;
+            }
+
+            // ExternalErrorsFunction is a LOGIC op used in gradient graphs built with
+            // SameDiffUtils.externalErrors(). Its gradient placeholder already appears
+            // in variableValues via the placeholder mechanism. The op itself just
+            // passes through the gradient placeholder as its "dummy" output — no
+            // native execution is needed or possible (calculateOutputShape returns null).
+            if (op instanceof ExternalErrorsFunction) {
+                ExternalErrorsFunction fn = (ExternalErrorsFunction) op;
+                String gradPlaceholderName = fn.getGradPlaceholderName();
+                SDValue gradVal = variableValues.get(gradPlaceholderName);
+                Preconditions.checkState(gradVal != null,
+                        "ExternalErrorsFunction: could not find gradient placeholder array for '%s'. " +
+                        "Ensure the placeholder is populated via calculateGradients(placeholderVals, ...)",
+                        gradPlaceholderName);
+                INDArray gradArr = gradVal.getTensorValue();
+                // The dummy output variable is the first (and only) output of this op
+                List<String> outputVarNames = node.getOutputVariables();
+                if (outputVarNames != null && !outputVarNames.isEmpty()) {
+                    // Allocate a copy so downstream cleanup doesn't affect the placeholder
+                    INDArray out = mmgr.allocate(false, gradArr.dataType(), gradArr.shape());
+                    out.assign(gradArr);
+                    variableValues.put(outputVarNames.get(0), SDValue.create(out));
+                }
                 return;
             }
 

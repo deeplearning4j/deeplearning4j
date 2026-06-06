@@ -42,20 +42,34 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
     z = output;
   }
 
+  // Compare two scalar NDArrays in the array's native precision.
+  // Using e<double>() on a FLOAT array can cause boundary-exact cases to be
+  // incorrectly clipped when float norm computes as 2.0000001f vs clip 2.0f.
+  // Read both in float precision for FLOAT32 arrays; double precision for others.
+  const double clipNormVal = (z->dataType() == DataType::FLOAT32)
+      ? (double)clipNorm->e<float>(0)
+      : clipNorm->e<double>(0);
+
   if (dimensions.empty()) {
     std::vector<sd::LongType> emptyVec = {};
 
     NDArray *norm2Result = z->reduceAlongDimension(reduce::Norm2, &emptyVec);
+    const double norm2Val = (z->dataType() == DataType::FLOAT32)
+        ? (double)norm2Result->e<float>(0)
+        : norm2Result->e<double>(0);
     if (useAverage) {
       NDArray *divResult = (*norm2Result) / z->lengthOf();
-      if (divResult->e<double>(0) > clipNorm->e<double>(0)) {
+      const double divVal = (z->dataType() == DataType::FLOAT32)
+          ? (double)divResult->e<float>(0)
+          : divResult->e<double>(0);
+      if (divVal > clipNormVal) {
         NDArray *clipDivResult = (*clipNorm) / (*divResult);
         *z *= (*clipDivResult);
         delete clipDivResult;
       }
       delete divResult;
     } else {
-      if (norm2Result->e<double>(0) > clipNorm->e<double>(0)) {
+      if (norm2Val > clipNormVal) {
         NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
         *z *= (*clipDivResult);
         delete clipDivResult;
@@ -64,21 +78,28 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
     delete norm2Result;
   } else {
     auto listOfSubArrs = z->allTensorsAlongDimension(dimensions);
+    const bool isFP32 = (z->dataType() == DataType::FLOAT32);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         std::vector<sd::LongType> emptyVec = {};
         NDArray *norm2Result = listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec);
+        const double norm2Val = isFP32
+            ? (double)norm2Result->e<float>(0)
+            : norm2Result->e<double>(0);
         if (useAverage) {
           NDArray *divResult = (*norm2Result) / listOfSubArrs.at(i)->lengthOf();
-          if (divResult->e<double>(0) > clipNorm->e<double>(0)) {
+          const double divVal = isFP32
+              ? (double)divResult->e<float>(0)
+              : divResult->e<double>(0);
+          if (divVal > clipNormVal) {
             NDArray *clipDivResult = (*clipNorm) / (*divResult);
             *listOfSubArrs.at(i) *= (*clipDivResult);
             delete clipDivResult;
           }
           delete divResult;
         } else {
-          if (norm2Result->e<double>(0) > clipNorm->e<double>(0)) {
+          if (norm2Val > clipNormVal) {
             NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
             *listOfSubArrs.at(i) *= (*clipDivResult);
             delete clipDivResult;

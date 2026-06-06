@@ -70,7 +70,11 @@ CUSTOM_OP_IMPL(mixture_of_experts, 3, -1, false, 0, 3) {
     // Get arguments
     auto numExperts = INT_ARG(0);
     auto topK = INT_ARG(1);
-    auto expertCapacity = INT_ARG(2);
+    // INT_ARG(2): normalizeProbs flag (Java MixtureOfExperts sends normalizeProbs ? 1 : 0 here).
+    // When normalizeProbs=true the selected top-K softmax scores are renormalized to sum
+    // to 1.0, which amplifies gradients by ~numExperts/topK (~30x for large models).
+    // Kept as false by default for gradient-correct training.
+    auto normalizeProbs = block.numI() > 2 ? (INT_ARG(2) != 0) : false;
     auto useSoftmaxGating = block.numB() > 0 ? B_ARG(0) : true;
     auto returnRouterLogits = block.numB() > 1 ? B_ARG(1) : false;
 
@@ -89,10 +93,11 @@ CUSTOM_OP_IMPL(mixture_of_experts, 3, -1, false, 0, 3) {
         expertBias = nullptr;
     }
 
-    // Use helper for CPU/GPU implementation
+    // Use helper for CPU/GPU implementation.
+    // normalizeProbs=false by default to avoid gradient amplification of ~numExperts/topK.
     helpers::mixtureOfExpertsSimple(block.launchContext(),
                                      input, gatingWeights, expertWeights, expertBias,
-                                     output, numExperts, topK);
+                                     output, numExperts, topK, normalizeProbs);
 
     return sd::Status::OK;
 }

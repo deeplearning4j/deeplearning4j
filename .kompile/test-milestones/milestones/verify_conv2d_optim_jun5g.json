@@ -1,0 +1,21 @@
+{
+  "id": "verify_conv2d_optim_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-conv2d-causal-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 3,
+  "passed": 3,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "ConvolutionLayerTest": {"run": 1, "pass": 1, "tests": ["testCausal1d"]},
+    "TestOptimization": {"run": 2, "pass": 2, "tests": ["testConstantOpFolding", "testConstantOpFolding2"]}
+  },
+  "failures": [],
+  "notes": "ConvolutionLayerTest#testCausal1d passes after conv2d.cpp PLATFORM_CHECK fix rejecting paddingMode==2 (causal). TestOptimization 2/2 pass after equalsWithEps Java fix. TestLossOpValidation#testLoss2d still fails — DSP lifecycle GRAPH_REPLAY outcome set on CPU with no replay handle; fixed to ZERO_KERNEL_SBS, rebuild pending.",
+  "tags": ["cpu", "convolution", "causal", "optimization", "fix-verified"],
+  "timestamp": "2026-06-05T22:25:00Z"
+}

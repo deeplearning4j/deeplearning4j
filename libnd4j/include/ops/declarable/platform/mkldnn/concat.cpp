@@ -179,9 +179,17 @@ PLATFORM_CHECK(concat, ENGINE_CPU) {
   const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
 
   // Check if output type is supported by OneDNN
+  // bf16 requires AVX512_CORE_BF16, f16 requires AVX512_CORE_AMX_FP16
   const auto zType = z->dataType();
-  const bool isSupportedType = (zType == DataType::FLOAT32 || zType == DataType::HALF ||
-                                zType == DataType::BFLOAT16 || zType == DataType::UINT8 || zType == DataType::INT8);
+  bool isSupportedType = (zType == DataType::FLOAT32 || zType == DataType::UINT8 || zType == DataType::INT8);
+  if (!isSupportedType && zType == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (!isSupportedType && zType == DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
 
   Requirements req("ONEDNN CONCAT OP");
   req.expectLess(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 7) &&

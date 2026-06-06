@@ -1,0 +1,28 @@
+{
+  "id": "batch40_misc_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-resize-cpu-rebuild",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 200,
+  "passed": 179,
+  "failed": 0,
+  "errors": 1,
+  "skipped": 20,
+  "classes": {
+    "TestDspWorkingTreeChanges": {"run": 16, "pass": 16},
+    "TestBGEModelAnalysis": {"run": 3, "pass": 0, "skipped": 3, "notes": "All skipped — requires model files"},
+    "TestGemma4Ops": {"run": 14, "pass": 13, "errors": 1, "notes": "testGemmaGGUFImport: GGML dequantize of Q5_K with 2.3B elements causes shape corruption — tensor too large for Java fallback"},
+    "TestGatedDeltaNetBlock": {"run": 4, "pass": 0, "skipped": 4, "notes": "All skipped — requires CUDA or specific setup"},
+    "TestBeamKVCache": {"run": 31, "pass": 31},
+    "TestArchitectureOutputDegeneracy": {"run": 96, "pass": 83, "skipped": 13, "notes": "13 skipped (model-dependent)"},
+    "TestGLMAndLlama4Architecture": {"run": 36, "pass": 36}
+  },
+  "failures": [
+    "TestGemma4Ops.testGemmaGGUFImport: GGML native dequantize Q5_K with 2.3B elements causes shape corruption"
+  ],
+  "notes": "7 classes ran, 179 tests pass, 1 error (GGML tensor size), 20 skipped. TestArchitectureOutputDegeneracy (96 tests, 83 pass) and TestGLMAndLlama4Architecture (36 pass) were the largest.",
+  "tags": ["cpu", "dsp-working-tree", "beam-kv", "architecture-degeneracy", "glm-llama4", "gemma4", "ggml", "gated-delta"],
+  "timestamp": "2026-06-06T01:25:00Z"
+}

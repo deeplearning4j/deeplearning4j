@@ -1,0 +1,19 @@
+{
+  "id": "t1u2v3w4",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "2263b615ce23df3894b32d42f8b853d8b0fe3e85",
+    "short": "2263b615ce"
+  },
+  "commitMessage": "fix: dup non-contiguous arrays in Nd4j.pile() to fix 3D/4D eval masking",
+  "commitAuthor": "agibsonccc",
+  "passing": true,
+  "module": "cpu-native-eval-fixed",
+  "totalTests": 57,
+  "passed": 56,
+  "failed": 0,
+  "skipped": 1,
+  "notes": "FIXED: 12 eval masking failures resolved. Root cause: C++ reshape_no_copy clears ARRAY_IS_VIEW flag, native concat uses fast memcpy on non-contiguous views. Fix: isCContiguousND check + dup in Nd4j.pile(). RegressionEvalTest 11/0F, EvalTest 21/0F, EvalJsonTest 5/0F, ROCTest 20/0F/1skip. Pending verification.",
+  "tags": ["cpu", "eval", "nd4j-native", "fixed"],
+  "timestamp": "2026-06-02T21:21:08Z"
+}

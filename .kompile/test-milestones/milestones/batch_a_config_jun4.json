@@ -1,0 +1,12 @@
+{
+  "id": "batch_a_config_jun4",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "cpu-native-dl4j-config-layer-setup",
+  "totalTests": 100,
+  "passed": 97,
+  "failed": 3,
+  "skipped": 0,
+  "notes": "Batch A: Core NN config + layer setup tests on nd4j-native. PASSING: NeuralNetConfigurationTest(12/12), MultiLayerNeuralNetConfigurationTest(7/7), LayerBuilderTest(21/21), LayerConfigTest(4/4), ComputationGraphConfigurationTest(5/5), ConvolutionLayerSetupTest(14/14), MultiNeuralNetConfLayerBuilderTest(1/1), TestInvalidConfigurations(23/25), TestInvalidInput(8/9). FAILURES: TestInvalidConfigurations.testCnnInvalidConfigOrInput_SmallerDataThanKernel (no DL4JException thrown for small input), TestInvalidConfigurations.testCnnInvalidConfigOrInput_BadStrides (no DL4JException thrown for bad strides), TestInvalidInput.testInputNinRank2Convolutional (rank-2 input to conv layer not caught). All 3 failures are missing input validation in ConvolutionLayer forward pass — no rank check exists."
+}

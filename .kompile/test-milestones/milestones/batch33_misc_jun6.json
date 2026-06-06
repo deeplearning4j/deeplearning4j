@@ -1,0 +1,32 @@
+{
+  "id": "batch33_misc_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-sparsesoftmax-cpu-rebuild",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 39,
+  "passed": 38,
+  "failed": 1,
+  "errors": 0,
+  "skipped": 2,
+  "classes": {
+    "TestActivationGradChecks": {"run": 2, "pass": 2},
+    "TestTensorAlongDimension": {"run": 6, "pass": 5, "failed": 1, "notes": "testTadShapes2d: expected [2.0, 32.0, 62.0, 92.0] got [7.0, 37.0, 67.0, 97.0] — TAD view offset by 5"},
+    "TestNDArrayCreationUtil": {"run": 1, "pass": 1},
+    "TestTokenizedTextDataIterator": {"run": 11, "pass": 11},
+    "TestDropout (layers)": {"run": 1, "pass": 1},
+    "TestSetGetParameters (multilayer)": {"run": 2, "pass": 2},
+    "TestDropout (conf)": {"run": 11, "pass": 11},
+    "TestSetGetParameters (graph)": {"run": 1, "pass": 1},
+    "TestHardWareMetric": {"run": 1, "pass": 0, "skipped": 1, "notes": "Skipped — requires hardware monitoring"},
+    "TestNodeReader": {"run": 1, "pass": 1},
+    "TestUI (datavec)": {"run": 2, "pass": 1, "skipped": 1, "notes": "1 skipped — HTML rendering"}
+  },
+  "failures": [
+    "TestTensorAlongDimension.testTadShapes2d: TAD view returns offset-by-5 values — expected first element 2.0, got 7.0"
+  ],
+  "notes": "11 classes ran, 38 of 39 tests pass. 2 skipped (TestHardWareMetric hardware monitoring, TestUI HTML). 1 failure in TAD shape view offset calculation.",
+  "tags": ["cpu", "tad", "dropout", "parameters", "tokenizer", "activation", "ui", "node-reader"],
+  "timestamp": "2026-06-06T00:37:00Z"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "batch_e_misc_jun4",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "cpu-native-dl4j-misc-batch-e-jun4",
+  "totalTests": 21,
+  "passed": 21,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Batch E partial: Misc NN tests on nd4j-native. Fork crashed (SIGABRT exit 134) at TestEarlyStopping — cumulative native heap corruption. PASSING before crash: TestNetConversion(1/1), TestCustomActivation(1/1), TestCustomLayers(5/5), TestRecurrentWeightInit(1/1), TestWeightNoise(3/3), TestConstraints(7/7), TestFrozenLayers(2/2), TestCustomUpdater(1/1). NOT RUN due to crash: TestListeners, TestCheckpointListener, TestEarlyStoppingCompGraph, TestEarlyStopping (were starting when fork died)."
+}

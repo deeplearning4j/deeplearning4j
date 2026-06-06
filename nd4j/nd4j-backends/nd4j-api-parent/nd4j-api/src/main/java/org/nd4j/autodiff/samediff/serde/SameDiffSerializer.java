@@ -3147,7 +3147,15 @@ public class SameDiffSerializer {
                             case DOUBLE: {
                                 double val = bb.getDouble();
                                 log.debug("LOAD_INLINE [{}]: Scalar DOUBLE value from buffer: {}", varName, val);
-                                scalar = Nd4j.constantScalar(val);
+                                // Downcast to FLOAT when the value survives a float32 round-trip
+                                // (e.g. 0.125, 0.5, 1.0). Prevents DOUBLE scalars from cascading
+                                // through matmul dtype promotion (dtypeZ = max(x,y)) and producing
+                                // DOUBLE output tensors in otherwise-FLOAT graphs.
+                                if ((double)(float) val == val) {
+                                    scalar = Nd4j.constantScalar((float) val);
+                                } else {
+                                    scalar = Nd4j.constantScalar(val);
+                                }
                                 break;
                             }
                             case INT: {
@@ -3887,7 +3895,7 @@ public class SameDiffSerializer {
      */
     @SneakyThrows
     private static int createUpdaterStateOffset(SameDiff sameDiff, FlatBufferBuilder bufferBuilder,
-                                                boolean includeUpdaterState) { // Removed largeArrayNamesToExcludeData
+                                                boolean includeUpdaterState) throws IOException { // Removed largeArrayNamesToExcludeData
         if (!includeUpdaterState || sameDiff.getUpdaterMap() == null || sameDiff.getUpdaterMap().isEmpty()) {
             return 0; // Return 0 offset if not saving state or map is empty/null
         }

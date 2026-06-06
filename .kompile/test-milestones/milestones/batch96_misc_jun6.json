@@ -1,0 +1,28 @@
+{
+  "id": "batch96_misc_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-simpo-kto-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 19,
+  "passed": 19,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 3,
+  "jvmCrash": true,
+  "classes": {
+    "TestVAE": {"run": 9, "pass": 9},
+    "TestRegressionTest060": {"run": 3, "pass": 3, "skip": 1},
+    "TestRegressionTest050": {"run": 3, "pass": 3, "skip": 1},
+    "CompareTrainingImplementations": {"run": 1, "pass": 1, "skip": 1},
+    "TestGraph": {"run": 3, "pass": 3},
+    "TestEarlyStopping": {"run": 0, "pass": 0, "notes": "Not reached — JVM SIGSEGV/SIGABRT crash"}
+  },
+  "failures": [
+    "JVM SIGSEGV/SIGABRT after TestGraph — native heap corruption"
+  ],
+  "notes": "6 classes requested. 5 completed (19/19 pass, 3 skipped). TestEarlyStopping not reached due to JVM crash.",
+  "tags": ["cpu", "misc", "jvm-crash"],
+  "timestamp": "2026-06-06T07:45:00Z"
+}

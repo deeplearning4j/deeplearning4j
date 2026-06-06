@@ -1,6 +1,6 @@
 #!/bin/bash
-# SmolDocling VLM Decode Benchmark — pathfinder-mythic.pdf page 10, 250 tokens
-# Target: 100+ tok/s with correct SmolDocling layout tags + coherent English
+# SmolDocling VLM Decode Benchmark — pathfinder-mythic.pdf page 10, 1000 tokens
+# Target: 70+ tok/s late steady-state with correct SmolDocling layout + mythic text
 #
 # ┌─────────────────────────────────────────────────────────────────────┐
 # │ CURRENT OPTIMAL DEFAULTS (update this when perf improves)          │
@@ -9,11 +9,11 @@
 # │  GraphOptimizer:        ON  (default, disable: --no-optimizer)     │
 # │  Clear decoder cache:   ON  (default, disable: --no-clear-decoder) │
 # │  Config:                OPTIMAL (warps4/stages1/tf32/batchedGemm)   │
-# │  Max tokens:            250                                         │
+# │  Max tokens:            1000                                        │
 # │                                                                     │
-# │  Best measured:         ~87-92 tok/s late steady-state decode       │
-# │  Speculation (K=5):    ~37 tok/s (n-gram 0% acceptance, overhead)  │
-# │  Expected with FP16:    mythic passage + section header present     │
+# │  Best measured:         ~59-65 tok/s late steady-state decode       │
+# │  FP16 note:             upcast HALF→FLOAT32 (no downcast)          │
+# │  Expected content:      mythic heroes passage + section headers     │
 # └─────────────────────────────────────────────────────────────────────┘
 #
 # Usage: ./run-benchmark.sh [OPTIONS]
@@ -117,7 +117,7 @@ OP_TIMING=false
 OP_TIMING_DETAILED=false
 OP_BREAKDOWN_OPS=""
 OP_HISTOGRAM_OPS=""
-MAX_TOKENS=250
+MAX_TOKENS=1000
 CONFIG="OPTIMAL"
 FP16=true
 NO_OPTIMIZER=false
@@ -682,18 +682,37 @@ if $JVM_CRASHED; then
 fi
 
 # Content check: look for mythic content in GENERATED text only (decode step lines).
-# Do NOT grep the full surefire output — it contains the PDF filename "pathfinder-mythic"
-# which causes false positives. Instead, look for the token output pattern.
+# Check for mythic passage content in the generated output.
+# Multiple detection methods since different pipelines log differently:
+# 1. Token-by-token output lines (contain 'id=' markers)
+# 2. "generated text" summary blocks
+# 3. FULL_TEXT log line (from optimized pipeline)
+# 4. Surefire XML (has full stdout with all generated text)
+# Do NOT grep the full surefire .txt — it contains "pathfinder-mythic" in config lines.
+MYTHIC_FOUND=false
 if ! $JVM_CRASHED && [ "$MAX_TOKENS" -ge 200 ] && [ -f "$SUREFIRE_OUT" ]; then
-    # Only match content in actual decode step output lines (contain 'id=' token markers)
-    # or in the final text summary. NOT in config/setup lines.
-    if ! grep "id=" "$SUREFIRE_OUT" | grep -qi "mythic\|hero\|character\|creating\|ability\|tier"; then
-        # Also check for generated text summary blocks
-        if ! grep -A5 -i "generated text" "$SUREFIRE_OUT" | grep -qi "mythic\|hero\|creating"; then
-            echo "  WARNING: mythic passage not found in generated tokens"
-            echo "  (checked decode step lines in $SUREFIRE_OUT)"
-            # Don't exit — let the Python parser give the full verdict
+    # Method 1: Token-by-token output lines
+    if grep "id=" "$SUREFIRE_OUT" | grep -qi "mythic\|hero\|character\|creating\|ability\|tier"; then
+        MYTHIC_FOUND=true
+    fi
+    # Method 2: Generated text summary blocks
+    if ! $MYTHIC_FOUND && grep -A5 -i "generated text" "$SUREFIRE_OUT" | grep -qi "mythic\|hero\|creating"; then
+        MYTHIC_FOUND=true
+    fi
+    # Method 3: FULL_TEXT log line (optimized pipeline logs full generated text)
+    if ! $MYTHIC_FOUND && grep "FULL_TEXT" "$SUREFIRE_OUT" | grep -qi "mythic\|hero\|creating\|champion\|ascension"; then
+        MYTHIC_FOUND=true
+    fi
+    # Method 4: Surefire XML has full stdout — search for mythic content in generated text
+    # Exclude lines with 'pathfinder-mythic.pdf' to avoid false positives from config lines
+    if ! $MYTHIC_FOUND && [ -f "$SUREFIRE_XML" ]; then
+        if grep -v "pathfinder-mythic" "$SUREFIRE_XML" | grep -qi "mythic heroes\|mythic character\|mythic champion\|creating a mythic\|moment of ascension"; then
+            MYTHIC_FOUND=true
         fi
+    fi
+    if ! $MYTHIC_FOUND; then
+        echo "  WARNING: mythic passage not found in generated tokens"
+        echo "  (checked decode step lines in $SUREFIRE_OUT)"
     fi
 fi
 
@@ -760,9 +779,13 @@ token_count = None
 warmup_steps = None
 
 if benchmark_summary:
-    # Try steady=X tok/s format first ([PASS] line)
-    m = re.search(r'steady=([\d.]+)\s*tok/s', benchmark_summary)
+    # Prefer lateSteady (excludes warmup/compilation), then steady, then throughput
+    m = re.search(r'lateSteady=([\d.]+)\s*tok/s', benchmark_summary)
     if m: steady_tps = float(m.group(1))
+    # Fall back to steady=X tok/s (includes warmup overhead)
+    if steady_tps is None:
+        m = re.search(r'steady=([\d.]+)\s*tok/s', benchmark_summary)
+        if m: steady_tps = float(m.group(1))
     # Fallback: result{...,throughput=X,...} format ([FAIL] line)
     if steady_tps is None:
         m = re.search(r'throughput=([\d.]+)', benchmark_summary)

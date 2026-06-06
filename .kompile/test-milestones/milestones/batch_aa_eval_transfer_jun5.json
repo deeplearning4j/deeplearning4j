@@ -1,0 +1,19 @@
+{
+  "batch": "AA",
+  "name": "Eval tools, regression eval, score stat, transfer learning, memory reports tests",
+  "date": "2026-06-05T01:22:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "EvaluationToolsTests": {"total": 3, "passed": 3, "failed": 0, "errors": 0},
+    "RegressionEvalTest": {"total": 3, "passed": 3, "failed": 0, "errors": 0},
+    "ScoreStatTest": {"total": 4, "passed": 3, "failed": 0, "errors": 0, "skipped": 1},
+    "TestTransferLearningJson": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "TestTransferLearningModelSerializer": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "TestMultiModelGradientApplication": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "TestMemoryReports": {"total": 6, "passed": 6, "failed": 0, "errors": 0}
+  },
+  "fixes_applied": [
+    "EvaluationCalibration.java:251: IsMax output type changed from p.ulike() (FLOAT) to Nd4j.createUninitialized(DataType.BOOL, p.shape()), then .castTo(p.dataType()) for downstream numeric operations"
+  ],
+  "summary": "21 tests run, 20 passed, 0 failures, 0 errors, 1 skipped. Fixed EvaluationCalibration IsMax BOOL output type."
+}

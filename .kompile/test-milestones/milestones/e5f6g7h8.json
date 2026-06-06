@@ -1,0 +1,19 @@
+{
+  "id": "e5f6g7h8",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "2263b615ce23df3894b32d42f8b853d8b0fe3e85",
+    "short": "2263b615ce"
+  },
+  "commitMessage": "fix: Q4_K/Q5_K/Q6_K quantizers rewritten for correct GGML format",
+  "commitAuthor": "agibsonccc",
+  "passing": true,
+  "module": "cpu-native-ggml-verified",
+  "totalTests": 99,
+  "passed": 99,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "VERIFIED: All 99 GGML tests pass. Q4_K(144B), Q5_K(176B), Q6_K(210B) quantizers rewritten. DequantizerTest/GGMLModelImportTest fixed.",
+  "tags": ["cpu", "ggml", "nd4j-native", "verified", "fixed"],
+  "timestamp": "2026-06-02T20:51:17Z"
+}

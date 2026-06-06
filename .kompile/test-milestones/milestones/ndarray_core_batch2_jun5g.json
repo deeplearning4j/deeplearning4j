@@ -1,0 +1,23 @@
+{
+  "id": "ndarray_core_batch2_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 53,
+  "passed": 53,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "ConcatTests": {"run": 9, "pass": 9},
+    "ReshapeTests": {"run": 2, "pass": 2},
+    "ShapeTests": {"run": 13, "pass": 13},
+    "BasicBroadcastTests": {"run": 24, "pass": 24},
+    "ArrayOptionsTests": {"run": 5, "pass": 5}
+  },
+  "failures": [],
+  "tags": ["cpu", "ndarray", "shape", "broadcast", "concat"],
+  "timestamp": "2026-06-05T22:50:00Z"
+}

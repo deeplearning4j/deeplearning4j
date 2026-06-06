@@ -1,0 +1,32 @@
+{
+  "id": "batch41_misc_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-resize-cpu-rebuild",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 83,
+  "passed": 81,
+  "failed": 1,
+  "errors": 1,
+  "skipped": 0,
+  "classes": {
+    "TestLinearFusionOptimization": {"run": 4, "pass": 4},
+    "TestScalarOpDup": {"run": 2, "pass": 2},
+    "TestRematerialization": {"run": 4, "pass": 4},
+    "TestMixtureOfExpertsOpValidation": {"run": 6, "pass": 5, "failed": 1, "notes": "testMoEMultipleExperts gradient check failure"},
+    "TestPowBroadcastValidation": {"run": 5, "pass": 5},
+    "TestNewModelOps": {"run": 30, "pass": 30},
+    "TestSparseSoftmaxDirect": {"run": 2, "pass": 1, "errors": 1, "notes": "testLoss2dScenario: op execution failure"},
+    "TestMhaAndSdpaEdgeCases": {"run": 5, "pass": 5},
+    "TestQuantizedKVCache": {"run": 18, "pass": 18},
+    "TestWhisperArchitecture": {"run": 7, "pass": 7}
+  },
+  "failures": [
+    "TestMixtureOfExpertsOpValidation.testMoEMultipleExperts: gradient check failure",
+    "TestSparseSoftmaxDirect.testLoss2dScenario: op execution failure"
+  ],
+  "notes": "10 classes ran, 81 of 83 tests pass. 1 gradient check failure (MoE), 1 op execution error (sparse softmax direct). TestNewModelOps (30) and TestQuantizedKVCache (18) were the largest.",
+  "tags": ["cpu", "linear-fusion", "scalar-dup", "rematerialization", "moe", "pow-broadcast", "new-model-ops", "sparse-softmax", "mha-sdpa", "quantized-kv", "whisper"],
+  "timestamp": "2026-06-06T01:30:00Z"
+}

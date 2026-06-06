@@ -341,8 +341,17 @@ public class TensorParallelRunner implements Closeable {
             initCommunicator();
         }
 
-        // Execute on this rank's device
-        Map<String, INDArray> outputs = model.output(inputs, model.outputs().toArray(new String[0]));
+        // Execute on this rank's device.
+        // If no explicit outputs are registered on the SameDiff graph, fall back to
+        // outputAll() so that the caller gets all computed variables rather than
+        // "No outputs were specified" from an empty outputs list.
+        List<String> registeredOutputs = model.outputs();
+        Map<String, INDArray> outputs;
+        if (registeredOutputs == null || registeredOutputs.isEmpty()) {
+            outputs = model.outputAll(inputs);
+        } else {
+            outputs = model.output(inputs, registeredOutputs.toArray(new String[0]));
+        }
 
         // Apply collective communication to outputs that need it
         if (config.isEnabled() && communicator != null && !outputCommunicationNeeds.isEmpty()) {
@@ -406,23 +415,15 @@ public class TensorParallelRunner implements Closeable {
     }
 
     /**
-     * Slice an array along a specific dimension.
+     * Slice an array along a specific dimension using interval (range) indexing.
+     * Returns rows/columns in [fromInclusive, toExclusive).
      */
     private static INDArray sliceAlongDimension(INDArray arr, int dimension, long fromInclusive, long toExclusive) {
-        // Build interval indices for each dimension
-        // For the target dimension, use the range [from, to); for others, use all
-        if (arr.rank() == 2) {
-            if (dimension == 0) {
-                return arr.get(Nd4j.createFromArray(new long[]{fromInclusive, toExclusive}));
-            } else {
-                // For 2D column slicing, use interval notation
-                return arr.get(
-                        org.nd4j.linalg.indexing.NDArrayIndex.all(),
-                        org.nd4j.linalg.indexing.NDArrayIndex.interval(fromInclusive, toExclusive)
-                );
-            }
-        }
-        // General case: build index array
+        // Build interval indices for each dimension.
+        // For the target dimension, use the range [from, to); for others, use all.
+        // NOTE: Nd4j.createFromArray is fancy/gather indexing — it selects specific
+        // elements by index, NOT a contiguous range. Always use NDArrayIndex.interval
+        // for range slicing to avoid returning a [2,...] shape instead of [N,...].
         org.nd4j.linalg.indexing.INDArrayIndex[] indices =
                 new org.nd4j.linalg.indexing.INDArrayIndex[arr.rank()];
         for (int d = 0; d < arr.rank(); d++) {

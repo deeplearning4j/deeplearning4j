@@ -74,23 +74,26 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
   auto gradY = OUTPUT_VARIABLE(1);
   gradX->assign(epsNext);
 
-  NDArray temp(*epsNext);
-  BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, &temp);
+  // Use dup() for a deep copy — NDArray copy constructor creates a VIEW (shares buffer).
+  // Writing into a view of epsNext would corrupt the upstream gradient in-place.
+  NDArray *temp = epsNext->dup();
+  BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, temp);
   if (gradY->rankOf() == gradX->rankOf()) {
-    epsNext->applyPairwiseTransform(pairwise::Multiply, &temp, gradY);
+    epsNext->applyPairwiseTransform(pairwise::Multiply, temp, gradY);
   } else  { // epsNext is greater than gradY
     std::vector<LongType> dims(epsNext->rankOf() * 2);
     LongType gap = epsNext->rankOf() - gradY->rankOf();
     for (LongType d = 0; d < gap; d++) {
       dims[d * 2 + 1] = 1;
     }
-    auto tempIn((temp)(dims));
+    auto tempIn((*temp)(dims));
     NDArray negTempIn = -*tempIn;
     auto get=  (*epsNext)(dims);
     get->applyPairwiseTransform(pairwise::Multiply, &negTempIn, gradY);
     delete get;
     delete tempIn;
   }
+  delete temp;
   return Status::OK;
 }
 

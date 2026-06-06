@@ -1,0 +1,12 @@
+{
+  "batch": "AN",
+  "name": "Transfer learning isolation tests, CNN gradient checks",
+  "date": "2026-06-05T02:40:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "TransferLearningCompGraphIsolationTest": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "TransferLearningMLNIsolationTest": {"total": 17, "passed": 17, "failed": 0, "errors": 0},
+    "CNNGradientCheckTest": {"total": 0, "passed": 0, "failed": 0, "errors": 0, "crashed": true, "note": "OOM — physicalBytes exceeded maxPhysicalBytes during gradient check computations"}
+  },
+  "summary": "22 tests run, 22 passed, 0 failures, 0 errors. CNNGradientCheckTest OOM crash."
+}

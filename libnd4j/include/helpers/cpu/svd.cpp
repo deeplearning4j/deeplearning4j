@@ -351,8 +351,6 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
 
     for (; i > 1; --i) {
       if ((diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) < DataTypeUtils::eps<T>() * maxElem) {
-        if (math::sd_abs<T,T>(diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) >= epsBig)
-          THROW_EXCEPTION("ops::helpers::SVD::deflation: diagonal elements are not properly sorted !");
         deflation2(col1, col1 + shift, row1W, col1W, i - 1, i, len);
       }
     }

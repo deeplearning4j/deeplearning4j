@@ -1,0 +1,27 @@
+{
+  "id": "batch46_shape_serde_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 59,
+  "passed": 59,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "DataBufferTests": {"run": 5, "pass": 5},
+    "IntDataBufferTests": {"run": 3, "pass": 3},
+    "IndexingTests": {"run": 23, "pass": 23, "notes": "Two classes with same name in different packages"},
+    "BasicSerDeTests": {"run": 2, "pass": 2},
+    "JsonSerdeTests": {"run": 2, "pass": 2},
+    "LongShapeTests": {"run": 2, "pass": 2},
+    "ArrayOptionsTests": {"run": 5, "pass": 5},
+    "NdArraySerdeTest": {"run": 17, "pass": 17}
+  },
+  "failures": [],
+  "notes": "8 classes ran (9 test classes, 2 IndexingTests in different packages). All 59 tests pass. Clean.",
+  "tags": ["cpu", "shape", "serde", "buffer", "indexing"],
+  "timestamp": "2026-06-06T01:38:00Z"
+}

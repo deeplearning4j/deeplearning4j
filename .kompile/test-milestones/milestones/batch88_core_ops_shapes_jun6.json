@@ -1,0 +1,32 @@
+{
+  "id": "batch88_core_ops_shapes_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-isa-fix-rebuild",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 197,
+  "passed": 196,
+  "failed": 0,
+  "errors": 1,
+  "skipped": 1,
+  "jvmCrash": false,
+  "classes": {
+    "OpExecutionerTestsC": {"run": 59, "pass": 59},
+    "OpExecutionerTests": {"run": 49, "pass": 48, "skip": 1},
+    "ExpandableOpsTests": {"run": 2, "pass": 1, "errors": 1, "notes": "testCompatStringSplit_1: compat_string_split op fails with UTF8 data type"},
+    "StaticShapeTests": {"run": 2, "pass": 2},
+    "ShapeTests": {"run": 13, "pass": 13},
+    "ShapeTestsC": {"run": 28, "pass": 28},
+    "ShapeBufferTests": {"run": 3, "pass": 3},
+    "ShapeTest": {"run": 8, "pass": 8},
+    "ShapeTestC": {"run": 14, "pass": 14},
+    "ShapeInfoTests": {"run": 19, "pass": 19}
+  },
+  "failures": [
+    "ExpandableOpsTests.testCompatStringSplit_1: ND4JIllegalState - compat_string_split calculateOutputShape failed for UTF8 type"
+  ],
+  "notes": "10 classes. 196/197 pass. 1 error in string op (compat_string_split UTF8 type issue). All shape and op executor tests pass.",
+  "tags": ["cpu", "core-ops", "shapes"],
+  "timestamp": "2026-06-06T06:50:00Z"
+}

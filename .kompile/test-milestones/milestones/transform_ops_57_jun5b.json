@@ -1,0 +1,16 @@
+{
+  "id": "transform_ops_57_jun5b",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "TestTransformOpValidation",
+  "totalTests": 57,
+  "passed": 53,
+  "failed": 3,
+  "skipped": 1,
+  "notes": "Fixed: testBooleanAnd and testPairwiseTransforms (LogicalAnd/Or/Xor → BooleanAnd/Or/Xor). Remaining: testBroadcastEmpty, testTransforms, testClipByAvgNorm. Improved from 52/57 to 53/57.",
+  "tags": "cpu,transform,opvalidation,fix",
+  "timestamp": "2026-06-05T06:40:00Z"
+}

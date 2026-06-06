@@ -1566,7 +1566,10 @@ public class SDVariable implements Serializable {
      */
     public INDArray eval() {
         Map<String,INDArray> m = sameDiff.output((Map<String,INDArray>)null, name());
-        return m.get(name());
+        INDArray result = m.get(name());
+        // Return a detached copy so the caller's array survives session destruction
+        // (e.g., when convertToConstant/convertToVariable calls closeAllSessions).
+        return result != null ? result.dup() : null;
     }
 
 
@@ -1576,7 +1579,8 @@ public class SDVariable implements Serializable {
      */
     public INDArray eval(Map<String, INDArray> placeholders) {
         Map<String,INDArray> m = sameDiff.output(placeholders, name());
-        return m.get(name());
+        INDArray result = m.get(name());
+        return result != null ? result.dup() : null;
     }
 
 

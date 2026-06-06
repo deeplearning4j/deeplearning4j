@@ -56,6 +56,10 @@ import org.deeplearning4j.ui.module.convolutional.ConvolutionalListenerModule;
 import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
 import org.deeplearning4j.ui.module.remote.RemoteReceiverModule;
 import org.deeplearning4j.ui.module.train.TrainModule;
+import org.deeplearning4j.ui.module.dsp.DspDiagModule;
+import org.deeplearning4j.ui.module.EntityResolutionModule;
+import org.deeplearning4j.ui.module.ModelManagerModule;
+import org.deeplearning4j.ui.module.ModelVisualizationModule;
 import org.deeplearning4j.ui.module.tsne.TsneModule;
 import org.nd4j.common.function.Function;
 import org.nd4j.common.primitives.Pair;
@@ -335,6 +339,10 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         uiModules.add(new ConvolutionalListenerModule());
         uiModules.add(new TsneModule());
         uiModules.add(new SameDiffModule());
+        uiModules.add(new DspDiagModule());
+        uiModules.add(new ModelVisualizationModule());
+        uiModules.add(new ModelManagerModule());
+        uiModules.add(new EntityResolutionModule());
         remoteReceiverModule = new RemoteReceiverModule();
         uiModules.add(remoteReceiverModule);
 
@@ -353,6 +361,9 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
                         break;
                     case POST:
                         r.post(route.getRoute()).handler(rc -> route.getConsumer().accept(extractArgsFromRoute(route.getRoute(), rc), rc));
+                        break;
+                    case DELETE:
+                        r.delete(route.getRoute()).handler(rc -> route.getConsumer().accept(extractArgsFromRoute(route.getRoute(), rc), rc));
                         break;
                     default:
                         throw new IllegalStateException("Unknown or not supported HTTP method: " + route.getHttpMethod());

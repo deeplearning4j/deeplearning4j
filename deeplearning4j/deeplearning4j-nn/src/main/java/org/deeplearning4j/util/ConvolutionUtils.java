@@ -347,9 +347,9 @@ public class ConvolutionUtils {
             throw new IllegalArgumentException("Dilation must be an array of length 2 (received array of length " + dilation.length + ")");
         }
 
-        // For Same mode, padding is not used; default to zeros if null
+        // For Same/Causal mode, padding is not used; default to zeros if null
         if (padding == null) {
-            if (convolutionMode != ConvolutionMode.Same) {
+            if (convolutionMode != ConvolutionMode.Same && convolutionMode != ConvolutionMode.Causal) {
                 throw new IllegalArgumentException("Padding must not be null for convolution mode " + convolutionMode);
             }
             padding = new long[]{0, 0};
@@ -397,6 +397,14 @@ public class ConvolutionUtils {
             // Truncate mode: floor division
             outH = (inH + 2 * padH - eKH) / sH + 1;
             outW = (inW + 2 * padW - eKW) / sW + 1;
+        }
+
+        if (outH <= 0 || outW <= 0) {
+            throw new DL4JInvalidInputException("Invalid input data or configuration: output size is not positive. "
+                    + "Input size [h,w] = [" + inH + "," + inW + "], kernel = [" + kH + "," + kW
+                    + "], strides = [" + sH + "," + sW + "], padding = [" + padH + "," + padW
+                    + "], dilation = [" + dH + "," + dW + "], output size = [" + outH + "," + outW + "]. "
+                    + "Possible cause: kernel size is larger than the input size.");
         }
 
         return new long[]{outH, outW};
@@ -577,6 +585,14 @@ public class ConvolutionUtils {
             oW = (inputWidth + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
         } else {
             throw new IllegalArgumentException("Unknown convolution mode: " + convolutionMode);
+        }
+
+        if (oH <= 0 || oW <= 0) {
+            throw new DL4JInvalidInputException("Invalid input data or configuration: output size is not positive. "
+                    + "Input size [h,w] = [" + inputHeight + "," + inputWidth + "], kernel = [" + kH + "," + kW
+                    + "], strides = [" + sH + "," + sW + "], padding = [" + pH + "," + pW
+                    + "], dilation = [" + dH + "," + dW + "], output size = [" + oH + "," + oW + "]. "
+                    + "Possible cause: kernel size is larger than the input size.");
         }
 
         return new long[]{oH, oW};

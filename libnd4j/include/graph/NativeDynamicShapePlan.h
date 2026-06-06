@@ -513,6 +513,38 @@ struct NativeSlot {
            flags.outputShapeDependsOnInputValues;
   }
 
+  // ── In-place fusion state management ────────────────────────────────
+  // Centralizes all reads and writes to inPlaceFused / inPlaceFusedInputIdx
+  // so callers don't scatter paired field mutations across files.
+
+  /** Whether this slot executes in-place (writes into its input buffer). */
+  bool isInPlaceFused() const { return flags.inPlaceFused; }
+
+  /** The input index whose buffer is reused as output, or -1 if not in-place. */
+  int inPlaceFusedInputIdx() const { return flags.inPlaceFusedInputIdx; }
+
+  /**
+   * The source output-slot index that this in-place op will overwrite,
+   * or -1 if not in-place or the input comes from an external array.
+   */
+  int inPlaceSourceSlot() const {
+    if (!flags.inPlaceFused || flags.inPlaceFusedInputIdx < 0 ||
+        flags.inPlaceFusedInputIdx >= wiring.numInputs) return -1;
+    return wiring.inputSourceIndices[flags.inPlaceFusedInputIdx];
+  }
+
+  /** Mark this slot for in-place execution using the given input index. */
+  void enableInPlaceFusion(int inputIdx) {
+    flags.inPlaceFused = true;
+    flags.inPlaceFusedInputIdx = inputIdx;
+  }
+
+  /** Clear in-place fusion (e.g. source is a requested output or frozen). */
+  void disableInPlaceFusion() {
+    flags.inPlaceFused = false;
+    flags.inPlaceFusedInputIdx = -1;
+  }
+
   /**
    * Whether this slot's output buffer needs prezero memset before execution.
    * Consolidates the skip-prezero logic that was duplicated across 4 call sites:
@@ -525,7 +557,7 @@ struct NativeSlot {
     if (frozenConstantSlot()) return false;        // output never changes
     if (aliasesInput()) return false;              // no output buffer to zero
     if (isFullyWriting()) return false;            // op writes every element
-    if (flags.inPlaceFused) return false;          // handled by fusion host
+    if (isInPlaceFused()) return false;             // handled by fusion host
     if (fusedChain.isFusedChainTail) return false; // tail of fused chain
     return true;
   }
@@ -1831,11 +1863,41 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   };
 
   /**
-   * Write to an output slot. The ONLY way to modify outputSlots_.
+   * Write to an output slot. The ONLY way to install an NDArray into outputSlots_.
    * Validates against phase invariants. Hard error on violation.
    * Tracks plan ownership of new arrays.
    */
   void writeOutputSlot(int slotIdx, NDArray* value, const char* tag);
+
+  /**
+   * Clear an output slot to nullptr with proper cleanup.
+   * Removes from planOwnedArrays_, optionally defers delete.
+   * All null-assignments to outputSlots_ MUST go through this method.
+   * @param deferDelete if true, queue old array for deferred deletion
+   */
+  void clearOutputSlot(int slotIdx, const char* tag, bool deferDelete = false);
+
+  /**
+   * Mark a slot as a view producer. This is a STRUCTURAL property of the op
+   * (permute/reshape always produce views) — distinct from phase transitions.
+   * The flag persists across reset()/unseal() since it describes the op, not the phase.
+   */
+  void markViewProducer(int slotIdx, const char* tag);
+
+  /**
+   * Demote a slot from view producer. Called when a view can no longer be maintained
+   * (e.g., input DataBuffer freed). Self-contained: inspects the slot's DataBuffer
+   * validity and nulls the output if the buffer is stale/freed/invalid.
+   */
+  void demoteViewProducer(int slotIdx, const char* tag, bool unused = false);
+
+  /**
+   * Materialize a view-producer slot: replace the zero-copy view with an
+   * independent copy so the plan owns its own DataBuffer. Used after execution
+   * to decouple slot outputs from external (placeholder) inputs that the
+   * caller may close.
+   */
+  void materializeViewSlot(int slotIdx, const char* tag);
 
   /**
    * Get the slot state for a specific slot index (for JNI).

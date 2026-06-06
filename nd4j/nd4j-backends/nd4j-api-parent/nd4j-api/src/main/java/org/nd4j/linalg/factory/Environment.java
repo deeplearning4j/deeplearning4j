@@ -21,10 +21,11 @@ package org.nd4j.linalg.factory;
 
 import org.nd4j.linalg.factory.config.CoreEnvironmentConfig;
 import org.nd4j.linalg.factory.config.CudaEnvironmentConfig;
-import org.nd4j.linalg.factory.config.TritonEnvironmentConfig;
 import org.nd4j.linalg.factory.config.DspEnvironmentConfig;
 import org.nd4j.linalg.factory.config.LifecycleEnvironmentConfig;
+import org.nd4j.linalg.factory.config.MemoryConfig;
 import org.nd4j.linalg.factory.config.PrintEnvironmentConfig;
+import org.nd4j.linalg.factory.config.TritonEnvironmentConfig;
 
 /**
  * This interface describes environment for ND4J.
@@ -1654,5 +1655,15 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
 
     default void cudaSetLimit(int limitType, long value) {
         // No-op stub
+    }
+
+    /**
+     * Returns the {@link MemoryConfig} subsystem which exposes pool-level memory
+     * tuning knobs (pool release threshold, non-peer headroom, etc.).
+     *
+     * @return singleton MemoryConfig instance
+     */
+    default MemoryConfig memory() {
+        return MemoryConfig.getInstance();
     }
 }

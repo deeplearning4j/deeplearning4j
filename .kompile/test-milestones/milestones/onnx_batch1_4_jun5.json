@@ -1,0 +1,18 @@
+{
+  "id": "onnx_batch1_4_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "ONNXPipelineTest,OnnxOpTests,TestOnnxConverter,TensorflowOpMappingTest",
+  "totalTests": 205,
+  "passed": 27,
+  "failed": 159,
+  "skipped": 8,
+  "errors": 11,
+  "failedTests": "OnnxOpTests: 158 failures + 10 errors (all 'Another variable with the name X already exists' — ONNX import variable naming collision), TestOnnxConverter: 1 error (same issue), TensorflowOpMappingTest: 1 failure (ReverseV2 mapping to noop instead of reverse)",
+  "notes": "ONNX batch 1: Dominant failure pattern is 'Another variable with the name X already exists' in SameDiff ONNX import. This is a single root cause — variable naming collision when importing ONNX models. ONNXPipelineTest passes 9/9 (4 skipped). TensorflowOpMappingTest has 1 mapping bug (ReverseV2).",
+  "tags": "cpu,onnx,tensorflow,variable-naming-bug,needs-fix",
+  "timestamp": "2026-06-05T07:39:00Z"
+}

@@ -1,0 +1,16 @@
+{
+  "batch": "AS",
+  "name": "Misc vertex, adapter, weight init, utility tests",
+  "date": "2026-06-05T03:05:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "ElementWiseVertexTest": {"total": 7, "passed": 7, "failed": 0, "errors": 0},
+    "ShiftVertexTest": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "LegacyWeightInitTest": {"total": 5, "passed": 3, "failed": 0, "errors": 0, "skipped": 2},
+    "ArgmaxAdapterTest": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "Regression2dAdapterTest": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "MultiBooleanTest": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "CapsnetGradientCheckTest": {"total": 1, "passed": 0, "failed": 0, "errors": 0, "skipped": 1}
+  },
+  "summary": "27 tests run, 24 passed, 0 failures, 0 errors, 3 skipped. All clean."
+}

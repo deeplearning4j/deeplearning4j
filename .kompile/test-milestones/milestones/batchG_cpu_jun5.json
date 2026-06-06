@@ -1,0 +1,19 @@
+{
+  "id": "batchG_cpu_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "cpu-native-nd4j-batch-G-jun5",
+  "totalTests": 128,
+  "passed": 127,
+  "failed": 0,
+  "errors": 1,
+  "skipped": 3,
+  "notes": "BasicWorkspaceTests(38/38 pass, 2 skip). CyclicWorkspaceTests(1/1 pass). SpecialWorkspaceTests(11/11 pass after fix: testViewDetach_1 expected [10,1] but getColumn() returns 1D [10] — fixed exp to Nd4j.create(DataType.DOUBLE,10)). CloseableTests(4/4 pass). DebugModeTests(4/4 pass). MixedDataTypesTests(41/41 pass, 1 skip). ArrayOptionsTests(5/5 pass). ShapeInfoTests(19/19 pass after fix: testEWS used banned elementWiseStride() always returning 0 — replaced with stride(0)==3, stride(1)==1 contiguity check). PaddingTests(3/3 pass). ExpandableOpsTests(1/2 pass, 1 error): testCompatStringSplit_1 — NDArray::buffer() throws ND4JIllegalState for UTF8 arrays because BUILD_SINGLE_SELECTOR with SD_COMMON_TYPES_ALL does not cover string types; fix requires C++ rebuild of NDArray.cpp. Root cause: NDArray.hXX buffer() falls through to THROW_EXCEPTION for UTF8/UTF16/UTF32 types.",
+  "fixes_applied": [
+    "SpecialWorkspaceTests.java line 237: changed Nd4j.create(DataType.DOUBLE,10,1) to Nd4j.create(DataType.DOUBLE,10) to match 1D result of getColumn() without keepDim",
+    "ShapeInfoTests.java testEWS: replaced banned elementWiseStride() call with stride(0)/stride(1)/ordering() assertions for C-order contiguity"
+  ],
+  "tags": ["cpu", "nd4j-native", "batch-G"],
+  "timestamp": "2026-06-05T15:16:00+09:00"
+}

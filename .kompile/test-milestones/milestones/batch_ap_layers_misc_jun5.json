@@ -1,0 +1,14 @@
+{
+  "batch": "AP",
+  "name": "ActivationLayer, SpaceToDepth, Subsampling, LocalResponse, MaskZeroLayer",
+  "date": "2026-06-05T02:43:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "ActivationLayerTest": {"total": 6, "passed": 6, "failed": 0, "errors": 0},
+    "SpaceToDepthTest": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "SubsamplingLayerTest": {"total": 6, "passed": 6, "failed": 0, "errors": 0},
+    "LocalResponseTest": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "MaskZeroLayerTest": {"total": 4, "passed": 4, "failed": 0, "errors": 0}
+  },
+  "summary": "23 tests run, 23 passed, 0 failures, 0 errors. All clean."
+}

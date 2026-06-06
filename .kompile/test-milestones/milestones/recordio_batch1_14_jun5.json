@@ -1,0 +1,16 @@
+{
+  "id": "recordio_batch1_14_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "CSVRecordReaderTest,CSVRecordWriterTest,CSVSequenceRecordReaderTest,CSVNLinesSequenceRecordReaderTest,CSVVariableSlidingWindowRecordReaderTest,ExcelRecordReaderTest,ExcelRecordWriterTest,LibSvmRecordReaderTest,LibSvmRecordWriterTest,SVMLightRecordReaderTest,SVMLightRecordWriterTest,RegexRecordReaderTest,FileRecordReaderTest,FileBatchRecordReaderTest",
+  "totalTests": 85,
+  "passed": 85,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Record I/O batch 1: 14 classes, ALL PASS. CSV, Excel, LibSvm, SVMLight, Regex, FileBatch readers/writers all clean.",
+  "tags": "cpu,recordio,csv,excel,all-pass",
+  "timestamp": "2026-06-05T07:26:00Z"
+}

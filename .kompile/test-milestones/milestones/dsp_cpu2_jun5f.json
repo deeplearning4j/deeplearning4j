@@ -1,0 +1,20 @@
+{
+  "id": "dsp_cpu2_jun5f",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-sparsesoftmax-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 20,
+  "passed": 20,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "DspBufferColoringTest": {"run": 5, "pass": 5},
+    "DspTrainingE2ETest": {"run": 15, "pass": 15}
+  },
+  "notes": "DspBufferColoringTest and DspTrainingE2ETest both pass fully on CPU. DspOptimizedSlotBySlotTest, DspCpuOperationsTest, TestDspWorkingTreeChanges not matched (may have different names).",
+  "tags": ["cpu", "dsp", "buffer-coloring", "training"],
+  "timestamp": "2026-06-05T19:50:00Z"
+}

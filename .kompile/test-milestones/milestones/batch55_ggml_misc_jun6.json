@@ -1,0 +1,29 @@
+{
+  "id": "batch55_ggml_misc_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 73,
+  "passed": 72,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 1,
+  "classes": {
+    "GraphTransformUtilTests": {"run": 2, "pass": 2},
+    "ForceCloseConstantPoisonedTest": {"run": 4, "pass": 4},
+    "ExternalInputSourceTypeTest": {"run": 4, "pass": 4},
+    "EarlyTerminationMultiDataSetIteratorTest": {"run": 3, "pass": 3},
+    "GGUFWriterTest": {"run": 31, "pass": 31},
+    "GGMLModelExportTest": {"run": 21, "pass": 21},
+    "GraphTransformerTest": {"run": 1, "pass": 1},
+    "FileLabelAwareIteratorTest": {"run": 2, "pass": 2},
+    "FileDocumentIteratorTest": {"run": 4, "pass": 4},
+    "FilenamesLabelAwareIteratorTest": {"run": 1, "pass": 0, "skipped": 1}
+  },
+  "failures": [],
+  "notes": "All 10 classes found and executed. 72 tests pass, 1 skipped. Clean.",
+  "tags": ["cpu", "ggml", "gguf", "export", "graph", "document-iterator", "samediff", "constant"],
+  "timestamp": "2026-06-06T02:50:00Z"
+}

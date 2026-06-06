@@ -1,0 +1,20 @@
+{
+  "id": "basedl4jtest_fix_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-sparsesoftmax-cpu-rebuild",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 4,
+  "passed": 4,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "TestReconstructionDistributions": {"run": 4, "pass": 4, "notes": "Fixed by restoring @BeforeEach to BaseDL4JTest that sets Nd4j.setDefaultDataTypes(DOUBLE, DOUBLE). Without this, gradient checks ran in FLOAT precision causing finite difference noise."}
+  },
+  "failures": [],
+  "notes": "BaseDL4JTest @BeforeEach/@AfterEach restored. Sets data types, profiling mode, thread count, and workspace cleanup. Fixes gradient check failures across all BaseDL4JTest subclasses. Root cause: commit 7051233bb4 stripped lifecycle methods.",
+  "tags": ["cpu", "fix-verified", "basedl4jtest", "gradient-check", "data-types"],
+  "timestamp": "2026-06-06T00:43:00Z"
+}

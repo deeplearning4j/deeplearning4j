@@ -152,6 +152,29 @@ public class HorizontalFusionOptimizations extends BaseOptimizerSet {
                 outputWidths[i] = w.shape()[1];
             }
 
+            // Determine output rank from sibling matmul outputs — these have known shapes
+            // at execution time and their rank equals the activation rank.
+            // This is more reliable than BFS (which can follow reshape/weight chains to wrong ranks).
+            int outRank = -1;
+            for (String sibOut : siblingOutputVars) {
+                SDVariable ov = sd.getVariable(sibOut);
+                if (ov != null) {
+                    long[] oShape = ov.getShape();
+                    if (oShape != null && oShape.length > 0) {
+                        outRank = oShape.length;
+                        break;
+                    }
+                }
+            }
+            // Fallback to BFS-based resolution if no sibling output has known shape
+            if (outRank < 0) {
+                outRank = resolveRankSafe(sd, activationVar, firstWeight);
+            }
+            if (outRank < 0) {
+                log.debug("Horizontal fusion: skipping group for '{}' — cannot determine activation rank", activationVar);
+                return false;
+            }
+
             // All checks passed — apply the fusion
             log.debug("Horizontal fusion: fusing {} parallel matmuls on shared input '{}'",
                     siblings.size(), activationVar);
@@ -197,10 +220,6 @@ public class HorizontalFusionOptimizations extends BaseOptimizerSet {
                 //
                 // Actually, the safest approach: resolve rank from activation shape or
                 // weight shape, and create correctly-sized begin/end arrays.
-                int outRank = resolveRankSafe(sd, activationVar, firstWeight);
-                log.debug("Horizontal fusion: resolveRank('{}') = {}, weight shape = {}",
-                        activationVar, outRank, java.util.Arrays.toString(firstWeight.shape()));
-
                 long[] beginArr = new long[outRank];
                 long[] endArr = new long[outRank];
                 long[] strideArr = new long[outRank];
@@ -282,7 +301,9 @@ public class HorizontalFusionOptimizations extends BaseOptimizerSet {
          *      output has at least 2 dimensions. For transformers it's typically 3 (batch, seq, hidden).
          */
         private int resolveRank(SameDiff sd, String varName, INDArray weight) {
-            // First try: direct shape lookup on the variable itself
+            // Only use the direct shape lookup — BFS through producer chains is unreliable
+            // because it can follow reshape boundaries or reach weight matrices (2D) and
+            // return the wrong rank.
             SDVariable directVar = sd.getVariable(varName);
             if (directVar != null) {
                 long[] shape = directVar.getShape();
@@ -291,80 +312,23 @@ public class HorizontalFusionOptimizations extends BaseOptimizerSet {
                 }
             }
 
-            // Second try: BFS through producer ops to find ANY variable with known shape
-            Set<String> visited = new HashSet<>();
-            Deque<String> queue = new ArrayDeque<>();
-            queue.add(varName);
-
-            while (!queue.isEmpty()) {
-                String current = queue.poll();
-                if (!visited.add(current)) continue;
-
-                SDVariable v = sd.getVariable(current);
-                if (v == null) continue;
-
-                long[] shape = v.getShape();
-                if (shape != null && shape.length > 0) {
-                    return shape.length;
-                }
-
-                // Trace back through producer ops
-                Variable vMeta = sd.getVariables().get(current);
-                if (vMeta != null && vMeta.getOutputOfOp() != null) {
-                    String opKey = vMeta.getOutputOfOp();
-                    // Handle ":0" suffix from FlatBuffers dup
-                    if (opKey.contains(":")) {
-                        opKey = opKey.substring(0, opKey.indexOf(':'));
-                    }
-                    SameDiffOp producerOp = sd.getOps().get(opKey);
-                    if (producerOp == null) {
-                        producerOp = sd.getOps().get(vMeta.getOutputOfOp());
-                    }
-                    if (producerOp != null && producerOp.getInputsToOp() != null) {
-                        for (String input : producerOp.getInputsToOp()) {
-                            queue.add(input);
-                        }
-                    }
-                }
-            }
-
-            // Third try: infer from weight matrix.
-            // matmul(X, W) where W=[D,H] → output has same rank as X.
-            // Weight is always 2D, so output rank >= 2.
-            // For transformers, activations are typically 3D [batch, seq, hidden].
-            // Check if any consumer of the activation has known output shapes that hint at rank.
-            if (weight != null && weight.rank() == 2) {
-                // Count how many other ops use the activation — if any produce known shapes, use those
-                Variable avMeta = sd.getVariables().get(varName);
-                if (avMeta != null && avMeta.getInputsForOp() != null) {
-                    for (String opName : avMeta.getInputsForOp()) {
-                        SameDiffOp consOp = sd.getOps().get(opName);
-                        if (consOp != null && consOp.getOutputsOfOp() != null) {
-                            for (String outVar : consOp.getOutputsOfOp()) {
-                                SDVariable ov = sd.getVariable(outVar);
-                                if (ov != null) {
-                                    long[] oShape = ov.getShape();
-                                    if (oShape != null && oShape.length > 0) {
-                                        return oShape.length;  // Sibling output has known rank
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Default: assume 2D (standard matmul).
-            // matmul output is always at least rank 2.
-            return 2;
+            // Could not determine rank from any source.
+            // Return -1 to signal "unknown" — caller must skip fusion rather than
+            // guess wrong (guessing 2 when truth is 3 causes stridedSlice misconfiguration).
+            return -1;
         }
 
         /**
-         * resolveRank wrapper that enforces a minimum rank of 2 for matmul outputs.
-         * A matmul(X, W) where W is 2D always produces output with rank >= 2.
+         * resolveRank wrapper that returns -1 when rank cannot be determined.
+         * Returns -1 to signal that fusion should be skipped (unknown rank makes
+         * stridedSlice configuration unsafe — guessing 2 when truth is 3 causes
+         * strided_slice end_index > dimension errors at runtime).
          */
         private int resolveRankSafe(SameDiff sd, String varName, INDArray weight) {
             int rank = resolveRank(sd, varName, weight);
+            if (rank <= 0) {
+                return -1;  // unknown — caller must skip fusion
+            }
             // matmul output can never be 1D — enforce minimum of 2
             return Math.max(rank, 2);
         }

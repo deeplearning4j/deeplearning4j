@@ -1,0 +1,38 @@
+{
+  "id": "re-enabled-session3c",
+  "branch": "ag_new_release_updates_2",
+  "commit": {"full": "a420800821c456857bbab9bc50e726b005405437", "short": "a420800821"},
+  "commitMessage": "Continued re-enabling @Disabled tests — batch 3",
+  "commitAuthor": "agibsonccc",
+  "passing": true,
+  "module": "re-enabled-disabled-tests-batch3",
+  "totalTests": 17,
+  "passed": 17,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Batch 3 of re-enabling @Disabled tests. All were stale @Disabled markers or minor test annotation bugs. Production fixes: RandomProjection targetShape(long[]) overloads, ExternalErrorsFunction diff() bypass. Test fixes: ConvolutionTestsC @Test+@ParameterizedTest conflict, JUnit4→5 assertEquals order in 2 eval tests.",
+  "testDetails": [
+    {"class": "SameDiffGradientTest", "method": "testExternalErrorsSimple", "status": "PASS", "fix": "ExternalErrorsFunction.diff() override bypasses accumulation"},
+    {"class": "ROCBinaryTest", "method": "testROCBinary", "status": "PASS", "fix": "JUnit4→5 assertEquals arg order"},
+    {"class": "ROCTest", "method": "testRocBinaryMerge", "status": "PASS", "fix": "removed stale @Disabled"},
+    {"class": "NewInstanceTest", "method": "testNewInstances", "status": "PASS", "fix": "JUnit4→5 assertEquals arg order"},
+    {"class": "TestRandomProjection", "method": "testJohnsonLindenStraussDim+testTargetShape+testTargetEpsilonChecks+testTargetShapeTooHigh+testBasicEmbedding", "status": "PASS", "fix": "targetShape(long[]) overloads + OOM fix"},
+    {"class": "ConvolutionTestsC", "method": "testMaxPoolBackprop", "status": "PASS", "fix": "@Test+@ParameterizedTest conflict + missing backend param"},
+    {"class": "LegacyWeightInitTest", "method": "initParamsFromDistribution", "status": "PASS", "fix": "removed stale @Disabled"},
+    {"class": "LegacyWeightInitTest", "method": "serializeDeserializeDistributionJson", "status": "PASS", "fix": "removed stale @Disabled"},
+    {"class": "TestComputationGraphNetwork", "method": "testCompGraphInputReuse", "status": "PASS", "fix": "removed stale @Disabled"},
+    {"class": "MixedDataTypesTests", "method": "testArrayCreationFromPointer", "status": "PASS", "fix": "removed stale @Disabled"},
+    {"class": "TestNDArrayCreation", "method": "testCreateNpy", "status": "PASS", "fix": "removed stale @Disabled"},
+    {"class": "TestNDArrayCreation", "method": "testCreateNpz", "status": "PASS", "fix": "removed stale @Disabled"},
+    {"class": "NumpyFormatTests", "method": "testAbsentNumpyFile_2", "status": "PASS", "fix": "removed stale @Disabled"},
+    {"class": "Nd4jTestsC", "method": "testTensorDot", "status": "PASS", "fix": "removed stale @Disabled"},
+    {"class": "Nd4jTestsC", "method": "testJaccardDistance1", "status": "PASS", "fix": "removed stale @Disabled"},
+    {"class": "TestRandomProjection", "method": "testEmbedding", "status": "DISABLED", "fix": "native SEGV in Reduction3Loops::loopReduce3All<EuclideanDistance> with f-order arrays"}
+  ],
+  "productionFixes": [
+    "ExternalErrorsFunction.java: diff() override bypasses DifferentialFunction.diff() gradient accumulation",
+    "RandomProjection.java: public targetShape(long[], double) and targetShape(long[], int) overloads"
+  ],
+  "tags": ["cpu", "nd4j-native", "re-enabled", "disabled-tests", "production-fixes"],
+  "timestamp": "2026-06-04T07:30:00Z"
+}

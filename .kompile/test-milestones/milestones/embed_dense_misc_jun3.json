@@ -1,0 +1,21 @@
+{
+  "id": "embed_dense_misc_jun3",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "uncommitted",
+    "short": "uncommitted"
+  },
+  "commitMessage": "test: embedding, dense, dropout, frozen layer suites",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-dl4j-embed-dense-misc",
+  "totalTests": 13,
+  "passed": 13,
+  "failed": 0,
+  "skipped": 0,
+  "errors": 0,
+  "notes": "DenseTest(3/3 PASS), FrozenLayerTest(6/6 PASS), DropoutLayerTest(4/4 PASS). EmbeddingLayerTest CRASHED (JVM fork crash, exit 134, likely native SIGSEGV during embedding op). All 13 completed tests pass. EmbeddingLayerTest needs separate investigation.",
+  "tags": ["cpu", "nd4j-native", "dl4j-core", "embedding", "dense", "dropout", "frozen"],
+  "timestamp": "2026-06-03T15:50:00Z",
+  "previousMilestone": "recurrent_tests_jun3"
+}

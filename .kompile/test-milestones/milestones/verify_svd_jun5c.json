@@ -1,0 +1,16 @@
+{
+  "id": "verify_svd_jun5c",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-svd-deflation-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 43,
+  "passed": 43,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "notes": "NdArrayMmulSvdTest: ALL 43 pass. SVD deflation fix confirmed — removed strict sort check throw, just swap near-equal misordered elements. Integer GEMM fix (BaseLevel3 cast to FLOAT32) and row vector GEMM test shape fix also verified. Was 15 errors before all fixes, then 6 after first partial fix, now 0.",
+  "tags": ["cpu", "svd", "gemm", "integer", "verification", "fix-confirmed"],
+  "timestamp": "2026-06-05T17:46:00Z"
+}

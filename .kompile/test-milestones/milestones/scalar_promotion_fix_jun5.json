@@ -1,0 +1,18 @@
+{
+  "id": "scalar_promotion_fix_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821+scalar-promo-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "SameDiffDoubleScalarPromotionTest",
+  "totalTests": 3,
+  "passed": 3,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "",
+  "notes": "Fix: SameDiffSerializer.java and FlatBuffersMapper.java DOUBLE scalar deserialization now round-trip checks (double)(float)val==val and downcasts to FLOAT when lossless. Prevents matmul output type promotion to DOUBLE. All 3 tests pass including testNonRoundTrippableDoublePreserved.",
+  "tags": "cpu,fix-verification,scalar,samediff,serialization",
+  "timestamp": "2026-06-05T13:35:00Z"
+}

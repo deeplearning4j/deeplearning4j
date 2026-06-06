@@ -1,0 +1,18 @@
+{
+  "id": "batch_b7_outputlayer_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "OutputLayerTest",
+  "totalTests": 8,
+  "passed": 8,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "",
+  "notes": "All 8 tests passed. 8.857s elapsed.",
+  "tags": "cpu,passing",
+  "timestamp": "2026-06-05T01:55:00Z"
+}

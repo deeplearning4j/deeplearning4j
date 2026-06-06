@@ -68,8 +68,7 @@ import java.util.List;
 @Builder
 public class VideoPreprocessor {
 
-    @Builder.Default
-    private VLMImagePreprocessor imagePreprocessor = VLMImagePreprocessor.defaultPreprocessor();
+    private VLMImagePreprocessor imagePreprocessor;
 
     @Builder.Default
     private VideoFrameSampler sampler = VideoFrameSampler.builder().build();

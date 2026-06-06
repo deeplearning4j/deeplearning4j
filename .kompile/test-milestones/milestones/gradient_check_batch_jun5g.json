@@ -1,0 +1,23 @@
+{
+  "id": "gradient_check_batch_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-horizontal-fusion-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 5,
+  "passed": 5,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "CNNGradientCheckTest": {"run": 0, "pass": 0, "errors": 1, "notes": "JVM OOM-killed (51GB RSS) during test - 159 gradient checks ran and all passed before crash"},
+    "BNGradientCheckTest": {"run": 5, "pass": 5}
+  },
+  "failures": [
+    "CNNGradientCheckTest: JVM OOM-killed — Cannot allocate LongPointer, physicalBytes=57476M. 159 gradient checks completed, ALL passing before crash."
+  ],
+  "notes": "BNGradientCheckTest 5/5 pass. CNNGradientCheckTest JVM OOM-killed during execution — all 159 gradient checks that ran were passing (0 failed). Need to re-run CNNGradientCheckTest alone with lower memory pressure.",
+  "tags": ["cpu", "gradient-check", "dl4j", "cnn", "batch-normalization", "oom"],
+  "timestamp": "2026-06-05T22:03:00Z"
+}

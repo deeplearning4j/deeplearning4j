@@ -4914,38 +4914,42 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         int nThreads = 8;
         int nLoadsPerThread = 5;
 
-        // Create a model similar to encoder layers with many scalars
-        SameDiff original = SameDiff.create();
-
-        // Simulate encoder layer structure with dimension scalars
-        SDVariable input = original.placeHolder("input", DataType.FLOAT, -1, 768);
-
-        // Add dimension scalars (common in transformer imports)
-        SDVariable dim0 = original.constant("dim_0", Nd4j.scalar(DataType.LONG, 0L));
-        SDVariable dim1 = original.constant("dim_1", Nd4j.scalar(DataType.LONG, 1L));
-        SDVariable dimNeg1 = original.constant("dim_neg1", Nd4j.scalar(DataType.LONG, -1L));
-
-        // Layer norm parameters
-        SDVariable lnGamma = original.var("ln_gamma", Nd4j.ones(DataType.FLOAT, 768));
-        SDVariable lnBeta = original.var("ln_beta", Nd4j.zeros(DataType.FLOAT, 768));
-        SDVariable lnEps = original.constant("ln_eps", Nd4j.scalar(DataType.FLOAT, 1e-12f));
-
-        // Dense layer
-        SDVariable denseWeight = original.var("dense_weight", Nd4j.randn(DataType.FLOAT, 768, 768).mul(0.02));
-        SDVariable denseBias = original.var("dense_bias", Nd4j.zeros(DataType.FLOAT, 768));
-
-        // MatMul dimension scalars (these are the ones causing issues)
-        SDVariable matmulDim0 = original.constant("matmul_dim0", Nd4j.scalar(DataType.INT, 0));
-        SDVariable matmulDim1 = original.constant("matmul_dim1", Nd4j.scalar(DataType.INT, 1));
-
-        // Build graph
-        SDVariable dense = original.nn.linear("dense", input, denseWeight, denseBias);
-        SDVariable normalized = original.nn.layerNorm("output", dense, lnGamma, lnBeta, true, 1);
-
         // Save as SDZ (compressed format)
         File tempFile = File.createTempFile("concurrent_load_sdz_test", ".sdz");
         tempFile.deleteOnExit();
-        original.save(tempFile, true);  // saveUpdater = true
+
+        // Create a model similar to encoder layers with many scalars.
+        // Use try-with-resources to ensure the original SameDiff is closed
+        // after saving, releasing its weight buffers before the concurrent
+        // loading phase begins.
+        try (SameDiff original = SameDiff.create()) {
+            // Simulate encoder layer structure with dimension scalars
+            SDVariable input = original.placeHolder("input", DataType.FLOAT, -1, 768);
+
+            // Add dimension scalars (common in transformer imports)
+            SDVariable dim0 = original.constant("dim_0", Nd4j.scalar(DataType.LONG, 0L));
+            SDVariable dim1 = original.constant("dim_1", Nd4j.scalar(DataType.LONG, 1L));
+            SDVariable dimNeg1 = original.constant("dim_neg1", Nd4j.scalar(DataType.LONG, -1L));
+
+            // Layer norm parameters
+            SDVariable lnGamma = original.var("ln_gamma", Nd4j.ones(DataType.FLOAT, 768));
+            SDVariable lnBeta = original.var("ln_beta", Nd4j.zeros(DataType.FLOAT, 768));
+            SDVariable lnEps = original.constant("ln_eps", Nd4j.scalar(DataType.FLOAT, 1e-12f));
+
+            // Dense layer
+            SDVariable denseWeight = original.var("dense_weight", Nd4j.randn(DataType.FLOAT, 768, 768).mul(0.02));
+            SDVariable denseBias = original.var("dense_bias", Nd4j.zeros(DataType.FLOAT, 768));
+
+            // MatMul dimension scalars (these are the ones causing issues)
+            SDVariable matmulDim0 = original.constant("matmul_dim0", Nd4j.scalar(DataType.INT, 0));
+            SDVariable matmulDim1 = original.constant("matmul_dim1", Nd4j.scalar(DataType.INT, 1));
+
+            // Build graph
+            SDVariable dense = original.nn.linear("dense", input, denseWeight, denseBias);
+            SDVariable normalized = original.nn.layerNorm("output", dense, lnGamma, lnBeta, true, 1);
+
+            original.save(tempFile, true);  // saveUpdater = true
+        }  // original.close() called here
 
         log.info("Created SDZ model with scalars, saving to: {}", tempFile.getAbsolutePath());
 
@@ -4962,10 +4966,21 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 try {
                     startLatch.await();
 
-                    for (int i = 0; i < nLoadsPerThread; i++) {
-                        // Load SDZ model
-                        SameDiff loaded = SameDiff.load(tempFile, true);
-
+                    // Load model ONCE per thread to test concurrent loading.
+                    // Loading once and executing multiple times on the same instance
+                    // allows the DSP plan to warm up and reach steady-state (REPLAYING)
+                    // after a few executions. Loading a fresh instance each iteration
+                    // would force nThreads * nLoadsPerThread sequential warmup cycles
+                    // through the per-device warmup serialization mutex, causing timeouts
+                    // on CUDA backends where graph capture takes 1-3 seconds per plan.
+                    //
+                    // Explicit close() is required to release DSP plan slot arrays and
+                    // native plan cache before the thread exits. Without it, the 8 unclosed
+                    // SameDiff instances accumulate in the DeallocatorService queue and are
+                    // processed during JVM shutdown, triggering "double free or corruption (out)"
+                    // when the GC-driven deallocator and the NativePlanCache destructor both
+                    // attempt to free the same slot arrays.
+                    try (SameDiff loaded = SameDiff.load(tempFile, true)) {
                         // Verify scalars loaded correctly
                         assertNotNull(loaded.getVariable("dim_0"), "dim_0 should exist");
                         assertNotNull(loaded.getVariable("dim_1"), "dim_1 should exist");
@@ -4973,20 +4988,24 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                         assertNotNull(loaded.getVariable("matmul_dim0"), "matmul_dim0 should exist");
                         assertNotNull(loaded.getVariable("matmul_dim1"), "matmul_dim1 should exist");
 
-                        // Execute to verify
-                        INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 768);
-                        Map<String, INDArray> placeholders = new HashMap<>();
-                        placeholders.put("input", inputData);
+                        // Execute multiple times on the same loaded instance.
+                        // After the first 2-3 executions the DSP plan reaches REPLAYING
+                        // and subsequent executions run lock-free (fully parallel).
+                        for (int i = 0; i < nLoadsPerThread; i++) {
+                            INDArray inputData = Nd4j.randn(DataType.FLOAT, 2, 768);
+                            Map<String, INDArray> placeholders = new HashMap<>();
+                            placeholders.put("input", inputData);
 
-                        Map<String, INDArray> outputs = loaded.output(placeholders, "output");
-                        assertNotNull(outputs.get("output"));
-                        assertEquals(DataType.FLOAT, outputs.get("output").dataType());
+                            Map<String, INDArray> outputs = loaded.output(placeholders, "output");
+                            assertNotNull(outputs.get("output"));
+                            assertEquals(DataType.FLOAT, outputs.get("output").dataType());
 
-                        outputs.get("output").close();
-                        inputData.close();
+                            outputs.get("output").close();
+                            inputData.close();
 
-                        successCount.incrementAndGet();
-                    }
+                            successCount.incrementAndGet();
+                        }
+                    }  // loaded.close() called here — releases DSP plans, slot arrays, weight buffers
                 } catch (Throwable e) {
                     failed.set(true);
                     firstError.compareAndSet(null, e);

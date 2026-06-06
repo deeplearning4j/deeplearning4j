@@ -1644,13 +1644,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (i < 0)
             i += rank();
 
-        // TODO: i'm not sure that rank == 1 has fair shortcut here
+        // rank == 1 shortcut must include the array's offset() to handle views correctly
         if (isScalar()) {
             autoProcessScalarCall();
             data.put(i, value);
             return this;
         } else if (rank() == 1) {
-            data.put(i * stride(0), value);
+            data.put(offset() + i * stride(0), value);
             return this;
         }
 
@@ -4698,7 +4698,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray getColumn(long c) {
-        return getColumn(c, true);
+        return getColumn(c, false);
     }
 
     @Override

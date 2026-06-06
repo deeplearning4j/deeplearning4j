@@ -744,8 +744,8 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         row = row.reshape(1, row.length());
         assertArrayEquals(new long[]{1, 4}, row.shape());
 
-        val result1 = row.ulike();
-        val result2 = row.ulike();
+        val result1 = Nd4j.create(DataType.BOOL, row.shape());
+        val result2 = Nd4j.create(DataType.BOOL, row.shape());
 
         Nd4j.exec(new IsMax(row.dup(), result1, 1));        //OK
         Nd4j.exec(new IsMax(row, result2, 1));              //C++ exception
@@ -760,8 +760,8 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(DataType.FLOAT, 3, 3, 4, 4).permute(0, 2, 3, 1);
 
-        INDArray out_permutedIn = in.like();
-        INDArray out_dupedIn = in.like();
+        INDArray out_permutedIn = Nd4j.create(DataType.BOOL, in.shape());
+        INDArray out_dupedIn = Nd4j.create(DataType.BOOL, in.shape());
 
         Nd4j.exec(new IsMax(in.dup(), out_dupedIn, 2, 3));
         Nd4j.exec(new IsMax(in, out_permutedIn, 2, 3));

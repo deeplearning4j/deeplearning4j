@@ -1,0 +1,27 @@
+{
+  "id": "batch48_config_builder_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 58,
+  "passed": 58,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "CNNProcessorTest": {"run": 7, "pass": 7},
+    "LayerConfigTest": {"run": 8, "pass": 8},
+    "LayerBuilderTest": {"run": 11, "pass": 11},
+    "MultiLayerNeuralNetConfigurationTest": {"run": 12, "pass": 12},
+    "JsonTest": {"run": 2, "pass": 2, "notes": "dl4j + keras JsonTest classes"},
+    "ComputationGraphConfigurationTest": {"run": 9, "pass": 9},
+    "MultiNeuralNetConfLayerBuilderTest": {"run": 1, "pass": 1},
+    "WeightInitUtilTest": {"run": 8, "pass": 8}
+  },
+  "failures": [],
+  "notes": "9 classes ran (8 specified, JsonTest found in 2 packages). All 58 tests pass. Clean.",
+  "tags": ["cpu", "config", "builder", "layers", "json", "weights"],
+  "timestamp": "2026-06-06T01:42:00Z"
+}

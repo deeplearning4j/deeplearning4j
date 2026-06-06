@@ -645,10 +645,23 @@ public class ForwardExecutionDAGBuilder {
             }
         }
 
-        // Check if it's a variable/constant/placeholder (these don't have producers)
+        // Check if it's a variable/constant/placeholder (these don't have producers).
+        // EXCEPTION: ONNX import can create VARIABLE-type nodes that ARE outputs of ops
+        // (e.g., /Concat_output_0_ is type VARIABLE but produced by a Concat op).
+        // If outputOfOp is set, the variable HAS a producer and we must return it —
+        // otherwise the producing op is excluded from the DAG and the DSP compiler
+        // treats the variable as a stale external input with zero-initialized values.
         Variable var = sameDiff.getVariables().get(variableName);
         if (var != null) {
             VariableType type = var.getVariable().getVariableType();
+            // If the variable has a producing op, return it regardless of type.
+            // This handles ONNX-imported variables that are misclassified as VARIABLE
+            // but are actually computed intermediates (outputs of Concat, Shape, etc.).
+            String outputOfOp = var.getOutputOfOp();
+            if (outputOfOp != null && !outputOfOp.isEmpty()
+                    && sameDiff.getOps().containsKey(outputOfOp)) {
+                return outputOfOp;
+            }
             if (type == VariableType.CONSTANT || type == VariableType.VARIABLE || type == VariableType.PLACEHOLDER) {
                 return null;
             }
@@ -776,6 +789,12 @@ public class ForwardExecutionDAGBuilder {
     private Set<String> findConstants() {
         return sameDiff.getVariables().values().stream()
             .filter(v -> v.getVariable().getVariableType() == VariableType.CONSTANT)
+            // Exclude constants that are outputs of ops — same rationale as findVariables().
+            .filter(v -> {
+                String outputOfOp = v.getOutputOfOp();
+                return outputOfOp == null || outputOfOp.isEmpty()
+                        || !sameDiff.getOps().containsKey(outputOfOp);
+            })
             .map(v -> v.getVariable().name())
             .collect(Collectors.toSet());
     }
@@ -783,6 +802,15 @@ public class ForwardExecutionDAGBuilder {
     private Set<String> findVariables() {
         return sameDiff.getVariables().values().stream()
             .filter(v -> v.getVariable().getVariableType() == VariableType.VARIABLE)
+            // Exclude variables that are outputs of ops — these are computed intermediates
+            // misclassified as VARIABLE during ONNX import (e.g., /Concat_output_0_).
+            // They must be treated as op outputs, not external inputs, so their producing
+            // ops are included in the DAG and compute the correct values at execution time.
+            .filter(v -> {
+                String outputOfOp = v.getOutputOfOp();
+                return outputOfOp == null || outputOfOp.isEmpty()
+                        || !sameDiff.getOps().containsKey(outputOfOp);
+            })
             .map(v -> v.getVariable().name())
             .collect(Collectors.toSet());
     }

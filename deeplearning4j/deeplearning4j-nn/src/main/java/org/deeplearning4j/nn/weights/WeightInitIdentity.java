@@ -44,12 +44,12 @@ public class WeightInitIdentity implements IWeightInit {
 
     @Override
     public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
-        if (shape[0] != shape[1]) {
-            throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
-                    + Arrays.toString(shape) + ": weights must be a square matrix for identity");
-        }
         switch (shape.length) {
             case 2:
+                if (shape[0] != shape[1]) {
+                    throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
+                            + Arrays.toString(shape) + ": weights must be a square matrix for identity");
+                }
                return setIdentity2D(shape, order, paramView);
             case 3:
             case 4:
@@ -77,33 +77,67 @@ public class WeightInitIdentity implements IWeightInit {
     }
 
     /**
-     * Set identity mapping for convolution layers. When viewed as an NxM matrix of kernel tensors,
-     * identity mapping is when parameters is a diagonal matrix of identity kernels.
+     * Set identity mapping for convolution layers. Supports both OIYX format [oC, iC, kH, kW, ...]
+     * (used by Conv3D, rank 5) and YXIO format [kH, kW, ..., iC, oC] (used by Conv1D/Conv2D, rank 3-4).
+     * The identity kernel has 1s at the center spatial position along the diagonal of the
+     * input/output channel dimensions.
      * @param shape Shape of parameters
      * @param order Order of parameters
      * @param paramView View of parameters
      * @return A reshaped view of paramView which results in identity mapping when used in convolution layers
      */
     private INDArray setIdentityConv(long[] shape, char order, INDArray paramView) {
-        final INDArrayIndex[] indArrayIndices = new INDArrayIndex[shape.length];
-        for(int i = 2; i < shape.length; i++) {
-            if(shape[i] % 2 == 0) {
-                throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
-                        + Arrays.toString(shape) + "! Must have odd sized kernels!");
-            }
-            indArrayIndices[i] = NDArrayIndex.point(shape[i] / 2);
-        }
+        int rank = shape.length;
+        // Rank 5 = Conv3D uses OIYX [oC, iC, kD, kH, kW]
+        // Rank 3/4 = Conv1D/Conv2D uses YXIO [kH, kW, ..., iC, oC]
+        boolean isOIYX = (rank == 5);
 
-        paramView.assign(0);
-        final INDArray params =paramView.reshape(order, shape);
-        for (int i = 0; i < shape[0]; i++) {
-            indArrayIndices[0] = NDArrayIndex.point(i);
-            indArrayIndices[1] = NDArrayIndex.point(i);
-            params.put(indArrayIndices, Nd4j.ones(1));
+        final INDArrayIndex[] indArrayIndices = new INDArrayIndex[rank];
+        long nChannels;
+
+        if (isOIYX) {
+            for (int i = 2; i < rank; i++) {
+                if (shape[i] % 2 == 0) {
+                    throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
+                            + Arrays.toString(shape) + "! Must have odd sized kernels!");
+                }
+                indArrayIndices[i] = NDArrayIndex.point(shape[i] / 2);
+            }
+            nChannels = Math.min(shape[0], shape[1]);
+            paramView.assign(0);
+            final INDArray params = paramView.reshape(order, shape);
+            for (int i = 0; i < nChannels; i++) {
+                indArrayIndices[0] = NDArrayIndex.point(i);
+                indArrayIndices[1] = NDArrayIndex.point(i);
+                params.put(indArrayIndices, Nd4j.ones(1));
+            }
+            if (scale != null) {
+                params.muli(scale);
+            }
+            return params;
+        } else {
+            int nSpatialDims = rank - 2;
+            for (int i = 0; i < nSpatialDims; i++) {
+                if (shape[i] % 2 == 0) {
+                    throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
+                            + Arrays.toString(shape) + "! Must have odd sized kernels!");
+                }
+                indArrayIndices[i] = NDArrayIndex.point(shape[i] / 2);
+            }
+            long nIn = shape[rank - 2];
+            long nOut = shape[rank - 1];
+            nChannels = Math.min(nIn, nOut);
+            paramView.assign(0);
+            final INDArray params = paramView.reshape(order, shape);
+            for (int i = 0; i < nChannels; i++) {
+                indArrayIndices[rank - 2] = NDArrayIndex.point(i);
+                indArrayIndices[rank - 1] = NDArrayIndex.point(i);
+                params.put(indArrayIndices, Nd4j.ones(1));
+            }
+            if (scale != null) {
+                params.muli(scale);
+            }
+            return params;
         }
-        if(scale != null){
-            params.muli(scale);
-        }
-        return params;
     }
 }

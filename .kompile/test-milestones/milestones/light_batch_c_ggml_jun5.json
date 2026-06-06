@@ -1,0 +1,17 @@
+{
+  "id": "light_batch_c_ggml_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "ArchitectureTest,AttentionSinkDetectorTest,DecoderMaskedMhaTest,DequantizerTest,DspHandleDataModelTest,ExportArchitectureTest,ExportOptionsTest,ExternalInputSourceTypeTest,ForceCloseConstantPoisonedTest,GGMLDataTypeTest,GGMLFormatDetectorTest,GGUFReaderTest,GGUFWriterTest",
+  "totalTests": 220,
+  "passed": 220,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "notes": "Light batch C: 13 ggml/dsp/misc classes, all pass on CPU.",
+  "tags": "cpu,light,ggml,dsp,misc",
+  "timestamp": "2026-06-05T10:55:00Z"
+}

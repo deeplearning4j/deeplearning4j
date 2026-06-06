@@ -1,0 +1,24 @@
+{
+  "id": "batch43_verify_fixes_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 2,
+  "passed": 2,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "TestSparseSoftmaxDirect": {"run": 2, "pass": 2, "notes": "Both direct op and SameDiff paths pass after casting labels to INT"}
+  },
+  "failures": [],
+  "fixes_applied": [
+    "TestSparseSoftmaxDirect: cast all label arrays to DataType.INT (sparse_softmax op requires ALL_INTS)",
+    "GradCheckUtil.checkGradients(): added DSP save/disable/restore around numerical gradient loop"
+  ],
+  "notes": "SparseSoftmax fully fixed. GradCheckUtil DSP fix confirmed working (MoE numericalGrad now non-zero, but real gradient mismatch remains — backward pass bug, not DSP).",
+  "tags": ["cpu", "sparse-softmax", "gradcheck-dsp", "fix-verification"],
+  "timestamp": "2026-06-06T01:25:00Z"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "bidirectional_vertex_fix_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821+bidir-fix+vertex-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "TestTimeDistributed,SameDiffCustomLayerTests",
+  "totalTests": 6,
+  "passed": 6,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "notes": "Fix verification: BidirectionalLayer NWC concat dim fix (was always dim 1, now dim 2 for NWC) + SameDiffGraphVertex null parent workspace NPE fix. Both fixes verified. TestTimeDistributed (4 pass), SameDiffCustomLayerTests (2 pass). BUILD SUCCESS.",
+  "tags": "cpu,fix-verification,bidirectional,samediff,all-pass",
+  "timestamp": "2026-06-05T10:12:00Z"
+}

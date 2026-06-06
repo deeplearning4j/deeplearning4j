@@ -173,7 +173,7 @@ public class TestVLMModelImportPipeline {
         log.info("Imported CLIP model with {} variables", sd.variables().size());
 
         // Verify CLIP-style preprocessing works
-        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.defaultPreprocessor();
+        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromModelDirectory(new File("."));
         INDArray testInput = createTestInput(model);
 
         assertEquals(224, testInput.shape()[2], "CLIP expects 224x224 input");

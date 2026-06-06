@@ -1,0 +1,19 @@
+{
+  "id": "n7o8p9q0",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "2263b615ce23df3894b32d42f8b853d8b0fe3e85",
+    "short": "2263b615ce"
+  },
+  "commitMessage": "fix: IntegrationTestsDL4J @AfterEach -> @AfterAll for static method",
+  "commitAuthor": "agibsonccc",
+  "passing": true,
+  "module": "cpu-native-integration",
+  "totalTests": 16,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 16,
+  "notes": "FIXED: @AfterEach on static afterClass() -> @AfterAll. All 16 tests skipped (tagged for specific conditions), 0 failures, 0 errors. BUILD SUCCESS.",
+  "tags": ["cpu", "integration", "nd4j-native", "fixed"],
+  "timestamp": "2026-06-02T21:02:43Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "recurrent_tests_jun3",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "uncommitted",
+    "short": "uncommitted"
+  },
+  "commitMessage": "test: recurrent layer suites",
+  "commitAuthor": "agibsonccc",
+  "passing": true,
+  "module": "cpu-native-dl4j-recurrent",
+  "totalTests": 10,
+  "passed": 10,
+  "failed": 0,
+  "skipped": 0,
+  "errors": 0,
+  "notes": "ALL PASS. TestSimpleRnn(4/4), TestRnnLayers(6/6). No failures, no errors.",
+  "tags": ["cpu", "nd4j-native", "dl4j-core", "recurrent", "rnn", "lstm"],
+  "timestamp": "2026-06-03T15:40:00Z",
+  "previousMilestone": "transfer_learning_fix_jun3"
+}

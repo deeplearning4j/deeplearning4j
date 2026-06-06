@@ -98,7 +98,11 @@ public class VLMImagePreprocessor implements AutoCloseable {
      * @param workspace optional workspace for memory management
      */
     public VLMImagePreprocessor(PreprocessorConfig config, DeviceDescriptor targetDevice, MultiBackendWorkspace workspace) {
-        this.config = config != null ? config : PreprocessorConfig.forClip();
+        if (config == null) {
+            throw new IllegalArgumentException(
+                    "PreprocessorConfig must not be null. Load from preprocessor_config.json via PreprocessorConfig.fromFile() or fromModelDirectory().");
+        }
+        this.config = config;
         this.targetHeight = this.config.getTargetHeight();
         this.targetWidth = this.config.getTargetWidth();
         this.numChannels = this.config.getNumChannels() != null ? this.config.getNumChannels() : 3;
@@ -149,31 +153,33 @@ public class VLMImagePreprocessor implements AutoCloseable {
     }
 
     /**
-     * Create a default preprocessor (CLIP-style).
+     * Create a preprocessor with default CLIP/ImageNet-style settings.
+     * Uses 224x224 target size, standard ImageNet mean=[0.485,0.456,0.406]
+     * and std=[0.229,0.224,0.225], with rescaling enabled.
      *
-     * @return default preprocessor
+     * @return a new VLMImagePreprocessor with default settings
      */
     public static VLMImagePreprocessor defaultPreprocessor() {
-        return new VLMImagePreprocessor(PreprocessorConfig.forClip());
+        PreprocessorConfig config = new PreprocessorConfig();
+        config.setDoResize(true);
+        config.setSize(new PreprocessorConfig.ImageSize(224, 224));
+        config.setDoRescale(true);
+        config.setDoNormalize(true);
+        config.setImageMean(new double[]{0.485, 0.456, 0.406});
+        config.setImageStd(new double[]{0.229, 0.224, 0.225});
+        return new VLMImagePreprocessor(config);
     }
 
     /**
-     * Create a preprocessor for SmolDocling.
+     * Create a preprocessor by loading config from a model directory.
+     * Looks for preprocessor_config.json or processor_config.json.
      *
-     * @return SmolDocling preprocessor
+     * @param modelDir the model directory containing preprocessor config
+     * @return the preprocessor
+     * @throws IOException if no config file found or parsing fails
      */
-    public static VLMImagePreprocessor forSmolDocling() {
-        return new VLMImagePreprocessor(PreprocessorConfig.forSmolDocling());
-    }
-
-    /**
-     * Create a preprocessor for LLaVA models.
-     *
-     * @return LLaVA preprocessor
-     */
-    public static VLMImagePreprocessor forLlava() {
-        PreprocessorConfig config = PreprocessorConfig.forClip();
-        config.setSize(new PreprocessorConfig.ImageSize(336, 336));
+    public static VLMImagePreprocessor fromModelDirectory(File modelDir) throws IOException {
+        PreprocessorConfig config = PreprocessorConfig.fromModelDirectory(modelDir);
         return new VLMImagePreprocessor(config);
     }
 

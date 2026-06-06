@@ -562,7 +562,7 @@ public class TestVLMDecodeQuality {
 
     private INDArray buildTestInputEmbeddings() throws Exception {
         BufferedImage testImage = createTestImage();
-        PreprocessorConfig config = PreprocessorConfig.forSmolDocling();
+        PreprocessorConfig config = PreprocessorConfig.fromFile(VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_PREPROCESSOR_CONFIG).getModelFile());
         VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromConfig(config);
         ImageTiler.SplitImageResult split = ImageTiler.splitImageForVLM(testImage, config.getTargetHeight());
         List<BufferedImage> tiles = split.frames;

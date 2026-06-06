@@ -34,7 +34,7 @@ public class ImagePromptBuilder {
      * Build the expanded image prompt string for tiled document pages.
      *
      * The prompt uses tiles-first, global-last ordering to match the HuggingFace
-     * Idefics3 preprocessing that the model was trained with. Tile descriptors are
+     * Idefics3 preprocessing that SmolDocling was trained with. Tile descriptors are
      * emitted in row-major order, with newlines between rows.
      *
      * @param imageRows number of tile rows (0 if no tiling)

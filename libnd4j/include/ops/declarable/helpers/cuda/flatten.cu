@@ -57,11 +57,19 @@ static void SD_KERNEL flattenKernel(void **xBuffers, LongType **xShapeInfos, Lon
       LongType xOffset;
       LongType xCoords[SD_MAX_RANK];
 
-      // Compute x coordinates and offset
-      INDEX2COORDS(i, xRank, xShapePtr, xCoords);
+      if (order == 'f') {
+        // F-order: decompose linear index with dim 0 as fastest (LSB first)
+        LongType idx = i;
+        for (int d = 0; d < xRank; d++) {
+          xCoords[d] = idx % xShapePtr[d];
+          idx /= xShapePtr[d];
+        }
+      } else {
+        // C-order: decompose linear index with last dim as fastest
+        INDEX2COORDS(i, xRank, xShapePtr, xCoords);
+      }
       COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
 
-      // Write the value from xBuffer to the flattened zBuffer
       z[i] = xBuffer[xOffset];
     }
   }

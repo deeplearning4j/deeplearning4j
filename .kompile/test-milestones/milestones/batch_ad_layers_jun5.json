@@ -1,0 +1,17 @@
+{
+  "batch": "AD",
+  "name": "AutoEncoder, VAE, upsampling, dense tests",
+  "date": "2026-06-05T01:42:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "AutoEncoderTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "TestVAE": {"total": 9, "passed": 9, "failed": 0, "errors": 0},
+    "Upsampling1DTest": {"total": 2, "passed": 1, "failed": 1, "errors": 0, "note": "testUpsampling1D: NDArray assertEquals fails despite identical values and shapes — likely equality comparison issue. Previously passed in session8c."},
+    "Upsampling2DTest": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "DenseTest": {"total": 3, "passed": 3, "failed": 0, "errors": 0}
+  },
+  "known_issues": [
+    "Upsampling1DTest.testUpsampling1D: NDArray assertEquals fails despite identical printed values. Was passing in earlier session — possible regression in NDArray.equals() or stride difference."
+  ],
+  "summary": "17 tests run, 16 passed, 1 failure (Upsampling1D equality), 0 errors. EmbeddingLayerTest not resolved — needs investigation."
+}

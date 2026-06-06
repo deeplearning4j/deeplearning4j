@@ -1,0 +1,16 @@
+{
+  "id": "keras_batch5_4_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "KerasCroppingTest,KerasNoiseLayerTest,KerasUpsamplingTest,KerasZeroPaddingTest",
+  "totalTests": 29,
+  "passed": 29,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Keras batch 5 (final): 4 classes, ALL PASS. Cropping, noise, upsampling, zero padding layers all clean. This completes Keras coverage — all 57 Keras test classes now tested.",
+  "tags": "cpu,keras,all-pass,coverage-complete",
+  "timestamp": "2026-06-05T07:39:00Z"
+}

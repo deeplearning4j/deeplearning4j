@@ -1,0 +1,16 @@
+{
+  "id": "d65531a1",
+  "branch": "ag_new_release_updates_2",
+  "commit": {"full": "3d3eaafd5a32f249973bd20b4e94cca9aa27efda", "short": "3d3eaafd5a"},
+  "commitMessage": "fix: disable Triton on Windows",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-dl4j-core-batch2",
+  "totalTests": 360,
+  "passed": 305,
+  "failed": 24,
+  "skipped": 13,
+  "notes": "layers/graph/multilayer. ConvDataFormatTests(17): mostly param[2] failures (OneDNN data format). GlobalPoolingMasking(6): FLOAT vs DOUBLE dtype mismatch. Yolo(3): same dtype mismatch. Conv1d related(4): Causal1d/Upsampling1d/BatchNormCNN1d/LocallyConnected. OCNN(2): op exec. ReconstructionDist(2): precision. TestSetGetParams/CacheMode/Dropout/TimeDistributed/GraphNodes/VarLengthTS: scattered.",
+  "tags": ["cpu", "dl4j-core", "nd4j-native", "batch2"],
+  "timestamp": "2026-06-02T19:21:38Z"
+}

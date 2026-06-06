@@ -1,0 +1,38 @@
+{
+  "id": "dspA_cpu_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "DspExtInputDeviceStreamTest,DspExtInputMixedPrecisionCaptureTest,DspLifecycleExhaustiveTest,DspLruModuleResidencyTest,DspMixedPrecisionReplayTest,DspOpenVinoAccuracyTest,DspPostPrefillReshapeCrashTest,DspReplayDeviceAnalyticsTest",
+  "totalTests": 133,
+  "passed": 116,
+  "failed": 8,
+  "skipped": 19,
+  "crashed": 1,
+  "noTestsFound": 1,
+  "perClass": [
+    {"class": "DspExtInputDeviceStreamTest", "run": 79, "passed": 79, "failed": 0, "skipped": 19, "status": "PASS"},
+    {"class": "DspExtInputMixedPrecisionCaptureTest", "run": 0, "passed": 0, "failed": 0, "skipped": 0, "status": "NO_TESTS", "note": "Class exists but no tests matched on CPU backend - likely all CUDA-only"},
+    {"class": "DspLifecycleExhaustiveTest", "run": 0, "passed": 0, "failed": 0, "skipped": 0, "status": "CRASH", "note": "JVM SIGSEGV in sd::NDArray::shapeInfo() from DspHandle.getStagingBufferContent() in testIsolationStagingSumNumber — null NDArray pointer dereference"},
+    {"class": "DspLruModuleResidencyTest", "run": 3, "passed": 2, "failed": 1, "skipped": 0, "status": "FAIL", "failedTests": ["testWarnBytesEmitsWarning"], "note": "warnFireCount before=0 after=0 — Triton module-residency warn path never fires on CPU backend"},
+    {"class": "DspMixedPrecisionReplayTest", "run": 17, "passed": 10, "failed": 7, "skipped": 0, "status": "FAIL", "failedTests": ["testDecodeLoopReachesReplay[AUTO]", "testDecodeLoopReachesReplay[CUDA_GRAPHS]", "testDecodeLoopReachesReplay[TRITON]", "testFp16WeightChainNoNaN", "testFp16ConstantNoNaNThroughLifecycle[AUTO]", "testFp16ConstantNoNaNThroughLifecycle[CUDA_GRAPHS]", "testFp16ConstantNoNaNThroughLifecycle[TRITON]"], "note": "DSP phase contract violations: plans stuck in SHAPES_FROZEN/WARMUP after 30 executions, never advancing to COMPILING/REPLAYING. ADDRESS_DRIFT + PHASE_DEMOTION violations on all 3 modes."},
+    {"class": "DspOpenVinoAccuracyTest", "run": 9, "passed": 9, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"class": "DspPostPrefillReshapeCrashTest", "run": 15, "passed": 15, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"class": "DspReplayDeviceAnalyticsTest", "run": 10, "passed": 10, "failed": 0, "skipped": 0, "status": "PASS"}
+  ],
+  "failedTests": [
+    "DspLifecycleExhaustiveTest — CRASH (SIGSEGV in sd::NDArray::shapeInfo() from DspHandle.getStagingBufferContent)",
+    "DspLruModuleResidencyTest.testWarnBytesEmitsWarning",
+    "DspMixedPrecisionReplayTest.testDecodeLoopReachesReplay[AUTO]",
+    "DspMixedPrecisionReplayTest.testDecodeLoopReachesReplay[CUDA_GRAPHS]",
+    "DspMixedPrecisionReplayTest.testDecodeLoopReachesReplay[TRITON]",
+    "DspMixedPrecisionReplayTest.testFp16WeightChainNoNaN",
+    "DspMixedPrecisionReplayTest.testFp16ConstantNoNaNThroughLifecycle[AUTO]",
+    "DspMixedPrecisionReplayTest.testFp16ConstantNoNaNThroughLifecycle[CUDA_GRAPHS]",
+    "DspMixedPrecisionReplayTest.testFp16ConstantNoNaNThroughLifecycle[TRITON]"
+  ],
+  "notes": "4 of 8 classes passed clean. 1 JVM crash (DspLifecycleExhaustiveTest SIGSEGV in native NDArray.shapeInfo from DspHandle.getStagingBufferContent). 1 Triton-specific failure on CPU (DspLruModuleResidencyTest warn path never fires). 7 DSP phase contract violations in DspMixedPrecisionReplayTest — plans stuck in SHAPES_FROZEN/WARMUP, never advancing to REPLAYING on CPU backend. DspExtInputMixedPrecisionCaptureTest had 0 runnable tests on CPU.",
+  "tags": "cpu,dsp",
+  "timestamp": "2026-06-05T14:55:00Z"
+}

@@ -172,6 +172,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
 
+        if (input.rank() != 4) {
+            String layerName = conf.getLayer().getLayerName();
+            if (layerName == null) layerName = "(not named)";
+            throw new DL4JInvalidInputException("Cannot do forward pass in ConvolutionLayer (layer name = "
+                    + layerName + ", layer index = " + index + "): input is not rank 4 (expected rank 4 "
+                    + "[minibatch, channels, height, width] or [minibatch, height, width, channels], "
+                    + "got rank " + input.rank() + " with shape " + Arrays.toString(input.shape()) + "). "
+                    + "Possible cause: missing preprocessor or wrong InputType? " + layerId());
+        }
 
         INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
@@ -205,6 +214,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             }
             throw new DL4JInvalidInputException(s);
         }
+
+        // Validate output size (catches kernel > input, bad strides in Strict mode, etc.)
+        ConvolutionUtils.getOutputSize(input,
+                new long[]{kH, kW},
+                new long[]{layerConf().getStride()[0], layerConf().getStride()[1]},
+                new long[]{layerConf().getPadding()[0], layerConf().getPadding()[1]},
+                layerConf().getConvolutionMode(),
+                new long[]{layerConf().getDilation()[0], layerConf().getDilation()[1]},
+                format);
 
         Conv2DConfig config = Conv2DConfig.builder()
                 .dH(layerConf().getDilation()[0])

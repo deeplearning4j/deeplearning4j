@@ -1,0 +1,16 @@
+{
+  "id": "78812541",
+  "branch": "ag_new_release_updates_2",
+  "commit": {"full": "3d3eaafd5a32f249973bd20b4e94cca9aa27efda", "short": "3d3eaafd5a"},
+  "commitMessage": "fix: disable Triton on Windows",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-nd4j-core-batch2",
+  "totalTests": 717,
+  "passed": 548,
+  "failed": 2,
+  "skipped": 146,
+  "notes": "custom/indexing/convolution/api/inverse/dimreduction. 12 of 21 errors are CUDA-only tests (CudaMemoryPool*, CudaModifiedOp) expected on CPU. Real issues: VisionTransformerOps TwoWayCrossAttention(5), MultiBackend attention+conv(2), TAD shapes(1), ShapeInfo EWS(1), Flatten(1), StringSplit(1). 146 skipped includes many CUDA-tagged tests.",
+  "tags": ["cpu", "nd4j-core", "nd4j-native", "batch2"],
+  "timestamp": "2026-06-02T19:12:41Z"
+}

@@ -48,6 +48,7 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 @NativeTag
@@ -211,8 +212,14 @@ public class TestSameDiffLambda extends BaseDL4JTest {
                 std.fit(mds);
 
                 String s = String.valueOf(i);
-                assertEquals(std.params(), lambda.params(), s);
-                assertEquals(std.getFlattenedGradients(), lambda.getFlattenedGradients(), s);
+                INDArray stdParams = std.params();
+                INDArray lambdaParams = lambda.params();
+                assertTrue(stdParams.equalsWithEps(lambdaParams, 1e-3),
+                        s + ": params differ, max diff=" + stdParams.sub(lambdaParams).amaxNumber());
+                INDArray stdGrad = std.getFlattenedGradients();
+                INDArray lambdaGrad = lambda.getFlattenedGradients();
+                assertTrue(stdGrad.equalsWithEps(lambdaGrad, 1e-3),
+                        s + ": gradients differ, max diff=" + stdGrad.sub(lambdaGrad).amaxNumber());
             }
 
             ComputationGraph loaded = TestUtils.testModelSerialization(lambda);

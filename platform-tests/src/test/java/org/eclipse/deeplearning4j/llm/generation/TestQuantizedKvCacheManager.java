@@ -65,13 +65,23 @@ class TestQuantizedKvCacheManager {
         assertEquals(DataType.FLOAT, dequantized.dataType(), "Dequantized should be FLOAT");
         assertArrayEquals(new long[]{4, 8}, dequantized.shape(), "Dequantized shape should match input");
 
-        // Check accuracy: INT8 quantization should have < 1% relative error for typical values
+        // Check accuracy: INT8 quantization with scale = absmax/127 has worst-case relative error
+        // of scale/(2*|v|) = absmax/(254*|v|). For error < 2%, we need |v| > absmax*0.197.
+        // We threshold at 0.2 * per-row absmax to exclude small values dominated by quant noise.
+        int numCols = 8;
         double maxRelError = 0.0;
         for (int r = 0; r < 4; r++) {
-            for (int c = 0; c < 8; c++) {
+            // Compute per-row absmax
+            double rowAbsMax = 0.0;
+            for (int c = 0; c < numCols; c++) {
+                rowAbsMax = Math.max(rowAbsMax, Math.abs(input.getFloat(r, c)));
+            }
+            // Only measure relative error for values >= 20% of row absmax
+            double threshold = 0.2 * rowAbsMax;
+            for (int c = 0; c < numCols; c++) {
                 float orig = input.getFloat(r, c);
                 float deq = dequantized.getFloat(r, c);
-                if (Math.abs(orig) > 0.01) {
+                if (Math.abs(orig) >= threshold) {
                     double relError = Math.abs((orig - deq) / orig);
                     maxRelError = Math.max(maxRelError, relError);
                 }
@@ -97,13 +107,24 @@ class TestQuantizedKvCacheManager {
         INDArray[] deqResult = Nd4j.exec(deqOp);
         INDArray dequantized = deqResult[0];
 
-        // INT4 has much lower precision -- allow up to 20% relative error
+        // INT4 has much lower precision. scale = absmax/7, step = scale.
+        // Worst-case relative error for a value v: scale/(2*|v|) = absmax/(14*|v|).
+        // For error < 25%, we need |v| > absmax/(14*0.25) = absmax*0.286.
+        // We threshold at 0.3 * per-row absmax to exclude small values dominated by quant noise.
+        int numCols = 8;
         double maxRelError = 0.0;
         for (int r = 0; r < 4; r++) {
-            for (int c = 0; c < 8; c++) {
+            // Compute per-row absmax
+            double rowAbsMax = 0.0;
+            for (int c = 0; c < numCols; c++) {
+                rowAbsMax = Math.max(rowAbsMax, Math.abs(input.getFloat(r, c)));
+            }
+            // Only measure relative error for values >= 30% of row absmax
+            double threshold = 0.3 * rowAbsMax;
+            for (int c = 0; c < numCols; c++) {
                 float orig = input.getFloat(r, c);
                 float deq = dequantized.getFloat(r, c);
-                if (Math.abs(orig) > 0.1) {
+                if (Math.abs(orig) >= threshold) {
                     double relError = Math.abs((orig - deq) / orig);
                     maxRelError = Math.max(maxRelError, relError);
                 }

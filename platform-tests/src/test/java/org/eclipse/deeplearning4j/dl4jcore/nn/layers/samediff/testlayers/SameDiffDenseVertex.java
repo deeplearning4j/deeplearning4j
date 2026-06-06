@@ -65,7 +65,7 @@ public class SameDiffDenseVertex extends SameDiffVertex {
     public void defineParametersAndInputs(SDVertexParams params) {
         params.defineInputs("in");
         params.addWeightParam("W", nIn, nOut);
-        params.addBiasParam("b", 1, nOut);
+        params.addBiasParam("b", nOut);
     }
 
     @Override

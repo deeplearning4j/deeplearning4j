@@ -447,7 +447,16 @@ PLATFORM_CHECK(flash_attention, ENGINE_CPU) {
   auto value = INPUT_VARIABLE(2);
 
   const auto qType = query->dataType();
-  const bool isSupportedType = (qType == DataType::FLOAT32 || qType == DataType::HALF || qType == DataType::BFLOAT16);
+  // Runtime ISA detection: BF16 requires AVX512_CORE_BF16, HALF requires AVX512_CORE_AMX_FP16
+  bool isSupportedType = (qType == DataType::FLOAT32);
+  if (!isSupportedType && qType == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (!isSupportedType && qType == DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
   const bool isSupportedRank = (query->rankOf() == 3 || query->rankOf() == 4);
 
   // For 4D, check if GQA is used (currently not supported)

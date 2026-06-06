@@ -1,0 +1,20 @@
+{
+  "id": "re-enabled-session8g",
+  "branch": "ag_new_release_updates_2",
+  "passing": true,
+  "module": "batch4c-remaining-shape-transfer",
+  "totalTests": 19,
+  "passed": 19,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Session 8g: Remaining shape tests + transfer learning. All 19 pass. Shape: StaticShapeTests (2), TestPermuteRankMismatchAdaptation (8), LongShapeTests (2), ShapeBufferTests (3). Transfer: TestFrozenLayers (2). TestTransferLearningJson and TestTransferLearningModelSerializer extend BaseDL4JTest not BaseNd4jTestWithBackends — need separate run.",
+  "testResults": [
+    {"test": "StaticShapeTests", "run": 2, "passed": 2, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "TestPermuteRankMismatchAdaptation", "run": 8, "passed": 8, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "LongShapeTests", "run": 2, "passed": 2, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "ShapeBufferTests", "run": 3, "passed": 3, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "TestFrozenLayers", "run": 2, "passed": 2, "failed": 0, "skipped": 0, "status": "PASS"}
+  ],
+  "tags": ["cpu", "nd4j-native", "batch-testing", "shape-tests", "transfer-learning"],
+  "timestamp": "2026-06-04T13:22:00Z"
+}

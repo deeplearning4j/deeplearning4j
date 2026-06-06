@@ -1,0 +1,30 @@
+{
+  "id": "batch18_misc_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 39,
+  "passed": 22,
+  "failed": 0,
+  "errors": 11,
+  "skipped": 6,
+  "classes": {
+    "TestDeformableConvOpValidation": {"run": 11, "pass": 0, "errors": 11, "notes": "All fail: gradient check exception — deformable_conv2d backward not implemented on CPU"},
+    "TestDependencyTracker": {"run": 4, "pass": 4},
+    "TestDropout_layers": {"run": 1, "pass": 1},
+    "TestDropout_conf": {"run": 11, "pass": 11},
+    "TestDataSets": {"run": 2, "pass": 2},
+    "TestDistributionDeserializer": {"run": 2, "pass": 2},
+    "TestDownload": {"run": 2, "pass": 2},
+    "TestDeepWalk": {"run": 6, "pass": 0, "skipped": 6, "notes": "All skipped (missing tags)"}
+  },
+  "notRun": ["TestDataSetConsumer", "TestDb"],
+  "failures": [
+    "TestDeformableConvOpValidation: all 11 tests fail — deformable_conv2d gradient check exception"
+  ],
+  "notes": "7 of 9 requested classes ran successfully. TestDeformableConvOpValidation has 11 errors (backward pass not implemented). TestDeepWalk all skipped. TestDataSetConsumer and TestDb not found.",
+  "tags": ["cpu", "deformable-conv", "dropout", "dependency", "distribution", "download"],
+  "timestamp": "2026-06-05T23:46:00Z"
+}

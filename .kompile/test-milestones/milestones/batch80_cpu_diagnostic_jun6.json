@@ -1,0 +1,24 @@
+{
+  "id": "batch80_cpu_diagnostic_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-tp-pipeline-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 26,
+  "passed": 26,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "FusedRoPEContiguityTest": {"run": 6, "pass": 6},
+    "HeapCorruptionReproducerTest": {"run": 17, "pass": 17},
+    "MobileNetIsolationTest": {"run": 1, "pass": 1},
+    "ImdbLstmIsolationTest": {"run": 1, "pass": 1},
+    "BatchGemmDiagnosticTest": {"run": 1, "pass": 1}
+  },
+  "failures": [],
+  "notes": "5 classes all pass. GTestResultParser not found by surefire.",
+  "tags": ["cpu", "diagnostic", "rope", "keras-import", "isolation"],
+  "timestamp": "2026-06-06T05:13:00Z"
+}

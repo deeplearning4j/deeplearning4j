@@ -1,0 +1,15 @@
+{
+  "batch": "R",
+  "name": "Text tokenizer, labels, and stream iterator tests",
+  "date": "2026-06-05T00:57:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "DefaulTokenizerTests": {"total": 4, "passed": 4, "failed": 0, "errors": 0},
+    "NGramTokenizerTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "NGramTokenizerFactoryTest": {"total": 4, "passed": 4, "failed": 0, "errors": 0},
+    "EndingPreProcessorTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "LabelsSourceTest": {"total": 6, "passed": 6, "failed": 0, "errors": 0},
+    "StreamLineIteratorTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0}
+  },
+  "summary": "17 tests run, 17 passed, 0 failures, 0 errors. All tokenizer and label tests pass cleanly."
+}

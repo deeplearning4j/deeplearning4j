@@ -1,0 +1,28 @@
+{
+  "id": "batch51_lightweight_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 14,
+  "passed": 14,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "LapackDiagTest": {"run": 1, "pass": 1},
+    "MinMaxStrategyTest": {"run": 1, "pass": 1},
+    "MinMaxStatsTest": {"run": 1, "pass": 1},
+    "MatchDebugTest": {"run": 4, "pass": 4},
+    "Regression2dAdapterTest": {"run": 2, "pass": 2},
+    "KerasGlobalPoolingTest": {"run": 2, "pass": 2},
+    "MemoryTrackerTest": {"run": 1, "pass": 1},
+    "AsyncLabelAwareIteratorTest": {"run": 1, "pass": 1},
+    "DefaultDocumentIteratorTest": {"run": 1, "pass": 1}
+  },
+  "failures": [],
+  "notes": "9 of 10 class patterns matched (Word2VecVisualizationTests not found). All 14 tests pass. Clean.",
+  "tags": ["cpu", "lightweight", "lapack", "stats", "keras", "iterator"],
+  "timestamp": "2026-06-06T02:45:00Z"
+}

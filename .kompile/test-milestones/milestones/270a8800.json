@@ -1,0 +1,16 @@
+{
+  "id": "270a8800",
+  "branch": "ag_new_release_updates_2",
+  "commit": {"full": "3d3eaafd5a32f249973bd20b4e94cca9aa27efda", "short": "3d3eaafd5a"},
+  "commitMessage": "fix: disable Triton on Windows",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-eval",
+  "totalTests": 91,
+  "passed": 76,
+  "failed": 12,
+  "skipped": 3,
+  "notes": "12 failures all in 3D/4D eval masking tests. Root cause: BaseNDArrayFactory.concat() fast path reads non-contiguous views incorrectly.",
+  "tags": ["cpu", "evaluation", "nd4j-native"],
+  "timestamp": "2026-06-02T17:47:51Z"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "batch85_dsp_fixed_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-isa-fix-rebuild",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 470,
+  "passed": 470,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 19,
+  "jvmCrash": false,
+  "classes": {
+    "DspExtInputStalenessTest": {"run": 470, "pass": 470, "skip": 19, "notes": "Fixed: testVariableWeightGetsStaging CPU backend guard for staging buffers (CUDA-only concept). All 3 previously failing tests now pass."}
+  },
+  "failures": [],
+  "notes": "DspExtInputStalenessTest fully passing after CPU backend guard fix for staging buffer assertion. 470/470 pass, 19 skipped (uncompiled plan guards).",
+  "tags": ["cpu", "dsp", "fixed"],
+  "timestamp": "2026-06-06T06:55:00Z"
+}

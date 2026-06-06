@@ -1,0 +1,19 @@
+{
+  "id": "rnnopval_crash_jun5e",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-reduce-float-clip-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 0,
+  "passed": 0,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "TestRnnOpValidation": {"run": 0, "crash": "SIGABRT exit 134 after testGRUCell"}
+  },
+  "notes": "TestRnnOpValidation crashes with SIGABRT exit 134 after testGRUCell completes. Same pattern as TestLayerOpValidation and TestListeners — systemic native heap corruption in op validation framework.",
+  "tags": ["cpu", "opvalidation", "crash", "sigabrt"],
+  "timestamp": "2026-06-05T19:04:00Z"
+}

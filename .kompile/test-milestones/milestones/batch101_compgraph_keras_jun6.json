@@ -1,0 +1,27 @@
+{
+  "id": "batch101_compgraph_keras_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-simpo-kto-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 18,
+  "passed": 18,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "jvmCrash": true,
+  "classes": {
+    "KerasModelImportSameDiffTest": {"run": 3, "pass": 3},
+    "ComputationGraphSameDiffConverterTest": {"run": 15, "pass": 15},
+    "TestComputationGraphNetwork": {"run": 0, "pass": 0, "notes": "double free or corruption (!prev) — JVM crash during test execution"},
+    "TestOutputLayerGradientChecks": {"run": 0, "pass": 0, "notes": "Not reached — JVM crash"},
+    "KerasActivationLayer": {"run": 0, "pass": 0, "notes": "Not reached — JVM crash"}
+  },
+  "failures": [
+    "JVM double free crash during TestComputationGraphNetwork — 3 classes not reached"
+  ],
+  "notes": "5 classes. 2 completed (18/18 pass). TestComputationGraphNetwork crashed JVM with double free. Systemic native heap corruption.",
+  "tags": ["cpu", "comp-graph", "keras", "jvm-crash"],
+  "timestamp": "2026-06-06T08:20:00Z"
+}

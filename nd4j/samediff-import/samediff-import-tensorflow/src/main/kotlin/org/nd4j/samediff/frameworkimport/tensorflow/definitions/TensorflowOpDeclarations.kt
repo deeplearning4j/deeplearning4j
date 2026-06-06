@@ -1797,11 +1797,13 @@ val resizeNearestNeighbor = multipleNameMapping(inputFrameworkOpNames = listOf("
         tensorNames = mutableMapOf("image" to "images","newImageSize" to "size")
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
-// ReverseV2 is handled by PreImportHook (ReverseV2.kt) to properly handle axis input tensor
+// ReverseV2 maps to the ND4J reverse op. TF inputs: tensor (index 0), axis (index 1).
+// ND4J reverse inputs: input (index 0), dimensions (index 1).
 val reverse = TensorflowMappingProcess(
-        opName = "noop",
+        opName = "reverse",
         opMappingRegistry = tensorflowOpRegistry,
-        inputFrameworkOpName = "ReverseV2"
+        inputFrameworkOpName = "ReverseV2",
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "tensor", "dimensions" to "axis")))
 )
 
 val reverseSequence = multipleNameMapping(inputFrameworkOpNames = listOf("ReverseSequence"),opName = "reverse_sequence",

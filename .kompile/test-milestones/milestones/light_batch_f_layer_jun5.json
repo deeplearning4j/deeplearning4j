@@ -1,0 +1,18 @@
+{
+  "id": "light_batch_f_layer_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "NeuralNetConfigurationTest,OpaqueNDArrayTests,PrimaryCapsulesTest,RepeatVectorTest,SeedTest,SpaceToDepthTest,TestCustomActivation,TestInvalidConfigurations,TestInvalidInput,TestIrisCrashRepro,Upsampling1DTest,Upsampling2DTest,Regression2dAdapterTest,RegressionEvalTest,ScalarCrashTest,ScalarOpsSmokeTests,ReduceOpsSmokeTests,TestUIDProvider",
+  "totalTests": 103,
+  "passed": 102,
+  "failed": 1,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "Upsampling1DTest.testUpsampling1D (assertEquals dtype mismatch)",
+  "notes": "Light batch F: 18 layer/network/misc classes. 1 failure (Upsampling1D dtype), 1 JVM crash (TestIrisCrashRepro SIGABRT during MLN fit).",
+  "tags": "cpu,light,layer,network,jvm-crash",
+  "timestamp": "2026-06-05T11:05:00Z"
+}

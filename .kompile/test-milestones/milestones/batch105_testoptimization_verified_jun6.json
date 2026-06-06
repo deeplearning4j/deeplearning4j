@@ -1,0 +1,21 @@
+{
+  "id": "batch105_testoptimization_verified_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "already-fixed",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 3,
+  "passed": 3,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "jvmCrash": false,
+  "classes": {
+    "TestOptimization": {"run": 3, "pass": 3, "notes": "VERIFIED: testConstantOpFolding and testConstantOpFolding2 already fixed on branch — assertEquals(INDArray) changed to getDouble(0) with 1e-5 tolerance"}
+  },
+  "failures": [],
+  "notes": "All 3 tests pass. Fix was already applied on this branch.",
+  "tags": ["cpu", "optimizer", "fix-confirmed"],
+  "timestamp": "2026-06-06T08:14:00Z"
+}

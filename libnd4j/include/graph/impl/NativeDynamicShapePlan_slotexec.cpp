@@ -1083,20 +1083,8 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       if (input0 == nullptr || input0->dataBuffer() == nullptr
           || !input0->dataBuffer()->isValid()) {
         // Input DataBuffer was freed (placeholder closed between calls).
-        // Demote this slot from view producer so normal execution recomputes it.
-        DSP_DIAG_SLOT(MEMORY, stepIdx,
-            "REFRESH_VIEW_DEMOTE: step %d (%s) outputSlot=%d input0 unresolved or invalid "
-            "— demoting from view producer",
-            stepIdx, slot.ident.opName.c_str(), outSi);
-        slots_[outSi].slotPhase.isViewProducer = false;
-        auto* demoteDb = cachedValid ? cached->dataBuffer() : nullptr;
-        if (!cachedValid || (demoteDb != nullptr && !demoteDb->isValid())) {
-          outputSlots_[outSi] = nullptr;
-          planOwnedArrays_.erase(cached);
-          if (cachedValid) {
-            deferredDeletes.push_back(cached);
-          }
-        }
+        // demoteViewProducer inspects the slot and clears it if stale.
+        demoteViewProducer(outSi, "refresh-input-invalid");
         refreshedCount++;
         continue;
       }
@@ -1104,20 +1092,8 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       if (!slot.shapeCacheValid() ||
           outIdx >= static_cast<int>(slot.shapeCache.cachedOutputShapes.size()) ||
           slot.shapeCache.cachedOutputShapes[outIdx] == nullptr) {
-        // Shape cache not valid — demote this slot like above.
-        DSP_DIAG_SLOT(MEMORY, stepIdx,
-            "REFRESH_VIEW_DEMOTE: step %d (%s) outputSlot=%d has no cached output shape "
-            "— demoting from view producer",
-            stepIdx, slot.ident.opName.c_str(), outSi);
-        slots_[outSi].slotPhase.isViewProducer = false;
-        auto* demoteDb2 = cachedValid ? cached->dataBuffer() : nullptr;
-        if (!cachedValid || (demoteDb2 != nullptr && !demoteDb2->isValid())) {
-          outputSlots_[outSi] = nullptr;
-          planOwnedArrays_.erase(cached);
-          if (cachedValid) {
-            deferredDeletes.push_back(cached);
-          }
-        }
+        // Shape cache not valid — demoteViewProducer inspects + cleans up.
+        demoteViewProducer(outSi, "refresh-no-shape-cache");
         refreshedCount++;
         continue;
       }
@@ -1161,44 +1137,13 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
         // cached NDArray keeps wrapping a freed DataBuffer whose shape metadata
         // decays to UNKNOWN dtype, poisoning downstream ops.
         if (vcr == VIEW_NOT_POSSIBLE) {
-          DSP_DIAG_SLOT(MEMORY, stepIdx,
-              "REFRESH_VIEW_DEMOTE: step %d (%s) outputSlot=%d cannot create "
-              "zero-copy view (input non-contiguous) — demoting from view producer, "
-              "slot will be recomputed during execution",
-              stepIdx, slot.ident.opName.c_str(), outSi);
-          slots_[outSi].slotPhase.isViewProducer = false;
-          // If the cached output holds a stale/freed DataBuffer, null it out
-          // so normal execution allocates fresh.
-          auto* demoteCachedDb = cachedValid ? cached->dataBuffer() : nullptr;
-          if (!cachedValid || (demoteCachedDb != nullptr && !demoteCachedDb->isValid())) {
-            outputSlots_[outSi] = nullptr;
-            planOwnedArrays_.erase(cached);
-            if (cachedValid) {
-              deferredDeletes.push_back(cached);
-            }
-          }
+          demoteViewProducer(outSi, "refresh-view-not-possible");
           refreshedCount++;
           continue;
         }
 
-        // VIEW_STALE_EMPTY_SHAPE or VIEW_STRIDED_SLICE_FAIL: demote like
-        // VIEW_NOT_POSSIBLE — the slot cannot be a view, let normal execution
-        // recompute it.
-        DSP_DIAG_SLOT(MEMORY, stepIdx,
-            "REFRESH_VIEW_DEMOTE: step %d (%s) outputSlot=%d tryCreateViewForSlot "
-            "returned %d — demoting from view producer",
-            stepIdx, slot.ident.opName.c_str(), outSi, static_cast<int>(vcr));
-        slots_[outSi].slotPhase.isViewProducer = false;
-        {
-          auto* demoteCachedDb2 = cachedValid ? cached->dataBuffer() : nullptr;
-          if (!cachedValid || (demoteCachedDb2 != nullptr && !demoteCachedDb2->isValid())) {
-            outputSlots_[outSi] = nullptr;
-            planOwnedArrays_.erase(cached);
-            if (cachedValid) {
-              deferredDeletes.push_back(cached);
-            }
-          }
-        }
+        // VIEW_STALE_EMPTY_SHAPE or VIEW_STRIDED_SLICE_FAIL
+        demoteViewProducer(outSi, "refresh-view-create-fail");
         refreshedCount++;
         continue;
       }
@@ -1705,23 +1650,32 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     }
   }
 
+  // Build requested output set — in-place fusion must not overwrite a slot
+  // whose value the caller explicitly asked for (e.g. sd.outputAll()).
+  std::unordered_set<int> requestedOutputSlotSet;
+  if (requestedOutputSlotIndices_ != nullptr) {
+    for (int i = 0; i < numRequestedOutputs_; i++) {
+      int si = requestedOutputSlotIndices_[i];
+      if (si >= 0 && si < totalOutputSlots_) {
+        requestedOutputSlotSet.insert(si);
+      }
+    }
+  }
+
   int disabledInPlace = 0;
   for (int s = 0; s < numSlots_; s++) {
     auto& sl = slots_[s];
-    if (!sl.flags.inPlaceFused || sl.flags.inPlaceFusedInputIdx < 0 ||
-        sl.flags.inPlaceFusedInputIdx >= sl.wiring.numInputs) continue;
-
-    int srcSlot = sl.wiring.inputSourceIndices[sl.flags.inPlaceFusedInputIdx];
+    int srcSlot = sl.inPlaceSourceSlot();
     if (srcSlot < 0) continue;
 
     bool mustDisable =
         frozenOutputSlots.count(srcSlot) ||        // frozen buffer: read-only
         valueDepInputSlots.count(srcSlot) ||        // value-dep input: must survive
-        slotConsumerCount[srcSlot] > 1;             // multi-consumer: others need it
+        slotConsumerCount[srcSlot] > 1 ||           // multi-consumer: others need it
+        requestedOutputSlotSet.count(srcSlot);      // user-requested output: must preserve
 
     if (mustDisable) {
-      sl.flags.inPlaceFused = false;
-      sl.flags.inPlaceFusedInputIdx = -1;
+      sl.disableInPlaceFusion();
       disabledInPlace++;
     }
   }
@@ -2235,7 +2189,7 @@ Status NativeDynamicShapePlan::executeSlot(
                                   ? ffNewView->dataBuffer()->getLenInBytes()
                                   : 0,
                               stream, "ff-view-install");
-          slots_[outSi].slotPhase.isViewProducer = true;
+          markViewProducer(outSi, "ff-view-install");
           auto& ffViewCtx = *contextPool_[stepIdx];
           ffViewCtx.setOutputArray(0, ffNewView);
           ffViewCtx.setInputArray(0, input0);
@@ -3142,7 +3096,7 @@ Status NativeDynamicShapePlan::executeSlot(
                                     ? newView->dataBuffer()->getLenInBytes()
                                     : 0,
                                 stream, "view-install");
-            slots_[si].slotPhase.isViewProducer = true;
+            markViewProducer(si, "view-install");
             auto& ctx2 = *contextPool_[stepIdx];
             ctx2.setOutputArray(0, newView);
             ctx2.setInputArray(0, input0);
@@ -4271,9 +4225,12 @@ Status NativeDynamicShapePlan::executeSlot(
   bool outputsReady = false;
 
   // ── In-place fusion: reuse input buffer as output ──
-  if (slot.flags.inPlaceFused && slot.flags.inPlaceFusedInputIdx >= 0 &&
-      slot.flags.inPlaceFusedInputIdx < slot.wiring.numInputs && numActualOutputs >= 1) {
-    NDArray* inPlaceBuffer = inputs[slot.flags.inPlaceFusedInputIdx];
+  // Guard on the input *index* (always non-negative for valid in-place ops),
+  // NOT inPlaceSourceSlot() which returns negative for external-sourced inputs.
+  // External inputs are valid in-place sources — they're in the inputs[] array.
+  if (slot.isInPlaceFused() && slot.inPlaceFusedInputIdx() >= 0 &&
+      slot.inPlaceFusedInputIdx() < slot.wiring.numInputs && numActualOutputs >= 1) {
+    NDArray* inPlaceBuffer = inputs[slot.inPlaceFusedInputIdx()];
     if (inPlaceBuffer != nullptr) {
       const LongType* expectedShape = outputShapes[0];
       if (shape::equalsSoft(inPlaceBuffer->shapeInfo(), expectedShape) &&
@@ -4466,7 +4423,7 @@ Status NativeDynamicShapePlan::executeSlot(
                                     ? existing->dataBuffer()->getLenInBytes()
                                     : 0,
                                 stream, "view-op-reuse");
-            slots_[slotIdx].slotPhase.isViewProducer = true;
+            markViewProducer(slotIdx, "view-op-reuse");
           } else {
             // Note: writeOutputSlot handles ownership and deferred cleanup safely.
             // It deletes the old array when safe (not referenced by other slots,
@@ -4477,8 +4434,7 @@ Status NativeDynamicShapePlan::executeSlot(
                                     ? view->dataBuffer()->getLenInBytes()
                                     : 0,
                                 stream, "view-op-install");
-            outputSlots_[slotIdx] = view;
-            slots_[slotIdx].slotPhase.isViewProducer = true;
+            markViewProducer(slotIdx, "view-op-install");
 
           }
         }
@@ -5212,7 +5168,7 @@ Status NativeDynamicShapePlan::executeSlot(
 
       if (!viewProducerDetectionDone_) {
         if (ctxOutputs[i] != outputs[i]) {
-          slots_[si].slotPhase.isViewProducer = true;
+          markViewProducer(si, "view-producer-detect");
           // writeOutputSlot handles safe deletion of old arrays
           writeOutputSlot(si, ctxOutputs[i], "view-producer-detect");
           DSP_DIAG_SLOT_WRITE(si, slot.ident.opName.c_str(),

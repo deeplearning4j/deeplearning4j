@@ -1,0 +1,16 @@
+{
+  "batch": "U",
+  "name": "Sequence vectors, graph walkers, serialization tests",
+  "date": "2026-06-05T01:03:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "SequenceVectorsTest": {"total": 5, "passed": 0, "failed": 0, "errors": 0, "skipped": 5, "note": "All tests skipped — likely require resource files or specific configuration"},
+    "PopularityWalkerTest": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "RandomWalkerTest": {"total": 7, "passed": 7, "failed": 0, "errors": 0},
+    "WeightedWalkerTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "GraphTransformerTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "AbstractElementFactoryTest": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "VocabWordFactoryTest": {"total": 2, "passed": 2, "failed": 0, "errors": 0}
+  },
+  "summary": "23 tests run, 18 passed, 0 failures, 0 errors, 5 skipped. Graph walker and serialization tests all pass. SequenceVectorsTest all skipped."
+}

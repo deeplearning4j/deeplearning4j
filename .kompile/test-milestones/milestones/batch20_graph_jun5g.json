@@ -1,0 +1,28 @@
+{
+  "id": "batch20_graph_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 118,
+  "passed": 113,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 5,
+  "classes": {
+    "TestGraphOptimizerFusions": {"run": 23, "pass": 23},
+    "TestGraphOptimizerPasses": {"run": 63, "pass": 63, "notes": "Heavy DSP test, 506s runtime"},
+    "TestGraphOptimizerInputMerge": {"run": 7, "pass": 7},
+    "TestGraphNodes": {"run": 14, "pass": 14},
+    "TestGradientNormalization": {"run": 5, "pass": 5},
+    "TestGraphHuffman": {"run": 1, "pass": 1},
+    "TestGraphLoadingWeighted": {"run": 2, "pass": 0, "skipped": 2},
+    "TestGraphLoading": {"run": 3, "pass": 0, "skipped": 3}
+  },
+  "notRun": ["TestGraphVertex"],
+  "failures": [],
+  "notes": "All 8 classes ran, 113 tests pass, 5 skipped. Zero failures. TestGraphOptimizerPasses (63 tests) ran full DSP pipeline. Clean batch.",
+  "tags": ["cpu", "graph-optimizer", "gradient-norm", "graph-nodes", "dsp"],
+  "timestamp": "2026-06-06T00:01:00Z"
+}

@@ -66,6 +66,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         INDArray indices = Nd4j.createFromArray(indexes);
         ScatterAdd op = new ScatterAdd(weightGradients, indices, delta);
+        op.addOutputArgument(weightGradients);
         Nd4j.getExecutioner().exec(op);
 
         Gradient ret = new DefaultGradient();

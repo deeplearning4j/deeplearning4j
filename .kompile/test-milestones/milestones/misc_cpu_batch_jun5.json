@@ -1,0 +1,16 @@
+{
+  "id": "misc_cpu_batch_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "5ea40f8d0a33106ef5726cbeb4d555e60b3f4d52",
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "AffinityManagerCpuDeviceTest,AggregableMultiOpArchTest,AllRegisteredOpsFrozenShapeTest,CacheModeTest,CpuDataBufferCloseCoordinationIsolationTest,CropAndResizeDataSetPreProcessorTest,AttnMaskReformatSubgraphTest,DynamicShapePlanPoolingTest,EmbeddingMergerTest,ExecutionModeContractTest",
+  "totalTests": 946,
+  "passed": 946,
+  "failed": 0,
+  "skipped": 0,
+  "failedTests": [],
+  "notes": "All 10 classes passed. AggregableMultiOpArchTest uses ArchUnit @ArchTest (not JUnit @Test) so reports 0 JUnit tests run but the arch rule is defined inline as a static field - treated as 0 runnable JUnit tests. AllRegisteredOpsFrozenShapeTest was the largest class with 827 tests. Counts: AffinityManagerCpuDeviceTest=19, AggregableMultiOpArchTest=0(ArchUnit), AllRegisteredOpsFrozenShapeTest=827, CacheModeTest=3, CpuDataBufferCloseCoordinationIsolationTest=2, CropAndResizeDataSetPreProcessorTest=10, AttnMaskReformatSubgraphTest=3, DynamicShapePlanPoolingTest=8, EmbeddingMergerTest=4, ExecutionModeContractTest=70.",
+  "tags": "cpu,misc",
+  "timestamp": "2026-06-05T05:30:00Z"
+}

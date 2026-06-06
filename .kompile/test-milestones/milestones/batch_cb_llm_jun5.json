@@ -1,0 +1,18 @@
+{
+  "id": "batch_cb_llm_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "BatchCompactorTest,BatchGenerationStateTest,DecoderUtilsTest,SamplerUtilsTest,KVCacheCheckpointTest,PerLayerKVPolicyTest",
+  "totalTests": 64,
+  "passed": 64,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "",
+  "notes": "6 previously untested LLM generation classes: batch compaction, generation state, decoder utils, sampler utils, KV cache checkpoint, per-layer KV policy. All pass clean on CPU.",
+  "tags": "cpu,llm,generation,untested",
+  "timestamp": "2026-06-05T13:05:00Z"
+}

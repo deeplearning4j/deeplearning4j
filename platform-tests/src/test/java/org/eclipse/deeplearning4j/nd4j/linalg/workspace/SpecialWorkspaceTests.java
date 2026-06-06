@@ -234,7 +234,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "WS109");
 
         INDArray row = Nd4j.linspace(1, 10, 10).castTo(DataType.DOUBLE);
-        INDArray exp = Nd4j.create(DataType.DOUBLE,10, 1).assign(2.0);
+        INDArray exp = Nd4j.create(DataType.DOUBLE, 10).assign(2.0);
         INDArray result = null;
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS109")) {
             INDArray matrix = Nd4j.create(DataType.DOUBLE,10, 10);

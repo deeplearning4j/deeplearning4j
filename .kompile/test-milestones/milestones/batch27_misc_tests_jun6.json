@@ -1,0 +1,33 @@
+{
+  "id": "batch27_misc_tests_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-sparsesoftmax-cpu-rebuild",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 66,
+  "passed": 62,
+  "failed": 0,
+  "errors": 2,
+  "skipped": 2,
+  "classes": {
+    "StringArrayTests": {"run": 7, "pass": 5, "errors": 2, "notes": "UTF8 data type unsupported — known limitation"},
+    "SubsamplingLayerTest": {"run": 6, "pass": 6},
+    "SVMLightRecordReaderTest": {"run": 15, "pass": 15},
+    "SVMLightRecordWriterTest": {"run": 11, "pass": 11},
+    "SystemPollingTest": {"run": 1, "pass": 0, "skipped": 1},
+    "SerializationUtilsTest": {"run": 1, "pass": 1},
+    "SolveDebugTest": {"run": 1, "pass": 1},
+    "StaticShapeTests": {"run": 2, "pass": 2},
+    "StreamLineIteratorTest": {"run": 1, "pass": 1},
+    "ROCTest (nd4j)": {"run": 20, "pass": 19, "skipped": 1},
+    "ROCTest (dl4jcore)": {"run": 1, "pass": 1}
+  },
+  "failures": [
+    "StringArrayTests.testBasicStrings_4: UTF8 data type unsupported",
+    "StringArrayTests.testBasicStrings_4a: UTF8 data type unsupported"
+  ],
+  "notes": "11 classes ran, 62 tests pass, 2 errors (UTF8 unsupported), 2 skipped. Only failures are UTF8 string ops — known limitation.",
+  "tags": ["cpu", "string", "subsampling", "svmlight", "roc", "serialization", "solve"],
+  "timestamp": "2026-06-06T00:20:00Z"
+}

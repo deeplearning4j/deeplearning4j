@@ -1,0 +1,21 @@
+{
+  "id": "workspace_ndarray_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-lambda-npe-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 41,
+  "passed": 31,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 10,
+  "classes": {
+    "WorkspaceProviderTests": {"run": 27, "pass": 25, "skip": 2},
+    "TestNDArrayCreation": {"run": 5, "pass": 2, "skip": 3},
+    "NDArrayMathTests": {"run": 9, "pass": 9}
+  },
+  "notes": "WorkspaceProviderTests, TestNDArrayCreation, NDArrayMathTests all pass. BasicNDArrayTests and Nd4jTestsC not run due to JVM crash from concurrent C++ build (exit 134/SIGABRT). Need to re-run those separately.",
+  "tags": ["cpu", "workspace", "ndarray", "creation", "math"],
+  "timestamp": "2026-06-05T21:25:00Z"
+}

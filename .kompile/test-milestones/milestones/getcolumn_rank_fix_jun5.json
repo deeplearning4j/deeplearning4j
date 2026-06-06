@@ -1,0 +1,18 @@
+{
+  "id": "getcolumn_rank_fix_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821+getcolumn-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "IndexingTests#test2dGetPoint",
+  "totalTests": 1,
+  "passed": 1,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "",
+  "notes": "Fix: BaseNDArray.getColumn(c) default changed from keepDim=true to keepDim=false. Historical behavior is rank reduction (returning [n] not [n,1]). Test expected rank 1 from getColumn.",
+  "tags": "cpu,fix-verification,indexing,getcolumn",
+  "timestamp": "2026-06-05T12:47:00Z"
+}

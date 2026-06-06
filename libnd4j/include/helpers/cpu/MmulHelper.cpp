@@ -425,7 +425,26 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
   }
 
   if ((!typeFloat && !typeDouble) || !sd::env_isEnableBlas()) {
-    BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
+    // When all three types match, usualGemm is safe as-is.
+    // When types differ (ABC=false), we must cast to a common type first —
+    // BUILD_SINGLE_SELECTOR_THRICE uses aType for all template params,
+    // which would reinterpret B/C buffers with wrong element size.
+    if (!ABC) {
+      // Promote to A's type — cast B and C if they differ.
+      NDArray* castB = (bType != aType) ? new NDArray(B->cast(aType)) : nullptr;
+      std::vector<LongType> cShape = {M, N};
+      NDArray* castC = (cType != aType) ? new NDArray(NDArray('c', cShape, aType, C->getContext())) : nullptr;
+      const NDArray* effB = (castB != nullptr) ? castB : B;
+      NDArray* effC = (castC != nullptr) ? castC : const_cast<NDArray*>(C);
+      BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, effB, effC, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
+      if (castC != nullptr) {
+        C->assign(effC);
+      }
+      delete castB;
+      delete castC;
+    } else {
+      BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
+    }
   } else {
     NDArray *pA = const_cast<NDArray*>(A);
     NDArray *pB = const_cast<NDArray*>(B);

@@ -1,0 +1,37 @@
+{
+  "id": "batch4_cpu_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "CacheEnabledDuringExecTest,DebugModeTests,CompareTrainingImplementations,ArrowWritableRecordTimeSeriesBatchTests,ConcurrentDownloaderTest,AsyncLabelAwareIteratorTest,DeepWalkGradientCheck,DspBatchedModulePreloadTest,DspCompositeReplayTest,DspConcurrentPlanSharingTest",
+  "totalTests": 18,
+  "passed": 8,
+  "failed": 4,
+  "skipped": 6,
+  "crashed": 1,
+  "failedTests": [
+    "DspCompositeReplayTest.test11_PlanAssertionsSmokeTest - [ADDRESS_DRIFT]+[PHASE_DEMOTION]: capturable segment stays in WARMUP after 11 execs (AUTO mode)",
+    "DspCompositeReplayTest.test17_PhaseTransitionTiming[AUTO] - segment[0] execCount=25 still in WARMUP, never advances to COMPILING/COMPILED/REPLAYING",
+    "DspCompositeReplayTest.test17_PhaseTransitionTiming[CUDA_GRAPHS] - same ADDRESS_DRIFT+PHASE_DEMOTION violation",
+    "DspCompositeReplayTest.test17_PhaseTransitionTiming[TRITON] - same ADDRESS_DRIFT+PHASE_DEMOTION violation"
+  ],
+  "crashedTests": [
+    "DspConcurrentPlanSharingTest - JVM SIGABRT (exit code 134) during startup; 0 tests ran; stderr: 'double free or corruption (!prev)' from libnd4jcpu.so"
+  ],
+  "perClassResults": {
+    "CacheEnabledDuringExecTest": {"run": 4, "passed": 4, "failed": 0, "skipped": 0, "status": "PASS"},
+    "DebugModeTests": {"run": 4, "passed": 4, "failed": 0, "skipped": 0, "status": "PASS"},
+    "CompareTrainingImplementations": {"run": 1, "passed": 0, "failed": 0, "skipped": 1, "status": "SKIP"},
+    "ArrowWritableRecordTimeSeriesBatchTests": {"run": 2, "passed": 0, "failed": 0, "skipped": 2, "status": "SKIP"},
+    "ConcurrentDownloaderTest": {"run": 1, "passed": 0, "failed": 0, "skipped": 1, "status": "SKIP"},
+    "AsyncLabelAwareIteratorTest": {"run": 1, "passed": 1, "failed": 0, "skipped": 0, "status": "PASS"},
+    "DeepWalkGradientCheck": {"run": 2, "passed": 0, "failed": 0, "skipped": 2, "status": "SKIP"},
+    "DspBatchedModulePreloadTest": {"run": 2, "passed": 2, "failed": 0, "skipped": 0, "status": "PASS"},
+    "DspCompositeReplayTest": {"run": 181, "passed": 177, "failed": 4, "skipped": 0, "status": "FAIL"},
+    "DspConcurrentPlanSharingTest": {"run": 0, "passed": 0, "failed": 0, "skipped": 0, "status": "CRASH", "exitCode": 134, "signal": "SIGABRT"}
+  },
+  "notes": "DspCompositeReplayTest: 4 phase contract violations - capturable segment[0] stays in WARMUP phase on CPU backend even after 11-25 executions, never advancing to COMPILING/COMPILED/REPLAYING. Both ADDRESS_DRIFT and PHASE_DEMOTION violations. DspConcurrentPlanSharingTest: JVM SIGABRT with 'double free or corruption (!prev)' from libnd4jcpu.so during class initialization before any tests run. 6 tests skipped (long-running or require external resources). Non-DSP tests all pass cleanly.",
+  "tags": "cpu,batch4,dsp,phase-contract-violation,double-free-crash",
+  "timestamp": "2026-06-05T05:55:00Z"
+}

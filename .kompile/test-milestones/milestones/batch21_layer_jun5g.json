@@ -1,0 +1,30 @@
+{
+  "id": "batch21_layer_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 24,
+  "passed": 24,
+  "failed": 0,
+  "errors": 1,
+  "skipped": 0,
+  "classes": {
+    "TestLossFunctionJson": {"run": 1, "pass": 1},
+    "TestLossFunctionsSizeChecks": {"run": 1, "pass": 1},
+    "TestLegacyJsonLoading": {"run": 1, "pass": 1},
+    "TestMemoryReports": {"run": 6, "pass": 6},
+    "TestLrChanges": {"run": 5, "pass": 5},
+    "TestLastTimeStepLayer": {"run": 4, "pass": 4},
+    "TestMasking": {"run": 5, "pass": 5},
+    "TestListeners": {"run": 0, "errors": 1, "notes": "JVM crash SIGABRT exit 134"},
+    "TestLineRecordReaderFunction": {"run": 1, "pass": 1}
+  },
+  "failures": [
+    "TestListeners: JVM crash SIGABRT exit 134 — native heap corruption"
+  ],
+  "notes": "8 of 9 classes fully pass, all 24 tests pass. TestListeners crashed JVM (systemic SIGABRT).",
+  "tags": ["cpu", "loss", "masking", "lr-changes", "memory-reports", "listeners", "crash"],
+  "timestamp": "2026-06-05T23:56:00Z"
+}

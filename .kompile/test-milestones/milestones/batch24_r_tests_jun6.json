@@ -1,0 +1,32 @@
+{
+  "id": "batch24_r_tests_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-sparsesoftmax-cpu-rebuild",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 61,
+  "passed": 59,
+  "failed": 1,
+  "errors": 0,
+  "skipped": 1,
+  "classes": {
+    "RGBtoGrayscaleDataSetPreProcessorTest": {"run": 3, "pass": 3},
+    "RationalTanhTest": {"run": 1, "pass": 1},
+    "ReshapeTests": {"run": 2, "pass": 2},
+    "ReshapeViewCopyTests": {"run": 25, "pass": 25},
+    "RngValidationTests": {"run": 1, "pass": 0, "failed": 1, "notes": "Bernoulli mean 0.512 vs expected 0.5 with 1% tolerance — seed-sensitive statistical test"},
+    "ROCBinaryTest": {"run": 7, "pass": 6, "skipped": 1},
+    "RegressionEvalTest (nd4j)": {"run": 10, "pass": 10},
+    "RepeatVectorTest": {"run": 1, "pass": 1},
+    "RegressionEvalTest (dl4jcore)": {"run": 3, "pass": 3},
+    "RecordConverterTest": {"run": 5, "pass": 5},
+    "RecordMapperTest": {"run": 3, "pass": 3}
+  },
+  "failures": [
+    "RngValidationTests.validateRngDistributions: Bernoulli mean 0.512 vs expected 0.5, relative error 1.19% exceeds 1% tolerance — seed-sensitive statistical test"
+  ],
+  "notes": "11 classes ran, 59 tests pass, 1 failure (seed-sensitive RNG), 1 skipped. ReshapeViewCopyTests (25 tests) largest class.",
+  "tags": ["cpu", "reshape", "rng", "roc", "regression-eval", "preprocessor", "record-converter"],
+  "timestamp": "2026-06-06T00:18:00Z"
+}

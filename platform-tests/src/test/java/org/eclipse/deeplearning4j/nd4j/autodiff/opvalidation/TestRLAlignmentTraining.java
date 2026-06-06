@@ -57,14 +57,20 @@ public class TestRLAlignmentTraining {
     private static final int HIDDEN = 8;
 
     /**
-     * Build a simple 2-layer SameDiff model: input -> linear -> softmax -> logits.
+     * Build a simple 2-layer SameDiff model with 3D logits [batch, seqLen, vocab].
      * Returns the SameDiff graph with placeholder "input" and output "logits".
+     *
+     * The trainers expect logits to be 3D [batch, seq, vocab] — this matches
+     * production LLM usage where each token position has its own distribution.
+     * The model produces 2D hidden activations [batch, vocab], then expands and
+     * tiles to [batch, seqLen, vocab] to match the token sequence length.
      */
     private SameDiff buildSimpleModel() {
         SameDiff sd = SameDiff.create();
 
-        // Input: [batch, seqLen] token IDs - we treat as placeholder
-        SDVariable input = sd.placeHolder("input", DataType.FLOAT, BATCH, SEQ_LEN);
+        // Input: [batch, seqLen] token IDs — placeholder covers dynamic batch size
+        // (trainers may concatenate chosen+rejected so runtime batch can be 2*BATCH)
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, SEQ_LEN);
 
         // Layer 1 weights: [seqLen, hidden]
         SDVariable w1 = sd.var("w1", Nd4j.randn(DataType.FLOAT, SEQ_LEN, HIDDEN).mul(0.1));
@@ -74,8 +80,12 @@ public class TestRLAlignmentTraining {
         // Layer 2 weights: [hidden, vocab]
         SDVariable w2 = sd.var("w2", Nd4j.randn(DataType.FLOAT, HIDDEN, VOCAB).mul(0.1));
         SDVariable b2 = sd.var("b2", Nd4j.zeros(DataType.FLOAT, VOCAB));
-        SDVariable logits = hidden.mmul(w2).add(b2);
-        logits.rename("logits");
+        SDVariable logits2d = hidden.mmul(w2).add(b2);  // [batch, vocab]
+
+        // Expand to [batch, 1, vocab] then tile to [batch, seqLen, vocab]
+        // so that logits are 3D matching the token sequence dimension expected by trainers.
+        SDVariable logitsExp = sd.expandDims("logits_exp", logits2d, 1);  // [batch, 1, vocab]
+        sd.tile("logits", logitsExp, 1, SEQ_LEN, 1);                      // [batch, seqLen, vocab]
 
         return sd;
     }

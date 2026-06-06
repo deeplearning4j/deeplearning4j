@@ -1,0 +1,24 @@
+{
+  "id": "samediff_core_jun5f",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-reduce-float-clip-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 32,
+  "passed": 32,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "ControlFlowTest": {"run": 7, "pass": 7},
+    "GraphQueryTest": {"run": 4, "pass": 4},
+    "CacheEnabledDuringExecTest": {"run": 4, "pass": 4},
+    "PlaceholderOverrideTest": {"run": 10, "pass": 10},
+    "PlaceholderBufferClearTest": {"run": 4, "pass": 4},
+    "MultiIntermediateOverrideTest": {"run": 3, "pass": 3}
+  },
+  "notes": "All 6 SameDiff core test classes pass: 32 tests, 0 failures. Covers control flow, graph queries, cache, placeholders, multi-intermediate overrides.",
+  "tags": ["cpu", "samediff", "core", "controlflow", "placeholder", "cache"],
+  "timestamp": "2026-06-05T19:43:00Z"
+}

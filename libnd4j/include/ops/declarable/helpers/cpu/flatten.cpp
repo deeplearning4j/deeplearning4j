@@ -53,8 +53,17 @@ static void flatten_(std::vector<NDArray *> &inputs, NDArray *output, const char
       sd::LongType xOffset;
       sd::LongType xCoords[SD_MAX_RANK];
 
-      // Use cached shape values for coordinate transforms
-      INDEX2COORDS(i, xRank, xShape, xCoords);
+      if (order == 'f') {
+        // F-order: decompose linear index with dim 0 as fastest (LSB first)
+        sd::LongType idx = i;
+        for (int d = 0; d < xRank; d++) {
+          xCoords[d] = idx % xShape[d];
+          idx /= xShape[d];
+        }
+      } else {
+        // C-order: decompose linear index with last dim as fastest
+        INDEX2COORDS(i, xRank, xShape, xCoords);
+      }
       COORDS2INDEX(xRank, xStride, xCoords, xOffset);
 
       z[i] = xBuffer[xOffset];

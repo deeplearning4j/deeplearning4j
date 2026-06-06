@@ -1,0 +1,25 @@
+{
+  "id": "opval_misc_jun5f",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-reduce-float-clip-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 51,
+  "passed": 49,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 2,
+  "classes": {
+    "TestCreateOpAndConstantOfShape": {"run": 11, "pass": 11},
+    "DynamicPartitionGradientIsolationTest": {"run": 1, "pass": 1},
+    "TestStdevDebug": {"run": 5, "pass": 5},
+    "TestImportOptimizations": {"run": 7, "pass": 7},
+    "TestSigmoidXentDebug": {"run": 11, "pass": 11},
+    "OpaqueNDArrayTests": {"run": 3, "pass": 3},
+    "NumpyFormatTests": {"run": 13, "pass": 11, "skip": 2}
+  },
+  "notes": "All 7 classes pass (49 pass, 2 skipped in NumpyFormatTests). Covers create/constant ops, dynamic partition grad, stdev, import optimizations, sigmoid xent, opaque arrays, numpy formats.",
+  "tags": ["cpu", "samediff", "opvalidation", "numpy", "misc"],
+  "timestamp": "2026-06-05T19:47:00Z"
+}

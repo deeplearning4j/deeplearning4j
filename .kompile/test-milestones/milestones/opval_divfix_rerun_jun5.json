@@ -1,0 +1,50 @@
+{
+  "id": "opval_divfix_rerun_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "f8b74f7ff83a1419d4d39fb10270d5011cecf5f3",
+  "passing": false,
+  "module": "platform-tests",
+  "totalTests": 70,
+  "passed": 68,
+  "failed": 2,
+  "skipped": 6,
+  "notes": "Re-run after divide-family backward pass fixes (divide_bp, realdiv_bp, reversedivide_bp, floormod_bp). Test 1 (5 targeted tests): 4/5 pass — testGradientAutoBroadcast2, testGradientAutoBroadcast3, testDivideNoNan, testTrace all PASS; testClipByNorm0 FAILS (forward-pass value mismatch unrelated to divide fixes). Test 2 (full TestMiscOpValidation): 64/65 pass (6 skipped), only testClipByNorm0 fails — divide-related gradient tests all green. Test 3 (TestLossOpValidation): 4/5 pass, testLoss2d[1] FAILS on sparsesoftmax with SUM reduction weights=none producing -5.943e148 instead of 19.6829 — this is a pre-existing sparsesoftmax numerical overflow issue unrelated to divide fixes. Summary: all 4 divide-family backward pass fixes confirmed working. Two remaining failures are pre-existing bugs in unrelated ops: (1) testClipByNorm0 clipByNorm forward pass value mismatch, (2) testLoss2d sparsesoftmax numerical overflow.",
+  "tests": {
+    "TestMiscOpValidation": {
+      "total": 65,
+      "passed": 64,
+      "failed": 1,
+      "skipped": 6,
+      "failures": [
+        {
+          "test": "testClipByNorm0",
+          "type": "forward_pass_value_mismatch",
+          "related_to_divide_fix": false,
+          "note": "Expected/actual arrays differ by ~8%; unrelated to divide backward pass fixes"
+        }
+      ]
+    },
+    "TestLossOpValidation": {
+      "total": 5,
+      "passed": 4,
+      "failed": 1,
+      "skipped": 0,
+      "failures": [
+        {
+          "test": "testLoss2d[1]",
+          "type": "sparsesoftmax_numerical_overflow",
+          "related_to_divide_fix": false,
+          "note": "sparsesoftmax SUM reduction produces -5.943e148 instead of 19.6829; pre-existing overflow bug"
+        }
+      ]
+    }
+  },
+  "divide_fix_verification": {
+    "testGradientAutoBroadcast2": "PASS",
+    "testGradientAutoBroadcast3": "PASS",
+    "testDivideNoNan": "PASS",
+    "testTrace": "PASS"
+  },
+  "tags": ["cpu", "opvalidation", "divide_fix_rerun", "gradient"],
+  "timestamp": "2026-06-05T00:00:00Z"
+}

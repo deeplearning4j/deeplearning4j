@@ -1,0 +1,40 @@
+{
+  "batch": "BI-TransformOps",
+  "name": "TestTransformOpValidation on nd4j-native",
+  "date": "2026-06-05T04:30:00",
+  "backend": "nd4j-native",
+  "results": {
+    "total": 57,
+    "pass": 51,
+    "fail": 4,
+    "error": 1,
+    "skip": 1
+  },
+  "failures": [
+    {
+      "test": "testBooleanAnd",
+      "type": "ERROR",
+      "issue": "Op [boolean_and] execution failed — runtime error in native boolean_and op"
+    },
+    {
+      "test": "testPairwiseTransforms",
+      "type": "FAILURE",
+      "issue": "Classes differ: LogicalOr vs BooleanOr, LogicalAnd vs BooleanAnd, LogicalXor vs BooleanXor — op class mismatch in test assertions"
+    },
+    {
+      "test": "testBroadcastEmpty",
+      "type": "FAILURE",
+      "issue": "expected true but was false — broadcast with empty array"
+    },
+    {
+      "test": "testTransforms",
+      "type": "FAILURE",
+      "issue": "1 transform failed (unspecified which)"
+    },
+    {
+      "test": "testClipByAvgNorm",
+      "type": "FAILURE",
+      "issue": "clipbyavgnorm variable failed — INDArray equality check failed, values don't match expected"
+    }
+  ]
+}

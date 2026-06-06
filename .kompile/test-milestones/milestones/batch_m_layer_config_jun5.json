@@ -1,0 +1,15 @@
+{
+  "batch": "M",
+  "name": "Layer config, constraints, weight noise, preprocessor tests",
+  "date": "2026-06-05T00:30:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "CustomPreprocessorTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "CNNProcessorTest": {"total": 7, "passed": 7, "failed": 0, "errors": 0},
+    "LayerConfigTest": {"total": 8, "passed": 8, "failed": 0, "errors": 0},
+    "LayerBuilderTest": {"total": 11, "passed": 11, "failed": 0, "errors": 0},
+    "TestWeightNoise": {"total": 3, "passed": 3, "failed": 0, "errors": 0},
+    "TestConstraints": {"total": 7, "passed": 7, "failed": 0, "errors": 0}
+  },
+  "summary": "37 tests run, 37 passed, 0 failures, 0 errors. All layer config and constraint tests pass cleanly. TestGraphVertex not found by short name — needs re-run with full package."
+}

@@ -123,7 +123,9 @@ PLATFORM_CHECK(resize_bilinear, ENGINE_CPU) {
       req.expectGreaterEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 3) &&
       req.expectLessEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 5) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
+      req.expectEq(makeInfoVariable(x->sizeAt(0), "INPUT_BATCH_DIM"), makeInfoVariable(z->sizeAt(0), "OUTPUT_BATCH_DIM")) &&
+      req.expectEq(makeInfoVariable(x->sizeAt(-1), "INPUT_CHANNEL_DIM"), makeInfoVariable(z->sizeAt(-1), "OUTPUT_CHANNEL_DIM"));
   req.logTheSuccess();
   return req;
 }
@@ -151,7 +153,9 @@ PLATFORM_CHECK(resize_nearest_neighbor, ENGINE_CPU) {
       req.expectGreaterEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 3) &&
       req.expectLessEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 5) &&
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
+      req.expectEq(makeInfoVariable(x->sizeAt(0), "INPUT_BATCH_DIM"), makeInfoVariable(z->sizeAt(0), "OUTPUT_BATCH_DIM")) &&
+      req.expectEq(makeInfoVariable(x->sizeAt(-1), "INPUT_CHANNEL_DIM"), makeInfoVariable(z->sizeAt(-1), "OUTPUT_CHANNEL_DIM"));
   req.logTheSuccess();
   return req;
 }

@@ -145,7 +145,8 @@ public class BidirectionalLayer implements RecurrentLayer {
         INDArray eFwd;
         INDArray eBwd;
 
-        val n = epsilon.size(1) / 2;
+        int channelDim = (getRNNDataFormat() == RNNFormat.NWC) ? 2 : 1;
+        val n = epsilon.size(channelDim) / 2;
         epsilon = epsilon.dup(epsilon.ordering());
         switch (layerConf.getMode()) {
             case ADD:
@@ -161,8 +162,13 @@ public class BidirectionalLayer implements RecurrentLayer {
                 eBwd = eFwd;
                 break;
             case CONCAT:
-                eFwd = epsilon.get(all(), interval(0, n), all()).dup('f');
-                eBwd = epsilon.get(all(), interval(n, 2 * n), all()).dup('f');
+                if (getRNNDataFormat() == RNNFormat.NWC) {
+                    eFwd = epsilon.get(all(), all(), interval(0, n)).dup('f');
+                    eBwd = epsilon.get(all(), all(), interval(n, 2 * n)).dup('f');
+                } else {
+                    eFwd = epsilon.get(all(), interval(0, n), all()).dup('f');
+                    eBwd = epsilon.get(all(), interval(n, 2 * n), all()).dup('f');
+                }
                 break;
             default:
                 throw new RuntimeException("Unknown mode: " + layerConf.getMode());
@@ -219,7 +225,7 @@ public class BidirectionalLayer implements RecurrentLayer {
                 ret = out1.add(out2).muli(0.5);
                 break;
             case CONCAT:
-                int concatDim = 1;
+                int concatDim = (getRNNDataFormat() == RNNFormat.NWC) ? 2 : 1;
                 ret = Nd4j.concat(concatDim, out1, out2);
                 break;
             default:

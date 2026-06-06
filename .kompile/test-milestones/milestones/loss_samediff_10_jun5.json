@@ -1,0 +1,18 @@
+{
+  "id": "loss_samediff_10_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "SameDiffOutputTest,SameDiffSpecifiedLossVarsTests,SameDiffDoubleScalarPromotionTest,NameScopeTests,SameDiffTrainingTest,NDLossTest,TestLossFunctionJson,LossFunctionTest,TestLossFunctionsSizeChecks,SameDiffCustomLayerTests",
+  "totalTests": 44,
+  "passed": 39,
+  "failed": 4,
+  "errors": 0,
+  "skipped": 1,
+  "failedTests": "SameDiffDoubleScalarPromotionTest (2 failures), SameDiffCustomLayerTests (2 failures)",
+  "notes": "Loss/SameDiff batch: 10 classes. Pass: SameDiffOutputTest (2), SameDiffSpecifiedLossVarsTests (2+1skip), NameScopeTests (4), SameDiffTrainingTest (12), NDLossTest (12), TestLossFunctionJson (1), LossFunctionTest (1), TestLossFunctionsSizeChecks (1). Fail: SameDiffDoubleScalarPromotionTest (2/3 fail), SameDiffCustomLayerTests (2/2 fail — workspace borrow issue).",
+  "tags": "cpu,loss,samediff,scalar-promotion-bug,workspace-bug",
+  "timestamp": "2026-06-05T09:19:00Z"
+}

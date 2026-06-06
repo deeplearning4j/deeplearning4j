@@ -1,0 +1,30 @@
+{
+  "id": "batch11_misc_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 74,
+  "passed": 74,
+  "failed": 0,
+  "errors": 1,
+  "skipped": 0,
+  "classes": {
+    "FailingSameDiffTests": {"run": 4, "pass": 4},
+    "IndexingTestsC_indexing": {"run": 30, "pass": 30},
+    "CompareAndSetIsolationTest": {"run": 7, "pass": 7},
+    "IndexingTestsC_shape": {"run": 13, "pass": 13},
+    "CrashTestMinimal": {"run": 17, "pass": 17},
+    "CustomEvaluationTest": {"run": 1, "pass": 1},
+    "ArrowSerdeTest": {"run": 2, "pass": 2},
+    "CheckpointListenerTest": {"run": 0, "errors": 1, "notes": "JVM crash SIGABRT exit 134 — native heap corruption"}
+  },
+  "notRun": ["ClipByNormBpTest", "CompressedDataBufferTest", "LargeNDArrayTests"],
+  "failures": [
+    "CheckpointListenerTest: JVM crash SIGABRT — native heap corruption"
+  ],
+  "notes": "7 classes ran, all 74 tests pass. CheckpointListenerTest crashed JVM. 3 classes not found or didn't run.",
+  "tags": ["cpu", "samediff", "indexing", "crash-test", "arrow", "evaluation"],
+  "timestamp": "2026-06-05T23:29:00Z"
+}

@@ -26,7 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.BaseBroadcastBoolOp;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
@@ -50,6 +52,7 @@ import org.nd4j.linalg.api.ops.impl.reduce3.BaseReduce3Op;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -114,6 +117,20 @@ public class DynamicShapePlanCompiler {
         // groups Enter ops into child frames, placing them after their Merge consumers.
         List<ExecutionNode> executionOrder = dag.getExecutionOrder();
 
+        // Pre-check: if the entire SameDiff graph (not just the execution DAG) contains
+        // ExternalErrorsFunction, fall back to standard path. ExternalErrorsFunction is a
+        // LOGIC op that provides externally-supplied gradients; it is handled exclusively
+        // by Java-side InferenceSession logic and must never reach the native DSP executor.
+        // It may not appear in the minimal execution DAG (which is built only from ops
+        // reachable from the requested outputs), so we must scan the full op map here.
+        for (SameDiffOp sdOpFull : sd.getOps().values()) {
+            if (sdOpFull.getOp() instanceof ExternalErrorsFunction) {
+                log.debug("DSP compile: SameDiff graph contains ExternalErrorsFunction op '{}'. " +
+                        "Falling back to standard path.", sdOpFull.getName());
+                return null;
+            }
+        }
+
         // Step 1: Filter to actual ops, classify control flow ops
         List<ExecutionNode> opNodes = new ArrayList<>();
         boolean hasControlFlow = false;
@@ -159,6 +176,15 @@ public class DynamicShapePlanCompiler {
                                 "Falling back to standard path.", opNameLower);
                         return null;
                     }
+                }
+                // ExternalErrorsFunction is a LOGIC op handled by special Java-side logic
+                // in InferenceSession. The native executor has no implementation for it.
+                // Graphs containing ExternalErrorsFunction (e.g. gradient graphs built with
+                // SameDiffUtils.externalErrors) must fall back to the standard path.
+                if (sdOp.getOp() instanceof ExternalErrorsFunction) {
+                    log.debug("DSP compile: graph contains ExternalErrorsFunction op. " +
+                            "Falling back to standard path.");
+                    return null;
                 }
             }
             opNodes.add(node);
@@ -406,7 +432,22 @@ public class DynamicShapePlanCompiler {
                         }
                     }
                     if (externalIdx == null) {
-                        // Last resort: add it as external
+                        // Last resort: add it as external.
+                        // Log a warning — this variable's producing op was expected to be
+                        // in the plan's execution subgraph, but it wasn't found in
+                        // varToOutputSlot. For VariableType.ARRAY variables, this means
+                        // ext input resolution will fall back to sd.getVariable().getArr()
+                        // which may return a stale/zero-initialized value.
+                        Variable varMeta = sd.getVariables().get(inputVar);
+                        VariableType vType = varMeta != null ? varMeta.getVariable().getVariableType() : null;
+                        String outputOfOp = varMeta != null ? varMeta.getOutputOfOp() : null;
+                        if (vType == VariableType.ARRAY || (outputOfOp != null && !outputOfOp.isEmpty())) {
+                            log.warn("DSP compile: {} variable '{}' (produced by op '{}') at step {} " +
+                                    "(op '{}') input[{}] has no output slot and is not in external maps. " +
+                                    "Adding as last-resort external input ext[{}]. This will resolve " +
+                                    "via getArr() which may be stale/zero on first execution.",
+                                    vType, inputVar, outputOfOp, stepIdx, opName, i, externalInputKeys.size());
+                        }
                         externalIdx = externalInputKeys.size();
                         externalInputKeys.add(inputVar);
                         externalIndexMap.put(inputVar, externalIdx);

@@ -1,0 +1,17 @@
+{
+  "id": "optimizer_fusion_9_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "TestGraphOptimizerFusions,TestAttentionFusionOptimization,TestLinearFusionOptimization,TestGraphOptimizerPasses,TestGraphOptimizerInputMerge,TestActivationFusionOptimizations,TestAlgebraicOptimizations,TestGraphOptimizerAccuracy,TestImportOptimizations",
+  "totalTests": 164,
+  "passed": 164,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "notes": "Optimizer/Fusion batch: 9 classes, ALL PASS. TestGraphOptimizerFusions (23), TestAttentionFusionOptimization (18), TestLinearFusionOptimization (4), TestGraphOptimizerPasses (63, 239s), TestGraphOptimizerInputMerge (7), TestActivationFusionOptimizations (6), TestAlgebraicOptimizations (8), TestGraphOptimizerAccuracy (28), TestImportOptimizations (7). BUILD SUCCESS.",
+  "tags": "cpu,optimizer,fusion,graph,all-pass",
+  "timestamp": "2026-06-05T09:35:00Z"
+}

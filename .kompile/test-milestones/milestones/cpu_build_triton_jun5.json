@@ -1,0 +1,15 @@
+{
+  "id": "cpu_build_triton_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "libnd4j,nd4j-cpu-backend-common,nd4j-native",
+  "backend": "nd4j-native",
+  "totalTests": 0,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "CPU build with Triton ON completed successfully in 8:29 min. ccache fully warmed. All 3 modules (libnd4j, nd4j-cpu-backend-common, nd4j-native) built cleanly. Includes sparseSoftmaxCrossEntropy fix, ConvDataFormat NHWC fixes, and all pending Java changes.",
+  "tags": "cpu,build,triton,success",
+  "timestamp": "2026-06-05T07:34:00Z"
+}

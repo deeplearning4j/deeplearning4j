@@ -209,15 +209,18 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
 template <typename T>
 static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output, const int dimension) {
  const int rank = input->rankOf();
+ // Normalize negative dimension to its positive equivalent before passing to tadForDimensions.
+ // tadForDimensions treats -1 as a sentinel meaning "entire array", not "last dimension".
+ const int dim = (dimension < 0) ? (rank + dimension) : dimension;
 
  if (input->isVector()) {
-   if (rank == 1 || input->sizeAt(dimension) != 1)
+   if (rank == 1 || input->sizeAt(dim) != 1)
      softMaxForVector_<T>(input->buffer(), input->shapeInfo(), output->buffer(), output->shapeInfo());
    else
      *output = 1.;
  } else if (input->isSameShapeStrict(*output)) {
    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),
-                                                                            dimension);
+                                                                            (sd::LongType)dim);
    auto tadShapeInfo = tadPack->primaryShapeInfo();
    auto tadOffsets = tadPack->primaryOffsets();
    const sd::LongType numOfSubArrs = tadPack->numberOfTads();
@@ -302,7 +305,7 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
    samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
 
  } else {
-   std::vector<sd::LongType> dimensionVec = {dimension};
+   std::vector<sd::LongType> dimensionVec = {(sd::LongType)dim};
    NDArray *max = input->reduceAlongDimension(sd::reduce::Max, &dimensionVec, true);
    input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), max, output, false);
    output->applyTransform(sd::transform::Exp, output);

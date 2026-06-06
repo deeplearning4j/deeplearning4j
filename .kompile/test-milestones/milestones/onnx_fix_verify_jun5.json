@@ -1,0 +1,18 @@
+{
+  "id": "onnx_fix_verify_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "OnnxOpTests",
+  "totalTests": 56,
+  "passed": 54,
+  "failed": 2,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "testUnaryOpsOpset14 (HardSwish output 0.0 instead of -0.2399), testUnaryOpsOpset18 (Mish output 4.43 instead of -0.0524)",
+  "notes": "ONNX fix verification (subset): Variable naming collision fixed — 166+ tests recovered. Only 2 remain: HardSwish and Mish op implementations producing wrong values. These are C++ op bugs, not import issues.",
+  "tags": "cpu,onnx,fix-verified,hardswish-bug,mish-bug",
+  "timestamp": "2026-06-05T07:56:00Z"
+}

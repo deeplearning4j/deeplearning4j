@@ -25,6 +25,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
+import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -115,7 +116,7 @@ public class TestVLMPdfImageLoader {
         Assumptions.assumeTrue(pdfFile.exists(),
                 "PDF file does not exist: " + pdfPath);
 
-        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.defaultPreprocessor();
+        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromModelDirectory(new File("."));
 
         List<INDArray> processedPages = loadAndPreprocessPdf(pdfFile, preprocessor);
 
@@ -154,7 +155,7 @@ public class TestVLMPdfImageLoader {
         Assumptions.assumeTrue(pdfFile.exists(),
                 "PDF file does not exist: " + pdfPath);
 
-        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.forSmolDocling();
+        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromConfig(PreprocessorConfig.fromFile(VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_PREPROCESSOR_CONFIG).getModelFile()));
 
         List<INDArray> processedPages = loadAndPreprocessPdf(pdfFile, preprocessor);
 
@@ -235,7 +236,7 @@ public class TestVLMPdfImageLoader {
         Assumptions.assumeTrue(pdfFile.exists(),
                 "PDF file does not exist: " + pdfPath);
 
-        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.defaultPreprocessor();
+        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromModelDirectory(new File("."));
         int patchSize = 16; // Standard ViT patch size
 
         try (PDDocument document = PDDocument.load(pdfFile)) {
@@ -281,7 +282,7 @@ public class TestVLMPdfImageLoader {
         Assumptions.assumeTrue(pdfFile.exists(),
                 "PDF file does not exist: " + pdfPath);
 
-        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.defaultPreprocessor();
+        VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromModelDirectory(new File("."));
 
         try (PDDocument document = PDDocument.load(pdfFile)) {
             PDFRenderer renderer = new PDFRenderer(document);

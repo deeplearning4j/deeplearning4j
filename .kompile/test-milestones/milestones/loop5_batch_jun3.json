@@ -1,0 +1,21 @@
+{
+  "id": "loop5_batch_jun3",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "uncommitted",
+    "short": "uncommitted"
+  },
+  "commitMessage": "test: loop 5 — Upsampling1D dtype fix, more DL4J layer suites, compilation fixes",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-dl4j-loop5-batch",
+  "totalTests": 73,
+  "passed": 68,
+  "failed": 0,
+  "skipped": 10,
+  "errors": 2,
+  "notes": "LOOP 5 BATCH — 73 tests across multiple suites. FIXES: Upsampling1DTest dtype mismatch (Nd4j.create(double[]) creates DOUBLE, layer outputs FLOAT — castTo fix). Compilation fix: 8 TestPage10*SensitivityTest subclasses missing @Slf4j for parent class log access. PASSING SUITES: Upsampling1DTest(2/2 NOW FIXED), AutoEncoderTest(1/1), RepeatVectorTest(1/1), TestDropout-conf(11/11), TestDropout-layers(1/1), CacheModeTest(3/3), SeedTest(1/1), FrozenLayerWithBackpropTest(6/6), GlobalPoolingMaskingTests(8/8), CenterLossOutputLayerTest(1/1+1skip), TestConvolutionModes(6/6), TestCustomLayers(5/5), BidirectionalTest(16/16), TestLastTimeStepLayer(4/4), TestRecurrentWeightInit(1/1), TestSameDiffOutput(2/2), OCNNOutputLayerTest(2/2), TestSameDiffConv(0/3,3skip), TestSameDiffDense(0/6,6skip), Convolution3DTest(2/2), MaskZeroLayerTest(4/4). ERRORS: TestTimeDistributed[2] (input size mismatch for NWC RNN format), LocallyConnectedLayerTest.testLocallyConnected (assign op shape mismatch).",
+  "tags": ["cpu", "nd4j-native", "dl4j-core", "loop-batch", "IMPROVED"],
+  "timestamp": "2026-06-03T16:10:00Z",
+  "previousMilestone": "loop4_summary_jun3"
+}

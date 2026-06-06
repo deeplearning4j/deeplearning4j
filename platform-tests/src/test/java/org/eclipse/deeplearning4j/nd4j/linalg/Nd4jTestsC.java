@@ -7501,10 +7501,10 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
         //First element: index 5
         //Last element: index 95
-        //91 total elements
+        //Column is a view; data() returns the full underlying buffer (100 elements)
         assertEquals(5, m.getDouble(5), 1e-6);
         assertEquals(95, m.getDouble(95), 1e-6);
-        assertEquals(91, col.data().length());
+        assertEquals(100, col.data().length());
 
         assertEquals(exp, col);
         assertEquals(exp.toString(), col.toString());

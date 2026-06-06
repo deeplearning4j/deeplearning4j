@@ -28,6 +28,7 @@ import java.util.Arrays;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.shape.Shape;
@@ -36,6 +37,13 @@ import org.nd4j.linalg.factory.Nd4j;
 
 @Slf4j
 public abstract class BaseLevel3 extends BaseLevel implements Level3 {
+
+    private static boolean isNanInfCheckEnabled() {
+        OpExecutioner.ProfilingMode mode = Nd4j.getExecutioner().getProfilingMode();
+        return mode == OpExecutioner.ProfilingMode.NAN_PANIC
+                || mode == OpExecutioner.ProfilingMode.INF_PANIC
+                || mode == OpExecutioner.ProfilingMode.ANY_PANIC;
+    }
     /**
      * gemm performs a matrix-matrix operation
      * c := alpha*op(a)*op(b) + beta*c,
@@ -54,6 +62,17 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta,
                     INDArray C) {
+        // Integer types are not supported by BLAS — promote to FLOAT32 for computation, then cast back.
+        DataType origType = A.data().dataType();
+        if (origType.isIntType()) {
+            INDArray aF = A.castTo(DataType.FLOAT);
+            INDArray bF = B.castTo(DataType.FLOAT);
+            INDArray cF = Nd4j.createUninitialized(DataType.FLOAT, C.shape(), 'f');
+            gemm(Order, TransA, TransB, alpha, aF, bF, 0.0, cF);
+            C.assign(cF.castTo(origType));
+            return;
+        }
+
         // If C is a view or has non-standard strides, use a temp array to avoid BLAS pointer offset issues
         boolean requiresTemp = C.isView() || C.ordering() != 'f' || !Shape.hasDefaultStridesForShape(C);
         INDArray cActual = requiresTemp ? Nd4j.createUninitialized(C.dataType(), C.shape(), 'f') : C;
@@ -81,7 +100,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             C.assign(cActual);
         }
 
-        OpExecutionerUtil.checkForAny(C);
+        if (isNanInfCheckEnabled()) {
+            OpExecutionerUtil.checkForAny(C);
+        }
     }
 
     /**{@inheritDoc}
@@ -89,6 +110,17 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha,
                     double beta) {
+        // Integer types are not supported by BLAS — promote to FLOAT32 for computation, then cast back.
+        DataType origType = A.data().dataType();
+        if (origType.isIntType()) {
+            INDArray aF = A.castTo(DataType.FLOAT);
+            INDArray bF = B.castTo(DataType.FLOAT);
+            INDArray cF = Nd4j.createUninitialized(DataType.FLOAT, C.shape(), 'f');
+            gemm(aF, bF, cF, transposeA, transposeB, alpha, 0.0);
+            C.assign(cF.castTo(origType));
+            return;
+        }
+
         // If C is a view or has non-standard strides, use a temp array to avoid BLAS pointer offset issues
         boolean requiresTemp = C.isView() || C.ordering() != 'f' || !Shape.hasDefaultStridesForShape(C);
         INDArray cActual = requiresTemp ? Nd4j.createUninitialized(C.dataType(), C.shape(), 'f') : C;
@@ -118,7 +150,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             C.assign(cActual);
         }
 
-        OpExecutionerUtil.checkForAny(C);
+        if (isNanInfCheckEnabled()) {
+            OpExecutionerUtil.checkForAny(C);
+        }
     }
 
 
@@ -154,7 +188,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     (int) C.size(0));
         }
 
-        OpExecutionerUtil.checkForAny(C);
+        if (isNanInfCheckEnabled()) {
+            OpExecutionerUtil.checkForAny(C);
+        }
     }
 
     /**
@@ -188,7 +224,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             ssyrk(Order, Uplo, Trans, C.rows(), 1, (float) alpha, A, (int) A.size(0), (float) beta, C, (int) C.size(0));
         }
 
-        OpExecutionerUtil.checkForAny(C);
+        if (isNanInfCheckEnabled()) {
+            OpExecutionerUtil.checkForAny(C);
+        }
     }
 
     /**
@@ -223,7 +261,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             ssyr2k(Order, Uplo, Trans, A.rows(), A.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0), (float) beta, C, (int) C.size(0));
         }
 
-        OpExecutionerUtil.checkForAny(C);
+        if (isNanInfCheckEnabled()) {
+            OpExecutionerUtil.checkForAny(C);
+        }
     }
 
     /**
@@ -259,7 +299,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0));
         }
 
-        OpExecutionerUtil.checkForAny(C);
+        if (isNanInfCheckEnabled()) {
+            OpExecutionerUtil.checkForAny(C);
+        }
     }
 
     /**
@@ -294,7 +336,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             strsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0));
         }
 
-        OpExecutionerUtil.checkForAny(B);
+        if (isNanInfCheckEnabled()) {
+            OpExecutionerUtil.checkForAny(B);
+        }
     }
 
     /*

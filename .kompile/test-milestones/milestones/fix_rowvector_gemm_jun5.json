@@ -1,0 +1,16 @@
+{
+  "id": "fix_rowvector_gemm_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "f8b74f7ff83a1419d4d39fb10270d5011cecf5f3",
+  "passing": null,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": null,
+  "passed": null,
+  "failed": null,
+  "errors": null,
+  "skipped": null,
+  "notes": "Fixed: testRowVectorGemm test bug: assertion shape was reshape(4,1) but linspace(1,4).reshape(1,4) mmul (4,4) produces shape [1,4], not [4,1]. Changed assertion to reshape(1,4). File: platform-tests/.../NdArrayMmulSvdTest.java line 135.",
+  "tags": ["cpu", "test-fix", "gemm", "shape"],
+  "timestamp": "2026-06-05T16:45:00Z"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "untested_batch5_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 153,
+  "passed": 140,
+  "failed": 8,
+  "errors": 0,
+  "skipped": 5,
+  "classes": {
+    "CustomOpsTests": {"run": 102, "pass": 97, "skip": 5},
+    "EmptyTests": {"run": 20, "pass": 20},
+    "ConvDataFormatTests": {"run": 31, "pass": 23, "fail": 8}
+  },
+  "failures": [
+    "ConvDataFormatTests.testCnnLossLayer[2]",
+    "ConvDataFormatTests.testDepthwiseConv2d[2]",
+    "ConvDataFormatTests.testConv2d[2]",
+    "ConvDataFormatTests.testDeconv2d[2]",
+    "ConvDataFormatTests.testLocallyConnected[1]",
+    "ConvDataFormatTests.testLocallyConnected[2]",
+    "ConvDataFormatTests.testSeparableConv2d[1]",
+    "ConvDataFormatTests.testSeparableConv2d[2]"
+  ],
+  "notes": "CustomOpsTests 97/97 pass (5 skipped). EmptyTests 20/20 pass. ConvDataFormatTests 23/31 pass — 8 failures in NHWC/parameterized variants (locally connected, separable conv, etc). Need investigation.",
+  "tags": ["cpu", "custom-ops", "empty", "conv-data-format", "nhwc"],
+  "timestamp": "2026-06-05T22:58:00Z"
+}

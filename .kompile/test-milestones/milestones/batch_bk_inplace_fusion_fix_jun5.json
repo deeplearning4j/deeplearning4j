@@ -1,0 +1,19 @@
+{
+  "batch": "BK-InPlaceFusionFix",
+  "name": "Fix: in-place fused chain must not overwrite user-requested intermediate output slots",
+  "date": "2026-06-05T04:30:00",
+  "backend": "nd4j-native",
+  "fix": {
+    "file": "libnd4j/include/graph/impl/NativeDynamicShapePlan_slotexec.cpp",
+    "lines": "1708-1727",
+    "change": "Added requestedOutputSlotSet.count(srcSlot) to mustDisable condition in in-place fusion check",
+    "root_cause": "Element-wise chain fusion (add+sigmoid) executed in-place on matmul output buffer (slot 0), overwriting intermediate result. The in-place disable logic checked frozenOutputSlots, valueDepInputSlots, and slotConsumerCount but NOT whether the slot was a user-requested output.",
+    "tests_fixed": ["SameDiffScopeSerdeTest.testDenseLayerForwardPass"],
+    "diagnosis": "DSP diagnostics showed FUSION: applied ELEMENTWISE_CHAIN fusion, slots 1-2 (2 ops) with inPlaceFused=1 and WRITE_SLOT: slot=2 tag=in-place-fused. sigmoid(matmul_result) was ~0.92 confirming in-place overwrote ~2.43 matmul values."
+  },
+  "status": "build_in_progress",
+  "verification": {
+    "before": "testDenseLayerForwardPass fails: expected matmul ~2.43, got sigmoid ~0.92",
+    "after": "pending_verification"
+  }
+}

@@ -81,16 +81,16 @@ public class KTOTrainer extends RLAlignmentTrainer<KTOConfig> {
         // loss_d = loss_aversion * (1 - w_d)
         SDVariable dArg = piLP.sub("_kto_d_diff", refLP).sub("_kto_d_kl", klRef).mul("_kto_d_scaled", betaD);
         SDVariable wD = sd.nn().sigmoid("_kto_w_d", dArg);
-        SDVariable lossD = sd.constant("_kto_one_d", 1.0).sub("_kto_one_minus_wd", wD).mul("_kto_loss_d", lossAversion);
+        SDVariable lossD = sd.constant("_kto_one_d", 1.0f).sub("_kto_one_minus_wd", wD).mul("_kto_loss_d", lossAversion);
 
         // Undesirable branch: w_u = sigmoid(beta_u * (kl_ref - pi_lp + ref_lp))
         // loss_u = 1 - w_u
         SDVariable uArg = klRef.sub("_kto_u_diff", piLP).add("_kto_u_ref", refLP).mul("_kto_u_scaled", betaU);
         SDVariable wU = sd.nn().sigmoid("_kto_w_u", uArg);
-        SDVariable lossU = sd.constant("_kto_one_u", 1.0).sub("_kto_one_minus_wu", wU);
+        SDVariable lossU = sd.constant("_kto_one_u", 1.0f).sub("_kto_one_minus_wu", wU);
 
         // Combine: desirability * loss_d + (1 - desirability) * loss_u
-        SDVariable oneMinusDesirability = sd.constant("_kto_one_label", 1.0).sub("_kto_inv_label", desirability);
+        SDVariable oneMinusDesirability = sd.constant("_kto_one_label", 1.0f).sub("_kto_inv_label", desirability);
         SDVariable combinedLoss = desirability.mul("_kto_des_term", lossD)
                 .add("_kto_combined", oneMinusDesirability.mul("_kto_undes_term", lossU));
 

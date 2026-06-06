@@ -925,10 +925,13 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         Arrays.sort(dimension);
         OpaqueNDArray xOpaque = OpaqueNDArray.fromINDArray(x);
-        OpaqueNDArray dimensionOpaque = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimension));
 
-        nativeOps.sort(null,
+        nativeOps.sortTad(null,
                 xOpaque,
+                new LongPointer(dimension),
+                dimension.length,
+                null,
+                null,
                 descending);
 
         if (nativeOps.lastErrorCode() != 0)

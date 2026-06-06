@@ -1,0 +1,24 @@
+{
+  "id": "dl4j_misc_batch3_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 21,
+  "passed": 15,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 6,
+  "classes": {
+    "AccountingTests": {"run": 6, "pass": 0, "skip": 6},
+    "AutoEncoderTest": {"run": 1, "pass": 1},
+    "BaseLayerTest": {"run": 2, "pass": 2},
+    "BackPropMLPTest": {"run": 6, "pass": 6},
+    "ArrayUtilTest": {"run": 2, "pass": 2},
+    "BNBroadcastTest": {"run": 4, "pass": 4}
+  },
+  "failures": [],
+  "tags": ["cpu", "dl4j", "misc", "keras", "autoencoder", "mlp"],
+  "timestamp": "2026-06-05T22:52:00Z"
+}

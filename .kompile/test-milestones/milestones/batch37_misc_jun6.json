@@ -1,0 +1,31 @@
+{
+  "id": "batch37_misc_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-basedl4jtest-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 31,
+  "passed": 31,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "TestDupDebug": {"run": 3, "pass": 3},
+    "TestGraniteOps": {"run": 8, "pass": 8},
+    "TestEinsumDense": {"run": 8, "pass": 8},
+    "TestGradientNormalization": {"run": 5, "pass": 5},
+    "TestGGMLDequantize": {"run": 5, "pass": 5},
+    "TestObjectDetectionRecordReader": {"run": 1, "pass": 1},
+    "TestCollectionRecordReaders": {"run": 1, "pass": 1},
+    "TestEarlyStoppingCompGraph": {"run": 0, "pass": 0, "notes": "SIGABRT (exit code 134) — native heap corruption during DSP execution"},
+    "TestConvolutionalListener": {"run": 0, "pass": 0, "notes": "Started but JVM crashed during TestEarlyStoppingCompGraph"},
+    "TestCase": {"run": 0, "pass": 0, "notes": "Not reached — JVM crashed before this class"}
+  },
+  "failures": [
+    "TestEarlyStoppingCompGraph: SIGABRT (corrupted size vs. prev_size) — systemic native heap corruption"
+  ],
+  "notes": "7 of 10 classes completed successfully before JVM SIGABRT crash during TestEarlyStoppingCompGraph. 31 tests passed. TestConvolutionalListener, TestCase, TestImageAndSequenceOpValidation not reached.",
+  "tags": ["cpu", "einsum", "granite", "ggml", "gradient-normalization", "sigabrt"],
+  "timestamp": "2026-06-06T01:05:00Z"
+}

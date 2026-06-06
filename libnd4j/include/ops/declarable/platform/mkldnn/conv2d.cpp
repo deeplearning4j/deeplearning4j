@@ -51,9 +51,18 @@ static dnnl::memory::data_type getOneDnnDataType(DataType dt) {
 }
 
 //////////////////////////////////////////////////////////////////////
-// Check if data type is supported by OneDNN conv2d
+// Check if data type is supported by OneDNN conv2d (runtime ISA detection)
 static bool isSupportedConv2dType(DataType dt) {
-  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16 || dt == DataType::HALF;
+  if (dt == DataType::FLOAT32) return true;
+  if (dt == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (dt == DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
+  return false;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -95,11 +104,20 @@ static void conv2dMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArra
 
   // memory descriptors for arrays
 
+  // For NHWC arrays: the array has shape [bS, H, W, C] but OneDNN dims are in NCHW order [bS, C, H, W].
+  // setBlockStrides assigns array strides to dims positionally, so we need a permutation that maps
+  // NHWC array dim positions to NCHW OneDNN dim positions: permut[onednn_dim] = nhwc_array_dim
+  // onednn[0]=bS <- nhwc[0]=bS, onednn[1]=C <- nhwc[3]=C, onednn[2]=H <- nhwc[1]=H, onednn[3]=W <- nhwc[2]=W
+  const std::vector<int> nhwcPermut = {0, 3, 1, 2};
+
   sd_debug("Creating input descriptor\n",0);
   // input
   dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xDims, type, dnnl::memory::format_tag::any);
   dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, type, xzFormatMkl);
-  onednnUtils::setBlockStrides(*input, x_user_md);
+  if (!isNCHW)
+    onednnUtils::setBlockStrides(*input, x_user_md, nhwcPermut);
+  else
+    onednnUtils::setBlockStrides(*input, x_user_md);
 
   sd_debug("Creating weight descriptor\n",0);
 
@@ -119,7 +137,10 @@ static void conv2dMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArra
   // output
   dnnl::memory::desc z_mkl_md = dnnl::memory::desc(zDims, type, dnnl::memory::format_tag::any);
   dnnl::memory::desc z_user_md = dnnl::memory::desc(zDims, type, xzFormatMkl);
-  onednnUtils::setBlockStrides(*output, z_user_md);
+  if (!isNCHW)
+    onednnUtils::setBlockStrides(*output, z_user_md, nhwcPermut);
+  else
+    onednnUtils::setBlockStrides(*output, z_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -205,12 +226,20 @@ static void conv2dBpMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDAr
   else if (2 == wFormat)
     permut = {0, 3, 1, 2};  // [oC, kH, kW, iC] -> [oC, iC, kH, kW]
 
+  // For NHWC arrays: the array has shape [bS, H, W, C] but OneDNN dims are in NCHW order [bS, C, H, W].
+  // setBlockStrides assigns array strides to dims positionally, so we need a permutation that maps
+  // NHWC array dim positions to NCHW OneDNN dim positions: permut[onednn_dim] = nhwc_array_dim
+  const std::vector<int> nhwcPermut = {0, 3, 1, 2};
+
   // memory descriptors for arrays
 
   // input
   dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xDims, type, dnnl::memory::format_tag::any);
   dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, type, xzFormatMkl);
-  onednnUtils::setBlockStrides(*input, x_user_md);
+  if (!isNCHW)
+    onednnUtils::setBlockStrides(*input, x_user_md, nhwcPermut);
+  else
+    onednnUtils::setBlockStrides(*input, x_user_md);
 
   // weights
   dnnl::memory::desc w_mkl_md = dnnl::memory::desc(wDims, type, dnnl::memory::format_tag::any);
@@ -220,12 +249,18 @@ static void conv2dBpMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDAr
   // gradO
   dnnl::memory::desc gradO_mkl_md = dnnl::memory::desc(zDims, type, dnnl::memory::format_tag::any);
   dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, type, xzFormatMkl);
-  onednnUtils::setBlockStrides(*gradO, gradO_user_md);
+  if (!isNCHW)
+    onednnUtils::setBlockStrides(*gradO, gradO_user_md, nhwcPermut);
+  else
+    onednnUtils::setBlockStrides(*gradO, gradO_user_md);
 
   // gradI
   dnnl::memory::desc gradI_mkl_md = dnnl::memory::desc(xDims, type, dnnl::memory::format_tag::any);
   dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, type, xzFormatMkl);
-  onednnUtils::setBlockStrides(*gradI, gradI_user_md);
+  if (!isNCHW)
+    onednnUtils::setBlockStrides(*gradI, gradI_user_md, nhwcPermut);
+  else
+    onednnUtils::setBlockStrides(*gradI, gradI_user_md);
 
   // gradW
   dnnl::memory::desc gradW_mkl_md = dnnl::memory::desc(wDims, type, dnnl::memory::format_tag::any);
@@ -367,9 +402,16 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
   auto weights = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
 
+  // Causal padding (paddingMode=2) produces asymmetric padding that oneDNN
+  // cannot express correctly — the formula computes negative padding_r values
+  // for dilated kernels. Route causal conv through the generic CPU path.
+  int paddingMode = INT_ARG(8);
+
   // conv2d is available for float32, bfloat16, and float16 dtypes
   Requirements req("ONEDNN CONV2d OP");
-  req.expectTrue(makeInfoVariable(isSupportedConv2dType(input->dataType()), TYPE_MSG_INPUT0),
+  req.expectNotEq(makeInfoVariable(paddingMode, "paddingMode"),
+                  makeInfoVariable(2, "CAUSAL")) &&
+      req.expectTrue(makeInfoVariable(isSupportedConv2dType(input->dataType()), TYPE_MSG_INPUT0),
                      "Must be FLOAT32, BFLOAT16, or HALF") &&
       req.expectTrue(makeInfoVariable(isSupportedConv2dType(weights->dataType()), TYPE_MSG_INPUT1),
                      "Must be FLOAT32, BFLOAT16, or HALF") &&
@@ -454,9 +496,13 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
   auto gradW = OUTPUT_VARIABLE(1);  // [kH, kW, iC, oC] always
   auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;  // [oC]
 
+  int paddingMode = INT_ARG(8);
+
   // conv2d_bp is available for float32, bfloat16, and float16 dtypes
   Requirements req("ONEDNN CONV2d_BP OP");
-  req.expectTrue(makeInfoVariable(isSupportedConv2dType(input->dataType()), TYPE_MSG_INPUT0),
+  req.expectNotEq(makeInfoVariable(paddingMode, "paddingMode"),
+                  makeInfoVariable(2, "CAUSAL")) &&
+      req.expectTrue(makeInfoVariable(isSupportedConv2dType(input->dataType()), TYPE_MSG_INPUT0),
                      "Must be FLOAT32, BFLOAT16, or HALF") &&
       req.expectTrue(makeInfoVariable(isSupportedConv2dType(weights->dataType()), TYPE_MSG_INPUT1),
                      "Must be FLOAT32, BFLOAT16, or HALF") &&

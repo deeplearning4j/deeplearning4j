@@ -1,0 +1,18 @@
+{
+  "id": "medium_batch_i_dl4j_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "TestMemoryReports,TestLrChanges,TestNetConversion,TestSameDiffDense,TestSameDiffOutput,TestConvolutionModes,TestCustomLayers,TestMasking,TestPreProcessors,TestGraphNodes",
+  "totalTests": 58,
+  "passed": 52,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 6,
+  "failedTests": "",
+  "notes": "10 DL4J classes. All 6 skips in TestSameDiffDense (class-level skip, likely @Disabled or CPU assumption). TestPreProcessors(8), TestGraphNodes(14), TestMasking(5) all pass clean.",
+  "tags": "cpu,dl4j,layer,network",
+  "timestamp": "2026-06-05T11:30:00Z"
+}

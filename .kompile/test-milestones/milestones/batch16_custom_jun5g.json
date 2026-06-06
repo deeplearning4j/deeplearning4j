@@ -1,0 +1,30 @@
+{
+  "id": "batch16_custom_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 29,
+  "passed": 28,
+  "failed": 0,
+  "errors": 1,
+  "skipped": 0,
+  "classes": {
+    "SameDiffDoubleScalarPromotionTest": {"run": 3, "pass": 3},
+    "PermuteDataSetPreProcessorTest": {"run": 4, "pass": 4},
+    "TestArrayUtils": {"run": 5, "pass": 5},
+    "SameDiffMemoryUtilsTest": {"run": 7, "pass": 7},
+    "TestCustomLayers": {"run": 5, "pass": 5},
+    "TestCustomActivation": {"run": 1, "pass": 1},
+    "TestCustomUpdater": {"run": 1, "pass": 1},
+    "TestCustomOps": {"run": 2, "pass": 1, "errors": 1, "notes": "testResizeBilinearEdgeCase: resize_bilinear op execution failed"},
+    "TestCustomTransformJsonYaml": {"run": 1, "pass": 1}
+  },
+  "failures": [
+    "TestCustomOps.testResizeBilinearEdgeCase: resize_bilinear op execution failed"
+  ],
+  "notes": "8 of 9 classes fully pass. TestCustomOps has 1 error (resize_bilinear op failure). 28/29 tests pass.",
+  "tags": ["cpu", "samediff", "custom-layers", "preprocessor", "tensorflow"],
+  "timestamp": "2026-06-05T23:43:00Z"
+}

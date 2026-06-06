@@ -1,0 +1,31 @@
+{
+  "id": "batch15_misc_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 25,
+  "passed": 14,
+  "failed": 1,
+  "errors": 2,
+  "skipped": 10,
+  "classes": {
+    "NDArrayIndexResolveTests": {"run": 2, "pass": 2},
+    "NormalizerStandardizeLabelsTest": {"run": 2, "pass": 2},
+    "NormalizerStandardizeTest": {"run": 6, "pass": 5, "fail": 1, "notes": "testTransform: assertion failed"},
+    "NormalizerMinMaxScalerTest": {"run": 5, "pass": 5},
+    "LongTests": {"run": 9, "pass": 0, "skipped": 9, "notes": "All skipped (missing LONG_TEST tag)"},
+    "NDArrayTestsFortran": {"run": 0, "errors": 1, "notes": "JVM crash SIGABRT exit 134"},
+    "keras.MiscTests": {"run": 0, "errors": 1, "notes": "JVM crash SIGABRT exit 134 (killed by NDArrayTestsFortran crash)"},
+    "zoo.MiscTests": {"run": 1, "pass": 0, "skipped": 1}
+  },
+  "failures": [
+    "NormalizerStandardizeTest.testTransform: assertion failed",
+    "NDArrayTestsFortran: JVM crash SIGABRT exit 134",
+    "keras.MiscTests: JVM crash SIGABRT exit 134"
+  ],
+  "notes": "4 of 8 classes pass. NDArrayTestsFortran crashed JVM (systemic native heap corruption), taking keras.MiscTests down with it. NormalizerStandardizeTest has 1 failure. LongTests all skipped.",
+  "tags": ["cpu", "normalizer", "ndarray", "fortran", "keras", "crash"],
+  "timestamp": "2026-06-05T23:41:00Z"
+}

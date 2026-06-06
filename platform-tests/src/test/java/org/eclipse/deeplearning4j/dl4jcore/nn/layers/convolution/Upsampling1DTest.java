@@ -68,7 +68,7 @@ class Upsampling1DTest extends BaseDL4JTest {
     @DisplayName("Test Upsampling 1 D")
     void testUpsampling1D() throws Exception {
         double[] outArray = new double[] { 1., 1., 2., 2., 3., 3., 4., 4. };
-        INDArray containedExpectedOut = Nd4j.create(outArray, new int[] { 1, 1, 8 });
+        INDArray containedExpectedOut = Nd4j.create(outArray, new long[] { 1, 1, 8 }, Nd4j.defaultFloatingPointType());
         INDArray containedInput = getContainedData();
         INDArray input = getData();
         Layer layer = getUpsampling1DLayer();
@@ -83,8 +83,8 @@ class Upsampling1DTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Upsampling 1 D Backprop")
     void testUpsampling1DBackprop() throws Exception {
-        INDArray expectedContainedEpsilonInput = Nd4j.create(new double[] { 1., 3., 2., 6., 7., 2., 5., 5. }, new int[] { 1, 1, 8 });
-        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] { 4., 8., 9., 10. }, new int[] { 1, 1, 4 });
+        INDArray expectedContainedEpsilonInput = Nd4j.create(new double[] { 1., 3., 2., 6., 7., 2., 5., 5. }, new long[] { 1, 1, 8 }, Nd4j.defaultFloatingPointType());
+        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] { 4., 8., 9., 10. }, new long[] { 1, 1, 4 }, Nd4j.defaultFloatingPointType());
         INDArray input = getContainedData();
         Layer layer = getUpsampling1DLayer();
         layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
@@ -115,7 +115,7 @@ class Upsampling1DTest extends BaseDL4JTest {
     }
 
     private INDArray getContainedData() {
-        INDArray ret = Nd4j.create(new double[] { 1., 2., 3., 4. }, new int[] { 1, 1, 4 });
+        INDArray ret = Nd4j.create(new double[] { 1., 2., 3., 4. }, new long[] { 1, 1, 4 }, Nd4j.defaultFloatingPointType());
         return ret;
     }
 }

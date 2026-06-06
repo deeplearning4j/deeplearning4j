@@ -1,0 +1,18 @@
+{
+  "id": "opval_recheck_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "current",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "TestMiscOpValidation",
+  "totalTests": 5,
+  "passed": 4,
+  "failed": 1,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "testClipByNorm0 (forward-pass value mismatch ~8%, unrelated to divide fixes)",
+  "notes": "UPDATED after divide-family fixes. Was 0/5 pass, now 4/5 pass. testGradientAutoBroadcast2 FIXED (divide_bp axis bug), testGradientAutoBroadcast3 FIXED (divide_bp axis bug), testDivideNoNan FIXED (divide_bp view corruption), testTrace FIXED (was runtime error, now passes). Only testClipByNorm0 still fails — clipByNorm forward-pass numerical discrepancy, unrelated to divide.",
+  "tags": "cpu,recheck,opvalidation,div,gradient,fixed",
+  "timestamp": "2026-06-05T16:15:00Z"
+}

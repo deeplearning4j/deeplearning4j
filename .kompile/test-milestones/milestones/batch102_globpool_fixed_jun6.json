@@ -1,0 +1,21 @@
+{
+  "id": "batch102_globpool_fixed_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-masking-n-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 8,
+  "passed": 8,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "jvmCrash": false,
+  "classes": {
+    "GlobalPoolingMaskingTests": {"run": 8, "pass": 8, "notes": "FIXED: maskedPoolingConvolution AVG N computation was broadcasting mask to [mb,ch,h,w] then summing — ch factor inflated N. Fix: broadcast to [mb,1,h,w] for spatial-only count. Same fix applied to backward pass maskedPoolingEpsilonCnn."}
+  },
+  "failures": [],
+  "notes": "Verified fix: All 8 tests pass. Root cause: mask.broadcast(mb,ch,inH,inW) in AVG pooling multiplied N by channel count. Fix: broadcast(mb,1,inH,inW) for spatial-only counting.",
+  "tags": ["cpu", "pooling", "masking", "fix-confirmed"],
+  "timestamp": "2026-06-06T08:05:00Z"
+}

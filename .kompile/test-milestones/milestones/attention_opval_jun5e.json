@@ -1,0 +1,19 @@
+{
+  "id": "attention_opval_jun5e",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-reduce-float-clip-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 27,
+  "passed": 27,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "TestAttentionOpValidation": {"run": 27, "pass": 27}
+  },
+  "notes": "All 27 attention op validation tests pass on CPU. Covers dot product attention, scaled dot product, fused attention, large sequence, relative position bias.",
+  "tags": ["cpu", "samediff", "attention", "opvalidation"],
+  "timestamp": "2026-06-05T19:28:00Z"
+}

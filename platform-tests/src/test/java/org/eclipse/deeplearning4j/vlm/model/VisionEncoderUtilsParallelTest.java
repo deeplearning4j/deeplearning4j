@@ -54,7 +54,12 @@ public class VisionEncoderUtilsParallelTest extends BaseNd4jTestWithBackends {
     }
 
     private Supplier<VLMImagePreprocessor> preprocessorFactory() {
-        return VLMImagePreprocessor::defaultPreprocessor;
+        return () -> {
+            org.eclipse.deeplearning4j.llm.config.PreprocessorConfig config =
+                    new org.eclipse.deeplearning4j.llm.config.PreprocessorConfig();
+            config.setSize(new org.eclipse.deeplearning4j.llm.config.PreprocessorConfig.ImageSize(TARGET_SIZE, TARGET_SIZE));
+            return VLMImagePreprocessor.fromConfig(config);
+        };
     }
 
     @ParameterizedTest

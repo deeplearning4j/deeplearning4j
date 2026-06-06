@@ -372,7 +372,13 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
                     "(soft limit %d%%), routing %zu bytes to another device\n",
                     deviceId, usagePercent, softLimit, size);
         }
-        auto result = allocateFailover(size, deviceId, actualDeviceId);
+        // skipSameDeviceRetry=true: the whole point of the soft limit is to route
+        // to another device. If we let Step 1 trim-and-retry on the same device,
+        // it succeeds (pool's own usage is low — the high cudaMemGetInfo reading
+        // is from other processes), keeping all allocations on device 0 while
+        // device 1 sits idle with gigabytes free.
+        auto result = allocateFailover(size, deviceId, actualDeviceId,
+                                       /*skipSameDeviceRetry=*/true);
         if (result != nullptr) {
           restoreDevice();
           return result;
@@ -527,8 +533,11 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   return ptr;
 }
 
-void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* actualDeviceId) {
-  sd_debug("CudaMemoryPool::allocateFailover: Primary allocation failed on device %d for %zu bytes\n", currentDeviceId, size);
+void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* actualDeviceId,
+                                       bool skipSameDeviceRetry) {
+  sd_debug("CudaMemoryPool::allocateFailover: %s on device %d for %zu bytes\n",
+           skipSameDeviceRetry ? "Proactive soft-limit failover" : "Primary allocation failed",
+           currentDeviceId, size);
 
   // Get available memory on current device for pressure event
   size_t currentFreeMem = 0, currentTotalMem = 0;
@@ -576,10 +585,16 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     cudaSetDevice(prevDev);
   }
 
-  // Step 1: Trim pool and retry.
+  // Step 1: Trim pool and retry on the SAME device.
   // trimPool() syncs only streams with pending cudaFreeAsync (tracked in dirtyFreeStreams_),
   // then releases pool-reserved memory back to the driver.
-  if (supported_ && poolInitialized_[currentDeviceId]) {
+  //
+  // SKIP when skipSameDeviceRetry is true (proactive soft-limit path). The soft limit's
+  // purpose is to route allocations to ANOTHER device when cudaMemGetInfo reports high
+  // overall GPU usage. But trim-and-retry succeeds when the pool's own usage is low
+  // (the high usage is from other CUDA processes sharing the GPU). Succeeding here
+  // keeps all allocations on the overloaded device, defeating the soft limit entirely.
+  if (!skipSameDeviceRetry && supported_ && poolInitialized_[currentDeviceId]) {
     trimPool(currentDeviceId);
 
     // Log post-trim state to see how much memory was actually recovered
@@ -754,18 +769,34 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
       }
       cudaGetLastError();
     } else {
-      // Non-peer device: use cudaMallocManaged for transparent UVA page migration.
-      // The CUDA driver migrates pages between devices on access — no P2P/NVLink
-      // needed. After first touch, data caches on the accessing device at full
-      // GPU bandwidth. This is the correct path for multi-GPU without NVLink.
+      // Non-peer device: use cudaMallocManaged for transparent UVA access.
+      // Without P2P/NVLink, device 0 cannot directly access device 1's memory.
+      // cudaMallocManaged allocates in the unified address space. We set the
+      // preferred location to currentDeviceId (where kernels run) and hint
+      // that device d (where the allocation was routed) may also access it.
+      // Then prefetch to currentDeviceId so pages are resident BEFORE the
+      // first kernel launch — without this, the first access triggers a
+      // demand-paging fault that can race with kernel execution (error 700).
       void* ptr = nullptr;
       cudaError_t err = cudaMallocManaged(&ptr, size, cudaMemAttachGlobal);
       if (err == cudaSuccess && ptr != nullptr) {
-        cudaMemAdvise(ptr, size, cudaMemAdviseSetPreferredLocation, d);
-        sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMallocManaged on device %d "
-                  "for %zu bytes (UVA accessible from device %d)\n", d, size, currentDeviceId);
+        // Preferred location = the device that will run kernels on this memory.
+        // NOT device d — setting preferred to a non-peer device forces pages to
+        // stay where the kernel can't reach them without demand paging, which
+        // causes error 700 ("illegal memory access") on non-peer GPU pairs.
+        cudaMemAdvise(ptr, size, cudaMemAdviseSetPreferredLocation, currentDeviceId);
+        // Hint that both devices will access this memory. The CUDA driver uses
+        // this to set up page table mappings proactively rather than on fault.
+        cudaMemAdvise(ptr, size, cudaMemAdviseSetAccessedBy, currentDeviceId);
+        cudaMemAdvise(ptr, size, cudaMemAdviseSetAccessedBy, d);
+        // Prefetch to currentDeviceId so pages are resident before kernel launch.
+        // Use nullptr stream (default) to avoid LaunchContext recursion.
+        cudaMemPrefetchAsync(ptr, size, currentDeviceId, nullptr);
+        sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMallocManaged "
+                  "(backed by device %d, prefetched to device %d) for %zu bytes\n",
+                  d, currentDeviceId, size);
         registerDirectAllocation(ptr, size);
-        if (actualDeviceId) *actualDeviceId = d;
+        if (actualDeviceId) *actualDeviceId = currentDeviceId;
         cudaSetDevice(prevDev);
         return ptr;
       }

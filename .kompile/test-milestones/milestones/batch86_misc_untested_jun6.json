@@ -1,0 +1,26 @@
+{
+  "id": "batch86_misc_untested_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-isa-fix-rebuild",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 19,
+  "passed": 17,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 2,
+  "jvmCrash": false,
+  "classes": {
+    "TestMatmulDtypeInspection": {"run": 1, "pass": 1},
+    "TestAttnMaskReformatRegression": {"run": 4, "pass": 4},
+    "TestArgTableStablePerfFloor": {"run": 1, "pass": 0, "skip": 1, "notes": "CUDA-only test"},
+    "TestFrozenPhaseDriftDetection": {"run": 10, "pass": 10},
+    "TestGapExecutionSlotInvariants": {"run": 1, "pass": 0, "skip": 1, "notes": "CUDA-only test"},
+    "TestVisionEncoderConv2dRank": {"run": 2, "pass": 2}
+  },
+  "failures": [],
+  "notes": "6 classes. 17 pass, 2 skipped (CUDA-only). All CPU-eligible tests pass.",
+  "tags": ["cpu", "dsp", "misc"],
+  "timestamp": "2026-06-06T06:10:00Z"
+}

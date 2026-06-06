@@ -1,0 +1,15 @@
+{
+  "id": "batchN_cpu_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "f8b74f7ff83a1419d4d39fb10270d5011cecf5f3",
+  "passing": false,
+  "module": "platform-tests",
+  "totalTests": 639,
+  "passed": 625,
+  "failed": 0,
+  "skipped": 1,
+  "crashed": 2,
+  "notes": "NOTE: Requested class names (SameDiffInferenceTest, SameDiffBasicFunctionsTest, etc.) do not exist in this codebase. Ran the actual SameDiff/autodiff test classes instead. Per-class summary: SameDiffTests(91 started, CRASH in testConcurrentGCDeallocatorRace - JVM abort/signal 134); SameDiffTrainingTest(12 pass); SameDiffGradientTest(26 pass); SameDiffOutputTest(2 pass); FlatBufferSerdeTest(12 pass); ControlFlowTest(7 pass); NameScopeTests(4 pass); GraphTransformUtilTests(2 pass); SameDiffSpecifiedLossVarsTests(2 pass, 1 skip); ListenerTest(3 pass); SameDiffConcurrencyTest(4 pass, CRASH after testCastLongToIntConcurrentModelCreation - double free or corruption (!prev)); SameDiffMultiThreadTests(0 pass, CRASH on testSimple - double free or corruption (!prev)); DspCpuOperationsTest(36 pass); DspLifecycleValidationTest(101 pass); DspSlotLifecycleAuditTest(448 pass). Crashes are in concurrency/multi-thread tests exhibiting native heap corruption (double free). All single-threaded tests pass cleanly.",
+  "tags": ["cpu", "samediff", "autodiff", "dsp"],
+  "timestamp": "2026-06-05T07:42:28Z"
+}

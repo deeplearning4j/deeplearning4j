@@ -1,0 +1,20 @@
+{
+  "id": "sparsesoftmax_cpu_verified_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-sparsesoftmax-cpu-rebuild",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 1,
+  "passed": 1,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "TestLossOpValidation": {"run": 1, "pass": 1, "method": "testLoss2d", "notes": "sparsesoftmax fix verified on CPU after C++ scalar double-loop rewrite"}
+  },
+  "failures": [],
+  "notes": "Sparsesoftmax overflow fix confirmed on CPU backend. testLoss2d passes in 20.6s. Fix: replaced applyTrueBroadcast+scatterForLoss with scalar loop using numerically stable log-sum-exp in sparseSoftmaxCrossEntropyWithLogits.cpp.",
+  "tags": ["cpu", "sparsesoftmax", "loss", "fix-verification"],
+  "timestamp": "2026-06-06T00:13:00Z"
+}

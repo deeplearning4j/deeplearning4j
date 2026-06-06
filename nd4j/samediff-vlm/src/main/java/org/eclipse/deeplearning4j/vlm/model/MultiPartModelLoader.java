@@ -35,8 +35,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Loader for multi-part VLM models in SDZ (SameDiff ZIP) format.
@@ -108,35 +106,27 @@ public class MultiPartModelLoader {
                 ". Expected one of: " + String.join(", ", DECODER_NAMES) + SDZ_EXTENSION);
         }
 
-        // Load SDZ components in parallel — each file is independent
+        // Load SDZ components sequentially — SameDiff deserialization uses ND4J global
+        // state (FlatBuffers parsing, Nd4j.create, workspace management) which is not
+        // safe for concurrent loading on ForkJoinPool threads.
         long loadStart = System.currentTimeMillis();
-        CompletableFuture<SameDiff> visionFuture = visionEncoderFile != null
-                ? CompletableFuture.supplyAsync(() -> loadSdzQuiet(visionEncoderFile))
-                : CompletableFuture.completedFuture(null);
-        CompletableFuture<SameDiff> embedFuture = embedTokensFile != null
-                ? CompletableFuture.supplyAsync(() -> loadSdzQuiet(embedTokensFile))
-                : CompletableFuture.completedFuture(null);
-        CompletableFuture<SameDiff> decoderFuture =
-                CompletableFuture.supplyAsync(() -> loadSdzQuiet(decoderFile));
-
-        // Wait for all loads to complete
-        SameDiff visionEncoder;
-        SameDiff embedTokens;
+        SameDiff visionEncoder = null;
+        SameDiff embedTokens = null;
         SameDiff decoder;
         try {
-            CompletableFuture.allOf(visionFuture, embedFuture, decoderFuture).join();
-            visionEncoder = visionFuture.get();
-            embedTokens = embedFuture.get();
-            decoder = decoderFuture.get();
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            throw cause instanceof IOException ? (IOException) cause
-                    : new IOException("Parallel model loading failed", cause);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Model loading interrupted", e);
+            if (visionEncoderFile != null) {
+                visionEncoder = loadSdz(visionEncoderFile);
+            }
+            if (embedTokensFile != null) {
+                embedTokens = loadSdz(embedTokensFile);
+            }
+            decoder = loadSdz(decoderFile);
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Model loading failed", e);
         }
-        log.info("Parallel model loading completed in {}ms", System.currentTimeMillis() - loadStart);
+        log.info("Model loading completed in {}ms", System.currentTimeMillis() - loadStart);
 
         if (decoder == null) {
             throw new IOException("Failed to load decoder from: " + decoderFile.getAbsolutePath());
@@ -292,16 +282,8 @@ public class MultiPartModelLoader {
         return null;
     }
 
-    private static VLMImagePreprocessor loadPreprocessor(File modelDir) {
-        File preprocessorFile = new File(modelDir, "preprocessor_config.json");
-        if (preprocessorFile.exists()) {
-            try {
-                return VLMImagePreprocessor.fromConfig(preprocessorFile);
-            } catch (Exception e) {
-                log.warn("Failed to load preprocessor_config.json: {}", e.getMessage());
-            }
-        }
-        return VLMImagePreprocessor.defaultPreprocessor();
+    private static VLMImagePreprocessor loadPreprocessor(File modelDir) throws IOException {
+        return VLMImagePreprocessor.fromModelDirectory(modelDir);
     }
 
     /**

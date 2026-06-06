@@ -1,0 +1,17 @@
+{
+  "id": "light_batch_b_ops_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "ArgmaxAdapterTest,CNNProcessorTest,CustomPreprocessorTest,DataTypeCreationTest,BNBroadcastTest,BroadcastingOpsSmokeTests,CompareAndSetIsolationTest,DynamicPartitionGradientIsolationTest,EinsumOpTest,FusedElementwiseChainTest,FusedRoPEContiguityTest,IntDataBufferTests",
+  "totalTests": 81,
+  "passed": 81,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "notes": "Light batch B: 12 layer/config/op classes, all pass on CPU.",
+  "tags": "cpu,light,op-validation,layer",
+  "timestamp": "2026-06-05T10:55:00Z"
+}

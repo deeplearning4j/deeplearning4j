@@ -1,0 +1,21 @@
+{
+  "id": "loop4_summary_jun3",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "uncommitted",
+    "short": "uncommitted"
+  },
+  "commitMessage": "test: loop 4 summary — DL4J test batches + ComputationGraph frozen layer fix",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-dl4j-loop4-summary",
+  "totalTests": 131,
+  "passed": 121,
+  "failed": 2,
+  "skipped": 2,
+  "errors": 2,
+  "notes": "LOOP 4 SUMMARY — 131 tests across 8 suites, 121 PASS (92%). NEW FIX: ComputationGraph.calcBackpropGradients null epsilon NPE in frozen layer backprop (production code fix). TransferLearningHelperTest RNG seed determinism fix. PASSING SUITES: BatchNormalizationTest(15/15), ActivationLayerTest(6/6), OutputLayerTest(8/8), TestSimpleRnn(4/4), TestRnnLayers(6/6), DenseTest(3/3), FrozenLayerTest(6/6), DropoutLayerTest(4/4), TestVAE(9/9), LocalResponseTest(5/5), JsonTest(1/1), TransferLearningMLNTest(11/11+1skip), ScoreStatTest(4/4+1skip), ConvolutionLayerTest(19/20). REMAINING ISSUES: TransferLearningHelperTest.testFitUnFrozen FAILURE (param divergence), ConvolutionLayerTest.testCausal1d ERROR (Conv1D op failure), JVM fork crashes (exit 134) from CUDA lib loading on CPU backend affecting MultiLayerTest/TestComputationGraphNetwork/EmbeddingLayerTest/TestEarlyStopping.",
+  "tags": ["cpu", "nd4j-native", "dl4j-core", "loop-summary", "IMPROVED"],
+  "timestamp": "2026-06-03T16:15:00Z",
+  "previousMilestone": "vae_lrn_json_jun3"
+}

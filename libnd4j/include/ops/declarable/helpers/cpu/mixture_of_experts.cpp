@@ -83,7 +83,8 @@ static void mixtureOfExpertsSimple_(sd::LaunchContext* context,
                                      NDArray* expertBias,
                                      NDArray* output,
                                      int numExperts,
-                                     int topK) {
+                                     int topK,
+                                     bool normalizeProbs) {
 
     // Input: [batch, seq_len, hidden_dim]
     // Gating: [hidden_dim, num_experts]
@@ -147,13 +148,20 @@ static void mixtureOfExpertsSimple_(sd::LaunchContext* context,
             softmax(routerLogits.data(), numExperts);
             topKIndices(routerLogits.data(), numExperts, topK, selectedExperts, expertScores);
 
-            // Normalize selected expert scores
-            T scoreSum = static_cast<T>(0);
-            for (int k = 0; k < topK; k++) {
-                scoreSum += expertScores[k];
-            }
-            for (int k = 0; k < topK; k++) {
-                expertScores[k] /= scoreSum;
+            // Optionally renormalize selected expert scores.
+            // WARNING: renormalization rescales gradients by numExperts/topK in the
+            // backward pass (e.g. ~16x for numExperts=32, topK=2), causing the
+            // "~30x too large gradients" bug.  Only enable when inference-only.
+            if (normalizeProbs) {
+                T scoreSum = static_cast<T>(0);
+                for (int k = 0; k < topK; k++) {
+                    scoreSum += expertScores[k];
+                }
+                if (scoreSum > static_cast<T>(0)) {
+                    for (int k = 0; k < topK; k++) {
+                        expertScores[k] /= scoreSum;
+                    }
+                }
             }
 
             // Apply each selected expert and combine
@@ -196,10 +204,11 @@ void mixtureOfExpertsSimple(sd::LaunchContext* context,
                              NDArray* expertBias,
                              NDArray* output,
                              int numExperts,
-                             int topK) {
+                             int topK,
+                             bool normalizeProbs) {
 
     BUILD_SINGLE_SELECTOR(input->dataType(), mixtureOfExpertsSimple_,
-                          (context, input, gatingWeights, expertWeights, expertBias, output, numExperts, topK),
+                          (context, input, gatingWeights, expertWeights, expertBias, output, numExperts, topK, normalizeProbs),
                           SD_FLOAT_TYPES);
 }
 
@@ -222,9 +231,11 @@ void mixtureOfExperts(sd::LaunchContext* context,
     // TODO: Implement full version with capacity constraints and aux loss
 
     if (expertWeights.size() == 1) {
+        // Note: normalizeProbs=false to avoid ~numExperts/topK gradient amplification
+        // in the backward pass. Pass true only for inference-only (non-training) use.
         mixtureOfExpertsSimple(context, input, gatingWeights, expertWeights[0],
                                 expertBias.empty() ? nullptr : expertBias[0],
-                                output, numExperts, topK);
+                                output, numExperts, topK, false);
     } else {
         // Handle multiple expert weight tensors - implement later
         THROW_EXCEPTION("mixtureOfExperts: Multiple expert weight tensors not yet supported");

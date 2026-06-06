@@ -1,0 +1,14 @@
+{
+  "id": "batchI_cpu_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "cpu-native-datavec-batch-I-jun5",
+  "totalTests": 56,
+  "passed": 56,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "CSVRecordReaderTest(14/14). CSVRecordWriterTest(1/1). CSVSequenceRecordReaderTest(4/4). CSVLineSequenceRecordReaderTest(1/1) - required -Dsurefire.failIfNoSpecifiedTests=false because class is package-private. CSVNLinesSequenceRecordReaderTest(2/2). CSVVariableSlidingWindowRecordReaderTest(2/2). JacksonRecordReaderTest(5/5). JacksonLineRecordReaderTest(2/2). LibSvmRecordReaderTest(14/14). LibSvmRecordWriterTest(11/11). All passed, no failures.",
+  "tags": ["cpu", "nd4j-native", "datavec", "batch-I"],
+  "timestamp": "2026-06-05T15:37:00+09:00"
+}

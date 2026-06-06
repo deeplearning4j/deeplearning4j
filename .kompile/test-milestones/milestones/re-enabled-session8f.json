@@ -1,0 +1,28 @@
+{
+  "id": "re-enabled-session8f",
+  "branch": "ag_new_release_updates_2",
+  "passing": true,
+  "module": "batch4a-workspace-tests",
+  "totalTests": 81,
+  "passed": 78,
+  "failed": 0,
+  "skipped": 3,
+  "notes": "Session 8f: Workspace tests. 78/81 pass, 3 skipped. 1 failure fixed: WorkspaceProviderTests#testNestedWorkspaces5 — Nd4jWorkspace.notifyScopeEntered() early-return for already-open workspace did not increment tagScope, so closing inner scope ran full teardown including reset() which zeroed hostOffset. Fixed by adding tagScope.incrementAndGet() in the isOpen guard.",
+  "fixes": [
+    {
+      "file": "nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/memory/abstracts/Nd4jWorkspace.java",
+      "description": "notifyScopeEntered(): added tagScope.incrementAndGet() in isOpen.get() early-return guard so nested re-entry of same workspace doesn't trigger full teardown on inner close()",
+      "test": "WorkspaceProviderTests#testNestedWorkspaces5",
+      "status": "FIXED"
+    }
+  ],
+  "testResults": [
+    {"test": "WorkspaceProviderTests", "run": 27, "passed": 26, "failed": 0, "skipped": 1, "status": "PASS"},
+    {"test": "BasicWorkspaceTests", "run": 38, "passed": 36, "failed": 0, "skipped": 2, "status": "PASS"},
+    {"test": "CyclicWorkspaceTests", "run": 1, "passed": 1, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "DebugModeTests", "run": 4, "passed": 4, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "SpecialWorkspaceTests", "run": 11, "passed": 11, "failed": 0, "skipped": 0, "status": "PASS"}
+  ],
+  "tags": ["cpu", "nd4j-native", "batch-testing", "workspace-tests"],
+  "timestamp": "2026-06-04T13:15:00Z"
+}

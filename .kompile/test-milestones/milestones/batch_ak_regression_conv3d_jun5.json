@@ -1,0 +1,13 @@
+{
+  "batch": "AK",
+  "name": "Regression compat tests, Conv3D, SameDiff Lambda",
+  "date": "2026-06-05T02:32:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "TestRegressionTest050": {"total": 3, "passed": 2, "failed": 0, "errors": 0, "skipped": 1},
+    "TestRegressionTest060": {"total": 3, "passed": 2, "failed": 0, "errors": 0, "skipped": 1},
+    "Convolution3DTest": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "TestSameDiffLambda": {"total": 2, "passed": 2, "failed": 0, "errors": 0}
+  },
+  "summary": "10 tests run, 8 passed, 0 failures, 0 errors, 2 skipped. All clean."
+}

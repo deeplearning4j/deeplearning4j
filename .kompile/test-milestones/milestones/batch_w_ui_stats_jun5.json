@@ -1,0 +1,15 @@
+{
+  "batch": "W",
+  "name": "UI stats, serialization, and histogram tests",
+  "date": "2026-06-05T01:10:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "TestStatsClasses": {"total": 4, "passed": 4, "failed": 0, "errors": 0},
+    "TestStatsListener": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "TestTransferStatsCollection": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "TestComponentSerialization": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "TestStorageMetaData": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "HistogramBinTest": {"total": 4, "passed": 4, "failed": 0, "errors": 0}
+  },
+  "summary": "12 tests run, 12 passed, 0 failures, 0 errors. All UI stats and serialization tests pass cleanly."
+}

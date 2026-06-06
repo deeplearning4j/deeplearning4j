@@ -1,0 +1,17 @@
+{
+  "id": "batch_bl_opval_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "d1b36fa060",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "results": [
+    {"testClass": "TestShapeOpValidation", "total": 98, "passed": 93, "failed": 0, "skipped": 5, "status": "PASS"},
+    {"testClass": "TestRandomOpValidation", "total": 8, "passed": 8, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"testClass": "TestLossOpValidation", "total": 5, "passed": 4, "failed": 1, "skipped": 0, "status": "FAIL",
+     "failures": ["testLoss2d: sparsesoftmax SUM weights=none — expected 19.68, got -5.943e148"]}
+  ],
+  "notes": "Batch BL: op validation suite. Shape and Random all pass. Loss has 1 sparsesoftmax numerical overflow.",
+  "tags": "cpu,opvalidation,batch-bl",
+  "timestamp": "2026-06-05T05:20:00Z"
+}

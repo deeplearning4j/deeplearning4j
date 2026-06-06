@@ -1,0 +1,18 @@
+{
+  "id": "earlystop_retry_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "TestEarlyStopping",
+  "totalTests": 1,
+  "passed": 1,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "",
+  "notes": "TestEarlyStopping#testEarlyStoppingEveryNEpoch passes when run alone without resource contention. Prior SIGABRT (exit 134) was from OOM killer during concurrent CPU builds consuming all memory. Not a code bug.",
+  "tags": "cpu,retry,earlystopping,oom-false-positive",
+  "timestamp": "2026-06-05T12:35:00Z"
+}

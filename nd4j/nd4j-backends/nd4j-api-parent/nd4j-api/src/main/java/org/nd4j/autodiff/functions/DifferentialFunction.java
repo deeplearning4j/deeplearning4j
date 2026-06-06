@@ -846,6 +846,14 @@ public abstract class DifferentialFunction {
         boolean copied = false;
         for(int i = 0; i < vals.size(); i++) {
             SDVariable var = outputVars[i];
+            // Constants never accumulate gradients — do not register a gradient variable for them.
+            // The gradient value is still computed (so backprop can continue through upstream ops),
+            // but the Variable's gradient pointer must stay null so that sd.grad("b") returns null
+            // for a constant b. Registering a gradient for a constant would falsely indicate that
+            // the constant is a trainable parameter.
+            if (var.getVariableType() == org.nd4j.autodiff.samediff.VariableType.CONSTANT) {
+                continue;
+            }
             SDVariable grad = var.hasGradient() ? var.getGradient() : null;
             if(grad != null) {
                 if(!copied) {
@@ -860,8 +868,16 @@ public abstract class DifferentialFunction {
             } else {
                 SDVariable gradVar = vals.get(i);
                 if(sameDiff.hasVariable(var.name() + "-grad")) {
-                    if(sameDiff.getVariable(var.name() + "-grad").dataType().isFPType())
-                        sameDiff.getVariable(var.name() + "-grad").add(gradVar);
+                    if(sameDiff.getVariable(var.name() + "-grad").dataType().isFPType()) {
+                        // Accumulate gradient: existing + new contribution.
+                        // Must capture the returned SDVariable and register it — the existing
+                        // variable is NOT mutated in-place, so discarding the result would leave
+                        // the gradient pointer pointing at the pre-accumulation value.
+                        SDVariable existing = sameDiff.getVariable(var.name() + "-grad");
+                        SDVariable accumulated = existing.add(gradVar);
+                        sameDiff.updateVariableNameAndReference(accumulated, var.name() + "-grad");
+                        sameDiff.setGradientForVariableName(var.name(), accumulated);
+                    }
                 } else {
                     sameDiff.updateVariableNameAndReference(gradVar,var.name() + "-grad");
                     sameDiff.setGradientForVariableName(var.name(), gradVar);

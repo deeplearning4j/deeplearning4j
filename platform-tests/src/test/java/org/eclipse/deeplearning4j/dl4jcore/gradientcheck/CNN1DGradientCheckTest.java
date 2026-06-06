@@ -155,18 +155,14 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                 SubsamplingLayer.PoolingType.AVG,
                 SubsamplingLayer.PoolingType.PNORM
         };
-        //kernel 1 = 5 cropped length
-        //kernel 2 = 3 cropped length
-        Map<Integer,Integer> croppedLengths = new HashMap<>();
-        croppedLengths.put(1, 5);
-        croppedLengths.put(2, 3);
-        croppedLengths.put(4,3);
+        //ConvolutionMode.Same with stride=1 preserves length; cropping removes 2*cropping
+        //croppedLength = length - 2 * cropping = 7 - 2 = 5 for all kernels
+        int croppedLength = length - 2 * cropping;
         for (Activation afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     for (int kernel : kernels) {
                         INDArray input = Nd4j.rand(DataType.DOUBLE, minibatchSize, convNIn, length);
-                        int croppedLength = croppedLengths.get(kernel);
                         INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, finalNOut, croppedLength);
                         String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn=" + afn + ", kernel = " + kernel;
                         if (PRINT_RESULTS) {

@@ -1,0 +1,18 @@
+{
+  "id": "batch_cc_fixes_verify_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "Upsampling1DTest,TestDropoutGradientCheck,SameDiffCustomLayerTests,SameDiffDoubleScalarPromotionTest,NormalizerStandardizeTest",
+  "totalTests": 15,
+  "passed": 11,
+  "failed": 4,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "SameDiffDoubleScalarPromotionTest.testSerializedDoubleScalarDeserializesAsFloat, SameDiffDoubleScalarPromotionTest.testDoubleScalarDoesNotPromoteMatmulOutput, NormalizerStandardizeTest.testTransform (flaky statistical tolerance), TestDropoutGradientCheck.testDropoutGradient (gradient check fail)",
+  "notes": "5 classes tested. SameDiffCustomLayerTests(2) NOW PASSING (was 2 failures). Upsampling1DTest(2) NOW PASSING (was 1 failure). TestDropoutGradientCheck.testCompGraphMultiInput PASSES (was error). 3 persistent failures: scalar promotion (2), normalizer (flaky), dropout gradient.",
+  "tags": "cpu,recheck,fixes",
+  "timestamp": "2026-06-05T13:10:00Z"
+}

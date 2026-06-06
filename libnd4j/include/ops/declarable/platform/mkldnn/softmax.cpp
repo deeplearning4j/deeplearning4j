@@ -138,11 +138,19 @@ PLATFORM_IMPL(softmax, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // Check if data type is supported by OneDNN softmax.
-// NOTE: HALF (FP16) is excluded because OneDNN FP16 requires AVX-512-FP16
-// hardware that is not universally available on CPU. HALF inputs fall back
-// to the generic CPU softmax implementation which upcasts to float32 internally.
+// Runtime ISA detection: BF16 requires AVX512_CORE_BF16, HALF requires AVX512_CORE_AMX_FP16.
+// On CPUs without the required ISA, fall back to the generic implementation.
 static bool isSupportedSoftmaxType(DataType dt) {
-  return dt == DataType::FLOAT32 || dt == DataType::BFLOAT16;
+  if (dt == DataType::FLOAT32) return true;
+  if (dt == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (dt == DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
+  return false;
 }
 
 PLATFORM_CHECK(softmax, ENGINE_CPU) {

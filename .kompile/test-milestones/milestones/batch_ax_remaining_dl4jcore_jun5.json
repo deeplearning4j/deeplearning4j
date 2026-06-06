@@ -1,0 +1,11 @@
+{
+  "batch": "AX",
+  "name": "Remaining dl4jcore: LargeNetTest, CapsNetMNISTTest",
+  "date": "2026-06-05T03:17:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "LargeNetTest": {"total": 2, "passed": 0, "failed": 0, "errors": 0, "skipped": 2},
+    "CapsNetMNISTTest": {"total": 1, "passed": 0, "failed": 0, "errors": 0, "skipped": 1}
+  },
+  "summary": "3 tests total, 0 passed, 0 failures, 0 errors, 3 skipped (long-running/conditional)."
+}

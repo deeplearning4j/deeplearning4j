@@ -1,0 +1,18 @@
+{
+  "id": "dsp_cpu_8_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "DspFrozenConstantInvariantTest,DspExtInputStalenessTest,DspLifecycleValidationTest,TestDspShapePrePass,DspSlotLifecycleAuditTest,DspBufferAliasAccuracyTest,DspHandleTest,DspCpuOperationsTest",
+  "totalTests": 1285,
+  "passed": 1236,
+  "failed": 3,
+  "errors": 0,
+  "skipped": 46,
+  "failedTests": "DspExtInputStalenessTest.testAutoMarkFromPlaceholderClassification x3 (staging buffer address is 0 on CPU — CUDA-centric assertion, fix dispatched)",
+  "notes": "DSP CPU batch: 8 classes. DspFrozenConstantInvariantTest (16 pass), DspExtInputStalenessTest (467 run, 3 fail, 19 skip — staging buffer assertions are CUDA-centric), DspLifecycleValidationTest (101 pass), TestDspShapePrePass (13 pass), DspSlotLifecycleAuditTest (448 pass), DspBufferAliasAccuracyTest (189 run, 27 skip), DspHandleTest (15 pass), DspCpuOperationsTest (36 pass). Fix agent dispatched for CUDA-centric assertions.",
+  "tags": "cpu,dsp,staging-buffer,fix-dispatched",
+  "timestamp": "2026-06-05T10:14:00Z"
+}

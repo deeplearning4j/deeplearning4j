@@ -1,0 +1,16 @@
+{
+  "id": "verify_globpool_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-cpu-rebuild",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 4,
+  "passed": 4,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "notes": "GlobalPoolingGradientCheckTests: all 4 pass including testCnnGlobalPoolingMasking. Fix: MaskedReductionUtil used repmat() which is 2D-only; changed to broadcast() for 4D mask expansion in both forward (maskedPoolingConvolution) and backward (maskedPoolingEpsilonCnn) paths.",
+  "tags": ["cpu", "pooling", "gradient", "verification", "fix-confirmed"],
+  "timestamp": "2026-06-05T17:20:00Z"
+}

@@ -1,0 +1,23 @@
+{
+  "batch": "BC",
+  "name": "SameDiff gradient, training, control flow, transfer learning, graph build, scope serde",
+  "date": "2026-06-05T03:35:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "TransferLearningTest": {"total": 46, "passed": 46, "failed": 0, "errors": 0},
+    "ControlFlowTest": {"total": 7, "passed": 7, "failed": 0, "errors": 0},
+    "SameDiffTrainingTest": {"total": 12, "passed": 12, "failed": 0, "errors": 0},
+    "SameDiffGradientTest": {"total": 26, "passed": 21, "failed": 4, "errors": 1,
+      "note": "4 gradient check failures, 1 DSP dispatch error (testShapeUpdating)"},
+    "SameDiffGraphBuildTest": {"total": 37, "passed": 35, "failed": 2, "errors": 0,
+      "note": "testDoubleUseOfArray gradient check, testDuplicateNamePlaceholder exception handling"},
+    "SameDiffScopeSerdeTest": {"total": 23, "passed": 16, "failed": 4, "errors": 3,
+      "note": "3 'array is closed' errors (convertToConstant/Variable, placeholderToConstant), 4 failures (dtype, forward pass, exception type)"}
+  },
+  "known_issues": [
+    "SameDiffScopeSerdeTest: 3 errors from premature array closure during constant/variable conversion",
+    "SameDiffGradientTest: testShapeUpdating DSP dispatch failure, gradient computation diffs",
+    "SameDiffGraphBuildTest: gradient check and exception handling changes"
+  ],
+  "summary": "151 tests run, 137 passed, 10 failures, 4 errors. 65 pass (TransferLearning+ControlFlow+Training all clean)."
+}

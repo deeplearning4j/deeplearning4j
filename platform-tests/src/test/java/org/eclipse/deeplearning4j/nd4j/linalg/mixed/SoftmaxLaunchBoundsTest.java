@@ -95,11 +95,17 @@ public class SoftmaxLaunchBoundsTest {
         assertArrayEquals(shape, softmaxOut.shape(), name + ": output shape mismatch");
 
         // Softmax values should sum to ~1.0 along the softmax axis
+        // FP16 has limited precision (~3 decimal digits); large reduction dims accumulate error
         int normalizedAxis = axis < 0 ? axis + shape.length : axis;
+        long reductionLen = shape[normalizedAxis];
+        double tolerance = dtype == DataType.FLOAT16
+                ? Math.max(0.05, reductionLen * 2e-3)  // FP16: scales with reduction length
+                : 0.01;                                  // FP32: tight tolerance
         INDArray sums = softmaxOut.sum(normalizedAxis);
         double maxDeviation = sums.sub(1.0).amaxNumber().doubleValue();
-        assertTrue(maxDeviation < 0.01,
-                name + ": softmax sum deviates from 1.0 by " + maxDeviation);
+        assertTrue(maxDeviation < tolerance,
+                name + ": softmax sum deviates from 1.0 by " + maxDeviation
+                        + " (tolerance=" + tolerance + ", reductionLen=" + reductionLen + ")");
 
         // No NaN or Inf
         assertFalse(softmaxOut.isNaN().any(),

@@ -1,0 +1,18 @@
+{
+  "id": "rsub_scalar_cast_fix_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821+rsub-cast-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "NdArrayBroadcastMathTest",
+  "totalTests": 0,
+  "passed": 0,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "",
+  "notes": "Fix applied, pending build verification. Root cause: applyScalarArr(scalar::Ops) did not cast scalar to match array dtype. INT scalar (4 bytes) was reinterpreted as DOUBLE (8 bytes) producing garbage. Fix: added cast guard in NDArray.hXX lines 5707-5721, matching existing pattern from BoolOps path. Header change — triggers wider recompile.",
+  "tags": "cpu,fix-applied,rsub,scalar,pending-verification",
+  "timestamp": "2026-06-05T13:40:00Z"
+}

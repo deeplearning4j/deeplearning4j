@@ -379,7 +379,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                   si, slot.ident.opName.c_str(), slot.wiring.numInputs, slot.wiring.numOutputs,
                   iArgBuf, slot.args.numIArgs, tArgBuf, slot.args.numTArgs,
                   slot.args.numBArgs, slot.isIdentityOp() ? 1 : 0,
-                  slot.isViewCapableOp() ? 1 : 0, slot.flags.inPlaceFused ? 1 : 0);
+                  slot.isViewCapableOp() ? 1 : 0, slot.isInPlaceFused() ? 1 : 0);
       }
 
       // Log input wiring for every slot

@@ -1,0 +1,19 @@
+{
+  "id": "sparse_softmax_fix",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "944396e7fa",
+    "short": "944396e7fa"
+  },
+  "commitMessage": "uncommitted: fix sparse_softmax_cross_entropy_loss_with_logits forward+grad with direct loop",
+  "commitAuthor": "agibsonccc",
+  "passing": true,
+  "module": "cpu-native-testLoss2d-fixed",
+  "totalTests": 1,
+  "passed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "FIXED: sparseSoftmaxCrossEntropyWithLogits was returning -5.943e148. Root cause: scatterForLoss subarray extraction had stride bug causing reads from wrong rows. Fix: replaced complex reduce+broadcast+scatterForLoss chain with direct per-example loop computing -log(softmax(logits[i])[label[i]]) for forward, and softmax-one_hot for grad. Both forward (direct op test) and gradient check (testLoss2d 187/187) now pass.",
+  "tags": ["cpu", "loss-ops", "nd4j-native", "fixed"],
+  "timestamp": "2026-06-03T11:35:00Z"
+}

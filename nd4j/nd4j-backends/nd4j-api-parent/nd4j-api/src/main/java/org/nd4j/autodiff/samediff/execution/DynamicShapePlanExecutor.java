@@ -105,8 +105,18 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /** True once shapes have been frozen at least once in this executor's lifetime.
      *  Used to block plan cache swaps after the first freeze — swaps after freeze
-     *  indicate a cache key instability bug and cause cascading performance loss. */
+     *  indicate a cache key instability bug and cause cascading performance loss.
+     *  NOTE: when multi-plan frozen switching is active (shapes change while frozen),
+     *  plan swaps due to DIFFERENT shapes are legitimate and not suppressed. */
     private boolean wasEverFrozen;
+
+    /** Hash of placeholder shapes from the last dispatchNativePlan call.
+     *  Used to detect when placeholder shapes change between executions so that
+     *  the executor can redispatch to a different plan even when frozen.
+     *  This enables the VLM multi-page pattern where prefill (seqLen=N) and
+     *  decode (seqLen=1) alternate on the same frozen executor. The C++ NativePlanCache
+     *  already handles shape-keyed dispatch — this hash just tells Java WHEN to call it. */
+    private long lastDispatchedShapeHash;
 
     private final SameDiff sd;
     private final SessionMemMgr mmgr;
@@ -991,6 +1001,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         wasEverFrozen = false;
         nativeExecutorFailed = false;
         executionCount = 0;
+        lastDispatchedShapeHash = 0;
 
         // Drain ArrayCacheMemoryMgr state: deferred close buffers accumulate across pages
         // because nothing drains them between page boundaries. The cache itself holds arrays
@@ -1039,6 +1050,41 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     public void resetForNextPageDecode() {
         log.info("DSP resetForNextPageDecode: no-op (KV cache is an in-graph scatter; no native state to reset)");
+    }
+
+    /**
+     * Clear Java-side output caches and trim the CUDA memory pool, WITHOUT destroying
+     * the native plan handle or CUDA graphs.
+     *
+     * <p>Use this between pages for models whose plans are preserved across pages
+     * (vision encoder, embedTokens). The slot array cache and zero-copy output cache
+     * hold references to intermediate GPU buffers from the last execution. Clearing
+     * them allows the JavaCPP deallocator to free those native buffers, preventing
+     * GPU memory from accumulating across pages.</p>
+     *
+     * <p>Unlike {@link #releaseGpuIntermediates()}, this does NOT call the C++
+     * {@code releaseGpuIntermediates()} which would destroy CUDA graphs and replay
+     * state. The frozen plan handle stays intact for shape-keyed switching.</p>
+     */
+    public void clearOutputCaches() {
+        log.info("DSP clearOutputCaches: clearing Java-side caches (plan preserved)");
+        closeSlotArrayCache();
+        closeZeroCopyOutputCache();
+        frozenOutputsInitialized = false;
+
+        // Trim CUDA memory pool so freed buffers are returned to the driver
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            try {
+                Pointer stream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+                if (stream != null) {
+                    NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                    nativeOps.trimMemoryPoolOnStream(currentDevice, stream);
+                }
+            } catch (Exception e) {
+                log.debug("clearOutputCaches: trim failed (non-fatal): {}", e.getMessage());
+            }
+        }
     }
 
     /**
@@ -1407,6 +1453,35 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Compute a hash of all placeholder shapes from the current execution's inputs.
+     * Used to detect when shapes change between frozen executions so that the executor
+     * can switch between shape-keyed plans in the C++ cache.
+     *
+     * @param placeholderArrays the placeholder name → array map from sd.output()
+     * @return a hash combining all placeholder shape info, or 0 if no placeholders
+     */
+    private long computePlaceholderShapeHash(Map<String, INDArray> placeholderArrays) {
+        if (cachedPhKeys == null || cachedPhKeys.length == 0) return 0;
+        long hash = 17;
+        for (String phKey : cachedPhKeys) {
+            INDArray arr = placeholderArrays != null ? placeholderArrays.get(phKey) : null;
+            if (arr == null) {
+                SDVariable v = sd.getVariable(phKey);
+                arr = v != null ? v.getArr() : null;
+            }
+            if (arr != null) {
+                long[] shape = arr.shape();
+                for (long dim : shape) {
+                    hash = hash * 31 + dim;
+                }
+                // Include rank as a delimiter to distinguish e.g. [2,3] from [6]
+                hash = hash * 31 + shape.length;
+            }
+        }
+        return hash;
+    }
+
+    /**
      * Re-dispatch through the C++ NativePlanCache using the current placeholder
      * shape-info pointers. The cache is O(1) for matching shapes (returns the same
      * plan handle) and swaps to a different cached plan when shapes differ. This is
@@ -1497,11 +1572,16 @@ public class DynamicShapePlanExecutor implements Closeable {
                     || newHandle.address() != nativePlanHandle.address();
             if (swapped) {
                 if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
-                    // HARD ERROR: if the plan swaps after frozen/replay state is established,
-                    // the cache is returning different plans for the same shapes. This means
-                    // every decode step creates a new plan, destroying all replay/capture
-                    // progress and annihilating throughput. This is a catastrophic bug.
-                    if (shapesFrozen || frozenCallCount > 2) {
+                    // Check if this swap is due to a legitimate shape change (multi-plan switching)
+                    // or a same-shape cache key instability bug.
+                    long currentShapeHash = computePlaceholderShapeHash(placeholderArrays);
+                    boolean isShapeChange = (lastDispatchedShapeHash != 0 && currentShapeHash != lastDispatchedShapeHash);
+
+                    if ((shapesFrozen || frozenCallCount > 2) && !isShapeChange) {
+                        // HARD ERROR: plan swapped for the SAME shapes after frozen state —
+                        // the cache is returning different plans for identical shapes. This means
+                        // every decode step creates a new plan, destroying all replay/capture
+                        // progress and annihilating throughput. This is a catastrophic bug.
                         throw new RuntimeException(
                             "PLAN_CACHE_BUG: plan handle swapped from " +
                             Long.toHexString(nativePlanHandle.address()) + " to " +
@@ -1514,21 +1594,42 @@ public class DynamicShapePlanExecutor implements Closeable {
                             " phKeys=" + (cachedPhKeys != null ? cachedPhKeys.length : "null") +
                             " outputs=" + (cachedSortedOutputs != null ? cachedSortedOutputs.length : "null"));
                     }
-                    // PLAN SWAP SUPPRESSION: if shapes were ever frozen in this executor's
-                    // lifetime, the plan cache returning a different plan is a cache key
-                    // instability bug. Suppress the swap to prevent cascading performance loss
-                    // (each swap resets frozen state → triggers re-warmup → re-compile → re-capture).
-                    // The existing plan handle is still valid and has all captured graphs intact.
-                    if (wasEverFrozen) {
-                        // Unpin the NEW plan (which getOrInsert auto-pinned) since we're not using it.
+
+                    if (isShapeChange && (shapesFrozen || wasEverFrozen)) {
+                        // FROZEN MULTI-PLAN SWITCH: shapes changed while frozen. This is the
+                        // VLM multi-page pattern (prefill seq=N ↔ decode seq=1). The C++ cache
+                        // returned a different plan for the new shape — accept it. Both handles
+                        // stay pinned in the C++ cache so we can switch between them freely.
+                        log.info("redispatchForCurrentShapes: frozen multi-plan switch from {} to {} " +
+                                "(shapeHash {} → {}, shapesFrozen={}, executionCount={})",
+                                Long.toHexString(nativePlanHandle.address()),
+                                Long.toHexString(newHandle.address()),
+                                lastDispatchedShapeHash, currentShapeHash,
+                                shapesFrozen, executionCount);
+                        nativePlanHandle = newHandle;
+                        // Clear per-shape caches — the new plan has different input mappings
+                        cachedInputArrays = null;
+                        cachedInputOpaques = null;
+                        contextInputRefs = null;
+                        inputIsPlaceholder = null;
+                        frozenExtInputsWorkingCopy = null;
+                        frozenExtBufferSnapshot = null;
+                        frozenExtShapeSnapshot = null;
+                        frozenOutputsInitialized = false;
+                        closeZeroCopyOutputCache();
+                        // Freeze the new plan handle too — it needs frozen C++ state for replay
+                        NativeOps nOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                        nOps.setPlanShapesFrozen(nativePlanHandle, true);
+                    } else if (wasEverFrozen && !isShapeChange) {
+                        // PLAN SWAP SUPPRESSION: same shapes but different handle after freeze.
+                        // This is a cache key instability bug. Suppress the swap to prevent
+                        // cascading performance loss.
                         nativeOps.unpinNativePlan(cache, newHandle);
                         log.warn("redispatchForCurrentShapes: SUPPRESSED plan swap from {} to {} " +
                                 "(wasEverFrozen=true, shapesFrozen={}, executionCount={}). " +
                                 "Keeping existing plan to preserve graph replay state.",
                                 nativePlanHandle.address(), newHandle.address(),
                                 shapesFrozen, executionCount);
-                        // Don't update nativePlanHandle — keep the existing one.
-                        // Re-freeze if it was unfrozen by a previous swap.
                         if (!shapesFrozen) {
                             shapesFrozen = true;
                         }
@@ -2287,17 +2388,20 @@ public class DynamicShapePlanExecutor implements Closeable {
         // This is what lets the plan cache's shape-keyed dispatch enforce slot immutability —
         // each shape-sig gets its own plan with its own bound slots.
         //
-        // After shapes freeze, the plan handle is guaranteed stable (a swap would throw
-        // PLAN_CACHE_BUG). Skip the redispatch to avoid per-step BytePointer allocation
-        // of the full serialized plan + JNI call overhead.
-        // Skip redispatch when shapes are frozen OR when shapes were ever frozen and we have
-        // a valid plan handle. wasEverFrozen prevents the cascade where a spurious plan swap
-        // resets shapesFrozen, causing another redispatch on the next step, which swaps again.
+        // When shapes are frozen, we still need to detect when placeholder shapes CHANGE
+        // (e.g., VLM prefill seq=N → decode seq=1 → prefill seq=N on next page).
+        // Each distinct shape gets its own plan in the C++ cache. The C++ cache handles
+        // shape-keyed dispatch natively — we just need to call it when shapes change.
+        // Skip redispatch ONLY when frozen AND shapes are the same (performance optimization).
+        long currentShapeHash = computePlaceholderShapeHash(placeholderArrays);
+        boolean shapesChanged = (lastDispatchedShapeHash != 0 && currentShapeHash != lastDispatchedShapeHash);
         boolean needsRedispatch = (nativePlanHandle == null || nativePlanHandle.isNull())
-                || (!shapesFrozen && !wasEverFrozen);
+                || (!shapesFrozen && !wasEverFrozen)
+                || shapesChanged;
         if (needsRedispatch) {
             redispatchForCurrentShapes(placeholderArrays);
         }
+        lastDispatchedShapeHash = currentShapeHash;
         applyMutableExternalInputsIfNeeded(nativeOps, nativePlanHandle);
 
         DspDiagnostics.record(DspDiagnostics.EXECUTE,
@@ -3524,6 +3628,17 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                 }
 
+                // Placeholders also have no slot in the native plan (slot -1).
+                // Return the caller-supplied placeholder array directly.
+                if (sdVar != null && sdVar.getVariableType() == VariableType.PLACEHOLDER
+                        && placeholderArrays != null) {
+                    INDArray phArr = placeholderArrays.get(outputName);
+                    if (phArr != null) {
+                        results.put(outputName, phArr.dup());
+                        continue;
+                    }
+                }
+
                 OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
                 if (opaqueOut == null || opaqueOut.isNull()) {
                     throw new RuntimeException("Native executor: null output at index " + i + " for '" + outputName + "'");
@@ -3814,6 +3929,8 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             cachedOpContext = null;
         }
+
+        lastDispatchedShapeHash = 0;
 
         // Free native C++ plan handle reference. The plan is cache-owned and will
         // be cleaned up by the NativePlanCache destructor (or LRU eviction).

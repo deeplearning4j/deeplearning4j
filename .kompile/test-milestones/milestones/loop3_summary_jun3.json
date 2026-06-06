@@ -1,0 +1,21 @@
+{
+  "id": "loop3_summary_jun3",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "uncommitted",
+    "short": "uncommitted"
+  },
+  "commitMessage": "fix: OCNNOutputLayer mmuli 1D→2D, SeparableConv NHWC workspace dup",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-platform-tests-loop3-summary",
+  "totalTests": 146,
+  "passed": 120,
+  "failed": 20,
+  "skipped": 2,
+  "errors": 8,
+  "notes": "Loop 3 summary. FIXED: OCNNOutputLayerTest(2/2), verified many passing suites. REMAINING FAILURES: ConvDataFormatTests(16F+1E, systematic NHWC), YoloGradientCheck(2F), Conv1DIsolation(1F+1E, NHWC/dilation), ImageSeqOpValidation(5E, empty test config), testBroadcastEmpty(1E, Nd4j.empty EMPTY bit). PASSING SUITES: VisionTransformerOps(23), ONNX(22), SameDiffTraining(12), SameDiffOutput(2), Conv1DManual(1), Conv1DOp(5), ConvolutionModes(6), KerasImport(5), Serde(4), NDArrayCreation(2). Key insight: most remaining failures are NHWC data format related at conv op level.",
+  "tags": ["cpu", "summary", "loop3"],
+  "timestamp": "2026-06-03T05:05:00Z",
+  "previousMilestone": "ismax_bool_fix_jun3"
+}

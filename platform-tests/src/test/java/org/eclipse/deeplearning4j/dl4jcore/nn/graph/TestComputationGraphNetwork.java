@@ -131,7 +131,10 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     @BeforeEach
     public void before(){
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
+        // GradientCheckUtil's static initializer sets default types to DOUBLE.
+        // Reset to FLOAT to match the data type used by tests in this class.
+        Nd4j.setDefaultDataTypes(getDataType(), getDataType());
     }
 
     @AfterAll
@@ -759,7 +762,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
             ol.setLabels(outData);
             Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null, LayerWorkspaceMgr.noWorkspaces());
 
-            INDArray olEpsilon = olPairStd.getSecond();
+            INDArray olEpsilon = olPairStd.getSecond().detach();
 
             e.feedForward(new INDArray[]{inData}, true, false); //FF without clearing inputs as we need them later
             Gradient extErrorGrad = e.backpropGradient(olEpsilon);
@@ -775,7 +778,6 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     @Test
     public void testExternalErrors2(){
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
         int nIn = 4;
         int nOut = 3;
 
@@ -806,7 +808,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
             INDArray input = Nd4j.rand(new long[]{minibatch, nIn, seqLen});
             INDArray expected = Nd4j.ones(minibatch, nOut, seqLen);
 
-            INDArray output = graph.outputSingle(false, false, input);
+            INDArray output = graph.outputSingle(false, false, input).detach();
             INDArray error = output.sub(expected);
 
             for (org.deeplearning4j.nn.api.Layer l : graph.getLayers()) {
@@ -814,8 +816,15 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 assertFalse(l.input().isAttached());
             }
 
-            // Compute Gradient
-            Gradient gradient = graph.backpropGradient(error);
+            // Compute Gradient - detach error to avoid workspace pointer issues
+            // when passing across workspace boundaries with SEPARATE mode
+            Gradient gradient = graph.backpropGradient(error.detach());
+            // Detach gradient arrays before use outside workspace scope
+            for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
+                if (entry.getValue().isAttached()) {
+                    entry.setValue(entry.getValue().detach());
+                }
+            }
             graph.getUpdater().update(gradient, 0, 0, minibatch, LayerWorkspaceMgr.noWorkspaces());
 
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();

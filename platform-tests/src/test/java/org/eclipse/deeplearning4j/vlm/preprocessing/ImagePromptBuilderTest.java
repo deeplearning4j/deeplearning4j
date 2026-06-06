@@ -58,8 +58,8 @@ public class ImagePromptBuilderTest extends BaseNd4jTestWithBackends {
         // 2 rows, 3 cols, 2 image tokens per tile
         String prompt = ImagePromptBuilder.buildImagePromptString(2, 3, 2);
 
-        // Global frame should be emitted before tile descriptors in packed layout
-        assertTrue(prompt.indexOf("<global-img>") < prompt.indexOf("<row_1_col_1>"));
+        // Tiles-first, global-last ordering (matching SmolDocling/Idefics3 training format)
+        assertTrue(prompt.indexOf("<row_1_col_1>") < prompt.indexOf("<global-img>"));
 
         // Should have row/col tokens for each tile
         assertTrue(prompt.contains("<row_1_col_1>"));

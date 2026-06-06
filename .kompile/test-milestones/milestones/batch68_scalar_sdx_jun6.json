@@ -1,0 +1,28 @@
+{
+  "id": "batch68_scalar_sdx_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 105,
+  "passed": 105,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "ScalarReverseSubtractionGradientIsolationTest": {"run": 3, "pass": 3},
+    "ScalarMeanTransformSequenceIsolationTest": {"run": 3, "pass": 3},
+    "ScalarTransformBoundaryIsolationTest": {"run": 2, "pass": 2},
+    "SdxRuntimeTest": {"run": 33, "pass": 33},
+    "ShapeCacheReproducerTest": {"run": 5, "pass": 5},
+    "SoftmaxLaunchBoundsTest": {"run": 9, "pass": 9},
+    "SamplerUtilsTest": {"run": 13, "pass": 13},
+    "SamplerTest": {"run": 20, "pass": 20},
+    "RoundTripTest": {"run": 15, "pass": 15}
+  },
+  "failures": [],
+  "notes": "9 of 10 classes found (ScalarPowFlatBufferIsolationTest not in classpath). All 105 tests pass. Clean.",
+  "tags": ["cpu", "scalar", "sdx", "shape-cache", "softmax", "sampler", "ggml-roundtrip"],
+  "timestamp": "2026-06-06T03:47:00Z"
+}

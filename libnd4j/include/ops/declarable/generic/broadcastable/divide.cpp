@@ -133,8 +133,8 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
   auto gradY = OUTPUT_VARIABLE(1);
 
 
-  if (x->isSameShape(y)) {
-    // PWT case case
+  if (x->isSameShape(y) && epsNext->isSameShape(x)) {
+    // PWT case: all three inputs have the same shape
 
     // X gradient: gradX = epsNext / y
     epsNext->applyPairwiseTransform(pairwise::Divide, y, gradX);
@@ -162,37 +162,44 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
 
     epsNext->applyScalarArr(scalar::Divide, y, gradX);
   } else {
-    // broadcast case
+    // broadcast case — epsNext, x, y may have different shapes
 
     auto preX = *epsNext / *y;
 
-    NDArray negX(*x);
-    x->applyTransform(transform::Neg, &negX);
-    NDArray *negXMulEps = (*epsNext) * negX;
+    // Use dup() for a deep copy — NDArray copy constructor creates a VIEW (shares buffer).
+    // Writing into a view of x would permanently negate the input variable in-place.
+    NDArray *negX = x->dup();
+    negX->applyTransform(transform::Neg, negX);
+    NDArray *negXMulEps = (*epsNext) * (*negX);
     NDArray *ySquared = (*y) * (*y);
     auto preY = (*negXMulEps) / (*ySquared);
+    delete negX;
     delete negXMulEps;
     delete ySquared;
-    auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-    auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+
+    // Reduce along axes where x/y were broadcast to the pre-gradient shape.
+    // Use preX/preY shapes (the broadcast result), NOT epsNext shape —
+    // epsNext may be scalar even when x/y are non-scalar.
+    auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), preX->shapeInfo());
+    auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), preY->shapeInfo());
 
     if (axisX.size() > 0) {
       auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
       gradX->assign(sum);
       delete sum;
     } else {
-      // FIXED: preX is stack-allocated from operator/, don't delete
       gradX->assign(preX);
     }
+    delete preX;
 
     if (axisY.size() > 0) {
       auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
       delete sum;
     } else {
-      // FIXED: preY is stack-allocated from operator/, don't delete
       gradY->assign(preY);
     }
+    delete preY;
   }
 
   return Status::OK;

@@ -1,0 +1,16 @@
+{
+  "id": "dsp_seal_5_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "d1b36fa060",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "DspCompilationSealTest",
+  "totalTests": 5,
+  "passed": 5,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Fixed: EMULATED_REPLAY had isSlotBySlot=true in ModeContract, which blocked phaseCompile() from being called on CPU. Changed guard from !explicitSlotBySlot to !neverAutoSeal in NativeDynamicShapePlan.cpp line 3038.",
+  "tags": "cpu,dsp,compilation-seal,fix",
+  "timestamp": "2026-06-05T05:52:00Z"
+}

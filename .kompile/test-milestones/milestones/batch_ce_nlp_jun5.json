@@ -1,0 +1,18 @@
+{
+  "id": "batch_ce_nlp_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "TokenizerTest,BasicLineIteratorTest",
+  "totalTests": 4,
+  "passed": 3,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 1,
+  "failedTests": "",
+  "notes": "NLP batch: TokenizerTest(2) + BasicLineIteratorTest(2, 1 skipped). BagOfWordsTest, SentenceIteratorTest, VocabCacheTest do not exist in platform-tests. All executed tests pass.",
+  "tags": "cpu,nlp,tokenizer",
+  "timestamp": "2026-06-05T14:00:00Z"
+}

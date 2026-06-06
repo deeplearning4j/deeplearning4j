@@ -40,7 +40,12 @@ import java.util.List;
 public class EmbeddingMerger {
 
     /**
-     * Replace image token embeddings with vision embeddings via native scatter.
+     * Replace image token embeddings with vision embeddings.
+     *
+     * Uses host-side float[] copy for guaranteed correctness — the native
+     * VisionEmbeddingMerge op can be used via mergeNative() but this path
+     * ensures correct CUDA host/device sync by building the merged array
+     * from raw float data on the host side.
      *
      * @param textEmbeddings text embeddings [1, seqLen, hiddenDim]
      * @param visionEmbeddings vision embeddings [1, visionSeqLen, hiddenDim]
@@ -50,9 +55,64 @@ public class EmbeddingMerger {
      */
     public static INDArray mergeEmbeddings(INDArray textEmbeddings, INDArray visionEmbeddings,
                                            int[] tokenIds, int imageTokenId) {
-        // dup() ensures contiguous device buffer after reshape (views may have stale device data on CUDA)
-        INDArray tokenIdArray = Nd4j.createFromArray(tokenIds).reshape(1, tokenIds.length).dup();
-        return mergeNative(textEmbeddings, visionEmbeddings, tokenIdArray, imageTokenId);
+        long visionSeqLen = visionEmbeddings.shape()[1];
+        long visionHiddenSize = visionEmbeddings.shape()[2];
+
+        int imageSlots = 0;
+        for (int id : tokenIds) {
+            if (id == imageTokenId) imageSlots++;
+        }
+
+        if (imageSlots != visionSeqLen) {
+            log.warn("Image token slots ({}) != vision tokens ({}). Will fill {} slots.",
+                    imageSlots, visionSeqLen, Math.min(imageSlots, (int) visionSeqLen));
+        }
+
+        // Cast vision embeddings to match text embedding dtype
+        INDArray visionFlat = visionEmbeddings.reshape((int) visionSeqLen, (int) visionHiddenSize);
+        INDArray visionCast = null;
+        if (visionFlat.dataType() != textEmbeddings.dataType()) {
+            log.info("Casting vision embeddings from {} to {} to match text embeddings",
+                    visionFlat.dataType(), textEmbeddings.dataType());
+            visionCast = visionFlat.castTo(textEmbeddings.dataType());
+            visionFlat = visionCast;
+        }
+
+        int seqLen = tokenIds.length;
+        int hiddenDim = (int) visionHiddenSize;
+
+        // Extract raw float data from both embedding sources via host buffers
+        float[] textData = textEmbeddings.data().asFloat();
+        float[] visionData = visionFlat.data().asFloat();
+
+        // Close the castTo() result now that we've extracted the float data
+        if (visionCast != null && !visionCast.wasClosed()) {
+            visionCast.setCloseable(true);
+            visionCast.close();
+        }
+
+        // Build merged float array on the host
+        float[] mergedData = new float[seqLen * hiddenDim];
+        int fillIdx = 0;
+        int fillCount = Math.min(imageSlots, (int) visionSeqLen);
+        for (int pos = 0; pos < seqLen; pos++) {
+            int destOffset = pos * hiddenDim;
+            if (tokenIds[pos] == imageTokenId && fillIdx < fillCount) {
+                int srcOffset = fillIdx * hiddenDim;
+                System.arraycopy(visionData, srcOffset, mergedData, destOffset, hiddenDim);
+                fillIdx++;
+            } else {
+                int srcOffset = pos * hiddenDim;
+                System.arraycopy(textData, srcOffset, mergedData, destOffset, hiddenDim);
+            }
+        }
+
+        // Create fresh INDArray from host float[] — guarantees proper CUDA device sync
+        INDArray inputsEmbeds = Nd4j.create(mergedData, new long[]{1, seqLen, hiddenDim}, 'c');
+        log.info("Built inputsEmbeds via host float[]: shape={}, filled {} of {} image token positions",
+                java.util.Arrays.toString(inputsEmbeds.shape()), fillIdx, imageSlots);
+
+        return inputsEmbeds;
     }
 
     /**

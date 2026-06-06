@@ -1,0 +1,774 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
+/* ── DL4J Shared Theme ─────────────────────────────────────────────────
+   CSS custom properties for consistent theming across all DL4J UI pages.
+   Dark mode is default; light mode activated by [data-theme="light"] on <html>.
+   ───────────────────────────────────────────────────────────────────── */
+
+:root {
+    /* Surface hierarchy (dark) */
+    --bg-base:          #111827;
+    --bg-surface:       #1f2937;
+    --bg-elevated:      #374151;
+    --bg-inset:         #0f172a;
+
+    /* Borders */
+    --border-default:   #374151;
+    --border-subtle:    rgba(55, 65, 81, 0.5);
+
+    /* Text */
+    --text-primary:     #f3f4f6;
+    --text-secondary:   #9ca3af;
+    --text-muted:       #6b7280;
+    --text-inverse:     #111827;
+
+    /* Brand accent */
+    --accent:           #6366f1;
+    --accent-hover:     #818cf8;
+    --accent-muted:     rgba(99, 102, 241, 0.15);
+
+    /* Semantic colors */
+    --success:          #22c55e;
+    --success-muted:    rgba(34, 197, 94, 0.15);
+    --warning:          #eab308;
+    --warning-muted:    rgba(234, 179, 8, 0.15);
+    --error:            #ef4444;
+    --error-muted:      rgba(239, 68, 68, 0.15);
+    --info:             #3b82f6;
+    --info-muted:       rgba(59, 130, 246, 0.15);
+
+    /* Chart / visualization palette */
+    --chart-1:          #6366f1;
+    --chart-2:          #22c55e;
+    --chart-3:          #eab308;
+    --chart-4:          #ef4444;
+    --chart-5:          #a855f7;
+    --chart-6:          #14b8a6;
+
+    /* Shadows */
+    --shadow-sm:        0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md:        0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg:        0 10px 15px rgba(0, 0, 0, 0.4);
+
+    /* Radii */
+    --radius-sm:        4px;
+    --radius-md:        6px;
+    --radius-lg:        8px;
+    --radius-xl:        12px;
+
+    /* Transitions */
+    --transition-fast:  150ms ease;
+    --transition-base:  250ms ease;
+
+    /* Typography */
+    --font-sans:        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono:        "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+}
+
+/* ── Light theme ──────────────────────────────────────────────────── */
+[data-theme="light"] {
+    --bg-base:          #f8fafc;
+    --bg-surface:       #ffffff;
+    --bg-elevated:      #f1f5f9;
+    --bg-inset:         #e2e8f0;
+
+    --border-default:   #e2e8f0;
+    --border-subtle:    rgba(226, 232, 240, 0.7);
+
+    --text-primary:     #0f172a;
+    --text-secondary:   #475569;
+    --text-muted:       #94a3b8;
+    --text-inverse:     #f8fafc;
+
+    --accent:           #4f46e5;
+    --accent-hover:     #4338ca;
+    --accent-muted:     rgba(79, 70, 229, 0.1);
+
+    --success:          #16a34a;
+    --success-muted:    rgba(22, 163, 74, 0.1);
+    --warning:          #ca8a04;
+    --warning-muted:    rgba(202, 138, 4, 0.1);
+    --error:            #dc2626;
+    --error-muted:      rgba(220, 38, 38, 0.1);
+    --info:             #2563eb;
+    --info-muted:       rgba(37, 99, 235, 0.1);
+
+    --chart-1:          #4f46e5;
+    --chart-2:          #16a34a;
+    --chart-3:          #ca8a04;
+    --chart-4:          #dc2626;
+    --chart-5:          #9333ea;
+    --chart-6:          #0d9488;
+
+    --shadow-sm:        0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md:        0 4px 6px rgba(0, 0, 0, 0.07);
+    --shadow-lg:        0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Base resets ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body.dl4j-themed {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.5;
+    transition: background var(--transition-base), color var(--transition-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────── */
+.dl4j-toolbar {
+    background: var(--bg-surface);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 48px;
+    border-bottom: 1px solid var(--border-default);
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.dl4j-toolbar h1 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+}
+
+.dl4j-toolbar .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.dl4j-toolbar .nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+}
+
+.dl4j-toolbar .nav-links a:hover {
+    background: var(--accent-muted);
+    color: var(--accent);
+}
+
+/* ── Theme toggle button ──────────────────────────────────────────── */
+.theme-toggle {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.theme-toggle:hover {
+    background: var(--accent-muted);
+    border-color: var(--accent);
+}
+
+/* ── Content container ────────────────────────────────────────────── */
+.dl4j-content {
+    max-width: 1440px;
+    margin: 24px auto;
+    padding: 0 24px;
+}
+
+/* ── Cards / Sections ─────────────────────────────────────────────── */
+.dl4j-section {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+    transition: background var(--transition-base), border-color var(--transition-base);
+}
+
+.dl4j-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* ── Status cards row ─────────────────────────────────────────────── */
+.dl4j-status-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.dl4j-status-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 12px 18px;
+    min-width: 130px;
+    flex: 1;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.dl4j-status-card .label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.dl4j-status-card .value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.dl4j-status-card .value.small {
+    font-size: 14px;
+}
+
+/* ── Badges ───────────────────────────────────────────────────────── */
+.dl4j-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    line-height: 1.4;
+}
+
+.dl4j-badge-accent   { background: var(--accent-muted); color: var(--accent); }
+.dl4j-badge-success  { background: var(--success-muted); color: var(--success); }
+.dl4j-badge-warning  { background: var(--warning-muted); color: var(--warning); }
+.dl4j-badge-error    { background: var(--error-muted); color: var(--error); }
+.dl4j-badge-info     { background: var(--info-muted); color: var(--info); }
+.dl4j-badge-muted    { background: var(--bg-elevated); color: var(--text-secondary); }
+
+/* Solid badges (for phase indicators that need high contrast) */
+.dl4j-badge-solid-accent  { background: var(--accent); color: #fff; }
+.dl4j-badge-solid-success { background: var(--success); color: #fff; }
+.dl4j-badge-solid-warning { background: var(--warning); color: #fff; }
+.dl4j-badge-solid-error   { background: var(--error); color: #fff; }
+.dl4j-badge-solid-info    { background: var(--info); color: #fff; }
+.dl4j-badge-solid-muted   { background: var(--text-muted); color: #fff; }
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+.dl4j-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    line-height: 1.4;
+}
+
+.dl4j-btn-primary {
+    background: var(--accent);
+    color: #fff;
+}
+.dl4j-btn-primary:hover { background: var(--accent-hover); }
+.dl4j-btn-primary:disabled { background: var(--text-muted); cursor: not-allowed; }
+
+.dl4j-btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+}
+.dl4j-btn-outline:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-muted);
+}
+
+.dl4j-btn-danger {
+    background: transparent;
+    border: 1px solid var(--error);
+    color: var(--error);
+}
+.dl4j-btn-danger:hover { background: var(--error); color: #fff; }
+
+/* ── Tables ───────────────────────────────────────────────────────── */
+.dl4j-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.dl4j-table th {
+    text-align: left;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-default);
+}
+
+.dl4j-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+}
+
+.dl4j-table tr:hover td {
+    background: var(--accent-muted);
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────────── */
+.dl4j-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 24px;
+}
+
+.dl4j-tab {
+    padding: 8px 20px;
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+}
+
+.dl4j-tab:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.dl4j-tab:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+
+.dl4j-tab.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.dl4j-tab:not(.active):hover {
+    background: var(--accent-muted);
+    color: var(--accent);
+}
+
+/* ── Model cards grid ─────────────────────────────────────────────── */
+.dl4j-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 12px;
+}
+
+.dl4j-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-fast);
+}
+
+.dl4j-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md);
+}
+
+.dl4j-card .name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.dl4j-card .repo {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-family: var(--font-mono);
+}
+
+.dl4j-card .desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.dl4j-card .meta {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.dl4j-card .actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+/* ── Progress ─────────────────────────────────────────────────────── */
+.dl4j-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.dl4j-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.3s;
+    border-radius: 3px;
+}
+
+.dl4j-progress-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Segment timeline (scrollable) ────────────────────────────────── */
+.dl4j-segment-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-elevated) transparent;
+}
+
+.dl4j-segment-timeline::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dl4j-segment-timeline::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dl4j-segment-timeline::-webkit-scrollbar-thumb {
+    background: var(--bg-elevated);
+    border-radius: 3px;
+}
+
+.dl4j-segment-timeline::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+.dl4j-segment-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dl4j-segment-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    min-width: 90px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+}
+
+.dl4j-segment-bar {
+    height: 28px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-size: 11px;
+    color: #fff;
+    font-weight: 600;
+    min-width: 40px;
+    cursor: pointer;
+    position: relative;
+    transition: opacity var(--transition-fast);
+}
+
+.dl4j-segment-bar:hover { opacity: 0.85; }
+
+.dl4j-segment-tooltip {
+    display: none;
+    position: absolute;
+    bottom: 110%;
+    left: 0;
+    background: var(--bg-inset);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 400;
+    white-space: nowrap;
+    z-index: 100;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-lg);
+    line-height: 1.6;
+}
+
+.dl4j-segment-bar:hover .dl4j-segment-tooltip { display: block; }
+
+/* Segment replay state colors (solid — need contrast on bar) */
+.replay-EMPTY     { background: var(--text-muted); }
+.replay-CAPTURING { background: var(--warning); }
+.replay-CAPTURED  { background: var(--info); }
+.replay-READY     { background: var(--success); }
+.replay-REPLAYING { background: #16a34a; }
+.replay-ERROR     { background: var(--error); }
+.replay-UNKNOWN   { background: var(--bg-elevated); }
+
+/* Execution phase mini-badges */
+.dl4j-exec-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 2px;
+    margin-left: 6px;
+}
+.exec-WARMUP      { background: rgba(255,255,255,0.2); }
+.exec-COMPILING   { background: rgba(255,255,255,0.2); }
+.exec-COMPILED    { background: rgba(255,255,255,0.2); }
+.exec-REPLAYING   { background: rgba(255,255,255,0.25); }
+.exec-SLOT_BY_SLOT { background: rgba(255,255,255,0.15); }
+
+/* Phase badges */
+.dl4j-phase-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.phase-SLOT_BY_SLOT  { background: var(--chart-5); }
+.phase-SHAPES_FROZEN { background: var(--warning); }
+.phase-REPLAYING     { background: var(--success); }
+.phase-BUILDING      { background: var(--info); }
+.phase-SEALED        { background: var(--success); }
+.phase-FAILED        { background: var(--error); }
+
+/* ── Op histogram chart ───────────────────────────────────────────── */
+.dl4j-op-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 120px;
+    padding: 8px 0;
+}
+
+.dl4j-op-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+
+.dl4j-op-bar {
+    background: var(--chart-1);
+    border-radius: 2px 2px 0 0;
+    width: 100%;
+    min-height: 2px;
+    transition: height 0.3s;
+}
+
+.dl4j-op-bar-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    transform: rotate(-45deg);
+    transform-origin: left top;
+    white-space: nowrap;
+    margin-top: 4px;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dl4j-op-bar-count {
+    font-size: 9px;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Memory timeline ──────────────────────────────────────────────── */
+.dl4j-memory-timeline {
+    height: 100px;
+    position: relative;
+    overflow-x: auto;
+}
+
+.dl4j-mem-event {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.mem-ALLOCATE { background: var(--success); }
+.mem-RELEASE  { background: var(--error); }
+
+/* ── Device bars ──────────────────────────────────────────────────── */
+.dl4j-device-bars {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    height: 60px;
+}
+
+.dl4j-device-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.dl4j-device-bar {
+    width: 40px;
+    background: var(--chart-1);
+    border-radius: 3px 3px 0 0;
+    min-height: 4px;
+}
+
+.dl4j-device-bar-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.dl4j-device-bar-count {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── DOT graph container ──────────────────────────────────────────── */
+.dl4j-dot-graph {
+    background: var(--bg-inset);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    overflow: auto;
+    max-height: 400px;
+}
+
+.dl4j-dot-graph pre {
+    margin: 0;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* ── Misc ─────────────────────────────────────────────────────────── */
+.dl4j-no-data {
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+    padding: 24px;
+}
+
+.dl4j-auto-refresh {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dl4j-auto-refresh input[type="checkbox"] {
+    accent-color: var(--accent);
+}
+
+.dl4j-session-select {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.dl4j-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 900px) {
+    .dl4j-grid-2 { grid-template-columns: 1fr; }
+}
+
+.dl4j-category-header {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 24px 0 12px 0;
+    text-transform: capitalize;
+}
+
+/* Source-specific badge colors */
+.badge-source-omnihub    { background: var(--chart-5); color: #fff; }
+.badge-source-huggingface { background: #ff6f00; color: #fff; }
+
+/* ── Searchbox ────────────────────────────────────────────────────── */
+.dl4j-search-box {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--text-primary);
+    width: 200px;
+    transition: border-color var(--transition-fast);
+}
+
+.dl4j-search-box::placeholder {
+    color: var(--text-muted);
+}
+
+.dl4j-search-box:focus {
+    outline: none;
+    border-color: var(--accent);
+}

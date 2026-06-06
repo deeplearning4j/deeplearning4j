@@ -1,0 +1,32 @@
+{
+  "id": "batchF_cpu_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "cpu-native-nd4j-batch-F-jun5",
+  "totalTests": 149,
+  "passed": 143,
+  "failed": 6,
+  "skipped": 2,
+  "notes": "ReduceOpsSmokeTests(15/15 pass). Level1Test(3/3 pass). Level2Test(7/7 pass). Level3Test(6/6 pass). NativeBlasTests(10/10 pass). OpExecutionerTests(48/49, 1 skip). SpecialTests: CRASH exit 134 — C++ std::runtime_error during testScalarShuffle2, JVM terminated, 0 tests reported. RandomTests (rng package): 53/57 pass, 4 fail — testBernoulliDistribution2 (wrong bit pattern for seed), testBernoulliDistribution3 (wrong bit pattern for seed), testAndersonDarling (AD stat 2.008 > threshold 1.8692), testCrossBackendEquality1 (different values between backends for same seed), 1 skip; parallelism.RandomTests: 2/2 pass; longrunning.RandomTests: CRASH exit 134 (MNIST download test, network/resource crash). RngTests: 2/3 pass, 1 fail — testRandomWithOrder expected 0.0 but got -0.09317 (RNG seed mismatch). RngValidationTests: 0/1 pass, 1 fail — validateRngDistributions Bernoulli DOUBLE seed=12345 mean rel error 0.01186 > 0.01 tolerance. Compilation fix applied: DspMultiPlanShapeSwitchTest.java line 138 — sd.math.transpose() -> sd.transpose() (SDMath does not have transpose, it is in SDBaseOps).",
+  "tags": ["cpu", "nd4j-native", "batch-F"],
+  "timestamp": "2026-06-05T15:16:00+09:00",
+  "crashes": [
+    {
+      "class": "org.eclipse.deeplearning4j.nd4j.linalg.crash.SpecialTests",
+      "cause": "std::runtime_error in C++ native during testScalarShuffle2, exit code 134 (SIGABRT)"
+    },
+    {
+      "class": "org.eclipse.deeplearning4j.longrunning.RandomTests",
+      "cause": "MNIST download test crash, exit code 134"
+    }
+  ],
+  "failures": [
+    "RandomTests.testBernoulliDistribution2 — different bit pattern for seed (RNG behavior change)",
+    "RandomTests.testBernoulliDistribution3 — different bit pattern for seed (RNG behavior change)",
+    "RandomTests.testAndersonDarling — AD statistic 2.008788 > threshold 1.8692 (borderline statistical test)",
+    "RandomTests.testCrossBackendEquality1 — different values between backends for same seed",
+    "RngTests.testRandomWithOrder — expected 0.0 but got -0.09317322679118821",
+    "RngValidationTests.validateRngDistributions — Bernoulli DOUBLE seed=12345 mean relative error 0.01186 exceeds tolerance 0.01"
+  ]
+}

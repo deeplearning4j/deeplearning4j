@@ -1,0 +1,25 @@
+{
+  "id": "batch_bo_dl4j_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "d1b36fa060",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "results": [
+    {"testClass": "ConvDataFormatTests", "total": 31, "passed": 14, "failed": 16, "errors": 1, "skipped": 0, "status": "FAIL",
+     "failures": ["15 of 31 methods fail — NCHW/NHWC data format mismatch across all conv layers"]},
+    {"testClass": "DspCompilationSealTest", "total": 5, "passed": 0, "failed": 5, "skipped": 0, "status": "FAIL",
+     "failures": ["All 5 tests: compilation seal not being set (expected true, got false)"]},
+    {"testClass": "TestTransformOpValidation", "total": 57, "passed": 52, "failed": 4, "errors": 1, "skipped": 1, "status": "FAIL",
+     "failures": [
+       "testBooleanAnd: RuntimeException",
+       "testPairwiseTransforms: RuntimeException",
+       "testBroadcastEmpty: expected true but was false",
+       "testTransforms: RuntimeException",
+       "testClipByAvgNorm: INDArray equality failed"
+     ]}
+  ],
+  "notes": "Batch BO: DL4J layers + transform ops. ConvDataFormatTests has widespread NCHW/NHWC mismatch. DspCompilationSealTest seal feature not wired up. Transform ops have 5 failures.",
+  "tags": "cpu,dl4j,conv,dsp,transform,batch-bo",
+  "timestamp": "2026-06-05T05:25:00Z"
+}

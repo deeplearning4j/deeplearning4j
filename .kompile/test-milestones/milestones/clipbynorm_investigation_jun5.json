@@ -1,0 +1,18 @@
+{
+  "id": "clipbynorm_investigation_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "TestMiscOpValidation",
+  "totalTests": 1,
+  "passed": 0,
+  "failed": 1,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "testClipByNorm0: columns 0,1 have wrong scaling factors (not just tolerance), column 2 (norm==clipValue) is spuriously clipped due to fp precision + strict > comparison",
+  "notes": "Investigation found: (1) Column 2 clipped because fp norm2 exceeds 2.0 by tiny epsilon (strict > comparison). (2) Columns 0,1 have different scaling from expected — deeper issue with allTensorsAlongDimension or intermediate precision. Needs further investigation.",
+  "tags": "cpu,investigation,clipbynorm,needs-fix",
+  "timestamp": "2026-06-05T13:45:00Z"
+}

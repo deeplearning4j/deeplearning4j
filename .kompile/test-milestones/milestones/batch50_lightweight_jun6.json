@@ -1,0 +1,28 @@
+{
+  "id": "batch50_lightweight_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 12,
+  "passed": 11,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 1,
+  "classes": {
+    "DeviceCountDebugTest": {"run": 1, "pass": 1},
+    "ScalarCrashTest": {"run": 3, "pass": 3},
+    "SamplingTest": {"run": 1, "pass": 1},
+    "DotProductAttentionLayerTest": {"run": 1, "pass": 1},
+    "MovingWindowMatrixTest": {"run": 1, "pass": 1},
+    "TimeSeriesUtilsTest": {"run": 1, "pass": 1, "notes": "Two classes in different packages (dl4j + datavec)"},
+    "TimeSeriesGeneratorImportTest": {"run": 1, "pass": 1},
+    "MutipleEpochsSentenceIteratorTest": {"run": 1, "pass": 0, "skipped": 1},
+    "InMemoryVocabStoreTests": {"run": 1, "pass": 1}
+  },
+  "failures": [],
+  "notes": "9 class patterns matched 10 actual classes (TimeSeriesUtilsTest in 2 packages). AggregableMultiOpArchTest not found. All 11 executed tests pass, 1 skipped. Clean.",
+  "tags": ["cpu", "lightweight", "misc", "timeseries", "scalar", "vocab"],
+  "timestamp": "2026-06-06T02:30:00Z"
+}

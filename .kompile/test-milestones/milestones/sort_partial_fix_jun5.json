@@ -1,0 +1,18 @@
+{
+  "id": "sort_partial_fix_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821+sort-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "NdArraySortTest",
+  "totalTests": 14,
+  "passed": 13,
+  "failed": 1,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "testSortWithIndicesDescending: expected [[4.0,3.0],[3.0,4.0]] got [[2.0,1.0],[4.0,3.0]] — sort-with-indices descending path returns wrong values",
+  "notes": "Sort fix progress: 8 failures -> 1 failure. sortGeneric, sortTadGeneric, sortTad Java call all fixed. Remaining: sortWithIndicesDescending uses a different code path (sort returning indices), not yet fixed.",
+  "tags": "cpu,fix-verification,sort,partial",
+  "timestamp": "2026-06-05T13:10:00Z"
+}

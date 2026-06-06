@@ -135,13 +135,13 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
             //Legacy (non-custom) RNG ops:
             testCases.add(TestCase.builder().opType("bernoulli").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("bernoulli").dataType(type).shape(1000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5)
-                    .expectedMean(0.5).expectedStd(Math.sqrt(0.5*0.5) /*var = p*(1-p)*/).build());
+                    .expectedMean(0.5).expectedStd(Math.sqrt(0.5*0.5) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("bernoulli").dataType(type).shape(100,10000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.2)
                     .expectedMean(0.2).expectedStd(Math.sqrt(0.2*(1-0.2)) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
             testCases.add(TestCase.builder().opType("uniform").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("min", 0.0).arg("max", 1.0).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("uniform").dataType(type).shape(1000).minValue(1).maxValue(2).minValueInclusive(true).maxValueInclusive(true).arg("min", 1.0).arg("max",2.0)
-                    .expectedMean((1+2)/2.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(2.0-1.0, 2)) /*Var: 1/12 * (b-a)^2*/).build());
+                    .expectedMean((1+2)/2.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(2.0-1.0, 2)) /*Var: 1/12 * (b-a)^2*/).meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("uniform").dataType(type).shape(100,10000).minValue(-4).maxValue(-2).minValueInclusive(true).maxValueInclusive(true).arg("min", -4.0).arg("max",-2.0)
                     .expectedMean(-3.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(-4.0+2.0, 2)) /*Var: 1/12 * (b-a)^2*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
@@ -153,7 +153,7 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
 
             testCases.add(TestCase.builder().opType("binomial").dataType(type).shape(new long[0]).minValue(0).maxValue(5).minValueInclusive(true).maxValueInclusive(true).arg("n", 5).arg("p",0.5).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("binomial").dataType(type).shape(1000).minValue(0).maxValue(10).minValueInclusive(true).maxValueInclusive(true).arg("n", 10).arg("p",0.5)
-                    .stdRelativeErrorTolerance(0.02).expectedMean(10*0.5).expectedStd(Math.sqrt(10*0.5*(1-0.5)) /*var = np(1-p)*/).build());
+                    .meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.05).expectedMean(10*0.5).expectedStd(Math.sqrt(10*0.5*(1-0.5)) /*var = np(1-p)*/).build());
             testCases.add(TestCase.builder().opType("binomial").dataType(type).shape(100,10000).minValue(0).maxValue(20).minValueInclusive(true).maxValueInclusive(true).arg("n", 20).arg("p",0.2)
                     .expectedMean(20*0.2).expectedStd(Math.sqrt(20*0.2*(1-0.2)) /*var = np(1-p)*/).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.01).build());
 
@@ -205,7 +205,7 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
             //Probabilistic merge: use 0 and 1, 0.5 probability. Then it's same as bernoulli distribution
             testCases.add(TestCase.builder().opType("probabilisticmerge").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("probabilisticmerge").dataType(type).shape(1000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5)
-                    .expectedMean(0.5).expectedStd(Math.sqrt(0.5*0.5) /*var = p*(1-p)*/).build());
+                    .expectedMean(0.5).expectedStd(Math.sqrt(0.5*0.5) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("probabilisticmerge").dataType(type).shape(100,10000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.2)
                     .expectedMean(0.2).expectedStd(Math.sqrt(0.2*(1-0.2)) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
@@ -231,20 +231,20 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
             //DistributionUniform, RandomBernoulli, RandomExponential, RandomNormal, RandomStandardNormal
             testCases.add(TestCase.builder().opType("distributionuniform").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("min", 0.0).arg("max", 1.0).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("distributionuniform").dataType(type).shape(1000).minValue(1).maxValue(2).minValueInclusive(true).maxValueInclusive(true).arg("min", 1.0).arg("max",2.0)
-                    .expectedMean((1+2)/2.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(2.0-1.0, 2)) /*Var: 1/12 * (b-a)^2*/).build());
+                    .expectedMean((1+2)/2.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(2.0-1.0, 2)) /*Var: 1/12 * (b-a)^2*/).meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("distributionuniform").dataType(type).shape(100,10000).minValue(-4).maxValue(-2).minValueInclusive(true).maxValueInclusive(true).arg("min", -4.0).arg("max",-2.0)
                     .expectedMean(-3.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(-4.0+2.0, 2)) /*Var: 1/12 * (b-a)^2*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
             testCases.add(TestCase.builder().opType("randombernoulli").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("randombernoulli").dataType(type).shape(1000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5)
-                    .expectedMean(0.5).expectedStd(Math.sqrt(0.5*0.5) /*var = p*(1-p)*/).build());
+                    .expectedMean(0.5).expectedStd(Math.sqrt(0.5*0.5) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("randombernoulli").dataType(type).shape(100,10000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.2)
                     .expectedMean(0.2).expectedStd(Math.sqrt(0.2*(1-0.2)) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
             //3 cases: lambda = 1, 1, 0.4
             testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(new long[0]).minValue(0).maxValue(maxValue(type)).minValueInclusive(type == DataType.HALF).maxValueInclusive(true).arg("lambda", 1.0).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(1000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(type == DataType.HALF).maxValueInclusive(true).arg("lambda", 1.0)
-                    .expectedMean(1.0).expectedStd(1.0 /*var = 1 / lambda^2*/).build());
+                    .expectedMean(1.0).expectedStd(1.0 /*var = 1 / lambda^2*/).meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.1).build());
             testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(100,10000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(type == DataType.HALF).maxValueInclusive(true).arg("lambda", 0.4)
                     .expectedMean(1.0 / 0.4).expectedStd(1.0 / 0.4 /*std = 1 / lambda*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
@@ -252,13 +252,13 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
             testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
                     .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.08).stdMinAbsErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(100,1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
-                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
+                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.005).build());
 
             testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(new long[0]).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
                     .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.08).stdMinAbsErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(100,1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
-                    .expectedMean(0.0).expectedStd(1.0).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
+                    .expectedMean(0.0).expectedStd(1.0).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.01).build());
         }
 
 

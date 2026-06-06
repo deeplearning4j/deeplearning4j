@@ -1396,6 +1396,15 @@ public class DspSlotLifecycleAuditTest {
                 }
             }
             if (!droppedSlots.isEmpty()) {
+                // Debug: print slot details for dropped slots
+                for (int ds : droppedSlots.subList(0, Math.min(5, droppedSlots.size()))) {
+                    INDArray debugOut = null;
+                    try { debugOut = handle.getSlotOutput(ds); } catch (Throwable ignored) {}
+                    System.out.println("DEBUG_DROP: slot=" + ds + " wasNonNull=" + wasNonNull[ds]
+                            + " getSlotOutput=" + debugOut
+                            + " phase=" + handle.planPhase()
+                            + " exec=" + i + " mode=" + mode + " fix=" + fix.name);
+                }
                 fail(fix.name + "/" + mode + " post-freeze exec#" + i
                         + ": " + droppedSlots.size() + " slots dropped from non-null to null"
                         + " after freeze (first 20: "

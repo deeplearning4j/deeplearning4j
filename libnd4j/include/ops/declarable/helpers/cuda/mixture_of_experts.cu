@@ -84,6 +84,7 @@ __global__ __launch_bounds__(128, 4) static void mixtureOfExpertsKernel(
     const sd::LongType expertDim,
     const int numExperts,
     const int topK,
+    const int normalizeProbs,
     const sd::LongType inBatchStride,
     const sd::LongType inSeqStride,
     const sd::LongType inDimStride,
@@ -135,13 +136,20 @@ __global__ __launch_bounds__(128, 4) static void mixtureOfExpertsKernel(
         deviceSoftmax(routerLogits, numExperts);
         deviceTopK(routerLogits, numExperts, topK, selectedExperts, expertScores);
 
-        // Normalize scores
-        T scoreSum = static_cast<T>(0);
-        for (int k = 0; k < topK; k++) {
-            scoreSum += expertScores[k];
-        }
-        for (int k = 0; k < topK; k++) {
-            expertScores[k] /= scoreSum;
+        // Optionally renormalize scores.
+        // WARNING: renormalization amplifies gradients by ~numExperts/topK in the
+        // backward pass (the "~30x too large gradients" bug).  Only enable for
+        // inference-only (non-training) use.
+        if (normalizeProbs) {
+            T scoreSum = static_cast<T>(0);
+            for (int k = 0; k < topK; k++) {
+                scoreSum += expertScores[k];
+            }
+            if (scoreSum > static_cast<T>(0)) {
+                for (int k = 0; k < topK; k++) {
+                    expertScores[k] /= scoreSum;
+                }
+            }
         }
     }
     __syncthreads();
@@ -180,7 +188,8 @@ static void mixtureOfExpertsSimpleCuda_(sd::LaunchContext* context,
                                          NDArray* expertBias,
                                          NDArray* output,
                                          int numExperts,
-                                         int topK) {
+                                         int topK,
+                                         bool normalizeProbs) {
 
     const auto batchSize = input->sizeAt(0);
     const auto seqLen = input->sizeAt(1);
@@ -220,7 +229,7 @@ static void mixtureOfExpertsSimpleCuda_(sd::LaunchContext* context,
     mixtureOfExpertsKernel<T><<<totalTokens, blockSize, sharedMemSize, *context->getCudaStream()>>>(
         inputBuffer, gatingBuffer, expertBuffer, biasBuffer, outputBuffer,
         batchSize, seqLen, hiddenDim, expertDim,
-        numExperts, topK,
+        numExperts, topK, normalizeProbs ? 1 : 0,
         inBatchStride, inSeqStride, inDimStride,
         gatingDimStride, gatingExpStride,
         expExpStride, expInStride, expOutStride,
@@ -236,10 +245,11 @@ void mixtureOfExpertsSimple(sd::LaunchContext* context,
                              NDArray* expertBias,
                              NDArray* output,
                              int numExperts,
-                             int topK) {
+                             int topK,
+                             bool normalizeProbs) {
 
     BUILD_SINGLE_SELECTOR(input->dataType(), mixtureOfExpertsSimpleCuda_,
-                          (context, input, gatingWeights, expertWeights, expertBias, output, numExperts, topK),
+                          (context, input, gatingWeights, expertWeights, expertBias, output, numExperts, topK, normalizeProbs),
                           SD_FLOAT_TYPES);
 }
 
@@ -258,9 +268,10 @@ void mixtureOfExperts(sd::LaunchContext* context,
                        bool useAuxLoss) {
 
     if (expertWeights.size() == 1) {
+        // Note: normalizeProbs=false to avoid ~numExperts/topK gradient amplification.
         mixtureOfExpertsSimple(context, input, gatingWeights, expertWeights[0],
                                 expertBias.empty() ? nullptr : expertBias[0],
-                                output, numExperts, topK);
+                                output, numExperts, topK, false);
     } else {
         THROW_EXCEPTION("mixtureOfExperts: Multiple expert weight tensors not yet supported");
     }
@@ -269,7 +280,7 @@ void mixtureOfExperts(sd::LaunchContext* context,
 BUILD_SINGLE_TEMPLATE(void mixtureOfExpertsSimpleCuda_,
                       (sd::LaunchContext* context, NDArray* input, NDArray* gatingWeights,
                        NDArray* expertWeights, NDArray* expertBias, NDArray* output,
-                       int numExperts, int topK),
+                       int numExperts, int topK, bool normalizeProbs),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers

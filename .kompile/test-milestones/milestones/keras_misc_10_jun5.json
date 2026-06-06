@@ -1,0 +1,17 @@
+{
+  "id": "keras_misc_10_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "KerasUpsampling2DTest,KerasCropping2DTest,KerasCropping1DTest,KerasCropping3DTest,KerasUpsampling1DTest,KerasUpsampling3DTest,KerasPooling1DTest,KerasPooling2DTest,KerasPooling3DTest,KerasFlatten3dTest",
+  "totalTests": 12,
+  "passed": 12,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "notes": "Keras Misc batch: 10 classes, ALL PASS. Upsampling2D (1), Cropping2D (1), Cropping1D (1), Cropping3D (1), Upsampling1D (1), Upsampling3D (1), Pooling1D (3), Pooling2D (1), Pooling3D (1), Flatten3d (1). BUILD SUCCESS.",
+  "tags": "cpu,keras,pooling,cropping,upsampling,all-pass",
+  "timestamp": "2026-06-05T09:43:00Z"
+}

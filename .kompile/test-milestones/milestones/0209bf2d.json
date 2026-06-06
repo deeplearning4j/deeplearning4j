@@ -1,0 +1,16 @@
+{
+  "id": "0209bf2d",
+  "branch": "ag_new_release_updates_2",
+  "commit": {"full": "3d3eaafd5a32f249973bd20b4e94cca9aa27efda", "short": "3d3eaafd5a"},
+  "commitMessage": "fix: disable Triton on Windows",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-onnx",
+  "totalTests": 71,
+  "passed": 68,
+  "failed": 1,
+  "skipped": 1,
+  "notes": "1 error: conv2d OneDNN memory descriptor stride issue in DSP exec. 1 failure: MHA KV cache key from repeat_kv pipeline assertion. Same conv family as Keras conv1d failures.",
+  "tags": ["cpu", "onnx", "nd4j-native"],
+  "timestamp": "2026-06-02T19:04:01Z"
+}

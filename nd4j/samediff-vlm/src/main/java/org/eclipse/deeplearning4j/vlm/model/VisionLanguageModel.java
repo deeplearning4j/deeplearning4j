@@ -29,6 +29,7 @@ import org.eclipse.deeplearning4j.llm.generation.BatchGenerationState;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
 import org.eclipse.deeplearning4j.llm.generation.SamplerUtils;
+import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
@@ -129,6 +130,16 @@ public class VisionLanguageModel implements AutoCloseable {
     /** Maximum KV cache sequence length. 0 means auto-detect. */
     @Setter
     private int maxKvLen = 0;
+
+    /**
+     * Cached GenerationPipeline for multi-page decode reuse.
+     * Created on first page with fixedBuffers enabled (maxPrefillLength > 0)
+     * so the frozen DSP plan is reused across pages without recompilation.
+     */
+    private GenerationPipeline cachedPipeline;
+
+    /** Cached decoder I/O configuration — discovered once, reused across pages. */
+    private ModelIOConfig cachedDecoderIOConfig;
 
     /** External KV cache manager for managed autoregressive decoding. */
     @Setter
@@ -353,7 +364,7 @@ public class VisionLanguageModel implements AutoCloseable {
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
-                .imagePreprocessor(VLMImagePreprocessor.defaultPreprocessor());
+                .imagePreprocessor(null);
         if (ioConfig != null) {
             builder.visionEncoderIOConfig(ioConfig);
         }
@@ -418,7 +429,7 @@ public class VisionLanguageModel implements AutoCloseable {
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
-                .imagePreprocessor(VLMImagePreprocessor.defaultPreprocessor());
+                .imagePreprocessor(null);
         if (ioConfig != null) {
             builder.visionEncoderIOConfig(ioConfig);
         }
@@ -1454,7 +1465,25 @@ public class VisionLanguageModel implements AutoCloseable {
         int totalImageTokens = totalFrames * imageSeqLenPerFrame;
         String imagePrompt = ImagePromptBuilder.buildImagePromptString(
                 imageRows, imageCols, imageSeqLenPerFrame);
-        String fullPrompt = imagePrompt + userPrompt;
+
+        // Apply chat template if available — wraps image + text in model-specific format
+        // (e.g., Idefics3: <|im_start|>User:<image tokens>prompt<end_of_utterance>\nAssistant:)
+        String fullPrompt;
+        String chatTemplateText = tokenizer.getChatTemplate();
+        if (chatTemplateText != null && !chatTemplateText.isEmpty()) {
+            List<ChatTemplate.ContentPart> parts = new ArrayList<>();
+            parts.add(ChatTemplate.ContentPart.image(imagePrompt));
+            parts.add(ChatTemplate.ContentPart.text(userPrompt));
+            ChatTemplate.Message msg = new ChatTemplate.Message("user", parts);
+            ChatTemplate chatTemplate = new ChatTemplate(
+                    chatTemplateText,
+                    tokenizer.getBosToken(),
+                    tokenizer.getEosToken());
+            fullPrompt = chatTemplate.apply(List.of(msg), true);
+            log.info("Applied chat template to VLM prompt, length: {} chars", fullPrompt.length());
+        } else {
+            fullPrompt = imagePrompt + userPrompt;
+        }
 
         // Tokenize
         Encoding encoding = tokenizer.encode(fullPrompt, false);
@@ -1526,13 +1555,35 @@ public class VisionLanguageModel implements AutoCloseable {
         long pastSeqLen = 0;
         long batchSize = 1;
 
-        // Pre-allocate reusable buffers for attention_mask and position_ids
+        // Pre-allocate FIXED-SHAPE reusable buffers for attention_mask, _causal_mask, and position_ids.
+        // CRITICAL: These buffers must have CONSTANT shape across all decode steps to prevent
+        // DSP shape-hash changes that trigger multi-plan switches on unwarmed plans (→ garbage output).
+        // Pattern matches GenerationPipeline's fixed-shape approach with delta putScalar updates.
         boolean needsAttentionMask2 = decoderInputNames.contains("attention_mask");
+        boolean needsCausalMask2 = decoderInputNames.contains("_causal_mask");
         boolean needsPositionIds2 = decoderInputNames.contains("position_ids");
         long initialSeqLen2 = currentEmbeddings.shape()[1];
         long maxTotalSeqLen2 = initialSeqLen2 + maxNewTokens;
-        INDArray attentionMaskBuffer2 = needsAttentionMask2 ?
-                Nd4j.ones(DataType.LONG, batchSize, maxTotalSeqLen2) : null;
+
+        // attention_mask: fixed [1, maxTotalSeqLen2] — ones for valid positions, zeros for future
+        INDArray attentionMaskBuffer2 = null;
+        if (needsAttentionMask2) {
+            attentionMaskBuffer2 = Nd4j.zeros(DataType.LONG, batchSize, maxTotalSeqLen2);
+            // Prefill: mark initial positions as valid
+            attentionMaskBuffer2.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, initialSeqLen2)).assign(1);
+        }
+
+        // _causal_mask: fixed [1, 1, 1, maxTotalSeqLen2] — 0.0 for visible positions, MASK_FILL for masked
+        // During decode (seqLen=1), this is a 1D attention bias: attend to past, mask future
+        INDArray causalMaskBuffer2 = null;
+        if (needsCausalMask2) {
+            causalMaskBuffer2 = Nd4j.zeros(DataType.FLOAT, 1, 1, 1, maxTotalSeqLen2);
+            // Prefill: all positions beyond initialSeqLen are masked
+            causalMaskBuffer2.assign(ModelIOConfig.MASK_FILL);
+            causalMaskBuffer2.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.interval(0, initialSeqLen2)).assign(0.0f);
+        }
+
         INDArray positionIdsBuffer2 = needsPositionIds2 ?
                 Nd4j.zeros(DataType.LONG, 1, Math.max(initialSeqLen2, 1)) : null;
 
@@ -1548,14 +1599,31 @@ public class VisionLanguageModel implements AutoCloseable {
                 if (inputName.equals("inputs_embeds")) {
                     decoderInputMap.put(inputName, currentEmbeddings);
                 } else if (inputName.equals("attention_mask")) {
-                    // Reuse pre-allocated buffer, slicing to current totalSeqLen
-                    INDArray mask = attentionMaskBuffer2.get(
-                            NDArrayIndex.all(), NDArrayIndex.interval(0, totalSeqLen));
-                    decoderInputMap.put(inputName, mask);
+                    // FIXED-SHAPE buffer: delta update — mark the new position as valid.
+                    // Shape stays [1, maxTotalSeqLen2] every step → no DSP plan switches.
+                    if (i > 0) {
+                        // Unmask the position for the token generated in the previous step
+                        attentionMaskBuffer2.putScalar(0, totalSeqLen - 1, 1);
+                    }
+                    decoderInputMap.put(inputName, attentionMaskBuffer2);
                 } else if (inputName.equals("_causal_mask")) {
-                    INDArray causalMask = ModelIOConfig.buildCausalMask(currentSeqLen, totalSeqLen);
-                    decoderInputMap.put(inputName, causalMask);
-                    tempInputs.add(causalMask);
+                    // FIXED-SHAPE buffer: delta update — unmask one more position.
+                    // Shape stays [1, 1, 1, maxTotalSeqLen2] every step → no DSP plan switches.
+                    if (i == 0) {
+                        // Prefill: use the pre-initialized buffer directly (already set up above)
+                        // For prefill with currentSeqLen > 1, we need a proper causal mask
+                        if (currentSeqLen > 1) {
+                            INDArray prefillMask = ModelIOConfig.buildCausalMask(currentSeqLen, totalSeqLen);
+                            decoderInputMap.put(inputName, prefillMask);
+                            tempInputs.add(prefillMask);
+                        } else {
+                            decoderInputMap.put(inputName, causalMaskBuffer2);
+                        }
+                    } else {
+                        // Decode: unmask position for the newly generated token
+                        causalMaskBuffer2.putScalar(new long[]{0, 0, 0, totalSeqLen - 1}, 0.0f);
+                        decoderInputMap.put(inputName, causalMaskBuffer2);
+                    }
                 } else if (inputName.equals("position_ids")) {
                     // For KV cache decode (single token), reuse buffer and set value
                     if (useKvCache && i > 0 && currentSeqLen == 1) {
@@ -1655,6 +1723,7 @@ public class VisionLanguageModel implements AutoCloseable {
 
         // Clean up pre-allocated buffers
         SameDiffMemoryUtils.safeClose(attentionMaskBuffer2);
+        SameDiffMemoryUtils.safeClose(causalMaskBuffer2);
         SameDiffMemoryUtils.safeClose(positionIdsBuffer2);
 
         // Free final KV cache entries
@@ -1696,14 +1765,17 @@ public class VisionLanguageModel implements AutoCloseable {
      * before starting the next page.
      */
     public void resetSessions() {
-        log.info("Resetting sessions between pages (freeing cached intermediates, preserving compiled plans)");
-        // Reset DSP executors on all sub-models. resetForNextPage() frees the slot
-        // array cache and zero-copy output cache (the main GPU memory consumers)
-        // while PRESERVING the native plan handle — so compiled Triton kernels and
-        // CUDA graph captures stay alive with zero recompilation overhead.
-        resetDspForModel("decoder", decoder);
+        log.info("Resetting sessions between pages (freeing cached intermediates)");
+        // Reset vision encoder and embedTokens — their shapes vary per page.
         resetDspForModel("visionEncoder", visionEncoder);
         resetDspForModel("embedTokens", embedTokens);
+        // Preserve decoder DSP plan if cachedPipeline is active (fixedBuffers mode).
+        // The frozen decode plan has constant shapes and is valid for replay.
+        if (cachedPipeline == null) {
+            resetDspForModel("decoder", decoder);
+        } else {
+            log.info("Decoder DSP plan preserved for replay in resetSessions()");
+        }
 
         // Drain ArrayCacheMemoryMgr: deferred close buffers and cached arrays accumulate
         // across pages. resetDspForModel() calls resetForNextPage() which now drains them,
@@ -1758,9 +1830,10 @@ public class VisionLanguageModel implements AutoCloseable {
      *
      * <p><b>Strategy:</b></p>
      * <ul>
-     *   <li>Vision encoder and embedTokens always get a full reset (shapes change per page)</li>
-     *   <li>Decoder uses preserve mode ({@code resetForNextPageDecode}) by default, keeping
-     *       CUDA graphs, staging buffers, and slot arrays alive (saves ~5s re-capture per page)</li>
+     *   <li>Vision encoder, embedTokens, and decoder all preserve their frozen DSP plans.
+     *       Shape changes (different tile counts per page) are handled by the frozen
+     *       multi-plan switch — the C++ NativePlanCache maintains shape-keyed plans
+     *       and Java switches between them automatically.</li>
      *   <li>After preserve, GPU free memory is checked against a configurable threshold
      *       (default 80% usage). If usage exceeds the threshold, the decoder falls back to
      *       a full reset for this page to reclaim memory</li>
@@ -1777,37 +1850,53 @@ public class VisionLanguageModel implements AutoCloseable {
      * <p>Call this between pages when decode shapes are invariant (always [1,1] for input_ids/position_ids).</p>
      */
     public void resetSessionsForDecode() {
-        // Vision encoder and embedTokens: ALWAYS full reset (shapes change per page)
-        resetDspForModel("visionEncoder", visionEncoder);
-        resetDspForModel("embedTokens", embedTokens);
+        // Vision encoder and embedTokens: PRESERVE DSP plans across pages.
+        // Their shapes vary per page (different tile counts, image sizes), but the
+        // frozen multi-plan switch mechanism handles this — the C++ NativePlanCache
+        // maintains shape-keyed plans and the Java executor switches between them
+        // when placeholder shapes change. Destroying plans here wastes ~5-10s per
+        // page for recompilation + CUDA graph recapture.
+        log.info("Vision encoder and embedTokens DSP plans preserved (frozen multi-plan switch handles shape changes)");
 
-        // Decoder: attempt to preserve CUDA graphs (shapes are invariant at [1,1])
-        boolean decoderPreserved = false;
-        try {
-            resetDspForModelDecode("decoder", decoder);
-            decoderPreserved = true;
-            log.info("Decoder CUDA graphs PRESERVED (skipping ~5s re-capture)");
-        } catch (Exception e) {
-            log.warn("Decoder preserve failed, falling back to full reset: {}", e.getMessage());
-            resetDspForModel("decoder", decoder);
-            lastDecoderResetWasFull = true;
-            return;
-        }
-
-        // Check GPU memory pressure after preserving decoder graphs.
-        // If usage exceeds threshold, fall back to full decoder reset.
-        if (decoderPreserved && isGpuMemoryPressureHigh()) {
-            log.warn("GPU memory usage exceeds {}% threshold after decoder preserve — "
-                    + "falling back to full decoder reset to prevent OOM",
-                    (int)(GPU_MEMORY_PRESERVE_THRESHOLD * 100));
-            resetDspForModel("decoder", decoder);
-            lastDecoderResetWasFull = true;
+        // PRESERVE the decoder DSP plan for replay across pages.
+        //
+        // With fixedBuffers mode (maxPrefillLength > 0 in GenerationPipelineConfig),
+        // the decoder's DSP plan is compiled for constant shapes:
+        //   - Prefill: [1, maxPrefillLength] (padded prompts)
+        //   - Decode:  [1, 1] (single-token steps)
+        //   - KV:      [batch, heads, maxKvLen, dim] (static buffers)
+        //
+        // These shapes are identical across pages, so the frozen plan (including
+        // captured CUDA graphs) is valid for replay. The generateNative() method's
+        // fixedBuffers path (lines 1572-1582) handles this correctly:
+        //   1. clearNodeOutputsOnly() removes stale intermediate outputs
+        //   2. Prefill creates fresh KV buffers with the same shapes
+        //   3. Ext input mechanism updates device pointers before replay
+        //
+        // The previous full-reset approach destroyed the decoder plan between pages,
+        // causing ~5s recompilation overhead per page and CUDA graph capture conflicts
+        // that leaked ~3GB/page. The stale-KV-pointer crash that motivated the full
+        // reset only occurs WITHOUT fixedBuffers — with fixedBuffers, KV buffers are
+        // created fresh each call and the ext input update path is safe.
+        if (cachedPipeline != null) {
+            log.info("Decoder DSP plan preserved for replay (fixedBuffers mode active)");
         } else {
-            lastDecoderResetWasFull = false;
-            if (decoderPreserved) {
-                logGpuMemoryStatus("after decoder preserve");
-            }
+            // No cached pipeline yet (first page or pipeline creation failed).
+            // Fall back to full decoder reset for safety.
+            resetDspForModel("decoder", decoder);
+            lastDecoderResetWasFull = true;
         }
+
+        // Drain deferred-close buffers and CUDA memory pool.
+        // Without this, freed GPU allocations stay in the pool and
+        // accumulate across pages until OOM.
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = collectAllModelProtectedBuffers();
+        ArrayCacheMemoryMgr.closeDeferredBuffers(protectedBuffers);
+        ArrayCacheMemoryMgr.clearCacheState();
+        ArrayCacheMemoryMgr.setEnableCache(false);
+        SameDiffMemoryUtils.trimAllDevicePools();
+
+        logGpuMemoryStatus("after decode reset (decoder plan preserved)");
     }
 
     /**
@@ -1929,32 +2018,50 @@ public class VisionLanguageModel implements AutoCloseable {
     }
 
     /**
-     * Release GPU memory held by the vision encoder's DSP intermediates.
-     * Called after vision encoding is complete, before decode starts.
-     * Frees CUDA graph capture buffers, cuBLAS workspace, and non-weight output slots
-     * (~4-5 GB for SmolDocling). The vision encoder will re-warm on next use.
+     * Preserve vision encoder and embedTokens DSP plans across pages.
+     *
+     * Previously this released GPU intermediates (CUDA graphs, cuBLAS workspace,
+     * non-weight output slots) to make room for the decoder. With frozen multi-plan
+     * switching, both the vision encoder and decoder plans stay frozen in the
+     * C++ NativePlanCache. The shape-keyed dispatch handles tile count variations
+     * between pages — destroying the plans here wastes ~5-10s per page for
+     * recompilation + CUDA graph recapture.
+     *
+     * <p>On a 24GB+ GPU, the vision encoder intermediates (~2-4 GB) plus decoder
+     * intermediates (~2-3 GB) plus model weights (~1 GB) fit comfortably.</p>
      */
     private void releaseVisionEncoderGpuMemory() {
-        if (visionEncoder == null) return;
-        InferenceSession session = visionEncoder.getOrCreateSession();
-        DynamicShapePlanExecutor dsp = session.getDynamicShapePlanExecutor();
-        if (dsp != null) {
-            int freed = dsp.releaseGpuIntermediates();
-            log.info("Released vision encoder GPU intermediates: {} arrays freed", freed);
+        // Clear Java-side output caches to free intermediate GPU buffers, but
+        // preserve the frozen plan handles and CUDA graphs for multi-plan switching.
+        if (visionEncoder != null) {
+            InferenceSession session = visionEncoder.getOrCreateSession();
+            DynamicShapePlanExecutor dsp = session.getDynamicShapePlanExecutor();
+            if (dsp != null) {
+                dsp.clearOutputCaches();
+                log.info("Vision encoder: output caches cleared (plan preserved)");
+            }
         }
-        // Also release embedTokens — small but no longer needed until next page
         if (embedTokens != null) {
             InferenceSession embedSession = embedTokens.getOrCreateSession();
             DynamicShapePlanExecutor embedDsp = embedSession.getDynamicShapePlanExecutor();
             if (embedDsp != null) {
-                int embedFreed = embedDsp.releaseGpuIntermediates();
-                log.info("Released embedTokens GPU intermediates: {} arrays freed", embedFreed);
+                embedDsp.clearOutputCaches();
+                log.info("embedTokens: output caches cleared (plan preserved)");
             }
         }
     }
 
     /**
      * Decode using GenerationPipeline for optimized throughput (Triton, CUDA graphs, native KV scatter).
+     *
+     * <p>The pipeline is cached after first creation with {@code maxPrefillLength} set,
+     * enabling fixed-buffer mode in {@code generateNative()}. This means:</p>
+     * <ul>
+     *   <li>All prompts are padded/truncated to a fixed prefill length</li>
+     *   <li>The DSP plan is compiled once on the first page and frozen</li>
+     *   <li>Subsequent pages reuse the frozen plan via CUDA graph replay</li>
+     *   <li>Only KV cache contents change between pages — no plan recompilation</li>
+     * </ul>
      */
     private GenerationResult decodeWithStaticLoop(INDArray combinedEmbeddings, int[] promptIds,
                                                    int maxNewTokens, double temperature, boolean doSample) {
@@ -1963,25 +2070,54 @@ public class VisionLanguageModel implements AutoCloseable {
                         .temperature(temperature).topP(0.95).doSample(true).build()
                 : SamplingConfig.greedy();
 
-        // Auto-discover I/O names from the decoder model graph
-        ModelIOConfig decoderIOConfig = ModelIOConfig.discover(decoder);
-
         try {
-            GenerationPipeline pipeline = GenerationPipeline.create(
-                    GenerationPipelineConfig.builder()
-                            .decoder(decoder)
-                            .embedTokens(embedTokens)
-                            .tokenizer(tokenizer)
-                            .ioConfig(decoderIOConfig)
-                            .samplingConfig(samplingCfg)
-                            .maxNewTokens(maxNewTokens)
-                            .hiddenSize(config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0)
-                            .build());
+            if (cachedPipeline == null) {
+                // First page: create pipeline with fixedBuffers enabled for plan reuse.
+                cachedDecoderIOConfig = ModelIOConfig.discover(decoder);
+                int maxPrefill = computeMaxPrefillLength(promptIds.length, maxNewTokens);
+                log.info("Creating cached GenerationPipeline with maxPrefillLength={} (promptLen={}, maxNewTokens={})",
+                        maxPrefill, promptIds.length, maxNewTokens);
 
-            return pipeline.generate(combinedEmbeddings, promptIds, maxNewTokens);
+                cachedPipeline = GenerationPipeline.create(
+                        GenerationPipelineConfig.builder()
+                                .decoder(decoder)
+                                .embedTokens(embedTokens)
+                                .tokenizer(tokenizer)
+                                .ioConfig(cachedDecoderIOConfig)
+                                .samplingConfig(samplingCfg)
+                                .maxNewTokens(maxNewTokens)
+                                .maxPrefillLength(maxPrefill)
+                                .hiddenSize(config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0)
+                                .build());
+            } else {
+                log.info("Reusing cached GenerationPipeline (fixedBuffers mode, decoder plan preserved)");
+            }
+
+            return cachedPipeline.generate(combinedEmbeddings, promptIds, maxNewTokens);
         } catch (IOException e) {
             throw new RuntimeException("Failed to create generation pipeline", e);
         }
+    }
+
+    /**
+     * Compute the fixed prefill length for stable DSP plan shapes across pages.
+     *
+     * <p>When {@code maxKvLen} is configured, it is used as the total sequence budget
+     * and {@code maxPrefillLength = maxKvLen - maxNewTokens}. Otherwise, the current
+     * prompt length is rounded up to the next 256-token boundary with 20% headroom
+     * to accommodate minor prompt length variations between pages.</p>
+     *
+     * @param currentPromptLen the prompt token count from the first page
+     * @param maxNewTokens maximum tokens to generate per page
+     * @return the fixed prefill length for all subsequent pages
+     */
+    private int computeMaxPrefillLength(int currentPromptLen, int maxNewTokens) {
+        // Add 20% headroom and round up to 256-token boundary for prompt variation
+        int prefill = (int) (currentPromptLen * 1.2);
+        prefill = Math.max(prefill, 512);
+        prefill = ((prefill + 255) / 256) * 256;
+        log.info("maxPrefillLength computed from promptLen={}: {}", currentPromptLen, prefill);
+        return prefill;
     }
 
     /**
@@ -2389,6 +2525,15 @@ public class VisionLanguageModel implements AutoCloseable {
     public void close() {
         if (!closed) {
             closed = true;
+            if (cachedPipeline != null) {
+                try {
+                    cachedPipeline.close();
+                } catch (Exception e) {
+                    log.warn("Error closing cached pipeline", e);
+                }
+                cachedPipeline = null;
+                cachedDecoderIOConfig = null;
+            }
             closeModel("decoder", decoder);
             closeModel("embedTokens", embedTokens);
             closeModel("visionEncoder", visionEncoder);

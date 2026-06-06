@@ -1270,7 +1270,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                 slot.wiring.numInputs, slot.wiring.numOutputs,
                 slot.args.numIArgs, slot.args.numTArgs, slot.args.numBArgs,
                 slot.isIdentityOp() ? 1 : 0, slot.isViewCapableOp() ? 1 : 0,
-                slot.flags.inPlaceFused ? 1 : 0, slot.needsZeroedOutput() ? 1 : 0,
+                slot.isInPlaceFused() ? 1 : 0, slot.needsZeroedOutput() ? 1 : 0,
                 slot.frozenConstantSlot() ? 1 : 0);
       for (int inp = 0; inp < slot.wiring.numInputs; inp++) {
         int srcIdx = slot.wiring.inputSourceIndices[inp];
@@ -2502,11 +2502,48 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           ssaValues[outSlot] = outVal;
         }
       } else {
-        // Single-row: use generic store loop at end of buildModule
+        // Single-row normalization: inline store with paddedRowLen-sized tensors.
+        // The generic store loop uses blockSize (min 64), but our SSA value is
+        // paddedRowLen-wide (e.g., 4). Storing inline avoids the shape mismatch
+        // (tensor<4xf32> value vs tensor<64x!tt.ptr<f32>> pointers) that causes
+        // Phase 4 (TTGIR→LLVM) compilation failure.
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          auto outSlot = slot.wiring.outputSlotIndices[o];
           // skip_rms_norm: output[0]=normed, output[1]=hidden (pre-norm input+skip)
           mlir::Value outVal = (o == 1 && hiddenValue) ? hiddenValue : opResult;
-          ssaValues[slot.wiring.outputSlotIndices[o]] = outVal;
+          // Find the output buffer arg
+          auto outArgIt = std::find_if(result.args.begin(), result.args.end(),
+              [outSlot](const TritonKernelArg& arg) {
+                  return arg.slotIndex == outSlot && arg.isOutput;
+              });
+          if (outArgIt != result.args.end()) {
+            int outArgIdx = outArgIt - result.args.begin();
+            auto outBufArg = getBufferArg(outArgIdx);
+            if (outBufArg) {
+              auto elemType = getElementType(outVal);
+              auto ptrType = mlir::triton::PointerType::get(elemType, 1);
+              auto ptrTensorType = mlir::RankedTensorType::get({paddedRowLen}, ptrType);
+
+              // Offsets: range[0..paddedRowLen)
+              auto storeRange = builder.create<mlir::triton::MakeRangeOp>(loc,
+                  mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), 0, paddedRowLen);
+              auto splatOutPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, outBufArg);
+              auto outPtrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatOutPtr, storeRange);
+
+              // Mask: range < logicalRowLen (protect against padding overrun)
+              auto storeMaskLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
+              auto storeMaskSplat = builder.create<mlir::triton::SplatOp>(loc,
+                  mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), storeMaskLenConst);
+              auto storeMask = builder.create<mlir::arith::CmpIOp>(loc,
+                  mlir::arith::CmpIPredicate::slt, storeRange, storeMaskSplat);
+
+              builder.create<mlir::triton::StoreOp>(loc, outPtrs, outVal, storeMask,
+                  mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+              normInlineStoredOutputs.insert(outSlot);
+            }
+          }
+          // Still put in SSA for any downstream consumers in the same kernel
+          ssaValues[outSlot] = outVal;
         }
       }
 
@@ -5020,7 +5057,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   si, slot.ident.opName.c_str(), slot.wiring.numInputs, slot.wiring.numOutputs,
                   slot.args.numIArgs, slot.args.numTArgs, slot.args.numBArgs,
                   slot.isIdentityOp() ? 1 : 0, slot.isViewCapableOp() ? 1 : 0,
-                  slot.flags.inPlaceFused ? 1 : 0, slot.needsZeroedOutput() ? 1 : 0);
+                  slot.isInPlaceFused() ? 1 : 0, slot.needsZeroedOutput() ? 1 : 0);
 
         // Every input for this slot
         for (int inp = 0; inp < slot.wiring.numInputs; inp++) {

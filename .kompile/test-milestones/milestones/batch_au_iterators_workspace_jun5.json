@@ -1,0 +1,17 @@
+{
+  "batch": "AU",
+  "name": "Iterators, validators, workspace tests",
+  "date": "2026-06-05T03:10:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "SamplingTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "RandomDataSetIteratorTest": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "DummyBlockDataSetIteratorTests": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "LoaderIteratorTests": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "JointMultiDataSetIteratorTests": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "MovingWindowMatrixTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "ModelValidatorTests": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "WorkspaceTests": {"total": 0, "passed": 0, "failed": 0, "errors": 0, "crashed": true, "note": "JVM SIGABRT during WorkspaceTests execution"}
+  },
+  "summary": "11 tests run, 11 passed, 0 failures, 0 errors. WorkspaceTests JVM crash (SIGABRT)."
+}

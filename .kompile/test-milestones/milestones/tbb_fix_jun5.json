@@ -1,0 +1,11 @@
+{
+  "id": "tbb_fix_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "libnd4j",
+  "backend": "nd4j-native",
+  "notes": "Fixed: libtbb.so.12 not found. Root cause: OpenVINO's TBB .so lived in subdirectory not copied by Maven packaging. Fix: added TBB bundling to MainBuildFlow.cmake + immediate copy to JavaCPP cache.",
+  "tags": "cpu,build,tbb,openvino,fix",
+  "timestamp": "2026-06-05T06:35:00Z"
+}

@@ -1,0 +1,23 @@
+{
+  "id": "batch79_cpu_import_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-tp-pipeline-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 36,
+  "passed": 20,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 16,
+  "classes": {
+    "KerasVGG16ImportTest": {"run": 1, "pass": 1},
+    "GGMLModelImportTest": {"run": 19, "pass": 19},
+    "IntegrationTestsDL4J": {"run": 12, "pass": 0, "skip": 12, "notes": "All skipped (DL4J integration tests disabled on CPU)"},
+    "MnistFetcherTest": {"run": 4, "pass": 0, "skip": 4, "notes": "Skipped (network download tests)"}
+  },
+  "failures": [],
+  "notes": "4 classes found. 20 pass, 16 skipped. MLPTestCases not found by surefire.",
+  "tags": ["cpu", "ggml", "keras-import", "integration"],
+  "timestamp": "2026-06-06T05:11:00Z"
+}

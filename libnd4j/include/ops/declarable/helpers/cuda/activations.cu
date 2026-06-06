@@ -646,9 +646,12 @@ static void softMaxCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 //////////////////////////////////////////////////////////////////////////
 void softmax(LaunchContext *context, NDArray *input, NDArray *output, const int dimension) {
   const int rank = input->rankOf();
+  // Normalize negative dimension before passing to tadForDimensions.
+  // tadForDimensions treats -1 as a sentinel meaning "entire array", not "last dimension".
+  const int dim = (dimension < 0) ? (rank + dimension) : dimension;
 
   if (input->isVector()) {
-    if (rank == 1 || input->sizeAt(dimension) != 1) {
+    if (rank == 1 || input->sizeAt(dim) != 1) {
       NDArray::prepareSpecialUse({output}, {input});
       BUILD_SINGLE_SELECTOR(input->dataType(), softMaxForVectorCudaLauncher,
                             (context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(),
@@ -658,8 +661,8 @@ void softmax(LaunchContext *context, NDArray *input, NDArray *output, const int 
     } else
       *output = 1.;
   } else {
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimension});
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimension});
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {(LongType)dim});
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {(LongType)dim});
 
     LongType numTads = packX->numberOfTads();
     LongType tadLen = shape::length(packX->primaryShapeInfo());

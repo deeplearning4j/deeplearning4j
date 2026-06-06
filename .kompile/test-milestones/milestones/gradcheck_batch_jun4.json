@@ -1,0 +1,27 @@
+{
+  "id": "gradcheck_batch_jun4",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "uncommitted",
+    "short": "uncommitted"
+  },
+  "commitMessage": "test: gradient check batch + GemmParams fix verification",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-dl4j-gradcheck-batch-jun4",
+  "totalTests": 18,
+  "passed": 13,
+  "failed": 2,
+  "skipped": 3,
+  "errors": 0,
+  "notes": "GRADIENT CHECK + MISC BATCH on nd4j-native. PASSING: LSTMGradientCheckTests(4/4), TestEinsumDense(8/8), ComputationGraphSameDiffConverterTest(15/15), MultiLayerNetworkSameDiffConverterTest(16/16), JointParallelDataSetIteratorTest(4/4), ParallelExistingMiniBatchDataSetIteratorTest(1/1), CapsNetMNISTTest(0/1,1skip), CapsnetGradientCheckTest(0/1,1skip), KerasModelImportSameDiffTest(3/3), SystemPollingTest(0/1,1skip). FAILURES: TestOutputLayerGradientChecks#testCnnLossLayer (grad check assertion), TestDropoutGradientCheck#testDropoutGradient (grad check assertion). TestUtilLayerGradientChecks not in per-class output. CRASHING (SIGABRT): TestComputationGraphNetwork#testIrisFit, AsyncDataSetIteratorTest, AsyncMultiDataSetIteratorTest — free():invalid pointer during fit(). CNNGradientCheckTest OOM'd from concurrent JVMs — needs solo rerun. GemmParams fix (k=a.columns) confirmed NOT root cause of crashes.",
+  "tags": [
+    "cpu",
+    "nd4j-native",
+    "dl4j-core",
+    "gradient-check",
+    "crash-investigation"
+  ],
+  "timestamp": "2026-06-04T16:18:00Z",
+  "previousMilestone": "untested_batch_jun4"
+}

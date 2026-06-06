@@ -1,0 +1,16 @@
+{
+  "id": "00cb1dc2",
+  "branch": "ag_new_release_updates_2",
+  "commit": {"full": "3d3eaafd5a32f249973bd20b4e94cca9aa27efda", "short": "3d3eaafd5a"},
+  "commitMessage": "fix: disable Triton on Windows",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-nd4j-core-batch1",
+  "totalTests": 644,
+  "passed": 622,
+  "failed": 5,
+  "skipped": 14,
+  "notes": "shape/serde/dataset/workspace/broadcast/options/memory/schedule/factory/activations/lossfunctions/learning. 5 failures: UnderSamplingPreProcessor(2), broadcast DSP shape mismatch(1+2 errors), workspace size(1), view detach(1), LossFunction dtype(1 error). Broadcast errors involve DSP + empty arrays.",
+  "tags": ["cpu", "nd4j-core", "nd4j-native", "batch1"],
+  "timestamp": "2026-06-02T18:05:45Z"
+}

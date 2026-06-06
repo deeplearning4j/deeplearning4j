@@ -1032,13 +1032,24 @@ public class TestMixedPrecisionGradientChecks extends BaseNd4jTestWithBackends {
 
         SameDiff sd = SameDiff.create();
 
-        // Use small values that are still within representable range for the dtype
-        double smallScale = dtype == DataType.HALF || dtype == DataType.BFLOAT16 ? 0.01 : 0.001;
+        // Use small values that are still within representable range for the dtype.
+        // BF16 has ~2.4 decimal digits of precision — using too-small values causes
+        // std() of exp(x) to be near zero, making gradients ill-conditioned.
+        // For BF16, use a simple polynomial (x^2) with sum() to avoid exp's catastrophic
+        // cancellation in finite-difference gradient estimation.
+        double smallScale = dtype == DataType.HALF || dtype == DataType.BFLOAT16 ? 0.1 : 0.001;
         INDArray input = Nd4j.rand(dtype, 3, 4).muli(smallScale);
 
         SDVariable in = sd.var("in", input);
-        SDVariable exp = sd.math().exp(in);  // exp(small) ≈ 1 + small
-        SDVariable loss = exp.std(true);
+        SDVariable loss;
+        if (dtype == DataType.BFLOAT16) {
+            // x^2 has analytic gradient 2*x — well-conditioned for finite differences
+            SDVariable sq = in.mul(in);
+            loss = sq.sum();
+        } else {
+            SDVariable exp = sd.math().exp(in);  // exp(small) ≈ 1 + small
+            loss = exp.std(true);
+        }
         loss.markAsLoss();
 
         MixedPrecisionGradConfig config = MixedPrecisionGradConfig.forDataType(dtype);
@@ -1146,8 +1157,17 @@ public class TestMixedPrecisionGradientChecks extends BaseNd4jTestWithBackends {
 
         SameDiff sd = SameDiff.create();
 
-        // Create scenario where some gradients are zero
-        INDArray input = Nd4j.rand(dtype, 3, 4).subi(0.5);
+        // Create scenario where some gradients are zero.
+        // Values must be well away from relu discontinuity at 0 — if |x| < eps,
+        // the finite-difference perturbation crosses the discontinuity, making
+        // numerical gradient estimation meaningless. Use values in [-1, -0.2] ∪ [0.2, 1].
+        INDArray input = Nd4j.rand(dtype, 3, 4).muli(0.8).addi(0.2); // [0.2, 1.0]
+        // Make half the values negative to test zero-gradient path
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 2; j++) {
+                input.putScalar(i, j, -input.getDouble(i, j)); // [-1.0, -0.2]
+            }
+        }
         SDVariable in = sd.var("in", input);
 
         // ReLU zeros out negative values, resulting in zero gradients for those

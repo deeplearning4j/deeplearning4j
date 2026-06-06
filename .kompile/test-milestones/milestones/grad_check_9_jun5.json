@@ -1,0 +1,20 @@
+{
+  "id": "grad_check_9_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "GradientCheckTests",
+  "totalTests": 9,
+  "passed": 6,
+  "failed": 2,
+  "skipped": 1,
+  "failedTests": [
+    "testEmbeddingSequenceLayer",
+    "testEmbeddingLayerPreluSimple"
+  ],
+  "notes": "6/9 pass. 2 failures are pre-existing embedding layer gradient check failures (numerical vs analytical gradient mismatch). 1 test skipped. These are NOT related to recent SameDiff fixes.",
+  "tags": "cpu,gradientcheck,dl4j,pre-existing",
+  "timestamp": "2026-06-05T07:02:00Z"
+}

@@ -1,0 +1,21 @@
+{
+  "batch": "BD",
+  "name": "ND4J updaters, loss, factory, serde, slicing, util tests",
+  "date": "2026-06-05T03:40:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "NumpyFormatTests": {"total": 13, "passed": 11, "failed": 0, "errors": 0, "skipped": 2},
+    "BasicSerDeTests": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "NDLossTest": {"total": 12, "passed": 12, "failed": 0, "errors": 0},
+    "NDBaseTest": {"total": 84, "passed": 84, "failed": 0, "errors": 0},
+    "DataTypeCreationTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "Nd4jTest": {"total": 13, "passed": 13, "failed": 0, "errors": 0},
+    "ShapeTest": {"total": 8, "passed": 8, "failed": 0, "errors": 0},
+    "NDArrayUtilTest": {"total": 6, "passed": 6, "failed": 0, "errors": 0},
+    "PreconditionsTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "LossFunctionTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "UpdaterTest": {"total": 7, "passed": 7, "failed": 0, "errors": 0},
+    "SlicingTests": {"total": 2, "passed": 2, "failed": 0, "errors": 0}
+  },
+  "summary": "150 tests run, 148 passed, 0 failures, 0 errors, 2 skipped. All clean."
+}

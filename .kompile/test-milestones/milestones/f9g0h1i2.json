@@ -1,0 +1,19 @@
+{
+  "id": "f9g0h1i2",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "2263b615ce23df3894b32d42f8b853d8b0fe3e85",
+    "short": "2263b615ce"
+  },
+  "commitMessage": "fix: replace deprecated BroadcastMulOp with muli, add dtype casts",
+  "commitAuthor": "agibsonccc",
+  "passing": true,
+  "module": "cpu-native-yolo-verified",
+  "totalTests": 4,
+  "passed": 3,
+  "failed": 0,
+  "skipped": 1,
+  "notes": "VERIFIED: TestYolo2OutputLayer 3 pass, 1 skipped, 0 failures. Yolo2OutputLayer castTo fix + MaskedReductionUtil + ConvolutionUtils fixes. Commit 2263b615ce.",
+  "tags": ["cpu", "dl4j-core", "nd4j-native", "verified", "fixed"],
+  "timestamp": "2026-06-02T20:52:52Z"
+}

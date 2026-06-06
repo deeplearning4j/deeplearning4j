@@ -1,0 +1,21 @@
+{
+  "id": "batch100_testreverse_fixed_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-testreverse-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 1,
+  "passed": 1,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "jvmCrash": false,
+  "classes": {
+    "TestVariableLengthTS": {"run": 1, "pass": 1, "notes": "FIXED: testReverse castTo(inMask.dataType()) — FLOAT vs DOUBLE mismatch"}
+  },
+  "failures": [],
+  "notes": "Verified fix: testReverse passes. Root cause was FLOAT vs DOUBLE datatype mismatch in NDArray.equals().",
+  "tags": ["cpu", "fixed", "variable-length"],
+  "timestamp": "2026-06-06T08:25:00Z"
+}

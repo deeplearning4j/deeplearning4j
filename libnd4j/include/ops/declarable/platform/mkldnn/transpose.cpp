@@ -153,11 +153,19 @@ PLATFORM_CHECK(transpose, ENGINE_CPU) {
 
   // OneDNN supports f32, bf16, f16, and integer types for reorder
   // Note: DOUBLE (f64) is NOT supported by oneDNN reorder primitives
+  // bf16 requires AVX512_CORE_BF16, f16 requires AVX512_CORE_AMX_FP16
   auto xType = x->dataType();
-  bool isSupportedType = (xType == DataType::FLOAT32 || xType == DataType::BFLOAT16 ||
-                          xType == DataType::HALF ||
+  bool isSupportedType = (xType == DataType::FLOAT32 ||
                           xType == DataType::INT8 || xType == DataType::UINT8 ||
                           xType == DataType::INT32);
+  if (!isSupportedType && xType == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (!isSupportedType && xType == DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
 
   Requirements req("ONEDNN TRANSPOSE OP");
   req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
@@ -210,11 +218,19 @@ PLATFORM_CHECK(permute, ENGINE_CPU) {
 
   // OneDNN supports f32, bf16, f16, and integer types for reorder
   // Note: DOUBLE (f64) is NOT supported by oneDNN reorder primitives
+  // bf16 requires AVX512_CORE_BF16, f16 requires AVX512_CORE_AMX_FP16
   auto xType = x->dataType();
-  bool isSupportedType = (xType == DataType::FLOAT32 || xType == DataType::BFLOAT16 ||
-                          xType == DataType::HALF ||
+  bool isSupportedType = (xType == DataType::FLOAT32 ||
                           xType == DataType::INT8 || xType == DataType::UINT8 ||
                           xType == DataType::INT32);
+  if (!isSupportedType && xType == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (!isSupportedType && xType == DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
   bool typesMatch = (x->dataType() == z->dataType());
 
   Requirements req("ONEDNN PERMUTE OP");

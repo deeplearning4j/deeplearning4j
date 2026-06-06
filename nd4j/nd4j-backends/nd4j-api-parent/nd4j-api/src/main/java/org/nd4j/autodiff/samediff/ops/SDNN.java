@@ -3605,7 +3605,8 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("mixtureOfExperts", "input", input);
     SDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
     SDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, null, numExperts, topK, true, 1.0).outputVariables();
+    // normalizeProbs=false: gradient-safe default (avoids ~numExperts/topK gradient amplification).
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, null, numExperts, topK, false, 1.0).outputVariables();
   }
 
   /**
@@ -3644,7 +3645,8 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("mixtureOfExperts", "input", input);
     SDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
     SDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, null, numExperts, topK, true, 1.0).outputVariables();
+    // normalizeProbs=false: gradient-safe default (avoids ~numExperts/topK gradient amplification).
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, null, numExperts, topK, false, 1.0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -3845,7 +3847,8 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(sd,input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, null, numRoutedExperts, topK, true, 1.0).outputVariables();
+    // normalizeProbs=false: gradient-safe default (avoids ~numRoutedExperts/topK gradient amplification).
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(sd,input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, null, numRoutedExperts, topK, false, 1.0).outputVariables();
   }
 
   /**
@@ -3883,7 +3886,8 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(sd,input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, null, numRoutedExperts, topK, true, 1.0).outputVariables();
+    // normalizeProbs=false: gradient-safe default (avoids ~numRoutedExperts/topK gradient amplification).
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(sd,input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, null, numRoutedExperts, topK, false, 1.0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 

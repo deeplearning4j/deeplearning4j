@@ -26,6 +26,9 @@
 #include <array/NDArray.h>
 #include <helpers/Loops.h>
 #include <cstring>
+#include <algorithm>
+#include <functional>
+#include <vector>
 
 #include <helpers/shape.h>
 #include <ops/declarable/CustomOperations.h>
@@ -349,9 +352,53 @@ void SpecialMethods<T>::splitCpuGeneric(NDArray& input, const std::vector<NDArra
 
 template <typename T>
 void SpecialMethods<T>::sortGeneric(NDArray *input, bool descending) {
-  auto x = input->bufferAsT<T>();
-  auto xShapeInfo = input->shapeInfo();
-  quickSort_parallel(input, sd::env_maxMasterThreads(), descending);
+  auto length = input->lengthOf();
+  if (length <= 1) return;
+
+  // Check if the array is contiguous (strides match expected layout)
+  bool contiguous = shape::strideDescendingCAscendingF(input->shapeInfo());
+
+  if (contiguous) {
+    // Direct buffer sort — std::sort is well-tested and efficient
+    auto x = input->bufferAsT<T>();
+    if (descending) {
+      std::sort(x, x + length, std::greater<T>());
+    } else {
+      std::sort(x, x + length);
+    }
+  } else {
+    // Non-contiguous (view): extract values via INDEX2COORDS/COORDS2INDEX, sort, write back
+    auto xBuf = input->bufferAsT<T>();
+    auto xShapeInfo = input->shapeInfo();
+    int rank = shape::rank(xShapeInfo);
+    auto xShape = shape::shapeOf(xShapeInfo);
+    auto xStride = shape::stride(xShapeInfo);
+
+    // Extract values into contiguous temp buffer
+    std::vector<T> temp(length);
+    sd::LongType coords[SD_MAX_RANK];
+    for (sd::LongType i = 0; i < length; i++) {
+      INDEX2COORDS(i, rank, xShape, coords);
+      sd::LongType offset;
+      COORDS2INDEX(rank, xStride, coords, offset);
+      temp[i] = xBuf[offset];
+    }
+
+    // Sort the temp buffer
+    if (descending) {
+      std::sort(temp.begin(), temp.end(), std::greater<T>());
+    } else {
+      std::sort(temp.begin(), temp.end());
+    }
+
+    // Write sorted values back using the same coord mapping
+    for (sd::LongType i = 0; i < length; i++) {
+      INDEX2COORDS(i, rank, xShape, coords);
+      sd::LongType offset;
+      COORDS2INDEX(rank, xStride, coords, offset);
+      xBuf[offset] = temp[i];
+    }
+  }
 }
 
 template <typename T>
@@ -472,19 +519,19 @@ void SpecialMethods<T>::quickSort_parallel(NDArray *x, int numThreads, bool desc
 
 template <typename T>
 void SpecialMethods<T>::sortTadGeneric(NDArray *input, sd::LongType *dimension, int dimensionLength, bool descending) {
-  auto x = input->bufferAsT<T>();
   sd::LongType xLength = input->lengthOf();
   sd::LongType xTadLength = shape::tadLength(input->shapeInfo(), dimension, dimensionLength);
   int numTads = xLength / xTadLength;
 
   const std::vector<sd::LongType> dimVector(dimension, dimension + dimensionLength);
   auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
-      const_cast<sd::LongType *>(input->shapeInfo()), const_cast<sd::LongType *>(dimVector.data()), false);
+      const_cast<sd::LongType *>(input->shapeInfo()), const_cast<sd::LongType *>(dimVector.data()), dimensionLength);
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
       NDArray *dx = pack->extractTadView(input, r);
-      quickSort_parallel(dx, xTadLength, descending);
+      // Use sortGeneric which handles both contiguous and non-contiguous views
+      sortGeneric(dx, descending);
       delete dx;
     }
   };

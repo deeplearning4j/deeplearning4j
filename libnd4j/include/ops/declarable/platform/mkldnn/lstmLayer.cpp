@@ -521,6 +521,11 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
       req.expectTrue(
           makeInfoVariable(
               [xType, WxType, WrType, bType, hIType, cIType, hType, hLType, cLType] {
+                // HALF requires AVX512_CORE_AMX_FP16 ISA at runtime
+                if (xType == DataType::HALF) {
+                  dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+                  if (isa < dnnl_cpu_isa_avx512_core_amx_fp16) return false;
+                }
                 return ((xType == DataType::FLOAT32 && WxType == DataType::FLOAT32 && WrType == DataType::FLOAT32 &&
                          bType == DataType::FLOAT32 && hIType == DataType::FLOAT32 && cIType == DataType::FLOAT32 &&
                          hType == DataType::FLOAT32 && hLType == DataType::FLOAT32 && cLType == DataType::FLOAT32) ||

@@ -527,6 +527,13 @@ PLATFORM_CHECK(deconv3d_bp, ENGINE_CPU) {
                            const DataType gradIType = gradI->dataType();
                            const DataType gradWType = gradW->dataType();
                            const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
+                           // BF16 requires AVX512_CORE_BF16 ISA at runtime
+                           if (xType == DataType::BFLOAT16 || wType == DataType::BFLOAT16 ||
+                               gradOType == DataType::BFLOAT16 || gradIType == DataType::BFLOAT16 ||
+                               gradWType == DataType::BFLOAT16 || gradBType == DataType::BFLOAT16) {
+                             dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+                             if (isa < dnnl_cpu_isa_avx512_core_bf16) return false;
+                           }
                            return ((xType == DataType::FLOAT32 || xType == DataType::BFLOAT16) &&
                                    (wType == DataType::FLOAT32 || wType == DataType::BFLOAT16) &&
                                    (gradOType == DataType::FLOAT32 || gradOType == DataType::BFLOAT16) &&

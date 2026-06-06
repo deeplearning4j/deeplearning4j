@@ -1,0 +1,15 @@
+{
+  "id": "batch_e_crashes_jun4",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "totalTests": 0,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "crashed": 4,
+  "notes": "4 classes crash with native double-free/SIGABRT during MLN training: TestListeners (3 methods), TestCheckpointListener, TestEarlyStopping, TestEarlyStoppingCompGraph. Crash in glibc free() during GC cleanup of native buffers between test methods. Fixed getShapeFromPointer in DefaultOpExecutioner to not wrap ConstantShapeHelper pointers (prevents one category of double-free). Remaining crashes need deeper C++ investigation of OpaqueDataBuffer lifecycle.",
+  "crashedClasses": ["TestListeners", "TestCheckpointListener", "TestEarlyStopping", "TestEarlyStoppingCompGraph"],
+  "fix_applied": "DefaultOpExecutioner.getShapeFromPointer now creates DataBuffer from long[] instead of wrapping constant cache pointer"
+}

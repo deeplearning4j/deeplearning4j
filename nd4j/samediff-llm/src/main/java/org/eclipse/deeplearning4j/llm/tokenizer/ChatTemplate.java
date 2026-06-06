@@ -106,7 +106,10 @@ public class ChatTemplate {
         StringBuilder result = new StringBuilder();
 
         // Check for common template patterns
-        if (template.contains("<|im_start|>")) {
+        if (template.contains("<end_of_utterance>")) {
+            // Idefics3/SmolDocling multimodal format
+            return applyIdefics3(messages, addGenerationPrompt);
+        } else if (template.contains("<|im_start|>")) {
             // ChatML format
             return applyChatML(messages, addGenerationPrompt);
         } else if (template.contains("[INST]")) {
@@ -144,6 +147,62 @@ public class ChatTemplate {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Apply Idefics3/SmolDocling multimodal format.
+     *
+     * <p>Template pattern: {@code <|im_start|>Role:content<end_of_utterance>\nAssistant:}</p>
+     * <p>Roles are capitalized. Colon has no trailing space when first content is image type.</p>
+     * <p>Supports multimodal messages with interleaved image and text content parts.</p>
+     *
+     * @see ContentPart
+     */
+    private String applyIdefics3(List<Message> messages, boolean addGenerationPrompt) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(bosToken);
+
+        for (Message msg : messages) {
+            List<ContentPart> parts = msg.resolveContentParts();
+
+            // Role with capitalized first letter (Jinja2 capitalize filter)
+            sb.append(capitalize(msg.getRole()));
+
+            // Colon placement: no space if first content part is image, space otherwise
+            if (!parts.isEmpty() && "image".equals(parts.get(0).getType())) {
+                sb.append(":");
+            } else {
+                sb.append(": ");
+            }
+
+            // Render content parts
+            for (ContentPart part : parts) {
+                if ("text".equals(part.getType())) {
+                    if (part.getText() != null) {
+                        sb.append(part.getText());
+                    }
+                } else if ("image".equals(part.getType())) {
+                    // Use pre-expanded image tokens if provided, otherwise single <image> placeholder
+                    sb.append(part.getText() != null ? part.getText() : "<image>");
+                }
+            }
+
+            sb.append("<end_of_utterance>\n");
+        }
+
+        if (addGenerationPrompt) {
+            sb.append("Assistant:");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Capitalize the first letter of a string (matches Jinja2 capitalize filter behavior).
+     */
+    private static String capitalize(String s) {
+        if (s == null || s.isEmpty()) return s;
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
     /**
@@ -314,17 +373,81 @@ public class ChatTemplate {
     }
 
     /**
-     * Represents a chat message.
+     * Represents a content part in a multimodal message.
+     * Used by Idefics3/SmolDocling templates where message content is an array
+     * of typed parts (text, image, etc.).
      */
     @Data
-    @Builder
+    public static class ContentPart {
+        private final String type;
+        private final String text;
+
+        public ContentPart(String type, String text) {
+            this.type = type;
+            this.text = text;
+        }
+
+        public static ContentPart text(String text) {
+            return new ContentPart("text", text);
+        }
+
+        public static ContentPart image() {
+            return new ContentPart("image", null);
+        }
+
+        public static ContentPart image(String expandedImageTokens) {
+            return new ContentPart("image", expandedImageTokens);
+        }
+    }
+
+    /**
+     * Represents a chat message with optional multimodal content.
+     *
+     * <p>For text-only messages, use the two-arg constructor or factory methods
+     * ({@link #user(String)}, {@link #system(String)}, {@link #assistant(String)}).
+     * For multimodal messages (e.g., image + text), use the list constructor or
+     * {@link #userMultimodal(List)}.</p>
+     */
+    @Data
     public static class Message {
         private final String role;
         private final String content;
+        private final List<ContentPart> contentParts;
 
-        public Message(String role, String content) {
+        @Builder
+        public Message(String role, String content, List<ContentPart> contentParts) {
             this.role = role;
             this.content = content;
+            this.contentParts = contentParts;
+        }
+
+        public Message(String role, String content) {
+            this(role, content, null);
+        }
+
+        public Message(String role, List<ContentPart> contentParts) {
+            this(role, null, contentParts);
+        }
+
+        /**
+         * Resolve content as a list of parts.
+         * For text-only messages, wraps the string content in a single text part.
+         */
+        public List<ContentPart> resolveContentParts() {
+            if (contentParts != null && !contentParts.isEmpty()) return contentParts;
+            if (content != null) return List.of(ContentPart.text(content));
+            return List.of();
+        }
+
+        /**
+         * Check if this message contains multimodal content (images).
+         */
+        public boolean isMultimodal() {
+            if (contentParts == null) return false;
+            for (ContentPart p : contentParts) {
+                if ("image".equals(p.getType())) return true;
+            }
+            return false;
         }
 
         /**
@@ -346,6 +469,13 @@ public class ChatTemplate {
          */
         public static Message assistant(String content) {
             return new Message("assistant", content);
+        }
+
+        /**
+         * Create a multimodal user message with image and text content parts.
+         */
+        public static Message userMultimodal(List<ContentPart> parts) {
+            return new Message("user", parts);
         }
     }
 }

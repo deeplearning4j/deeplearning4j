@@ -58,7 +58,11 @@ public class MixtureOfExperts extends DynamicCustomOp {
 
     private int numExperts;
     private int topK = 2;
-    private boolean normalizeProbs = true;
+    // normalizeProbs=false is the gradient-safe default.
+    // When true the top-K softmax scores are renormalized to sum to 1, which amplifies
+    // backward gradients by ~numExperts/topK (the "~30x too large gradients" bug).
+    // Only set to true for inference-only (non-training) use-cases.
+    private boolean normalizeProbs = false;
     private double capacityFactor = 1.0;
 
     /**

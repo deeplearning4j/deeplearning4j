@@ -1,0 +1,16 @@
+{
+  "id": "graph_build_37_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "SameDiffGraphBuildTest",
+  "totalTests": 37,
+  "passed": 36,
+  "failed": 1,
+  "skipped": 0,
+  "notes": "Fixed: testDuplicateNamePlaceholder — added duplicate name check to SameDiff.constant() and placeHolder(). Remaining: testDoubleUseOfArray gradient check fails (same DSP ext input staleness issue as testUpdatingGradientSimple).",
+  "tags": "cpu,samediff,graph-build,fix",
+  "timestamp": "2026-06-05T06:30:00Z"
+}

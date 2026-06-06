@@ -1,0 +1,15 @@
+{
+  "batch": "Q",
+  "name": "Text document iterator tests",
+  "date": "2026-06-05T00:55:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "AsyncLabelAwareIteratorTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "BasicLabelAwareIteratorTest": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "DefaultDocumentIteratorTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "FileDocumentIteratorTest": {"total": 4, "passed": 4, "failed": 0, "errors": 0},
+    "FileLabelAwareIteratorTest": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "FilenamesLabelAwareIteratorTest": {"total": 1, "passed": 0, "failed": 0, "errors": 0, "skipped": 1}
+  },
+  "summary": "11 tests run, 10 passed, 0 failures, 0 errors, 1 skipped. All document iterator tests pass cleanly."
+}

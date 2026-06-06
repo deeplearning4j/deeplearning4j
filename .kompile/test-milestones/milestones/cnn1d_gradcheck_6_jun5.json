@@ -1,0 +1,21 @@
+{
+  "id": "cnn1d_gradcheck_6_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "CNN1DGradientCheckTest",
+  "totalTests": 6,
+  "passed": 4,
+  "failed": 0,
+  "errors": 2,
+  "skipped": 0,
+  "failedTests": [
+    "testCnn1Causal",
+    "testCnn1DWithLocallyConnected1D"
+  ],
+  "notes": "4/6 pass. testCnn1Causal: Conv1D op execution error (likely needs C++ rebuild). testCnn1DWithLocallyConnected1D: LocallyConnected layer error. Same failures as prior batch_aq run.",
+  "tags": "cpu,cnn1d,gradientcheck,conv1d",
+  "timestamp": "2026-06-05T07:19:00Z"
+}

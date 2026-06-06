@@ -1,0 +1,28 @@
+{
+  "id": "batch38_misc_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-basedl4jtest-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 83,
+  "passed": 77,
+  "failed": 0,
+  "errors": 5,
+  "skipped": 1,
+  "classes": {
+    "TestDspPipelineFacets": {"run": 15, "pass": 15},
+    "TestGatedDeltaRule": {"run": 9, "pass": 9},
+    "TestFusedGemmSwigluCorrectness": {"run": 5, "pass": 5},
+    "TestDiskKVCache": {"run": 14, "pass": 14},
+    "TestDspRepeatedOutputFreshness": {"run": 27, "pass": 27},
+    "TestConvolutionalListener": {"run": 1, "pass": 0, "skipped": 1, "notes": "Skipped — requires display/UI dependencies"},
+    "TestImageAndSequenceOpValidation": {"run": 12, "pass": 7, "errors": 5, "notes": "3 AffineGrid tests have no expected results (gradientCheck disabled + no reference), 2 GridSample tests throw exception during gradient check"}
+  },
+  "failures": [
+    "TestImageAndSequenceOpValidation: 3 AffineGrid tests empty (no expected results configured), 2 GridSample gradient check exceptions"
+  ],
+  "notes": "7 classes ran, 77 tests pass, 5 errors in AffineGrid/GridSample op validation (test config issues), 1 skipped. TestCase is not a test class (utility).",
+  "tags": ["cpu", "dsp-pipeline", "gated-delta-rule", "fused-gemm", "disk-kv-cache", "dsp-freshness", "affine-grid", "grid-sample"],
+  "timestamp": "2026-06-06T01:10:00Z"
+}

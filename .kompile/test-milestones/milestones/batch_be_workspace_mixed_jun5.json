@@ -1,0 +1,20 @@
+{
+  "batch": "BE",
+  "name": "ND4J workspace and mixed precision tests",
+  "date": "2026-06-05T04:00:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "BasicWorkspaceTests": {"total": 40, "passed": 38, "failed": 0, "errors": 0, "skipped": 2},
+    "DebugModeTests": {"total": 4, "passed": 4, "failed": 0, "errors": 0},
+    "CyclicWorkspaceTests": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "SpecialWorkspaceTests": {"total": 11, "passed": 11, "failed": 0, "errors": 0},
+    "WorkspaceProviderTests": {"total": 27, "passed": 24, "failed": 1, "errors": 0, "skipped": 2,
+      "note": "1 failure in workspace provider test"},
+    "FP16FundamentalsTest": {"total": 83, "passed": 66, "failed": 1, "errors": 16,
+      "note": "FP16 operations not fully supported on CPU backend"},
+    "StringArrayTests": {"total": 7, "passed": 5, "failed": 0, "errors": 2,
+      "note": "String array type handling errors"},
+    "MixedDataTypesTests": {"total": 41, "passed": 40, "failed": 0, "errors": 0, "skipped": 1}
+  },
+  "summary": "214 tests run, 189 passed, 2 failures, 18 errors, 5 skipped."
+}

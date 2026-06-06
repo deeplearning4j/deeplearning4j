@@ -1,0 +1,33 @@
+{
+  "id": "re-enabled-session4a",
+  "branch": "ag_new_release_updates_2",
+  "commit": {"full": "a420800821c456857bbab9bc50e726b005405437", "short": "a420800821"},
+  "commitMessage": "Continued re-enabling @Disabled tests — batch 4a",
+  "commitAuthor": "agibsonccc",
+  "passing": true,
+  "module": "re-enabled-disabled-tests-batch4a",
+  "totalTests": 10,
+  "passed": 10,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Batch 4a of re-enabling @Disabled tests. Fixes: CustomOpsTests test data bugs (shape, swapped input/expected), Solver.java optimizer fall-through for legacy models, WeightInitIdentityTest stale disable, TestCompGraphCNN stale @BeforeEach @Disabled, StandardScaler.fit() rank-1 axis bug.",
+  "testDetails": [
+    {"class": "CustomOpsTests", "method": "testDrawBoundingBoxesShape", "status": "PASS", "fix": "expected array missing .reshape(2,5,5,1)"},
+    {"class": "CustomOpsTests", "method": "testDrawBoundingBoxes", "status": "PASS", "fix": "stale @Disabled removed"},
+    {"class": "CustomOpsTests", "method": "testRgbToHsv", "status": "PASS", "fix": "input/expected arrays were swapped + assertEquals arg order"},
+    {"class": "TestRegressionTest050", "method": "regressionTestMLP2", "status": "PASS", "fix": "Solver.java legacy optimizer fall-through (CONJUGATE_GRADIENT/LINE_GRADIENT_DESCENT/LBFGS -> SGD)"},
+    {"class": "TestRegressionTest060", "method": "regressionTestMLP2", "status": "PASS", "fix": "same Solver.java fall-through fix"},
+    {"class": "TestRegressionTest071", "method": "regressionTestMLP2", "status": "PASS", "fix": "same Solver.java fall-through fix"},
+    {"class": "TestRegressionTest080", "method": "regressionTestMLP2", "status": "PASS", "fix": "same Solver.java fall-through fix"},
+    {"class": "WeightInitIdentityTest", "method": "testIdConv1D", "status": "PASS", "fix": "stale @Disabled removed — 1D conv identity mapping works correctly"},
+    {"class": "TestCompGraphCNN", "method": "testConfigBasic", "status": "PASS", "fix": "removed stale @Disabled from @BeforeEach (no-op in JUnit 5)"},
+    {"class": "TestCompGraphCNN", "method": "testCNNComputationGraphKernelTooLarge", "status": "PASS", "fix": "same @BeforeEach fix"}
+  ],
+  "productionFixes": [
+    "StandardScaler.java: replaced std.min(1) with std.minNumber().floatValue() for rank-1 arrays (2 locations)",
+    "Solver.java: added fall-through cases for CONJUGATE_GRADIENT, LINE_GRADIENT_DESCENT, LBFGS to SGD optimizer",
+    "CustomOpsTests: fixed testDrawBoundingBoxesShape expected array reshape, testRgbToHsv swapped input/expected data"
+  ],
+  "tags": ["cpu", "nd4j-native", "re-enabled", "disabled-tests", "production-fixes"],
+  "timestamp": "2026-06-04T07:30:00Z"
+}

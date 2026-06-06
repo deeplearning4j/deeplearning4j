@@ -95,6 +95,21 @@ public class DspExtInputStalenessTest {
         return g;
     }
 
+    /**
+     * Build single placeholder graph with true CONSTANT weights (not VARIABLE).
+     * Constants may be inlined by the compiler; if they survive as external inputs,
+     * they will have SOURCE_CONSTANT type and should NEVER get staging buffers.
+     */
+    private SameDiff buildSinglePlaceholderWithConstants(int inDim, int outDim) {
+        SameDiff g = SameDiff.create();
+        SDVariable x = g.placeHolder("x", DataType.FLOAT, 1, inDim);
+        SDVariable w = g.constant("w", Transforms.abs(Nd4j.randn(DataType.FLOAT, inDim, outDim)).addi(0.1f));
+        SDVariable b = g.constant("b", Nd4j.ones(DataType.FLOAT, 1, outDim));
+        SDVariable mm = g.mmul("mm", x, w);
+        mm.add("out", b);
+        return g;
+    }
+
     /** Multi-placeholder: matmul(x, w_ph) + b_ph → out */
     private SameDiff buildMultiPlaceholder(int inDim, int outDim) {
         SameDiff g = SameDiff.create();
@@ -273,8 +288,37 @@ public class DspExtInputStalenessTest {
 
     @ParameterizedTest(name = "constantNeverStaged mode={0}")
     @EnumSource(value = GraphExecutionMode.class, names = {"CUDA_GRAPHS", "TRITON", "AUTO"})
-    @DisplayName("Constant ext input never gets staging")
+    @DisplayName("True CONSTANT ext input never gets staging")
     void testConstantNeverStaged(GraphExecutionMode mode) {
+        // Use g.constant() — true SOURCE_CONSTANT inputs must never get staging
+        sd = buildSinglePlaceholderWithConstants(8, 4);
+        configureMode(sd, mode);
+
+        INDArray input = Nd4j.ones(DataType.FLOAT, 1, 8);
+        warmupWithChangingInput(sd, "x", input, "out", 8, new long[]{1, 8});
+
+        DspHandle h = sd.dsp();
+        if (!h.isCompiled()) return;
+
+        // "w" is a true constant (g.constant) — find its ext index
+        int wIdx = h.extInputIndex("w");
+        if (wIdx < 0) {
+            log.info("[CONST_STAGED] mode={} w not found as ext input (may be inlined) — OK", mode);
+            return;
+        }
+
+        long stagingAddr = h.stagingBufferAddress(wIdx);
+        assertEquals(0L, stagingAddr,
+                mode + ": constant 'w' should NOT have staging. addr=0x" + Long.toHexString(stagingAddr));
+        log.info("[CONST_STAGED] mode={} PASS — constant 'w' has no staging", mode);
+    }
+
+    @ParameterizedTest(name = "variableWeightGetsStaging mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"CUDA_GRAPHS", "TRITON", "AUTO"})
+    @DisplayName("VARIABLE weight ext inputs DO get staging (needed for training correctness)")
+    void testVariableWeightGetsStaging(GraphExecutionMode mode) {
+        // Use g.var() — SOURCE_VARIABLE inputs MUST get staging because they can
+        // change during training (calculateGradients with weight updates)
         sd = buildSinglePlaceholder(8, 4);
         configureMode(sd, mode);
 
@@ -284,17 +328,25 @@ public class DspExtInputStalenessTest {
         DspHandle h = sd.dsp();
         if (!h.isCompiled()) return;
 
-        // "w" is a constant weight — find its ext index
+        // "w" is a VARIABLE (g.var) — find its ext index
         int wIdx = h.extInputIndex("w");
         if (wIdx < 0) {
-            log.info("[CONST_STAGED] mode={} w not found as ext input (may be inlined)", mode);
+            log.info("[VAR_STAGED] mode={} w not found as ext input (may be inlined)", mode);
             return;
         }
 
         long stagingAddr = h.stagingBufferAddress(wIdx);
-        assertEquals(0L, stagingAddr,
-                mode + ": constant weight 'w' should NOT have staging. addr=0x" + Long.toHexString(stagingAddr));
-        log.info("[CONST_STAGED] mode={} PASS — constant 'w' has no staging", mode);
+        // Staging buffers are a CUDA-only concept (device memory for CUDA graph replay).
+        // On CPU backend, specialBuffer() always returns null/0 so getStagingBufferAddress()
+        // returns 0 even when a staging NDArray is allocated. Only assert on CUDA.
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if ("CUDA".equalsIgnoreCase(backend)) {
+            assertNotEquals(0L, stagingAddr,
+                    mode + ": VARIABLE weight 'w' SHOULD have staging for training correctness");
+            log.info("[VAR_STAGED] mode={} PASS — variable 'w' has staging at 0x{}", mode, Long.toHexString(stagingAddr));
+        } else {
+            log.info("[VAR_STAGED] CPU backend — staging device address not applicable (specialBuffer=null on CPU), skipping assertion. stagingAddr={}", stagingAddr);
+        }
     }
 
     @ParameterizedTest(name = "mixedVariableAndConstant mode={0}")
@@ -1570,9 +1622,11 @@ public class DspExtInputStalenessTest {
 
     @ParameterizedTest(name = "weightExtInputsNeverGetStaging mode={0}")
     @EnumSource(value = GraphExecutionMode.class, names = {"CUDA_GRAPHS", "TRITON", "AUTO"})
-    @DisplayName("Constant/weight ext inputs should NOT have staging buffers allocated")
+    @DisplayName("True CONSTANT ext inputs should NOT have staging buffers allocated")
     void testWeightExtInputsNeverGetStaging_allModes(GraphExecutionMode mode) {
-        sd = buildSinglePlaceholder(8, 4);
+        // Use g.constant() — true SOURCE_CONSTANT inputs must never get staging.
+        // Note: g.var() creates SOURCE_VARIABLE which correctly gets staging for training.
+        sd = buildSinglePlaceholderWithConstants(8, 4);
         configureMode(sd, mode);
 
         INDArray input = Nd4j.ones(DataType.FLOAT, 1, 8);
@@ -1584,8 +1638,7 @@ public class DspExtInputStalenessTest {
             return;
         }
 
-        // "w" is a constant SameDiff variable (weight), "b" is also constant
-        // Neither should have a D2D staging buffer — they never change
+        // "w" and "b" are true constants (g.constant) — neither should have staging
         String[] weightNames = {"w", "b"};
         for (String wName : weightNames) {
             int extIdx = h.extInputIndex(wName);
@@ -1595,12 +1648,12 @@ public class DspExtInputStalenessTest {
             }
             long stagingAddr = h.stagingBufferAddress(extIdx);
             assertEquals(0L, stagingAddr,
-                    mode + ": constant weight '" + wName + "' has staging buffer allocated! " +
+                    mode + ": constant '" + wName + "' has staging buffer allocated! " +
                             "addr=0x" + Long.toHexString(stagingAddr) +
-                            " — constants should NEVER get D2D staging (they do not change)");
+                            " — true constants (g.constant) should NEVER get D2D staging");
             log.info("[WEIGHT_STAGING] mode={} '{}' extIdx={} stagingAddr=0 PASS", mode, wName, extIdx);
         }
-        log.info("[WEIGHT_STAGING] mode={} PASS — no constant weights have staging buffers", mode);
+        log.info("[WEIGHT_STAGING] mode={} PASS — no true constants have staging buffers", mode);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -5661,13 +5714,20 @@ public class DspExtInputStalenessTest {
         }
 
         // Document the behavior
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        boolean isCudaBackend = "CUDA".equalsIgnoreCase(backend);
         if (xIsVariable) {
             log.info("[AUTO_MARK_PLACEHOLDER] mode={} — placeholder 'x' was AUTO-marked as variable " +
                     "(staging allocated). numCachedVars={}", mode, numCached);
-            // If auto-marked, staging buffer should exist
+            // Staging buffers are a discrete-device (CUDA) concept — on CPU, staging is never allocated.
             long stagingAddr = h.stagingBufferAddress(xIdx);
-            assertTrue(stagingAddr != 0,
-                    mode + " 'x' auto-marked variable but staging buffer address is 0!");
+            if (isCudaBackend) {
+                assertTrue(stagingAddr != 0,
+                        mode + " 'x' auto-marked variable but staging buffer address is 0!");
+            } else {
+                log.info("[AUTO_MARK_PLACEHOLDER] mode={} CPU backend — staging not applicable (addr=0x{})",
+                        mode, Long.toHexString(stagingAddr));
+            }
         } else {
             log.info("[AUTO_MARK_PLACEHOLDER] mode={} — placeholder 'x' was NOT auto-marked as variable. " +
                     "numCachedVars={}. This means markVariable() is required for D2D staging.", mode, numCached);

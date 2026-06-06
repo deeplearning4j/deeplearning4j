@@ -472,7 +472,16 @@ public class FlatBuffersMapper {
                             scalar = Nd4j.constantScalar(bb.getFloat());
                             break;
                         case DOUBLE:
-                            scalar = Nd4j.constantScalar(bb.getDouble());
+                            double dv = bb.getDouble();
+                            // Downcast to FLOAT when the value survives a float32 round-trip
+                            // (e.g. 0.125, 0.5, 1.0). This prevents DOUBLE scalars from
+                            // cascading through matmul dtype promotion (dtypeZ = max(x,y))
+                            // and producing DOUBLE output tensors in otherwise-FLOAT graphs.
+                            if ((double)(float) dv == dv) {
+                                scalar = Nd4j.constantScalar((float) dv);
+                            } else {
+                                scalar = Nd4j.constantScalar(dv);
+                            }
                             break;
                         case INT:
                             scalar = Nd4j.constantScalar(bb.getInt());

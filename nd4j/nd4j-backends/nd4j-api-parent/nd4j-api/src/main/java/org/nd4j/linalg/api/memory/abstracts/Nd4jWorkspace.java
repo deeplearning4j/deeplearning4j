@@ -795,17 +795,17 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // we should block stuff since we're going to invalidate spilled allocations
         // TODO: block on spilled allocations probably?
         if(isOpen.get()) {
-            this.lastEntered = Thread.currentThread().getStackTrace();
-            return this;
-        }
-        MemoryWorkspace prev = Nd4j.getMemoryManager().getCurrentWorkspace();
-
-        // if we're opening the same workspace - just increase counter, and skip everything else
-        if (prev == this && isOpen.get()) {
+            // workspace is already open - this is a nested re-entry of the same workspace.
+            // increment tagScope so the matching close() call decrements it and skips the full close,
+            // preserving offsets and keeping the workspace open for the outer scope.
+            // Ensure the current workspace is set to this (it may have been changed by an
+            // intervening workspace open/close cycle between iterations).
+            Nd4j.getMemoryManager().setCurrentWorkspace(this);
             tagScope.incrementAndGet();
             this.lastEntered = Thread.currentThread().getStackTrace();
             return this;
         }
+        MemoryWorkspace prev = Nd4j.getMemoryManager().getCurrentWorkspace();
 
         // we'll need this in close() call, to restore previous workspace (if any)
         previousWorkspace = prev;

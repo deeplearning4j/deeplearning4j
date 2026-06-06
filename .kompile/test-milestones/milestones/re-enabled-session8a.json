@@ -1,0 +1,21 @@
+{
+  "id": "re-enabled-session8a",
+  "branch": "ag_new_release_updates_2",
+  "passing": true,
+  "module": "dtypes-cnn-full-verification",
+  "totalTests": 1,
+  "passed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Session 8a: DTypeTests#testDtypesModelVsGlobalDtypeCnn — ALL 135/135 configs passed (3 global dtypes x 3 network dtypes x 5 output layers x 3 input dtypes). Zero assertion errors. Verified on nd4j-native backend.",
+  "fixes": [
+    {
+      "file": "deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/convolution/ConvolutionLayer.java",
+      "description": "Added input casting to network dtype in preOutput() — INDArray input = this.input.castTo(dataType). Fixes conv2d mixed-type rejection when input dtype differs from network dtype. All other conv layers already had this cast.",
+      "test": "DTypeTests#testDtypesModelVsGlobalDtypeCnn",
+      "status": "PASS"
+    }
+  ],
+  "tags": ["cpu", "nd4j-native", "re-enabled", "dtype-fix", "mixed-dtype", "full-verification"],
+  "timestamp": "2026-06-04T12:30:00Z"
+}

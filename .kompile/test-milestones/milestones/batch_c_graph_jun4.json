@@ -1,0 +1,12 @@
+{
+  "id": "batch_c_graph_jun4",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "cpu-native-dl4j-graph-workspace-masking-jun4",
+  "totalTests": 29,
+  "passed": 26,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Batch C: Graph/workspace/masking tests on nd4j-native. 3 errors: (1) TestTimeDistributed#testTimeDistributedDense[2] — NWC format input size mismatch (5 vs 10), (2) TestVariableLengthTSCG#testInputMasking — Workspace WS_LAYER_WORKING_MEM not open inside RNN loop (only WS_RNN_LOOP_WORKING_MEM), (3) TestGradientCheckTestsMasking#testOutputLayerMaskingCG — same workspace issue at ComputationGraph.computeGradientAndScore:1425. PASSING: TestCompGraphWorkSpaces(1/1), WorkspaceTests(not found?), TestMasking(5/5), TestLastTimeStepLayer(4/4), TestVariableLengthTS(5/5), TestTimeDistributed(3/4), TestVariableLengthTSCG(3/4), TestGradientCheckTestsMasking(5/6)."
+}

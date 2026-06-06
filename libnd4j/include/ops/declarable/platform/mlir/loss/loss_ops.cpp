@@ -110,8 +110,8 @@ PLATFORM_CHECK(softmax_cross_entropy_loss_with_logits_grad, ENGINE_CPU) {
 DECLARE_PLATFORM(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU)
 
 PLATFORM_IMPL(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
-    auto* logits = INPUT_VARIABLE(0);   // [batch, classes]
-    auto* labels = INPUT_VARIABLE(1);   // [batch] - integer class indices
+    auto* labels = INPUT_VARIABLE(0);   // [batch] - integer class indices
+    auto* logits = INPUT_VARIABLE(1);   // [batch, classes]
     auto* output = OUTPUT_VARIABLE(0);  // [batch]
 
     std::vector<NDArray*> inputs = {logits, labels};
@@ -127,8 +127,8 @@ PLATFORM_IMPL(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
-    auto* logits = INPUT_VARIABLE(0);
-    auto* labels = INPUT_VARIABLE(1);
+    auto* labels = INPUT_VARIABLE(0);
+    auto* logits = INPUT_VARIABLE(1);
 
     Requirements req("MLIR SPARSE_SOFTMAX_CROSS_ENTROPY_WITH_LOGITS");
 

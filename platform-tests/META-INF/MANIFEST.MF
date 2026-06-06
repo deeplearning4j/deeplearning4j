@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Created-By: Apache Maven 3.9.12
+Built-By: agibsonccc
+Build-Jdk: 17.0.17
+Automatic-Module-Name: nd4j.cpu.binary
+

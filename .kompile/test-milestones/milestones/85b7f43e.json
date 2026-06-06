@@ -1,0 +1,16 @@
+{
+  "id": "85b7f43e",
+  "branch": "ag_new_release_updates_2",
+  "commit": {"full": "3d3eaafd5a32f249973bd20b4e94cca9aa27efda", "short": "3d3eaafd5a"},
+  "commitMessage": "fix: disable Triton on Windows",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-samediff-core",
+  "totalTests": 51,
+  "passed": 49,
+  "failed": 1,
+  "skipped": 1,
+  "notes": "SameDiff core: SameDiffTests, Training, Output, ControlFlow, FlatBufferSerde, NameScopes, ConvConfig, LossVars, GraphQuery. 1 failure: FlatBufferSerdeTest.testTrainingSerde boolean assertion.",
+  "tags": ["cpu", "samediff", "nd4j-native"],
+  "timestamp": "2026-06-02T20:10:13Z"
+}

@@ -1,0 +1,30 @@
+{
+  "id": "batch8_ndcore_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 50,
+  "passed": 47,
+  "failed": 0,
+  "errors": 2,
+  "skipped": 2,
+  "classes": {
+    "ConvConfigTests": {"run": 7, "pass": 7},
+    "NDIndexIteratorTest": {"run": 1, "pass": 1},
+    "ExpandableOpsTests": {"run": 2, "pass": 1, "errors": 1, "notes": "testCompatStringSplit_1: UTF8 data type unsupported in _bufferWithOffset — known limitation"},
+    "PaddingTestsC": {"run": 5, "pass": 5},
+    "ConvolutionTests": {"run": 26, "pass": 26},
+    "ConvolutionTestsC": {"run": 8, "pass": 6, "skip": 2},
+    "Nd4jTestsComparisonC": {"run": 1, "pass": 1},
+    "Nd4jTestsC": {"run": 0, "errors": 1, "notes": "JVM crash SIGABRT exit code 134 — native heap corruption during test execution"}
+  },
+  "failures": [
+    "ExpandableOpsTests.testCompatStringSplit_1: UTF8 data type unsupported — known limitation",
+    "Nd4jTestsC: JVM crash SIGABRT — native heap corruption"
+  ],
+  "notes": "7 of 8 classes completed. 47/49 executed tests pass. ExpandableOpsTests UTF8 error is known limitation. Nd4jTestsC crashed JVM (SIGABRT). ConvolutionTestsC 2 skipped tests (expected).",
+  "tags": ["cpu", "conv", "ndarray", "padding", "indexing", "expandable-ops"],
+  "timestamp": "2026-06-05T23:20:00Z"
+}

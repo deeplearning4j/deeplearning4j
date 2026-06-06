@@ -1,0 +1,18 @@
+{
+  "id": "batch_cd_lstm_spec_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "ImdbLstmIsolationTest,LstmImportDiagnosticTest,MobileNetIsolationTest,SpeculativeDecodeLoopTest,SpeculativeKVCacheManagerTest,AbstractPage10SensitivityTest",
+  "totalTests": 25,
+  "passed": 25,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "",
+  "notes": "6 previously untested classes: LSTM isolation/diagnostic, MobileNet isolation, speculative decode/KV cache, page sensitivity. All pass clean on CPU.",
+  "tags": "cpu,lstm,speculative,untested",
+  "timestamp": "2026-06-05T13:25:00Z"
+}

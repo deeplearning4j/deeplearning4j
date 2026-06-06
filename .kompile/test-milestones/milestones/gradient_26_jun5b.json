@@ -1,0 +1,16 @@
+{
+  "id": "gradient_26_jun5b",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "SameDiffGradientTest",
+  "totalTests": 26,
+  "passed": 23,
+  "failed": 3,
+  "skipped": 0,
+  "notes": "Fixed: testSameDiffNoGradForConstantAndPlaceholder (removed setGradientForVariableName for constants), testShapeUpdating, testExternalErrorsSimple. Remaining: testUpdatingGradient, testUpdatingGradientSimple (DSP ext input staleness), testGradFnRequiredVars. Improved from 21/26 to 23/26.",
+  "tags": "cpu,gradient,samediff,fix",
+  "timestamp": "2026-06-05T06:45:00Z"
+}

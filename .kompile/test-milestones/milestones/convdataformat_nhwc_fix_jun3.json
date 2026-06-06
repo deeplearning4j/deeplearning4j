@@ -1,0 +1,21 @@
+{
+  "id": "convdataformat_nhwc_fix_jun3",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "uncommitted",
+    "short": "uncommitted"
+  },
+  "commitMessage": "fix: OneDNN NHWC stride permutation in conv2d, deconv2d, depthwiseConv2d",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-dl4j-ConvDataFormatTests",
+  "totalTests": 31,
+  "passed": 23,
+  "failed": 8,
+  "skipped": 0,
+  "errors": 0,
+  "notes": "MAJOR IMPROVEMENT: 14/31 -> 23/31 passing. Previous: 14 pass, 16 fail, 1 error. Now: 23 pass, 8 fail, 0 errors. The OneDNN NHWC stride permutation fix (xzPermut={0,3,1,2}) eliminates the 'could not construct memory descriptor' crash. testConv2d[2] changed from ERROR to FAILURE (values mismatch). REMAINING 8 FAILURES: testConv2d[2], testDeconv2d[2], testDepthwiseConv2d[2], testCnnLossLayer[2] all FLOAT+NHWC value mismatch. testSeparableConv2d[1+2] both params. testLocallyConnected[1+2] both params. testSubsampling, testUpsampling, testBatchnorm, testLRN, testConv2d[1], testDeconv2d[1], testDepthwiseConv2d[1], testCnnLossLayer[1] all pass now.",
+  "tags": ["cpu", "nd4j-native", "dl4j-core", "conv", "nhwc", "IMPROVED"],
+  "timestamp": "2026-06-03T14:50:00Z",
+  "previousMilestone": "convdataformat_jun3"
+}

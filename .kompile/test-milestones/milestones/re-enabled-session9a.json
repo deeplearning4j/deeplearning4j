@@ -1,0 +1,27 @@
+{
+  "id": "re-enabled-session9a",
+  "branch": "ag_new_release_updates_2",
+  "passing": true,
+  "module": "batch5b-transfer-learning",
+  "totalTests": 42,
+  "passed": 42,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Session 9a: Transfer learning tests. All 42 pass. Also fixed TestUIModulesE2E compilation error (softmaxCrossEntropy missing weights arg).",
+  "fixes": [
+    {
+      "file": "platform-tests/src/test/java/org/deeplearning4j/ui/ui/TestUIModulesE2E.java",
+      "description": "softmaxCrossEntropy call missing weights parameter — added sd.var lossWeights",
+      "test": "TestUIModulesE2E (compilation)",
+      "status": "FIXED"
+    }
+  ],
+  "testResults": [
+    {"test": "TransferLearningMLNTest", "run": 11, "passed": 11, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "TransferLearningMLNIsolationTest", "run": 17, "passed": 17, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "TransferLearningCompGraphTest", "run": 9, "passed": 9, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "TransferLearningCompGraphIsolationTest", "run": 5, "passed": 5, "failed": 0, "skipped": 0, "status": "PASS"}
+  ],
+  "tags": ["cpu", "nd4j-native", "batch-testing", "transfer-learning"],
+  "timestamp": "2026-06-04T13:55:00Z"
+}

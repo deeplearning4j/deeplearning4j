@@ -1,0 +1,24 @@
+{
+  "id": "miscop_full_jun5e",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-reduce-float-clip-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 65,
+  "passed": 59,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 6,
+  "classes": {
+    "TestMiscOpValidation": {"run": 65, "pass": 59, "skip": 6}
+  },
+  "fixes_verified": [
+    "testClipByNorm0: reduce_float.hpp stride fix + clip.cpp float precision",
+    "testLoss2d sparsesoftmax: now passes",
+    "atan2 forward: arg swap fix verified"
+  ],
+  "notes": "Full TestMiscOpValidation: 65 run, 0 fail, 6 skip. All previously failing ops now pass after reduce_float.hpp, clip.cpp, and atan2 fixes.",
+  "tags": ["cpu", "opvalidation", "fix-verified"],
+  "timestamp": "2026-06-05T18:47:00Z"
+}

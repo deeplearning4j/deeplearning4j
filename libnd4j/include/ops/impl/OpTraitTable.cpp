@@ -273,7 +273,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"batch_norm",     NORM},
         {"batchnorm",      NORM},
         {"rms_norm",       NORM},
-        {"rms_norm_linear", MATMUL},
+        {"rms_norm_linear", NORM | MATMUL},
         {"skip_rms_norm",  NORM},
         {"normalize_moments", NORM},
         {"fused_rope",     NORM},
@@ -660,11 +660,15 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"standardize_bp",              NORM | BP},
 
         // ── Clip ops ──────────────────────────────────────────────────────
-        {"clipbyavgnorm",       UNARY_EW},
-        {"clipbyavgnorm_bp",    UNARY_EW | BP},
-        {"clip_by_global_norm", UNARY_EW},
-        {"clipbynorm",          UNARY_EW},
-        {"clipbynorm_bp",       UNARY_EW | BP},
+        // clipbyavgnorm and clipbynorm are NOT elementwise: they perform norm
+        // reductions over TADs before clipping. Marking them UNARY_EW causes
+        // FusionPass to detect a spurious ELEMENTWISE_CHAIN with downstream
+        // mul_scalar ops, enabling in-place buffer aliasing that corrupts results.
+        {"clipbyavgnorm",       OP_TRAIT_FULLY_WRITING},
+        {"clipbyavgnorm_bp",    BP},
+        {"clip_by_global_norm", OP_TRAIT_FULLY_WRITING},
+        {"clipbynorm",          OP_TRAIT_FULLY_WRITING},
+        {"clipbynorm_bp",       BP},
 
         // ── Pooling forward ────────────────────────────────────────────────
         {"avgpool",             OP_TRAIT_FULLY_WRITING},

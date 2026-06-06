@@ -1,0 +1,16 @@
+{
+  "id": "keras_batch2_14_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "KerasCustomLossTest,KerasDeconvolution2DTest,KerasDeconvolution3DTest,KerasDenseTest,KerasDepthwiseConvolution2DTest,KerasDropoutTest,KerasEinsumDenseTest,KerasEmbeddingTest,KerasFlatten3dTest,KerasGaussianDropoutTest,KerasGaussianNoiseTest,KerasGlobalPoolingTest,KerasInitilizationTest,KerasLambdaTest",
+  "totalTests": 41,
+  "passed": 41,
+  "failed": 0,
+  "skipped": 0,
+  "notes": "Keras import batch 2: 14 classes, 41 tests, ALL PASS. Includes deconv2d/3d, dense, depthwise conv, dropout, einsum, embedding, flatten, gaussian noise/dropout, global pooling, initialization, lambda, custom loss.",
+  "tags": "cpu,keras,import,all-pass",
+  "timestamp": "2026-06-05T07:14:00Z"
+}

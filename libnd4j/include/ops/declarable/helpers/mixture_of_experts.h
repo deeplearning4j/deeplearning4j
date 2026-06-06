@@ -82,6 +82,14 @@ SD_LIB_HIDDEN void mixtureOfExperts(sd::LaunchContext* context,
  * @param output Output tensor [batch, seq_len, hidden_dim]
  * @param numExperts Total number of experts
  * @param topK Number of experts per token
+ * @param normalizeProbs Whether to renormalize the selected top-K expert scores.
+ *        When true, the raw softmax scores for the selected experts are divided
+ *        by their sum, rescaling them to sum to 1.0.  This introduces a gradient
+ *        scaling factor of approximately numExperts/topK in the backward pass
+ *        (e.g. ~16x for numExperts=32, topK=2), which causes the "~30x too large
+ *        gradients" bug.  Pass false to use the raw softmax probabilities, which
+ *        is the mathematically correct behaviour for gradient-based training.
+ *        Default: false (gradient-safe).
  */
 SD_LIB_HIDDEN void mixtureOfExpertsSimple(sd::LaunchContext* context,
                                            NDArray* input,
@@ -90,7 +98,8 @@ SD_LIB_HIDDEN void mixtureOfExpertsSimple(sd::LaunchContext* context,
                                            NDArray* expertBias,
                                            NDArray* output,
                                            int numExperts,
-                                           int topK);
+                                           int topK,
+                                           bool normalizeProbs = false);
 
 }  // namespace helpers
 }  // namespace ops

@@ -1,0 +1,21 @@
+{
+  "id": "transfer_learning_jun3",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "uncommitted",
+    "short": "uncommitted"
+  },
+  "commitMessage": "fix: ComputationGraph null epsilon NPE in frozen layer backprop + TransferLearningHelper seed fix",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-dl4j-transfer-learning",
+  "totalTests": 14,
+  "passed": 12,
+  "failed": 1,
+  "skipped": 1,
+  "errors": 0,
+  "notes": "TransferLearningMLNTest(11 pass, 1 skip), ScoreStatTest(4 pass, 1 skip from prior batch). TransferLearningHelperTest.testFitUnFrozen had NPE in ComputationGraph.calcBackpropGradients due to null epsilon from frozen layers — fixed by adding null check in addi path. Also fixed RNG seed determinism. Awaiting retest.",
+  "tags": ["cpu", "nd4j-native", "dl4j-core", "transfer-learning", "frozen-layers", "IN_PROGRESS"],
+  "timestamp": "2026-06-03T15:15:00Z",
+  "previousMilestone": "layer_tests_batch1_jun3"
+}

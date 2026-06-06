@@ -1,0 +1,28 @@
+{
+  "id": "datavec_local_jun5d",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-svd-deflation-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 22,
+  "passed": 22,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "TestNDArrayWritableAndSerialization": {"run": 4, "pass": 4},
+    "TestNDArrayWritableTransforms": {"run": 4, "pass": 4},
+    "TestStreamInputSplit": {"run": 3, "pass": 3},
+    "TestWritablesToStringFunctions": {"run": 2, "pass": 2},
+    "TestWritablesToNDArrayFunction": {"run": 2, "pass": 2},
+    "TestNDArrayToWritablesFunction": {"run": 2, "pass": 2},
+    "TestConvertToSequence": {"run": 2, "pass": 2},
+    "TestLineRecordReaderFunction": {"run": 1, "pass": 1},
+    "TestAnalyzeLocal": {"run": 1, "pass": 1},
+    "TestCalculateSortedRank": {"run": 1, "pass": 1}
+  },
+  "notes": "Datavec local/writable batch: all 22 tests pass. Covers local transforms, NDArray writables, stream splits.",
+  "tags": ["cpu", "datavec", "local", "writable", "verification"],
+  "timestamp": "2026-06-05T18:19:00Z"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "batch_ca_keras_onnx_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "BatchGemmDiagnosticTest,DeepCTRLambdaTest,CausalConv1DIsolationTest,Conv1DManualTest,TimeSeriesGeneratorImportTest,TimeSeriesGeneratorTest,MhaEmptyPastKvIsolationTest,OnnxMhaImportKvCacheTest",
+  "totalTests": 21,
+  "passed": 21,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "",
+  "notes": "8 previously untested classes: keras diagnostic/lambda/conv1d/timeseries, ONNX MHA KV cache isolation. All pass clean on CPU.",
+  "tags": "cpu,keras,onnx,mha,untested",
+  "timestamp": "2026-06-05T13:00:00Z"
+}

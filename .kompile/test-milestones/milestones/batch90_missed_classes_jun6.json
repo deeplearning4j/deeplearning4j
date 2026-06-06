@@ -1,0 +1,26 @@
+{
+  "id": "batch90_missed_classes_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-isa-fix-rebuild",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 19,
+  "passed": 19,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "jvmCrash": false,
+  "classes": {
+    "TestSetGetParameters": {"run": 3, "pass": 3, "notes": "2 from multilayer + 1 from graph"},
+    "TestYamlJsonSerde": {"run": 11, "pass": 11, "notes": "2 from datavec transform + 9 from datavec serde"},
+    "TestJoin": {"run": 5, "pass": 5, "notes": "3 from datavec api + 2 from datavec local"},
+    "TestUtils": {"run": 0, "pass": 0, "notes": "No tests matched (class may use different annotation pattern)"},
+    "TestTolerances": {"run": 0, "pass": 0, "notes": "No tests matched"},
+    "UnsupervisedTestCases": {"run": 0, "pass": 0, "notes": "No @Test methods (data provider class)"}
+  },
+  "failures": [],
+  "notes": "6 classes from batch 89 crash. 19/19 pass. TestUtils/TestTolerances/UnsupervisedTestCases had no matching tests (data providers or different annotation patterns).",
+  "tags": ["cpu", "misc", "recovery"],
+  "timestamp": "2026-06-06T07:00:00Z"
+}

@@ -179,6 +179,14 @@ public class GradCheckUtil {
         }
         gm.clear();
 
+        // DSP caches compiled plans — in-place putScalar perturbations don't propagate
+        // through cached plans, yielding numericalGrad=0. Disable DSP for numerical gradient loop.
+        boolean dspAutoCompileSaved = sd.isDspAutoCompileEnabled();
+        boolean dspNativeAutoCompileSaved = sd.isDspNativeAutoCompileEnabled();
+        sd.setDspAutoCompileEnabled(false);
+        sd.setDspNativeAutoCompileEnabled(false);
+        try {
+
         //Validate gradients for each variable:
         int totalNFailures = 0;
         int totalCount = 0;
@@ -370,6 +378,11 @@ public class GradCheckUtil {
         }
 
         return totalNFailures == 0;
+        } finally {
+            // Restore DSP flags that were disabled for numerical gradient computation
+            sd.setDspAutoCompileEnabled(dspAutoCompileSaved);
+            sd.setDspNativeAutoCompileEnabled(dspNativeAutoCompileSaved);
+        }
     }
 
 

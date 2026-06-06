@@ -325,31 +325,54 @@ struct SlotPhase {
     shapeCacheValid = true;
   }
 
-  /** Freeze slot (shape + buffer stable → SEALED) */
+  /** Freeze slot (shape + buffer stable → SEALED)
+   *
+   * isViewProducer is a STRUCTURAL property of the op (permute/reshape always
+   * produce views) — not an execution-phase property. seal() therefore only
+   * SETS isViewProducer (when viewProducer=true), and never clears it.
+   * This preserves the flag that was set by the view-op execution path
+   * (slots_[slotIdx].slotPhase.isViewProducer = true) so that subsequent calls
+   * to refreshStaleViewWrappersInSegment correctly detect and refresh stale
+   * views after placeholder inputs are closed and re-opened between iterations.
+   *
+   * Regression: prior to this fix, seal(false) reset isViewProducer to false,
+   * causing refreshStaleViewWrappersInSegment to skip the view slot and leave
+   * a dangling NDArray pointing at a freed DataBuffer. */
   void seal(bool constant = false, bool viewProducer = false) {
-    DSP_DIAG(LIFECYCLE, "SlotPhase: %s -> SEALED (constant=%d viewProducer=%d)",
-             displayName(), (int)constant, (int)viewProducer);
+    DSP_DIAG(LIFECYCLE, "SlotPhase: %s -> SEALED (constant=%d viewProducer=%d existing=%d)",
+             displayName(), (int)constant, (int)viewProducer, (int)isViewProducer);
     phase = GraphNodePhase::SEALED;
     isConstant = constant;
-    isViewProducer = viewProducer;
+    // Preserve isViewProducer: only set it, never clear it via seal().
+    // The view-op execution path sets it to true before seal() fires;
+    // clearing it here causes refreshStaleViewWrappersInSegment to skip
+    // view slots and leave dangling pointers after placeholder close/reuse.
+    if (viewProducer) isViewProducer = true;
   }
 
   /** Unfreeze (back to BUILDING — e.g., shape change detected) */
   void unseal() {
-    DSP_DIAG(LIFECYCLE, "SlotPhase: %s -> BUILDING:WARMUP (unsealed — shape change)",
-             displayName());
+    DSP_DIAG(LIFECYCLE, "SlotPhase: %s -> BUILDING:WARMUP (unsealed — shape change, viewProducer=%d preserved)",
+             displayName(), (int)isViewProducer);
     phase = GraphNodePhase::BUILDING;
     isConstant = false;
-    isViewProducer = false;
+    // NOTE: isViewProducer is NOT cleared here. It is a structural property
+    // of the op (permute/reshape always produce views) — not an execution-phase
+    // property. Clearing it causes refreshStaleViewWrappersInSegment to skip
+    // the slot, leaving a dangling view whose DataBuffer has been freed.
     shapeCacheValid = false;
   }
 
   /** Full reset */
   void reset() {
-    DSP_DIAG(LIFECYCLE, "SlotPhase: %s -> BUILDING:WARMUP (full reset)", displayName());
+    DSP_DIAG(LIFECYCLE, "SlotPhase: %s -> BUILDING:WARMUP (full reset, viewProducer=%d preserved)",
+             displayName(), (int)isViewProducer);
     phase = GraphNodePhase::BUILDING;
     isConstant = false;
-    isViewProducer = false;
+    // NOTE: isViewProducer is NOT cleared here — same rationale as unseal().
+    // The flag is set once when the op first executes and must persist across
+    // phase transitions so that refreshStaleViewWrappersInSegment can detect
+    // and refresh stale views after placeholder inputs are closed.
     shapeCacheValid = false;
   }
 

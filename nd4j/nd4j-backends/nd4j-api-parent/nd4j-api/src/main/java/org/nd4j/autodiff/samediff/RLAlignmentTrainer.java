@@ -232,32 +232,50 @@ public abstract class RLAlignmentTrainer<C extends RLAlignmentConfig> {
     /**
      * Build log probability computation ops in the SameDiff graph.
      * Uses log_softmax + one_hot to compute per-sequence log probabilities.
+     * Logits must be 3D [batch, seq, vocab]. Models that produce 2D logits [batch, vocab]
+     * should use the overload with {@code logitsAre2D=true}.
      *
-     * @param sd       The SameDiff instance
-     * @param prefix   Unique prefix for variable names
-     * @param logits   Logit variable [batch, seq, vocab]
-     * @param tokenIds Token ID variable [batch, seq] (INT64)
+     * @param sd        The SameDiff instance
+     * @param prefix    Unique prefix for variable names
+     * @param logits    Logit variable [batch, seq, vocab]
+     * @param tokenIds  Token ID variable [batch, seq] (INT64)
      * @param vocabSize Vocabulary size
-     * @return SDVariable of shape [batch] containing per-sequence log probabilities
+     * @return SDVariable of shape [batch] containing per-sequence summed log probabilities
      */
     protected SDVariable computeLogProbOps(SameDiff sd, String prefix, SDVariable logits,
                                            SDVariable tokenIds, int vocabSize) {
-        // Always normalize to 3D [batch, seq, vocab]:
-        //   - If logits are 3D already, keep as-is.
-        //   - If logits are 2D [batch, vocab] (e.g. model without seq dim), expand to [batch, 1, vocab].
-        // We use a conditional reshape: if vocabSize is known, reshape to [-1, 1, vocabSize].
-        // Since static shape may be null for computed nodes (e.g. after gather), we always
-        // reshape unconditionally to [-1, 1, vocabSize]. For true 3D logits this would lose
-        // the seq dimension, so callers with 3D logits should override this method.
-        // For the common case of 2D [batch, vocab] policy models this is correct.
-        long[] logitShape = logits.getShape();
+        return computeLogProbOps(sd, prefix, logits, tokenIds, vocabSize, false);
+    }
+
+    /**
+     * Build log probability computation ops in the SameDiff graph.
+     * Uses log_softmax + one_hot to compute per-sequence log probabilities.
+     *
+     * @param sd             The SameDiff instance
+     * @param prefix         Unique prefix for variable names
+     * @param logits         Logit variable [batch, seq, vocab] or [batch, vocab]
+     * @param tokenIds       Token ID variable [batch, seq] (INT64)
+     * @param vocabSize      Vocabulary size
+     * @param logitsAre2D    When true, reshape logits from [batch, vocab] to [batch, 1, vocab].
+     *                       Use this when the model produces a single distribution per sequence
+     *                       (no seq dimension). When false (default), logits must already be 3D.
+     * @return SDVariable of shape [batch] containing per-sequence summed log probabilities
+     */
+    protected SDVariable computeLogProbOps(SameDiff sd, String prefix, SDVariable logits,
+                                           SDVariable tokenIds, int vocabSize, boolean logitsAre2D) {
+        // Normalize to 3D [batch, seq, vocab]:
+        //   - logitsAre2D=true: reshape [batch, vocab] to [batch, 1, vocab]
+        //   - logitsAre2D=false: logits are already [batch, seq, vocab]; use as-is regardless
+        //     of whether static shape is known (handles gather outputs whose shape is null)
         SDVariable logits3d;
-        if (logitShape != null && logitShape.length == 3) {
-            // Already 3D — use as-is
-            logits3d = logits;
-        } else {
-            // 2D [batch, vocab] or unknown shape → reshape to [batch, 1, vocab]
+        if (logitsAre2D) {
+            // Explicitly requested 2D→3D expansion: reshape to [batch, 1, vocab]
             logits3d = sd.reshape(prefix + "_logits3d", logits, -1L, 1L, (long) vocabSize);
+        } else {
+            // Logits are already 3D [batch, seq, vocab] — use as-is.
+            // This handles both static-shape-known nodes and computed nodes (e.g. gather output)
+            // whose getShape() returns null.
+            logits3d = logits;
         }
         SDVariable logSM = sd.nn().logSoftmax(prefix + "_logsm", logits3d, -1);
 

@@ -1,0 +1,22 @@
+{
+  "batch": "P",
+  "name": "RNN, masking, workspace, and gradient tests",
+  "date": "2026-06-05T00:45:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "TestMasking": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "MultiLayerTestRNN": {"total": 11, "passed": 11, "failed": 0, "errors": 0},
+    "TestVariableLengthTS": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "TestMmulMinimal": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "TestCompGraphWorkSpaces": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "TestVariableLengthTSCG": {"total": 4, "passed": 3, "failed": 0, "errors": 1, "note": "testInputMasking fails: workspace scoping bug — LSTM leverageTo(FF_WORKING_MEM) inside RNN loop scope finds WS_LAYER_WORKING_MEM not open during computeGradientAndScore. Pre-existing architectural issue with ComputationGraph creating separate workspace managers in ffToLayerActivationsInWS vs computeGradientAndScore."}
+  },
+  "fixes_applied": [
+    "Added BP_WORKING_MEM and RNN_BP_LOOP_WORKING_MEM to ffToLayerActivationsInWS workspace builder (ComputationGraph.java lines 2118, 2120)",
+    "Reverted broken scopeOutOfWorkspaces wrapper around score computation loop"
+  ],
+  "known_issues": [
+    "TestVariableLengthTSCG.testInputMasking: deep workspace scoping architectural issue — ffToLayerActivationsInWS creates separate LayerWorkspaceMgr from computeGradientAndScore, LSTM mask code calls leverageTo(FF_WORKING_MEM) which requires WS_LAYER_WORKING_MEM to be open but it's not in the RNN loop scope"
+  ],
+  "summary": "27 tests run, 26 passed, 0 failures, 1 error. TestVariableLengthTSCG.testInputMasking is a pre-existing workspace scoping bug."
+}

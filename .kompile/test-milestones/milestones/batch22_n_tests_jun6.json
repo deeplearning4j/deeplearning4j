@@ -1,0 +1,29 @@
+{
+  "id": "batch22_n_tests_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 161,
+  "passed": 158,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 3,
+  "classes": {
+    "NameScopeTests": {"run": 4, "pass": 4},
+    "NumpyFormatTests": {"run": 13, "pass": 11, "skipped": 2},
+    "NormalizerSerializerTest": {"run": 14, "pass": 14},
+    "NormalizerTests": {"run": 4, "pass": 4},
+    "NDBaseTest": {"run": 84, "pass": 84},
+    "NDLossTest": {"run": 12, "pass": 12},
+    "Nd4jTest": {"run": 13, "pass": 13},
+    "NewInstanceTest": {"run": 1, "pass": 0, "skipped": 1},
+    "NeuralNetConfigurationTest": {"run": 12, "pass": 12},
+    "NameTests": {"run": 4, "pass": 4}
+  },
+  "failures": [],
+  "notes": "All 10 classes ran, 158 tests pass, 3 skipped. Zero failures. Clean batch. NDBaseTest (84 tests) is the largest class.",
+  "tags": ["cpu", "names", "normalizer", "numpy", "ndbase", "ndloss", "neural-net-config"],
+  "timestamp": "2026-06-06T00:15:00Z"
+}

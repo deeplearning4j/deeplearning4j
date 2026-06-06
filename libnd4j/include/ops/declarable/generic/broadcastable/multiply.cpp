@@ -241,7 +241,10 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
     y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
   } else if (x->isSameShape(dLdz)) {
-    auto yTiled = NDArray(dLdz, false, block.launchContext());
+    // Allocate a fresh buffer — NDArray(other, copyStrides, ctx) shares the raw data pointer
+    // with `other`, so tiling into it would corrupt dLdz.
+    std::vector<LongType> tileShape(dLdz->shapeOf(), dLdz->shapeOf() + dLdz->rankOf());
+    NDArray yTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
     y->tile(yTiled);
     std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
@@ -252,10 +255,12 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     delete dLdyTemp;
     yTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
   } else if (y->isSameShape(dLdz)) {
-    auto xTiled = NDArray(dLdz, false, block.launchContext());
+    // Allocate a fresh buffer — NDArray(other, copyStrides, ctx) shares the raw data pointer
+    // with `other`, so tiling into it would corrupt dLdz.
+    std::vector<LongType> tileShape(dLdz->shapeOf(), dLdz->shapeOf() + dLdz->rankOf());
+    NDArray xTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
     x->tile(xTiled);
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
-    // FIXED: Clean up intermediate result from operator*
     NDArray *yMulDldz = (*y) * (*dLdz);
     NDArray *dLdxTemp = yMulDldz->reduceAlongDimension(reduce::Sum, &axesForX);
     dLdx->assign(dLdxTemp);
@@ -263,8 +268,11 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     delete dLdxTemp;
     xTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
   } else {
-    auto xTiled = NDArray(dLdz, false, block.launchContext());
-    auto yTiled = NDArray(dLdz, false, block.launchContext());
+    // Allocate fresh buffers — NDArray(other, copyStrides, ctx) shares the raw data pointer
+    // with `other`, so tiling into either array would corrupt dLdz (and each other).
+    std::vector<LongType> tileShape(dLdz->shapeOf(), dLdz->shapeOf() + dLdz->rankOf());
+    NDArray xTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
+    NDArray yTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
     x->tile(xTiled);
     y->tile(yTiled);
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
@@ -278,7 +286,6 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     delete dLdxTemp;
 
     // For dLdy
-    // FIXED: Clean up intermediate result from operator*
     NDArray *xMulDldz = (*x) * (*dLdz);
     NDArray *dLdyTemp = xMulDldz->reduceAlongDimension(reduce::Sum, &axesForY);
     dLdy->assign(dLdyTemp);

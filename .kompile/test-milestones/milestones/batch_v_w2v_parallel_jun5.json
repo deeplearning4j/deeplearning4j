@@ -1,0 +1,17 @@
+{
+  "batch": "V",
+  "name": "Word2Vec, embeddings, parallel inference tests",
+  "date": "2026-06-05T01:08:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "Word2VecTestsSmall": {"total": 7, "passed": 7, "failed": 0, "errors": 0},
+    "Word2VecDataSetIteratorTest": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "InMemoryLookupTableTest": {"total": 2, "passed": 1, "failed": 0, "errors": 0, "skipped": 1},
+    "ParallelTransformerIteratorTest": {"total": 4, "passed": 4, "failed": 0, "errors": 0},
+    "BatchedInferenceObservableTest": {"total": 4, "passed": 4, "failed": 0, "errors": 0}
+  },
+  "fixes_applied": [
+    "EmbeddingLayerParamInitializer.createWeightMatrix: bypass row-by-row init for WeightInitEmbedding — it needs the full [vocabSize, vectorSize] shape, not [1, vectorSize] per row"
+  ],
+  "summary": "18 tests run, 17 passed, 0 failures, 0 errors, 1 skipped. Fixed Word2VecTestsSmall.testW2VEmbeddingLayerInit (shape mismatch from row-by-row init)."
+}

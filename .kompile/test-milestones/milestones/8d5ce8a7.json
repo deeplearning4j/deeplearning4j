@@ -1,0 +1,16 @@
+{
+  "id": "8d5ce8a7",
+  "branch": "ag_new_release_updates_2",
+  "commit": {"full": "3d3eaafd5a32f249973bd20b4e94cca9aa27efda", "short": "3d3eaafd5a"},
+  "commitMessage": "fix: disable Triton on Windows",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-ggml",
+  "totalTests": 438,
+  "passed": 413,
+  "failed": 6,
+  "skipped": 18,
+  "notes": "6 failures + 1 error. Q4_K/Q5_K/Q6_K round trip correlation ~0 (quant broken). Dequantizer: expected exception not thrown. LFM2 SameDiff exec error. ConversionOptions expected FP16 got FP32. LayerSensitivity negative value.",
+  "tags": ["cpu", "ggml", "nd4j-native"],
+  "timestamp": "2026-06-02T19:07:15Z"
+}

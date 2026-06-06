@@ -1552,9 +1552,9 @@ public class TestTransformOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBooleanAnd(Nd4jBackend backend) {
-        INDArray arr1 = Nd4j.create(new long[]{3, 4}).castTo(DataType.FLOAT);
-        INDArray arr2 = Nd4j.create(new long[]{3, 4}).castTo(DataType.FLOAT);
-        INDArray out = Nd4j.create(new long[]{3, 4}).castTo(DataType.FLOAT);
+        INDArray arr1 = Nd4j.create(new long[]{3, 4}).castTo(DataType.BOOL);
+        INDArray arr2 = Nd4j.create(new long[]{3, 4}).castTo(DataType.BOOL);
+        INDArray out = Nd4j.create(DataType.BOOL, 3, 4);
 
         DynamicCustomOp op = DynamicCustomOp.builder("boolean_and")
                 .addInputs(arr1, arr2)
@@ -1946,8 +1946,10 @@ public class TestTransformOpValidation extends BaseOpValidation {
                         assertEquals(DataType.FLOAT, outputDtype);
                     }
 
-                    assertArrayEquals(new long[0], shape);
-                    assertTrue(empty);
+                    assertArrayEquals(new long[0], shape,
+                        "Op=" + opName + " i=" + i + " scalar=" + scalar + " x.isEmpty=" + x.isEmpty() + " y.isEmpty=" + y.isEmpty() + " shapeInfo=" + java.util.Arrays.toString(l.get(0).asLong()));
+                    assertTrue(empty,
+                        "Op=" + opName + " i=" + i + " scalar=" + scalar + " x.isEmpty=" + x.isEmpty() + " y.isEmpty=" + y.isEmpty() + " shapeInfo=" + java.util.Arrays.toString(l.get(0).asLong()));
 
 
                     INDArray out = Nd4j.empty(isBool ? DataType.BOOL : DataType.FLOAT);

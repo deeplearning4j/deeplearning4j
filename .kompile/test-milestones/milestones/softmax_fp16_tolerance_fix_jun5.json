@@ -1,0 +1,18 @@
+{
+  "id": "softmax_fp16_tolerance_fix_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821+softmax-fp16-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "SoftmaxLaunchBoundsTest",
+  "totalTests": 9,
+  "passed": 9,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "",
+  "notes": "Fix: FP16 softmax tolerance now scales with reduction length (reductionLen * 2e-3, min 0.05). FP16 has ~3 decimal digits precision; large reductions accumulate error proportional to length. FP32 tolerance remains tight at 0.01. All 9 tests pass.",
+  "tags": "cpu,fix-verification,fp16,softmax,tolerance",
+  "timestamp": "2026-06-05T11:45:00Z"
+}

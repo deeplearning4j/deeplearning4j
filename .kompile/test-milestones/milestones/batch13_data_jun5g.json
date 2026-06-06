@@ -1,0 +1,29 @@
+{
+  "id": "batch13_data_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-dsp-zero-kernel-sbs-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 76,
+  "passed": 76,
+  "failed": 0,
+  "errors": 1,
+  "skipped": 0,
+  "classes": {
+    "CompositeDataSetPreProcessorTest": {"run": 5, "pass": 5},
+    "CropAndResizeDataSetPreProcessorTest": {"run": 10, "pass": 10},
+    "CachingDataSetIteratorTest": {"run": 2, "pass": 2},
+    "BalanceMinibatchesTest": {"run": 2, "pass": 2},
+    "TransformsTest": {"run": 11, "pass": 11},
+    "SlicingTests": {"run": 2, "pass": 2},
+    "SlicingTestsC": {"run": 6, "pass": 6},
+    "ShufflesTests": {"run": 38, "pass": 38, "notes": "All 38 tests passed, but JVM crashed SIGABRT immediately after completion"}
+  },
+  "failures": [
+    "ShufflesTests: JVM crash SIGABRT exit 134 after all 38 tests passed — native heap corruption"
+  ],
+  "notes": "All 8 classes ran, all 76 tests pass. ShufflesTests completed all tests but crashed JVM after. longrunning.RandomTests was the crash victim in next fork.",
+  "tags": ["cpu", "dataset", "preprocessor", "slicing", "transform", "shuffle", "crash"],
+  "timestamp": "2026-06-05T23:33:00Z"
+}

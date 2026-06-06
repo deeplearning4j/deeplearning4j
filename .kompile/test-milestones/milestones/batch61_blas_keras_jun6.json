@@ -1,0 +1,31 @@
+{
+  "id": "batch61_blas_keras_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 51,
+  "passed": 48,
+  "failed": 1,
+  "errors": 0,
+  "skipped": 2,
+  "classes": {
+    "Level1Test": {"run": 3, "pass": 3},
+    "Level2Test": {"run": 7, "pass": 7},
+    "Level3Test": {"run": 6, "pass": 6},
+    "LoneTest": {"run": 14, "pass": 14},
+    "LocalResponseTest": {"run": 5, "pass": 5},
+    "LegacyWeightInitTest": {"run": 5, "pass": 3, "skipped": 2},
+    "LoaderIteratorTests": {"run": 2, "pass": 2},
+    "KerasNewLayersTest": {"run": 6, "pass": 6},
+    "ListenerTest": {"run": 3, "pass": 2, "failed": 1, "notes": "testCustomListener: expected 1 got 2 (likely DSP plan compilation count)"},
+    "KerasModelEndToEndTest": {"run": 0, "pass": 0, "notes": "Did not complete in this run — long-running Keras model imports"}
+  },
+  "failures": [
+    "ListenerTest#testCustomListener: expected 1 but got 2 (plan compilation count)"
+  ],
+  "notes": "9 of 10 classes ran (KerasModelEndToEndTest did not complete). 48 tests pass, 1 failure, 2 skipped.",
+  "tags": ["cpu", "blas", "level1", "level2", "level3", "keras", "listener", "local-response"],
+  "timestamp": "2026-06-06T03:15:00Z"
+}

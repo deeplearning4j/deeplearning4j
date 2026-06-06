@@ -1,0 +1,32 @@
+{
+  "id": "batch74_iter_ggml_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 51,
+  "passed": 32,
+  "failed": 1,
+  "errors": 3,
+  "skipped": 15,
+  "classes": {
+    "DataSetIteratorTest": {"run": 11, "pass": 0, "skipped": 11, "notes": "All tests skipped (longrunning/download tests)"},
+    "GGMLTest": {"run": 17, "pass": 17},
+    "FileBatchRecordReaderTest": {"run": 3, "pass": 3, "notes": "2 packages: image.recordreader(1) + api.records.reader(2)"},
+    "LstmImportDiagnosticTest": {"run": 1, "pass": 1},
+    "MiscTests": {"run": 1, "pass": 0, "skipped": 1},
+    "TensorParallelIntegrationTest": {"run": 18, "pass": 11, "failed": 1, "errors": 3, "skipped": 3, "notes": "Multi-GPU assumptions: testAutoDetectSharding expects 16 devices but finds 2; testSingleGpuExecutionUsesLocalComm: no outputs specified; testWeightShardingRowParallel: illegal slice 32"},
+    "RandomPerformanceTests": {"run": 0, "pass": 0, "notes": "Not found in classpath"},
+    "SameDiffMultiThreadTests": {"run": 0, "pass": 0, "notes": "Not found in classpath"}
+  },
+  "failures": [
+    "TensorParallelIntegrationTest#testAutoDetectSharding: expects 16 devices but environment has 2",
+    "TensorParallelIntegrationTest#testSingleGpuExecutionUsesLocalComm: No outputs specified in SameDiff graph",
+    "TensorParallelIntegrationTest#testWeightShardingRowParallel: Illegal slice 32 (slice exceeds array dim)",
+    "TensorParallelIntegrationTest: 1 more error (similar multi-device assumption)"
+  ],
+  "notes": "8 classes attempted, 6 found. 32 pass, 4 failures/errors. DataSetIteratorTest all skipped (download tests). TensorParallel failures are multi-GPU assumptions on single-CPU environment.",
+  "tags": ["cpu", "ggml", "iterator", "file-batch", "lstm-import", "tensor-parallel"],
+  "timestamp": "2026-06-06T04:38:00Z"
+}

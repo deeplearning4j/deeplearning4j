@@ -1,0 +1,16 @@
+{
+  "id": "workspace_27_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "d1b36fa060",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "WorkspaceProviderTests",
+  "totalTests": 27,
+  "passed": 25,
+  "failed": 0,
+  "skipped": 2,
+  "notes": "Fixed: Nd4jWorkspace.notifyScopeEntered() early-return for already-open workspace didn't increment tagScope, causing nested close to reset hostOffset/deviceOffset to 0 and break outer scope.",
+  "tags": "cpu,workspace,nested,fix",
+  "timestamp": "2026-06-05T06:04:00Z"
+}

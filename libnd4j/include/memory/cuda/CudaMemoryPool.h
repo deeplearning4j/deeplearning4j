@@ -370,8 +370,14 @@ class SD_LIB_EXPORT CudaMemoryPool {
    * Failover allocation when primary allocation fails.
    * Tries: trim pool + retry, other GPU devices, pinned host memory.
    * @param actualDeviceId If non-null, receives the device where memory was actually allocated
+   * @param skipSameDeviceRetry When true, skip Step 1 (trim-and-retry on currentDeviceId).
+   *        Set by the proactive soft-limit path — if the soft limit triggered failover to
+   *        route allocations to another device, retrying on the same device defeats the purpose
+   *        (the pool's own usage is low, so trim+retry always succeeds, keeping all allocations
+   *        on the overloaded device while other devices sit idle).
    */
-  void* allocateFailover(size_t size, int currentDeviceId, int* actualDeviceId = nullptr);
+  void* allocateFailover(size_t size, int currentDeviceId, int* actualDeviceId = nullptr,
+                         bool skipSameDeviceRetry = false);
 
   static constexpr int MAX_DEVICES = 16;
 

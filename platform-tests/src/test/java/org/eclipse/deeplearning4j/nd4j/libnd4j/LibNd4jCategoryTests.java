@@ -147,7 +147,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("Declarable Operations Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class DeclarableOpsTests {
 
         @ParameterizedTest(name = "{0}")
@@ -163,7 +163,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("Array Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class ArrayTests {
 
         @ParameterizedTest(name = "{0}")
@@ -179,7 +179,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("Convolution Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class ConvolutionTests {
 
         @ParameterizedTest(name = "{0}")
@@ -195,7 +195,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("Attention & NLP Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class AttentionNlpTests {
 
         @ParameterizedTest(name = "{0}")
@@ -211,7 +211,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("Helper Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class HelperTests {
 
         @ParameterizedTest(name = "{0}")
@@ -227,7 +227,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("Memory & Workspace Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class MemoryTests {
 
         @ParameterizedTest(name = "{0}")
@@ -243,7 +243,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("Graph Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class GraphTests {
 
         @ParameterizedTest(name = "{0}")
@@ -259,7 +259,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("Broadcast Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class BroadcastTests {
 
         @ParameterizedTest(name = "{0}")
@@ -275,7 +275,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("Legacy & Parity Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class LegacyTests {
 
         @ParameterizedTest(name = "{0}")
@@ -291,7 +291,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("RNG Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class RngTests {
 
         @ParameterizedTest(name = "{0}")
@@ -307,7 +307,7 @@ public class LibNd4jCategoryTests {
 
     @Nested
     @DisplayName("Backprop Tests")
-    @EnabledIf("nativeTestsAreAvailable")
+    @EnabledIf("org.eclipse.deeplearning4j.nd4j.libnd4j.LibNd4jCategoryTests#nativeTestsAreAvailable")
     class BackpropTestsSuite {
 
         @ParameterizedTest(name = "{0}")

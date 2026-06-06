@@ -1,0 +1,29 @@
+{
+  "id": "batch60_keras_misc_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 37,
+  "passed": 36,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 1,
+  "classes": {
+    "KFoldIteratorTest": {"run": 5, "pass": 5},
+    "KVCacheCheckpointTest": {"run": 11, "pass": 11},
+    "LayerConfigValidationTest": {"run": 7, "pass": 6, "skipped": 1},
+    "KerasMaskingTest": {"run": 1, "pass": 1},
+    "KerasPReLUTest": {"run": 1, "pass": 1},
+    "KerasLeakyReLUTest": {"run": 1, "pass": 1},
+    "KerasNoiseLayerTest": {"run": 3, "pass": 3},
+    "KerasLocallyConnected2DTest": {"run": 1, "pass": 1},
+    "KerasLocallyConnected1DTest": {"run": 1, "pass": 1},
+    "LabelsSourceTest": {"run": 6, "pass": 6}
+  },
+  "failures": [],
+  "notes": "All 10 classes found. 36 tests pass, 1 skipped. Clean.",
+  "tags": ["cpu", "keras", "kfold", "kv-cache", "masking", "prelu", "locally-connected", "labels"],
+  "timestamp": "2026-06-06T03:12:00Z"
+}

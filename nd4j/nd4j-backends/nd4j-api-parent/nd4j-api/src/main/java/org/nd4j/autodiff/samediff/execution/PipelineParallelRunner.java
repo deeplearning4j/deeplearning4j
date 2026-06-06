@@ -259,7 +259,11 @@ public class PipelineParallelRunner implements Closeable {
 
         if (!config.isEnabled()) {
             // Single-stage: just run the full model
-            return fullModel.output(inputs, fullModel.outputs().toArray(new String[0]));
+            List<String> registeredOutputs = fullModel.outputs();
+            if (registeredOutputs == null || registeredOutputs.isEmpty()) {
+                return fullModel.outputAll(inputs);
+            }
+            return fullModel.output(inputs, registeredOutputs.toArray(new String[0]));
         }
 
         // Sequential pipeline execution (inference mode)

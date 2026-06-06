@@ -21,5 +21,5 @@
 package org.deeplearning4j.ui.api;
 
 public enum HttpMethod {
-    GET, PUT, POST
+    GET, PUT, POST, DELETE
 }

@@ -1,0 +1,24 @@
+{
+  "batch": "H",
+  "name": "Lightweight dl4j core tests",
+  "date": "2026-06-05T00:00:00",
+  "backend": "nd4j-native",
+  "fixes_applied": [
+    "WeightInitIdentity: support YXIO format (rank 4, Conv1D/Conv2D) and OIYX format (rank 5, Conv3D) — old code assumed OIYX for all ranks",
+    "ComputationGraph.init: remove redundant asRowVectorView on flattenedParams — was breaking reference equality for clone=false init"
+  ],
+  "tests": {
+    "TestConvolutionModes": {"total": 6, "passed": 6, "failed": 0, "errors": 0},
+    "TestSetGetParameters_MLN": {"total": 2, "passed": 2, "failed": 0, "errors": 0},
+    "TestSetGetParameters_CG": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "TestPreProcessors": {"total": 8, "passed": 8, "failed": 0, "errors": 0},
+    "WeightInitIdentityTest": {"total": 3, "passed": 2, "failed": 0, "errors": 0, "skipped": 1, "note": "testIdConv1D @Disabled"},
+    "WeightInitUtilTest": {"total": 8, "passed": 8, "failed": 0, "errors": 0},
+    "TestInstantiation": {"total": 23, "passed": 0, "failed": 0, "errors": 0, "skipped": 23, "note": "All @Disabled"},
+    "TestDropout_layers": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "TestDropout_conf": {"total": 11, "passed": 11, "failed": 0, "errors": 0},
+    "TestGradientNormalization": {"total": 5, "passed": 5, "failed": 0, "errors": 0},
+    "TestLrChanges": {"total": 5, "passed": 5, "failed": 0, "errors": 0}
+  },
+  "summary": "All active tests pass. Fixed WeightInitIdentity to handle YXIO weight format for 2D conv (rank 4) and OIYX for 3D conv (rank 5). Fixed ComputationGraph.params() reference stability for clone=false initialization."
+}

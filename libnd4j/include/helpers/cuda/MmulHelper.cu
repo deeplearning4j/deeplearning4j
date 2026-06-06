@@ -115,6 +115,13 @@ static thread_local const NDArray* tl_lastCaptureCastSourceB = nullptr;
 static thread_local NDArray* tl_lastCaptureCastArrayA = nullptr;
 static thread_local NDArray* tl_lastCaptureCastArrayB = nullptr;
 
+// Per-cache source buffer tracking for skip-assign optimization.
+// When the source NDArray's DataBuffer pointer hasn't changed since the last
+// assign to a given cache slot, we skip the copy — constant weights (frozen
+// in DSP) are the same every decode step.
+static thread_local std::vector<const void*> tl_castCacheSourcePtrA;
+static thread_local std::vector<const void*> tl_castCacheSourcePtrB;
+
 // Persistent PINNED-HOST cuBLAS scalar parameters for CUDA graph capture.
 // cuBLAS internally enqueues H2D memcpy from the alpha/beta host addresses.
 // During graph capture, these H2D copies are baked into the graph with the
@@ -253,15 +260,29 @@ void MmulHelper::clearCastCache() {
   tl_lastCaptureCastArrayA = nullptr;
   tl_lastCaptureCastArrayB = nullptr;
   tl_ltAlgoCache.clear();
+  tl_castCacheSourcePtrA.clear();
+  tl_castCacheSourcePtrB.clear();
 }
 
 static NDArray* castWithPersistentCache(std::vector<NDArray*>& cache, size_t& index,
                                         NDArray* source, DataType targetType) {
+  // Determine which source-pointer tracker to use (A or B based on cache identity)
+  auto& srcPtrs = (&cache == &tl_castCacheA) ? tl_castCacheSourcePtrA : tl_castCacheSourcePtrB;
+
   if (index < cache.size()) {
     NDArray* cached = cache[index];
     if (cached != nullptr && cached->dataType() == targetType && cached->isSameShape(source)) {
+      // Skip assign if the source DataBuffer hasn't changed (constant weight optimization).
+      // The DataBuffer pointer is stable for frozen constant arrays across decode steps.
+      const void* srcBufPtr = source->dataBuffer() != nullptr ? static_cast<const void*>(source->dataBuffer()) : nullptr;
+      bool sourceChanged = (index >= srcPtrs.size()) || (srcPtrs[index] != srcBufPtr);
+      if (sourceChanged) {
+        cached->assign(source);
+        // Track the source pointer for next time
+        if (index >= srcPtrs.size()) srcPtrs.resize(index + 1, nullptr);
+        srcPtrs[index] = srcBufPtr;
+      }
       index++;
-      cached->assign(source);
       return cached;
     }
 
@@ -273,12 +294,20 @@ static NDArray* castWithPersistentCache(std::vector<NDArray*>& cache, size_t& in
       }
     }
     cached = source->cast(targetType);
-    cache[index++] = cached;
+    cache[index] = cached;
+    // Track source pointer
+    const void* srcBufPtr = source->dataBuffer() != nullptr ? static_cast<const void*>(source->dataBuffer()) : nullptr;
+    if (index >= srcPtrs.size()) srcPtrs.resize(index + 1, nullptr);
+    srcPtrs[index] = srcBufPtr;
+    index++;
     return cached;
   }
 
   NDArray* cached = source->cast(targetType);
   cache.push_back(cached);
+  // Track source pointer
+  const void* srcBufPtr = source->dataBuffer() != nullptr ? static_cast<const void*>(source->dataBuffer()) : nullptr;
+  srcPtrs.push_back(srcBufPtr);
   index++;
   return cached;
 }
@@ -917,9 +946,14 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  const auto cType = C->dataType();
 
  // Mixed-precision handling: when one input is FLOAT32 and the other is HALF,
- // cast the FLOAT32 input to HALF so both are HALF. cuBLAS cublasSgemmEx then handles
- // HALF×HALF→FLOAT32 with FP32 accumulation (tensor cores, much faster than FP32 GEMM).
- // The cast is fast (GPU parallel) and we still get the memory bandwidth benefit of FP16 weights.
+ // Mixed-type handling: when one operand is HALF and the other is FLOAT32
+ // (common with FP16 weight pre-casting via GraphOptimizer), upcast the HALF
+ // operand to FLOAT32 so both match. This preserves activation precision
+ // (no downcast of FLOAT32→HALF which loses bits and compounds across layers)
+ // while cuBLAS gets same-type inputs it requires.
+ //
+ // NOTE: cuBLAS does NOT support mixed A/B types (CUDA_R_16F × CUDA_R_32F) —
+ // it returns CUBLAS_STATUS_NOT_SUPPORTED. Both must match.
  //
  NDArray* castA = nullptr;
  NDArray* castB = nullptr;
@@ -938,77 +972,28 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  // gdn_qkv output was 7x attenuated vs CPU reference). FP32 accumulation
  // only helps during the dot product — it cannot recover precision lost
  // at the cast step. Use cublasSgemm (pure FP32) for FP32 model weights.
- // For models stored natively in FP16, the mixed-precision path below handles
- // them correctly without any autocast.
 
- if (aType != bType && (cType == FLOAT32 || cType == HALF) && major >= 6) {
-   if (aType == FLOAT32 && bType == HALF) {
-     // sameLogicalA shortcut: reuse last cast if same NDArray pointer AND we are
-     // NOT in gap replay. During gap replay, the buffer pool may reuse the same
-     // NDArray pointer for DIFFERENT activations (e.g., rms_norm output from layer 0
-     // vs layer 1 occupies the same pool slot). The content changes even though
-     // the pointer is stable, so the shortcut would return stale cast data.
-     // The shortcut is ONLY safe during capture (content is frozen) or when the
-     // same op is called back-to-back within one step (e.g., q/k/v projections).
-     const bool sameLogicalA =
-         tl_lastCaptureCastArrayA != nullptr && tl_lastCaptureCastSourceA == A
-         && !tl_dspReplayActive;
-     if (useCastCache && sameLogicalA && tl_castIdxA < tl_castCacheA.size()) {
-       // q/k/v and gate/up projections commonly reuse the same row-vector activation
-       // back-to-back during decode. Reuse the already-cast HALF buffer and only
-       // advance the cache index so capture and replay consume buffers in the same order.
-       tl_castIdxA++;
-       effA = tl_lastCaptureCastArrayA;
-     } else if (useCastCache && tl_castIdxA < tl_castCacheA.size()
-                && tl_castCacheA[tl_castIdxA]->dataType() == HALF
-                && tl_castCacheA[tl_castIdxA]->isSameShape(effA)) {
-       // During capture/replay: reuse persistent buffer, assign launches FLOAT→HALF kernel
-       NDArray* cached = tl_castCacheA[tl_castIdxA++];
-       cached->assign(effA);
-       tl_lastCaptureCastSourceA = A;
-       tl_lastCaptureCastArrayA = cached;
-       effA = cached;
+ // Mixed HALF×FLOAT32: upcast the HALF operand to FLOAT32 (preserves precision).
+ // NEVER downcast FLOAT32→HALF — that loses activation precision across 30+ layers.
+ // The upcast is always done here so the cublasGemmEx fallback path works correctly.
+ // The cublasLt path (tryLtMatmul) uses origAType/origBType for descriptors but
+ // the upcast data is harmless since Lt will handle the type mismatch via its API.
+ if (cType == FLOAT32 && A->dataType() != B->dataType() && major >= 6) {
+   if (A->dataType() == HALF && B->dataType() == FLOAT32) {
+     // Weight is HALF, activation is FLOAT32 → upcast weight to FLOAT32
+     if (useCastCache) {
+       effA = castWithPersistentCache(tl_castCacheA, tl_castIdxA, effA, FLOAT32);
      } else {
-       if (useCastCache) {
-         NDArray* cached = castWithPersistentCache(tl_castCacheA, tl_castIdxA, effA, HALF);
-         tl_lastCaptureCastSourceA = A;
-         tl_lastCaptureCastArrayA = cached;
-         effA = cached;
-       } else {
-         castA = effA->cast(HALF);
-         effA = castA;
-         tl_lastCaptureCastSourceA = nullptr;
-         tl_lastCaptureCastArrayA = nullptr;
-       }
+       castA = effA->cast(FLOAT32);
+       effA = castA;
      }
-   } else if (aType == HALF && bType == FLOAT32) {
-     // Same logic for B: disable shortcut during gap replay
-     const bool sameLogicalB =
-         tl_lastCaptureCastArrayB != nullptr && tl_lastCaptureCastSourceB == B
-         && !tl_dspReplayActive;
-     if (useCastCache && sameLogicalB && tl_castIdxB < tl_castCacheB.size()) {
-       tl_castIdxB++;
-       effB = tl_lastCaptureCastArrayB;
-     } else if (useCastCache && tl_castIdxB < tl_castCacheB.size()
-                && tl_castCacheB[tl_castIdxB]->dataType() == HALF
-                && tl_castCacheB[tl_castIdxB]->isSameShape(effB)) {
-       NDArray* cached = tl_castCacheB[tl_castIdxB++];
-       cached->assign(effB);
-       tl_lastCaptureCastSourceB = B;
-       tl_lastCaptureCastArrayB = cached;
-       effB = cached;
+   } else if (A->dataType() == FLOAT32 && B->dataType() == HALF) {
+     // Activation is FLOAT32, weight is HALF → upcast weight to FLOAT32
+     if (useCastCache) {
+       effB = castWithPersistentCache(tl_castCacheB, tl_castIdxB, effB, FLOAT32);
      } else {
-       if (useCastCache) {
-         NDArray* cached = castWithPersistentCache(tl_castCacheB, tl_castIdxB, effB, HALF);
-         tl_lastCaptureCastSourceB = B;
-         tl_lastCaptureCastArrayB = cached;
-         effB = cached;
-       } else {
-         castB = effB->cast(HALF);
-         effB = castB;
-         tl_lastCaptureCastSourceB = nullptr;
-         tl_lastCaptureCastArrayB = nullptr;
-       }
+       castB = effB->cast(FLOAT32);
+       effB = castB;
      }
    }
  }
@@ -1121,7 +1106,11 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({pC}, {pA, pB});
 
    // cuBLAS Lt fast path for decoder logits projection [1,K] x [K,N] -> [1,N]
-   // Mixed precision: FLOAT32 x HALF -> FLOAT32 with large N (vocab)
+   // Use ORIGINAL types (before upcast) for Lt descriptors — cublasLt natively
+   // supports mixed A/B types via separate layout descriptors. After upcast,
+   // pA/pB data is FLOAT32 but Lt is told the type is CUDA_R_16F for the HALF
+   // operand — WRONG: Lt would read FLOAT32 data as HALF. So use effAType/effBType
+   // (post-upcast) which correctly reflect the actual data in pA/pB.
    const cudaDataType ltAType = effAType == HALF ? CUDA_R_16F : CUDA_R_32F;
    const cudaDataType ltBType = effBType == HALF ? CUDA_R_16F : CUDA_R_32F;
    const cudaDataType ltCType = cType == HALF ? CUDA_R_16F : CUDA_R_32F;
@@ -1191,7 +1180,8 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
                              &getCublasScalars()->betaF,
                              pC->specialBuffer(), CUDA_R_16F, ldcFast,
                              CUBLAS_COMPUTE_32F, gemmAlgo);
-     } else {
+     } else if (typeHalfFloat) {
+       // HALF inputs with FP32 output, row-vector fast path
        getCublasScalars()->alphaF = static_cast<float>(alpha);
        getCublasScalars()->betaF  = static_cast<float>(beta);
        status = cublasGemmEx(*handle, CUBLAS_OP_N, CUBLAS_OP_N,
@@ -1307,28 +1297,22 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  NDArray* effA = const_cast<NDArray*>(A);
  NDArray* effX = const_cast<NDArray*>(X);
 
- // Mixed-type cast: align operands when one is HALF/BF16 and other is FLOAT32.
- // Cast the FLOAT32 operand down to HALF/BF16 so both match → routes to
- // typeHalfFloat path (cublasGemmEx HALF×HALF→FLOAT32 with FP32 accumulation).
- // The activation vector is small (model_dim elements), so cast overhead is minimal.
- // This is REQUIRED for correctness: without it, usualGemv interprets HALF weight
- // memory as FLOAT32 bytes → complete garbage output (root cause of VLM EOS bug).
+ // Mixed-type handling for GEMV: cublasSgemv/cublasGemmEx require same type for A and X.
+ // When one is HALF and the other FLOAT32, upcast the HALF operand to FLOAT32.
+ // NEVER downcast FLOAT32→HALF — that loses precision across transformer layers.
  if (A->dataType() != X->dataType() && (yType == FLOAT32 || yType == HALF) && major >= 6) {
    if (A->dataType() == HALF && X->dataType() == FLOAT32) {
-     // Weight is HALF (pre-cast by GraphOptimizer), activation is FLOAT32 → cast X to HALF
-     castX = X->cast(HALF);
-     effX = castX;
+     // Weight is HALF, vector is FLOAT32 → upcast weight to FLOAT32
+     castA = A->cast(FLOAT32);
+     effA = castA;
    } else if (A->dataType() == FLOAT32 && X->dataType() == HALF) {
-     // Weight is FLOAT32, activation is HALF → cast X (small vector) up to FLOAT32
-     // This avoids casting the large weight matrix; uses cublasSgemv (pure FP32).
+     // Weight is FLOAT32, vector is HALF → upcast vector to FLOAT32
      castX = X->cast(FLOAT32);
      effX = castX;
    } else if (A->dataType() == BFLOAT16 && X->dataType() == FLOAT32) {
-     // Cast X (small vector) down to BF16 to match weight
-     castX = X->cast(BFLOAT16);
-     effX = castX;
+     castA = A->cast(FLOAT32);
+     effA = castA;
    } else if (A->dataType() == FLOAT32 && X->dataType() == BFLOAT16) {
-     // Cast X (small vector) up to FLOAT32 to match weight
      castX = X->cast(FLOAT32);
      effX = castX;
    }

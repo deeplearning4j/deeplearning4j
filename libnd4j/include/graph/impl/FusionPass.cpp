@@ -764,8 +764,7 @@ int FusionPass::applyFusions(
                     }
 
                     if (fusedInputIdx >= 0) {
-                        slot.flags.inPlaceFused = true;
-                        slot.flags.inPlaceFusedInputIdx = fusedInputIdx;
+                        slot.enableInPlaceFusion(fusedInputIdx);
                     }
                 }
 
@@ -887,8 +886,7 @@ int FusionPass::applyFusions(
                 }
 
                 if (fusedInputIdx >= 0) {
-                    actSlot.flags.inPlaceFused = true;
-                    actSlot.flags.inPlaceFusedInputIdx = fusedInputIdx;
+                    actSlot.enableInPlaceFusion(fusedInputIdx);
                     applied++;
                     DSP_DIAG(FUSION, "applied BIAS_ACTIVATION fusion, slots %d-%d",
                               fusion.startSlot, fusion.endSlot);
@@ -949,8 +947,7 @@ int FusionPass::applyFusions(
                     }
 
                     if (fusedInputIdx >= 0) {
-                        slot.flags.inPlaceFused = true;
-                        slot.flags.inPlaceFusedInputIdx = fusedInputIdx;
+                        slot.enableInPlaceFusion(fusedInputIdx);
                     }
                 }
 

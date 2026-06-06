@@ -95,7 +95,7 @@ public class TestGenerationPipeline {
         // --- 2. Process a synthetic test image ---
         long t2 = System.currentTimeMillis();
         BufferedImage testImage = createTestImage();
-        PreprocessorConfig ppConfig = PreprocessorConfig.forSmolDocling();
+        PreprocessorConfig ppConfig = PreprocessorConfig.fromFile(VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_PREPROCESSOR_CONFIG).getModelFile());
         VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromConfig(ppConfig);
 
         ImageTiler.SplitImageResult tileResult = ImageTiler.splitImageForVLM(testImage, ppConfig.getTargetHeight());

@@ -86,7 +86,7 @@ public class SameDiffDense extends SameDiffLayer {
     public void defineParameters(SDLayerParams params) {
         params.clear();
         params.addWeightParam(DefaultParamInitializer.WEIGHT_KEY, new long[]{nIn, nOut});
-        params.addBiasParam(DefaultParamInitializer.BIAS_KEY, new long[]{1, nOut});
+        params.addBiasParam(DefaultParamInitializer.BIAS_KEY, new long[]{nOut});
     }
 
     @Override

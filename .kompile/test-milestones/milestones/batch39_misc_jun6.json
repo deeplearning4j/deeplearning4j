@@ -1,0 +1,31 @@
+{
+  "id": "batch39_misc_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-basedl4jtest-fix",
+  "passing": false,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 28,
+  "passed": 26,
+  "failed": 0,
+  "errors": 1,
+  "skipped": 1,
+  "classes": {
+    "TestReshapeViewStrides": {"run": 4, "pass": 4},
+    "TestDupDebug2": {"run": 2, "pass": 2},
+    "TestAttentionPerformance": {"run": 2, "pass": 2},
+    "TestTensorOpsValidation": {"run": 2, "pass": 2},
+    "TestModelCatalog": {"run": 5, "pass": 5},
+    "TestSystemInfoPrintListener": {"run": 1, "pass": 0, "skipped": 1, "notes": "Skipped — requires system info listener deps"},
+    "TestOptimizerImport": {"run": 7, "pass": 7},
+    "TestOnnxConverter": {"run": 2, "pass": 1, "errors": 1, "notes": "testOnnxTraining: IllegalArgument — duplicate variable name 'input.1' during ONNX import"},
+    "TestQwen35SsmConv1dRawBytes": {"run": 1, "pass": 1},
+    "TestStrumpf": {"run": 2, "pass": 2}
+  },
+  "failures": [
+    "TestOnnxConverter.testOnnxTraining: IllegalArgument — Another variable with the name input.1 already exists"
+  ],
+  "notes": "10 classes ran, 26 tests pass, 1 error (ONNX import duplicate variable), 1 skipped. TestAttentionPerformance took 5s, TestOnnxConverter 15s.",
+  "tags": ["cpu", "reshape", "attention-perf", "tensor-ops", "model-catalog", "onnx-converter", "keras-optimizer", "qwen-ssm", "strumpf"],
+  "timestamp": "2026-06-06T01:15:00Z"
+}

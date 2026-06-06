@@ -1,0 +1,65 @@
+{
+  "milestone": "sort_fix_jun5",
+  "date": "2026-06-05",
+  "result": "PASS",
+  "tests_run": 14,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "test_class": "NdArraySortTest",
+  "backend": "nd4j-native",
+  "fixes_applied": [
+    {
+      "id": "bug1",
+      "description": "CpuNDArrayFactory.sort(INDArray, boolean, long...) called nativeOps.sort() (flat sort) instead of nativeOps.sortTad(). Fixed to call sortTad with dimension array and length.",
+      "file": "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common/src/main/java/org/nd4j/linalg/cpu/nativecpu/CpuNDArrayFactory.java"
+    },
+    {
+      "id": "bug2",
+      "description": "sortGeneric() in specials_single.hpp used quickSort_parallel() which treated non-contiguous views as contiguous. Fixed with INDEX2COORDS/COORDS2INDEX path for non-contiguous arrays.",
+      "file": "libnd4j/include/ops/impl/specials_single.hpp"
+    },
+    {
+      "id": "bug3",
+      "description": "sortTadGeneric() called quickSort_parallel(dx, xTadLength, descending) passing xTadLength as numThreads. Fixed to call sortGeneric(dx, descending) per TAD.",
+      "file": "libnd4j/include/ops/impl/specials_single.hpp"
+    },
+    {
+      "id": "bug4",
+      "description": "sortTadGeneric() called tadForDimensions(..., false) where false=0 was passed as LongType dimLength. ConstantTadHelper::tadForDimensions with dimLength=0 creates a single whole-array TAD instead of per-row TADs. Fixed by passing dimensionLength instead of false.",
+      "file": "libnd4j/include/ops/impl/specials_single.hpp",
+      "line": 528
+    },
+    {
+      "id": "bug5",
+      "description": "BaseNDArray.putScalar(long i, double value) for rank-1 arrays wrote to data.put(i * stride(0), value) without applying the array's offset(). For rank-1 TAD views with non-zero offset (e.g., row 1 of a 2x2 matrix has offset=2), this overwrote the wrong buffer positions. Fixed by using offset() + i * stride(0).",
+      "file": "nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ndarray/BaseNDArray.java",
+      "line": 1653
+    },
+    {
+      "id": "compile_fix",
+      "description": "Pre-existing VLMImagePreprocessor.defaultPreprocessor() references in 3 test files caused platform-tests to fail compilation when nd4j-api was updated. Replaced with fromModelDirectory(new File('.')) or fromConfig(new PreprocessorConfig()) in VisionEncoderUtilsParallelTest.",
+      "files": [
+        "platform-tests/src/test/java/org/eclipse/deeplearning4j/vlm/TestVLMPdfImageLoader.java",
+        "platform-tests/src/test/java/org/eclipse/deeplearning4j/vlm/TestVLMModelImportPipeline.java",
+        "platform-tests/src/test/java/org/eclipse/deeplearning4j/vlm/model/VisionEncoderUtilsParallelTest.java"
+      ]
+    }
+  ],
+  "tests": [
+    "testSort",
+    "testSortRows",
+    "testSortColumns",
+    "testSortWithIndicesDescending",
+    "testNativeSortView1",
+    "testNativeSort1",
+    "testNativeSort2",
+    "testNativeSort3",
+    "testNativeSort3_1",
+    "testNativeSortAlongDimension1",
+    "testNativeSortAlongDimension2",
+    "testNativeSortAlongDimension3",
+    "shuffleTest",
+    "testSmallSort"
+  ]
+}

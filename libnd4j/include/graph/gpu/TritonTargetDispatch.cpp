@@ -855,12 +855,11 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     DspCompilePhaseGuard phase12Guard(compileId, "TTIR_TO_TTGIR", sd::graph::DSP_DIAG_COMPILE);
     {
     mlir::PassManager pm(moduleOp->getContext());
-    // Suppress stderr spam from MLIR's PassManager/Verifier during Triton compilation.
-    // Triton 3.6's TritonToTritonGPU conversion produces transient invalid states
-    // (SymbolTable trait, IsolatedFromAbove) that spam stderr but don't indicate
-    // real failures.  The ScopedDiagnosticHandler installed before pm.run() below
-    // redirects all diagnostics away from stderr.  Real failures are still detected
-    // via the pm.run() return value and the post-pipeline verify.
+    // Disable inter-pass MLIR verification. Triton 3.6's TritonToTritonGPU conversion
+    // produces transient invalid states (SymbolTable trait, IsolatedFromAbove) that
+    // The inter-pass verifier catches real IR issues (e.g., shape mismatches in
+    // tt.store). Keep it ON so malformed IR is rejected early rather than silently
+    // producing wrong results.  Fix the IR generation instead of disabling the check.
     if (tritonVerbose) {
 #ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
       pm.addInstrumentation(
@@ -991,7 +990,6 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       moduleOp->getContext()->appendDialectRegistry(phase4Registry);
     }
     mlir::PassManager pm(moduleOp->getContext());
-    // Diagnostics suppressed via ScopedDiagnosticHandler below (same rationale as TTIR->TTGIR).
     if (tritonVerbose) {
 #ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
       pm.addInstrumentation(

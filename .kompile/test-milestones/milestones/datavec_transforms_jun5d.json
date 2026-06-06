@@ -1,0 +1,28 @@
+{
+  "id": "datavec_transforms_jun5d",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-svd-deflation-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 88,
+  "passed": 88,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "TestTransforms": {"run": 53, "pass": 53},
+    "TestConditions": {"run": 13, "pass": 13},
+    "TestMultiOpReduce": {"run": 7, "pass": 7},
+    "TestWindowFunctions": {"run": 5, "pass": 5},
+    "TestTransformProcess": {"run": 3, "pass": 3},
+    "TestFilters": {"run": 3, "pass": 3},
+    "TestReduce": {"run": 1, "pass": 1},
+    "TestSequenceSplit": {"run": 1, "pass": 1},
+    "TestReduceSequenceByWindowFunction": {"run": 1, "pass": 1},
+    "TestSchemaMethods": {"run": 1, "pass": 1}
+  },
+  "notes": "Datavec transforms batch: all 88 tests pass. Covers transform/condition/filter/reduce/schema/sequence operations.",
+  "tags": ["cpu", "datavec", "transforms", "verification"],
+  "timestamp": "2026-06-05T18:16:00Z"
+}

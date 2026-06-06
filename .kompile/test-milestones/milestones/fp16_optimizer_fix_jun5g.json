@@ -1,0 +1,20 @@
+{
+  "id": "fp16_optimizer_fix_jun5g",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-horizontal-fusion-resolveRank-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 6,
+  "passed": 6,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "FP16FundamentalsTest": {"run": 6, "pass": 6}
+  },
+  "fix": "HorizontalFusionOptimizations.resolveRank() simplified to direct shape lookup only, removed BFS that could reach 2D weight matrices and return wrong rank for 3D activations. Added sibling matmul output shape check before resolveRankSafe fallback. Returns -1 when rank unknown to skip fusion safely.",
+  "notes": "All 6 FP16 tests pass including optimizer + DSP execution modes. stridedSlice no longer gets wrong-rank begin/end arrays.",
+  "tags": ["cpu", "fp16", "optimizer", "horizontal-fusion", "strided-slice", "fix"],
+  "timestamp": "2026-06-05T21:20:00Z"
+}

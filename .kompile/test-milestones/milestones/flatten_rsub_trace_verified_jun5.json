@@ -1,0 +1,18 @@
+{
+  "id": "flatten_rsub_trace_verified_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "a420800821+flatten+rsub+trace",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "testClass": "NdArraySerdeTest,NdArrayBroadcastMathTest,TestMiscOpValidation",
+  "totalTests": 4,
+  "passed": 4,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failedTests": "",
+  "notes": "3 fixes verified after CPU C++ rebuild: (1) flatten.cpp F-order decomposition — testToFlattened2+testToFlattenedOrder pass. (2) NDArray.hXX applyScalarArr cast guard — testRsub passes. (3) trace.cpp rank-2 special case — testTrace passes. All previously failing.",
+  "tags": "cpu,fix-verification,flatten,rsub,trace",
+  "timestamp": "2026-06-05T12:35:00Z"
+}

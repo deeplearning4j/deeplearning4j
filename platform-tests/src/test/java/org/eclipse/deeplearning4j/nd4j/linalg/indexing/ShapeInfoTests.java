@@ -291,12 +291,15 @@ public class ShapeInfoTests  extends BaseNd4jTestWithBackends  {
         assertEquals(59, view.getDouble(2, 3, 1), 1e-5);
     }
 
-    // Additional test to cover EWS (Element Wise Stride)
+    // Test that a standard C-order contiguous array has expected strides
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEWS(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new float[9], new int[]{3, 3}, 'c');
-        assertEquals(1, arr.elementWiseStride());
+        // For a contiguous C-order [3,3] array, strides should be [3, 1]
+        assertEquals(3, arr.stride(0));
+        assertEquals(1, arr.stride(1));
+        assertEquals('c', arr.ordering());
     }
 
     // Additional test to cover data type conversion

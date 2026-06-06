@@ -1,0 +1,13 @@
+{
+  "batch": "T",
+  "name": "Graph structure, BERT iterator, CNN sentence iterator tests",
+  "date": "2026-06-05T01:01:00",
+  "backend": "nd4j-native",
+  "tests": {
+    "TestGraph": {"total": 3, "passed": 3, "failed": 0, "errors": 0},
+    "TestGraphHuffman": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+    "TestBertIterator": {"total": 7, "passed": 7, "failed": 0, "errors": 0},
+    "TestCnnSentenceDataSetIterator": {"total": 4, "passed": 4, "failed": 0, "errors": 0}
+  },
+  "summary": "15 tests run, 15 passed, 0 failures, 0 errors. All graph and iterator tests pass cleanly."
+}

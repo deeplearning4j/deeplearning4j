@@ -1,0 +1,19 @@
+{
+  "id": "re-enabled-session8h",
+  "branch": "ag_new_release_updates_2",
+  "passing": true,
+  "module": "batch5a-memory-closeable",
+  "totalTests": 17,
+  "passed": 14,
+  "failed": 0,
+  "skipped": 3,
+  "notes": "Session 8h: Memory/closeable tests. 14/17 pass, 3 skipped (CUDA-only DeviceLocal tests). All 0 failures.",
+  "testResults": [
+    {"test": "CloseableTests", "run": 4, "passed": 4, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "AccountingTests", "run": 6, "passed": 6, "failed": 0, "skipped": 0, "status": "PASS"},
+    {"test": "DeviceLocalNDArrayTests (nd4j)", "run": 5, "passed": 2, "failed": 0, "skipped": 3, "status": "PASS"},
+    {"test": "DeviceLocalNDArrayTests (jita)", "run": 2, "passed": 2, "failed": 0, "skipped": 0, "status": "PASS"}
+  ],
+  "tags": ["cpu", "nd4j-native", "batch-testing", "memory-tests"],
+  "timestamp": "2026-06-04T13:29:00Z"
+}

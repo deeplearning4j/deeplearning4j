@@ -34,6 +34,7 @@ import org.nd4j.autodiff.samediff.optimize.optimizations.IdentityFunctionOptimiz
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -82,7 +83,9 @@ public class TestOptimization extends BaseNd4jTestWithBackends {
 
         assertFalse(optimized.hasVariable("c"));
 
-        assertEquals(sd.outputSingle(Collections.emptyMap(), "out"), optimized.outputSingle(Collections.emptyMap(), "out"));
+        INDArray origResult = sd.outputSingle(Collections.emptyMap(), "out");
+        INDArray optResult = optimized.outputSingle(Collections.emptyMap(), "out");
+        assertEquals(origResult.getDouble(0), optResult.getDouble(0), 1e-5);
 
         //Check the
 
@@ -121,7 +124,8 @@ public class TestOptimization extends BaseNd4jTestWithBackends {
 
         assertFalse(optimized.hasVariable("c"));
 
-        assertEquals(sd.outputSingle(Collections.emptyMap(), "out"), optimized.outputSingle(Collections.emptyMap(), "out"));
+        assertEquals(sd.outputSingle(Collections.emptyMap(), "out").getDouble(0),
+                optimized.outputSingle(Collections.emptyMap(), "out").getDouble(0), 1e-5);
 
     }
 

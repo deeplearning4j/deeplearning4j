@@ -1044,6 +1044,10 @@ public class TrainModule implements UIModule {
         Map<String, Object> updateHistograms = getHistograms(layerIdx, gi, StatsType.Updates, lastUpdate);
         result.put("updateHist", updateHistograms);
 
+        //Gradients histogram data
+        Map<String, Object> gradientHistograms = getHistograms(layerIdx, gi, StatsType.Gradients, lastUpdate);
+        result.put("gradientHist", gradientHistograms);
+
         rc.response()
                 .putHeader("content-type", "application/json")
                 .end(asJson(result));

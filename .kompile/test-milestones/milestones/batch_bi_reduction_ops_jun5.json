@@ -1,0 +1,15 @@
+{
+  "batch": "BI-ReductionOps",
+  "name": "TestReductionOpValidation on nd4j-native",
+  "date": "2026-06-05T04:45:00",
+  "backend": "nd4j-native",
+  "results": {
+    "total": 40,
+    "pass": 40,
+    "fail": 0,
+    "error": 0,
+    "skip": 0
+  },
+  "failures": [],
+  "status": "all_pass"
+}

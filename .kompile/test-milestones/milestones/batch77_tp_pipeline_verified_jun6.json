@@ -1,0 +1,20 @@
+{
+  "id": "batch77_tp_pipeline_verified_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-tp-pipeline-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 18,
+  "passed": 15,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 3,
+  "classes": {
+    "TensorParallelIntegrationTest": {"run": 18, "pass": 15, "skip": 3, "notes": "15 pass, 3 multi-GPU tests correctly skipped on CPU. Fixes: sliceAlongDimension interval indexing, empty outputs fallback in TensorParallelRunner.execute() and PipelineParallelRunner.executeInference()"}
+  },
+  "failures": [],
+  "notes": "Full TensorParallelIntegrationTest class verified after 3 fixes: (1) sliceAlongDimension changed from fancy indexing to NDArrayIndex.interval, (2) TensorParallelRunner.execute() empty outputs fallback to outputAll(), (3) PipelineParallelRunner.executeInference() same empty outputs fix. All 15 runnable tests pass.",
+  "tags": ["cpu", "fix-verification", "tensor-parallel", "pipeline-parallel"],
+  "timestamp": "2026-06-06T05:04:00Z"
+}

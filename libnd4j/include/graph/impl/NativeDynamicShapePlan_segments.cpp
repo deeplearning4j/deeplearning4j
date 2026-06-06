@@ -1775,7 +1775,11 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   // go straight to slot-by-slot execution. This eliminates shape key overhead
   // (~5-10us per segment) that real graph replay also avoids.
   bool fastPath = false;
-  if (execCount >= 2 && !seg.exec.needsArgRefresh()) {
+  // Never fast-path when variable external inputs exist: their data may have
+  // been mutated in-place (e.g. putScalar during gradient checking) without
+  // changing the pointer, so the generation counter won't detect the change.
+  bool hasVariableInputs = !cachedVariableExtIndices_.empty();
+  if (execCount >= 2 && !seg.exec.needsArgRefresh() && !hasVariableInputs) {
     fastPath = true;
     DSP_DIAG(EMULATED_REPLAY,
              "  FAST PATH: args current (gen %llu), skipping key recomputation",
@@ -1884,7 +1888,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       if (slot.isViewCapableOp())  numViewOps++;
       if (slot.fusedChain.isFusedChainHead) { numFusedChains++; totalFusedChainOps += slot.fusedChain.fusedChainLength; }
       if (slot.fusedChain.isFusedChainTail) numFusedTails++;
-      if (slot.flags.inPlaceFused)     numInPlaceFused++;
+      if (slot.isInPlaceFused())        numInPlaceFused++;
       if (slot.isDataDependent())  numDataDependent++;
       if (slot.cf.controlFlowType != CF_NONE) numControlFlow++;
 
@@ -2119,6 +2123,48 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     DSP_DIAG(EMULATED_REPLAY,
              "  ** EXECUTION FAILED: status=%d — graph capture would also fail here",
              (int)status);
+  }
+
+  // ── EMULATED_REPLAY segPhase lifecycle transitions ─────────────────────
+  // executeSegmentSlotBySlot increments executionCount, so execCount (captured
+  // at entry) is now the count BEFORE this execution completed.
+  //
+  // Lifecycle:
+  //   execCount==0 → warmup done; advance segPhase WARMUP→CAPTURING so that
+  //                  the next call sees segPhase.needsCapture()==true.
+  //   execCount==1 → "capture" step done (for emulated replay there is no
+  //                  real capture, so we stay in CAPTURING after exec 0
+  //                  transitions us there).
+  //   execCount>=2 + args stable → segment is in steady state; seal it so
+  //                  segmentIsFullyReplayingForPlanPhase() returns true and
+  //                  the plan can advance to REPLAYING.
+  //
+  // All transitions are guarded by the current segPhase to be idempotent
+  // (re-entry is safe after invalidation).
+  if (status == Status::OK) {
+    if (execCount == 0 && seg.exec.segPhase.needsWarmup()) {
+      // Warmup complete — advance to CAPTURING (emulated replay skips the
+      // separate COMPILING sub-phase since there is no backend to compile).
+      DSP_DIAG(EMULATED_REPLAY,
+               "  LIFECYCLE: seg[%d-%d] BUILDING:WARMUP -> BUILDING:CAPTURING "
+               "(warmup done, execCount=%d)",
+               seg.def.startSlot, seg.def.endSlot, execCount);
+      seg.exec.segPhase.skipCompileToCapturing();
+      seg.exec.compiledByBackend = "emulated_replay";
+      seg.exec.lifecycleState = GraphSegmentExec::SegmentLifecycleState::CAPTURE_PENDING;
+    } else if (execCount >= 1 && seg.exec.segPhase.needsCapture() &&
+               !seg.exec.needsArgRefresh()) {
+      // Args are stable and we have completed the "capture" step — seal.
+      // execCount >= 1 ensures at least 2 total executions have occurred
+      // (one warmup + this one) before we declare steady state.
+      DSP_DIAG(EMULATED_REPLAY,
+               "  LIFECYCLE: seg[%d-%d] BUILDING:CAPTURING -> SEALED "
+               "(args stable, execCount=%d)",
+               seg.def.startSlot, seg.def.endSlot, execCount);
+      seg.exec.segPhase.seal();
+      seg.exec.outcome = SegmentExecOutcome::ZERO_KERNEL_SBS;
+      seg.exec.lifecycleState = GraphSegmentExec::SegmentLifecycleState::REPLAYING;
+    }
   }
 
   // Note: executeSegmentSlotBySlot already increments seg.exec.executionCount

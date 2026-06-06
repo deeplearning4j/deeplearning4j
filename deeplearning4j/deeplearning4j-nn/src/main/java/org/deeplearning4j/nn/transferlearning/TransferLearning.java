@@ -1001,8 +1001,9 @@ public class TransferLearning {
 
             int[] topologicalOrder = newGraph.topologicalSortOrder();
             org.deeplearning4j.nn.graph.vertex.GraphVertex[] vertices = newGraph.getVertices();
-            if (!editedVertices.isEmpty()) {
+            if (!editedVertices.isEmpty() || newGraph.numParams() != origGraph.numParams()) {
                 //set params from orig graph as necessary to new graph
+                //Per-layer copy is required when vertices were edited or removed (param count differs)
                 for (int i = 0; i < topologicalOrder.length; i++) {
 
                     if (!vertices[topologicalOrder[i]].hasLayer())
@@ -1015,8 +1016,11 @@ public class TransferLearning {
                         continue; //some layers have no params
                     if (editedVertices.contains(layerName))
                         continue; //keep the changed params
-                    INDArray origParams = origGraph.getLayer(layerName).params();
-                    layer.setParams(origParams.dup()); //copy over origGraph params
+                    org.deeplearning4j.nn.api.Layer origLayer = origGraph.getLayer(layerName);
+                    if (origLayer != null) {
+                        INDArray origParams = origLayer.params();
+                        layer.setParams(origParams.dup()); //copy over origGraph params
+                    }
                 }
             } else {
                 newGraph.setParams(origGraph.params());

@@ -1,0 +1,16 @@
+{
+  "id": "fix_integer_gemm_jun5",
+  "branch": "ag_new_release_updates_2",
+  "commit": "f8b74f7ff83a1419d4d39fb10270d5011cecf5f3",
+  "passing": null,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": null,
+  "passed": null,
+  "failed": null,
+  "errors": null,
+  "skipped": null,
+  "notes": "Fixed: BaseLevel3.gemm() (both overloads) now handles integer data types by casting to FLOAT32 for BLAS computation, then casting back to the original integer type. Previously, integer arrays fell through to validateDataType(HALF,...) which threw validation errors. Affects: testMatmulMethod_1 through testMatmulMethod_8 (INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64). File: nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/blas/impl/BaseLevel3.java. nd4j-api installed successfully with Java-only build.",
+  "tags": ["cpu", "gemm", "integer", "java-fix", "nd4j-api"],
+  "timestamp": "2026-06-05T16:45:00Z"
+}

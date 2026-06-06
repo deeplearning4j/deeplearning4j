@@ -1325,6 +1325,15 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 // preserves the old same-shape buffer for assign-style updates; remove first
                 // so callers can safely release the previously associated INDArray.
                 variablesArrays.removeArray(variable.name());
+                // If the exact same INDArray instance is already stored for a different variable,
+                // dup it to prevent shared-buffer aliasing. Shared buffers corrupt numerical
+                // gradient checks: perturbing one variable inadvertently perturbs the other.
+                for (String s : variablesArrays.arrayNames()) {
+                    if (variablesArrays.getArray(s) == arr) {
+                        arr = arr.dup();
+                        break;
+                    }
+                }
                 variablesArrays.setArray(variable.name(), arr);
                 break;
             case CONSTANT:
@@ -1780,6 +1789,48 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         }
         for (SameDiff sd : this.sameDiffFunctionInstances.values()) {
             sd.clearOpInputs();
+        }
+    }
+
+    /**
+     * Remove a single VARIABLE-type array by name.
+     *
+     * <p>Use this to clear stale KV cache variable arrays between generations
+     * without disturbing model weight variables.</p>
+     *
+     * @param varName the variable name to remove
+     */
+    public void removeVariableArray(String varName) {
+        if (varName != null && variablesArrays.hasArray(varName)) {
+            variablesArrays.removeArray(varName);
+        }
+    }
+
+    /**
+     * Remove all VARIABLE-type arrays whose data buffer has been released or deallocated.
+     *
+     * <p>After a session reset, intermediate arrays referenced by variable-type SDVariables
+     * may have their native data buffers freed while the Java INDArray wrapper survives.
+     * This method removes exactly those stale references, preventing use-after-free when
+     * subgraph ops (e.g., attn_mask_reformat/Shape) read from these variables.</p>
+     *
+     * <p>Live model weight arrays (layernorm, attention, etc.) are preserved because their
+     * data buffers remain valid (non-null pointer, not closed).</p>
+     */
+    public void removeReleasedVariableArrays() {
+        for (String name : new ArrayList<>(variablesArrays.arrayNames())) {
+            INDArray arr = variablesArrays.getArray(name);
+            if (arr == null) continue;
+            boolean stale = arr.wasClosed();
+            if (!stale && arr.data() != null) {
+                stale = arr.data().wasClosed() || arr.data().pointer() == null || arr.data().pointer().isNull();
+            }
+            if (stale) {
+                variablesArrays.removeArray(name);
+            }
+        }
+        for (SameDiff sd : this.sameDiffFunctionInstances.values()) {
+            sd.removeReleasedVariableArrays();
         }
     }
 
@@ -2687,6 +2738,21 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 placeholders.put(s, ds.getLabelsMaskArray(count++));
             }
         }
+
+        // Validate placeholder shapes match the declared shapes
+        for (Map.Entry<String, INDArray> e : placeholders.entrySet()) {
+            SDVariable v = getVariable(e.getKey());
+            if (v != null && v.getVariableType() == VariableType.PLACEHOLDER && e.getValue() != null) {
+                long[] phShape = v.placeholderShape();
+                if (phShape != null && !Shape.shapeMatchesPlaceholder(phShape, e.getValue().shape())) {
+                    throw new IllegalStateException("Invalid array shape: cannot associate an array with shape " +
+                            Arrays.toString(e.getValue().shape()) + " with placeholder \"" + e.getKey() +
+                            "\" of shape " + Arrays.toString(phShape) +
+                            ": shape is wrong rank or does not match on one or more dimensions");
+                }
+            }
+        }
+
         return placeholders;
     }
 
@@ -3723,7 +3789,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public SDVariable constant(String name, @NonNull INDArray constant) {
         if(variables.containsKey(name)) {
-            return variables.get(name).getVariable();
+            Variable existing = variables.get(name);
+            if(existing.getVariable() != null && existing.getVariable().getVariableType() == VariableType.CONSTANT) {
+                return existing.getVariable();
+            }
+            throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
         }
 
         if (name == null || name.length() < 1)
@@ -3769,6 +3839,9 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @return SDVariable placeholder
      */
     public SDVariable placeHolder(@NonNull String name, DataType dataType, long... shape) {
+        if (variables.containsKey(name)) {
+            throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
+        }
         SDVariable ret = new SDVariable(name, VariableType.PLACEHOLDER, this, shape, dataType);
         variables.put(name, Variable.builder().name(name).variable(ret).build());
         return ret;
@@ -5312,36 +5385,63 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         int closedCount = 0;
         int errors = 0;
 
+        String[] holderNames = {"constantArrays", "variablesArrays", "eagerArrays"};
+        int holderIdx = 0;
         for (ArrayHolder holder : new ArrayHolder[]{ constantArrays, variablesArrays, eagerArrays }) {
+            String holderName = holderNames[holderIdx++];
             if (holder == null) continue;
             List<String> names = new ArrayList<>(holder.arrayNames());
+            log.info("SameDiff.close(): holder={} has {} arrays: {}", holderName, names.size(), names);
             for (String name : names) {
                 INDArray arr;
                 try {
                     arr = holder.removeArray(name);
                 } catch (Exception e) {
+                    log.info("SameDiff.close(): [{}] removeArray threw: {}", name, e.getMessage());
                     continue;
                 }
-                if (arr == null || arr.wasClosed()) continue;
+                if (arr == null) {
+                    log.info("SameDiff.close(): [{}] arr is null after removeArray", name);
+                    continue;
+                }
+                if (arr.wasClosed()) {
+                    log.info("SameDiff.close(): [{}] arr.wasClosed()=true, skipping", name);
+                    continue;
+                }
 
                 DataBuffer data = null;
                 try { data = arr.data(); } catch (Exception ignored) {}
 
-                if (data != null && data.wasClosed()) continue;
+                if (data != null && data.wasClosed()) {
+                    log.info("SameDiff.close(): [{}] data.wasClosed()=true, skipping", name);
+                    continue;
+                }
+
+                log.info("SameDiff.close(): [{}] arr.closeable={} data.isConstant={} data.wasClosed={}",
+                        name,
+                        arr.closeable(),
+                        data != null ? data.isConstant() : "null",
+                        data != null ? data.wasClosed() : "null");
 
                 // Try the full INDArray close path first
                 try {
                     if (data != null) data.setConstant(false);
                     arr.setCloseable(true);
-                    if (arr.closeable()) {
+                    boolean closeableAfter = arr.closeable();
+                    log.info("SameDiff.close(): [{}] after setConstant(false)+setCloseable(true): arr.closeable()={} data.isConstant={}",
+                            name, closeableAfter, data != null ? data.isConstant() : "null");
+                    if (closeableAfter) {
                         arr.close();
-                        if (arr.wasClosed()) {
+                        boolean wasClosed = arr.wasClosed();
+                        log.info("SameDiff.close(): [{}] after arr.close(): arr.wasClosed()={}", name, wasClosed);
+                        if (wasClosed) {
                             if (data != null) closedBufferSet.add(data);
                             closedCount++;
                             continue;
                         }
                     }
                 } catch (Exception e) {
+                    log.info("SameDiff.close(): [{}] exception in primary path: {}", name, e.getMessage());
                     // Fall through to direct buffer close
                 }
 
@@ -5351,10 +5451,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                     try {
                         data.setConstant(false);
                         data.close();
-                        if (data.wasClosed()) closedCount++;
+                        boolean wasClosedData = data.wasClosed();
+                        log.info("SameDiff.close(): [{}] fallback data.close(): data.wasClosed()={}", name, wasClosedData);
+                        if (wasClosedData) closedCount++;
                     } catch (Exception e) {
+                        log.info("SameDiff.close(): [{}] fallback exception: {}", name, e.getMessage());
                         errors++;
                     }
+                } else {
+                    log.info("SameDiff.close(): [{}] fallback skipped: data={} data.wasClosed={} inSet={}",
+                            name, data != null ? "non-null" : "null",
+                            data != null ? data.wasClosed() : "null",
+                            data != null ? closedBufferSet.contains(data) : "null");
                 }
             }
         }
@@ -6620,7 +6728,21 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         Preconditions.checkArgument((outputVars != null && !outputVars.isEmpty()) || (gradientVars != null && !gradientVars.isEmpty()),
                 "No variables were specified for either output or gradients");
         if (getFunction(GRAD_FN_KEY) == null) {
-            createGradFunction(gradientVars != null ? gradientVars.toArray(new String[0]) : null);
+            // Only request gradients for trainable (VARIABLE) vars in createGradFunction.
+            // Constants and placeholders never have meaningful gradients.
+            String[] trainableGradVars = null;
+            if (gradientVars != null) {
+                List<String> filtered = new ArrayList<>();
+                for (String gv : gradientVars) {
+                    Variable v = variables.get(gv);
+                    if (v != null && v.getVariable() != null
+                            && v.getVariable().getVariableType() == VariableType.VARIABLE) {
+                        filtered.add(gv);
+                    }
+                }
+                trainableGradVars = filtered.isEmpty() ? null : filtered.toArray(new String[0]);
+            }
+            createGradFunction(trainableGradVars);
         }
 
         List<String> varNames = new ArrayList<>();
@@ -7162,7 +7284,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                     boolean allAvailable = true;
                     SameDiffOp o = ops.get(opName);
                     for (String opOutput : o.getOutputsOfOp()) {
-                        Variable outVar = variables.get(opOutput);
+                        // Use sameDiff.variables (the gradient function instance) for gradient lookups
+                        // because gradients are stored there, not in outer.variables.
+                        Variable outVar = sameDiff.variables.containsKey(opOutput)
+                                ? sameDiff.variables.get(opOutput)
+                                : variables.get(opOutput);
                         if (outVar.getVariable().dataType().isFPType()) {
                             if (minimalSubgraphVars.contains(outVar.getName())) {
                                 //Need gradient for this variable to be available before we can differentiate
@@ -7178,8 +7304,16 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                                 for(String prereq : prereqs) {
                                     String[] prereqOutput = sameDiff.getOutputsForOp(sameDiff.getOpById(prereq));
                                     for(String prereq2 : prereqOutput) {
-                                        if(sameDiff.hasVariable(prereq2) && sameDiff.isPlaceHolder(prereq2) || sameDiff.isConstant(prereq2) && !differentiatedOps.contains(prereq2)) {
-                                            sameDiff.setGradientForVariableName(prereq2,sameDiff.one(prereq + "-grad",sameDiff.getVariable(prereq2).shape));
+                                        // Constants and placeholders do not need gradient variables created
+                                        // UNLESS the user explicitly requested gradients for them via
+                                        // createGradFunction(varName). Without the explicit request, creating
+                                        // gradient vars for constants/placeholders is spurious.
+                                        boolean isExplicitlyRequested = variablesRequiringGradients != null
+                                                && ArrayUtils.contains(variablesRequiringGradients, prereq2);
+                                        if(sameDiff.hasVariable(prereq2)
+                                                && (sameDiff.isPlaceHolder(prereq2) || sameDiff.isConstant(prereq2))
+                                                && !differentiatedOps.contains(prereq2)
+                                                && !isExplicitlyRequested) {
                                             differentiatedOps.add(prereq);
                                         }
                                     }
@@ -7205,10 +7339,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             }
 
             //Let's validate we actually differentiated everything correctly:
+            //Use sameDiff.variables (the gradient function instance) rather than outer.variables
+            //because gradients are stored in the gradient function's SameDiff instance.
             for (String s : minimalSubgraphVars) {
                 if (lossVariables.contains(s))
                     continue;
-                SDVariable v = variables.get(s).getVariable();
+                // Look up in the gradient function's variables (where setGradientForVariableName stores them)
+                Variable varEntry = sameDiff.variables.get(s);
+                if (varEntry == null) {
+                    // Fall back to outer if not found in sameDiff (shouldn't happen but be safe)
+                    varEntry = variables.get(s);
+                }
+                SDVariable v = varEntry.getVariable();
                 SDVariable g = v.gradient();
                 if (g == null) {
                     throw new IllegalStateException("Error encountered during differentiation: no gradient for required variable \"" + s + "\" was calculated");

@@ -1,0 +1,20 @@
+{
+  "id": "batch67_rmsnorm_jun6",
+  "branch": "ag_new_release_updates_2",
+  "commit": "post-gradcheck-dsp-fix",
+  "passing": true,
+  "module": "platform-tests",
+  "backend": "nd4j-native",
+  "totalTests": 13,
+  "passed": 13,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": {
+    "RmsNormLinearTest": {"run": 13, "pass": 13}
+  },
+  "failures": [],
+  "notes": "Only 1 of 10 classes found in classpath. RmsNormLinearTest passes clean. Other 9 classes not on classpath (SelfAttentionLayerTest, SequenceRecordReaderDataSetIteratorTest, etc. may be in different packages or not compiled).",
+  "tags": ["cpu", "rmsnorm", "linear"],
+  "timestamp": "2026-06-06T03:42:00Z"
+}

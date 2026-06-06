@@ -86,7 +86,7 @@ public class TestPage10PreprocessorConfigSensitivity {
         Map<String, INDArray> encodedVision = new LinkedHashMap<>();
         try {
             encodedVision.put("LEGACY_HALF_HALF", encodeVision(legacyBenchmarkConfig()));
-            encodedVision.put("CANONICAL_SMOLDOCLING", encodeVision(PreprocessorConfig.forSmolDocling()));
+            encodedVision.put("CANONICAL_SMOLDOCLING", encodeVision(PreprocessorConfig.fromFile(VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_PREPROCESSOR_CONFIG).getModelFile())));
 
             compileFor(config);
 

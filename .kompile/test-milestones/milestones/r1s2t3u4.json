@@ -1,0 +1,20 @@
+{
+  "id": "r1s2t3u4",
+  "branch": "ag_new_release_updates_2",
+  "commit": {
+    "full": "2263b615ce23df3894b32d42f8b853d8b0fe3e85",
+    "short": "2263b615ce"
+  },
+  "commitMessage": "fix: disable Triton on Windows",
+  "commitAuthor": "agibsonccc",
+  "passing": false,
+  "module": "cpu-native-samediff-opvalidation-batch2",
+  "totalTests": 56,
+  "passed": 49,
+  "failed": 0,
+  "skipped": 0,
+  "errors": 7,
+  "notes": "OpValidation batch2: Attention(27/0F), Activation(2/0F), RnnOp(3/0F), Where(5/0F), Layer(7/0F), ImageSeq(12/7E). All 7 errors in TestImageAndSequenceOpValidation: AffineGrid(3)+GridSample(2)+CTCGreedyDecoder(2) — test config empty (no gradCheck/expected). Not production bugs.",
+  "tags": ["cpu", "samediff", "nd4j-native", "opvalidation"],
+  "timestamp": "2026-06-02T21:04:17Z"
+}
