@@ -1890,8 +1890,8 @@ function(setup_triton)
     # MSVC-specific flags for Triton build
     if(MSVC)
         list(APPEND TRITON_CMAKE_ARGS
-            "-DCMAKE_C_FLAGS=/bigobj /Zc:preprocessor /permissive- /utf-8"
-            "-DCMAKE_CXX_FLAGS=/bigobj /Zc:preprocessor /permissive- /utf-8"
+            "-DCMAKE_C_FLAGS=-bigobj -Zc:preprocessor -permissive- -utf-8"
+            "-DCMAKE_CXX_FLAGS=-bigobj -Zc:preprocessor -permissive- -utf-8"
         )
     endif()
 

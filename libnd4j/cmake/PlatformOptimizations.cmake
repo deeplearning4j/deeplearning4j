@@ -21,7 +21,7 @@ function(apply_android_x86_64_plt_fixes target_name)
     else()
         # MSVC equivalent flags
         target_compile_options(${target_name} PRIVATE
-                /Gy  # Function-level linking
+                -Gy  # Function-level linking
         )
     endif()
 
@@ -98,9 +98,9 @@ function(configure_section_splitting)
     # MSVC-specific optimizations
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         # MSVC equivalent optimizations
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy" PARENT_SCOPE)      # Function-level linking
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy" PARENT_SCOPE)          # Function-level linking
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /OPT:REF /OPT:ICF" PARENT_SCOPE)  # Remove unreferenced code
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Gy" PARENT_SCOPE)      # Function-level linking
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Gy" PARENT_SCOPE)          # Function-level linking
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -OPT:REF -OPT:ICF" PARENT_SCOPE)  # Remove unreferenced code
         message(STATUS "Applied MSVC function-level linking optimizations")
     endif()
 endfunction()
