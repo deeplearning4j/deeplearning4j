@@ -38,7 +38,6 @@ import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
-import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.CleanupDiagnostics;
@@ -1453,35 +1452,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         if (!executor.isNativePlanCompiled(plan)) {
             executor.compileNativePlan(plan, null, sameDiff.isDspFallbackToAutoIfTritonUnavailable());
-        }
-
-        // Mark SOURCE_VARIABLE external inputs as mutable so that detectFrozenConstants() in
-        // C++ does not classify variable-dependent slots as frozen constants.
-        //
-        // The C++ plan's fromSerializedPlan() initializes externalInputIsVariable_ only for
-        // SOURCE_PLACEHOLDER inputs. SOURCE_VARIABLE inputs (training variables, gradient weight
-        // inputs) are left as false, which causes detectFrozenConstants() (running at executeCount_=1
-        // under EMULATED_REPLAY/SHAPES_FROZEN lifecycle) to treat all variable-dependent slots as
-        // frozen. On subsequent executions (executeCount_>=2) those slots are skipped entirely,
-        // returning the stale first-call output regardless of changed variable values.
-        //
-        // This is particularly visible in gradient computation: if the user assigns new values to a
-        // VARIABLE array between two calculateGradients() calls, the second call returns the same
-        // gradients as the first.
-        {
-            String[] extKeys = plan.getExternalInputKeys();
-            byte[] extSourceTypes = plan.getExternalInputSourceTypes();
-            if (extKeys != null && extSourceTypes != null && extKeys.length > 0) {
-                List<String> variableInputNames = new ArrayList<>();
-                for (int i = 0; i < extKeys.length && i < extSourceTypes.length; i++) {
-                    if (extSourceTypes[i] == DynamicShapeSlot.SOURCE_VARIABLE) {
-                        variableInputNames.add(extKeys[i]);
-                    }
-                }
-                if (!variableInputNames.isEmpty()) {
-                    executor.addMutableExternalInputs(variableInputNames);
-                }
-            }
         }
 
         // DSP replay executes a fixed plan with known shapes, so exact-match allocation has

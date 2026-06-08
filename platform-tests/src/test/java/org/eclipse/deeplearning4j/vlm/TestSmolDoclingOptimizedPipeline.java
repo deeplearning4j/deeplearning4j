@@ -377,7 +377,7 @@ public class TestSmolDoclingOptimizedPipeline {
             pdfImage = loadImageFromPdfOrGenerate();
             assertNotNull(pdfImage, "Failed to load/generate test image");
             BufferedImage resizedForTiling = ImageTiler.resizeLongestEdge(pdfImage, 2048);
-            splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, 9);
+            splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, -1);
             visionFrames = splitResult.getTotalFrames();
             assertTrue(visionFrames > 0, "No vision frames produced");
 
@@ -700,7 +700,7 @@ public class TestSmolDoclingOptimizedPipeline {
         int targetSize = 512;
         BufferedImage pdfImage = loadImageFromPdfOrGenerate();
         BufferedImage resizedForTiling = ImageTiler.resizeLongestEdge(pdfImage, 2048);
-        ImageTiler.SplitImageResult splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, 9);
+        ImageTiler.SplitImageResult splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, -1);
 
         PreprocessorConfig ppConfig = new PreprocessorConfig();
         ppConfig.setSize(new PreprocessorConfig.ImageSize(targetSize, targetSize));
