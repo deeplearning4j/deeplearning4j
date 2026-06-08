@@ -38,6 +38,7 @@ import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.CleanupDiagnostics;
@@ -1452,6 +1453,27 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         if (!executor.isNativePlanCompiled(plan)) {
             executor.compileNativePlan(plan, null, sameDiff.isDspFallbackToAutoIfTritonUnavailable());
+        }
+
+        // Mark SOURCE_VARIABLE external inputs as mutable so that the C++ plan
+        // allocates staging buffers for them. This is needed for training correctness:
+        // VARIABLE inputs can change between executions (weight updates via
+        // calculateGradients). Without this, detectFrozenConstants() treats
+        // variable-dependent slots as frozen and returns stale first-call output.
+        {
+            String[] extKeys = plan.getExternalInputKeys();
+            byte[] extSourceTypes = plan.getExternalInputSourceTypes();
+            if (extKeys != null && extSourceTypes != null && extKeys.length > 0) {
+                List<String> variableInputNames = new ArrayList<>();
+                for (int i = 0; i < extKeys.length && i < extSourceTypes.length; i++) {
+                    if (extSourceTypes[i] == DynamicShapeSlot.SOURCE_VARIABLE) {
+                        variableInputNames.add(extKeys[i]);
+                    }
+                }
+                if (!variableInputNames.isEmpty()) {
+                    executor.addMutableExternalInputs(variableInputNames);
+                }
+            }
         }
 
         // DSP replay executes a fixed plan with known shapes, so exact-match allocation has
