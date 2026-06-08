@@ -5659,10 +5659,24 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // graph capture and executes compute slots through executeSlot() with
   // tl_dspGapStream routed to ctx.cudaStr.
   if (allSlotsAreGaps) {
-    DSP_DIAG(EXECUTE, "ALL_GAPS_NATIVE_CAPTURE: seg[%d-%d] has %d gap slots out of %d total — "
-                      "no Triton islands, using native-only monolithic CUDA graph capture",
-             seg.def.startSlot, seg.def.endSlot, tritonGapSlotCount,
-             seg.def.endSlot - seg.def.startSlot + 1);
+    // Apply the same capture-safety check that the composite path uses
+    // (MONOLITHIC_TO_COMPOSITE). Ops with OP_TRAIT_EXTERNAL_WORKSPACE (cuBLAS
+    // matmul), OP_TRAIT_DYNAMIC_OUTPUT_SIZE, or non-fully-writing ops (softmax
+    // with TAD pointers) are NOT safe to bake into a monolithic CUDA graph
+    // because their workspace/TAD pointers go stale on replay.
+    bool mergeViews = Environment::getInstance().triton().mergedCaptureThroughViews();
+    if (!isGapRangeCaptureSafe(slots_, seg.def.startSlot, seg.def.endSlot, mergeViews)) {
+      DSP_DIAG(EXECUTE, "ALL_GAPS_NATIVE_DIRECT: seg[%d-%d] has %d gap slots out of %d total — "
+                        "non-capture-safe ops detected, using direct execution (not monolithic capture)",
+               seg.def.startSlot, seg.def.endSlot, tritonGapSlotCount,
+               seg.def.endSlot - seg.def.startSlot + 1);
+      allSlotsAreGaps = false;  // prevent nativeOnlyGraphCapture
+    } else {
+      DSP_DIAG(EXECUTE, "ALL_GAPS_NATIVE_CAPTURE: seg[%d-%d] has %d gap slots out of %d total — "
+                        "all ops capture-safe, using native-only monolithic CUDA graph capture",
+               seg.def.startSlot, seg.def.endSlot, tritonGapSlotCount,
+               seg.def.endSlot - seg.def.startSlot + 1);
+    }
   }
 
   bool captureWindowSatisfied = execCountInWindow || requiresOrderedGapCapture;

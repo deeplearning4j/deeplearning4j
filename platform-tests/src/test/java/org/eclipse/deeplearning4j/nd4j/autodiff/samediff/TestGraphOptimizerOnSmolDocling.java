@@ -35,6 +35,7 @@ import org.nd4j.autodiff.samediff.optimize.optimizations.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
 
+import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -326,6 +327,245 @@ public class TestGraphOptimizerOnSmolDocling {
                 }
             }
         }
+    }
+
+    /**
+     * Load the OPTIMIZED SDZ from cache and dump the full graph structure.
+     * This shows what the pipeline actually executes — post-optimizer, post-save.
+     */
+    @Test
+    @DisplayName("Dump optimized SDZ graph structure for SmolDocling decoder")
+    public void testDumpOptimizedSdzGraph() throws Exception {
+        File optSdz = new File(System.getProperty("user.home") + "/.cache/dl4j-vlm-models/smoldocling-decoder.opt.sdz");
+        File rawSdz = new File(System.getProperty("user.home") + "/.cache/dl4j-vlm-models/smoldocling-decoder.sdz");
+
+        // Load optimized SDZ
+        assertTrue(optSdz.exists(), "Optimized SDZ must exist at " + optSdz);
+        log.info("Loading optimized SDZ: {} ({}MB)", optSdz, optSdz.length() / (1024 * 1024));
+        SameDiff optimized = SameDiff.load(optSdz, false);
+        log.info("Loaded optimized graph: {} ops, {} vars", optimized.getOps().size(), optimized.getVariables().size());
+
+        // Op type distribution
+        Map<String, Integer> opCounts = countOpsByType(optimized);
+        log.info("");
+        log.info("========== OPTIMIZED SDZ OP DISTRIBUTION ==========");
+        opCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .forEach(e -> log.info("  {} x {}", String.format("%6d", e.getValue()), e.getKey()));
+
+        // Focus on normalization ops
+        log.info("");
+        log.info("========== NORMALIZATION OPS ==========");
+        for (SameDiffOp op : optimized.getOps().values()) {
+            String opName = op.getOp().opName();
+            if (opName.contains("rms") || opName.contains("norm") || opName.contains("layer_norm")) {
+                log.info("  op={} name={}", opName, op.getName());
+                log.info("    inputs: {}", op.getInputsToOp());
+                log.info("    outputs: {}", op.getOutputsOfOp());
+            }
+        }
+
+        // Focus on skip_rms_norm ops — trace layer 0 fully
+        log.info("");
+        log.info("========== LAYER 0 skip_rms_norm TRACE ==========");
+        for (SameDiffOp op : optimized.getOps().values()) {
+            String opName = op.getOp().opName();
+            if (opName.equals("skip_rms_norm") && op.getName().contains("layers.0")) {
+                log.info("OP: {} ({})", op.getName(), opName);
+                log.info("  inputs: {}", op.getInputsToOp());
+                log.info("  outputs: {}", op.getOutputsOfOp());
+                // Trace each input
+                if (op.getInputsToOp() != null) {
+                    for (String inputName : op.getInputsToOp()) {
+                        SDVariable v = optimized.getVariable(inputName);
+                        var vi = optimized.getVariables().get(inputName);
+                        log.info("  INPUT '{}': type={}, dtype={}, producedBy={}",
+                                inputName,
+                                v != null ? v.getVariableType() : "?",
+                                v != null ? v.dataType() : "?",
+                                vi != null ? vi.getOutputOfOp() : "none");
+                    }
+                }
+                // Trace each output
+                if (op.getOutputsOfOp() != null) {
+                    for (String outputName : op.getOutputsOfOp()) {
+                        SDVariable v = optimized.getVariable(outputName);
+                        var vi = optimized.getVariables().get(outputName);
+                        List<String> consumers = vi != null ? vi.getInputsForOp() : null;
+                        log.info("  OUTPUT '{}': type={}, dtype={}, consumedBy={}",
+                                outputName,
+                                v != null ? v.getVariableType() : "?",
+                                v != null ? v.dataType() : "?",
+                                consumers);
+                    }
+                }
+            }
+        }
+
+        // Focus on attention ops
+        log.info("");
+        log.info("========== ATTENTION OPS (layer 0) ==========");
+        for (SameDiffOp op : optimized.getOps().values()) {
+            String opName = op.getOp().opName();
+            if ((opName.contains("attention") || opName.contains("mha") || opName.contains("dot_product"))
+                    && op.getName().contains("layers.0")) {
+                log.info("OP: {} ({})", op.getName(), opName);
+                log.info("  inputs: {}", op.getInputsToOp());
+                log.info("  outputs: {}", op.getOutputsOfOp());
+            }
+        }
+
+        // Count skip_rms_norm output counts (how many outputs per op)
+        log.info("");
+        log.info("========== skip_rms_norm OUTPUT COUNTS ==========");
+        int skipRmsTotal = 0;
+        Map<Integer, Integer> outputCountDist = new TreeMap<>();
+        for (SameDiffOp op : optimized.getOps().values()) {
+            if (op.getOp().opName().equals("skip_rms_norm")) {
+                skipRmsTotal++;
+                int numOut = op.getOutputsOfOp() != null ? op.getOutputsOfOp().size() : 0;
+                outputCountDist.merge(numOut, 1, Integer::sum);
+            }
+        }
+        log.info("Total skip_rms_norm ops: {}", skipRmsTotal);
+        log.info("Output count distribution: {}", outputCountDist);
+
+        // Also load and compare raw SDZ
+        if (rawSdz.exists()) {
+            log.info("");
+            log.info("========== RAW (unoptimized) SDZ ==========");
+            SameDiff raw = SameDiff.load(rawSdz, false);
+            Map<String, Integer> rawOpCounts = countOpsByType(raw);
+            log.info("Raw graph: {} ops, {} vars", raw.getOps().size(), raw.getVariables().size());
+            log.info("Op distribution:");
+            rawOpCounts.entrySet().stream()
+                    .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                    .limit(30)
+                    .forEach(e -> log.info("  {} x {}", String.format("%6d", e.getValue()), e.getKey()));
+
+            // Show raw normalization ops for comparison
+            log.info("");
+            log.info("Raw norm ops (layer 0):");
+            for (SameDiffOp op : raw.getOps().values()) {
+                String opn = op.getOp().opName();
+                if ((opn.contains("rms") || opn.contains("norm")) && op.getName().contains("layers.0")) {
+                    log.info("  {} ({}) inputs={} outputs={}", op.getName(), opn, op.getInputsToOp(), op.getOutputsOfOp());
+                }
+            }
+        }
+
+        // Check: do output_3 variables exist?
+        log.info("");
+        log.info("========== output_3 VARIABLE CHECK ==========");
+        int found3 = 0, missing3 = 0;
+        for (SameDiffOp op : optimized.getOps().values()) {
+            if (op.getOp().opName().equals("skip_rms_norm")) {
+                String base = op.getName().replace("/output_0", "");
+                String out3Name = base + "/output_3";
+                SDVariable out3Var = optimized.getVariable(out3Name);
+                if (out3Var != null) {
+                    var vi3 = optimized.getVariables().get(out3Name);
+                    log.info("  FOUND {}: type={}, producedBy={}, consumedBy={}", out3Name,
+                            out3Var.getVariableType(), vi3 != null ? vi3.getOutputOfOp() : "?",
+                            vi3 != null ? vi3.getInputsForOp() : "?");
+                    found3++;
+                } else {
+                    // Check if any variable references this as input
+                    boolean referenced = false;
+                    for (SameDiffOp otherOp : optimized.getOps().values()) {
+                        if (otherOp.getInputsToOp() != null && otherOp.getInputsToOp().contains(out3Name)) {
+                            log.info("  MISSING {} but REFERENCED by {}", out3Name, otherOp.getName());
+                            referenced = true;
+                        }
+                    }
+                    if (!referenced) {
+                        missing3++;
+                    } else {
+                        missing3++;
+                    }
+                }
+            }
+        }
+        log.info("output_3 found: {}, missing: {}", found3, missing3);
+
+        // Also check raw SDZ for output_3
+        if (rawSdz.exists()) {
+            SameDiff rawForCheck = SameDiff.load(rawSdz, false);
+            log.info("");
+            log.info("========== RAW SDZ output_3 CHECK ==========");
+            int rawFound3 = 0, rawMissing3 = 0;
+            for (SameDiffOp op : rawForCheck.getOps().values()) {
+                if (op.getOp().opName().equals("skip_rms_norm")) {
+                    String base = op.getName().replace("/output_0", "");
+                    String out3Name = base + "/output_3";
+                    SDVariable out3Var = rawForCheck.getVariable(out3Name);
+                    if (out3Var != null) {
+                        var vi3 = rawForCheck.getVariables().get(out3Name);
+                        log.info("  FOUND {}: type={}, producedBy={}, consumedBy={}", out3Name,
+                                out3Var.getVariableType(), vi3 != null ? vi3.getOutputOfOp() : "?",
+                                vi3 != null ? vi3.getInputsForOp() : "?");
+                        rawFound3++;
+                    } else {
+                        rawMissing3++;
+                    }
+                }
+            }
+            log.info("RAW output_3 found: {}, missing: {}", rawFound3, rawMissing3);
+
+            // Check how many outputs each skip_rms_norm has in raw SDZ
+            Map<Integer, Integer> rawOutputCountDist = new TreeMap<>();
+            for (SameDiffOp op : rawForCheck.getOps().values()) {
+                if (op.getOp().opName().equals("skip_rms_norm")) {
+                    int numOut = op.getOutputsOfOp() != null ? op.getOutputsOfOp().size() : 0;
+                    rawOutputCountDist.merge(numOut, 1, Integer::sum);
+                }
+            }
+            log.info("RAW skip_rms_norm output count distribution: {}", rawOutputCountDist);
+        }
+
+        // Outputs
+        log.info("");
+        log.info("========== GRAPH OUTPUTS ==========");
+        log.info("Outputs: {}", optimized.outputs());
+
+        // Placeholders
+        log.info("");
+        log.info("========== PLACEHOLDERS ==========");
+        for (SDVariable v : optimized.variables()) {
+            if (v.getVariableType() == VariableType.PLACEHOLDER) {
+                log.info("  {} dtype={} shape={}", v.name(), v.dataType(),
+                        v.getShape() != null ? Arrays.toString(v.getShape()) : "dynamic");
+            }
+        }
+
+        // Check attn_mask_reformat variables
+        log.info("");
+        log.info("========== attn_mask_reformat VARIABLES ==========");
+        for (SDVariable v : optimized.variables()) {
+            if (v.name().contains("attn_mask_reformat")) {
+                var vi = optimized.getVariables().get(v.name());
+                log.info("  {} type={} dtype={} producedBy={} consumedBy={}",
+                        v.name(), v.getVariableType(), v.dataType(),
+                        vi != null ? vi.getOutputOfOp() : "?",
+                        vi != null ? vi.getInputsForOp() : "?");
+            }
+        }
+
+        // Check ALL VARIABLE-typed nodes that have producers (computed intermediates)
+        log.info("");
+        log.info("========== COMPUTED VARIABLES (type=VARIABLE but has producer) ==========");
+        int computedVarCount = 0;
+        for (SDVariable v : optimized.variables()) {
+            if (v.getVariableType() == VariableType.VARIABLE) {
+                var vi = optimized.getVariables().get(v.name());
+                String producer = vi != null ? vi.getOutputOfOp() : null;
+                if (producer != null && !producer.isEmpty() && optimized.getOps().containsKey(producer)) {
+                    log.info("  {} producedBy={}", v.name(), producer);
+                    computedVarCount++;
+                }
+            }
+        }
+        log.info("Total computed VARIABLE nodes: {}", computedVarCount);
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────────

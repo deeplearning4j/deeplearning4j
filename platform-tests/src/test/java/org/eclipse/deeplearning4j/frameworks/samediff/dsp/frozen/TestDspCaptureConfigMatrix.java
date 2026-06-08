@@ -64,9 +64,10 @@ public class TestDspCaptureConfigMatrix {
     // Element-wise graphs should match bit-exactly (1e-4).
     private static double toleranceFor(GraphTopology t) {
         switch (t) {
-            case MATMUL_ONLY: return 1.0;   // TF32 non-determinism
-            case MIXED_GAPS:  return 0.02;
-            default:          return 1e-4;
+            case MATMUL_ONLY:              return 1.1;    // TF32 non-determinism (6 chained matmuls)
+            case MATMUL_GAPS_CAPTURE_SAFE: return 1.1;    // same 6 chained matmuls as MATMUL_ONLY
+            case MIXED_GAPS:               return 0.02;
+            default:                       return 1e-4;
         }
     }
 

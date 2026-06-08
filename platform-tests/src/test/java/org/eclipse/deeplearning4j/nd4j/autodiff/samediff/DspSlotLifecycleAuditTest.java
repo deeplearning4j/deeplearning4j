@@ -1373,44 +1373,47 @@ public class DspSlotLifecycleAuditTest {
             Map<String, INDArray> inputs = fix.inputBuilder.get();
             try {
                 sd.output(inputs, fix.outputNames);
+
+                // Check slot outputs BEFORE closing inputs. View-producer slots
+                // (permute, reshape) hold views wrapping the placeholder's
+                // DataBuffer. Once closeAll(inputs) frees that DataBuffer, the
+                // view becomes dangling and getSlotOutput correctly returns null.
+                // The invariant we test is that slots stay populated while the
+                // inputs they depend on are alive.
+                List<Integer> droppedSlots = new ArrayList<>();
+                for (int s = 0; s < totalSlots; s++) {
+                    if (!wasNonNull[s]) continue;
+                    try {
+                        INDArray out = handle.getSlotOutput(s);
+                        if (out == null) {
+                            droppedSlots.add(s);
+                        }
+                    } catch (Throwable t2) {
+                        droppedSlots.add(s);
+                    }
+                }
+                if (!droppedSlots.isEmpty()) {
+                    for (int ds : droppedSlots.subList(0, Math.min(5, droppedSlots.size()))) {
+                        INDArray debugOut = null;
+                        try { debugOut = handle.getSlotOutput(ds); } catch (Throwable ignored) {}
+                        System.out.println("DEBUG_DROP: slot=" + ds + " wasNonNull=" + wasNonNull[ds]
+                                + " getSlotOutput=" + debugOut
+                                + " phase=" + handle.planPhase()
+                                + " exec=" + i + " mode=" + mode + " fix=" + fix.name);
+                    }
+                    fail(fix.name + "/" + mode + " post-freeze exec#" + i
+                            + ": " + droppedSlots.size() + " slots dropped from non-null to null"
+                            + " after freeze (first 20: "
+                            + droppedSlots.subList(0, Math.min(20, droppedSlots.size())) + ")."
+                            + " phase=" + handle.planPhase()
+                            + " — freeze must not wipe populated slot outputs.");
+                }
             } catch (Throwable t) {
                 fail(fix.name + "/" + mode + " post-freeze exec#" + i
                         + " threw: " + t.getMessage(), t);
                 return;
             } finally {
                 closeAll(inputs);
-            }
-
-            // After each post-freeze execution, check that previously
-            // non-null slots remain non-null
-            List<Integer> droppedSlots = new ArrayList<>();
-            for (int s = 0; s < totalSlots; s++) {
-                if (!wasNonNull[s]) continue;
-                try {
-                    INDArray out = handle.getSlotOutput(s);
-                    if (out == null) {
-                        droppedSlots.add(s);
-                    }
-                } catch (Throwable t) {
-                    droppedSlots.add(s);
-                }
-            }
-            if (!droppedSlots.isEmpty()) {
-                // Debug: print slot details for dropped slots
-                for (int ds : droppedSlots.subList(0, Math.min(5, droppedSlots.size()))) {
-                    INDArray debugOut = null;
-                    try { debugOut = handle.getSlotOutput(ds); } catch (Throwable ignored) {}
-                    System.out.println("DEBUG_DROP: slot=" + ds + " wasNonNull=" + wasNonNull[ds]
-                            + " getSlotOutput=" + debugOut
-                            + " phase=" + handle.planPhase()
-                            + " exec=" + i + " mode=" + mode + " fix=" + fix.name);
-                }
-                fail(fix.name + "/" + mode + " post-freeze exec#" + i
-                        + ": " + droppedSlots.size() + " slots dropped from non-null to null"
-                        + " after freeze (first 20: "
-                        + droppedSlots.subList(0, Math.min(20, droppedSlots.size())) + ")."
-                        + " phase=" + handle.planPhase()
-                        + " — freeze must not wipe populated slot outputs.");
             }
         }
     }

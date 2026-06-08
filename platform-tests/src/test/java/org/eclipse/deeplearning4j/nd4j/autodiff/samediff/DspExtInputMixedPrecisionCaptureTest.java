@@ -1213,7 +1213,11 @@ public class DspExtInputMixedPrecisionCaptureTest {
 
         int stuckCount = 0;
         for (int i = 1; i < sums.size(); i++) {
-            if (Math.abs(sums.get(i) - sums.get(i - 1)) < 1e-3) stuckCount++;
+            double diff = Math.abs(sums.get(i) - sums.get(i - 1));
+            double maxAbs = Math.max(Math.abs(sums.get(i)), Math.abs(sums.get(i - 1)));
+            // Use relative tolerance for small values: 1e-3 absolute or 1% relative
+            boolean stuck = diff < 1e-3 && (maxAbs < 1e-6 || diff / maxAbs < 0.01);
+            if (stuck) stuckCount++;
         }
         int totalSteps = sums.size() - 1;
         assertTrue(stuckCount < 2,

@@ -795,90 +795,22 @@ void autoregressiveDecodeCuda(
         }
         tokensGenerated++;
 
-        // ── Tier 1b: Launch mask/position updates BEFORE the sync ──
-        // These kernels only depend on currentPosition (CPU counter), NOT nextTokenId.
-        // Launching them here overlaps their GPU execution with the graph replay that's
-        // still in flight on the stream, and hides their latency behind the sync wait.
+        // ── Tier 1b: Pre-sync GPU work ──
+        // Everything below until the cudaStreamSynchronize only depends on
+        // currentPosition (CPU counter) and plan output pointers (already on
+        // device). None of it needs the token ID from D2H. Launching these
+        // kernels BEFORE the sync overlaps their GPU execution with the
+        // async D2H copy and hides their latency behind the sync wait.
         //
-        // Advance position BEFORE updating mask/posIds for the next step.
-        // KV scatter (step 5, after sync) used currentPosition as the cache write position.
-        // Now increment so the mask/posIds updates prepare the NEXT decode step's inputs.
+        // Advance position BEFORE updates for the NEXT decode step.
         currentPosition++;
-
-        // Update attention mask: unmask the KV position that was JUST written.
         LongType kvJustWritten = currentPosition - 1;
-        if (kvJustWritten >= 0 && kvJustWritten < maxKvLen) {
-            NDArray::prepareSpecialUse({attentionMask}, {});
-            BUILD_SINGLE_SELECTOR(attentionMask->dataType(), updateAttentionMaskLauncher,
-                                  (stream, attentionMask->specialBuffer(), kvJustWritten, maxKvLen),
-                                  SD_COMMON_TYPES);
-            NDArray::registerSpecialUse({attentionMask}, {});
-        }
 
-        // Update causal mask: unmask the KV position that was JUST written (set to 0.0f)
-        if (causalMask != nullptr && kvJustWritten >= 0 && kvJustWritten < causalMaskLen) {
-            NDArray::prepareSpecialUse({causalMask}, {});
-            BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskLauncher,
-                                  (stream, causalMask->specialBuffer(), kvJustWritten, causalMaskLen),
-                                  SD_FLOAT_TYPES);
-            NDArray::registerSpecialUse({causalMask}, {});
-        }
-
-        // Update attn_mask_reformat: unmask the just-written KV position (set to 0.0f)
-        if (attnMaskReformat != nullptr && kvJustWritten >= 0 && kvJustWritten < attnMaskReformatLen) {
-            NDArray::prepareSpecialUse({attnMaskReformat}, {});
-            BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskLauncher,
-                                  (stream, attnMaskReformat->specialBuffer(), kvJustWritten, attnMaskReformatLen),
-                                  SD_FLOAT_TYPES);
-            NDArray::registerSpecialUse({attnMaskReformat}, {});
-        }
-
-        // Update position_ids: set to next step's position
-        NDArray::prepareSpecialUse({positionIds}, {});
-        updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
-            positionIds->specialBuffer(),
-            currentPosition);
-        NDArray::registerSpecialUse({positionIds}, {});
-
-        // ── Tier 1c: D2H token readback via pinned memory ──
-        // Read sampled token ID back to host (single int64).
-        // Issue D2H copy on the SAME stream as the argmax kernel — FIFO ordering
-        // guarantees the copy starts after argmax completes.
-        // Using pinned memory enables true async DMA (no driver bounce buffer).
-        LongType* tokenDst = pinnedTokenId ? pinnedTokenId : &stackTokenId;
-        *tokenDst = 0;
-        auto tSyncStart = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
-        cudaMemcpyAsync(tokenDst, sampledToken->specialBuffer(),
-                        sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
-        cudaStreamSynchronize(*stream);
-        auto tSyncEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
-        LongType nextTokenId = *tokenDst;
-
-        if (step < 10 && env_isVerbose()) {
-            sd_printf("DECODE_STEP[%d]: nextTokenId=%lld currentPosition=%lld\n",
-                      step, (long long)nextTokenId, (long long)currentPosition);
-        }
-
-        // ── Step 4: Check stop condition ──
-        bool shouldStop = false;
-        for (int s : stopTokenIds) {
-            if (nextTokenId == static_cast<LongType>(s)) {
-                shouldStop = true;
-                break;
-            }
-        }
-
-        auto tStopCheck = std::chrono::high_resolution_clock::now();
-
-        // Compute step time using the stop check timestamp (before KV scatter/embed updates)
-        // Always measure real wall-clock step time — needed for lateSteady metric even
-        // when detailed sub-step timing (stepTimingEnabled) is off.
-        double stepMs = std::chrono::duration<double, std::milli>(tStopCheck - stepStart).count();
-        stepTimesMs.push_back(stepMs);
-
-        if (shouldStop) break;
-
-        // ── Step 5: KV scatter — copy present KV into static buffers ──
+        // ── KV scatter — copy present KV into static buffers ──
+        // Moved BEFORE sync: scatter only needs currentPosition (CPU counter)
+        // and plan output device pointers. Both are available without the token
+        // ID. Since scatter and the next plan execution are on the same stream,
+        // CUDA ordering guarantees scatter completes before the next read.
         // Skip manual scatter when the plan's native KV scatter is active
         // (planOwnsKvScatter) — executeKvScatterPostExec handles it with its
         // own device-side position counter via executeSteadyState.
@@ -918,7 +850,7 @@ void autoregressiveDecodeCuda(
                 entries[kv].dstSeqLen = staticBuf->sizeAt(2);
                 entries[kv].dim = presentKv->sizeAt(3);
                 entries[kv].lastPos = presentKv->sizeAt(2) - 1;
-                entries[kv].cachePos = currentPosition - 1;  // pre-increment: use previous position
+                entries[kv].cachePos = kvJustWritten;  // currentPosition - 1
             }
 
             REQUIRE_TRUE(staticKvBuffers[0] != nullptr, 0,
@@ -933,6 +865,82 @@ void autoregressiveDecodeCuda(
                 staticKvBuffers[kv]->tickWriteDevice();
             }
         }
+
+        // Update attention mask: unmask the KV position that was JUST written.
+        if (kvJustWritten >= 0 && kvJustWritten < maxKvLen) {
+            NDArray::prepareSpecialUse({attentionMask}, {});
+            BUILD_SINGLE_SELECTOR(attentionMask->dataType(), updateAttentionMaskLauncher,
+                                  (stream, attentionMask->specialBuffer(), kvJustWritten, maxKvLen),
+                                  SD_COMMON_TYPES);
+            NDArray::registerSpecialUse({attentionMask}, {});
+        }
+
+        // Update causal mask: unmask the KV position that was JUST written (set to 0.0f)
+        if (causalMask != nullptr && kvJustWritten >= 0 && kvJustWritten < causalMaskLen) {
+            NDArray::prepareSpecialUse({causalMask}, {});
+            BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskLauncher,
+                                  (stream, causalMask->specialBuffer(), kvJustWritten, causalMaskLen),
+                                  SD_FLOAT_TYPES);
+            NDArray::registerSpecialUse({causalMask}, {});
+        }
+
+        // Update attn_mask_reformat: unmask the just-written KV position (set to 0.0f)
+        if (attnMaskReformat != nullptr && kvJustWritten >= 0 && kvJustWritten < attnMaskReformatLen) {
+            NDArray::prepareSpecialUse({attnMaskReformat}, {});
+            BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskLauncher,
+                                  (stream, attnMaskReformat->specialBuffer(), kvJustWritten, attnMaskReformatLen),
+                                  SD_FLOAT_TYPES);
+            NDArray::registerSpecialUse({attnMaskReformat}, {});
+        }
+
+        // Update position_ids: set to next step's position
+        NDArray::prepareSpecialUse({positionIds}, {});
+        updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+            positionIds->specialBuffer(),
+            currentPosition);
+        NDArray::registerSpecialUse({positionIds}, {});
+
+        // ── D2H token readback via pinned memory ──
+        // Read sampled token ID back to host (single int64).
+        // Issue D2H copy on the SAME stream as the argmax kernel — FIFO ordering
+        // guarantees the copy starts after argmax completes.
+        // Using pinned memory enables true async DMA (no driver bounce buffer).
+        //
+        // All GPU work that doesn't need the token ID (KV scatter, mask updates,
+        // position updates) is launched ABOVE this point. The sync below waits for
+        // everything on the stream, including those overlapped kernels.
+        LongType* tokenDst = pinnedTokenId ? pinnedTokenId : &stackTokenId;
+        *tokenDst = 0;
+        auto tSyncStart = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
+        cudaMemcpyAsync(tokenDst, sampledToken->specialBuffer(),
+                        sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+        cudaStreamSynchronize(*stream);
+        auto tSyncEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
+        LongType nextTokenId = *tokenDst;
+
+        if (step < 10 && env_isVerbose()) {
+            sd_printf("DECODE_STEP[%d]: nextTokenId=%lld currentPosition=%lld\n",
+                      step, (long long)nextTokenId, (long long)currentPosition);
+        }
+
+        // ── Check stop condition ──
+        bool shouldStop = false;
+        for (int s : stopTokenIds) {
+            if (nextTokenId == static_cast<LongType>(s)) {
+                shouldStop = true;
+                break;
+            }
+        }
+
+        auto tStopCheck = std::chrono::high_resolution_clock::now();
+
+        // Compute step time using the stop check timestamp
+        // Always measure real wall-clock step time — needed for lateSteady metric even
+        // when detailed sub-step timing (stepTimingEnabled) is off.
+        double stepMs = std::chrono::duration<double, std::milli>(tStopCheck - stepStart).count();
+        stepTimesMs.push_back(stepMs);
+
+        if (shouldStop) break;
 
         // ── Step 6: Embedding lookup for next token ──
         // Only perform embedding lookup if we have an embeddings ext input to update.
@@ -996,18 +1004,21 @@ void autoregressiveDecodeCuda(
         }
 
         // Per-step timing breakdown (gated behind executionTimingEnabled only — print every step)
+        // Note: "preSyncGpu" = argmax + KV scatter + mask/posId updates (all before sync).
+        //       "syncOnly" = just the cudaStreamSynchronize wait.
+        //       "postSync" = embed lookup + input_ids update + GGUF scalars.
         if (stepTimingEnabled) {
             auto tLoopEnd = std::chrono::high_resolution_clock::now();
             auto wireUs = std::chrono::duration_cast<std::chrono::microseconds>(tWireEnd - stepStart).count();
             auto planUs = std::chrono::duration_cast<std::chrono::microseconds>(tPlanEnd - tWireEnd).count();
-            auto sampSyncUs = std::chrono::duration_cast<std::chrono::microseconds>(tSyncEnd - tPlanEnd).count();
+            auto preSyncGpuUs = std::chrono::duration_cast<std::chrono::microseconds>(tSyncStart - tPlanEnd).count();
             auto syncOnlyUs = std::chrono::duration_cast<std::chrono::microseconds>(tSyncEnd - tSyncStart).count();
             auto postSyncUs = std::chrono::duration_cast<std::chrono::microseconds>(tLoopEnd - tSyncEnd).count();
             auto totalStepUs = std::chrono::duration_cast<std::chrono::microseconds>(tLoopEnd - stepStart).count();
             sd_printf("DECODE_STEP_TIMING[%d]: total=%lldus wire=%lldus plan=%lldus "
-                      "samp+sync=%lldus (syncOnly=%lldus) postSync=%lldus\n",
+                      "preSyncGpu=%lldus syncOnly=%lldus postSync=%lldus\n",
                       step, totalStepUs, wireUs, planUs,
-                      sampSyncUs, syncOnlyUs, postSyncUs);
+                      preSyncGpuUs, syncOnlyUs, postSyncUs);
         }
     }
 

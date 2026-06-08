@@ -313,12 +313,13 @@ public class DspExtInputStalenessTest {
         log.info("[CONST_STAGED] mode={} PASS — constant 'w' has no staging", mode);
     }
 
-    @ParameterizedTest(name = "variableWeightGetsStaging mode={0}")
+    @ParameterizedTest(name = "variableWeightNoStagingInInference mode={0}")
     @EnumSource(value = GraphExecutionMode.class, names = {"CUDA_GRAPHS", "TRITON", "AUTO"})
-    @DisplayName("VARIABLE weight ext inputs DO get staging (needed for training correctness)")
+    @DisplayName("VARIABLE weight ext inputs do NOT get staging during inference (weights are constant)")
     void testVariableWeightGetsStaging(GraphExecutionMode mode) {
-        // Use g.var() — SOURCE_VARIABLE inputs MUST get staging because they can
-        // change during training (calculateGradients with weight updates)
+        // Use g.var() — SOURCE_VARIABLE inputs are NOT marked mutable during inference.
+        // Weights don't change between decode steps, so the C++ plan correctly treats
+        // them as frozen constants. Staging is only needed for training (TrainingSession).
         sd = buildSinglePlaceholder(8, 4);
         configureMode(sd, mode);
 
@@ -336,17 +337,13 @@ public class DspExtInputStalenessTest {
         }
 
         long stagingAddr = h.stagingBufferAddress(wIdx);
-        // Staging buffers are a CUDA-only concept (device memory for CUDA graph replay).
-        // On CPU backend, specialBuffer() always returns null/0 so getStagingBufferAddress()
-        // returns 0 even when a staging NDArray is allocated. Only assert on CUDA.
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        if ("CUDA".equalsIgnoreCase(backend)) {
-            assertNotEquals(0L, stagingAddr,
-                    mode + ": VARIABLE weight 'w' SHOULD have staging for training correctness");
-            log.info("[VAR_STAGED] mode={} PASS — variable 'w' has staging at 0x{}", mode, Long.toHexString(stagingAddr));
-        } else {
-            log.info("[VAR_STAGED] CPU backend — staging device address not applicable (specialBuffer=null on CPU), skipping assertion. stagingAddr={}", stagingAddr);
-        }
+        // During inference, VARIABLE weights should NOT have staging — they are treated
+        // as constants by the C++ plan (no D2D copies per step, enabling frozen-constant
+        // skip optimization). Staging is only allocated when the Java side explicitly
+        // marks inputs as mutable via addMutableExternalInputs() (training path).
+        assertEquals(0L, stagingAddr,
+                mode + ": VARIABLE weight 'w' should NOT have staging during inference. addr=0x" + Long.toHexString(stagingAddr));
+        log.info("[VAR_STAGED] mode={} PASS — variable 'w' has no staging during inference (correct)", mode);
     }
 
     @ParameterizedTest(name = "mixedVariableAndConstant mode={0}")

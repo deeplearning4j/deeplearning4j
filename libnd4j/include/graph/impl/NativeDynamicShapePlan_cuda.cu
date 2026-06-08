@@ -276,6 +276,23 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   }
   externalInputs = performPreReplaySync(externalInputs, numExternalInputs, stream, "frozen_fast_path");
 
+  // ── Refresh stale view wrappers before replay ───────────────────────────
+  // View ops (reshape, permute) create NDArray wrappers that alias their
+  // input's DataBuffer. During CUDA graph capture, downstream compute kernels
+  // (mmul, softmax) are recorded with the capture-time device addresses from
+  // these view wrappers. If external input arrays are swapped between steps
+  // (new NDArray objects with different specialBuffer() addresses), the view
+  // wrappers become stale — but the captured CUDA graph still holds the old
+  // addresses, causing error 700 on replay.
+  //
+  // The normal execute() path refreshes at NativeDynamicShapePlan.cpp line 2485,
+  // but only when isShapesFrozen(). Once the plan enters REPLAYING, that guard
+  // is false and the frozen fast path (this method) handles all execution —
+  // so the refresh must happen here as well.
+  for (size_t ri = 0; ri < segments_.size(); ri++) {
+    refreshStaleViewWrappersInSegment(segments_[ri], externalInputs, numExternalInputs);
+  }
+
   // ── Per-segment replay iteration ─────────────────────────────────────────
   // Iterate all segments and replay each one. Every segment must have a replay
   // handle (monolithic or composite) — allSegmentsReplayReady() was checked

@@ -407,6 +407,7 @@ public class TestDspPipelineFacets {
     @Test
     @DisplayName("Multi-output: two independent paths from same input")
     void testMultiOutputTwoPaths() {
+        Nd4j.getRandom().setSeed(42);
         int D = 8;
         INDArray w1 = Nd4j.randn(DataType.FLOAT, D, D).muli(0.1f);
         INDArray w2 = Nd4j.randn(DataType.FLOAT, D, D).muli(0.1f);

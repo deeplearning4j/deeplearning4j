@@ -2152,15 +2152,17 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       seg.exec.segPhase.skipCompileToCapturing();
       seg.exec.compiledByBackend = "emulated_replay";
       seg.exec.lifecycleState = GraphSegmentExec::SegmentLifecycleState::CAPTURE_PENDING;
-    } else if (execCount >= 1 && seg.exec.segPhase.needsCapture() &&
-               !seg.exec.needsArgRefresh()) {
-      // Args are stable and we have completed the "capture" step — seal.
-      // execCount >= 1 ensures at least 2 total executions have occurred
-      // (one warmup + this one) before we declare steady state.
+    } else if (execCount >= 1 && seg.exec.segPhase.needsCapture()) {
+      // EMULATED_REPLAY re-executes every slot fresh (no baked CUDA graph),
+      // so address instability from fresh placeholder allocations does not
+      // affect correctness. Seal after the "capture" step regardless of arg
+      // stability. execCount >= 1 ensures at least 2 total executions have
+      // occurred (one warmup + this one) before we declare steady state.
       DSP_DIAG(EMULATED_REPLAY,
                "  LIFECYCLE: seg[%d-%d] BUILDING:CAPTURING -> SEALED "
-               "(args stable, execCount=%d)",
-               seg.def.startSlot, seg.def.endSlot, execCount);
+               "(execCount=%d, argRefresh=%d)",
+               seg.def.startSlot, seg.def.endSlot, execCount,
+               seg.exec.needsArgRefresh() ? 1 : 0);
       seg.exec.segPhase.seal();
       seg.exec.outcome = SegmentExecOutcome::ZERO_KERNEL_SBS;
       seg.exec.lifecycleState = GraphSegmentExec::SegmentLifecycleState::REPLAYING;

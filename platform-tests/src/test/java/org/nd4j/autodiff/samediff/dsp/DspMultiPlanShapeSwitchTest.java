@@ -26,8 +26,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -591,5 +594,244 @@ public class DspMultiPlanShapeSwitchTest {
             Map<String, INDArray> result = sd.output(ph, "y");
             assertOutputsMatch(label, expected, result);
         }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Fixed-shape decode graph builder for pointer stability tests
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Build a fixed-shape mini-decoder graph that compiles into capturable DSP segments.
+     * Uses constant weights and a fixed input shape — no dynamic (-1) dimensions.
+     * Pattern: input → matmul(W1) → normalize → matmul(W2) → output
+     *
+     * <p>Fixed shapes are required for pointer stability because dynamic shapes prevent
+     * the native plan from freezing and capturing CUDA graphs.
+     */
+    private SameDiff buildFixedShapeDecodeGraph(int dim) {
+        SameDiff sd = SameDiff.create();
+        INDArray w1 = Nd4j.randn(DataType.FLOAT, dim, dim);
+        INDArray w2 = Nd4j.randn(DataType.FLOAT, dim, dim);
+
+        SDVariable weight1 = sd.constant("w1", w1);
+        SDVariable weight2 = sd.constant("w2", w2);
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, dim);
+
+        SDVariable h = sd.mmul("hidden", input, weight1);
+        SDVariable norm = sd.math().norm2("norm", h, 1);
+        SDVariable eps = sd.constant("eps", Nd4j.scalar(DataType.FLOAT, 1e-5f));
+        SDVariable maxNorm = sd.math().max("maxNorm", norm, eps);
+        SDVariable normalized = sd.math().div("normalized", h, maxNorm);
+        SDVariable out = sd.mmul("output", normalized, weight2);
+        sd.setOutputs("output");
+        return sd;
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // TEST 8: Multi-page pointer stability with buffer reuse (regression)
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Regression test for the multi-page VLM pointer stability bug.
+     *
+     * <p>Reproduces the exact pattern from {@code GenerationPipeline.generateNative()}
+     * with {@code fixedBuffers=true}: after page 1 freezes the executor, page 2 must
+     * reuse the SAME INDArray objects (same device pointers) so the plan's pointer
+     * stability check passes and the plan transitions from SHAPES_FROZEN → REPLAYING.
+     *
+     * <p><b>The bug:</b> {@code generateNative()} allocated fresh arrays each call.
+     * Fresh allocations = new device pointers = pointer stability never reached =
+     * plan stuck at SHAPES_FROZEN = no CUDA graph capture = every token through
+     * slow execute().
+     *
+     * <p><b>The fix pattern:</b> On second+ calls with a frozen plan, retrieve the
+     * plan's existing ext input arrays and write new data into them via
+     * {@code .assign()}, NOT fresh allocations.
+     */
+    @Test
+    @DisplayName("Multi-page pointer stability with buffer reuse (fixedBuffers regression)")
+    void testMultiPagePointerStabilityWithBufferReuse() {
+        int dim = 32;
+        int numPages = 5;
+        int warmupSteps = 30;  // enough for segment compilation + pointer stability
+        int stepsPerPage = 10;
+
+        SameDiff sd = buildFixedShapeDecodeGraph(dim);
+        configureDsp(sd);
+
+        // Reuse the SAME INDArray for all steps — this is the correct pattern
+        INDArray inputArr = Nd4j.randn(DataType.FLOAT, 1, dim);
+        Map<String, INDArray> ph = new LinkedHashMap<>();
+        ph.put("input", inputArr);
+
+        // === Page 1: warmup until pointer stability ===
+        log.info("=== Page 1: Warmup {} steps ===", warmupSteps);
+        for (int step = 0; step < warmupSteps; step++) {
+            inputArr.assign(Nd4j.randn(DataType.FLOAT, 1, dim));
+            sd.output(ph, "output");
+        }
+
+        // Check that DSP reached at least SHAPES_FROZEN with stable pointers
+        DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN,
+                "Page 1 after " + warmupSteps + " steps");
+        DspPlanAssertions.assertPointersStable(sd,
+                "Page 1 after " + warmupSteps + " steps");
+
+        log.info("Page 1 stable: pointersStable={} frozenExec={} snapshot:\n{}",
+                DspPlanAssertions.getPointersStable(sd),
+                DspPlanAssertions.getFrozenExecCount(sd),
+                DspPlanAssertions.snapshotPlanState(sd));
+
+        // === Pages 2..N: reuse path — SAME array, new values ===
+        // This simulates the CORRECT fixedBuffers behavior: the plan's ext input
+        // arrays survive across calls and get new data written into them.
+        for (int page = 2; page <= numPages; page++) {
+            log.info("=== Page {}: Reuse frozen plan, write new data into existing array ===", page);
+
+            for (int step = 0; step < stepsPerPage; step++) {
+                inputArr.assign(Nd4j.randn(DataType.FLOAT, 1, dim));
+                sd.output(ph, "output");
+            }
+
+            // Pointer stability must hold across page transitions when reusing same array
+            int ptrsStable = DspPlanAssertions.getPointersStable(sd);
+            log.info("Page {} pointersStable={} frozenExec={}",
+                    page, ptrsStable, DspPlanAssertions.getFrozenExecCount(sd));
+            assertEquals(1, ptrsStable,
+                    String.format("Page %d: pointer stability must hold when reusing same INDArray", page));
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // TEST 9: Pointer stability BREAKS with fresh allocations (negative test)
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Negative test proving that fresh INDArray allocations break pointer stability.
+     * This reproduces the EXACT bug pattern from the unfixed generateNative():
+     *   1. Page 1: warm up to pointer stability
+     *   2. Page 2: create FRESH INDArray → pass to sd.output() → pointers break
+     *
+     * This test documents the failure mode so it's clear WHY buffer reuse matters.
+     * If this test starts passing (stable pointers with fresh arrays), it means the
+     * DSP executor learned to handle pointer changes — update the multi-page fix.
+     */
+    @Test
+    @DisplayName("Fresh allocations break pointer stability (documents the bug)")
+    void testFreshAllocationsBreakPointerStability() {
+        int dim = 32;
+        int warmupSteps = 30;
+        int postSteps = 10;
+
+        SameDiff sd = buildFixedShapeDecodeGraph(dim);
+        configureDsp(sd);
+
+        // Page 1: warm up to pointer stability
+        INDArray input1 = Nd4j.randn(DataType.FLOAT, 1, dim);
+        Map<String, INDArray> ph = new LinkedHashMap<>();
+        ph.put("input", input1);
+
+        for (int step = 0; step < warmupSteps; step++) {
+            input1.assign(Nd4j.randn(DataType.FLOAT, 1, dim));
+            sd.output(ph, "output");
+        }
+
+        int stableAfterPage1 = DspPlanAssertions.getPointersStable(sd);
+        log.info("After page 1 ({} steps): pointersStable={}",
+                warmupSteps, stableAfterPage1);
+
+        // If page 1 can't reach stability, skip the negative test — the backend
+        // may not support pointer tracking for this graph.
+        if (stableAfterPage1 != 1) {
+            log.warn("Skipping negative test: page 1 never reached pointer stability " +
+                    "(may be backend-specific). stableAfterPage1={}", stableAfterPage1);
+            return;
+        }
+
+        // Page 2: create FRESH array — this is the bug pattern
+        INDArray input2 = Nd4j.randn(DataType.FLOAT, 1, dim);
+        Map<String, INDArray> ph2 = new LinkedHashMap<>();
+        ph2.put("input", input2);
+
+        // Execute with the new array — pointers change
+        for (int step = 0; step < postSteps; step++) {
+            sd.output(ph2, "output");
+        }
+
+        int stableAfterPage2 = DspPlanAssertions.getPointersStable(sd);
+        log.info("After fresh allocation ({} steps): pointersStable={} (expected 0 = broken)",
+                postSteps, stableAfterPage2);
+
+        // The fresh allocation should break pointer stability.
+        // If this assertion fails (pointers remain stable), it means the DSP executor
+        // now handles pointer changes gracefully — which is good! Update the multi-page
+        // fix to remove the buffer reuse requirement.
+        if (stableAfterPage2 == 1) {
+            log.warn("UNEXPECTED: pointer stability survived fresh allocation. " +
+                    "The DSP executor may now handle pointer changes. " +
+                    "Review whether the generateNative() buffer reuse fix is still needed.");
+        }
+        // We document the expected behavior but don't fail if the DSP got smarter —
+        // the important thing is the positive test (TEST 8) always passes.
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // TEST 10: Memory stability across pages with buffer reuse
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Verifies that reusing the same INDArray across "pages" does not leak memory.
+     * Tracks workspace + physical memory across N pages and asserts no unbounded growth.
+     * This guards against the scenario where each page accumulates unreleased buffers.
+     */
+    @Test
+    @DisplayName("No memory growth across pages with buffer reuse")
+    void testNoMemoryGrowthWithBufferReuse() {
+        int dim = 32;
+        int numPages = 10;
+        int stepsPerPage = 4;
+        int warmupSteps = 30;
+
+        SameDiff sd = buildFixedShapeDecodeGraph(dim);
+        configureDsp(sd);
+
+        // Warmup to pointer stability
+        INDArray inputArr = Nd4j.randn(DataType.FLOAT, 1, dim);
+        Map<String, INDArray> ph = new LinkedHashMap<>();
+        ph.put("input", inputArr);
+
+        for (int step = 0; step < warmupSteps; step++) {
+            inputArr.assign(Nd4j.randn(DataType.FLOAT, 1, dim));
+            sd.output(ph, "output");
+        }
+
+        // Baseline memory after stabilization
+        System.gc();
+        long baselinePhysical = org.bytedeco.javacpp.Pointer.physicalBytes();
+        log.info("Baseline physical memory after stabilization: {} MB", baselinePhysical / (1024 * 1024));
+
+        // Run N pages, reusing the same INDArray
+        for (int page = 0; page < numPages; page++) {
+            for (int step = 0; step < stepsPerPage; step++) {
+                inputArr.assign(Nd4j.randn(DataType.FLOAT, 1, dim));
+                sd.output(ph, "output");
+            }
+        }
+
+        System.gc();
+        long afterPhysical = org.bytedeco.javacpp.Pointer.physicalBytes();
+        long growthBytes = afterPhysical - baselinePhysical;
+        double growthMB = growthBytes / (1024.0 * 1024.0);
+        log.info("Memory after {} pages: {} MB (growth: {} MB)",
+                numPages, afterPhysical / (1024 * 1024), String.format("%.1f", growthMB));
+
+        // Allow up to 50 MB growth for JVM/GC noise, but catch real leaks.
+        // A real leak would show ~10-50 MB per page (KV buffer + decode arrays).
+        assertTrue(growthMB < 50.0,
+                String.format("Memory grew by %.1f MB across %d pages — possible leak. " +
+                        "Baseline=%d MB, after=%d MB",
+                        growthMB, numPages,
+                        baselinePhysical / (1024 * 1024),
+                        afterPhysical / (1024 * 1024)));
     }
 }

@@ -1029,7 +1029,9 @@ public class DspHandleTest {
 
         SDVariable input = sd.placeHolder("x", DataType.FLOAT, 1, 8);
         SDVariable weights = sd.var("w", Nd4j.randn(DataType.FLOAT, 8, 4));
-        SDVariable output = sd.mmul("out", input, weights);
+        SDVariable bias = sd.constant("b", Nd4j.zeros(DataType.FLOAT, 1, 4));
+        SDVariable mm = sd.mmul("mm", input, weights);
+        SDVariable output = mm.add("out", bias);
 
         sd.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
         sd.setDspAutoCompileEnabled(true);
@@ -1055,9 +1057,15 @@ public class DspHandleTest {
         log.info("[GATE-TEST] Before markVariable: execCount={} phase={}",
                 preSnap.executeCount, preSnap.planPhase);
 
-        // markVariable should drop plan from REPLAYING to SHAPES_FROZEN
-        int extIdx = h.extInputIndex("x");
-        assertTrue(extIdx >= 0);
+        // markVariable on a constant should drop plan from REPLAYING.
+        // "x" (placeholder) and "w" (variable) are already variable via
+        // addMutableExternalInputs — marking them again is a no-op.
+        // Use "b" (constant bias) which is NOT yet variable.
+        int extIdx = h.extInputIndex("b");
+        assertTrue(extIdx >= 0, "constant 'b' should be in ext inputs");
+        List<Integer> varIdxBefore = h.cachedVariableExtIndices();
+        assertFalse(varIdxBefore.contains(extIdx),
+                "constant 'b' should NOT be variable before markVariable");
         h.markVariable(extIdx);
 
         DspHandle.StepSnapshot postMarkSnap = h.captureStepSnapshot();

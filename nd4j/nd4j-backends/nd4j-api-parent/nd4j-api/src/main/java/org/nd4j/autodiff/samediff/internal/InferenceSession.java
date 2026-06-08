@@ -38,7 +38,6 @@ import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
-import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.CleanupDiagnostics;
@@ -1452,29 +1451,22 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         executor.addMutableExternalInputs(dspMutableExternalInputNames());
 
         if (!executor.isNativePlanCompiled(plan)) {
-            executor.compileNativePlan(plan, null, sameDiff.isDspFallbackToAutoIfTritonUnavailable());
+            // Pass the SameDiff-configured mode explicitly so the native plan receives the
+            // correct mode (e.g. SLOT_BY_SLOT) rather than relying on the system-property
+            // fallback in resolveRequestedGraphExecutionMode(null).
+            executor.compileNativePlan(plan, sameDiff.getGraphExecutionMode(),
+                    sameDiff.isDspFallbackToAutoIfTritonUnavailable());
         }
 
-        // Mark SOURCE_VARIABLE external inputs as mutable so that the C++ plan
-        // allocates staging buffers for them. This is needed for training correctness:
-        // VARIABLE inputs can change between executions (weight updates via
-        // calculateGradients). Without this, detectFrozenConstants() treats
-        // variable-dependent slots as frozen and returns stale first-call output.
-        {
-            String[] extKeys = plan.getExternalInputKeys();
-            byte[] extSourceTypes = plan.getExternalInputSourceTypes();
-            if (extKeys != null && extSourceTypes != null && extKeys.length > 0) {
-                List<String> variableInputNames = new ArrayList<>();
-                for (int i = 0; i < extKeys.length && i < extSourceTypes.length; i++) {
-                    if (extSourceTypes[i] == DynamicShapeSlot.SOURCE_VARIABLE) {
-                        variableInputNames.add(extKeys[i]);
-                    }
-                }
-                if (!variableInputNames.isEmpty()) {
-                    executor.addMutableExternalInputs(variableInputNames);
-                }
-            }
-        }
+        // SOURCE_VARIABLE external inputs (model weights) are NOT marked mutable
+        // during inference. Weights are constants during inference — they never change
+        // between decode steps. The C++ plan's detectFrozenConstants() correctly
+        // identifies them as frozen, enabling frozen-constant skip and avoiding
+        // per-step D2D staging copies for all weight tensors.
+        //
+        // For training, TrainingSession.dspMutableExternalInputNames() returns the
+        // gradient variable names, and the SOURCE_VARIABLE marking should be added
+        // there when weight updates between forward passes need staging.
 
         // DSP replay executes a fixed plan with known shapes, so exact-match allocation has
         // no amortization cost. A >1.0 growth factor creates a gap between logical length

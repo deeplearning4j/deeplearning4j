@@ -136,12 +136,16 @@ sd::LongType getShapeInfoLength(OpaqueNDArray array) {
 }
 
 sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) {
-  // Return 0 for empty arrays or arrays with null/closed buffers.
-  // Views sharing a placeholder's DataBuffer become invalid after the
-  // placeholder is closed. Without this check, getSlotOutput returns
-  // a non-zero length and then copyBuffer crashes on freed GPU memory.
+  // Return 0 for empty arrays or arrays with null/invalid buffers.
+  // Views sharing a placeholder's DataBuffer become invalid (dangling) after
+  // the placeholder is closed via dbClose(): the destructor sets
+  // _magicNumber=0xDEADBEEF BEFORE deleteBuffers() sets closed=true.
+  // Using isClosed() reads 'closed' from potentially freed memory (UB), which
+  // is unreliable when the allocator reuses that memory. isValid() checks
+  // (_magicNumber == MAGIC_NUMBER && !closed), reliably detecting freed
+  // DataBuffers via the sentinel magic number regardless of allocator behavior.
   if(array == nullptr || array->dataBuffer() == nullptr
-     || array->dataBuffer()->isClosed()) {
+     || !array->dataBuffer()->isValid()) {
     return 0;
   }
   return array->lengthOf();

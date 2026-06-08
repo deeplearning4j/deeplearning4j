@@ -1568,6 +1568,13 @@ public class GenerationPipeline implements AutoCloseable {
 
         int maxPrefill = config.getMaxPrefillLength();
         boolean fixedBuffers = maxPrefill > 0;
+        // Track whether we're reusing a frozen plan from a previous call.
+        // When true, ext input arrays are retrieved from the executor and reused
+        // (new data written via assign()) instead of allocating fresh arrays.
+        // This preserves device pointer stability for CUDA graph replay.
+        boolean reusingFrozenPlan = false;
+        INDArray[] frozenExtInputSnapshot = null;
+        DynamicShapePlanExecutor frozenExecutor = null;
 
         if (fixedBuffers) {
             // Fixed-size buffers: skip DSP reset — reuse the frozen plan.
@@ -1576,7 +1583,18 @@ public class GenerationPipeline implements AutoCloseable {
                 DynamicShapePlanExecutor existingExecutor = existingSession.getDynamicShapePlanExecutor();
                 if (existingExecutor != null && existingExecutor.isShapesFrozen()) {
                     log.info("[Lifecycle] Reusing frozen DSP plan for native generation (fixedBuffers=true, maxPrefill={})", maxPrefill);
+                    // Snapshot ext inputs BEFORE clearing node outputs — these are the
+                    // arrays whose device pointers the native plan tracks for stability.
+                    frozenExtInputSnapshot = existingExecutor.getExternalInputsSnapshot();
+                    reusingFrozenPlan = frozenExtInputSnapshot != null && frozenExtInputSnapshot.length > 0;
+                    if (reusingFrozenPlan) {
+                        frozenExecutor = existingExecutor;
+                    }
                     existingSession.clearNodeOutputsOnly();
+                    if (reusingFrozenPlan) {
+                        log.info("[Lifecycle] Captured {} ext input arrays for pointer-stable reuse",
+                                frozenExtInputSnapshot.length);
+                    }
                 }
             }
         } else {
@@ -1732,9 +1750,29 @@ public class GenerationPipeline implements AutoCloseable {
         Map<String, INDArray> staticKvBuffers = new LinkedHashMap<>();
         for (String keyName : kvNames.keyNames) {
             INDArray presentKv = prefillOutputs.get(keyName);
-            INDArray padded = padKvToStaticSize(presentKv, maxKvLen);
-            padded.setCloseable(false);  // Pin buffer — matches UnifiedKvCacheManager line 457
             String inputName = ioConfig.presentToInputName(keyName);
+            INDArray padded;
+            if (reusingFrozenPlan) {
+                // Reuse the existing ext input array to preserve device pointers.
+                int extIdx = resolveExtInputIdx(frozenExecutor, inputName);
+                padded = (extIdx >= 0 && extIdx < frozenExtInputSnapshot.length)
+                        ? frozenExtInputSnapshot[extIdx] : null;
+                if (padded != null) {
+                    // Zero the buffer, then copy prefill KV data into the reused array.
+                    padded.assign(0);
+                    long seqLen = presentKv.shape()[2];
+                    padded.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, seqLen), NDArrayIndex.all()).assign(presentKv);
+                } else {
+                    // Fallback: ext input not found — allocate fresh (breaks pointer stability)
+                    log.warn("[Lifecycle] KV ext input '{}' not found in snapshot (extIdx={}), allocating fresh", inputName, extIdx);
+                    padded = padKvToStaticSize(presentKv, maxKvLen);
+                    padded.setCloseable(false);
+                }
+            } else {
+                padded = padKvToStaticSize(presentKv, maxKvLen);
+                padded.setCloseable(false);
+            }
             staticKvBuffers.put(inputName, padded);
             if (!prefillDspActive) {
                 presentKv.close();
@@ -1742,9 +1780,26 @@ public class GenerationPipeline implements AutoCloseable {
         }
         for (String valName : kvNames.valueNames) {
             INDArray presentKv = prefillOutputs.get(valName);
-            INDArray padded = padKvToStaticSize(presentKv, maxKvLen);
-            padded.setCloseable(false);  // Pin buffer — matches UnifiedKvCacheManager line 457
             String inputName = ioConfig.presentToInputName(valName);
+            INDArray padded;
+            if (reusingFrozenPlan) {
+                int extIdx = resolveExtInputIdx(frozenExecutor, inputName);
+                padded = (extIdx >= 0 && extIdx < frozenExtInputSnapshot.length)
+                        ? frozenExtInputSnapshot[extIdx] : null;
+                if (padded != null) {
+                    padded.assign(0);
+                    long seqLen = presentKv.shape()[2];
+                    padded.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, seqLen), NDArrayIndex.all()).assign(presentKv);
+                } else {
+                    log.warn("[Lifecycle] KV ext input '{}' not found in snapshot (extIdx={}), allocating fresh", inputName, extIdx);
+                    padded = padKvToStaticSize(presentKv, maxKvLen);
+                    padded.setCloseable(false);
+                }
+            } else {
+                padded = padKvToStaticSize(presentKv, maxKvLen);
+                padded.setCloseable(false);
+            }
             staticKvBuffers.put(inputName, padded);
             if (!prefillDspActive) {
                 presentKv.close();
@@ -1783,51 +1838,124 @@ public class GenerationPipeline implements AutoCloseable {
         // The warmup compiles the DSP plan for these shapes, and the native
         // loop reuses the same plan handle — no shape mismatch, no plan swap.
         // ══════════════════════════════════════════════════════════════════════
-        // dup() is MANDATORY: getRow().reshape() returns a VIEW into embeddingTable.
-        // assign() at line below writes into this buffer — without dup(), that corrupts
-        // the persistent weight matrix, making subsequent runs non-deterministic.
-        INDArray decodeEmbeddings = embeddingTable.getRow(firstTokenId).reshape(1, 1, hiddenSize).dup();
-        INDArray decodeInputIds = Nd4j.createFromArray(new int[]{firstTokenId})
-                .reshape(1, 1).castTo(DataType.INT64);
-
         // Mask dimension: maxKvLen + 1 (past KV positions + current query position).
         // The model's internal attention ops produce [1,1,1,maxKvLen+1] tensors and
         // add them to the causal mask — shapes MUST match.
         long totalSeqLen = maxKvLen + 1;
 
-        // Causal mask: [1, 1, 1, totalSeqLen] FLOAT — MASK_FILL for unfilled positions, 0.0 for filled.
-        // Uses PADDED layout (query at totalSeqLen-1), matching DecoderInputBuilder with dspActive=true.
-        //   1. Fill everything with MASK_FILL = masked
-        //   2. Unmask [0..actualPrefillLen] with 0.0f (real prefill KV + the first decode position)
-        // actualPrefillLen IS the first decode token's write slot — the query must
-        // attend to its own KV entry. The C++ kernel updates subsequent positions per step.
-        //
-        // Constructed entirely on host to avoid CUDA host/device mismatch issues.
-        float[] causalData = new float[(int) totalSeqLen];
-        float maskFill = ModelIOConfig.MASK_FILL;
-        for (int i = 0; i < (int) totalSeqLen; i++) {
-            causalData[i] = (i <= actualPrefillLen) ? 0.0f : maskFill;
+        INDArray decodeEmbeddings;
+        INDArray decodeInputIds;
+        INDArray decodeCausalMask;
+        INDArray decodeAttentionMask;
+        INDArray decodePosIds;
+
+        if (reusingFrozenPlan) {
+            // ── Reuse existing ext input arrays for pointer stability ──────────
+            // The frozen plan tracks device pointer addresses. Fresh allocations
+            // give new pointers, breaking pointer stability and preventing CUDA
+            // graph capture/replay. Retrieve the existing arrays and write new
+            // values into them via assign()/putScalar().
+            String embedsName = ioConfig.getInputEmbeddingsName();
+            int embExtIdx = (embedsName != null && decoder.hasVariable(embedsName))
+                    ? resolveExtInputIdx(frozenExecutor, embedsName) : -1;
+            int idsExtIdx = resolveExtInputIdx(frozenExecutor, ioConfig.getInputIdsName());
+            int causalExtIdx = ioConfig.getCausalMaskName() != null
+                    ? resolveExtInputIdx(frozenExecutor, ioConfig.getCausalMaskName()) : -1;
+            int maskExtIdx = resolveExtInputIdx(frozenExecutor, ioConfig.getAttentionMaskName());
+            int posExtIdx = resolveExtInputIdx(frozenExecutor, ioConfig.getPositionIdsName());
+
+            // Embeddings: write first token embedding into reused array
+            decodeEmbeddings = (embExtIdx >= 0 && embExtIdx < frozenExtInputSnapshot.length)
+                    ? frozenExtInputSnapshot[embExtIdx] : null;
+            if (decodeEmbeddings != null) {
+                INDArray firstEmbed = embeddingTable.getRow(firstTokenId).reshape(1, 1, hiddenSize);
+                decodeEmbeddings.assign(firstEmbed);
+                firstEmbed.close();
+            } else {
+                decodeEmbeddings = embeddingTable.getRow(firstTokenId).reshape(1, 1, hiddenSize).dup();
+            }
+
+            // Input IDs
+            decodeInputIds = (idsExtIdx >= 0 && idsExtIdx < frozenExtInputSnapshot.length)
+                    ? frozenExtInputSnapshot[idsExtIdx] : null;
+            if (decodeInputIds != null) {
+                decodeInputIds.putScalar(new long[]{0, 0}, firstTokenId);
+            } else {
+                decodeInputIds = Nd4j.createFromArray(new int[]{firstTokenId})
+                        .reshape(1, 1).castTo(DataType.INT64);
+            }
+
+            // Causal mask: rewrite values into existing array
+            decodeCausalMask = (causalExtIdx >= 0 && causalExtIdx < frozenExtInputSnapshot.length)
+                    ? frozenExtInputSnapshot[causalExtIdx] : null;
+            if (decodeCausalMask != null) {
+                float maskFill = ModelIOConfig.MASK_FILL;
+                for (int i = 0; i < (int) totalSeqLen; i++) {
+                    decodeCausalMask.putScalar(new long[]{0, 0, 0, i},
+                            (i <= actualPrefillLen) ? 0.0f : maskFill);
+                }
+            } else {
+                float[] causalData = new float[(int) totalSeqLen];
+                float maskFill = ModelIOConfig.MASK_FILL;
+                for (int i = 0; i < (int) totalSeqLen; i++) {
+                    causalData[i] = (i <= actualPrefillLen) ? 0.0f : maskFill;
+                }
+                decodeCausalMask = Nd4j.createFromArray(causalData).reshape(1, 1, 1, totalSeqLen);
+            }
+
+            // Attention mask: rewrite values into existing array
+            decodeAttentionMask = (maskExtIdx >= 0 && maskExtIdx < frozenExtInputSnapshot.length)
+                    ? frozenExtInputSnapshot[maskExtIdx] : null;
+            if (decodeAttentionMask != null) {
+                decodeAttentionMask.assign(0);
+                for (int i = 0; i < actualPrefillLen; i++) {
+                    decodeAttentionMask.putScalar(new long[]{0, i}, 1);
+                }
+                decodeAttentionMask.putScalar(new long[]{0, totalSeqLen - 1}, 1);
+            } else {
+                long[] maskData = new long[(int) totalSeqLen];
+                for (int i = 0; i < actualPrefillLen; i++) maskData[i] = 1;
+                maskData[(int) (totalSeqLen - 1)] = 1;
+                decodeAttentionMask = Nd4j.createFromArray(maskData).reshape(1, totalSeqLen);
+            }
+
+            // Position IDs
+            decodePosIds = (posExtIdx >= 0 && posExtIdx < frozenExtInputSnapshot.length)
+                    ? frozenExtInputSnapshot[posExtIdx] : null;
+            if (decodePosIds != null) {
+                decodePosIds.putScalar(new long[]{0, 0}, actualPrefillLen);
+            } else {
+                decodePosIds = Nd4j.createFromArray(new long[]{actualPrefillLen}).reshape(1, 1);
+            }
+
+            log.info("[Lifecycle] Reused {} ext input arrays for pointer-stable decode step",
+                    frozenExtInputSnapshot.length);
+        } else {
+            // ── First call: allocate fresh decode arrays ───────────────────────
+            // dup() is MANDATORY: getRow().reshape() returns a VIEW into embeddingTable.
+            // assign() at line below writes into this buffer — without dup(), that corrupts
+            // the persistent weight matrix, making subsequent runs non-deterministic.
+            decodeEmbeddings = embeddingTable.getRow(firstTokenId).reshape(1, 1, hiddenSize).dup();
+            decodeInputIds = Nd4j.createFromArray(new int[]{firstTokenId})
+                    .reshape(1, 1).castTo(DataType.INT64);
+
+            // Causal mask: [1, 1, 1, totalSeqLen] FLOAT — MASK_FILL for unfilled positions, 0.0 for filled.
+            float[] causalData = new float[(int) totalSeqLen];
+            float maskFill = ModelIOConfig.MASK_FILL;
+            for (int i = 0; i < (int) totalSeqLen; i++) {
+                causalData[i] = (i <= actualPrefillLen) ? 0.0f : maskFill;
+            }
+            decodeCausalMask = Nd4j.createFromArray(causalData).reshape(1, 1, 1, totalSeqLen);
+
+            // Attention mask: [1, totalSeqLen] LONG (0/1 values, updated per step by C++ kernel).
+            long[] maskData = new long[(int) totalSeqLen];
+            for (int i = 0; i < actualPrefillLen; i++) maskData[i] = 1;
+            maskData[(int) (totalSeqLen - 1)] = 1;
+            decodeAttentionMask = Nd4j.createFromArray(maskData).reshape(1, totalSeqLen);
+
+            // Position IDs: [1, 1] INT64 — first decode position is after real tokens
+            decodePosIds = Nd4j.createFromArray(new long[]{actualPrefillLen}).reshape(1, 1);
         }
-        INDArray decodeCausalMask = Nd4j.createFromArray(causalData).reshape(1, 1, 1, totalSeqLen);
-
-        // Attention mask: [1, totalSeqLen] LONG (0/1 values, updated per step by C++ kernel).
-        // Uses PADDED layout (query at totalSeqLen-1).
-        //   1. Valid past KV positions: [0, actualPrefillLen-1] = 1
-        //   2. Query position: totalSeqLen-1 = 1
-        //   3. Future padding: [actualPrefillLen, totalSeqLen-2] = 0
-        //
-        // IMPORTANT: Construct entirely on host via createFromArray to avoid
-        // host/device buffer mismatch. Mixing .get().assign() (CUDA kernel → device)
-        // with putScalar (host write) creates an inconsistent state where syncToDevice
-        // copies the stale host (missing the CUDA-assigned values) over the device buffer.
-        long[] maskData = new long[(int) totalSeqLen];
-        for (int i = 0; i < actualPrefillLen; i++) maskData[i] = 1;
-        maskData[(int) (totalSeqLen - 1)] = 1;
-        INDArray decodeAttentionMask = Nd4j.createFromArray(maskData).reshape(1, totalSeqLen);
-
-        // Position IDs: [1, 1] INT64 — first decode position is after real tokens
-        INDArray decodePosIds = Nd4j.createFromArray(new long[]{actualPrefillLen})
-                .reshape(1, 1);
 
         // ── attn_mask_reformat override ──────────────────────────────────────
         // The model's internal attn_mask_reformat subgraph is correct for single-
@@ -2156,18 +2284,22 @@ public class GenerationPipeline implements AutoCloseable {
         log.info("[Perf] Native decode: {} tokens in {} ms ({} tok/s)",
                 decodeSteps, decodeLoopMs, String.format("%.1f", tokPerSec));
 
-        // Cleanup
+        // Cleanup — skip closing reused ext input arrays (they belong to the executor).
+        // Closing them would destroy the device memory that the native plan tracks,
+        // breaking pointer stability on the next page.
         currentInputIds.close();
-        decodeEmbeddings.close();
-        decodeInputIds.close();
-        decodeCausalMask.close();
-        decodeAttentionMask.close();
-        decodePosIds.close();
-        if (decodeAttnMaskReformat != null) decodeAttnMaskReformat.close();
+        if (!reusingFrozenPlan) {
+            decodeEmbeddings.close();
+            decodeInputIds.close();
+            decodeCausalMask.close();
+            decodeAttentionMask.close();
+            decodePosIds.close();
+            if (decodeAttnMaskReformat != null) decodeAttnMaskReformat.close();
 
-        for (INDArray kv : staticKvBuffers.values()) {
-            kv.setCloseable(true);  // Unpin before closing
-            kv.close();
+            for (INDArray kv : staticKvBuffers.values()) {
+                kv.setCloseable(true);  // Unpin before closing
+                kv.close();
+            }
         }
 
         return GenerationResult.builder()

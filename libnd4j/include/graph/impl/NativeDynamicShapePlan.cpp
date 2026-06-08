@@ -453,8 +453,13 @@ bool segmentIsFullyReplayingForPlanPhase(const GraphSegment& seg, NativeSlot* sl
 
   switch (seg.def.selectedBackend) {
     case SelectedBackend::EMULATED_REPLAY:
-      return seg.exec.segPhase.isSealed() &&
-             !seg.exec.needsArgRefresh();
+      // EMULATED_REPLAY re-executes every slot fresh each step (no baked CUDA
+      // graph), so address instability from fresh placeholder allocations does
+      // not affect correctness. The view wrapper refresh + addr key update in
+      // executeSegmentEmulatedReplay handles staleness at execution time.
+      // Only require isSealed() — don't block on needsArgRefresh() which would
+      // cause phase demotion when callers allocate fresh inputs each call.
+      return seg.exec.segPhase.isSealed();
 
     case SelectedBackend::CPU_GRAPH:
       return seg.exec.segPhase.isSealed() ||
@@ -1760,9 +1765,14 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
           if (slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
             plan->externalInputIsVariable_[extIdx] = true;
             plan->externalInputIsPlaceholder_[extIdx] = true;
-          } else if (slot.wiring.inputSourceTypes[i] == SOURCE_VARIABLE) {
-            plan->externalInputIsVariable_[extIdx] = true;
           }
+          // NOTE: SOURCE_VARIABLE inputs (trainable weights) are NOT marked
+          // variable here. During inference, weights are constants — they never
+          // change between decode steps. Marking weights as variable prevents
+          // detectFrozenConstants() from freezing any weight-dependent slot and
+          // adds unnecessary D2D staging copies per step. For training, the
+          // Java side calls markPlanExternalInputVariable() selectively.
+          // See NativePlanCompiler.cpp lines 630-641 for the canonical rationale.
         }
       }
     }
@@ -2477,7 +2487,7 @@ Status NativeDynamicShapePlan::execute(
     // a new placeholder), the view wrapper becomes stale — its DataBuffer pointer
     // no longer matches slotOwnership_[].dataBuffer. Refreshing here ensures the
     // lifecycle validator sees consistent ownership for view slots.
-    if (planLifecycle_.isShapesFrozen()) {
+    if (planLifecycle_.isInFrozenOrReplayState()) {
       if (sd::Environment::getInstance().isDebug()) {
         scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
                                   "BEFORE_refreshStaleViewWrappers", executeCount_);
@@ -3650,7 +3660,12 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
     computeSlotVariableDependency();
   }
 
-  if (!planLifecycle_.isSlotBySlot()) {
+  // Only invalidate captures when the variable status actually changed.
+  // Redundant marks (ext already variable) must NOT invalidate — each
+  // invalidation resets segment execution counts and forces re-warmup +
+  // re-capture of CUDA graphs, which in a 60-KV-cache model means 60+
+  // redundant invalidations that prevent the graph from ever stabilizing.
+  if (!wasAlreadyVariable && !planLifecycle_.isSlotBySlot()) {
     DSP_DIAG(EXECUTE, "markExternalInputVariable: ext[%d] invalidating captures "
              "after explicit variable mark (segments=%d phase=%s)",
              extIdx, (int)segments_.size(), planLifecycle_.displayName());
@@ -3667,6 +3682,12 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
     }
     clearGpuBackendFailedCache();
     platformClearCastCache();
+  } else if (wasAlreadyVariable) {
+    DSP_DIAG(EXECUTE, "markExternalInputVariable: ext[%d] name='%s' ALREADY variable — "
+             "skipping invalidation (captures remain valid)",
+             extIdx,
+             (extIdx < static_cast<int>(externalInputNames_.size()))
+                 ? externalInputNames_[extIdx].c_str() : "?");
   }
 
   // ── Staging buffer cleanup (only if staging existed before) ────────────────
@@ -4903,6 +4924,21 @@ Status NativeDynamicShapePlan::dispatchSegment(
     return Status::OK;
   }
 
+  // ── 1b. EMULATED_REPLAY backend — dispatch BEFORE terminal outcome check.
+  // EMULATED_REPLAY manages its own lifecycle (WARMUP → CAPTURING → SEALED)
+  // and sets outcome=ZERO_KERNEL_SBS when sealing. If the terminal outcome
+  // check fires first, it bypasses executeSegmentEmulatedReplay entirely,
+  // routing through executeSegmentSlotBySlot with SBS_ON_LC_STREAM (no staging,
+  // raw ext arrays). This causes view-producer slots to wrap the raw
+  // placeholder DataBuffer instead of the staging buffer. When the placeholder
+  // is closed between executions, the view's DataBuffer becomes invalid and
+  // getSlotOutput returns null.
+  if (seg.def.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
+    auto status = executeSegmentEmulatedReplay(seg, externalArrays, numExt, stream);
+    usedGraph = (status == Status::OK);
+    return status;
+  }
+
   // ── 2. Terminal outcomes — permanent slot-by-slot ───────────────────────
   // Terminal outcomes (ZERO_KERNEL_SBS, NOT_FUSIBLE, COMPILE_FAILED) will
   // NEVER do graph replay. Route through performPreReplaySync with
@@ -4983,11 +5019,7 @@ Status NativeDynamicShapePlan::dispatchSegment(
   }
 
   // ── 5. PENDING — still building (warmup/compile/capture) ───────────────
-  if (seg.def.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
-    auto status = executeSegmentEmulatedReplay(seg, externalArrays, numExt, stream);
-    usedGraph = (status == Status::OK);
-    return status;
-  }
+  // Note: EMULATED_REPLAY is handled above in step 1b, before terminal outcomes.
 
   if (platformShouldUseGraph(seg)) {
     return platformExecuteSegmentWithBackends(

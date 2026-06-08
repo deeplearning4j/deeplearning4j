@@ -1677,18 +1677,24 @@ public class DynamicShapePlanExecutor implements Closeable {
             return;
         }
 
-        if (cachedCudaGraphsEnabled) {
+        // Only enable CUDA graph capture if the configured mode supports it.
+        // SLOT_BY_SLOT and EMULATED_REPLAY must never capture/replay CUDA graphs.
+        boolean modeSupportsGraphCapture = configuredGraphExecutionMode.requiresGraphBackend();
+        if (cachedCudaGraphsEnabled && modeSupportsGraphCapture) {
             try {
                 nativeOps.setPlanCudaGraphsEnabled(handle, true);
                 DspDiagnostics.record(DspDiagnostics.COMPILE,
-                        "Java: CUDA graphs ENABLED on native plan (addr=" + Long.toHexString(addr) + ")");
+                        "Java: CUDA graphs ENABLED on native plan (addr=" + Long.toHexString(addr) +
+                        " mode=" + configuredGraphExecutionMode + ")");
             } catch (UnsupportedOperationException e) {
                 DspDiagnostics.record(DspDiagnostics.COMPILE,
                         "Java: CUDA graphs not supported by backend (CPU?)");
             }
         } else {
             DspDiagnostics.record(DspDiagnostics.COMPILE,
-                    "Java: CUDA graphs DISABLED (cudaGraphsFailed=" + cudaGraphsFailed + ")");
+                    "Java: CUDA graphs DISABLED (cudaGraphsFailed=" + cudaGraphsFailed +
+                    " modeSupportsGraphCapture=" + modeSupportsGraphCapture +
+                    " mode=" + configuredGraphExecutionMode + ")");
         }
 
         if (cachedJitModeInt >= 0) {
@@ -1912,7 +1918,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (staticBuf.rank() != 4) continue;
 
             presentSlotIndices.add(slotIdx);
-            staticBufList.add(OpaqueNDArray.fromINDArrayNoSync(staticBuf));
+            staticBufList.add(OpaqueNDArray.fromINDArray(staticBuf));
 
             // Extract shape info from first pair (all pairs are assumed uniform)
             if (heads < 0) {
@@ -2024,6 +2030,16 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (nativeExecutorFailed) {
                 throw new RuntimeException("Native DSP executor compilation previously failed. " +
                         "No fallback to Java permitted. Fix the native compilation issue.");
+            }
+            // Detect mode changes after initial compilation.
+            // If sd.setGraphExecutionMode() was called after the native plan was compiled,
+            // the C++ plan still has the old mode. Recompile with the new mode so that
+            // e.g. SLOT_BY_SLOT is not silently ignored in favour of the initial AUTO.
+            GraphExecutionMode currentSdMode = sd.getGraphExecutionMode();
+            if (isNativePlanCompiled(plan) && currentSdMode != configuredGraphExecutionMode) {
+                log.info("Native executor: mode change detected ({} -> {}), recompiling native plan",
+                        configuredGraphExecutionMode, currentSdMode);
+                compileNativePlan(plan, currentSdMode, sd.isDspFallbackToAutoIfTritonUnavailable());
             }
             if (!isNativePlanCompiled(plan) && sd.isDspNativeAutoCompileEnabled()) {
                 // Reuse the previously configured execution mode (e.g. SLOT_BY_SLOT)
@@ -3059,7 +3075,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     for (int pi : placeholderIndices) {
                         INDArray arr = extInputs[pi];
                         if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
-                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
+                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                             nativeOps.setGraphContextInputArray(opContext, pi, opaqueIn);
                             cachedInputOpaques[pi] = opaqueIn;
                             cachedInputArrays[pi] = arr;
@@ -3072,7 +3088,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                     + extKeys[di] + "' is not live during frozen execution");
                         }
                         extInputs[di] = arr;
-                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
+                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                         nativeOps.setGraphContextInputArray(opContext, di, opaqueIn);
                         cachedInputOpaques[di] = opaqueIn;
                         cachedInputArrays[di] = arr;
@@ -3084,7 +3100,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         }
                         if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
                             extInputs[ci] = arr;
-                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
+                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                             nativeOps.setGraphContextInputArray(opContext, ci, opaqueIn);
                             cachedInputOpaques[ci] = opaqueIn;
                             cachedInputArrays[ci] = arr;
@@ -3099,7 +3115,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             int ci = staleNonPlaceholderIndices[sc];
                             INDArray arr = extInputs[ci];
                             if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
-                                OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
+                                OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                                 nativeOps.setGraphContextInputArray(opContext, ci, opaqueIn);
                                 cachedInputOpaques[ci] = opaqueIn;
                                 DspDiagnostics.record(DspDiagnostics.MEMORY,
@@ -3125,7 +3141,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                             + "' changed identity but is not live");
                         }
 
-                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
+                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                         nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
                         cachedInputOpaques[i] = opaqueIn;
                         cachedInputArrays[i] = arr;
@@ -3163,7 +3179,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 }
                                 extInputs[i] = arrToSet;
                             }
-                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arrToSet);
+                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arrToSet);
                             nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
                             cachedInputOpaques[i] = opaqueIn;
                             cachedInputArrays[i] = extInputs[i];
@@ -3223,7 +3239,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         arr = Nd4j.scalar(DataType.FLOAT, 0.0f);
                         extInputs[i] = arr;
                     }
-                    OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArrayNoSync(arr);
+                    OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                     nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
                     newRefs[i] = opaqueIn;
                 }
@@ -3239,7 +3255,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     int derivedCount = 0;
                     int controlCount = 0;
                     for (int i = 0; i < extInputs.length; i++) {
-                        cachedInputOpaques[i] = OpaqueNDArray.fromINDArrayNoSync(extInputs[i]);
+                        cachedInputOpaques[i] = OpaqueNDArray.fromINDArray(extInputs[i]);
                         // Mark as placeholder if it came from the placeholderArrays map
                         inputIsPlaceholder[i] = placeholderArrays != null
                                 && placeholderArrays.containsKey(extKeys[i]);
@@ -3288,7 +3304,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // multi-output graphs to return wrong outputs after shape freezing.
             for (int i = 0; i < numOutputs; i++) {
                 INDArray dummy = Nd4j.empty(DataType.FLOAT);
-                OpaqueNDArray opaqueOut = OpaqueNDArray.fromINDArrayNoSync(dummy);
+                OpaqueNDArray opaqueOut = OpaqueNDArray.fromINDArray(dummy);
                 nativeOps.setGraphContextOutputArray(opContext, i, opaqueOut);
             }
 

@@ -143,10 +143,11 @@ public class DspPostPrefillReshapeCrashTest {
 
         sd.setOutputs("logits", "kvKey");
 
-        // Configure DSP
-        if (mode == GraphExecutionMode.SLOT_BY_SLOT) {
-            sd.setDspAutoCompileEnabled(false);
-        }
+        // Configure DSP — let DSP auto-compile run for all modes including SLOT_BY_SLOT.
+        // Previously, dspAutoCompileEnabled(false) was set for SLOT_BY_SLOT to work around
+        // a mode propagation bug where the native plan received mode=AUTO instead of
+        // SLOT_BY_SLOT. That bug is now fixed: InferenceSession passes the SameDiff mode
+        // explicitly to compileNativePlan, and execute() detects post-compilation mode changes.
         sd.setGraphExecutionMode(mode);
 
         // STEP 1: Run prefill — multiple iterations to advance DSP phases
@@ -247,9 +248,7 @@ public class DspPostPrefillReshapeCrashTest {
         SDVariable logits = sd.math.add("logits", h.sum("hSum"), 0.0);
 
         sd.setOutputs("logits", "kvOut");
-        if (mode == GraphExecutionMode.SLOT_BY_SLOT) {
-            sd.setDspAutoCompileEnabled(false);
-        }
+        // Mode propagation is now fixed: pass mode directly, no need to disable DSP for SLOT_BY_SLOT.
         sd.setGraphExecutionMode(mode);
 
         // Run prefill
@@ -321,9 +320,7 @@ public class DspPostPrefillReshapeCrashTest {
         SDVariable out3 = sd.mmul("out3", h1, w3);
 
         sd.setOutputs("out1", "out2", "out3");
-        if (mode == GraphExecutionMode.SLOT_BY_SLOT) {
-            sd.setDspAutoCompileEnabled(false);
-        }
+        // Mode propagation is now fixed: pass mode directly, no need to disable DSP for SLOT_BY_SLOT.
         sd.setGraphExecutionMode(mode);
 
         INDArray input = Nd4j.linspace(DataType.FLOAT, -0.01, 0.001, 1 * seqLen * hiddenSize)
@@ -366,5 +363,137 @@ public class DspPostPrefillReshapeCrashTest {
         assertNotNull(outputs2.get("out1"));
         assertNotNull(outputs2.get("out2"));
         assertNotNull(outputs2.get("out3"));
+    }
+
+    /**
+     * Diagnostic test: reduction (sum along dimension) uses TADs via ConstantTadHelper
+     * the same way softmax does. If the graph-replay TAD pointer issue is general,
+     * this should also fail under CUDA_GRAPHS / AUTO / TRITON. If only softmax fails,
+     * the root cause is softmax-specific, not a generic TAD staging problem.
+     */
+    @ParameterizedTest(name = "reductionTadReplay[{0}]")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON", "EMULATED_REPLAY"}, mode = org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE)
+    @DisplayName("Reduction along dimension (TAD-based) under CUDA graph replay")
+    public void testReductionTadUnderGraphReplay(GraphExecutionMode mode) {
+        int rows = 16;
+        int cols = 64;
+
+        sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, rows, cols);
+        SDVariable w = sd.var("w", Nd4j.linspace(DataType.FLOAT, -0.01, 0.001, cols * cols).reshape(cols, cols));
+
+        // matmul → reduction (sum along dim 1) — the reduction uses TADs
+        SDVariable h = sd.mmul("h", x, w);
+        SDVariable reduced = h.sum("reduced", 1);  // sum along columns, TAD along dim 1
+        SDVariable out = sd.math.add("out", reduced, 0.0);
+
+        sd.setOutputs("out");
+        sd.setGraphExecutionMode(mode);
+
+        INDArray input = Nd4j.linspace(DataType.FLOAT, -0.05, 0.001, rows * cols).reshape(rows, cols);
+
+        // 6 iterations to advance through DSP phases (warmup → capture → replay)
+        Map<String, INDArray> outputs = null;
+        for (int i = 0; i < 6; i++) {
+            outputs = sd.output(Map.of("x", input), "out");
+        }
+
+        assertNotNull(outputs);
+        INDArray result = outputs.get("out");
+        assertNotNull(result, "Output should not be null");
+        assertEquals(rows, result.length(), "Reduction should produce one value per row");
+        assertFalse(Float.isNaN(result.getFloat(0)), "Result should not be NaN (stale pointer → garbage)");
+        log.info("Reduction TAD replay [{}]: first={}, shape={}", mode, result.getFloat(0), Arrays.toString(result.shape()));
+    }
+
+    /**
+     * Diagnostic test: softmax alone (no surrounding attention) under CUDA graph replay.
+     * Isolates whether the graph-replay crash is specific to softmax's TAD usage pattern
+     * or caused by the attention graph's structure (reshapes, permutes, batched matmul).
+     */
+    @ParameterizedTest(name = "softmaxTadReplay[{0}]")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON", "EMULATED_REPLAY"}, mode = org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE)
+    @DisplayName("Softmax along dimension (TAD-based) under CUDA graph replay")
+    public void testSoftmaxTadUnderGraphReplay(GraphExecutionMode mode) {
+        int rows = 16;
+        int cols = 64;
+
+        sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, rows, cols);
+        SDVariable w = sd.var("w", Nd4j.linspace(DataType.FLOAT, -0.01, 0.001, cols * cols).reshape(cols, cols));
+
+        // matmul → softmax along last dim — softmax uses TADs
+        SDVariable h = sd.mmul("h", x, w);
+        SDVariable sm = sd.nn.softmax("softmax", h, -1);
+        SDVariable out = sd.math.add("out", sm, 0.0);
+
+        sd.setOutputs("out");
+        sd.setGraphExecutionMode(mode);
+
+        INDArray input = Nd4j.linspace(DataType.FLOAT, -0.05, 0.001, rows * cols).reshape(rows, cols);
+
+        Map<String, INDArray> outputs = null;
+        for (int i = 0; i < 6; i++) {
+            outputs = sd.output(Map.of("x", input), "out");
+        }
+
+        assertNotNull(outputs);
+        INDArray result = outputs.get("out");
+        assertNotNull(result, "Output should not be null");
+        assertArrayEquals(new long[]{rows, cols}, result.shape(), "Softmax should preserve shape");
+        assertFalse(Float.isNaN(result.getFloat(0)), "Result should not be NaN (stale pointer → garbage)");
+
+        // Verify softmax row sums to 1.0
+        INDArray rowSum = result.sum(1);
+        for (int i = 0; i < rows; i++) {
+            assertEquals(1.0f, rowSum.getFloat(i), 0.01,
+                    "Softmax row " + i + " should sum to 1.0, got " + rowSum.getFloat(i));
+        }
+        log.info("Softmax TAD replay [{}]: shape={}, row0sum={}", mode, Arrays.toString(result.shape()), rowSum.getFloat(0));
+    }
+
+    /**
+     * Diagnostic test: both reduction AND softmax in the same graph under CUDA graph replay.
+     * This directly tests whether the two TAD-based op types can coexist in a captured graph.
+     */
+    @ParameterizedTest(name = "mixedTadReplay[{0}]")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON", "EMULATED_REPLAY"}, mode = org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE)
+    @DisplayName("Mixed TAD ops (reduction + softmax) under CUDA graph replay")
+    public void testMixedTadOpsUnderGraphReplay(GraphExecutionMode mode) {
+        int rows = 16;
+        int cols = 64;
+
+        sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, rows, cols);
+        SDVariable w = sd.var("w", Nd4j.linspace(DataType.FLOAT, -0.01, 0.001, cols * cols).reshape(cols, cols));
+
+        SDVariable h = sd.mmul("h", x, w);
+
+        // Branch 1: softmax (TAD-based)
+        SDVariable sm = sd.nn.softmax("softmax", h, -1);
+
+        // Branch 2: reduction along dim 1 (TAD-based)
+        SDVariable reduced = h.sum("reduced", 1);
+
+        // Combine both to ensure both are in the graph
+        SDVariable smSum = sm.sum("smSum", 1);
+        SDVariable combined = sd.math.add("combined", smSum, reduced);
+
+        sd.setOutputs("combined");
+        sd.setGraphExecutionMode(mode);
+
+        INDArray input = Nd4j.linspace(DataType.FLOAT, -0.05, 0.001, rows * cols).reshape(rows, cols);
+
+        Map<String, INDArray> outputs = null;
+        for (int i = 0; i < 6; i++) {
+            outputs = sd.output(Map.of("x", input), "combined");
+        }
+
+        assertNotNull(outputs);
+        INDArray result = outputs.get("combined");
+        assertNotNull(result, "Combined output should not be null");
+        assertEquals(rows, result.length(), "Combined output should have one value per row");
+        assertFalse(Float.isNaN(result.getFloat(0)), "Result should not be NaN");
+        log.info("Mixed TAD replay [{}]: shape={}, first={}", mode, Arrays.toString(result.shape()), result.getFloat(0));
     }
 }
