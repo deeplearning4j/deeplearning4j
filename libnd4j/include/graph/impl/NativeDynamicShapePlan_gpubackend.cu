@@ -487,6 +487,30 @@ static bool validateAndStoreMergedCapture(
     }
   }
 
+  // ── Pre-instantiation memory gate ──────────────────────────────────────
+  // Each cudaGraphExec_t instantiation reserves GPU memory for graph metadata,
+  // kernel arguments, and dependency tables. With many composite islands (e.g. 76
+  // in the vision encoder), cumulative memory can exhaust the GPU, causing
+  // error 700 during subsequent gap ops that need workspace allocations.
+  // Check free memory BEFORE instantiation to bail out cleanly.
+  {
+    size_t gpuFree = 0, gpuTotal = 0;
+    cudaMemGetInfo(&gpuFree, &gpuTotal);
+    // Reserve enough headroom for gap op workspaces (xw_plus_b needs ~12MB each,
+    // cuBLAS workspace is ~256MB). Use configurable safety threshold, default 384MB.
+    size_t perIslandSafetyBytes = static_cast<size_t>(
+        Environment::getInstance().dsp().graphMetadataSafetyMb()) * 1024ULL * 1024ULL;
+    // Scale safety by node count — larger graphs need more instantiation memory
+    size_t scaledSafety = perIslandSafetyBytes + (nodeCount * 4096ULL);
+    if (gpuFree < scaledSafety) {
+      DSP_DIAG(MEMORY, "%s: group=%d PRE-INSTANTIATE OOM GATE: gpuFree=%zuMB < safety=%zuMB "
+               "(nodes=%zu, perIslandSafety=%zuMB). Bailing out cleanly to prevent error 700.",
+               diagPrefix, mergedGroupId, gpuFree / (1024*1024), scaledSafety / (1024*1024),
+               nodeCount, perIslandSafetyBytes / (1024*1024));
+      return false;
+    }
+  }
+
   bool instOk = nativeHandle->instantiate();
   if (!instOk) {
     cudaError_t instErr = cudaGetLastError();
@@ -690,13 +714,14 @@ static Status reportOomError(GraphSegment& seg, const char* phase,
       seg.exec.executionCount,
       tritonCaptureWorkspaceSize() / (1024*1024));
   DSP_DIAG(MEMORY, "%s", oomMsg);
-  SegmentLifecycle::markFailed(seg.exec, "oom");
+  SegmentLifecycle::markFailed(seg.exec, "oom", seg.def.startSlot, seg.def.endSlot);
   // Throw instead of silently returning KERNEL_FAILURE — OOM must produce a stack trace.
   THROW_EXCEPTION(oomMsg);
   return Status::KERNEL_FAILURE;  // unreachable, but satisfies return type
 }
 
-static Status reportCaptureError(GraphSegment& seg, const char* step,
+static Status reportCaptureError(NativeDynamicShapePlan* plan, GraphSegment& seg,
+                                 const char* step,
                                  cudaError_t cudaErr, int deviceId) {
   dumpGpuContextState(deviceId, "CAPTURE");
   size_t gpuFree = 0, gpuTotal = 0;
@@ -712,13 +737,11 @@ static Status reportCaptureError(GraphSegment& seg, const char* step,
       seg.exec.executionCount, seg.def.endSlot - seg.def.startSlot + 1,
       seg.exec.compiledByBackend.c_str());
   DSP_DIAG(EXECUTE, "%s", captureMsg);
-  // Mark as zero-kernel slot-by-slot instead of permanent failure — capture
-  // errors are recoverable.  The CUDA context is NOT poisoned after endCapture
-  // + cudaGetLastError clears the sticky error.  Throwing here crashes the JVM
-  // unnecessarily; slot-by-slot execution produces correct results.
-  seg.exec.captureProducedNoKernels = true;
-  seg.exec.outcome = SegmentExecOutcome::ZERO_KERNEL_SBS;
+  // Capture errors are recoverable — reset segment for retry via lifecycle.
+  // The CUDA context is NOT poisoned after endCapture + cudaGetLastError
+  // clears the sticky error.
   cudaGetLastError(); // clear error state
+  SegmentLifecycle::markCaptureErrorRetry(plan, seg, step);
   return Status::KERNEL_FAILURE;
 }
 
@@ -738,7 +761,7 @@ static Status reportReplayError(GraphSegment& seg, const char* step,
       seg.exec.executionCount,
       seg.exec.replayHandle != nullptr ? 1 : 0);
   DSP_DIAG(EXECUTE, "%s", replayMsg);
-  SegmentLifecycle::markFailed(seg.exec, step);
+  SegmentLifecycle::markFailed(seg.exec, step, seg.def.startSlot, seg.def.endSlot);
   cudaGetLastError(); // clear error state
   // Throw with full context — replay errors must never be silent.
   THROW_EXCEPTION(replayMsg);
@@ -2413,35 +2436,9 @@ Status NativeDynamicShapePlan::segDispatchReplay(
   // All-frozen-constant segments are skipped before reaching here (their
   // replayHandle is cleared by ZERO_NODE_REJECT in the capture path).
   //
-  // SAFETY CHECK: When the Triton backend reports gap slots in this segment,
-  // the monolithic graph only contains island kernels — gap ops (matmul, etc.)
-  // were skipped during capture (GAP_SKIP_DURING_CAPTURE). Replaying the
-  // monolithic graph alone would skip gap ops entirely → stale outputs.
-  // Clear the handle and fall through to capture/direct execution.
-#if HAVE_TRITON
-  if (allowTritonCudaGraphReplay &&
-      seg.exec.replayHandle != nullptr &&
-      seg.exec.replayHandle->isReady() &&
-      seg.exec.compositeReplaySchedule.units.empty()) {
-    // Native-only monolithic captures intentionally contain gap slots. Untagged
-    // or Triton-tagged monolithic handles do not, so those still demote.
-    bool capturedByTritonBackend =
-        seg.exec.compiledByBackend.empty() || seg.exec.compiledByBackend == backendName;
-    auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
-    if (capturedByTritonBackend && tritonBackend != nullptr) {
-      auto gapSlots = tritonBackend->getGapSlots(seg, slots_);
-      if (!gapSlots.empty()) {
-        DSP_DIAG(EXECUTE, "MONOLITHIC_REPLAY_GAP_DEMOTE: seg[%d-%d] has monolithic handle but %d "
-                 "gap slots (not in graph) — clearing handle, falling through to direct execution",
-                 seg.def.startSlot, seg.def.endSlot, static_cast<int>(gapSlots.size()));
-        seg.exec.replayHandle.reset();
-        seg.exec.outcome = SegmentExecOutcome::PENDING;
-        handled = false;
-        return Status::OK;
-      }
-    }
-  }
-#endif
+  // Gap ops are included in the monolithic CUDA graph when nativeOnlyGraphCapture
+  // was used (compiledByBackend == "CUDA", gapOpsCapturedInGraph == true).
+  // No demotion is needed — the monolithic graph is complete.
   if (allowTritonCudaGraphReplay &&
       seg.exec.replayHandle != nullptr &&
       seg.exec.replayHandle->isReady() &&
@@ -2552,7 +2549,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          gapSeg.def.startSlot = startSlot;
          gapSeg.def.endSlot = endSlot;
          gapSeg.exec.executionCount = seg.exec.executionCount;
-         gapSeg.exec.compilationFailed = seg.exec.compilationFailed;
+         SegmentLifecycle::copyCompilationState(gapSeg.exec, seg.exec);
 
          // Check if the Triton stream is currently being captured (CUDA graph recording).
          bool streamIsCapturing = false;
@@ -2704,8 +2701,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
   // This is the actual capture point - the diagnostic above just logs the decision.
   bool hasReplayHandleNow = (seg.exec.replayHandle != nullptr);
   bool replayHandleNullNow = (seg.exec.replayHandle == nullptr);
-  bool execCountInWindowNow = (seg.exec.executionCount >= ctx.captureMinExec) &&
-                              (ctx.forceRecaptureEnabled || seg.exec.executionCount <= (ctx.captureMinExec + 2));
+  bool execCountInWindowNow = (seg.exec.executionCount >= ctx.captureMinExec);
   bool captureWindowSatisfiedNow = execCountInWindowNow || ctx.requiresOrderedGapCapture;
   // compilationFailed prevents re-capture of permanently failed segments
   // (distinct from platformShouldUseGraph which gates graph USAGE).
@@ -3033,7 +3029,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           warmupSeg.def.startSlot = seg.def.startSlot;
           warmupSeg.def.endSlot = seg.def.endSlot;
           warmupSeg.exec.executionCount = seg.exec.executionCount;
-          warmupSeg.exec.compilationFailed = seg.exec.compilationFailed;
+          SegmentLifecycle::copyCompilationState(warmupSeg.exec, seg.exec);
           warmupStatus = executeSegmentSlotBySlot(warmupSeg, externalArrays, numExt, stream);
         }
         restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesWarmup);
@@ -3042,7 +3038,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           DSP_DIAG(EXECUTE, "FATAL: Triton pre-capture warmup FAILED for seg[%d-%d] status=%d. "
                             "BLOCKING EXECUTION.",
                    seg.def.startSlot, seg.def.endSlot, static_cast<int>(warmupStatus));
-          SegmentLifecycle::markFailed(seg.exec, "pre_capture_warmup_failed");
+          SegmentLifecycle::markFailed(seg.exec, "pre_capture_warmup_failed", seg.def.startSlot, seg.def.endSlot);
           // savedSlotPhasesTriton has not been populated yet (demote happens after warmup).
           // Pass empty vector — no capture-phase slot demotion to undo here.
           const std::vector<SlotPhase> emptySlotPhases;
@@ -3099,7 +3095,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         if (warmupOnly) {
           DSP_DIAG(EXECUTE, "WARMUP_ONLY: skipping capture for seg[%d-%d], using warmup result",
                    seg.def.startSlot, seg.def.endSlot);
-          SegmentLifecycle::markFailed(seg.exec, "warmup_only_mode");
+          SegmentLifecycle::markFailed(seg.exec, "warmup_only_mode", seg.def.startSlot, seg.def.endSlot);
           // savedSlotPhasesTriton has not been populated yet (demote happens after warmup).
           // Pass empty vector — no capture-phase slot demotion to undo here.
           const std::vector<SlotPhase> emptySlotPhases;
@@ -3826,10 +3822,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                   ctx.backendName);
             } else {
               // Already sealed — just update the replay keys without lifecycle transition.
-              seg.exec.capturedInputAddrKey = ctx.segInputAddrKey;
-              seg.exec.capturedCreateValueKey = ctx.createValueKey;
-              seg.exec.capturedSlotAddrHash = computeSlotAddrHash(outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
-              seg.exec.gapOpsCapturedInGraph = false;
+              seg.exec.sealCapture(ctx.segInputAddrKey, ctx.createValueKey,
+                  computeSlotAddrHash(outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_),
+                  ctx.backendName, false);
               DSP_DIAG(EXECUTE, "COMPOSITE_CAPTURE: seg[%d-%d] already SEALED — updated replay keys without lifecycle transition",
                        seg.def.startSlot, seg.def.endSlot);
             }
@@ -3936,6 +3931,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                       u.isMergedLeader ? 1 : 0);
            }
            // Free any successfully captured merged handles
+           size_t numCapturedIslands = sched.mergedReplayHandles.size();
            for (auto& h : sched.mergedReplayHandles) {
              h.reset();
            }
@@ -3953,6 +3949,28 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                        prevCaptureStream, savedSlotPhasesTriton, stream);
            tritonOrderedRangeGuard.active = false;
            TritonGraphBackend::clearOrderedRangeExecutor();
+
+           // ── Device health check after capture abort ──────────────────
+           // If error 700 (illegal memory access) already corrupted the device,
+           // we must NOT fall through to slot-by-slot — it would SIGSEGV.
+           // Sync the stream to surface any pending async errors, then check.
+           {
+             cudaError_t syncErr = cudaStreamSynchronize(ctx.cudaStr);
+             cudaError_t stickyErr = cudaGetLastError();
+             if (syncErr == cudaErrorIllegalAddress || stickyErr == cudaErrorIllegalAddress) {
+               DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
+                            "COMPOSITE_CAPTURE ABORT: device in error 700 state "
+                            "(syncErr=%d stickyErr=%d). Cannot fall through to slot-by-slot.",
+                            (int)syncErr, (int)stickyErr);
+               SegmentLifecycle::markFailed(seg.exec, "device_error_700_after_capture_abort",
+                                           seg.def.startSlot, seg.def.endSlot);
+               DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
+                             "COMPOSITE_CAPTURE_DEVICE_ERROR: seg[%d-%d] device in unrecoverable "
+                             "error 700 state after capture abort. GPU memory exhausted during "
+                             "composite capture of %zu islands.",
+                             seg.def.startSlot, seg.def.endSlot, numCapturedIslands);
+             }
+           }
 
            size_t gpuFreeAtFail = 0, gpuTotalAtFail = 0;
            cudaMemGetInfo(&gpuFreeAtFail, &gpuTotalAtFail);
@@ -3976,7 +3994,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              didCompositeCapture = true;
              // Don't throw — fall through to slot-by-slot execution for this step
            } else {
-             SegmentLifecycle::markFailed(seg.exec, "composite_capture_failed");
+             SegmentLifecycle::markFailed(seg.exec, "composite_capture_failed", seg.def.startSlot, seg.def.endSlot);
              DSP_THROW_SEG(COMPILE, seg.def.startSlot,
                            "COMPOSITE_CAPTURE_FAILED: seg[%d-%d] merged capture failed after %d retries. "
                            "Fix the capture — do NOT reconfigure the segment.",
@@ -4043,6 +4061,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       }
 
       bool nativeOnlyCapture = ctx.nativeOnlyGraphCapture;
+      const bool originallyNativeOnly = nativeOnlyCapture;  // track if we started as native-only
       bool captureOk = nativeOnlyCapture ||
                        handle->beginCapture(ctx.cudaStr, cudaStreamCaptureModeThreadLocal);
       if (captureOk) {
@@ -4120,6 +4139,41 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                    static_cast<int>(captureStatus), seg.def.startSlot, seg.def.endSlot);
         }
 
+        // ── Zero-node detection: Triton backend returned OK but all ops were ──
+        // gap-skipped during capture, producing 0 CUDA graph nodes. This happens
+        // when compileSegment classified all ops as native-handled (gap ops) and
+        // created a cache entry with no Triton kernels. During capture,
+        // orderedRangeExecutor skips gap ops (streamIsCapturing && !mergedCapture),
+        // so executeSegment returns OK without recording any work. Treat this the
+        // same as KERNEL_FAILURE to fall through to native-only capture, which
+        // executes ops via executeSlot() on the capture stream to actually record
+        // cuBLAS/cuDNN/elementwise CUDA kernels into the graph.
+        if (!nativeOnlyCapture && captureStatus == Status::OK) {
+          size_t midNodes = 0;
+          {
+            cudaStreamCaptureStatus midStat = cudaStreamCaptureStatusNone;
+            cudaGraph_t midGraph = nullptr;
+            unsigned long long midId = 0;
+            auto midErr = cudaStreamGetCaptureInfo_v2(ctx.cudaStr, &midStat, &midId, &midGraph, nullptr, nullptr);
+            if (midErr == cudaSuccess && midGraph != nullptr) {
+              cudaGraphGetNodes(midGraph, nullptr, &midNodes);
+            }
+          }
+          if (midNodes == 0) {
+            DSP_DIAG(EXECUTE, "MONOLITHIC_CAPTURE: executeSegment returned OK but 0 CUDA graph nodes "
+                     "for seg[%d-%d] — all ops were gap-skipped during capture. "
+                     "Falling through to native-only capture.",
+                     seg.def.startSlot, seg.def.endSlot);
+            captureStatus = Status::KERNEL_FAILURE;
+            // Mark as native-only so the post-capture path at line ~4781 sets
+            // compiledByBackend="CUDA" (not "Triton GPU") and clears the composite
+            // schedule. Without this, the frozen fast path sees compiledByBackend=
+            // "Triton GPU" and routes to composite replay which re-executes all
+            // 2419 slots slot-by-slot instead of using cudaGraphLaunch.
+            nativeOnlyCapture = true;
+          }
+        }
+
         // ── NATIVE-ONLY GRAPH CAPTURE ─────────────────────────────────────────
         // When executeSegment returns KERNEL_FAILURE (no compiled Triton segment —
         // all ops are native/gap), capture native GPU ops directly via executeSlot
@@ -4142,12 +4196,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           // which means the current capture is invalid/empty.  End it so we can
           // execute view/identity ops outside any capture scope, then start a
           // fresh capture for just the compute ops.
-          if (!nativeOnlyCapture) {
+          if (!originallyNativeOnly) {
             capGuard.deactivate();
             tl_graphCaptureStream = nullptr;
             if (handle->isCapturing()) {
-              handle->endCapture(ctx.cudaStr);  // discard the invalid graph
-              DSP_DIAG(EXECUTE, "NATIVE_ONLY_CAPTURE: ended failed Triton capture before re-capture");
+              handle->endCapture(ctx.cudaStr);  // discard the invalid/empty graph
+              DSP_DIAG(EXECUTE, "NATIVE_ONLY_CAPTURE: ended %s capture before re-capture",
+                       (captureStatus == Status::OK) ? "zero-node" : "failed Triton");
             }
             cudaGetLastError();  // clear any sticky error from the failed capture
           }
@@ -4374,8 +4429,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             // capture every step. These ops produce no GPU kernels — slot-by-slot
             // execution is correct and avoids the begin/end capture overhead.
             seg.exec.replayHandle.reset();
-            seg.exec.captureProducedNoKernels = true;
-            seg.exec.outcome = SegmentExecOutcome::ZERO_KERNEL_SBS;
+            SegmentLifecycle::markZeroKernel(seg.exec, "zero_node_graph", seg.def.startSlot, seg.def.endSlot);
             popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
             restoreCublasWorkspaceAfterCapture(stream);
             cleanupCaptureTlsState(true, prevCaptureStream);
@@ -4560,7 +4614,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           tritonOrderedRangeGuard.active = false;
           TritonGraphBackend::clearOrderedRangeExecutor();
 #endif
-          return reportCaptureError(seg, "instantiate", reportErr, deviceId);
+          return reportCaptureError(this, seg, "instantiate", reportErr, deviceId);
         }
 
         // POST-INSTANTIATE MEMORY CHECK removed: the validation launch immediately
@@ -4617,13 +4671,12 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             const char* captureBackendName = nativeOnlyCapture ? "CUDA" : ctx.backendName;
             SegmentLifecycle::markCaptured(seg.exec, ctx.segInputAddrKey, ctx.createValueKey,
                 computeSlotAddrHash(outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_),
-                captureBackendName);
+                captureBackendName, nativeOnlyCapture);
           } else {
             // Already sealed — just update the replay keys without lifecycle transition.
-            seg.exec.capturedInputAddrKey = ctx.segInputAddrKey;
-            seg.exec.capturedCreateValueKey = ctx.createValueKey;
-            seg.exec.capturedSlotAddrHash = computeSlotAddrHash(outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
-            seg.exec.gapOpsCapturedInGraph = false;
+            seg.exec.sealCapture(ctx.segInputAddrKey, ctx.createValueKey,
+                computeSlotAddrHash(outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_),
+                nativeOnlyCapture ? "CUDA" : ctx.backendName, nativeOnlyCapture);
             DSP_DIAG(EXECUTE, "MONOLITHIC_CAPTURE: seg[%d-%d] already SEALED — updated replay keys without lifecycle transition",
                      seg.def.startSlot, seg.def.endSlot);
           }
@@ -4778,46 +4831,6 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 #endif
           }
 
-#if HAVE_TRITON
-          // If the composite schedule has non-capture-safe GAP units (compute ops like
-          // matmul whose kernel args get baked into the CUDA graph), the monolithic
-          // replayHandle must be cleared. Monolithic replay replays ALL ops (including
-          // gaps) from the single captured graph — but cuBLAS/native kernel args have
-          // no refresh mechanism, so gap ops use capture-time buffer addresses on replay,
-          // producing stale output when placeholder buffers change between steps.
-          // Clearing the monolithic handle forces the frozen fast path to use composite
-          // replay instead, which executes gap ops live (with fresh buffer addresses)
-          // and only replays Triton islands from captured CUDA graphs.
-          if (seg.exec.replayHandle && !seg.exec.compositeReplaySchedule.units.empty()) {
-            bool hasIslandUnits = false;
-            for (auto& u : seg.exec.compositeReplaySchedule.units) {
-              if (u.kind == REPLAY_UNIT_TRITON_ISLAND) {
-                hasIslandUnits = true;
-                break;
-              }
-            }
-            bool hasNonCaptureSafeGaps = false;
-            bool mergeViews = Environment::getInstance().triton().mergedCaptureThroughViews();
-            if (hasIslandUnits) {
-              for (auto& u : seg.exec.compositeReplaySchedule.units) {
-                if (u.kind == REPLAY_UNIT_GAP &&
-                    !isGapRangeCaptureSafe(slots_, u.startSlot, u.endSlot, mergeViews)) {
-                  hasNonCaptureSafeGaps = true;
-                  break;
-                }
-              }
-            }
-            if (hasNonCaptureSafeGaps) {
-              DSP_DIAG(EXECUTE, "MONOLITHIC_TO_COMPOSITE: seg[%d-%d] has non-capture-safe gap ops — "
-                       "clearing monolithic replayHandle to force composite replay "
-                       "(prevents stale cuBLAS args on replay)",
-                       seg.def.startSlot, seg.def.endSlot);
-              seg.exec.replayHandle.reset();
-              seg.exec.outcome = SegmentExecOutcome::PENDING;
-            }
-          }
-#endif
-
           // FORCE_RECAPTURE: invalidate graph immediately after capture+launch
           // so the NEXT step also re-captures instead of replaying a stale graph.
           // This ensures every single step is a fresh capture+launch with zero replays.
@@ -4842,7 +4855,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           tritonOrderedRangeGuard.active = false;
           TritonGraphBackend::clearOrderedRangeExecutor();
 #endif
-          return reportCaptureError(seg, "execute_during_capture", cudaGetLastError(), deviceId);
+          return reportCaptureError(this, seg, "execute_during_capture", cudaGetLastError(), deviceId);
         }
       } else {
         // beginCapture failed — free the pre-allocated host workspace
@@ -4890,7 +4903,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         tritonOrderedRangeGuard.active = false;
         TritonGraphBackend::clearOrderedRangeExecutor();
 #endif
-        return reportCaptureError(seg, "beginCapture", beginErr, deviceId);
+        return reportCaptureError(this, seg, "beginCapture", beginErr, deviceId);
       }
 
       // ── Restore warmup output slots for downstream segment visibility ──
@@ -5089,46 +5102,24 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       totalGraphReplays_++;
       if (seg.exec.compiledByBackend.empty()) {
         seg.exec.compiledByBackend = ctx.backendName;
-        // Build composite schedule now that Triton gap data is accurate.
-#if HAVE_TRITON
-        if (seg.exec.compositeReplaySchedule.units.empty() && ctx.tritonBackend != nullptr) {
-          seg.exec.compositeReplaySchedule = buildCompositeReplaySchedule(seg, slots_, ctx.tritonBackend);
-          DSP_DIAG(SHAPE, "COMPOSITE_SCHEDULE_BUILT: seg[%d-%d] units=%d compiledBy=%s (direct path)",
-                   seg.def.startSlot, seg.def.endSlot,
-                   static_cast<int>(seg.exec.compositeReplaySchedule.units.size()),
-                   seg.exec.compiledByBackend.c_str());
-        }
-
-        // Same monolithic→composite demotion as the capture path above.
-          if (seg.exec.replayHandle && !seg.exec.compositeReplaySchedule.units.empty()) {
-            bool hasIslandUnits = false;
-            for (auto& u : seg.exec.compositeReplaySchedule.units) {
-              if (u.kind == REPLAY_UNIT_TRITON_ISLAND) {
-                hasIslandUnits = true;
-                break;
-              }
-            }
-            bool hasNonCaptureSafeGaps = false;
-            bool mergeViews = Environment::getInstance().triton().mergedCaptureThroughViews();
-            if (hasIslandUnits) {
-              for (auto& u : seg.exec.compositeReplaySchedule.units) {
-                if (u.kind == REPLAY_UNIT_GAP &&
-                    !isGapRangeCaptureSafe(slots_, u.startSlot, u.endSlot, mergeViews)) {
-                  hasNonCaptureSafeGaps = true;
-                  break;
-                }
-              }
-            }
-            if (hasNonCaptureSafeGaps) {
-            DSP_DIAG(EXECUTE, "MONOLITHIC_TO_COMPOSITE: seg[%d-%d] has non-capture-safe gap ops — "
-                     "clearing monolithic replayHandle to force composite replay (direct path)",
-                     seg.def.startSlot, seg.def.endSlot);
-            seg.exec.replayHandle.reset();
-            seg.exec.outcome = SegmentExecOutcome::PENDING;
-          }
-        }
-#endif
       }
+
+#if HAVE_TRITON
+      // segDispatchCompile can set compiledByBackend before the first direct
+      // execution. Build the composite schedule whenever it is missing, not only
+      // on the transition from an empty compiledByBackend. Without the schedule,
+      // composite capture has no island units and the segment can remain
+      // BUILDING:CAPTURING with no replay handles.
+      if (ctx.tritonBackend != nullptr &&
+          seg.exec.compiledByBackend == ctx.backendName &&
+          seg.exec.compositeReplaySchedule.units.empty()) {
+        seg.exec.compositeReplaySchedule = buildCompositeReplaySchedule(seg, slots_, ctx.tritonBackend);
+        DSP_DIAG(SHAPE, "COMPOSITE_SCHEDULE_BUILT: seg[%d-%d] units=%d compiledBy=%s (direct path)",
+                 seg.def.startSlot, seg.def.endSlot,
+                 static_cast<int>(seg.exec.compositeReplaySchedule.units.size()),
+                 seg.exec.compiledByBackend.c_str());
+      }
+#endif
     }
 
     if (Environment::getInstance().tritonVerifyKernels()) {
@@ -5609,8 +5600,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   bool replayHandleNull = (seg.exec.replayHandle == nullptr);
   bool hasComposite = hasCompositeHandles(seg);  // true only for composite-captured segments
   bool notCaptureFailed = !seg.exec.compilationFailed;
-  bool execCountInWindow = (seg.exec.executionCount >= captureMinExec) &&
-                           (forceRecaptureEnabled || seg.exec.executionCount <= (captureMinExec + 2));
+  bool execCountInWindow = (seg.exec.executionCount >= captureMinExec);
   bool hasCudaStream = (cudaStr != nullptr);
   bool requiresOrderedGapCapture = false;
 
@@ -5620,8 +5610,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
            planLifecycle_.isShapesFrozen() ? 1 : 0,
            Environment::getInstance().tritonSkipKernels() ? 1 : 0,
            allowTritonCudaGraphReplay ? 1 : 0);
-  DSP_DIAG(EXECUTE, "  seg.exec.executionCount=%d, captureMinExec=%d, window=[%d,%d], inWindow=%d",
-           seg.exec.executionCount, captureMinExec, captureMinExec, captureMinExec + 2,
+  DSP_DIAG(EXECUTE, "  seg.exec.executionCount=%d, captureMinExec=%d, window=[%d,inf), inWindow=%d",
+           seg.exec.executionCount, captureMinExec, captureMinExec,
            execCountInWindow ? 1 : 0);
   // hasReplayHandle=1 + hasComposite=1 means composite-captured (sentinel + island handles).
   // hasReplayHandle=1 + hasComposite=0 means monolithic-captured (full graph in replayHandle).
@@ -5652,31 +5642,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   seg.exec.compositeReplaySchedule = ReplaySchedule();
 #endif
 
-  // When ALL slots are gap ops, "no Triton island" does NOT mean "no GPU work".
-  // MatMul, elementwise, attention, and other native CUDA ops are all gap slots
-  // from the Triton compiler's point of view, but they are still capturable by
-  // the native-only monolithic capture path below. That path starts a fresh CUDA
-  // graph capture and executes compute slots through executeSlot() with
-  // tl_dspGapStream routed to ctx.cudaStr.
-  if (allSlotsAreGaps) {
-    // Apply the same capture-safety check that the composite path uses
-    // (MONOLITHIC_TO_COMPOSITE). Ops with OP_TRAIT_EXTERNAL_WORKSPACE (cuBLAS
-    // matmul), OP_TRAIT_DYNAMIC_OUTPUT_SIZE, or non-fully-writing ops (softmax
-    // with TAD pointers) are NOT safe to bake into a monolithic CUDA graph
-    // because their workspace/TAD pointers go stale on replay.
-    bool mergeViews = Environment::getInstance().triton().mergedCaptureThroughViews();
-    if (!isGapRangeCaptureSafe(slots_, seg.def.startSlot, seg.def.endSlot, mergeViews)) {
-      DSP_DIAG(EXECUTE, "ALL_GAPS_NATIVE_DIRECT: seg[%d-%d] has %d gap slots out of %d total — "
-                        "non-capture-safe ops detected, using direct execution (not monolithic capture)",
-               seg.def.startSlot, seg.def.endSlot, tritonGapSlotCount,
-               seg.def.endSlot - seg.def.startSlot + 1);
-      allSlotsAreGaps = false;  // prevent nativeOnlyGraphCapture
-    } else {
-      DSP_DIAG(EXECUTE, "ALL_GAPS_NATIVE_CAPTURE: seg[%d-%d] has %d gap slots out of %d total — "
-                        "all ops capture-safe, using native-only monolithic CUDA graph capture",
-               seg.def.startSlot, seg.def.endSlot, tritonGapSlotCount,
-               seg.def.endSlot - seg.def.startSlot + 1);
-    }
+  // When ANY gap slots exist, use native-only monolithic capture. This captures
+  // ALL ops (Triton islands + cuBLAS gaps) into a single CUDA graph via
+  // executeSlot() on the capture stream. Phases stay linear: no composite
+  // schedule, no demotion, no re-capture. The monolithic graph is complete.
+  //
+  // Previously, mixed segments used Triton capture (which skips gap ops) then
+  // tried composite replay (islands from sub-graphs + gaps live). This required
+  // demotion from monolithic→composite and caused error 700 crashes. Native-only
+  // capture avoids all of this by recording everything in one graph.
+  bool forceNativeCapture = false;
+  if (tritonGapSlotCount > 0) {
+    forceNativeCapture = true;
+    DSP_DIAG(EXECUTE, "NATIVE_CAPTURE_FORCED: seg[%d-%d] has %d gap slots out of %d total — "
+                      "capturing ALL ops natively (monolithic graph includes gaps)",
+             seg.def.startSlot, seg.def.endSlot, tritonGapSlotCount,
+             seg.def.endSlot - seg.def.startSlot + 1);
   }
 
   bool captureWindowSatisfied = execCountInWindow || requiresOrderedGapCapture;
@@ -5689,10 +5670,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 
   if (requiresOrderedGapCapture) {
     DSP_DIAG(EXECUTE,
-             "COMPOSITE_GAP_CAPTURE: seg[%d-%d] has %d gap slots. "
-             "Gap ops will be EXCLUDED from CUDA graph; "
-             "composite replay will execute gaps fresh before Triton-only graph replay.",
-             seg.def.startSlot, seg.def.endSlot, tritonGapSlotCount);
+             "GAP_CAPTURE_MODE: seg[%d-%d] has %d gap slots — %s",
+             seg.def.startSlot, seg.def.endSlot, tritonGapSlotCount,
+             forceNativeCapture
+               ? "native-only monolithic capture (gaps INCLUDED in CUDA graph)"
+               : "ordered gap capture (gaps excluded, composite replay)");
   }
 
   DSP_DIAG(EXECUTE, "  => shouldCaptureTritonGraph=%d", shouldCaptureTritonGraph ? 1 : 0);
@@ -5707,8 +5689,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     if (seg.exec.compilationFailed)
       DSP_DIAG(EXECUTE, "  BLOCKED: compilationFailed=true (previous capture failed, warmup path only)");
     if (!captureWindowSatisfied)
-      DSP_DIAG(EXECUTE, "  BLOCKED: executionCount=%d outside capture window [%d,%d]",
-               seg.exec.executionCount, captureMinExec, captureMinExec + 2);
+      DSP_DIAG(EXECUTE, "  BLOCKED: executionCount=%d below captureMinExec=%d",
+               seg.exec.executionCount, captureMinExec);
     if (!hasCudaStream)
       DSP_DIAG(EXECUTE, "  BLOCKED: cudaStr=nullptr (no CUDA stream available)");
   } else {
@@ -5866,19 +5848,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   }
   // Fall through to capture or direct execution
 
-  // Segments that previously captured 0 GPU nodes: execute slots directly.
-  // These ops (views, shapes, identity) never produce GPU kernels.
-  // Re-attempting capture every step wastes begin/end capture overhead.
-  if (seg.exec.captureProducedNoKernels) {
+  // Segments with terminal outcomes execute slots directly — no GPU graph.
+  // This covers ZERO_KERNEL_SBS (0 GPU nodes), NOT_FUSIBLE, COMPILE_FAILED.
+  if (isTerminalOutcome(seg.exec.outcome)) {
     DSP_DIAG(BACKEND,
-             "ZERO_KERNEL_SLOT_BY_SLOT: seg[%d-%d] captureProducedNoKernels=true — "
-             "executing %d slots directly (no GPU graph; view/identity/shape ops only) execCount=%d",
+             "TERMINAL_SLOT_BY_SLOT: seg[%d-%d] outcome=%s — "
+             "executing %d slots directly (no GPU graph) execCount=%d",
              seg.def.startSlot, seg.def.endSlot,
+             segmentExecOutcomeName(seg.exec.outcome),
              seg.def.endSlot - seg.def.startSlot + 1, seg.exec.executionCount);
     // Cross-stream + H2D + staging sync handled by dispatchSegment ->
     // performPreReplaySync (ONE function, ONE state machine).
     // SyncOverride forces prepareSpecialUse/registerSpecialUse in frozen mode.
-    SyncOverride zeroNodeSyncGuard(*this, "captureProducedNoKernels");
+    SyncOverride zeroNodeSyncGuard(*this, "terminal_sbs");
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
@@ -5899,7 +5881,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     ctx.forceRecaptureEnabled = forceRecaptureEnabled;
     ctx.allowTritonCudaGraphReplay = allowTritonCudaGraphReplay;
     ctx.requiresOrderedGapCapture = requiresOrderedGapCapture;
-    ctx.nativeOnlyGraphCapture = allSlotsAreGaps;
+    ctx.nativeOnlyGraphCapture = allSlotsAreGaps || forceNativeCapture;
     ctx.hasCudaStream = hasCudaStream;
     return segDispatchCaptureOrDirect(seg, externalArrays, numExt, stream, ctx);
   }

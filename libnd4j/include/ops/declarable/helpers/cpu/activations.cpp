@@ -229,8 +229,16 @@ static void thresholdReluDerivative_(sd::LaunchContext* context, NDArray* input,
 
 void thresholdReluDerivative(sd::LaunchContext* context, NDArray* input, double threshold, NDArray* dLdO,
                              NDArray* output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (context, input, threshold, dLdO, output),
+  // applyPairwiseLambda requires all arrays to share the same type; cast dLdO if needed
+  NDArray* dLdOToUse = dLdO;
+  NDArray* dLdOCast = nullptr;
+  if (dLdO->dataType() != input->dataType()) {
+    dLdOCast = dLdO->cast(input->dataType());
+    dLdOToUse = dLdOCast;
+  }
+  BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (context, input, threshold, dLdOToUse, output),
                         SD_FLOAT_TYPES);
+  if (dLdOCast != nullptr) delete dLdOCast;
 }
 
 ///////////////////////////////////////////////////////////////////

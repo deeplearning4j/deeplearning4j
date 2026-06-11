@@ -1906,6 +1906,14 @@ public class DspLifecycleExhaustiveTest {
         Nd4j.getExecutioner().commit();
         h.replay(ph);
 
+        // Staging buffers are only valid on CUDA backends with CUDA graph capture.
+        // On CPU, numCapturedGraphSegments() == 0, so skip to avoid crashing native code.
+        int capturedSegs = h.numCapturedGraphSegments();
+        if (capturedSegs == 0) {
+            log.info("[ISOLATION] No captured graph segments (CPU backend) — skipping staging assertion");
+            return;
+        }
+
         INDArray staging = h.getStagingBufferContent(extIdx);
         if (staging == null) {
             log.info("[ISOLATION] getStagingBufferContent returned null — copy failed or no staging");
@@ -1949,6 +1957,14 @@ public class DspLifecycleExhaustiveTest {
         input.assign(Nd4j.valueArrayOf(new long[]{1, 8}, 99.0));
         Nd4j.getExecutioner().commit();
         h.replay(ph);
+
+        // Staging buffers are only valid on CUDA backends with CUDA graph capture.
+        // On CPU, numCapturedGraphSegments() == 0, so skip to avoid crashing native code.
+        int capturedSegs = h.numCapturedGraphSegments();
+        if (capturedSegs == 0) {
+            log.info("[ISOLATION] No captured graph segments (CPU backend) — skipping staging assertion");
+            return;
+        }
 
         INDArray staging = h.getStagingBufferContent(extIdx);
         if (staging == null) {
@@ -2001,6 +2017,14 @@ public class DspLifecycleExhaustiveTest {
         long stagingAddr = h.stagingBufferAddress(extIdx);
         log.info("[ISOLATION] staging addr before copy: 0x{}", Long.toHexString(stagingAddr));
 
+        // Staging buffers are only valid on CUDA backends with CUDA graph capture.
+        // On CPU, numCapturedGraphSegments() == 0, so skip to avoid crashing native code.
+        int capturedSegs = h.numCapturedGraphSegments();
+        if (capturedSegs == 0) {
+            log.info("[ISOLATION] No captured graph segments (CPU backend) — skipping staging copy assertion");
+            return;
+        }
+
         // getStagingBufferContent calls copyPlanStagingToBuffer internally
         // If it returns null, the copy failed
         INDArray result = h.getStagingBufferContent(extIdx);
@@ -2045,13 +2069,16 @@ public class DspLifecycleExhaustiveTest {
         Nd4j.getExecutioner().commit();
         h.replay(ph);
 
-        INDArray staging = h.getStagingBufferContent(extIdx);
         // Staging content is only available on CUDA backends with CUDA graph capture.
-        // On CPU backend, getStagingBufferContent returns null — skip the sum assertion.
+        // On CPU backend, numCapturedGraphSegments() == 0 — skip the staging check entirely.
         int capturedSegs = h.numCapturedGraphSegments();
-        if (capturedSegs == 0 || staging == null) {
-            log.info("[ISOLATION] No staging content (capturedSegs={} staging={}) — CPU backend or no capture",
-                    capturedSegs, staging == null ? "null" : "non-null");
+        if (capturedSegs == 0) {
+            log.info("[ISOLATION] No captured graph segments (CPU backend) — skipping staging assertion");
+            return;
+        }
+        INDArray staging = h.getStagingBufferContent(extIdx);
+        if (staging == null) {
+            log.info("[ISOLATION] getStagingBufferContent returned null — no staging buffer available");
             return;
         }
 

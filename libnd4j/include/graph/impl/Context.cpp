@@ -974,6 +974,21 @@ void Context::clearFastPath() {
   _fastpath_in.clear();
   _fastpath_out.clear();
 
+  // Clear intermediate results (e.g. im2col buffers from conv2d forward pass).
+  // These must be freed when the context is reused so that backward-pass helpers
+  // (e.g. conv2dBP_) do not see stale column matrices from a previous op.
+  // Delete in reverse order: views (pushed last) must be freed before their parents.
+  for (auto it = _intermediateResults.rbegin(); it != _intermediateResults.rend(); ++it) {
+    auto* arr = *it;
+    if (arr != nullptr) {
+      uintptr_t addr = reinterpret_cast<uintptr_t>(arr);
+      if (addr > 0x10000) {
+        delete arr;
+      }
+    }
+  }
+  _intermediateResults.clear();
+
   // IMPORTANT: Do NOT delete or clear _handles here.
   //
   // When Java calls ctxPurge(), we're clearing fastpath state for potential reuse.
@@ -993,6 +1008,20 @@ void Context::clearFastPath() {
 void Context::clearFastPathNoSync() {
   _fastpath_in.clear();
   _fastpath_out.clear();
+
+  // Clear intermediate results on reuse so backward-pass helpers do not see
+  // stale column matrices from a previous forward op execution.
+  // Delete in reverse order: views before parents.
+  for (auto it = _intermediateResults.rbegin(); it != _intermediateResults.rend(); ++it) {
+    auto* arr = *it;
+    if (arr != nullptr) {
+      uintptr_t addr = reinterpret_cast<uintptr_t>(arr);
+      if (addr > 0x10000) {
+        delete arr;
+      }
+    }
+  }
+  _intermediateResults.clear();
 }
 
 void Context::setInputArrays(int numArrays,NDArray** array, bool removable) {

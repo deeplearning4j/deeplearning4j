@@ -422,6 +422,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         LongType currentAddrHash = computeSlotAddrHash(
             outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
         if (currentAddrHash != seg.exec.capturedSlotAddrHash) {
+          seg.exec.handleTracker.record(ReplayHandleEvent::Kind::ADDRESS_DRIFT,
+                                        seg.exec.executionCount, 0, 0, "slot_addr_drift");
           DSP_DIAG(MEMORY, "SLOT ADDRESS DRIFT for seg[%d-%d]: "
                    "captured=0x%llx current=0x%llx — invalidating replay handle",
                    seg.def.startSlot, seg.def.endSlot,
@@ -517,7 +519,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // markWarmupDone→markCompiled→markCaptured sequence (below, ~line 1166)
   // handles the legacy lifecycleState field transitions via SegmentLifecycle functions.
   if (seg.exec.segPhase.needsWarmup()) {
-    seg.exec.segPhase.skipCompileToCapturing();
+    SegmentLifecycle::skipToCapturing(seg.exec, "cuda_graphs",
+                                     seg.def.startSlot, seg.def.endSlot);
   }
 
   // ── CAPTURE ──
@@ -868,11 +871,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];
     }
-    // Clean up the replay handle we allocated above
-    seg.exec.replayHandle.reset();
-    seg.exec.outcome = SegmentExecOutcome::PENDING;
-    // Decrement executionCount so next call re-attempts capture
-    if (seg.exec.executionCount > 0) seg.exec.executionCount--;
+    SegmentLifecycle::markCaptureBailout(seg.exec, seg.def.startSlot, seg.def.endSlot);
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
@@ -883,7 +882,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // stream and appear as false "host-only" holes in the capture audit.
   ScopedDspGapStream gapStreamCaptureGuard(cudaStr);
 
+  seg.exec.handleTracker.record(ReplayHandleEvent::Kind::CAPTURE_BEGIN,
+                                seg.exec.executionCount, 0, 0, "monolithic");
   if (!handle->beginCapture(cudaStr, cudaStreamCaptureModeThreadLocal)) {
+    seg.exec.handleTracker.record(ReplayHandleEvent::Kind::ERROR,
+                                  seg.exec.executionCount, 0, 0, "beginCapture_failed");
     restoreCublasWorkspaceAfterCapture(stream);
     clearGraphStreamError(cudaStr);
     platformCleanupSegmentForRebuild(seg);
@@ -1139,7 +1142,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                    seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
                    seg.exec.captureRetryAfterExec);
     } else {
-      seg.exec.compilationFailed = true;
+      SegmentLifecycle::markFailed(seg.exec, "cuda_graph_capture_failed",
+                                   seg.def.startSlot, seg.def.endSlot);
     }
 
     // Arrays persist across capture failures — only slot state needs restoring.
@@ -1174,6 +1178,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   };
 
   if (!handle->endCapture(cudaStr)) {
+    seg.exec.handleTracker.record(ReplayHandleEvent::Kind::ERROR,
+                                  seg.exec.executionCount, 0, 0, "endCapture_failed");
     cudaGetLastError();
     cudaGetLastError();
     // Guard destructor frees host ptrs (commit() not called).
@@ -1186,6 +1192,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                   seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
+
+  seg.exec.handleTracker.record(ReplayHandleEvent::Kind::CAPTURE_END,
+                                seg.exec.executionCount,
+                                static_cast<int>(handle->getNumNodes()), 0, "monolithic");
 
   if (!handle->instantiate()) {
     // ── OOM eviction: free smallest captured graphs to reclaim GPU memory ──
@@ -1227,29 +1237,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                  evictSeg.def.startSlot, evictSeg.def.endSlot, smallestNodes,
                  seg.def.startSlot, seg.def.endSlot, evictAttempt + 1, GraphSegment::maxOomRetries());
 
-        evictSeg.exec.replayHandle->releaseWorkspace(nullptr, evictSeg.def.startSlot);
-
-        // Free pinned host pointers allocated during capture
-        evictSeg.exec.replayHandle->freeHostPointers();
-        evictSeg.exec.replayHandle->clearExternalAddresses();
-
-        // Destroy the replay handle (frees cudaGraphExec + cudaGraph via
-        // CudaGraphHandle::cleanup())
-        evictSeg.exec.replayHandle.reset();
-        evictSeg.exec.outcome = SegmentExecOutcome::PENDING;
-
-        // Reset the evicted segment so it can re-capture on a future execution
-        evictSeg.exec.cachedShapeKey = 0;
-        evictSeg.exec.capturedInputAddrKey = 0;
-        evictSeg.exec.capturedCreateValueKey = 0;
-        evictSeg.exec.compilationFailed = false;
-        evictSeg.exec.gapOpsCapturedInGraph = false;
-        evictSeg.exec.bumpArgGeneration();
-        evictSeg.exec.addrKeyStableCount = 0;
-        evictSeg.exec.slotAddrStableCount = 0;
-        evictSeg.exec.compiledByBackend.clear();
-        // Reset execution count so evicted segment goes through warmup -> capture again
-        evictSeg.exec.executionCount = 0;
+        SegmentLifecycle::evictSegmentCapture(evictSeg.exec,
+                                              evictSeg.def.startSlot, evictSeg.def.endSlot);
 
         numEvicted++;
 
@@ -1278,7 +1267,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
                seg.exec.captureRetryAfterExec, numEvicted);
     } else {
-      seg.exec.compilationFailed = true;
+      SegmentLifecycle::markFailed(seg.exec, "cuda_graph_instantiate_failed",
+                                   seg.def.startSlot, seg.def.endSlot);
     }
 
     // Guard destructor frees host ptrs (commit() not called).
@@ -1320,8 +1310,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       DSP_DIAG_SEG(COMPILE, segIdx, "empty graph for seg[%d-%d] (0 kernels) — skipping replay, "
                    "marking segment as zero-kernel slot-by-slot",
                    seg.def.startSlot, seg.def.endSlot);
-      seg.exec.captureProducedNoKernels = true;
-      seg.exec.outcome = SegmentExecOutcome::ZERO_KERNEL_SBS;
+      SegmentLifecycle::markZeroKernel(seg.exec, "empty_cuda_graph", seg.def.startSlot, seg.def.endSlot);
       tl_captureReplicateCache.clear();
       platformCleanupSegmentForRebuild(seg);
       seg.exec.executionCount++;
@@ -1385,7 +1374,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     cudaGetLastError();
     // Guard destructor frees host ptrs (commit() not called).
     clearGraphStreamError(cudaStr);
-    seg.exec.compilationFailed = true;
+    SegmentLifecycle::markFailed(seg.exec, "cuda_graph_launch_failed",
+                                 seg.def.startSlot, seg.def.endSlot);
     cleanupCaptureBuffersOnFailure();
     platformCleanupSegmentForRebuild(seg);
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
@@ -1440,11 +1430,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // Clear compilationFailed — the CUDA graph path succeeded even if the Triton path
   // failed earlier. Without this, cleanup treats this segment as non-graph-managed
   // and frees its output/cross-segment slots, causing stale data on replay.
-  if (seg.exec.compilationFailed) {
-    DSP_DIAG(COMPILE, "clearing compilationFailed for seg[%d-%d] after successful CUDA graph capture",
-             seg.def.startSlot, seg.def.endSlot);
-    seg.exec.compilationFailed = false;
-  }
+  SegmentLifecycle::clearCompilationFailedOnRecovery(seg.exec,
+      "cuda_graph_capture_succeeded", seg.def.startSlot, seg.def.endSlot);
 
   // ── LIFECYCLE STATE TRANSITION ──
   // The CUDA graph path goes NEEDS_WARMUP → captured+replaying in one shot
@@ -1579,11 +1566,9 @@ void NativeDynamicShapePlan::performReplayVerify(
   DSP_DIAG(VERIFY, "REPLAY_VERIFY: saved %zu snapshots from replay (%s path)", snaps.size(), pathLabel);
 
   // 3. Re-execute slot-by-slot for ground truth
-  // Save segment state
-  int savedSegExecCount = seg.exec.executionCount;
-  bool savedCaptureFailed = seg.exec.compilationFailed;
-  seg.exec.compilationFailed = true;
-  seg.exec.executionCount = 999;
+  // RAII guard overrides compilationFailed+executionCount to force slot-by-slot,
+  // then restores original state on scope exit (even if an exception occurs).
+  ReplayVerifyStateGuard verifyGuard(seg.exec);
 
   // Disable releaseAtStep (prevents nullifying outputs before comparison)
   int** savedReleaseAtStep = releaseAtStep_;
@@ -1625,8 +1610,8 @@ void NativeDynamicShapePlan::performReplayVerify(
     slots_[s].slotPhase = savedVerifySlotPhases[s - seg.def.startSlot];  // PRIMARY restore
   }
   executeCount_ = savedExecCountGlobal;
-  seg.exec.executionCount = savedSegExecCount;
-  seg.exec.compilationFailed = savedCaptureFailed;
+  // seg.exec.executionCount and seg.exec.compilationFailed are restored
+  // by ReplayVerifyStateGuard destructor at scope exit.
 
   if (freshStatus != Status::OK) {
     DSP_DIAG(VERIFY, "REPLAY_VERIFY: slot-by-slot re-execution FAILED (%s path)", pathLabel);
@@ -1850,7 +1835,11 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
            diagTag, seg.def.startSlot, seg.def.endSlot,
            executeCount_, seg.exec.executionCount);
 
+  seg.exec.handleTracker.record(ReplayHandleEvent::Kind::REPLAY,
+                                seg.exec.executionCount, 0, 0, "monolithic");
   if (!seg.exec.replayHandle->replay(stream)) {
+    seg.exec.handleTracker.record(ReplayHandleEvent::Kind::ERROR,
+                                  seg.exec.executionCount, 0, 0, "monolithic_replay_failed");
     DSP_DIAG(EXECUTE, "%s: monolithic replay FAILED seg[%d-%d]",
              diagTag, seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;

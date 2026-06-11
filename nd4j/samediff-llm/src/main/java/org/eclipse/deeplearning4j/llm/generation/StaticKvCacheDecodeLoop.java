@@ -669,11 +669,14 @@ public class StaticKvCacheDecodeLoop {
                         // runs as an ordinary operation that reads the present outputs and
                         // writes them into the Java-owned static KV buffers at cachePosition.
                         String[] recompileOutputs = fullOutputNames;
-                        decoder.clearDynamicShapePlanCache();
-                        // Clear stale prefill node outputs so the recompiled DSP plan
+                        // Invalidate stale prefill node outputs so the recompiled DSP plan
                         // doesn't read wrong values. Do NOT call clearAllCaches() —
                         // that also flushes the array cache which progressively destroys
                         // model constant DataBuffers across recompile cycles.
+                        // NOTE: Do NOT call clearDynamicShapePlanCache() here — that
+                        // destroys the DSP plan mid-inference, preventing proper CUDA
+                        // graph replay. Instead, let the plan recompile naturally when
+                        // shapes change (the plan detects shape mismatches automatically).
                         decoderSession.clearNodeOutputsOnly();
                         dspExec = null;  // old executor invalidated
                         if (!skipFreeze) {
@@ -690,9 +693,9 @@ public class StaticKvCacheDecodeLoop {
                                         usingStaticKv, useDirect, cachePos, e);
                             }
                         } else {
-                            log.info("  [Perf] No-freeze mode: disabling DSP, using op-by-op execution");
-                            decoder.setDspAutoCompileEnabled(false);
-                            decoder.setDspNativeAutoCompileEnabled(false);
+                            // No-freeze mode: let DSP stay enabled so it can still capture
+                            // and replay graphs. The plan handles shape changes internally.
+                            log.info("  [Perf] No-freeze mode: DSP remains enabled, shapes not frozen");
                         }
                         // Re-fetch executor after recompilation
                         decoderSession = decoder.getOrCreateSession();

@@ -23,7 +23,6 @@ package org.eclipse.deeplearning4j.vlm.model;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
-import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
@@ -36,8 +35,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -67,7 +64,7 @@ public class OnnxModelCache {
      * System property to disable SDZ caching entirely.
      * Set to "true" to always import from ONNX.
      */
-    public static final String DISABLE_CACHE_PROPERTY = "vlm.model.cache.disable";
+    public static final String DISABLE_CACHE_PROPERTY = SameDiffOptimizationCache.DISABLE_CACHE_PROPERTY;
 
     /**
      * System property to control graph optimization after loading.
@@ -75,7 +72,7 @@ public class OnnxModelCache {
      * (constant folding, identity removal, attention fusion, FP16 pre-cast, etc.).
      * Optimized graphs are cached separately as .opt.sdz files.
      */
-    public static final String OPTIMIZER_ENABLED_PROPERTY = "nd4j.optimizer.enabled";
+    public static final String OPTIMIZER_ENABLED_PROPERTY = SameDiffOptimizationCache.OPTIMIZER_ENABLED_PROPERTY;
 
     private OnnxModelCache() {
         // utility class
@@ -86,9 +83,7 @@ public class OnnxModelCache {
      * explicitly set to "false" via system property.
      */
     private static boolean isOptimizerEnabled() {
-        String prop = System.getProperty(OPTIMIZER_ENABLED_PROPERTY);
-        // Default to true — only disable if explicitly set to "false"
-        return prop == null || !"false".equalsIgnoreCase(prop.trim());
+        return SameDiffOptimizationCache.isOptimizerEnabled();
     }
 
     /**
@@ -133,32 +128,10 @@ public class OnnxModelCache {
 
     private static SameDiff importWithCacheLocked(File onnxFile, File sdzFile, boolean cacheDisabled) throws IOException {
 
-        boolean optimizerEnabled = isOptimizerEnabled();
-
-        // Check for cached optimized SDZ first (if optimizer is enabled)
-        // The .opt.sdz must be newer than BOTH the .onnx source AND the base .sdz cache.
-        // If the base .sdz was regenerated (new import), the .opt.sdz is stale and must be re-optimized.
-        if (optimizerEnabled && !cacheDisabled) {
-            File optSdzFile = getOptimizedSdzCacheFile(onnxFile);
-            File baseSdzFile = getSdzCacheFile(onnxFile);
-            boolean optValid = optSdzFile.exists()
-                    && optSdzFile.lastModified() >= onnxFile.lastModified()
-                    && (!baseSdzFile.exists() || optSdzFile.lastModified() >= baseSdzFile.lastModified());
-            if (optValid) {
-                log.info("Loading cached optimized SDZ model: {} ({} bytes)", optSdzFile.getName(), optSdzFile.length());
-                long start = System.currentTimeMillis();
-                SameDiff sd = loadSdzWithRetry(optSdzFile);
-                if (sd != null) {
-                    long elapsed = System.currentTimeMillis() - start;
-                    log.info("Loaded cached optimized SDZ model in {}ms: {}", elapsed, optSdzFile.getName());
-                    return sd;
-                }
-                log.warn("Failed to load optimized SDZ after retries, will re-import: {}", optSdzFile.getName());
-                optSdzFile.delete();
-            } else if (optSdzFile.exists()) {
-                log.info("Stale .opt.sdz detected, will re-optimize: {}", optSdzFile.getName());
-                optSdzFile.delete();
-            }
+        SameDiff optimizedCache = SameDiffOptimizationCache.loadOptimizedIfValid(
+                onnxFile, getSdzCacheFile(onnxFile), cacheDisabled);
+        if (optimizedCache != null) {
+            return optimizedCache;
         }
 
         // Use cached SDZ if it exists and is newer than the ONNX source
@@ -169,7 +142,8 @@ public class OnnxModelCache {
             if (sd != null) {
                 long elapsed = System.currentTimeMillis() - start;
                 log.info("Loaded cached SDZ model in {}ms: {}", elapsed, sdzFile.getName());
-                return maybeOptimize(sd, onnxFile, optimizerEnabled, cacheDisabled);
+                return SameDiffOptimizationCache.optimizeWithCache(sd, onnxFile, cacheDisabled,
+                        Map.of("source_onnx", onnxFile.getName()));
             }
             log.warn("Failed to load cached SDZ after retries, will re-import: {}", sdzFile.getName());
             sdzFile.delete();
@@ -201,52 +175,8 @@ public class OnnxModelCache {
             }
         }
 
-        return maybeOptimize(sd, onnxFile, optimizerEnabled, cacheDisabled);
-    }
-
-    /**
-     * Optionally run GraphOptimizer on the loaded model and cache the result.
-     */
-    private static SameDiff maybeOptimize(SameDiff sd, File onnxFile, boolean optimizerEnabled, boolean cacheDisabled) {
-        if (!optimizerEnabled) {
-            return sd;
-        }
-
-        int opsBefore = sd.getOps().size();
-        log.info("Running GraphOptimizer on {} ({} ops)...", onnxFile.getName(), opsBefore);
-        long optStart = System.currentTimeMillis();
-
-        List<String> outputs = sd.outputs() != null ? new ArrayList<>(sd.outputs()) : new ArrayList<>();
-        SameDiff optimized = GraphOptimizer.optimize(sd, outputs);
-
-        int opsAfter = optimized.getOps().size();
-        long optElapsed = System.currentTimeMillis() - optStart;
-        log.info("GraphOptimizer: {} -> {} ops ({} removed) in {}ms for {}",
-                opsBefore, opsAfter, opsBefore - opsAfter, optElapsed, onnxFile.getName());
-
-        // Cache the optimized graph for future runs
-        if (!cacheDisabled) {
-            File optSdzFile = getOptimizedSdzCacheFile(onnxFile);
-            try {
-                long saveStart = System.currentTimeMillis();
-                SDZSerializer.save(optimized, optSdzFile, false, Map.of(
-                        "source_onnx", onnxFile.getName(),
-                        "optimized", "true",
-                        "ops_before", String.valueOf(opsBefore),
-                        "ops_after", String.valueOf(opsAfter)
-                ));
-                long saveElapsed = System.currentTimeMillis() - saveStart;
-                log.info("Cached optimized SDZ in {}ms: {} ({} bytes)",
-                        saveElapsed, optSdzFile.getName(), optSdzFile.length());
-            } catch (Exception e) {
-                log.warn("Failed to cache optimized SDZ (non-fatal): {}", e.getMessage());
-                if (optSdzFile.exists()) {
-                    optSdzFile.delete();
-                }
-            }
-        }
-
-        return optimized;
+        return SameDiffOptimizationCache.optimizeWithCache(sd, onnxFile, cacheDisabled,
+                Map.of("source_onnx", onnxFile.getName()));
     }
 
     /**
@@ -513,14 +443,6 @@ public class OnnxModelCache {
      * Get the optimized SDZ cache file path for a given ONNX file.
      */
     private static File getOptimizedSdzCacheFile(File onnxFile) {
-        String name = onnxFile.getName();
-        String baseName;
-        int dotIdx = name.lastIndexOf('.');
-        if (dotIdx > 0) {
-            baseName = name.substring(0, dotIdx);
-        } else {
-            baseName = name;
-        }
-        return new File(onnxFile.getParentFile(), baseName + ".opt.sdz");
+        return SameDiffOptimizationCache.getOptimizedSdzCacheFile(onnxFile);
     }
 }

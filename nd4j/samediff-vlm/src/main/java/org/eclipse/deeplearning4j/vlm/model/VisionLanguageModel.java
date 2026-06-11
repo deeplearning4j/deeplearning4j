@@ -44,6 +44,7 @@ import org.eclipse.deeplearning4j.llm.generation.KvCacheManager;
 import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.NgramSpeculator;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
+import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -130,6 +131,10 @@ public class VisionLanguageModel implements AutoCloseable {
     /** Maximum KV cache sequence length. 0 means auto-detect. */
     @Setter
     private int maxKvLen = 0;
+
+    /** Optional benchmark config applied after GenerationPipeline construction. */
+    @Setter
+    private BenchmarkConfig benchmarkConfig;
 
     /**
      * Cached GenerationPipeline for multi-page decode reuse.
@@ -1257,9 +1262,11 @@ public class VisionLanguageModel implements AutoCloseable {
                         java.util.Arrays.toString(embedding.shape()));
             }
 
-            for (var entry : outputs.entrySet()) {
-                SameDiffMemoryUtils.safeClose(entry.getValue());
-            }
+            // Do NOT close plan-owned output arrays — their DataBuffers may be
+            // the same GPU allocation the DSP plan's slot buffers reference.
+            // Closing them frees GPU memory that the next execution still reads,
+            // causing Xid 13 (Out Of Range Address). The .dup() above already
+            // copied what we need; the plan will manage its own buffers.
 
             SameDiffMemoryUtils.safeClose(frameTensor);
             SameDiffMemoryUtils.safeClose(pixelMask);
@@ -2001,7 +2008,29 @@ public class VisionLanguageModel implements AutoCloseable {
         collectModelBuffers(decoder, protectedBuffers);
         collectModelBuffers(visionEncoder, protectedBuffers);
         collectModelBuffers(embedTokens, protectedBuffers);
+        // Protect ext input arrays from frozen DSP plans.
+        // These arrays (inputIds, posIds, causalMask, attentionMask, embeddings, etc.)
+        // are tracked by the native plan for pointer stability. If trimAllDevicePools()
+        // frees their device memory, the next execution sees stale pointers
+        // → pointersStableCount never increases → no CUDA graph replay.
+        collectDspExtInputBuffers(decoder, protectedBuffers);
+        collectDspExtInputBuffers(visionEncoder, protectedBuffers);
+        collectDspExtInputBuffers(embedTokens, protectedBuffers);
         return protectedBuffers;
+    }
+
+    private static void collectDspExtInputBuffers(SameDiff model, IdentityHashMap<DataBuffer, Boolean> out) {
+        if (model == null) return;
+        InferenceSession session = model.getOrCreateSession();
+        DynamicShapePlanExecutor dsp = session.getDynamicShapePlanExecutor();
+        if (dsp == null) return;
+        INDArray[] extInputs = dsp.getExternalInputsSnapshot();
+        if (extInputs == null) return;
+        for (INDArray arr : extInputs) {
+            if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                out.put(arr.data(), Boolean.TRUE);
+            }
+        }
     }
 
     private static void collectModelBuffers(SameDiff model, IdentityHashMap<DataBuffer, Boolean> out) {
@@ -2054,14 +2083,17 @@ public class VisionLanguageModel implements AutoCloseable {
     /**
      * Decode using GenerationPipeline for optimized throughput (Triton, CUDA graphs, native KV scatter).
      *
-     * <p>The pipeline is cached after first creation with {@code maxPrefillLength} set,
-     * enabling fixed-buffer mode in {@code generateNative()}. This means:</p>
+     * <p>By default the pipeline is cached after first creation with {@code maxPrefillLength}
+     * set, enabling fixed-buffer mode in {@code generateNative()}. This means:</p>
      * <ul>
      *   <li>All prompts are padded/truncated to a fixed prefill length</li>
      *   <li>The DSP plan is compiled once on the first page and frozen</li>
      *   <li>Subsequent pages reuse the frozen plan via CUDA graph replay</li>
      *   <li>Only KV cache contents change between pages — no plan recompilation</li>
      * </ul>
+     *
+     * <p>Set {@code -Dvlm.benchmark.dynamicBuffers=true} for benchmark comparison with
+     * the platform GenerationPipeline tests, which do not use fixed prefill buffers.</p>
      */
     private GenerationResult decodeWithStaticLoop(INDArray combinedEmbeddings, int[] promptIds,
                                                    int maxNewTokens, double temperature, boolean doSample) {
@@ -2072,25 +2104,31 @@ public class VisionLanguageModel implements AutoCloseable {
 
         try {
             if (cachedPipeline == null) {
-                // First page: create pipeline with fixedBuffers enabled for plan reuse.
                 cachedDecoderIOConfig = ModelIOConfig.discover(decoder);
-                int maxPrefill = computeMaxPrefillLength(promptIds.length, maxNewTokens);
-                log.info("Creating cached GenerationPipeline with maxPrefillLength={} (promptLen={}, maxNewTokens={})",
-                        maxPrefill, promptIds.length, maxNewTokens);
+                boolean dynamicBenchmarkBuffers = Boolean.getBoolean("vlm.benchmark.dynamicBuffers");
+                int maxPrefill = dynamicBenchmarkBuffers ? 0 : computeMaxPrefillLength(promptIds.length, maxNewTokens);
+                int effectiveMaxKvCacheLength = dynamicBenchmarkBuffers ? 0 : (this.maxKvLen > 0 ? this.maxKvLen : 0);
+                log.info("Creating cached GenerationPipeline (mode={}, maxPrefillLength={}, promptLen={}, maxNewTokens={}, maxKvCacheLength={})",
+                        dynamicBenchmarkBuffers ? "dynamic-benchmark" : "fixedBuffers",
+                        maxPrefill, promptIds.length, maxNewTokens, effectiveMaxKvCacheLength);
 
-                cachedPipeline = GenerationPipeline.create(
-                        GenerationPipelineConfig.builder()
-                                .decoder(decoder)
-                                .embedTokens(embedTokens)
-                                .tokenizer(tokenizer)
-                                .ioConfig(cachedDecoderIOConfig)
-                                .samplingConfig(samplingCfg)
-                                .maxNewTokens(maxNewTokens)
-                                .maxPrefillLength(maxPrefill)
-                                .hiddenSize(config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0)
-                                .build());
+                GenerationPipelineConfig.GenerationPipelineConfigBuilder pipelineConfigBuilder = GenerationPipelineConfig.builder()
+                        .decoder(decoder)
+                        .embedTokens(embedTokens)
+                        .tokenizer(tokenizer)
+                        .ioConfig(cachedDecoderIOConfig)
+                        .samplingConfig(samplingCfg)
+                        .maxNewTokens(maxNewTokens)
+                        .maxKvCacheLength(effectiveMaxKvCacheLength)
+                        .hiddenSize(config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0)
+                        .benchmarkConfig(benchmarkConfig);
+                if (!dynamicBenchmarkBuffers) {
+                    pipelineConfigBuilder.maxPrefillLength(maxPrefill);
+                }
+
+                cachedPipeline = GenerationPipeline.create(pipelineConfigBuilder.build());
             } else {
-                log.info("Reusing cached GenerationPipeline (fixedBuffers mode, decoder plan preserved)");
+                log.info("Reusing cached GenerationPipeline (decoder plan preserved)");
             }
 
             return cachedPipeline.generate(combinedEmbeddings, promptIds, maxNewTokens);
@@ -2112,11 +2150,19 @@ public class VisionLanguageModel implements AutoCloseable {
      * @return the fixed prefill length for all subsequent pages
      */
     private int computeMaxPrefillLength(int currentPromptLen, int maxNewTokens) {
-        // Add 20% headroom and round up to 256-token boundary for prompt variation
+        // Add 20% headroom and round up to 256-token boundary to absorb
+        // prompt length variation across pages (tile count differences).
+        // maxKvLen caps the total sequence budget when configured.
         int prefill = (int) (currentPromptLen * 1.2);
         prefill = Math.max(prefill, 512);
         prefill = ((prefill + 255) / 256) * 256;
-        log.info("maxPrefillLength computed from promptLen={}: {}", currentPromptLen, prefill);
+        if (this.maxKvLen > 0) {
+            // Cap prefill so prefill + maxNewTokens <= maxKvLen
+            int cap = Math.max(this.maxKvLen - maxNewTokens, 512);
+            prefill = Math.min(prefill, cap);
+        }
+        log.info("maxPrefillLength computed: {} (promptLen={}, maxNewTokens={}, maxKvLen={})",
+                prefill, currentPromptLen, maxNewTokens, this.maxKvLen);
         return prefill;
     }
 
@@ -2218,19 +2264,22 @@ public class VisionLanguageModel implements AutoCloseable {
         if (image == null) {
             throw new IllegalArgumentException("image must not be null");
         }
-        // Match the vision encoder's declared placeholder rank.
-        // The ONNX model may declare rank-5 [batch, frames, C, H, W] placeholder.
-        // The model graph internally reshapes rank-5 to rank-4 [batch*frames, C, H, W]
-        // before conv2d. If we pass rank-4 directly, the reshape op gets confused
-        // because it expects 5 dimensions. So add the frames dimension when needed.
-        boolean expectsFramed = visionEncoderExpectsFramedInput();
-        log.info("normalizeVisionInputShape: image.rank()={}, shape={}, expectsFramedInput={}",
-                image.rank(), java.util.Arrays.toString(image.shape()), expectsFramed);
-        if (image.rank() == 4 && expectsFramed) {
-            // [batch, C, H, W] -> [batch, 1, C, H, W] (single frame)
+        // Always pass rank-4 [batch, C, H, W] to the vision encoder.
+        // The ONNX model may declare a rank-5 placeholder [batch, frames, C, H, W],
+        // but the internal reshape_no_copy ops use ONNX zero-semantics shape constants
+        // (e.g. [0,0,0,0]) that copy dims positionally from the input. With rank-5
+        // input, [0,0,0,0] copies [batch, frames, C, H] instead of [batch, C, H, W],
+        // producing a shape mismatch. Rank-4 input makes the reshape identity-correct.
+        // SameDiff's dynamic shape system accepts any input rank regardless of what
+        // the placeholder declared.
+        log.info("normalizeVisionInputShape: image.rank()={}, shape={}",
+                image.rank(), java.util.Arrays.toString(image.shape()));
+        if (image.rank() == 5) {
+            // [batch, frames, C, H, W] -> [batch*frames, C, H, W]
             long[] shape = image.shape();
-            INDArray reshaped = image.reshape(shape[0], 1, shape[1], shape[2], shape[3]);
-            log.info("normalizeVisionInputShape: reshaped to rank-5 {}", java.util.Arrays.toString(reshaped.shape()));
+            long batchFrames = shape[0] * shape[1];
+            INDArray reshaped = image.reshape(batchFrames, shape[2], shape[3], shape[4]);
+            log.info("normalizeVisionInputShape: collapsed rank-5 to rank-4 {}", java.util.Arrays.toString(reshaped.shape()));
             return reshaped;
         }
         return image;

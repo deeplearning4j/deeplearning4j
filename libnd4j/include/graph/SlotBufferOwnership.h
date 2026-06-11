@@ -273,7 +273,8 @@ struct BufferPointerSnapshot {
    */
   void pruneTransientViewSlots(
       const SlotBufferInfo* ownership,
-      const std::unordered_set<DataBuffer*>& protectedWeightBuffers);
+      const std::unordered_set<DataBuffer*>& protectedWeightBuffers,
+      NDArray** externalInputs = nullptr, int numExternalInputs = 0);
 
   /**
    * Validate that current buffer state matches the snapshot.

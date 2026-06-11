@@ -31,6 +31,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,12 @@ public class CheckNumerics extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f1.get(0));
+        // Gradient flows only through input 0 (the numeric tensor).
+        // Input 1 is a UTF-8 string constant (the error message); it is a CONSTANT type
+        // and will be skipped by the gradient framework. Return a numeric zero placeholder
+        // of the same shape as the numeric input so the gradient list has the correct length.
+        SDVariable zeroForMessage = sameDiff.zerosLike(arg(0));
+        return new ArrayList<>(Arrays.asList(f1.get(0), zeroForMessage));
     }
 
     @Override

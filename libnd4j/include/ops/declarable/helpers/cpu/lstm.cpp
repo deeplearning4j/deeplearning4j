@@ -210,7 +210,7 @@ void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDAr
  const int nIn = xt->sizeAt(1);
  const int nOut = cLast->sizeAt(1);
 
- std::vector<sd::LongType> cOutShape = {xt->sizeAt(0),xt->sizeAt(1), xt->sizeAt(1) + yLast->sizeAt(1)};
+ std::vector<sd::LongType> cOutShape = {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)};
  // Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
  NDArray concatOut(xt->ordering(), cOutShape, xt->dataType(),
                    xt->getContext());

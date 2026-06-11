@@ -81,9 +81,16 @@ static void conv2dMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArra
   const int pWSame = (paddingMode == 2 && dW > 1) ? ((oW - 1) * sW + (kW - 1) * dW + 1 - iW) / 2
                                                   : pW;  // dH == 1 for causal mode in conv1d
 
+  // Effective kernel sizes accounting for dilation. OneDNN padding_r must be computed
+  // using the effective (dilated) kernel size, not the raw kernel size. Using raw kH/kW
+  // gives negative padding_r when dilation > 1 with SAME padding, causing OneDNN to reject
+  // the primitive descriptor.
+  const sd::LongType eKH = (kH - 1) * dH + 1;
+  const sd::LongType eKW = (kW - 1) * dW + 1;
+
   dnnl::memory::dims strides = {sH, sW};
   dnnl::memory::dims padding = {pH, pW};
-  dnnl::memory::dims padding_r = {(oH - 1) * sH - iH + kH - pH, (oW - 1) * sW - iW + kW - pWSame};
+  dnnl::memory::dims padding_r = {(oH - 1) * sH - iH + eKH - pH, (oW - 1) * sW - iW + eKW - pWSame};
   dnnl::memory::dims dilation = {dH - 1, dW - 1};
 
   auto xzFormatMkl = isNCHW ? dnnl::memory::format_tag::nchw : dnnl::memory::format_tag::nhwc;
@@ -205,9 +212,13 @@ static void conv2dBpMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDAr
   const int pWSame = (paddingMode == 2 && dW > 1) ? ((oW - 1) * sW + (kW - 1) * dW + 1 - iW) / 2
                                                   : pW;  // dH == 1 for causal mode in conv1d
 
+  // Effective kernel sizes accounting for dilation (same fix as forward pass).
+  const int eKH_bp = (kH - 1) * dH + 1;
+  const int eKW_bp = (kW - 1) * dW + 1;
+
   dnnl::memory::dims strides = {sH, sW};
   dnnl::memory::dims padding = {pH, pW};
-  dnnl::memory::dims padding_r = {(oH - 1) * sH - iH + kH - pH, (oW - 1) * sW - iW + kW - pWSame};
+  dnnl::memory::dims padding_r = {(oH - 1) * sH - iH + eKH_bp - pH, (oW - 1) * sW - iW + eKW_bp - pWSame};
   dnnl::memory::dims dilation = {dH - 1, dW - 1};
 
   auto xzFormatMkl = isNCHW ? dnnl::memory::format_tag::nchw : dnnl::memory::format_tag::nhwc;

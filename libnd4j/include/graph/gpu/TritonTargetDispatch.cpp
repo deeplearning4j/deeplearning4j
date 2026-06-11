@@ -717,6 +717,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   // Phase 3: TTGIR optimizations (coalesce)
   // Phase 4: TTGIR -> LLVM MLIR dialect (backend-specific lowering)
   // Phase 5: LLVM MLIR -> LLVM IR module
+
   // Phase 6: LLVM IR -> target ISA (PTX/AMDGCN/SPIR-V)
 
   // Determine target-specific parameters
@@ -854,12 +855,69 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   { // DspCompilePhaseGuard scope: emits TTIR_TO_TTGIR START/DONE automatically
     DspCompilePhaseGuard phase12Guard(compileId, "TTIR_TO_TTGIR", sd::graph::DSP_DIAG_COMPILE);
     {
-    mlir::PassManager pm(moduleOp->getContext());
-    // Disable inter-pass MLIR verification. Triton 3.6's TritonToTritonGPU conversion
-    // produces transient invalid states (SymbolTable trait, IsolatedFromAbove) that
-    // The inter-pass verifier catches real IR issues (e.g., shape mismatches in
-    // tt.store). Keep it ON so malformed IR is rejected early rather than silently
-    // producing wrong results.  Fix the IR generation instead of disabling the check.
+    // TypeID diagnostic: check IsolatedFromAbove trait resolution
+    {
+      auto queryTypeId = mlir::TypeID::get<mlir::OpTrait::IsIsolatedFromAbove>();
+      auto* op = moduleOp->getOperation();
+      bool isRegistered = op->getName().isRegistered();
+      bool hasTrait = op->hasTrait<mlir::OpTrait::IsIsolatedFromAbove>();
+      bool mightHave = op->getName().mightHaveTrait<mlir::OpTrait::IsIsolatedFromAbove>();
+      // Check the op's registered TypeID
+      auto registeredTypeId = op->getName().getTypeID();
+      auto expectedTypeId = mlir::TypeID::get<mlir::ModuleOp>();
+      bool typeIdMatch = (registeredTypeId == expectedTypeId);
+      // Check via RegisteredOperationName
+      auto regInfo = op->getName().getRegisteredInfo();
+      bool hasRegInfo = regInfo.has_value();
+      // Direct hasTrait via OperationName (goes through getImpl()->hasTrait)
+      bool nameHasTrait = op->getName().hasTrait<mlir::OpTrait::IsIsolatedFromAbove>();
+      bool nameHasOneRegion = op->getName().hasTrait<mlir::OpTrait::OneRegion>();
+      // Bypass vtable: call op_definition_impl::hasTrait directly with ModuleOp's traits
+      auto oneRegionId = mlir::TypeID::get<mlir::OpTrait::OneRegion>();
+      bool directHasTrait = mlir::op_definition_impl::hasTrait<
+          mlir::OpTrait::OneRegion, mlir::OpTrait::ZeroResults,
+          mlir::OpTrait::ZeroSuccessors, mlir::OpTrait::ZeroOperands,
+          mlir::OpTrait::NoRegionArguments, mlir::OpTrait::NoTerminator,
+          mlir::OpTrait::SingleBlock, mlir::OpTrait::OpInvariants,
+          mlir::BytecodeOpInterface::Trait, mlir::OpTrait::AffineScope,
+          mlir::OpTrait::IsIsolatedFromAbove, mlir::OpTrait::SymbolTable,
+          mlir::SymbolOpInterface::Trait, mlir::OpAsmOpInterface::Trait,
+          mlir::RegionKindInterface::Trait, mlir::OpTrait::HasOnlyGraphRegion
+      >(queryTypeId);
+      bool directHasOneRegion = mlir::op_definition_impl::hasTrait<
+          mlir::OpTrait::OneRegion, mlir::OpTrait::ZeroResults,
+          mlir::OpTrait::ZeroSuccessors, mlir::OpTrait::ZeroOperands,
+          mlir::OpTrait::NoRegionArguments, mlir::OpTrait::NoTerminator,
+          mlir::OpTrait::SingleBlock, mlir::OpTrait::OpInvariants,
+          mlir::BytecodeOpInterface::Trait, mlir::OpTrait::AffineScope,
+          mlir::OpTrait::IsIsolatedFromAbove, mlir::OpTrait::SymbolTable,
+          mlir::SymbolOpInterface::Trait, mlir::OpAsmOpInterface::Trait,
+          mlir::RegionKindInterface::Trait, mlir::OpTrait::HasOnlyGraphRegion
+      >(oneRegionId);
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: TypeID diag2: "
+               "isoQueryId=%p isRegistered=%d hasTrait=%d mightHave=%d opName=%s "
+               "registeredTypeId=%p expectedTypeId=%p typeIdMatch=%d "
+               "hasRegInfo=%d nameHasTrait=%d nameHasOneRegion=%d "
+               "directHasTrait=%d directHasOneRegion=%d",
+               compileId,
+               queryTypeId.getAsOpaquePointer(),
+               (int)isRegistered, (int)hasTrait, (int)mightHave,
+               op->getName().getStringRef().str().c_str(),
+               registeredTypeId.getAsOpaquePointer(),
+               expectedTypeId.getAsOpaquePointer(),
+               (int)typeIdMatch,
+               (int)hasRegInfo, (int)nameHasTrait, (int)nameHasOneRegion,
+               (int)directHasTrait, (int)directHasOneRegion);
+    }
+    // Use the module op's name explicitly ("builtin.module") rather than the default
+    // "any" anchor. The "any" anchor requires a runtime IsolatedFromAbove trait check
+    // via the vtable path. Due to TypeID pointer mismatches across translation units
+    // (TU-local TypeID singletons in shared libraries), the vtable-based hasTrait
+    // returns false even though the trait IS present — causing pm.run() to fail with
+    // "trying to schedule a pass on an operation not marked as IsolatedFromAbove".
+    // Using the concrete op name bypasses this check: the PassManager matches by
+    // operation name string instead of requiring the trait to pass at runtime.
+    mlir::PassManager pm(moduleOp->getContext(), mlir::ModuleOp::getOperationName());
     if (tritonVerbose) {
 #ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
       pm.addInstrumentation(
@@ -943,14 +1001,19 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     pm.addPass(mlir::createSymbolDCEPass());
     pm.addPass(mlir::createCanonicalizerPass());
 
-    // Install a diagnostic handler to suppress stderr spam from Triton 3.6's
-    // MLIR PassManager (SymbolTable trait, IsolatedFromAbove transient errors).
-    // Real failures are still detected via the pm.run() return value.
+    // Capture MLIR diagnostics so pass-pipeline errors are visible instead of
+    // silently swallowed.  Redirect stderr spam through DSP_DIAG(COMPILE).
     {
+      std::string capturedDiags;
       auto diagHandler = mlir::ScopedDiagnosticHandler(
           moduleOp->getContext(),
-          [](mlir::Diagnostic&) -> mlir::LogicalResult {
-            return mlir::success();  // silently consume
+          [&capturedDiags](mlir::Diagnostic& diag) -> mlir::LogicalResult {
+            std::string msg;
+            llvm::raw_string_ostream os(msg);
+            diag.print(os);
+            if (!capturedDiags.empty()) capturedDiags += "\n";
+            capturedDiags += msg;
+            return mlir::success();  // consume (prevent duplicate stderr)
           });
       if (mlir::failed(pm.run(*moduleOp))) {
         tritonInProtectedRegion = false;
@@ -964,9 +1027,10 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
           fprintf(diagFile, "%s", preDump.c_str());
           fclose(diagFile);
         }
-        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: TTIR->TTGIR pass pipeline failed. "
-                  "TTIR dumped to %s (%d bytes)",
-                  ttirDumpPath.c_str(), static_cast<int>(preDump.size()));
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: TTIR->TTGIR pass pipeline FAILED. "
+                  "TTIR dumped to %s (%d bytes). MLIR diagnostics:\n%.4000s",
+                  compileId, ttirDumpPath.c_str(), static_cast<int>(preDump.size()),
+                  capturedDiags.empty() ? "(none)" : capturedDiags.c_str());
         return result;
       }
     }
@@ -989,7 +1053,9 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       mlir::LLVM::registerInlinerInterface(phase4Registry);
       moduleOp->getContext()->appendDialectRegistry(phase4Registry);
     }
-    mlir::PassManager pm(moduleOp->getContext());
+    // Same fix as Phase 1-2: use the concrete op name to bypass the broken
+    // vtable-based IsolatedFromAbove trait check. See the comment above.
+    mlir::PassManager pm(moduleOp->getContext(), mlir::ModuleOp::getOperationName());
     if (tritonVerbose) {
 #ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
       pm.addInstrumentation(
@@ -1096,12 +1162,18 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       return result;
     }
 
-    // Install diagnostic handler to suppress stderr spam for TTGIR->LLVM PassManager
+    // Capture MLIR diagnostics for TTGIR->LLVM lowering errors.
     {
+      std::string capturedDiags;
       auto diagHandler = mlir::ScopedDiagnosticHandler(
           moduleOp->getContext(),
-          [](mlir::Diagnostic&) -> mlir::LogicalResult {
-            return mlir::success();  // silently consume
+          [&capturedDiags](mlir::Diagnostic& diag) -> mlir::LogicalResult {
+            std::string msg;
+            llvm::raw_string_ostream os(msg);
+            diag.print(os);
+            if (!capturedDiags.empty()) capturedDiags += "\n";
+            capturedDiags += msg;
+            return mlir::success();  // consume (prevent duplicate stderr)
           });
       if (mlir::failed(pm.run(*moduleOp))) {
         tritonInProtectedRegion = false;
@@ -1117,8 +1189,10 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
           fprintf(diagFile, "=== PHASE 4 FAILED ===\n%s\n=== END ===\n", mlirDump.c_str());
           fclose(diagFile);
         }
-        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: TTGIR->LLVM pass pipeline failed. "
-                "Module dumped to %s", mlirDumpPath.c_str());
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: TTGIR->LLVM pass pipeline FAILED. "
+                "Module dumped to %s. MLIR diagnostics:\n%.4000s",
+                compileId, mlirDumpPath.c_str(),
+                capturedDiags.empty() ? "(none)" : capturedDiags.c_str());
         return result;
       }
     } // closes ScopedDiagnosticHandler scope
@@ -1133,15 +1207,19 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
   // Phase 5: MLIR LLVM dialect -> LLVM IR module
   // Verify the MLIR module before attempting LLVM translation.
-  // Use a diagnostic handler to suppress stderr spam from Triton 3.6's
-  // SymbolTable trait false-positive while still detecting real failures.
+  // Capture MLIR verifier diagnostics so verification errors are visible.
   {
     bool verifyFailed = false;
+    std::string capturedDiags;
     auto diagHandler = mlir::ScopedDiagnosticHandler(
         moduleOp->getContext(),
-        [](mlir::Diagnostic&) -> mlir::LogicalResult {
-          // Silently consume all diagnostics (verifier errors go here instead of stderr)
-          return mlir::success();
+        [&capturedDiags](mlir::Diagnostic& diag) -> mlir::LogicalResult {
+          std::string msg;
+          llvm::raw_string_ostream os(msg);
+          diag.print(os);
+          if (!capturedDiags.empty()) capturedDiags += "\n";
+          capturedDiags += msg;
+          return mlir::success();  // consume (prevent duplicate stderr)
         });
     verifyFailed = mlir::failed(mlir::verify(*moduleOp));
     if (verifyFailed) {
@@ -1149,7 +1227,9 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 #ifdef SD_CUDA
       cudaGetLastError();
 #endif
-      DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: MLIR module verification failed after lowering");
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: MLIR module verification FAILED "
+                "after lowering. Verifier diagnostics:\n%.4000s",
+                compileId, capturedDiags.empty() ? "(none)" : capturedDiags.c_str());
       return result;
     }
   }

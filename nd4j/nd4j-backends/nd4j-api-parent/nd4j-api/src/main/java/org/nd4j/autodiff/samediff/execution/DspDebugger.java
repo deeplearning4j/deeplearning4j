@@ -1168,9 +1168,29 @@ public class DspDebugger {
             return replaying;
         }
 
-        /** Whether the plan has reached full replay state. */
+        /**
+         * Whether the plan has reached full replay state.
+         *
+         * <p>Requires all three conditions:</p>
+         * <ol>
+         *   <li>{@code planPhase == REPLAYING}</li>
+         *   <li>{@code pointersStable == true}</li>
+         *   <li>At least one segment has a non-zero {@code replayCount} — i.e. at least
+         *       one CUDA graph was actually replayed. A plan stuck at REPLAYING with
+         *       {@code replayCount=0} everywhere is still running slot-by-slot and should
+         *       not be reported as fully replaying.</li>
+         * </ol>
+         */
         public boolean isFullyReplaying() {
-            return planPhase == PlanPhase.REPLAYING && pointersStable;
+            if (planPhase != PlanPhase.REPLAYING || !pointersStable) {
+                return false;
+            }
+            for (SegmentReplayInfo seg : segments) {
+                if (seg.replayCount > 0) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override

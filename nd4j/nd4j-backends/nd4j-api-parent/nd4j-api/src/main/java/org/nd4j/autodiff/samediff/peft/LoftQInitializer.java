@@ -27,6 +27,7 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Svd;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -95,33 +96,40 @@ public class LoftQInitializer {
         int blockSize     = config.getBlockSize();
 
         for (int iter = 0; iter < numIterations; iter++) {
-            // Effective residual target: W - B@A (first iteration: W - 0 = W)
-            INDArray target;
+            // LoftQ Algorithm (arXiv:2310.08659 Algorithm 1):
+            //   Each iteration updates Q and (B, A) jointly:
+            //     1. Q_n = quantize(W - B@A)          ← update quantized weights based on current residual
+            //     2. R_n = W - Q_n                    ← full residual of W vs quantized approximation
+            //     3. B, A = top-rank SVD(R_n)          ← low-rank correction for quantization error
+            //   Reconstruction: W ≈ Q_n + B@A
+            //   With more iterations, Q_n adapts to the current B@A, giving better joint approximation.
+
+            // Step 1: update Q = quantize(W - B@A)
+            INDArray ba;
             if (iter == 0) {
-                target = W.dup();
+                // First iteration: B=0, A=0, so W - B@A = W
+                ba = null;
             } else {
-                // dup() B and A before mmul to prevent InferenceSession from releasing them
                 INDArray bDup = B.dup();
                 INDArray aDup = A.dup();
-                INDArray ba = bDup.mmul(aDup);  // [outDim, inDim]
+                ba = bDup.mmul(aDup);  // [outDim, inDim]
                 bDup.close();
                 aDup.close();
-                target = W.sub(ba);
-                ba.close();
             }
+            INDArray target = (ba == null) ? W.dup() : W.sub(ba);
+            if (ba != null) ba.close();
 
-            // Step 1: quantize target → Q
             INDArray Q;
             if ("nf4".equals(quantType) || quantBits == 4) {
                 Q = quantizeNF4(target, blockSize);
             } else {
                 Q = quantizeFP4(target, blockSize);
             }
-
-            // Step 2: residual R = target - Q
-            INDArray R = target.sub(Q);
-            Q.close();
             target.close();
+
+            // Step 2: residual R = W - Q (full residual of original W vs quantized approximation)
+            INDArray R = W.sub(Q);
+            Q.close();
 
             // Step 3: Economy SVD of R (only rank-r singular values needed)
             //   Returns: [S, U, Vt] when calcUV=true, fullUV=false
@@ -233,7 +241,8 @@ public class LoftQInitializer {
             result.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end)}, quantBlock);
             quantBlock.close();
         }
-        flat.close();
+        // NOTE: flat is a VIEW sharing the same DataBuffer as weight — do NOT close it here.
+        // Closing flat would mark weight's DataBuffer as closed, invalidating the caller's array.
 
         return result.reshape(weight.shape());
     }
@@ -309,7 +318,8 @@ public class LoftQInitializer {
             result.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end)}, quantBlock);
             quantBlock.close();
         }
-        flat.close();
+        // NOTE: flat is a VIEW sharing the same DataBuffer as weight — do NOT close it here.
+        // Closing flat would mark weight's DataBuffer as closed, invalidating the caller's array.
 
         return result.reshape(weight.shape());
     }
@@ -347,24 +357,18 @@ public class LoftQInitializer {
      * @return [S, U, Vt]
      */
     static INDArray[] svd(INDArray matrix, int rank) {
-        int m = (int) matrix.size(0);
-        int n = (int) matrix.size(1);
-        int diagSize = Math.min(m, n);
-
-        // Ensure FLOAT32 and C-contiguous for LAPACK
+        // Use the high-level Svd op (fullUV=false → economy/thin SVD, computeUv=true).
+        // Constructor: Svd(INDArray input, boolean fullUV, boolean computeUV, int switchNum)
+        // Returns outputs in order: [S, U, V] where S=[k], U=[m,k], V=[n,k], k=min(m,n).
+        // We need Vt = V.transpose() to get [k, n] as expected by callers.
         INDArray A = matrix.dataType() == DataType.FLOAT ? matrix.dup('c') : matrix.castTo(DataType.FLOAT).dup('c');
-
-        INDArray S  = Nd4j.create(DataType.FLOAT, diagSize);
-        INDArray U  = Nd4j.create(DataType.FLOAT, new long[]{m, diagSize}, 'f');
-        INDArray Vt = Nd4j.create(DataType.FLOAT, new long[]{diagSize, n}, 'f');
-
-        // LAPACK gesvd: A (m×n) → U (m×k), S (k), Vt (k×n) where k = min(m,n)
-        // Note: gesvd overwrites A; U and Vt are the full economy decomposition
-        Nd4j.getBlasWrapper().lapack().gesvd(A, S, U, Vt);
+        INDArray[] svdOuts = Nd4j.exec(new Svd(A, false, true, Svd.DEFAULT_SWITCHNUM));
         A.close();
-
-        // Return views; caller is responsible for cleanup
-        return new INDArray[]{S, U, Vt};
+        // svdOuts[0] = S [k], svdOuts[1] = U [m, k], svdOuts[2] = V [n, k]
+        // Transpose V to Vt = [k, n] as expected by the caller
+        INDArray Vt = svdOuts[2].transpose().dup();
+        svdOuts[2].close();
+        return new INDArray[]{svdOuts[0], svdOuts[1], Vt};
     }
 
 }

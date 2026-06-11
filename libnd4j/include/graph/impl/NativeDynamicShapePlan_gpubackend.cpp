@@ -92,6 +92,52 @@ void NativeDynamicShapePlan::cleanupSegmentForRebuild(GraphSegment& seg,
   platformCleanupSegmentForRebuild(seg);
 }
 
+// ── dumpSegmentGraphState ───────────────────────────────────────────────────
+// Dumps full graph state for all segments as structured JSON to DspDiagnostics.
+void NativeDynamicShapePlan::dumpSegmentGraphState(const char* tag) const {
+  std::string json = "{\"tag\":\"";
+  json += (tag ? tag : "unknown");
+  json += "\",\"planExecCount\":";
+  json += std::to_string(executeCount_);
+  json += ",\"planPhase\":\"";
+  json += planLifecycle_.displayName();
+  json += "\",\"segments\":[";
+
+  for (size_t i = 0; i < segments_.size(); i++) {
+    const auto& seg = segments_[i];
+    if (i > 0) json += ",";
+    json += "{\"idx\":";
+    json += std::to_string(i);
+    json += ",\"slots\":[";
+    json += std::to_string(seg.def.startSlot);
+    json += ",";
+    json += std::to_string(seg.def.endSlot);
+    json += "],\"phase\":\"";
+    json += seg.exec.displayPhaseName();
+    json += "\",\"outcome\":\"";
+    json += segmentExecOutcomeName(seg.exec.outcome);
+    json += "\",\"execCount\":";
+    json += std::to_string(seg.exec.executionCount);
+    json += ",\"hasHandle\":";
+    json += (seg.exec.replayHandle ? "true" : "false");
+    json += ",\"handleReady\":";
+    json += (seg.exec.replayHandle && seg.exec.replayHandle->isReady() ? "true" : "false");
+    json += ",\"capturedInputAddrKey\":";
+    json += std::to_string(seg.exec.capturedInputAddrKey);
+    json += ",\"capturedSlotAddrHash\":";
+    json += std::to_string(seg.exec.capturedSlotAddrHash);
+    json += ",\"tracker\":";
+    json += seg.exec.handleTracker.toJsonSummary(seg.def.startSlot, seg.def.endSlot);
+    json += "}";
+  }
+
+  json += "]}";
+
+  DspDiagnostics::getInstance().recordGraphStateDump(tag, json.c_str());
+  // Also print to stderr for immediate visibility when debugging
+  sd_printf("=== GRAPH STATE DUMP [%s] ===\n%s\n", tag, json.c_str());
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // hasCompositeHandles — check if merged captures are ready for replay
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -538,7 +584,7 @@ Status NativeDynamicShapePlan::segDispatchCompile(
       DSP_TRACE_ERROR(trace_, -1, seg.def.startSlot,
                       static_cast<uint32_t>(executeCount_),
                       static_cast<uint64_t>(Status::KERNEL_FAILURE));
-      SegmentLifecycle::markFailed(seg.exec, "zero_compiled_ops");
+      SegmentLifecycle::markFailed(seg.exec, "zero_compiled_ops", seg.def.startSlot, seg.def.endSlot);
       return Status::KERNEL_FAILURE;
     }
     if (compiledCount == 0 && failedCount == 0) {
@@ -553,7 +599,7 @@ Status NativeDynamicShapePlan::segDispatchCompile(
       DSP_TRACE_ERROR(trace_, -1, seg.def.startSlot,
                       static_cast<uint32_t>(executeCount_),
                       static_cast<uint64_t>(Status::KERNEL_FAILURE));
-      SegmentLifecycle::markFailed(seg.exec, "partial_compile_failure");
+      SegmentLifecycle::markFailed(seg.exec, "partial_compile_failure", seg.def.startSlot, seg.def.endSlot);
       return Status::KERNEL_FAILURE;
     }
     if (nativeHandledCount > 0) {

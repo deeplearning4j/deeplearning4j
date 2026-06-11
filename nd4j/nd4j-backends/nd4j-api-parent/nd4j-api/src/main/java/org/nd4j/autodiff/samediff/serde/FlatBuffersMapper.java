@@ -473,15 +473,11 @@ public class FlatBuffersMapper {
                             break;
                         case DOUBLE:
                             double dv = bb.getDouble();
-                            // Downcast to FLOAT when the value survives a float32 round-trip
-                            // (e.g. 0.125, 0.5, 1.0). This prevents DOUBLE scalars from
-                            // cascading through matmul dtype promotion (dtypeZ = max(x,y))
-                            // and producing DOUBLE output tensors in otherwise-FLOAT graphs.
-                            if ((double)(float) dv == dv) {
-                                scalar = Nd4j.constantScalar((float) dv);
-                            } else {
-                                scalar = Nd4j.constantScalar(dv);
-                            }
+                            // Always preserve the DOUBLE dtype as stored in the FlatBuffer.
+                            // Downcasting to FLOAT breaks DOUBLE graphs: scalar ops use the
+                            // scalar dtype to determine output shape, so a FLOAT scalar in a
+                            // DOUBLE graph causes type mismatches and garbage native output.
+                            scalar = Nd4j.constantScalar(dv);
                             break;
                         case INT:
                             scalar = Nd4j.constantScalar(bb.getInt());

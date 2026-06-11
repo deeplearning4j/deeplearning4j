@@ -131,34 +131,66 @@ static void multiply1DLast_(const void* vx, const void* vy, void* vz, sd::LongTy
 
 void fusedAddContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
-  BUILD_SINGLE_SELECTOR(x.dataType(), addContiguous_, (x.buffer(), y.buffer(), z.buffer(), len), SD_COMMON_TYPES);
+  // Guard: empty arrays have null data buffers. Mirrors the pairwise null-buffer guard
+  // in NativeOpExecutioner_pairwise_*.cpp. Without this, parallel_for invokes the lambda
+  // even when len==0 (delta==0 fast-path calls function(0,0,0,1)), and SIMD preamble code
+  // may load from address 0 before the loop-bound check, causing SIGSEGV.
+  void* xBuf = x.buffer();
+  void* yBuf = y.buffer();
+  void* zBuf = z.buffer();
+  if (xBuf == nullptr || yBuf == nullptr || zBuf == nullptr || len == 0) return;
+  BUILD_SINGLE_SELECTOR(x.dataType(), addContiguous_, (xBuf, yBuf, zBuf, len), SD_COMMON_TYPES);
 }
 
 void fusedSubtractContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
-  BUILD_SINGLE_SELECTOR(x.dataType(), subtractContiguous_, (x.buffer(), y.buffer(), z.buffer(), len), SD_COMMON_TYPES);
+  void* xBuf = x.buffer();
+  void* yBuf = y.buffer();
+  void* zBuf = z.buffer();
+  if (xBuf == nullptr || yBuf == nullptr || zBuf == nullptr || len == 0) return;
+  BUILD_SINGLE_SELECTOR(x.dataType(), subtractContiguous_, (xBuf, yBuf, zBuf, len), SD_COMMON_TYPES);
 }
 
 void fusedMultiplyContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
-  BUILD_SINGLE_SELECTOR(x.dataType(), multiplyContiguous_, (x.buffer(), y.buffer(), z.buffer(), len), SD_COMMON_TYPES);
+  void* xBuf = x.buffer();
+  void* yBuf = y.buffer();
+  void* zBuf = z.buffer();
+  if (xBuf == nullptr || yBuf == nullptr || zBuf == nullptr || len == 0) return;
+  BUILD_SINGLE_SELECTOR(x.dataType(), multiplyContiguous_, (xBuf, yBuf, zBuf, len), SD_COMMON_TYPES);
 }
 
 void fusedDivideContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
-  BUILD_SINGLE_SELECTOR(x.dataType(), divideContiguous_, (x.buffer(), y.buffer(), z.buffer(), len), SD_COMMON_TYPES);
+  void* xBuf = x.buffer();
+  void* yBuf = y.buffer();
+  void* zBuf = z.buffer();
+  if (xBuf == nullptr || yBuf == nullptr || zBuf == nullptr || len == 0) return;
+  BUILD_SINGLE_SELECTOR(x.dataType(), divideContiguous_, (xBuf, yBuf, zBuf, len), SD_COMMON_TYPES);
 }
 
 void fusedAdd1DLast(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType lastDim = x.sizeAt(-1);
+  // Guard lastDim before the division to avoid UB (divide-by-zero) on empty arrays.
+  if (lastDim == 0) return;
   const sd::LongType numRows = x.lengthOf() / lastDim;
-  BUILD_SINGLE_SELECTOR(x.dataType(), add1DLast_, (x.buffer(), y.buffer(), z.buffer(), numRows, lastDim), SD_COMMON_TYPES);
+  void* xBuf = x.buffer();
+  void* yBuf = y.buffer();
+  void* zBuf = z.buffer();
+  if (xBuf == nullptr || yBuf == nullptr || zBuf == nullptr || numRows == 0) return;
+  BUILD_SINGLE_SELECTOR(x.dataType(), add1DLast_, (xBuf, yBuf, zBuf, numRows, lastDim), SD_COMMON_TYPES);
 }
 
 void fusedMultiply1DLast(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType lastDim = x.sizeAt(-1);
+  // Guard lastDim before the division to avoid UB (divide-by-zero) on empty arrays.
+  if (lastDim == 0) return;
   const sd::LongType numRows = x.lengthOf() / lastDim;
-  BUILD_SINGLE_SELECTOR(x.dataType(), multiply1DLast_, (x.buffer(), y.buffer(), z.buffer(), numRows, lastDim), SD_COMMON_TYPES);
+  void* xBuf = x.buffer();
+  void* yBuf = y.buffer();
+  void* zBuf = z.buffer();
+  if (xBuf == nullptr || yBuf == nullptr || zBuf == nullptr || numRows == 0) return;
+  BUILD_SINGLE_SELECTOR(x.dataType(), multiply1DLast_, (xBuf, yBuf, zBuf, numRows, lastDim), SD_COMMON_TYPES);
 }
 
 }  // namespace helpers

@@ -32,6 +32,17 @@ BroadcastableOp::BroadcastableOp(const char *name, int numTArgs, int numIArgs)
 }
 
 ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+  // Ensure registerTypes() has been called so that _descriptor->_outputTypes is populated.
+  // calculateOutputShape may be invoked before validateDataTypes (which normally triggers
+  // registerTypes). Without this, getOutputTypesForOutput(0) returns empty for ops like
+  // boolean_and/or/xor, causing the dtype to be computed as FLOAT instead of BOOL.
+  _registrator.lock();
+  if (!_registered) {
+    _registered = true;
+    this->registerTypes();
+  }
+  _registrator.unlock();
+
   auto shapeList = SHAPELIST();
   auto x = inputShape->at(0);
   auto y = inputShape->at(1);
@@ -61,12 +72,25 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
     return ConstantShapeHelper::getInstance().createShapeInfo(dtype, shape::order(si), shapeVec);
   };
 
-  if (shape::isEmptyConst(x) || shape::isEmptyConst(y)) {
+  // Also check using the NDArray objects when available (fastpath).
+  // The native shape info may not have the ARRAY_EMPTY bit set for Java-created empty arrays
+  // (the Java singleton Nd4j.empty() stores ARRAY_EMPTY in javaShapeInformation but the
+  // native shape info only has the dtype bit). NDArray::isEmpty() has a fallback that checks
+  // rank==0 && _buffer==nullptr, which correctly identifies these arrays as empty.
+  bool xEmptyFromArray = false, yEmptyFromArray = false;
+  if (block.isFastPath()) {
+    const auto& fp = block.fastpath_in();
+    if (fp.size() > 0 && fp[0] != nullptr) xEmptyFromArray = fp[0]->isEmpty();
+    if (fp.size() > 1 && fp[1] != nullptr) yEmptyFromArray = fp[1]->isEmpty();
+  }
+
+  if (shape::isEmptyConst(x) || shape::isEmptyConst(y) || xEmptyFromArray || yEmptyFromArray) {
     // When either operand is rank-0 empty, return a rank-0 empty with the correct output dtype.
     // When both operands have shape dimensions (rank > 0), compute the broadcast shape and
     // mark it empty so that structural shape info is preserved (e.g. [0,2]).
-    if ((shape::isEmptyConst(x) && shape::rank(x) == 0) ||
-        (shape::isEmptyConst(y) && shape::rank(y) == 0)) {
+    bool xIsRank0Empty = (shape::isEmptyConst(x) && shape::rank(x) == 0) || (xEmptyFromArray && shape::rank(x) == 0);
+    bool yIsRank0Empty = (shape::isEmptyConst(y) && shape::rank(y) == 0) || (yEmptyFromArray && shape::rank(y) == 0);
+    if (xIsRank0Empty || yIsRank0Empty) {
       // Rank-0 empty input: return rank-0 empty with correct dtype
       auto desc = ShapeBuilders::emptyShapeInfo(dtype);
       shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(desc)->primary());
@@ -86,6 +110,18 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
     } else {
       shapeList->push_back(newshape);
     }
+    return shapeList;
+  }
+
+  // Defensive fallback: if either input is empty (e.g. rank-0 empty scalar) and the
+  // early-exit block above was bypassed for any reason, emit a rank-0 empty output.
+  // This guards against equalsSoft returning true for any two rank-0 arrays (empty or not)
+  // and against isScalar returning non-zero for rank-0 non-empty scalars sharing a
+  // rank with a rank-0 empty input.
+  if (shape::isEmptyConst(x) || shape::isEmptyConst(y) || xEmptyFromArray || yEmptyFromArray) {
+    auto desc = ShapeBuilders::emptyShapeInfo(dtype);
+    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(desc)->primary());
+    delete[] desc;
     return shapeList;
   }
 

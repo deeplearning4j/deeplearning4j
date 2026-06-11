@@ -322,17 +322,13 @@ bool NativeDynamicShapePlan::allSegmentsReplayReady() const {
       segIdx++;
       continue;
     }
-    // Segments that produce 0 GPU nodes execute slot-by-slot — no replay needed
-    if (seg.exec.captureProducedNoKernels) {
-      DSP_DIAG(GRAPH_REPLAY, "allSegmentsReplayReady: seg[%d-%d] idx=%d SKIP (captureProducedNoKernels)",
-               seg.def.startSlot, seg.def.endSlot, segIdx);
-      segIdx++;
-      continue;
-    }
-    // Non-capturable segments execute slot-by-slot — no replay needed
-    if (!seg.def.isCapturable) {
-      DSP_DIAG(GRAPH_REPLAY, "allSegmentsReplayReady: seg[%d-%d] idx=%d SKIP (not isCapturable)",
-               seg.def.startSlot, seg.def.endSlot, segIdx);
+    // Terminal-outcome segments (ZERO_KERNEL_SBS, NOT_FUSIBLE, COMPILE_FAILED)
+    // and non-capturable segments execute slot-by-slot — no replay needed
+    if (isTerminalOutcome(seg.exec.outcome) || !seg.def.isCapturable) {
+      DSP_DIAG(GRAPH_REPLAY, "allSegmentsReplayReady: seg[%d-%d] idx=%d SKIP (terminal=%d capturable=%d outcome=%d)",
+               seg.def.startSlot, seg.def.endSlot, segIdx,
+               isTerminalOutcome(seg.exec.outcome) ? 1 : 0, seg.def.isCapturable ? 1 : 0,
+               static_cast<int>(seg.exec.outcome));
       segIdx++;
       continue;
     }
@@ -407,6 +403,10 @@ bool isSmallIntegralControlArray(NDArray* arr) {
 
 bool segmentHasStablePointersForPlanPhase(const GraphSegment& seg, NativeSlot* slots) {
   if (!segmentBlocksPlanPhase(seg)) return true;
+  // Terminal-outcome segments (ZERO_KERNEL_SBS, NOT_FUSIBLE, COMPILE_FAILED)
+  // execute slot-by-slot permanently — they don't participate in graph replay
+  // and should never block plan-level pointer stability assessment.
+  if (isTerminalOutcome(seg.exec.outcome)) return true;
   const bool needsReplayInvariantTracking = segmentHasInternalValueShapeInputs(seg, slots);
 
   switch (seg.def.selectedBackend) {
@@ -449,6 +449,9 @@ bool segmentHasStablePointersForPlanPhase(const GraphSegment& seg, NativeSlot* s
 
 bool segmentIsFullyReplayingForPlanPhase(const GraphSegment& seg, NativeSlot* slots) {
   if (!segmentBlocksPlanPhase(seg)) return true;
+  // Terminal segments are permanently slot-by-slot — they're in their final state
+  // and should not block plan-level REPLAYING promotion.
+  if (isTerminalOutcome(seg.exec.outcome)) return true;
   const bool needsReplayInvariantTracking = segmentHasInternalValueShapeInputs(seg, slots);
 
   switch (seg.def.selectedBackend) {
@@ -534,6 +537,7 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       gpuGraphBackend_(nullptr), gpuGraphBackendChecked_(false),
       untrackedOutputCache_(nullptr), untrackedOutputCacheSize_(0),
       hasControlFlow_(false), loopRegions_(nullptr), numLoopRegions_(0),
+      cfLoopBackStep_(-1),
       slotIsDead_(nullptr), slotIsDeadSize_(0),
       slotOwnership_(nullptr),
       dirtySlotGenerations_(),
@@ -1583,10 +1587,12 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     if (slot.opTraits_ == 0 && !slot.ident.opName.empty()) {
       slot.opTraits_ = sd::ops::getOpTraitsByName(slot.ident.opName);
     }
-    // Apply where-hack: where with 3 inputs is elementwise select, not data-dependent.
-    if (slot.isDataDependent() && normalizeOpName(slot.ident.opName) == "where"
-        && slot.wiring.numInputs == 3) {
+    // Where with 3 inputs is elementwise select (cond ? x : y) — not data-dependent
+    // and has fixed output shape. Where with 1 input is coordinate extraction with
+    // variable-length output that requires host sync → non-capturable.
+    if (normalizeOpName(slot.ident.opName) == "where" && slot.wiring.numInputs == 3) {
       slot.clearOpTrait(sd::ops::OP_TRAIT_DATA_DEPENDENT);
+      slot.clearOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
     }
 
     // Set structural iArg count from table (consistent with NativePlanCompiler)
@@ -1705,6 +1711,7 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   plan->loopRegions_ = nullptr;
   plan->numLoopRegions_ = 0;
   plan->hasControlFlow_ = false;
+  plan->cfLoopBackStep_ = -1;
   if (version >= 3) {
     plan->numLoopRegions_ = reader.read<int32_t>();
     if (plan->numLoopRegions_ > 0) {
@@ -2663,11 +2670,11 @@ Status NativeDynamicShapePlan::execute(
   DSP_DIAG(MEMORY, "execute: arrays persist (exec=%d, frozen=%d, slots=%d)",
            executeCount_, planLifecycle_.isShapesFrozen() ? 1 : 0, totalOutputSlots_);
 
-  // Non-frozen first execution only: reset segment state for warmup
+  // Non-frozen first execution only: reset segment state for warmup.
+  // compilationFailed is managed by lifecycle (markFailed/reset) — not set here.
   if (executeCount_ == 0 && planLifecycle_.isSlotBySlot()) {
     for (auto& segment : segments_) {
       segment.exec.executionCount = 0;
-      segment.exec.compilationFailed = false;
       segment.exec.captureOomRetries = 0;
       segment.exec.captureRetryAfterExec = 0;
       segment.exec.cachedShapeKey = 0;
@@ -2993,7 +3000,12 @@ Status NativeDynamicShapePlan::execute(
     // underlying DataBuffer is a placeholder (not in protectedWeightBuffers_).
     // These views are refreshed each call by slot-exec, so the captured
     // pointers/identity are not authoritative and must be skipped in validate().
-    frozenSnapshot_.pruneTransientViewSlots(slotOwnership_, protectedWeightBuffers_);
+    // Pass the RAW externalInputs (not lifecycleExternalInputPtrs) because
+    // lifecycleExternalInputPtrs has placeholder entries nulled out by
+    // refreshLifecycleExternalInputs(). pruneTransientViewSlots needs to
+    // see placeholder DataBuffers to detect slots that alias them.
+    frozenSnapshot_.pruneTransientViewSlots(slotOwnership_, protectedWeightBuffers_,
+                                              externalInputs, numExternalInputs);
 
     // Dynamic output slots are intentionally mutable during frozen execution:
     // their buffers may be replaced by plan-internal control/value-shape
@@ -3872,47 +3884,77 @@ void NativeDynamicShapePlan::advancePlanPhase() {
       }
     }
     if (hasReplayEligibleSegment && allReplaying && !planLifecycle_.isReplaying()) {
-      const char* oldPhase = planLifecycle_.displayName();
-      DSP_TRACE_PHASE(trace_, -1,
-                      static_cast<uint8_t>(getPlanPhase()),
-                      static_cast<uint8_t>(PlanPhase::REPLAYING),
-                      static_cast<uint32_t>(executeCount_));
-      planLifecycle_.seal();
-      DSP_DIAG(EXECUTE, "[PHASE_TRANSITION] plan %s -> REPLAYING reason=all_segments_fully_replaying frozenExec=%d",
-               oldPhase, planLifecycle_.postFreezeExecCount);
-
-      // ── Compilation summary at warmup→replay transition ─────────────────
-      // Emitted exactly once when all segments reach steady-state replay.
-      // This marks the end of compilation/capture overhead.
-      {
-        int compiledSegs = 0, capturedSegs = 0, failedSegs = 0, slotBySlotSegs = 0;
-        for (auto& s : segments_) {
-          if (s.exec.compilationFailed) {
-            failedSegs++;
-          } else if (!s.exec.compiledByBackend.empty()) {
-            compiledSegs++;
-          }
-          if (s.exec.replayHandle != nullptr && s.exec.replayHandle->isReady()) {
-            capturedSegs++;
-          }
-          if (!s.def.isCapturable) {
-            slotBySlotSegs++;
-          }
+      // Count segments with GRAPH_REPLAY outcome — if zero, the plan will run
+      // slot-by-slot forever and must NOT be marked REPLAYING.
+      //
+      // EMULATED_REPLAY segments (CPU without graph backends) are sealed with
+      // ZERO_KERNEL_SBS outcome by markEmulatedSealed() — they re-execute ops
+      // slot-by-slot on each step rather than replaying a baked CUDA graph.
+      // Despite the ZERO_KERNEL_SBS label, sealed EMULATED_REPLAY segments ARE
+      // performing their intended replay: the lifecycle (WARMUP → CAPTURING →
+      // SEALED) completed successfully and totalGraphReplays_ is incremented
+      // per step.  Count them as replay-capable so the plan can advance to
+      // REPLAYING (SEALED) and assertFrozenExecCountAtLeast / assertPointersStable
+      // work correctly on CPU.
+      int graphReplaySegCount = 0;
+      for (auto& s : segments_) {
+        if (s.exec.outcome == SegmentExecOutcome::GRAPH_REPLAY) {
+          graphReplaySegCount++;
+        } else if (s.def.selectedBackend == SelectedBackend::EMULATED_REPLAY &&
+                   s.exec.segPhase.isSealed()) {
+          // Sealed EMULATED_REPLAY = CPU replay steady state: counts as replay.
+          graphReplaySegCount++;
         }
-        int totalIslandHandles = 0;
-        int totalMergedGroups = 0;
-        for (auto& s : segments_) {
-          totalIslandHandles += static_cast<int>(s.exec.compositeReplaySchedule.compositeReplayHandles.size());
-          totalMergedGroups += static_cast<int>(s.exec.compositeReplaySchedule.mergedReplayHandles.size());
-        }
-        DSP_DIAG_BANNER(COMPILE, "WARMUP COMPLETE",
-                 "segs=%d compiled=%d captured=%d failed=%d sbs=%d "
-                 "islands=%d mergedGroups=%d replays=%d warmupExec=%d",
-                 static_cast<int>(segments_.size()), compiledSegs, capturedSegs,
-                 failedSegs, slotBySlotSegs,
-                 totalIslandHandles, totalMergedGroups,
-                 totalGraphReplays_, planLifecycle_.postFreezeExecCount);
       }
+      const char* oldPhase = planLifecycle_.displayName();
+      if (graphReplaySegCount == 0) {
+        sd_printf("DSP ERROR: plan seal gate — 0 segments have GRAPH_REPLAY outcome. "
+                  "All segments resolved to slot-by-slot. planPhase=REPLAY_BLOCKED, NOT REPLAYING.\n");
+        planLifecycle_.blockReplay("zero_graph_replay_segments");
+        DSP_DIAG(EXECUTE, "[PHASE_TRANSITION] plan %s -> REPLAY_BLOCKED reason=zero_graph_replay_segments frozenExec=%d",
+                 oldPhase, planLifecycle_.postFreezeExecCount);
+      } else {
+        DSP_TRACE_PHASE(trace_, -1,
+                        static_cast<uint8_t>(getPlanPhase()),
+                        static_cast<uint8_t>(PlanPhase::REPLAYING),
+                        static_cast<uint32_t>(executeCount_));
+        planLifecycle_.seal();
+        DSP_DIAG(EXECUTE, "[PHASE_TRANSITION] plan %s -> REPLAYING reason=all_segments_fully_replaying frozenExec=%d",
+                 oldPhase, planLifecycle_.postFreezeExecCount);
+
+        // ── Compilation summary at warmup→replay transition ─────────────────
+        // Emitted exactly once when all segments reach steady-state replay.
+        // This marks the end of compilation/capture overhead.
+        {
+          int compiledSegs = 0, capturedSegs = 0, failedSegs = 0, slotBySlotSegs = 0;
+          for (auto& s : segments_) {
+            if (s.exec.compilationFailed) {
+              failedSegs++;
+            } else if (!s.exec.compiledByBackend.empty()) {
+              compiledSegs++;
+            }
+            if (s.exec.replayHandle != nullptr && s.exec.replayHandle->isReady()) {
+              capturedSegs++;
+            }
+            if (!s.def.isCapturable) {
+              slotBySlotSegs++;
+            }
+          }
+          int totalIslandHandles = 0;
+          int totalMergedGroups = 0;
+          for (auto& s : segments_) {
+            totalIslandHandles += static_cast<int>(s.exec.compositeReplaySchedule.compositeReplayHandles.size());
+            totalMergedGroups += static_cast<int>(s.exec.compositeReplaySchedule.mergedReplayHandles.size());
+          }
+          DSP_DIAG_BANNER(COMPILE, "WARMUP COMPLETE",
+                   "segs=%d compiled=%d captured=%d failed=%d sbs=%d "
+                   "islands=%d mergedGroups=%d replays=%d warmupExec=%d",
+                   static_cast<int>(segments_.size()), compiledSegs, capturedSegs,
+                   failedSegs, slotBySlotSegs,
+                   totalIslandHandles, totalMergedGroups,
+                   totalGraphReplays_, planLifecycle_.postFreezeExecCount);
+        }
+      }  // end else (graphReplaySegCount > 0)
     }
   }
 }
@@ -3989,7 +4031,7 @@ Status NativeDynamicShapePlan::phaseFreeze() {
     seg.exec.cachedShapeKey = 0;
     seg.exec.capturedInputAddrKey = 0;
     seg.exec.capturedCreateValueKey = 0;
-    seg.exec.compilationFailed = false;
+    // compilationFailed is managed by lifecycle (markFailed/reset) — not reset here
   }
 
   planLifecycle_.freezeShapes();
@@ -4067,10 +4109,10 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
   int slotBySlotSlots = 0;
   using Clock = std::chrono::high_resolution_clock;
 
-  // Reset segment state for warmup
+  // Reset segment state for warmup.
+  // compilationFailed is managed by lifecycle (markFailed/reset) — not reset here.
   for (auto& segment : segments_) {
     segment.exec.executionCount = 0;
-    segment.exec.compilationFailed = false;
     segment.exec.captureOomRetries = 0;
     segment.exec.captureRetryAfterExec = 0;
     segment.exec.cachedShapeKey = 0;
@@ -4108,8 +4150,7 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
     }
     platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
 
-    segment.exec.segPhase.reset();  // PRIMARY: BUILDING:WARMUP
-    segment.exec.lifecycleState = GraphSegmentExec::SegmentLifecycleState::NEEDS_WARMUP;
+    SegmentLifecycle::initSegmentPhase(segment.exec, segment.def.startSlot, segment.def.endSlot);
 
     auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
     auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
@@ -4876,6 +4917,16 @@ Status NativeDynamicShapePlan::dispatchSegment(
            segmentExecOutcomeName(seg.exec.outcome),
            seg.exec.executionCount);
 
+  // ── Loud sync-override diagnostic ────────────────────────────────────────
+  // If syncOverrideDepth_ > 0 while shapes are frozen or replaying, this
+  // segment is forced slot-by-slot and CUDA graph replay cannot happen.
+  if ((planLifecycle_.isShapesFrozen() || planLifecycle_.isReplaying()) && syncOverrideDepth_ > 0) {
+    sd_printf("DSP ERROR: syncOverrideDepth=%d during %s phase. "
+              "Segment [%d-%d] forced slot-by-slot. This BLOCKS CUDA graph replay.\n",
+              syncOverrideDepth_, planLifecycle_.displayName(),
+              seg.def.startSlot, seg.def.endSlot);
+  }
+
   // ── VALIDATION: detect invalid state combinations ──────────────────────
   // These throw hard errors — invalid states are bugs, not edge cases.
 
@@ -4940,6 +4991,15 @@ Status NativeDynamicShapePlan::dispatchSegment(
   }
 
   // ── 2. Terminal outcomes — permanent slot-by-slot ───────────────────────
+  // V4: ZERO_KERNEL_SBS must only appear on SEALED segments — lifecycle methods
+  // enforce this invariant. If we see it on a non-sealed segment, the lifecycle
+  // was bypassed somewhere.
+  if (seg.exec.outcome == SegmentExecOutcome::ZERO_KERNEL_SBS && !seg.exec.segPhase.isSealed()) {
+    DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
+        "DISPATCH VALIDATION: seg[%d-%d] outcome=ZERO_KERNEL_SBS but phase=%s",
+        seg.def.startSlot, seg.def.endSlot, seg.exec.segPhase.displayName());
+  }
+
   // Terminal outcomes (ZERO_KERNEL_SBS, NOT_FUSIBLE, COMPILE_FAILED) will
   // NEVER do graph replay. Route through performPreReplaySync with
   // SBS_ON_LC_STREAM — H2D only, no staging, no cross-stream.
@@ -5002,11 +5062,7 @@ Status NativeDynamicShapePlan::dispatchSegment(
   if (seg.exec.outcome == SegmentExecOutcome::OOM_DEFERRED) {
     if (seg.exec.segPhase.oomRetryPending &&
         seg.exec.executionCount >= seg.exec.segPhase.oomRetryAfterExec) {
-      seg.exec.segPhase.clearOomRetry();
-      seg.exec.outcome = SegmentExecOutcome::PENDING;
-      DSP_DIAG(EXECUTE,
-               "dispatchSegment: seg[%d-%d] OOM retry firing — resetting to PENDING",
-               seg.def.startSlot, seg.def.endSlot);
+      SegmentLifecycle::markOomRetryFiring(seg.exec, seg.def.startSlot, seg.def.endSlot);
       // Fall through to PENDING handling below
     } else {
       DSP_DIAG(EXECUTE,
@@ -5027,8 +5083,7 @@ Status NativeDynamicShapePlan::dispatchSegment(
   }
 
   // Slot-by-slot fallback — SyncOverride for warmup sync
-  seg.exec.segPhase.reset();
-  seg.exec.lifecycleState = GraphSegmentExec::SegmentLifecycleState::NEEDS_WARMUP;
+  SegmentLifecycle::initSegmentPhase(seg.exec, seg.def.startSlot, seg.def.endSlot);
   {
     SyncOverride warmupSync(*this, "sbs_warmup");
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
@@ -5059,10 +5114,13 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
 
   long long graphReplayUs = 0, slotBySlotUs = 0;
   int graphReplaySegs = 0, slotBySlotSegs = 0, graphReplaySlots = 0, slotBySlotSlots = 0;
+  int cfLoopIterations = 0;
+  cfLoopBackStep_ = -1;  // Reset at start of execution
 
   using Clock = std::chrono::high_resolution_clock;
 
-  for (auto& segment : segments_) {
+  for (size_t segIdx = 0; segIdx < segments_.size(); segIdx++) {
+    auto& segment = segments_[segIdx];
     if (!platformBindSegmentDevice(segment)) {
       return Status::KERNEL_FAILURE;
     }
@@ -5095,6 +5153,82 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
     platformCleanupMigratedInputs();
     auto postStatus = platformCheckPostSegment(segment);
     if (postStatus != Status::OK) return postStatus;
+
+    // ── Control flow loop-back across segments ──────────────────────────
+    // NextIteration sets cfLoopBackStep_ to the target Merge step. After
+    // the last segment containing a NextIteration for this loop executes,
+    // we jump back to the segment containing that Merge.
+    if (cfLoopBackStep_ >= 0) {
+      // Check if there are more NextIteration segments ahead that belong
+      // to the same loop (they target Merges near cfLoopBackStep_). We
+      // must let ALL NextIterations execute before jumping back.
+      bool moreNextItersAhead = false;
+      for (size_t ahead = segIdx + 1; ahead < segments_.size(); ahead++) {
+        auto& aheadSeg = segments_[ahead];
+        for (int s = aheadSeg.def.startSlot; s <= aheadSeg.def.endSlot; s++) {
+          if (slots_[s].cf.controlFlowType == CF_NEXT_ITERATION
+              && slots_[s].cf.loopBackTarget >= 0) {
+            moreNextItersAhead = true;
+            break;
+          }
+        }
+        if (moreNextItersAhead) break;
+      }
+
+      if (!moreNextItersAhead) {
+        // All NextIterations have fired. Handle loop-back.
+        cfLoopIterations++;
+        if (cfLoopIterations >= MAX_LOOP_ITERATIONS) {
+          DSP_DIAG(EXECUTE, "loop iteration limit (%d) reached at cfLoopBackStep_=%d",
+                   MAX_LOOP_ITERATIONS, cfLoopBackStep_);
+          return Status::VALIDATION;
+        }
+
+        int earliestMerge = cfLoopBackStep_;
+        // Find the last NextIteration step to determine loop body range
+        int lastNextIter = segment.def.endSlot;
+        for (int s = numSlots_ - 1; s >= earliestMerge; s--) {
+          if (slots_[s].cf.controlFlowType == CF_NEXT_ITERATION
+              && slots_[s].cf.loopBackTarget >= 0) {
+            lastNextIter = s;
+            break;
+          }
+        }
+
+        // Clear dead flags for the full loop body range so body ops re-execute
+        if (slotIsDead_) {
+          for (int s = earliestMerge; s <= lastNextIter && s < numSlots_; s++) {
+            NativeSlot& bodySlot = slots_[s];
+            for (int oi = 0; oi < bodySlot.wiring.numOutputs; oi++) {
+              int si = bodySlot.wiring.outputSlotIndices[oi];
+              if (si >= 0 && si < slotIsDeadSize_) slotIsDead_[si] = false;
+            }
+          }
+
+          // Mark Enter outputs dead for ALL Merges in this loop so each
+          // Merge picks the NextIteration value instead of the Enter value.
+          for (int s = earliestMerge; s <= lastNextIter; s++) {
+            if (slots_[s].cf.controlFlowType == CF_MERGE && slots_[s].wiring.numInputs >= 2) {
+              int enterSrcIdx = slots_[s].wiring.inputSourceIndices[0];
+              if (enterSrcIdx >= 0 && enterSrcIdx < slotIsDeadSize_) {
+                slotIsDead_[enterSrcIdx] = true;
+              }
+            }
+          }
+        }
+
+        // Find the segment containing the earliest Merge and jump back
+        cfLoopBackStep_ = -1;
+        for (size_t si = 0; si < segments_.size(); si++) {
+          if (earliestMerge >= segments_[si].def.startSlot
+              && earliestMerge <= segments_[si].def.endSlot) {
+            segIdx = si - 1; // will be incremented by for-loop
+            break;
+          }
+        }
+        continue; // restart from target segment
+      }
+    }
 
     // Trace slot reporting (GPU only)
     platformTraceSlotValues(segment, stream, executeCount_);
@@ -5187,22 +5321,11 @@ void NativeDynamicShapePlan::clearAllShapeCachesForce() {
 // ─── Reset segment execution state ──────────────────────────────────────────
 
 void NativeDynamicShapePlan::resetSegmentExecutionState() {
-  demotePlanPhase(PlanPhase::SLOT_BY_SLOT, "resetSegmentExecutionState");
-  frozenSnapshot_.clear();
-  for (auto& seg : segments_) {
-    seg.exec.executionCount = 0;
-    seg.exec.compilationFailed = false;
-    seg.exec.captureProducedNoKernels = false;
-    seg.exec.noFusibleOps = false;
-    seg.exec.captureOomRetries = 0;
-    if (seg.exec.replayHandle) seg.exec.replayHandle.reset();
-    seg.exec.outcome = SegmentExecOutcome::PENDING;
-    seg.exec.bumpArgGeneration();
-    seg.exec.addrKeyStableCount = 0;
-    seg.exec.slotAddrStableCount = 0;
-  }
-  planLifecycle_.compilationDone = false;
-  shapePrePassDone_ = false;
+  // Phase demotion is an architectural violation — destroy the plan and create
+  // a fresh one instead. This method exists only as a hard error sentinel.
+  DSP_THROW(FALLBACK,
+           "[PHASE_VIOLATION] resetSegmentExecutionState called — "
+           "phase demotion is prohibited. Destroy the plan and recreate.");
 }
 
 // ─── Passivation ────────────────────────────────────────────────────────────
@@ -5981,11 +6104,12 @@ void NativeDynamicShapePlan::buildSegments() {
         sd::ops::OP_TRAIT_MATMUL | sd::ops::OP_TRAIT_ATTENTION);
   };
 
-  // Only control flow ops break segments. All other ops (including those whose
-  // shape functions read tensor values) are capturable — shape functions run
-  // during warmup before capture, and shapes are cached after freeze.
+  // Control flow ops and dynamic-output-size ops break segments.
+  // Dynamic-output-size ops (e.g. single-arg Where, Unique, NMS) require
+  // host synchronization during execution, which invalidates CUDA graph
+  // capture. Delegates to NativeSlot::isCapturable() for the full check.
   auto isSlotCapturable = [](const NativeSlot& slot) -> bool {
-    return slot.cf.controlFlowType == CF_NONE;
+    return slot.isCapturable();
   };
 
   GraphSegment current;

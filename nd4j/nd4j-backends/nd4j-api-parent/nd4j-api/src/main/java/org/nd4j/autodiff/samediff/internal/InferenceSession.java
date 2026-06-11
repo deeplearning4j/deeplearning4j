@@ -38,6 +38,7 @@ import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.CleanupDiagnostics;
@@ -1093,6 +1094,37 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                 returnableResults.put(requestedVar, val);
                             }
                         }
+                        // Detach workspace-backed output arrays before returning.
+                        // The finally block also detaches filteredResults, but returnableResults is a
+                        // SEPARATE map — modifying filteredResults entries in the finally block does
+                        // NOT affect returnableResults, so the caller would receive workspace-attached
+                        // arrays. Detach here while the workspace scope is still active.
+                        if (mmgr.isWorkspaceBacked()) {
+                            try (MemoryWorkspace detachWs = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                for (Map.Entry<String, SDValue> entry : returnableResults.entrySet()) {
+                                    SDValue val = entry.getValue();
+                                    if (val != null && val.getSdValueType() == SDValueType.TENSOR) {
+                                        INDArray arr = val.getTensorValue();
+                                        if (arr != null && arr.isAttached()) {
+                                            entry.setValue(SDValue.create(arr.detach()));
+                                        }
+                                    } else if (val != null && val.getSdValueType() == SDValueType.LIST) {
+                                        List<INDArray> list = val.getListValue();
+                                        boolean needsDetach = false;
+                                        for (INDArray a : list) {
+                                            if (a != null && a.isAttached()) { needsDetach = true; break; }
+                                        }
+                                        if (needsDetach) {
+                                            List<INDArray> detachedList = new java.util.ArrayList<>(list.size());
+                                            for (INDArray a : list) {
+                                                detachedList.add(a != null && a.isAttached() ? a.detach() : a);
+                                            }
+                                            entry.setValue(SDValue.create(detachedList));
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         return ExecutionResult.builder().valueOutputs(returnableResults).build();
                     }
                 } catch (Exception e) {
@@ -1458,15 +1490,39 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     sameDiff.isDspFallbackToAutoIfTritonUnavailable());
         }
 
-        // SOURCE_VARIABLE external inputs (model weights) are NOT marked mutable
-        // during inference. Weights are constants during inference — they never change
-        // between decode steps. The C++ plan's detectFrozenConstants() correctly
-        // identifies them as frozen, enabling frozen-constant skip and avoiding
-        // per-step D2D staging copies for all weight tensors.
+        // Mark SOURCE_VARIABLE and SOURCE_PLACEHOLDER external inputs as mutable so
+        // the C++ plan allocates staging buffers for them.
         //
-        // For training, TrainingSession.dspMutableExternalInputNames() returns the
-        // gradient variable names, and the SOURCE_VARIABLE marking should be added
-        // there when weight updates between forward passes need staging.
+        // VARIABLE: required for training correctness — weight updates change the array.
+        // PLACEHOLDER: required for CUDA graph replay correctness — callers pass new
+        //   INDArray objects per call (e.g. VLM vision encoder per-frame inputs), which
+        //   may be allocated at different GPU addresses or closed between calls. Without
+        //   staging buffers, the CUDA graph has stale device pointers baked into graph
+        //   nodes, causing CUDA error 700 (illegal memory access) on replay.
+        //
+        // The staging buffer mechanism D2D-copies from the caller's array into a
+        // plan-owned buffer with a stable address. The CUDA graph captures against
+        // the stable staging address, so closing the caller's array is safe.
+        //
+        // For LLM inference with frozen weights, this is safe: detectFrozenConstants()
+        // will correctly identify the weights as frozen after observing they do not
+        // change, and the frozen-constant optimization will engage on subsequent steps.
+        {
+            String[] extKeys = plan.getExternalInputKeys();
+            byte[] extSourceTypes = plan.getExternalInputSourceTypes();
+            if (extKeys != null && extSourceTypes != null && extKeys.length > 0) {
+                List<String> mutableInputNames = new ArrayList<>();
+                for (int i = 0; i < extKeys.length && i < extSourceTypes.length; i++) {
+                    if (extSourceTypes[i] == DynamicShapeSlot.SOURCE_VARIABLE ||
+                        extSourceTypes[i] == DynamicShapeSlot.SOURCE_PLACEHOLDER) {
+                        mutableInputNames.add(extKeys[i]);
+                    }
+                }
+                if (!mutableInputNames.isEmpty()) {
+                    executor.addMutableExternalInputs(mutableInputNames);
+                }
+            }
+        }
 
         // DSP replay executes a fixed plan with known shapes, so exact-match allocation has
         // no amortization cost. A >1.0 growth factor creates a gap between logical length

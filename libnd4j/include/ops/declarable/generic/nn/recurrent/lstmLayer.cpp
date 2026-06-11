@@ -910,11 +910,6 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
       delete dLdhBwd;
     }
 
-    if(directionMode > 2) {
-      delete dLdhFwd;
-      delete dLdhBwd;
-    }
-
   }
 
   return Status::OK;

@@ -171,8 +171,16 @@ public class MultiPartModelLoader {
         if (!isSdzFile(sdzFile)) {
             throw new IOException("File is not a valid SDZ file: " + sdzFile.getAbsolutePath());
         }
+        boolean cacheDisabled = SameDiffOptimizationCache.isCacheDisabled();
+        SameDiff optimized = SameDiffOptimizationCache.loadOptimizedIfValid(sdzFile, sdzFile, cacheDisabled);
+        if (optimized != null) {
+            return optimized;
+        }
+
         log.info("Loading SDZ file: {}", sdzFile.getName());
-        return SDZSerializer.load(sdzFile, false);
+        SameDiff loaded = SDZSerializer.load(sdzFile, false);
+        return SameDiffOptimizationCache.optimizeWithCache(loaded, sdzFile, cacheDisabled,
+                Map.of("source_sdz", sdzFile.getName()));
     }
 
     /**
@@ -243,7 +251,7 @@ public class MultiPartModelLoader {
     private static SameDiff loadSdzQuiet(File file) {
         try {
             log.info("Loading SDZ: {}", file.getName());
-            return SDZSerializer.load(file, false);
+            return loadSdz(file);
         } catch (Exception e) {
             log.warn("Failed to load {}: {}", file.getName(), e.getMessage());
             throw new RuntimeException("Failed to load " + file.getName(), e);

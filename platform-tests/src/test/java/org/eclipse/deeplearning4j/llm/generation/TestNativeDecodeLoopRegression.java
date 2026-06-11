@@ -88,6 +88,12 @@ public class TestNativeDecodeLoopRegression {
     private static long hiddenSize;
     private static boolean modelsLoaded = false;
 
+    // State captured immediately after pipeline.generate() inside runNativeDecodeLoop().
+    // Must be read before any subsequent runNativeDecodeLoop() call resets the session.
+    private int lastRunPlanReplays = 0;
+    private boolean lastRunCachedOpContextNonNull = false;
+    private DynamicShapePlanExecutor lastRunExecutor = null;
+
     @BeforeAll
     public static void setup() {
         System.setProperty("nd4j.optimizer.enabled", "true");
@@ -439,13 +445,13 @@ public class TestNativeDecodeLoopRegression {
 
         decoder.setDspAutoCompileEnabled(true);
         decoder.setDspNativeAutoCompileEnabled(true);
-        List<String> outputNames = new ArrayList<>(decoder.outputs());
-        // Use AUTO mode to enable GPU graph capture and phase transitions
-        // (SLOT_BY_SLOT disables graph capture and blocks all phase transitions).
-        decoder.compileNativeDynamicShapePlan(outputNames, GraphExecutionMode.AUTO, true);
 
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
 
+        // graphOptimizerEnabled=false: the model is already optimized by OnnxModelCache
+        // (nd4j.optimizer.enabled=true in @BeforeAll). Running the optimizer again would
+        // dup the decoder (GraphOptimizer.optimize always calls graph.dup()), creating a
+        // new SameDiff instance that disconnects from the test's decoder reference.
         GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
@@ -454,9 +460,45 @@ public class TestNativeDecodeLoopRegression {
                 .samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(maxTokens)
                 .hiddenSize(hiddenSize)
+                .graphOptimizerEnabled(false)
                 .build());
 
-        return pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+        GenerationResult result = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+
+        // Capture executor state IMMEDIATELY after generate() returns, before any session
+        // teardown can occur. The nativePlanHandle and cachedOpContext are only valid on the
+        // executor that ran the decode; they may be nulled by the next resetModelState() call.
+        //
+        // Use pipeline.getDecoder() — when graphOptimizerEnabled=true, the pipeline's
+        // internal decoder is a dup (different SameDiff instance). Even with it disabled,
+        // always read from the pipeline's decoder to be safe.
+        lastRunPlanReplays = 0;
+        lastRunCachedOpContextNonNull = false;
+        lastRunExecutor = null;
+        try {
+            SameDiff pipelineDecoder = pipeline.getDecoder();
+            InferenceSession postGenSession = pipelineDecoder.getOrCreateSession();
+            if (postGenSession != null) {
+                DynamicShapePlanExecutor postGenExecutor = postGenSession.getDynamicShapePlanExecutor();
+                if (postGenExecutor != null) {
+                    lastRunExecutor = postGenExecutor;
+                    lastRunCachedOpContextNonNull = postGenExecutor.getCachedOpContext() != null;
+                    Pointer postGenHandle = postGenExecutor.getNativePlanHandle();
+                    boolean handleValid = postGenHandle != null && !postGenHandle.isNull();
+                    if (handleValid) {
+                        NativeOps ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                        lastRunPlanReplays = ops.getPlanTotalGraphReplays(postGenHandle);
+                    }
+                    log.info("[runNativeDecodeLoop] Captured: replays={} ctxNonNull={} handle={}",
+                            lastRunPlanReplays, lastRunCachedOpContextNonNull,
+                            handleValid ? postGenHandle.address() : "null");
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[runNativeDecodeLoop] Failed to capture executor state: {}", e.getMessage());
+        }
+
+        return result;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -652,28 +694,26 @@ public class TestNativeDecodeLoopRegression {
         log.info("Native decode produced {} tokens: {}", result.getTokenIds().length,
                 Arrays.toString(result.getTokenIds()));
 
-        InferenceSession session = decoder.getOrCreateSession();
-        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        // Use state captured immediately after generate() inside runNativeDecodeLoop(),
+        // before any session teardown can null the native plan handle.
+        DynamicShapePlanExecutor executor = lastRunExecutor;
         assertNotNull(executor, "DSP executor must exist after native decode");
 
         PlanPhase phase = executor.getPlanPhase();
         log.info("Plan phase after decode: {}", phase);
 
-        // Check that graph replays actually happened (fast path engaged)
-        NativeOps ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        Pointer handle = executor.getNativePlanHandle();
-        if (handle != null && !handle.isNull()) {
-            int totalReplays = ops.getPlanTotalGraphReplays(handle);
-            log.info("Total graph replays: {}", totalReplays);
-            // With AUTO mode, the frozen fast path should engage after warmup.
-            // Graph replays > 0 means the fast path is working and address
-            // stability is maintained. The exact phase name depends on whether
-            // advancePlanPhase() was reached (fast path may skip it).
-            assertTrue(totalReplays > 0,
-                    "Expected at least 1 graph replay after 10-token native decode, got "
-                            + totalReplays + ". This indicates address instability or "
-                            + "frozen fast path never engaged. Phase=" + phase);
-        }
+        // lastRunPlanReplays was captured immediately after generate() returned,
+        // when the native plan handle was still valid.
+        int totalReplays = lastRunPlanReplays;
+        log.info("Total graph replays: {}", totalReplays);
+        // With AUTO mode, the frozen fast path should engage after warmup.
+        // Graph replays > 0 means the fast path is working and address
+        // stability is maintained. The exact phase name depends on whether
+        // advancePlanPhase() was reached (fast path may skip it).
+        assertTrue(totalReplays > 0,
+                "Expected at least 1 graph replay after 10-token native decode, got "
+                        + totalReplays + ". This indicates address instability or "
+                        + "frozen fast path never engaged. Phase=" + phase);
     }
 
     @Test
@@ -681,33 +721,20 @@ public class TestNativeDecodeLoopRegression {
     public void testAddressStabilityAcrossRuns() throws Exception {
         ensureModelsLoaded();
 
-        // First run — warms up the plan
+        // First run — warms up the plan.
+        // Replay count is captured inside runNativeDecodeLoop() immediately after
+        // pipeline.generate() returns, before any session teardown can occur.
         GenerationResult result1 = runNativeDecodeLoop(8);
         log.info("Run 1: {} tokens", result1.getTokenIds().length);
-
-        InferenceSession session = decoder.getOrCreateSession();
-        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
-        NativeOps ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        Pointer handle = executor.getNativePlanHandle();
-
-        int replaysAfterRun1 = 0;
-        if (handle != null && !handle.isNull()) {
-            replaysAfterRun1 = ops.getPlanTotalGraphReplays(handle);
-        }
+        int replaysAfterRun1 = lastRunPlanReplays;
         log.info("Replays after run 1: {}", replaysAfterRun1);
 
-        // Second run — runNativeDecodeLoop resets the decoder state, so the
-        // plan is recompiled. We verify the NEW plan also engages graph replays.
+        // Second run — runNativeDecodeLoop resets the decoder state via
+        // BenchmarkConfigApplier.resetModelState(), so the plan is recompiled.
+        // We verify the NEW plan also engages graph replays.
         GenerationResult result2 = runNativeDecodeLoop(8);
         log.info("Run 2: {} tokens", result2.getTokenIds().length);
-
-        // Re-fetch handle — plan was recompiled after reset
-        executor = decoder.getOrCreateSession().getDynamicShapePlanExecutor();
-        handle = executor.getNativePlanHandle();
-        int replaysAfterRun2 = 0;
-        if (handle != null && !handle.isNull()) {
-            replaysAfterRun2 = ops.getPlanTotalGraphReplays(handle);
-        }
+        int replaysAfterRun2 = lastRunPlanReplays;
         log.info("Replays after run 2: {}", replaysAfterRun2);
 
         // Each run should independently engage graph replays (> 0).
@@ -773,16 +800,20 @@ public class TestNativeDecodeLoopRegression {
     public void testOpaqueContextInputFreshness() throws Exception {
         ensureModelsLoaded();
 
-        // Run warmup decode exactly like GenerationPipeline does
+        // Run warmup decode exactly like GenerationPipeline does.
+        // Executor state is captured inside runNativeDecodeLoop() immediately after
+        // pipeline.generate() returns, before any session teardown can occur.
         int maxTokens = 3;
         GenerationResult nativeResult = runNativeDecodeLoop(maxTokens);
         log.info("Native warmup produced {} tokens: {}", nativeResult.getTokenIds().length,
                 Arrays.toString(nativeResult.getTokenIds()));
 
-        InferenceSession session = decoder.getOrCreateSession();
-        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        // Use the executor captured inside runNativeDecodeLoop() — it reflects the state
+        // immediately after generation, before resetModelState() can null the handle.
+        DynamicShapePlanExecutor executor = lastRunExecutor;
         assertNotNull(executor, "DSP executor must exist after native decode");
 
+        assertTrue(lastRunCachedOpContextNonNull, "OpaqueContext must exist after warmup decode");
         org.nd4j.nativeblas.OpaqueContext ctx = executor.getCachedOpContext();
         assertNotNull(ctx, "OpaqueContext must exist after warmup decode");
 

@@ -712,6 +712,11 @@ public final class DspPlanAssertions {
         return getNativeOps().getPlanTotalGraphReplays(getPlanHandle(sd));
     }
 
+    /** PlanPhase: 0=SLOT_BY_SLOT, 1=SHAPES_FROZEN, 2=REPLAYING. */
+    public static int getPlanPhase(SameDiff sd) {
+        return getNativeOps().getPlanPhase(getPlanHandle(sd));
+    }
+
     /** Whether buffer pointers are stable. 1=stable, 0=not, -1=invalid. */
     public static int getPointersStable(SameDiff sd) {
         return getNativeOps().getPlanPointersStable(getPlanHandle(sd));
@@ -765,6 +770,11 @@ public final class DspPlanAssertions {
     /** Per-segment island handle readiness. 1=ready, 0=not, -1=invalid. */
     public static int isIslandHandleReady(SameDiff sd, int segmentIndex, int islandIndex) {
         return getNativeOps().getPlanSegmentIslandHandleReady(getPlanHandle(sd), segmentIndex, islandIndex);
+    }
+
+    /** Per-segment compiled backend name ("CUDA" for native-only, "Triton GPU" for Triton, "" if not yet compiled). */
+    public static String getSegmentCompiledBackend(SameDiff sd, int segmentIndex) {
+        return getNativeOps().getPlanSegmentCompiledBackend(getPlanHandle(sd), segmentIndex);
     }
 
     /**

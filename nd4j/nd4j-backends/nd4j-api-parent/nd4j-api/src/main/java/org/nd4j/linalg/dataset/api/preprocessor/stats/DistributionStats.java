@@ -118,16 +118,11 @@ public class DistributionStats implements NormalizerStats {
 
             if (runningMean == null) {
                 // First batch
-                runningMean = mean;
-                runningVariance = variance;
+                // Always dup to ensure runningMean/runningVariance own their data and cannot be
+                // invalidated by subsequent reduction ops or workspace reuse on the CUDA backend.
+                runningMean = mean.dup();
+                runningVariance = variance.dup();
                 runningCount = count;
-
-                if (data.size(0) == 1) {
-                    //Handle edge case: currently, reduction ops may return the same array
-                    //But we don't want to modify this array in-place later
-                    runningMean = runningMean.dup();
-                    runningVariance = runningVariance.dup();
-                }
             } else {
                 // Update running variance
                 INDArray deltaSquared = Transforms.pow(mean.subRowVector(runningMean), 2);
@@ -142,16 +137,7 @@ public class DistributionStats implements NormalizerStats {
 
                 // Update running mean
                 INDArray xMinusMean = data.subRowVector(runningMean);
-                INDArray sumResult = xMinusMean.sum(0);
-                double sumBefore = sumResult.getDouble(0);
-                INDArray increment = sumResult.divi(runningCount);
-                System.out.println("DISTSTATS: xMinusMean.shape=" + java.util.Arrays.toString(xMinusMean.shape())
-                    + " xMinusMean=" + xMinusMean.toStringFull()
-                    + " SUM_BEFORE_DIV=" + sumBefore
-                    + " runningCount=" + runningCount
-                    + " increment=" + increment.getDouble(0));
-                runningMean.addi(increment);
-                System.out.println("DISTSTATS: runningMean(after)=" + runningMean.toStringFull());
+                runningMean.addi(xMinusMean.sum(0).divi(runningCount));
             }
 
             return this;

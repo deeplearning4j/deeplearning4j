@@ -1026,7 +1026,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   }
 
   bool useDirtyTracking = Environment::getInstance().tritonArgDirtyTracking()
-                          && !compiledSeg->hasDynamicArgs.empty();
+                          && compiledSeg->hasDirtyTrackingInfo();
 
   // specialBuffer() addresses are CPU-side pointer values set during allocation
   // (cudaMallocAsync returns pointers synchronously). No stream sync needed
@@ -1044,9 +1044,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
       continue;
     }
 
-    bool isStaticByDirtyTracking = useDirtyTracking
-        && ki < compiledSeg->hasDynamicArgs.size()
-        && !compiledSeg->hasDynamicArgs[ki];
+    bool isStaticByDirtyTracking = useDirtyTracking && compiledSeg->isSubKernelStatic(ki);
 
     auto* argTableHostPinned = static_cast<int64_t*>(subKernel.cachedArgTableHostPinned);
     int numBufferArgs = static_cast<int>(subKernel.argSlotMapping.size());

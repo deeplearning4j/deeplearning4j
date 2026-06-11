@@ -571,7 +571,11 @@ public class TestSmolDoclingOptimizedPipeline {
         BenchmarkRunner.ValidateFunction validateFn = (config, result) -> {
             long valPhaseNs = phaseStart("FINAL_VALIDATE", config.getName() + " " + summarizeResult(result));
             try {
-                validateResult(config, result);
+                if (Boolean.parseBoolean(System.getProperty("vlm.test.skipFinalValidate", "false"))) {
+                    log.info("[VALIDATE] Skipping final content validation for {}", config.getName());
+                } else {
+                    validateResult(config, result);
+                }
                 // DSP structural assertions (enabled via --dsp-assert / -Dvlm.benchmark.dspAssert=true)
                 if (isDspAssertEnabled() && config.getExecutionMode() != GraphExecutionMode.SLOT_BY_SLOT) {
                     DspPlanAssertions.assertPhaseReached(decoder, PlanPhase.SHAPES_FROZEN,

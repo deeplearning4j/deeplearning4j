@@ -27,7 +27,7 @@
 #include <ops/declarable/helpers/lup.h>
 namespace sd {
 namespace ops {
-OP_IMPL(matrix_inverse, 1, 1, true) {
+OP_IMPL(matrix_inverse, 1, 1, false) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 

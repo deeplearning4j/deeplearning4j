@@ -22,8 +22,11 @@ package org.eclipse.deeplearning4j.audio.training;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.config.LoraConfig;
 import org.nd4j.autodiff.samediff.config.TtsFineTuneConfig;
 import org.nd4j.autodiff.samediff.config.TtsTrainingConfig;
 import org.nd4j.autodiff.samediff.peft.PeftModel;
@@ -39,6 +42,7 @@ import org.nd4j.linalg.schedule.CosineWarmupSchedule;
 import org.nd4j.linalg.schedule.ISchedule;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -167,6 +171,30 @@ public class TtsTrainingPipeline {
         Preconditions.checkNotNull(ttsConfig, "ttsConfig must not be null");
         Preconditions.checkNotNull(trainingConfig, "trainingConfig must not be null");
         ttsConfig.validate();
+
+        // Auto-detect target modules for LoRA when none are specified.
+        // Collect all 2-D VARIABLE-type variable names from the model and use them
+        // so callers don't need to know the variable naming scheme in advance.
+        if (trainingConfig.getPeftConfig() instanceof LoraConfig) {
+            LoraConfig loraConfig = (LoraConfig) trainingConfig.getPeftConfig();
+            if (loraConfig.getTargetModules() == null || loraConfig.getTargetModules().isEmpty()) {
+                List<String> autoTargets = new ArrayList<>();
+                for (SDVariable var : model.variables()) {
+                    if (var.getVariableType() == VariableType.VARIABLE) {
+                        long[] shape = var.getShape();
+                        if (shape != null && shape.length == 2) {
+                            autoTargets.add(var.name());
+                        }
+                    }
+                }
+                Preconditions.checkState(!autoTargets.isEmpty(),
+                        "Target modules must contain at least one valid module. " +
+                        "No 2-D weight variables found in the model to apply LoRA to.");
+                log.info("LoRA: auto-detected target modules from model variables: {}", autoTargets);
+                loraConfig.setTargetModules(autoTargets);
+            }
+        }
+
         trainingConfig.validate();
         return new TtsTrainingPipeline(model, ttsConfig, trainingConfig);
     }

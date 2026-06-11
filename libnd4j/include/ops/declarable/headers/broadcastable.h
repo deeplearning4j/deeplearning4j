@@ -310,21 +310,21 @@ DECLARE_BROADCASTABLE_BOOL_OP(greater, 0, 0);
  *
  */
 #if NOT_EXCLUDED(OP_boolean_and)
-DECLARE_BROADCASTABLE_OP(boolean_and, 0, 0);
+DECLARE_BROADCASTABLE_BOOL_OP(boolean_and, 0, 0);
 #endif
 
 /**
  *
  */
 #if NOT_EXCLUDED(OP_boolean_or)
-DECLARE_BROADCASTABLE_OP(boolean_or, 0, 0);
+DECLARE_BROADCASTABLE_BOOL_OP(boolean_or, 0, 0);
 #endif
 
 /**
  *
  */
 #if NOT_EXCLUDED(OP_boolean_xor)
-DECLARE_BROADCASTABLE_OP(boolean_xor, 0, 0);
+DECLARE_BROADCASTABLE_BOOL_OP(boolean_xor, 0, 0);
 #endif
 
 /**

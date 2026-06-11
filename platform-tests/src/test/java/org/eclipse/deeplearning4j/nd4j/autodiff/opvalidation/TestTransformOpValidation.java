@@ -878,14 +878,20 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.name(), expOut48);
                     break;
                 case 49:
-                    //Clip by norm, dimension 0, some below threshold, some above
+                    //Clip by norm, dimension 0, some below threshold, some above.
+                    //Columns 0,2 are scaled to 0.7*clip (clearly below), columns 1,3 to 1.3*clip (clearly above).
+                    //This avoids placing any column near the clip boundary where the gradient check
+                    //becomes ill-posed due to non-differentiability.
                     double clip = 2.0;
                     t = sd.math().clipByNorm(in, clip, 0);
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
-                    ia.diviRowVector(ia.norm2(0)).muli(clip);  //Norm2 is now 'clip' (i.e., exactly at threshold
-                    //System.out.println(ia.norm2(0));
-                    ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0), DataType.DOUBLE).reshape(ia.size(0), 1));
-                    //System.out.println(ia.norm2(0));
+                    ia.diviRowVector(ia.norm2(0)).muli(clip);  //Each column norm is now exactly clip
+                    // Scale each column by a deterministic per-column factor to ensure clear separation:
+                    // even-indexed columns (0,2) → 0.7*clip (below threshold), odd (1,3) → 1.3*clip (above)
+                    for (int j = 0; j < ia.columns(); j++) {
+                        double colScale = (j % 2 == 0) ? 0.7 : 1.3;
+                        ia.getColumn(j).muli(colScale);
+                    }
 
                     INDArray expOut49 = Nd4j.create(DataType.DOUBLE, ia.shape());
                     for (int j = 0; j < ia.columns(); j++) {
@@ -1166,6 +1172,9 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.name(), ia.rsub(5.0));
                     break;
                 case 5:
+                    // rdiv(1.0) = 1/x has gradient -1/x^2 which diverges near x=0.
+                    // Use values away from zero to avoid numerical Infinity in grad check.
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).addi(0.5);
                     t = in.rdiv(1.0);
                     tc.expectedOutput(t.name(), ia.rdiv(1.0));
                     break;
@@ -1768,7 +1777,6 @@ public class TestTransformOpValidation extends BaseOpValidation {
         }
     }
 
-    @Disabled("Known native bug: top_k op execution fails with rank-1 input + scalar k argument")
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTopK1(Nd4jBackend backend) {
@@ -2414,6 +2422,37 @@ public class TestTransformOpValidation extends BaseOpValidation {
             String err = OpValidation.validate(new TestCase(sd)
                     .gradientCheck(true));
             assertNull(err);
+        }
+    }
+
+    /**
+     * Regression test for thresholdedrelu_bp type mismatch:
+     * input DOUBLE + eps FLOAT must not throw "all three arrays must have the same type".
+     * The fix casts eps to match input dtype before calling applyPairwiseLambda.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testThresholdedReluBpMixedTypes(Nd4jBackend backend) {
+        INDArray input = Nd4j.createFromArray(new double[]{-1.0, 0.5, 1.5, 2.0, -0.5, 0.1, 1.0, 0.9, 1.1, -2.0,
+                0.3, 0.7, 1.2, 1.8, -0.8, 1.6, 0.4, 0.6, 1.4, 0.2}).reshape(5, 4);
+        INDArray eps = Nd4j.ones(DataType.FLOAT, 5, 4);
+        INDArray output = Nd4j.create(DataType.DOUBLE, 5, 4);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("thresholdedrelu_bp")
+                .addInputs(input, eps)
+                .addOutputs(output)
+                .addFloatingPointArguments(1.0)
+                .build();
+
+        // Should not throw: NDArray::applyPairwiseLambda<T>: all three arrays must have the same type
+        Nd4j.getExecutioner().exec(op);
+
+        // Values above threshold=1.0 should pass gradient through; others should be 0
+        for (int i = 0; i < input.length(); i++) {
+            double x = input.getDouble(i);
+            double expected = x > 1.0 ? 1.0 : 0.0;
+            assertEquals(expected, output.getDouble(i), 1e-6,
+                    "Mismatch at index " + i + " for input value " + x);
         }
     }
 }

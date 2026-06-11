@@ -38,6 +38,7 @@
 #include <graph/GraphReplayHandle.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
 #include <graph/DspPhaseUtils.h>
+#include <graph/DspSegmentLifecycle.h>
 #include <config.h>
 
 #include <cstdint>
@@ -111,8 +112,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       if (status != Status::OK) {
         // Backend that was working now failed — this is a real bug.
         // Mark it failed so we fall to slot-by-slot on subsequent calls.
-        seg.exec.compilationFailed = true;
-        DSP_DIAG(EXECUTE, "CPU_FROZEN: backend failed seg[%d-%d], marking compilationFailed, "
+        SegmentLifecycle::markFailed(seg.exec, "cpu_frozen_backend_failed",
+                                     seg.def.startSlot, seg.def.endSlot);
+        DSP_DIAG(EXECUTE, "CPU_FROZEN: backend failed seg[%d-%d], marked FAILED via lifecycle, "
                  "falling back to slot-by-slot",
                  seg.def.startSlot, seg.def.endSlot);
         status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
@@ -125,8 +127,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // executionCount==0 after freeze resets them.
       status = executeSegmentWithCpuGraph(seg, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
-        seg.exec.compilationFailed = true;
-        DSP_DIAG(EXECUTE, "CPU_FROZEN: cascade failed seg[%d-%d], marking compilationFailed, "
+        SegmentLifecycle::markFailed(seg.exec, "cpu_frozen_cascade_failed",
+                                     seg.def.startSlot, seg.def.endSlot);
+        DSP_DIAG(EXECUTE, "CPU_FROZEN: cascade failed seg[%d-%d], marked FAILED via lifecycle, "
                  "falling back to slot-by-slot",
                  seg.def.startSlot, seg.def.endSlot);
         status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
@@ -310,10 +313,11 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
           return Status::OK;
         }
         // Cascade returned KERNEL_FAILURE = no backend could fuse this segment.
-        // Mark compilationFailed so we don't retry the cascade on every call.
-        segment.exec.compilationFailed = true;
+        // Mark failed via lifecycle so we don't retry the cascade on every call.
+        SegmentLifecycle::markFailed(segment.exec, "cpu_graph_cascade_failed",
+                                     segment.def.startSlot, segment.def.endSlot);
         DSP_DIAG(BACKEND, "NativeDSP::execute: CPU_GRAPH cascade failed seg[%d-%d], "
-                 "marking compilationFailed, falling back to slot-by-slot",
+                 "marked FAILED via lifecycle, falling back to slot-by-slot",
                  segment.def.startSlot, segment.def.endSlot);
       }
       [[fallthrough]];
@@ -345,11 +349,8 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
             segment.exec.replayHandle->finalize();
             DSP_SET_SEG_PHASE(segment, ExecutionPhase::COMPILED, "functional_capture_end_ok");
           } else {
-            segment.exec.replayHandle.reset();
-            segment.exec.outcome = SegmentExecOutcome::PENDING;
-            segment.exec.bumpArgGeneration();
-            segment.exec.addrKeyStableCount = 0;
-            segment.exec.slotAddrStableCount = 0;
+            SegmentLifecycle::markFunctionalCaptureFailure(segment.exec,
+                segment.def.startSlot, segment.def.endSlot);
             DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "functional_capture_failed");
           }
         } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
@@ -391,7 +392,7 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
   seg.exec.replayHandle.reset();
-  seg.exec.outcome = SegmentExecOutcome::PENDING;
+  SegmentLifecycle::resetForResourceRelease(seg.exec);
   // Also reset composite replay handles
   seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
   seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
@@ -408,7 +409,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
 void NativeDynamicShapePlan::platformFreePlanResources() {
   for (auto& seg : segments_) {
     seg.exec.replayHandle.reset();
-    seg.exec.outcome = SegmentExecOutcome::PENDING;
+    SegmentLifecycle::resetForResourceRelease(seg.exec);
     // Also reset composite replay handles
     seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
     seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
@@ -561,24 +562,7 @@ bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int /*cur
 void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
   // CPU path: reset segment execution state (no CUDA graphs or GPU resources)
   for (auto& seg : segments_) {
-    if (seg.exec.replayHandle) {
-      seg.exec.replayHandle.reset();
-      seg.exec.outcome = SegmentExecOutcome::PENDING;
-    }
-    seg.exec.gapOpsCapturedInGraph = false;
-    seg.exec.bumpArgGeneration();
-    seg.exec.addrKeyStableCount = 0;
-    seg.exec.slotAddrStableCount = 0;
-    seg.exec.capturedInputAddrKey = 0;
-    seg.exec.compilationFailed = false;
-    seg.exec.executionCount = 0;
-    seg.exec.cachedShapeKey = 0;
-    seg.exec.capturedCreateValueKey = 0;
-    seg.exec.captureOomRetries = 0;
-    seg.exec.captureRetryAfterExec = 0;
-    seg.exec.compiledByBackend.clear();
-    seg.exec.segPhase.reset();  // PRIMARY: BUILDING:WARMUP
-    seg.exec.lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;  // Legacy sync
+    seg.exec.reset();
     seg.def.shapeKeyState.reset();
   }
 }

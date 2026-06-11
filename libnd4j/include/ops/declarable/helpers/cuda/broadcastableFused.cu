@@ -180,6 +180,10 @@ static void multiply1DLastLauncher(const void* vx, const void* vy, void* vz, sd:
 
 void fusedAddContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
+  // Guard: empty arrays have null special (device) buffers. Skip kernel launch
+  // to avoid passing null device pointers, which is undefined behavior in CUDA
+  // even when the kernel loop body would not execute (i < len check).
+  if (len == 0 || x.isEmpty() || y.isEmpty()) return;
   auto stream = x.getContext()->getCudaStream();
 
   NDArray::prepareSpecialUse({&z}, {&x, &y});
@@ -192,6 +196,7 @@ void fusedAddContiguous(NDArray& x, NDArray& y, NDArray& z) {
 
 void fusedSubtractContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
+  if (len == 0 || x.isEmpty() || y.isEmpty()) return;
   auto stream = x.getContext()->getCudaStream();
 
   NDArray::prepareSpecialUse({&z}, {&x, &y});
@@ -204,6 +209,7 @@ void fusedSubtractContiguous(NDArray& x, NDArray& y, NDArray& z) {
 
 void fusedMultiplyContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
+  if (len == 0 || x.isEmpty() || y.isEmpty()) return;
   auto stream = x.getContext()->getCudaStream();
 
   NDArray::prepareSpecialUse({&z}, {&x, &y});
@@ -216,6 +222,7 @@ void fusedMultiplyContiguous(NDArray& x, NDArray& y, NDArray& z) {
 
 void fusedDivideContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
+  if (len == 0 || x.isEmpty() || y.isEmpty()) return;
   auto stream = x.getContext()->getCudaStream();
 
   NDArray::prepareSpecialUse({&z}, {&x, &y});
@@ -228,7 +235,10 @@ void fusedDivideContiguous(NDArray& x, NDArray& y, NDArray& z) {
 
 void fusedAdd1DLast(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType lastDim = x.sizeAt(-1);
+  // Guard lastDim before the division to avoid UB (divide-by-zero) on empty arrays.
+  if (lastDim == 0 || x.isEmpty() || y.isEmpty()) return;
   const sd::LongType numRows = x.lengthOf() / lastDim;
+  if (numRows == 0) return;
   auto stream = x.getContext()->getCudaStream();
 
   NDArray::prepareSpecialUse({&z}, {&x, &y});
@@ -241,7 +251,10 @@ void fusedAdd1DLast(NDArray& x, NDArray& y, NDArray& z) {
 
 void fusedMultiply1DLast(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType lastDim = x.sizeAt(-1);
+  // Guard lastDim before the division to avoid UB (divide-by-zero) on empty arrays.
+  if (lastDim == 0 || x.isEmpty() || y.isEmpty()) return;
   const sd::LongType numRows = x.lengthOf() / lastDim;
+  if (numRows == 0) return;
   auto stream = x.getContext()->getCudaStream();
 
   NDArray::prepareSpecialUse({&z}, {&x, &y});

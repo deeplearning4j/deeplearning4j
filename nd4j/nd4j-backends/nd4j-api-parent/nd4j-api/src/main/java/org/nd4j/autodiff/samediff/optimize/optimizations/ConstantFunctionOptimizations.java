@@ -30,7 +30,6 @@ import org.nd4j.autodiff.samediff.optimize.Optimizer;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
@@ -131,26 +130,24 @@ public class ConstantFunctionOptimizations extends BaseOptimizerSet {
                     }
                 } else {
                     Op o = (Op) df;
+                    // Use OpContext to execute the legacy op. Explicit z pre-allocation avoids
+                    // the workspace-backed ulike() allocation that exec(op, null) uses internally —
+                    // workspace memory can be reclaimed before the caller reads the result.
+                    // For ScalarOp: native execScalar always reads the scalar from op.scalar()
+                    // regardless of what is in the context, so op.scalar() must be correct.
                     OpContext ctx = Nd4j.getExecutioner().buildContext();
                     try {
-                        // Set input arrays on the context
-                        if (o.y() != null) {
-                            ctx.setInputArrays(o.x(), o.y());
+                        INDArray xArr = o.x();
+                        INDArray yArr = o.y();
+                        if (yArr != null) {
+                            ctx.setInputArrays(xArr, yArr);
                         } else {
-                            ctx.setInputArrays(o.x());
+                            ctx.setInputArrays(xArr);
                         }
-
-                        // Calculate output shape and allocate output array
-                        List<DataBuffer> outputShape = ((BaseOp) o).calculateOutputShape(ctx);
-                        if (outputShape != null && !outputShape.isEmpty()) {
-                            DataBuffer shapeDesc = outputShape.get(0);
-                            INDArray z = Nd4j.createFromDescriptor(shapeDesc);
-                            ctx.setOutputArray(0, z);
-                        }
-
-                        // Execute with context - this properly handles ScalarOps
+                        // Pre-allocate output array outside any workspace so the result is stable
+                        INDArray z = Nd4j.createUninitialized(xArr.dataType(), xArr.shape());
+                        ctx.setOutputArray(0, z);
                         Nd4j.getExecutioner().exec(o, ctx);
-
                         outputs = new INDArray[]{ctx.getOutputArray(0)};
                     } finally {
                         try { ctx.close(); } catch (Exception ignored) {}

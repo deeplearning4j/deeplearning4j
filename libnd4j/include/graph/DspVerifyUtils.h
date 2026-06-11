@@ -60,7 +60,7 @@ inline int dspVerifyCopyValuesT(void* devicePtr, LongType length, float* hostOut
 // Dispatch metadata-only device value read by runtime DataType.
 inline int dspVerifyCopyValues(void* devicePtr, DataType dtype, LongType length,
                                float* hostOut, int maxVals) {
-  if (devicePtr == nullptr || length <= 0) return 0;
+  if (devicePtr == nullptr || length <= 0 || dtype == DataType::UNKNOWN) return 0;
   BUILD_SINGLE_SELECTOR(dtype, return dspVerifyCopyValuesT,
       (devicePtr, length, hostOut, maxVals), SD_COMMON_TYPES);
   return 0;
@@ -78,6 +78,7 @@ inline void dspBytesToFloatT(const uint8_t* raw, float* out, int count) {
 
 // Dispatch bytes-to-float by runtime DataType.
 inline void dspBytesToFloat(const uint8_t* raw, DataType dtype, float* out, int count) {
+  if (dtype == DataType::UNKNOWN || raw == nullptr || out == nullptr || count <= 0) return;
   BUILD_SINGLE_SELECTOR(dtype, dspBytesToFloatT, (raw, out, count), SD_COMMON_TYPES);
 }
 
@@ -96,6 +97,7 @@ inline float dspMaxDiffT(const uint8_t* bufA, const uint8_t* bufB, int count) {
 
 // Dispatch max-diff comparison by runtime DataType.
 inline float dspMaxDiff(const uint8_t* bufA, const uint8_t* bufB, DataType dtype, int count) {
+  if (bufA == nullptr || bufB == nullptr || count <= 0 || dtype == DataType::UNKNOWN) return 0.0f;
   BUILD_SINGLE_SELECTOR(dtype, return dspMaxDiffT, (bufA, bufB, count), SD_COMMON_TYPES);
   return 0.0f;
 }
@@ -111,6 +113,16 @@ inline std::string dspFormatValues(const float* vals, int count) {
   }
   s += "]";
   return s;
+}
+
+inline bool dspHasConcreteDType(NDArray* arr) {
+  return arr != nullptr && arr->dataType() != DataType::UNKNOWN;
+}
+
+inline size_t dspSafeByteCount(NDArray* arr) {
+  if (!dspHasConcreteDType(arr)) return 0;
+  return static_cast<size_t>(arr->lengthOf()) *
+         static_cast<size_t>(DataTypeUtils::sizeOfElement(arr->dataType()));
 }
 
 // ─── Device value dump placeholder (async-only CUDA path) ────────────────
@@ -143,6 +155,7 @@ inline int dspArgmax(void* devicePtr, DataType dtype, LongType length) {
 inline int dspReadHostValues(DataBuffer* db, DataType dtype, LongType length,
                              float* hostOut, int maxVals) {
   if (db == nullptr || db->primary() == nullptr || length <= 0) return 0;
+  if (dtype == DataType::UNKNOWN) return 0;
   int n = std::min(static_cast<int>(length), maxVals);
   auto* raw = reinterpret_cast<const uint8_t*>(db->primary());
   dspBytesToFloat(raw, dtype, hostOut, n);
@@ -160,9 +173,11 @@ inline std::string dspDumpHostDeviceValues(NDArray* arr, int maxVals = 8) {
   std::string hostStr = "null", devStr = "device-values-disabled";
   float vals[16];
 
-  if (db && db->primary() != nullptr && n > 0) {
+  if (db && db->primary() != nullptr && n > 0 && dtype != DataType::UNKNOWN) {
     int hn = dspReadHostValues(db, dtype, len, vals, n);
     hostStr = dspFormatValues(vals, hn);
+  } else if (dtype == DataType::UNKNOWN) {
+    hostStr = "dtype-unknown";
   }
   char header[256];
   snprintf(header, sizeof(header), "dtype=%s len=%lld pAct=%d sAct=%d hostAddr=%p devAddr=%p",
@@ -471,6 +486,7 @@ inline void dspBytesToFloatT(const uint8_t* raw, float* out, int count) {
 }
 
 inline void dspBytesToFloat(const uint8_t* raw, DataType dtype, float* out, int count) {
+  if (dtype == DataType::UNKNOWN || raw == nullptr || out == nullptr || count <= 0) return;
   BUILD_SINGLE_SELECTOR(dtype, dspBytesToFloatT, (raw, out, count), SD_COMMON_TYPES);
 }
 
@@ -486,9 +502,20 @@ inline std::string dspFormatValues(const float* vals, int count) {
   return s;
 }
 
+inline bool dspHasConcreteDType(NDArray* arr) {
+  return arr != nullptr && arr->dataType() != DataType::UNKNOWN;
+}
+
+inline size_t dspSafeByteCount(NDArray* arr) {
+  if (!dspHasConcreteDType(arr)) return 0;
+  return static_cast<size_t>(arr->lengthOf()) *
+         static_cast<size_t>(DataTypeUtils::sizeOfElement(arr->dataType()));
+}
+
 inline int dspReadHostValues(DataBuffer* db, DataType dtype, LongType length,
                              float* hostOut, int maxVals) {
   if (db == nullptr || db->primary() == nullptr || length <= 0) return 0;
+  if (dtype == DataType::UNKNOWN) return 0;
   int n = std::min(static_cast<int>(length), maxVals);
   auto* raw = reinterpret_cast<const uint8_t*>(db->primary());
   dspBytesToFloat(raw, dtype, hostOut, n);
@@ -504,9 +531,11 @@ inline std::string dspDumpHostDeviceValues(NDArray* arr, int maxVals = 8) {
 
   std::string hostStr = "null";
   float vals[16];
-  if (db && db->primary() != nullptr && n > 0) {
+  if (db && db->primary() != nullptr && n > 0 && dtype != DataType::UNKNOWN) {
     int hn = dspReadHostValues(db, dtype, len, vals, n);
     hostStr = dspFormatValues(vals, hn);
+  } else if (dtype == DataType::UNKNOWN) {
+    hostStr = "dtype-unknown";
   }
 
   char header[256];

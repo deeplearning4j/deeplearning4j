@@ -528,7 +528,13 @@ NDArray::NDArray(NDArray *other, const bool copyStrides, sd::LaunchContext *cont
   }
 
   int len = isScalar() ? 1 : lengthOf();
-  if (!isEmpty()) {
+  // Use shapeInfo-based emptiness check — do NOT call isEmpty() here.
+  // isEmpty() has a fallback: "rank==0 && _buffer==nullptr => empty".
+  // At this point _buffer IS nullptr (not yet assigned from other), so a scalar
+  // (rank-0) array would be mis-classified as empty and _buffer would stay null.
+  // Use shape::isEmptyConst() (ARRAY_EMPTY flag) + length instead.
+  bool shapeIsEmpty = shape::isEmptyConst(_shapeInfo) || shape::length(_shapeInfo) == 0;
+  if (!shapeIsEmpty) {
     _buffer = new DataBuffer(other->getDataBuffer()->primary(),
                              other->getDataBuffer()->special(),
                              len * DataTypeUtils::sizeOf(other->dataType()), other->dataType(),
@@ -649,7 +655,14 @@ NDArray::NDArray(sd::LongType *shapeInfo, const sd::DataType dtype, const bool c
     _shapeInfoD = constDesc->special();
   }
 
-  if (!isEmpty()) {
+  // Use shapeInfo-based checks only — do NOT call isEmpty() here.
+  // isEmpty() has a fallback: "rank==0 && _buffer==nullptr => empty".
+  // At this point _buffer IS nullptr (not yet allocated), so any scalar (rank-0)
+  // shape info would be mis-classified as empty and the buffer would never be
+  // allocated, causing a null-deref crash in reduceNumber/execScalar.
+  // Use shape::isEmptyConst() (ARRAY_EMPTY flag) + length > 0 instead.
+  bool shapeIsEmpty = shape::isEmptyConst(_shapeInfo) || shape::length(_shapeInfo) == 0;
+  if (!shapeIsEmpty) {
     _length = shape::length(_shapeInfo);
     LongType len = isScalar() ? 1 : lengthOf();
     _buffer = new DataBuffer(len * DataTypeUtils::sizeOf(ArrayOptions::dataType(_shapeInfo)), dtype, getContext()->getWorkspace());
@@ -918,9 +931,11 @@ NDArray::NDArray(DataBuffer *buffer,
                  sd::LongType *shapeInfo,
                  sd::LaunchContext *context,
                  const sd::LongType offset) {
-  // An array is effectively empty if: 1) ARRAY_EMPTY flag is set, OR 2) length is 0
-  // Arrays with shape like [0,1] or [2,0] have length 0 and may not have a buffer
-  bool effectivelyEmpty = shape::isEmptyConst(shapeInfo) || shape::length(shapeInfo) == 0;
+  // An array is effectively empty if: 1) ARRAY_EMPTY flag is set, OR 2) length is 0,
+  // OR 3) rank==0 with null buffer (Java-style empty scalar, e.g. Nd4j.empty(DataType.LONG))
+  // For rank-0, shape::length returns 1 (product of empty dims = 1), so we need the javaStyleEmpty check.
+  bool javaStyleEmpty = (shape::rank(shapeInfo) == 0 && buffer == nullptr);
+  bool effectivelyEmpty = shape::isEmptyConst(shapeInfo) || shape::length(shapeInfo) == 0 || javaStyleEmpty;
   if(!effectivelyEmpty && buffer == nullptr) {
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer can't be nullptr !");
   }
@@ -1093,7 +1108,13 @@ NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *conte
   this->_shapeInfo = constShapeBuffer->primary();
   this->_shapeInfoD = constShapeBuffer->special();
 
-  if (this->isEmpty()) {
+  // Use shapeInfo-based emptiness check — do NOT call isEmpty() here.
+  // isEmpty() has a fallback: "rank==0 && _buffer==nullptr => empty".
+  // At this point _buffer IS nullptr (not yet assigned from external buffer),
+  // so a scalar (rank-0) array would be mis-classified as empty and the
+  // external buffer would be ignored.
+  bool shapeIsEmpty = shape::isEmptyConst(_shapeInfo) || shape::length(_shapeInfo) == 0;
+  if (shapeIsEmpty) {
     tickReadDevice();
     tickReadHost();
   } else {
@@ -2719,6 +2740,11 @@ void *NDArray::buffer() {
   // Throwing here helps identify where invalid arrays are being used.
   if (_shapeInfo == nullptr) {
     THROW_EXCEPTION("NDArray::buffer(): _shapeInfo is nullptr - array destroyed or not initialized");
+  }
+  // String types (UTF8/UTF16/UTF32) are not in SD_COMMON_TYPES_ALL, but they store raw bytes.
+  // For string arrays, offset() is always 0 and the buffer is accessed as raw bytes by callers.
+  if (dataType() == DataType::UTF8 || dataType() == DataType::UTF16 || dataType() == DataType::UTF32) {
+    return _bufferWithOffset<int8_t>(0, getDataBuffer());
   }
   BUILD_SINGLE_SELECTOR(dataType(), return _bufferWithOffset, (offset(),getDataBuffer()),SD_COMMON_TYPES_ALL);
   // If BUILD_SINGLE_SELECTOR didn't match any type, throw instead of returning nullptr

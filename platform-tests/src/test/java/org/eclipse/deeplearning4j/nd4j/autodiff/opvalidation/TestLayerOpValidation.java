@@ -1547,7 +1547,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         int outChannels = 3;
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.rand(bS, inChannels, 5,5));
+        SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, bS, inChannels, 5, 5));
         SDVariable weights = sd.var("weights", Nd4j.rand(DataType.DOUBLE, kernelHeight, kernelWidth, inChannels, outChannels));
         SDVariable bias = sd.var("bias", Nd4j.rand(DataType.DOUBLE, inChannels*outChannels));
         Conv2DConfig config = Conv2DConfig.builder()

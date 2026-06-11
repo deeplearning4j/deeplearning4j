@@ -1891,6 +1891,12 @@ bool NDArray::isEmpty()  {
   if (!baseEmpty && shape::length(shInfo) == 0) {
     return true;
   }
+  // NOTE: Do NOT check "_buffer == nullptr" as a proxy for emptiness.
+  // A rank-0 (scalar) NDArray has a valid primary buffer after construction.
+  // During construction, _buffer starts as nullptr before allocation — checking it
+  // here would mis-classify every scalar being constructed as empty and skip buffer
+  // allocation, causing null-deref crashes in reduceNumber/execScalar (e.g. IsFinite).
+  // The ARRAY_EMPTY flag and zero-length check above are the correct emptiness tests.
   return baseEmpty;
 }
 

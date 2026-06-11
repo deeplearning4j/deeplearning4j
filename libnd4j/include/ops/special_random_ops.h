@@ -667,8 +667,16 @@ class LogNormalDistribution {
                                  realMean);
 
       if (epm < zLength) {
-        realMean = y == z ? mean : y[epm + yOffset];
-        z[epm + zOffset] =
+        // Compute proper coordinate-based offsets for epm (not epm + offset-of-e)
+        sd::LongType epmCoords[SD_MAX_RANK];
+        sd::LongType yEpmOffset;
+        sd::LongType zEpmOffset;
+        INDEX2COORDS(epm, yRank, yShape, epmCoords);
+        COORDS2INDEX(yRank, yStride, epmCoords, yEpmOffset);
+        INDEX2COORDS(epm, zRank, zShape, epmCoords);
+        COORDS2INDEX(zRank, zStride, epmCoords, zEpmOffset);
+        realMean = y == z ? mean : y[yEpmOffset];
+        z[zEpmOffset] =
             sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                                     sd::math::sd_sin<T, T>(two_pi * r1)) *
                                        stddev +

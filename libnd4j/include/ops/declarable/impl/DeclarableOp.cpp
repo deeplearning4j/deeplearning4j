@@ -1020,6 +1020,25 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     prepTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeStart - timeEnter).count();
   }
 
+  // Empty input short-circuit: if any input is empty and this op uses EMPTY_SKIP
+  // (the default for all ops), skip kernel execution entirely.
+  // TF semantics: op(x, empty) -> empty. The output shape has already been computed
+  // correctly by calculateOutputShape; the output array is already allocated as empty.
+  // Executing the kernel would crash on NULL DataBuffer dereference.
+  if (this->emptyHandling() == samediff::EmptyHandling::EMPTY_SKIP) {
+    bool hasEmptyInput = false;
+    for (int i = 0; i < block->width(); i++) {
+      auto input = block->array(i);
+      if (input != nullptr && input->isEmpty()) {
+        hasEmptyInput = true;
+        break;
+      }
+    }
+    if (hasEmptyInput) {
+      return sd::Status::OK;
+    }
+  }
+
   sd::Status status;
   bool hasHelper = false;
 

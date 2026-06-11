@@ -336,7 +336,17 @@ void DataBuffer::expand(const uint64_t size) {
     if (_primaryBuffer != nullptr) {
       // there's non-zero chance that primary buffer doesn't exist yet
       ALLOCATE(newBuffer, _workspace, hostAllocSize, int8_t);
-      std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
+      if (_lenInBytes > 0) {
+        std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
+      }
+
+      // Write canary values in the padding region (same as allocatePrimary)
+      if (_workspace == nullptr) {
+        uint64_t* canary = reinterpret_cast<uint64_t*>(newBuffer + size);
+        for (size_t i = 0; i < (HOST_ALLOC_PADDING / sizeof(uint64_t)); i++) {
+          canary[i] = 0xDEADBEEFCAFEBABEULL;
+        }
+      }
 
       if (_isOwnerPrimary) {
 #if defined(SD_GCC_FUNCTRACE)

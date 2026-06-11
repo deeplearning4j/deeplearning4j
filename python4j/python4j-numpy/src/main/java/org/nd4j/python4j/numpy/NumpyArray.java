@@ -83,10 +83,17 @@ public class NumpyArray extends PythonType<INDArray> {
             //See: https://numpy.org/doc/1.17/reference/c-api.array.html#importing-the-api
             //DO NOT REMOVE
             if(Boolean.parseBoolean(System.getProperty(ADD_JAVACPP_NUMPY_TO_PATH,DEFAULT_ADD_JAVACPP_NUMPY_TO_PATH))) {
+               // Append each numpy package directory to sys.path using PyList_Append.
+               // PySys_SetObject("path", ...) is intentionally NOT used here — it replaces
+               // the entire sys.path list with a single string, which corrupts the path and
+               // causes "No module named 'numpy'" when _import_array() is called.
+               // initPythonPath() already appends these dirs, but we also do it here for
+               // robustness in case init() is called without initPythonPath().
+               PyObject sysPath = PySys_GetObject("path");
                for(File packageDir : numpy.cachePackages()) {
-                   PyObject pythonPath = PyUnicode_FromString(packageDir.getAbsolutePath());
-                   PySys_SetObject("path", pythonPath);
-                   PythonRefCount.decRef(pythonPath);
+                   PyObject pyStr = PyUnicode_FromString(packageDir.getAbsolutePath());
+                   PyList_Append(sysPath, pyStr);
+                   PythonRefCount.decRef(pyStr);
                }
 
             }
@@ -97,8 +104,11 @@ public class NumpyArray extends PythonType<INDArray> {
 
             int err = numpy._import_array();
             if (err < 0){
-                System.out.println("Numpy import failed!");
-                throw new PythonException("Numpy import failed!");
+                // Print the Python error to stderr so it's visible in test output
+                if (PyErr_Occurred() != null) {
+                    PyErr_Print();
+                }
+                throw new PythonException("Numpy import failed! (numpy._import_array() returned " + err + ")");
             }
         }
 

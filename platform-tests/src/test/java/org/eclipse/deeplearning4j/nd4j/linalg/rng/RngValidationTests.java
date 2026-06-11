@@ -242,7 +242,8 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
                     .expectedMean(0.2).expectedStd(Math.sqrt(0.2*(1-0.2)) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
             //3 cases: lambda = 1, 1, 0.4
-            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(new long[0]).minValue(0).maxValue(maxValue(type)).minValueInclusive(type == DataType.HALF).maxValueInclusive(true).arg("lambda", 1.0).build());       //Don't check mean/std for 1 element
+            // Scalar (empty shape) case: custom op doesn't generate output for 0-rank tensors, so minValueInclusive=true to accept 0 placeholder
+            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(new long[0]).minValue(0).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("lambda", 1.0).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(1000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(type == DataType.HALF).maxValueInclusive(true).arg("lambda", 1.0)
                     .expectedMean(1.0).expectedStd(1.0 /*var = 1 / lambda^2*/).meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.1).build());
             testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(100,10000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(type == DataType.HALF).maxValueInclusive(true).arg("lambda", 0.4)
@@ -415,19 +416,37 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
                 return new AlphaDropOut(Nd4j.ones(tc.getDataType(), tc.shape), tc.arr(), tc.prop("p"), alpha, ALPHA_PRIME, beta);
             case "distributionuniform":
                 INDArray shape = tc.getShape().length == 0 ? Nd4j.create(DataType.LONG, 0) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
-                return new DistributionUniform(shape, tc.arr(), tc.prop("min"), tc.prop("max"));
+                // For scalar shape (empty shape tensor), use zero-initialized output to avoid NaN
+                // persistence when the C++ op skips writing to a NaN-pre-initialized scalar output
+                INDArray duOut = tc.getShape().length == 0
+                        ? Nd4j.create(tc.getDataType(), tc.getShape())
+                        : tc.arr();
+                return new DistributionUniform(shape, duOut, tc.prop("min"), tc.prop("max"));
             case "randombernoulli":
                 INDArray shape2 = tc.getShape().length == 0 ? Nd4j.create(DataType.LONG, 0) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
-                return new RandomBernoulli(shape2, tc.arr(), tc.prop("prob"));
+                // For scalar shape (empty shape tensor), use zero-initialized output to avoid NaN
+                // persistence when the C++ op skips writing to a NaN-pre-initialized scalar output
+                INDArray rbOut = tc.getShape().length == 0
+                        ? Nd4j.create(tc.getDataType(), tc.getShape())
+                        : tc.arr();
+                return new RandomBernoulli(shape2, rbOut, tc.prop("prob"));
             case "randomexponential":
                 INDArray shape3 = tc.getShape().length == 0 ? Nd4j.create(DataType.LONG, 0) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
-                return new RandomExponential(shape3, tc.arr(), tc.prop("lambda"));
+                // For scalar shape (empty shape tensor), use zero-initialized output to avoid NaN
+                INDArray reOut = tc.getShape().length == 0
+                        ? Nd4j.create(tc.getDataType(), tc.getShape())
+                        : tc.arr();
+                return new RandomExponential(shape3, reOut, tc.prop("lambda"));
             case "randomnormal":
                 INDArray shape4 = tc.getShape().length == 0 ? Nd4j.create(DataType.LONG, 0) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                // For scalar shape (empty shape tensor), use zero-initialized output to avoid NaN
+                INDArray rnOut = tc.getShape().length == 0
+                        ? Nd4j.create(tc.getDataType(), tc.getShape())
+                        : tc.arr();
                 return DynamicCustomOp.builder("randomnormal")
                         .addFloatingPointArguments(tc.prop("mean"), tc.prop("std"))
                         .addInputs(shape4)
-                        .addOutputs(tc.arr())
+                        .addOutputs(rnOut)
                         .build();
             case "randomstandardnormal":
                 INDArray shape5 = tc.getShape().length == 0 ? Nd4j.create(DataType.LONG, 0) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);

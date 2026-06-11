@@ -1645,7 +1645,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
         assertEquals( 0, failed.size(),failed.toString());
     }
 
-    @Disabled("Known native op bug: extract_image_patches op crashes at runtime")
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExtractImagePatches(){
@@ -1715,7 +1714,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
         Nd4j.getExecutioner().exec(op);
     }
 
-    @Disabled("Known native op bug: batched rank-4 matmul returns wrong values")
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulRank4() throws Exception {
@@ -1850,7 +1848,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Disable due to gradient check failing on constants")
     public void testCheckNumerics(){
 
         SameDiff sd = SameDiff.create();
@@ -1862,7 +1859,12 @@ public class TestMiscOpValidation extends BaseOpValidation {
         INDArray in = Nd4j.rand(DataType.DOUBLE, 3, 4);
         INDArray expLoss = in.std(true);
 
+        // Gradient check is disabled: the string constant message input is non-differentiable,
+        // and the gradient framework cannot compute numerical gradients through placeholder-only
+        // graphs that have no VARIABLE type trainable parameters. Forward pass correctness is
+        // verified by the expectedOutput assertions below.
         String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(false)
                 .expectedOutput(checkNumerics.name(), in)
                 .placeholderValue("in", in)
                 .expectedOutput("loss", expLoss));
@@ -2138,7 +2140,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Disabled("Known native op bug: matrix_band_part returns all zeros instead of the expected band")
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatrixBandPart(Nd4jBackend backend) {
@@ -2169,7 +2170,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Disabled("Known native op bug: polygamma computes only the first element, remaining output is zero")
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPolygamma(Nd4jBackend backend) {
@@ -2187,7 +2187,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Disabled("Known native op bug: triangularSolve with lower=false, adjoint=true returns wrong values")
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTriangularSolve(Nd4jBackend backend) {

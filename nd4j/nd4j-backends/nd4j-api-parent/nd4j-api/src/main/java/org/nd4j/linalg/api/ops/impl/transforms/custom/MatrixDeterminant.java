@@ -62,16 +62,13 @@ public class MatrixDeterminant extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //TODO support rank 3+ case
-        //Derivative of matrix determinant
-        //From: Matrix Cookbook - Petersen & Pedersen
-        // z=det(X) then dz/dx = z * tr(X^-1)
-        //Unfortunately: this is NOT passing gradient checks :(
-//        SDVariable inverse = f().matrixInverse(arg());
-//        SDVariable trace = f().trace(inverse.mul(sameDiff.onesLike(arg())));
-//        SDVariable dOutdIn = outputVariable().mul(trace);
-//        return Collections.singletonList(i_v.get(0).mul(dOutdIn).mul(sameDiff.onesLike(arg())));
-        throw new UnsupportedOperationException("Not yet implemented");
+        // Gradient of det(A): grad_A = upstream * det(A) * A^{-T}
+        SDVariable input = arg();
+        SDVariable grad = i_v.get(0);
+        SDVariable det = outputVariable();
+        // inv(A)^T * det(A) * upstream_grad
+        SDVariable inv = sameDiff.math().matrixInverse(input);
+        return Collections.singletonList(grad.mul(det).mul(sameDiff.transpose(inv)));
     }
 
     @Override

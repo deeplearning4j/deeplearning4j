@@ -3315,7 +3315,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public INDArray params() {
-        if(flattenedParams == null)
+        if(flattenedParams == null || flattenedParams.length() == 0)
             return Nd4j.zeros(DataType.FLOAT,0);
 
         if(flattenedParams.rank() > 1 && !flattenedParams.wasClosed())

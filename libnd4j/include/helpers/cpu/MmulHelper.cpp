@@ -771,8 +771,6 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
     const sd::LongType cLen = vC->lengthOf();
 
     sd::LongType *cShape = shape::shapeOf(cShapeInfo);
-    sd::LongType *aShape = shape::shapeOf(aShapeInfo);
-    sd::LongType *bShape = shape::shapeOf(bShapeInfo);
 
     auto func = PRAGMA_THREADS_FOR {
       std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
@@ -781,17 +779,22 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
         // evaluate C coordinates
         INDEX2COORDS(i, cRank, cShape, cCoords.data());
 
-        // calculate index of current batch
-        sd::LongType batchInd;
-        if (cRank > 2) COORDS2INDEX(cRank, cStride, cCoords.data(), batchInd);
-
-        // evaluate A coordinates
-        if (aRank > 2) INDEX2COORDS(batchInd, aRank, aShape, aCoords.data());
+        // evaluate A coordinates: copy batch dims directly from C coords.
+        // Batch dims are always the leading dims: [0..rank-3] for each array.
+        // The previous approach (batchInd via COORDS2INDEX + INDEX2COORDS roundtrip)
+        // was incorrect for ranks > 3 because cCoords includes the M/N matrix dims,
+        // making batchInd exceed A's element count and producing wrong batch coordinates.
+        if (aRank > 2) {
+          // Copy shared batch dimensions from C to A (batch dims are 0..aRank-3)
+          for (sd::LongType d = 0; d < aRank - 2; ++d) aCoords[d] = cCoords[d];
+        }
         aCoords[aMaxis] = cCoords[cMaxis];
         aCoords[aKaxis] = 0;
 
-        // evaluate B coordinates
-        if (bRank > 2) INDEX2COORDS(batchInd, bRank, bShape, bCoords.data());
+        // evaluate B coordinates: same direct-copy approach for batch dims
+        if (bRank > 2) {
+          for (sd::LongType d = 0; d < bRank - 2; ++d) bCoords[d] = cCoords[d];
+        }
         bCoords[bKaxis] = 0;
         bCoords[bNaxis] = cCoords[cNaxis];
 

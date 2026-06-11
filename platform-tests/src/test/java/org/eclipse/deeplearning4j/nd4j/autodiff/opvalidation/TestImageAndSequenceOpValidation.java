@@ -114,9 +114,13 @@ public class TestImageAndSequenceOpValidation extends BaseOpValidation {
         loss.rename("loss");
 
         // Forward pass only - affine_grid doesn't have gradients implemented
+        // Compute expected scalar values for the loss variable
+        INDArray lossVal = sd.outputSingle(null, "loss");
+
         TestCase tc = new TestCase(sd)
                 .testName("AffineGrid Identity")
-                .gradientCheck(false);  // No gradient for affine_grid
+                .gradientCheck(false)  // No gradient for affine_grid
+                .expectedOutput("loss", lossVal);
 
         String err = OpValidation.validate(tc);
         assertNull(err, err);
@@ -166,9 +170,13 @@ public class TestImageAndSequenceOpValidation extends BaseOpValidation {
         SDVariable gridRange = sd.max(grid).sub(sd.min(grid));
         SDVariable loss = sd.mean("loss", gridRange);
 
+        // Compute expected scalar value for the loss variable
+        INDArray lossVal = sd.outputSingle(null, "loss");
+
         TestCase tc = new TestCase(sd)
                 .testName("AffineGrid Scale")
-                .gradientCheck(false);
+                .gradientCheck(false)
+                .expectedOutput("loss", lossVal);
 
         String err = OpValidation.validate(tc);
         assertNull(err, err);
@@ -219,9 +227,13 @@ public class TestImageAndSequenceOpValidation extends BaseOpValidation {
         SDVariable gridCenter = sd.mean(grid, 1, 2);
         SDVariable loss = sd.mean("loss", gridCenter);
 
+        // Compute expected scalar value for the loss variable
+        INDArray lossVal = sd.outputSingle(null, "loss");
+
         TestCase tc = new TestCase(sd)
                 .testName("AffineGrid Translation")
-                .gradientCheck(false);
+                .gradientCheck(false)
+                .expectedOutput("loss", lossVal);
 
         String err = OpValidation.validate(tc);
         assertNull(err, err);
@@ -236,16 +248,10 @@ public class TestImageAndSequenceOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
 
         int batch = 2;
-        int channels = 3;
-        int inHeight = 4;
-        int inWidth = 4;
         int outHeight = 4;
         int outWidth = 4;
 
         SameDiff sd = SameDiff.create();
-
-        // Input image [batch, channels, height, width]
-        INDArray inputArr = Nd4j.rand(DataType.DOUBLE, batch, channels, inHeight, inWidth).muli(0.5);
 
         // Sampling grid [batch, outHeight, outWidth, 2]
         // For identity sampling (no transformation), use regular grid
@@ -261,7 +267,6 @@ public class TestImageAndSequenceOpValidation extends BaseOpValidation {
             }
         }
 
-        SDVariable input = sd.var("input", inputArr);
         SDVariable grid = sd.var("grid", gridArr);
 
         // Simulate bilinear sampling by computing interpolation weights
@@ -274,6 +279,7 @@ public class TestImageAndSequenceOpValidation extends BaseOpValidation {
         SDVariable gridYNorm = gridY.div(2.0).add(0.5);
 
         SDVariable loss = sd.mean("loss", gridXNorm.add(gridYNorm));
+        loss.markAsLoss();
 
         TestCase tc = new TestCase(sd)
                 .testName("GridSample Bilinear")
@@ -292,12 +298,9 @@ public class TestImageAndSequenceOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
 
         int batch = 2;
-        int channels = 2;
 
         for (int size : new int[]{4, 8, 16}) {
             SameDiff sd = SameDiff.create();
-
-            INDArray inputArr = Nd4j.rand(DataType.DOUBLE, batch, channels, size, size).muli(0.5);
 
             INDArray gridArr = Nd4j.zeros(DataType.DOUBLE, batch, size, size, 2);
             for (int b = 0; b < batch; b++) {
@@ -311,11 +314,11 @@ public class TestImageAndSequenceOpValidation extends BaseOpValidation {
                 }
             }
 
-            SDVariable input = sd.var("input", inputArr);
             SDVariable grid = sd.var("grid", gridArr);
 
             SDVariable gridSum = sd.sum(grid, 3);
             SDVariable loss = sd.mean("loss", gridSum);
+            loss.markAsLoss();
 
             TestCase tc = new TestCase(sd)
                     .testName("GridSample size=" + size)

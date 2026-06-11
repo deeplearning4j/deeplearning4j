@@ -99,6 +99,7 @@ import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.function.Function;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -150,6 +151,7 @@ public class OpValidation {
 
         SameDiff sameDiff = testCase.sameDiff();
         List<Listener> listeners = sameDiff.getListeners();
+
         //Check forward pass:
         if (testCase.fwdTestFns() != null && testCase.fwdTestFns().size() > 0) {
             SameDiff sd = testCase.sameDiff();
@@ -189,13 +191,11 @@ public class OpValidation {
                 }
             }
 
-            ByteBuffer serializedAfterExec = null;
             if (testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH) {
-                serializedAfterExec = testCase.sameDiff().asFlatBuffers(true);
+                ByteBuffer serializedAfterExec = testCase.sameDiff().asFlatBuffers(true);
                 Preconditions.checkNotNull(serializedAfterExec, "Serialization failed? Null output");
             }
 
-            //Now: deserialize, and check the results
             if (serializedBeforeExec != null) {
                 checkDeserializedEquality(sd, serializedBeforeExec, testCase);
             }
@@ -333,8 +333,32 @@ public class OpValidation {
                 }
             }
             Map<String,INDArray> outOrig = original.outputAll(tc.placeholderValues());
-            Map<String,INDArray> outDe = deserialized.outputAll(tc.placeholderValues());
-            Preconditions.checkState(outOrig.keySet().equals(outDe.keySet()), "Keysets for execution after deserialization does not match key set for original model");
+            Map<String,INDArray> outDeRaw = deserialized.outputAll(tc.placeholderValues());
+            Preconditions.checkState(outOrig.keySet().equals(outDeRaw.keySet()), "Keysets for execution after deserialization does not match key set for original model");
+
+            // Duplicate deserialized outputs into independent arrays before closing deserialized.
+            // deserialized.close() calls closeLatestRequestedOutputBuffers() which frees the DataBuffers
+            // backing outDeRaw. If the DSP plan cache cleanup then reads from those NDArrays (e.g. in
+            // freeNativePlanCache / clearNativePlanCacheHandle), it will hit the freed+canary-poisoned
+            // buffer and SIGSEGV. dup() gives each value its own DataBuffer, independent of the session.
+            Map<String,INDArray> outDe = new java.util.LinkedHashMap<>(outDeRaw.size());
+            for (Map.Entry<String,INDArray> entry : outDeRaw.entrySet()) {
+                INDArray raw = entry.getValue();
+                outDe.put(entry.getKey(), raw != null ? raw.dup() : null);
+            }
+
+            // Close deserialized SameDiff now that we have independent copies of its outputs.
+            // On CPU backends, do NOT close — deserialized.close() frees DataBuffers whose
+            // heap memory allocatePrimary() may reuse, writing 65536-byte HOST_ALLOC_PADDING
+            // canary zones (0xDEADBEEFCAFEBABEULL) that can corrupt live DataBuffer objects'
+            // _primaryBuffer fields (offset 8 in struct), causing SIGSEGV in NDArray::e<double>
+            // from OpenMP worker threads during the numerical gradient loop.
+            // On CPU, the JVM GC will reclaim the memory safely. On GPU, explicit close is
+            // needed to prevent multi-GB VRAM leaks.
+            if (Nd4j.getBackendDeviceType() == DeviceType.CUDA_GPU
+                    || Nd4j.getBackendDeviceType() == DeviceType.GPU) {
+                deserialized.close();
+            }
 
             for (String s : outOrig.keySet()) {
                 INDArray orig = outOrig.get(s);
@@ -353,48 +377,83 @@ public class OpValidation {
                     } else if (!orig.equalShapes(deser)) {
                         err = "INDArray shapes differ after deserialization";
                     } else if (orig.dataType().isNumerical() && !orig.equals(deser)) {
-                        // Use tolerance check - CUDA and different execution ordering can cause small numerical differences
-                        long count = -1;
-                        MatchCondition nanCheck1 = new MatchCondition(orig, Conditions.isNan());
-                        ReduceOp nanResult1 = null;
-                        try {
-                            nanResult1 = Nd4j.getExecutioner().execAndReturn(nanCheck1);
-                            count = nanResult1.getFinalResult().longValue();
-                        } finally {
-                            try {
-                                nanCheck1.clearArrays();
-                            } catch (Exception e) {
-                                // Ignore errors
-                            }
-                        }
-                        if (count > 0) {
-                            MatchCondition nanCheck2 = new MatchCondition(deser, Conditions.isNan());
-                            ReduceOp nanResult2 = null;
-                            long count2 = -1;
-                            try {
-                                nanResult2 = Nd4j.getExecutioner().execAndReturn(nanCheck2);
-                                count2 = nanResult2.getFinalResult().longValue();
-                            } finally {
-                                try {
-                                    nanCheck2.clearArrays();
-                                } catch (Exception e) {
-                                    // Ignore errors
-                                }
-                            }
+                        // orig.equals(deser) uses subtraction-based comparison which fails for:
+                        //  - NaN values: NaN - NaN = NaN, and NaN < eps is false
+                        //  - Inf values: +Inf - +Inf = NaN, and NaN < eps is false
+                        // Use element-wise NaN-safe comparison as the authoritative check.
+                        // Double.compare(a, b) == 0 handles NaN (NaN == NaN → true) and Inf correctly.
+                        if (!arraysEqualNaNSafe(orig, deser)) {
+                            // Arrays genuinely differ. If NaN counts match, the difference
+                            // is a floating-point divergence between original and deserialized graphs.
+                            long count = countNaNsJava(orig);
+                            long count2 = countNaNsJava(deser);
                             if (count != count2) {
                                 err = "INDArray NaN count mismatch after deserialization";
+                            } else if (count == 0) {
+                                // No NaN in either — genuine numerical difference after deserialization.
+                                err = "INDArray values differ after deserialization";
                             }
+                            // If NaN counts match and count > 0, the difference is NaN positional equality —
+                            // both have the same NaN pattern, consider this a pass.
                         }
+                        // else: element-wise NaN-safe comparison passed — no error.
                     }
                 }
 
                 Preconditions.checkState(err == null, "Variable result (%s) failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", s, orig, deser, orig, deser, err);
             }
 
+        } else {
+            // No fwd test functions - close deserialized to free GPU memory.
+            // On CPU backends, skip close for the same reason as above (canary-write corruption).
+            if (Nd4j.getBackendDeviceType() == DeviceType.CUDA_GPU
+                    || Nd4j.getBackendDeviceType() == DeviceType.GPU) {
+                deserialized.close();
+            }
         }
+    }
 
-        // Close the deserialized SameDiff to free its GPU memory
-        deserialized.close();
+    /**
+     * Count NaN values in a floating-point array using element-wise Java access.
+     * This avoids using MatchCondition (a native reduce op) which can fail when
+     * the result buffer is workspace-allocated or has null primary pointer.
+     * Only meaningful for floating-point types (FLOAT, DOUBLE, HALF, BFLOAT16).
+     * Returns 0 for non-floating-point types.
+     */
+    private static long countNaNsJava(INDArray arr) {
+        if (arr == null || arr.isEmpty()) return 0;
+        DataType dt = arr.dataType();
+        if (!dt.isFPType()) return 0;
+        long count = 0;
+        long len = arr.length();
+        for (long i = 0; i < len; i++) {
+            if (Double.isNaN(arr.getDouble(i))) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Element-wise NaN-safe and Inf-safe equality check.
+     * Uses Double.compare(a, b) == 0 which treats NaN as equal to NaN
+     * and correctly handles +Inf == +Inf and -Inf == -Inf.
+     * This fixes subtraction-based equalsWithEps failures where
+     * Inf - Inf = NaN (incorrectly reports inequality for identical Inf arrays).
+     */
+    private static boolean arraysEqualNaNSafe(INDArray a, INDArray b) {
+        if (a == null || b == null) return a == b;
+        if (!a.equalShapes(b)) return false;
+        if (a.dataType() != b.dataType()) return false;
+        long len = a.length();
+        for (long i = 0; i < len; i++) {
+            double va = a.getDouble(i);
+            double vb = b.getDouble(i);
+            if (Double.compare(va, vb) != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected static void equalConsideringNull(List<String> l1, List<String> l2, String msg, Object... args){

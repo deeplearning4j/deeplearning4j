@@ -40,27 +40,21 @@ public class EmbeddingLayerParamInitializer extends DefaultParamInitializer {
         val shape = new long[] {nIn, nOut};
 
         if (initializeParameters) {
-            INDArray weights = weightParamView.reshape('f', nIn, nOut);
             if (weightInit instanceof WeightInitEmbedding) {
                 // WeightInitEmbedding copies pre-trained weights directly — it must
                 // receive the full [vocabSize, vectorSize] shape, not row-by-row.
+                INDArray weights = weightParamView.reshape(IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, nIn, nOut);
                 weightInit.init(nIn, nOut, shape, IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, weights);
+                return weights;
             } else {
-                // Initialize row-by-row so each call operates on nOut elements.
-                // For typical nOut values (<= 1024) this stays single-threaded in the
-                // native CPU random kernel, avoiding a data race on the shared coords
-                // buffer in the single-arg execTransform path that is used by
-                // UniformDistribution (XAVIER_UNIFORM).  Initializing the whole
-                // nIn*nOut matrix at once with nIn large enough (>= 1024/nOut rows)
-                // causes the kernel to spawn multiple threads that all write to the
-                // same stack-allocated coords array, producing non-deterministic results.
-                long[] rowShape = new long[]{1, nOut};
-                for (long i = 0; i < nIn; i++) {
-                    INDArray row = weights.getRow(i);
-                    weightInit.init(1, nOut, rowShape, IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, row);
-                }
+                // Initialize using standard fan-in=1 approach for embedding layers.
+                // fanIn=1 is correct here: vocab size shouldn't affect the init scale,
+                // since each row is a separate lookup that doesn't accumulate over vocab.
+                INDArray ret = weightInit.init(1, //Fan in
+                        nOut, //Fan out
+                        shape, IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, weightParamView);
+                return ret;
             }
-            return weights;
         } else {
             return WeightInitUtil.reshapeWeights(shape, weightParamView);
         }

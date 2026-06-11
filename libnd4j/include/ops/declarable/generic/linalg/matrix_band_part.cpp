@@ -27,7 +27,7 @@
 
 namespace sd {
 namespace ops {
-CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 0) {
+CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
 
   auto output = OUTPUT_VARIABLE(0);

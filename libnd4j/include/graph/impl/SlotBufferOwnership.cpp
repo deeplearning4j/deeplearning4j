@@ -300,16 +300,66 @@ void BufferPointerSnapshot::capture(NDArray** outputSlots, int numSlots,
 
 void BufferPointerSnapshot::pruneTransientViewSlots(
     const SlotBufferInfo* ownership,
-    const std::unordered_set<DataBuffer*>& protectedWeightBuffers) {
+    const std::unordered_set<DataBuffer*>& protectedWeightBuffers,
+    NDArray** externalInputs, int numExternalInputs) {
   if (!valid || ownership == nullptr) return;
   if (slotDataBuffers == nullptr) return;
 
+  // Build set of non-protected (placeholder) external input DataBuffers.
+  // Used to catch slots whose DataBuffer matches a placeholder even when
+  // ownership is SLOT_OWNED (e.g. reshape output that sometimes creates a
+  // new buffer and sometimes reuses the placeholder's buffer).
+  std::unordered_set<DataBuffer*> placeholderBuffers;
+  if (externalInputs != nullptr) {
+    for (int e = 0; e < numExternalInputs; e++) {
+      if (externalInputs[e] == nullptr) {
+        DSP_DIAG(MEMORY, "pruneTransientViewSlots: ext[%d] NDArray=null", e);
+        continue;
+      }
+      DataBuffer* edb = externalInputs[e]->dataBuffer();
+      bool isProtected = (edb != nullptr && protectedWeightBuffers.count(edb) > 0);
+      DSP_DIAG(MEMORY, "pruneTransientViewSlots: ext[%d] NDArray=%p db=%p isProtected=%d",
+               e, (void*)externalInputs[e], (void*)edb, isProtected ? 1 : 0);
+      if (edb != nullptr && !isProtected) {
+        placeholderBuffers.insert(edb);
+      }
+    }
+  }
+
+  DSP_DIAG(MEMORY,
+           "pruneTransientViewSlots: totalSlots=%d numExtInputs=%d "
+           "protectedWeightBuffers=%d placeholderBuffers=%d",
+           totalSlots, numExternalInputs,
+           static_cast<int>(protectedWeightBuffers.size()),
+           static_cast<int>(placeholderBuffers.size()));
+
   int pruned = 0;
   for (int i = 0; i < totalSlots; i++) {
-    if (ownership[i].ownership != BufferOwnership::VIEW_OF_WEIGHT) continue;
     DataBuffer* db = slotDataBuffers[i];
     if (db == nullptr) continue;
-    if (protectedWeightBuffers.count(db) > 0) continue;  // true weight — keep
+
+    bool isPlaceholderView = false;
+    if (ownership[i].ownership == BufferOwnership::VIEW_OF_WEIGHT) {
+      // Classic path: classified as view of external input, check if non-protected
+      isPlaceholderView = (protectedWeightBuffers.count(db) == 0);
+    } else if (!placeholderBuffers.empty() && placeholderBuffers.count(db) > 0) {
+      // Ownership may be SLOT_OWNED but the DataBuffer is actually a
+      // placeholder's buffer (reshape/view ops oscillate between SLOT_OWNED
+      // and VIEW_OF_WEIGHT depending on execution timing).
+      isPlaceholderView = true;
+    }
+
+    if (i == 0) {
+      DSP_DIAG(MEMORY,
+               "pruneTransientViewSlots: slot 0 db=%p ownership=%d "
+               "isPlaceholderView=%d protectedCount=%d placeholderCount=%d",
+               (void*)db, static_cast<int>(ownership[i].ownership),
+               isPlaceholderView ? 1 : 0,
+               static_cast<int>(protectedWeightBuffers.count(db)),
+               static_cast<int>(placeholderBuffers.count(db)));
+    }
+
+    if (!isPlaceholderView) continue;
 
     // Transient placeholder view — null out so later snapshot->validate()
     // calls naturally skip this slot via the existing null-entry guards.
@@ -329,8 +379,8 @@ void BufferPointerSnapshot::pruneTransientViewSlots(
   if (pruned > 0) {
     DSP_DIAG(MEMORY,
              "BufferPointerSnapshot::pruneTransientViewSlots: nullified %d "
-             "VIEW_OF_WEIGHT slot(s) that point at non-protected (placeholder) "
-             "DataBuffers — those slots are refreshed by slot-exec each call",
+             "slot(s) sharing DataBuffers with non-protected (placeholder) "
+             "external inputs — those slots are refreshed by slot-exec each call",
              pruned);
   }
 }

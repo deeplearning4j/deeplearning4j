@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -103,58 +102,53 @@ public class VisionEncoder implements AutoCloseable {
         List<String> inputNames = model.inputs();
         String[] outputNames = model.outputs().toArray(new String[0]);
 
-        // Force SLOT_BY_SLOT for the vision encoder: each frame is independent
-        // (no recurrent state between frames), so CUDA graph capture/replay
-        // provides no benefit. Worse, DSP's output slot lifecycle causes
-        // use-after-free when .dup() is called on plan-owned arrays between
-        // frames — the GPU addresses baked into captured graphs get freed.
-        GraphExecutionMode savedMode = model.getGraphExecutionMode();
-        model.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
-
         List<INDArray> frameEmbeddings = new ArrayList<>();
-        for (int frameIdx = 0; frameIdx < numFrames; frameIdx++) {
-            INDArray frameSlice = tiledImage.get(
-                    NDArrayIndex.point(0), NDArrayIndex.point(frameIdx),
-                    NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray singleFrame = frameSlice.reshape(1, 1, 3, targetSize, targetSize).dup();
+        List<INDArray> frameInputs = new ArrayList<>();
+        boolean frameLoopSucceeded = false;
+        try {
+            for (int frameIdx = 0; frameIdx < numFrames; frameIdx++) {
+                INDArray frameSlice = tiledImage.get(
+                        NDArrayIndex.point(0), NDArrayIndex.point(frameIdx),
+                        NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                // SmolDocling's vision encoder expects rank-4 NCHW input per frame.
+                // Passing rank-5 [1, 1, C, H, W] breaks ONNX zero-copy reshape constants.
+                INDArray singleFrame = frameSlice.reshape(1, 3, targetSize, targetSize).dup();
+                frameInputs.add(singleFrame);
 
-            Map<String, INDArray> inputMap = new HashMap<>();
-            for (String inputName : inputNames) {
-                if (inputName.equals("pixel_values")) {
-                    inputMap.put(inputName, singleFrame);
-                } else if (inputName.equals("pixel_attention_mask")) {
-                    ImageTiler.ContentRegion region = splitResult.contentRegions.get(frameIdx);
-                    inputMap.put(inputName,
-                            ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize));
+                Map<String, INDArray> inputMap = new HashMap<>();
+                for (String inputName : inputNames) {
+                    if (inputName.equals("pixel_values")) {
+                        inputMap.put(inputName, singleFrame);
+                    } else if (inputName.equals("pixel_attention_mask")) {
+                        ImageTiler.ContentRegion region = splitResult.contentRegions.get(frameIdx);
+                        INDArray attentionMask = ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize);
+                        inputMap.put(inputName, attentionMask);
+                        frameInputs.add(attentionMask);
+                    }
+                }
+
+                Map<String, INDArray> outputs = model.output(inputMap, outputNames);
+
+                VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(outputs);
+                if (selected == null || selected.tensor == null) {
+                    throw new IllegalStateException("Vision encoder produced no usable output for frame " + frameIdx);
+                }
+
+                INDArray out = selected.tensor.dup();
+                frameEmbeddings.add(out);
+
+            }
+            frameLoopSucceeded = true;
+        } finally {
+            for (INDArray frameInput : frameInputs) {
+                if (frameInput != null && frameInput.closeable() && !frameInput.wasClosed()) frameInput.close();
+            }
+            if (!frameLoopSucceeded) {
+                for (INDArray fe : frameEmbeddings) {
+                    if (fe != null && fe.closeable() && !fe.wasClosed()) fe.close();
                 }
             }
-
-            Map<String, INDArray> outputs = model.output(inputMap, outputNames);
-
-            VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(outputs);
-            if (selected == null || selected.tensor == null) {
-                throw new IllegalStateException("Vision encoder produced no usable output for frame " + frameIdx);
-            }
-
-            INDArray out = selected.tensor.dup();
-            frameEmbeddings.add(out);
-
-            // Do NOT close plan-owned output arrays — their DataBuffers are frozen
-            // and their GPU addresses are baked into captured CUDA graphs. Closing
-            // them frees GPU memory that graph replay depends on, causing illegal
-            // memory access on subsequent frames. The .dup() above already created
-            // a safe copy of the data we need.
-            singleFrame.close();
         }
-
-        // Restore original execution mode and clean up encoder session state.
-        model.setGraphExecutionMode(savedMode);
-        model.resetSession();
-        model.clearPlaceholderOverrides();
-        model.clearPlaceholders(true);
-        model.clearOpInputs();
-        model.clearDynamicShapePlanCache();
-        Nd4j.getExecutioner().commit();
 
         // Concatenate frame embeddings along sequence dimension
         INDArray embeddings;

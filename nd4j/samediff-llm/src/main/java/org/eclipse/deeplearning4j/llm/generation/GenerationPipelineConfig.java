@@ -25,6 +25,7 @@ import lombok.Getter;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
+import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
 
 import java.util.Set;
 
@@ -92,6 +93,20 @@ public class GenerationPipelineConfig {
     @Builder.Default
     private final int maxPrefillLength = 0;
 
+    /**
+     * Hard upper bound on total KV cache sequence length.
+     * When &gt; 0, the effective {@code maxKvLen} used for buffer allocation and
+     * attention masks is clamped to this value regardless of
+     * {@code prefillSeqLen + maxNewTokens}. This prevents shape hash changes
+     * (and costly plan recompilation) when callers vary {@code maxNewTokens}
+     * between calls on a cached pipeline.
+     *
+     * <p>When 0 (default), no capping is applied and buffers are sized to
+     * {@code prefillSeqLen + maxNewTokens} each call.</p>
+     */
+    @Builder.Default
+    private final int maxKvCacheLength = 0;
+
     /** Model hidden size. Auto-detected from embeddings if 0. */
     @Builder.Default
     private final long hiddenSize = 0;
@@ -144,6 +159,9 @@ public class GenerationPipelineConfig {
     /** Whether DSP (DynamicShapePlan) is enabled for this pipeline. */
     @Builder.Default
     private final boolean dspEnabled = true;
+
+    /** Optional benchmark config applied to the optimized in-pipeline SameDiff models. */
+    private final BenchmarkConfig benchmarkConfig;
 
     /** Optional model loader for loading models from paths. Uses default loader if null. */
     private final GenerationPipeline.ModelLoader modelLoader;

@@ -2726,8 +2726,10 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrsShapeInfoAndOffsets(const sd::Lo
   }
 
   // calculation of sub-array offsets (subArrOffsets)
-  // Pass the order from the original array to ensure F-order arrays are iterated correctly
-  calcOffsets(dimsSize, shape, strides, subArrOffsets, order(wholeShapeInfo));
+  // Always use C-order for TAD offset enumeration to ensure consistent TAD indexing
+  // regardless of the underlying array storage order. TAD index i must map to the
+  // same logical element group for C-order, F-order, and view arrays alike.
+  calcOffsets(dimsSize, shape, strides, subArrOffsets);
 
   // Note: checkStridesEwsAndOrder removed - EWS is deprecated and the order
   // is already correctly set from wholeShapeInfo at line 2648.

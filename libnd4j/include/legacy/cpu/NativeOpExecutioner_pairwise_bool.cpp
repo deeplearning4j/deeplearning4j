@@ -34,6 +34,13 @@ void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext *lc, int o
     errorMessage += sd::DataTypeUtils::asString(zType);
     THROW_EXCEPTION(errorMessage.c_str());
   }
+  // Empty array fast-path: if any operand has a null data pointer or an empty shape,
+  // there is nothing to compute. Handles Nd4j.empty() singletons with null data buffers.
+  if (hX == nullptr || hY == nullptr || hZ == nullptr
+      || shape::isEmptyConst(hZShapeInfo) || shape::length(hZShapeInfo) == 0) {
+    return;
+  }
+
   auto func = PRAGMA_THREADS_FOR {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform,
                           ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),

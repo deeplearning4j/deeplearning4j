@@ -48,6 +48,8 @@ public enum PlanPhase {
     SHAPES_FROZEN(1),
     /** Steady state — shapes frozen + pointers stable + graph replay active */
     REPLAYING(2),
+    /** All segments resolved to slot-by-slot — no CUDA graphs captured. Performance is degraded. */
+    REPLAY_BLOCKED(3),
 
     /**
      * @deprecated Removed — pointer stability is now tracked per-segment via generation counters.

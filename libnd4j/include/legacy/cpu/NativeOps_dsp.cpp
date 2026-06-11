@@ -28,6 +28,7 @@
  */
 
 #include <dsp/NativeOpsDsp.h>
+#include <graph/DspSegmentLifecycle.h>
 #include <graph/DspBufferPool.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
@@ -817,7 +818,17 @@ int getPlanPointersStable(sd::Pointer planHandle) {
 int getPlanFrozenExecutionCount(sd::Pointer planHandle) {
   if (planHandle == nullptr) return -1;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  if (!plan->isShapesFrozen()) return -1;
+  // plan->isShapesFrozen() covers SHAPES_FROZEN and REPLAYING (SEALED).
+  // Also include REPLAY_BLOCKED — shapes are frozen there too (plan was sealed
+  // on CPU but no hardware graph backend is available). Use postFreezeExecCount
+  // from the lifecycle for REPLAY_BLOCKED since segment exec counts stop
+  // incrementing after blockReplay() fires.
+  if (!plan->isShapesFrozen()) {
+    if (plan->planLifecycle().isReplayBlocked()) {
+      return plan->planLifecycle().postFreezeExecCount;
+    }
+    return -1;
+  }
   auto& segs = plan->getSegments();
   int maxExecCount = 0;
   for (auto& seg : segs) {
@@ -1059,10 +1070,9 @@ void invalidatePlanSegmentCache(sd::Pointer planHandle, int segIdx) {
   if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
   auto& seg = segs[segIdx];
   seg.exec.replayHandle.reset();
-  seg.exec.outcome = SegmentExecOutcome::PENDING;
+  SegmentLifecycle::resetForCacheInvalidation(seg.exec);
   seg.exec.cachedShapeKey = 0;
   seg.exec.executionCount = 0;
-  seg.exec.compilationFailed = false;
   seg.exec.compiledByBackend.clear();
 }
 
@@ -1073,7 +1083,7 @@ void invalidatePlanBackendCaches(sd::Pointer planHandle, const char* backendName
   for (auto& seg : plan->getSegmentsMutable()) {
     if (seg.exec.compiledByBackend == name || name.empty()) {
       seg.exec.replayHandle.reset();
-      seg.exec.outcome = SegmentExecOutcome::PENDING;
+      SegmentLifecycle::resetForCacheInvalidation(seg.exec);
       seg.exec.cachedShapeKey = 0;
       seg.exec.executionCount = 0;
       seg.exec.compiledByBackend.clear();

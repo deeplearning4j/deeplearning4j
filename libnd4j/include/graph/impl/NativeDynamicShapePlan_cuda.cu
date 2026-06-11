@@ -50,6 +50,9 @@
 #include <graph/gpu/NvrtcKernelCache.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <system/Environment.h>
+#ifndef _WIN32
+#include <pthread.h>
+#endif
 // Forward-declare clearCache to avoid circular includes through CudaGraphScheduler.h → graph/Context.h
 namespace sd { namespace cuda { void clearCudaGraphSchedulerCache(); } }
 
@@ -234,7 +237,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   // slot-by-slot warmup when executionCount < CAPTURE_MIN_WARMUPS).
   for (auto& seg : segments_) {
     if (seg.def.allFrozenConstants) continue;
-    if (seg.exec.captureProducedNoKernels) continue;
+    if (isTerminalOutcome(seg.exec.outcome)) continue;
     if (!seg.def.isCapturable) continue;
     if (seg.exec.executionCount == 0) {
       DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: SKIP — seg[%d-%d] executionCount=0 "
@@ -265,6 +268,18 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
   sd::graph::DspStreamGuard dspStreamGuard(cudaStr);
 
+  // Redirect gap-segment ops (non-capturable slots executed slot-by-slot between
+  // graph replays) to run on the DSP stream rather than the LaunchContext default
+  // stream. Without this, gap ops dispatch on lcStream while graph replays run on
+  // dspStream — with no cross-stream event sync between them, causing CUDA error
+  // 700 when a graph node reads a gap op's output before it has finished.
+  // This matches the GapStreamGuard pattern in compositeReplay().
+  struct GapStreamGuard {
+    cudaStream_t prev;
+    GapStreamGuard(cudaStream_t s) : prev(tl_dspGapStream) { tl_dspGapStream = s; }
+    ~GapStreamGuard() { tl_dspGapStream = prev; }
+  } gapStreamGuard(cudaStr);
+
   // Unified pre-replay sync for all segments: cross-stream ordering + H2D
   // variable inputs + D2D staging. Idempotent (PlanExecutionContext dedup flags).
   // Set GRAPH_REPLAY target: frozen fast path always replays captured graphs.
@@ -293,6 +308,35 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     refreshStaleViewWrappersInSegment(segments_[ri], externalInputs, numExternalInputs);
   }
 
+  // ── Slot address drift detection ──────────────────────────────────────────
+  // The monolithic CUDA graph has native op (cuBLAS) pointer arguments baked
+  // into graph nodes at capture time. If any output slot's specialBuffer()
+  // address changed since capture (e.g., view wrapper refresh created new
+  // NDArray objects backed by different DataBuffers), replaying the graph
+  // would dereference stale device pointers → CUDA error 700.
+  //
+  // The normal (non-frozen) path in executeSegmentWithCudaGraph has this check
+  // and triggers recapture on drift. The frozen fast path must also check.
+  // On drift, return MAYBE to fall back to the normal path which handles
+  // invalidation and recapture properly.
+  for (size_t segIdx = 0; segIdx < segments_.size(); segIdx++) {
+    GraphSegment& seg = segments_[segIdx];
+    if (seg.def.allFrozenConstants) continue;
+    if (isTerminalOutcome(seg.exec.outcome) || !seg.def.isCapturable) continue;
+    if (seg.exec.capturedSlotAddrHash == 0) continue;
+
+    LongType currentAddrHash = computeSlotAddrHash(
+        outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
+    if (currentAddrHash != seg.exec.capturedSlotAddrHash) {
+      DSP_DIAG(EXECUTE,
+               "FROZEN_FAST_PATH: SLOT_ADDR_DRIFT for seg[%d-%d] "
+               "captured=0x%llx current=0x%llx — falling back to normal path for recapture",
+               seg.def.startSlot, seg.def.endSlot,
+               (long long)seg.exec.capturedSlotAddrHash, (long long)currentAddrHash);
+      return Status::MAYBE;
+    }
+  }
+
   // ── Per-segment replay iteration ─────────────────────────────────────────
   // Iterate all segments and replay each one. Every segment must have a replay
   // handle (monolithic or composite) — allSegmentsReplayReady() was checked
@@ -310,10 +354,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       continue;
     }
 
-    // Segments that produced 0 GPU nodes during capture, or are non-capturable,
-    // have no replay handles (allSegmentsReplayReady skips them). Execute these
-    // slot-by-slot — they are typically reshape/view/identity ops with no kernels.
-    if (seg.exec.captureProducedNoKernels || !seg.def.isCapturable) {
+    // Segments with terminal outcomes or non-capturable — no replay handles.
+    // Execute slot-by-slot (reshape/view/identity ops with no kernels).
+    if (isTerminalOutcome(seg.exec.outcome) || !seg.def.isCapturable) {
       if (!bindSegmentCudaDevice(seg, slots_, numSlots_, "frozenFastPath_sbs")) {
         return Status::KERNEL_FAILURE;
       }
@@ -321,15 +364,15 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // state, no contract override). Without this, executeSlot skips
       // registerSpecialUse — output actuality flags stay stale from the
       // previous step, causing the NEXT step to read stale device data.
-      // This mirrors the ZERO_KERNEL_SLOT_BY_SLOT guard in
+      // This mirrors the TERMINAL_SLOT_BY_SLOT guard in
       // executeSegmentWithGpuGraph (NativeDynamicShapePlan_gpubackend.cu).
-      SyncOverride frozenSbsSync(*this, "frozenFastPath_captureProducedNoKernels");
+      SyncOverride frozenSbsSync(*this, "frozenFastPath_terminal_sbs");
       auto sbsStatus = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
       if (sbsStatus != Status::OK) {
         DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: slot-by-slot FAILED seg[%d-%d] status=%d "
-                 "(captureProducedNoKernels=%d isCapturable=%d)",
+                 "(outcome=%d isCapturable=%d)",
                  seg.def.startSlot, seg.def.endSlot, (int)sbsStatus,
-                 (int)seg.exec.captureProducedNoKernels, (int)seg.def.isCapturable);
+                 (int)seg.exec.outcome, (int)seg.def.isCapturable);
         return sbsStatus;
       }
       seg.exec.executionCount++;
@@ -342,59 +385,6 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
     bool hasMonolithicReplay = (seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady());
     bool hasCompositeSchedule = !seg.exec.compositeReplaySchedule.units.empty();
-    bool monolithicCapturesNativeGaps = (seg.exec.compiledByBackend == "CUDA");
-
-    // When a segment has BOTH a monolithic replay handle AND a composite replay
-    // schedule with gap units, the composite path MUST be preferred. The monolithic
-    // CUDA graph only contains Triton island kernels — gap ops (matmul, etc.) are
-    // NOT captured into the monolithic graph. Replaying the monolithic graph alone
-    // skips gap ops entirely, leaving their output slots with stale capture-time
-    // data. The composite path properly alternates island graph replays with live
-    // gap execution, ensuring gap ops process fresh inputs every step.
-    if (hasMonolithicReplay && hasCompositeSchedule && !monolithicCapturesNativeGaps) {
-      bool hasGapUnits = false;
-      for (const auto& u : seg.exec.compositeReplaySchedule.units) {
-        if (u.kind == REPLAY_UNIT_GAP) { hasGapUnits = true; break; }
-      }
-      if (hasGapUnits) {
-        DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: seg[%d-%d] has monolithic handle + composite "
-                 "schedule with gap units — routing to composite replay (monolithic would "
-                 "skip gap ops)",
-                 seg.def.startSlot, seg.def.endSlot);
-        hasMonolithicReplay = false;  // Force composite path
-      }
-    }
-
-#if HAVE_TRITON
-    // When a monolithic replay handle exists but the composite schedule was never
-    // built, the monolithic graph may only contain Triton island kernels while gap
-    // ops (matmul via cuBLAS) were skipped during capture (GAP_SKIP_DURING_CAPTURE).
-    // Replaying such a graph skips all gap ops → stale outputs.
-    //
-    // The composite schedule is normally built in _gpubackend.cu, but only inside
-    // a `compiledByBackend.empty()` gate that fires once. If the monolithic capture
-    // path ran first and set compiledByBackend, the schedule never gets built.
-    //
-    // Detect this by querying the Triton backend for gap slots. If gap slots exist,
-    // fall through to slot-by-slot execution rather than replaying a partial graph.
-    if (hasMonolithicReplay && !hasCompositeSchedule && !monolithicCapturesNativeGaps) {
-      auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
-      if (tritonBackend != nullptr) {
-        auto gapSlots = tritonBackend->getGapSlots(seg, slots_);
-        if (!gapSlots.empty()) {
-          DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: seg[%d-%d] has monolithic handle but %d gap "
-                   "slots (not in graph) and no composite schedule — clearing monolithic "
-                   "handle and falling through to slot-by-slot (monolithic would skip gap ops)",
-                   seg.def.startSlot, seg.def.endSlot, static_cast<int>(gapSlots.size()));
-          // Destroy the stale monolithic handle permanently so we don't re-check
-          // gap slots on every subsequent frozen fast path iteration.
-          seg.exec.replayHandle.reset();
-          seg.exec.outcome = SegmentExecOutcome::PENDING;
-          hasMonolithicReplay = false;  // Force slot-by-slot fallback at bottom
-        }
-      }
-    }
-#endif
 
     if (hasMonolithicReplay) {
       // ── Monolithic graph replay (consolidated) ─────────────────────────
@@ -447,10 +437,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // and re-capture. NEVER silently fall back to slot-by-slot here —
       // that hides bugs and makes it impossible to tell which path ran.
       DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: BUG — no replay handles for seg[%d-%d] "
-               "(capturable=%d noKernels=%d compileFailed=%d execCount=%d compiledBy=%s) "
+               "(capturable=%d outcome=%d compileFailed=%d execCount=%d compiledBy=%s) "
                "— returning MAYBE for full execute() re-warmup",
                seg.def.startSlot, seg.def.endSlot,
-               (int)seg.def.isCapturable, (int)seg.exec.captureProducedNoKernels,
+               (int)seg.def.isCapturable, (int)seg.exec.outcome,
                (int)seg.exec.compilationFailed, seg.exec.executionCount,
                seg.exec.compiledByBackend.c_str());
       return Status::MAYBE;
@@ -712,14 +702,82 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
     }
   };
 
-  // Launch worker threads
-  std::vector<std::thread> workers;
-  for (int t = 0; t < numThreads; t++) {
-    workers.emplace_back(workerFn);
+  // Launch worker threads with 64 MB stack — compileSegment() calls into
+  // Triton MLIR passes whose recursive SSA traversal can exceed the default
+  // 8 MB std::thread stack.  Inner compile workers already use this size
+  // (TRITON_COMPILE_WORKER_STACK_SIZE in TritonGraphBackend_compile.cu);
+  // outer workers need it too since they call compileSegment() directly.
+  static constexpr size_t PRECOMPILE_WORKER_STACK_SIZE = 64 * 1024 * 1024;
+#ifdef _WIN32
+  {
+    struct WinWorkerArg { std::function<void()>* fn; };
+    auto fnObj = std::function<void()>(workerFn);
+
+    std::vector<HANDLE> threadHandles(numThreads);
+    std::vector<WinWorkerArg> args(numThreads);
+    std::vector<std::thread> fallbackThreads;
+
+    for (int t = 0; t < numThreads; t++) {
+      args[t].fn = &fnObj;
+      threadHandles[t] = CreateThread(
+          nullptr,
+          PRECOMPILE_WORKER_STACK_SIZE,
+          [](LPVOID arg) -> DWORD {
+            auto* wa = static_cast<WinWorkerArg*>(arg);
+            (*wa->fn)();
+            return 0;
+          }, &args[t], STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr);
+      if (threadHandles[t] == nullptr) {
+        fallbackThreads.emplace_back(workerFn);
+      }
+    }
+
+    for (int t = 0; t < numThreads; t++) {
+      if (threadHandles[t] != nullptr) {
+        WaitForSingleObject(threadHandles[t], INFINITE);
+        CloseHandle(threadHandles[t]);
+      }
+    }
+    for (auto& ft : fallbackThreads) {
+      ft.join();
+    }
   }
-  for (auto& w : workers) {
-    w.join();
+#else
+  {
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, PRECOMPILE_WORKER_STACK_SIZE);
+
+    struct WorkerArg { std::function<void()>* fn; };
+    auto fnObj = std::function<void()>(workerFn);
+
+    std::vector<pthread_t> threads(numThreads, 0);
+    std::vector<WorkerArg> args(numThreads);
+    std::vector<std::thread> fallbackThreads;
+
+    for (int t = 0; t < numThreads; t++) {
+      args[t].fn = &fnObj;
+      int rc = pthread_create(&threads[t], &attr,
+          [](void* arg) -> void* {
+            auto* wa = static_cast<WorkerArg*>(arg);
+            (*wa->fn)();
+            return nullptr;
+          }, &args[t]);
+      if (rc != 0) {
+        threads[t] = 0;
+        fallbackThreads.emplace_back(workerFn);
+      }
+    }
+    pthread_attr_destroy(&attr);
+
+    for (int t = 0; t < numThreads; t++) {
+      if (threads[t] != 0) pthread_join(threads[t], nullptr);
+    }
+    for (auto& ft : fallbackThreads) {
+      ft.join();
+    }
   }
+#endif
 
   auto precompileMs = std::chrono::duration_cast<std::chrono::milliseconds>(
       Clock::now() - precompileStart).count();
@@ -967,29 +1025,30 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
   bool hasBackend = (segment.def.selectedBackend == SelectedBackend::GPU_COMPILER ||
                      segment.def.selectedBackend == SelectedBackend::CUDA_GRAPHS);
   bool canCapture = !segment.exec.compilationFailed &&
-                    !segment.exec.captureProducedNoKernels && hasBackend;
+                    !isTerminalOutcome(segment.exec.outcome) && hasBackend;
 
   if (!canCapture && planLifecycle_.isInFrozenOrReplayState() && !mode.allowsFallback) {
-    // captureProducedNoKernels is a normal outcome — the segment had no GPU work
-    // or interleaved host-only ops. It permanently executes slot-by-slot. This is
-    // NOT a mode violation; the segment simply isn't graph-capturable.
-    if (!segment.exec.captureProducedNoKernels) {
+    // Terminal outcomes are normal — the segment had no GPU work or can't be fused.
+    // It permanently executes slot-by-slot. This is NOT a mode violation.
+    if (!isTerminalOutcome(segment.exec.outcome)) {
       REQUIRE_TRUE(false, 0,
                    "DSP MODE VIOLATION: seg[%d-%d] capturable but cannot graph-execute. "
-                   "mode=%d compilFailed=%d backend=%d. "
+                   "mode=%d compilFailed=%d backend=%d outcome=%d. "
                    "Graph mode requires capture/replay — silent fallback is banned.",
                    segment.def.startSlot, segment.def.endSlot,
                    static_cast<int>(graphExecutionMode_),
                    static_cast<int>(segment.exec.compilationFailed),
-                   static_cast<int>(segment.def.selectedBackend));
+                   static_cast<int>(segment.def.selectedBackend),
+                   static_cast<int>(segment.exec.outcome));
     }
   }
 
   if (!canCapture) {
     DSP_DIAG_SEG(EXECUTE, segment.def.startSlot,
-                 "platformShouldUseGraph: false (compilFailed=%d backend=%d)",
+                 "platformShouldUseGraph: false (compilFailed=%d backend=%d outcome=%d)",
                  segment.exec.compilationFailed ? 1 : 0,
-                 static_cast<int>(segment.def.selectedBackend));
+                 static_cast<int>(segment.def.selectedBackend),
+                 static_cast<int>(segment.exec.outcome));
   }
   return canCapture;
 }
@@ -1040,9 +1099,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
                  "platformExecuteSegmentWithBackends: backend=%s cannot fuse seg[%d-%d] "
                  "(segment contains non-JIT-compatible ops — falling back to slot-by-slot)",
                  gpuBackend->name(), segment.def.startSlot, segment.def.endSlot);
-        DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "gpu_compiler_not_fusible_fallback");
-        segment.exec.noFusibleOps = true;
-        segment.exec.outcome = SegmentExecOutcome::NOT_FUSIBLE;
+        SegmentLifecycle::markNotFusible(segment.exec, "gpu_compiler_not_fusible", segment.def.startSlot, segment.def.endSlot);
         return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
       }
 
@@ -1089,19 +1146,18 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       }
 
       // GPU backend execution failed.
-      // If the segment was already marked captureProducedNoKernels (e.g., capture
-      // failed due to unsupported ops during graph capture, or interleaved host-only),
-      // fall through to slot-by-slot execution.  This is NOT a workaround — the
-      // segment genuinely cannot be graph-captured, and slot-by-slot produces correct
-      // results.
-      if (segment.exec.captureProducedNoKernels) {
+      // If the segment already has a terminal outcome (e.g., ZERO_KERNEL_SBS from
+      // capture producing 0 nodes, or NOT_FUSIBLE), fall through to slot-by-slot
+      // execution. This is NOT a workaround — the segment genuinely cannot be
+      // graph-captured, and slot-by-slot produces correct results.
+      if (isTerminalOutcome(segment.exec.outcome)) {
         DSP_DIAG_SEG(COMPILE, segment.def.startSlot,
-                     "NativeDSP: exec%d seg[%d-%d] capture failed but captureProducedNoKernels=true "
+                     "NativeDSP: exec%d seg[%d-%d] capture failed with terminal outcome=%d "
                      "— executing slot-by-slot permanently",
                      executeCount_, segment.def.startSlot, segment.def.endSlot);
         return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
       }
-      SegmentLifecycle::markFailed(segment.exec, "gpu_backend_exec_failed");
+      SegmentLifecycle::markFailed(segment.exec, "gpu_backend_exec_failed", segment.def.startSlot, segment.def.endSlot);
       DSP_THROW_SEG(COMPILE, segment.def.startSlot,
                     "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d. "
                     "GPU compilation/capture failed — fix the root cause.",
@@ -1114,7 +1170,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       if (status != Status::OK) {
         // Graph capture failed — mark permanently failed and throw.
         // Do NOT fall back to slot-by-slot; fix the root cause.
-        SegmentLifecycle::markFailed(segment.exec, "cuda_graph_capture_failed");
+        SegmentLifecycle::markFailed(segment.exec, "cuda_graph_capture_failed", segment.def.startSlot, segment.def.endSlot);
         DSP_THROW_SEG(COMPILE, segment.def.startSlot,
                       "NativeDSP::execute: CUDA graph capture failed for seg[%d-%d] status=%d. "
                       "Fix capture memory management — do NOT fall back to slot-by-slot.",
@@ -1181,7 +1237,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
     seg.exec.replayHandle->freeHostPointers();
     seg.exec.replayHandle->clearExternalAddresses();
     seg.exec.replayHandle.reset();
-    seg.exec.outcome = SegmentExecOutcome::PENDING;
+    SegmentLifecycle::resetForResourceRelease(seg.exec);
   }
   // Clear merged replay handles (island-merged capture groups)
   for (auto& h : seg.exec.compositeReplaySchedule.mergedReplayHandles) {
@@ -1332,7 +1388,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
       seg.exec.replayHandle->freeHostPointers();
       seg.exec.replayHandle->clearExternalAddresses();
       seg.exec.replayHandle.reset();
-      seg.exec.outcome = SegmentExecOutcome::PENDING;
+      SegmentLifecycle::resetForResourceRelease(seg.exec);
     }
     // Clean up merged replay handles (island-merged capture groups)
     for (auto& h : seg.exec.compositeReplaySchedule.mergedReplayHandles) {
@@ -2206,7 +2262,6 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
       seg.exec.replayHandle->freeHostPointers();
       seg.exec.replayHandle->clearExternalAddresses();
       seg.exec.replayHandle.reset();
-      seg.exec.outcome = SegmentExecOutcome::PENDING;
     }
     // Clean up merged replay handles (island-merged capture groups).
     // Must call releaseWorkspace explicitly for pool deregistration —
@@ -2242,7 +2297,7 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.addrKeyStableCount = 0;
     seg.exec.slotAddrStableCount = 0;
     seg.exec.capturedInputAddrKey = 0;
-    seg.exec.compilationFailed = false;
+    SegmentLifecycle::resetForResourceRelease(seg.exec);
     seg.exec.executionCount = 0;
     delete seg.exec.jitKernel;
     seg.exec.jitKernel = nullptr;
@@ -2251,8 +2306,7 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.captureOomRetries = 0;
     seg.exec.captureRetryAfterExec = 0;
     seg.exec.compiledByBackend.clear();
-    seg.exec.segPhase.reset();  // PRIMARY: unified lifecycle
-    seg.exec.lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;  // legacy sync
+    SegmentLifecycle::initSegmentPhase(seg.exec, seg.def.startSlot, seg.def.endSlot);
     seg.exec.jitShapeKey = 0;
     seg.exec.jitCompileFailed = false;
     seg.def.shapeKeyState.reset();

@@ -76,7 +76,17 @@ void DataBuffer::expand(const uint64_t size) {
 #endif
 
     // copy data from existing buffer
-    std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
+    if (_primaryBuffer != nullptr && _lenInBytes > 0) {
+      std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
+    }
+
+    // Write canary values in the padding region (same as allocatePrimary)
+    if (_workspace == nullptr) {
+      uint64_t* canary = reinterpret_cast<uint64_t*>(newBuffer + size);
+      for (size_t i = 0; i < (HOST_ALLOC_PADDING / sizeof(uint64_t)); i++) {
+        canary[i] = 0xDEADBEEFCAFEBABEULL;
+      }
+    }
 
     if (_isOwnerPrimary) {
 #if defined(SD_GCC_FUNCTRACE)
@@ -289,7 +299,10 @@ void DataBuffer::deleteSpecial() {
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::freeGpuOnly() {
   throwIfFrozen("freeGpuOnly");
-  // CPU: no GPU to free. Free both buffers properly.
+  // CPU: no GPU buffer to free. On CPU this is called during JVM shutdown
+  // (via dbFreeBuffersOnly) to avoid free() crashing on corrupted heap metadata.
+  // deletePrimary() now skips free() when canaries are corrupted, so it's safe
+  // to call here. deleteSpecial() is a no-op on CPU.
   deleteSpecial();
   deletePrimary();
   closed = true;

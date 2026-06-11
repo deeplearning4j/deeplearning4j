@@ -378,7 +378,7 @@ public class ConvolutionUtils {
         long eKW = (kW - 1) * dW + 1;
 
         long outH, outW;
-        if (convolutionMode == ConvolutionMode.Same) {
+        if (convolutionMode == ConvolutionMode.Same || convolutionMode == ConvolutionMode.Causal) {
             outH = (long) Math.ceil(inH / (double) sH);
             outW = (long) Math.ceil(inW / (double) sW);
         } else if (convolutionMode == ConvolutionMode.Strict) {
@@ -576,13 +576,14 @@ public class ConvolutionUtils {
             oH = (inputHeight + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
             oW = (inputWidth + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
         } else if (convolutionMode == ConvolutionMode.Causal) {  // causal
-            // Update the padding values for causal convolution
+            // Causal padding: pad only on the left side (temporal past), not symmetric.
+            // With left-only padding of (kH-1)*dH, output size = ceil(inputHeight / sH)
             pH = (kH - 1) * dH;
             pW = (kW - 1) * dW;
 
-            // Calculate the output height and width with the updated padding
-            oH = (inputHeight + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
-            oW = (inputWidth + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
+            // Single-sided padding: effective padded length = inputHeight + pH (not 2*pH)
+            oH = (inputHeight + pH - (kH - 1) * dH - 1) / sH + 1;
+            oW = (inputWidth + pW - (kW - 1) * dW - 1) / sW + 1;
         } else {
             throw new IllegalArgumentException("Unknown convolution mode: " + convolutionMode);
         }

@@ -56,6 +56,15 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+  // Empty array fast-path: if any operand has a null data pointer or an empty shape,
+  // there is nothing to compute. This handles Java-created Nd4j.empty() singletons whose
+  // native shape info may lack the ARRAY_EMPTY flag but whose data buffer pointer is null,
+  // as well as shape infos that do carry the ARRAY_EMPTY flag or have zero length.
+  if (hX == nullptr || hY == nullptr || hZ == nullptr
+      || shape::isEmptyConst(hZShapeInfo) || shape::length(hZShapeInfo) == 0) {
+    return;
+  }
+
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform,
                                  ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),

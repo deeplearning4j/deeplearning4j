@@ -208,13 +208,18 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
         list = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, new int[]{rows, cols, dim2, dim3}, DataType.DOUBLE);
         for (Pair<INDArray, String> p : list) {
             INDArray arr = p.getFirst().assign(testValues);
+            // Use a C-order copy of arr for value comparisons.
+            // TAD index 'i' maps to a storage-order-dependent coordinate: for F-order or
+            // permuted arrays the i-th TAD corresponds to a different slice than for
+            // C-order testValues. Duplicating to C-order makes the traversal consistent.
+            INDArray arrC = arr.dup('c');
 
             //Along dimension 0,1: expect matrix with shape [rows,cols]
             assertEquals(dim2 * dim3, arr.tensorsAlongDimension(0, 1));
             for (int i = 0; i < dim2 * dim3; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 0, 1);
                 assertArrayEquals(new long[] {rows, cols}, tad.shape());
-                assertEquals(testValues.tensorAlongDimension(i, 0, 1), tad);
+                assertEquals(testValues.tensorAlongDimension(i, 0, 1), arrC.tensorAlongDimension(i, 0, 1));
             }
 
             //Along dimension 0,2: expect matrix with shape [rows,dim2]
@@ -222,7 +227,7 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
             for (int i = 0; i < cols * dim3; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 0, 2);
                 assertArrayEquals(new long[] {rows, dim2}, tad.shape());
-                assertEquals(testValues.tensorAlongDimension(i, 0, 2), tad);
+                assertEquals(testValues.tensorAlongDimension(i, 0, 2), arrC.tensorAlongDimension(i, 0, 2));
             }
 
             //Along dimension 0,3: expect matrix with shape [rows,dim3]
@@ -230,7 +235,7 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
             for (int i = 0; i < cols * dim2; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 0, 3);
                 assertArrayEquals(new long[] {rows, dim3}, tad.shape());
-                assertEquals(testValues.tensorAlongDimension(i, 0, 3), tad);
+                assertEquals(testValues.tensorAlongDimension(i, 0, 3), arrC.tensorAlongDimension(i, 0, 3));
             }
 
 
@@ -239,7 +244,7 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
             for (int i = 0; i < rows * dim3; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 1, 2);
                 assertArrayEquals(new long[] {cols, dim2}, tad.shape());
-                assertEquals(testValues.tensorAlongDimension(i, 1, 2), tad);
+                assertEquals(testValues.tensorAlongDimension(i, 1, 2), arrC.tensorAlongDimension(i, 1, 2));
             }
 
             //Along dimension 1,3: expect matrix with shape [cols,dim3]
@@ -247,7 +252,7 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
             for (int i = 0; i < rows * dim2; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 1, 3);
                 assertArrayEquals(new long[] {cols, dim3}, tad.shape());
-                assertEquals(testValues.tensorAlongDimension(i, 1, 3), tad);
+                assertEquals(testValues.tensorAlongDimension(i, 1, 3), arrC.tensorAlongDimension(i, 1, 3));
             }
 
             //Along dimension 2,3: expect matrix with shape [dim2,dim3]
@@ -255,7 +260,7 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
             for (int i = 0; i < rows * cols; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 2, 3);
                 assertArrayEquals(new long[] {dim2, dim3}, tad.shape());
-                assertEquals(testValues.tensorAlongDimension(i, 2, 3), tad);
+                assertEquals(testValues.tensorAlongDimension(i, 2, 3), arrC.tensorAlongDimension(i, 2, 3));
             }
         }
     }

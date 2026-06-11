@@ -690,6 +690,7 @@ void DataBuffer::deletePrimary() {
     // after the data. If any canary is corrupted, a C++ op wrote past this buffer.
     // FIX: Skip canary check for zero-length buffers - the canary would be at offset 0
     // (start of buffer), and any write to the buffer would corrupt it.
+    bool canaryCorrupted = false;
     if (_workspace == nullptr && _lenInBytes > 0 && _primaryAllocBytes > 0 && _primaryAllocBytes > _lenInBytes) {
       auto canary = reinterpret_cast<uint64_t*>(
           static_cast<int8_t*>(_primaryBuffer) + _lenInBytes);
@@ -698,7 +699,8 @@ void DataBuffer::deletePrimary() {
       size_t checkCount = (canaryCount > 16) ? 16 : canaryCount;  // check first 128 bytes
       for (size_t i = 0; i < checkCount; i++) {
         if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
-          fprintf(stderr, "\n!!! CANARY CORRUPTED in deletePrimary !!!\n");
+          canaryCorrupted = true;
+          fprintf(stderr, "\n!!! CANARY CORRUPTED in deletePrimary — LEAKING BUFFER TO PREVENT CRASH !!!\n");
           fprintf(stderr, "  buffer=%p, lenInBytes=%zu, allocBytes=%zu, dtype=%d\n",
                   _primaryBuffer, _lenInBytes, _primaryAllocBytes, static_cast<int>(_dataType));
           fprintf(stderr, "  First corrupted canary at offset %zu (byte offset %zu from data end)\n",
@@ -714,7 +716,16 @@ void DataBuffer::deletePrimary() {
       }
     }
 
-    if(sd::env_isDeletePrimary()) {
+    if (canaryCorrupted) {
+      // Buffer overrun detected: the op that used this buffer wrote past its end,
+      // corrupting the canary region and potentially the adjacent malloc chunk header.
+      // Calling free() on this buffer would crash with "double free or corruption (!prev)"
+      // because glibc validates chunk metadata during free(). Instead, we intentionally
+      // leak the buffer — a small memory leak is far better than a process crash.
+      // The stderr message above identifies which buffer was corrupted for debugging.
+      _primaryBuffer = nullptr;
+      _isOwnerPrimary = false;
+    } else if(sd::env_isDeletePrimary()) {
 #if defined(SD_GCC_FUNCTRACE)
       // Record deallocation before releasing memory
       array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
@@ -722,10 +733,13 @@ void DataBuffer::deletePrimary() {
 #endif
       auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
       RELEASE(p, _workspace);
+      // Always nullify pointer and clear ownership flag, regardless of isDeletePrimary
+      _primaryBuffer = nullptr;
+      _isOwnerPrimary = false;
+    } else {
+      _primaryBuffer = nullptr;
+      _isOwnerPrimary = false;
     }
-    // Always nullify pointer and clear ownership flag, regardless of isDeletePrimary
-    _primaryBuffer = nullptr;
-    _isOwnerPrimary = false;
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
@@ -734,9 +748,6 @@ void DataBuffer::deletePrimary() {
       memory::MemoryCounter::getInstance().countOut(memory::MemoryType::HOST, getLenInBytes());
     }
   }
-
-
-
 }
 
 void DataBuffer::printPrimaryAllocationStackTraces() {

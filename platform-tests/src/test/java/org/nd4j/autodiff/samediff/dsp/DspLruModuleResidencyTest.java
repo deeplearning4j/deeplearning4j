@@ -38,6 +38,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.nd4j.linalg.api.device.DeviceType;
+
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -341,6 +343,12 @@ public class DspLruModuleResidencyTest {
     @DisplayName("Setting a tiny warn threshold fires the residency-warn diagnostic path")
     public void testWarnBytesEmitsWarning() {
         assumeTrue(isTritonAvailable(), "Triton unavailable — skipping");
+        // The warn fire counter (tritonModuleResidencyWarnFireCount) is only
+        // implemented in the CUDA backend. On CPU the Environment default methods
+        // return 0 and the counter never increments, so skip this test there.
+        assumeTrue(Nd4j.getBackendDeviceType() == DeviceType.CUDA_GPU
+                        || Nd4j.getBackendDeviceType() == DeviceType.GPU,
+                "CUDA backend required for module-residency warn counter — skipping on CPU");
 
         // Use a pure elementwise graph so TritonGraphBackend actually compiles
         // a CUmodule (the matmul-heavy graph in buildManyKernelGraph routes

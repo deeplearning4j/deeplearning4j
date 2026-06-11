@@ -527,7 +527,6 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   NDArray *c = (*gates)({0, 0, 2 * nOut, 3 * nOut});  // [bS, nOut]
 
   NDArray *WhView = (*Wh)({0, 0, 2 * nOut, 3 * nOut});
-  NDArray *WhcT = WhView->transpose();
 
   if (dLdh) *dLdhI += *dLdh;
 
@@ -556,15 +555,20 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   delete dLdzuTemp;
   delete oneMinusU;
 
-  // dLdzr = (dLdzc * hI * r * (1-r)) × WhcT
+  // dLdzr = dLdzc * (hI × Whc) * r * (1-r)
+  // Forward: zc[i,j] = ... + r[i,j] * (hI × Whc)[i,j] + ...
+  // So ∂zc[i,j]/∂r[i,j] = (hI × Whc)[i,j]  — purely element-wise, no cross-j contraction.
+  // Therefore: dLdzr = dLdzc * (hI × Whc) * σ'(zr)  where σ'(zr) = r*(1-r)
   auto* oneMinusR = 1 - (*r);
   auto* rTimesOneMinusR = (*r) * (*oneMinusR);
   delete oneMinusR;
-  auto* temp3 = (*dLdzc) * (*hI);
+  NDArray hIWhc(dLdzr->shapeInfo(), dLdzr->dataType(), context);
+  MmulHelper::mmul(hI, WhView, &hIWhc);  // [bS, nOut] x [nOut, nOut] = [bS, nOut]
+  auto* temp3 = (*dLdzc) * hIWhc;
   auto* temp4 = (*temp3) * (*rTimesOneMinusR);
   delete temp3;
   delete rTimesOneMinusR;
-  MmulHelper::mmul(temp4, WhcT, dLdzr);  // [bS, nOut] x [nOut, nOut] = [bS, nOut]
+  dLdzr->assign(temp4);
   delete temp4;
 
   // dLdx = dLdz × WxT
@@ -610,7 +614,6 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   delete u;
   delete c;
   delete WhView;
-  delete WhcT;
   delete hITranspose;
   delete WhT;
   delete xT;

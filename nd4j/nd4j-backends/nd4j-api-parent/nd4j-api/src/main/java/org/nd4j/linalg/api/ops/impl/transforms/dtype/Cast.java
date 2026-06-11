@@ -168,11 +168,17 @@ public class Cast extends BaseDynamicTransformOp {
             return null; // Fall back to C++
         }
 
-        // For empty inputs, use the canonical empty descriptor (shape=[0], rank 1)
-        // which is what the C++ cache layer expects. Using input.shape() for rank-0
-        // empty arrays produces long[0] which may lose the empty bit in native round-trip.
+        // For empty inputs: preserve the actual shape with the new dtype.
+        // rank-0 empty arrays have shape long[0] which may lose the empty bit in native
+        // round-trip, so use the canonical rank-1 empty descriptor only for that case.
+        // For higher-rank empty arrays (e.g. [1, 0, 2]), preserve the original shape.
         if (input.isEmpty()) {
-            LongShapeDescriptor descriptor = LongShapeDescriptor.empty(dtype);
+            LongShapeDescriptor descriptor;
+            if (input.rank() == 0) {
+                descriptor = LongShapeDescriptor.empty(dtype);
+            } else {
+                descriptor = LongShapeDescriptor.emptyWithShape(outputShape, dtype);
+            }
             DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
             return Collections.singletonList(shapeInfo);
         }

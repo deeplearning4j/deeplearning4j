@@ -3494,7 +3494,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (this.dataType() != other.dataType()) {
             throw new ND4JIllegalStateException("Matrix multiplication: arrays must have same dtype: " + this.dataType() + " vs. " + other.dataType());
         }
-        // FIXME: add support for 3D+ here?
+        // For rank > 2, delegate to Nd4j.matmul which handles batched/ND matmul correctly.
+        // rows()/columns() are only valid for rank-2 arrays.
+        if (this.rank() > 2 || other.rank() > 2) {
+            return Nd4j.matmul(this, other);
+        }
         long[] shape = other.rank() == 1 ? new long[]{rows()} : new long[]{rows(), other.columns()};
         INDArray result = createUninitialized(this.dataType(), shape, resultOrder);
         if (result.isScalar())
@@ -6368,8 +6372,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             logViewCreationIfNeccessary();
             return this;
         }
-        if(isEmpty() && rank() == 0) {
-            INDArray ret = Nd4j.empty(dataType);
+        if(isEmpty()) {
+            // Empty arrays have no elements to cast. Create a new empty array with
+            // the same shape but the target dtype. For rank-0 empty arrays use Nd4j.empty();
+            // for higher-rank empty arrays (e.g. [1,0,2]) preserve the original shape.
+            INDArray ret;
+            if (rank() == 0) {
+                ret = Nd4j.empty(dataType);
+            } else {
+                ret = Nd4j.create(dataType, shape());
+            }
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
                         .parentDataAtEvent(NDArrayMetaData.fromArr(this))

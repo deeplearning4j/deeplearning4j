@@ -2035,10 +2035,19 @@ public class DynamicShapePlanExecutor implements Closeable {
             // If sd.setGraphExecutionMode() was called after the native plan was compiled,
             // the C++ plan still has the old mode. Recompile with the new mode so that
             // e.g. SLOT_BY_SLOT is not silently ignored in favour of the initial AUTO.
+            // Note: compileNativePlan() remaps modes on platforms without a GPU graph
+            // backend (e.g. AUTO → EMULATED_REPLAY on CPU). Compare using the effective
+            // mode that *would* result from compilation, not the raw SD-stored mode,
+            // to avoid spurious recompiles on every executeNative() call.
             GraphExecutionMode currentSdMode = sd.getGraphExecutionMode();
-            if (isNativePlanCompiled(plan) && currentSdMode != configuredGraphExecutionMode) {
-                log.info("Native executor: mode change detected ({} -> {}), recompiling native plan",
-                        configuredGraphExecutionMode, currentSdMode);
+            GraphExecutionMode effectiveCurrentMode = currentSdMode;
+            boolean hasGraphBackend = Nd4j.backends().isCudaAvailable();
+            if (!hasGraphBackend && effectiveCurrentMode.requiresGraphBackend()) {
+                effectiveCurrentMode = GraphExecutionMode.EMULATED_REPLAY;
+            }
+            if (isNativePlanCompiled(plan) && effectiveCurrentMode != configuredGraphExecutionMode) {
+                log.info("Native executor: mode change detected ({} -> {} effective={}), recompiling native plan",
+                        configuredGraphExecutionMode, currentSdMode, effectiveCurrentMode);
                 compileNativePlan(plan, currentSdMode, sd.isDspFallbackToAutoIfTritonUnavailable());
             }
             if (!isNativePlanCompiled(plan) && sd.isDspNativeAutoCompileEnabled()) {
@@ -2637,6 +2646,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                 extInputs[i] = arr;
             }
         }
+
+        // Publish the resolved external input array so snapshots and lifecycle
+        // checks see the same buffers that will be bound into the native context.
+        this.externalInputs = extInputs;
 
         // Debug metadata only; value reductions would force host reads on CUDA.
         if (Nd4j.getEnvironment().isDebug() && extInputs.length > 1331 && extInputs[1331] != null) {
@@ -3298,12 +3311,16 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
 
-            // Set empty output slots on context — C++ plan will allocate and fill them.
+            // Set placeholder output slots on context — C++ plan will allocate and fill them.
             // Must be done every call (not just first frozen call) because C++ may
             // reorder output slot indices across executions, and skipping this causes
             // multi-output graphs to return wrong outputs after shape freezing.
+            // Use a zero scalar rather than Nd4j.empty() because the empty singleton's
+            // native shapeInfo layout can produce "not empty but null buffer" in
+            // createOpaqueNDArray on first execution. Any valid array works here —
+            // C++ replaces the output buffer during execution.
             for (int i = 0; i < numOutputs; i++) {
-                INDArray dummy = Nd4j.empty(DataType.FLOAT);
+                INDArray dummy = Nd4j.scalar(DataType.FLOAT, 0.0f);
                 OpaqueNDArray opaqueOut = OpaqueNDArray.fromINDArray(dummy);
                 nativeOps.setGraphContextOutputArray(opContext, i, opaqueOut);
             }

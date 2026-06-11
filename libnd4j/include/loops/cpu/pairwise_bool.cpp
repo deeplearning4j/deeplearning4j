@@ -44,6 +44,9 @@ template <typename OpType>
 void PairWiseBoolTransform<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                        const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
                                        void *vextraParams, sd::LongType start, sd::LongType stop) {
+  // Guard against null data pointers from empty arrays (e.g. Nd4j.empty() singletons).
+  if (vx == nullptr || vy == nullptr || vz == nullptr || start >= stop) return;
+
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const X *>(vy);
   auto z = reinterpret_cast<Z *>(vz);

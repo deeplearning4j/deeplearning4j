@@ -283,8 +283,10 @@ public class OpaqueNDArray extends Pointer {
      * @return An array of long values representing the shape information.
      */
     public static long[] getOpaqueNDArrayShapeInfo(OpaqueNDArray array) {
-        LongPointer ret =  Nd4j.getNativeOps().getOpaqueNDArrayShapeInfo(array);
+        LongPointer ret = Nd4j.getNativeOps().getOpaqueNDArrayShapeInfo(array);
+        if (ret == null || ret.isNull()) return null;
         long len = Nd4j.getNativeOps().getShapeInfoLength(array);
+        if (len <= 0) return null;
         ret.capacity(len);
         long[] retArr = new long[(int) len];
         ret.get(retArr);
@@ -471,14 +473,34 @@ public class OpaqueNDArray extends Pointer {
                 // Can't even read shape — create a minimal scalar placeholder
                 return fromINDArrayUncached(Nd4j.scalar(0.0f));
             }
-            // Check if the shape info's EMPTY bit is actually set in the native extras flags.
-            // BaseNDArray.isEmpty() returns true for ANY null data buffer, but the native code
-            // requires the EMPTY bit in shape info to match. Only pass null buffer if the shape
-            // info genuinely marks the array as empty.
+            // Check if the array is genuinely empty (not just a dead control-flow branch).
+            // We must check BOTH the Java-side isEmpty() AND the native shape info EMPTY bit,
+            // because Nd4j.empty(DataType) singletons store the EMPTY bit in javaShapeInformation
+            // but the native shape DataBuffer may only have the dtype bit (no EMPTY bit).
+            // In that case array.isEmpty() (which uses javaShapeInformation) returns true but
+            // Shape.isEmpty(shapeInfo.asLong()) returns false. Both must be checked.
             boolean shapeInfoEmpty = Shape.isEmpty(shapeInfo.asLong());
+            // Also check Java-side isEmpty() which uses javaShapeInformation (has EMPTY bit for Nd4j.empty() singletons).
+            boolean javaEmpty = array.isEmpty();
             if (shapeInfoEmpty) {
-                // Genuinely empty: null data + EMPTY bit set — pass through to native correctly
+                // Native shape info has EMPTY bit set — safe to pass null buffer to C++.
                 return fromINDArrayUncached(array);
+            }
+            if (javaEmpty) {
+                // Java says empty but native shape info does NOT have EMPTY bit.
+                // C++ createOpaqueNDArray checks: rank==0 && buffer==nullptr for "javaStyleEmpty".
+                // If native shape has rank > 0 or non-zero length, C++ throws
+                // "not empty but null buffer". Only pass through when native shape is rank-0.
+                long rank = shapeInfo.asLong()[0];
+                long nativeLength = Shape.length(shapeInfo.asLong());
+                if (rank == 0 || nativeLength == 0) {
+                    // Rank-0 or zero-length: C++ javaStyleEmpty path handles this safely.
+                    return fromINDArrayUncached(array);
+                }
+                // Java EMPTY bit is set but native shape has rank>0 and non-zero length.
+                // This is a mismatch — treat as non-empty and create zero-filled replacement.
+                INDArray replacement = Nd4j.zeros(array.dataType(), array.shape());
+                return fromINDArrayUncached(replacement);
             }
             // Non-empty shape but null data (dead control flow branches, freed buffers).
             // Create a zero-filled replacement to avoid native "not empty but null buffer" error.

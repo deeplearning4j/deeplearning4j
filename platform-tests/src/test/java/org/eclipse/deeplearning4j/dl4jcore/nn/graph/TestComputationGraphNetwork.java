@@ -1897,7 +1897,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         ComputationGraph cg = new ComputationGraph(conf);
         cg.init();
-        cg.params().assign(Nd4j.linspace(1, 220, 220).reshape(1, -11));
+        cg.params().assign(Nd4j.linspace(1, 220, 220).reshape(1, -1));
 
         INDArray p0w = cg.getParam("layer_zero_W");
         assertEquals(Nd4j.linspace(1, 100, 100).reshape('f', 10, 10), p0w);

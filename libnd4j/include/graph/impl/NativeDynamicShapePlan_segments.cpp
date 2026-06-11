@@ -30,6 +30,7 @@
 #include <graph/DspHashUtils.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/DspThreadState.h>
+#include <graph/DspSegmentLifecycle.h>
 
 // Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
 #ifdef SD_CUDA
@@ -578,8 +579,9 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
 
     DSP_DIAG(BACKEND, "cascade: backend=%s failed for seg[%d-%d] (status=%d), trying next",
               backendName, seg.def.startSlot, seg.def.endSlot, static_cast<int>(status));
-    // Reset compilationFailed so next backend gets a fresh try
-    seg.exec.compilationFailed = false;
+    // compilationFailed is managed by lifecycle — no raw reset needed here.
+    // The markFailed() call below handles the terminal case; individual backend
+    // failures don't set compilationFailed since the cascade continues.
   }
 
   if (!anyBackendAttemptedCompile) {
@@ -588,8 +590,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     // Mark noFusibleOps so the frozen fast path doesn't re-attempt the cascade
     // every step, but also doesn't hard-throw — these segments execute slot-by-slot
     // gracefully because there's nothing to compile.
-    seg.exec.noFusibleOps = true;
-    seg.exec.outcome = SegmentExecOutcome::NOT_FUSIBLE;
+    SegmentLifecycle::markNotFusible(seg.exec, "cascade_no_fusible", seg.def.startSlot, seg.def.endSlot);
     DSP_DIAG(BACKEND, "cascade: NO backend can fuse seg[%d-%d] (no fusible ops) — "
               "demoting to slot-by-slot native execution",
               seg.def.startSlot, seg.def.endSlot);
@@ -600,7 +601,8 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   // Demote to slot-by-slot native execution — same as the "no fusible ops" path.
   // This can happen when shapes/types change between executions (e.g., BF16 on a CPU
   // without AVX-512 BF16) or when OV model shapes don't match cached buffers.
-  seg.exec.compilationFailed = true;
+  SegmentLifecycle::markFailed(seg.exec, "cascade_all_backends_failed",
+                               seg.def.startSlot, seg.def.endSlot);
   DSP_DIAG(COMPILE, "cascade: ALL %d backends failed to compile seg[%d-%d] — "
             "demoting to slot-by-slot native execution",
             (int)chain.size(), seg.def.startSlot, seg.def.endSlot);
@@ -688,7 +690,8 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
       }
     }
     if (!allCovered) {
-      seg.exec.compilationFailed = true;
+      SegmentLifecycle::markFailed(seg.exec, "validation_ops_not_covered",
+                                   seg.def.startSlot, seg.def.endSlot);
       DSP_THROW_SEG(COMPILE, seg.def.startSlot,
                     "%s VALIDATION FAILURE: segment [%d-%d] has %d ops not covered by backend. "
                     "Fix the backend to compile or natively handle all ops — silent fallback is not permitted.",
@@ -1154,7 +1157,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           break;
 
         case CF_NEXT_ITERATION: {
-          // Forward input[0] to output[0], then jump back to Merge
+          // Forward input[0] to output[0]
           forwardInput(this, slot, outputSlots_, totalOutputSlots_, externalArrays, numExt,
                        "cf-next-iter");
 #ifdef SD_CUDA
@@ -1162,28 +1165,13 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                             outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
 #endif
 
-          if (slot.cf.loopBackTarget >= 0 && slot.cf.loopBackTarget >= seg.def.startSlot) {
-            loopIterations++;
-            if (loopIterations >= MAX_LOOP_ITERATIONS) {
-              DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
-                            "loop iteration limit (%d) reached at slot %d (%s) in seg[%d-%d]. "
-                            "Possible infinite loop in control flow.",
-                            MAX_LOOP_ITERATIONS, stepIdx, slots_[stepIdx].ident.opName.c_str(),
-                            seg.def.startSlot, seg.def.endSlot);
+          // Loop-back is handled at the phaseReplay level (across segments),
+          // not here, because NextIteration and its target Merge are typically
+          // in different segments. Signal phaseReplay by recording the target.
+          if (slot.cf.loopBackTarget >= 0) {
+            if (cfLoopBackStep_ < 0 || slot.cf.loopBackTarget < cfLoopBackStep_) {
+              cfLoopBackStep_ = slot.cf.loopBackTarget;
             }
-            // Clear dead flags for loop body range
-            if (slotIsDead_ && slot.cf.loopRegionIndex >= 0 && slot.cf.loopRegionIndex < numLoopRegions_) {
-              LoopRegion& lr = loopRegions_[slot.cf.loopRegionIndex];
-              for (int s = lr.mergeSlot; s <= lr.bodyEndSlot && s < numSlots_; s++) {
-                NativeSlot& bodySlot = slots_[s];
-                for (int oi = 0; oi < bodySlot.wiring.numOutputs; oi++) {
-                  int si = bodySlot.wiring.outputSlotIndices[oi];
-                  if (si >= 0 && si < slotIsDeadSize_) slotIsDead_[si] = false;
-                }
-              }
-            }
-            stepIdx = slot.cf.loopBackTarget;
-            continue; // jump back to Merge, don't increment stepIdx
           }
           break;
         }
@@ -2149,9 +2137,8 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
                "  LIFECYCLE: seg[%d-%d] BUILDING:WARMUP -> BUILDING:CAPTURING "
                "(warmup done, execCount=%d)",
                seg.def.startSlot, seg.def.endSlot, execCount);
-      seg.exec.segPhase.skipCompileToCapturing();
-      seg.exec.compiledByBackend = "emulated_replay";
-      seg.exec.lifecycleState = GraphSegmentExec::SegmentLifecycleState::CAPTURE_PENDING;
+      SegmentLifecycle::skipToCapturing(seg.exec, "emulated_replay",
+                                       seg.def.startSlot, seg.def.endSlot);
     } else if (execCount >= 1 && seg.exec.segPhase.needsCapture()) {
       // EMULATED_REPLAY re-executes every slot fresh (no baked CUDA graph),
       // so address instability from fresh placeholder allocations does not
@@ -2163,9 +2150,15 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
                "(execCount=%d, argRefresh=%d)",
                seg.def.startSlot, seg.def.endSlot, execCount,
                seg.exec.needsArgRefresh() ? 1 : 0);
-      seg.exec.segPhase.seal();
-      seg.exec.outcome = SegmentExecOutcome::ZERO_KERNEL_SBS;
-      seg.exec.lifecycleState = GraphSegmentExec::SegmentLifecycleState::REPLAYING;
+      SegmentLifecycle::markEmulatedSealed(seg.exec, seg.def.startSlot, seg.def.endSlot);
+    }
+
+    // Increment totalGraphReplays_ for EMULATED_REPLAY segments in steady state
+    // (execCount >= 2 means at least warmup + capture + this replay).
+    // This mirrors the real GPU graph replay path which increments
+    // totalGraphReplays_ after each successful cudaGraphLaunch.
+    if (execCount >= 2) {
+      totalGraphReplays_++;
     }
   }
 

@@ -72,7 +72,6 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
 
         int batch = 2;
-        int inChannels = 3;
         int inHeight = 8;
         int inWidth = 8;
         int kH = 3;
@@ -80,15 +79,12 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
 
-        // Input feature map [batch, channels, height, width] NCHW
-        INDArray inputArr = Nd4j.rand(DataType.DOUBLE, batch, inChannels, inHeight, inWidth).muli(0.5);
         // Offset prediction network output [batch, 2*kH*kW, outH, outW]
         // 2 offsets (x, y) per kernel position
         int outH = inHeight - kH + 1;
         int outW = inWidth - kW + 1;
         INDArray offsetArr = Nd4j.rand(DataType.DOUBLE, batch, 2 * kH * kW, outH, outW).muli(0.1);
 
-        SDVariable input = sd.var("input", inputArr);
         SDVariable offset = sd.var("offset", offsetArr);
 
         // The offset field should have small values centered around 0
@@ -97,8 +93,8 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         SDVariable offsetStd = sd.standardDeviation("offset_std", offset, true);
 
         // Combine into a single loss for gradient checking
-        SDVariable loss = offsetMean.add(offsetStd);
-        loss.rename("loss");
+        SDVariable loss = sd.math.add("loss", offsetMean, offsetStd);
+        sd.setLossVariables("loss");
 
         TestCase tc = new TestCase(sd)
                 .testName("DeformableConv Offset Field")
@@ -117,15 +113,10 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
 
         int batch = 2;
-        int channels = 2;
         int height = 4;
         int width = 4;
 
         SameDiff sd = SameDiff.create();
-
-        // Create a simple feature map
-        INDArray inputArr = Nd4j.rand(DataType.DOUBLE, batch, channels, height, width).muli(0.5);
-        SDVariable input = sd.var("input", inputArr);
 
         // Simulate bilinear interpolation by using standard grid sample approximation
         // For deformable conv, we sample at offset positions using bilinear interpolation
@@ -154,6 +145,7 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         // The sampled grid represents offset sampling positions
         SDVariable result = sd.mean("result", sampledGrid);
         SDVariable loss = sd.mean("loss", result);
+        sd.setLossVariables("loss");
 
         TestCase tc = new TestCase(sd)
                 .testName("DeformableConv Bilinear Interp")
@@ -432,7 +424,6 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
 
         int batch = 2;
-        int inChannels = 3;
         int inHeight = 8;
         int inWidth = 8;
         int kH = 3;
@@ -442,14 +433,10 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
 
-        // Input feature map
-        INDArray inputArr = Nd4j.rand(DataType.DOUBLE, batch, inChannels, inHeight, inWidth).muli(0.5);
-
         // Modulation mask for v2 [batch, kH*kW, outH, outW]
         // Values between 0 and 1, learned to weight sampling positions
         INDArray maskArr = Nd4j.rand(DataType.DOUBLE, batch, kH * kW, outH, outW);
 
-        SDVariable input = sd.var("input", inputArr);
         SDVariable mask = sd.var("mask", maskArr);
 
         // Apply sigmoid to ensure mask values are in [0, 1]
@@ -459,8 +446,8 @@ public class TestDeformableConvOpValidation extends BaseOpValidation {
         SDVariable maskMean = sd.mean("mask_mean", modulationMask);
         SDVariable maskStd = sd.standardDeviation("mask_std", modulationMask, true);
 
-        SDVariable loss = maskMean.add(maskStd);
-        loss.rename("loss");
+        SDVariable loss = sd.math.add("loss", maskMean, maskStd);
+        sd.setLossVariables("loss");
 
         TestCase tc = new TestCase(sd)
                 .testName("DeformableConv v2 Modulation")

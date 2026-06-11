@@ -145,6 +145,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             lastZ = null;
         }
 
+        // Apply dropout backward if dropout was used during the forward pass.
+        // The epsilon passed to the previous layer must be multiplied by the dropout mask
+        // so that gradients flowing back through zeroed-out activations are also zeroed.
+        epsOut = backpropDropOutIfPresent(epsOut);
+
         return new Pair<>(retGradient, workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsOut));
     }
 

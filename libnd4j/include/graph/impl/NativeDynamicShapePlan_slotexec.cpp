@@ -1059,13 +1059,10 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
     NDArray* input0 = nullptr;
     for (int ii = 0; ii < slot.wiring.numInputs; ii++) {
       int srcIdx = slot.wiring.inputSourceIndices[ii];
-      NDArray* resolved = nullptr;
-      if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-        resolved = outputSlots_[srcIdx];
-      } else if (srcIdx < 0) {
-        int extIdx = -(srcIdx + 1);
-        if (extIdx < numExt) resolved = externalArrays[extIdx];
-      }
+      // Use resolveViewInput to prefer staging buffers for external inputs.
+      // Views must alias the staging buffer (stable address) so that cuBLAS
+      // kernels baked into the CUDA graph see consistent addresses on replay.
+      NDArray* resolved = resolveViewInput(srcIdx, externalArrays, numExt);
       viewInputs[ii] = resolved;
       if (ii == 0) input0 = resolved;
     }
@@ -1398,6 +1395,27 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
           anyInputDependsOnExternal = true;
           break;
         }
+        // Safety check: if externalInputIsVariable_ is non-empty but has ZERO true
+        // entries, markExternalInputVariable() has not been called for any decode-step
+        // inputs (input_ids, position_ids, attention_mask, etc.). This happens when
+        // the Java side populates the vector but forgets to call markExternalInputVariable
+        // before detectFrozenConstants() runs. Without this guard, every external-input
+        // slot is treated as a constant and ALL 2419 slots get sealed as FROZEN_CONSTANT,
+        // causing CUDA graph capture to see 0 nodes.
+        {
+          bool hasAnyVariable = false;
+          for (bool v : externalInputIsVariable_) {
+            if (v) { hasAnyVariable = true; break; }
+          }
+          if (!hasAnyVariable) {
+            sd_printf("DSP WARN: detectFrozenConstants: externalInputIsVariable_ has %d entries but NONE are true. "
+                      "markExternalInputVariable() likely not called for decode inputs. "
+                      "Falling back to conservative (all externals variable) to prevent incorrect freezing.\n",
+                      (int)externalInputIsVariable_.size());
+            anyInputDependsOnExternal = true;
+            break;
+          }
+        }
         continue;
       }
       if (srcIdx >= 0 && srcIdx < totalOutputSlots_ && dependsOnExternal[srcIdx]) {
@@ -1486,35 +1504,46 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
         if (si < 0 || si >= totalOutputSlots_) continue;
         NDArray* arr = outputSlots_[si];
         if (arr == nullptr) {
-          DSP_THROW(SHAPE,
-              "FREEZE_NULL_OUTPUT: slot %d (%s) output[%d] (outputSlot=%d) is null at "
-              "freeze time (executeCount=%d). Cannot freeze a slot whose output was "
-              "never populated during warmup.",
+          DSP_DIAG(SHAPE,
+              "FREEZE_SKIP_NULL_OUTPUT: slot %d (%s) output[%d] (outputSlot=%d) is null at "
+              "freeze time (executeCount=%d). Slot will remain LIVE and re-execute each step.",
               s, sl.ident.opName.c_str(), o, si, executeCount_);
           outputsValid = false;
           break;
         }
         auto* db = arr->dataBuffer();
         if (db == nullptr || db->isClosed()) {
-          DSP_THROW(SHAPE,
-              "FREEZE_INVALID_BUFFER: slot %d (%s) output[%d] (outputSlot=%d) has %s "
-              "DataBuffer at freeze time (executeCount=%d). Cannot freeze a slot "
-              "with an invalid buffer.",
+          DSP_DIAG(SHAPE,
+              "FREEZE_SKIP_INVALID_BUFFER: slot %d (%s) output[%d] (outputSlot=%d) has %s "
+              "DataBuffer at freeze time (executeCount=%d). Slot will remain LIVE and "
+              "re-execute each step.",
               s, sl.ident.opName.c_str(), o, si,
               db == nullptr ? "null" : "closed", executeCount_);
           outputsValid = false;
           break;
         }
       }
-      if (!outputsValid) continue;  // DSP_THROW may not always abort
+      if (!outputsValid) continue;  // Skip freeze — slot stays LIVE
 
       sl.slotPhase.seal(true);
       frozenConstCount++;
       if (isValueIndependentSlot[s]) valueIndepCount++;
+
+      // ── Snapshot primary buffer pointers at freeze time ────────────────
+      // Stored in frozenOutputPtrs (one entry per output ordinal). On subsequent
+      // executions, if a buffer's primary pointer changes (reallocation), the
+      // frozen skip falls through to re-execute rather than returning stale data.
+      // This handles ops like rank/size whose output buffer may be reallocated
+      // between the warmup execution and later decode steps.
+      sl.frozenOutputPtrs.resize(sl.wiring.numOutputs, nullptr);
       for (int o = 0; o < sl.wiring.numOutputs; o++) {
         int si = sl.wiring.outputSlotIndices[o];
         if (si >= 0 && si < totalOutputSlots_) {
           frozenOutputSlots.insert(si);
+          NDArray* arr = outputSlots_[si];
+          if (arr != nullptr && arr->dataBuffer() != nullptr) {
+            sl.frozenOutputPtrs[o] = arr->dataBuffer()->primary();
+          }
         }
       }
     }
@@ -1563,6 +1592,7 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
 
       if (sharedWithLive) {
         sl.slotPhase.unseal();
+        sl.frozenOutputPtrs.clear();  // No longer frozen — clear stale snapshot
         frozenConstCount--;
         viewAliasUnfrozen++;
         for (int o = 0; o < sl.wiring.numOutputs; o++) {
@@ -1603,6 +1633,7 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
         for (int o = 0; o < psl.wiring.numOutputs; o++) {
           if (psl.wiring.outputSlotIndices[o] == srcIdx) {
             psl.slotPhase.unseal();
+            psl.frozenOutputPtrs.clear();  // No longer frozen — clear stale snapshot
             frozenConstCount--;
             valueDepUnfrozen++;
             for (int o2 = 0; o2 < psl.wiring.numOutputs; o2++) {
@@ -2106,14 +2137,10 @@ Status NativeDynamicShapePlan::executeSlot(
       if (outSi < 0 || outSi >= totalOutputSlots_) break;
 
       NDArray* currentOut = outputSlots_[outSi];
+      // Resolve input0 via resolveViewInput — prefer staging buffer for
+      // external inputs so views alias stable plan-owned addresses.
       int srcIdx = slot.wiring.inputSourceIndices[0];
-      NDArray* input0 = nullptr;
-      if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-        input0 = outputSlots_[srcIdx];
-      } else if (srcIdx < 0) {
-        int extIdx = -(srcIdx + 1);
-        if (extIdx < numExt) input0 = externalArrays[extIdx];
-      }
+      NDArray* input0 = resolveViewInput(srcIdx, externalArrays, numExt);
       // View is stale or missing — attempt inline re-creation using cached
       // output shapes, avoiding the heavy frozen context path below.
       //
@@ -2129,12 +2156,7 @@ Status NativeDynamicShapePlan::executeSlot(
         ffViewInputs[0] = input0;
         for (int ii = 1; ii < slot.wiring.numInputs; ii++) {
           int iiSrc = slot.wiring.inputSourceIndices[ii];
-          if (iiSrc >= 0 && iiSrc < totalOutputSlots_) {
-            ffViewInputs[ii] = outputSlots_[iiSrc];
-          } else if (iiSrc < 0) {
-            int iiExt = -(iiSrc + 1);
-            ffViewInputs[ii] = (iiExt < numExt) ? externalArrays[iiExt] : nullptr;
-          }
+          ffViewInputs[ii] = resolveViewInput(iiSrc, externalArrays, numExt);
         }
 
         // Fix UNKNOWN dtype in cached shape before view creation (frozen fast path)
@@ -2558,14 +2580,24 @@ Status NativeDynamicShapePlan::executeSlot(
     // or an earlier view in the chain being rebuilt), the previously cached
     // wrapper can point at a closed DataBuffer by the time Step 3 reaches it.
     // Treat that as a cache miss and let the view-install path below recreate
-    // the wrapper from current inputs. Non-view slots remain a hard error.
+    // the wrapper from current inputs.
+    //
+    // CONST_GEN ops (min_max_datatype, shape_of, ones_as, etc.) produce
+    // deterministic constant outputs. During executeCount_==0 (shape-only or
+    // first warmup pass), the output NDArray may be allocated with shape info
+    // but no DataBuffer (the op body wasn't executed, or the allocation took
+    // the empty-scalar path). At executeCount_==1 the cached array has
+    // db==nullptr — treat as cache miss so the op re-executes and populates
+    // the buffer. This is safe because CONST_GEN outputs are input-independent.
     if (slot.isViewCapableOp() ||
         slot.flags.outputShapeDependsOnInputValues ||
+        slot.hasOpTrait(sd::ops::OP_TRAIT_CONSTANT_GENERATION) ||
         executeCount_ == 0) {
       // View-capable ops recreate their output wrapper each step.
       // Value-dependent ops (Where, NonZero) produce variable-length output
       // that can be empty (null DataBuffer) one step and non-empty the next.
-      // In both cases, a stale/empty cached output is a normal cache miss —
+      // CONST_GEN ops may have null DataBuffer from shape-only warmup pass.
+      // In all cases, a stale/empty cached output is a normal cache miss —
       // drop it and let the allocation path below create a fresh one.
       DSP_DIAG_SLOT(MEMORY, stepIdx,
           "STALE_REBUILD: slot %d (%s) dropping stale cached output tag=%s "
@@ -2673,19 +2705,68 @@ Status NativeDynamicShapePlan::executeSlot(
               executeCount_, numSlots_);
         }
       }
-      DSP_DIAG(VERIFY, "SLOT_EXEC step=%d op=%s [SKIPPED:frozen-const]", stepIdx, slot.ident.opName.c_str());
-      backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
-      return Status::OK;
+
+      // ── Buffer reallocation detection ─────────────────────────────────
+      // If any output's primary buffer pointer changed since freeze time, the
+      // buffer was reallocated and the frozen value is gone. Fall through to
+      // re-execute the slot so the output is repopulated with correct data.
+      //
+      // This fixes rank/size/size_at/shape_of returning 0 on CPU: these ops
+      // are classified as frozen constants but their output buffers can be
+      // reallocated between the warmup execution and subsequent decode steps.
+      // Without this check the skip path returns Status::OK with a zeroed buffer.
+      bool frozenPtrChanged = false;
+      if (!slot.frozenOutputPtrs.empty()) {
+        for (int o = 0; o < slot.wiring.numOutputs && o < (int)slot.frozenOutputPtrs.size(); o++) {
+          int si = slot.wiring.outputSlotIndices[o];
+          if (si < 0 || si >= totalOutputSlots_) continue;
+          NDArray* arr = outputSlots_[si];
+          if (arr == nullptr || arr->dataBuffer() == nullptr) continue;
+          void* currentPtr = arr->dataBuffer()->primary();
+          void* frozenPtr  = slot.frozenOutputPtrs[o];
+          if (frozenPtr != nullptr && currentPtr != frozenPtr) {
+            DSP_DIAG(SHAPE,
+                "FROZEN_PTR_CHANGED: step=%d (%s) output[%d] (outputSlot=%d) "
+                "primary ptr changed: frozen=%p current=%p — re-executing slot to repopulate. "
+                "execCount=%d",
+                stepIdx, slot.ident.opName.c_str(), o, si,
+                frozenPtr, currentPtr, executeCount_);
+            frozenPtrChanged = true;
+            break;
+          }
+        }
+        if (frozenPtrChanged) {
+          // Update the frozen pointer snapshot so subsequent steps use the new ptr
+          for (int o = 0; o < slot.wiring.numOutputs && o < (int)slot.frozenOutputPtrs.size(); o++) {
+            int si = slot.wiring.outputSlotIndices[o];
+            if (si < 0 || si >= totalOutputSlots_) continue;
+            NDArray* arr = outputSlots_[si];
+            if (arr != nullptr && arr->dataBuffer() != nullptr) {
+              slot.frozenOutputPtrs[o] = arr->dataBuffer()->primary();
+            }
+          }
+          // Fall through to normal execution (do NOT return here)
+        }
+      }
+
+      if (!frozenPtrChanged) {
+        DSP_DIAG(VERIFY, "SLOT_EXEC step=%d op=%s [SKIPPED:frozen-const]", stepIdx, slot.ident.opName.c_str());
+        backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
+        return Status::OK;
+      }
+    } else {
+      // Frozen constant with null output — this should never happen post-warmup.
+      // detectFrozenConstants runs at executeCount_==1, and warmup populates all
+      // outputs. If we get here, the slot was incorrectly classified as frozen
+      // before its outputs were populated.
+      DSP_THROW(EXECUTE,
+          "FROZEN_NULL_OUTPUT: step=%d (%s) is frozenConstantSlot but has null output "
+          "at executeCount=%d. detectFrozenConstants must run AFTER warmup populates "
+          "all outputs. This indicates a lifecycle ordering bug.",
+          stepIdx, slot.ident.opName.c_str(), executeCount_);
     }
-    // Frozen constant with null output — this should never happen post-warmup.
-    // detectFrozenConstants runs at executeCount_==1, and warmup populates all
-    // outputs. If we get here, the slot was incorrectly classified as frozen
-    // before its outputs were populated.
-    DSP_THROW(EXECUTE,
-        "FROZEN_NULL_OUTPUT: step=%d (%s) is frozenConstantSlot but has null output "
-        "at executeCount=%d. detectFrozenConstants must run AFTER warmup populates "
-        "all outputs. This indicates a lifecycle ordering bug.",
-        stepIdx, slot.ident.opName.c_str(), executeCount_);
+    // If we reach here: allOutputsPopulated && frozenPtrChanged — fall through
+    // to normal slot execution below (buffer was reallocated, must re-execute).
   }
 
   // ── Fused chain tail skip ─────────────────────────────────────────────────
@@ -2967,15 +3048,12 @@ Status NativeDynamicShapePlan::executeSlot(
     if (slot.isViewCapableOp() && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
       int si = slot.wiring.outputSlotIndices[0];
       if (si >= 0 && si < totalOutputSlots_) {
-        // Resolve input0 from slot source indices
+        // Resolve input0 from slot source indices.
+        // Use resolveViewInput to prefer staging buffers for external inputs.
+        // Views must alias the staging buffer (stable address) so that cuBLAS
+        // kernels baked into the CUDA graph see consistent addresses on replay.
         int srcIdx = slot.wiring.inputSourceIndices[0];
-        NDArray* input0 = nullptr;
-        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-          input0 = outputSlots_[srcIdx];
-        } else if (srcIdx < 0) {
-          int extIdx = -(srcIdx + 1);
-          if (extIdx < numExt) input0 = externalArrays[extIdx];
-        }
+        NDArray* input0 = resolveViewInput(srcIdx, externalArrays, numExt);
 
         if (input0 != nullptr && slot.shapeCacheValid() && !slot.shapeCache.cachedOutputShapes.empty()) {
           // Trace frozen view installation during warmup only.
@@ -2997,12 +3075,7 @@ Status NativeDynamicShapePlan::executeSlot(
           ssInputs[0] = input0;
           for (int ii = 1; ii < slot.wiring.numInputs; ii++) {
             int iiSrc = slot.wiring.inputSourceIndices[ii];
-            if (iiSrc >= 0 && iiSrc < totalOutputSlots_) {
-              ssInputs[ii] = outputSlots_[iiSrc];
-            } else if (iiSrc < 0) {
-              int iiExt = -(iiSrc + 1);
-              ssInputs[ii] = (iiExt < numExt) ? externalArrays[iiExt] : nullptr;
-            }
+            ssInputs[ii] = resolveViewInput(iiSrc, externalArrays, numExt);
           }
 
           NDArray* newView = nullptr;
@@ -3134,12 +3207,7 @@ Status NativeDynamicShapePlan::executeSlot(
     // If input is non-empty but cached outputs are empty, re-infer via normal path.
     if (slot.isViewCapableOp() && slot.wiring.numInputs >= 1) {
       int srcIdx0 = slot.wiring.inputSourceIndices[0];
-      NDArray* inp0 = nullptr;
-      if (srcIdx0 >= 0 && srcIdx0 < totalOutputSlots_) inp0 = outputSlots_[srcIdx0];
-      else if (srcIdx0 < 0) {
-        int extIdx = -(srcIdx0 + 1);
-        if (extIdx < numExt) inp0 = externalArrays[extIdx];
-      }
+      NDArray* inp0 = resolveViewInput(srcIdx0, externalArrays, numExt);
       if (inp0 != nullptr && inp0->hasValidShapeInfo() && !inp0->isEmpty() && inp0->lengthOf() > 0) {
         // Check if all frozen outputs are empty
         bool allEmpty = true;
@@ -5008,11 +5076,12 @@ Status NativeDynamicShapePlan::executeSlot(
       if (srcIdx < 0) {  // external input
         NDArray* inp = ctx.fastpath_in().size() > (size_t)i ? ctx.fastpath_in()[i] : nullptr;
         if (inp != nullptr && inp->dataBuffer() != nullptr && inp->specialBuffer() != nullptr) {
-          size_t bytes = (size_t)inp->lengthOf() * inp->sizeOfT();
+          size_t bytes = dspSafeByteCount(inp);
           DSP_DIAG(VERIFY, "PRE_EXEC_INPUT: slot=%d op=%s input[%d] extIdx=%d "
-                   "specialBuf=%p bytes=%zu pAct=%d sAct=%d exec=%d",
+                   "specialBuf=%p bytes=%zu dtype=%s pAct=%d sAct=%d exec=%d",
                    stepIdx, slot.ident.opName.c_str(), i, -(srcIdx + 1),
                    inp->specialBuffer(), bytes,
+                   DataTypeUtils::asString(inp->dataType()).c_str(),
                    inp->dataBuffer()->isPrimaryActual() ? 1 : 0,
                    inp->dataBuffer()->isSpecialActual() ? 1 : 0,
                    executeCount_);
@@ -5049,12 +5118,13 @@ Status NativeDynamicShapePlan::executeSlot(
     for (int i = 0; i < numActualOutputs; i++) {
       NDArray* out = ctx.fastpath_out().size() > (size_t)i ? ctx.fastpath_out()[i] : nullptr;
       if (out != nullptr && out->dataBuffer() != nullptr && out->specialBuffer() != nullptr) {
-        size_t bytes = (size_t)out->lengthOf() * out->sizeOfT();
+        size_t bytes = dspSafeByteCount(out);
         int si = i < slot.wiring.numOutputs ? slot.wiring.outputSlotIndices[i] : -1;
         DSP_DIAG(VERIFY, "POST_EXEC_OUTPUT: slot=%d op=%s output[%d] outSlot=%d "
-                 "specialBuf=%p bytes=%zu exec=%d",
+                 "specialBuf=%p bytes=%zu dtype=%s exec=%d",
                  stepIdx, slot.ident.opName.c_str(), i, si,
-                 out->specialBuffer(), bytes, executeCount_);
+                 out->specialBuffer(), bytes,
+                 DataTypeUtils::asString(out->dataType()).c_str(), executeCount_);
       }
     }
   }

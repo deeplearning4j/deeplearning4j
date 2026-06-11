@@ -1573,27 +1573,15 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
   }
 
-  // Dirty tracking: classify each arg as static vs dynamic for refresh optimization
+  // Dirty tracking: classify each sub-kernel's args as static vs dynamic.
+  // Must pass slots[] so the classification uses wiring.outputSlotIndices
+  // (global output slot indices) rather than the op-slot range — these
+  // numbering spaces diverge in multi-output/wide ops, causing intermediates
+  // to be misclassified as static weights if only the op range is checked.
   if (Environment::getInstance().tritonArgDirtyTracking()) {
-    compiledSeg.hasDynamicArgs.resize(compiledSeg.subKernels.size(), false);
-    for (size_t ki = 0; ki < compiledSeg.subKernels.size(); ki++) {
-      auto& kernel = compiledSeg.subKernels[ki];
-      if (!kernel.useIndirectArgs) continue;
-      for (auto& argMapping : kernel.argSlotMapping) {
-        // Dynamic args: external inputs (negative slot index) or non-constant slots
-        // Static args: constant weight slots (srcIdx < 0 in the plan = constant)
-        // For simplicity, mark as dynamic if slot index is negative (external input)
-        // or if the slot is in a non-frozen range
-        if (argMapping.slotIndex < 0) {
-          compiledSeg.hasDynamicArgs[ki] = true;
-          break;
-        }
-      }
-    }
-    int staticCount = 0;
-    for (bool d : compiledSeg.hasDynamicArgs) if (!d) staticCount++;
+    compiledSeg.classifyDirtyTracking(slots, seg.def.startSlot, seg.def.endSlot);
     DSP_DIAG(COMPILE, "TritonGraphBackend: dirty tracking: %d/%d sub-kernels have static-only args (skip refresh)",
-              staticCount, static_cast<int>(compiledSeg.subKernels.size()));
+              compiledSeg.countStaticSubKernels(), static_cast<int>(compiledSeg.subKernels.size()));
   }
 
   cudaEvent_t preallocReadyEvent = nullptr;

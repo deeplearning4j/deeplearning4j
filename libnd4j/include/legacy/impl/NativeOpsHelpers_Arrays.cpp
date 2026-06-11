@@ -25,6 +25,7 @@
 #include <windows.h>
 #endif
 
+#include <array/ArrayOptions.h>
 #include <helpers/ConstantTadHelper.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -105,6 +106,7 @@ sd::LongType getOpaqueNDArrayOffset(OpaqueNDArray array) {
 
 
 const sd::LongType* getOpaqueNDArrayShapeInfo(OpaqueNDArray array) {
+  if (array == nullptr) return nullptr;
   return array->shapeInfo();
 }
 
@@ -132,6 +134,7 @@ void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
 }
 
 sd::LongType getShapeInfoLength(OpaqueNDArray array) {
+  if (array == nullptr || array->shapeInfo() == nullptr) return 0;
   return shape::shapeInfoLength(array->rankOf());
 }
 
@@ -185,9 +188,15 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  // An array is effectively empty if: 1) ARRAY_EMPTY flag is set, OR 2) length is 0
-  // Arrays with shape like [0,1] or [2,0] have length 0 and may not have a buffer
-  bool effectivelyEmpty = shape::isEmpty(shapeInfoCast) || shape::length(shapeInfoCast) == 0;
+  // An array is effectively empty if:
+  // 1) ARRAY_EMPTY flag is set in native shape info, OR
+  // 2) length is 0 (shape like [0,1] or [2,0]), OR
+  // 3) rank is 0 and buffer is null — this is the Java Nd4j.empty(DataType) singleton pattern.
+  //    Java's javaShapeInformation carries the ARRAY_EMPTY bit but the native DataBuffer does not,
+  //    so shape::isEmpty() returns false even though the array is genuinely empty.
+  //    NDArray::isEmpty() uses the same rank==0 && _buffer==nullptr fallback for this case.
+  bool javaStyleEmpty = (shape::rank(shapeInfoCast) == 0 && buffer == nullptr);
+  bool effectivelyEmpty = shape::isEmpty(shapeInfoCast) || shape::length(shapeInfoCast) == 0 || javaStyleEmpty;
 
   if(effectivelyEmpty && buffer != nullptr) {
     THROW_EXCEPTION("createOpaqueNDArray: Shape info was empty but buffer was not null!");
@@ -200,9 +209,30 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     buffer->getDataBuffer()->validateIntegrity();
   }
 
+  // For javaStyleEmpty arrays (rank-0, null buffer, Nd4j.empty(DataType) singleton pattern):
+  // The Java-side shapeInfo has ARRAY_EMPTY set in its extras, but the native DataBuffer copy may
+  // not carry that bit because JavaCPP copies the raw long[] without re-applying Java ArrayOptions.
+  // Without ARRAY_EMPTY, NDArray::isEmpty() returns false (checks ARRAY_EMPTY + length==0),
+  // BroadcastHelper empty guards don't fire, and the null DataBuffer is dereferenced → SIGSEGV.
+  // Fix: create a stack copy of the shapeInfo with ARRAY_EMPTY explicitly set so that all
+  // downstream isEmpty() checks and empty-guard code paths see a genuinely-empty descriptor.
+  // The NDArray constructor passes this through ConstantShapeHelper which caches the result;
+  // the local copy is safe to release after construction.
+  sd::LongType shapeInfoLen = shape::shapeInfoLength(shape::rank(shapeInfoCast));
+  std::vector<sd::LongType> shapeInfoWithEmpty;
+  const sd::LongType* shapeInfoPtr = shapeInfoCast;
+  if (javaStyleEmpty && !shape::isEmptyConst(shapeInfoCast)) {
+    // Copy only the required shapeInfo bytes (shapeInfoLen elements); the NDArray constructor
+    // passes this through ConstantShapeHelper which stores its own permanent copy, so we
+    // only need the local copy to survive until the constructor returns.
+    shapeInfoWithEmpty.assign(shapeInfoCast, shapeInfoCast + shapeInfoLen);
+    sd::ArrayOptions::setPropertyBit(shapeInfoWithEmpty.data(), ARRAY_EMPTY);
+    shapeInfoPtr = shapeInfoWithEmpty.data();
+  }
+
   sd::NDArray* ret = new sd::NDArray(
     buffer != nullptr ? buffer->getDataBuffer() : nullptr,
-    shapeInfoCast,
+    const_cast<sd::LongType*>(shapeInfoPtr),
     sd::LaunchContext::defaultContext(),
     offset
   );

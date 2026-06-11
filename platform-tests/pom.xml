@@ -87,9 +87,11 @@
         <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
         <log4j2.version>2.17.2</log4j2.version>
         <netty.version>4.1.74.Final</netty.version>
-        <test.heap.size>48g</test.heap.size>
-        <!-- maxPhysicalBytes must be larger than heap to accommodate CUDA driver overhead (~1-2GB) -->
-        <test.offheap.size>56g</test.offheap.size>
+        <test.heap.size>8g</test.heap.size>
+        <!-- maxPhysicalBytes must be larger than heap to accommodate off-heap NDArrays + CUDA driver overhead -->
+        <test.offheap.size>24g</test.offheap.size>
+        <!-- Separate physical bytes limit — defaults to offheap size but can be overridden for memory-intensive tests -->
+        <test.maxphysicalbytes>${test.offheap.size}</test.maxphysicalbytes>
         <!-- Note this will not use the embedded java shell script if forks is set to 0. Uset fork count 0 with address sanitizer only.-->
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
@@ -98,6 +100,8 @@
 
         <test.nogc>false</test.nogc>
         <test.prefix></test.prefix>
+        <nd4j.triton.verbose></nd4j.triton.verbose>
+        <nd4j.triton.alwaysCompile></nd4j.triton.alwaysCompile>
         <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
         <test.asan.options></test.asan.options>
@@ -857,8 +861,9 @@
                 </property>
             </activation>
             <properties>
-                <test.heap.size>48g</test.heap.size>
-                <test.offheap.size>56g</test.offheap.size>
+                <test.heap.size>8g</test.heap.size>
+                <test.offheap.size>24g</test.offheap.size>
+                <test.maxphysicalbytes>${test.offheap.size}</test.maxphysicalbytes>
                 <surefire.forks>1</surefire.forks>
                 <surefire.threads>1</surefire.threads>
             </properties>
@@ -1707,6 +1712,8 @@
                         <ND4J_DSP_GAP_TENSOR_CORES>${nd4j.dsp.gapTensorCores}</ND4J_DSP_GAP_TENSOR_CORES>
                         <ND4J_DEBUG>${nd4j.debug}</ND4J_DEBUG>
                         <ND4J_VERBOSE>${nd4j.verbose}</ND4J_VERBOSE>
+                        <ND4J_TRITON_VERBOSE>${nd4j.triton.verbose}</ND4J_TRITON_VERBOSE>
+                        <ND4J_TRITON_ALWAYS_COMPILE>${nd4j.triton.alwaysCompile}</ND4J_TRITON_ALWAYS_COMPILE>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <!-- libnd4j native test configuration -->
@@ -1754,7 +1761,7 @@
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <shutdown>kill</shutdown>
-                    <argLine>-Dorg.bytedeco.javacpp.logger.debug=false   ${jdk9.exports}  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine>-Dorg.bytedeco.javacpp.logger.debug=false   ${jdk9.exports}  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.maxphysicalbytes} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>

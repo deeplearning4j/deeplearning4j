@@ -1581,7 +1581,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     @Override
     public INDArray params() {
-        if(flattenedParams == null)
+        if(flattenedParams == null || flattenedParams.length() == 0)
             return Nd4j.zeros(DataType.FLOAT,0);
         // If the params array has been closed (e.g. after net.close()), return it directly
         // so callers can check wasClosed() without triggering a reshape on a released buffer

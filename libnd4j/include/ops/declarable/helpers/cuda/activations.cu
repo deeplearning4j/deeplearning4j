@@ -992,7 +992,15 @@ void thresholdReluDerivative_(NDArray *input, double theta, NDArray *dLdO, NDArr
 
 void thresholdReluDerivative(LaunchContext *context, NDArray *input, double threshold, NDArray *dLdO,
                              NDArray *output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), SD_FLOAT_TYPES);
+  // applyPairwiseLambda requires all arrays to share the same type; cast dLdO if needed
+  NDArray* dLdOToUse = dLdO;
+  NDArray* dLdOCast = nullptr;
+  if (dLdO->dataType() != input->dataType()) {
+    dLdOCast = dLdO->cast(input->dataType());
+    dLdOToUse = dLdOCast;
+  }
+  BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdOToUse, output), SD_FLOAT_TYPES);
+  if (dLdOCast != nullptr) delete dLdOCast;
 }
 
 }  // namespace helpers

@@ -76,6 +76,34 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
       }
     }
     delete norm2Result;
+  } else if (dimensions.size() >= (size_t)z->rankOf()) {
+    // All dimensions specified: equivalent to no-dimensions case (global norm over entire array).
+    // allTensorsAlongDimension with all dims produces element-wise scalar TADs, which is wrong
+    // for clipByNorm semantics — we need a single global norm, not per-element norms.
+    std::vector<sd::LongType> emptyVec = {};
+    NDArray *norm2Result = z->reduceAlongDimension(reduce::Norm2, &emptyVec);
+    const double norm2Val = (z->dataType() == DataType::FLOAT32)
+        ? (double)norm2Result->e<float>(0)
+        : norm2Result->e<double>(0);
+    if (useAverage) {
+      NDArray *divResult = (*norm2Result) / z->lengthOf();
+      const double divVal = (z->dataType() == DataType::FLOAT32)
+          ? (double)divResult->e<float>(0)
+          : divResult->e<double>(0);
+      if (divVal > clipNormVal) {
+        NDArray *clipDivResult = (*clipNorm) / (*divResult);
+        *z *= (*clipDivResult);
+        delete clipDivResult;
+      }
+      delete divResult;
+    } else {
+      if (norm2Val > clipNormVal) {
+        NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
+        *z *= (*clipDivResult);
+        delete clipDivResult;
+      }
+    }
+    delete norm2Result;
   } else {
     auto listOfSubArrs = z->allTensorsAlongDimension(dimensions);
     const bool isFP32 = (z->dataType() == DataType::FLOAT32);
@@ -116,25 +144,40 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
 template <typename T>
 static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
                           const std::vector<LongType>& dimensions, NDArray *clipNorm, const bool useAverage) {
-  const int rank = input->rankOf();
-
-  auto *norm2Ptr = input->reduceAlongDimension(reduce::Norm2, &dimensions);
-  auto norm2 = *norm2Ptr;
-
-  // Compute dot(gradO, input) per TAD: needed for correct gradient formula.
+  // Correct gradient formula for clipByNorm:
   // dL/dx_j = (clip/norm)*gradO_j - (clip/norm^3)*x_j*dot(gradO,x)
+  // where dot(gradO,x) = sum_k(gradO_k * x_k) is the inner product over the TAD.
+  //
+  // Implementation note: norm is computed via a single global reduceAlongDimension call,
+  // then indexed per-TAD. This is consistent with the known-good baseline.
+  // Per-TAD sub-array reductions on views can produce incorrect threshold decisions.
+
+  const auto clipVal = clipNorm->e<T>(0);
+
+  // Compute per-TAD norms and dot products using a single global reduction.
+  // norm2Ptr: for each TAD i, norm2Ptr[i] = L2 norm of TAD i.
+  // dotsPtr:  for each TAD i, dotsPtr[i] = dot(gradO, input) over TAD i.
+  //
+  // IMPORTANT: NDArray copy constructor creates a VIEW (shared DataBuffer).
+  // The pointers norm2Ptr and dotsPtr must NOT be deleted until after all
+  // accesses to norm2 and dots are complete — deleting them early frees the
+  // shared buffer and causes use-after-free with undefined behaviour.
+  auto *norm2Ptr = input->reduceAlongDimension(reduce::Norm2, &dimensions);
+  auto norm2 = *norm2Ptr;  // view into norm2Ptr's buffer — do NOT delete norm2Ptr yet
+
+  // dot(gradO, input) = sum(gradO * input) per TAD
   auto *elemwiseProductPtr = (*input) * (*gradO);
   auto *dotsPtr = elemwiseProductPtr->reduceAlongDimension(reduce::Sum, &dimensions);
-  auto dots = *dotsPtr;
+  auto dots = *dotsPtr;  // view into dotsPtr's buffer — do NOT delete dotsPtr yet
   delete elemwiseProductPtr;
 
   if (norm2.lengthOf() == 1) {
-    const T norm = useAverage ? norm2.e<T>(0) / input->lengthOf() : norm2.e<T>(0);
-
-    auto clipVal = clipNorm->e<T>(0);
+    // Global norm case: entire array is one TAD
+    const T norm2Raw = norm2.e<T>(0);
+    const T norm = useAverage ? norm2Raw / static_cast<T>(input->lengthOf()) : norm2Raw;
 
     if (norm > clipVal) {
-      const T dot = dots.e<T>(0);  // dot(gradO, input) scalar
+      const T dot = dots.e<T>(0);
       const T factor1 = clipVal / norm;
       const T factor2 = static_cast<T>(1.f) / (norm * norm);
 
@@ -146,23 +189,22 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
     } else
       gradI->assign(gradO);
   } else {
-    auto gradISubArrs = gradI->allTensorsAlongDimension({dimensions});
-    auto gradOSubArrs = gradO->allTensorsAlongDimension({dimensions});
-    auto inputSubArrs = input->allTensorsAlongDimension({dimensions});
-
-    auto clipVal = clipNorm->e<T>(0);
+    // Per-TAD case
+    auto gradISubArrs = gradI->allTensorsAlongDimension(dimensions);
+    auto gradOSubArrs = gradO->allTensorsAlongDimension(dimensions);
+    auto inputSubArrs = input->allTensorsAlongDimension(dimensions);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        auto gradOSubArr = gradOSubArrs.at(i);
-        auto gradISubArr = gradISubArrs.at(i);
-
-        const T norm = useAverage ? norm2.e<T>(i) / gradISubArr->lengthOf() : norm2.e<T>(i);
+        const T norm2Raw = norm2.e<T>(i);
+        const T norm = useAverage ? norm2Raw / static_cast<T>(gradISubArrs.at(i)->lengthOf()) : norm2Raw;
 
         if (norm > clipVal) {
           auto inputSubArr = inputSubArrs.at(i);
+          auto gradOSubArr = gradOSubArrs.at(i);
+          auto gradISubArr = gradISubArrs.at(i);
 
-          const T dot = dots.e<T>(i);  // dot(gradO, input) for this TAD
+          const T dot = dots.e<T>(i);
           const T factor1 = clipVal / norm;
           const T factor2 = static_cast<T>(1.f) / (norm * norm);
 
@@ -172,12 +214,13 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
 
           inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
         } else
-          gradISubArr->assign(gradOSubArr);
+          gradISubArrs.at(i)->assign(gradOSubArrs.at(i));
       }
     };
     samediff::Threads::parallel_tad(func, 0, gradISubArrs.size());
   }
 
+  // Delete after all uses of norm2 and dots are complete.
   delete norm2Ptr;
   delete dotsPtr;
 }

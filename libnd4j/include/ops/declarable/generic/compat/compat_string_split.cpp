@@ -29,6 +29,7 @@
 
 namespace sd {
 namespace ops {
+
 CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto delim = INPUT_VARIABLE(1);

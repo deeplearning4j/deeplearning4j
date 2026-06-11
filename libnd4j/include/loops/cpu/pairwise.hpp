@@ -56,6 +56,8 @@ template <typename OpType>
 SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx, sd::LongType xEws, const void *vy, sd::LongType yEws, void *vz,
                                                 sd::LongType zEws, void *vextraParams, sd::LongType n, sd::LongType start,
                                                 sd::LongType stop) {
+  // Guard against null data pointers from empty arrays.
+  if (vx == nullptr || vy == nullptr || vz == nullptr || start >= stop) return;
 
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);
@@ -88,6 +90,10 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
                                                 void *vextraParams,
                                                 sd::LongType start,
                                                 sd::LongType stop) {
+  // Guard against null data pointers from empty arrays (e.g. Nd4j.empty() singletons).
+  // NativeOpExecutioner::execPairwiseTransform should have returned early already, but this
+  // provides defense-in-depth. Empty arrays have null buffers; dereferencing would SIGSEGV.
+  if (vx == nullptr || vy == nullptr || vz == nullptr || start >= stop) return;
 
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);

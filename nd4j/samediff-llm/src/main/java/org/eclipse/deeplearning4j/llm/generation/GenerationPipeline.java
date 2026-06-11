@@ -24,6 +24,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
+import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
+import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfigApplier;
 import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -40,6 +42,10 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
+import org.nd4j.autodiff.samediff.execution.DspDebugger;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
+import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
@@ -390,7 +396,7 @@ public class GenerationPipeline implements AutoCloseable {
                 config.getKvCacheStrategy(),
                 config.isDspEnabled());
 
-        return new GenerationPipeline(
+        GenerationPipeline pipeline = new GenerationPipeline(
                 decoder, ownsDecoder,
                 embedTokens, ownsEmbedTokens,
                 config.getTokenizer(),
@@ -400,6 +406,51 @@ public class GenerationPipeline implements AutoCloseable {
                 embedInputName, embedOutputNames,
                 draftDecoder, ownsDraftDecoder,
                 config);
+
+        BenchmarkConfig benchmarkConfig = config.getBenchmarkConfig();
+        if (benchmarkConfig == null) {
+            benchmarkConfig = BenchmarkConfig.optimal();
+            log.info("No BenchmarkConfig provided — using default optimal config (Triton + CUDA graph capture)");
+        }
+        log.info("Applying BenchmarkConfig.{} to optimized GenerationPipeline models", benchmarkConfig.getName());
+        BenchmarkConfigApplier.apply(benchmarkConfig);
+        // Set execution mode to TRITON on models WITHOUT creating a native plan.
+        // Calling compileModels() here would create plans with no input data,
+        // causing the Triton JIT to produce zero compiled kernels. The decode-shape
+        // plan (created later by auto-compile during the first execution with real
+        // shapes) would then find no Triton cache entries for its shape key, leaving
+        // all 2419 slots as gaps. Gap range 2419 > maxCapturableGapSlots (32) blocks
+        // native-only capture, and composite capture finds no Triton islands → zero
+        // CUDA graph nodes → ZERO_KERNEL_SBS terminal → permanent slot-by-slot at
+        // ~19 tok/s instead of ~65 tok/s.
+        //
+        // Fix: set TRITON mode + environment flags via setDspCompilationMode() so
+        // auto-compile creates the plan during the warmup decode with real decode
+        // shapes. The segment lifecycle then proceeds: WARMUP → COMPILE (Triton JIT
+        // with actual data) → CAPTURE (CUDA graph with Triton islands).
+        if (benchmarkConfig.isTriton()) {
+            decoder.setDspCompilationMode(DspCompilationMode.MAX_AUTOTUNE);
+            if (embedTokens != null) {
+                embedTokens.setDspCompilationMode(DspCompilationMode.MAX_AUTOTUNE);
+            }
+            log.info("  Triton mode configured on decoder{} — compilation deferred to first execution with real shapes",
+                    embedTokens != null ? " and embed_tokens" : "");
+        } else {
+            // Non-Triton configs (CUDA_GRAPHS, SLOT_BY_SLOT, etc.) can compile
+            // eagerly since they don't depend on Triton JIT with shape-keyed caches.
+            if (embedTokens != null) {
+                BenchmarkConfigApplier.compileModels(
+                        decoder, "decoder",
+                        embedTokens, "embed_tokens",
+                        benchmarkConfig);
+            } else {
+                List<String> decoderOutputs = decoder.outputs() != null
+                        ? new ArrayList<>(decoder.outputs()) : new ArrayList<>();
+                BenchmarkConfigApplier.compileModel(decoder, "decoder", decoderOutputs, benchmarkConfig);
+            }
+        }
+
+        return pipeline;
     }
 
     // ==================== Simple API ====================
@@ -621,6 +672,14 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         long maxKvLen = prefillSeqLen + maxNewTokens;
+        // Cap to configured KV cache length to keep buffer shapes stable across
+        // calls with different maxNewTokens — avoids plan recompilation.
+        int kvCap = config.getMaxKvCacheLength();
+        if (kvCap > 0 && maxKvLen > kvCap) {
+            maxKvLen = kvCap;
+            maxNewTokens = (int) (maxKvLen - prefillSeqLen);
+            if (maxNewTokens < 1) maxNewTokens = 1;
+        }
         int numLayers = kvInputNames.keyNames.size();
 
         // Discover recurrent state input→output pairs from graph structure
@@ -631,17 +690,8 @@ public class GenerationPipeline implements AutoCloseable {
 
         // ══════════════════════════════════════════════════════════════════════
         // STEP 1: PREFILL -- full prompt, empty KV cache, extract per-layer K/V
-        //
-        // Skip DSP compilation for prefill when fixedBuffers is off: the prefill
-        // output set (logits + per-layer K/V) differs from decode (logits only),
-        // so the prefill plan is compiled and immediately discarded. Skipping saves
-        // one full DAG build + plan compilation + serialization cycle.
+        // DSP stays enabled throughout — never disable it.
         // ══════════════════════════════════════════════════════════════════════
-        boolean dspWasEnabled = decoder.isDspAutoCompileEnabled();
-        boolean skipPrefillDsp = dspWasEnabled && !fixedBuffers;
-        if (skipPrefillDsp) {
-            decoder.setDspAutoCompileEnabled(false);
-        }
 
         INDArray prefillInputIds = Nd4j.createFromArray(effectiveTokenIds)
                 .reshape(1, prefillSeqLen).castTo(DataType.INT64);
@@ -714,10 +764,6 @@ public class GenerationPipeline implements AutoCloseable {
         } catch (Exception e) {
             log.error("[GGUF-KV] Prefill decoder.output() failed", e);
             throw e;
-        } finally {
-            if (skipPrefillDsp) {
-                decoder.setDspAutoCompileEnabled(true);
-            }
         }
 
         log.info("[GGUF-KV] Prefill returned {} outputs: {}", prefillOutputs.size(), prefillOutputs.keySet());
@@ -1574,7 +1620,7 @@ public class GenerationPipeline implements AutoCloseable {
         // This preserves device pointer stability for CUDA graph replay.
         boolean reusingFrozenPlan = false;
         INDArray[] frozenExtInputSnapshot = null;
-        DynamicShapePlanExecutor frozenExecutor = null;
+        String[] frozenExtInputKeys = null;
 
         if (fixedBuffers) {
             // Fixed-size buffers: skip DSP reset — reuse the frozen plan.
@@ -1586,10 +1632,11 @@ public class GenerationPipeline implements AutoCloseable {
                     // Snapshot ext inputs BEFORE clearing node outputs — these are the
                     // arrays whose device pointers the native plan tracks for stability.
                     frozenExtInputSnapshot = existingExecutor.getExternalInputsSnapshot();
-                    reusingFrozenPlan = frozenExtInputSnapshot != null && frozenExtInputSnapshot.length > 0;
-                    if (reusingFrozenPlan) {
-                        frozenExecutor = existingExecutor;
-                    }
+                    DynamicShapePlan frozenPlan = existingExecutor.getCurrentPlan();
+                    frozenExtInputKeys = frozenPlan != null ? frozenPlan.getExternalInputKeys() : null;
+                    reusingFrozenPlan = frozenExtInputSnapshot != null && frozenExtInputSnapshot.length > 0
+                            && frozenExtInputKeys != null
+                            && frozenExtInputKeys.length == frozenExtInputSnapshot.length;
                     existingSession.clearNodeOutputsOnly();
                     if (reusingFrozenPlan) {
                         log.info("[Lifecycle] Captured {} ext input arrays for pointer-stable reuse",
@@ -1695,25 +1742,24 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         long maxKvLen = prefillSeqLen + maxNewTokens;
+        // Cap to configured KV cache length to keep buffer shapes stable across
+        // calls with different maxNewTokens — avoids plan recompilation.
+        int kvCap = config.getMaxKvCacheLength();
+        if (kvCap > 0 && maxKvLen > kvCap) {
+            maxKvLen = kvCap;
+            // Clamp maxNewTokens so the decode loop doesn't run past the buffer
+            maxNewTokens = (int) (maxKvLen - prefillSeqLen);
+            if (maxNewTokens < 1) maxNewTokens = 1;
+        }
         boolean dspActive = decoder.isDspAutoCompileEnabled();
         List<String> decoderInputNames = decoder.inputs();
         Map<String, INDArray> reusableInputs = new HashMap<>();
 
         // ══════════════════════════════════════════════════════════════════════
         // STEP 1: Prefill — run decoder with full prompt to get initial KV caches.
-        //
-        // When fixedBuffers is disabled, prefill shapes (seqLen=N) differ from decode
-        // shapes (seqLen=1). The DSP plan compiled for prefill is never reused — the
-        // decode step compiles a fresh plan with different shapes. Temporarily disable
-        // DSP auto-compile for prefill to avoid wasting time on a throwaway plan
-        // (saves DAG build + plan compilation + plan serialization).
-        // When fixedBuffers IS enabled, the prefill plan IS reused across calls,
-        // so we keep DSP active.
+        // DSP stays enabled throughout — never disable it. The shape-keyed plan
+        // cache handles prefill vs decode shape differences automatically.
         // ══════════════════════════════════════════════════════════════════════
-        boolean skipPrefillDsp = dspActive && !fixedBuffers;
-        if (skipPrefillDsp) {
-            decoder.setDspAutoCompileEnabled(false);
-        }
 
         INDArray currentInputIds = Nd4j.createFromArray(effectiveTokenIds)
                 .reshape(1, prefillSeqLen).castTo(DataType.INT64);
@@ -1726,15 +1772,8 @@ public class GenerationPipeline implements AutoCloseable {
                 false, hiddenSize,
                 reusableInputs, dspActive);
 
-        Map<String, INDArray> prefillOutputs;
-        try {
-            prefillOutputs = decoder.output(
-                    prefillInputMap, allOutputNames.toArray(new String[0]));
-        } finally {
-            if (skipPrefillDsp) {
-                decoder.setDspAutoCompileEnabled(true);
-            }
-        }
+        Map<String, INDArray> prefillOutputs = decoder.output(
+                prefillInputMap, allOutputNames.toArray(new String[0]));
 
         // ══════════════════════════════════════════════════════════════════════
         // STEP 2: Pad KV caches to static size and prepare decode-step state
@@ -1754,7 +1793,7 @@ public class GenerationPipeline implements AutoCloseable {
             INDArray padded;
             if (reusingFrozenPlan) {
                 // Reuse the existing ext input array to preserve device pointers.
-                int extIdx = resolveExtInputIdx(frozenExecutor, inputName);
+                int extIdx = resolveExtInputIdx(frozenExtInputKeys, inputName);
                 padded = (extIdx >= 0 && extIdx < frozenExtInputSnapshot.length)
                         ? frozenExtInputSnapshot[extIdx] : null;
                 if (padded != null) {
@@ -1783,7 +1822,7 @@ public class GenerationPipeline implements AutoCloseable {
             String inputName = ioConfig.presentToInputName(valName);
             INDArray padded;
             if (reusingFrozenPlan) {
-                int extIdx = resolveExtInputIdx(frozenExecutor, inputName);
+                int extIdx = resolveExtInputIdx(frozenExtInputKeys, inputName);
                 padded = (extIdx >= 0 && extIdx < frozenExtInputSnapshot.length)
                         ? frozenExtInputSnapshot[extIdx] : null;
                 if (padded != null) {
@@ -1857,12 +1896,12 @@ public class GenerationPipeline implements AutoCloseable {
             // values into them via assign()/putScalar().
             String embedsName = ioConfig.getInputEmbeddingsName();
             int embExtIdx = (embedsName != null && decoder.hasVariable(embedsName))
-                    ? resolveExtInputIdx(frozenExecutor, embedsName) : -1;
-            int idsExtIdx = resolveExtInputIdx(frozenExecutor, ioConfig.getInputIdsName());
+                    ? resolveExtInputIdx(frozenExtInputKeys, embedsName) : -1;
+            int idsExtIdx = resolveExtInputIdx(frozenExtInputKeys, ioConfig.getInputIdsName());
             int causalExtIdx = ioConfig.getCausalMaskName() != null
-                    ? resolveExtInputIdx(frozenExecutor, ioConfig.getCausalMaskName()) : -1;
-            int maskExtIdx = resolveExtInputIdx(frozenExecutor, ioConfig.getAttentionMaskName());
-            int posExtIdx = resolveExtInputIdx(frozenExecutor, ioConfig.getPositionIdsName());
+                    ? resolveExtInputIdx(frozenExtInputKeys, ioConfig.getCausalMaskName()) : -1;
+            int maskExtIdx = resolveExtInputIdx(frozenExtInputKeys, ioConfig.getAttentionMaskName());
+            int posExtIdx = resolveExtInputIdx(frozenExtInputKeys, ioConfig.getPositionIdsName());
 
             // Embeddings: write first token embedding into reused array
             decodeEmbeddings = (embExtIdx >= 0 && embExtIdx < frozenExtInputSnapshot.length)
@@ -2264,6 +2303,44 @@ public class GenerationPipeline implements AutoCloseable {
                 allTokens.add(tid);
                 if (stopTokenIds.contains(tid)) break;
             }
+            log.info("[Perf] Decoder after native loop: planPhase={} pointersStable={}",
+                    executor.getPlanPhase(), executor.arePointersStable());
+            logDspReplayState("after native loop");
+
+            // INVARIANT: if planPhase=REPLAYING, at least one segment must have replayed.
+            // A replayCount=0 across all segments means every step ran slot-by-slot at
+            // ~8 tok/s instead of the ~65 tok/s CUDA-graph-replay target.  No exception is
+            // thrown (the generation result is still valid) but the degradation is severe
+            // enough that it must be surfaced as a hard ERROR even without any debug flags.
+            try {
+                DspDebugger.GraphReplayReport replayReport =
+                        DspDebugger.attach(decoder).analyzeGraphReplay();
+                if (replayReport.errorMessage == null) {
+                    if (replayReport.planPhase == PlanPhase.REPLAYING) {
+                        int totalReplays = 0;
+                        for (DspDebugger.SegmentReplayInfo seg : replayReport.segments) {
+                            totalReplays += seg.replayCount;
+                        }
+                        if (totalReplays == 0) {
+                            log.error("[DSP INVARIANT VIOLATION] planPhase=REPLAYING but " +
+                                    "totalReplayCount=0 across {} segment(s). " +
+                                    "All execution steps ran slot-by-slot. " +
+                                    "Performance is SEVERELY degraded. " +
+                                    "Check logs for 'DSP ERROR' or 'DSP WARN' messages.",
+                                    replayReport.numSegments);
+                        }
+                    } else if (replayReport.planPhase != null
+                            && replayReport.planPhase != PlanPhase.REPLAYING) {
+                        // Plan never reached REPLAYING — every step was slot-by-slot or shapes-only.
+                        log.error("[DSP] planPhase={} after decode loop — CUDA graphs were never " +
+                                "captured. All segments resolved to slot-by-slot. " +
+                                "Performance matches slot-by-slot baseline (~8 tok/s vs ~65 tok/s target).",
+                                replayReport.planPhase);
+                    }
+                }
+            } catch (Throwable t) {
+                log.warn("[DSP] Post-loop replay invariant check failed: {}", t.getMessage());
+            }
         }
 
         long decodeLoopEnd = System.currentTimeMillis();
@@ -2281,14 +2358,15 @@ public class GenerationPipeline implements AutoCloseable {
 
         boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
 
-        log.info("[Perf] Native decode: {} tokens in {} ms ({} tok/s)",
-                decodeSteps, decodeLoopMs, String.format("%.1f", tokPerSec));
+        log.info("[Perf] Native decode: {} tokens in {} ms ({} tok/s, lateSteady={} tok/s)",
+                decodeSteps, decodeLoopMs, String.format("%.1f", tokPerSec),
+                String.format("%.1f", lateSteadyTokPerSec));
 
-        // Cleanup — skip closing reused ext input arrays (they belong to the executor).
-        // Closing them would destroy the device memory that the native plan tracks,
-        // breaking pointer stability on the next page.
+        // Cleanup — fixed-buffer decode inputs belong to the frozen executor plan.
+        // Closing them would destroy device memory tracked by the native plan and
+        // break pointer-stable replay on the next page.
         currentInputIds.close();
-        if (!reusingFrozenPlan) {
+        if (!fixedBuffers) {
             decodeEmbeddings.close();
             decodeInputIds.close();
             decodeCausalMask.close();
@@ -2327,6 +2405,47 @@ public class GenerationPipeline implements AutoCloseable {
                 NDArrayIndex.point(seqLen - 1), NDArrayIndex.all());
         staticBuf.get(NDArrayIndex.all(), NDArrayIndex.all(),
                 NDArrayIndex.point(cachePos), NDArrayIndex.all()).assign(slice);
+    }
+
+    private void logDspReplayState(String phase) {
+        if (!Boolean.getBoolean("vlm.benchmark.dspState")) {
+            return;
+        }
+        try {
+            DspDebugger.GraphReplayReport replay = DspDebugger.attach(decoder).analyzeGraphReplay();
+            if (replay.errorMessage != null) {
+                log.info("[DSP] {} replay unavailable: {}", phase, replay.errorMessage);
+                return;
+            }
+            log.info("[DSP] {} planPhase={} pointersStable={} fullyReplaying={} frozenExec={} segments={} replaying={} captureFailures={} stuck={}",
+                    phase,
+                    replay.planPhase,
+                    replay.pointersStable,
+                    replay.isFullyReplaying(),
+                    replay.frozenExecutionCount,
+                    replay.numSegments,
+                    replay.getReplayingSegments().size(),
+                    replay.getCaptureFailures().size(),
+                    replay.getStuckSegments().size());
+            for (DspDebugger.SegmentReplayInfo segment : replay.segments) {
+                log.info("[DSP] {} {}", phase, segment);
+            }
+        } catch (Throwable t) {
+            log.warn("[DSP] {} replay state unavailable: {}", phase, t.getMessage());
+        }
+    }
+
+    /**
+     * Resolve an external input index by name from a captured plan key order.
+     */
+    private static int resolveExtInputIdx(String[] externalInputKeys, String name) {
+        if (name == null || externalInputKeys == null) return -1;
+        for (int i = 0; i < externalInputKeys.length; i++) {
+            if (name.equals(externalInputKeys[i])) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**

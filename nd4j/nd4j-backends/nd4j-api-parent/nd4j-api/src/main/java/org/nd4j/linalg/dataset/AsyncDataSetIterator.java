@@ -421,10 +421,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
                         queue.put(smth);
 
                 }
-                queue.put(terminator);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                // do nothing
                 shouldWork.set(false);
             } catch (RuntimeException e) {
                 throwable = e;
@@ -433,9 +431,12 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 throwable = new RuntimeException(e);
                 throw new RuntimeException(e);
             } finally {
-                //log.info("Trying destroy...");
-                //if (useWorkspace)
-                //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
+                // Always put terminator so consumer never blocks forever on buffer.take()
+                try {
+                    queue.put(terminator);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
                 synchronized (this) {
                     isShutdown = true;
                     this.notifyAll();

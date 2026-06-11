@@ -165,6 +165,20 @@ struct TritonKernelArg {
     }
     return false;
   }
+
+  /**
+   * DEPRECATED: Use the set-based check in CompiledKernel::hasDynamicArgsInSegment instead.
+   *
+   * This range-based check compares slotIndex against op-slot boundaries, but
+   * slotIndex holds OUTPUT slot indices (from wiring.outputSlotIndices), which
+   * can exceed the op-slot range in graphs with multi-output or wide ops.
+   * The set-based variant in TritonGraphBackend.h is the correct implementation.
+   */
+  bool isDynamicInSegment(int segStartSlot, int segEndSlot) const {
+    if (slotIndex < 0) return true;                         // external input
+    if (slotIndex >= segStartSlot && slotIndex <= segEndSlot) return true;  // segment intermediate
+    return false;
+  }
 };
 
 /**

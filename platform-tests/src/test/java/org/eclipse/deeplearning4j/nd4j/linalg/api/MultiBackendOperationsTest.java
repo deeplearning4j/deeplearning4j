@@ -116,8 +116,8 @@ public class MultiBackendOperationsTest {
     void testConvolutionAllBackends() {
         // NCHW format: batch=1, channels=3, height=28, width=28
         INDArray input = Nd4j.rand(DataType.FLOAT, 1, 3, 28, 28);
-        // OIHW format: outChannels=16, inChannels=3, kernelH=3, kernelW=3
-        INDArray weights = Nd4j.rand(DataType.FLOAT, 16, 3, 3, 3);
+        // ND4J conv2d expects weights in [kH, kW, inChannels, outChannels] format
+        INDArray weights = Nd4j.rand(DataType.FLOAT, 3, 3, 3, 16);
 
         // This will use the appropriate helper if available
         Conv2DConfig config2d = Conv2DConfig.builder()

@@ -243,11 +243,12 @@ public class TestEarlyStopping extends BaseDL4JTest {
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150, 150);
+        DataSetIterator irisIterScore = new IrisDataSetIterator(150, 150);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
                         new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                                         .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true))
+                                        .scoreCalculator(new DataSetLossCalculator(irisIterScore, true))
                                         .evaluateEveryNEpochs(2).modelSaver(saver).build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, irisIter);

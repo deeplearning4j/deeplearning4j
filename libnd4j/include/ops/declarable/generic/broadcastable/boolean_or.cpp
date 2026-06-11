@@ -20,6 +20,7 @@
 // Created by raver on 6/6/2018.
 //
 
+#include <ops/BroadcastBoolOpsTuple.h>
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_boolean_or)
 
@@ -27,7 +28,7 @@
 
 namespace sd {
 namespace ops {
-BROADCASTABLE_OP_IMPL(boolean_or, 0, 0) {
+BROADCASTABLE_BOOL_OP_IMPL(boolean_or, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -35,11 +36,11 @@ BROADCASTABLE_OP_IMPL(boolean_or, 0, 0) {
   BROADCAST_CHECK_EMPTY(x, y, z);
 
   auto tZ = BroadcastHelper::broadcastApply(
-      BroadcastOpsTuple::custom(scalar::LogicalOr, pairwise::LogicalOr, broadcast::LogicalOr), x, y, z);
+      BroadcastBoolOpsTuple::custom(scalar::Or, pairwise::Or, broadcast::Or), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;
   else if (tZ != z)
-    THROW_EXCEPTION("boolean_and: result was overwritten");
+    OVERWRITE_RESULT(tZ);
 
   return Status::OK;
 }

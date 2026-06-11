@@ -25,7 +25,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.math3.linear.LUDecomposition;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -1273,7 +1272,6 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("MatrixDeterminant does not have a gradient yet.")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testMatrixDeterminant(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -1295,7 +1293,6 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("MatrixDeterminant does not have a gradient yet.")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testDeterminant22(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -1320,7 +1317,33 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("MatrixDeterminant does not have a gradient yet.")
+    @Tag(TagNames.NEEDS_VERIFY)
+    public void testMatrixInverseCorrectness(Nd4jBackend backend) {
+        // Verify matrix_inverse op produces correct results for a 2x2 matrix
+        // A = [[1, 2.5], [3.5, 4.5]], det = -4.25
+        // Expected inverse: [[-1.0588.., 0.5882..], [0.8235.., -0.2353..]]
+        INDArray in = Nd4j.create(new double[][]{{1, 2.5}, {3.5, 4.5}});
+        // Use MatrixInverse directly - no pre-allocated output, let the op create it
+        org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixInverse miOp =
+            new org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixInverse(in.dup());
+        INDArray[] results = Nd4j.exec(miOp);
+        INDArray out = results[0];
+
+        double det = -4.25;
+        double expectedInv00 = 4.5 / det;   // -1.0588..
+        double expectedInv01 = -2.5 / det;  //  0.5882..
+        double expectedInv10 = -3.5 / det;  //  0.8235..
+        double expectedInv11 = 1.0 / det;   // -0.2353..
+
+        assertNotNull(out, "MatrixInverse output should not be null");
+        assertEquals(expectedInv00, out.getDouble(0, 0), 1e-4, "inv[0,0]");
+        assertEquals(expectedInv01, out.getDouble(0, 1), 1e-4, "inv[0,1]");
+        assertEquals(expectedInv10, out.getDouble(1, 0), 1e-4, "inv[1,0]");
+        assertEquals(expectedInv11, out.getDouble(1, 1), 1e-4, "inv[1,1]");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testMatrixDeterminant3(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -1353,7 +1376,6 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("MatrixDeterminant does not have a gradient yet.")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testMatrixDeterminant4(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -1580,7 +1602,6 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Adam: 5/11/22: invalid with latest indexing changes")
     public void testGather(Nd4jBackend backend) {
         List<INDArray> inArrs = new ArrayList<>();
         List<Integer> axis = new ArrayList<>();

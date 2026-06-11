@@ -437,6 +437,22 @@ std::string DspDiagnostics::generateJsonReport() const {
   }
   os << "\n  },\n";
 
+  // Segment terminal summaries — persistent, never overwritten by ring buffer
+  os << "  \"segmentTerminals\": [\n";
+  for (int i = 0; i < segTerminalCount_; i++) {
+    const auto& r = segTerminals_[i];
+    if (i > 0) os << ",\n";
+    os << "    { \"seg\": [" << r.startSlot << ", " << r.endSlot << "]"
+       << ", \"execCount\": " << r.execCountAtTransition
+       << ", \"outcome\": " << r.outcome
+       << ", \"phase\": \"" << r.phase << "\""
+       << ", \"reason\": \"" << r.reason << "\""
+       << ", \"backend\": \"" << r.backend << "\""
+       << ", \"timestampUs\": " << r.timestampUs
+       << " }";
+  }
+  os << "\n  ],\n";
+
   // Events array
   os << "  \"events\": [\n";
   int64_t totalEvents = writePos_.load(std::memory_order_relaxed);
@@ -515,6 +531,36 @@ void DspDiagnostics::clear() {
   planStartUs_     = 0;
   planTotalUs_     = 0;
   lastStepStartUs_ = 0;
+  segTerminalCount_ = 0;
+}
+
+// ─── Segment terminal records ────────────────────────────────────────────────
+
+void DspDiagnostics::recordSegmentTerminal(int startSlot, int endSlot, int execCount,
+                                            int outcome, const char* phase,
+                                            const char* reason, const char* backend) {
+  std::lock_guard<std::mutex> lock(eventMutex_);
+  if (segTerminalCount_ >= MAX_SEGMENT_TERMINALS) return;
+
+  auto& r = segTerminals_[segTerminalCount_++];
+  r.startSlot = startSlot;
+  r.endSlot = endSlot;
+  r.execCountAtTransition = execCount;
+  r.outcome = outcome;
+  r.timestampUs = nowUs();
+
+  if (phase) {
+    strncpy(r.phase, phase, sizeof(r.phase) - 1);
+    r.phase[sizeof(r.phase) - 1] = '\0';
+  }
+  if (reason) {
+    strncpy(r.reason, reason, sizeof(r.reason) - 1);
+    r.reason[sizeof(r.reason) - 1] = '\0';
+  }
+  if (backend) {
+    strncpy(r.backend, backend, sizeof(r.backend) - 1);
+    r.backend[sizeof(r.backend) - 1] = '\0';
+  }
 }
 
 // ─── Address snapshot for graph replay validation ────────────────────────────
@@ -747,6 +793,13 @@ void DspDiagnostics::reportSegmentBucketSummary(
     }
     fflush(stdout);
   }
+}
+
+void DspDiagnostics::recordGraphStateDump(const char* tag, const char* jsonSummary) {
+  if (!isEnabled(DSP_DIAG_GRAPH_REPLAY)) return;
+  recordEvent(DSP_DIAG_GRAPH_REPLAY, -1, -1, -1, nullptr, 0,
+              "GRAPH_STATE_DUMP tag=%s: %s", tag ? tag : "?",
+              jsonSummary ? jsonSummary : "{}");
 }
 
 }  // namespace graph

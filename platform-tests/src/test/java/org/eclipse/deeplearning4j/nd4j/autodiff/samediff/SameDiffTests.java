@@ -2993,7 +2993,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testExternalErrorsSimple(Nd4jBackend backend) {
         INDArray externalGrad = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
@@ -4220,15 +4219,21 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(casted.dataType(), DataType.FLOAT);
     }
 
-    @Test
-    @Disabled // casted shape is null
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void castShapeTestEmpty(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable x = sd.constant(Nd4j.empty(DataType.INT));
         SDVariable casted = x.castTo(DataType.FLOAT);
 
-        assertEquals(casted.dataType(), DataType.FLOAT);
-        assertTrue(casted.getShapeDescriptor().isEmpty());
+        assertEquals(DataType.FLOAT, casted.dataType());
+        // Evaluate the graph to populate the output array
+        java.util.HashMap<String, INDArray> placeholders = new java.util.HashMap<>();
+        Map<String, INDArray> outputs = sd.output(placeholders, casted.name());
+        INDArray result = outputs.get(casted.name());
+        assertNotNull(result, "cast output should not be null");
+        assertTrue(result.isEmpty(), "cast of empty input should produce empty output");
+        assertEquals(DataType.FLOAT, result.dataType(), "cast output should have FLOAT dtype");
     }
 
     /**

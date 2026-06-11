@@ -461,6 +461,20 @@ struct NativeSlot {
    */
   uint32_t generation_ = 0;
 
+  /**
+   * Primary buffer pointers snapshotted at freeze time (detectFrozenConstants).
+   * One entry per output slot, indexed by output ordinal (0..numOutputs-1).
+   * Null pointer means "not snapshotted" (e.g. slot was not frozen or output
+   * was null at freeze time).
+   *
+   * Used in the frozen constant skip path to detect buffer reallocation:
+   * if the current primary pointer differs from the frozen snapshot, the buffer
+   * was reallocated and the frozen value is lost — fall through to re-execute.
+   *
+   * Size: 0 until the slot is frozen, then resized to numOutputs.
+   */
+  std::vector<void*> frozenOutputPtrs;
+
   NativeSlot() = default;
 
   // ── Phase queries (delegate to slotPhase) ──────────────────────────
@@ -482,6 +496,10 @@ struct NativeSlot {
   bool isIdentityOp()    const { return hasOpTrait(sd::ops::OP_TRAIT_IDENTITY); }
   bool isViewCapableOp() const { return hasOpTrait(sd::ops::OP_TRAIT_VIEW_PRODUCING); }
   bool usesExternalWorkspace() const { return hasOpTrait(sd::ops::OP_TRAIT_EXTERNAL_WORKSPACE); }
+  /** Output size depends on runtime data values (Where 1-arg, Unique, NonZero, NMS).
+   *  These ops require host synchronization during execution to determine output
+   *  tensor dimensions, which invalidates CUDA graph capture streams. */
+  bool hasDynamicOutputSize() const { return hasOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE); }
 
   /** View or identity — aliases input buffer without computing. */
   bool aliasesInput() const { return isViewCapableOp() || isIdentityOp(); }
@@ -574,6 +592,14 @@ struct NativeSlot {
   // this method instead of ad-hoc flag checks.
   bool isCapturable(bool mergeViews = true) const {
     if (cf.controlFlowType != CF_NONE) return false;
+    // Ops with dynamic output size (e.g. single-arg Where, Unique, NonZero, NMS)
+    // require host synchronization during execution to determine output tensor
+    // dimensions. This invalidates CUDA graph capture streams (cudaStreamCaptureStatusInvalidated).
+    // Note: DATA_DEPENDENT alone is NOT sufficient — reshape, concat, argmax etc.
+    // are DATA_DEPENDENT (shape fn reads tensor data) but their execution is
+    // regular GPU kernels safe for capture. Only DYNAMIC_OUTPUT_SIZE ops actually
+    // perform host sync during execution.
+    if (hasDynamicOutputSize()) return false;
     if (!mergeViews && (isViewCapableOp() || isIdentityOp() || frozenConstantSlot()))
       return false;
     return true;
@@ -915,6 +941,12 @@ struct GraphSegmentExec {
   // slot-by-slot instead. Set by ZERO_NODE_REJECT in the capture path.
   bool captureProducedNoKernels = false;
 
+  // Why this segment reached a terminal outcome (ZERO_KERNEL_SBS, NOT_FUSIBLE,
+  // COMPILE_FAILED, etc.). Set by SegmentLifecycle:: methods at transition time.
+  // Persists across ring buffer overwrites — always available in diagnostic JSON.
+  // nullptr while outcome is PENDING or GRAPH_REPLAY.
+  const char* terminalReason = nullptr;
+
   // OOM retry mechanism — now derived from segPhase.oomRetryCount/oomRetryAfterExec.
   // Kept as fields during migration; will be removed when all callers use segPhase.
   int captureOomRetries = 0;
@@ -977,8 +1009,32 @@ struct GraphSegmentExec {
   int addrKeyStableCount = 0;
   int slotAddrStableCount = 0;
 
-  // Native ordered range ops captured in graph — must not be re-executed after replay.
+  // True when native-only monolithic capture included gap ops (cuBLAS matmul etc.)
+  // in the CUDA graph. The frozen fast path checks this to know monolithic replay
+  // covers ALL ops — no live gap execution needed.
   bool gapOpsCapturedInGraph = false;
+
+  // ── Capture seal: consolidated state update at capture completion ──────
+  // Sets all capture-related fields atomically. Called from SegmentLifecycle::markCaptured.
+  void sealCapture(LongType inputAddrKey, LongType createValueKey,
+                   LongType slotAddrHash, const char* backendName,
+                   bool gapsCaptured) {
+    capturedInputAddrKey = inputAddrKey;
+    capturedCreateValueKey = createValueKey;
+    capturedSlotAddrHash = slotAddrHash;
+    gapOpsCapturedInGraph = gapsCaptured;
+    if (compiledByBackend.empty()) compiledByBackend = backendName;
+  }
+
+  // Query: does the monolithic graph include gap ops?
+  bool hasGapsInGraph() const { return gapOpsCapturedInGraph; }
+
+  // ── Replay handle mutation tracker ──────────────────────────────────────────
+  // Records every create/capture/replay/invalidate/destroy event on this
+  // segment's replay handle. Ring buffer of 128 events + aggregate counters.
+  // Gated behind DSP_DIAG_GRAPH_REPLAY category when recording via lifecycle
+  // methods. dump() and toJsonSummary() always work (read-only).
+  ReplayHandleTracker handleTracker;
 
   // View recipe chain — captures view-producing ops (reshape, permute,
   // expand_dims, squeeze, strided_slice) so they can be installed during
@@ -1021,6 +1077,9 @@ struct GraphSegmentExec {
     lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
     executionCount = 0;
     compilationFailed = false;
+    captureProducedNoKernels = false;
+    noFusibleOps = false;
+    terminalReason = nullptr;
     captureOomRetries = 0;
     captureRetryAfterExec = 0;
     lastReplayExecCount = 0;
@@ -1044,6 +1103,7 @@ struct GraphSegmentExec {
     addrKeyStableCount = 0;
     slotAddrStableCount = 0;
     gapOpsCapturedInGraph = false;
+    handleTracker.reset();
     viewRecipes = ViewRecipeChain();
     compositeReplaySchedule = ReplaySchedule();
     replaySignatureHash = 0;
@@ -1525,7 +1585,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     auto* db = staging->dataBuffer();
     if (db == nullptr || db->isClosed()) return nullptr;
     if (staging->specialBuffer() == nullptr) return nullptr;
-    if (staging->shapeInfo() != nullptr) {
+    // Validate shapeInfo — null shapeInfo means the staging NDArray was freed/poisoned.
+    // Return nullptr here to prevent Java crash (Java would call getOpaqueNDArrayShapeInfo
+    // which dereferences the NDArray's shapeInfo_ field).
+    if (staging->shapeInfo() == nullptr) return nullptr;
+    {
       LongType rank = staging->shapeInfo()[0];
       if (rank < 0 || rank > SD_MAX_RANK) {
         DSP_DIAG(MEMORY,
@@ -2223,6 +2287,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Segment cleanup — public so SegmentLifecycle::invalidateForRebuild can call it.
   void cleanupSegmentForRebuild(GraphSegment& seg, const char* reason);
 
+  // Dump full graph state for all segments — phases, outcomes, replay handle
+  // tracker summaries, captured address keys. Routes through DspDiagnostics.
+  // tag: caller-supplied label (e.g. "pre-replay", "post-capture", "error-dump")
+  void dumpSegmentGraphState(const char* tag) const;
+
   // Clear all nativeRangeSegments_ entries whose slot range overlaps [startSlot, endSlot].
   // Called from invalidateForRebuild so that CPU replay handles captured by the
   // NativeSlotExecutor lambda are not replayed with stale slot arrays after
@@ -2256,6 +2325,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     for (int i = startSlot; i <= endSlot && i < numSlots_; i++) {
       // SlotPhase::reset() emits DSP_DIAG(LIFECYCLE) with old->new state per slot.
       slots_[i].slotPhase.reset();
+      // Clear frozen buffer pointer snapshot so detectFrozenConstants re-snapshots
+      // fresh pointers when the slot is re-frozen after re-warmup.
+      slots_[i].frozenOutputPtrs.clear();
       for (int o = 0; o < slots_[i].wiring.numOutputs; o++) {
         int outSi = slots_[i].wiring.outputSlotIndices[o];
         if (outSi < 0 || outSi >= totalOutputSlots_ || outputSlots_ == nullptr) continue;
@@ -2535,6 +2607,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool* slotIsDead_;                       // Per-output-slot dead flag (reset each execute)
   int slotIsDeadSize_;                     // = totalOutputSlots_
   static constexpr int MAX_LOOP_ITERATIONS = 10000000;  // Safety limit
+  int cfLoopBackStep_;                     // Set by NextIteration to signal phaseReplay to jump back (-1 = no jump)
 
   // ── Untracked output cache ──────────────────────────────────────────
   // Ops with untracked outputs (outputSlotIndices[i] < 0) allocate a
@@ -2620,6 +2693,39 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   //          one or more wrappers were refreshed), or -1 if any view-producer
   //          slot could not be refreshed (caller must trigger graph invalidation).
   int refreshStaleViewWrappersInSegment(GraphSegment& seg, NDArray** externalArrays, int numExt);
+
+  /**
+   * Resolve an input for a view op, preferring the staging buffer for external inputs.
+   *
+   * When a view op aliases an external input, the view wrapper must point into the
+   * plan-owned staging buffer (stable address) rather than the Java-managed placeholder
+   * (address changes every frame). cuBLAS kernels baked into the CUDA graph have staging
+   * buffer addresses — if views resolve through the original placeholder, the output slot
+   * addresses drift and the graph reads from freed/wrong memory (error 700).
+   *
+   * @param srcIdx  Slot wiring source index: >= 0 for internal slot, < 0 for external
+   * @param externalArrays  Java-provided external input arrays
+   * @param numExt  Number of external inputs
+   * @return The staging NDArray* if available, else the original external array, else outputSlots_[srcIdx]
+   */
+  inline NDArray* resolveViewInput(int srcIdx, NDArray** externalArrays, int numExt) const {
+    if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+      return outputSlots_[srcIdx];
+    } else if (srcIdx < 0) {
+      int extIdx = -(srcIdx + 1);
+      if (extIdx >= numExt) return nullptr;
+      // Prefer staging buffer: stable address that matches what the CUDA graph captured
+      if (placeholderStagingBuffers_ != nullptr && extIdx < numExternalInputs_) {
+        NDArray* staging = placeholderStagingBuffers_[extIdx];
+        if (staging != nullptr && staging->dataBuffer() != nullptr
+            && staging->dataBuffer()->isValid() && staging->specialBuffer() != nullptr) {
+          return staging;
+        }
+      }
+      return externalArrays[extIdx];
+    }
+    return nullptr;
+  }
   // Post-graph-replay fixup: ticks device actuality on all slot outputs (graph
   // replay writes device memory without registerSpecialUse), then re-executes
   // any host-only ops (0 CUDA graph nodes) that were recorded but not replayed.

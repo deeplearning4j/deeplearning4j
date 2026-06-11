@@ -7256,7 +7256,9 @@ public class Nd4j {
             dataBuffer = Nd4j.createBuffer(dtype, length, false);
         } else {
             java.nio.ByteOrder dataByteBufferOrder = FlatBuffersMapper.getOrderFromByte(array.byteOrder());
-            int bytesPerElement = Nd4j.sizeOfDataType(dtype);
+            // UTF8 has variable-width elements; sizeOfDataType throws for UTF8, so use 0 to skip the
+            // size-based expectedBytes check (the ternary below falls back to bufLen when 0).
+            int bytesPerElement = (dtype == DataType.UTF8) ? 0 : Nd4j.sizeOfDataType(dtype);
             int bufLen = array.bufferLength();
             long expectedBytes = (bytesPerElement > 0) ? length * bytesPerElement : bufLen;
 

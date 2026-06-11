@@ -24,6 +24,13 @@ void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext *lc, int op
                                                    const sd::LongType *dZShapeInfo, void *extraParams) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
 
+  // Empty array fast-path: if any operand has a null data pointer or an empty shape,
+  // there is nothing to compute. Handles Nd4j.empty() singletons with null data buffers.
+  if (hX == nullptr || hY == nullptr || hZ == nullptr
+      || shape::isEmptyConst(hZShapeInfo) || shape::length(hZShapeInfo) == 0) {
+    return;
+  }
+
   auto func = PRAGMA_THREADS_FOR {
     // PairWiseIntTransform only takes ONE template parameter (X type)
     BUILD_SINGLE_SELECTOR(xType, functions::pairwise_transforms::PairWiseIntTransform,

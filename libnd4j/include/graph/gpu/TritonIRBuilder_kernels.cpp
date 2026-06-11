@@ -1337,8 +1337,12 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   }
 
   // Load Q tile [BLOCK_M, headDim]
-  // Q pointer offsets: qBase + qIndices[:, None] * headDim + rangeHd[None, :]
-  auto qMExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndices, 1);  // [BM, 1]
+  // Q pointer offsets: qBase + qIndicesClamped[:, None] * headDim + rangeHd[None, :]
+  // Clamp Q indices for pointer computation (same rationale as K clamping above).
+  auto seqQMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, seqQ - 1), 32);
+  auto seqQMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32BmType, seqQMinus1);
+  auto qIndicesClamped = builder.create<mlir::arith::MinSIOp>(loc, qIndices, seqQMinus1Splat);
+  auto qMExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndicesClamped, 1);  // [BM, 1]
   auto hdExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHd, 0);   // [1, HD]
 
   auto i32BmHdType = mlir::RankedTensorType::get({blockM, headDimPadded}, i32Type);
@@ -1420,8 +1424,19 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto splatJOffset = builder.create<mlir::triton::SplatOp>(loc, i32BnType, jIdxI32);
   auto kIndices = builder.create<mlir::arith::AddIOp>(loc, splatJOffset, rangeN);
 
+  // Clamp K indices for pointer computation: min(kIndices, seqK - 1).
+  // Triton masked loads still issue memory transactions for masked-out lanes —
+  // the hardware accesses the address then discards the result. During CUDA graph
+  // replay, the last tile's OOB pointer addresses (past the K/V buffer) can land
+  // on unmapped memory, causing Xid 13 GPU faults. Clamping ensures every pointer
+  // stays within the buffer while the mask still zeros the loaded values.
+  auto seqKMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, seqK - 1), 32);
+  auto seqKMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, seqKMinus1);
+  auto kIndicesClamped = builder.create<mlir::arith::MinSIOp>(loc, kIndices, seqKMinus1Splat);
+
   // Load K tile [BLOCK_N, headDim]
-  auto kNExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndices, 1);  // [BN, 1]
+  // Use clamped indices for pointer computation, original for mask
+  auto kNExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndicesClamped, 1);  // [BN, 1]
   auto hdExpandedK = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHd, 0);  // [1, HD]
 
   auto i32BnHdType = mlir::RankedTensorType::get({blockN, headDimPadded}, i32Type);
@@ -1476,9 +1491,17 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
     auto pastKLoaded = castTo(builder, loc, pastKLoadedRaw, f32Type);
 
-    // Current K: compute adjusted indices (kIndices - pastSeq) and BSHD offsets
-    auto adjustedK = builder.create<mlir::arith::SubIOp>(loc, kIndices, pastSeqSplat);
-    auto adjustedKExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, adjustedK, 1);  // [BN, 1]
+    // Current K: compute adjusted indices (kIndicesClamped - pastSeq) and BSHD offsets
+    // Use clamped K indices to prevent OOB pointer computation for masked-out lanes
+    auto adjustedK = builder.create<mlir::arith::SubIOp>(loc, kIndicesClamped, pastSeqSplat);
+    // Clamp adjusted indices to [0, seqKVCur - 1] for safe pointer computation
+    auto zeroConst = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+    auto zeroSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, zeroConst);
+    auto adjustedKLow = builder.create<mlir::arith::MaxSIOp>(loc, adjustedK, zeroSplat);
+    auto seqKVCurMinus1Const = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, seqKVCur - 1), 32);
+    auto seqKVCurMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, seqKVCurMinus1Const);
+    auto adjustedKClamped = builder.create<mlir::arith::MinSIOp>(loc, adjustedKLow, seqKVCurMinus1Splat);
+    auto adjustedKExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, adjustedKClamped, 1);  // [BN, 1]
     auto curKvRowStrideSplat = builder.create<mlir::triton::SplatOp>(loc,
         mlir::RankedTensorType::get({blockN, 1}, i32Type), curKvRowStride);
     auto curKRowOffsets = builder.create<mlir::arith::MulIOp>(loc, adjustedKExpanded, curKvRowStrideSplat);
@@ -1582,15 +1605,17 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
       biasBaseScalar = builder.create<mlir::arith::MulIOp>(loc, batchIdx, headSliceSize);
     }
 
-    // Q row offsets within bias: qIndices * biasSeqK  → [BM, 1] → broadcast to [BM, BN]
-    auto qBiasRowExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndices, 1);  // [BM, 1]
+    // Q row offsets within bias: qIndicesClamped * biasSeqK  → [BM, 1] → broadcast to [BM, BN]
+    // Use clamped indices for pointer safety (same rationale as Q/K clamping)
+    auto qBiasRowExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndicesClamped, 1);  // [BM, 1]
     auto biasSeqKSplat = builder.create<mlir::triton::SplatOp>(loc,
         mlir::RankedTensorType::get({blockM, 1}, i32Type), biasSeqKConst);
     auto biasRowOffsets = builder.create<mlir::arith::MulIOp>(loc, qBiasRowExpanded, biasSeqKSplat);
     auto biasRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBnType, biasRowOffsets);
 
-    // K column offsets: kIndices → [1, BN] → broadcast to [BM, BN]
-    auto kBiasColExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndices, 0);  // [1, BN]
+    // K column offsets: kIndicesClamped → [1, BN] → broadcast to [BM, BN]
+    // Use clamped indices for pointer safety
+    auto kBiasColExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndicesClamped, 0);  // [1, BN]
     auto kBiasColBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBnType, kBiasColExpanded);
 
     // Final: base + qRow*seqK + kCol
@@ -1686,8 +1711,15 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
     auto pastVLoaded = castTo(builder, loc, pastVLoadedRaw, f32Type);
 
     // Current V: BSHD offsets (same computation as current K)
-    auto adjustedKV = builder.create<mlir::arith::SubIOp>(loc, kIndices, pastSeqSplatV);
-    auto adjustedKVExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, adjustedKV, 1);
+    // Use clamped K indices for pointer safety (same as current K path)
+    auto adjustedKV = builder.create<mlir::arith::SubIOp>(loc, kIndicesClamped, pastSeqSplatV);
+    auto adjustedKVZero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+    auto adjustedKVZeroSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, adjustedKVZero);
+    auto adjustedKVLow = builder.create<mlir::arith::MaxSIOp>(loc, adjustedKV, adjustedKVZeroSplat);
+    auto seqKVCurM1ForV = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, seqKVCur - 1), 32);
+    auto seqKVCurM1ForVSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, seqKVCurM1ForV);
+    auto adjustedKVClamped = builder.create<mlir::arith::MinSIOp>(loc, adjustedKVLow, seqKVCurM1ForVSplat);
+    auto adjustedKVExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, adjustedKVClamped, 1);
     auto curVRowStrideSplat = builder.create<mlir::triton::SplatOp>(loc,
         mlir::RankedTensorType::get({blockN, 1}, i32Type), curKvRowStride);
     auto curVRowOffsets = builder.create<mlir::arith::MulIOp>(loc, adjustedKVExpanded, curVRowStrideSplat);

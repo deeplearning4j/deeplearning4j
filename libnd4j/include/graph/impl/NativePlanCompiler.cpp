@@ -694,6 +694,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   plan->hasControlFlow_ = false;
   plan->loopRegions_ = nullptr;
   plan->numLoopRegions_ = 0;
+  plan->cfLoopBackStep_ = -1;
   for (int s = 0; s < numSteps; s++) {
     if (plan->slots_[s].cf.controlFlowType != CF_NONE) {
       plan->hasControlFlow_ = true;

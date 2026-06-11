@@ -244,9 +244,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     zb);
         } else {
             // Use dimArray which was validated earlier (null check on data buffer)
-            // If dimArray had null data, we use the normalized dimension array instead
-            INDArray dimsToUse = (dimArray != null && dimArray.data() != null) ? dimArray : Nd4j.createFromArray(dimension);
-            OpaqueNDArray fromDims = OpaqueNDArray.fromINDArray(dimsToUse);
+            // If dimArray had null data, we use the normalized dimension array instead.
+            // Guard: if dimension is also null/empty, pass null for reduce-all semantics.
+            OpaqueNDArray fromDims;
+            if (dimArray != null && dimArray.data() != null) {
+                fromDims = OpaqueNDArray.fromINDArray(dimArray);
+            } else if (dimension != null && dimension.length > 0) {
+                fromDims = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimension));
+            } else {
+                fromDims = null;
+            }
             getNativeOps().execIndexReduce(dummy,op.opNum(),xb,getPointerForExtraArgs(op,x.dataType()),zb,fromDims);
         }
 
@@ -507,8 +514,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else {
             if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
-            INDArray dimsArray = Nd4j.createFromArray(dimension);
-            OpaqueNDArray dims = OpaqueNDArray.fromINDArray(dimsArray);
+            // Compute the OpaqueNDArray wrapper for the dimension array.
+            // For reduce-all (null or empty dimension), use null for ops that don't require dims
+            // (REDUCE_FLOAT, REDUCE_SAME) but use an empty INDArray for ops whose native binding
+            // requires a non-null @ByVal OpaqueNDArray dimension parameter (REDUCE_LONG, REDUCE_BOOL).
+            // Passing Java null for a @ByVal JavaCPP parameter throws NullPointerException.
+            OpaqueNDArray dims = (dimension == null || dimension.length == 0)
+                    ? null
+                    : OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimension));
+            // For REDUCE_LONG and REDUCE_BOOL the native binding always requires a dimension OpaqueNDArray.
+            // When performing a full reduce-all (dims == null), supply an empty LONG array so
+            // JavaCPP does not throw "Pointer address of argument N is NULL" for the @ByVal param.
+            OpaqueNDArray emptyDimsForReduceLongBool = null; // lazily created below if needed
 
             if (ret.isScalar()) {
                 if (extraz.get() == null)
@@ -518,13 +535,25 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         getNativeOps().execReduceFloat(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case REDUCE_BOOL:
-                        getNativeOps().execReduceBool(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb,dims);
+                        if (dims == null) {
+                            if (emptyDimsForReduceLongBool == null)
+                                emptyDimsForReduceLongBool = OpaqueNDArray.fromINDArray(Nd4j.empty(DataType.LONG));
+                            getNativeOps().execReduceBool(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, emptyDimsForReduceLongBool);
+                        } else {
+                            getNativeOps().execReduceBool(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, dims);
+                        }
                         break;
                     case REDUCE_SAME:
                         getNativeOps().execReduceSame(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case REDUCE_LONG:
-                        getNativeOps().execReduceLong(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb,dims);
+                        if (dims == null) {
+                            if (emptyDimsForReduceLongBool == null)
+                                emptyDimsForReduceLongBool = OpaqueNDArray.fromINDArray(Nd4j.empty(DataType.LONG));
+                            getNativeOps().execReduceLong(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, emptyDimsForReduceLongBool);
+                        } else {
+                            getNativeOps().execReduceLong(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, dims);
+                        }
                         break;
                     default:
                         throw new UnsupportedOperationException("Unsupported op used in reduce: " + op.getOpType());
@@ -601,9 +630,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
 
-        // Use validated dimension array for native calls
-        INDArray dimsToUse = (dimArray != null && dimArray.data() != null) ? dimArray : Nd4j.createFromArray(dimension);
-        OpaqueNDArray fromDims = OpaqueNDArray.fromINDArray(dimsToUse);
+        // Use validated dimension array for native calls.
+        // Guard: if dimension is null/empty and dimArray has no data, pass null for reduce-all.
+        OpaqueNDArray fromDims;
+        if (dimArray != null && dimArray.data() != null) {
+            fromDims = OpaqueNDArray.fromINDArray(dimArray);
+        } else if (dimension != null && dimension.length > 0) {
+            fromDims = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimension));
+        } else {
+            fromDims = null;
+        }
 
         switch (op.getOpType()) {
             case SCALAR:

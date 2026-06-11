@@ -147,6 +147,7 @@ DIAG_CAPTURE=false
 DSP_ASSERT=false
 SKIP_AUDIT=false
 AUDIT_ONLY=false
+SKIP_FINAL_VALIDATE=false
 # Gap capture tuning (empty = use C++ defaults)
 GAP_MAX_SLOTS=""
 GAP_BLOCK_EXT_WS=""
@@ -320,6 +321,10 @@ while [[ $# -gt 0 ]]; do
             SKIP_AUDIT=true
             shift
             ;;
+        --skip-final-validate|--skip-validation)
+            SKIP_FINAL_VALIDATE=true
+            shift
+            ;;
         --audit-only)
             AUDIT_ONLY=true
             shift
@@ -365,8 +370,8 @@ while [[ $# -gt 0 ]]; do
             echo "       [--draft] [--speculative K] [--no-cublas-workspace] [--no-freeze]"
             echo "       [--triton-tf32] [--no-triton-tf32]"
 echo "       [--disable-view-fastpath] [--disable-cast-hwm] [--disable-ws-skip]"
-echo "       [--dsp-timing]"
-echo "       [--diag-replay] [--diag-stream] [--diag-device] [--diag-all] [--diag-json FILE]"
+            echo "       [--dsp-timing] [--skip-final-validate]"
+            echo "       [--diag-replay] [--diag-stream] [--diag-device] [--diag-all] [--diag-json FILE]"
 echo "       [--diag-step] [--diag-d2d] [--diag-capture]"
 echo "       [--dsp-assert]"
 echo "       [--max-gap-slots N] [--gap-block-ext-ws] [--no-gap-block-ext-ws]"
@@ -427,6 +432,7 @@ elif $SKIP_AUDIT; then
 else
     echo "  Audit:    ON (suite: $AUDIT_SUITE, timeout: ${AUDIT_TIMEOUT}s)"
 fi
+$SKIP_FINAL_VALIDATE && echo "  Final validation: SKIPPED"
 echo "═══════════════════════════════════════════════════════════"
 echo ""
 
@@ -499,6 +505,10 @@ fi
 if $DRAFT_MODEL; then
     EXTRA_ARGS="$EXTRA_ARGS -Dvlm.speculative.draft=true"
     echo "  Draft model:  SmolLM2-135M (K=$SPECULATIVE_K)"
+fi
+
+if $SKIP_FINAL_VALIDATE; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.test.skipFinalValidate=true"
 fi
 
 # Debug mode flags

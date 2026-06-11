@@ -207,6 +207,24 @@ class TritonGraphBackend : public GraphBackend {
     int cachedGlobalScratchDeviceId;
 #endif
 
+    /**
+     * Returns true if any buffer arg references a dynamic slot (external input
+     * or intermediate whose output slot index is in the segment's owned set).
+     * Only sub-kernels whose args are ALL frozen weights return false.
+     *
+     * IMPORTANT: segmentOwnedOutputSlots must contain the actual output slot
+     * indices from wiring.outputSlotIndices, NOT the op-slot range. These
+     * numbering spaces diverge in multi-output/wide ops.
+     */
+    bool hasDynamicArgsInSegment(const std::unordered_set<int>& segmentOwnedOutputSlots) const {
+      if (!useIndirectArgs) return false;
+      for (const auto& arg : argSlotMapping) {
+        if (arg.slotIndex < 0) return true;  // external input = always dynamic
+        if (segmentOwnedOutputSlots.count(arg.slotIndex) > 0) return true;  // segment intermediate
+      }
+      return false;
+    }
+
     CompiledKernel()
         : gpuModule(nullptr), kernelFunction(nullptr),
           gridX(1), gridY(1), gridZ(1),
@@ -261,6 +279,54 @@ class TritonGraphBackend : public GraphBackend {
     // cudaEvent_t recorded after async preallocation; stored as void* to keep
     // CUDA types out of this header's non-CUDA translation units.
     void* preallocReadyEvent = nullptr;
+
+    /**
+     * Returns true if dirty tracking classification was computed at compile time.
+     */
+    bool hasDirtyTrackingInfo() const {
+      return !hasDynamicArgs.empty();
+    }
+
+    /**
+     * Returns true if sub-kernel ki is classified as fully static by dirty tracking.
+     * A static sub-kernel has no dynamic args — all buffer pointers are frozen weights
+     * that never change between replay steps, so its arg table row can be skipped.
+     */
+    bool isSubKernelStatic(size_t ki) const {
+      return ki < hasDynamicArgs.size() && !hasDynamicArgs[ki];
+    }
+
+    /**
+     * Returns the number of sub-kernels classified as fully static.
+     */
+    int countStaticSubKernels() const {
+      int count = 0;
+      for (bool d : hasDynamicArgs) if (!d) count++;
+      return count;
+    }
+
+    /**
+     * Populate dirty tracking classification for all sub-kernels in this segment.
+     * Called once at compile time. Each sub-kernel is classified as dynamic if any
+     * of its buffer args reference an output slot produced by an op in this segment.
+     *
+     * Uses wiring.outputSlotIndices (global output slot indices) — NOT the op-slot
+     * range — because argSlotMapping.slotIndex values are output slot indices and
+     * can exceed the op-slot range in graphs with multi-output or wide ops.
+     */
+    void classifyDirtyTracking(NativeSlot* slots, int segStartSlot, int segEndSlot) {
+      // Build the set of all output slot indices produced by ops in this segment
+      std::unordered_set<int> ownedOutputSlots;
+      for (int i = segStartSlot; i <= segEndSlot; i++) {
+        for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
+          ownedOutputSlots.insert(slots[i].wiring.outputSlotIndices[o]);
+        }
+      }
+      hasDynamicArgs.resize(subKernels.size(), false);
+      for (size_t ki = 0; ki < subKernels.size(); ki++) {
+        hasDynamicArgs[ki] = subKernels[ki].hasDynamicArgsInSegment(ownedOutputSlots);
+      }
+    }
 #endif
 
     bool isValid() const {

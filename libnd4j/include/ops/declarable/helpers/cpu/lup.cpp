@@ -88,7 +88,7 @@ static void invertLowerMatrix_(NDArray* inputMatrix, NDArray* invertedMatrix) {
 
   for (sd::LongType i = 1; i < n; i++) {
     for (sd::LongType j = 0; j < i - 1; j++)
-      for (sd::LongType k = 0; k < i; k++)
+      for (sd::LongType k = j; k < i; k++)
         invertedMatrix->r<T>(i, j) -=
             ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
   }
@@ -126,7 +126,7 @@ static void _invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
 
   for (auto i = n - 2; i >= 0; i--) {
     for (auto j = i + 2; j < n; j++)
-      for (auto k = i; k < n; k++)
+      for (auto k = i + 1; k <= j; k++)
         invertedMatrix->r<T>(i, j) -=
             ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
   }
@@ -147,8 +147,15 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
   // FIXED: Use stack allocation instead of heap to avoid memory leak
   NDArray determinant(DataTypeUtils::fromT<T>(), context, true);  // scalar initialized to 0
   determinant.r<T>(0) = static_cast<T>(1.f);                      // set value to 1
-  NDArray compoundMatrix = *input;                                // copy
-  NDArray permutationMatrix(input, false, context);               // has same shape as input and contiguous strides
+  // BUGFIX: Do NOT use copy constructor (creates a VIEW sharing input's buffer).
+  // Do NOT use NDArray(input, false, context) for permutationMatrix (also shares input's buffer).
+  // Both of those caused setIdentity() to corrupt input before LUP decomposition started.
+  // Instead create independent arrays with their own buffers and copy data explicitly.
+  auto* compoundMatrixPtr = NDArrayFactory::create('c', {rowNum, columnNum}, DataTypeUtils::fromT<T>(), context);
+  compoundMatrixPtr->assign(input);
+  NDArray& compoundMatrix = *compoundMatrixPtr;
+  auto* permutationMatrixPtr = NDArrayFactory::create('c', {rowNum, columnNum}, DataTypeUtils::fromT<T>(), context);
+  NDArray& permutationMatrix = *permutationMatrixPtr;
   permutationMatrix.setIdentity();
 
   T pivotValue;  // = T(0.0);
@@ -204,7 +211,10 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
     else if (permutation->isSameShape(permutaionVector)) {
       permutation->assign(permutaionVector);
     }
+    delete permutaionVector;
   }
+  delete compoundMatrixPtr;
+  delete permutationMatrixPtr;
   return determinant;  // FIXED: Return stack-allocated object instead of dereferencing pointer
 }
 
@@ -487,15 +497,20 @@ static sd::Status inverse_(LaunchContext* context, NDArray* input, NDArray* outp
 
     // FIXME: and how this is going to work on float16?
     if (sd::math::sd_abs<T,T>(det) < T(0.000001)) {
-      sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
+      sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", (int)e, (double)det);
+      delete matrix;
+      delete compound;
+      delete permutation;
+      delete upperMatrix;
+      delete lowerMatrix;
       return sd::Status::VALIDATION;
     }
-    lowerMatrix->setIdentity();     // set up U to identity matrix
+    lowerMatrix->setIdentity();     // set up L to identity matrix
     for (sd::LongType k = 1; k < n; k++) {  // and then put all values under main diagonal on to it
       for (sd::LongType j = 0; j < k; j++) lowerMatrix->template r<T>(k, j) = compound->template t<T>(k, j);
     }
     upperMatrix->setIdentity();     // set up U to identity matrix
-    for (sd::LongType k = 0; k < n; k++) {  // and then put all values under main diagonal on to it
+    for (sd::LongType k = 0; k < n; k++) {  // and then put all values on or above main diagonal on to it
       for (sd::LongType j = k; j < n; j++) upperMatrix->template r<T>(k, j) = compound->template t<T>(k, j);
     }
     invertUpperMatrix(upperMatrix, matrix);
@@ -513,6 +528,7 @@ static sd::Status inverse_(LaunchContext* context, NDArray* input, NDArray* outp
 
   delete matrix;
   delete compound;
+  delete permutation;
   delete upperMatrix;
   delete lowerMatrix;
 
@@ -540,13 +556,18 @@ static sd::Status lowerInverse_(LaunchContext* context, NDArray* input, NDArray*
     matrix->tickWriteHost();
     matrix->syncToDevice();
     T det = T(1.f);
-    for (auto i = 0; i < n; i++) {
+    for (sd::LongType i = 0; i < n; i++) {
       det *= matrix->template t<T>(i, i);
     }
 
-    // FIXME: a->d how this is going to work on float16?
+    // FIXME: how this is going to work on float16?
     if (sd::math::sd_abs<T,T>(det) < T(0.000001)) {
-      sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quitting...\n", e, det);
+      sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quitting...\n", (int)e, (double)det);
+      delete matrix;
+      delete compound;
+      delete permutation;
+      delete upperMatrix;
+      delete lowerMatrix;
       return sd::Status::VALIDATION;
     }
     lowerMatrix->nullify();
@@ -560,19 +581,16 @@ static sd::Status lowerInverse_(LaunchContext* context, NDArray* input, NDArray*
   output->syncToDevice();
 
   delete matrix;
-  delete lowerMatrix;
   delete compound;
   delete permutation;
   delete upperMatrix;
+  delete lowerMatrix;
 
   return sd::Status::OK;
 }
 
 template <typename T>
 static sd::Status upperInverse_(LaunchContext* context, NDArray* input, NDArray* output) {
-  auto n = input->sizeAt(-1);
-  auto n2 = n * n;
-
   output->nullify();  // fill up output tensor with zeros
 
   // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs.

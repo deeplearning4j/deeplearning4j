@@ -167,6 +167,15 @@ public class Conv2D extends DynamicCustomOp {
                 builder.dataFormat(properties.get("dataFormat").toString());
             }
 
+            if(properties.containsKey("weightsFormat")) {
+                Object wf = properties.get("weightsFormat");
+                if(wf instanceof WeightsFormat) {
+                    builder.weightsFormat((WeightsFormat) wf);
+                } else if(wf != null) {
+                    builder.weightsFormat(WeightsFormat.valueOf(wf.toString()));
+                }
+            }
+
 
             this.config = builder.build();
 
@@ -186,6 +195,8 @@ public class Conv2D extends DynamicCustomOp {
                     .dH(iArguments.get(6))
                     .dW(iArguments.get(7))
                     .paddingMode(PaddingMode.fromNumber(iArguments.get(8).intValue()))
+                    .dataFormat(iArguments.size() < 10 ? "NCHW" : iArguments.get(9) > 0 ? "NHWC" : "NCHW")
+                    .weightsFormat(iArguments.size() < 11 ? YXIO : WeightsFormat.values()[iArguments.get(10).intValue()])
                     .build();
         }
     }

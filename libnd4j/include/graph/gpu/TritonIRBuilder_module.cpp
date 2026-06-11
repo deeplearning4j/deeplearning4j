@@ -910,10 +910,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   if (hasReduction || hasNormalization) {
     result.useDynamicGrid = false;
 
-    // For normalization-only kernels with multi-row inputs (seqLen > 1),
-    // each block processes one row: blockSize = paddedRowLen, gridX = numRows.
-    // Without this, blockSize = totalPaddedElements but the emitter only produces
-    // paddedRowLen-sized tensors, causing MLIR type mismatch on tt.store.
+    // For normalization-only kernels, set blockSize = paddedRowLen so the grid
+    // offsets, mask, and output store tensors match the normalization emitter's
+    // tensor width.  For multi-row inputs (seqLen > 1), each block processes
+    // one row: gridX = numRows.  For single-row inputs, gridX = 1.
     if (hasNormalization && !hasReduction && !hasMatmul) {
       for (int i = startSlot; i <= endSlot; i++) {
         if (slots[i].wiring.numInputs >= 1) {
@@ -923,17 +923,25 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             int64_t totalElements = 1;
             for (auto d : inputShape) totalElements *= static_cast<int64_t>(d);
             int64_t nRows = totalElements / rowLen;
+            // Compute paddedRowLen for ALL normalization kernels (single-row AND multi-row).
+            // The normalization emitter always creates paddedRowLen-wide tensors, so blockSize
+            // must match to prevent shape mismatches in the generic output store
+            // (e.g., tensor<16xf32> value vs tensor<64x!tt.ptr<f32>> pointers).
+            normLogicalRowLen = rowLen;
+            normPaddedRowLen = 1;
+            while (normPaddedRowLen < rowLen) normPaddedRowLen <<= 1;
+            blockSize = static_cast<int>(std::min(normPaddedRowLen, (int64_t)4096));
             if (nRows > 1) {
-              normLogicalRowLen = rowLen;
               normNumRows = nRows;
-              normPaddedRowLen = 1;
-              while (normPaddedRowLen < rowLen) normPaddedRowLen <<= 1;
               normMultiRow = true;
-              blockSize = static_cast<int>(std::min(normPaddedRowLen, (int64_t)4096));
               result.gridX = static_cast<int>(nRows);
               DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: multi-row normalization "
                         "blockSize=%d (paddedRowLen), gridX=%d (numRows), logicalRowLen=%lld",
                         blockSize, result.gridX, (long long)normLogicalRowLen);
+            } else {
+              DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: single-row normalization "
+                        "blockSize=%d (paddedRowLen), logicalRowLen=%lld",
+                        blockSize, (long long)normLogicalRowLen);
             }
           }
           break;  // Only check first normalization op

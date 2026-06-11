@@ -136,11 +136,19 @@ public class ImageTiler {
                 newWidth = (int) (newHeight * aspectRatio);
                 newWidth = (int) Math.ceil((double) newWidth / maxSize) * maxSize;
             }
-            log.info("resize_for_vision_encoder: {}x{} -> {}x{} (multiples of {})",
-                    width, height, newWidth, newHeight, maxSize);
-            image = resizeImage(image, newWidth, newHeight);
-            width = newWidth;
-            height = newHeight;
+            // Only apply resize if it doesn't upscale the image.
+            // Upscaling increases dimensions but the natural tile crop + pad handles
+            // rectangular images correctly without enlarging them first.
+            if (newWidth <= width && newHeight <= height) {
+                log.info("resize_for_vision_encoder: {}x{} -> {}x{} (multiples of {})",
+                        width, height, newWidth, newHeight, maxSize);
+                image = resizeImage(image, newWidth, newHeight);
+                width = newWidth;
+                height = newHeight;
+            } else {
+                log.info("resize_for_vision_encoder: skipping upscale {}x{} -> {}x{} (tiles will use padding)",
+                        width, height, newWidth, newHeight);
+            }
         }
         log.info("Splitting image {}x{} into {}x{} tiles (maxTiles={})", width, height, maxSize, maxSize,
                 maxTiles > 0 ? maxTiles : "unlimited");

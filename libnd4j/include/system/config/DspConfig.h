@@ -77,7 +77,7 @@ class SD_LIB_EXPORT DspConfig {
   std::atomic<int> _captureOomMaxRetries{3};
   std::atomic<int> _captureOomRetryInterval{4};
   std::atomic<int> _cublasWorkspaceMb{256};
-  std::atomic<int> _graphMetadataSafetyMb{16};
+  std::atomic<int> _graphMetadataSafetyMb{256};
   std::atomic<bool> _proactiveEvictBeforeCapture{true};
   std::atomic<bool> _lruEviction{true};
 

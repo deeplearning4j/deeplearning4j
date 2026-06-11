@@ -86,11 +86,11 @@ public class LSTMLayerBp extends DynamicCustomOp {
             ret.add(arg().dataType());
         }
 
-        if(cLast != null) {
+        if(yLast != null) {
             ret.add(arg().dataType());
         }
 
-        if(yLast != null) {
+        if(cLast != null) {
             ret.add(arg().dataType());
         }
 
@@ -119,8 +119,8 @@ public class LSTMLayerBp extends DynamicCustomOp {
                 configuration.getLstmdataformat().ordinal(),// INT_ARG(0)
                 configuration.getDirectionMode().ordinal(), // INT_ARG(1)
                 configuration.getGateAct().ordinal(),  // INT_ARG(2)
-                configuration.getOutAct().ordinal(), // INT_ARG(3)
-                configuration.getCellAct().ordinal()  // INT_ARG(4)
+                configuration.getCellAct().ordinal(), // INT_ARG(3)
+                configuration.getOutAct().ordinal()   // INT_ARG(4)
 
         };
     }
@@ -167,11 +167,11 @@ public class LSTMLayerBp extends DynamicCustomOp {
             ret++;
         }
 
-        if(cLast != null) {
+        if(yLast != null) {
             ret++;
         }
 
-        if(yLast != null) {
+        if(cLast != null) {
             ret++;
         }
 

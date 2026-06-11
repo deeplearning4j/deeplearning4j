@@ -27,32 +27,33 @@ namespace helpers {
 
 template <typename T>
 void matrixBandPart_(NDArray* input, NDArray* output, sd::LongType lowerBand, sd::LongType upperBand) {
-  // TO DO: retrieve all 2D submatrices with last dimensions and process them with given bands
-  sd::LongType M = input->sizeAt(-2);
-  sd::LongType N = input->sizeAt(-1);
-  sd::LongType lastDim = input->rankOf() - 1;
-  sd::LongType preLastDim = input->rankOf() - 2;
-  ResultSet listOut = output->allTensorsAlongDimension({preLastDim, lastDim});
-  ResultSet listDiag = input->allTensorsAlongDimension({preLastDim, lastDim});
-  for (sd::LongType e = 0; e < static_cast<sd::LongType>(listOut.size()); ++e) {
-    NDArray* inputMatrix = listDiag.at(e);
-    NDArray* outputMatrix = listOut.at(e);
-    if (outputMatrix != inputMatrix)  // if not inplace
-      outputMatrix->assign(inputMatrix);
-    if (lowerBand >= 0) {
-      for (sd::LongType row = 0; row < inputMatrix->rows(); ++row) {
-        for (sd::LongType col = 0; col < row; ++col) {
-          if ((row - col) > lowerBand) outputMatrix->p(row, col, 0.);
+  const int rank = input->rankOf();
+  // Last two dims are the matrix dimensions; all leading dims are batch.
+  sd::LongType M = input->sizeAt(rank - 2);
+  sd::LongType N = input->sizeAt(rank - 1);
+  sd::LongType matrixSize = M * N;
 
-        }
+  // Compute numMatrices from batch dimensions (everything except last two).
+  sd::LongType numMatrices = 1;
+  for (int i = 0; i < rank - 2; ++i) numMatrices *= input->sizeAt(i);
 
-      }
+  PRAGMA_OMP_PARALLEL_FOR
+  for (sd::LongType e = 0; e < numMatrices; ++e) {
+    sd::LongType offset = e * matrixSize;
+
+    // Copy this matrix from input to output first.
+    if (output->buffer() != input->buffer()) {
+      for (sd::LongType idx = 0; idx < matrixSize; ++idx)
+        output->r<T>(offset + idx) = input->t<T>(offset + idx);
     }
-    if (upperBand >= 0) {
-      for (sd::LongType col = 0; col < inputMatrix->columns(); ++col) {
-        for (sd::LongType row = 0; row < col; ++row) {
-          if ((col - row) > upperBand) outputMatrix->p(row, col, 0.);
-        }
+
+    // Zero elements outside the band using flat 1-D indexing on the main arrays.
+    for (sd::LongType row = 0; row < M; ++row) {
+      for (sd::LongType col = 0; col < N; ++col) {
+        bool inBand = true;
+        if (lowerBand >= 0 && (row - col) > lowerBand) inBand = false;
+        if (upperBand >= 0 && (col - row) > upperBand) inBand = false;
+        if (!inBand) output->r<T>(offset + row * N + col) = T(0);
       }
     }
   }

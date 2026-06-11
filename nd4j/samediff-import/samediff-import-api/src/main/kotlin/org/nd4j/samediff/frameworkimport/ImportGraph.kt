@@ -448,6 +448,15 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             val opName = node.opName()
 
             if (irGraph.nodeIsPlaceHolder(node.nodeName())) {
+                // Skip if a variable with this name was already registered as a dynamic variable
+                // in the first pass. This happens when ONNX initializers overlap with graph inputs
+                // (e.g. input.1 appears both as an initializer in dynamicVariables and as a
+                // placeholder in the graph) — addInitializersToDynamicVariables may have added it.
+                if (sd.hasVariable(nodeName)) {
+                    if (isTracingEnabled) {
+                        VariableOriginTracer.traceVariableResolution(nodeName, "placeholder_skipped_exists", sd.getVariable(nodeName), null)
+                    }
+                } else {
                 val shape = irGraph.shapeOfInput(node.nodeName())
                 val dt = irGraph.dataTypeForVariable(node.nodeName()).nd4jDataType()
                 if (shape != null) {
@@ -458,12 +467,18 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 if (isTracingEnabled) {
                     VariableOriginTracer.traceVariableResolution(nodeName, "placeholder", sd.getVariable(nodeName), null)
                 }
+                }
             } else if (irGraph.isConstantOpName(opName)) {
                 val arr = irGraph.getConstantArrayForName(nodeName)
-                if (node.numOutputs() < 1 || irGraph.frameworkName().contains("tensorflow")) {
-                    sd.constant(nodeName, arr)
-                } else {
-                    sd.constant(node.outputAt(0), arr)
+                val constantOutputName = if (node.numOutputs() < 1 || irGraph.frameworkName().contains("tensorflow")) nodeName else node.outputAt(0)
+                // Skip if a variable with this name was already registered as a dynamic variable
+                // in the first pass (e.g. Constant node output added by addInitializersToDynamicVariables).
+                if (!sd.hasVariable(constantOutputName)) {
+                    if (node.numOutputs() < 1 || irGraph.frameworkName().contains("tensorflow")) {
+                        sd.constant(nodeName, arr)
+                    } else {
+                        sd.constant(node.outputAt(0), arr)
+                    }
                 }
                 if (isTracingEnabled) {
                     VariableOriginTracer.traceVariableResolution(nodeName, "constant", sd.getVariable(nodeName), arr)
@@ -471,10 +486,13 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             } else if (irGraph.isVariable(nodeName)) {
                 val shape = irGraph.shapeOfInput(nodeName)
                 val dt = irGraph.dataTypeForVariable(nodeName).nd4jDataType()
-                if (shape != null) {
-                    sd.`var`(nodeName, dt, *shape)
-                } else {
-                    sd.`var`(nodeName, dt, -1)
+                // Skip if variable already exists from first pass dynamic variables
+                if (!sd.hasVariable(nodeName)) {
+                    if (shape != null) {
+                        sd.`var`(nodeName, dt, *shape)
+                    } else {
+                        sd.`var`(nodeName, dt, -1)
+                    }
                 }
                 if (isTracingEnabled) {
                     VariableOriginTracer.traceVariableResolution(nodeName, "variable", sd.getVariable(nodeName), null)

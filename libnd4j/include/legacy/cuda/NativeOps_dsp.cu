@@ -30,6 +30,7 @@
 #include <cuda.h>
 #include <dsp/NativeOpsDsp.h>
 #include <graph/DspBufferPool.h>
+#include <graph/DspSegmentLifecycle.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
 #include <helpers/ShapeUtils.h>
@@ -1304,10 +1305,9 @@ void invalidatePlanSegmentCache(sd::Pointer planHandle, int segIdx) {
   if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
   auto& seg = segs[segIdx];
   seg.exec.replayHandle.reset();
-  seg.exec.outcome = SegmentExecOutcome::PENDING;
+  SegmentLifecycle::resetForCacheInvalidation(seg.exec);
   seg.exec.cachedShapeKey = 0;
   seg.exec.executionCount = 0;
-  seg.exec.compilationFailed = false;
   seg.exec.compiledByBackend.clear();
 }
 
@@ -1318,7 +1318,7 @@ void invalidatePlanBackendCaches(sd::Pointer planHandle, const char* backendName
   for (auto& seg : plan->getSegmentsMutable()) {
     if (seg.exec.compiledByBackend == name || name.empty()) {
       seg.exec.replayHandle.reset();
-      seg.exec.outcome = SegmentExecOutcome::PENDING;
+      SegmentLifecycle::resetForCacheInvalidation(seg.exec);
       seg.exec.cachedShapeKey = 0;
       seg.exec.executionCount = 0;
       seg.exec.compiledByBackend.clear();

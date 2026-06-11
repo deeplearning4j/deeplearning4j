@@ -287,7 +287,16 @@ public class DynamicShapePlanCompiler {
                     legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_STRICT;
                     legacyOpNum = ((BaseTransformStrictOp) op).opNum();
                 } else if (op instanceof BaseTransformSameOp) {
-                    legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_SAME;
+                    // BaseTransformSameOp with 2 array inputs (e.g. CompareAndReplace, which
+                    // extends BaseTransformSameOp but has both x and y) must use the pairwise
+                    // execution path (execPairwiseTransform). With a single input it is a
+                    // standard single-input transform (execTransformSame).
+                    // NativeOpExecutioner makes this same distinction via op.y() != null.
+                    if (node.getInputVariables().size() >= 2) {
+                        legacyOpType = DynamicShapeSlot.LEGACY_PAIRWISE_TRANSFORM;
+                    } else {
+                        legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_SAME;
+                    }
                     legacyOpNum = ((BaseTransformSameOp) op).opNum();
                 } else if (op instanceof BaseTransformFloatOp) {
                     legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_FLOAT;
@@ -468,13 +477,22 @@ public class DynamicShapePlanCompiler {
                 }
 
                 // Check for INT/LONG inputs (for sync flag)
-                if (!hasIntLongInputs) {
-                    org.nd4j.autodiff.samediff.SDVariable sdVar = sd.getVariable(inputVar);
-                    if (sdVar != null) {
-                        DataType dt = sdVar.dataType();
-                        if (dt == DataType.INT || dt == DataType.LONG) {
-                            hasIntLongInputs = true;
-                        }
+                // Also check for string-type inputs (UTF8/UTF16/UTF32): the native executor
+                // calls buffer() on all external inputs, which calls BUILD_SINGLE_SELECTOR
+                // with SD_COMMON_TYPES_ALL — string types are excluded from that macro and
+                // will throw "Unexpected error with data type UTF8". Fall back to standard
+                // execution so the string constants pass through the Java-side op as-is.
+                org.nd4j.autodiff.samediff.SDVariable sdVar = sd.getVariable(inputVar);
+                if (sdVar != null) {
+                    DataType dt = sdVar.dataType();
+                    if (dt == DataType.INT || dt == DataType.LONG) {
+                        hasIntLongInputs = true;
+                    }
+                    if (dt == DataType.UTF8 || dt == DataType.UTF16 || dt == DataType.UTF32) {
+                        log.debug("DSP compile: op '{}' at step {} has string-type input '{}' ({}). " +
+                                "Native executor cannot handle string buffers. Falling back to standard path.",
+                                opName, stepIdx, inputVar, dt);
+                        return null;
                     }
                 }
             }
@@ -1049,6 +1067,21 @@ public class DynamicShapePlanCompiler {
         // Step 8: Build output name → slot index map for O(1) output collection.
         // LinkedHashMap preserves insertion order (= requestedOutputs iteration order)
         // so serialize() writes indices in the same order as getRequestedOutputs().
+        //
+        // If any requested output is an external input (placeholder or variable), it has
+        // no slot in the plan — the DSP executor cannot return external inputs as outputs.
+        // Fall back to standard execution in this case to get correct values.
+        // This occurs when GradCheckUtil requests gradient variable names that coincide with
+        // the forward graph's placeholder/variable names in the grad function's SameDiff.
+        Set<String> externalInputSet = new java.util.HashSet<>(externalInputKeys);
+        for (String outputName : requestedOutputs) {
+            if (!varToOutputSlot.containsKey(outputName) && externalInputSet.contains(outputName)) {
+                log.debug("DSP compile: requested output '{}' is an external input (not an op output). " +
+                        "DSP cannot return external inputs as outputs — falling back to standard path.", outputName);
+                return null;
+            }
+        }
+
         Map<String, Integer> outputNameToSlotIndex = new java.util.LinkedHashMap<>();
         int missingOutputCount = 0;
         for (String outputName : requestedOutputs) {

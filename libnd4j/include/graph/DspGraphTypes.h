@@ -184,6 +184,15 @@ struct SegmentPhase {
     oomRetryCount = 0;
   }
 
+  /** Any BUILDING → SEALED (non-capture terminal — for NOT_FUSIBLE segments that skip capture) */
+  void sealNonCapture() {
+    assert(isBuilding());
+    DSP_DIAG(LIFECYCLE, "SegmentPhase: %s -> SEALED (non-capture seal)", displayName());
+    phase = GraphNodePhase::SEALED;
+    oomRetryPending = false;
+    oomRetryCount = 0;
+  }
+
   /** Any → FAILED (terminal, never recovers without full invalidation) */
   void fail() {
     DSP_DIAG(LIFECYCLE, "SegmentPhase: %s -> FAILED", displayName());
@@ -286,6 +295,169 @@ inline bool isTerminalOutcome(SegmentExecOutcome o) {
          o == SegmentExecOutcome::NOT_FUSIBLE ||
          o == SegmentExecOutcome::COMPILE_FAILED;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ReplayHandleTracker — tracks every mutation to a segment's replay handle
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Lightweight per-segment ring buffer recording CREATE, CAPTURE_BEGIN, CAPTURE_END,
+// INSTANTIATE, REPLAY, INVALIDATE, DESTROY events with timestamps and counts.
+// Gated behind DSP_DIAG_GRAPH_REPLAY category — zero cost when diagnostics are off.
+//
+// Usage from SegmentLifecycle methods: exec.handleTracker.record(...)
+// Dump on demand: exec.handleTracker.dump(startSlot, endSlot)
+
+struct ReplayHandleEvent {
+  enum class Kind : uint8_t {
+    CREATE          = 0,   // replay handle allocated
+    CAPTURE_BEGIN   = 1,   // beginCapture() called
+    CAPTURE_END     = 2,   // endCapture() returned
+    INSTANTIATE     = 3,   // finalize() / cudaGraphInstantiate
+    REPLAY          = 4,   // replay() / cudaGraphLaunch
+    INVALIDATE      = 5,   // lifecycle invalidation (address drift, rebuild, evict)
+    DESTROY         = 6,   // handle.reset() — cudaGraphExecDestroy
+    ADDRESS_DRIFT   = 7,   // address mismatch detected before replay
+    OOM_DEFERRED    = 8,   // instantiate failed with OOM
+    ERROR           = 9,   // any error (capture fail, replay fail)
+  };
+
+  Kind     kind;
+  int      execCount;        // plan execution count at event time
+  int64_t  timestampUs;      // microseconds since epoch (steady_clock)
+  int      numNodes;         // graph node count (for CAPTURE_END/INSTANTIATE), 0 otherwise
+  int      cudaError;        // CUDA error code (for ERROR), 0 otherwise
+  char     reason[64];       // short reason string (truncated)
+};
+
+inline const char* replayHandleEventKindName(ReplayHandleEvent::Kind k) {
+  switch (k) {
+    case ReplayHandleEvent::Kind::CREATE:        return "CREATE";
+    case ReplayHandleEvent::Kind::CAPTURE_BEGIN:  return "CAPTURE_BEGIN";
+    case ReplayHandleEvent::Kind::CAPTURE_END:    return "CAPTURE_END";
+    case ReplayHandleEvent::Kind::INSTANTIATE:    return "INSTANTIATE";
+    case ReplayHandleEvent::Kind::REPLAY:         return "REPLAY";
+    case ReplayHandleEvent::Kind::INVALIDATE:     return "INVALIDATE";
+    case ReplayHandleEvent::Kind::DESTROY:        return "DESTROY";
+    case ReplayHandleEvent::Kind::ADDRESS_DRIFT:  return "ADDRESS_DRIFT";
+    case ReplayHandleEvent::Kind::OOM_DEFERRED:   return "OOM_DEFERRED";
+    case ReplayHandleEvent::Kind::ERROR:          return "ERROR";
+    default:                                      return "UNKNOWN";
+  }
+}
+
+class ReplayHandleTracker {
+ public:
+  static constexpr int RING_SIZE = 128;
+  static constexpr int RING_MASK = RING_SIZE - 1;
+
+  ReplayHandleTracker() { reset(); }
+
+  void record(ReplayHandleEvent::Kind kind, int execCount,
+              int numNodes = 0, int cudaError = 0,
+              const char* reason = nullptr) {
+    int idx = writePos_++ & RING_MASK;
+    auto& e = events_[idx];
+    e.kind = kind;
+    e.execCount = execCount;
+    e.timestampUs = nowUs();
+    e.numNodes = numNodes;
+    e.cudaError = cudaError;
+    if (reason) {
+      std::strncpy(e.reason, reason, sizeof(e.reason) - 1);
+      e.reason[sizeof(e.reason) - 1] = '\0';
+    } else {
+      e.reason[0] = '\0';
+    }
+    // Update aggregate counters
+    switch (kind) {
+      case ReplayHandleEvent::Kind::CREATE:        createCount_++; break;
+      case ReplayHandleEvent::Kind::CAPTURE_BEGIN:  captureBeginCount_++; break;
+      case ReplayHandleEvent::Kind::CAPTURE_END:    captureEndCount_++; break;
+      case ReplayHandleEvent::Kind::INSTANTIATE:    instantiateCount_++; break;
+      case ReplayHandleEvent::Kind::REPLAY:         replayCount_++; break;
+      case ReplayHandleEvent::Kind::INVALIDATE:     invalidateCount_++; break;
+      case ReplayHandleEvent::Kind::DESTROY:        destroyCount_++; break;
+      case ReplayHandleEvent::Kind::ADDRESS_DRIFT:  addressDriftCount_++; break;
+      case ReplayHandleEvent::Kind::OOM_DEFERRED:   oomCount_++; break;
+      case ReplayHandleEvent::Kind::ERROR:          errorCount_++; break;
+    }
+  }
+
+  // Dump recent events via DspDiagnostics
+  void dump(int startSlot, int endSlot, int lastN = 32) const {
+    int total = writePos_;
+    int start = (total > lastN) ? (total - lastN) : 0;
+    sd_printf("=== REPLAY HANDLE TRACKER: seg[%d-%d] === "
+              "creates=%d captures=%d instantiates=%d replays=%d "
+              "invalidates=%d destroys=%d drifts=%d ooms=%d errors=%d\n",
+              startSlot, endSlot,
+              createCount_, captureEndCount_, instantiateCount_, replayCount_,
+              invalidateCount_, destroyCount_, addressDriftCount_, oomCount_, errorCount_);
+    for (int i = start; i < total; i++) {
+      const auto& e = events_[i & RING_MASK];
+      sd_printf("  [%d] %s exec=%d nodes=%d cudaErr=%d reason='%s'\n",
+                i, replayHandleEventKindName(e.kind),
+                e.execCount, e.numNodes, e.cudaError, e.reason);
+    }
+  }
+
+  // JSON-serializable summary for diagnostic reports
+  std::string toJsonSummary(int startSlot, int endSlot) const {
+    char buf[512];
+    std::snprintf(buf, sizeof(buf),
+        "{\"seg\":[%d,%d],\"creates\":%d,\"captureBegins\":%d,"
+        "\"captureEnds\":%d,\"instantiates\":%d,\"replays\":%d,"
+        "\"invalidates\":%d,\"destroys\":%d,\"drifts\":%d,"
+        "\"ooms\":%d,\"errors\":%d,\"totalEvents\":%d}",
+        startSlot, endSlot,
+        createCount_, captureBeginCount_, captureEndCount_,
+        instantiateCount_, replayCount_, invalidateCount_,
+        destroyCount_, addressDriftCount_, oomCount_, errorCount_,
+        writePos_);
+    return std::string(buf);
+  }
+
+  // Aggregate accessors
+  int createCount() const { return createCount_; }
+  int captureBeginCount() const { return captureBeginCount_; }
+  int captureEndCount() const { return captureEndCount_; }
+  int instantiateCount() const { return instantiateCount_; }
+  int replayCount() const { return replayCount_; }
+  int invalidateCount() const { return invalidateCount_; }
+  int destroyCount() const { return destroyCount_; }
+  int addressDriftCount() const { return addressDriftCount_; }
+  int oomCount() const { return oomCount_; }
+  int errorCount() const { return errorCount_; }
+  int totalEvents() const { return writePos_; }
+
+  void reset() {
+    writePos_ = 0;
+    createCount_ = captureBeginCount_ = captureEndCount_ = 0;
+    instantiateCount_ = replayCount_ = invalidateCount_ = 0;
+    destroyCount_ = addressDriftCount_ = oomCount_ = errorCount_ = 0;
+    std::memset(events_, 0, sizeof(events_));
+  }
+
+ private:
+  static int64_t nowUs() {
+    auto now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+        now.time_since_epoch()).count();
+  }
+
+  ReplayHandleEvent events_[RING_SIZE];
+  int writePos_ = 0;
+  int createCount_ = 0;
+  int captureBeginCount_ = 0;
+  int captureEndCount_ = 0;
+  int instantiateCount_ = 0;
+  int replayCount_ = 0;
+  int invalidateCount_ = 0;
+  int destroyCount_ = 0;
+  int addressDriftCount_ = 0;
+  int oomCount_ = 0;
+  int errorCount_ = 0;
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SlotPhase — Complete slot state in a single struct
@@ -415,6 +587,7 @@ struct PlanLifecycle {
   enum class BuildStage : uint8_t {
     SLOT_BY_SLOT = 0,     // No guarantees — shapes and pointers may change
     SHAPES_FROZEN = 1,    // Shapes constant, tracking pointer stability
+    REPLAY_BLOCKED = 2,   // Frozen but zero GRAPH_REPLAY segments — will never enter REPLAYING
   };
 
   BuildStage buildStage = BuildStage::SLOT_BY_SLOT;
@@ -433,6 +606,7 @@ struct PlanLifecycle {
 
   bool isSlotBySlot()    const { return isBuilding() && buildStage == BuildStage::SLOT_BY_SLOT; }
   bool isShapesFrozen()  const { return isBuilding() && buildStage == BuildStage::SHAPES_FROZEN; }
+  bool isReplayBlocked() const { return isBuilding() && buildStage == BuildStage::REPLAY_BLOCKED; }
   bool isReplaying()     const { return isSealed(); }
 
   /** True when shapes are stable — either SHAPES_FROZEN (building) or REPLAYING (sealed).
@@ -463,6 +637,14 @@ struct PlanLifecycle {
              "(pointersStableCount=%d postFreezeExec=%d)",
              pointersStableCount, postFreezeExecCount);
     phase = GraphNodePhase::SEALED;
+  }
+
+  /** SHAPES_FROZEN → REPLAY_BLOCKED (zero GRAPH_REPLAY segments — cannot enter REPLAYING) */
+  void blockReplay(const char* reason) {
+    assert(isBuilding() && buildStage == BuildStage::SHAPES_FROZEN);
+    DSP_DIAG(LIFECYCLE, "PlanLifecycle: SHAPES_FROZEN -> REPLAY_BLOCKED reason=%s",
+             reason ? reason : "?");
+    buildStage = BuildStage::REPLAY_BLOCKED;
   }
 
   /** Unfreeze — back to SLOT_BY_SLOT (shape change detected) */
@@ -521,6 +703,7 @@ struct PlanLifecycle {
   const char* displayName() const {
     if (isFailed()) return "FAILED";
     if (isSealed()) return "REPLAYING";
+    if (isReplayBlocked()) return "REPLAY_BLOCKED";
     if (isShapesFrozen()) return "SHAPES_FROZEN";
     return "SLOT_BY_SLOT";
   }
@@ -528,6 +711,7 @@ struct PlanLifecycle {
   // ── Legacy compatibility ────────────────────────────────────────────────
   int toLegacyCode() const {
     if (isSealed()) return 2;           // REPLAYING
+    if (isReplayBlocked()) return 3;    // REPLAY_BLOCKED
     if (isShapesFrozen()) return 1;     // SHAPES_FROZEN
     return 0;                            // SLOT_BY_SLOT
   }

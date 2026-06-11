@@ -153,6 +153,25 @@ class SD_LIB_EXPORT DspDiagnostics {
   void beginStep(int stepNumber);
   void endStep(int stepNumber);
 
+  // ── Segment terminal summary (persists across ring buffer overwrites) ──
+  // Records WHY each segment reached a terminal outcome. Called by
+  // SegmentLifecycle:: methods. Unlike ring buffer events, these are
+  // never overwritten — always available in the diagnostic JSON.
+  static constexpr int MAX_SEGMENT_TERMINALS = 64;
+  struct SegmentTerminalRecord {
+    int startSlot = -1;
+    int endSlot = -1;
+    int execCountAtTransition = 0;
+    int outcome = 0;              // SegmentExecOutcome as int
+    char phase[32] = {};          // segPhase at transition time
+    char reason[128] = {};        // terminalReason string
+    char backend[32] = {};        // compiledByBackend
+    int64_t timestampUs = 0;
+  };
+  void recordSegmentTerminal(int startSlot, int endSlot, int execCount,
+                             int outcome, const char* phase,
+                             const char* reason, const char* backend);
+
   // ── Reports ──
   std::string generatePlanReport() const;
   std::string generateJsonReport() const;
@@ -278,6 +297,16 @@ class SD_LIB_EXPORT DspDiagnostics {
     return total;
   }
 
+  // ── Graph state dump ──
+  // Dumps a structured summary of each segment's replay handle state:
+  //   - phase, outcome, execution count
+  //   - handle tracker summary (creates, captures, replays, invalidates, destroys)
+  //   - captured address keys
+  // tag: caller-supplied label (e.g. "pre-replay", "post-capture", "error-dump")
+  // Implementation deferred to NativeDynamicShapePlan.cpp where GraphSegment is defined.
+  // See dumpSegmentGraphState() in NativeDynamicShapePlan.
+  void recordGraphStateDump(const char* tag, const char* jsonSummary);
+
  private:
   DspDiagnostics();
   ~DspDiagnostics() = default;
@@ -305,6 +334,10 @@ class SD_LIB_EXPORT DspDiagnostics {
 
   // JSON output path
   std::string jsonPath_;
+
+  // Persistent segment terminal records (never overwritten by ring buffer)
+  SegmentTerminalRecord segTerminals_[MAX_SEGMENT_TERMINALS];
+  int segTerminalCount_ = 0;
 
   // Configurable limits (read from DspConfig in applyDspConfig)
   int diagExecLimit_;     // 0 = no limit
