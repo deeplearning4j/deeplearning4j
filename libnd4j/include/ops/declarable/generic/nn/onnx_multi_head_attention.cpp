@@ -357,38 +357,29 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   }
 
   // Output in BSHD format [batch, seqQ, numHeads, headDim]
-  // When no attnBias: write directly into the output buffer (zero-copy reshape).
-  // FlashAttention writes ALL positions when no additive bias mask is present.
-  // When attnBias is present: use workspace+nullify because FlashAttention may
-  // skip masked positions, leaving stale data in the output buffer.
+  // Always use workspace path and explicit copy-back.
+  // The "zero-copy reshape" path (output->reshape('c', outShape4d, false)) was
+  // incorrect: when the DSP-allocated output buffer has non-contiguous strides,
+  // reshape() detects this and falls back to allocating a NEW buffer (copyToNewBuff=true).
+  // FlashAttention then writes into that temporary copy, not the real output buffer,
+  // leaving the actual output all-zeros. Use workspace+assign unconditionally to
+  // guarantee correctness regardless of buffer layout.
   std::vector<LongType> outShape4d = {batch, seqQ, numHeads, headDim};
-  NDArray* attnOut4d = nullptr;
-  bool attnOut4dOwned = false;
-  if (attnBias == nullptr) {
-    // Direct write: reshape output to 4D view (zero-copy if C-contiguous)
-    attnOut4d = output->reshape('c', outShape4d, false);
-    attnOut4dOwned = true;
-  } else {
-    // Workspace path: zero buffer to prevent stale data in masked positions
-    auto workspace = AttentionWorkspace::getInstance();
-    attnOut4d = workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(), block.launchContext());
-    attnOut4d->nullify();
-  }
+  auto workspace = AttentionWorkspace::getInstance();
+  NDArray* attnOut4d = workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(), block.launchContext());
+  attnOut4d->nullify();
 
   // Call FlashAttentionHelper::forward with 4D tensors (BSHD format)
   FlashAttentionHelper::forward(qReshaped, kFinal, vFinal, attnOut4d, config,
                                 nullptr, nullptr, nullptr,
                                 block.launchContext(), attnBias);
 
-  // Copy to output only when using workspace (attnBias path)
-  if (attnBias != nullptr) {
+  // Copy workspace result to the op output buffer
+  {
     std::vector<LongType> outShape3d = {batch, seqQ, hidden};
     NDArray* attnOutFinal = attnOut4d->reshape('c', outShape3d, false);
     output->assign(attnOutFinal);
     delete attnOutFinal;
-  }
-  if (attnOut4dOwned) {
-    delete attnOut4d;
   }
   
   // Output present key/value if requested (in BHSD format for ONNX compatibility)

@@ -1031,7 +1031,7 @@ public class Transforms {
 
 
     public static INDArray isMax(INDArray input) {
-        return isMax(input, input);
+        return isMax(input, DataType.BOOL);
     }
 
     public static INDArray isMax(INDArray input, INDArray output) {

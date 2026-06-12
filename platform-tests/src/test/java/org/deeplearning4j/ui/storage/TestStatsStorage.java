@@ -59,7 +59,6 @@ public class TestStatsStorage extends BaseDL4JTest {
 
 
     @Test
-    @Disabled("AB 2019/05/21 - Failing on linux-x86_64-cuda-9.2 only - Issue #7657")
     public void testStatsStorage(@TempDir Path testDir) throws IOException {
 
         for (boolean useJ7Storage : new boolean[] {false, true}) {
@@ -214,7 +213,6 @@ public class TestStatsStorage extends BaseDL4JTest {
 
 
     @Test
-    @Disabled("AB 2019/05/21 - Failing on linux-x86_64-cuda-9.2 only - Issue #7657")
     public void testFileStatsStore(@TempDir Path testDir) throws IOException {
 
         for (boolean useJ7Storage : new boolean[] {false, true}) {

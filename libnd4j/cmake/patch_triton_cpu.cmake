@@ -323,18 +323,17 @@ if(EXISTS "${_CPU_RUNTIME}")
         if(_patched_pos EQUAL -1)
             # Replace _Float16 with a portable typedef
             string(REPLACE "_Float16" "fp16_t" _rt_content "${_rt_content}")
-            set(_float16_preamble
-"// PATCHED_FLOAT16: _Float16 is not available on all compilers (e.g. GCC on ARM64).
+            set(_float16_preamble [=[// PATCHED_FLOAT16: _Float16 is not available on all compilers (e.g. GCC on ARM64).
 // Use a portable typedef.
 #if defined(__clang__) || (defined(__GNUC__) && defined(__x86_64__))
-  typedef _Float16 fp16_t\;
+  typedef _Float16 fp16_t;
 #elif defined(__GNUC__) && defined(__aarch64__)
-  typedef __fp16 fp16_t\;
+  typedef __fp16 fp16_t;
 #else
   #include <cstdint>
-  typedef uint16_t fp16_t\;  // fallback: raw bits
+  typedef uint16_t fp16_t;  // fallback: raw bits
 #endif
-")
+]=])
             string(PREPEND _rt_content "${_float16_preamble}")
             file(WRITE "${_CPU_RUNTIME}" "${_rt_content}")
             message(STATUS "  [patch] Fixed _Float16 -> fp16_t in cpu_runtime.cpp")

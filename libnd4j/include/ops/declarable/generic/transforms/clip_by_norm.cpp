@@ -30,7 +30,7 @@
 namespace sd {
 namespace ops {
 
-CONFIGURABLE_OP_IMPL(clipbynorm, 1, 1, true, 1, 0) {
+CONFIGURABLE_OP_IMPL(clipbynorm, 1, 1, false, 1, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   if (block.numT() > 0) {

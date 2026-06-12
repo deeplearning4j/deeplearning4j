@@ -4071,6 +4071,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                        "NATIVE_ONLY_CAPTURE: seg[%d-%d] has no Triton islands — "
                        "skipping empty Triton capture and capturing native ops directly",
                        seg.def.startSlot, seg.def.endSlot);
+          // Activate capture lifecycle: sets tl_graphExecutionActive=true so that
+          // PointersManager uses the persistent pinned host workspace for H2D copies.
+          // Without this, gather/concat ops copy from temp stack buffers that are freed
+          // after the op completes. The CUDA graph's H2D memcpy nodes bake the source
+          // address — reading freed memory on replay causes error 700.
+          capGuard.activate();
+          tl_graphCaptureStream = ctx.cudaStr;
         } else {
           DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "Triton graph capture started for seg[%d-%d] execCount=%d",
                        seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);

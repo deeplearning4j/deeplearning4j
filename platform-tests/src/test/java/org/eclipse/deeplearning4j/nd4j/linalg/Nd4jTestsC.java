@@ -929,13 +929,14 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         //[0 2]    [0 1]
         //[2 1] -> [0 0]bg
         INDArray orig = Nd4j.create(new double[][] {{0, 3}, {2, 1}});
-        INDArray exp = Nd4j.create(new double[][] {{0, 1}, {0, 0}});
+        INDArray exp = Nd4j.create(DataType.BOOL, 2, 2);
+        exp.putScalar(new long[]{0, 1}, 1);
         INDArray outc = Transforms.isMax(orig.dup('c'));
         assertEquals(exp, outc);
 
 //        log.info("Orig: {}", orig.dup('f').data().asFloat());
 
-        INDArray outf = Transforms.isMax(orig.dup('f'), orig.dup('f').ulike());
+        INDArray outf = Transforms.isMax(orig.dup('f'), Nd4j.createUninitialized(DataType.BOOL, orig.shape(), 'f'));
 //        log.info("OutF: {}", outf.data().asFloat());
         assertEquals(exp, outf);
     }
@@ -946,11 +947,12 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         //[0 2]    [0 1]
         //[2 1] -> [0 0]
         INDArray orig = Nd4j.create(new double[][] {{0, 2}, {3, 1}});
-        INDArray exp = Nd4j.create(new double[][] {{0, 0}, {1, 0}});
+        INDArray exp = Nd4j.create(DataType.BOOL, 2, 2);
+        exp.putScalar(new long[]{1, 0}, 1);
         INDArray outc = Transforms.isMax(orig.dup('c'));
         assertEquals(exp, outc);
 
-        INDArray outf = Transforms.isMax(orig.dup('f'), orig.dup('f').ulike());
+        INDArray outf = Transforms.isMax(orig.dup('f'), Nd4j.createUninitialized(DataType.BOOL, orig.shape(), 'f'));
         assertEquals(exp, outf);
     }
 
@@ -4414,7 +4416,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
         //Test 2,3
-        exp = Nd4j.create(s);
+        exp = Nd4j.create(DataType.BOOL, s);
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 3; j++) {
                 INDArray subset = arr.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(),
@@ -4440,8 +4442,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             }
         }
 
-        actC = Nd4j.getExecutioner().exec(new IsMax(arr.dup('c'), arr.dup('c').ulike(), 2, 3))[0];
-        actF = Nd4j.getExecutioner().exec(new IsMax(arr.dup('f'), arr.dup('f').ulike(), 2, 3))[0];
+        actC = Nd4j.getExecutioner().exec(new IsMax(arr.dup('c'), Nd4j.createUninitialized(DataType.BOOL, arr.shape()), 2, 3))[0];
+        actF = Nd4j.getExecutioner().exec(new IsMax(arr.dup('f'), Nd4j.createUninitialized(DataType.BOOL, arr.shape(), 'f'), 2, 3))[0];
 
         assertEquals(exp, actC);
         assertEquals(exp, actF);

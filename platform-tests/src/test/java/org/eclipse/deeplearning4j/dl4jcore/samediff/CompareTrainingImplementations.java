@@ -72,7 +72,6 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
 
     @Test
-    @Disabled("Need to look in to comparisons to see how valid this test is")
     public void testCompareMlpTrainingIris() {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         NormalizerStandardize std = new NormalizerStandardize();

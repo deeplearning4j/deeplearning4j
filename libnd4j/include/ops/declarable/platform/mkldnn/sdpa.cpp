@@ -406,7 +406,12 @@ static bool executeSDPA3D(NDArray* query, NDArray* key, NDArray* value, NDArray*
   if (dtype == 1) dt = dg::logical_tensor::data_type::f16;
   else if (dtype == 2) dt = dg::logical_tensor::data_type::bf16;
 
-  // Create logical tensors with actual strides
+  // Create logical tensors with actual strides.
+  // IDs MUST match those assigned in buildSDPAGraph3D:
+  //   query=0, key=1, value=2, score=3, scale=4, scaled=5, probs=6, output=7
+  // The compile() call used inputs {query(0), key(1), scale(4), value(2)} and output {output(7)}.
+  // execute() tensors are matched by logical_tensor ID, not by vector position,
+  // so using wrong IDs here causes the output to be unwritten (all-zeros).
   std::vector<int64_t> q_shape = {batch, seqQ, dim};
   std::vector<int64_t> k_shape = {batch, seqKV, dim};
   std::vector<int64_t> v_shape = {batch, seqKV, dim};
@@ -417,11 +422,11 @@ static bool executeSDPA3D(NDArray* query, NDArray* key, NDArray* value, NDArray*
   std::vector<int64_t> v_strides = {value->strideAt(0), value->strideAt(1), value->strideAt(2)};
   std::vector<int64_t> out_strides = {output->strideAt(0), output->strideAt(1), output->strideAt(2)};
 
-  auto query_lt = dg::logical_tensor(0, dt, q_shape, q_strides);
-  auto key_lt = dg::logical_tensor(1, dt, k_shape, k_strides);
-  auto scale_lt = dg::logical_tensor(2, dg::logical_tensor::data_type::f32, {1}, {1});
-  auto value_lt = dg::logical_tensor(3, dt, v_shape, v_strides);
-  auto output_lt = dg::logical_tensor(4, dt, out_shape, out_strides);
+  auto query_lt = dg::logical_tensor(0, dt, q_shape, q_strides);   // id=0 matches build
+  auto key_lt   = dg::logical_tensor(1, dt, k_shape, k_strides);   // id=1 matches build
+  auto value_lt = dg::logical_tensor(2, dt, v_shape, v_strides);   // id=2 matches build
+  auto scale_lt = dg::logical_tensor(4, dg::logical_tensor::data_type::f32, {1}, {1}); // id=4 matches build
+  auto output_lt = dg::logical_tensor(7, dt, out_shape, out_strides); // id=7 matches build
 
   // Create tensors with direct buffer pointers
   dg::tensor t_query(query_lt, cache.eng, query->buffer());
@@ -893,12 +898,14 @@ static void executeSDPA4D_WithBias(NDArray* query, NDArray* key, NDArray* value,
     biasF32->strideAt(0), biasF32->strideAt(1), biasF32->strideAt(2), biasF32->strideAt(3)
   };
 
+  // IDs MUST match buildSDPAGraph4D_WithBias: query=0, key=1, value=2, scale=4, bias=6, output=9
+  // (score=3, scaled=5, biased=7, probs=8 are internal intermediates, not provided at execute time)
   auto query_lt  = dg::logical_tensor(0, dt,                               q_shape,    q_strides);
   auto key_lt    = dg::logical_tensor(1, dt,                               k_shape,    k_strides);
-  auto scale_lt  = dg::logical_tensor(2, dg::logical_tensor::data_type::f32, {1},     {1});
-  auto bias_lt   = dg::logical_tensor(3, dg::logical_tensor::data_type::f32, bias_shape, bias_strides);
-  auto value_lt  = dg::logical_tensor(4, dt,                               v_shape,    v_strides);
-  auto output_lt = dg::logical_tensor(5, dt,                               out_shape,  out_strides);
+  auto value_lt  = dg::logical_tensor(2, dt,                               v_shape,    v_strides);    // id=2 matches build
+  auto scale_lt  = dg::logical_tensor(4, dg::logical_tensor::data_type::f32, {1},     {1});            // id=4 matches build
+  auto bias_lt   = dg::logical_tensor(6, dg::logical_tensor::data_type::f32, bias_shape, bias_strides); // id=6 matches build
+  auto output_lt = dg::logical_tensor(9, dt,                               out_shape,  out_strides);  // id=9 matches build
 
   dg::tensor t_query (query_lt,  cache.eng, query->buffer());
   dg::tensor t_key   (key_lt,    cache.eng, key->buffer());
@@ -1050,12 +1057,14 @@ static void executeSDPA4D(NDArray* query, NDArray* key, NDArray* value, NDArray*
     output->strideAt(0), output->strideAt(2), output->strideAt(1), output->strideAt(3)
   };
 
-  // Create logical tensors with strided layouts
-  auto query_lt = dg::logical_tensor(0, dt, q_shape, q_strides);
-  auto key_lt = dg::logical_tensor(1, dt, k_shape, k_strides);
-  auto scale_lt = dg::logical_tensor(2, dg::logical_tensor::data_type::f32, {1}, {1});
-  auto value_lt = dg::logical_tensor(3, dt, v_shape, v_strides);
-  auto output_lt = dg::logical_tensor(4, dt, out_shape, out_strides);
+  // Create logical tensors with strided layouts.
+  // IDs MUST match buildSDPAGraph4D: query=0, key=1, value=2, scale=4, output=7
+  // (score=3, scaled=5, probs=6 are internal intermediates, not provided at execute time)
+  auto query_lt  = dg::logical_tensor(0, dt,                                 q_shape,   q_strides);
+  auto key_lt    = dg::logical_tensor(1, dt,                                 k_shape,   k_strides);
+  auto value_lt  = dg::logical_tensor(2, dt,                                 v_shape,   v_strides);   // id=2 matches build
+  auto scale_lt  = dg::logical_tensor(4, dg::logical_tensor::data_type::f32, {1},       {1});         // id=4 matches build
+  auto output_lt = dg::logical_tensor(7, dt,                                 out_shape, out_strides); // id=7 matches build
 
   // Create tensors pointing directly to input/output buffers - ZERO COPY
   dg::tensor t_query(query_lt, cache.eng, query->buffer());

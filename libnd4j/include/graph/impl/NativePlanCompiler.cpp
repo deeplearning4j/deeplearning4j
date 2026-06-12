@@ -501,6 +501,24 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         }
       }
     }
+
+    // Ops with OP_TRAIT_DYNAMIC_OUTPUT_SIZE (e.g., 1-arg where, unique, NMS)
+    // produce outputs whose SIZE (not just shape) depends on runtime data values.
+    // They are non-capturable (isCapturable() returns false) and their output
+    // cannot be pre-allocated from a cached frozen context.
+    //
+    // Without this flag set at compile time, these slots enter the frozen fast path
+    // (line 3044: "!slot.flags.isDynamicShape") on the second frozen execution,
+    // reusing stale pre-allocated output buffers from the first frozen execution.
+    // When the runtime true-count differs from the first frozen execution,
+    // output.assign(list.stack()) in the WHERE/unique IMPL calls reshapeShapeInfo
+    // with mismatched lengths, throwing "reshapeShapeInfo: bad length of new shape!".
+    //
+    // Setting isDynamicShape=true at compile time ensures these slots always bypass
+    // the frozen fast path and receive fresh output allocation on every execution.
+    if (slot.hasDynamicOutputSize()) {
+      slot.flags.isDynamicShape = true;
+    }
   }
 
   // ── Step 5b: Buffer aliasing — mark unary elementwise ops for in-place execution.

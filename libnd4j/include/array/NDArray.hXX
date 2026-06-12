@@ -1101,6 +1101,7 @@ NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *conte
 
   _offset = offset;
   _context = context;
+  if (_context == nullptr) _context = sd::LaunchContext::defaultContext();
   _isAttached = getContext()->getWorkspace() != nullptr;
   auto constShapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
   // bufferForShapeInfo()->getOrCreate() already called addRef() for the caller.
@@ -3659,7 +3660,7 @@ sd::LongType NDArray::sizeAt(const int dim)  {
   int actualDim = (dim >= 0) ? dim : (this->rankOf() + dim);
   sd::LongType result = shape::shapeOf(_shapeInfo)[actualDim];
 
-  const sd::LongType MAX_REASONABLE_DIM = 1000000000LL;  // 1 billion
+  const sd::LongType MAX_REASONABLE_DIM = 9000000000LL;  // 9 billion - supports large embedding matrices
   if (result < 0 || result > MAX_REASONABLE_DIM) {
     std::string errorMessage = "NDArray::sizeAt: SHAPE CORRUPTION DETECTED! ";
     errorMessage += "Dimension " + std::to_string(actualDim) + " has value " + std::to_string(result);

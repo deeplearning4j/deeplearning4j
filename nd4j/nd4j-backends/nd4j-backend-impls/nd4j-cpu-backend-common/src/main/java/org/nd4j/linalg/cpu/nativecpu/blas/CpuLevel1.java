@@ -38,6 +38,12 @@ import org.nd4j.nativeblas.Nd4jBlas;
 public class CpuLevel1 extends BaseLevel1 {
     private Nd4jBlas nd4jBlas = (Nd4jBlas) Nd4j.factory().blas();
 
+    private boolean isSafeForBlas(long N, INDArray arr, int inc) {
+        if (inc <= 0 || N <= 0) return false;
+        long maxIndex = arr.offset() + (N - 1) * (long) inc;
+        return maxIndex < arr.data().length();
+    }
+
     private FloatPointer floatPtr(INDArray arr) {
         return ((FloatPointer) arr.data().addressPointer()).getPointer(arr.offset());
     }
@@ -70,7 +76,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (incX >= 1 && incY >= 1) {
+        if (incX >= 1 && incY >= 1 && isSafeForBlas(N, X, incX) && isSafeForBlas(N, Y, incY)) {
             return Nd4j.getBlasLapackDelegator().cblas_sdot((int) N, floatPtr(X), incX,
                             floatPtr(Y), incY);
         } else {
@@ -88,7 +94,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected double ddot(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (incX >= 1 && incY >= 1) {
+        if (incX >= 1 && incY >= 1 && isSafeForBlas(N, X, incX) && isSafeForBlas(N, Y, incY)) {
             return Nd4j.getBlasLapackDelegator().cblas_ddot((int) N, doublePtr(X), incX,
                             doublePtr(Y), incY);
         } else {

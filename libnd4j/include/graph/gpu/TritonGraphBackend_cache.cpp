@@ -371,6 +371,7 @@ void TritonGraphBackend::writeBinaryToDiskCache(int startSlot, int endSlot,
   }
 
   std::ostringstream meta;
+  meta << "targetArch=" << binary.targetArch << "\n";
   meta << "numWarps=" << binary.numWarps << "\n";
   meta << "sharedMemBytes=" << binary.sharedMemBytes << "\n";
   meta << "globalScratchBytes=" << binary.globalScratchBytes << "\n";

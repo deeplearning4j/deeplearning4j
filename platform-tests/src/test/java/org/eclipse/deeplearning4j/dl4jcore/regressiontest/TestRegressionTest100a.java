@@ -59,7 +59,6 @@ import java.io.FileInputStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Disabled
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
 public class TestRegressionTest100a extends BaseDL4JTest {

@@ -57,27 +57,48 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     THROW_EXCEPTION("Failed to evaluate dimensions to exclude");
   }
 
-  if (dimsToExclude->size() == 0 || dimsToExclude->size() == rank) {
+  if (dimsToExclude->size() == 0) {
+    // All input dimensions are kept in each TAD — there is exactly 1 TAD = the full array.
+    // Example: rank-1 array with dims={0} → evalDimsToExclude returns {} → 1 TAD covering all elements.
+    ConstantShapeBuffer* fullShapeBuffer = CudaShapeBufferCreator::getInstance().create(const_cast<LongType*>(shapeInfo), rank);
+
+    LongType* baseOffset = new LongType[1 + SD_SHAPE_ALLOC_PADDING]();
+    baseOffset[0] = 0;
+    auto oPtr = std::make_shared<PointerWrapper>(baseOffset);
+    auto offDPtr = std::make_shared<PointerWrapper>(
+        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), (1 + SD_SHAPE_ALLOC_PADDING) * sizeof(LongType)),
+        std::make_shared<CudaPointerDeallocator>());
+
+    _tadShape = fullShapeBuffer;
+    _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);
+    _numTads = 1;
+
+    delete dimsToExclude;
+    return;
+  }
+
+  if (dimsToExclude->size() == static_cast<size_t>(rank)) {
+    // No dimensions kept in each TAD — every element is its own scalar TAD.
     const LongType totalElements = shape::length(shapeInfo);
-    
+
     auto scalarShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(shapeInfo));
     auto scalarShapeBuffer = CudaShapeBufferCreator::getInstance().create(scalarShapeInfo, 0);
-    
+
     LongType* offsetsBuf = new LongType[totalElements + SD_SHAPE_ALLOC_PADDING]();
 
     for (LongType i = 0; i < totalElements; ++i) {
       offsetsBuf[i] = i;
     }
-    
+
     auto oPtr = std::make_shared<PointerWrapper>(offsetsBuf);
     auto offDPtr = std::make_shared<PointerWrapper>(
         ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), (totalElements + SD_SHAPE_ALLOC_PADDING) * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
-    
+
     _tadShape = scalarShapeBuffer;
     _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);
     _numTads = totalElements;
-    
+
     delete dimsToExclude;
     return;
   }

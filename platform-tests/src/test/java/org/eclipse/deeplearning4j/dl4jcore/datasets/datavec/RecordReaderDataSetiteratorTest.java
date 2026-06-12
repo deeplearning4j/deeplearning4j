@@ -78,7 +78,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
 @DisplayName("Record Reader Data Setiterator Test")
-@Disabled
 @NativeTag
 class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
@@ -444,7 +443,6 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
     public Pair<double[][], File> makeRandomCSV(String tempFile, int nLines, int nFeatures) throws IOException {
         File temp = temporaryFolder.resolve(tempFile).toFile();
-        temp.mkdirs();
         temp.deleteOnExit();
         Random rand = new Random(12345);
         double[][] dArr = new double[nLines][nFeatures + 1];

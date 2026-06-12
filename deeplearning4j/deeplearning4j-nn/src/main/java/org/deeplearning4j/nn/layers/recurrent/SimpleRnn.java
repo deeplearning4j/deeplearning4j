@@ -98,15 +98,15 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, true, workspaceMgr);
         INDArray b = getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, true, workspaceMgr);
         INDArray g = (hasLayerNorm() ? getParamWithNoise(SimpleRnnParamInitializer.GAIN_KEY, true, workspaceMgr) : null);
-        INDArray gx = (g != null ? g.get(interval(0, 0, true), interval(0, nOut)) : null);
-        INDArray gr = (g != null ? g.get(interval(0, 0, true), interval(nOut, nOut * 2)) : null);
+        INDArray gx = (g != null ? g.get(interval(0, nOut)) : null);
+        INDArray gr = (g != null ? g.get(interval(nOut, nOut * 2)) : null);
 
         INDArray wg = gradientViews.get(SimpleRnnParamInitializer.WEIGHT_KEY);
         INDArray rwg = gradientViews.get(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY);
         INDArray bg = gradientViews.get(SimpleRnnParamInitializer.BIAS_KEY);
         INDArray gg = (hasLayerNorm() ? gradientViews.get(SimpleRnnParamInitializer.GAIN_KEY) : null);
-        INDArray gxg = (gg != null ? gg.get(interval(0, 0, true), interval(0, nOut)) : null);
-        INDArray grg = (gg != null ? gg.get(interval(0, 0, true), interval(nOut, nOut * 2)) : null);
+        INDArray gxg = (gg != null ? gg.get(interval(0, nOut)) : null);
+        INDArray grg = (gg != null ? gg.get(interval(nOut, nOut * 2)) : null);
 
         gradientsFlattened.assign(0);
 
@@ -233,8 +233,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr);
         INDArray b = getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray g = (hasLayerNorm() ? getParamWithNoise(SimpleRnnParamInitializer.GAIN_KEY, training, workspaceMgr) : null);
-        INDArray gx = (g != null ? g.get(interval(0, 0, true), interval(0, nOut)) : null);
-        INDArray gr = (g != null ? g.get(interval(0, 0, true), interval(nOut, nOut * 2)) : null);
+        INDArray gx = (g != null ? g.get(interval(0, nOut)) : null);
+        INDArray gr = (g != null ? g.get(interval(nOut, nOut * 2)) : null);
 
         INDArray out = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, w.dataType(), new long[]{m, nOut, tsLength}, 'f');
         INDArray outZ = (forBackprop ? workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, w.dataType(), out.shape()) : null);

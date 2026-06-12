@@ -203,18 +203,11 @@ public class KerasConvolution1D extends KerasConvolution {
 
             if (tfWeightOrder) {
                 /* TF backend stores 1D weights as [k, nIn, nOut].
-                 * dimOrder determines the expected 4D shape:
-                 *   channels_last  (TENSORFLOW/OIYX): [nOut, nIn, 1, k]
-                 *   channels_first (THEANO/YXIO):     [k, 1, nIn, nOut] */
-                if (this.getDimOrder() == KerasLayer.DimOrder.TENSORFLOW) {
-                    // OIYX: [k,nIn,nOut] → permute to [nOut,nIn,k] → reshape to [nOut,nIn,1,k]
-                    paramValue = kerasParamValue.permute(2, 1, 0).dup('c');
-                    paramValue = paramValue.reshape('c', paramValue.size(0), paramValue.size(1), 1, paramValue.size(2));
-                } else {
-                    // YXIO: [k,nIn,nOut] already kW-major → reshape to [k,1,nIn,nOut]
-                    paramValue = kerasParamValue.dup('c');
-                    paramValue = paramValue.reshape('c', paramValue.size(0), 1, paramValue.size(1), paramValue.size(2));
-                }
+                 * DL4J Conv1D uses YXIO weight format internally: [k, 1, nIn, nOut].
+                 * No permute needed — TF already stores weights in kW-major order
+                 * matching DL4J's YXIO layout. Simply reshape to [k, 1, nIn, nOut]. */
+                paramValue = kerasParamValue.dup('c');
+                paramValue = paramValue.reshape('c', paramValue.size(0), 1, paramValue.size(1), paramValue.size(2));
             } else {
                 /* Theano backend stores 1D weights as [nOut, nIn, k].
                  * Layer expects YXIO: [k, 1, nIn, nOut]. */

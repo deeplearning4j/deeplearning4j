@@ -1479,6 +1479,18 @@ function(setup_triton)
             endif()
             list(SORT _TRITON_MLIR_LIBS)
             list(SORT _TRITON_LLVM_LIBS)
+            # Separate critical MLIR libraries that need --whole-archive
+            # to prevent GNU ld from demoting STB_GNU_UNIQUE TypeID symbols to STB_LOCAL
+            set(_MLIR_WHOLE_ARCHIVE_LIBS "")
+            set(_MLIR_NORMAL_LIBS "")
+            foreach(_lib ${_TRITON_MLIR_LIBS})
+                get_filename_component(_name "${_lib}" NAME)
+                if(_name MATCHES "^libMLIRIR\\.a$|^libMLIRSupport\\.a$")
+                    list(APPEND _MLIR_WHOLE_ARCHIVE_LIBS "${_lib}")
+                else()
+                    list(APPEND _MLIR_NORMAL_LIBS "${_lib}")
+                endif()
+            endforeach()
             if(WIN32)
                 # MSVC linker handles circular deps automatically (no --start-group needed)
                 target_link_libraries(triton_interface INTERFACE
@@ -1502,8 +1514,11 @@ function(setup_triton)
                     )
                 else()
                     target_link_libraries(triton_interface INTERFACE
+                        -Wl,--whole-archive
+                        ${_MLIR_WHOLE_ARCHIVE_LIBS}
+                        -Wl,--no-whole-archive
                         -Wl,--start-group
-                        ${_TRITON_MLIR_LIBS}
+                        ${_MLIR_NORMAL_LIBS}
                         ${_TRITON_LLVM_LIBS}
                         ${_TRITON_MLIR_CAPI_LIBS}
                         -Wl,--end-group
@@ -1722,6 +1737,19 @@ function(setup_triton)
                 -DLLVM_BUILD_SHARED_LIBS=OFF
                 "-DCMAKE_C_FLAGS=/utf-8 /D_SILENCE_NONFLOATING_COMPLEX_DEPRECATION_WARNING"
                 "-DCMAKE_CXX_FLAGS=/utf-8 /D_SILENCE_NONFLOATING_COMPLEX_DEPRECATION_WARNING"
+            )
+        endif()
+
+        # Match critical compiler flags with libnd4j to prevent TypeID ODR violations.
+        # When MLIR .a files and libnd4j .o files are compiled with different flags
+        # (especially -fno-plt and -ffunction-sections), the linker may demote
+        # STB_GNU_UNIQUE template statics to STB_LOCAL, breaking MLIR's
+        # hasTrait<IsIsolatedFromAbove>() pointer comparison and causing 100%
+        # Triton kernel compilation failure.
+        if(NOT MSVC)
+            list(APPEND TRITON_LLVM_CMAKE_ARGS
+                "-DCMAKE_C_FLAGS=-fPIC -fno-plt -ffunction-sections -fdata-sections -ftls-model=global-dynamic"
+                "-DCMAKE_CXX_FLAGS=-fPIC -fno-plt -ffunction-sections -fdata-sections -ftls-model=global-dynamic"
             )
         endif()
 
@@ -2044,6 +2072,18 @@ function(setup_triton)
         # Libraries exist — use full paths (most reliable)
         list(SORT _TRITON_MLIR_LIBS)
         list(SORT _TRITON_LLVM_LIBS)
+        # Separate critical MLIR libraries that need --whole-archive
+        # to prevent GNU ld from demoting STB_GNU_UNIQUE TypeID symbols to STB_LOCAL
+        set(_MLIR_WHOLE_ARCHIVE_LIBS "")
+        set(_MLIR_NORMAL_LIBS "")
+        foreach(_lib ${_TRITON_MLIR_LIBS})
+            get_filename_component(_name "${_lib}" NAME)
+            if(_name MATCHES "^libMLIRIR\\.a$|^libMLIRSupport\\.a$")
+                list(APPEND _MLIR_WHOLE_ARCHIVE_LIBS "${_lib}")
+            else()
+                list(APPEND _MLIR_NORMAL_LIBS "${_lib}")
+            endif()
+        endforeach()
         if(WIN32)
             target_link_libraries(triton_interface INTERFACE
                 ${_TRITON_MLIR_LIBS}
@@ -2061,8 +2101,11 @@ function(setup_triton)
                 )
             else()
                 target_link_libraries(triton_interface INTERFACE
+                    -Wl,--whole-archive
+                    ${_MLIR_WHOLE_ARCHIVE_LIBS}
+                    -Wl,--no-whole-archive
                     -Wl,--start-group
-                    ${_TRITON_MLIR_LIBS}
+                    ${_MLIR_NORMAL_LIBS}
                     ${_TRITON_LLVM_LIBS}
                     -Wl,--end-group
                 )
@@ -2228,7 +2271,9 @@ function(setup_triton)
             if(APPLE OR ANDROID)
                 target_link_libraries(triton_interface INTERFACE ${_TRITON_DEFERRED_LIBS})
             else()
+                # --whole-archive for MLIRIR and MLIRSupport to preserve STB_GNU_UNIQUE TypeID symbols
                 target_link_libraries(triton_interface INTERFACE
+                    -Wl,--whole-archive -lMLIRIR -lMLIRSupport -Wl,--no-whole-archive
                     -Wl,--start-group ${_TRITON_DEFERRED_LIBS} -Wl,--end-group)
             endif()
             target_link_libraries(triton_interface INTERFACE -lz -lm)

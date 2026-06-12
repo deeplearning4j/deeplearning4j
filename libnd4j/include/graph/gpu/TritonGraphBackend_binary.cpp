@@ -453,6 +453,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     {
       std::ofstream metaOut(basePath + ".meta", std::ios::trunc);
       if (metaOut.good()) {
+        metaOut << "targetArch=" << dumpBinary.targetArch << "\n";
         metaOut << "numWarps=" << dumpBinary.numWarps << "\n";
         metaOut << "sharedMemBytes=" << dumpBinary.sharedMemBytes << "\n";
         metaOut << "globalScratchBytes=" << dumpBinary.globalScratchBytes << "\n";

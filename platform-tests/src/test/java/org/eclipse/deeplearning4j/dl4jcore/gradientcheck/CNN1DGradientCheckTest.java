@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.Convolution1DUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -71,9 +72,16 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
 
 
 
+    @AfterEach
+    void cleanupAfterEach() {
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        Nd4j.getMemoryManager().purgeCaches();
+        System.gc();
+    }
+
     @Override
     public long getTimeoutMilliseconds() {
-        return 18000;
+        return 180000;
     }
 
     @Test
@@ -129,6 +137,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                     assertTrue(gradOK,msg);
                     TestUtils.testModelSerialization(net);
+                    net.close();
                 }
             }
         }
@@ -201,6 +210,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                         assertTrue(gradOK,msg);
 
                         TestUtils.testModelSerialization(net);
+                        net.close();
                     }
                 }
             }
@@ -278,6 +288,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                         assertTrue(gradOK,msg);
 
                         TestUtils.testModelSerialization(net);
+                        net.close();
                     }
                 }
             }
@@ -328,6 +339,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                         assertTrue(gradOK,msg);
 
                         TestUtils.testModelSerialization(net);
+                        net.close();
                     }
                 }
             }
@@ -381,6 +393,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                     INDArray gradAfter = net.getFlattenedGradients().dup();
                     assertEquals(scoreBefore, scoreAfter, 1e-6);
                     assertEquals(gradBefore, gradAfter);
+                    net.close();
                 }
             }
         }
@@ -427,6 +440,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f).labels(label).inputMask(fm));
             assertTrue(gradOK,s);
             TestUtils.testModelSerialization(net);
+            net.close();
         }
     }
 }

@@ -111,24 +111,24 @@ DECLARE_SHAPE_FN(resize_bilinear) {
                  shape::length(inputShape->at(1)));
     REQUIRE_TRUE(block.numI() <= 1, 0,
                  "resize_bilinear: Resize params already given by the second param. Int params are expensive.");
-    width = newImageSize->e<int>(0);
-    height = newImageSize->e<int>(1);
+    height = newImageSize->e<int>(0);
+    width = newImageSize->e<int>(1);
   } else {
     REQUIRE_TRUE(block.numI() == 2, 0, "resize_bilinear: Neither resize width nor height are provided.");
-    width = INT_ARG(0);
-    height = INT_ARG(1);
+    height = INT_ARG(0);
+    width = INT_ARG(1);
   }
 
   ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(inRank), sd::LongType);
   outputShape[0] = inRank;
   if (inRank == 4) {
     outputShape[1] = in[1];
-    outputShape[2] = width;
-    outputShape[3] = height;
+    outputShape[2] = height;
+    outputShape[3] = width;
     outputShape[4] = in[4];
   } else {  // input shape is 3D, so result also should be 3D
-    outputShape[1] = width;
-    outputShape[2] = height;
+    outputShape[1] = height;
+    outputShape[2] = width;
     outputShape[3] = in[3];
   }
   if (DataTypeUtils::isR(ArrayOptions::dataType(in))) {

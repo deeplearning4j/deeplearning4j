@@ -45,7 +45,6 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 
 @Slf4j
 
-@Disabled
 @NativeTag
 @Tag(TagNames.NDARRAY_INDEXING)
 public class CrashTest extends BaseNd4jTestWithBackends {

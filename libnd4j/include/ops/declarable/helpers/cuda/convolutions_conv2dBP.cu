@@ -166,7 +166,13 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   // Calculate gradB
   if (gradB) {
     std::vector<LongType> axes = {1};  // Sum over bS*oH*oW dimension
-    gradO2d->reduceAlongDimension(reduce::Sum, gradB, &axes);
+    // gradO2d is [oC, bS*oH*oW]; reduction along axis 1 produces shape [oC] (1D).
+    // gradB may be allocated as [1, oC] (2D) when the bias was [1, oC], so we must
+    // reshape it to 1D before the reduction to avoid a shape mismatch.
+    std::vector<LongType> gradBShape1d = {gradB->lengthOf()};
+    NDArray *gradB1d = gradB->reshape(gradB->ordering(), gradBShape1d, false);
+    gradO2d->reduceAlongDimension(reduce::Sum, gradB1d, &axes);
+    delete gradB1d;
   }
 
   // Calculate gradI: permute weights to [iC, kH, kW, oC], dup contiguous,

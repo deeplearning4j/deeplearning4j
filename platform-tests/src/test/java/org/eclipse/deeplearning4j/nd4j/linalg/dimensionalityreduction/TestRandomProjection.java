@@ -20,9 +20,9 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.dimensionalityreduction;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,12 +44,26 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.dimensionalityreduction.RandomProjection.johnsonLindenStraussMinDim;
 
-@Disabled
 @Tag(TagNames.NDARRAY_ETL)
 @NativeTag
 public class TestRandomProjection extends BaseNd4jTestWithBackends {
 
-    INDArray z1 = Nd4j.createUninitialized(new int[]{(int)1e6, 1000});
+    // z1 is allocated once for the entire class to avoid repeated 8GB allocations.
+    // Shape [1000000, 1000] is needed for the Johnson-Lindenstrauss / targetShape tests.
+    static INDArray z1;
+
+    @BeforeAll
+    public static void setupZ1() {
+        z1 = Nd4j.createUninitialized(new int[]{(int)1e6, 1000});
+    }
+
+    @AfterAll
+    public static void teardownZ1() {
+        if (z1 != null) {
+            z1.close();
+            z1 = null;
+        }
+    }
 
 
     @ParameterizedTest

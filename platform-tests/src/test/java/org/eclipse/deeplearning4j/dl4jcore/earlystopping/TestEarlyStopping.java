@@ -54,6 +54,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -99,6 +100,12 @@ public class TestEarlyStopping extends BaseDL4JTest {
     @Override
     public DataType getDataType(){
         return DataType.DOUBLE;
+    }
+
+    @AfterEach
+    public void cleanupAfterTest() {
+        Nd4j.getMemoryManager().purgeCaches();
+        Nd4j.getMemoryManager().invokeGc();
     }
 
     @Test
@@ -227,6 +234,12 @@ public class TestEarlyStopping extends BaseDL4JTest {
                     throw new RuntimeException();
             }
             assertEquals(result.getBestModelScore(), score, 1e-2,msg);
+
+            // Release network resources to prevent offheap accumulation across loop iterations
+            net.close();
+            bestNetwork.close();
+            Nd4j.getMemoryManager().purgeCaches();
+            Nd4j.getMemoryManager().invokeGc();
         }
     }
 
@@ -258,6 +271,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
         assertEquals(5, result.getTotalEpochs());
         assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition, result.getTerminationReason());
+
+        net.close();
+        result.getBestModel().close();
     }
 
     @Test
@@ -304,6 +320,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
         irisIter.reset();
         double score = bestNetwork.score(irisIter.next(), false);
         assertEquals(result.getBestModelScore(), score, 1e-2);
+
+        net.close();
+        bestNetwork.close();
     }
 
     @Test
@@ -343,6 +362,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
         assertEquals(0, result.getBestModelEpoch());
         assertNotNull(result.getBestModel());
+
+        net.close();
+        ((MultiLayerNetwork) result.getBestModel()).close();
     }
 
     @Test
@@ -385,6 +407,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         result.getTerminationReason());
         String expDetails = new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS).toString();
         assertEquals(expDetails, result.getTerminationDetails());
+
+        net.close();
+        ((MultiLayerNetwork) result.getBestModel()).close();
     }
 
     @Test
@@ -425,6 +450,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
         assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition, result.getTerminationReason());
         String expDetails = new ScoreImprovementEpochTerminationCondition(5).toString();
         assertEquals(expDetails, result.getTerminationDetails());
+
+        net.close();
+        ((MultiLayerNetwork) result.getBestModel()).close();
     }
 
     @Test
@@ -476,6 +504,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
         assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition, result.getTerminationReason());
         String expDetails = new ScoreImprovementEpochTerminationCondition(5, minImprovement).toString();
         assertEquals(expDetails, result.getTerminationDetails());
+
+        net.close();
+        ((MultiLayerNetwork) result.getBestModel()).close();
     }
 
     @Test
@@ -514,6 +545,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
         BaseLayer bl = (BaseLayer) net.conf().getLayer();
         assertEquals(bl.getActivationFn().toString(), ((BaseLayer) mln.conf().getLayer()).getActivationFn().toString());
         assertEquals(bl.getIUpdater(), ((BaseLayer) mln.conf().getLayer()).getIUpdater());
+
+        net.close();
+        mln.close();
     }
 
     @Test
@@ -547,6 +581,8 @@ public class TestEarlyStopping extends BaseDL4JTest {
         assertEquals(1, listener.onStartCallCount);
         assertEquals(5, listener.onEpochCallCount);
         assertEquals(1, listener.onCompletionCallCount);
+
+        net.close();
     }
 
     private static class LoggingEarlyStoppingListener implements EarlyStoppingListener<MultiLayerNetwork> {
@@ -616,6 +652,11 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);
+
+            net.close();
+            result.getBestModel().close();
+            Nd4j.getMemoryManager().purgeCaches();
+            Nd4j.getMemoryManager().invokeGc();
         }
     }
 
@@ -659,6 +700,11 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);
+
+            net.close();
+            result.getBestModel().close();
+            Nd4j.getMemoryManager().purgeCaches();
+            Nd4j.getMemoryManager().invokeGc();
         }
     }
 
@@ -706,6 +752,11 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);
+
+            net.close();
+            result.getBestModel().close();
+            Nd4j.getMemoryManager().purgeCaches();
+            Nd4j.getMemoryManager().invokeGc();
         }
     }
 
@@ -797,6 +848,11 @@ public class TestEarlyStopping extends BaseDL4JTest {
             EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
 
             assertNotNull(result.getBestModel());
+
+            net.close();
+            result.getBestModel().close();
+            Nd4j.getMemoryManager().purgeCaches();
+            Nd4j.getMemoryManager().invokeGc();
         }
     }
 
@@ -833,6 +889,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
         assertEquals(4, tl.maxEpochStart);
         assertEquals(4, tl.maxEpochEnd);
+
+        net.close();
+        result.getBestModel().close();
     }
 
     @Data
@@ -929,6 +988,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
                 assertTrue(map.get(i) > map.get(i-1));
             }
         }
+
+        net.close();
+        result.getBestModel().close();
     }
 
 

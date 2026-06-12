@@ -50,6 +50,7 @@ CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
     helpers::adjustAxis(input->rankOf(), axisVector, axis);
     helpers::argMax(*input, *output, axis);
   } else {
+    helpers::adjustAxis(input->rankOf(), axis);
     helpers::argMax(*input, *output, axis);
   }
 

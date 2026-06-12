@@ -88,7 +88,7 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
    THROW_EXCEPTION(errorMessage.c_str());
  }
 
- const LongType MAX_REASONABLE_DIM = 1000000000LL;  // 1 billion - generous limit
+ const LongType MAX_REASONABLE_DIM = 9000000000LL;  // 9 billion - supports large embedding matrices (e.g. 10M x 300 = 3B elements)
  const LongType* shapeValues = shape::shapeOf(shapeInfo);
  for (int i = 0; i < inputRank; i++) {
    LongType dimValue = shapeValues[i];

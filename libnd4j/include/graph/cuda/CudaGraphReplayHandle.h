@@ -120,6 +120,7 @@ class SD_LIB_EXPORT CudaGraphReplayHandle : public GraphReplayHandle {
  private:
   std::shared_ptr<sd::cuda::CudaGraphHandle> handle_;
   int deviceId_;
+  int replayCount_ = 0;
 };
 
 }  // namespace graph

@@ -181,6 +181,17 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected synchronized void initLearners() {
         if (!configured) {
             log.info("Building learning algorithms:");
+            // Propagate vectorCalcThreads to configuration.workers so that the elements learning
+            // algorithm (e.g. SkipGram) uses the same thread count for batch execution.
+            // This prevents data races on shared syn1/Huffman-tree nodes when vectorCalcThreads=1
+            // (the typical sequential-training configuration). VectorsConfiguration initializes
+            // workers to Runtime.getRuntime().availableProcessors(), which spawns all CPU threads
+            // in parallel_tad causing concurrent writes to shared Huffman-tree syn1 nodes and
+            // preventing convergence on small corpora. vectorCalcThreads (default=1) takes
+            // precedence as the explicit parallelism setting for this training session.
+            if (vectorCalcThreads > 0) {
+                configuration.setWorkers(vectorCalcThreads);
+            }
             if (trainElementsVectors && elementsLearningAlgorithm != null && !trainSequenceVectors) {
                 log.info("          building ElementsLearningAlgorithm: [" + elementsLearningAlgorithm.getCodeName()
                         + "]");
@@ -323,6 +334,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         initLearners();
         initIntersectVectors();
+
+        // Always reset the iterator before training. When vocab is pre-built (resetModel=false,
+        // vocab.numWords()>0), buildVocab() is not called, so the iterator may be exhausted
+        // (e.g. if VocabConstructor consumed it before fit() was called). Without this reset,
+        // zero sequences are processed and training is a no-op, producing near-zero similarity.
+        this.iterator.reset();
 
         log.info("Starting learning process...");
         timeSpent.set(System.currentTimeMillis());

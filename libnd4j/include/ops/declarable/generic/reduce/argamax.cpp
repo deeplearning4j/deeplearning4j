@@ -48,6 +48,7 @@ CUSTOM_OP_IMPL(argamax, 1, 1, false, 0, -2) {
     helpers::adjustAxis(input->rankOf(), axisVector, axis);
     helpers::argAbsMax(*input, *output, axis);
   } else {
+    helpers::adjustAxis(input->rankOf(), axis);
     helpers::argAbsMax(*input, *output, axis);
   }
 

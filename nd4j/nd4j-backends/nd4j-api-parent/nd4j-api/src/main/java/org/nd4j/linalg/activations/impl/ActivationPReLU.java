@@ -42,8 +42,13 @@ public class ActivationPReLU extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
+        // If alpha is a view (e.g. a slice of a larger parameter array), dup it to ensure
+        // the C++ native op receives a contiguous array with offset=0. Without this dup,
+        // the native code may read alpha at the wrong buffer offset and see 0 instead of
+        // the actual parameter value, producing f(x) = 0*x = 0 for all negative inputs.
+        INDArray alphaForOp = alpha.isView() ? alpha.dup() : alpha;
         DynamicCustomOp.DynamicCustomOpsBuilder prelu = DynamicCustomOp.builder("prelu")
-                .addOutputs(in).addInputs(in, alpha);
+                .addOutputs(in).addInputs(in, alphaForOp);
         if (sharedAxes != null) {
             for (long axis: sharedAxes) {
                 prelu.addIntegerArguments(axis);
@@ -58,8 +63,13 @@ public class ActivationPReLU extends BaseActivationFunction {
         assertShape(in, epsilon);
         INDArray dLdalpha = alpha.ulike();
         INDArray outTemp = in.ulike();
+        // If alpha is a view (e.g. a slice of a larger parameter array), dup it to ensure
+        // the C++ native op receives a contiguous array with offset=0. Without this dup,
+        // the native code may read alpha at the wrong buffer offset and see 0 instead of
+        // the actual parameter value, producing dLdI = grO * 0 = 0 for all negative inputs.
+        INDArray alphaForOp = alpha.isView() ? alpha.dup() : alpha;
         DynamicCustomOp.DynamicCustomOpsBuilder preluBp = DynamicCustomOp.builder("prelu_bp")
-                .addInputs(in, alpha, epsilon)
+                .addInputs(in, alphaForOp, epsilon)
                 .addOutputs(outTemp, dLdalpha);
 
         if (sharedAxes != null) {

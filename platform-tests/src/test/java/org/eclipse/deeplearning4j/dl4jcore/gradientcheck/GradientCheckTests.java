@@ -37,6 +37,7 @@ import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitConstant;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -333,7 +334,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
                 .list().layer(new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                                 .updater(new NoOp()).build())
-                .layer(new PReLULayer.Builder().inputShape(3).sharedAxes(1).updater(new NoOp()).build())
+                .layer(new PReLULayer.Builder().inputShape(3).sharedAxes(1).updater(new NoOp()).weightInit(new WeightInitConstant(0.25)).build())
                 .layer(new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
                         .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).activation(Activation.SOFTMAX).build())
@@ -342,8 +343,19 @@ public class GradientCheckTests extends BaseDL4JTest {
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
         mln.init();
 
+        // PReLU weight defaults to 0.0 which is the kink point where the derivative is undefined.
+        // Numerical gradient check straddles the discontinuity (f(0+eps) - f(0-eps) = 0) while
+        // backprop yields a non-zero gradient, causing relError = 1.0. Initialize to 0.25 (typical
+        // PReLU default) so the weight is away from the kink point.
+        mln.getLayer(1).setParam("W", Nd4j.ones(mln.getLayer(1).getParam("W").shape()).mul(0.25));
+
         if (PRINT_RESULTS) {
             System.out.println("testEmbeddingLayerSimple");
+            System.out.println("Embedding weights: " + mln.getLayer(0).getParam("W"));
+            System.out.println("Input indices: " + input);
+            // Check activation output of embedding layer (= input to PReLU)
+            INDArray embOut = mln.feedForwardToLayer(0, input, false).get(1);
+            System.out.println("Embedding output (PReLU input): " + embOut);
 //            for (int j = 0; j < mln.getnLayers(); j++)
 //                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
         }

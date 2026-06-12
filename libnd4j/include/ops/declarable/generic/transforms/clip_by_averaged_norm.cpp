@@ -32,7 +32,7 @@ namespace sd {
 namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
-CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, true, -2, 0) {
+CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, false, -2, 0) {
   if (block.inputs()->size() > 1) {
     auto input = INPUT_VARIABLE(0);
     auto clipNorm = INPUT_VARIABLE(1);

@@ -108,7 +108,7 @@ bool CudaGraphReplayHandle::replay(void* stream) {
                  (void*)exec, (void*)cudaStr, deviceId_,
                  handle_->getNumNodes(), (int)handle_->getState());
     cudaError_t err = cudaGraphLaunch(exec, cudaStr);
-    if (err == cudaSuccess) return true;
+    if (err == cudaSuccess) { replayCount_++; return true; }
     // Launch failed — fall through to full launchAsync for detailed diagnostics
     DSP_DIAG_DEV(FALLBACK, deviceId_,
                  "CudaGraphReplayHandle::replay cudaGraphLaunch FAILED err=%d (%s) exec=%p stream=%p",
@@ -122,7 +122,9 @@ bool CudaGraphReplayHandle::replay(void* stream) {
 
   // Slow path: full launchAsync with diagnostics
   bool ok = handle_->launchAsync(cudaStr);
-  if (!ok) {
+  if (ok) {
+    replayCount_++;
+  } else {
     DSP_DIAG_DEV(FALLBACK, deviceId_,
                  "CudaGraphReplayHandle::replay launchAsync FAILED device=%d state=%d",
                  deviceId_, (int)handle_->getState());
@@ -154,7 +156,7 @@ ReplayStatistics CudaGraphReplayHandle::getStatistics() const {
                        cudaStats.numMemcpyD2D + cudaStats.numMemsets;
   stats.estimatedMemory = cudaStats.totalMemoryOps;
   stats.captureTimeMs = cudaStats.estimatedTimeMs;
-  stats.replayCount = static_cast<int>(handle_->getExecutionTimeline().size());
+  stats.replayCount = replayCount_;
   return stats;
 }
 

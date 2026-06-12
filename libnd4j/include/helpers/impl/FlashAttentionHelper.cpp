@@ -245,7 +245,17 @@ void FlashAttentionHelper::forward3D(
 #endif
 
   // Batched matmul: scores @ V -> [batch, seqQ, dim]
-  MmulHelper::matmul(workBuffer, value, output, false, false, 1.0, 0.0);
+  // IMPORTANT: Do NOT write directly to `output`. When the DSP allocator produces
+  // a non-contiguous output buffer (e.g. a 1D oversized buffer reshaped in-place),
+  // MmulHelper detects the non-contiguous stride layout and silently allocates a
+  // fresh temporary array for the result, leaving the actual `output` buffer all-zeros.
+  // Use a workspace buffer for the matmul and then assign back to guarantee that the
+  // result always lands in the real output buffer regardless of its stride layout.
+  // (Same fix pattern as onnx_multi_head_attention.cpp lines 360-383.)
+  std::vector<LongType> outShape3d = {batch, seqLenQ, dim};
+  NDArray* outBuffer3d = workspace->getBuffer("forward3d_out", outShape3d, query->dataType(), context);
+  MmulHelper::matmul(workBuffer, value, outBuffer3d, false, false, 1.0, 0.0);
+  output->assign(outBuffer3d);
 
   if (softmaxLse != nullptr) {
     softmaxLse->nullify();

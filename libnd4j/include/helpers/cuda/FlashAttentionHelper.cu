@@ -820,7 +820,6 @@ void fusedAttentionCuda(
 
  if (attentionBias != nullptr && !attentionBias->isEmpty()) {
    biasRank = attentionBias->rankOf();
-   biasPtr = attentionBias->specialBuffer();
 
    if (biasRank == 3) {
      // [batch, seqQ, seqKV] - use broadcast-safe strides (0 for size-1 dims)
@@ -833,7 +832,12 @@ void fusedAttentionCuda(
      biasStride1 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
      biasStride2 = attentionBias->sizeAt(3) > 1 ? attentionBias->strideAt(3) : 0;
    }
+   // IMPORTANT: prepareSpecialUse BEFORE reading specialBuffer().
+   // attentionBias may be host-only when first created (specialBuffer() returns host ptr).
+   // prepareSpecialUse calls syncToDevice(), which allocates the device buffer and copies
+   // data to it. Reading specialBuffer() AFTER ensures we get the valid device pointer.
    NDArray::prepareSpecialUse({output}, {query, key, value, attentionBias});
+   biasPtr = attentionBias->specialBuffer();
  } else {
    NDArray::prepareSpecialUse({output}, {query, key, value});
  }

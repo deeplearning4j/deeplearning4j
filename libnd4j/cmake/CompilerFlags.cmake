@@ -23,8 +23,15 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     # - global-dynamic: Uses __tls_get_addr() for dynamic TLS allocation at runtime
     # - Works with dlopen() because TLS is allocated dynamically, not from static block
     # - Slightly slower than initial-exec, but required for dlopen() compatibility
-    # Also disable thread-safe static initialization guards which use TLS internally
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftls-model=global-dynamic -fno-threadsafe-statics")
+    #
+    # NOTE: Do NOT add -fno-threadsafe-statics here. GCC's __cxa_guard_acquire uses
+    # futex, not TLS — it is unrelated to the dlopen TLS exhaustion issue. Adding it
+    # causes TypeID ODR violations with MLIR: our .o files get BSS-local (b) static
+    # locals while the MLIR .a files (compiled without -fno-threadsafe-statics) get
+    # unique-global (u) symbols. Both coexist in libnd4jcuda.so at different addresses,
+    # breaking MLIR's hasTrait<IsIsolatedFromAbove>() pointer comparison and causing
+    # 100% Triton kernel compilation failure.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftls-model=global-dynamic")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ftls-model=global-dynamic")
 
     # ADDITIONAL FIX: Use GNU2 TLS dialect (TLSDESC) for better dlopen() support
@@ -281,9 +288,8 @@ if(SD_SANITIZE)
         # - global-dynamic: Uses __tls_get_addr() for dynamic TLS allocation
         # - Works with libraries loaded via dlopen() (JavaCPP's method)
         # - Avoids static TLS block exhaustion
-        # ALSO disable thread-safe statics to prevent __tls_guard from using initial-exec TLS
-        # Thread-safe static initialization uses internal TLS that doesn't respect -ftls-model flag
-        set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -ftls-model=global-dynamic -fno-threadsafe-statics")
+        # NOTE: Do NOT add -fno-threadsafe-statics here — it breaks MLIR TypeID ODR across TUs
+        set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -ftls-model=global-dynamic")
 
         # Additional memory optimizations for template-heavy instantiation files
         set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -fmerge-all-constants")
@@ -700,12 +706,12 @@ if(SD_GCC_FUNCTRACE)
         # Debug flags WITHOUT function instrumentation (reduces binary size significantly)
         # Keep frame pointers for stack traces
         # MEMORY OPTIMIZATION: Use -g1 (minimal debug info) instead of -ggdb3
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g1 -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g1 -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -ftls-model=global-dynamic")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g1 -fno-omit-frame-pointer -ftls-model=global-dynamic")
         message(STATUS "Applied memory-optimized debug flags for GCC:")
         message(STATUS "  - g1 (minimal debug info) for 40-60% memory reduction vs ggdb3")
         message(STATUS "  - frame pointers enabled for stack traces")
-        message(STATUS "  - disabled thread-safe static guards")
+        message(STATUS "  - thread-safe static guards preserved (required for MLIR TypeID)")
 
         # Override any conflicting optimization
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -714,12 +720,12 @@ if(SD_GCC_FUNCTRACE)
         # Debug flags WITHOUT function instrumentation (reduces binary size significantly)
         # Keep frame pointers for stack traces
         # MEMORY OPTIMIZATION: Use -gline-tables-only instead of -ggdb3 (Clang-specific flag)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic -fno-standalone-debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -ftls-model=global-dynamic -fno-standalone-debug")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gline-tables-only -fno-omit-frame-pointer -ftls-model=global-dynamic -fno-standalone-debug")
         message(STATUS "Applied memory-optimized debug flags for Clang:")
         message(STATUS "  - gline-tables-only (Clang-specific) for 40-60% memory reduction vs ggdb3")
         message(STATUS "  - frame pointers enabled for stack traces")
-        message(STATUS "  - disabled thread-safe static guards")
+        message(STATUS "  - thread-safe static guards preserved (required for MLIR TypeID)")
 
         # Override any conflicting optimization
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

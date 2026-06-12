@@ -42,15 +42,33 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     THROW_EXCEPTION("Failed to evaluate dimensions to exclude");
   }
 
-  if (dimsToExclude->size() == 0 || dimsToExclude->size() == rank) {
+  if (dimsToExclude->size() == 0) {
+    // All input dimensions are kept in each TAD — there is exactly 1 TAD = the full array.
+    // Example: rank-1 array with dims={0} → evalDimsToExclude returns {} → 1 TAD covering all elements.
+    auto fullShapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+
+    LongType* baseOffset = new LongType[1 + SD_SHAPE_ALLOC_PADDING]();
+    baseOffset[0] = 0;
+    auto oPtr = std::make_shared<PointerWrapper>(baseOffset);
+
+    _tadShape = fullShapeBuffer;
+    _tadOffsets = new ConstantOffsetsBuffer(oPtr);
+    _numTads = 1;
+
+    delete dimsToExclude;
+    return;
+  }
+
+  if (dimsToExclude->size() == static_cast<size_t>(rank)) {
+    // No dimensions kept in each TAD — every element is its own scalar TAD.
     const LongType totalElements = shape::length(shapeInfo);
-    
+
     auto scalarShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(shapeInfo));
     auto scalarShapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(scalarShapeInfo);
-    
+
     auto oPtr = std::make_shared<PointerWrapper>(new LongType[totalElements + SD_SHAPE_ALLOC_PADDING]());
     LongType* offsets = oPtr->pointerAsT<LongType>();
-    
+
     for (LongType i = 0; i < totalElements; ++i) {
       offsets[i] = i;
     }
@@ -58,7 +76,7 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     _tadShape = scalarShapeBuffer;
     _tadOffsets = new ConstantOffsetsBuffer(oPtr);
     _numTads = totalElements;
-    
+
     delete dimsToExclude;
     return;
   }

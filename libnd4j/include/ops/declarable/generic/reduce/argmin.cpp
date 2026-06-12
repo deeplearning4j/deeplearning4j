@@ -49,6 +49,7 @@ CUSTOM_OP_IMPL(argmin, 1, 1, false, 0, -2) {
     helpers::adjustAxis(input->rankOf(), axisVector, axis);
     helpers::argMin(*input, *output, axis);
   } else {
+    helpers::adjustAxis(input->rankOf(), axis);
     helpers::argMin(*input, *output, axis);
   }
 
