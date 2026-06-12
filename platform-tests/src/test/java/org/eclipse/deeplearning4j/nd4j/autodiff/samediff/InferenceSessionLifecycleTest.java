@@ -82,17 +82,17 @@ public class InferenceSessionLifecycleTest extends BaseNd4jTestWithBackends {
     public void testIntermediateArraysReleasedDuringExecution(Nd4jBackend backend) {
         // Force standard (non-DSP) execution path
         boolean prevDynamicEnabled = InferenceSession.isDynamicShapePlanEnabled();
-        InferenceFactory prevFactory = SameDiff.getInferenceFactory();
         boolean prevCache = ArrayCacheMemoryMgr.isCacheEnabled();
 
         ReleaseTrackingFactory factory = new ReleaseTrackingFactory();
         try {
             InferenceSession.setDynamicShapePlanEnabled(false);
             ArrayCacheMemoryMgr.setEnableCache(false);
-            SameDiff.bindInferenceFactory(factory);
 
             // Build a 5-op linear chain: x -> a -> b -> c -> d -> e
             SameDiff sd = SameDiff.create();
+            // Bind the tracking factory on this instance only (no global side effects)
+            sd.bindInferenceFactory(factory);
             SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 4);
             SDVariable a = x.add("a", 1.0);
             SDVariable b = a.mul("b", 2.0);
@@ -128,7 +128,6 @@ public class InferenceSessionLifecycleTest extends BaseNd4jTestWithBackends {
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDynamicEnabled);
             ArrayCacheMemoryMgr.setEnableCache(prevCache);
-            SameDiff.bindInferenceFactory(prevFactory);
         }
     }
 
@@ -183,17 +182,17 @@ public class InferenceSessionLifecycleTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMemoryBoundedDuringRepeatedExecution(Nd4jBackend backend) {
         boolean prevDynamicEnabled = InferenceSession.isDynamicShapePlanEnabled();
-        InferenceFactory prevFactory = SameDiff.getInferenceFactory();
         boolean prevCache = ArrayCacheMemoryMgr.isCacheEnabled();
 
         ReleaseTrackingFactory factory = new ReleaseTrackingFactory();
         try {
             InferenceSession.setDynamicShapePlanEnabled(false);
             ArrayCacheMemoryMgr.setEnableCache(false);
-            SameDiff.bindInferenceFactory(factory);
 
             // Build a wider graph to create more intermediates per step
             SameDiff sd = SameDiff.create();
+            // Bind the tracking factory on this instance only (no global side effects)
+            sd.bindInferenceFactory(factory);
             SDVariable x = sd.placeHolder("x", DataType.FLOAT, 4, 128);
             SDVariable a = x.add("a", 1.0);
             SDVariable b = a.mul("b", 2.0);
@@ -225,7 +224,6 @@ public class InferenceSessionLifecycleTest extends BaseNd4jTestWithBackends {
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDynamicEnabled);
             ArrayCacheMemoryMgr.setEnableCache(prevCache);
-            SameDiff.bindInferenceFactory(prevFactory);
         }
     }
 

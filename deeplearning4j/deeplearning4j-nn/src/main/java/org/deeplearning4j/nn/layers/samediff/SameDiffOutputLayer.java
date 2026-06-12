@@ -118,7 +118,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
         InferenceSession is = sameDiff.getSessions().get(Thread.currentThread().getId());
         if(is == null){
-            is = SameDiff.getInferenceFactory().create(sameDiff);
+            is = sameDiff.getInferenceFactory().create(sameDiff);
             sameDiff.getSessions().put(Thread.currentThread().getId(), is);
         }
         is.setMmgr(mmgr);
@@ -171,7 +171,8 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
         //Configure memory management for SameDiff instance - use DL4J workspaces
         Map<Long,InferenceSession> sessionMap = sameDiff.getFunction("grad").getSessions();
         if(!sessionMap.containsKey(Thread.currentThread().getId())){
-            sessionMap.put(Thread.currentThread().getId(), SameDiff.getInferenceFactory().create(sameDiff.getFunction("grad")));
+            SameDiff gradSd = sameDiff.getFunction("grad");
+            sessionMap.put(Thread.currentThread().getId(), gradSd.getInferenceFactory().create(gradSd));
         }
         String wsNameWorking = workspaceMgr.getWorkspaceName(ArrayType.BP_WORKING_MEM);
         String wsNameActGrad = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATION_GRAD);

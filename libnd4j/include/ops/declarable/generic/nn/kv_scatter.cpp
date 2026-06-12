@@ -75,8 +75,13 @@ CUSTOM_OP_IMPL(kv_scatter, 2, 1, false, 0, 1) {
 
       NDArray::prepareSpecialUse({staticBuf}, {present});
 
+#ifdef SD_CUDA
       entries[i].srcPtr = present->specialBuffer();
       entries[i].dstPtr = staticBuf->specialBuffer();
+#else
+      entries[i].srcPtr = present->buffer();
+      entries[i].dstPtr = staticBuf->buffer();
+#endif
       entries[i].heads = present->sizeAt(1);
       entries[i].srcSeqLen = present->sizeAt(2);
       entries[i].dstSeqLen = staticBuf->sizeAt(2);

@@ -42,6 +42,9 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.*;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
@@ -434,8 +437,19 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 JsonNode nncNode = layerConfs.get(layerCount);
                 if (nncNode == null) { layerCount++; continue; }
                 JsonNode layerWrapperNode = nncNode.get("layer");
-                if (layerWrapperNode == null || layerWrapperNode.size() != 1) { layerCount++; continue; }
-                JsonNode layerNode = layerWrapperNode.elements().next();
+                if (layerWrapperNode == null) { layerCount++; continue; }
+                // Handle two legacy formats:
+                // - @class format (1.0.0-alpha): layer node has @class field and all properties inline
+                // - wrapper format (pre-1.0.0-alpha): layer node has a single child keyed by type name
+                JsonNode layerNode;
+                if (layerWrapperNode.has("@class")) {
+                    layerNode = layerWrapperNode;
+                } else if (layerWrapperNode.size() == 1) {
+                    layerNode = layerWrapperNode.elements().next();
+                } else {
+                    layerCount++;
+                    continue;
+                }
 
                 if (l instanceof BaseLayer) {
                     BaseLayer bl = (BaseLayer) l;
@@ -534,6 +548,32 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                             }
                         } catch (Exception e) {
                             log.warn("Failed to apply legacy weightInit backward compatibility for layer {}", l.getLayerName(), e);
+                        }
+                    }
+
+                    // l2/l1 -> WeightDecay/L1Regularization migration (1.0.0-alpha and earlier)
+                    if (bl.getRegularization() == null || bl.getRegularization().isEmpty()) {
+                        try {
+                            if (bl.getRegularization() == null) bl.setRegularization(new ArrayList<>());
+                            if (bl.getRegularizationBias() == null) bl.setRegularizationBias(new ArrayList<>());
+                            if (layerNode.has("l2")) {
+                                double l2 = layerNode.get("l2").asDouble();
+                                if (l2 > 0.0) bl.getRegularization().add(new WeightDecay(l2, false));
+                            }
+                            if (layerNode.has("l1")) {
+                                double l1 = layerNode.get("l1").asDouble();
+                                if (l1 > 0.0) bl.getRegularization().add(new L1Regularization(l1));
+                            }
+                            if (layerNode.has("l2Bias")) {
+                                double l2b = layerNode.get("l2Bias").asDouble();
+                                if (l2b > 0.0) bl.getRegularizationBias().add(new WeightDecay(l2b, false));
+                            }
+                            if (layerNode.has("l1Bias")) {
+                                double l1b = layerNode.get("l1Bias").asDouble();
+                                if (l1b > 0.0) bl.getRegularizationBias().add(new L1Regularization(l1b));
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to apply legacy l2/l1 regularization backward compatibility for layer {}", l.getLayerName(), e);
                         }
                     }
                 }

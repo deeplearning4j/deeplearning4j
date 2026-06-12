@@ -58,7 +58,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
@@ -78,7 +78,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.NEEDS_VERIFY)
-@Disabled("Permissions issues on CI")
 public class SequenceVectorsTest extends BaseDL4JTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(SequenceVectorsTest.class);
@@ -90,8 +89,7 @@ public class SequenceVectorsTest extends BaseDL4JTest {
 
     @Test
     public void testAbstractW2VModel() throws Exception {
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("big/raw_sentences.txt");
 
         logger.info("dtype: {}", Nd4j.dataType());
 
@@ -227,8 +225,7 @@ public class SequenceVectorsTest extends BaseDL4JTest {
     @Test
 
     public void testInternalVocabConstruction() throws Exception {
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("big/raw_sentences.txt");
 
         BasicLineIterator underlyingIterator = new BasicLineIterator(file);
 
@@ -283,6 +280,7 @@ public class SequenceVectorsTest extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Requires external BlogCatalog dataset at hardcoded /ext/Temp/BlogCatalog/ path")
     public void testDeepWalk() throws Exception {
         AbstractCache<Blogger> vocabCache = new AbstractCache.Builder<Blogger>().build();
 

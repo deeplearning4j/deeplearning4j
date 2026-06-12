@@ -296,7 +296,20 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     public final SDTraining training = new SDTraining(this);
 
     public final static String INFERENCE_FACTORY_CLASS = "inferencefactory.class";
-    private static InferenceFactory INFERENCE_FACTORY;
+    /**
+     * Per-instance inference factory. Defaults to the class-level default determined at class
+     * initialization time (a WorkspaceInferenceFactory on CUDA backends, DefaultInferenceFactory
+     * otherwise, or whatever was configured via the nd4j context properties). Making this
+     * per-instance prevents enableWorkspaceMode()/disableWorkspaceMode() calls on one SameDiff
+     * instance from leaking into other instances.
+     */
+    private InferenceFactory inferenceFactory;
+
+    /**
+     * Class-level default factory resolved once at static-init time.  Individual instances start
+     * with this value and may override it via enableWorkspaceMode() / bindInferenceFactory().
+     */
+    private static final InferenceFactory DEFAULT_INFERENCE_FACTORY;
 
 
 
@@ -501,31 +514,37 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
 
     /**
-     * Get the inference factory
+     * Get the inference factory for this SameDiff instance.
+     * Each instance has its own factory so that workspace mode changes are not global.
      *
-     * @return the inference Factory
+     * @return the inference Factory for this instance
      */
-    public static InferenceFactory getInferenceFactory() {
-        if (INFERENCE_FACTORY == null){
-            synchronized(SameDiff.class){
-                if(INFERENCE_FACTORY == null) {
-                    // Auto-enable workspace mode for CUDA backends unless disabled via system property
-                    boolean autoWorkspace = Boolean.parseBoolean(
-                            System.getProperty(org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_AUTO, "true"));
-                    if (autoWorkspace && isCudaBackend()) {
-                        long wsSize = Long.parseLong(
-                                System.getProperty(org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_SIZE, "268435456"));
-                        INFERENCE_FACTORY = new WorkspaceInferenceFactory(wsSize);
-                        log.info("SameDiff: Auto-enabled workspace mode for CUDA backend (size={}MB). " +
-                                "Disable with -D{}=false", wsSize / (1024 * 1024),
-                                org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_AUTO);
+    public InferenceFactory getInferenceFactory() {
+        if (inferenceFactory == null) {
+            synchronized (this) {
+                if (inferenceFactory == null) {
+                    // If the class-level config provided a factory, use it.
+                    if (DEFAULT_INFERENCE_FACTORY != null) {
+                        inferenceFactory = DEFAULT_INFERENCE_FACTORY;
                     } else {
-                        INFERENCE_FACTORY = new DefaultInferenceFactory();
+                        // Auto-enable workspace mode for CUDA backends unless disabled via system property
+                        boolean autoWorkspace = Boolean.parseBoolean(
+                                System.getProperty(org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_AUTO, "true"));
+                        if (autoWorkspace && isCudaBackend()) {
+                            long wsSize = Long.parseLong(
+                                    System.getProperty(org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_SIZE, "268435456"));
+                            inferenceFactory = new WorkspaceInferenceFactory(wsSize);
+                            log.info("SameDiff: Auto-enabled workspace mode for CUDA backend (size={}MB). " +
+                                    "Disable with -D{}=false", wsSize / (1024 * 1024),
+                                    org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_AUTO);
+                        } else {
+                            inferenceFactory = new DefaultInferenceFactory();
+                        }
                     }
                 }
             }
         }
-        return INFERENCE_FACTORY;
+        return inferenceFactory;
     }
 
     /**
@@ -540,22 +559,20 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
-     * Bind the inferenceFactory.
+     * Bind the inferenceFactory for this SameDiff instance.
+     * This is an instance method — it only affects this instance, not others.
      *
-     * @implNote it will work when neither default
-     *           nor the one from the config is bound
-     * @param inferenceFactory
+     * @param inferenceFactory the factory to use for this instance
      * @return true if the provided inferenceFactory is bound successfully
      */
-    public static boolean bindInferenceFactory(InferenceFactory inferenceFactory) {
-        boolean success = false;
-        synchronized (SameDiff.class) {
-            if (inferenceFactory != null) {
-                INFERENCE_FACTORY = inferenceFactory;
-                success = true;
+    public boolean bindInferenceFactory(InferenceFactory inferenceFactory) {
+        if (inferenceFactory != null) {
+            synchronized (this) {
+                this.inferenceFactory = inferenceFactory;
             }
+            return true;
         }
-        return success;
+        return false;
     }
 
     public Set<String> variableNames() {
@@ -637,7 +654,9 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     static {
-        // try to set the inferenceFactory using the config
+        // Resolve the class-level default factory once at class-init time.
+        // Individual instances start with this value and may override it independently.
+        InferenceFactory resolved = null;
         Properties props = Nd4jContext.getInstance().getConf();
         PropertyParser pp = new PropertyParser(props);
         String clazzNameInferenceFactory = pp.toString(INFERENCE_FACTORY_CLASS, "");
@@ -645,12 +664,12 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             try {
                 Class<? extends InferenceFactory> inferenceClazz = ND4JClassLoading
                         .loadClassByName(clazzNameInferenceFactory);
-                INFERENCE_FACTORY = inferenceClazz.newInstance();
+                resolved = inferenceClazz.newInstance();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-
+        DEFAULT_INFERENCE_FACTORY = resolved;
     }
 
 
@@ -1899,6 +1918,8 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             copy.setPlacementStrategy(this.getPlacementStrategy());
             copy.setCustomDevicePlacement(this.getCustomDevicePlacement() == null
                     ? null : new LinkedHashMap<>(this.getCustomDevicePlacement()));
+            // Propagate the inference factory so clones respect workspace mode set on the original.
+            copy.bindInferenceFactory(this.getInferenceFactory());
             return copy;
         } catch (IOException e) {
             throw new RuntimeException("Failed to clone SameDiff via SDNB round-trip", e);
@@ -3581,9 +3602,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 });
         }
 
-        // Note: TAD cache is already cleared in InferenceSession.output()'s finally block.
-        // This additional clearing serves as a safety net for alternative execution paths.
-        org.nd4j.linalg.factory.Nd4j.clearTADCache();
+        // TAD cache clearing removed: ConstantTadHelper device pointers get baked into
+        // CUDA graph kernel arguments during native-only capture. Clearing the cache
+        // between g.output() calls destroys those device allocations (cudaFreeAsync),
+        // making the baked pointers stale on replay → error 700.
+        // InferenceSession.output() already skips clearing for DSP (line 1291).
 
         for (Listener l : activeListeners) {
             l.operationEnd(this, operation);

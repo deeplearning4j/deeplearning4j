@@ -57,7 +57,6 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDynamicShapePlanEnablesCacheAndGrowth(Nd4jBackend backend) {
-        InferenceFactory prevFactory = SameDiff.getInferenceFactory();
         String prevDynamicProp = System.getProperty(DYNAMIC_SHAPE_PROP);
         boolean prevCache = ArrayCacheMemoryMgr.isCacheEnabled();
         double prevGrowth = ArrayCacheMemoryMgr.getGrowthFactor().get();
@@ -86,14 +85,12 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
             ArrayCacheMemoryMgr.setEnableCache(prevCache);
             ArrayCacheMemoryMgr.setGrowthFactor(prevGrowth);
             InferenceSession.setDynamicShapePlanEnabled(prevDynamicEnabled);
-            SameDiff.bindInferenceFactory(prevFactory);
         }
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDynamicShapePlanReusesBuffersWithinRun(Nd4jBackend backend) {
-        InferenceFactory prevFactory = SameDiff.getInferenceFactory();
         String prevDynamicProp = System.getProperty(DYNAMIC_SHAPE_PROP);
         boolean prevCache = ArrayCacheMemoryMgr.isCacheEnabled();
         double prevGrowth = ArrayCacheMemoryMgr.getGrowthFactor().get();
@@ -105,9 +102,10 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
             InferenceSession.setDynamicShapePlanEnabled(true);
             ArrayCacheMemoryMgr.setEnableCache(false);
             ArrayCacheMemoryMgr.setGrowthFactor(1.0);
-            SameDiff.bindInferenceFactory(factory);
 
             SameDiff sd = SameDiff.create();
+            // Bind the counting factory on this instance only (no global side effects)
+            sd.bindInferenceFactory(factory);
             sd.setDspAutoCompileEnabled(true);
             SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 4);
             SDVariable a = x.add("a", 1.0);
@@ -131,7 +129,6 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
             ArrayCacheMemoryMgr.setEnableCache(prevCache);
             ArrayCacheMemoryMgr.setGrowthFactor(prevGrowth);
             InferenceSession.setDynamicShapePlanEnabled(prevDynamicEnabled);
-            SameDiff.bindInferenceFactory(prevFactory);
         }
     }
 
@@ -143,7 +140,6 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRepeatedExecutionsReusePoolBuffers(Nd4jBackend backend) {
-        InferenceFactory prevFactory = SameDiff.getInferenceFactory();
         String prevDynamicProp = System.getProperty(DYNAMIC_SHAPE_PROP);
         boolean prevCache = ArrayCacheMemoryMgr.isCacheEnabled();
         double prevGrowth = ArrayCacheMemoryMgr.getGrowthFactor().get();
@@ -155,10 +151,11 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
             InferenceSession.setDynamicShapePlanEnabled(true);
             ArrayCacheMemoryMgr.setEnableCache(true);
             ArrayCacheMemoryMgr.setGrowthFactor(1.1);
-            SameDiff.bindInferenceFactory(factory);
 
             // Build a simple graph: y = (x + 1) * 2
             SameDiff sd = SameDiff.create();
+            // Bind the counting factory on this instance only (no global side effects)
+            sd.bindInferenceFactory(factory);
             sd.setDspAutoCompileEnabled(true);
             SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 128);
             SDVariable a = x.add("a", 1.0);
@@ -192,7 +189,6 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
             ArrayCacheMemoryMgr.setEnableCache(prevCache);
             ArrayCacheMemoryMgr.setGrowthFactor(prevGrowth);
             InferenceSession.setDynamicShapePlanEnabled(prevDynamicEnabled);
-            SameDiff.bindInferenceFactory(prevFactory);
         }
     }
 

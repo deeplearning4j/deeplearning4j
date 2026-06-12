@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -63,8 +64,13 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
+    private boolean isCudaBackend() {
+        return Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda");
+    }
+
     @Test
     public void testFp8Matmul() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
         // FP8 matmul: INT8 tensors as FP8 stand-ins with per-tensor scales
         // C = (scaleA * A_fp8) @ (scaleB * B_fp8)
         SameDiff sd = SameDiff.create();
@@ -88,6 +94,7 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
 
     @Test
     public void testSmoothQuant() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
         // SmoothQuant W8A8: Y = deq(quant(X * diag(s)^-1) @ quant(diag(s) * W))
         SameDiff sd = SameDiff.create();
 
@@ -111,6 +118,7 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
 
     @Test
     public void testAwqMatmul() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
         // AWQ: output = input @ dequant(weightPacked, scales, zeros)
         SameDiff sd = SameDiff.create();
 
@@ -135,6 +143,7 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
 
     @Test
     public void testGpuTopKSample() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
         // GPU top-K sampling: logits -> top-K filter -> softmax -> multinomial
         SameDiff sd = SameDiff.create();
 
@@ -161,6 +170,7 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
 
     @Test
     public void testGpuTopPSample() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
         // GPU top-P (nucleus) sampling: logits -> softmax -> sort -> cumsum -> nucleus filter -> sample
         SameDiff sd = SameDiff.create();
 
@@ -187,6 +197,7 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
 
     @Test
     public void testDecoderMaskedMha() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
         // Decoder masked multi-head attention with KV cache
         // Inputs: hidden [B,1,H], QKV weight [H,3H], out weight [H,H], past KV
         SameDiff sd = SameDiff.create();
@@ -247,6 +258,7 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
 
     @Test
     public void testFusedNormQuantize() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
         // Fused normalization + quantization: RMSNorm -> INT8 quantize
         SameDiff sd = SameDiff.create();
 
@@ -276,6 +288,7 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
 
     @Test
     public void testMoeGate() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
         // MoE gating: top-K expert routing with load-balancing loss
         SameDiff sd = SameDiff.create();
 
@@ -332,6 +345,7 @@ public class TRTLLMFeatureParityOpsTest extends BaseNd4jTestWithBackends {
 
     @Test
     public void testMultiLoraMatmul() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
         // Multi-LoRA: output[i] = input[i] @ baseWeight + alpha * input[i] @ loraA[id] @ loraB[id]
         SameDiff sd = SameDiff.create();
 

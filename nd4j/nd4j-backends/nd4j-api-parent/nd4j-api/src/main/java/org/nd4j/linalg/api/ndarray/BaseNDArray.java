@@ -320,9 +320,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(DataBuffer buffer,LongShapeDescriptor longShapeDescriptor) {
         this.data = buffer;
-        // buffer can be null for empty arrays (shape containing 0)
-        if (buffer != null && buffer.length() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
         Pair<DataBuffer, long[]> shapeInformation = getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo());
         setShapeInformation(shapeInformation);
         init(longShapeDescriptor.getShape(),longShapeDescriptor.getStride());
@@ -335,9 +332,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(DataBuffer buffer) {
         this.data = buffer;
-        if (buffer.length() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
-        long[] shape = {1, (int) buffer.length()};
+        long[] shape = {1, buffer.length()};
         long[] stride = Nd4j.getStrides(shape);
 
         LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.builder()
@@ -1028,8 +1023,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this(floatBuffer, new int[] {(int) floatBuffer.length()},
                 Nd4j.getStrides(new int[] {(int) floatBuffer.length()}, order), 0, order);
         Shape.assertValidOrder(order);
-        if (floatBuffer.length() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
     }
 
     /**

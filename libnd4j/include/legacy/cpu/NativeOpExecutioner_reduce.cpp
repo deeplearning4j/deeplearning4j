@@ -229,16 +229,48 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext *lc, int opNum, const
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType *>(hXShapeInfo), dimension, dimensionLength);
-  auto func = PRAGMA_THREADS_FOR {
+  auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType *>(hXShapeInfo), dimension, dimensionLength);
+  auto yTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType *>(hYShapeInfo), dimension, dimensionLength);
+
+  // Capture the number of TADs before entering the lambda so we can pass it to parallel_tad.
+  sd::LongType numTads = xTadPack->numberOfTads();
+
+  // Use provided TAD shape infos/offsets if available, otherwise fall back to computed pack.
+  // When using the computed pack we must capture the shared_ptr by value in the lambda so the
+  // TadPack object stays alive for the entire duration of the parallel execution.  Capturing
+  // only the raw pointer is unsafe: the shared_ptr could be destroyed before all worker threads
+  // finish, leaving a dangling pointer and causing a SIGSEGV.
+  const sd::LongType *xTadSI_provided = xTadShapeInfo;
+  const sd::LongType *xOff_provided   = xOffsets;
+  const sd::LongType *yTadSI_provided = yTadShapeInfo;
+  const sd::LongType *yOff_provided   = yOffsets;
+
+  // Capture shared_ptrs by value so they are kept alive inside all threads.
+  // FUNC_1D signature is: void(sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment)
+  auto func = [xTadPack, yTadPack,
+               hX, hXShapeInfo, extraParamsVals,
+               hY, hYShapeInfo,
+               hZ, hZShapeInfo,
+               dimension, dimensionLength,
+               xType, zType,
+               opNum,
+               xTadSI_provided, xOff_provided,
+               yTadSI_provided, yOff_provided](sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) {
+    // Resolve the pointers inside the lambda so the shared_ptr ref-count is held for the
+    // entire call (the lambda object itself keeps both shared_ptrs alive).
+    const sd::LongType *xTadSI = xTadSI_provided != nullptr ? xTadSI_provided : xTadPack->primaryShapeInfo();
+    const sd::LongType *xOff   = xOff_provided   != nullptr ? xOff_provided   : xTadPack->primaryOffsets();
+    const sd::LongType *yTadSI = yTadSI_provided != nullptr ? yTadSI_provided : yTadPack->primaryShapeInfo();
+    const sd::LongType *yOff   = yOff_provided   != nullptr ? yOff_provided   : yTadPack->primaryOffsets();
+
     BUILD_DOUBLE_SELECTOR(
         xType, zType, functions::reduce3::Reduce3,
         ::execAll(opNum, hX, hXShapeInfo, extraParamsVals, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength,
-                  xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, start, stop),
+                  xTadSI, xOff, yTadSI, yOff, start, stop),
         SD_COMMON_TYPES, SD_FLOAT_TYPES);
   };
 
-  samediff::Threads::parallel_tad(func, 0, tadPack->numberOfTads());
+  samediff::Threads::parallel_tad(func, 0, numTads);
 }
 
 ////////////////////////////////////////////////////////////////////////
