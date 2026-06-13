@@ -193,7 +193,7 @@ static inline void markFailed(GraphSegmentExec& exec, const char* reason,
   exec.outcome = SegmentExecOutcome::COMPILE_FAILED;
   exec.terminalReason = reason;
   exec.lifecycleState = SLS::FAILED;  // Legacy sync
-  exec.handleTracker.record(ReplayHandleEvent::Kind::ERROR, exec.executionCount,
+  exec.handleTracker.record(ReplayHandleEvent::Kind::EXEC_ERROR, exec.executionCount,
                             0, 0, reason);
   DspDiagnostics::getInstance().recordSegmentTerminal(
       startSlot, endSlot, exec.executionCount,
@@ -357,7 +357,7 @@ static inline void markFunctionalCaptureFailure(GraphSegmentExec& exec,
   SLS_ASSERT_FROM(exec, SLS::CAPTURE_PENDING, "markFunctionalCaptureFailure");
   DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> BUILDING:WARMUP (functional_capture_failed execCount=%d)",
            exec.segPhase.displayName(), exec.executionCount);
-  exec.handleTracker.record(ReplayHandleEvent::Kind::ERROR, exec.executionCount,
+  exec.handleTracker.record(ReplayHandleEvent::Kind::EXEC_ERROR, exec.executionCount,
                             0, 0, "functional_capture_failed");
   exec.replayHandle.reset();
   exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP

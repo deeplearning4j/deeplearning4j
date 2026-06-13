@@ -318,7 +318,7 @@ struct ReplayHandleEvent {
     DESTROY         = 6,   // handle.reset() — cudaGraphExecDestroy
     ADDRESS_DRIFT   = 7,   // address mismatch detected before replay
     OOM_DEFERRED    = 8,   // instantiate failed with OOM
-    ERROR           = 9,   // any error (capture fail, replay fail)
+    EXEC_ERROR      = 9,   // any error (capture fail, replay fail)
   };
 
   Kind     kind;
@@ -340,7 +340,7 @@ inline const char* replayHandleEventKindName(ReplayHandleEvent::Kind k) {
     case ReplayHandleEvent::Kind::DESTROY:        return "DESTROY";
     case ReplayHandleEvent::Kind::ADDRESS_DRIFT:  return "ADDRESS_DRIFT";
     case ReplayHandleEvent::Kind::OOM_DEFERRED:   return "OOM_DEFERRED";
-    case ReplayHandleEvent::Kind::ERROR:          return "ERROR";
+    case ReplayHandleEvent::Kind::EXEC_ERROR:     return "ERROR";
     default:                                      return "UNKNOWN";
   }
 }
@@ -379,7 +379,7 @@ class ReplayHandleTracker {
       case ReplayHandleEvent::Kind::DESTROY:        destroyCount_++; break;
       case ReplayHandleEvent::Kind::ADDRESS_DRIFT:  addressDriftCount_++; break;
       case ReplayHandleEvent::Kind::OOM_DEFERRED:   oomCount_++; break;
-      case ReplayHandleEvent::Kind::ERROR:          errorCount_++; break;
+      case ReplayHandleEvent::Kind::EXEC_ERROR:     errorCount_++; break;
     }
   }
 
