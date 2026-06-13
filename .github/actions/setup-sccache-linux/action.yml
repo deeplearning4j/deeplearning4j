@@ -46,14 +46,23 @@ runs:
       shell: bash
       run: |
         # Enable GitHub Actions cache backend
+        # Export in current shell AND persist for subsequent steps via GITHUB_ENV.
+        # sccache reads these at server-start time — if they're only in GITHUB_ENV
+        # (which takes effect next step), the server falls back to local disk.
+        export SCCACHE_GHA_ENABLED=true
         echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
 
         # Partition cache by suffix to prevent cross-contamination between
         # CUDA versions, platforms, etc. Changing this value purges the cache.
         SUFFIX=$(echo "${{ inputs.cache-suffix }}" | sed 's/-*$//')
         if [ -n "$SUFFIX" ]; then
+          export SCCACHE_GHA_VERSION="${SUFFIX}"
           echo "SCCACHE_GHA_VERSION=${SUFFIX}" >> $GITHUB_ENV
         fi
+
+        # Expose GitHub Actions cache API tokens to sccache
+        export ACTIONS_RESULTS_URL="${ACTIONS_RESULTS_URL}"
+        export ACTIONS_RUNTIME_TOKEN="${ACTIONS_RUNTIME_TOKEN}"
 
         # sccache as the compiler launcher for CMake
         echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
@@ -66,7 +75,7 @@ runs:
         # Disable PCH: CI runners have different system header mtimes across restores
         echo "SD_DISABLE_PCH=1" >> $GITHUB_ENV
 
-        # Start sccache server
+        # Start sccache server — env vars must be exported above, not just in GITHUB_ENV
         sccache --start-server || true
         echo "=== sccache configuration ==="
         sccache --show-stats

@@ -51,18 +51,21 @@ runs:
       continue-on-error: true
       shell: pwsh
       run: |
-        # Enable GitHub Actions cache backend
+        # Enable GitHub Actions cache backend.
+        # Set in current process AND persist for subsequent steps via GITHUB_ENV.
+        # sccache reads these at server-start time — if only in GITHUB_ENV
+        # (takes effect next step), the server falls back to local disk.
+        $env:SCCACHE_GHA_ENABLED = "true"
         Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
 
         # Partition cache by suffix
         $suffix = "${{ inputs.cache-suffix }}" -replace '-+$', ''
         if ($suffix) {
+          $env:SCCACHE_GHA_VERSION = $suffix
           Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_VERSION=$suffix"
         }
 
         # sccache as compiler launcher — CMake will pick these up.
-        # Note: on Windows CUDA, CMakeLists.txt may override the CUDA launcher
-        # to chain sccache through nvcc_filter.py if needed.
         Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_C_COMPILER_LAUNCHER=sccache"
         Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CXX_COMPILER_LAUNCHER=sccache"
         Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CUDA_COMPILER_LAUNCHER=sccache"
@@ -73,7 +76,7 @@ runs:
         # Disable PCH
         Add-Content -Path $env:GITHUB_ENV -Value "SD_DISABLE_PCH=1"
 
-        # Start sccache server
+        # Start sccache server — env vars must be set above in current process
         $sccacheExe = "$env:USERPROFILE\sccache\sccache.exe"
         if (Test-Path $sccacheExe) {
           & $sccacheExe --start-server 2>$null

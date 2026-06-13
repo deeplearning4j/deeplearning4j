@@ -37,12 +37,19 @@ runs:
     - name: Set sccache environment
       shell: bash
       run: |
+        # Export in current shell so sccache --start-server sees them immediately.
+        # Also write to GITHUB_ENV for subsequent steps.
+        export SCCACHE_GHA_ENABLED=true
         echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
 
         SUFFIX=$(echo "${{ inputs.cache-suffix }}" | sed 's/-*$//')
         if [ -n "$SUFFIX" ]; then
+          export SCCACHE_GHA_VERSION="${SUFFIX}"
           echo "SCCACHE_GHA_VERSION=${SUFFIX}" >> $GITHUB_ENV
         fi
+
+        export ACTIONS_RESULTS_URL="${ACTIONS_RESULTS_URL}"
+        export ACTIONS_RUNTIME_TOKEN="${ACTIONS_RUNTIME_TOKEN}"
 
         echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
         echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
