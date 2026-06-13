@@ -162,9 +162,8 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
-        
-        
+
+
 
 
       - name: Update path for gnu sed

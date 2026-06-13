@@ -248,24 +248,14 @@ jobs:
           msystem: MINGW64
           release: false
           update: false
+          cache: false
           install: >-
             base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch
             mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm
             mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
             mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel
 
-
-      - name: Cache cuda install
-        uses: actions/cache@v4
-        id: cache-cuda-129
-        with:
-          path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
-          key: ${{ matrix.runs_on }}-${{ runner.arch }}-cuda-12.9-${{ matrix.helper }}-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ matrix.runs_on }}-${{ runner.arch }}-cuda-12.9-${{ matrix.helper }}-
-
-      - name: Install CUDA 12.9 (if not cached)
-        if: steps.cache-cuda-129.outputs.cache-hit != 'true'
+      - name: Install CUDA 12.9
         shell: powershell
         env:
           CUDA_VERSION: "12.9"
@@ -294,8 +284,6 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
-
 
       - name: Setup Windows PATH and Compiler Environment
         shell: powershell

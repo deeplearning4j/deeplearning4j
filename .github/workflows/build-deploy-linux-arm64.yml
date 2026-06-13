@@ -102,14 +102,7 @@ jobs:
           echo "=== sccache stats before build ==="
           sccache --show-stats || true
 
-      - name: Cache protobuf install
-        uses: actions/cache@v4
-        id: cache-protobuf
-        with:
-          path: /opt/protobuf
-          key: ${{ runner.os }}-${{ runner.arch }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
-        if: steps.cache-protobuf.outputs.cache-hit != 'true'
 
       - name: Install LLVM/MLIR toolchain
         if: matrix.helper == 'compile'
@@ -149,7 +142,6 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
       - name: Setup Path
         shell: bash
         run: |

@@ -178,29 +178,9 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y llvm-18-dev mlir-18-tools || sudo apt-get install -y llvm-dev libmlir-dev mlir-tools || true
 
-      - name: Cache cmake install
-        uses: actions/cache@v4
-        id: cache-cmake-install
-        with:
-          path: /opt/cmake
-          key: ${{ runner.os }}-${{ runner.arch }}-cmake-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cmake-
-
-      - name: Cache protobuf install
-        uses: actions/cache@v4
-        id: cache-protobuf
-        with:
-          path: /opt/protobuf
-          key: ${{ runner.os }}-${{ runner.arch }}-protobuf-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-protobuf-
-
       - uses: ./.github/actions/install-protobuf-linux
-        if: steps.cache-protobuf.outputs.cache-hit != 'true'
 
       - uses: ./.github/actions/install-cmake-linux
-        if: steps.cache-cmake-install.outputs.cache-hit != 'true'
 
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
@@ -212,7 +192,6 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
 
       - uses: nttld/setup-ndk@v1
         id: setup-ndk

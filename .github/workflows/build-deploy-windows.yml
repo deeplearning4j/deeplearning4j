@@ -216,6 +216,7 @@ jobs:
         with:
           msystem: MINGW64
           update: true
+          cache: false
           install: >-
             base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake libtool make patch gnupg
             mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool
@@ -285,7 +286,6 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
 
       - name: Setup windows path
         shell: powershell
