@@ -65,6 +65,7 @@
         <module>omnihub</module>
         <module>resources</module>
         <module>codegen</module>
+        <module>platform-tests</module>
     </modules>
 
     <distributionManagement>
