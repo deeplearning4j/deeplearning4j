@@ -62,6 +62,7 @@ jobs:
           MAVEN_OPTS: -Xmx2g
         run: |
           mvn install -DskipTests -DskipTestResourceEnforcement=true \
+              -Pplatform-tests \
               -Dmaven.javadoc.skip=true \
               -pl :platform-tests --also-make \
               -pl !:libnd4j \

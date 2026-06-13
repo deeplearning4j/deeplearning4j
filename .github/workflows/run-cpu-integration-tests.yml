@@ -150,6 +150,7 @@ jobs:
           MAVEN_OPTS: -Xmx2g
         run: |
           mvn install -DskipTests -DskipTestResourceEnforcement=true \
+              -Pplatform-tests \
               -Dbackend.artifactId=nd4j-native \
               -Djavacpp.platform=${{ matrix.javacpp_platform }} \
               -Djavacpp.platform.extension=${{ matrix.javacpp_extension }} \

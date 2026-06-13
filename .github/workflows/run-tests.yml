@@ -217,6 +217,7 @@ jobs:
         shell: bash
         run: |
           mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Pplatform-tests \
             -Dbackend.artifactId=${{ inputs.backendArtifactId }} \
             -Djavacpp.platform=${{ needs.setup.outputs.javacpp_platform }} \
             -Djavacpp.platform.extension=${{ needs.setup.outputs.javacpp_extension }} \
@@ -332,6 +333,7 @@ jobs:
         shell: bash
         run: |
           mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Pplatform-tests \
             -Dbackend.artifactId=${{ inputs.backendArtifactId }} \
             -Djavacpp.platform=${{ needs.setup.outputs.javacpp_platform }} \
             -Djavacpp.platform.extension=${{ needs.setup.outputs.javacpp_extension }} \
