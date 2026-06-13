@@ -197,10 +197,19 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # --- MSVC-specific optimizations ---
+# Guard with COMPILE_LANGUAGE to prevent these flags from leaking into CUDA
+# compilation. NVCC uses cl.exe as the host compiler, and sccache misparses
+# slash-prefixed flags (e.g. /bigobj -> D:\bigobj) as drive-relative file paths.
+# CudaConfiguration.cmake already handles these via -Xcompiler=-bigobj etc.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(-Gy)  # Function-level linking
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Gy>)  # Function-level linking
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -OPT:REF -OPT:ICF")
-    add_compile_options(-bigobj -EHsc -Zc:preprocessor -MP)
+    add_compile_options(
+        $<$<COMPILE_LANGUAGE:C,CXX>:-bigobj>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-EHsc>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Zc:preprocessor>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-MP>
+    )
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
