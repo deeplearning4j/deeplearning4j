@@ -169,7 +169,9 @@ runs:
             Write-Host "sccache server started successfully"
             Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_C_COMPILER_LAUNCHER=sccache"
             Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CXX_COMPILER_LAUNCHER=sccache"
-            Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CUDA_COMPILER_LAUNCHER=sccache"
+            # Do NOT set CMAKE_CUDA_COMPILER_LAUNCHER on Windows — sccache wrapping
+            # nvcc breaks nvcc's temp file handling (tmpxft_* stderr redirect fails
+            # with "Could not open input file"), causing all .cu compilation to fail.
             Add-Content -Path $env:GITHUB_ENV -Value "SD_USE_SCCACHE=1"
           } else {
             Write-Host "WARNING: sccache server failed to start — building without distributed cache"
