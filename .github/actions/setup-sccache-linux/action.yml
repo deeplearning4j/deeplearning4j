@@ -15,58 +15,112 @@ outputs:
 runs:
   using: composite
   steps:
+    # ---------------------------------------------------------------
+    # 1. Hash the patch file so the cache key changes when the patch
+    #    changes, triggering a rebuild of the patched binary.
+    # ---------------------------------------------------------------
+    - name: Hash sccache patch
+      id: patch-hash
+      shell: bash
+      run: |
+        PATCH_FILE="${GITHUB_WORKSPACE}/.github/patches/sccache-retry.patch"
+        if [ -f "$PATCH_FILE" ]; then
+          HASH=$(sha256sum "$PATCH_FILE" | cut -c1-16)
+        else
+          HASH="no-patch"
+        fi
+        echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+
+    # ---------------------------------------------------------------
+    # 2. Check GHA cache for a previously-built patched binary.
+    #    Key includes platform, arch, sccache version, and patch hash.
+    # ---------------------------------------------------------------
+    - name: Cache patched sccache binary
+      id: cache-sccache
+      uses: actions/cache@v4
+      with:
+        path: /tmp/sccache-patched-bin
+        key: sccache-patched-v0.15.0-linux-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
+
+    # ---------------------------------------------------------------
+    # 3. On cache miss: clone sccache source, apply RetryLayer patch,
+    #    and build from source with only the GHA feature enabled.
+    #    This adds ~3-5 min on first run; cached thereafter.
+    # ---------------------------------------------------------------
+    - name: Build patched sccache from source
+      if: steps.cache-sccache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      shell: bash
+      run: |
+        set -euo pipefail
+        SCCACHE_VERSION="v0.15.0"
+        PATCH_FILE="${GITHUB_WORKSPACE}/.github/patches/sccache-retry.patch"
+
+        # Ensure Rust is available (pre-installed on GHA runners, but just in case)
+        if ! command -v cargo &>/dev/null; then
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          source "$HOME/.cargo/env"
+        fi
+
+        # Clone sccache source at the target version
+        git clone --depth 1 --branch "$SCCACHE_VERSION" \
+          https://github.com/mozilla/sccache.git /tmp/sccache-src
+
+        # Apply the RetryLayer patch
+        if [ -f "$PATCH_FILE" ]; then
+          cd /tmp/sccache-src
+          patch -p1 < "$PATCH_FILE"
+          echo "Applied RetryLayer patch to gha.rs"
+        else
+          echo "WARNING: Patch file not found at $PATCH_FILE — building unpatched"
+        fi
+
+        # Build with only the GHA cache feature (minimal build)
+        cd /tmp/sccache-src
+        cargo build --release --features gha --no-default-features
+
+        # Stage the binary for GHA cache storage
+        mkdir -p /tmp/sccache-patched-bin
+        cp target/release/sccache /tmp/sccache-patched-bin/sccache
+        chmod +x /tmp/sccache-patched-bin/sccache
+        echo "Built patched sccache (with RetryLayer):"
+        /tmp/sccache-patched-bin/sccache --version
+
+    # ---------------------------------------------------------------
+    # 4. Install the binary — patched if available, upstream fallback.
+    # ---------------------------------------------------------------
     - name: Install sccache
       shell: bash
       run: |
         SCCACHE_VERSION="v0.15.0"
-        VERSION_BARE="${SCCACHE_VERSION#v}"
-        ARCH=$(uname -m)
 
-        if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-          MUSL_ARCH="aarch64"
+        if [ -f "/tmp/sccache-patched-bin/sccache" ]; then
+          sudo cp /tmp/sccache-patched-bin/sccache /usr/local/bin/sccache
+          sudo chmod +x /usr/local/bin/sccache
+          echo "Installed patched sccache (with RetryLayer):"
+          sccache --version
         else
-          MUSL_ARCH="x86_64"
-        fi
-
-        # ---------------------------------------------------------------
-        # 1. Try patched binary from this repo's release first.
-        #    The patched build adds RetryLayer to the OpenDAL GHA backend
-        #    so transient Azure Blob Storage errors are retried instead of
-        #    silently failing the cache write.
-        # ---------------------------------------------------------------
-        PATCHED_TAG="sccache-patched-${SCCACHE_VERSION}"
-        PATCHED_FILE="sccache-patched-${VERSION_BARE}-${MUSL_ARCH}-unknown-linux-musl"
-        REPO="${GITHUB_REPOSITORY:-deeplearning4j/deeplearning4j}"
-        PATCHED_URL="https://github.com/${REPO}/releases/download/${PATCHED_TAG}/${PATCHED_FILE}.tar.gz"
-
-        INSTALLED=false
-        echo "Trying patched sccache from ${PATCHED_URL} ..."
-        if curl -fsSL --max-time 30 "${PATCHED_URL}" \
-             | tar xz -C /tmp 2>/dev/null; then
-          if [ -f "/tmp/${PATCHED_FILE}/sccache" ]; then
-            sudo mv "/tmp/${PATCHED_FILE}/sccache" /usr/local/bin/sccache
-            sudo chmod +x /usr/local/bin/sccache
-            echo "Installed patched sccache (with RetryLayer):"
-            sccache --version
-            INSTALLED=true
+          # Fallback to upstream unpatched release
+          echo "Patched build not available — falling back to upstream sccache ${SCCACHE_VERSION}."
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            MUSL_ARCH="aarch64"
+          else
+            MUSL_ARCH="x86_64"
           fi
-        fi
-
-        # ---------------------------------------------------------------
-        # 2. Fall back to upstream unpatched release if patched unavailable.
-        # ---------------------------------------------------------------
-        if [ "$INSTALLED" = "false" ]; then
-          echo "Patched binary not available — falling back to upstream sccache ${SCCACHE_VERSION}."
           UPSTREAM_FILE="sccache-${SCCACHE_VERSION}-${MUSL_ARCH}-unknown-linux-musl"
           UPSTREAM_URL="https://github.com/mozilla/sccache/releases/download/${SCCACHE_VERSION}/${UPSTREAM_FILE}.tar.gz"
           echo "Downloading ${UPSTREAM_URL} ..."
           curl -fsSL "${UPSTREAM_URL}" | tar xz -C /tmp
           sudo mv "/tmp/${UPSTREAM_FILE}/sccache" /usr/local/bin/sccache
           sudo chmod +x /usr/local/bin/sccache
-          echo "Installed upstream sccache:"
+          echo "Installed upstream sccache (unpatched fallback):"
           sccache --version
         fi
 
+    # ---------------------------------------------------------------
+    # 5. Configure the GHA cache backend (V2 API).
+    # ---------------------------------------------------------------
     - name: Configure sccache GHA backend
       uses: actions/github-script@v7
       with:
@@ -78,10 +132,12 @@ runs:
           core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
           core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
+    # ---------------------------------------------------------------
+    # 6. Start the sccache server with GHA backend enabled.
+    # ---------------------------------------------------------------
     - name: Set sccache environment
       shell: bash
       run: |
-        # Enable GitHub Actions cache backend
         # Export in current shell AND persist for subsequent steps via GITHUB_ENV.
         # sccache reads these at server-start time — if they're only in GITHUB_ENV
         # (which takes effect next step), the server falls back to local disk.
@@ -104,7 +160,7 @@ runs:
         # Disable PCH: CI runners have different system header mtimes across restores
         echo "SD_DISABLE_PCH=1" >> $GITHUB_ENV
 
-        # Diagnostic logging for sccache server — remove after confirming cache works
+        # Diagnostic logging for sccache server — remove after confirming RetryLayer works
         export SCCACHE_LOG=debug
         export SCCACHE_ERROR_LOG=/tmp/sccache-server.log
         echo "SCCACHE_LOG=debug" >> $GITHUB_ENV
@@ -123,6 +179,9 @@ runs:
         echo "=== sccache configuration ==="
         sccache --show-stats || true
 
+    # ---------------------------------------------------------------
+    # 7. Final verification.
+    # ---------------------------------------------------------------
     - name: Verify sccache
       id: verify-sccache
       shell: bash

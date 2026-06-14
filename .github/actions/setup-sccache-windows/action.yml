@@ -15,6 +15,75 @@ outputs:
 runs:
   using: composite
   steps:
+    # ---------------------------------------------------------------
+    # 1. Hash the patch file for cache key.
+    # ---------------------------------------------------------------
+    - name: Hash sccache patch
+      id: patch-hash
+      shell: bash
+      run: |
+        PATCH_FILE="${GITHUB_WORKSPACE}/.github/patches/sccache-retry.patch"
+        if [ -f "$PATCH_FILE" ]; then
+          HASH=$(sha256sum "$PATCH_FILE" | cut -c1-16)
+        else
+          HASH="no-patch"
+        fi
+        echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+
+    # ---------------------------------------------------------------
+    # 2. Check GHA cache for a previously-built patched binary.
+    # ---------------------------------------------------------------
+    - name: Cache patched sccache binary
+      id: cache-sccache
+      uses: actions/cache@v4
+      with:
+        path: C:\sccache-patched-bin
+        key: sccache-patched-v0.15.0-windows-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
+
+    # ---------------------------------------------------------------
+    # 3. On cache miss: clone, patch, and build from source.
+    # ---------------------------------------------------------------
+    - name: Build patched sccache from source
+      if: steps.cache-sccache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      shell: bash
+      run: |
+        set -euo pipefail
+        SCCACHE_VERSION="v0.15.0"
+        PATCH_FILE="${GITHUB_WORKSPACE}/.github/patches/sccache-retry.patch"
+
+        # Ensure Rust is available (pre-installed on GHA Windows runners)
+        if ! command -v cargo &>/dev/null; then
+          echo "ERROR: Rust/cargo not found on this runner"
+          exit 1
+        fi
+
+        # Clone sccache source at the target version
+        git clone --depth 1 --branch "$SCCACHE_VERSION" \
+          https://github.com/mozilla/sccache.git /tmp/sccache-src
+
+        # Apply the RetryLayer patch
+        if [ -f "$PATCH_FILE" ]; then
+          cd /tmp/sccache-src
+          patch -p1 < "$PATCH_FILE"
+          echo "Applied RetryLayer patch to gha.rs"
+        else
+          echo "WARNING: Patch file not found at $PATCH_FILE — building unpatched"
+        fi
+
+        # Build with only the GHA cache feature
+        cd /tmp/sccache-src
+        cargo build --release --features gha --no-default-features
+
+        # Stage the binary for GHA cache storage
+        mkdir -p /c/sccache-patched-bin
+        cp target/release/sccache.exe /c/sccache-patched-bin/sccache.exe
+        echo "Built patched sccache (with RetryLayer):"
+        /c/sccache-patched-bin/sccache.exe --version
+
+    # ---------------------------------------------------------------
+    # 4. Install the binary — patched if available, upstream fallback.
+    # ---------------------------------------------------------------
     - name: Install sccache
       continue-on-error: true
       shell: pwsh
@@ -24,42 +93,14 @@ runs:
         $installDir     = "$env:USERPROFILE\sccache"
         if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir -Force | Out-Null }
 
-        # ---------------------------------------------------------------
-        # 1. Try patched binary from this repo's release first.
-        #    The patched build adds RetryLayer to the OpenDAL GHA backend
-        #    so transient Azure Blob Storage errors are retried.
-        # ---------------------------------------------------------------
-        $repo         = $env:GITHUB_REPOSITORY
-        if (-not $repo) { $repo = "deeplearning4j/deeplearning4j" }
-        $patchedTag   = "sccache-patched-${sccacheVersion}"
-        $patchedFile  = "sccache-patched-${versionBare}-x86_64-pc-windows-msvc"
-        $patchedUrl   = "https://github.com/${repo}/releases/download/${patchedTag}/${patchedFile}.tar.gz"
-
-        $installed = $false
-        Write-Host "Trying patched sccache from $patchedUrl ..."
-        try {
-          $tarball = "$env:TEMP\sccache-patched.tar.gz"
-          Invoke-WebRequest -Uri $patchedUrl -OutFile $tarball -UseBasicParsing -TimeoutSec 30
-          $extractDir = "$env:TEMP\sccache-patched-extract"
-          if (Test-Path $extractDir) { Remove-Item $extractDir -Recurse -Force }
-          New-Item -ItemType Directory -Path $extractDir -Force | Out-Null
-          tar -xzf $tarball -C $extractDir
-          $exePath = Join-Path $extractDir $patchedFile "sccache.exe"
-          if (Test-Path $exePath) {
-            Copy-Item $exePath "$installDir\sccache.exe" -Force
-            Write-Host "Installed patched sccache (with RetryLayer):"
-            & "$installDir\sccache.exe" --version
-            $installed = $true
-          }
-        } catch {
-          Write-Host "Patched sccache download failed: $_"
-        }
-
-        # ---------------------------------------------------------------
-        # 2. Fall back to upstream unpatched release if patched unavailable.
-        # ---------------------------------------------------------------
-        if (-not $installed) {
-          Write-Host "Falling back to upstream sccache ${sccacheVersion}."
+        $patchedBin = "C:\sccache-patched-bin\sccache.exe"
+        if (Test-Path $patchedBin) {
+          Copy-Item $patchedBin "$installDir\sccache.exe" -Force
+          Write-Host "Installed patched sccache (with RetryLayer):"
+          & "$installDir\sccache.exe" --version
+        } else {
+          # Fallback to upstream unpatched release
+          Write-Host "Patched build not available — falling back to upstream sccache ${sccacheVersion}."
           $upstreamFile = "sccache-${sccacheVersion}-x86_64-pc-windows-msvc"
           $upstreamUrl  = "https://github.com/mozilla/sccache/releases/download/${sccacheVersion}/${upstreamFile}.tar.gz"
           Write-Host "Downloading $upstreamUrl ..."
@@ -77,6 +118,9 @@ runs:
 
         Add-Content -Path $env:GITHUB_PATH -Value $installDir
 
+    # ---------------------------------------------------------------
+    # 5. Configure the GHA cache backend (V2 API).
+    # ---------------------------------------------------------------
     - name: Configure sccache GHA backend
       uses: actions/github-script@v7
       with:
@@ -88,6 +132,9 @@ runs:
           core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
           core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
+    # ---------------------------------------------------------------
+    # 6. Start the sccache server with GHA backend enabled.
+    # ---------------------------------------------------------------
     - name: Set sccache environment
       continue-on-error: true
       shell: pwsh
@@ -132,6 +179,9 @@ runs:
           & $sccacheExe --show-stats 2>$null
         }
 
+    # ---------------------------------------------------------------
+    # 7. Final verification.
+    # ---------------------------------------------------------------
     - name: Verify sccache
       id: verify-sccache
       continue-on-error: true
