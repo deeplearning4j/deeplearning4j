@@ -242,6 +242,8 @@ jobs:
           echo "=== sccache stats after build ==="
           sccache --show-stats || true
           sccache --stop-server || true
+          echo "=== sccache server log (last 100 lines) ==="
+          tail -100 /tmp/sccache-server.log 2>/dev/null || echo "no server log found"
 
       - name: Publish SDX runtime SDK artifacts
         if: always()
