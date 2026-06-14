@@ -65,21 +65,21 @@ runs:
         export ACTIONS_CACHE_URL="${ACTIONS_CACHE_URL}"
         export ACTIONS_RUNTIME_TOKEN="${ACTIONS_RUNTIME_TOKEN}"
 
-        # sccache as the compiler launcher for CMake
-        echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-        echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-        echo "CMAKE_CUDA_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-
-        # Tell downstream CMake that sccache is available (skip ccache setup)
-        echo "SD_USE_SCCACHE=1" >> $GITHUB_ENV
-
         # Disable PCH: CI runners have different system header mtimes across restores
         echo "SD_DISABLE_PCH=1" >> $GITHUB_ENV
 
-        # Start sccache server — env vars must be exported above, not just in GITHUB_ENV
-        sccache --start-server || true
+        # Start sccache server — only set compiler launcher if server starts successfully
+        if sccache --start-server 2>&1; then
+          echo "sccache server started successfully"
+          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CMAKE_CUDA_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "SD_USE_SCCACHE=1" >> $GITHUB_ENV
+        else
+          echo "WARNING: sccache server failed to start — building without distributed cache"
+        fi
         echo "=== sccache configuration ==="
-        sccache --show-stats
+        sccache --show-stats || true
 
     - name: Verify sccache
       id: verify-sccache

@@ -66,28 +66,29 @@ runs:
           Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_VERSION=$suffix"
         }
 
-        # sccache as compiler launcher — CMake will pick these up.
-        Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_C_COMPILER_LAUNCHER=sccache"
-        Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CXX_COMPILER_LAUNCHER=sccache"
-        Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CUDA_COMPILER_LAUNCHER=sccache"
-
-        # Tell downstream CMake that sccache is available
-        Add-Content -Path $env:GITHUB_ENV -Value "SD_USE_SCCACHE=1"
-
         # Disable PCH
         Add-Content -Path $env:GITHUB_ENV -Value "SD_DISABLE_PCH=1"
 
         # Expose GitHub Actions cache API tokens to sccache in current process
-        # (github-script step set them in GITHUB_ENV, but sccache reads at server-start)
         $env:ACTIONS_CACHE_URL = $env:ACTIONS_CACHE_URL
         $env:ACTIONS_RUNTIME_TOKEN = $env:ACTIONS_RUNTIME_TOKEN
 
-        # Start sccache server — env vars must be set above in current process
+        # Start sccache server — only set compiler launcher if server starts successfully
         $sccacheExe = "$env:USERPROFILE\sccache\sccache.exe"
         if (Test-Path $sccacheExe) {
-          & $sccacheExe --start-server 2>$null
+          $serverResult = & $sccacheExe --start-server 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "sccache server started successfully"
+            Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_C_COMPILER_LAUNCHER=sccache"
+            Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CXX_COMPILER_LAUNCHER=sccache"
+            Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CUDA_COMPILER_LAUNCHER=sccache"
+            Add-Content -Path $env:GITHUB_ENV -Value "SD_USE_SCCACHE=1"
+          } else {
+            Write-Host "WARNING: sccache server failed to start — building without distributed cache"
+            Write-Host $serverResult
+          }
           Write-Host "=== sccache configuration ==="
-          & $sccacheExe --show-stats
+          & $sccacheExe --show-stats 2>$null
         }
 
     - name: Verify sccache
