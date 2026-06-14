@@ -434,7 +434,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
       NDArray* castB = (bType != aType) ? new NDArray(B->cast(aType)) : nullptr;
       std::vector<LongType> cShape = {M, N};
       NDArray* castC = (cType != aType) ? new NDArray(NDArray('c', cShape, aType, C->getContext())) : nullptr;
-      const NDArray* effB = (castB != nullptr) ? castB : B;
+      NDArray* effB = (castB != nullptr) ? castB : const_cast<NDArray*>(B);
       NDArray* effC = (castC != nullptr) ? castC : const_cast<NDArray*>(C);
       BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, effB, effC, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
       if (castC != nullptr) {
