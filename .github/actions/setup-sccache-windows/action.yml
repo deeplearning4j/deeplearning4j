@@ -44,7 +44,8 @@ runs:
       uses: actions/github-script@v7
       with:
         script: |
-          core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
+          // sccache GHAC backend requires ACTIONS_CACHE_URL (not ACTIONS_RESULTS_URL).
+          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
           core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
     - name: Set sccache environment
@@ -75,6 +76,11 @@ runs:
 
         # Disable PCH
         Add-Content -Path $env:GITHUB_ENV -Value "SD_DISABLE_PCH=1"
+
+        # Expose GitHub Actions cache API tokens to sccache in current process
+        # (github-script step set them in GITHUB_ENV, but sccache reads at server-start)
+        $env:ACTIONS_CACHE_URL = $env:ACTIONS_CACHE_URL
+        $env:ACTIONS_RUNTIME_TOKEN = $env:ACTIONS_RUNTIME_TOKEN
 
         # Start sccache server — env vars must be set above in current process
         $sccacheExe = "$env:USERPROFILE\sccache\sccache.exe"

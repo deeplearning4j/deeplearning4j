@@ -38,8 +38,9 @@ runs:
       with:
         script: |
           // Expose the GitHub Actions cache API tokens to sccache.
+          // sccache GHAC backend requires ACTIONS_CACHE_URL (not ACTIONS_RESULTS_URL).
           // These are provided by the runner but not normally available as env vars.
-          core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
+          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
           core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
     - name: Set sccache environment
@@ -61,7 +62,7 @@ runs:
         fi
 
         # Expose GitHub Actions cache API tokens to sccache
-        export ACTIONS_RESULTS_URL="${ACTIONS_RESULTS_URL}"
+        export ACTIONS_CACHE_URL="${ACTIONS_CACHE_URL}"
         export ACTIONS_RUNTIME_TOKEN="${ACTIONS_RUNTIME_TOKEN}"
 
         # sccache as the compiler launcher for CMake
