@@ -20,25 +20,62 @@ runs:
       shell: pwsh
       run: |
         $sccacheVersion = "v0.15.0"
-        $sccacheFile = "sccache-${sccacheVersion}-x86_64-pc-windows-msvc"
-        $sccacheUrl = "https://github.com/mozilla/sccache/releases/download/${sccacheVersion}/${sccacheFile}.tar.gz"
-        $installDir = "$env:USERPROFILE\sccache"
-
-        Write-Host "Downloading sccache ${sccacheVersion}..."
+        $versionBare    = $sccacheVersion.TrimStart('v')
+        $installDir     = "$env:USERPROFILE\sccache"
         if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir -Force | Out-Null }
 
-        $tarball = "$env:TEMP\sccache.tar.gz"
-        Invoke-WebRequest -Uri $sccacheUrl -OutFile $tarball -UseBasicParsing
-        tar -xzf $tarball -C $env:TEMP
-        Copy-Item "$env:TEMP\${sccacheFile}\sccache.exe" "$installDir\sccache.exe" -Force
+        # ---------------------------------------------------------------
+        # 1. Try patched binary from this repo's release first.
+        #    The patched build adds RetryLayer to the OpenDAL GHA backend
+        #    so transient Azure Blob Storage errors are retried.
+        # ---------------------------------------------------------------
+        $repo         = $env:GITHUB_REPOSITORY
+        if (-not $repo) { $repo = "deeplearning4j/deeplearning4j" }
+        $patchedTag   = "sccache-patched-${sccacheVersion}"
+        $patchedFile  = "sccache-patched-${versionBare}-x86_64-pc-windows-msvc"
+        $patchedUrl   = "https://github.com/${repo}/releases/download/${patchedTag}/${patchedFile}.tar.gz"
 
-        if (Test-Path "$installDir\sccache.exe") {
-          Write-Host "Installed sccache:"
-          & "$installDir\sccache.exe" --version
-          Add-Content -Path $env:GITHUB_PATH -Value $installDir
-        } else {
-          Write-Host "WARNING: sccache installation failed"
+        $installed = $false
+        Write-Host "Trying patched sccache from $patchedUrl ..."
+        try {
+          $tarball = "$env:TEMP\sccache-patched.tar.gz"
+          Invoke-WebRequest -Uri $patchedUrl -OutFile $tarball -UseBasicParsing -TimeoutSec 30
+          $extractDir = "$env:TEMP\sccache-patched-extract"
+          if (Test-Path $extractDir) { Remove-Item $extractDir -Recurse -Force }
+          New-Item -ItemType Directory -Path $extractDir -Force | Out-Null
+          tar -xzf $tarball -C $extractDir
+          $exePath = Join-Path $extractDir $patchedFile "sccache.exe"
+          if (Test-Path $exePath) {
+            Copy-Item $exePath "$installDir\sccache.exe" -Force
+            Write-Host "Installed patched sccache (with RetryLayer):"
+            & "$installDir\sccache.exe" --version
+            $installed = $true
+          }
+        } catch {
+          Write-Host "Patched sccache download failed: $_"
         }
+
+        # ---------------------------------------------------------------
+        # 2. Fall back to upstream unpatched release if patched unavailable.
+        # ---------------------------------------------------------------
+        if (-not $installed) {
+          Write-Host "Falling back to upstream sccache ${sccacheVersion}."
+          $upstreamFile = "sccache-${sccacheVersion}-x86_64-pc-windows-msvc"
+          $upstreamUrl  = "https://github.com/mozilla/sccache/releases/download/${sccacheVersion}/${upstreamFile}.tar.gz"
+          Write-Host "Downloading $upstreamUrl ..."
+          $tarball = "$env:TEMP\sccache.tar.gz"
+          Invoke-WebRequest -Uri $upstreamUrl -OutFile $tarball -UseBasicParsing
+          tar -xzf $tarball -C $env:TEMP
+          Copy-Item "$env:TEMP\${upstreamFile}\sccache.exe" "$installDir\sccache.exe" -Force
+          if (Test-Path "$installDir\sccache.exe") {
+            Write-Host "Installed upstream sccache (unpatched fallback):"
+            & "$installDir\sccache.exe" --version
+          } else {
+            Write-Host "WARNING: sccache installation failed"
+          }
+        }
+
+        Add-Content -Path $env:GITHUB_PATH -Value $installDir
 
     - name: Configure sccache GHA backend
       uses: actions/github-script@v7

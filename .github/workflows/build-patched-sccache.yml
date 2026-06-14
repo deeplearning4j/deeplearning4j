@@ -1,0 +1,359 @@
+# Build patched sccache binaries and publish as a GitHub release.
+#
+# Why this workflow exists
+# -------------------------
+# sccache v0.15.0 constructs the OpenDAL GHA cache operator WITHOUT a
+# RetryLayer, so transient Azure Blob Storage errors (HTTP 5xx, 429) are never
+# retried and silently fail the cache write.  The patch at
+# .github/patches/sccache-retry.patch adds RetryLayer with exponential
+# back-off (5 attempts, 500 ms – 30 s, jittered) to src/cache/gha.rs.
+#
+# The binaries produced here are consumed by:
+#   .github/actions/setup-sccache-linux/action.yml
+#   .github/actions/setup-sccache-macos/action.yml
+#   .github/actions/setup-sccache-windows/action.yml
+#
+# Those actions try to download from the release tag `sccache-patched-v0.15.0`
+# in THIS repository first.  If that fails (e.g. first run before this
+# workflow has completed) they fall back to the unpatched upstream release.
+#
+# Running this workflow
+# ----------------------
+# Trigger manually via workflow_dispatch, or push a tag named
+# `sccache-patched-v*` to kick off an automated release build.
+#
+# Release tag convention: sccache-patched-v<upstream-version>
+# e.g. sccache-patched-v0.15.0
+
+name: Build Patched sccache
+
+on:
+  workflow_dispatch:
+    inputs:
+      sccache_version:
+        description: 'Upstream sccache tag to patch (e.g. v0.15.0)'
+        required: false
+        default: 'v0.15.0'
+      create_release:
+        description: 'Create a GitHub release with the built binaries'
+        required: false
+        default: 'true'
+  push:
+    tags:
+      - 'sccache-patched-v*'
+
+permissions:
+  contents: write   # needed to create releases and upload assets
+
+env:
+  SCCACHE_VERSION: ${{ github.event.inputs.sccache_version || 'v0.15.0' }}
+  # The release tag we publish to in this repo
+  RELEASE_TAG: sccache-patched-${{ github.event.inputs.sccache_version || 'v0.15.0' }}
+
+jobs:
+  # ------------------------------------------------------------------ #
+  # linux-x86_64 — musl static binary (same target as upstream release) #
+  # ------------------------------------------------------------------ #
+  build-linux-x86_64:
+    name: Build linux-x86_64
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout deeplearning4j (for patch file)
+        uses: actions/checkout@v4
+
+      - name: Clone sccache ${{ env.SCCACHE_VERSION }}
+        run: |
+          git clone --depth 1 --branch "$SCCACHE_VERSION" \
+            https://github.com/mozilla/sccache.git /tmp/sccache-src
+
+      - name: Apply RetryLayer patch
+        run: |
+          cd /tmp/sccache-src
+          patch -p1 < "$GITHUB_WORKSPACE/.github/patches/sccache-retry.patch"
+          echo "=== patched gha.rs ==="
+          cat src/cache/gha.rs
+
+      - name: Install musl toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y musl-tools
+          rustup target add x86_64-unknown-linux-musl
+
+      - name: Build sccache (musl, release, gha feature)
+        working-directory: /tmp/sccache-src
+        run: |
+          cargo build --release \
+            --target x86_64-unknown-linux-musl \
+            --features gha \
+            --no-default-features
+          ls -lh target/x86_64-unknown-linux-musl/release/sccache
+
+      - name: Package binary
+        run: |
+          VERSION_BARE="${SCCACHE_VERSION#v}"
+          ARTIFACT="sccache-patched-${VERSION_BARE}-x86_64-unknown-linux-musl"
+          mkdir -p "/tmp/pkg/${ARTIFACT}"
+          cp /tmp/sccache-src/target/x86_64-unknown-linux-musl/release/sccache \
+             "/tmp/pkg/${ARTIFACT}/sccache"
+          cd /tmp/pkg
+          tar czf "${ARTIFACT}.tar.gz" "${ARTIFACT}/"
+          echo "ARTIFACT_PATH=/tmp/pkg/${ARTIFACT}.tar.gz" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=${ARTIFACT}.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sccache-linux-x86_64
+          path: ${{ env.ARTIFACT_PATH }}
+          retention-days: 7
+
+  # ------------------------------------------------------------------ #
+  # linux-aarch64 — musl cross-compiled static binary                   #
+  # ------------------------------------------------------------------ #
+  build-linux-aarch64:
+    name: Build linux-aarch64
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout deeplearning4j (for patch file)
+        uses: actions/checkout@v4
+
+      - name: Clone sccache ${{ env.SCCACHE_VERSION }}
+        run: |
+          git clone --depth 1 --branch "$SCCACHE_VERSION" \
+            https://github.com/mozilla/sccache.git /tmp/sccache-src
+
+      - name: Apply RetryLayer patch
+        run: |
+          cd /tmp/sccache-src
+          patch -p1 < "$GITHUB_WORKSPACE/.github/patches/sccache-retry.patch"
+
+      - name: Install aarch64 musl cross-toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-aarch64-linux-gnu musl-tools
+          rustup target add aarch64-unknown-linux-musl
+
+      - name: Configure cargo cross-linker
+        run: |
+          mkdir -p /tmp/sccache-src/.cargo
+          cat >> /tmp/sccache-src/.cargo/config.toml <<'EOF'
+          [target.aarch64-unknown-linux-musl]
+          linker = "aarch64-linux-gnu-gcc"
+          EOF
+
+      - name: Build sccache (aarch64-musl, release, gha feature)
+        working-directory: /tmp/sccache-src
+        env:
+          CC_aarch64_unknown_linux_musl: aarch64-linux-gnu-gcc
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          cargo build --release \
+            --target aarch64-unknown-linux-musl \
+            --features gha \
+            --no-default-features
+          ls -lh target/aarch64-unknown-linux-musl/release/sccache
+
+      - name: Package binary
+        run: |
+          VERSION_BARE="${SCCACHE_VERSION#v}"
+          ARTIFACT="sccache-patched-${VERSION_BARE}-aarch64-unknown-linux-musl"
+          mkdir -p "/tmp/pkg/${ARTIFACT}"
+          cp /tmp/sccache-src/target/aarch64-unknown-linux-musl/release/sccache \
+             "/tmp/pkg/${ARTIFACT}/sccache"
+          cd /tmp/pkg
+          tar czf "${ARTIFACT}.tar.gz" "${ARTIFACT}/"
+          echo "ARTIFACT_PATH=/tmp/pkg/${ARTIFACT}.tar.gz" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=${ARTIFACT}.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sccache-linux-aarch64
+          path: ${{ env.ARTIFACT_PATH }}
+          retention-days: 7
+
+  # ------------------------------------------------------------------ #
+  # macOS arm64 (Apple Silicon)                                         #
+  # ------------------------------------------------------------------ #
+  build-macos-arm64:
+    name: Build macos-arm64
+    runs-on: macos-14
+    steps:
+      - name: Checkout deeplearning4j (for patch file)
+        uses: actions/checkout@v4
+
+      - name: Clone sccache ${{ env.SCCACHE_VERSION }}
+        run: |
+          git clone --depth 1 --branch "$SCCACHE_VERSION" \
+            https://github.com/mozilla/sccache.git /tmp/sccache-src
+
+      - name: Apply RetryLayer patch
+        run: |
+          cd /tmp/sccache-src
+          patch -p1 < "$GITHUB_WORKSPACE/.github/patches/sccache-retry.patch"
+          echo "=== patched gha.rs ==="
+          cat src/cache/gha.rs
+
+      - name: Install Rust (stable)
+        run: rustup target add aarch64-apple-darwin
+
+      - name: Build sccache (aarch64-apple-darwin, release, gha feature)
+        working-directory: /tmp/sccache-src
+        run: |
+          cargo build --release \
+            --target aarch64-apple-darwin \
+            --features gha \
+            --no-default-features
+          ls -lh target/aarch64-apple-darwin/release/sccache
+
+      - name: Package binary
+        run: |
+          VERSION_BARE="${SCCACHE_VERSION#v}"
+          ARTIFACT="sccache-patched-${VERSION_BARE}-aarch64-apple-darwin"
+          mkdir -p "/tmp/pkg/${ARTIFACT}"
+          cp /tmp/sccache-src/target/aarch64-apple-darwin/release/sccache \
+             "/tmp/pkg/${ARTIFACT}/sccache"
+          cd /tmp/pkg
+          tar czf "${ARTIFACT}.tar.gz" "${ARTIFACT}/"
+          echo "ARTIFACT_PATH=/tmp/pkg/${ARTIFACT}.tar.gz" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=${ARTIFACT}.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sccache-macos-arm64
+          path: ${{ env.ARTIFACT_PATH }}
+          retention-days: 7
+
+  # ------------------------------------------------------------------ #
+  # Windows x86_64 MSVC                                                 #
+  # ------------------------------------------------------------------ #
+  build-windows-x86_64:
+    name: Build windows-x86_64
+    runs-on: windows-2022
+    steps:
+      - name: Checkout deeplearning4j (for patch file)
+        uses: actions/checkout@v4
+
+      - name: Clone sccache ${{ env.SCCACHE_VERSION }}
+        shell: bash
+        run: |
+          git clone --depth 1 --branch "$SCCACHE_VERSION" \
+            https://github.com/mozilla/sccache.git /tmp/sccache-src
+
+      - name: Apply RetryLayer patch
+        shell: bash
+        run: |
+          cd /tmp/sccache-src
+          patch -p1 < "$GITHUB_WORKSPACE/.github/patches/sccache-retry.patch"
+          echo "=== patched gha.rs ==="
+          cat src/cache/gha.rs
+
+      - name: Install Rust (stable, MSVC)
+        shell: bash
+        run: rustup target add x86_64-pc-windows-msvc
+
+      - name: Build sccache (x86_64-pc-windows-msvc, release, gha feature)
+        shell: bash
+        run: |
+          cd /tmp/sccache-src
+          cargo build --release \
+            --target x86_64-pc-windows-msvc \
+            --features gha \
+            --no-default-features
+          ls -lh target/x86_64-pc-windows-msvc/release/sccache.exe
+
+      - name: Package binary
+        shell: bash
+        run: |
+          VERSION_BARE="${SCCACHE_VERSION#v}"
+          ARTIFACT="sccache-patched-${VERSION_BARE}-x86_64-pc-windows-msvc"
+          mkdir -p "/tmp/pkg/${ARTIFACT}"
+          cp /tmp/sccache-src/target/x86_64-pc-windows-msvc/release/sccache.exe \
+             "/tmp/pkg/${ARTIFACT}/sccache.exe"
+          cd /tmp/pkg
+          tar czf "${ARTIFACT}.tar.gz" "${ARTIFACT}/"
+          echo "ARTIFACT_PATH=/tmp/pkg/${ARTIFACT}.tar.gz" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=${ARTIFACT}.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sccache-windows-x86_64
+          path: ${{ env.ARTIFACT_PATH }}
+          retention-days: 7
+
+  # ------------------------------------------------------------------ #
+  # Publish release — runs after all builds succeed                     #
+  # ------------------------------------------------------------------ #
+  publish-release:
+    name: Publish GitHub Release
+    needs:
+      - build-linux-x86_64
+      - build-linux-aarch64
+      - build-macos-arm64
+      - build-windows-x86_64
+    runs-on: ubuntu-22.04
+    if: >
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sccache-patched-')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+    steps:
+      - name: Checkout deeplearning4j (for release notes)
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/release-assets
+
+      - name: List downloaded assets
+        run: find /tmp/release-assets -type f | sort
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION_BARE="${SCCACHE_VERSION#v}"
+          TAG="${RELEASE_TAG}"
+
+          BODY="## Patched sccache ${SCCACHE_VERSION}
+
+          This release contains patched sccache binaries built from upstream
+          [mozilla/sccache ${SCCACHE_VERSION}](https://github.com/mozilla/sccache/releases/tag/${SCCACHE_VERSION})
+          with the following change applied: [\`.github/patches/sccache-retry.patch\`](https://github.com/${{ github.repository }}/blob/master/.github/patches/sccache-retry.patch)
+
+          ### What the patch does
+
+          sccache v0.15.0's \`src/cache/gha.rs\` builds the OpenDAL GHA operator
+          without a RetryLayer.  Transient Azure Blob Storage errors (HTTP 5xx, 429)
+          are therefore never retried and silently drop cache writes, causing
+          frequent sccache misses on busy runners.
+
+          The patch adds \`RetryLayer\` with exponential back-off:
+          - **Max attempts:** 5
+          - **Base delay:** 500 ms (jittered)
+          - **Max delay:** 30 s
+
+          ### Binaries
+
+          | File | Platform |
+          |------|----------|
+          | \`sccache-patched-${VERSION_BARE}-x86_64-unknown-linux-musl.tar.gz\` | Linux x86_64 (musl static) |
+          | \`sccache-patched-${VERSION_BARE}-aarch64-unknown-linux-musl.tar.gz\` | Linux aarch64 (musl static) |
+          | \`sccache-patched-${VERSION_BARE}-aarch64-apple-darwin.tar.gz\` | macOS arm64 |
+          | \`sccache-patched-${VERSION_BARE}-x86_64-pc-windows-msvc.tar.gz\` | Windows x86_64 |
+
+          Built by workflow run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
+
+          # Delete existing release+tag if present (idempotent re-runs)
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          git push origin ":refs/tags/$TAG" 2>/dev/null || true
+
+          # Collect all .tar.gz files
+          ASSETS=$(find /tmp/release-assets -name '*.tar.gz' | tr '\n' ' ')
+
+          gh release create "$TAG" \
+            --title "Patched sccache ${SCCACHE_VERSION}" \
+            --notes "$BODY" \
+            --prerelease \
+            $ASSETS

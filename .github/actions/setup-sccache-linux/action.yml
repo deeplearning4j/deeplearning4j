@@ -19,19 +19,53 @@ runs:
       shell: bash
       run: |
         SCCACHE_VERSION="v0.15.0"
+        VERSION_BARE="${SCCACHE_VERSION#v}"
         ARCH=$(uname -m)
+
         if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-          SCCACHE_FILE="sccache-${SCCACHE_VERSION}-aarch64-unknown-linux-musl"
+          MUSL_ARCH="aarch64"
         else
-          SCCACHE_FILE="sccache-${SCCACHE_VERSION}-x86_64-unknown-linux-musl"
+          MUSL_ARCH="x86_64"
         fi
-        SCCACHE_URL="https://github.com/mozilla/sccache/releases/download/${SCCACHE_VERSION}/${SCCACHE_FILE}.tar.gz"
-        echo "Downloading sccache ${SCCACHE_VERSION} for ${ARCH}..."
-        curl -fsSL "${SCCACHE_URL}" | tar xz -C /tmp
-        sudo mv "/tmp/${SCCACHE_FILE}/sccache" /usr/local/bin/sccache
-        chmod +x /usr/local/bin/sccache
-        echo "Installed sccache:"
-        sccache --version
+
+        # ---------------------------------------------------------------
+        # 1. Try patched binary from this repo's release first.
+        #    The patched build adds RetryLayer to the OpenDAL GHA backend
+        #    so transient Azure Blob Storage errors are retried instead of
+        #    silently failing the cache write.
+        # ---------------------------------------------------------------
+        PATCHED_TAG="sccache-patched-${SCCACHE_VERSION}"
+        PATCHED_FILE="sccache-patched-${VERSION_BARE}-${MUSL_ARCH}-unknown-linux-musl"
+        REPO="${GITHUB_REPOSITORY:-deeplearning4j/deeplearning4j}"
+        PATCHED_URL="https://github.com/${REPO}/releases/download/${PATCHED_TAG}/${PATCHED_FILE}.tar.gz"
+
+        INSTALLED=false
+        echo "Trying patched sccache from ${PATCHED_URL} ..."
+        if curl -fsSL --max-time 30 "${PATCHED_URL}" \
+             | tar xz -C /tmp 2>/dev/null; then
+          if [ -f "/tmp/${PATCHED_FILE}/sccache" ]; then
+            sudo mv "/tmp/${PATCHED_FILE}/sccache" /usr/local/bin/sccache
+            sudo chmod +x /usr/local/bin/sccache
+            echo "Installed patched sccache (with RetryLayer):"
+            sccache --version
+            INSTALLED=true
+          fi
+        fi
+
+        # ---------------------------------------------------------------
+        # 2. Fall back to upstream unpatched release if patched unavailable.
+        # ---------------------------------------------------------------
+        if [ "$INSTALLED" = "false" ]; then
+          echo "Patched binary not available — falling back to upstream sccache ${SCCACHE_VERSION}."
+          UPSTREAM_FILE="sccache-${SCCACHE_VERSION}-${MUSL_ARCH}-unknown-linux-musl"
+          UPSTREAM_URL="https://github.com/mozilla/sccache/releases/download/${SCCACHE_VERSION}/${UPSTREAM_FILE}.tar.gz"
+          echo "Downloading ${UPSTREAM_URL} ..."
+          curl -fsSL "${UPSTREAM_URL}" | tar xz -C /tmp
+          sudo mv "/tmp/${UPSTREAM_FILE}/sccache" /usr/local/bin/sccache
+          sudo chmod +x /usr/local/bin/sccache
+          echo "Installed upstream sccache:"
+          sccache --version
+        fi
 
     - name: Configure sccache GHA backend
       uses: actions/github-script@v7

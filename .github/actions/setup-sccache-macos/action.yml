@@ -18,26 +18,62 @@ runs:
     - name: Install sccache
       shell: bash
       run: |
-        # Require sccache >=0.11 for V2 GHA cache service support.
-        NEED_INSTALL=false
-        if ! command -v sccache &>/dev/null; then
-          NEED_INSTALL=true
-        else
-          INSTALLED=$(sccache --version | grep -oE '[0-9]+\.[0-9]+' | head -1)
-          MAJOR=$(echo "$INSTALLED" | cut -d. -f1)
-          MINOR=$(echo "$INSTALLED" | cut -d. -f2)
-          if [ "$MAJOR" -eq 0 ] && [ "$MINOR" -lt 11 ]; then
-            echo "sccache $INSTALLED is too old (need >=0.11), upgrading..."
-            NEED_INSTALL=true
+        SCCACHE_VERSION="v0.15.0"
+        VERSION_BARE="${SCCACHE_VERSION#v}"
+
+        # macOS runners on GitHub Actions are arm64 (macos-14+).
+        # The patched binary targets aarch64-apple-darwin.
+        PATCHED_TAG="sccache-patched-${SCCACHE_VERSION}"
+        PATCHED_FILE="sccache-patched-${VERSION_BARE}-aarch64-apple-darwin"
+        REPO="${GITHUB_REPOSITORY:-deeplearning4j/deeplearning4j}"
+        PATCHED_URL="https://github.com/${REPO}/releases/download/${PATCHED_TAG}/${PATCHED_FILE}.tar.gz"
+
+        # ---------------------------------------------------------------
+        # 1. Try patched binary from this repo's release first.
+        #    The patched build adds RetryLayer to the OpenDAL GHA backend
+        #    so transient Azure Blob Storage errors are retried.
+        # ---------------------------------------------------------------
+        INSTALLED=false
+        echo "Trying patched sccache from ${PATCHED_URL} ..."
+        if curl -fsSL --max-time 30 "${PATCHED_URL}" \
+             | tar xz -C /tmp 2>/dev/null; then
+          if [ -f "/tmp/${PATCHED_FILE}/sccache" ]; then
+            sudo mv "/tmp/${PATCHED_FILE}/sccache" /usr/local/bin/sccache
+            sudo chmod +x /usr/local/bin/sccache
+            echo "Installed patched sccache (with RetryLayer):"
+            sccache --version
+            INSTALLED=true
           fi
         fi
-        if [ "$NEED_INSTALL" = true ]; then
-          echo "Installing sccache via Homebrew..."
-          brew install sccache
-        else
-          echo "sccache is already installed"
+
+        # ---------------------------------------------------------------
+        # 2. Fall back to Homebrew if patched binary unavailable.
+        #    Homebrew may install a version older than 0.11; check and
+        #    upgrade if needed.
+        # ---------------------------------------------------------------
+        if [ "$INSTALLED" = "false" ]; then
+          echo "Patched binary not available — falling back to Homebrew sccache."
+          NEED_INSTALL=false
+          if ! command -v sccache &>/dev/null; then
+            NEED_INSTALL=true
+          else
+            INSTALLED_VER=$(sccache --version | grep -oE '[0-9]+\.[0-9]+' | head -1)
+            MAJOR=$(echo "$INSTALLED_VER" | cut -d. -f1)
+            MINOR=$(echo "$INSTALLED_VER" | cut -d. -f2)
+            if [ "$MAJOR" -eq 0 ] && [ "$MINOR" -lt 11 ]; then
+              echo "sccache $INSTALLED_VER is too old (need >=0.11), upgrading..."
+              NEED_INSTALL=true
+            fi
+          fi
+          if [ "$NEED_INSTALL" = true ]; then
+            echo "Installing sccache via Homebrew..."
+            brew install sccache
+          else
+            echo "sccache is already installed at acceptable version"
+          fi
+          echo "Installed sccache (unpatched fallback):"
+          sccache --version
         fi
-        sccache --version
         echo "sccache location: $(which sccache)"
 
     - name: Configure sccache GHA backend
