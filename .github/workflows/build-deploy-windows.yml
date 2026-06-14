@@ -103,7 +103,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/setup-sccache-windows
         with:
-          cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
+          cache-suffix: windows-x86_64
 
       - name: Show sccache stats before build
         if: always()

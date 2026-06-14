@@ -93,7 +93,7 @@ jobs:
         id: setup-sccache
         uses: ./.github/actions/setup-sccache-linux
         with:
-          cache-suffix: arm64-${{ matrix.helper }}
+          cache-suffix: linux-arm64
 
       - name: Show sccache stats before build
         if: always()

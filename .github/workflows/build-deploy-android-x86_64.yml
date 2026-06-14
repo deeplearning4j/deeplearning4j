@@ -94,7 +94,7 @@ jobs:
         id: setup-sccache
         uses: ./.github/actions/setup-sccache-linux
         with:
-          cache-suffix: android-x86_64-${{ matrix.helper }}
+          cache-suffix: android-x86_64
 
       - name: Show sccache stats before build
         if: always()

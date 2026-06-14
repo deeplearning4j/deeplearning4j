@@ -95,7 +95,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/setup-sccache-windows
         with:
-          cache-suffix: cuda-12.9
+          cache-suffix: cuda
 
       - name: Show sccache stats before build
         if: always()

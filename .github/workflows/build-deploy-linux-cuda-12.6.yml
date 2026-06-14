@@ -126,7 +126,7 @@ jobs:
         id: setup-sccache
         uses: ./.github/actions/setup-sccache-linux
         with:
-          cache-suffix: cuda-12.6
+          cache-suffix: cuda
 
       - name: Show sccache stats before build
         if: always()
