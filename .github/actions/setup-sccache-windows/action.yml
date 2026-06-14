@@ -44,7 +44,10 @@ runs:
       uses: actions/github-script@v7
       with:
         script: |
-          // sccache >=0.11 uses the V2 cache service which reads ACTIONS_RESULTS_URL.
+          // Force V2 cache service — required for OpenDAL ghac writes.
+          // Without this, OpenDAL falls back to the dead V1 protocol and writes fail
+          // with "Cannot write to read-only storage".
+          core.exportVariable('ACTIONS_CACHE_SERVICE_V2', 'on');
           core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
           core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
@@ -69,7 +72,8 @@ runs:
         # Disable PCH
         Add-Content -Path $env:GITHUB_ENV -Value "SD_DISABLE_PCH=1"
 
-        # Expose GitHub Actions cache API tokens to sccache in current process
+        # Expose GitHub Actions cache API tokens and V2 flag to sccache in current process
+        $env:ACTIONS_CACHE_SERVICE_V2 = $env:ACTIONS_CACHE_SERVICE_V2
         $env:ACTIONS_RESULTS_URL = $env:ACTIONS_RESULTS_URL
         $env:ACTIONS_RUNTIME_TOKEN = $env:ACTIONS_RUNTIME_TOKEN
 
