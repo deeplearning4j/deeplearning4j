@@ -4,6 +4,8 @@
 
 Implemented
 
+Extends [ADR 0039](0039%20-%20Selective%20rendering%20type%20system.md). Supersedes [ADR 0031](0031%20-%20New%20generate%20combinations%20macros.md).
+
 Proposed by: Adam Gibson (September 2025)
 
 Discussed with: Development Team

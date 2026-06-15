@@ -20,7 +20,7 @@ The libnd4j project, being a complex C++ library with extensive use of preproces
 
 The ppstep tool (https://github.com/agibsonccc/ppstep) provides an interactive debugger for the C/C++ preprocessor, allowing developers to step through macro expansions, set breakpoints, and visualize the transformation process. This ADR documents the integration of ppstep into the libnd4j build system with enhanced recording capabilities and error handling features for offline analysis.
 
-## Proposal
+## Decision
 
 This ADR proposes and documents the integration of ppstep as an optional build tool for libnd4j, with the following enhancements:
 

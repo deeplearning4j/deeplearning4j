@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Superseded by [ADR 0036](0036%20-%20Namespace%20refactoring.md)
 
 Proposed by: Adam Gibson (January 2025)
 
@@ -26,7 +26,7 @@ The challenge is compounded by:
 3. Active development that continues during migration
 4. External dependencies and bindings (ONNX, TensorFlow, FlatBuffers)
 
-## Proposal
+## Decision
 
 This ADR proposes a two-phase release strategy to migrate from current namespaces to `org.eclipse.deeplearning4j`:
 

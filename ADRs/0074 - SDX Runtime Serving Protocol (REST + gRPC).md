@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (March 4, 2026)
+Accepted
 
 Proposed by: Adam Gibson
 

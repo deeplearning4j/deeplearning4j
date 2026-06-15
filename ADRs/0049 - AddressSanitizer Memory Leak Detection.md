@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented
+Superseded by [ADR 0050](0050%20-%20Clang%20Sanitizers%20for%20JNI%20Memory%20Debugging.md)
 
 Proposed by: Adam Gibson (13-10-2025)
 Discussed with: N/A

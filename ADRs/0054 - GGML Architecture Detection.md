@@ -6,6 +6,8 @@ Implemented
 
 Proposed by: Adam Gibson (30-12-2024)
 
+Discussed with: Development Team
+
 ## Context
 
 GGML/GGUF models embed architecture information in their metadata, allowing tools like llama.cpp to automatically configure the appropriate model structure. Different architectures (LLaMA, Mistral, BERT, GPT-2, Falcon, etc.) have different layer structures, attention mechanisms, and tensor naming conventions.
@@ -23,7 +25,7 @@ When importing GGML models into ND4J/SameDiff, we need to:
 - [ADR 0053 - GGML Quantization Handling](./0053%20-%20GGML%20Quantization%20Handling.md): Quantization/dequantization handling
 - GGUF metadata specification: https://github.com/ggerganov/ggml/blob/master/docs/gguf.md
 
-## Proposal
+## Decision
 
 We implement an extensible architecture detection and handling system using the Strategy pattern:
 

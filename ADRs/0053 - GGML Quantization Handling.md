@@ -24,7 +24,7 @@ When importing GGML models into ND4J/SameDiff, we must decide how to handle thes
 - GGML quantization reference: https://github.com/ggerganov/llama.cpp/blob/master/ggml-quants.c
 - K-quants paper: https://github.com/ggerganov/llama.cpp/pull/1684
 
-## Proposal
+## Decision
 
 We implement a flexible quantization handling strategy that supports three modes:
 

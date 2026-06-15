@@ -3,6 +3,9 @@
 ## Status
 Proposed
 
+## Related ADRs
+- [ADR 0055](0055-Kernel_Selection_And_Dynamic_Loading.md) / [ADR 0058](0058%20-%20Multi-Backend%20Kernel%20Selection%20and%20Management.md) — select kernels *within* a backend; this ADR routes *between* backends
+
 ## Context
 
 ND4J/libnd4j currently supports multiple compute backends (CPU, CUDA, ZLUDA, etc.), but traditionally only one backend is active at a time. The backend is selected at build time and runtime based on classpath configuration. This creates limitations:

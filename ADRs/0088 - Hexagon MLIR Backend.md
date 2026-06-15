@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress
+Accepted
 
 Proposed by: Development Team (March 2026)
 

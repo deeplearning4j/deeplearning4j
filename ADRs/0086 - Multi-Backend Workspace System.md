@@ -19,7 +19,7 @@ Modern deep learning workloads increasingly require execution across multiple co
 
 This ADR extends the workspace concept to support hybrid multi-backend execution with proper memory coherence tracking.
 
-## Proposal
+## Decision
 
 We introduce a **Multi-Backend Workspace System** that extends the existing workspace architecture with:
 

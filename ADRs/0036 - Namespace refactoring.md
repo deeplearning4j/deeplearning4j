@@ -4,6 +4,8 @@
 
 Proposed
 
+Supersedes [ADR 0038](0038%20-%20Namespace%20migration%20to%20Eclipse.md) (earlier namespace migration proposal).
+
 Proposed by: Adam Gibson  (May 8, 2025)
 
 Discussed with: Paul Dubs
@@ -21,7 +23,7 @@ specific rules for this migration.
 This is part of a 2 phase release plan where a milestone release that has the old package names is performed followed by the major renamespacing.
 
 
-## Proposal
+## Decision
 
 This ADR proposes using a comprehensive [OpenRewrite recipe](https://docs.openrewrite.org/reference/rewrite-maven-plugin) to automatically refactor the project's primary Java packages into the `org.eclipse.deeplearning4j` namespace. The refactoring follows a two-phase conceptual approach:
 

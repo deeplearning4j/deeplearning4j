@@ -30,7 +30,7 @@ This work builds upon and integrates with:
 The GGUF format specification is maintained at:
 - https://github.com/ggerganov/ggml/blob/master/docs/gguf.md
 
-## Proposal
+## Decision
 
 We introduce a new `nd4j-ggml` module that provides comprehensive support for importing GGML and GGUF format models into ND4J/SameDiff. The module consists of:
 

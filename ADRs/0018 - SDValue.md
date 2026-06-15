@@ -1,7 +1,7 @@
 # SDValue
 
 ## Status
-**Discussion**
+Discussion
 
 Proposed by: Adam Gibson (8th Mar 2022)
 
@@ -32,7 +32,7 @@ as well as other types to be used within execution of a graph.
 
 
 
-## Proposal
+## Decision
 
 Create an SDValue class and associated enum abstraction for passing around and manipulating
 variables of different types.

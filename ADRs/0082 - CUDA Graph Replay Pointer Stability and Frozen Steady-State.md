@@ -3,6 +3,9 @@
 ## Status
 Accepted
 
+## Related ADRs
+- [ADR 0089](0089%20-%20CUDA%20Graph%20Capture%20and%20Replay.md) — architectural specification this ADR patches
+
 ## Context
 
 CUDA graph replay is the top-tier DSP execution mode for autoregressive decode: once a segment's kernel launch sequence is captured into a `cudaGraph_t`, subsequent decode steps invoke `cudaGraphLaunch` instead of re-issuing per-op launches, eliminating ~2 ms of Java-side overhead per step and a similar amount of CUDA launch latency. For SmolDocling on an RTX 4090, replay brings per-step latency down to ~11 ms, approaching the memory-bandwidth bound (~8 ms to load 5.3 GB of weights at ~650 GB/s).

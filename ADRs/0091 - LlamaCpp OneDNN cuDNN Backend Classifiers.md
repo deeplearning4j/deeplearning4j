@@ -257,6 +257,5 @@ mvn -Pcuda -Dlibnd4j.extension=cudnn \
 ## Future Considerations
 
 1. **ARM Support**: Add llamacpp classifiers for ARM platforms (linux-arm64, macosx-arm64)
-2. **CUDA Integration**: Consider llamacpp CUDA backend for GPU acceleration
-3. **Auto-detection**: Runtime selection of optimal backend based on available hardware
-4. **Combined Classifiers**: Support for multiple extensions (e.g., `onednn-avx512`)
+2. **Auto-detection**: Runtime selection of optimal backend based on available hardware
+3. **Combined Classifiers**: Support for multiple extensions (e.g., `onednn-avx512`)

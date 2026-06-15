@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress
+Accepted
 
 Proposed by: Adam Gibson (January 2025)
 

@@ -149,6 +149,10 @@ CI/CD pipelines should continue to work unchanged, as we're adding support for n
 
 These improvements transform our Android toolchain from a source of frustration into a helpful part of the build system. By investing in proper error handling and validation, we save developer time and make the project more accessible to new contributors.
 
+## Related ADRs
+
+- **ADR 0042 - Android NDK Migration from r21d to r27d**: Covers the NDK version upgrade decision (r21d → r27d), including the minimum API change from 16 to 21 and the removal of GNU binutils. ADR 0045 covers the CMake toolchain hardening (path detection, validation, explicit LLVM tool usage) needed to support that migration; ADR 0042 covers the version migration rationale and consequences.
+
 ## References
 
 - Android NDK CMake Toolchain Documentation

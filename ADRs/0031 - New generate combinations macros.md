@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed**
+Superseded by [ADR 0047](0047%20-%20Comprehensive%20Template%20Instantiation%20Migration.md)
 
 Proposed by: Adam Gibson Oct 22, 2024
 

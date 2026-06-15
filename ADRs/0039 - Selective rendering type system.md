@@ -4,6 +4,8 @@
 
 Implemented
 
+Supersedes [ADR 0030](0030%20-%20Type%20Promotion.md). Extended by [ADR 0047](0047%20-%20Comprehensive%20Template%20Instantiation%20Migration.md).
+
 Proposed by: Adam Gibson (August 2025)
 
 Discussed with: Development Team
@@ -24,7 +26,7 @@ This results in:
 
 Traditional approaches like explicit template instantiation lists are unmaintainable at this scale. The selective rendering system provides an automated, semantically-aware solution to these challenges.
 
-## Proposal
+## Decision
 
 This ADR documents the implementation of a selective rendering type system that:
 

@@ -1,7 +1,7 @@
-# ADR 0057: MLIR JIT Compilation Backend
+# ADR 0085: MLIR JIT Compilation Backend
 
 ## Status
-ACCEPTED
+Accepted
 
 ## Context
 

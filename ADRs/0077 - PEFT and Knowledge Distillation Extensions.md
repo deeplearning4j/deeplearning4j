@@ -1,7 +1,12 @@
 # ADR 0077 - PEFT and Knowledge Distillation Extensions
 
 ## Status
+
 Accepted
+
+Proposed by: Adam Gibson
+
+Discussed with: Development Team
 
 ## Context
 

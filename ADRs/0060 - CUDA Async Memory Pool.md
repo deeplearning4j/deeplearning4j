@@ -176,6 +176,10 @@ This means the pool retains up to 75% of device memory for reuse, even when allo
 
 **Stream Mismatch Risk**: Memory freed on one stream can only be reused by allocations on the same stream (without explicit synchronization). If DSP frees on the execution stream but C++ allocates on the null stream, the pool cannot reuse freed memory, leading to excessive OOM recoveries. This must be addressed by ensuring stream consistency between Java and C++ execution paths.
 
+## Related ADRs
+
+- **ADR 0065 - Multi-GPU Memory Management**: Covers the CPU-side soft limit and the broader multi-stage OOM failover chain that the GPU-side soft limit in this ADR triggers into. ADR 0060 covers the GPU-side (CUDA async pool) failover; ADR 0065 covers the CPU-side failover and cross-device strategy.
+
 ## References
 
 - CUDA Memory Management documentation (cudaMallocAsync/cudaFreeAsync)

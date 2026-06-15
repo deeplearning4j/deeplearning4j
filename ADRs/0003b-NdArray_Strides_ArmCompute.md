@@ -2,7 +2,7 @@
 # Libnd4j NdArray padded buffers, strides for Arm_Compute Library wrapper
 
 ## Status
-Implemented 
+Implemented
 
 Proposed by: Abdelrauf (23/09/2020)
 
@@ -24,7 +24,7 @@ so strides will be calculated for the shape `{N,C, newH, newW}` and offset of th
      offset = pad.left * strideOfNewW + pad.top * strideOfNewH
 
 
-## Proposal
+## Decision
 Introduce helper functions checking  below case :
 
     strides[index-1] >= strides[index] * shapes[index];

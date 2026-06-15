@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented and actively maintained.
+Implemented
 
 Proposed by: Adam Gibson (January 2025)
 Updated by: Runtime maintainers (March 31, 2026; shape-keyed plan cache April 16, 2026; training support April 17, 2026; disk plan persistence May 24, 2026; buffer coloring + pooling + passivation June 3, 2026)

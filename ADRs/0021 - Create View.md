@@ -1,7 +1,7 @@
 # Create View
 
 ## Status
-**Discussion**
+Discussion
 
 Proposed by: Adam Gibson (27th April 2022)
 Discussed with: Paul Dubs

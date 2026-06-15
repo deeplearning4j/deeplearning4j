@@ -2,7 +2,9 @@
 
 ## Status
 
-Implemented (M1 runtime + SDZ load path), Proposed (M2-M4 packaging and release gates)
+Accepted
+
+**Milestone status:** M1 (runtime + SDZ load path) implemented; M2-M4 (packaging and release gates) proposed.
 
 Proposed by: Adam Gibson (March 4, 2026)
 

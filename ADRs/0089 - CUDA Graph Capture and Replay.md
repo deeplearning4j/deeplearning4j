@@ -1,7 +1,10 @@
 # ADR: CUDA Graph Capture, Replay, and Gap Op Orchestration
 
 ## Status
-Accepted (Updated 2026-03-30)
+Accepted
+
+## Related ADRs
+- [ADR 0082](0082%20-%20CUDA%20Graph%20Replay%20Pointer%20Stability%20and%20Frozen%20Steady-State.md) — resolves the known issues documented in this ADR
 
 ## Date
 2026-02-18 (Original), 2026-03-30 (Gap Ops, Shared Resources, Phase Model)

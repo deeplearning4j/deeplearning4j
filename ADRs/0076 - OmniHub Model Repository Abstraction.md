@@ -1,7 +1,7 @@
 # OmniHub Model Repository Abstraction
 
 ## Status
-**Accepted**
+Accepted
 
 Proposed by: Adam Gibson (13th Mar 2026)
 

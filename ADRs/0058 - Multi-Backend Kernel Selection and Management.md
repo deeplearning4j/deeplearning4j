@@ -3,6 +3,10 @@
 ## Status
 Accepted
 
+## Related ADRs
+- [ADR 0055](0055-Kernel_Selection_And_Dynamic_Loading.md) — foundation: auto-tuner, performance registry, and plugin system defined there
+- [ADR 0059](0059%20-%20Multi-Backend%20Op%20Execution%20System.md) — orthogonal: routes between JVM backends, while this ADR selects kernels within a backend
+
 ## Context
 
 The deeplearning4j/nd4j framework supports multiple execution backends (CPU, CUDA, oneDNN, cuDNN, MPS, etc.) through a "platform helper" system. Each operation can have multiple implementations optimized for different hardware. However, the existing infrastructure had several limitations:

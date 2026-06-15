@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed**
+Superseded by [ADR 0039](0039%20-%20Selective%20rendering%20type%20system.md)
 
 Proposed by: [Adam Gibson] Oct 22, 2024
 
@@ -10,7 +10,7 @@ Proposed by: [Adam Gibson] Oct 22, 2024
 
 The current C++ library published via Java Maven supports multi-type arithmetic, achieved through extensive template usage in C++ and built using CMake. While this approach provides flexibility by accommodating various data types, it results in a higher binary size. For many users, the full spectrum of type support may be unnecessary, leading to increased storage requirements and longer download times. To address these concerns, there is consideration to publish a smaller artifact that supports only specific types, thereby reducing the binary size.
 
-## Proposal
+## Decision
 
 We propose to publish a ``smaller Maven artifact of the C++ library that supports a limited set of data types. This specialized artifact will cater to users who do not require multi-type arithmetic, offering a more lightweight alternative. The key aspects of this proposal include:
 

@@ -150,6 +150,10 @@ Adding contemporary Android linker flags:
    - Archive old toolchain files
    - Final compatibility testing
 
+## Related ADRs
+
+- **ADR 0045 - Android Cross-Compilation Toolchain Modernization**: Covers the CMake toolchain file improvements (flexible NDK path detection, explicit LLVM tool configuration, comprehensive validation) that are required alongside the NDK version upgrade described in this ADR. ADR 0042 covers the NDK version migration decision (r21d → r27d); ADR 0045 covers the CMake toolchain hardening that accompanies it.
+
 ## References
 
 - Android NDK r21 Release Notes

@@ -1,7 +1,7 @@
-# ADR 0057: ZLUDA Transpiler Support for AMD and Intel GPUs
+# ADR 0087: ZLUDA Transpiler Support for AMD and Intel GPUs
 
 ## Status
-ACCEPTED
+Accepted
 
 ## Context
 

@@ -1,7 +1,7 @@
 # Testing
 
 ## Status
-**Proposed**
+Proposed
 
 Proposed by: Adam Gibson (13th December 2021)
 
@@ -48,7 +48,7 @@ is time-consuming and error-prone taking hours to run with some tests
 being inconsistent (oftentimes spark and multi threading clashing with OMP math threads causing crahses/slowdowns)
 
 
-## Proposal
+## Decision
 
 We put anything that is considered an end-to-end test requiring platform
 specific behavior in to its own module.

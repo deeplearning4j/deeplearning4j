@@ -6,6 +6,8 @@ Implemented
 
 Proposed by: Adam Gibson (May 24, 2026)
 
+Discussed with: Development Team
+
 ## Context
 
 DynamicShapePlan (DSP) compilation produces serialized plan bytes (`DSP1` v5 binary format) that are deterministic for a given SameDiff graph structure. For GGML-imported models, the graph topology is fully determined by the GGUF metadata — the same model file always produces byte-for-byte identical serialized plans across loads. Yet every JVM start recompiles the plan from scratch through the full pipeline: Java DAG builder, `DynamicShapePlanCompiler.compile()`, `DynamicShapePlan.serialize()`, JNI dispatch, and `NativeDynamicShapePlan::fromSerializedPlan()`.

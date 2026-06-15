@@ -1,7 +1,7 @@
 # Invoke
 
 ## Status
-**Discussion**
+Discussion
 
 Proposed by: Adam Gibson (10th April 2022)
 
@@ -15,7 +15,7 @@ samediff graphs in a dictionary called SameDiffFunctionInstances.
 Graphs with control flow ops such as switch, if and while also tend to heavily use sub graphs.
 
 
-## Proposal
+## Decision
 
 Invoke builds on the work from [SDValue](./0018%20-%20SDValue.md) and leverages returning an ExecutionResult (a dictionary of name to SDValue)
 passing the result of the invoke function as an op output in a larger parent graph.

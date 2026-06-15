@@ -1,7 +1,7 @@
 # Model Hub Zoo Download Implementation
 
 ## Status
-**Discussion**
+Superseded by [ADR 0013](0013%20-%20OmniHub-Zoo%20Consumption.md)
 
 Proposed by: Adam Gibson (1st Jan 2022)
 
@@ -17,7 +17,7 @@ specs for implementing interop with the following ecosystems:
 4. [Pytorch model zoo](https://pytorch.org/serve/model_zoo.html)
 5. [Keras applications](https://keras.io/api/applications/)
 
-## Proposal
+## Decision
 
 This proposal will be broken up in to separate sections detailing
 the work and implementation needed to implement the loading of models

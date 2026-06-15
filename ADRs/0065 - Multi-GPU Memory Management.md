@@ -238,6 +238,10 @@ NativeOps.cpp (CPU)       — setMemoryPoolSoftLimitPercent/getMemoryPoolSoftLim
 
 **Pool Statistics Fragmentation**: When allocations span multiple devices, pool statistics per device may not reflect actual memory pressure. Global memory budgeting requires aggregating across all devices.
 
+## Related ADRs
+
+- **ADR 0060 - CUDA Async Memory Pool**: Covers the GPU-side `cudaMallocAsync`/`cudaFreeAsync` pool implementation and the proactive soft limit that triggers into the failover chain described in this ADR. ADR 0065 covers the CPU-side failover and the cross-device management strategy; ADR 0060 covers the GPU-side pool implementation details.
+
 ## References
 
 - CudaMemoryPool.h, CudaMemoryPool.cu — CUDA pool with proactive soft limit
