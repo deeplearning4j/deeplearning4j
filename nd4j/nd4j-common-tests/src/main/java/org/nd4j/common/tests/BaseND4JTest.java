@@ -146,8 +146,6 @@ public abstract class BaseND4JTest {
             //Not really safe to continue testing under this situation... other tests will likely fail with obscure
             // errors that are hard to track back to this
             log.error("Open workspace leaked from test! Exiting - {}, isOpen = {} - {}", currWS.getId(), currWS.isScopeActive(), currWS);
-            System.out.println("Open workspace leaked from test! Exiting - " + currWS.getId() + ", isOpen = " + currWS.isScopeActive() + " - " + currWS);
-            System.out.flush();
             //Try to flush logs also:
             try{ Thread.sleep(1000); } catch (InterruptedException e){ }
             ILoggerFactory lf = LoggerFactory.getILoggerFactory();

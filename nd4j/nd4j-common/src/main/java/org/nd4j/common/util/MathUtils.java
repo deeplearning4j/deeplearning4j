@@ -1152,9 +1152,7 @@ public class MathUtils {
             rem = num % 10;
             num = num / 10;
             if (rem != 0 && rem != 1) {
-                System.out.println("This is not a binary number.");
-                System.out.println("Please try once again.");
-                return -1;
+                throw new IllegalArgumentException("Not a binary number: " + binary);
             }
         }
         int i = Integer.parseInt(binary, 2);
