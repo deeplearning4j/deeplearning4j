@@ -22,7 +22,6 @@ package org.nd4j.imports.converters;
 
 import dorkbox.annotation.AnnotationDefaults;
 import dorkbox.annotation.AnnotationDetector;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;

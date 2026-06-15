@@ -20,8 +20,15 @@
 
 package org.nd4j.linalg.api.memory.deallocation;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.Counter;

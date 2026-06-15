@@ -21,7 +21,6 @@
 package org.deeplearning4j.eval.curves;
 
 import org.nd4j.shade.guava.base.Preconditions;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonProperty;

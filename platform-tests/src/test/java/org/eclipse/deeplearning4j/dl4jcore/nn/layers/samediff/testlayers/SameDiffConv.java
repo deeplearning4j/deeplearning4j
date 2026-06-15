@@ -20,7 +20,10 @@
 
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.samediff.testlayers;
 
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.val;
+
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;

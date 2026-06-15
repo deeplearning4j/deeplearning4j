@@ -20,7 +20,11 @@
 
 package org.nd4j.common.primitives;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Setter;
 
 import java.io.Serializable;
 

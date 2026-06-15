@@ -21,7 +21,6 @@
 package org.deeplearning4j.ui.weights;
 
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.datavec.image.loader.ImageLoader;
 import org.deeplearning4j.core.storage.Persistable;

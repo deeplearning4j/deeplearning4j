@@ -4,7 +4,7 @@
 
 #ifndef LIBND4J_RESHAPENOCOPY_H
 #define LIBND4J_RESHAPENOCOPY_H
-#include <system/op_boilerplate.h>
+#include <system/common.h>
 
 namespace sd {
 namespace ops {
