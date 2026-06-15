@@ -28,6 +28,7 @@
 #include <execution/AffinityManager.h>
 #include <memory/MemoryCounter.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <system/Environment.h>
 #include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <system/type_boilerplate.h>
