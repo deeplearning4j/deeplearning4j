@@ -101,7 +101,7 @@ static void scaleTensorCUDNN(const LaunchContext* context, NDArray* input, NDArr
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("scaleTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "scaleTensorCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {});
@@ -137,7 +137,7 @@ static void transformTensorCUDNN(const LaunchContext* context, NDArray* input, N
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("transformTensorCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "transformTensorCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input});
@@ -304,7 +304,7 @@ PLATFORM_IMPL(selu, ENGINE_CUDA) {
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("selu CUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "selu CUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input});
@@ -358,7 +358,7 @@ PLATFORM_IMPL(swish, ENGINE_CUDA) {
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("swish CUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "swish CUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input});

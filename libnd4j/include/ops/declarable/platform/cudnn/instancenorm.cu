@@ -128,7 +128,7 @@ static void instanceNormCUDNN(const LaunchContext* context, NDArray* input, NDAr
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("instanceNormCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "instanceNormCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input, gamma, beta});

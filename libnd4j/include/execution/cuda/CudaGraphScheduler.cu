@@ -27,7 +27,7 @@
 
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
-#include <exceptions/cuda_exception.h>
+
 
 #include <algorithm>
 #include <chrono>

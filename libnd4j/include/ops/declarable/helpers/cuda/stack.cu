@@ -20,7 +20,7 @@
 // Created by Yurii Shyrma on 02.01.2018
 //
 #include <array/ResultSet.h>
-#include <exceptions/cuda_exception.h>
+
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>

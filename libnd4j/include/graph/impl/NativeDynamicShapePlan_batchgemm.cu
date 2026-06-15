@@ -39,7 +39,6 @@
 #include <system/Environment.h>
 #include <cublas_v2.h>
 #include <cuda_fp16.h>
-#include <exceptions/cuda_exception.h>
 
 #include <algorithm>
 #include <queue>

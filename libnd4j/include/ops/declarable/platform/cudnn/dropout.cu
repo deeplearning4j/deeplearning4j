@@ -94,7 +94,7 @@ static void dropoutCUDNN(const LaunchContext* context, NDArray* input, NDArray* 
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("dropoutCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "dropoutCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input});
@@ -164,7 +164,7 @@ static void dropoutBpCUDNN(const LaunchContext* context, NDArray* gradO, NDArray
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("dropoutBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "dropoutBpCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({gradI}, {gradO});

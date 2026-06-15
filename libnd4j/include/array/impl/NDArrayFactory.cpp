@@ -23,7 +23,7 @@
 // @author Oleg Semeniv <oleg.semeniv@gmail.com>
 //
 #include <array/NDArrayFactory.h>
-#include <exceptions/cuda_exception.h>
+
 #include <sys/stat.h>
 #include <helpers/ConstantHelper.h>
 #include <helpers/ConstantShapeHelper.h>

@@ -20,7 +20,7 @@
 //  @author sgazeos@gmail.com
 //
 #include <array/NDArrayFactory.h>
-#include <exceptions/cuda_exception.h>
+#include <string>
 #include <graph/Context.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
@@ -405,12 +405,14 @@ static void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& r
     graph::RandomGenerator* devRng = reinterpret_cast<graph::RandomGenerator*>(
         memory::CudaMemoryPool::getInstance().allocate(sizeof(graph::RandomGenerator), deviceId, *stream));
     if (devRng == nullptr) {
-      cuda_exception::build("fillRandomUniform_: Cannot allocate device memory for random generator", cudaErrorMemoryAllocation);
+      std::string msg = "fillRandomUniform_: Cannot allocate device memory for random generator; Error code: [" + std::to_string(cudaErrorMemoryAllocation) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
 
     auto err = cudaMemcpyAsync(devRng, &rng, sizeof(graph::RandomGenerator), cudaMemcpyHostToDevice, *stream);
     if (err != 0) {
-      cuda_exception::build("fillRandomUniform_: Cannot copy random generator to device", err);
+      std::string msg = "fillRandomUniform_: Cannot copy random generator to device; Error code: [" + std::to_string(err) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
     auto outputBuf = output->dataBuffer()->template specialAsT<T>();
     auto outputShape = output->specialShapeInfo();
@@ -509,11 +511,13 @@ void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, 
   graph::RandomGenerator* devRng = reinterpret_cast<graph::RandomGenerator*>(
       memory::CudaMemoryPool::getInstance().allocate(sizeof(graph::RandomGenerator), deviceId, *context->getCudaStream()));
   if (devRng == nullptr) {
-    cuda_exception::build("fillRandomMultiNomial: Cannot allocate device memory for random generator", cudaErrorMemoryAllocation);
+    std::string msg = "fillRandomMultiNomial: Cannot allocate device memory for random generator; Error code: [" + std::to_string(cudaErrorMemoryAllocation) + "]";
+    THROW_EXCEPTION(msg.c_str());
   }
   auto err = cudaMemcpyAsync(devRng, &rng, sizeof(graph::RandomGenerator), cudaMemcpyHostToDevice, *context->getCudaStream());
   if (err != 0) {
-    cuda_exception::build("fillRandomMultiNomial: Cannot copy random generator to device", err);
+    std::string msg = "fillRandomMultiNomial: Cannot copy random generator to device; Error code: [" + std::to_string(err) + "]";
+    THROW_EXCEPTION(msg.c_str());
   }
 
   NDArray::prepareSpecialUse({&output}, {&input});

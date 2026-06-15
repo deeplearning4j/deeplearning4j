@@ -20,8 +20,8 @@
 //  @author raver119@gmail.com
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
-#include <exceptions/cuda_exception.h>
 #include <execution/LaunchContext.h>
+#include <string>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/StringUtils.h>
@@ -370,8 +370,8 @@ SD_HOST  SD_INLINE void ReduceLongFunction<X, Z>::intermediate(
         cudaMemcpyHostToDevice,
         *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceLongFunction<X,Z>::intermediate: failed to copy temporary scalar", res);
+      std::string msg = "ReduceLongFunction<X,Z>::intermediate: failed to copy temporary scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
 
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
@@ -428,9 +428,8 @@ SD_HOST  SD_INLINE void ReduceLongFunction<X, Z>::intermediateScalar(
     auto res = cudaMemcpyAsync(z, &startingVal, sizeof(Z),
                                cudaMemcpyHostToDevice, *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceLongFunction<X,Z>::intermediateScalar: failed to copy resulting scalar",
-          res);
+      std::string msg = "ReduceLongFunction<X,Z>::intermediateScalar: failed to copy resulting scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
   } else {
     simpleScalar<X, Z, OpType>

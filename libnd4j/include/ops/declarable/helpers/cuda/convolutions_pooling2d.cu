@@ -21,7 +21,6 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-#include <exceptions/cuda_exception.h>
 #include <helpers/PointersManager.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/convolutions.h>
@@ -376,7 +375,7 @@ void ConvolutionUtils::pooling2d(graph::Context &block, NDArray&input, NDArray &
  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
    auto result = cudaStreamSynchronize(*block.launchContext()->getCudaStream());
-   if (result != 0) throw cuda_exception::build("Pooling2D failed", result);
+   if (result != 0) { std::string msg = "Pooling2D failed; Error code: [" + std::to_string(result) + "]"; THROW_EXCEPTION(msg.c_str()); }
  }
 }
 

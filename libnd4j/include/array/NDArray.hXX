@@ -30,8 +30,6 @@
 #include <helpers/PointersManager.h>
 #include <loops/BroadcastPairwiseConverter.h>
 #include <array/NDArrayFactory.h>
-#include <exceptions/allocation_exception.h>
-#include <exceptions/datatype_exception.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/threshold.h>
 #include <indexing/IndicesList.h>

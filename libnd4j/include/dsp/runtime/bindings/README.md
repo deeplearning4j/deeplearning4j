@@ -17,6 +17,12 @@ Serving runner:
 
 - `python/sdx_sdk_runner.py` exposes SDX runtime over REST and gRPC with binary ndarray transport (`NPZ` for REST and `bytes+shape+dtype` tensors for gRPC).
 
+Examples:
+
+- Usage examples for each binding have been moved to the
+  [deeplearning4j-examples](https://github.com/eclipse/deeplearning4j-examples)
+  repository under `sdx-runtime-examples/`.
+
 Notes:
 
 - These wrappers target ABI version `1`.

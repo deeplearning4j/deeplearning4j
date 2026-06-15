@@ -24,7 +24,7 @@
 
 #include <array/NDArrayFactory.h>
 #include <array/ResultSet.h>
-#include <exceptions/cuda_exception.h>
+
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>

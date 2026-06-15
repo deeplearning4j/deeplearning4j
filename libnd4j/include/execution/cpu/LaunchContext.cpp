@@ -19,7 +19,7 @@
 //
 // Created by raver119 on 30.11.17.
 //
-#include <exceptions/cuda_exception.h>
+
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
 #include <helpers/logger.h>

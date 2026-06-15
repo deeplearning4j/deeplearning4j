@@ -19,8 +19,8 @@
 //
 // @author raver119@gmail.com
 //
-#include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
+#include <string>
 #include <execution/ContextBuffers.h>
 #include <execution/LaunchContext.h>
 #include <helpers/logger.h>
@@ -64,7 +64,10 @@ int AffinityManager::currentDeviceId() {
   int dev = 0;
   auto res = cudaGetDevice(&dev);
 
-  if (res != 0) throw cuda_exception::build("cudaGetDevice failed", res);
+  if (res != 0) {
+    std::string msg = "cudaGetDevice failed; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   // Sync thread-local cache with actual CUDA device
   // This ensures subsequent calls return the correct device without CUDA API overhead
@@ -79,7 +82,10 @@ int AffinityManager::currentNativeDeviceId() {
   int dev = 0;
   auto res = cudaGetDevice(&dev);
 
-  if (res != 0) throw cuda_exception::build("cudaGetDevice failed", res);
+  if (res != 0) {
+    std::string msg = "cudaGetDevice failed; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   return dev;
 }
@@ -91,7 +97,10 @@ int AffinityManager::numberOfDevices() {
     int dev = 0;
     auto res = cudaGetDeviceCount(&dev);
 
-    if (res != 0) throw cuda_exception::build("cudaGetDeviceCount failed", res);
+    if (res != 0) {
+      std::string msg = "cudaGetDeviceCount failed; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
 
     _numberOfDevices = dev;
   }
@@ -102,7 +111,10 @@ int AffinityManager::numberOfDevices() {
 
 void AffinityManager::setCurrentNativeDevice(int deviceId) {
   auto res = cudaSetDevice(deviceId);
-  if (res != 0) throw cuda_exception::build("setCurrentDevice failed", res);
+  if (res != 0) {
+    std::string msg = "setCurrentDevice failed; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 }
 
 void AffinityManager::setCurrentDevice(int deviceId) {
@@ -114,7 +126,10 @@ void AffinityManager::setCurrentDevice(int deviceId) {
 
   // Switch to target device
   auto res = cudaSetDevice(deviceId);
-  if (res != 0) throw cuda_exception::build("cudaSetDevice failed", res);
+  if (res != 0) {
+    std::string msg = "cudaSetDevice failed; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   // update thread-device affinity
   globalThreadToDevice = deviceId;
@@ -164,7 +179,8 @@ void AffinityManager::setAvailableDevices(const std::vector<int> &devices) {
     cudaGetLastError();
   }
 
-  throw cuda_exception::build("setAvailableDevices failed to select any configured CUDA device", lastErr);
+  std::string msg = "setAvailableDevices failed to select any configured CUDA device; Error code: [" + std::to_string((int)lastErr) + "]";
+  THROW_EXCEPTION(msg.c_str());
 }
 
 std::atomic<int> AffinityManager::_lastDevice;  // = std::atomic<int>(initialV);

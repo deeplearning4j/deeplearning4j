@@ -21,7 +21,6 @@
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <cublas_v2.h>
-#include <exceptions/cuda_exception.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/batched_gemm.h>
@@ -176,7 +175,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
   if (!tl_graphExecutionActive) {
     status = cublasSetStream_v2(*handle, *stream);
-    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda set stream failed ! Please double check the passed in handle.", status);
+    if (status != CUBLAS_STATUS_SUCCESS) { std::string msg = "MmulHelper::mmulMxM cuda set stream failed ! Please double check the passed in handle.; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
   reapplyCublasWorkspace(*handle);
 
@@ -218,7 +217,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
     THROW_EXCEPTION("batched gemm cuda: this mode is not implemented yet !");
 
   if (status != CUBLAS_STATUS_SUCCESS) {
-    throw cuda_exception::build("MmulHelper::mmulMxM cuda execution failed !", status);
+    { std::string msg = "MmulHelper::mmulMxM cuda execution failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   // During CUDA graph capture, cudaStreamSynchronize is illegal. Stream
@@ -226,7 +225,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaResult = cudaStreamSynchronize(*stream);
     if (cudaResult != 0) {
-      throw cuda_exception::build("MmulHelper::mmulMxM cuda stream synchronize failed !", cudaResult);
+      { std::string msg = "MmulHelper::mmulMxM cuda stream synchronize failed !; Error code: [" + std::to_string(cudaResult) + "]"; THROW_EXCEPTION(msg.c_str()); }
     }
   }
 

@@ -627,8 +627,10 @@ NDArray* operator-(T1 &&arr1, T2 &&arr2) {
   if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
       (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL)) {
     // Always throw exception - never use _exit(1) which kills the entire process
-    THROW_EXCEPTION(sd::datatype_exception::build("operator-(T&& arr1, T&& arr2): Cannot subtract different types",
-                                        arr1.dataType(), arr2.dataType()).what());
+    std::string __dt_msg = std::string("operator-(T&& arr1, T&& arr2): Cannot subtract different types") +
+        "; Expected: [" + DataTypeUtils::asString(arr1.dataType()) +
+        "]; Actual: [" + DataTypeUtils::asString(arr2.dataType()) + "]";
+    THROW_EXCEPTION(__dt_msg.c_str());
   }
 
   PointersManager pointersManager(arr1.getContext(), "operator-(T&& arr1, T&& arr2)");
@@ -786,8 +788,10 @@ NDArray* operator/(T1 &&arr1, T2 &&arr2) {
   if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
       (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL)) {
     // Always throw exception - never use _exit(1) which kills the entire process
-    THROW_EXCEPTION(sd::datatype_exception::build("operator/(T&& arr1, T&& arr2): Cannot divide different types",
-                                        arr1.dataType(), arr2.dataType()).what());
+    std::string __dt_msg = std::string("operator/(T&& arr1, T&& arr2): Cannot divide different types") +
+        "; Expected: [" + DataTypeUtils::asString(arr1.dataType()) +
+        "]; Actual: [" + DataTypeUtils::asString(arr2.dataType()) + "]";
+    THROW_EXCEPTION(__dt_msg.c_str());
   }
 
   PointersManager pointersManager(arr1.getContext(), "operator/(T&& arr1, T&& arr2)");

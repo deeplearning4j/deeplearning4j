@@ -13,7 +13,7 @@
 #include <system/selective_rendering/uint_types.h>
 
 #include <array/DataTypeUtils.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/pairwise_transform.h>

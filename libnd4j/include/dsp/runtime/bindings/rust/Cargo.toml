@@ -14,6 +14,4 @@ default = []
 cuda = []
 amd = []
 
-[[example]]
-name = "basic_usage"
-path = "examples/basic_usage.rs"
+# Example moved to deeplearning4j-examples/sdx-runtime-examples/rust/

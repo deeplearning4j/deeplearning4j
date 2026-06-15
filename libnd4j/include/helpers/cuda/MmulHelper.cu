@@ -25,8 +25,8 @@
 #include <cublas_v2.h>
 #include <cublasLt.h>
 #include <cuda_fp16.h>
-#include <exceptions/cuda_exception.h>
 #include <helpers/PointersManager.h>
+#include <string>
 #include <helpers/ShapeUtils.h>
 #include <ops/specials_cuda.h>
 
@@ -1051,7 +1051,10 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
   cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
   if (!tl_cublasGapStreamReady && !tl_graphExecutionActive) {
     status = cublasSetStream_v2(*handle, *stream);
-    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+    if (status != CUBLAS_STATUS_SUCCESS) {
+      std::string msg = "MmulHelper::mmulMxM cuda failed !; Error code: [" + std::to_string(status) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
     reapplyCublasWorkspace(*handle);
   }
 
@@ -1238,7 +1241,10 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
                            CUBLAS_COMPUTE_32F, gemmAlgo);
    }
 
-   if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+   if (status != CUBLAS_STATUS_SUCCESS) {
+     std::string msg = "MmulHelper::mmulMxM cuda failed !; Error code: [" + std::to_string(status) + "]";
+     THROW_EXCEPTION(msg.c_str());
+   }
 
    if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({pC}, {pA, pB});
 
@@ -1336,7 +1342,10 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
   cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
   if (!tl_cublasGapStreamReady && !tl_graphExecutionActive) {
     status = cublasSetStream_v2(*handle, *stream);
-    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
+    if (status != CUBLAS_STATUS_SUCCESS) {
+      std::string msg = "MmulHelper::mmulMxV cuda failed !; Error code: [" + std::to_string(status) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
     reapplyCublasWorkspace(*handle);
   }
 
@@ -1400,7 +1409,10 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
                            tl_cublasLtDisabled ? CUBLAS_GEMM_DEFAULT : CUBLAS_GEMM_DEFAULT_TENSOR_OP);
    }
 
-   if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
+   if (status != CUBLAS_STATUS_SUCCESS) {
+     std::string msg = "MmulHelper::mmulMxV cuda failed !; Error code: [" + std::to_string(status) + "]";
+     THROW_EXCEPTION(msg.c_str());
+   }
 
    if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({Y}, {pA, effX});
 

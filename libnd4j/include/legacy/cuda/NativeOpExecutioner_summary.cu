@@ -18,8 +18,7 @@
 #include <array/ConstantDataBuffer.h>
 #include <array/DataTypeUtils.h>
 #include <array/ShapeDescriptor.h>
-#include <exceptions/cuda_exception.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>

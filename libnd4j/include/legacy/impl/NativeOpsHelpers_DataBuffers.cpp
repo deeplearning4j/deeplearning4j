@@ -40,7 +40,7 @@
 #include <array/DataBufferLifecycleTracker.h>
 #endif
 
-#include <exceptions/allocation_exception.h>
+
 #include <fcntl.h>
 
 #include <helpers/BlasHelper.h>

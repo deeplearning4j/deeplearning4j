@@ -23,8 +23,8 @@
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
-#include <exceptions/cuda_exception.h>
 #include <execution/ContextBuffers.h>
+#include <string>
 #include <helpers/logger.h>
 #include <memory/cuda/CudaMemoryPool.h>
 
@@ -292,10 +292,16 @@ void ContextBuffers::initialize() {
   cudaGetLastError();
 
   res = cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_execStream));
-  if (res != cudaSuccess) throw cuda_exception::build("Failed to create default CUDA stream with launch context", res);
+  if (res != cudaSuccess) {
+    std::string msg = "Failed to create default CUDA stream with launch context; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   res = cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_specialStream));
-  if (res != cudaSuccess) throw cuda_exception::build("Failed to create special CUDA stream with launch context", res);
+  if (res != cudaSuccess) {
+    std::string msg = "Failed to create special CUDA stream with launch context; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   _allocated = true;
   _initialized = true;

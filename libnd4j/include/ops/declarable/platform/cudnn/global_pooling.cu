@@ -77,7 +77,7 @@ static void globalAvgPool2dCUDNN(const LaunchContext* context, NDArray* input, N
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("globalAvgPool2dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "globalAvgPool2dCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input});
@@ -129,7 +129,7 @@ static void globalMaxPool2dCUDNN(const LaunchContext* context, NDArray* input, N
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("globalMaxPool2dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "globalMaxPool2dCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input});
@@ -190,7 +190,7 @@ static void globalAvgPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("globalAvgPool2dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "globalAvgPool2dBpCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({gradI}, {input, gradO, output});
@@ -251,7 +251,7 @@ static void globalMaxPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("globalMaxPool2dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "globalMaxPool2dBpCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({gradI}, {input, gradO, output});
@@ -319,7 +319,7 @@ static void globalAvgPool3dCUDNN(const LaunchContext* context, NDArray* input, N
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("globalAvgPool3dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "globalAvgPool3dCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input});
@@ -387,7 +387,7 @@ static void globalMaxPool3dCUDNN(const LaunchContext* context, NDArray* input, N
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("globalMaxPool3dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "globalMaxPool3dCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input});

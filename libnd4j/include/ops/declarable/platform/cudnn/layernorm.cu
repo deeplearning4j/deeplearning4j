@@ -112,7 +112,7 @@ static void layerNormCUDNN(const LaunchContext* context, NDArray* input, NDArray
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("layerNormCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "layerNormCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input, gamma, beta});
@@ -186,7 +186,7 @@ static void layerNormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("layerNormBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "layerNormBpCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({gradI, gradGamma, gradBeta}, {input, gradO, gamma, mean, variance});

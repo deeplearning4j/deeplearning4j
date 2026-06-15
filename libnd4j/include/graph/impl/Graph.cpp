@@ -20,7 +20,6 @@
 // @author raver119@gmail.com
 //
 #include <array/DataTypeUtils.h>
-#include <exceptions/graph_exception.h>
 #include <graph/FlatUtils.h>
 #include <graph/Graph.h>
 #include <graph/VariableProxy.h>
@@ -964,7 +963,7 @@ void Graph::toposortNodes() {
     attempts++;
   }
 
-  if (!_unmapped.empty()) THROW_EXCEPTION(graph_exception("Graph wasn't toposorted", 0).what());
+  if (!_unmapped.empty()) THROW_EXCEPTION("Graph wasn't toposorted");
 
   _built = true;
 }

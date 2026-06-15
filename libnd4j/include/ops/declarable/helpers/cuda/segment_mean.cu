@@ -20,7 +20,6 @@
 //  @author GS <sgazeos@gmail.com>
 //
 #include <array/NDArrayFactory.h>
-#include <exceptions/cuda_exception.h>
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>

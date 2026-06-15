@@ -1,5 +1,4 @@
 #include <array/NDArrayFactory.h>
-#include <exceptions/cuda_exception.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/image_resize.h>
 

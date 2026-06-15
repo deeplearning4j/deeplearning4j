@@ -19,7 +19,6 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-#include <exceptions/cuda_exception.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <memory/cuda/CudaMemoryPool.h>

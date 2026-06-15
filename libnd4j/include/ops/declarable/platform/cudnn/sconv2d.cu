@@ -111,7 +111,7 @@ static void sconv2dDepthwiseCUDNN(const LaunchContext* context, NDArray* input, 
                             cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
   }
   if (count == 0)
-    throw cuda_exception::build("sconv2dDepthwiseCUDNN: cudnnFindConvolutionForwardAlgorithm failed", 0);
+    THROW_EXCEPTION("sconv2dDepthwiseCUDNN: cudnnFindConvolutionForwardAlgorithm failed");
   algo = algoPerf.algo;
 
   // allocate workspace
@@ -212,7 +212,7 @@ static void sconv2dPointwiseCUDNN(const LaunchContext* context, NDArray* input, 
                             cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
   }
   if (count == 0)
-    throw cuda_exception::build("sconv2dPointwiseCUDNN: cudnnFindConvolutionForwardAlgorithm failed", 0);
+    THROW_EXCEPTION("sconv2dPointwiseCUDNN: cudnnFindConvolutionForwardAlgorithm failed");
   algo = algoPerf.algo;
 
   // allocate workspace

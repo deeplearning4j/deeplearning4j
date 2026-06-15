@@ -64,7 +64,7 @@ static void batchnormMIOpen(const LaunchContext* context,
         iH = 1;
         iW = 1;
     } else {
-        throw std::runtime_error("MIOpen batchnorm: only 2D and 4D inputs supported");
+        THROW_EXCEPTION("MIOpen batchnorm: only 2D and 4D inputs supported");
     }
 
     MIOpenTensor xDesc, bnScaleBiasMeanVarDesc;
@@ -160,7 +160,7 @@ static void batchnormBpMIOpen(const LaunchContext* context,
         iH = 1;
         iW = 1;
     } else {
-        throw std::runtime_error("MIOpen batchnorm_bp: only 2D and 4D inputs supported");
+        THROW_EXCEPTION("MIOpen batchnorm_bp: only 2D and 4D inputs supported");
     }
 
     MIOpenTensor xDesc, bnScaleBiasDiffDesc;

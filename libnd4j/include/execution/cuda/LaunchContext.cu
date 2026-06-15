@@ -20,7 +20,7 @@
 // @author raver119@gmail.com
 //
 #include <cuda_runtime.h>
-#include <exceptions/cuda_exception.h>
+
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
 #include <helpers/cublasHelper.h>

@@ -21,8 +21,8 @@
 // @author raver119@gmail.com
 //
 #include <array/DataBuffer.h>
-#include <exceptions/cuda_exception.h>
 #include <graph/DspDiagnostics.h>
+#include <string>
 #include <helpers/PointersManager.h>
 #include <helpers/StringUtils.h>
 #include <helpers/logger.h>
@@ -88,8 +88,10 @@ void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
     }
 
     dst = pool.allocate(sizeInBytes, deviceId, stream);
-    if (dst == nullptr)
-      throw cuda_exception::build(_funcName + ": cannot allocate global memory on device!", cudaErrorMemoryAllocation);
+    if (dst == nullptr) {
+      std::string msg = _funcName + ": cannot allocate global memory on device!; Error code: [" + std::to_string((int)cudaErrorMemoryAllocation) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
     fromCudaMalloc = true;
   } else {
     // Allocate from workspace - workspace manages lifecycle
@@ -192,7 +194,10 @@ void PointersManager::synchronize() const {
 
   if (_context != nullptr) {
     cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-    if (cudaResult != 0) throw cuda_exception::build(_funcName + ": cuda stream synchronization failed !", cudaResult);
+    if (cudaResult != 0) {
+      std::string msg = _funcName + ": cuda stream synchronization failed !; Error code: [" + std::to_string((int)cudaResult) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
   } else {
     sd_printf("<%s> syncStream isn't possible: no stream set!", _funcName.c_str());
   }

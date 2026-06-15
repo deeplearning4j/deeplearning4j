@@ -23,8 +23,8 @@
 #include <cublas_v2.h>
 #include <cublasLt.h>
 #include <cusolverDn.h>
-#include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
+#include <string>
 #include <helpers/logger.h>
 #include <mutex>
 #include <system/Environment.h>
@@ -42,7 +42,10 @@ std::mutex CublasHelper::_mutex;
 static void* handle_() {
   auto _handle = new cublasHandle_t();
   auto status = cublasCreate_v2(_handle);  // initialize CUBLAS context
-  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("cuBLAS handle creation failed !", status);
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    std::string msg = "cuBLAS handle creation failed !; Error code: [" + std::to_string(status) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   // Enable TF32 math mode on sm_80+ (Ampere and later) when configured.
   // TF32 uses tensor cores for FP32 GEMMs with 10-bit mantissa precision,
@@ -63,7 +66,10 @@ static void* handle_() {
 static void* solver_() {
   auto cusolverH = new cusolverDnHandle_t();
   auto status = cusolverDnCreate(cusolverH);
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("cuSolver handle creation failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) {
+    std::string msg = "cuSolver handle creation failed !; Error code: [" + std::to_string(status) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   return cusolverH;
 }
@@ -72,7 +78,10 @@ static void* cudnn_() {
 #if HAVE_CUDNN
   auto cudnnH = new cudnnHandle_t();
   auto status = cudnnCreate(cudnnH);
-  if (status != CUDNN_STATUS_SUCCESS) throw cuda_exception::build("cuDNN handle creation failed !", status);
+  if (status != CUDNN_STATUS_SUCCESS) {
+    std::string msg = "cuDNN handle creation failed !; Error code: [" + std::to_string(status) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   return cudnnH;
 #else
@@ -83,7 +92,10 @@ static void* cudnn_() {
 static void destroyHandle_(void* handle) {
   auto ch = reinterpret_cast<cublasHandle_t*>(handle);
   auto status = cublasDestroy_v2(*ch);
-  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("cuBLAS handle destruction failed !", status);
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    std::string msg = "cuBLAS handle destruction failed !; Error code: [" + std::to_string(status) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   delete ch;
 }
@@ -140,7 +152,8 @@ void CublasHelper::applyTf32Mode(bool enable) {
 void* CublasHelper::cudnn() {
   auto deviceId = AffinityManager::currentDeviceId();
   if (deviceId < 0 || deviceId >= _cudnn.size())
-    throw cuda_exception::build("requested deviceId doesn't look valid for cuDNN", deviceId);
+    std::string msg = "requested deviceId doesn't look valid for cuDNN; Error code: [" + std::to_string(deviceId) + "]";
+    THROW_EXCEPTION(msg.c_str());
 
   auto handle = _cudnn[deviceId];
   if (handle == nullptr) {
@@ -157,18 +170,22 @@ void* CublasHelper::handle() {
 void* CublasHelper::solver() {
   auto deviceId = AffinityManager::currentDeviceId();
   if (deviceId < 0 || deviceId >= _solvers.size())
-    throw cuda_exception::build("requested deviceId doesn't look valid for cuSolver", deviceId);
+    std::string msg = "requested deviceId doesn't look valid for cuSolver; Error code: [" + std::to_string(deviceId) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   auto handle = _solvers[deviceId];
   if (handle == nullptr) {
-    throw cuda_exception::build("cuSolver handle is null for device - initialization may have failed", deviceId);
+    std::string msg = "cuSolver handle is null for device - initialization may have failed; Error code: [" + std::to_string(deviceId) + "]";
+    THROW_EXCEPTION(msg.c_str());
   }
   return handle;
 }
 
 void* CublasHelper::handle(int deviceId) {
   if (deviceId < 0 || deviceId >= _cache.size())
-    throw cuda_exception::build("requested deviceId doesn't look valid for cuBLAS", deviceId);
+    std::string msg = "requested deviceId doesn't look valid for cuBLAS; Error code: [" + std::to_string(deviceId) + "]";
+    THROW_EXCEPTION(msg.c_str());
 
   // Thread-local cuBLAS handle per (thread, device) pair.
   // cuBLAS handles carry mutable state (stream, math mode, workspace) and are
@@ -192,7 +209,8 @@ void* CublasHelper::handle(int deviceId) {
     if (status != CUBLAS_STATUS_SUCCESS) {
       delete tl_handle;
       tl_handle = nullptr;
-      throw cuda_exception::build("thread-local cuBLAS handle creation failed", status);
+      std::string msg = "thread-local cuBLAS handle creation failed; Error code: [" + std::to_string(status) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
     tl_deviceId = deviceId;
   }

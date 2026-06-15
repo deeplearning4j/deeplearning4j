@@ -104,7 +104,7 @@ static void deconv3dCUDNN(const LaunchContext* context, NDArray* input, NDArray*
         cudnnFindConvolutionBackwardDataAlgorithm(*handle, w, x, conv, z, 1, &count, &algoPerf));
   }
   if (count == 0)
-    throw cuda_exception::build("deconv3dCUDNN: cudnnFindConvolutionBackwardDataAlgorithm failed", 0);
+    THROW_EXCEPTION("deconv3dCUDNN: cudnnFindConvolutionBackwardDataAlgorithm failed");
   algo = algoPerf.algo;
 
   // Allocate workspace
@@ -139,7 +139,7 @@ static void deconv3dCUDNN(const LaunchContext* context, NDArray* input, NDArray*
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("deconv3dCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "deconv3dCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input, weights, bias});
@@ -224,7 +224,7 @@ static void deconv3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArra
         cudnnFindConvolutionForwardAlgorithm(*handle, dz, w, conv, dx, 1, &count, &algoFwdPerf));
   }
   if (count == 0)
-    throw cuda_exception::build("deconv3dBpCUDNN: cudnnFindConvolutionForwardAlgorithm failed", 0);
+    THROW_EXCEPTION("deconv3dBpCUDNN: cudnnFindConvolutionForwardAlgorithm failed");
   algoFwd = algoFwdPerf.algo;
 
   size_t wsFwdSize;
@@ -251,7 +251,7 @@ static void deconv3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArra
         cudnnFindConvolutionBackwardFilterAlgorithm(*handle, dz, x, conv, dw, 1, &count, &algoFilterPerf));
   }
   if (count == 0)
-    throw cuda_exception::build("deconv3dBpCUDNN: cudnnFindConvolutionBackwardFilterAlgorithm failed", 0);
+    THROW_EXCEPTION("deconv3dBpCUDNN: cudnnFindConvolutionBackwardFilterAlgorithm failed");
   algoFilter = algoFilterPerf.algo;
 
   size_t wsFilterSize;
@@ -276,7 +276,7 @@ static void deconv3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArra
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("deconv3dBpCUDNN: cudaStreamSynchronize failed!", cudaErr);
+    if (cudaErr != 0) { std::string msg = "deconv3dBpCUDNN: cudaStreamSynchronize failed!; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({gradI, gradW, gradB}, {input, weights, gradO});

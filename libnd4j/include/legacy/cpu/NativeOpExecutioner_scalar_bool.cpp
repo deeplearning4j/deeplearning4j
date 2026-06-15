@@ -6,7 +6,7 @@
  ******************************************************************************/
 
 #include <array/DataTypeUtils.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/scalar_bool.h>

@@ -31,7 +31,7 @@
 #include <windows.h>
 #endif
 
-#include <exceptions/allocation_exception.h>
+
 #include <fcntl.h>
 #include <array/DataTypeUtils.h>
 #include <helpers/BlasHelper.h>

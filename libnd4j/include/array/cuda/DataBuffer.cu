@@ -23,8 +23,7 @@
 //
 #include <array/DataTypeUtils.h>
 #include <climits>
-#include <exceptions/allocation_exception.h>
-#include <exceptions/cuda_exception.h>
+
 #include <execution/AffinityManager.h>
 #include <memory/MemoryCounter.h>
 #include <memory/cuda/CudaMemoryPool.h>

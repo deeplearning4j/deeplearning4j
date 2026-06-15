@@ -23,8 +23,8 @@
 //
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <exceptions/cuda_exception.h>
 #include <helpers/logger.h>
+#include <string>
 #include <math/templatemath.h>
 #include <memory/cuda/CudaMemoryPool.h>
 #include <stdio.h>
@@ -75,7 +75,10 @@ Workspace::Workspace(LongType primarySize, LongType secondarySize) {
     // after the usable host buffer.  The canary is only checked in debug mode.
     auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost),
                              secondarySize + CANARY_SIZE, cudaHostAllocDefault);
-    if (res != 0) throw cuda_exception::build("Can't allocate [HOST] memory", res);
+    if (res != 0) {
+      std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
 
     // Host memory from cudaHostAlloc is CPU-accessible, use memset directly
     std::memset(this->_ptrHost, 0, secondarySize);
@@ -92,7 +95,10 @@ Workspace::Workspace(LongType primarySize, LongType secondarySize) {
     this->_deviceId = deviceId;  // Store device ID for proper deallocation
     cudaStream_t stream = currentStream();
     _ptrDevice = reinterpret_cast<char*>(CudaMemoryPool::getInstance().allocate(primarySize, deviceId, stream));
-    if (_ptrDevice == nullptr) throw cuda_exception::build("Can't allocate [DEVICE] memory", cudaErrorMemoryAllocation);
+    if (_ptrDevice == nullptr) {
+      std::string msg = "Can't allocate [DEVICE] memory; Error code: [" + std::to_string((int)cudaErrorMemoryAllocation) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
 
     // Use cudaMemsetAsync on the SAME stream as the allocation to maintain correct
     // stream ordering. cudaMallocAsync makes memory available on its stream, so
@@ -130,7 +136,10 @@ void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
     }
 
     _ptrDevice = reinterpret_cast<char*>(CudaMemoryPool::getInstance().allocate(primaryBytes, deviceId, stream));
-    if (_ptrDevice == nullptr) throw cuda_exception::build("Can't allocate [DEVICE] memory", cudaErrorMemoryAllocation);
+    if (_ptrDevice == nullptr) {
+      std::string msg = "Can't allocate [DEVICE] memory; Error code: [" + std::to_string((int)cudaErrorMemoryAllocation) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
 
     // Store device ID for proper deallocation later
     this->_deviceId = deviceId;
@@ -146,7 +155,10 @@ void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
 
     auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost),
                              secondaryBytes + CANARY_SIZE, cudaHostAllocDefault);
-    if (res != 0) throw cuda_exception::build("Can't allocate [HOST] memory", res);
+    if (res != 0) {
+      std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
 
     // Host memory from cudaHostAlloc is CPU-accessible, use memset directly
     std::memset(this->_ptrHost, 0, secondaryBytes);
@@ -263,8 +275,10 @@ LongType Workspace::getSpilledSize() { return _spillsSize.load(); }
 void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
   switch (type) {
     case HOST: {
-      if (numBytes < 1)
-        throw allocation_exception::build("Number of [HOST] bytes for allocation should be positive", numBytes);
+      if (numBytes < 1) {
+        std::string alloc_msg = "Number of [HOST] bytes for allocation should be positive; Requested bytes: [" + std::to_string(numBytes) + "]";
+        THROW_EXCEPTION(alloc_msg.c_str());
+      }
 
       // numBytes += 32;
       void *result = nullptr;
@@ -282,7 +296,10 @@ void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
         // adjacent glibc/pinned memory metadata.
         Pointer p;
         auto res = cudaHostAlloc(reinterpret_cast<void **>(&p), numBytes + SD_ALLOC_PADDING, cudaHostAllocDefault);
-        if (res != 0) throw cuda_exception::build("Can't allocate [HOST] memory", res);
+        if (res != 0) {
+          std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
+          THROW_EXCEPTION(msg.c_str());
+        }
 
         _mutexSpills.lock();
         _spillsSecondary.push_back(p);
@@ -305,8 +322,10 @@ void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
       return result;
     } break;
     case DEVICE: {
-      if (numBytes < 1)
-        throw allocation_exception::build("Number of [DEVICE] bytes for allocation should be positive", numBytes);
+      if (numBytes < 1) {
+        std::string alloc_msg = "Number of [DEVICE] bytes for allocation should be positive; Requested bytes: [" + std::to_string(numBytes) + "]";
+        THROW_EXCEPTION(alloc_msg.c_str());
+      }
 
       // numBytes += 32;
       void *result = nullptr;

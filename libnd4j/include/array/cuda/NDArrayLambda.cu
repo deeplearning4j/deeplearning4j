@@ -24,7 +24,7 @@
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
 #include <array/NDArray.h>
-#include <exceptions/cuda_exception.h>
+
 #include <execution/ThreadPool.h>
 #include <helpers/DebugHelper.h>
 #include <loops/legacy_ops.h>

@@ -25,6 +25,7 @@
 #include <math/templatemath.h>
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/PointersManager.h>
+#include <system/common.h>
 
 namespace sd {
 namespace ops {
@@ -68,7 +69,7 @@ static void lgamma_(LaunchContext *context, NDArray *x, NDArray *z) {
 
   auto err = cudaStreamSynchronize(*stream);
   if (err != cudaSuccess)
-    throw std::runtime_error("lgamma CUDA kernel failed");
+    THROW_EXCEPTION("lgamma CUDA kernel failed");
 }
 
 void lgamma(LaunchContext *context, NDArray *x, NDArray *z) {
