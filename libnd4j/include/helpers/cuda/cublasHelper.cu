@@ -21,17 +21,19 @@
 //
 
 #include <cublas_v2.h>
+#include <cublasLt.h>
 #include <cusolverDn.h>
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
+#include <mutex>
+#include <system/Environment.h>
 
 #include "../cublasHelper.h"
 #include "config.h"
 
-#ifdef HAVE_CUDNN
+#if HAVE_CUDNN
 #include <cudnn.h>
-
 #endif
 
 namespace sd {
@@ -41,6 +43,19 @@ static void* handle_() {
   auto _handle = new cublasHandle_t();
   auto status = cublasCreate_v2(_handle);  // initialize CUBLAS context
   if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("cuBLAS handle creation failed !", status);
+
+  // Enable TF32 math mode on sm_80+ (Ampere and later) when configured.
+  // TF32 uses tensor cores for FP32 GEMMs with 10-bit mantissa precision,
+  // providing significant speedup for compute-bound operations.
+  if (sd::Environment::getInstance().cublasTf32Enabled()) {
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, deviceId);
+    if (prop.major >= 8) {
+      cublasSetMathMode(*_handle, CUBLAS_TF32_TENSOR_OP_MATH);
+    }
+  }
 
   return reinterpret_cast<void*>(_handle);
 }
@@ -54,14 +69,15 @@ static void* solver_() {
 }
 
 static void* cudnn_() {
-#ifdef HAVE_CUDNN
+#if HAVE_CUDNN
   auto cudnnH = new cudnnHandle_t();
   auto status = cudnnCreate(cudnnH);
   if (status != CUDNN_STATUS_SUCCESS) throw cuda_exception::build("cuDNN handle creation failed !", status);
 
   return cudnnH;
-#endif
+#else
   return nullptr;
+#endif
 }
 
 static void destroyHandle_(void* handle) {
@@ -93,20 +109,44 @@ CublasHelper::CublasHelper() {
 CublasHelper::~CublasHelper() {
   auto numDevices = AffinityManager::numberOfDevices();
 
- // for (int e = 0; e < numDevices; e++) destroyHandle_(_cache[e]);
+  // for (int e = 0; e < numDevices; e++) destroyHandle_(_cache[e]);
 }
 
 CublasHelper& CublasHelper::getInstance() {
-  static CublasHelper instance;
-  return instance;
+  static CublasHelper* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new CublasHelper();
+  });
+  return *instance;
+}
+
+void CublasHelper::applyTf32Mode(bool enable) {
+  // Thread-local handles get TF32 applied lazily in handle() via tl_tf32Applied.
+  // This method is kept for any code that still references the legacy _cache handles.
+  for (int e = 0; e < _cache.size(); e++) {
+    auto handle = _cache[e];
+    if (handle == nullptr) continue;
+    auto ch = reinterpret_cast<cublasHandle_t*>(handle);
+
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, e);
+    if (prop.major >= 8) {
+      cublasSetMathMode(*ch, enable ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH);
+    }
+  }
 }
 
 void* CublasHelper::cudnn() {
   auto deviceId = AffinityManager::currentDeviceId();
-  if (deviceId < 0 || deviceId > _cudnn.size())
-    throw cuda_exception::build("requested deviceId doesn't look valid", deviceId);
+  if (deviceId < 0 || deviceId >= _cudnn.size())
+    throw cuda_exception::build("requested deviceId doesn't look valid for cuDNN", deviceId);
 
-  return _cudnn[deviceId];
+  auto handle = _cudnn[deviceId];
+  if (handle == nullptr) {
+    sd_printf("WARNING: cuDNN handle is null for device %d\n", deviceId);
+  }
+  return handle;
 }
 
 void* CublasHelper::handle() {
@@ -116,16 +156,113 @@ void* CublasHelper::handle() {
 
 void* CublasHelper::solver() {
   auto deviceId = AffinityManager::currentDeviceId();
-  if (deviceId < 0 || deviceId > _solvers.size())
-    throw cuda_exception::build("requested deviceId doesn't look valid", deviceId);
+  if (deviceId < 0 || deviceId >= _solvers.size())
+    throw cuda_exception::build("requested deviceId doesn't look valid for cuSolver", deviceId);
 
-  return _solvers[deviceId];
+  auto handle = _solvers[deviceId];
+  if (handle == nullptr) {
+    throw cuda_exception::build("cuSolver handle is null for device - initialization may have failed", deviceId);
+  }
+  return handle;
 }
 
 void* CublasHelper::handle(int deviceId) {
-  if (deviceId < 0 || deviceId > _cache.size())
-    throw cuda_exception::build("requested deviceId doesn't look valid", deviceId);
+  if (deviceId < 0 || deviceId >= _cache.size())
+    throw cuda_exception::build("requested deviceId doesn't look valid for cuBLAS", deviceId);
 
-  return _cache[deviceId];
+  // Thread-local cuBLAS handle per (thread, device) pair.
+  // cuBLAS handles carry mutable state (stream, math mode, workspace) and are
+  // explicitly NOT thread-safe (NVIDIA docs). Sharing a single handle across
+  // concurrent sd.output() threads causes races: thread A sets stream/workspace,
+  // thread B overwrites them, thread A launches GEMM on the wrong stream →
+  // CUDA error 906 (cudaErrorLaunchFailure).
+  thread_local cublasHandle_t* tl_handle = nullptr;
+  thread_local int tl_deviceId = -1;
+
+  if (tl_deviceId != deviceId || tl_handle == nullptr) {
+    // Device changed or first call on this thread — create a new handle.
+    if (tl_handle != nullptr) {
+      cublasDestroy_v2(*tl_handle);
+      delete tl_handle;
+      tl_handle = nullptr;
+    }
+
+    tl_handle = new cublasHandle_t();
+    auto status = cublasCreate_v2(tl_handle);
+    if (status != CUBLAS_STATUS_SUCCESS) {
+      delete tl_handle;
+      tl_handle = nullptr;
+      throw cuda_exception::build("thread-local cuBLAS handle creation failed", status);
+    }
+    tl_deviceId = deviceId;
+  }
+
+  // Lazily apply/remove TF32 mode when the flag changes.
+  // CRITICAL: When DSP has set deterministic cuBLAS (PEDANTIC_MATH via
+  // tl_cublasLtDisabled=true), skip the lazy TF32 application entirely.
+  extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled;
+  static thread_local bool tl_tf32Applied = false;
+  static thread_local int tl_smMajor = -1;
+  bool wantTf32 = sd::Environment::getInstance().cublasTf32Enabled();
+  if (!tl_cublasLtDisabled && wantTf32 != tl_tf32Applied) {
+    if (tl_smMajor < 0) {
+      cudaDeviceProp prop;
+      cudaGetDeviceProperties(&prop, deviceId);
+      tl_smMajor = prop.major;
+    }
+    if (tl_smMajor >= 8) {
+      cublasSetMathMode(*tl_handle, wantTf32 ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH);
+    }
+    tl_tf32Applied = wantTf32;
+  }
+
+  return reinterpret_cast<void*>(tl_handle);
+}
+
+// cuBLAS Lt handle: created on-demand per thread/device
+// Returns nullptr if Lt is not available (fallback to standard cuBLAS)
+void* CublasHelper::ltHandle() {
+  // Thread-local Lt handle cache - plain thread_local, not static thread_local
+  // to avoid initialization order issues in shared libraries
+  thread_local cublasLtHandle_t tl_ltHandle = nullptr;
+  thread_local int tl_deviceId = -1;
+  thread_local bool tl_available = true;
+  
+  // Check if already initialized for current device
+  int currentDevice = AffinityManager::currentDeviceId();
+  if (tl_deviceId == currentDevice && tl_ltHandle != nullptr) {
+    return tl_available ? reinterpret_cast<void*>(&tl_ltHandle) : nullptr;
+  }
+  
+  // Device changed or not initialized - create/replace Lt handle
+  if (tl_ltHandle != nullptr) {
+    cublasLtDestroy(tl_ltHandle);
+    tl_ltHandle = nullptr;
+  }
+  
+  if (!tl_available) {
+    return nullptr;  // Lt not available on this system
+  }
+  
+  tl_deviceId = currentDevice;
+  
+  cublasLtHandle_t ltHandle;
+  auto status = cublasLtCreate(&ltHandle);
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    tl_available = false;
+    return nullptr;
+  }
+  
+  tl_ltHandle = ltHandle;
+  return reinterpret_cast<void*>(&tl_ltHandle);
+}
+
+void* CublasHelper::ltHandle(int deviceId) {
+  // For explicit device request, save and restore current device
+  int savedDevice = AffinityManager::currentDeviceId();
+  AffinityManager::setCurrentNativeDevice(deviceId);
+  void* result = ltHandle();
+  AffinityManager::setCurrentNativeDevice(savedDevice);
+  return result;
 }
 }  // namespace sd

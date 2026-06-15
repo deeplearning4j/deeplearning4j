@@ -78,7 +78,7 @@ void calcEigenVals_(NDArray& schurMatrixT, NDArray& _Vals) {
       {
         T t0 = schurMatrixT.t<T>(i + 1, i);
         T t1 = schurMatrixT.t<T>(i, i + 1);
-        T maxval = math::sd_max<T>(math::sd_abs<T,T>(p), math::sd_max<T>(math::sd_abs<T,T>(t0), math::sd_abs<T,T>(t1)));
+        T maxval = math::sd_max(math::sd_abs<T,T>(p), math::sd_max(math::sd_abs<T,T>(t0), math::sd_abs<T,T>(t1)));
         t0 /= maxval;
         t1 /= maxval;
         T p0 = p / maxval;
@@ -112,7 +112,7 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
 
   T norm = static_cast<T>(0);
   for (int j = 0; j < numOfCols; ++j) {
-    NDArray *viewPtr = schurMatrixT({j, j + 1, math::sd_max<LongType>(j - 1, 0), numOfCols});
+    NDArray *viewPtr = schurMatrixT({j, j + 1, math::sd_max(static_cast<LongType>(j - 1), static_cast<LongType>(0)), numOfCols});
     auto* reduceResult = viewPtr->reduceNumber(reduce::ASum);
     norm += reduceResult->template t<T>(0);
     delete reduceResult;
@@ -243,7 +243,7 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
                                                      schurMatrixT.r<T>(i + 1, n - 1), schurMatrixT.r<T>(i + 1, n));
           }
 
-          T t = math::sd_max<T>(math::sd_abs<T,T>(schurMatrixT.t<T>(i, n - 1)), math::sd_abs<T,T>(schurMatrixT.t<T>(i, n)));
+          T t = math::sd_max(math::sd_abs<T,T>(schurMatrixT.t<T>(i, n - 1)), math::sd_abs<T,T>(schurMatrixT.t<T>(i, n)));
           if ((DataTypeUtils::eps<T>() * t) * t > T(1)) {
             NDArray *divViewPtr = schurMatrixT({i, numOfCols, n - 1, n + 1});
             *divViewPtr /= t;

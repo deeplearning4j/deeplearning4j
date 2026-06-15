@@ -18,6 +18,7 @@
 #include "../DirectTadTrie.h"
 
 #include <array/TadPack.h>
+#include <execution/AffinityManager.h>
 
 #include <algorithm>
 #include <memory>
@@ -34,31 +35,56 @@ std::shared_ptr<TadPack> DirectTadTrie::enhancedSearch(const std::vector<LongTyp
   const TadTrieNode* current = _roots[stripeIdx].get();
   int rank = shape::rank(originalShape);
 
-  // Navigate to dimension length node
-  current = findChild(current, dimensions.size(), 0, false, rank);
+  int deviceId = AffinityManager::currentDeviceId();
+  current = findChild(current, deviceId, 0, false, rank);
   if (!current) return nullptr;
 
-  // Navigate through dimension nodes
+  // Navigate to dimension length node (now level 1)
+  current = findChild(current, dimensions.size(), 1, false, rank);
+  if (!current) return nullptr;
+
+  // Navigate through dimension nodes (now starting at level 2)
   for (size_t i = 0; i < dimensions.size(); i++) {
-    current = findChild(current, dimensions[i], i + 1, true, rank);
+    current = findChild(current, dimensions[i], i + 2, true, rank);
     if (!current) return nullptr;
   }
 
-  // Found a matching node, now verify TadPack compatibility
+  // Navigate through original shape dimension nodes (prevents collisions
+  // between arrays with same rank/TAD dims but different shapes)
+  int shapeLevel = dimensions.size() + 2;
+  LongType* shapeOf = shape::shapeOf(originalShape);
+  for (int i = 0; i < rank; i++) {
+    current = findChild(current, shapeOf[i], shapeLevel + i, false, rank);
+    if (!current) return nullptr;
+  }
+
+  // Navigate through original strides and layout metadata. The stripe hash is
+  // stride-aware, but hashes are not keys; the trie path itself must separate
+  // same-shaped views with different strides to avoid reusing wrong offsets.
+  int strideLevel = shapeLevel + rank;
+  LongType* strides = shape::stride(originalShape);
+  for (int i = 0; i < rank; i++) {
+    current = findChild(current, strides[i], strideLevel + i, false, rank);
+    if (!current) return nullptr;
+  }
+
+  int metadataLevel = strideLevel + rank;
+  current = findChild(current, shape::elementWiseStride(originalShape),
+                       metadataLevel, false, rank);
+  if (!current) return nullptr;
+
+  current = findChild(current, static_cast<LongType>(shape::order(originalShape)),
+                       metadataLevel + 1, false, rank);
+  if (!current) return nullptr;
+
+  // Navigate to dtype node
+  current = findChild(current, static_cast<LongType>(ArrayOptions::dataType(originalShape)),
+                       metadataLevel + 2, false, rank);
+  if (!current) return nullptr;
+
+  // Found a matching node, now verify TadPack exists
   std::shared_ptr<TadPack> pack = current->pack();
   if (!pack) return nullptr;
-
-  // Use cached signature for fast comparison - no TadCalculator needed!
-  const TadPackSignature* signature = current->packSignature();
-  if (!signature) {
-    // Signature not cached (shouldn't happen, but handle gracefully)
-    return nullptr;
-  }
-
-  // Fast comparison using cached signature instead of creating TadCalculator
-  if (!signature->matches(originalShape)) {
-    return nullptr;
-  }
 
   return pack;
 }
@@ -68,6 +94,9 @@ size_t DirectTadTrie::computeStrideAwareHash(const std::vector<LongType>& dimens
   if (!originalShape) return 0;
 
   size_t hash = 17; // Prime number starting point
+
+  int deviceId = AffinityManager::currentDeviceId();
+  hash = hash * 53 + static_cast<size_t>(deviceId) * 59;
 
   // Handle empty dimensions specially
   if (dimensions.empty()) {
@@ -110,7 +139,7 @@ size_t DirectTadTrie::computeStrideAwareHash(const std::vector<LongType>& dimens
 bool DirectTadTrie::exists(const std::vector<LongType>& dimensions, LongType* originalShape)  {
   if (!originalShape) return false;
 
-  const size_t stripeIdx = computeStripeIndex(dimensions, originalShape);
+  const size_t stripeIdx = computeStrideAwareHash(dimensions, originalShape);
   SHARED_LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[stripeIdx]);
 
   // Using the enhanced search method which verifies TadPack compatibility
@@ -125,15 +154,22 @@ std::vector<LongType> DirectTadTrie::sortDimensions(const std::vector<LongType>&
 
 std::shared_ptr<TadPack> DirectTadTrie::search(const std::vector<LongType>& dimensions, int originalShapeRank, size_t stripeIdx) const {
   // No need for locking - caller handles locking (e.g., in getOrCreate)
+  // NOTE: This method only navigates to the dimension level — it does NOT
+  // navigate through shape/dtype levels. It is used only by exists() for
+  // basic presence checks. For full matching, use enhancedSearch().
   const TadTrieNode* current = _roots[stripeIdx].get();
 
-  // First level: dimension length
-  current = findChild(current, dimensions.size(), 0, false, originalShapeRank);
+  int deviceId = AffinityManager::currentDeviceId();
+  current = findChild(current, deviceId, 0, false, originalShapeRank);
   if (!current) return nullptr;
 
-  // Second level: dimensions
+  // Second level: dimension length (now level 1)
+  current = findChild(current, dimensions.size(), 1, false, originalShapeRank);
+  if (!current) return nullptr;
+
+  // Third level: dimensions (now starting at level 2)
   for (size_t i = 0; i < dimensions.size(); i++) {
-    current = findChild(current, dimensions[i], i + 1, true, originalShapeRank);
+    current = findChild(current, dimensions[i], i + 2, true, originalShapeRank);
     if (!current) return nullptr;
   }
 
@@ -181,18 +217,71 @@ std::shared_ptr<TadPack> DirectTadTrie::insert(std::vector<LongType>& dimensions
   // No compatible TadPack found, create a new one
   TadTrieNode* current = _roots[stripeIdx].get();
 
-  // First level: dimension length node with shape rank
-  current = current->findOrCreateChild(dimensions.size(), 0, false, rank);
+  int deviceId = AffinityManager::currentDeviceId();
+  current = current->findOrCreateChild(deviceId, 0, false, rank);
+  if (!current) {
+    THROW_EXCEPTION("Failed to create device ID node");
+  }
+
+  // Second level: dimension length node with shape rank (now level 1)
+  current = current->findOrCreateChild(dimensions.size(), 1, false, rank);
   if (!current) {
     THROW_EXCEPTION("Failed to create dimension length node");
   }
 
-  // Second level: dimension nodes with shape rank
+  // Third level: dimension nodes with shape rank (now starting at level 2)
   for (size_t i = 0; i < dimensions.size(); i++) {
-    current = current->findOrCreateChild(dimensions[i], i + 1, true, rank);
+    current = current->findOrCreateChild(dimensions[i], i + 2, true, rank);
     if (!current) {
       THROW_EXCEPTION("Failed to create dimension node");
     }
+  }
+
+  // Fourth level: original shape dimensions to prevent collisions between
+  // arrays with the same rank and TAD dims but different shapes.
+  // E.g., [1,4,512,512]@dim3 vs [1,1,1,2]@dim3 both have rank=4, dims={3},
+  // but need different TAD packs (2048 vs 2 offsets).
+  int shapeLevel = dimensions.size() + 2;
+  LongType* shapeOf = shape::shapeOf(originalShape);
+  for (int i = 0; i < rank; i++) {
+    current = current->findOrCreateChild(shapeOf[i], shapeLevel + i, false, rank);
+    if (!current) {
+      THROW_EXCEPTION("Failed to create shape dimension node");
+    }
+  }
+
+  // Fifth level: original strides and layout metadata. These are part of the
+  // logical TAD identity because offsets and TAD shape strides are derived from
+  // the original strides. Do not rely on the stripe hash alone for this.
+  int strideLevel = shapeLevel + rank;
+  LongType* strides = shape::stride(originalShape);
+  for (int i = 0; i < rank; i++) {
+    current = current->findOrCreateChild(strides[i], strideLevel + i, false, rank);
+    if (!current) {
+      THROW_EXCEPTION("Failed to create stride node");
+    }
+  }
+
+  int metadataLevel = strideLevel + rank;
+  current = current->findOrCreateChild(shape::elementWiseStride(originalShape),
+                                       metadataLevel, false, rank);
+  if (!current) {
+    THROW_EXCEPTION("Failed to create element-wise stride node");
+  }
+
+  current = current->findOrCreateChild(static_cast<LongType>(shape::order(originalShape)),
+                                       metadataLevel + 1, false, rank);
+  if (!current) {
+    THROW_EXCEPTION("Failed to create order node");
+  }
+
+  // Sixth level: data type to prevent collisions between same-shaped arrays
+  // with different dtypes (e.g., FLOAT32 vs FLOAT16)
+  current = current->findOrCreateChild(
+      static_cast<LongType>(ArrayOptions::dataType(originalShape)),
+      metadataLevel + 2, false, rank);
+  if (!current) {
+    THROW_EXCEPTION("Failed to create dtype node");
   }
 
   // Create the TadPack only if it doesn't exist yet
@@ -216,7 +305,8 @@ std::shared_ptr<TadPack> DirectTadTrie::insert(std::vector<LongType>& dimensions
 
       // Store the TadPack in the node
       // setPack now also caches the signature for future fast comparisons
-      current->setPack(newPack);
+      // Pass originalShape so the signature stores the original array's shape
+      current->setPack(newPack, originalShape);
 
       // Clean up the calculator (safe now that offsets ownership was transferred)
       delete calculator;
@@ -278,10 +368,6 @@ static void deleteTadPacksRecursive(TadTrieNode* node, int& deletedCount) {
 }
 
 void DirectTadTrie::clear() {
-  // CRITICAL: Skip cleanup during shutdown to avoid SIGSEGV from corrupted memory
-  // During JVM/static destruction, memory allocators may have been destroyed,
-  // leaving corrupted pointers in the trie. Traversing the tree in this state
-  // causes crashes in deleteTadPacksRecursive.
   if (_shutdownInProgress.load(std::memory_order_acquire)) {
     return;  // Let the OS reclaim memory at exit - this is safe
   }

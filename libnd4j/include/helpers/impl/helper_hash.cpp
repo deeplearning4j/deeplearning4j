@@ -21,13 +21,18 @@
 //
 #include <helpers/helper_hash.h>
 #include <helpers/logger.h>
+#include <mutex>
 
 namespace sd {
 namespace ops {
 
 HashHelper& HashHelper::getInstance() {
-  static HashHelper instance;
-  return instance;
+  static HashHelper* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new HashHelper();
+  });
+  return *instance;
 }
 
 LongType HashHelper::getLongHash(std::string& str) {

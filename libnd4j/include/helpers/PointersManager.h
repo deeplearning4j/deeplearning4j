@@ -31,10 +31,23 @@
 
 namespace sd {
 
+/**
+ * Tracks allocation source for proper cleanup.
+ * This fixes the memory leak where cudaMalloc allocations were never freed
+ * because we couldn't distinguish them from workspace allocations.
+ */
+struct AllocatedPointer {
+  void* ptr;
+  bool fromCudaMalloc;  // true = needs cudaFree, false = workspace-managed
+
+  AllocatedPointer(void* p, bool fromMalloc) : ptr(p), fromCudaMalloc(fromMalloc) {}
+};
+
 class SD_LIB_EXPORT PointersManager {
   LaunchContext* _context;
-  std::vector<void*> _pOnGlobMem;
+  std::vector<AllocatedPointer> _allocatedPointers;  // Track allocation source
   std::string _funcName;
+  bool _workspaceWasActive;  // Track if workspace was active at construction time
 
  public:
   PointersManager(const LaunchContext* context, const std::string& funcName = "");

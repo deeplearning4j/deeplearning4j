@@ -39,13 +39,13 @@ JacobiSVD<T>::JacobiSVD(NDArray& matrix, const bool calcU, const bool calcV, con
 
   _rows = static_cast<int>(matrix.sizeAt(0));
   _cols = static_cast<int>(matrix.sizeAt(1));
-  _diagSize = math::sd_min<int>(_rows, _cols);
+  _diagSize = math::sd_min(_rows, _cols);
 
   _calcU = calcU;
   _calcV = calcV;
   _fullUV = fullUV;
 
-  std::vector<LongType> sShape = {_diagSize,1};
+  std::vector<LongType> sShape = {_diagSize};
   _s = NDArray(matrix.ordering(),sShape, matrix.dataType(), matrix.getContext());
 
   if (_calcU) {
@@ -82,100 +82,77 @@ JacobiSVD<T>::JacobiSVD(NDArray& matrix, const bool calcU, const bool calcV, con
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, NDArray& rotation) {
-  if (i < j) {
-    if (j + 1 > block.sizeAt(0))
-      THROW_EXCEPTION(
-          "ops::helpers::JacobiSVD mulRotationOnLeft: second arguments is out of array row range !");
+  if (i == j) return;
 
-    NDArray *tempPtr = block({i, j + 1, j - i, 0, 0, 0}, true, true);
-    NDArray temp = *tempPtr;
-    NDArray *tempAssignResult = mmul(rotation, temp);
-    temp.assign(tempAssignResult);
-    delete tempAssignResult;
-    delete tempPtr;
+  if (j + 1 > block.sizeAt(0) || i + 1 > block.sizeAt(0))
+    THROW_EXCEPTION(
+        "ops::helpers::JacobiSVD mulRotationOnLeft: some or both integer arguments are out of array row range !");
 
-  } else {
-    if (j + 1 > block.sizeAt(0) || i + 1 > block.sizeAt(0))
-      THROW_EXCEPTION(
-          "ops::helpers::JacobiSVD mulRotationOnLeft: some or both integer arguments are out of array row range !");
-
-    std::vector<LongType> tempShape = {2, block.sizeAt(1)};
-    NDArray temp(block.ordering(),tempShape, block.dataType(), block.getContext());
-    
-    NDArray *row1Ptr = block({i, i + 1, 0, 0}, true);
-    NDArray row1 = *row1Ptr;
-    
-    NDArray *row2Ptr = block({j, j + 1, 0, 0}, true);
-    NDArray row2 = *row2Ptr;
-    
-    NDArray *rowTemp1Ptr = temp({0, 1, 0, 0}, true);
-    NDArray rowTemp1 = *rowTemp1Ptr;
-    
-    NDArray *rowTemp2Ptr = temp({1, 2, 0, 0}, true);
-    NDArray rowTemp2 = *rowTemp2Ptr;
-    
-    rowTemp1.assign(&row1);
-    rowTemp2.assign(&row2);
-    NDArray *tempAssignResult = mmul(rotation, temp);
-    temp.assign(tempAssignResult);
-    delete tempAssignResult;
-    row1.assign(&rowTemp1);
-    row2.assign(&rowTemp2);
-    
-    delete row1Ptr;
-    delete row2Ptr;
-    delete rowTemp1Ptr;
-    delete rowTemp2Ptr;
-  }
+  std::vector<LongType> tempShape = {2, block.sizeAt(1)};
+  NDArray temp(block.ordering(),tempShape, block.dataType(), block.getContext());
+  
+  NDArray *row1Ptr = block({i, i + 1, 0, 0}, true);
+  NDArray row1 = *row1Ptr;
+  
+  NDArray *row2Ptr = block({j, j + 1, 0, 0}, true);
+  NDArray row2 = *row2Ptr;
+  
+  NDArray *rowTemp1Ptr = temp({0, 1, 0, 0}, true);
+  NDArray rowTemp1 = *rowTemp1Ptr;
+  
+  NDArray *rowTemp2Ptr = temp({1, 2, 0, 0}, true);
+  NDArray rowTemp2 = *rowTemp2Ptr;
+  
+  rowTemp1.assign(&row1);
+  rowTemp2.assign(&row2);
+  NDArray *tempAssignResult = mmul(rotation, temp);
+  temp.assign(tempAssignResult);
+  delete tempAssignResult;
+  row1.assign(&rowTemp1);
+  row2.assign(&rowTemp2);
+  
+  delete row1Ptr;
+  delete row2Ptr;
+  delete rowTemp1Ptr;
+  delete rowTemp2Ptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, NDArray& rotation) {
-  if (i < j) {
-    if (j + 1 > block.sizeAt(1))
-      THROW_EXCEPTION(
-          "ops::helpers::JacobiSVD mulRotationOnRight: second argument is out of array column range !");
+  if (i == j) return;
 
-    NDArray *tempPtr = block({0, 0, 0, i, j + 1, j - i}, true, true);
-    NDArray temp = *tempPtr;
-    NDArray *tempAssignResult = mmul(temp, rotation);
-    temp.assign(tempAssignResult);
-    delete tempAssignResult;
-    delete tempPtr;
-  } else {
-    if (j + 1 > block.sizeAt(1) || i + 1 > block.sizeAt(1))
-      THROW_EXCEPTION(
-          "ops::helpers::JacobiSVD mulRotationOnRight: some or both integer arguments are out of array column range !");
+  if (j + 1 > block.sizeAt(1) || i + 1 > block.sizeAt(1))
+    THROW_EXCEPTION(
+        "ops::helpers::JacobiSVD mulRotationOnRight: some or both integer arguments are out of array column range !");
 
-    std::vector<LongType> tempShape = {block.sizeAt(0), 2};
-    NDArray temp(block.ordering(), tempShape, block.dataType(), block.getContext());
-    
-    NDArray *col1Ptr = block({0, 0, i, i + 1}, true);
-    NDArray col1 = *col1Ptr;
-    
-    NDArray *col2Ptr = block({0, 0, j, j + 1}, true);
-    NDArray col2 = *col2Ptr;
-    
-    NDArray *colTemp1Ptr = temp({0, 0, 0, 1}, true);
-    NDArray colTemp1 = *colTemp1Ptr;
-    
-    NDArray *colTemp2Ptr = temp({0, 0, 1, 2}, true);
-    NDArray colTemp2 = *colTemp2Ptr;
-    
-    colTemp1.assign(&col1);
-    colTemp2.assign(&col2);
-    NDArray *tempAssignResult = mmul(temp, rotation);
-    temp.assign(tempAssignResult);
-    delete tempAssignResult;
-    col1.assign(&colTemp1);
-    col2.assign(&colTemp2);
-    
-    delete col1Ptr;
-    delete col2Ptr;
-    delete colTemp1Ptr;
-    delete colTemp2Ptr;
-  }
+  std::vector<LongType> tempShape = {block.sizeAt(0), 2};
+  NDArray temp(block.ordering(), tempShape, block.dataType(), block.getContext());
+  
+  NDArray *col1Ptr = block({0, 0, i, i + 1}, true);
+  NDArray col1 = *col1Ptr;
+  
+  NDArray *col2Ptr = block({0, 0, j, j + 1}, true);
+  NDArray col2 = *col2Ptr;
+  
+  NDArray *colTemp1Ptr = temp({0, 0, 0, 1}, true);
+  NDArray colTemp1 = *colTemp1Ptr;
+  
+  NDArray *colTemp2Ptr = temp({0, 0, 1, 2}, true);
+  NDArray colTemp2 = *colTemp2Ptr;
+  
+  colTemp1.assign(&col1);
+  colTemp2.assign(&col2);
+  NDArray *tempAssignResult = mmul(temp, rotation);
+  temp.assign(tempAssignResult);
+  delete tempAssignResult;
+  col1.assign(&colTemp1);
+  col2.assign(&colTemp2);
+  
+  delete col1Ptr;
+  delete col2Ptr;
+  delete colTemp1Ptr;
+  delete colTemp2Ptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -208,8 +185,8 @@ bool JacobiSVD<T>::isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem) {
   }
 
   maxElem =
-      math::sd_max<T>(maxElem, math::sd_max<T>(math::sd_abs<T,T>(block.t<T>(p, p)), math::sd_abs<T,T>(block.t<T>(q, q))));
-  T threshold = math::sd_max<T>(almostZero, precision * maxElem);
+      math::sd_max(maxElem, math::sd_max(math::sd_abs<T,T>(block.t<T>(p, p)), math::sd_abs<T,T>(block.t<T>(q, q))));
+  T threshold = math::sd_max(almostZero, precision * maxElem);
 
   return math::sd_abs<T,T>(block.t<T>(p, q)) > threshold || math::sd_abs<T,T>(block.t<T>(q, p)) > threshold;
 }
@@ -402,7 +379,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
     for (int p = 1; p < _diagSize; ++p) {
       for (int q = 0; q < p; ++q) {
-        T threshold = math::sd_max<T>(almostZero, precision * maxDiagElem);
+        T threshold = math::sd_max(almostZero, precision * maxDiagElem);
 
         if (math::sd_abs<T,T>(_m.t<T>(p, q)) > threshold || math::sd_abs<T,T>(_m.t<T>(q, p)) > threshold) {
           stop = false;
@@ -420,8 +397,8 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
           if (_calcV) mulRotationOnRight(p, q, _v, rotRight);
 
-          maxDiagElem = math::sd_max<T>(
-              maxDiagElem, math::sd_max<T>(math::sd_abs<T,T>(_m.t<T>(p, p)), math::sd_abs<T,T>(_m.t<T>(q, q))));
+          maxDiagElem = math::sd_max(
+              maxDiagElem, math::sd_max(math::sd_abs<T,T>(_m.t<T>(p, p)), math::sd_abs<T,T>(_m.t<T>(q, q))));
 
           delete rotLeftTranspose;
         }
@@ -445,7 +422,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
   _s *= scale;
   for (int i = 0; i < _diagSize; i++) {
-    NDArray *sSlicePtr = _s({i, -1, 0, 0});
+    NDArray *sSlicePtr = _s({i, -1});
     NDArray sSlice = *sSlicePtr;
     
     NDArray *indexNum = sSlice.indexReduceNumber(indexreduce::IndexMax, nullptr);

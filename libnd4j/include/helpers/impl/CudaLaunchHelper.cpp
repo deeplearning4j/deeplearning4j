@@ -26,10 +26,10 @@ namespace sd {
 
 int CudaLaunchHelper::getReductionBlocks(LongType xLength, int blockSize) {
   int div = xLength / blockSize;
-  int can = sd::math::sd_max<int>(div, 1);
+  int can = sd::math::sd_max(div, 1);
   if (xLength % blockSize != 0 && xLength > blockSize) can++;
 
   // not more then 512 blocks
-  return sd::math::sd_min<int>(can, 512);
+  return sd::math::sd_min(can, 512);
 }
 }  // namespace sd

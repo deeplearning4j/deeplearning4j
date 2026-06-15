@@ -37,10 +37,15 @@ class Hessenberg {
   // suppose we got input square NxN matrix
 
  public:
-  NDArray _Q;  // {N,N}
-  NDArray _H;  // {N,N}
+  NDArray *_Q;  // {N,N}
+  NDArray *_H;  // {N,N}
 
-  explicit Hessenberg(NDArray& matrix);
+  explicit Hessenberg(NDArray* matrix);
+
+   ~Hessenberg() {
+     delete _Q;
+     delete _H;
+   }
 
  private:
   void evalData();
@@ -48,16 +53,16 @@ class Hessenberg {
 
 // this class implements real Schur decomposition of square matrix using orthogonal similarity transformation
 // A = U T U^T
-// T - real quasi-upper-triangular matrix - block upper triangular matrix where the blocks on the diagonal are 1×1 or
-// 2×2 with complex eigenvalues U - real orthogonal matrix
+// T - real quasi-upper-triangular matrix - block upper triangular matrix where the blocks on the diagonal are 1x1 or
+// 2x2 with complex eigenvalues U - real orthogonal matrix
 
 template <typename T>
 class Schur {
   // suppose we got input square NxN matrix
 
  public:
-  NDArray t;  // {N,N}
-  NDArray u;  // {N,N}
+  NDArray *t;  // {N,N}
+  NDArray *u;  // {N,N}
 
   explicit Schur(NDArray& matrix);
 
@@ -80,8 +85,8 @@ class Schur {
   SD_INLINE int getSmallSubdiagEntry(const int inInd) {
     int outInd = inInd;
     while (outInd > 0) {
-      T factor = math::sd_abs<T,T>(t.t<T>(outInd - 1, outInd - 1)) + math::sd_abs<T,T>(t.t<T>(outInd, outInd));
-      if (math::sd_abs<T,T>(t.t<T>(outInd, outInd - 1)) <= DataTypeUtils::eps<T>() * factor) break;
+      T factor = math::sd_abs<T,T>(t->t<T>(outInd - 1, outInd - 1)) + math::sd_abs<T,T>(t->t<T>(outInd, outInd));
+      if (math::sd_abs<T,T>(t->t<T>(outInd, outInd - 1)) <= DataTypeUtils::eps<T>() * factor) break;
       outInd--;
     }
     return outInd;

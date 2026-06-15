@@ -23,6 +23,7 @@
 #include <helpers/logger.h>
 #include <legacy/NativeOps.h>
 
+#include <mutex>
 #include <sstream>
 
 using namespace sd::ops;
@@ -31,8 +32,12 @@ using namespace sd::graph;
 namespace sd {
 
 OpTracker& OpTracker::getInstance() {
-  static OpTracker instance;
-  return instance;
+  static OpTracker* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new OpTracker();
+  });
+  return *instance;
 }
 
 void OpTracker::storeOperation(::graph::OpType opType, const OpDescriptor& descriptor) {

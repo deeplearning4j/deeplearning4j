@@ -25,6 +25,9 @@
 #define _SYS_MMAN_H_
 #include <errno.h>
 #include <io.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 
 #ifndef FILE_MAP_EXECUTE
@@ -49,10 +52,6 @@ typedef uint32_t OffsetType;
 #endif
 #include <sys/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define PROT_NONE 0
 #define PROT_READ 1
 #define PROT_WRITE 2
@@ -72,18 +71,6 @@ extern "C" {
 #define MS_ASYNC 1
 #define MS_SYNC 2
 #define MS_INVALIDATE 4
-
-void _mmap(sd::LongType *result, size_t length, const char *fileName);
-void *mmap(void *addr, size_t len, int prot, int flags, int fildes, OffsetType off);
-int munmap(void *addr, size_t len);
-int _mprotect(void *addr, size_t len, int prot);
-int msync(void *addr, size_t len, int flags);
-int mlock(const void *addr, size_t len);
-int munlock(const void *addr, size_t len);
-
-#ifdef __cplusplus
-}
-#endif
 
 static int __map_mman_error(const DWORD err, const int deferr) {
   if (err == 0) return 0;
@@ -117,7 +104,7 @@ static DWORD __map_mmap_prot_file(const int prot) {
   return desiredAccess;
 }
 
-void _mmap(sd::LongType *result, size_t length, const char *fileName) {
+static inline void _mmap(sd::LongType *result, size_t length, const char *fileName) {
   HANDLE fm, h;
 
   void *map = MAP_FAILED;
@@ -172,7 +159,7 @@ void _mmap(sd::LongType *result, size_t length, const char *fileName) {
   result[1] = reinterpret_cast<sd::LongType>(h);
 }
 
-void *mmap(void *addr, size_t len, int prot, int flags, int files, OffsetType off) {
+static inline void *mmap(void *addr, size_t len, int prot, int flags, int files, OffsetType off) {
   HANDLE fm, h;
 
   void *map = MAP_FAILED;
@@ -233,7 +220,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int files, OffsetType of
   return map;
 }
 
-int munmap(void *addr, size_t len) {
+static inline int munmap(void *addr, size_t len) {
   if (UnmapViewOfFile(addr)) return 0;
 
   errno = __map_mman_error(GetLastError(), EPERM);
@@ -241,7 +228,7 @@ int munmap(void *addr, size_t len) {
   return -1;
 }
 
-int _mprotect(void *addr, size_t len, int prot) {
+static inline int _mprotect(void *addr, size_t len, int prot) {
   DWORD newProtect = __map_mmap_prot_page(prot);
   DWORD oldProtect = 0;
 
@@ -252,9 +239,7 @@ int _mprotect(void *addr, size_t len, int prot) {
   return -1;
 }
 
-int msync(void *addr, size_t len, int flags)
-
-{
+static inline int msync(void *addr, size_t len, int flags) {
   if (FlushViewOfFile(addr, len)) return 0;
 
   errno = __map_mman_error(GetLastError(), EPERM);
@@ -262,7 +247,7 @@ int msync(void *addr, size_t len, int flags)
   return -1;
 }
 
-int mlock(const void *addr, size_t len) {
+static inline int mlock(const void *addr, size_t len) {
   if (VirtualLock((LPVOID)addr, len)) return 0;
 
   errno = __map_mman_error(GetLastError(), EPERM);
@@ -270,7 +255,7 @@ int mlock(const void *addr, size_t len) {
   return -1;
 }
 
-int munlock(const void *addr, size_t len) {
+static inline int munlock(const void *addr, size_t len) {
   if (VirtualUnlock((LPVOID)addr, len)) return 0;
 
   errno = __map_mman_error(GetLastError(), EPERM);

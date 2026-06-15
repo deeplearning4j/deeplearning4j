@@ -39,11 +39,11 @@ OmpLaunchHelper::OmpLaunchHelper(const LongType N, float desiredNumThreads) {
     else if (desiredNumThreads < 1)
       desiredNumThreads = 1;
     else
-      desiredNumThreads = sd::math::sd_min<int>(omp_get_max_threads(), desiredNumThreads);
+      desiredNumThreads = sd::math::sd_min(omp_get_max_threads(), desiredNumThreads);
 #else
     desiredNumThreads = Environment::getInstance().maxThreads();
 #endif
-    _numThreads = sd::math::sd_min<int>(N / maxItersPerThread, desiredNumThreads);
+    _numThreads = sd::math::sd_min(N / maxItersPerThread, desiredNumThreads);
   }
 
   _itersPerThread = N / _numThreads;
@@ -78,7 +78,7 @@ int OmpLaunchHelper::betterThreads(LongType N, int maxThreads) {
   if (N < t)
     return 1;
   else {
-    return static_cast<int>(sd::math::sd_min<LongType>(N / t, maxThreads));
+    return static_cast<int>(sd::math::sd_min(N / t, maxThreads));
   }
 }
 
@@ -98,6 +98,6 @@ int OmpLaunchHelper::tadThreads(LongType tadLength, LongType numTads) {
   if (totalLength < Environment::getInstance().elementwiseThreshold()) return 1;
 
   // by default we're spawning as many threads we can, but not more than number of TADs
-  return sd::math::sd_min<int>(numTads, maxThreads);
+  return sd::math::sd_min(numTads, maxThreads);
 }
 }  // namespace sd

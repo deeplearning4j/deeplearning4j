@@ -23,8 +23,6 @@
 #ifndef LIBND4J_DEBUGHELPER_H
 #define LIBND4J_DEBUGHELPER_H
 
-#include <helpers/StringUtils.h>
-#include <system/Environment.h>
 #include <system/op_boilerplate.h>
 
 #include <string>
@@ -33,78 +31,84 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
-
 #endif
 #include <helpers/DebugInfo.h>
 namespace sd {
+
+#ifdef __CUDACC__
+// Used to skip cudaStreamSynchronize during CUDA graph capture.
+// Defined in DataBuffer.cu within namespace sd.
+extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
+#endif
 class NDArray;
 class SD_LIB_EXPORT DebugHelper {
  public:
   // cuda-specific debug functions
 #ifdef __CUDACC__
   static SD_INLINE void checkErrorCode(cudaStream_t* stream, int opType = 0) {
+    // During CUDA graph capture, cudaStreamSynchronize is illegal (error 900).
+    // Kernels aren't actually launched during capture — they're recorded into the graph.
+    // Skip the sync entirely when graph capture is active.
+    if (tl_graphExecutionActive) return;
+
     cudaError_t res = cudaStreamSynchronize(*stream);
 
     if (res != 0) {
-      std::string op = "Kernel OpNum failed: [";
-      op += StringUtils::valueToString<int>(opType);
-      op += "]";
-
+      std::string op = "Kernel OpNum [" + std::to_string(opType) + "] cudaStreamSynchronize error [" +
+                       std::to_string(res) + "] = " + std::string(cudaGetErrorString(res));
+      cudaError_t sticky = cudaGetLastError();
+      if (sticky != 0 && sticky != res) {
+        op += "; also sticky error [" + std::to_string(sticky) + "] = " + std::string(cudaGetErrorString(sticky));
+      }
       THROW_EXCEPTION(op.c_str());
     }
 
-    cudaError_t res2 = cudaGetLastError();
-    if(res2 != 0) {
-        std::string op = "Kernel OpNum failed: [";
-        op += StringUtils::valueToString<int>(opType);
-        op += "]";
-
-        THROW_EXCEPTION(op.c_str());
-    }
+    // Clear any stale sticky errors from unrelated API calls (e.g. failed cudaMallocAsync).
+    // After a successful cudaStreamSynchronize, kernel errors are already caught above.
+    // cudaGetLastError() here would only pick up unrelated errors, causing false failures.
+    cudaGetLastError();
   }
 
 
 
   static SD_INLINE void checkGlobalErrorCode(const char* failMessage = nullptr) {
+    // During CUDA graph capture, kernels are recorded but not executed.
+    // cudaGetLastError() may return stale errors from Triton compilation or other
+    // non-stream CUDA API calls, causing false failures and heap corruption.
+    if (tl_graphExecutionActive) return;
+
     cudaError_t res2 = cudaGetLastError();
     if (res2 != 0) {
       if (failMessage == nullptr) {
-        std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res2) + std::string("]");
+        std::string op = "CUDA call ended with error code [" + std::to_string(res2) +
+                         "] = " + std::string(cudaGetErrorString(res2));
         THROW_EXCEPTION(op.c_str());
       } else {
-        std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res2) +
-                         std::string("]");
+        std::string op = std::string(failMessage) + std::string("Error code [") + std::to_string(res2) +
+                         "] = " + std::string(cudaGetErrorString(res2));
         THROW_EXCEPTION(op.c_str());
       }
     }
   }
 
   static SD_INLINE void checkErrorCode(cudaStream_t* stream, const char* failMessage = nullptr) {
+    // During CUDA graph capture, cudaStreamSynchronize is illegal (error 900).
+    if (tl_graphExecutionActive) return;
+
     cudaError_t res = cudaStreamSynchronize(*stream);
     if (res != 0) {
-      if (failMessage == nullptr) {
-        std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res) + std::string("]");
-        THROW_EXCEPTION(op.c_str());
-      } else {
-        std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res) +
-                         std::string("]");
-        THROW_EXCEPTION(op.c_str());
+      std::string msg = failMessage ? std::string(failMessage) : std::string("CUDA call");
+      msg += " cudaStreamSynchronize error code [" + std::to_string(res) + "] = " + std::string(cudaGetErrorString(res));
+      cudaError_t sticky = cudaGetLastError();
+      if (sticky != 0 && sticky != res) {
+        msg += "; also sticky error [" + std::to_string(sticky) + "] = " + std::string(cudaGetErrorString(sticky));
       }
+      THROW_EXCEPTION(msg.c_str());
     }
 
-
-
-    cudaError_t res2 = cudaGetLastError();
-    if (res2 != 0) {
-      if (failMessage == nullptr) {
-        std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res2) + std::string("]");
-        THROW_EXCEPTION(op.c_str());
-      } else {
-        std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res2) +
-                         std::string("]");
-        THROW_EXCEPTION(op.c_str());
-      }
-    }
+    // Clear any stale sticky errors from unrelated API calls (e.g. failed cudaMallocAsync).
+    // After a successful cudaStreamSynchronize, kernel errors are already caught above.
+    cudaGetLastError();
   }
 #endif
   static DebugInfo debugStatistics(NDArray * input);

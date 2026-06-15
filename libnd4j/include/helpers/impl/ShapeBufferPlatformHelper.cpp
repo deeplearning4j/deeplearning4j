@@ -43,39 +43,22 @@ struct ShapeBufferInitializer {
 static ShapeBufferInitializer _force_early_init;
 
 void ShapeBufferPlatformHelper::initialize() {
-  // Thread-safe initialization using static local mutex
-  // This prevents race conditions when multiple threads call initialize() simultaneously
-  static std::mutex init_mutex;
-  static bool init_done = false;
-
-  // Fast path: if already initialized, return immediately without locking
-  if (init_done) {
-    return;
-  }
-
-  // Slow path: acquire lock and check again
-  std::lock_guard<std::mutex> lock(init_mutex);
-  if (init_done) {
-    return;  // Another thread completed initialization while we were waiting
-  }
-
+  // -fno-threadsafe-statics: use std::call_once for thread-safe initialization.
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
 #if defined(SD_CUDA)
-  printf("Initializing CUDA platform\n");
-  fflush(stdout);
-  // Switch to CUDA implementation
-  ShapeBufferCreatorHelper::setCurrentCreator(&CudaShapeBufferCreator::getInstance());
+    printf("Initializing CUDA platform\n");
+    fflush(stdout);
+    // Switch to CUDA implementation
+    ShapeBufferCreatorHelper::setCurrentCreator(&CudaShapeBufferCreator::getInstance());
 #else
-  printf("Initializing CPU platform\n");
-  fflush(stdout);
+    printf("Initializing CPU platform\n");
+    fflush(stdout);
 
-  ShapeBufferCreatorHelper::setCurrentCreator(&CpuShapeBufferCreator::getInstance());
+    ShapeBufferCreatorHelper::setCurrentCreator(&CpuShapeBufferCreator::getInstance());
 
 #endif
-
-  // Mark as complete - must be last line after all initialization
-  init_done = true;
-
-  // Add other platforms as needed (ROCm, OpenCL, etc.)
+  });
 }
 
 } // namespace sd

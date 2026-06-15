@@ -31,10 +31,37 @@
 #include <loops/indexreduce.h>
 #include <ops/ops.h>
 
-
+#include <cstring>
 #include <functional>
 
 namespace sd {
+
+// Helper to check if array has contiguous (packed) memory layout without using EWS
+static inline bool isContiguousLayoutForLoops(const LongType* shapeInfo) {
+  const int rank = shape::rank(shapeInfo);
+  if (rank == 0) return true;  // Scalar is contiguous
+
+  const LongType* shapePtr = shape::shapeOf(shapeInfo);
+  const LongType* stridePtr = shape::stride(shapeInfo);
+  const char order = shape::order(shapeInfo);
+
+  if (order == 'c') {
+    LongType expectedStride = 1;
+    for (int i = rank - 1; i >= 0; --i) {
+      if (shapePtr[i] == 1) continue;
+      if (stridePtr[i] != expectedStride) return false;
+      expectedStride *= shapePtr[i];
+    }
+  } else {
+    LongType expectedStride = 1;
+    for (int i = 0; i < rank; ++i) {
+      if (shapePtr[i] == 1) continue;
+      if (stridePtr[i] != expectedStride) return false;
+      expectedStride *= shapePtr[i];
+    }
+  }
+  return true;
+}
 
 template <typename X, typename Z, typename E>
 class  ReductionLoops {
@@ -159,21 +186,8 @@ static void reduceExec21(const X* x, const LongType* xShapeInfo, Z* z, const Lon
   const LongType xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
   const LongType xStrd1 = shape::strideAt(xShapeInfo, dims[1]);
 
-  // Convert parameters to Z* for OpType compatibility
-  Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      // Convert parameters to Z type
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  // Reduction wrappers already normalize extra params to the correct type E.
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i0 = start; i0 < stop; ++i0) {
@@ -213,20 +227,7 @@ static void reduceExec31(const X* x, const LongType* xShapeInfo, Z* z, const Lon
 
   const LongType tadLen = static_cast<LongType>(xAxis1 * xAxis2);
 
-  Z* compatibleExtraParams = nullptr;
-  Z convertedParams[8];
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      // Convert parameters to Z type
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i0 = start; i0 < stop; ++i0) {
@@ -292,19 +293,7 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
   const LongType xStrd2 = shape::strideAt(xShapeInfo, dims[2]);
 
 
-  Z convertedParams[8] = {0};
-  Z* compatibleExtraParams = nullptr;
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR_2D {
     for (auto i0 = start_x; i0 < stop_x; ++i0) {
@@ -366,19 +355,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x,
 
   const LongType tadLen = static_cast<LongType>(xAxis1 * xAxis2 * xAxis3);
 
-  Z convertedParams[8] = {0};
-  Z* compatibleExtraParams = nullptr;
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i0 = start; i0 < stop; ++i0) {
@@ -461,19 +438,7 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  Z convertedParams[8] = {0};
-  Z* compatibleExtraParams = nullptr;
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR_2D {
     for (auto i0 = start_x; i0 < stop_x; ++i0) {
@@ -543,19 +508,7 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const LongType* xShapeInfo, Z* z, co
   const LongType xStrd3 = shape::strideAt(xShapeInfo, dims[3]);
   LongType xRank = shape::rank(xShapeInfo);
 
-  Z convertedParams[8] = {0};
-  Z* compatibleExtraParams = nullptr;
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR_3D {
     for (auto i0 = start_x; i0 < stop_x; ++i0) {
@@ -618,19 +571,7 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  Z convertedParams[8] = {0};
-  Z* compatibleExtraParams = nullptr;
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i0 = start; i0 < stop; ++i0) {
@@ -730,19 +671,7 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  Z convertedParams[8] = {0};
-  Z* compatibleExtraParams = nullptr;
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR_2D {
     for (auto i0 = start_x; i0 < stop_x; ++i0) {
@@ -830,19 +759,7 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  Z convertedParams[8] = {0};
-  Z* compatibleExtraParams = nullptr;
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR_3D {
     for (auto i0 = start_x; i0 < stop_x; ++i0) {
@@ -916,19 +833,7 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  Z convertedParams[8] = {0};
-  Z* compatibleExtraParams = nullptr;
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR_3D {
     for (auto i0 = start_x; i0 < stop_x; ++i0) {
@@ -1000,19 +905,7 @@ SD_LIB_HIDDEN void reduceDefault(memory::Workspace* workspace, const X* x, const
 
   LongType xRank = shape::rank(xShapeInfo);
 
-  Z convertedParams[8] = {0};
-  Z* compatibleExtraParams = nullptr;
-
-  if (extraParams != nullptr) {
-    if constexpr (std::is_same_v<E, Z>) {
-      compatibleExtraParams = reinterpret_cast<Z*>(extraParams);
-    } else {
-      for (int i = 0; i < 8; ++i) {
-        convertedParams[i] = static_cast<Z>(extraParams[i]);
-      }
-      compatibleExtraParams = convertedParams;
-    }
-  }
+  auto compatibleExtraParams = extraParams;
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; ++i) {
@@ -1084,22 +977,58 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
                                                           LongType threadId, LongType numThreads) {
   // Basic validation
   if(xShapeInfo == nullptr) {
-    THROW_EXCEPTION("Input x shape info was null!");
+    THROW_EXCEPTION("TransformLoops::loopTransform: Input x shape info was null!");
   }
   if(zShapeInfo == nullptr) {
-    THROW_EXCEPTION("Input z shape info was null!");
+    THROW_EXCEPTION("TransformLoops::loopTransform: Input z shape info was null!");
+  }
+  if(x == nullptr) {
+    THROW_EXCEPTION("TransformLoops::loopTransform: Input x buffer was null!");
+  }
+  if(z == nullptr) {
+    THROW_EXCEPTION("TransformLoops::loopTransform: Output z buffer was null!");
   }
   if(xShapeInfo[0] > SD_MAX_RANK || xShapeInfo[0] < 0) {
-    THROW_EXCEPTION("x shape info appears to be corrupt.");
+    THROW_EXCEPTION("TransformLoops::loopTransform: x shape info appears to be corrupt (invalid rank).");
   }
   if(zShapeInfo[0] > SD_MAX_RANK || zShapeInfo[0] < 0) {
-    THROW_EXCEPTION("z shape info appears to be corrupt.");
+    THROW_EXCEPTION("TransformLoops::loopTransform: z shape info appears to be corrupt (invalid rank).");
   }
 
   // Get basic shape information
-  const LongType len = shape::length(zShapeInfo);
+  const LongType zLen = shape::length(zShapeInfo);
+  const LongType xLen = shape::length(xShapeInfo);
   const LongType xRank = shape::rank(xShapeInfo);
   const LongType zRank = shape::rank(zShapeInfo);
+
+  // For element-wise transforms (like Assign), input and output lengths must match
+  // This validation catches mismatched TAD shapes that could cause out-of-bounds access
+  if (xLen != zLen) {
+    std::string error = "TransformLoops::loopTransform: input length ";
+    error += std::to_string(xLen);
+    error += " != output length ";
+    error += std::to_string(zLen);
+    error += ". This indicates a shape mismatch between input and output arrays.";
+    THROW_EXCEPTION(error.c_str());
+  }
+
+  // OPTIMIZATION: Fast path for Assign operation with contiguous same-type arrays
+  // Use memcpy when both arrays are contiguous, same type, AND same order
+  constexpr bool isAssignOp = std::is_same_v<OpType, simdOps::Assign<X, Z>>;
+  if constexpr (isAssignOp && std::is_same_v<X, Z>) {
+    bool sameOrder = (shape::order(xShapeInfo) == shape::order(zShapeInfo));
+    if (sameOrder && isContiguousLayoutForLoops(xShapeInfo) && isContiguousLayoutForLoops(zShapeInfo)) {
+      // Calculate this thread's portion of the data
+      auto span = samediff::Span::build(threadId, numThreads, 0, zLen, 1);
+      const LongType startIdx = span.startX();
+      const LongType stopIdx = span.stopX();
+      const LongType copyLen = stopIdx - startIdx;
+      if (copyLen > 0) {
+        std::memcpy(z + startIdx, x + startIdx, copyLen * sizeof(Z));
+      }
+      return;
+    }
+  }
 
   const LongType* xShape = shape::shapeOf(const_cast<LongType*>(xShapeInfo));
   const LongType* zShape = shape::shapeOf(const_cast<LongType*>(zShapeInfo));
@@ -1107,7 +1036,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
   const LongType* zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
 
   // Determine thread work span
-  auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+  auto span = samediff::Span::build(threadId, numThreads, 0, zLen, 1);
 
   // Process each element
   for (auto i = span.startX(); i < span.stopX(); i++) {
@@ -1122,6 +1051,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
     LongType zOffset;
     COORDS2INDEX(xRank, xStride, xCoords, xOffset);
     COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+
 
     // Simple heuristic based on operation patterns observed
     Z result;
@@ -1139,15 +1069,19 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
           std::is_same_v<OpType, simdOps::Assign<X, Z>>;
 
       if constexpr (expects_x_ptr) {
-        result = OpType::op(x[xOffset], static_cast<X*>(nullptr));
+        result = OpType::op(x[xOffset], reinterpret_cast<X*>(extraParams));
       } else {
         // Operations that expect Z* (bool*): IsFinite, IsInfOrNan, etc.
         result = OpType::op(x[xOffset], static_cast<Z*>(nullptr));
       }
     }
-    // For same-type transformations, use input type
+    // Same-type transforms like CompareAndSet can rely on extra params.
     else if constexpr (std::is_same_v<X, Z>) {
-      result = OpType::op(x[xOffset], static_cast<X*>(nullptr));
+      if constexpr (std::is_same_v<E, X>) {
+        result = OpType::op(x[xOffset], extraParams);
+      } else {
+        result = OpType::op(x[xOffset], static_cast<X*>(nullptr));
+      }
     }
     // Default: try with extraParams if types match, otherwise check for operations that expect Z*
     else {

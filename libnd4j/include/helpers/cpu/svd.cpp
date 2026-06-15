@@ -55,7 +55,7 @@ SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool 
   _fullUV = fullUV;
 
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
-  std::vector<sd::LongType> sShape = {_diagSize, 1};
+  std::vector<sd::LongType> sShape = {_diagSize};
   std::vector<sd::LongType> mShape = {_diagSize + 1, _diagSize};
   _s = NDArray(matrix.ordering(), sShape, matrix.dataType(), matrix.getContext());
   _m = NDArray(matrix.ordering(), mShape, matrix.dataType(), matrix.getContext());
@@ -103,7 +103,7 @@ SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool 
   _fullUV = fullUV;
 
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
-  std::vector<sd::LongType> sShape = {_diagSize, 1};
+  std::vector<sd::LongType> sShape = {_diagSize};
   std::vector<sd::LongType> mShape = {_diagSize + 1, _diagSize};
 
   _s = NDArray(matrix.ordering(), sShape, matrix.dataType(), matrix.getContext());
@@ -224,17 +224,15 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
   if (len == 1)
     maxElem = math::sd_abs<T,T>(diagInterval.template t<T>(0));
   else {
-    NDArray *diagIntervalSubPtr = diagInterval({1, -1, 0, 0}, true);
-    auto reduce =  diagIntervalSubPtr->reduceNumber(reduce::AMax);
-    maxElem = reduce->template t<T>(0);
-    delete reduce;
-    delete diagIntervalSubPtr;
+    maxElem = math::sd_abs<T,T>(diagInterval.template t<T>(1));
+    for (int i = 2; i < len; ++i)
+      maxElem = math::sd_max(maxElem, math::sd_abs<T,T>(diagInterval.template t<T>(i)));
   }
-  auto reduce = colVec0.reduceNumber(reduce::AMax);
-  T maxElem0 = reduce->template t<T>(0);
- delete reduce;
-  T eps = math::sd_max<T>(almostZero, DataTypeUtils::eps<T>() * maxElem);
-  T epsBig = (T)8. * DataTypeUtils::eps<T>() * math::sd_max<T>(maxElem0, maxElem);
+  T maxElem0 = math::sd_abs<T,T>(colVec0.template t<T>(0));
+  for (int i = 1; i < len; ++i)
+    maxElem0 = math::sd_max(maxElem0, math::sd_abs<T,T>(colVec0.template t<T>(i)));
+  T eps = math::sd_max(almostZero, DataTypeUtils::eps<T>() * maxElem);
+  T epsBig = (T)8. * DataTypeUtils::eps<T>() * math::sd_max(maxElem0, maxElem);
 
   if (diagInterval.template t<T>(0) < epsBig) diagInterval.template r<T>(0) = epsBig;
 
@@ -303,6 +301,11 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
       const int ki = permut[len - (totDefl ? i + 1 : i)];
       const int jac = tCol[ki];
 
+      if (ki < 0 || ki >= len)
+        THROW_EXCEPTION("ops::helpers::SVD::deflation generated out-of-range ki index during permutation");
+      if (jac < 0 || jac >= len)
+        THROW_EXCEPTION("ops::helpers::SVD::deflation generated out-of-range jac index during permutation");
+
       math::sd_swap<T>(diagInterval.template r<T>(i), diagInterval.template r<T>(jac));
 
       if (i != 0 && jac != 0) math::sd_swap<T>(colVec0.template r<T>(i), colVec0.template r<T>(jac));
@@ -348,8 +351,6 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
 
     for (; i > 1; --i) {
       if ((diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) < DataTypeUtils::eps<T>() * maxElem) {
-        if (math::sd_abs<T,T>(diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) >= epsBig)
-          THROW_EXCEPTION("ops::helpers::SVD::deflation: diagonal elements are not properly sorted !");
         deflation2(col1, col1 + shift, row1W, col1W, i - 1, i, len);
       }
     }
@@ -435,7 +436,7 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
     bool useBisection = fPrev * fCur > (T)0.;
     while (fCur != (T).0 &&
            math::sd_abs<T,T>(muCur - muPrev) >
-           (T)8. * DataTypeUtils::eps<T>() * math::sd_max<T>(math::sd_abs<T,T>(muCur), math::sd_abs<T,T>(muPrev)) &&
+           (T)8. * DataTypeUtils::eps<T>() * math::sd_max(math::sd_abs<T,T>(muCur), math::sd_abs<T,T>(muPrev)) &&
            math::sd_abs<T,T>(fCur - fPrev) > DataTypeUtils::eps<T>() && !useBisection) {
       T a = (fCur - fPrev) / ((T)1. / muCur - (T)1. / muPrev);
       T jac = fCur - a / muCur;
@@ -470,7 +471,7 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
 
       while (rightShifted - leftShifted >
              (T)2.f * DataTypeUtils::eps<T>() *
-             math::sd_max<T>(math::sd_abs<T,T>(leftShifted), math::sd_abs<T,T>(rightShifted))) {
+             math::sd_max(math::sd_abs<T,T>(leftShifted), math::sd_abs<T,T>(rightShifted))) {
         T midShifted = (leftShifted + rightShifted) / (T)2.;
         fMid = secularEq(midShifted, col0, diag, permut, *diagShifted, shift);
         if (fLeft * fMid < (T)0.)
@@ -679,6 +680,14 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shift) {
+  if (col1 < 0 || col2 < col1) {
+    THROW_EXCEPTION("ops::helpers::SVD::DivideAndConquer received an invalid block range");
+  }
+
+  if (col1 + shift >= _diagSize || col2 + shift >= _diagSize) {
+    THROW_EXCEPTION("ops::helpers::SVD::DivideAndConquer recursion exceeded bidiagonal workspace bounds");
+  }
+
   // requires rows = cols + 1;
   const int n = col2 - col1 + 1;
   const int k = n / 2;
@@ -690,7 +699,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   NDArray l(_u.ordering(),lShape, _u.dataType(), _u.getContext());
   NDArray f(_u.ordering(), fShape, _u.dataType(), _u.getContext());
 
-  if (n < _switchSize) {
+  if (n <= _switchSize) {
     NDArray *mViewPtr = _m({col1, col1 + n + 1, col1, col1 + n}, true);
     JacobiSVD<T> jac(*mViewPtr, _calcU, _calcV, _fullUV);
     delete mViewPtr;
@@ -727,7 +736,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     NDArray *firstPtr = diag({col1 + shift, col1 + shift + n, 0, 0}, true);
     NDArray first = *firstPtr;
     delete firstPtr;
-    NDArray *secondPtr = jac._s({0, n, 0, 0}, true);
+    NDArray *secondPtr = jac._s({0, n}, true);
     NDArray second = *secondPtr;
     delete secondPtr;
     first.assign(&second);
@@ -936,7 +945,7 @@ template <typename T>
 void SVD<T>::evalData(NDArray& matrix) {
   const T almostZero = DataTypeUtils::min_positive<T>();
 
-  if (matrix.sizeAt(1) < _switchSize) {
+  if (matrix.sizeAt(1) <= _switchSize) {
     JacobiSVD<T> jac(matrix, _calcU, _calcV, _fullUV);
 
     if (_calcU) _u = jac._u;
@@ -972,7 +981,7 @@ void SVD<T>::evalData(NDArray& matrix) {
     T a = math::sd_abs<T,T>(_m.t<T>(i, i));
     _s.template r<T>(i) = a * scale;
     if (a < almostZero) {
-      NDArray *sNullifyPtr = _s({i + 1, _diagSize, 0, 0});
+      NDArray *sNullifyPtr = _s({i + 1, _diagSize});
       sNullifyPtr->nullify();
       delete sNullifyPtr;
       break;

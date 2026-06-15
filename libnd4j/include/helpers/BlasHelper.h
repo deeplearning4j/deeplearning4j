@@ -26,8 +26,17 @@
 // work around conflict with OpenBLAS
 struct bfloat16;
 #define BFLOAT16 BFLOAT16
+
+// Include CBLAS headers - use MKL or OpenBLAS, but not both
+// HAVE_MKL is defined by cmake when MKL is available
 #if !SD_CUDA
-#include <blas/cblas.h>
+  #ifdef HAVE_MKL
+    // When MKL is available, use MKL's CBLAS
+    #include <mkl_cblas.h>
+  #else
+    // Fall back to OpenBLAS CBLAS
+    #include <blas/cblas.h>
+  #endif
 #endif
 #include <helpers/logger.h>
 #include <types/float16.h>
@@ -242,6 +251,14 @@ class BlasHelper {
   bool _hasDgemm = false;
   bool _hasDgemmBatch = false;
 
+  // BFloat16 support (MKL only)
+  bool _hasBf16gemm = false;
+  bool _hasBf16gemmBatch = false;
+
+  // MKL-specific features
+  bool _hasMkl = false;
+  bool _hasMklBatchStrided = false;
+
   // Mutex for serializing BLAS calls to prevent OpenBLAS TLS corruption
   // and race conditions when called from multiple threads concurrently
   mutable std::mutex _blasMutex;
@@ -358,6 +375,53 @@ class BlasHelper {
    * Called automatically during getInstance() initialization.
    */
   void initializeBlasThreading();
+
+  // MKL-specific methods
+
+  /**
+   * Check if Intel MKL is available.
+   * MKL provides thread-safe BLAS, extended data types, and optimized operations.
+   */
+  bool hasMKL() const { return _hasMkl; }
+
+  /**
+   * Check if bfloat16 GEMM is available (MKL only).
+   * Returns true if cblas_gemm_bf16bf16f32 is available.
+   */
+  bool hasBf16GEMM() const { return _hasBf16gemm; }
+
+  /**
+   * Check if batched bfloat16 GEMM is available (MKL only).
+   */
+  bool hasBf16GEMMBatch() const { return _hasBf16gemmBatch; }
+
+  /**
+   * Check if strided batch GEMM is available (MKL only).
+   * Strided batch GEMM is more efficient than pointer-array batch GEMM
+   * when matrices are laid out contiguously in memory.
+   */
+  bool hasStridedBatchGEMM() const { return _hasMklBatchStrided; }
+
+  /**
+   * Set MKL availability flag.
+   * Called during initialization when MKL is detected.
+   */
+  void setHasMKL(bool has) { _hasMkl = has; }
+
+  /**
+   * Set bfloat16 GEMM availability.
+   */
+  void setHasBf16GEMM(bool has) { _hasBf16gemm = has; }
+
+  /**
+   * Set batched bfloat16 GEMM availability.
+   */
+  void setHasBf16GEMMBatch(bool has) { _hasBf16gemmBatch = has; }
+
+  /**
+   * Set strided batch GEMM availability.
+   */
+  void setHasStridedBatchGEMM(bool has) { _hasMklBatchStrided = has; }
 
   // destructor
   ~BlasHelper() noexcept;

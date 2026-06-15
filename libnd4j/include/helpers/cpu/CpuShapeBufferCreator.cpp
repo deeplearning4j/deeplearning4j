@@ -20,6 +20,7 @@
 
 #include <helpers/cpu/CpuShapeBufferCreator.h>
 #include <array/PrimaryPointerDeallocator.h>
+#include <mutex>
 
 #if defined(SD_GCC_FUNCTRACE)
 #include <array/ShapeCacheLifecycleTracker.h>
@@ -38,11 +39,17 @@ ConstantShapeBuffer* CpuShapeBufferCreator::create(const LongType* shapeInfo, in
     }
 
     const int shapeInfoLength = shape::shapeInfoLength(rank);
-    LongType* shapeCopy = new LongType[shapeInfoLength];
+    LongType* shapeCopy = new LongType[shapeInfoLength + SD_SHAPE_ALLOC_PADDING];
     if (shapeCopy == nullptr) {
         THROW_EXCEPTION("CpuShapeBufferCreator::create: failed to allocate memory for shapeCopy");
     }
     std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
+
+    // Write canary stamps in the padding area to detect buffer overruns
+    static constexpr LongType SHAPE_CANARY = static_cast<LongType>(0x5AFE5AFE5AFE5AFELL);
+    for (int i = 0; i < 8 && (shapeInfoLength + i) < (shapeInfoLength + SD_SHAPE_ALLOC_PADDING); i++) {
+        shapeCopy[shapeInfoLength + i] = SHAPE_CANARY;
+    }
 
     // Previously used PointerDeallocator (no-op) which leaked memory
     auto deallocator = std::shared_ptr<PrimaryPointerDeallocator>(
@@ -86,8 +93,12 @@ ConstantShapeBuffer* CpuShapeBufferCreator::create(const LongType* shapeInfo, in
 }
 
 CpuShapeBufferCreator& CpuShapeBufferCreator::getInstance() {
-    static CpuShapeBufferCreator instance;
-    return instance;
+    static CpuShapeBufferCreator* instance = nullptr;
+    static std::once_flag initFlag;
+    std::call_once(initFlag, []() {
+        instance = new CpuShapeBufferCreator();
+    });
+    return *instance;
 }
 
 } // namespace sd

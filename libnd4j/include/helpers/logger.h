@@ -24,7 +24,7 @@
 #define LIBND4J_LOGGER_H
 #include <stdio.h>
 #include <stdlib.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 #include <cstdarg>
@@ -42,15 +42,15 @@
 
 #ifndef __CUDA_ARCH__
 
-#define sd_debug(FORMAT, ...)                                                                 \
-  if (sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) \
+#define sd_debug(FORMAT, ...)                           \
+  if (sd::env_isDebug() && sd::env_isVerbose())         \
     sd::Logger::info(FORMAT, __VA_ARGS__);
-#define sd_logger(FORMAT, ...)                                                                \
-  if (sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) \
+#define sd_logger(FORMAT, ...)                           \
+  if (sd::env_isDebug() && sd::env_isVerbose())          \
     sd::Logger::info(FORMAT, __VA_ARGS__);
 #define sd_verbose(FORMAT, ...) \
-  if (sd::Environment::getInstance().isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
-#define sd_printf(FORMAT, ...) sd::Logger::info(FORMAT, __VA_ARGS__);
+  if (sd::env_isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
+#define sd_printf(FORMAT, ...) sd::Logger::info(FORMAT, ##__VA_ARGS__);
 #define sd_print(FORMAT) sd::Logger::infoEmpty(FORMAT);
 #define sd_printv(FORMAT, VECTOR) sd::Logger::printv(FORMAT, VECTOR);
 
@@ -59,7 +59,7 @@
 #define sd_debug(FORMAT, A, ...)
 #define sd_logger(FORMAT, A, ...)
 #define sd_verbose(FORMAT, ...)
-#define sd_printf(FORMAT, ...) sd::Logger::info(FORMAT, __VA_ARGS__);
+#define sd_printf(FORMAT, ...) sd::Logger::info(FORMAT, ##__VA_ARGS__);
 #define sd_print(FORMAT) sd::Logger::infoEmpty(FORMAT);
 #define sd_printv(FORMAT, VECTOR)
 
@@ -118,12 +118,19 @@ SD_INLINE void _printHostBuffer(void* bufferVoid, sd::DataType dataType, sd::Lon
  * @param dataType   The data type of the elements in the buffer.
  * @param length     The total number of elements in the buffer.
  * @param offset     The starting index from which to begin printing.
+ *
+ * NOTE: This function uses BUILD_SINGLE_SELECTOR with SD_COMMON_TYPES, so it cannot
+ * be compiled in files that use selective rendering with limited type sets.
+ * Files using selective rendering should not include logger.h or should provide their
+ * own printBuffer implementation.
  */
+#ifndef SD_SELECTIVE_RENDERING_H
 SD_INLINE void printBuffer(void* buffer, sd::DataType dataType, sd::LongType length, sd::LongType offset) {
   // Invoke the BUILD_SINGLE_SELECTOR macro to instantiate and call _printHostBuffer with the appropriate type
   //T* buffer, sd::DataType dataType, sd::LongType length, sd::LongType offset
-  BUILD_SINGLE_SELECTOR(dataType, _printHostBuffer,(buffer,dataType,length,offset),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(dataType, _printHostBuffer,(buffer,dataType,length,offset),SD_COMMON_TYPES);
 }
+#endif
 
 namespace sd {
 class SD_LIB_EXPORT Logger {

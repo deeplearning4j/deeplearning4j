@@ -33,14 +33,14 @@ TadCalculator::TadCalculator(LongType* originalShape)
     : _originalShape(originalShape), _numTads(0) {}
 
 TadCalculator::~TadCalculator() {
+  // Only delete _tadOffsets if we still own it (hasn't been released via releaseOffsets())
   if (_tadOffsets) {
     delete _tadOffsets;
     _tadOffsets = nullptr;
   }
-  if (_tadShape) {
-    delete _tadShape;
-    _tadShape = nullptr;
-  }
+  // DON'T delete _tadShape - ownership is transferred to TadPack when tadShape() is called.
+  // TadPack holds the reference and will manage its lifecycle.
+  // Deleting it here causes use-after-free when softmax (or other ops) access the TAD shape info.
 }
 
 
@@ -57,35 +57,48 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     THROW_EXCEPTION("Failed to evaluate dimensions to exclude");
   }
 
-  bool hasSize1Dimension = false;
-  for (auto dim : dimensions) {
-    if (shape::shapeOf(shapeInfo)[dim] == 1) {
-      hasSize1Dimension = true;
-      break;
-    }
+  if (dimsToExclude->size() == 0) {
+    // All input dimensions are kept in each TAD — there is exactly 1 TAD = the full array.
+    // Example: rank-1 array with dims={0} → evalDimsToExclude returns {} → 1 TAD covering all elements.
+    ConstantShapeBuffer* fullShapeBuffer = CudaShapeBufferCreator::getInstance().create(const_cast<LongType*>(shapeInfo), rank);
+
+    LongType* baseOffset = new LongType[1 + SD_SHAPE_ALLOC_PADDING]();
+    baseOffset[0] = 0;
+    auto oPtr = std::make_shared<PointerWrapper>(baseOffset);
+    auto offDPtr = std::make_shared<PointerWrapper>(
+        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), (1 + SD_SHAPE_ALLOC_PADDING) * sizeof(LongType)),
+        std::make_shared<CudaPointerDeallocator>());
+
+    _tadShape = fullShapeBuffer;
+    _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);
+    _numTads = 1;
+
+    delete dimsToExclude;
+    return;
   }
 
-  if (dimsToExclude->size() == 0 || dimsToExclude->size() == rank || hasSize1Dimension) {
+  if (dimsToExclude->size() == static_cast<size_t>(rank)) {
+    // No dimensions kept in each TAD — every element is its own scalar TAD.
     const LongType totalElements = shape::length(shapeInfo);
-    
+
     auto scalarShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(shapeInfo));
     auto scalarShapeBuffer = CudaShapeBufferCreator::getInstance().create(scalarShapeInfo, 0);
-    
-    LongType* offsetsBuf = new LongType[totalElements];
-    
+
+    LongType* offsetsBuf = new LongType[totalElements + SD_SHAPE_ALLOC_PADDING]();
+
     for (LongType i = 0; i < totalElements; ++i) {
       offsetsBuf[i] = i;
     }
-    
+
     auto oPtr = std::make_shared<PointerWrapper>(offsetsBuf);
     auto offDPtr = std::make_shared<PointerWrapper>(
-        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), totalElements * sizeof(LongType)),
+        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), (totalElements + SD_SHAPE_ALLOC_PADDING) * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
-    
+
     _tadShape = scalarShapeBuffer;
     _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);
     _numTads = totalElements;
-    
+
     delete dimsToExclude;
     return;
   }
@@ -95,8 +108,8 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
   if (numOfSubArrs > 0) {
     const LongType subArrRank = (static_cast<size_t>(rank) == dimsToExclude->size() || false) ? rank : rank - dimsToExclude->size();
 
-    LongType* shapeInfoBuf = new LongType[shape::shapeInfoLength(subArrRank)];
-    LongType* offsetsBuf = new LongType[numOfSubArrs];
+    LongType* shapeInfoBuf = new LongType[shape::shapeInfoLength(subArrRank) + SD_SHAPE_ALLOC_PADDING];
+    LongType* offsetsBuf = new LongType[numOfSubArrs + SD_SHAPE_ALLOC_PADDING]();
 
     shape::calcSubArrsShapeInfoAndOffsets(
         shapeInfo,
@@ -111,7 +124,7 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
 
     auto oPtr = std::make_shared<PointerWrapper>(offsetsBuf);
     auto offDPtr = std::make_shared<PointerWrapper>(
-        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), numOfSubArrs * sizeof(LongType)),
+        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), (numOfSubArrs + SD_SHAPE_ALLOC_PADDING) * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
     
     _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);
@@ -122,18 +135,18 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
   } else {
     const LongType subArrRank = rank;
 
-    LongType* shapeInfoBuf = new LongType[shape::shapeInfoLength(subArrRank)];
+    LongType* shapeInfoBuf = new LongType[shape::shapeInfoLength(subArrRank) + SD_SHAPE_ALLOC_PADDING];
 
     auto nonConstant = const_cast<LongType*>(shapeInfo);
     shape::copyTo<LongType>(shape::shapeInfoLength(subArrRank), nonConstant, shapeInfoBuf);
 
     ConstantShapeBuffer* shapesBuffer = CudaShapeBufferCreator::getInstance().create(shapeInfoBuf, subArrRank);
 
-    LongType* baseOffset = new LongType[1];
+    LongType* baseOffset = new LongType[1 + SD_SHAPE_ALLOC_PADDING]();
     baseOffset[0] = 0;
     auto oPtr = std::make_shared<PointerWrapper>(baseOffset);
     auto offDPtr = std::make_shared<PointerWrapper>(
-        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), 1 * sizeof(LongType)),
+        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), (1 + SD_SHAPE_ALLOC_PADDING) * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
     
     _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);
