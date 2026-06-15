@@ -230,14 +230,14 @@ SD_LIB_EXPORT void sd::IndexReductionLoops<X, Z>::loopIndexReduce( X* x, const L
   }
 }
 
-template <typename X, typename Y>
-SD_LIB_HIDDEN void sd::IndexReductionLoops<X, Y>::wrapIndexReduce(const int opNum, const void* vx,
+template <typename X, typename Z>
+SD_LIB_HIDDEN void sd::IndexReductionLoops<X, Z>::wrapIndexReduce(const int opNum, const void* vx,
                                                                   const sd::LongType* xShapeInfo, void* vz,
                                                                   const sd::LongType* zShapeInfo,
                                                                   const sd::LongType* tadShapeInfo,
                                                                   const sd::LongType* tadOffsets, void* vextraParams) {
   auto x = reinterpret_cast<X*>(const_cast<void *>(vx));
-  auto z = reinterpret_cast<Y*>(vz);
+  auto z = reinterpret_cast<Z*>(vz);
 
   DISPATCH_BY_OPNUM_TT(loopIndexReduce, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, vextraParams),
                        INDEX_REDUCE_OPS);

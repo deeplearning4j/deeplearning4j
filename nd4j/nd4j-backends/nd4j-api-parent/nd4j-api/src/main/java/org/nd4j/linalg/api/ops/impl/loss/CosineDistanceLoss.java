@@ -21,7 +21,6 @@
 package org.nd4j.linalg.api.ops.impl.loss;
 
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
