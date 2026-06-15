@@ -1,10 +1,17 @@
 .DS_Store
 .claude/
+.codex
 .kompile/
+.cursorrules
 .mcp.json
+.windsurfrules
 AGENTS.md
+AGENTS.md.kompile-backup
+AGENTS.md.kompile-skills-backup
 CLAUDE.md
+opencode.json
 pr-plans/
+PR_SPLIT_PLAN.md
 pom.xml.releaseBackup
 target/
 dependency-reduced-pom.xml
