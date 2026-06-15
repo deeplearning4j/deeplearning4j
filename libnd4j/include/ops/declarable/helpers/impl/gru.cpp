@@ -562,7 +562,7 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   auto* oneMinusR = 1 - (*r);
   auto* rTimesOneMinusR = (*r) * (*oneMinusR);
   delete oneMinusR;
-  NDArray hIWhc(dLdzr->shapeInfo(), dLdzr->dataType(), context);
+  NDArray hIWhc(dLdzr->shapeInfo(), dLdzr->dataType(), false, context);
   MmulHelper::mmul(hI, WhView, &hIWhc);  // [bS, nOut] x [nOut, nOut] = [bS, nOut]
   auto* temp3 = (*dLdzc) * hIWhc;
   auto* temp4 = (*temp3) * (*rTimesOneMinusR);

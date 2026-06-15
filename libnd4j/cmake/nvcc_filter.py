@@ -8,13 +8,15 @@ as an input file, triggering: "A single input file is required".
 This wrapper:
 1. Intercepts --options-file arguments
 2. Reads and filters the response file content
-3. When ccache is enabled, expands response files into direct args (ccache can't parse --options-file)
-4. When ccache is disabled, writes a cleaned response file
+3. When ccache/sccache is enabled, expands response files into direct args
+   (ccache can't parse --options-file; sccache's nvcc handler breaks tmpxft_* temp
+   file handling on Windows when wrapping nvcc directly)
+4. When no cache tool is used, writes a cleaned response file
 5. Passes all other args through, filtering direct -Fd/-FS flags
-6. Invokes the real nvcc (optionally via ccache) with cleaned arguments
+6. Invokes the real nvcc (optionally via ccache/sccache) with cleaned arguments
 
 Usage (via CMAKE_CUDA_COMPILER_LAUNCHER):
-    python nvcc_filter.py [--ccache=<path>] nvcc.exe [args...]
+    python nvcc_filter.py [--ccache=<path>] [--sccache=<path>] nvcc.exe [args...]
 """
 
 import sys
@@ -181,18 +183,29 @@ def main():
         print("Usage: nvcc_filter.py [--ccache=<path>] <nvcc_path> [args...]", file=sys.stderr)
         sys.exit(1)
 
-    # Parse optional --ccache=<path> to chain ccache with nvcc.
-    ccache_path = None
+    # Parse optional --ccache=<path> or --sccache=<path> to chain a cache tool with nvcc.
+    cache_path = None
+    cache_tool = None  # "ccache" or "sccache"
     arg_start = 1
-    if sys.argv[1].startswith('--ccache='):
-        ccache_path = sys.argv[1][len('--ccache='):]
-        if not os.path.isfile(ccache_path):
-            print(f"[nvcc_filter] WARNING: ccache not found at {ccache_path}, proceeding without caching", file=sys.stderr)
-            ccache_path = None
-        arg_start = 2
+    while arg_start < len(sys.argv):
+        if sys.argv[arg_start].startswith('--ccache='):
+            cache_path = sys.argv[arg_start][len('--ccache='):]
+            cache_tool = "ccache"
+            arg_start += 1
+        elif sys.argv[arg_start].startswith('--sccache='):
+            cache_path = sys.argv[arg_start][len('--sccache='):]
+            cache_tool = "sccache"
+            arg_start += 1
+        else:
+            break
+
+    if cache_path and not os.path.isfile(cache_path):
+        print(f"[nvcc_filter] WARNING: {cache_tool} not found at {cache_path}, proceeding without caching", file=sys.stderr)
+        cache_path = None
+        cache_tool = None
 
     if arg_start >= len(sys.argv):
-        print("Usage: nvcc_filter.py [--ccache=<path>] <nvcc_path> [args...]", file=sys.stderr)
+        print("Usage: nvcc_filter.py [--ccache=<path>] [--sccache=<path>] <nvcc_path> [args...]", file=sys.stderr)
         sys.exit(1)
 
     nvcc = sys.argv[arg_start]
@@ -201,18 +214,19 @@ def main():
     global _log_count
     if _log_count == 0:
         print(f"[nvcc_filter] nvcc: {nvcc}", file=sys.stderr)
-        if ccache_path:
-            print(f"[nvcc_filter] ccache: {ccache_path}", file=sys.stderr)
+        if cache_path:
+            print(f"[nvcc_filter] {cache_tool}: {cache_path}", file=sys.stderr)
         print(f"[nvcc_filter] args ({len(args)}): {args[:20]}", file=sys.stderr)
 
     filtered_args = []
     temp_files = []
     direct_filtered = []
 
-    # When ccache is enabled, we EXPAND response files into direct args.
-    # ccache can't parse nvcc's --options-file format, so it fails to find
-    # the source file and flags. Expanding gives ccache direct visibility.
-    use_expanded = ccache_path is not None
+    # When a cache tool is enabled, we EXPAND response files into direct args.
+    # ccache can't parse nvcc's --options-file format; sccache's direct nvcc
+    # wrapping breaks tmpxft_* temp files on Windows. Expanding gives the cache
+    # tool direct visibility into args and avoids the temp file issue.
+    use_expanded = cache_path is not None
 
     i = 0
     while i < len(args):
@@ -274,20 +288,20 @@ def main():
         print(f"[nvcc_filter] Direct args filtered: {direct_filtered}", file=sys.stderr)
 
     if use_expanded and _log_count <= _MAX_VERBOSE_LOGS:
-        print(f"[nvcc_filter] Expanded response files for ccache ({len(filtered_args)} args)", file=sys.stderr)
+        print(f"[nvcc_filter] Expanded response files for {cache_tool} ({len(filtered_args)} args)", file=sys.stderr)
 
     try:
         cmd = [nvcc] + filtered_args
-        if ccache_path:
-            cmd = [ccache_path] + cmd
+        if cache_path:
+            cmd = [cache_path] + cmd
         result = subprocess.run(cmd)
         if result.returncode != 0:
             print(f"\n[nvcc_filter] === NVCC FAILED (exit {result.returncode}) ===", file=sys.stderr)
             print(f"[nvcc_filter] Full command ({len(cmd)} args):", file=sys.stderr)
             for ci, ca in enumerate(cmd):
                 print(f"[nvcc_filter]   [{ci}] {ca}", file=sys.stderr)
-            if ccache_path:
-                print(f"[nvcc_filter] ccache was: {ccache_path}", file=sys.stderr)
+            if cache_path:
+                print(f"[nvcc_filter] {cache_tool} was: {cache_path}", file=sys.stderr)
             for tf in temp_files:
                 if os.path.isfile(tf):
                     with open(tf, 'r', encoding='utf-8', errors='replace') as f:

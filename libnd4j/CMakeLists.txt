@@ -258,18 +258,40 @@ endif()
 # ccache needs nvcc_filter.py on Windows to expand response files.
 if(SCCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT WIN32)
     # sccache handles nvcc natively on Linux/macOS, including response files.
-    # On Windows, sccache wrapping nvcc breaks nvcc's tmpxft_* stderr redirect:
-    # sccache changes the working directory, so nvcc's relative temp file paths
-    # (compiler_tmp/tmpxft_*_stderr) resolve to the wrong location, causing
-    # "fatal: Could not open input file" on every .cu compilation.
-    # sccache still caches C/C++ compilation on Windows via CMAKE_C/CXX_COMPILER_LAUNCHER.
     set(CMAKE_CUDA_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher (sccache)" FORCE)
     message(STATUS "sccache enabled for CUDA compilation (no nvcc_filter.py needed)")
 
 elseif(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER AND SCCACHE_PROGRAM)
-    # sccache found on Windows but NOT used for CUDA (see comment above).
-    # C/C++ compilation still uses sccache via CMAKE_C/CXX_COMPILER_LAUNCHER.
-    message(STATUS "sccache SKIPPED for CUDA on Windows (tmpxft_* stderr redirect incompatibility)")
+    # On Windows, sccache wrapping nvcc directly breaks tmpxft_* stderr redirect.
+    # Route through nvcc_filter.py (same approach as ccache on Windows) which expands
+    # response files into direct args, preventing the temp file path issue.
+    find_package(Python3 QUIET COMPONENTS Interpreter)
+    if(NOT Python3_FOUND)
+        find_program(_PYTHON3_FALLBACK NAMES python3 python
+            HINTS
+                "C:/hostedtoolcache/windows/Python"
+                "$ENV{USERPROFILE}/AppData/Local/Programs/Python"
+            PATH_SUFFIXES "3.12.10/x64" "3.11/x64" "3.10/x64" ""
+        )
+        if(_PYTHON3_FALLBACK)
+            set(Python3_EXECUTABLE "${_PYTHON3_FALLBACK}")
+            set(Python3_FOUND TRUE)
+            message(STATUS "Python3 found via fallback: ${Python3_EXECUTABLE}")
+        endif()
+    endif()
+
+    set(_NVCC_FILTER "${CMAKE_CURRENT_SOURCE_DIR}/cmake/nvcc_filter.py")
+    if(Python3_FOUND AND EXISTS "${_NVCC_FILTER}")
+        set(CMAKE_CUDA_COMPILER_LAUNCHER "${Python3_EXECUTABLE}" "${_NVCC_FILTER}" "--sccache=${SCCACHE_PROGRAM}"
+            CACHE STRING "CUDA compiler launcher (nvcc filter + sccache)" FORCE)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES 0)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS 0)
+        message(STATUS "Windows CUDA: nvcc_filter.py + sccache enabled (${SCCACHE_PROGRAM})")
+    else()
+        # Fallback: use sccache directly (may have tmpxft issues but still better than no caching)
+        set(CMAKE_CUDA_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher (sccache)" FORCE)
+        message(STATUS "Windows CUDA: sccache direct (nvcc_filter.py not available)")
+    endif()
 
 elseif(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT SCCACHE_PROGRAM)
     # On Windows CUDA: use nvcc_filter.py wrapper to strip MSVC -Fd/-FS flags from
