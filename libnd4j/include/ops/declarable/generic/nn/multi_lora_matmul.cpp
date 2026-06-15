@@ -78,10 +78,10 @@ CUSTOM_OP_IMPL(multi_lora_matmul, 5, 1, false, 0, 0) {
         auto loraB = loraBSub->reshape('c', loraBShape);
 
         // LoRA: X @ A @ B * alpha
-        auto intermediate = NDArrayFactory::create(input->dataType(), 'c', {1, rank}, input->getContext());
+        auto intermediate = NDArrayFactory::create('c', std::vector<sd::LongType>{1, rank}, input->dataType(), input->getContext());
         MmulHelper::mmul(inputRow, loraA, intermediate, 1.0f, 0.0f);
 
-        auto loraOutput = NDArrayFactory::create(input->dataType(), 'c', {1, outFeatures}, input->getContext());
+        auto loraOutput = NDArrayFactory::create('c', std::vector<sd::LongType>{1, outFeatures}, input->dataType(), input->getContext());
         MmulHelper::mmul(intermediate, loraB, loraOutput, alpha, 0.0f);
 
         // Add to base output
