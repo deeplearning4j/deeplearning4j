@@ -79,6 +79,7 @@ its rationale, and its current implementation status.
 | [0022](0022%20-%20Dynamic%20Indexing.md) | Dynamic Indexing | Discussion | Runtime-resolved negative indices in SameDiff (NumPy-style dynamic indexing). |
 | [0023](0023%20-%20UDFs.md) | User-Defined Functions | Implemented | First-class UDF mechanism with base class, FlatBuffers serialization, and `sd.udf()` registration for custom ops with custom gradients. |
 | [0048](0048%20-%20Improved%20SameDiff%20Execution%20Framework.md) | Improved SameDiff Execution Framework | Accepted | DAG-based cached execution engine replacing the broken `initSubgraph` interpreter, with variable evolution tracking and frame-aware ordering for control flow. |
+| [0100](0100%20-%20SameDiff%20Graph%20Optimizer.md) | SameDiff Graph Optimizer | Implemented | Multi-pass fixed-point graph optimizer with 25+ passes (fusion, strength reduction, dead code elimination, constant folding). |
 
 ### DynamicShapePlan (DSP) Execution Engine
 
@@ -90,6 +91,7 @@ its rationale, and its current implementation status.
 | [0078](0078%20-%20DSP%20Diagnostic%20Framework%20Extensions.md) | DSP Diagnostic Framework Extensions | Accepted | Three new diagnostic categories (STREAM_SYNC, MULTI_DEVICE, GRAPH_REPLAY) with programmatic replay readiness and phase-transition tracking via DspDebugger Java API. |
 | [0079](0079%20-%20NativeDynamicShapePlan%20Structural%20Refactoring.md) | NativeDynamicShapePlan Structural Refactoring | Accepted | Decomposed 18K-line implementation into separate structs for immutable definition vs. mutable state, removing macro indirection and aliased members that caused silent bugs. |
 | [0084](0084%20-%20DSP%20Execution%20State%20Simplification.md) | DSP Execution State Simplification | Accepted | Removed redundant ExecutionPhase enum (collapsed into SegmentLifecycleState) and pruned dead SlotState values to eliminate parallel state machines that diverged silently. |
+| [0093](0093%20-%20DSP%20Plan%20Disk%20Persistence.md) | DSP Plan Disk Persistence | Implemented | FNV-1a shape-keyed disk cache for compiled DSP plans, avoiding recompilation across JVM restarts. |
 | [0094](0094%20-%20DSP%20Buffer%20Coloring%20Pooling%20and%20Passivation.md) | DSP Buffer Coloring, Pooling, and Passivation | Implemented | Three-tier GPU memory reduction: compile-time buffer coloring (non-overlapping slots share physical buffers), per-device buffer pool (cross-plan reuse), and LRU passivation (inactive plans release GPU memory). |
 
 ### DSP Correctness Fixes (Bug-Fix ADRs)
@@ -113,7 +115,7 @@ its rationale, and its current implementation status.
 
 | # | Title | Status | Description |
 |---|---|---|---|
-| [0073](0073%20-%20DSP%20Self-Contained%20Runtime%20SDK%20and%20SDZ%20Deployment.md) | DSP Self-Contained Runtime SDK (SDX) | Partially Implemented | Stable native ABI for shipping per-platform DSP runtime binaries that load .sdz/.sdnb models directly without Java graph construction. Multi-language SDK bindings (C#, Java, Kotlin, Python, Rust, Swift). |
+| [0073](0073%20-%20DSP%20Self-Contained%20Runtime%20SDK%20and%20SDZ%20Deployment.md) | DSP Self-Contained Runtime SDK (SDX) | Accepted | Stable native ABI for shipping per-platform DSP runtime binaries that load .sdz/.sdnb models directly without Java graph construction. Multi-language SDK bindings (C#, Java, Kotlin, Python, Rust, Swift). |
 | [0074](0074%20-%20SDX%20Runtime%20Serving%20Protocol%20(REST%20%2B%20gRPC).md) | SDX Runtime Serving Protocol | Accepted | gRPC as primary binary protocol, REST as secondary for serving SDX runtime models, with caller-provided output buffers matching the C ABI. |
 
 ### Memory Management
@@ -137,6 +139,8 @@ its rationale, and its current implementation status.
 | [0067](0067%20-%20Scaled%20Dot-Product%20Attention%20Optimization.md) | Scaled Dot-Product Attention Optimization | Implemented | Fused Q@K^T, softmax, attn@V into a single kernel via oneDNN/cuDNN backends with compiled partition caching, eliminating intermediate materialization. |
 | [0069](0069%20-%20OCR%20Operations.md) | OCR Operations | Implemented | Native OCR engine using SameDiff-executed ONNX model, integrated with VLM image preprocessing pipeline for GPU-accelerated document understanding. |
 | [0092](0092%20-%20Op%20Execution%20Timing%20Tracker.md) | Op Execution Timing Tracker | Accepted | Lock-free ring-buffer op timing with phase-level granularity (validation, shape calc, memory alloc, helper exec, native exec), Welford variance, logarithmic histograms, Chrome Trace/CSV export. |
+| [0096](0096%20-%20LLM%20Generation%20Pipeline.md) | LLM Generation Pipeline | Implemented | Chunked prefill, speculative decoding, and KV cache management for autoregressive LLM generation via `GenerationPipeline`. |
+| [0097](0097%20-%20Decode%20Path%20Performance%20Optimizations.md) | Decode Path Performance Optimizations | Implemented | Fused ops, batched GEMM, composite CUDA graph replay, and stream sync elimination for decode-phase throughput. |
 
 ### Training & PEFT
 
@@ -159,10 +163,12 @@ its rationale, and its current implementation status.
 
 | # | Title | Status | Description |
 |---|---|---|---|
-| [0072](0072%20-%20TPU%20Backend.md) | TPU Backend (PJRT) | In Progress | TPU backend via Google's PJRT API, mapping SameDiff graphs to XLA HLO IR with PJRT compilation caching and graph replay. |
+| [0072](0072%20-%20TPU%20Backend.md) | TPU Backend (PJRT) | Accepted | TPU backend via Google's PJRT API, mapping SameDiff graphs to XLA HLO IR with PJRT compilation caching and graph replay. |
 | [0085](0085%20-%20MLIR%20JIT%20Compilation%20Backend.md) | MLIR JIT Compilation Backend | Accepted | Optional MLIR JIT backend for libnd4j enabling graph-level op fusion, runtime shape specialization, and cross-platform code generation. |
 | [0087](0087%20-%20ZLUDA%20Transpiler%20Support.md) | ZLUDA Transpiler Support | Accepted | ZLUDA runtime transpiler to run existing CUDA codebase on AMD (ROCm) and Intel (oneAPI) GPUs without maintaining separate HIP/SYCL codebases. |
-| [0088](0088%20-%20Hexagon%20MLIR%20Backend.md) | Hexagon MLIR NPU Backend | In Progress | Qualcomm Hexagon NPU backend using hexagon-mlir following the DSP graph backend pattern, targeting INT8/INT16 inference on mobile HVX/HTP hardware. |
+| [0088](0088%20-%20Hexagon%20MLIR%20Backend.md) | Hexagon MLIR NPU Backend | Accepted | Qualcomm Hexagon NPU backend using hexagon-mlir following the DSP graph backend pattern, targeting INT8/INT16 inference on mobile HVX/HTP hardware. |
+| [0098](0098%20-%20OpenVINO%20CPU%20Graph%20Backend.md) | OpenVINO CPU Graph Backend | Accepted | Intel OpenVINO 200-op CPU fusion backend as an alternative to native op-by-op execution. |
+| [0099](0099%20-%20GraalVM%20Native%20Image%20Support.md) | GraalVM Native Image Support | Accepted | Reflection and JNI configuration for building SameDiff into GraalVM native images. |
 
 ### Test Architecture
 
@@ -186,6 +192,7 @@ its rationale, and its current implementation status.
 | [0045](0045%20-%20Android%20Cross-Compilation%20Modernization.md) | Android Cross-Compilation Modernization | Proposed | Modernized CMake toolchain files with flexible NDK path detection and explicit LLVM tool specification. |
 | [0046](0046%20-%20CUDA%20Macro%20Standardization.md) | CUDA Macro Standardization | Proposed | Replace mixed `__CUDABLAS__`/`__CUDACC__` with consistent `SD_`-prefixed hierarchy (`SD_CUDA`, `SD_HOST`, `SD_DEVICE`, etc.). |
 | [0047](0047%20-%20Comprehensive%20Template%20Instantiation%20Migration.md) | Template Instantiation Migration | Implemented | Platform-aware type equivalence classes (e.g., `long`/`int64_t`/`LongType`) ensuring all alias variants are instantiated to eliminate cross-platform linker errors. |
+| [0095](0095%20-%20sccache%20CI%20Build%20Caching.md) | sccache CI Build Caching | Implemented | Replaced ccache with sccache in CI workflows for distributed build caching with GHA backend. |
 
 ### Namespace Migration
 
@@ -282,8 +289,8 @@ its rationale, and its current implementation status.
 | 0069 | OCR Operations | Implemented |
 | 0070 | GC Pressure Optimization | Implemented |
 | 0071 | Triton Graph Backend | Implemented |
-| 0072 | TPU Backend (PJRT) | In Progress |
-| 0073 | DSP Self-Contained Runtime SDK (SDX) | Partially Implemented |
+| 0072 | TPU Backend (PJRT) | Accepted |
+| 0073 | DSP Self-Contained Runtime SDK (SDX) | Accepted |
 | 0074 | SDX Runtime Serving Protocol | Accepted |
 | 0076 | OmniHub Model Repository Abstraction | Accepted |
 | 0077 | PEFT & Knowledge Distillation | Accepted |
@@ -297,9 +304,16 @@ its rationale, and its current implementation status.
 | 0085 | MLIR JIT Compilation Backend | Accepted |
 | 0086 | Multi-Backend Workspace System | Implemented |
 | 0087 | ZLUDA Transpiler Support | Accepted |
-| 0088 | Hexagon MLIR NPU Backend | In Progress |
+| 0088 | Hexagon MLIR NPU Backend | Accepted |
 | 0089 | CUDA Graph Capture and Replay Orchestration | Accepted |
 | 0090 | Device Transfer Management Framework | Proposed |
 | 0091 | LlamaCpp/OneDNN/cuDNN Backend Classifiers | Accepted |
 | 0092 | Op Execution Timing Tracker | Accepted |
+| 0093 | DSP Plan Disk Persistence | Implemented |
 | 0094 | DSP Buffer Coloring, Pooling, and Passivation | Implemented |
+| 0095 | sccache CI Build Caching | Implemented |
+| 0096 | LLM Generation Pipeline | Implemented |
+| 0097 | Decode Path Performance Optimizations | Implemented |
+| 0098 | OpenVINO CPU Graph Backend | Accepted |
+| 0099 | GraalVM Native Image Support | Accepted |
+| 0100 | SameDiff Graph Optimizer | Implemented |

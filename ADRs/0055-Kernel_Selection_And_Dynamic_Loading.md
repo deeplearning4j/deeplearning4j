@@ -1,7 +1,7 @@
 # ADR 0055: Kernel Selection and Dynamic Plugin Loading System
 
 ## Status
-ACCEPTED
+Accepted
 
 ## Context
 
