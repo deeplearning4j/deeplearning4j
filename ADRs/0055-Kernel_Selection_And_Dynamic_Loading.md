@@ -3,6 +3,10 @@
 ## Status
 Accepted
 
+## Related ADRs
+- [ADR 0058](0058%20-%20Multi-Backend%20Kernel%20Selection%20and%20Management.md) — extends this ADR with KernelManager and Java fluent API
+- [ADR 0059](0059%20-%20Multi-Backend%20Op%20Execution%20System.md) — orthogonal: routes between JVM backends (CPU vs CUDA), while this ADR selects kernels within a backend
+
 ## Context
 
 Deep learning frameworks increasingly support multiple compute backends (cuDNN, oneDNN, Metal Performance Shaders, ARM Compute Library, etc.) that can execute the same operations with varying performance characteristics. The optimal backend often depends on:

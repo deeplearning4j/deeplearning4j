@@ -20,7 +20,7 @@ its rationale, and its current implementation status.
 ## Numbering Notes
 
 - Numbers 0017, 0029, 0040, 0043, 0044 were never assigned
-- Pre-existing duplicate numbers (0003, 0024) are kept as-is for history
+- Pre-existing duplicate numbers (0003, 0024) resolved with `b` suffix: 0003b (ARM Compute), 0024b (Workspaces)
 - Former duplicates (0057×4, 0073×2) have been renumbered to 0085-0088
 - Former duplicate 0075 (same as 0056) has been removed
 - Root-level stray ADRs have been moved in and numbered 0089-0092
@@ -43,7 +43,7 @@ its rationale, and its current implementation status.
 |---|---|---|---|
 | [0002](0002-ONNX_Runtime.md) | ONNX Runtime Module | Implemented | JavaCPP-based ONNX Runtime bindings for interop with ONNX models, exposing a GraphRunner API with INDArrays as interchange format. |
 | [0003](0003-Import_IR.md) | Import IR | Implemented | Intermediate representation bridging attribute-based framework formats (TF, ONNX, Keras) to nd4j's list-based op execution format. |
-| [0003](0003-NdArray_Strides_ArmCompute.md) | NDArray Padded Strides for ARM Compute | Implemented | Helper functions for non-standard padded strides in NDArray to enable ARM Compute Library integration. |
+| [0003b](0003b-NdArray_Strides_ArmCompute.md) | NDArray Padded Strides for ARM Compute | Implemented | Helper functions for non-standard padded strides in NDArray to enable ARM Compute Library integration. |
 | [0004](0004-Mapping_IR.md) | Mapping IR | Implemented | MappingRules file format describing op-level transformations between framework protobuf formats and nd4j's OpDescriptor format. |
 | [0005](0005-Interpreter.md) | Interpreter | Rejected | Proposed interpreter using Import IR — rejected in favor of direct conversion. |
 | [0009](0009%20-%20Import%20node%20pre%20processing.md) | Import Node Pre-Processing | Discussion | Annotation-driven node pre-processor hooks for version-migration rules during graph import. |
@@ -60,8 +60,8 @@ its rationale, and its current implementation status.
 
 | # | Title | Status | Description |
 |---|---|---|---|
-| [0011](0011%20-%20OmniHub-Zoo%20Download.md) | OmniHub Zoo Download | Discussion | Python-backed tooling for downloading models from HuggingFace, ONNX Hub, TF Hub, PyTorch Hub. |
-| [0012](0012%20-%20OmniHub-Zoo%20Download%20Implementations.md) | OmniHub Download Implementations | Discussion | Per-ecosystem download implementations for five model sources. |
+| [0011](0011%20-%20OmniHub-Zoo%20Download.md) | OmniHub Zoo Download | Superseded | Python-backed tooling for downloading models from HuggingFace, ONNX Hub, TF Hub, PyTorch Hub. |
+| [0012](0012%20-%20OmniHub-Zoo%20Download%20Implementations.md) | OmniHub Download Implementations | Superseded | Per-ecosystem download implementations for five model sources. |
 | [0013](0013%20-%20OmniHub-Zoo%20Consumption.md) | OmniHub Consumption API | Accepted | `Pretrained` namespace API (e.g. `Pretrained.samediff().resnet18().create()`) for instantiating pretrained models. |
 | [0014](0014%20-%20OmniHub-%20Replace%20old%20model%20zoo.md) | Replace Old Model Zoo | Accepted | Migration from legacy `deeplearning4j-zoo` to OmniHub with GitHub-hosted model registry. |
 | [0015](0015%20-%20Unified%20Resource%20Manager.md) | Unified Resource Manager | Discussion | Consolidation of all download/resource management (Strumpf, legacy zoo, OmniHub, datasets) into a single manager. |
@@ -122,7 +122,7 @@ its rationale, and its current implementation status.
 
 | # | Title | Status | Description |
 |---|---|---|---|
-| [0024](0024%20-%20Workspaces.md) | Workspaces | Implemented | Ring-buffer-backed workspace regions (scoped via try-with-resources) to avoid redundant allocation across cyclic neural network inference patterns. |
+| [0024b](0024b%20-%20Workspaces.md) | Workspaces | Implemented | Ring-buffer-backed workspace regions (scoped via try-with-resources) to avoid redundant allocation across cyclic neural network inference patterns. |
 | [0028](0028%20-%20Offset%20centralization.md) | Offset Centralization | Proposed | Centralize offset storage into NDArray objects and introduce `OpaqueNDArray` to simplify Java-C++ interop. |
 | [0033](0033-shape-buffer-trie.md) | Shape Buffer Trie | Implemented | `DirectShapeTrie` with striped mutex locking replacing `ShapeDescriptor`-based unordered-map cache for shape-buffer allocation. |
 | [0060](0060%20-%20CUDA%20Async%20Memory%20Pool.md) | CUDA Async Memory Pool | Implemented | `cudaMallocAsync`-based pooling replacing `cudaMalloc`/`cudaFree` to eliminate per-allocation driver latency, with multi-GPU OOM failover. |
@@ -184,8 +184,8 @@ its rationale, and its current implementation status.
 |---|---|---|---|
 | [0007](0007%20-%20Nd4j%20classifiers.md) | Nd4j Classifiers | Accepted | JavaCPP platform classifier extensions (e.g. `avx256-dnnl-2.2`) to expose different native build configurations. |
 | [0016](0016%20-%20Java%209%2B%20Support.md) | Java 9+ Module Support | Discussion | `module-info.java` metadata via moditect plugin for Java 9+ module system compatibility. |
-| [0030](0030%20-%20Type%20Promotion.md) | Smaller Type-Limited Artifact | Proposed | Publish a second Maven artifact with limited data type support (float-only) to reduce binary size. |
-| [0031](0031%20-%20New%20generate%20combinations%20macros.md) | Type Combination Macros | Proposed | Preprocessor macros for automating exhaustive template instantiation for all type combinations. |
+| [0030](0030%20-%20Type%20Promotion.md) | Smaller Type-Limited Artifact | Superseded | Publish a second Maven artifact with limited data type support (float-only) to reduce binary size. |
+| [0031](0031%20-%20New%20generate%20combinations%20macros.md) | Type Combination Macros | Superseded | Preprocessor macros for automating exhaustive template instantiation for all type combinations. |
 | [0039](0039%20-%20Selective%20rendering%20type%20system.md) | Selective Rendering Type System | Implemented | CMake-level semantic filtering engine that automatically determines valid type combinations and generates compile-time macros, avoiding template combinatorial explosion. |
 | [0041](0041%20-%20CUDA%20Architecture%20Reduction.md) | CUDA Architecture Target Reduction | Proposed | Drop pre-Ampere compute capabilities (target 8.6+ only) to cut build time ~75% and binary size from ~800MB to ~200MB. |
 | [0042](0042%20-%20Android%20NDK%20Migration.md) | Android NDK Migration | Proposed | Upgrade from NDK r21d (2019) to r27d (LLVM 18), minimum API 21, full LLVM toolchain. |
@@ -199,7 +199,7 @@ its rationale, and its current implementation status.
 | # | Title | Status | Description |
 |---|---|---|---|
 | [0036](0036%20-%20Namespace%20refactoring.md) | Namespace Refactoring (OpenRewrite) | Proposed | OpenRewrite recipe to migrate all Java packages from `org.nd4j`/`org.deeplearning4j` to `org.eclipse.deeplearning4j`. |
-| [0038](0038%20-%20Namespace%20migration%20to%20Eclipse.md) | Eclipse Namespace Migration | Proposed | Two-phase Eclipse Foundation namespace migration: Phase 1 = Maven groupIds; Phase 2 = full package rename. Driven by OSSRH shutdown. |
+| [0038](0038%20-%20Namespace%20migration%20to%20Eclipse.md) | Eclipse Namespace Migration | Superseded | Two-phase Eclipse Foundation namespace migration: Phase 1 = Maven groupIds; Phase 2 = full package rename. Driven by OSSRH shutdown. |
 
 ### Debugging & Profiling
 
@@ -211,7 +211,7 @@ its rationale, and its current implementation status.
 | [0027](0027%20-%20Bytebuddy%20op%20execution%20logger) | ByteBuddy Op Execution Logger | Proposed | Java agent using ByteBuddy to record ND4J op executions into an H2 database for cross-version regression detection. |
 | [0032](0032-%20CPP%20Debugging.md) | C++ Print Debugging Utilities | Implemented | Three build-time-controlled debugging utilities (print indices, print math, preprocessor output) toggled via Maven/CMake flags. |
 | [0037](0037%20-%20Ppstep%20integration%20with%20recording.md) | Ppstep Preprocessor Debugger | Implemented | Interactive macro debugger as an optional CMake target with recording and break-on-error commands. |
-| [0049](0049%20-%20AddressSanitizer%20Memory%20Leak%20Detection.md) | AddressSanitizer (ASAN) for JNI | Implemented | ASAN configuration tuned for JNI with mismatch suppression and `ThreadPool` destructor ordering fixes. |
+| [0049](0049%20-%20AddressSanitizer%20Memory%20Leak%20Detection.md) | AddressSanitizer (ASAN) for JNI | Superseded | ASAN configuration tuned for JNI with mismatch suppression and `ThreadPool` destructor ordering fixes. |
 | [0050](0050%20-%20Clang%20Sanitizers%20for%20JNI%20Memory%20Debugging.md) | Clang Sanitizers for JNI | Implemented | CMake `SD_SANITIZERS` flag for ASAN/MSAN/LSAN with embedded sanitizer RPATH in shared libraries. |
 | [0051](0051%20-%20NDArray%20and%20DataBuffer%20Lifecycle%20Tracking%20for%20Memory%20Leak%20Detection.md) | NDArray/DataBuffer Lifecycle Tracking | Implemented | Two-level tracker (NDArray + DataBuffer PRIMARY/SPECIAL) with full stack traces, periodic reports, flamegraph output, and JNI API for Java-side leak statistics. |
 
@@ -224,7 +224,7 @@ its rationale, and its current implementation status.
 | 0001 | SameDiff File Format | Accepted |
 | 0002 | ONNX Runtime Module | Implemented |
 | 0003 | Import IR | Implemented |
-| 0003 | NDArray Padded Strides for ARM Compute | Implemented |
+| 0003b | NDArray Padded Strides for ARM Compute | Implemented |
 | 0004 | Mapping IR | Implemented |
 | 0005 | Interpreter | Rejected |
 | 0006 | JUnit 5 Tag Usage | Proposed |
@@ -232,8 +232,8 @@ its rationale, and its current implementation status.
 | 0008 | Eager Shape Computation | Accepted |
 | 0009 | Import Node Pre-Processing | Discussion |
 | 0010 | Test Module Consolidation | Proposed |
-| 0011 | OmniHub Zoo Download | Discussion |
-| 0012 | OmniHub Download Implementations | Discussion |
+| 0011 | OmniHub Zoo Download | Superseded |
+| 0012 | OmniHub Download Implementations | Superseded |
 | 0013 | OmniHub Consumption API | Accepted |
 | 0014 | Replace Old Model Zoo | Accepted |
 | 0015 | Unified Resource Manager | Discussion |
@@ -245,20 +245,20 @@ its rationale, and its current implementation status.
 | 0022 | Dynamic Indexing | Discussion |
 | 0023 | User-Defined Functions | Implemented |
 | 0024 | Execution Tracing | Implemented |
-| 0024 | Workspaces | Implemented |
+| 0024b | Workspaces | Implemented |
 | 0025 | JavaCPP Pointer Tracking (AspectJ) | Implemented |
 | 0026 | Libnd4j Function Tracing | Implemented |
 | 0027 | ByteBuddy Op Execution Logger | Proposed |
 | 0028 | Offset Centralization | Proposed |
-| 0030 | Smaller Type-Limited Artifact | Proposed |
-| 0031 | Type Combination Macros | Proposed |
+| 0030 | Smaller Type-Limited Artifact | Superseded |
+| 0031 | Type Combination Macros | Superseded |
 | 0032 | C++ Print Debugging | Implemented |
 | 0033 | Shape Buffer Trie | Implemented |
 | 0034 | FlatBuffers Modernization | Implemented |
 | 0035 | SameDiff Unified Container (SDNB/SDZ) | Implemented |
 | 0036 | Namespace Refactoring (OpenRewrite) | Proposed |
 | 0037 | Ppstep Preprocessor Debugger | Implemented |
-| 0038 | Eclipse Namespace Migration | Proposed |
+| 0038 | Eclipse Namespace Migration | Superseded |
 | 0039 | Selective Rendering Type System | Implemented |
 | 0041 | CUDA Architecture Target Reduction | Proposed |
 | 0042 | Android NDK Migration | Proposed |
@@ -266,7 +266,7 @@ its rationale, and its current implementation status.
 | 0046 | CUDA Macro Standardization | Proposed |
 | 0047 | Template Instantiation Migration | Implemented |
 | 0048 | Improved SameDiff Execution Framework | Accepted |
-| 0049 | AddressSanitizer for JNI | Implemented |
+| 0049 | AddressSanitizer for JNI | Superseded |
 | 0050 | Clang Sanitizers for JNI | Implemented |
 | 0051 | NDArray/DataBuffer Lifecycle Tracking | Implemented |
 | 0052 | GGML/GGUF Model Import | Implemented |
