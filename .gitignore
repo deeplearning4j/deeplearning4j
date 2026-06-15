@@ -1,4 +1,5 @@
 .DS_Store
+.claude/
 .kompile/
 pom.xml.releaseBackup
 target/
