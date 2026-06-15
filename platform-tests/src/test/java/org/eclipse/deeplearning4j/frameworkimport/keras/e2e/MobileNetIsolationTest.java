@@ -1,5 +1,6 @@
 package org.eclipse.deeplearning4j.frameworkimport.keras.e2e;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+@Slf4j
 public class MobileNetIsolationTest {
 
     @Test
@@ -29,33 +34,29 @@ public class MobileNetIsolationTest {
                 .buildModel()
                 .getComputationGraph();
 
-        // Print layer info - first 15 layers
+        // Log layer info - first 15 layers
         for (int i = 0; i < Math.min(15, graph.getLayers().length); i++) {
             org.deeplearning4j.nn.api.Layer layer = graph.getLayers()[i];
-            System.out.println("Layer " + i + ": " + layer.getConfig().getClass().getSimpleName());
+            log.debug("Layer {}: {}", i, layer.getConfig().getClass().getSimpleName());
             if (layer.getConfig() instanceof org.deeplearning4j.nn.conf.layers.BatchNormalization) {
                 org.deeplearning4j.nn.conf.layers.BatchNormalization bn =
                         (org.deeplearning4j.nn.conf.layers.BatchNormalization) layer.getConfig();
-                System.out.println("  BN cnn2dFormat=" + bn.getCnn2DFormat() + " nOut=" + bn.getNOut());
+                log.debug("  BN cnn2dFormat={} nOut={}", bn.getCnn2DFormat(), bn.getNOut());
             }
             if (layer.getConfig() instanceof org.deeplearning4j.nn.conf.layers.ConvolutionLayer) {
                 org.deeplearning4j.nn.conf.layers.ConvolutionLayer conv =
                         (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.getConfig();
-                System.out.println("  Conv cnn2dFormat=" + conv.getCnn2dDataFormat() + " nOut=" + conv.getNOut());
+                log.debug("  Conv cnn2dFormat={} nOut={}", conv.getCnn2dDataFormat(), conv.getNOut());
             }
         }
 
         // Use smaller batch to rule out memory issues
-        System.out.println("\nCreating input [1, 32, 32, 3]...");
+        log.debug("Creating input [1, 32, 32, 3]...");
         INDArray input = Nd4j.ones(1, 32, 32, 3);  // Smaller input to save memory
-        System.out.println("Running forward pass...");
-        try {
-            java.util.Map<String, INDArray> outputs = graph.feedForward(input, false);
-            System.out.println("Forward pass complete, " + outputs.size() + " activations.");
-        } catch (Exception e) {
-            System.out.println("Exception during forward: " + e.getMessage());
-            e.printStackTrace();
-        }
-        System.out.println("PASSED");
+        log.debug("Running forward pass...");
+        Map<String, INDArray> outputs = graph.feedForward(input, false);
+        log.debug("Forward pass complete, {} activations.", outputs.size());
+        assertNotNull(outputs);
+        assertFalse(outputs.isEmpty());
     }
 }
