@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.vlm.model;
 
+import org.eclipse.deeplearning4j.vlm.model.encoder.EmbeddingMerger;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

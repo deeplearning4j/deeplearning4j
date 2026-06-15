@@ -21,7 +21,7 @@ package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
-import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
+import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

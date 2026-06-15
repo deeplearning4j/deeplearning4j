@@ -30,6 +30,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplerUtils;
+
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;

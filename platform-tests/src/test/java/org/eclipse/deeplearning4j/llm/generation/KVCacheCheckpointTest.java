@@ -20,6 +20,9 @@
 
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KVCacheCheckpoint;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KVCacheCheckpointManager;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.PagedKVCache;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -33,7 +33,7 @@ import org.eclipse.deeplearning4j.llm.eval.PerplexityEvaluator.PerplexityResult;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
-import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;

@@ -21,8 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff.vlm;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.deeplearning4j.vlm.model.DeepStackMerger;
-import org.eclipse.deeplearning4j.vlm.model.TemporalPatchEmbed;
+import org.eclipse.deeplearning4j.vlm.model.projector.TemporalPatchEmbed;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VideoFrameSampler;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VideoPreprocessor;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
@@ -124,20 +123,6 @@ public class TestQwen3VLVideoGeneration extends BaseNd4jTestWithBackends {
         assertEquals(20, op.getSectionH());
         assertEquals(20, op.getSectionW());
         assertTrue(op.isInterleaved());
-    }
-
-    @Test
-    @DisplayName("DeepStackMerger builder with correct dimensions")
-    public void testDeepStackMergerBuilder() {
-        DeepStackMerger merger = DeepStackMerger.builder()
-                .visualIndexes(new int[]{8, 16, 24})
-                .visionHiddenSize(1152)
-                .llmHiddenSize(4096)
-                .build();
-
-        assertArrayEquals(new int[]{8, 16, 24}, merger.getVisualIndexes());
-        assertEquals(1152, merger.getVisionHiddenSize());
-        assertEquals(4096, merger.getLlmHiddenSize());
     }
 
     @Test

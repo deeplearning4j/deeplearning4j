@@ -20,6 +20,9 @@
 
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.eclipse.deeplearning4j.llm.generation.kvcache.AttentionSinkDetector;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.EvictionPolicy;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.SinkAwareEvictionPolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;

@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.opvalidation;
 
-import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
+import org.eclipse.deeplearning4j.llm.generation.DecoderInputBuilder;
 import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for:
  * 1. ModelIOConfig encoder-decoder fields and discovery
- * 2. DecoderUtils encoder-decoder input map building
+ * 2. DecoderInputBuilder encoder-decoder input map building
  * 3. Native whisper_mel_spectrogram op
  */
 public class TestWhisperEncoderDecoder {
@@ -96,7 +96,7 @@ public class TestWhisperEncoderDecoder {
         assertTrue(config.isEncoderInput("enc_mask"));
     }
 
-    // ========== DecoderUtils encoder-decoder input map tests ==========
+    // ========== DecoderInputBuilder encoder-decoder input map tests ==========
 
     @Test
     public void testBuildDecoderInputMapWithEncoderOutputs() {
@@ -114,7 +114,7 @@ public class TestWhisperEncoderDecoder {
         INDArray embeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 512);
         INDArray encoderOutputs = Nd4j.randn(DataType.FLOAT, 1, 1500, 512);
 
-        Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> result = DecoderInputBuilder.buildDecoderInputMap(
                 config, inputNames, null,
                 embeddings, null,
                 0, 1,
@@ -157,7 +157,7 @@ public class TestWhisperEncoderDecoder {
         INDArray encoderOutputs = Nd4j.randn(DataType.FLOAT, 1, 1500, 512);
         INDArray encoderMask = Nd4j.ones(DataType.LONG, 1, 1200); // partial mask
 
-        Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> result = DecoderInputBuilder.buildDecoderInputMap(
                 config, inputNames, null,
                 embeddings, null,
                 0, 1,
@@ -180,7 +180,7 @@ public class TestWhisperEncoderDecoder {
         List<String> inputNames = Arrays.asList("inputs_embeds");
         INDArray embeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 512);
 
-        Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> result = DecoderInputBuilder.buildDecoderInputMap(
                 config, inputNames, null,
                 embeddings, null,
                 0, 1,
@@ -208,7 +208,7 @@ public class TestWhisperEncoderDecoder {
 
         // Step 1
         INDArray emb1 = Nd4j.zeros(DataType.FLOAT, 1, 5, 512);
-        Map<String, INDArray> result1 = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> result1 = DecoderInputBuilder.buildDecoderInputMap(
                 config, inputNames, null,
                 emb1, null, 0, 5,
                 null, 0, 0, false, 512,
@@ -217,7 +217,7 @@ public class TestWhisperEncoderDecoder {
 
         // Step 2
         INDArray emb2 = Nd4j.zeros(DataType.FLOAT, 1, 1, 512);
-        Map<String, INDArray> result2 = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> result2 = DecoderInputBuilder.buildDecoderInputMap(
                 config, inputNames, null,
                 emb2, null, 5, 1,
                 null, 0, 0, false, 512,
@@ -252,7 +252,7 @@ public class TestWhisperEncoderDecoder {
         INDArray inputIds = Nd4j.createFromArray(new long[][]{{42}});
         INDArray encoderOutputs = Nd4j.randn(DataType.FLOAT, 1, 1500, 512);
 
-        Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> result = DecoderInputBuilder.buildDecoderInputMap(
                 config, inputNames, null,
                 embeddings, inputIds,
                 5, 1,

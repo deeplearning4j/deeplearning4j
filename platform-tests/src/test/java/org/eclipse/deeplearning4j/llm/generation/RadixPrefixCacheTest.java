@@ -23,6 +23,8 @@ package org.eclipse.deeplearning4j.llm.generation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.PrefixLookupResult;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.RadixPrefixCache;
 
 import java.io.IOException;
 import java.nio.file.Path;

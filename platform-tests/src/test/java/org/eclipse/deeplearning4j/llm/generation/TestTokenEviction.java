@@ -20,6 +20,9 @@
 
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.eclipse.deeplearning4j.llm.generation.kvcache.EvictablePagedKVCache;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.H2OEvictionPolicy;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.StreamingLLMEvictionPolicy;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;

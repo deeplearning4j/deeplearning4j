@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -261,7 +262,7 @@ public class MultiBackendOperationsTest {
     @DisplayName("Float16 operations should work on capable helpers")
     void testFloat16Operations() {
         List<Helper> capableHelpers = config.getHelpersWithCapability("float16")
-                .stream().toList();
+                .stream().collect(Collectors.toList());
 
         Assumptions.assumeFalse(capableHelpers.isEmpty(),
                 "No helpers with float16 capability available");
@@ -282,7 +283,7 @@ public class MultiBackendOperationsTest {
     @DisplayName("Attention mechanisms should work on capable helpers")
     void testAttentionOperations() {
         List<Helper> capableHelpers = config.getHelpersWithCapability("attention")
-                .stream().toList();
+                .stream().collect(Collectors.toList());
 
         Assumptions.assumeFalse(capableHelpers.isEmpty(),
                 "No helpers with attention capability available");

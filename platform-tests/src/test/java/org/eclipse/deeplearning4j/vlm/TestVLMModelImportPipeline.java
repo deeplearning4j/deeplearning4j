@@ -25,7 +25,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
-import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
+import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
@@ -47,6 +47,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.deeplearning4j.llm.generation.*;
+import org.eclipse.deeplearning4j.llm.generation.sampling.CompositeSampler;
+import org.eclipse.deeplearning4j.llm.generation.sampling.GreedySampler;
+import org.eclipse.deeplearning4j.llm.generation.sampling.Sampler;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplerUtils;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 
 import static org.junit.jupiter.api.Assertions.*;
 

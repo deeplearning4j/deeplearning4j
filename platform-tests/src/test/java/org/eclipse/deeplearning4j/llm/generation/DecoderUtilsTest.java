@@ -48,19 +48,19 @@ public class DecoderUtilsTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBuildCausalMaskPrefill(Nd4jBackend backend) {
         // Multi-token prefill: 4 query tokens, 4 total (no past)
-        INDArray mask = DecoderUtils.buildCausalMask(4, 4);
+        INDArray mask = ModelIOConfig.buildCausalMask(4, 4);
 
         assertArrayEquals(new long[]{1, 1, 4, 4}, mask.shape());
         assertEquals(DataType.FLOAT, mask.dataType());
 
         // Row 0: can attend to position 0 only → [0, FILL, FILL, FILL]
         assertEquals(0.0f, mask.getFloat(0, 0, 0, 0), 1e-6);
-        assertEquals(DecoderUtils.MASK_FILL, mask.getFloat(0, 0, 0, 1), 1e-6);
+        assertEquals(ModelIOConfig.MASK_FILL, mask.getFloat(0, 0, 0, 1), 1e-6);
 
         // Row 1: can attend to 0,1 → [0, 0, FILL, FILL]
         assertEquals(0.0f, mask.getFloat(0, 0, 1, 0), 1e-6);
         assertEquals(0.0f, mask.getFloat(0, 0, 1, 1), 1e-6);
-        assertEquals(DecoderUtils.MASK_FILL, mask.getFloat(0, 0, 1, 2), 1e-6);
+        assertEquals(ModelIOConfig.MASK_FILL, mask.getFloat(0, 0, 1, 2), 1e-6);
 
         // Row 3 (last): can attend to all → [0, 0, 0, 0]
         assertEquals(0.0f, mask.getFloat(0, 0, 3, 0), 1e-6);
@@ -71,7 +71,7 @@ public class DecoderUtilsTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBuildCausalMaskDecode(Nd4jBackend backend) {
         // Single-token decode: 1 query token, 10 total
-        INDArray mask = DecoderUtils.buildCausalMask(1, 10);
+        INDArray mask = ModelIOConfig.buildCausalMask(1, 10);
 
         assertArrayEquals(new long[]{1, 1, 1, 10}, mask.shape());
         assertEquals(DataType.FLOAT, mask.dataType());
@@ -86,7 +86,7 @@ public class DecoderUtilsTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBuildCausalMaskBatched(Nd4jBackend backend) {
         int batchSize = 3;
-        INDArray mask = DecoderUtils.buildCausalMask(batchSize, 1, 5);
+        INDArray mask = ModelIOConfig.buildCausalMask(batchSize, 1, 5);
 
         // batch=3, heads=1, q=1, k=5
         assertArrayEquals(new long[]{3, 1, 1, 5}, mask.shape());
@@ -103,13 +103,13 @@ public class DecoderUtilsTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCausalMaskWithPast(Nd4jBackend backend) {
         // 2 query tokens, 5 total (3 past + 2 current)
-        INDArray mask = DecoderUtils.buildCausalMask(2, 5);
+        INDArray mask = ModelIOConfig.buildCausalMask(2, 5);
 
         assertArrayEquals(new long[]{1, 1, 2, 5}, mask.shape());
 
         // Row 0 (q=0): pastSeqLen=3, can attend to positions 0..3
         assertEquals(0.0f, mask.getFloat(0, 0, 0, 3), 1e-6);
-        assertEquals(DecoderUtils.MASK_FILL, mask.getFloat(0, 0, 0, 4), 1e-6);
+        assertEquals(ModelIOConfig.MASK_FILL, mask.getFloat(0, 0, 0, 4), 1e-6);
 
         // Row 1 (q=1): pastSeqLen=3, can attend to positions 0..4 (all)
         assertEquals(0.0f, mask.getFloat(0, 0, 1, 4), 1e-6);
@@ -123,7 +123,7 @@ public class DecoderUtilsTest extends BaseNd4jTestWithBackends {
         inputNames.add("position_ids");
         Map<String, INDArray> reusableInputs = new HashMap<>();
 
-        Map<String, INDArray> step0 = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> step0 = DecoderInputBuilder.buildDecoderInputMap(
                 ioConfig, inputNames, null, null, null,
                 679, 1, null, 0, 679,
                 true, 0, reusableInputs, true,
@@ -137,7 +137,7 @@ public class DecoderUtilsTest extends BaseNd4jTestWithBackends {
         assertFalse(pos0.wasClosed(), "Decode position_ids must stay live after construction");
         assertEquals(679L, pos0.getLong(0, 0));
 
-        Map<String, INDArray> step1 = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> step1 = DecoderInputBuilder.buildDecoderInputMap(
                 ioConfig, inputNames, null, null, null,
                 680, 1, null, 0, 680,
                 true, 0, reusableInputs, true,
@@ -169,7 +169,7 @@ public class DecoderUtilsTest extends BaseNd4jTestWithBackends {
                     .inputIdsName("input_ids")
                     .build();
 
-            Map<String, INDArray> inputMap = DecoderUtils.buildDecoderInputMap(
+            Map<String, INDArray> inputMap = DecoderInputBuilder.buildDecoderInputMap(
                     ioConfig, List.of("inputs_embeds"), sd,
                     embedsArr, inputIdsArr,
                     680, 1,

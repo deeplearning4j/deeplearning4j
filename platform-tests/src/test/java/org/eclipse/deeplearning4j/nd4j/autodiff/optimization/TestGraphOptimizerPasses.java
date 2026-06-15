@@ -20,8 +20,7 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.optimization;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
-import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
-import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
+import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
