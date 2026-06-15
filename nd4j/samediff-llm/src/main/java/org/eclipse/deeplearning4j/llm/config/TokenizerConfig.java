@@ -1,0 +1,304 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
+package org.eclipse.deeplearning4j.llm.config;
+
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.nd4j.ggml.format.GGMLMetadata;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * Configuration loaded from tokenizer_config.json.
+ *
+ * This configuration contains metadata about the tokenizer including:
+ * - Special tokens (BOS, EOS, PAD, UNK)
+ * - Chat template for instruction-following models
+ * - Model max length
+ * - Tokenizer class type
+ *
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * TokenizerConfig config = TokenizerConfig.fromFile(new File("tokenizer_config.json"));
+ * String eosToken = config.getEosToken();
+ * String chatTemplate = config.getChatTemplate();
+ * }</pre>
+ *
+ * @author Eclipse Deeplearning4j Contributors
+ */
+@Data
+@NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class TokenizerConfig {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    @JsonProperty("tokenizer_class")
+    private String tokenizerClass;
+
+    @JsonProperty("model_max_length")
+    private Integer modelMaxLength;
+
+    @JsonProperty("bos_token")
+    private Object bosTokenRaw;
+
+    @JsonProperty("eos_token")
+    private Object eosTokenRaw;
+
+    @JsonProperty("unk_token")
+    private Object unkTokenRaw;
+
+    @JsonProperty("pad_token")
+    private Object padTokenRaw;
+
+    @JsonProperty("sep_token")
+    private Object sepTokenRaw;
+
+    @JsonProperty("cls_token")
+    private Object clsTokenRaw;
+
+    @JsonProperty("mask_token")
+    private Object maskTokenRaw;
+
+    @JsonProperty("chat_template")
+    private String chatTemplate;
+
+    @JsonProperty("add_bos_token")
+    private Boolean addBosToken;
+
+    @JsonProperty("add_eos_token")
+    private Boolean addEosToken;
+
+    @JsonProperty("clean_up_tokenization_spaces")
+    private Boolean cleanUpTokenizationSpaces;
+
+    @JsonProperty("legacy")
+    private Boolean legacy;
+
+    @JsonProperty("use_default_system_prompt")
+    private Boolean useDefaultSystemPrompt;
+
+    /**
+     * Load config from a tokenizer_config.json file.
+     *
+     * @param file the config file
+     * @return the parsed configuration
+     * @throws IOException if reading fails
+     */
+    public static TokenizerConfig fromFile(File file) throws IOException {
+        return MAPPER.readValue(file, TokenizerConfig.class);
+    }
+
+    /**
+     * Load config from a JSON string.
+     *
+     * @param json the JSON string
+     * @return the parsed configuration
+     * @throws IOException if parsing fails
+     */
+    public static TokenizerConfig fromJson(String json) throws IOException {
+        return MAPPER.readValue(json, TokenizerConfig.class);
+    }
+
+    /**
+     * Build a tokenizer configuration from GGUF tokenizer metadata.
+     *
+     * <p>GGUF models may carry the authoritative chat template and special token
+     * ids even when the converted model directory only contains tokenizer.json.
+     * Keeping this conversion in the tokenizer config path lets tokenizer users
+     * apply the model-owned chat template without application-specific fallbacks.</p>
+     *
+     * @param tokenizerInfo GGUF tokenizer metadata
+     * @return a config populated from GGUF metadata, or null if no useful metadata is present
+     */
+    public static TokenizerConfig fromGgufMetadata(GGMLMetadata.TokenizerInfo tokenizerInfo) {
+        if (tokenizerInfo == null) {
+            return null;
+        }
+        TokenizerConfig config = new TokenizerConfig();
+        config.setTokenizerClass("PreTrainedTokenizerFast");
+        config.setBosTokenRaw(tokenFromMetadata(tokenizerInfo, tokenizerInfo.getBosTokenId()));
+        config.setEosTokenRaw(tokenFromMetadata(tokenizerInfo, tokenizerInfo.getEosTokenId()));
+        config.setChatTemplate(tokenizerInfo.getChatTemplate());
+
+        if (isBlank(config.getBosToken())
+                && isBlank(config.getEosToken())
+                && !config.hasChatTemplate()) {
+            return null;
+        }
+        return config;
+    }
+
+    /**
+     * Fill missing fields in this config from another config.
+     *
+     * @param fallback fallback values, typically derived from GGUF metadata
+     */
+    public void fillMissingFrom(TokenizerConfig fallback) {
+        if (fallback == null) {
+            return;
+        }
+        if (isBlank(tokenizerClass)) {
+            tokenizerClass = fallback.tokenizerClass;
+        }
+        if (modelMaxLength == null) {
+            modelMaxLength = fallback.modelMaxLength;
+        }
+        if (bosTokenRaw == null) {
+            bosTokenRaw = fallback.bosTokenRaw;
+        }
+        if (eosTokenRaw == null) {
+            eosTokenRaw = fallback.eosTokenRaw;
+        }
+        if (unkTokenRaw == null) {
+            unkTokenRaw = fallback.unkTokenRaw;
+        }
+        if (padTokenRaw == null) {
+            padTokenRaw = fallback.padTokenRaw;
+        }
+        if (sepTokenRaw == null) {
+            sepTokenRaw = fallback.sepTokenRaw;
+        }
+        if (clsTokenRaw == null) {
+            clsTokenRaw = fallback.clsTokenRaw;
+        }
+        if (maskTokenRaw == null) {
+            maskTokenRaw = fallback.maskTokenRaw;
+        }
+        if (isBlank(chatTemplate)) {
+            chatTemplate = fallback.chatTemplate;
+        }
+        if (addBosToken == null) {
+            addBosToken = fallback.addBosToken;
+        }
+        if (addEosToken == null) {
+            addEosToken = fallback.addEosToken;
+        }
+    }
+
+    /**
+     * Get the BOS token as a string.
+     * Handles both string and object ({"content": "..."}) formats.
+     *
+     * @return the BOS token string, or null
+     */
+    public String getBosToken() {
+        return extractTokenString(bosTokenRaw);
+    }
+
+    /**
+     * Get the EOS token as a string.
+     *
+     * @return the EOS token string, or null
+     */
+    public String getEosToken() {
+        return extractTokenString(eosTokenRaw);
+    }
+
+    /**
+     * Get the UNK token as a string.
+     *
+     * @return the UNK token string, or null
+     */
+    public String getUnkToken() {
+        return extractTokenString(unkTokenRaw);
+    }
+
+    /**
+     * Get the PAD token as a string.
+     *
+     * @return the PAD token string, or null
+     */
+    public String getPadToken() {
+        return extractTokenString(padTokenRaw);
+    }
+
+    /**
+     * Get the SEP token as a string.
+     *
+     * @return the SEP token string, or null
+     */
+    public String getSepToken() {
+        return extractTokenString(sepTokenRaw);
+    }
+
+    /**
+     * Get the CLS token as a string.
+     *
+     * @return the CLS token string, or null
+     */
+    public String getClsToken() {
+        return extractTokenString(clsTokenRaw);
+    }
+
+    /**
+     * Get the MASK token as a string.
+     *
+     * @return the MASK token string, or null
+     */
+    public String getMaskToken() {
+        return extractTokenString(maskTokenRaw);
+    }
+
+    /**
+     * Check if a chat template is available.
+     *
+     * @return true if chat template is defined
+     */
+    public boolean hasChatTemplate() {
+        return chatTemplate != null && !chatTemplate.isEmpty();
+    }
+
+    private static String tokenFromMetadata(GGMLMetadata.TokenizerInfo tokenizerInfo, int tokenId) {
+        List<String> tokens = tokenizerInfo.getTokens();
+        if (tokens == null || tokenId < 0 || tokenId >= tokens.size()) {
+            return null;
+        }
+        return tokens.get(tokenId);
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractTokenString(Object tokenRaw) {
+        if (tokenRaw == null) {
+            return null;
+        }
+        if (tokenRaw instanceof String) {
+            return (String) tokenRaw;
+        }
+        if (tokenRaw instanceof java.util.Map) {
+            java.util.Map<String, Object> map = (java.util.Map<String, Object>) tokenRaw;
+            Object content = map.get("content");
+            if (content instanceof String) {
+                return (String) content;
+            }
+        }
+        return tokenRaw.toString();
+    }
+}
