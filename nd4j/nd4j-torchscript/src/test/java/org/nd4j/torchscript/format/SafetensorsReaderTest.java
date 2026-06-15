@@ -18,6 +18,8 @@
  *  *****************************************************************************
  */
 
+// TODO: Move to platform-tests/ per project convention — all tests must run from platform-tests
+
 package org.nd4j.torchscript.format;
 
 import org.junit.jupiter.api.DisplayName;
