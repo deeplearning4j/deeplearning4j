@@ -20,7 +20,9 @@
 
 package org.nd4j.common.collections;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NonNull;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
