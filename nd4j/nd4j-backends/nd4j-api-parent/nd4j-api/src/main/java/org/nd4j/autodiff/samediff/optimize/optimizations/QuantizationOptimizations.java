@@ -364,18 +364,6 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Placeholder for DequantizeLinear/QuantizeLinear pair fusion.
-     * TODO: implement when SameDiff API supports consumer/output traversal.
-     */
-    public static class FuseDequantizeQuantizePair implements Optimizer {
-        @Override
-        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
-                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
-            return false;
-        }
-    }
-
-    /**
      * Removes redundant cast operations:
      * 1. Identity casts where input dtype == output dtype (FLOAT→FLOAT)
      * 2. Chained casts where cast(cast(x, A), B) can be replaced with cast(x, B)
@@ -506,28 +494,4 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
         }
     }
 
-    /**
-     * Placeholder for FP16 inference optimization.
-     * Use {@link QuantizeConstantsToFP16#quantizeAllConstants(SameDiff)} instead.
-     */
-    public static class OptimizeConstantsForInference implements Optimizer {
-        @Override
-        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
-                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
-            return false;
-        }
-    }
-
-    /**
-     * Placeholder for backward compatibility.
-     * @deprecated Use {@link QuantizeConstantsToFP16} or {@link OptimizeConstantsForInference} instead.
-     */
-    @Deprecated
-    public static class QuantizePlaceholder implements Optimizer {
-        @Override
-        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
-                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
-            return false;
-        }
-    }
 }

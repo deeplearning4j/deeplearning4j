@@ -1491,30 +1491,6 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Fuses attention output with a subsequent linear projection.
-     * Pattern: attention_output -> matmul(_, W) -> add(bias) => attention with fused output projection
-     *
-     * Disabled: No fused_attention_with_projection C++ op exists yet.
-     * When the C++ op is implemented, re-enable by adding DotProductAttentionV2.class
-     * to APPLICABLE_OPS and implementing the graph rewrite in checkAndApply.
-     */
-    public static class FuseAttentionWithProjection implements Optimizer {
-
-        private static final Set<Class<? extends DifferentialFunction>> APPLICABLE_OPS = Collections.emptySet();
-
-        @Override
-        public Set<Class<? extends DifferentialFunction>> getApplicableOpTypes() {
-            return APPLICABLE_OPS;
-        }
-
-        @Override
-        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
-                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
-            return false;
-        }
-    }
-
-    /**
      * Detects attention patterns with causal (autoregressive) masking and fuses them.
      * Pattern: matmul(Q, K^T) [-> scale] -> add(causal_mask) -> softmax -> matmul(_, V)
      *
