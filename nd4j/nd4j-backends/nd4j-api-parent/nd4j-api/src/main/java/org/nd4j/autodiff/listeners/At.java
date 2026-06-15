@@ -20,7 +20,13 @@
 
 package org.nd4j.autodiff.listeners;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.ToString;
+
 import org.nd4j.autodiff.samediff.internal.FrameIter;
 
 @AllArgsConstructor

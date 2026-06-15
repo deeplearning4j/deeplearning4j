@@ -20,7 +20,12 @@
 
 package org.nd4j.autodiff.listeners.debugging;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NonNull;
+
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
 import org.nd4j.autodiff.listeners.Operation;
