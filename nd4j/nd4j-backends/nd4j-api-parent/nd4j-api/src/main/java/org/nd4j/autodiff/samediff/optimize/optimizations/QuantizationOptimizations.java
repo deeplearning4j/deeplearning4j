@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
@@ -73,10 +74,10 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
         public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
                                      ArrayHolder constantArrays, ArrayHolder variablesArrays) {
             if (applied) return false;
-            // FP16 defaults to ON; disable with -Dnd4j.optimizer.fp16=false
-            String fp16Prop = System.getProperty("nd4j.optimizer.fp16");
-            boolean fp16Enabled = fp16Prop == null || !"false".equalsIgnoreCase(fp16Prop.trim());
-            boolean bf16Enabled = "true".equalsIgnoreCase(System.getProperty("nd4j.optimizer.bf16"));
+            // FP16 defaults to OFF; enable with -Dnd4j.optimizer.fp16=true
+            String fp16Prop = System.getProperty(ND4JSystemProperties.OPTIMIZER_FP16);
+            boolean fp16Enabled = "true".equalsIgnoreCase(fp16Prop);
+            boolean bf16Enabled = "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.OPTIMIZER_BF16));
             if (!fp16Enabled && !bf16Enabled) {
                 applied = true;
                 return false;
