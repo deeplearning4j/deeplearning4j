@@ -20,7 +20,14 @@
 
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.Setter;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
