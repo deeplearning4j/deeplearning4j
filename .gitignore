@@ -1,5 +1,11 @@
 .DS_Store
-pom.xml.releaseBackup 
+.claude/
+.kompile/
+.mcp.json
+AGENTS.md
+CLAUDE.md
+pr-plans/
+pom.xml.releaseBackup
 target/
 dependency-reduced-pom.xml
 *.ser
