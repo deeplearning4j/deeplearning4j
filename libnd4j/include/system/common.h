@@ -19,6 +19,24 @@
 #ifndef SD_SYSTEM_COMMON_H
 #define SD_SYSTEM_COMMON_H
 
+// ============================================================================
+// Backend Namespace Configuration
+// ============================================================================
+// Include backend namespace configuration for type identification and utilities.
+// NOTE: Full namespace isolation (redefining 'sd' as a macro) is NOT enabled
+// by default because it interferes with complex macro expansion in the codebase.
+//
+// The namespace remains 'sd' for all builds. Symbol isolation between CPU and
+// CUDA backends relies on:
+// 1. Different shared library names (libnd4jcpu.so vs libnd4jcuda.so)
+// 2. JNI symbol uniqueness (different Java package names)
+// 3. dlopen with RTLD_LOCAL to prevent symbol interposition
+//
+// If full namespace isolation is needed in the future, each source file would
+// need to be modified to use SD_NS macro instead of hardcoded 'sd'.
+// ============================================================================
+#include <system/BackendNamespace.h>
+
 #include <cstdint>
 
 #define STRINGIZE2(x) #x
@@ -47,8 +65,12 @@
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef __GNUC__
 #define SD_LIB_EXPORT __attribute__((dllexport))
+// MinGW uses __emutls for thread_local; wrapper symbols must be exported from DLL.
+// MSVC forbids dllexport on thread_local (C2492), so SD_TLS_EXPORT is GCC-only.
+#define SD_TLS_EXPORT __attribute__((dllexport))
 #else
 #define SD_LIB_EXPORT __declspec(dllexport)
+#define SD_TLS_EXPORT
 #endif
 #define SD_LIB_HIDDEN
 #else
@@ -59,6 +81,7 @@
 #define SD_LIB_EXPORT
 #define SD_LIB_HIDDEN
 #endif
+#define SD_TLS_EXPORT
 #endif
 
 // Cross-platform compiler attributes
@@ -203,7 +226,7 @@ enum class Status : int {
   KERNEL_FAILURE = 50,
   EQ_TRUE = 100,
   EQ_FALSE = 101,
-  MAYBE = 119
+  MAYBE = 200
 };
 struct ErrorResult {
   sd::Status status;
@@ -216,6 +239,15 @@ struct ErrorResult {
 #define SD_MAX_NUM_THREADS 1024
 #define SD_MAX_RANK 32
 #define SD_MAX_SHAPEINFOLENGTH 2 * SD_MAX_RANK + 4
+// Extra padding (in LongType elements) for shape buffer heap allocations.
+// C++ ops can write a few elements past shape info buffers, corrupting
+// adjacent glibc malloc metadata. 32 extra elements (256 bytes) absorbs
+// any reasonable overrun.
+#define SD_SHAPE_ALLOC_PADDING 4096
+// Extra byte padding for general temporary heap allocations via the
+// ALLOCATE macro.  Same purpose as SD_SHAPE_ALLOC_PADDING but sized
+// in bytes rather than LongType elements.
+#define SD_ALLOC_PADDING 4096
 #define SD_MAX_COORD 3
 #define SD_PREALLOC_SIZE 33554432
 
