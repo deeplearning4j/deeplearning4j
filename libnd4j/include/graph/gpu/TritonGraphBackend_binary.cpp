@@ -507,19 +507,6 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 
   dumpKernelArtifacts(binary);
 
-  // Debug: dump PTX for problematic sub-kernels
-  if (binary.data && startSlot == 347) {
-    std::string ptxDir = sd::Environment::getInstance().tritonDumpDir();
-    if (ptxDir.empty()) ptxDir = getTempDir();
-    if (!ptxDir.empty() && ptxDir.back() != '/' && ptxDir.back() != '\\') ptxDir += '/';
-    std::string ptxPath = ptxDir + "triton_ptx_" + std::to_string(startSlot) + "_" + std::to_string(endSlot) + ".ptx";
-    std::ofstream ptxFile(ptxPath, std::ios::binary | std::ios::trunc);
-    if (ptxFile.good()) {
-      ptxFile.write(static_cast<const char*>(binary.data), static_cast<std::streamsize>(binary.size));
-      DSP_DIAG(COMPILE, "TritonGraphBackend: PTX dumped to %s (%zu bytes)", ptxPath.c_str(), binary.size);
-    }
-  }
-
   if (!binary.data) {
 #ifdef SD_CUDA
     cudaGetLastError();  // Clear sticky CUDA errors from failed compilation

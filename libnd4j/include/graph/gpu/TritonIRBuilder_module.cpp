@@ -4076,7 +4076,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               static_cast<int>(inputArgs.size()), static_cast<int>(outputArgs.size()),
               blockSize);
     // Write TTIR to file per sub-kernel range
-    {
+    if (sd::Environment::getInstance().isDebug()) {
       char fname[512];
       // Use configurable dump dir (ND4J_TRITON_DUMP_DIR), falling back to the
       // platform temp directory.  Never hardcode /tmp/ — it is not portable and
@@ -7816,7 +7816,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               useMultiPhaseLaunch ? "YES" : "NO",
               static_cast<int>(launchPhases.size()), ttirDump.c_str());
     // Write TTIR to file for indirect-args kernels
-    if (useIndirectArgs) {
+    if (sd::Environment::getInstance().isDebug() && useIndirectArgs) {
       std::string dumpDir = sd::Environment::getInstance().tritonDumpDir();
       if (dumpDir.empty()) {
         const char* tmpEnv = std::getenv("TMPDIR");
