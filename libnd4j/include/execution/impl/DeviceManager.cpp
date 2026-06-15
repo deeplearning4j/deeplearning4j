@@ -728,20 +728,22 @@ std::string DeviceManager::deviceToString(const DeviceInfo& device) const {
 void DeviceManager::printDeviceInfo() const {
     std::lock_guard<std::mutex> lock(_mutex);
 
-    std::cout << "=== Device Manager ===" << std::endl;
-    std::cout << "Total devices: " << _devices.size() << std::endl;
+    if (sd::Environment::getInstance().isVerbose()) {
+        std::cout << "=== Device Manager ===" << std::endl;
+        std::cout << "Total devices: " << _devices.size() << std::endl;
 
-    for (const auto& device : _devices) {
-        std::cout << "  " << deviceToString(device) << std::endl;
-    }
-
-    std::cout << "P2P connections: " << _p2pConnections.size() << std::endl;
-    for (const auto& conn : _p2pConnections) {
-        std::cout << "  " << conn.sourceDevice << " <-> " << conn.targetDevice;
-        if (conn.nvlinkConnected) {
-            std::cout << " (NVLink)";
+        for (const auto& device : _devices) {
+            std::cout << "  " << deviceToString(device) << std::endl;
         }
-        std::cout << std::endl;
+
+        std::cout << "P2P connections: " << _p2pConnections.size() << std::endl;
+        for (const auto& conn : _p2pConnections) {
+            std::cout << "  " << conn.sourceDevice << " <-> " << conn.targetDevice;
+            if (conn.nvlinkConnected) {
+                std::cout << " (NVLink)";
+            }
+            std::cout << std::endl;
+        }
     }
 }
 

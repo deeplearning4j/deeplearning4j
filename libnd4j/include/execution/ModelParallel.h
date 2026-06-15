@@ -61,6 +61,7 @@
 #include <execution/DataTransferManager.h>
 #include <execution/PipelineScheduler.h>
 #include <execution/Engine.h>
+#include <system/Environment.h>
 
 namespace sd {
 namespace modelparallel {
@@ -227,19 +228,21 @@ inline ParallelCapabilities getCapabilities() {
  * Print system information for model parallelism
  */
 inline void printSystemInfo() {
-    auto& dm = DeviceManager::getInstance();
-    dm.printDeviceInfo();
+    if (sd::Environment::getInstance().isVerbose()) {
+        auto& dm = DeviceManager::getInstance();
+        dm.printDeviceInfo();
 
-    auto caps = dm.getParallelCapabilities();
-    std::cout << "\nParallel Capabilities:" << std::endl;
-    std::cout << "  Tensor Parallel: " << (caps.supportsTensorParallel ? "Yes" : "No")
-              << " (max " << caps.maxTensorParallelSize << ")" << std::endl;
-    std::cout << "  Pipeline Parallel: " << (caps.supportsPipelineParallel ? "Yes" : "No")
-              << " (max " << caps.maxPipelineStages << " stages)" << std::endl;
-    std::cout << "  Data Parallel: " << (caps.supportsDataParallel ? "Yes" : "No")
-              << " (max " << caps.maxDataParallelSize << ")" << std::endl;
-    std::cout << "  P2P: " << (caps.supportsP2P ? "Yes" : "No") << std::endl;
-    std::cout << "  Async Transfer: " << (caps.supportsAsyncTransfer ? "Yes" : "No") << std::endl;
+        auto caps = dm.getParallelCapabilities();
+        std::cout << "\nParallel Capabilities:" << std::endl;
+        std::cout << "  Tensor Parallel: " << (caps.supportsTensorParallel ? "Yes" : "No")
+                  << " (max " << caps.maxTensorParallelSize << ")" << std::endl;
+        std::cout << "  Pipeline Parallel: " << (caps.supportsPipelineParallel ? "Yes" : "No")
+                  << " (max " << caps.maxPipelineStages << " stages)" << std::endl;
+        std::cout << "  Data Parallel: " << (caps.supportsDataParallel ? "Yes" : "No")
+                  << " (max " << caps.maxDataParallelSize << ")" << std::endl;
+        std::cout << "  P2P: " << (caps.supportsP2P ? "Yes" : "No") << std::endl;
+        std::cout << "  Async Transfer: " << (caps.supportsAsyncTransfer ? "Yes" : "No") << std::endl;
+    }
 }
 
 }  // namespace modelparallel

@@ -22,6 +22,7 @@
 
 #include <execution/PipelineScheduler.h>
 #include <execution/DataTransferManager.h>
+#include <system/Environment.h>
 
 #include <chrono>
 #include <algorithm>
@@ -683,48 +684,52 @@ void PipelineScheduler::clearMicroBatches() {
 }
 
 void PipelineScheduler::printSchedule() const {
-    std::cout << "=== Pipeline Schedule ===" << std::endl;
-    std::cout << "Type: ";
-    switch (_schedule) {
-        case PipelineSchedule::GPIPE: std::cout << "GPipe"; break;
-        case PipelineSchedule::ONE_F_ONE_B: std::cout << "1F1B"; break;
-        case PipelineSchedule::INTERLEAVED_1F1B: std::cout << "Interleaved 1F1B"; break;
-        case PipelineSchedule::ZERO_BUBBLE: std::cout << "Zero Bubble"; break;
-        case PipelineSchedule::ASYNC: std::cout << "Async"; break;
-    }
-    std::cout << std::endl;
-    std::cout << "Stages: " << _stages.size() << std::endl;
-    std::cout << "Micro-batches: " << _numMicroBatches << std::endl;
-    std::cout << "Estimated efficiency: " << std::fixed << std::setprecision(2)
-              << (estimateEfficiency() * 100) << "%" << std::endl;
+    if (sd::Environment::getInstance().isVerbose()) {
+        std::cout << "=== Pipeline Schedule ===" << std::endl;
+        std::cout << "Type: ";
+        switch (_schedule) {
+            case PipelineSchedule::GPIPE: std::cout << "GPipe"; break;
+            case PipelineSchedule::ONE_F_ONE_B: std::cout << "1F1B"; break;
+            case PipelineSchedule::INTERLEAVED_1F1B: std::cout << "Interleaved 1F1B"; break;
+            case PipelineSchedule::ZERO_BUBBLE: std::cout << "Zero Bubble"; break;
+            case PipelineSchedule::ASYNC: std::cout << "Async"; break;
+        }
+        std::cout << std::endl;
+        std::cout << "Stages: " << _stages.size() << std::endl;
+        std::cout << "Micro-batches: " << _numMicroBatches << std::endl;
+        std::cout << "Estimated efficiency: " << std::fixed << std::setprecision(2)
+                  << (estimateEfficiency() * 100) << "%" << std::endl;
 
-    std::cout << "\nSchedule entries: " << _scheduleEntries.size() << std::endl;
-    for (const auto& entry : _scheduleEntries) {
-        std::cout << "  t=" << entry.timeStep
-                  << " stage=" << entry.stageId
-                  << " mb=" << entry.microBatchId
-                  << " " << (entry.isForward ? "FWD" : "BWD")
-                  << std::endl;
+        std::cout << "\nSchedule entries: " << _scheduleEntries.size() << std::endl;
+        for (const auto& entry : _scheduleEntries) {
+            std::cout << "  t=" << entry.timeStep
+                      << " stage=" << entry.stageId
+                      << " mb=" << entry.microBatchId
+                      << " " << (entry.isForward ? "FWD" : "BWD")
+                      << std::endl;
+        }
     }
 }
 
 void PipelineScheduler::printStats() const {
-    std::cout << "=== Pipeline Statistics ===" << std::endl;
-    std::cout << "Total time: " << _lastResult.totalTimeMs << " ms" << std::endl;
-    std::cout << "Compute time: " << _lastResult.computeTimeMs << " ms" << std::endl;
-    std::cout << "Efficiency: " << std::fixed << std::setprecision(2)
-              << (_lastResult.pipelineEfficiency * 100) << "%" << std::endl;
-    std::cout << "Bubble ratio: " << std::fixed << std::setprecision(2)
-              << (_lastResult.bubbleRatio * 100) << "%" << std::endl;
-    std::cout << "Throughput: " << std::fixed << std::setprecision(2)
-              << getThroughput() << " micro-batches/sec" << std::endl;
+    if (sd::Environment::getInstance().isVerbose()) {
+        std::cout << "=== Pipeline Statistics ===" << std::endl;
+        std::cout << "Total time: " << _lastResult.totalTimeMs << " ms" << std::endl;
+        std::cout << "Compute time: " << _lastResult.computeTimeMs << " ms" << std::endl;
+        std::cout << "Efficiency: " << std::fixed << std::setprecision(2)
+                  << (_lastResult.pipelineEfficiency * 100) << "%" << std::endl;
+        std::cout << "Bubble ratio: " << std::fixed << std::setprecision(2)
+                  << (_lastResult.bubbleRatio * 100) << "%" << std::endl;
+        std::cout << "Throughput: " << std::fixed << std::setprecision(2)
+                  << getThroughput() << " micro-batches/sec" << std::endl;
 
-    std::cout << "\nPer-stage times:" << std::endl;
-    for (size_t i = 0; i < _stages.size(); ++i) {
-        std::cout << "  Stage " << i << ": "
-                  << "fwd=" << _stages[i].totalForwardTime << "ms "
-                  << "bwd=" << _stages[i].totalBackwardTime << "ms"
-                  << std::endl;
+        std::cout << "\nPer-stage times:" << std::endl;
+        for (size_t i = 0; i < _stages.size(); ++i) {
+            std::cout << "  Stage " << i << ": "
+                      << "fwd=" << _stages[i].totalForwardTime << "ms "
+                      << "bwd=" << _stages[i].totalBackwardTime << "ms"
+                      << std::endl;
+        }
     }
 }
 
