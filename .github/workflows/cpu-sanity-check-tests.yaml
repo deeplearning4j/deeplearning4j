@@ -63,15 +63,15 @@ jobs:
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
+          key: ${{ runner.os }}-${{ runner.arch }}-cmake
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-cmake
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ runner.os }}-${{ runner.arch }}-protobuf
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
@@ -158,7 +158,7 @@ jobs:
 
 
 
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
@@ -238,11 +238,12 @@ jobs:
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
 
-      - name: Set up Java for publishing to GitHub Packages
-        uses: konduitai/setup-java@main
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
+          cache: 'maven'
         
 
 
@@ -250,7 +251,7 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch mingw-w64-x86_64-gnupg  mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
+          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch mingw-w64-x86_64-gnupg  mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel
       - name: Setup windows path
         shell: powershell
         run: echo "C:\msys64\mingw64\bin;C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -309,7 +310,7 @@ jobs:
             experimental: true
             name: Extra maven flags to use as part of the build
 
-    runs-on: macos-10.15
+    runs-on: macos-13
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0

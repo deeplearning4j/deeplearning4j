@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 2
+        default: 4
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -56,214 +56,185 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ onednn,"" ]
-        extension: [ avx2,avx512,"" ]
+        helper: [ onednn, compile, "" ]
+        extension: [ avx2, avx512, "" ]
         include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
+          - mvn_ext: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
+          - debug_enabled: ${{ github.event.inputs.debug_enabled || 'false' }}
             experimental: true
             name: Debug enabled
-          - runs_on: ${{ github.event.inputs.runsOn }}
+          - runs_on: ${{ github.event.inputs.runsOn || 'windows-2022' }}
             experimental: true
             name: OS to run on
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl || '' }}
             experimental: true
             name: OS to run on
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging || '0' }}
             experimental: true
             name: Whether to deploy to release staging or not
-          - release_version: ${{ github.event.inputs.releaseVersion }}
+          - release_version: ${{ github.event.inputs.releaseVersion || '1.0.0-M3' }}
             experimental: true
             name: Release version
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion || '1.0.0-SNAPSHOT' }}
             experimental: true
             name: Snapshot version
-          - server_id: ${{ github.event.inputs.serverId }}
+          - server_id: ${{ github.event.inputs.serverId || 'central' }}
             experimental: true
             name: Server id
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId || '' }}
             experimental: true
             name: The release repository to run on
-          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+          - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
     runs-on: ${{ matrix.runs_on }}
+    timeout-minutes: 720
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Free Disk Space (Windows)
+      - name: Setup sccache (distributed per-object cache)
+        id: setup-sccache
+        continue-on-error: true
+        uses: ./.github/actions/setup-sccache-windows
+        with:
+          cache-suffix: windows-x86_64
+
+      - name: Show sccache stats before build
+        if: always()
+        continue-on-error: true
+        shell: cmd
+        run: |
+          echo === sccache stats before build ===
+          %USERPROFILE%\sccache\sccache.exe --show-stats
+
+      - name: Disable Windows Defender real-time monitoring
+        continue-on-error: true
         shell: powershell
         run: |
+          # Disable real-time monitoring to prevent scanning every compiled .obj/.o file
+          Set-MpPreference -DisableRealtimeMonitoring $true
+          Write-Host "Windows Defender real-time monitoring disabled"
+
+          # Add exclusions as fallback in case DisableRealtimeMonitoring is not allowed
+          $excludePaths = @(
+            "$env:GITHUB_WORKSPACE",
+            "C:\msys64",
+            "$env:USERPROFILE\.m2",
+            "$env:USERPROFILE\ccache",
+            "$env:USERPROFILE\sccache"
+          )
+          foreach ($path in $excludePaths) {
+            Add-MpPreference -ExclusionPath $path -ErrorAction SilentlyContinue
+          }
+
+          $excludeProcesses = @("gcc.exe", "g++.exe", "make.exe", "cmake.exe", "java.exe", "ccache.exe", "sccache.exe")
+          foreach ($proc in $excludeProcesses) {
+            Add-MpPreference -ExclusionProcess $proc -ErrorAction SilentlyContinue
+          }
+
+          $excludeExtensions = @(".obj", ".o", ".h", ".hpp", ".cpp", ".lib", ".dll", ".exe", ".jar")
+          foreach ($ext in $excludeExtensions) {
+            Add-MpPreference -ExclusionExtension $ext -ErrorAction SilentlyContinue
+          }
+          Write-Host "Windows Defender exclusions added for build paths, processes, and extensions"
+
+      - name: Free Disk Space (Windows)
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Continue'
           # Show initial disk space
           Write-Host "Initial disk space:"
           Get-PSDrive C | Select-Object Used,Free
-           # The system must be told to stop managing the pagefile size automatically.
-          wmic computersystem set AutomaticManagedPagefile=False
-          
-          # Find and delete any existing pagefile configuration to ensure ours is the only one.
-          $currentPagefile = Get-WmiObject -Query "SELECT * FROM Win32_PageFileSetting WHERE Name='C:\\pagefile.sys'"
-          if ($currentPagefile) {
-            $currentPagefile.Delete()
+
+          # Configure pagefile to 24 GB
+          try {
+              wmic computersystem set AutomaticManagedPagefile=False 2>$null
+              $currentPagefile = Get-WmiObject -Query "SELECT * FROM Win32_PageFileSetting WHERE Name='C:\\pagefile.sys'" -ErrorAction SilentlyContinue
+              if ($currentPagefile) { $currentPagefile.Delete() }
+              wmic pagefileset create name="C:\\pagefile.sys" 2>$null
+              wmic pagefileset where "name='C:\\pagefile.sys'" set InitialSize=24576,MaximumSize=24576 2>$null
+              Write-Host "Pagefile configured to 24 GB for the duration of this job."
+          }
+          catch {
+              Write-Host "Pagefile configuration failed. Continuing..."
           }
 
-          # Create a new pagefile with a static size of 12 GB (12288 MB).
-          wmic pagefileset create name="C:\\pagefile.sys"
-          wmic pagefileset where "name='C:\\pagefile.sys'" set InitialSize=12288, MaximumSize=12288
-          
-          echo "Pagefile configured to 12 GB for the duration of this job."
           # Remove Windows Defender scan history
           Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
           Write-Host "Removed Windows Defender scan history"
-          
+
           # Clear Windows temp folders
           Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
           Write-Host "Cleared Windows temp folders"
-          
-          # Clear Windows Update cache safely (without stopping/starting service)
-          try {
-              Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared Windows Update download cache"
-          }
-          catch {
-              Write-Host "Could not clear Windows Update cache. Continuing..."
-          }
-          
+
+          # Clear Windows Update cache safely
+          Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Cleared Windows Update download cache"
+
           # Clean package manager caches
           if (Test-Path -Path "C:\npm\cache") {
               Remove-Item -Path "C:\npm\cache\*" -Recurse -Force -ErrorAction SilentlyContinue
               Write-Host "Cleared NPM cache"
           }
-          
-          choco cache remove -y -ErrorAction SilentlyContinue
+
+          choco cache remove -y 2>$null
           Write-Host "Cleared Chocolatey cache"
-          
+
           # Remove Docker images if Docker is installed
           try {
               if (Get-Command "docker" -ErrorAction SilentlyContinue) {
-                  docker image prune -a -f
-                  docker container prune -f
-                  docker volume prune -f
+                  docker image prune -a -f 2>$null
+                  docker container prune -f 2>$null
+                  docker volume prune -f 2>$null
                   Write-Host "Pruned Docker resources"
               }
           }
           catch {
               Write-Host "Failed to prune Docker resources. Continuing..."
           }
-          
+
           # Remove .NET SDK/Runtime backup folders
-          if (Test-Path -Path "$env:ProgramData\Microsoft\.NET\*.backup") {
-              Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Removed .NET backup folders"
-          }
-          
+          Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
+
           # Clear Azure artifacts cache
-          if (Test-Path -Path "$env:LOCALAPPDATA\Microsoft\Azure\*") {
-              Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared Azure artifacts cache"
-          }
-          
-          # Optimize Windows Component Store
-          try {
-              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
-              Write-Host "Optimized Windows Component Store"
-          }
-          catch {
-              Write-Host "Failed to optimize Windows Component Store. Continuing..."
-          }
-          
+          Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
+
           # Show final disk space
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
 
-      - name: Install environment
+      - name: Install MSYS2 and dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          cache: false
+          install: >-
+            base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake libtool make patch gnupg
+            mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
+            mingw-w64-x86_64-libwinpthread-git
+            mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel
+            mingw-w64-x86_64-vulkan-headers
+            mingw-w64-x86_64-vulkan-loader
+
+      - name: Install build tools
         shell: cmd
-        env:
-          GITHUB_EVENT_HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          cd /d %USERPROFILE%
-
-          echo Installing MSYS2
-          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm pkg-config"
-          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm base-devel git tar unzip p7zip zip autoconf autoconf-archive automake libtool make patch gnupg"
-          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-i686-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-i686-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-i686-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-i686-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-vulkan-headers mingw-w64-i686-vulkan-headers mingw-w64-x86_64-vulkan-loader mingw-w64-i686-vulkan-loader"
-          set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\usr\bin;%PATH%"
-
-          C:\msys64\usr\bin\bash -lc "pacman -Q"
-
-          echo Installing Windows SDK 8.1
-          curl -Lo sdksetup.exe https://go.microsoft.com/fwlink/p/?LinkId=323507
-          sdksetup.exe /features OptionId.WindowsDesktopSoftwareDevelopmentKit OptionId.NetFxSoftwareDevelopmentKit /quiet
-
-          echo Removing broken stuff from WSL, MSYS2, etc
-          rm "C:/msys64/usr/bin/curl.exe" "C:/msys64/mingw32/bin/curl.exe" "C:/msys64/mingw64/bin/curl.exe"
-          rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/timeout.exe" "C:/msys64/usr/bin/python.exe" "C:/msys64/usr/bin/python3.exe"
-          rm "C:/ProgramData/chocolatey/bin/gfortran.exe" "C:/msys64/mingw32/bin/gfortran.exe" "C:/msys64/mingw32/bin/python.exe" "C:/msys64/mingw32/bin/python3.exe"
-          rm "C:/Strawberry/c/bin/gfortran.exe" "C:/msys64/mingw64/bin/gfortran.exe" "C:/msys64/mingw64/bin/python.exe" "C:/msys64/mingw64/bin/python3.exe"
-          rm "C:/msys64/mingw32/bin/clang-cl.exe" "C:/msys64/mingw64/bin/clang-cl.exe" "C:/msys64/mingw32/bin/cmake.exe" "C:/msys64/mingw64/bin/cmake.exe"
-          rm "C:/Strawberry/c/lib/libz.a" "C:/Strawberry/c/lib/libzlib.a" "C:/Strawberry/c/lib/libzdll.a" "C:/Strawberry/c/bin/cmake.exe"
+          echo Removing conflicting binaries from MSYS2
+          del /f "C:\msys64\usr\bin\link.exe" 2>nul
+          del /f "C:\msys64\usr\bin\timeout.exe" 2>nul
 
           curl -LO https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz || curl -LO https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
           bash -c "tar -xzf apache-maven-3.6.3-bin.tar.gz -C 'C:/Program Files/'"
-
-          python -m pip install gdown || python -m pip install gdown
-
-          echo Installing ccache
-          curl -LO https://github.com/ccache/ccache/releases/download/v4.6/ccache-4.6-windows-64.zip
-          unzip -j ccache-4.6-windows-64.zip -d C:/msys64/usr/bin/
-          mkdir ccache
-          echo max_size = 3.0G                                                                        > ccache\ccache.conf
-          echo hash_dir = false                                                                      >> ccache\ccache.conf
-          echo sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros >> ccache\ccache.conf
-
-          echo Installing an older less buggy version of GCC
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-ada-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-objc-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-libs-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-fortran-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-libgfortran-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-binutils-2.42-2-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-crt-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-headers-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-libmangle-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-libwinpthread-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-tools-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-winpthreads-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-winstorecompat-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-vulkan-headers-1.3.280.0-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-vulkan-loader-1.3.280.0-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-SDL2-2.30.12-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-python-3.11.9-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-ada-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-objc-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-fortran-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libgfortran-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.42-2-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-crt-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-headers-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-libmangle-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-libwinpthread-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-tools-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-winpthreads-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-winstorecompat-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-vulkan-headers-1.3.280.0-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-vulkan-loader-1.3.280.0-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-SDL2-2.30.12-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-python-3.11.9-1-any.pkg.tar.zst
-          bash -c "pacman -U --noconfirm *.pkg.tar.zst"
 
       - name: Set mvn build command based on matrix
         shell: powershell
@@ -278,31 +249,35 @@ jobs:
             $modules=":nd4j-native-preset,:nd4j-native,libnd4j,:nd4j-native-platform"
           }
           
-          $command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests --also-make"
-          if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
-             $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
+          # Determine helper/extension flags first so they apply to both phases.
+          if ( "${{ matrix.helper }}" -eq "compile" ) {
+             $mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=windows-x86_64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
+          } elseif ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
+             $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64"
           } elseif ( "${{ matrix.helper }}" -ne "" ) {
-              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64   deploy -DskipTests"
+              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64"
           }  elseif ( "${{ matrix.extension }}" -ne "" ) {
                 $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
           } else {
              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
           }
-          
+
+          $mvn_common="${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests $mvn_ext"
+          $command="mvn $mvn_common -pl $modules --also-make deploy"
+
           if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
                  echo "Adding libnd4j download"
                  $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$(${{ matrix.libnd4j_file_download }}/$libnd4j_download_file_url)");
                  echo $libnd4j_url_to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
           }
-          
-          $command2 = -join("$($command)","$($mvn_ext)");
-          $to_write = -join("COMMAND=","$($command2)");
-          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2)"
-          echo $command2  | Out-File -FilePath   "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
+
+          $to_write = -join("COMMAND=","$($command)");
+          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command)"
+          echo $command  | Out-File -FilePath   "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
           echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
 
-      - name: Set up Java for publishing to GitHub Packages
-        uses: konduitai/setup-java@main
+      - name: Set up Java for publishing to OSSRH
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
@@ -329,44 +304,32 @@ jobs:
 
       - name: Run windows cpu build
         shell: cmd
+        timeout-minutes: 720
         run: |
-          call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           set MSYSTEM=MINGW64
-          
-          set "CCACHE_DIR=%USERPROFILE%\ccache"
+
+          set "MAVEN_OPTS=-Xmx3g -XX:+UseG1GC"
           set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%ProgramFiles%\apache-maven-3.6.3\bin;%PATH%"
-          
-          where bash
-          where curl
-          where git
+          set "CMAKE_BUILD_PARALLEL_LEVEL=4"
+
+          REM Raise OOM killer thresholds for CI with large pagefile
+          set "OOM_MEMORY_THRESHOLD=95"
+          set "OOM_CRITICAL_THRESHOLD=98"
+          set "OOM_VELOCITY_THRESHOLD=15"
+
           where cl
           where gcc
           where cmake
           where mvn
-          where python
-          where python3
-          where ccache
-          
-          bash --version
-          git --version
+          where sccache
+
           cl
-          gcc --version
           cmake --version
           call mvn -version
-          python --version
-          ccache --version -sv
+          sccache --show-stats
           df -h
-          wmic pagefile list /format:list
-          
-          set MAKEJ=%NUMBER_OF_PROCESSORS%
-          echo Fetching %GITHUB_REPOSITORY%@%GITHUB_SHA%
-          git init
-          git fetch --depth 1 https://github.com/%GITHUB_REPOSITORY% %GITHUB_SHA%
-          git checkout %GITHUB_SHA%
-          git submodule update --init --recursive
-          git submodule foreach --recursive "git reset --hard"
-          
+
           echo "libnd4j build threads ${{ matrix.build_threads }}"
           echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
           echo "release version ${{ matrix.release_version }}"
@@ -374,10 +337,9 @@ jobs:
           echo "debug enabled ${{ matrix.debug_enabled }}"
           echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
           echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
-          
+
           if "%PERFORM_RELEASE%"=="1" (
                echo "Running release"
                bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows x86_64 "${{ matrix.helper }}" "${{ matrix.extension }}"
@@ -389,12 +351,34 @@ jobs:
                ) else (
                   echo "Running snapshots"
                   call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                  if errorlevel 1 (
+                    echo "::warning::Deploy attempt 1 failed. Retrying in 60s..."
+                    timeout /t 60 /nobreak >nul
+                    call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                    if errorlevel 1 (
+                      echo "::warning::Deploy attempt 2 failed. Retrying in 180s..."
+                      timeout /t 180 /nobreak >nul
+                      call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                      if errorlevel 1 (
+                        echo "::warning::Deploy attempt 3 failed. Retrying in 300s..."
+                        timeout /t 300 /nobreak >nul
+                        call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                        if errorlevel 1 (
+                          echo "::warning::Deploy attempt 4 failed. Retrying in 420s..."
+                          timeout /t 420 /nobreak >nul
+                          call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                        )
+                      )
+                    )
+                  )
                )
           )
-          
-          ccache --version -sv
+          set MVN_EXIT=%ERRORLEVEL%
+
+          sccache --show-stats
           df -h
-          wmic pagefile list /format:list
+
+          exit /b %MVN_EXIT%
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: central
@@ -410,6 +394,35 @@ jobs:
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
+
+      - name: Show sccache stats after build
+        if: always()
+        continue-on-error: true
+        shell: cmd
+        run: |
+          echo === sccache stats after build ===
+          %USERPROFILE%\sccache\sccache.exe --show-stats
+          %USERPROFILE%\sccache\sccache.exe --stop-server
+
+      - name: Publish SDX runtime SDK artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdx-runtime-sdk
+        with:
+          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
+          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
+
+      - name: Publish SDK JAR artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdk-jars
+        with:
+          artifact-name: sdk-jars-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          backend: cpu
+          platform: windows-x86_64
+          platform-extension: ${{ matrix.helper != '' && matrix.extension != '' && format('-{0}-{1}', matrix.helper, matrix.extension) || matrix.helper != '' && format('-{0}', matrix.helper) || matrix.extension != '' && format('-{0}', matrix.extension) || '' }}
+          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
 
       - name: Clean up
         shell: cmd

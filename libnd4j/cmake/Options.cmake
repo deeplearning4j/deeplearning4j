@@ -12,6 +12,57 @@ option(SD_EXTRACT_INSTANTIATIONS "Extract template instantiations and exit" OFF)
 option(SD_GENERATE_FIX_FILES "Generate fix files for missing instantiations" OFF)
 option(SD_INSTANTIATION_VERBOSE "Verbose instantiation extraction" OFF)
 
+# --- Backend Options ---
+option(SD_CPU "Build CPU backend" ON)
+option(SD_CUDA "Build CUDA/GPU backend" OFF)
+option(SD_TPU "Build TPU backend using PJRT" OFF)
+set(TPU_VERSION "v5" CACHE STRING "TPU version (v4, v5)")
+
+# --- Build Verbosity Options ---
+option(SD_VERBOSE_CUDA "Enable verbose CUDA/nvcc output (increases memory usage)" OFF)
+
+# --- Backend Namespace Isolation ---
+# When multiple backends (CPU, CUDA) are loaded in the same process, symbol conflicts
+# can occur because both libraries export identically-named symbols (ops, helpers, singletons).
+# This option sets a unique namespace prefix for all internal symbols.
+#
+# Default behavior:
+#   - CPU build:  SD_BACKEND_NAMESPACE = sd_cpu
+#   - CUDA build: SD_BACKEND_NAMESPACE = sd_cuda
+#   - TPU build:  SD_BACKEND_NAMESPACE = sd_tpu
+#
+# This enables true multi-backend execution where both CPU and CUDA libraries
+# can be loaded simultaneously without symbol conflicts.
+if(NOT DEFINED SD_BACKEND_NAMESPACE OR SD_BACKEND_NAMESPACE STREQUAL "")
+    if(SD_CUDA)
+        set(SD_BACKEND_NAMESPACE "sd_cuda" CACHE STRING "Backend-specific namespace for symbol isolation")
+    elseif(SD_TPU)
+        set(SD_BACKEND_NAMESPACE "sd_tpu" CACHE STRING "Backend-specific namespace for symbol isolation")
+    else()
+        set(SD_BACKEND_NAMESPACE "sd_cpu" CACHE STRING "Backend-specific namespace for symbol isolation")
+    endif()
+    message(STATUS "🔧 Backend namespace: ${SD_BACKEND_NAMESPACE} (auto-detected)")
+else()
+    message(STATUS "🔧 Backend namespace: ${SD_BACKEND_NAMESPACE} (user-specified)")
+endif()
+
+# Add the namespace as a compile definition
+add_definitions(-DSD_BACKEND_NAMESPACE=${SD_BACKEND_NAMESPACE})
+
+# SD_CUDA, SD_TPU are already propagated as preprocessor defines by cmake.
+# Only define the non-option backends explicitly.
+if(SD_TPU)
+    add_definitions(-DSD_BACKEND_TYPE_TPU=1)
+elseif(NOT SD_CUDA)
+    add_definitions(-DSD_BACKEND_TYPE_CPU=1)
+endif()
+
+# --- ZLUDA Transpiler Options ---
+# ZLUDA enables running CUDA code on AMD/Intel GPUs via runtime translation
+option(SD_ZLUDA "Enable ZLUDA transpiler support for AMD/Intel GPUs" OFF)
+set(SD_ZLUDA_TARGET "AUTO" CACHE STRING "ZLUDA target backend (AMD, INTEL, AUTO)")
+set_property(CACHE SD_ZLUDA_TARGET PROPERTY STRINGS AUTO AMD INTEL)
+
 # --- COMPILATION OPTIMIZATION OPTIONS (NEW) ---
 # These dramatically affect template compilation time
 option(SD_FAST_BUILD "Enable fast build mode with minimal templates" OFF)
@@ -19,19 +70,177 @@ option(SD_UNITY_BUILD "Enable Unity build for faster compilation" OFF)
 set(SD_PARALLEL_COMPILE_JOBS "0" CACHE STRING "Number of parallel compile jobs (0 = auto)")
 
 # --- Helper Library Toggles ---
+# Individual helper enable flags (can enable multiple simultaneously)
 option(HELPERS_armcompute "Enable ARM Compute Library helper" OFF)
 option(HELPERS_onednn "Enable OneDNN helper" OFF)
 option(HELPERS_cudnn "Enable cuDNN helper" OFF)
+option(HELPERS_mlir "Enable MLIR/LLVM JIT compilation helper" OFF)
+option(HELPERS_mps "Enable Metal Performance Shaders helper (macOS/iOS)" OFF)
+option(HELPERS_pjrt "Enable PJRT/TPU helper" OFF)
+option(HELPERS_miopen "Enable MIOpen helper (AMD GPUs via ZLUDA)" OFF)
+option(HELPERS_accelerate "Enable Apple Accelerate framework helper (macOS/iOS)" OFF)
+option(HELPERS_llamacpp "Enable LlamaCpp helper for LLM operations" OFF)
+option(HELPERS_vlm "Enable VLM (Vision-Language Model) helper" OFF)
+option(HELPERS_cutlass "Enable CUTLASS helper for optimized GEMM operations" OFF)
+option(HELPERS_nccl "Enable NCCL helper for multi-GPU collective communications" OFF)
+option(HELPERS_nnapi "Enable Android NNAPI helper for hardware acceleration (Android only)" OFF)
+# NOTE: OpenVINO is triggered by SD_TRITON=ON (via -Dlibnd4j.triton=ON), not via helpers.
+# --- Multi-Backend Helper Configuration ---
+# HELPERS_LIST: Semicolon-separated list of helpers to enable (alternative to individual flags)
+# Example: -DHELPERS_LIST="onednn;cudnn" or from pom.xml: -Dlibnd4j.helpers=onednn,cudnn
+set(HELPERS_LIST "" CACHE STRING "Semicolon-separated list of helpers to enable (onednn;cudnn;armcompute;mlir;mps;pjrt;miopen;accelerate;llamacpp;vlm;nnapi)")
 
-# Force all helpers OFF by default to prevent compilation issues
-set(HELPERS_armcompute OFF CACHE BOOL "Force disable ARM Compute Library helper" FORCE)
-set(HELPERS_onednn OFF CACHE BOOL "Force disable OneDNN helper" FORCE)
-set(HELPERS_cudnn OFF CACHE BOOL "Force disable cuDNN helper" FORCE)
+# Parse HELPERS_LIST and set individual HELPERS_* flags
+if(HELPERS_LIST)
+    message(STATUS "🔧 Processing HELPERS_LIST: ${HELPERS_LIST}")
+    foreach(helper ${HELPERS_LIST})
+        string(TOUPPER "${helper}" helper_upper)
+        string(TOLOWER "${helper}" helper_lower)
+        # Normalize common variations
+        if(helper_lower STREQUAL "mkldnn" OR helper_lower STREQUAL "dnnl")
+            set(helper_lower "onednn")
+        endif()
+        set(HELPERS_${helper_lower} ON CACHE BOOL "Enable ${helper_lower} helper (from HELPERS_LIST)" FORCE)
+        message(STATUS "   ✓ Enabled helper: ${helper_lower}")
+    endforeach()
+endif()
 
-# Set corresponding HAVE_* variables
+# --- Dynamic Kernel Selection Configuration ---
+option(SD_DYNAMIC_KERNEL_SELECTION "Enable dynamic kernel selection at runtime" ON)
+option(SD_KERNEL_AUTOTUNING "Enable kernel auto-tuning for performance optimization" OFF)
+option(SD_KERNEL_BENCHMARKING "Enable kernel benchmarking during execution" OFF)
+option(SD_KERNEL_CACHING "Enable caching of kernel selection decisions" ON)
+
+# Kernel selection strategy: fastest, first, roundrobin, memory, power
+set(SD_KERNEL_STRATEGY "fastest" CACHE STRING "Default kernel selection strategy")
+set_property(CACHE SD_KERNEL_STRATEGY PROPERTY STRINGS fastest first roundrobin memory power)
+
+# Helper priority order for kernel dispatch (semicolon-separated, highest priority first)
+# Default priority: platform-specific optimized helpers first, then generic
+set(SD_HELPER_PRIORITY "" CACHE STRING "Helper priority order for kernel dispatch (e.g., 'cudnn;onednn;cpu')")
+
+# Auto-detect and set default helper priority based on platform
+if(NOT SD_HELPER_PRIORITY)
+    if(SD_CUDA)
+        set(SD_HELPER_PRIORITY "cudnn;cpu" CACHE STRING "Default CUDA helper priority" FORCE)
+    elseif(APPLE)
+        set(SD_HELPER_PRIORITY "mps;accelerate;cpu" CACHE STRING "Default macOS helper priority" FORCE)
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+        if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+            set(SD_HELPER_PRIORITY "nnapi;armcompute;mlir;cpu" CACHE STRING "Default Android ARM64 helper priority" FORCE)
+        else()
+            set(SD_HELPER_PRIORITY "armcompute;onednn;cpu" CACHE STRING "Default ARM64 helper priority" FORCE)
+        endif()
+    else()
+        set(SD_HELPER_PRIORITY "onednn;cpu" CACHE STRING "Default x86 helper priority" FORCE)
+    endif()
+endif()
+
+# --- MLIR Configuration Options ---
+set(MLIR_VERSION "18" CACHE STRING "MLIR/LLVM minimum version (18+)")
+option(MLIR_ENABLE_GPU "Enable MLIR GPU dialect and NVVM backend" OFF)
+option(MLIR_ENABLE_VULKAN "Enable MLIR Vulkan/SPIR-V backend for ARM mobile GPUs" OFF)
+option(MLIR_ENABLE_AARCH64 "Enable LLVM AArch64 backend for ARM cross-compilation" OFF)
+set(MLIR_AOT_TARGET "HOST" CACHE STRING "AOT compilation target (HOST, AARCH64_LINUX, AARCH64_ANDROID, X86_64_LINUX)")
+set_property(CACHE MLIR_AOT_TARGET PROPERTY STRINGS HOST AARCH64_LINUX AARCH64_ANDROID X86_64_LINUX)
+option(MLIR_JIT_CACHE "Enable caching of JIT-compiled kernels" ON)
+option(MLIR_DEBUG_DUMPS "Enable MLIR IR dump during lowering (debug)" OFF)
+
+# Auto-enable AArch64 and Vulkan when cross-compiling for Android ARM64
+if(CMAKE_SYSTEM_NAME STREQUAL "Android" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    set(MLIR_ENABLE_AARCH64 ON CACHE BOOL "Auto-enabled for Android ARM64" FORCE)
+    set(MLIR_AOT_TARGET "AARCH64_ANDROID" CACHE STRING "Auto-set for Android ARM64" FORCE)
+    message(STATUS "MLIR: Auto-enabled AArch64 backend for Android cross-compilation")
+
+    # Auto-enable NNAPI on Android (API 27+)
+    if(NOT DEFINED ANDROID_NATIVE_API_LEVEL)
+        set(ANDROID_NATIVE_API_LEVEL 27)
+    endif()
+    if(ANDROID_NATIVE_API_LEVEL GREATER_EQUAL 27)
+        set(HELPERS_nnapi ON CACHE BOOL "Auto-enabled for Android API 27+" FORCE)
+        set(HAVE_NNAPI ON CACHE BOOL "NNAPI available on Android" FORCE)
+        message(STATUS "NNAPI: Auto-enabled for Android API level ${ANDROID_NATIVE_API_LEVEL}")
+    endif()
+endif()
+
+# Auto-enable AArch64 on native ARM64 hosts
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64" AND NOT CMAKE_CROSSCOMPILING)
+    set(MLIR_ENABLE_AARCH64 ON CACHE BOOL "Auto-enabled for native ARM64" FORCE)
+    message(STATUS "MLIR: Auto-enabled AArch64 backend for native ARM64 host")
+endif()
+
+# Note: Helper defaults are already set by option() above (lines 34-40)
+# Do NOT force them OFF here - that would override command-line settings like -DHELPERS_onednn=ON
+# The option() command already defaults them to OFF but allows override
+
+# Set corresponding HAVE_* variables (will be updated by helper setup functions)
 set(HAVE_ARMCOMPUTE OFF CACHE BOOL "ARM Compute Library availability" FORCE)
 set(HAVE_ONEDNN OFF CACHE BOOL "OneDNN availability" FORCE)
 set(HAVE_CUDNN OFF CACHE BOOL "cuDNN availability" FORCE)
+set(HAVE_MLIR OFF CACHE BOOL "MLIR availability" FORCE)
+set(HAVE_MPS OFF CACHE BOOL "MPS availability" FORCE)
+set(HAVE_PJRT OFF CACHE BOOL "PJRT/TPU availability" FORCE)
+set(HAVE_MIOPEN OFF CACHE BOOL "MIOpen availability" FORCE)
+set(HAVE_ZLUDA OFF CACHE BOOL "ZLUDA availability" FORCE)
+set(HAVE_ACCELERATE OFF CACHE BOOL "Apple Accelerate availability" FORCE)
+set(HAVE_LLAMACPP OFF CACHE BOOL "LlamaCpp availability" FORCE)
+set(HAVE_VLM OFF CACHE BOOL "VLM availability" FORCE)
+set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
+set(HAVE_MLX OFF CACHE BOOL "MLX availability" FORCE)
+set(HAVE_CUTLASS OFF CACHE BOOL "CUTLASS availability" FORCE)
+set(HAVE_NCCL OFF CACHE BOOL "NCCL availability" FORCE)
+set(HAVE_NNAPI OFF CACHE BOOL "Android NNAPI availability" FORCE)
+set(HAVE_OPENVINO OFF CACHE BOOL "OpenVINO availability" FORCE)
+
+# --- Triton GPU Compiler Options ---
+set(TRITON_GPU_TARGET "AUTO" CACHE STRING "Triton target: AUTO, NVIDIA, AMD, INTEL")
+set_property(CACHE TRITON_GPU_TARGET PROPERTY STRINGS AUTO NVIDIA AMD INTEL)
+
+# --- Enabled Helpers Tracking ---
+# This list is populated by helper setup functions and used for dynamic kernel selection
+set(SD_ENABLED_HELPERS "" CACHE INTERNAL "List of successfully configured helpers")
+
+# Function to register an enabled helper
+function(sd_register_helper helper_name)
+    set(current_helpers "${SD_ENABLED_HELPERS}")
+    list(FIND current_helpers "${helper_name}" helper_index)
+    if(helper_index EQUAL -1)
+        list(APPEND current_helpers "${helper_name}")
+        set(SD_ENABLED_HELPERS "${current_helpers}" CACHE INTERNAL "List of successfully configured helpers" FORCE)
+        message(STATUS "✅ Registered helper: ${helper_name}")
+    endif()
+endfunction()
+
+# Function to print helper configuration summary
+function(print_helper_configuration)
+    message(STATUS "")
+    message(STATUS "=== Helper Configuration Summary ===")
+    message(STATUS "Dynamic Kernel Selection: ${SD_DYNAMIC_KERNEL_SELECTION}")
+    message(STATUS "Kernel Strategy: ${SD_KERNEL_STRATEGY}")
+    message(STATUS "Kernel Auto-tuning: ${SD_KERNEL_AUTOTUNING}")
+    message(STATUS "Helper Priority: ${SD_HELPER_PRIORITY}")
+    message(STATUS "")
+    message(STATUS "Individual Helper Status:")
+    message(STATUS "  OneDNN:       REQUESTED=${HELPERS_onednn}, AVAILABLE=${HAVE_ONEDNN}")
+    message(STATUS "  cuDNN:        REQUESTED=${HELPERS_cudnn}, AVAILABLE=${HAVE_CUDNN}")
+    message(STATUS "  ARM Compute:  REQUESTED=${HELPERS_armcompute}, AVAILABLE=${HAVE_ARMCOMPUTE}")
+    message(STATUS "  MPS:          REQUESTED=${HELPERS_mps}, AVAILABLE=${HAVE_MPS}")
+    message(STATUS "  Accelerate:   REQUESTED=${HELPERS_accelerate}, AVAILABLE=${HAVE_ACCELERATE}")
+    message(STATUS "  MLIR:         REQUESTED=${HELPERS_mlir}, AVAILABLE=${HAVE_MLIR}, VULKAN=${MLIR_ENABLE_VULKAN}, AOT=${MLIR_AOT_TARGET}")
+    message(STATUS "  PJRT:         REQUESTED=${HELPERS_pjrt}, AVAILABLE=${HAVE_PJRT}")
+    message(STATUS "  MIOpen:       REQUESTED=${HELPERS_miopen}, AVAILABLE=${HAVE_MIOPEN}")
+    message(STATUS "  LlamaCpp:     REQUESTED=${HELPERS_llamacpp}, AVAILABLE=${HAVE_LLAMACPP}")
+    message(STATUS "  VLM:          REQUESTED=${HELPERS_vlm}, AVAILABLE=${HAVE_VLM}")
+    message(STATUS "  Triton:       AVAILABLE=${HAVE_TRITON}")
+    message(STATUS "  CUTLASS:      REQUESTED=${HELPERS_cutlass}, AVAILABLE=${HAVE_CUTLASS}")
+    message(STATUS "  NCCL:         REQUESTED=${HELPERS_nccl}, AVAILABLE=${HAVE_NCCL}")
+    message(STATUS "  NNAPI:        REQUESTED=${HELPERS_nnapi}, AVAILABLE=${HAVE_NNAPI}")
+    message(STATUS "  OpenVINO:     SD_TRITON=${SD_TRITON}, AVAILABLE=${HAVE_OPENVINO}")
+    message(STATUS "")
+    message(STATUS "Enabled Helpers: ${SD_ENABLED_HELPERS}")
+    message(STATUS "====================================")
+    message(STATUS "")
+endfunction()
 set(GENERATED_TYPE_COMBINATIONS "" CACHE INTERNAL "Generated type combinations")
 set(PROCESSED_TEMPLATE_FILES "" CACHE INTERNAL "Processed template files")
 
@@ -48,6 +257,21 @@ option(PRINT_MATH "Print math operations" OFF)
 option(SD_PTXAS "Enable ptxas verbose output" OFF)
 option(SD_KEEP_NVCC_OUTPUT "Keep NVCC output files" OFF)
 option(SD_PREPROCESS "Enable preprocessing" OFF)
+
+# --- CUDA Parallel Compilation Options (CUDA 11.2+) ---
+# These options can dramatically reduce CUDA build times (up to 50% improvement)
+# --threads and --split-compile are auto-enabled for CUDA 11.2+
+# Device LTO is opt-in due to increased link time
+option(SD_CUDA_DEVICE_LTO "Enable CUDA Device Link Time Optimization (better runtime perf, longer link)" OFF)
+option(SD_CUDA_TIME_TRACE "Generate CUDA compilation time trace for build profiling (CUDA 12.8+)" OFF)
+set(SD_CUDA_THREADS "0" CACHE STRING "NVCC --threads count (0=auto, max parallel arch compilation)")
+set(SD_CUDA_SPLIT_COMPILE "0" CACHE STRING "NVCC --split-compile threads (0=auto, parallel optimization phase)")
+
+# --- SDX Standalone Runtime ---
+option(SD_BUILD_SDX_STANDALONE "Build standalone libsdx_cpu/libsdx_cuda (no JVM dependency)" OFF)
+# Kernel backend toggles for SDX (all default ON when the parent build has them):
+#   SDX_INCLUDE_TRITON, SDX_INCLUDE_ONEDNN, SDX_INCLUDE_MLIR, SDX_INCLUDE_OPENVINO
+# Override any to OFF for a smaller deployment binary.  See BuildSDX.cmake.
 
 # --- Build Target Options ---
 option(SD_BUILD_TESTS "Build tests" OFF)
@@ -90,8 +314,9 @@ if(DEFINED SD_GCC_FUNCTRACE AND SD_GCC_FUNCTRACE)
         set(MULTI_PASS_CHUNK_SIZE "200" CACHE STRING "Very large direct chunks for call tracing only" FORCE)
         message(STATUS "🔍 Call tracing only: Using very large chunks (80/200) for maximum build speed")
     endif()
-elseif((DEFINED SD_SANITIZE AND SD_SANITIZE) OR (DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL ""))
-    # Sanitizers only: Small chunks to prevent OOM (sanitizer builds use massive RAM per file)
+elseif(DEFINED SD_SANITIZE AND SD_SANITIZE)
+    # Sanitizers enabled: Small chunks to prevent OOM (sanitizer builds use massive RAM per file)
+    # Note: Only trigger on SD_SANITIZE=ON, not just SD_SANITIZERS being set (it has a default value)
     set(CHUNK_TARGET_INSTANTIATIONS "6" CACHE STRING "Small chunks for sanitizers (prevents OOM)" FORCE)
     set(MULTI_PASS_CHUNK_SIZE "8" CACHE STRING "Small direct chunks for sanitizers (prevents OOM)" FORCE)
     message(STATUS "⚠️  Sanitizers: Using small chunks (6/8) to prevent out-of-memory during compilation")
@@ -161,6 +386,27 @@ else()
     message(STATUS "Using template depth 512 for ${CMAKE_BUILD_TYPE} build")
 endif()
 
+# --- CONSTEXPR LIMITS: Reduce memory usage during template instantiation ---
+# These limits prevent excessive memory consumption during compile-time evaluation
+# fconstexpr-depth: Maximum nesting depth of constexpr function calls (default: 512)
+#   - Lowering to 256 reduces memory for deeply nested constexpr code
+# fconstexpr-loop-limit: Maximum iterations for constexpr loops (default: 262144)
+#   - 65536 is sufficient for most use cases while using less memory
+# fconstexpr-ops-limit: Maximum operations in constexpr evaluation (default: 33554432)
+#   - 4194304 (4M) is enough for practical constexpr while limiting memory
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)
+        add_compile_options(-fconstexpr-depth=256)
+        add_compile_options(-fconstexpr-loop-limit=65536)
+        add_compile_options(-fconstexpr-ops-limit=4194304)
+        message(STATUS "💾 Applied GCC constexpr limits to reduce compilation memory")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-fconstexpr-depth=256)
+    add_compile_options(-fconstexpr-steps=4194304)
+    message(STATUS "💾 Applied Clang constexpr limits to reduce compilation memory")
+endif()
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # Enable faster template compilation in GCC 10+
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)
@@ -175,6 +421,23 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # For development builds, use faster but less optimized compilation
     if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR SD_FAST_BUILD)
         add_compile_options(-O0 -fno-inline-functions)
+    endif()
+endif()
+
+# --- Dependency Cache Options ---
+# Persistent cache for ExternalProject_Add dependencies (FlatBuffers, OneDNN, Triton/LLVM, etc.)
+# so that 'mvn clean install' doesn't re-download and rebuild everything.
+option(SD_DEP_CACHE "Enable dependency caching across clean builds" ON)
+set(SD_DEP_CACHE_DIR "" CACHE STRING "Dependency cache directory (default: ~/.libnd4j/dep-cache)")
+option(SD_DEP_CACHE_CLEAR "Clear all cached dependencies at configure time" OFF)
+set(SD_DEP_CACHE_CLEAR_DEP "" CACHE STRING "Clear cache for a specific dependency (e.g. 'triton_llvm')")
+
+# Set default cache directory if not specified
+if(SD_DEP_CACHE AND NOT SD_DEP_CACHE_DIR)
+    if(WIN32)
+        set(SD_DEP_CACHE_DIR "$ENV{USERPROFILE}/.libnd4j/dep-cache" CACHE STRING "" FORCE)
+    else()
+        set(SD_DEP_CACHE_DIR "$ENV{HOME}/.libnd4j/dep-cache" CACHE STRING "" FORCE)
     endif()
 endif()
 

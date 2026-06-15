@@ -21,7 +21,7 @@ function(apply_android_x86_64_plt_fixes target_name)
     else()
         # MSVC equivalent flags
         target_compile_options(${target_name} PRIVATE
-                /Gy  # Function-level linking
+                -Gy  # Function-level linking
         )
     endif()
 
@@ -46,8 +46,11 @@ function(configure_large_template_linker)
     message(STATUS "Configuring linker for large template library with PLT overflow prevention")
 
     # Clear any existing conflicting linker flags
-    string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-    string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+    # BUT preserve -fuse-ld=mold for SD_GCC_FUNCTRACE builds - mold is required for >2GB binaries
+    if(NOT SD_GCC_FUNCTRACE)
+        string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+        string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+    endif()
 
     # Test if linker supports --plt-align before using it
     execute_process(
@@ -83,8 +86,10 @@ endfunction()
 # Function to apply memory optimization during compilation
 function(configure_compilation_memory_optimization)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072" PARENT_SCOPE)
-        message(STATUS "Applied GCC memory optimization flags")
+        # More aggressive GC (ggc-min-expand=20) reclaims memory more frequently
+        # This is critical for template-heavy files that can use 4-8GB per compiler
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=20 --param ggc-min-heapsize=65536 --param inline-unit-growth=30 -finline-limit=50" PARENT_SCOPE)
+        message(STATUS "Applied aggressive GCC memory optimization flags (ggc-min-expand=20)")
     endif()
 endfunction()
 
@@ -93,9 +98,9 @@ function(configure_section_splitting)
     # MSVC-specific optimizations
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         # MSVC equivalent optimizations
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy" PARENT_SCOPE)      # Function-level linking
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy" PARENT_SCOPE)          # Function-level linking
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /OPT:REF /OPT:ICF" PARENT_SCOPE)  # Remove unreferenced code
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Gy" PARENT_SCOPE)      # Function-level linking
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Gy" PARENT_SCOPE)          # Function-level linking
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -OPT:REF -OPT:ICF" PARENT_SCOPE)  # Remove unreferenced code
         message(STATUS "Applied MSVC function-level linking optimizations")
     endif()
 endfunction()
@@ -172,7 +177,7 @@ function(configure_architecture_tuning)
         message(STATUS "ARM32 architecture tuning: ${SD_ARCH} with NEON")
     elseif(SD_EXTENSION MATCHES "avx2")
         message(STATUS "Building AVX2 binary...")
-        set(ARCH_TUNE "-mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mprefetchwt1 -DSD_F16C=true -DF_AVX2=true" PARENT_SCOPE)
+        set(ARCH_TUNE "-mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -DSD_F16C=true -DF_AVX2=true" PARENT_SCOPE)
         if(NO_AVX256_SPLIT)
             set(ARCH_TUNE "${ARCH_TUNE} -mno-avx256-split-unaligned-load -mno-avx256-split-unaligned-store" PARENT_SCOPE)
         endif()
@@ -187,7 +192,7 @@ function(configure_architecture_tuning)
 
         if(SD_EXTENSION MATCHES "avx512")
             message(STATUS "Building AVX512 binary...")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mavx512f -mavx512vl -mavx512bw -mavx512dq -mavx512cd -mbmi -mbmi2 -mprefetchwt1 -mclflushopt -mxsavec -mxsaves -DSD_F16C=true -DF_AVX512=true" PARENT_SCOPE)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mavx512f -mavx512vl -mavx512bw -mavx512dq -mavx512cd -mbmi -mbmi2 -mclflushopt -mxsavec -mxsaves -DSD_F16C=true -DF_AVX512=true" PARENT_SCOPE)
         endif()
 
         if(NOT WIN32 AND NOT SD_CUDA)
@@ -212,9 +217,15 @@ function(apply_compiler_specific_flags ARCH_TUNE)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}" PARENT_SCOPE)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
-        message(STATUS "Adding GCC memory optimization flag: --param ggc-min-expand=10")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=10 ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++17 -fPIC" PARENT_SCOPE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ggc-min-expand=10 -fPIC" PARENT_SCOPE)
+        # Aggressive GCC memory flags for template-heavy builds:
+        # ggc-min-expand=20: Run GC when heap grows 20% (default 30, lower = more aggressive)
+        # ggc-min-heapsize=65536: 64MB min heap before GC applies (prevents thrashing on small files)
+        # inline-unit-growth=30: Limit function growth from inlining (default 40)
+        # finline-limit=50: Max inline function size (default 600, lower = much less memory)
+        set(GCC_MEM_FLAGS "--param ggc-min-expand=20 --param ggc-min-heapsize=65536 --param inline-unit-growth=30 -finline-limit=50")
+        message(STATUS "Adding GCC memory optimization flags: ${GCC_MEM_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_MEM_FLAGS} ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++17 -fPIC" PARENT_SCOPE)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_MEM_FLAGS} -fPIC" PARENT_SCOPE)
 
 
         if(UNIX)
@@ -246,7 +257,9 @@ function(apply_compiler_specific_flags ARCH_TUNE)
                 set(CMAKE_CXX_EXTENSIONS OFF PARENT_SCOPE)
             endif()
 
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0 -gno-record-gcc-switches -ftrack-macro-expansion=0 -fstack-protector -fstack-protector-all -Wall -Wextra -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -ggdb3 -pthread -MT -Bsymbolic -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions -O0 -fPIC" PARENT_SCOPE)
+            # Removed -finstrument-functions to reduce binary size, keep frame pointers for stack traces
+            # Changed -ggdb3 to -g1 for minimal debug info (consistent with CompilerFlags.cmake)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0 -gno-record-gcc-switches -ftrack-macro-expansion=0 -fstack-protector -fstack-protector-all -Wall -Wextra -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -g1 -pthread -MT -Bsymbolic -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fPIC" PARENT_SCOPE)
 
             # Session #1045 FIX: Removed -lunwind - conflicts with JVM's libgcc_s causing _Unwind_SetGR crashes
             # Use system libgcc_s for exception handling (JVM compatible)

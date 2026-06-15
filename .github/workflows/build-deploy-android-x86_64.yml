@@ -46,7 +46,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-latest
+        default: ubuntu-24.04
 
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
@@ -58,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [onednn, ""]
+        helper: [onednn, compile, ""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
@@ -88,12 +88,20 @@ jobs:
     steps:
       - uses: AutoModality/action-clean@v1
 
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-
       - uses: actions/checkout@v4
+
+      - name: Setup sccache (distributed per-object cache)
+        id: setup-sccache
+        uses: ./.github/actions/setup-sccache-linux
+        with:
+          cache-suffix: android-x86_64
+
+      - name: Show sccache stats before build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== sccache stats before build ==="
+          sccache --show-stats || true
 
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
@@ -157,29 +165,22 @@ jobs:
       - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/update-deps-linux
 
-      - name: Cache cmake install
-        uses: actions/cache@v4
-        id: cache-cmake-install
-        with:
-          path: /opt/cmake
-          key: ${{ runner.os }}-cmake-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-cmake-
+      - name: Install DWARF headers for stack trace support
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libdw-dev libelf-dev libdwarf-dev
 
-      - name: Cache protobuf install
-        uses: actions/cache@v4
-        id: cache-protobuf
-        with:
-          path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-protobuf-
+      - name: Install LLVM/MLIR toolchain
+        if: matrix.helper == 'compile'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y llvm-18-dev mlir-18-tools || sudo apt-get install -y llvm-dev libmlir-dev mlir-tools || true
 
       - uses: ./.github/actions/install-protobuf-linux
-        if: steps.cache-protobuf.outputs.cache-hit != 'true'
 
       - uses: ./.github/actions/install-cmake-linux
-        if: steps.cache-cmake-install.outputs.cache-hit != 'true'
 
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
@@ -191,7 +192,6 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
 
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
@@ -226,22 +226,18 @@ jobs:
              modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
 
-          # Base Maven command
-          command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
-
-          # Updated conditional flags for the helper library
-          if [ "${{ matrix.helper }}" != '' ]; then
-             if [ "${{ matrix.helper }}" == "onednn" ]; then
-                 mvn_ext=" -Dlibnd4j.helper=onednn -Djavacpp.platform.extension=-onednn -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-onednn"
-             else
-                 echo "Warning: Unsupported helper '${{ matrix.helper }}' defined in matrix. Only 'onednn' or empty is handled for Maven flags."
-                 mvn_ext=""
-             fi
+          # Determine helper/extension flags first so they apply to both phases.
+          if [ "${{ matrix.helper }}" == "compile" ]; then
+             mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
+          elif [ "${{ matrix.helper }}" == "onednn" ]; then
+             mvn_ext=" -Dlibnd4j.helper=onednn -Djavacpp.platform.extension=-onednn -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-onednn"
+          elif [ "${{ matrix.helper }}" != '' ]; then
+             echo "Warning: Unsupported helper '${{ matrix.helper }}' defined in matrix."
+             mvn_ext=""
           else
              mvn_ext=""
           fi
-
-          command="${command} ${mvn_ext}"
+          command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --batch-mode -DskipTests ${mvn_ext} -pl $modules --also-make deploy"
           echo "Setting command for helper ${{ matrix.helper }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
 
@@ -461,6 +457,12 @@ jobs:
           # Show memory status before build
           echo "=== Memory status before build ==="
           free -h
+
+          # Make libdwarf layout visible to Android cross-toolchain includes.
+          export C_INCLUDE_PATH="/usr/include/libdwarf:${C_INCLUDE_PATH:-}"
+          export CPLUS_INCLUDE_PATH="/usr/include/libdwarf:${CPLUS_INCLUDE_PATH:-}"
+          export CFLAGS="${CFLAGS:-} -DBACKWARD_HAS_DW=0 -DBACKWARD_HAS_BACKTRACE_SYMBOL=1"
+          export CXXFLAGS="${CXXFLAGS:-} -DBACKWARD_HAS_DW=0 -DBACKWARD_HAS_BACKTRACE_SYMBOL=1"
           
           # Pre-build verification
           echo "=== Pre-build OpenBLAS verification ==="
@@ -480,8 +482,42 @@ jobs:
           else
               echo "=== Executing snapshot build ==="
               echo "Command: ${COMMAND}"
-              eval "${COMMAND}"
+              BACKOFF=(0 60 180 300 420)
+              for attempt in 1 2 3 4 5; do
+                eval "${COMMAND}" && break
+                DELAY=${BACKOFF[$attempt]:-420}
+                echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in ${DELAY}s..."
+                sleep $DELAY
+              done
           fi
+
+      - name: Show sccache stats after build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== sccache stats after build ==="
+          sccache --show-stats || true
+          sccache --stop-server || true
+
+      - name: Publish SDX runtime SDK artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdx-runtime-sdk
+        with:
+          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
+          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
+
+      - name: Publish SDK JAR artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdk-jars
+        with:
+          artifact-name: sdk-jars-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          backend: cpu
+          platform: android-x86_64
+          platform-extension: ${{ matrix.helper != '' && matrix.extension != '' && format('-{0}-{1}', matrix.helper, matrix.extension) || matrix.helper != '' && format('-{0}', matrix.helper) || matrix.extension != '' && format('-{0}', matrix.extension) || '' }}
+          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
 
       - name: Show memory usage summary
         if: always()
@@ -491,14 +527,14 @@ jobs:
           if [ -n "$MONITOR_PID" ]; then
             kill $MONITOR_PID 2>/dev/null || true
           fi
-          
+
           echo "=== Final memory status ==="
           free -h
           if swapon --show | grep -q "/"; then
             echo "=== Swap usage ==="
             swapon --show
           fi
-          
+
           echo "=== Memory usage during build ==="
           if [ -f memory_monitor.log ]; then
             cat memory_monitor.log

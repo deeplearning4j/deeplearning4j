@@ -1,0 +1,422 @@
+name: Run Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      testSuite:
+        description: 'Test suite (quick = fast suites in parallel)'
+        required: true
+        default: 'quick'
+        type: choice
+        options:
+          - quick
+          - sanity
+          - nd4j
+          - samediff
+          - dl4jcore
+          - keras
+          - datavec
+          - onnx
+          - tensorflow
+          - integration
+          - libnd4j
+          - llm
+          - vlm
+          - ggml
+          - zoo
+          - longrunning
+          - all
+
+      backendArtifactId:
+        description: 'Backend artifact ID'
+        required: true
+        default: 'nd4j-native'
+        type: choice
+        options:
+          - nd4j-native
+          - nd4j-cuda-12.9
+          - nd4j-cuda-12.6
+
+      classifier:
+        description: 'Full platform classifier (e.g. linux-x86_64, linux-x86_64-onednn, linux-arm64-compile, macosx-arm64). Empty = linux-x86_64.'
+        required: false
+        default: ''
+
+      testFilter:
+        description: 'Surefire -Dtest override (e.g. SameDiffTests#testMethod). Overrides suite pattern.'
+        required: false
+        default: ''
+
+      heapSize:
+        description: 'JVM heap size'
+        required: false
+        default: '4g'
+
+      offHeapSize:
+        description: 'JVM off-heap / max physical bytes'
+        required: false
+        default: '6g'
+
+      runsOn:
+        description: 'Override GitHub Actions runner label (required for CUDA backends)'
+        required: false
+        default: ''
+
+env:
+  MAVEN_OPTS: -Xmx2g
+
+jobs:
+  # ────────────────────────────────────────────────────────────────
+  # Parse classifier → javacpp_platform, javacpp_extension, runner
+  # ────────────────────────────────────────────────────────────────
+  setup:
+    runs-on: ubuntu-22.04
+    outputs:
+      javacpp_platform: ${{ steps.parse.outputs.javacpp_platform }}
+      javacpp_extension: ${{ steps.parse.outputs.javacpp_extension }}
+      classifier: ${{ steps.parse.outputs.classifier }}
+      runner: ${{ steps.parse.outputs.runner }}
+      os: ${{ steps.parse.outputs.os }}
+    steps:
+      - id: parse
+        shell: bash
+        run: |
+          CLASSIFIER="${{ inputs.classifier }}"
+          BACKEND="${{ inputs.backendArtifactId }}"
+          RUNS_ON="${{ inputs.runsOn }}"
+
+          # Default classifier
+          if [ -z "$CLASSIFIER" ]; then
+            CLASSIFIER="linux-x86_64"
+          fi
+
+          # Parse classifier into base platform + extension
+          # Base platforms (longest first to avoid partial match)
+          PLATFORM=""
+          EXTENSION=""
+          for base in macosx-x86_64 linux-x86_64 linux-arm64 macosx-arm64 windows-x86_64 android-arm64 android-x86_64; do
+            if [[ "$CLASSIFIER" == "$base"* ]]; then
+              PLATFORM="$base"
+              EXTENSION="${CLASSIFIER#$base}"
+              break
+            fi
+          done
+
+          if [ -z "$PLATFORM" ]; then
+            echo "::error::Cannot parse classifier '${CLASSIFIER}'. Expected format: <platform>[-extension], e.g. linux-x86_64-onednn"
+            exit 1
+          fi
+
+          # Map platform → default runner + OS
+          case "$PLATFORM" in
+            linux-x86_64)   RUNNER="ubuntu-22.04";     OS="linux"   ;;
+            linux-arm64)    RUNNER="ubuntu-22.04-arm";  OS="linux"   ;;
+            macosx-arm64)   RUNNER="macos-14";          OS="macos"   ;;
+            macosx-x86_64)  RUNNER="macos-13";          OS="macos"   ;;
+            windows-x86_64) RUNNER="windows-2022";      OS="windows" ;;
+            android-*)      RUNNER="ubuntu-22.04";      OS="linux"   ;;
+            *)              RUNNER="ubuntu-22.04";      OS="linux"   ;;
+          esac
+
+          # CUDA backends require self-hosted unless explicitly overridden
+          if [[ "$BACKEND" == nd4j-cuda-* ]] && [ -z "$RUNS_ON" ]; then
+            RUNNER="self-hosted"
+          fi
+
+          # User override takes priority
+          if [ -n "$RUNS_ON" ]; then
+            RUNNER="$RUNS_ON"
+          fi
+
+          echo "javacpp_platform=$PLATFORM"   >> $GITHUB_OUTPUT
+          echo "javacpp_extension=$EXTENSION"  >> $GITHUB_OUTPUT
+          echo "classifier=$CLASSIFIER"        >> $GITHUB_OUTPUT
+          echo "runner=$RUNNER"                >> $GITHUB_OUTPUT
+          echo "os=$OS"                        >> $GITHUB_OUTPUT
+
+          echo "Parsed: classifier=$CLASSIFIER → platform=$PLATFORM extension=$EXTENSION runner=$RUNNER os=$OS"
+
+  # ────────────────────────────────────────────────────────────────
+  # Quick tests — fast suites run in parallel
+  # ────────────────────────────────────────────────────────────────
+  quick-tests:
+    needs: setup
+    if: inputs.testSuite == 'quick'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: sanity
+            test_pattern: 'SameDiffTests,SameDiffTrainingTest,BasicOpValidationTests,CustomOpsTests'
+          - suite: nd4j
+            test_pattern: 'org.eclipse.deeplearning4j.nd4j.linalg.**,org.eclipse.deeplearning4j.nd4j.evaluation.**,org.nd4j.**,org.eclipse.deeplearning4j.frameworkimport.nd4j.**'
+          - suite: datavec
+            test_pattern: 'org.datavec.**'
+          - suite: keras
+            test_pattern: 'org.eclipse.deeplearning4j.frameworkimport.keras.**'
+          - suite: dl4jcore
+            test_pattern: 'org.eclipse.deeplearning4j.dl4jcore.**,org.deeplearning4j.**'
+
+    runs-on: ${{ needs.setup.outputs.runner }}
+    timeout-minutes: 90
+    name: quick / ${{ matrix.suite }} (${{ needs.setup.outputs.classifier }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clean workspace (self-hosted)
+        if: needs.setup.outputs.runner == 'self-hosted'
+        uses: AutoModality/action-clean@v1
+
+      - name: Free Disk Space (Linux)
+        if: needs.setup.outputs.os == 'linux' && needs.setup.outputs.runner != 'self-hosted'
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: Build Java modules (native jars from snapshots)
+        shell: bash
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Dbackend.artifactId=${{ inputs.backendArtifactId }} \
+            -Djavacpp.platform=${{ needs.setup.outputs.javacpp_platform }} \
+            -Djavacpp.platform.extension=${{ needs.setup.outputs.javacpp_extension }} \
+            -Dplatform.classifier=${{ needs.setup.outputs.classifier }} \
+            -Dmaven.javadoc.skip=true \
+            -pl :platform-tests --also-make \
+            -pl !:libnd4j \
+            --no-transfer-progress --batch-mode
+
+      - name: Download test resources
+        shell: bash
+        run: |
+          wget -q https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip -q master.zip
+          cd dl4j-test-resources-master
+          mvn clean install -DskipTests --no-transfer-progress --batch-mode
+
+      - name: 'Run tests: ${{ matrix.suite }}'
+        shell: bash
+        env:
+          CUDA_LAUNCH_BLOCKING: '1'
+        run: |
+          export OMP_NUM_THREADS=1
+          TEST_FILTER="${{ inputs.testFilter }}"
+          if [ -n "$TEST_FILTER" ]; then
+            TEST_FLAGS="-Dtest=${TEST_FILTER}"
+          else
+            TEST_FLAGS="-Dtest=${{ matrix.test_pattern }}"
+          fi
+          cd platform-tests
+          mvn test \
+            -Dbackend.artifactId=${{ inputs.backendArtifactId }} \
+            -Djavacpp.platform=${{ needs.setup.outputs.javacpp_platform }} \
+            -Djavacpp.platform.extension=${{ needs.setup.outputs.javacpp_extension }} \
+            -Dplatform.classifier=${{ needs.setup.outputs.classifier }} \
+            -Dtest.heap.size=${{ inputs.heapSize }} \
+            -Dtest.offheap.size=${{ inputs.offHeapSize }} \
+            -DskipTestResourceEnforcement=true \
+            -DexcludedGroups="long-running-test,large-resources,downloads" \
+            ${TEST_FLAGS} \
+            --no-transfer-progress --batch-mode --fail-at-end
+
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-quick-${{ matrix.suite }}-${{ needs.setup.outputs.classifier }}
+          path: platform-tests/target/surefire-reports/
+          retention-days: 14
+
+  # ────────────────────────────────────────────────────────────────
+  # Single suite — run one specific test category
+  # ────────────────────────────────────────────────────────────────
+  single-suite:
+    needs: setup
+    if: inputs.testSuite != 'quick'
+    runs-on: ${{ needs.setup.outputs.runner }}
+    timeout-minutes: 180
+    name: ${{ inputs.testSuite }} (${{ needs.setup.outputs.classifier }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clean workspace (self-hosted)
+        if: needs.setup.outputs.runner == 'self-hosted'
+        uses: AutoModality/action-clean@v1
+
+      - name: Free Disk Space (Linux)
+        if: needs.setup.outputs.os == 'linux' && needs.setup.outputs.runner != 'self-hosted'
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: Build Java modules (native jars from snapshots)
+        shell: bash
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Dbackend.artifactId=${{ inputs.backendArtifactId }} \
+            -Djavacpp.platform=${{ needs.setup.outputs.javacpp_platform }} \
+            -Djavacpp.platform.extension=${{ needs.setup.outputs.javacpp_extension }} \
+            -Dplatform.classifier=${{ needs.setup.outputs.classifier }} \
+            -Dmaven.javadoc.skip=true \
+            -pl :platform-tests --also-make \
+            -pl !:libnd4j \
+            --no-transfer-progress --batch-mode
+
+      - name: Download test resources
+        shell: bash
+        run: |
+          wget -q https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip -q master.zip
+          cd dl4j-test-resources-master
+          mvn clean install -DskipTests --no-transfer-progress --batch-mode
+
+      - name: 'Run tests: ${{ inputs.testSuite }}'
+        shell: bash
+        env:
+          CUDA_LAUNCH_BLOCKING: '1'
+        run: |
+          export OMP_NUM_THREADS=1
+          SUITE="${{ inputs.testSuite }}"
+          TEST_FILTER="${{ inputs.testFilter }}"
+
+          # Resolve test pattern from suite name
+          if [ -n "$TEST_FILTER" ]; then
+            TEST_FLAGS="-Dtest=${TEST_FILTER}"
+          else
+            case "$SUITE" in
+              sanity)
+                TEST_FLAGS="-Dtest=SameDiffTests,SameDiffTrainingTest,BasicOpValidationTests,CustomOpsTests" ;;
+              nd4j)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.nd4j.linalg.**,org.eclipse.deeplearning4j.nd4j.evaluation.**,org.nd4j.**,org.eclipse.deeplearning4j.frameworkimport.nd4j.**" ;;
+              samediff)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.nd4j.autodiff.**" ;;
+              dl4jcore)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.dl4jcore.**,org.deeplearning4j.**" ;;
+              keras)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.frameworkimport.keras.**" ;;
+              datavec)
+                TEST_FLAGS="-Dtest=org.datavec.**" ;;
+              onnx)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx.**" ;;
+              tensorflow)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.frameworkimport.tensorflow.**,org.eclipse.deeplearning4j.longrunning.frameworkimport.tensorflow.**" ;;
+              integration)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.integration.**" ;;
+              libnd4j)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.nd4j.libnd4j.**" ;;
+              llm)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.llm.**" ;;
+              vlm)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.vlm.**" ;;
+              ggml)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.ggml.**" ;;
+              zoo)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.zoo.**" ;;
+              longrunning)
+                TEST_FLAGS="-Dtest=org.eclipse.deeplearning4j.longrunning.**" ;;
+              all)
+                TEST_FLAGS="" ;;
+              *)
+                echo "::error::Unknown test suite: $SUITE"
+                exit 1 ;;
+            esac
+          fi
+
+          cd platform-tests
+          mvn test \
+            -Dbackend.artifactId=${{ inputs.backendArtifactId }} \
+            -Djavacpp.platform=${{ needs.setup.outputs.javacpp_platform }} \
+            -Djavacpp.platform.extension=${{ needs.setup.outputs.javacpp_extension }} \
+            -Dplatform.classifier=${{ needs.setup.outputs.classifier }} \
+            -Dtest.heap.size=${{ inputs.heapSize }} \
+            -Dtest.offheap.size=${{ inputs.offHeapSize }} \
+            -DskipTestResourceEnforcement=true \
+            -DexcludedGroups="long-running-test,large-resources,downloads" \
+            ${TEST_FLAGS} \
+            --no-transfer-progress --batch-mode --fail-at-end
+
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-${{ inputs.testSuite }}-${{ needs.setup.outputs.classifier }}
+          path: platform-tests/target/surefire-reports/
+          retention-days: 14

@@ -1,0 +1,144 @@
+name: Setup ccache for Linux
+description: 'Install and configure ccache with smart caching for Linux builds'
+
+inputs:
+  cache-suffix:
+    description: 'Suffix for cache key (e.g., cuda-12.6, arm64)'
+    required: false
+    default: ''
+  cache-family:
+    description: 'Broad cache family prefix for cross-variant sharing (e.g., x86_64 for CPU, cuda-12.9 for CUDA). When set, enables fallback to any cache within the same family, so helper/extension variants share a common base.'
+    required: false
+    default: ''
+  max-size:
+    description: 'Maximum cache size (e.g., 5G)'
+    required: false
+    default: '8G'
+
+outputs:
+  cache-hit:
+    description: 'Whether there was a cache hit'
+    value: ${{ steps.ccache-restore.outputs.cache-hit }}
+  save-key:
+    description: 'Unique cache key used when saving ccache at end of job'
+    value: ${{ steps.ccache-keys.outputs.save-key }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install ccache
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y ccache
+        ccache --version
+        echo "Installed ccache successfully"
+
+    - name: Compute ccache keys
+      id: ccache-keys
+      shell: bash
+      run: |
+        # Strip trailing dashes from suffix (empty helper/extension produces "x86_64--")
+        SUFFIX=$(echo "${{ inputs.cache-suffix }}" | sed 's/-*$//')
+        echo "restore-key=ccache-linux-${{ runner.arch }}-${SUFFIX}-${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+        echo "save-key=ccache-linux-${{ runner.arch }}-${SUFFIX}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+
+    - name: Compute restore keys
+      id: ccache-restore-keys
+      shell: bash
+      run: |
+        # Build restore key chain: most specific first, broadest last.
+        # Each line is a prefix - GitHub Actions finds the first cache whose key starts with it.
+        # ccache's content-based hashing ensures correctness across variants.
+        PREFIX="ccache-linux-${{ runner.arch }}"
+        # Strip trailing dashes from suffix (empty helper/extension produces "x86_64--")
+        SUFFIX=$(echo "${{ inputs.cache-suffix }}" | sed 's/-*$//')
+        {
+          echo "keys<<RESTORE_KEYS_EOF"
+          # Variant-specific keys (exact helper/extension match)
+          echo "${PREFIX}-${SUFFIX}-${{ github.ref_name }}-"
+          echo "${PREFIX}-${SUFFIX}-master-"
+          echo "${PREFIX}-${SUFFIX}-main-"
+          echo "${PREFIX}-${SUFFIX}-"
+          # Family-level keys: enables cross-variant cache sharing.
+          # E.g., a cuda-12.9-cudnn build can restore from a cuda-12.9-compile cache,
+          # getting hits on the ~80% of files compiled with identical flags.
+          FAMILY="${{ inputs.cache-family }}"
+          if [ -n "$FAMILY" ] && [ "$FAMILY" != "$SUFFIX" ]; then
+            echo "${PREFIX}-${FAMILY}-${{ github.ref_name }}-"
+            echo "${PREFIX}-${FAMILY}-master-"
+            echo "${PREFIX}-${FAMILY}-"
+          fi
+          echo "RESTORE_KEYS_EOF"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Restore ccache
+      id: ccache-restore
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.ccache
+        key: ${{ steps.ccache-keys.outputs.restore-key }}
+        restore-keys: ${{ steps.ccache-restore-keys.outputs.keys }}
+
+    - name: Configure ccache
+      shell: bash
+      run: |
+        # Set ccache directory
+        export CCACHE_DIR="${HOME}/.ccache"
+        mkdir -p "${CCACHE_DIR}"
+
+        # Remove stale config from cache restore before writing fresh one
+        rm -f "${CCACHE_DIR}/ccache.conf"
+
+        # Configure ccache settings optimized for CI
+        ccache --set-config=max_size=${{ inputs.max-size }}
+        ccache --set-config=compression=true
+        ccache --set-config=compression_level=1
+        ccache --set-config=hash_dir=false
+        ccache --set-config=sloppiness=file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed
+        ccache --set-config=compiler_check=content
+        ccache --set-config=base_dir=${GITHUB_WORKSPACE}
+        ccache --set-config=temporary_dir=/dev/shm/ccache_tmp
+        ccache --set-config=depend_mode=true
+        ccache --set-config=direct_mode=true
+        ccache --set-config=inode_cache=false
+        ccache --set-config=file_clone=false
+        ccache --set-config=pch_external_checksum=true
+        mkdir -p /dev/shm/ccache_tmp
+
+        # Show configuration
+        echo "=== ccache configuration ==="
+        ccache --show-config
+
+        # Export environment variables for subsequent steps
+        echo "CCACHE_DIR=${CCACHE_DIR}" >> $GITHUB_ENV
+        echo "CCACHE_COMPILERCHECK=content" >> $GITHUB_ENV
+        echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+        echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+        echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+        echo "CMAKE_CUDA_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+        # Disable PCH: CI runners may have different system header mtimes across restores,
+        # which invalidates all PCH-based ccache manifest entries.
+        echo "SD_DISABLE_PCH=1" >> $GITHUB_ENV
+        # ccache debug logging disabled (was temporary diagnostic).
+        # Re-enable with: echo "CCACHE_LOGFILE=${HOME}/ccache-debug.log" >> $GITHUB_ENV
+
+        # Add ccache to PATH
+        echo "/usr/lib/ccache" >> $GITHUB_PATH
+
+    - name: Clean stale ccache locks and verify integrity
+      shell: bash
+      run: |
+        CCACHE_DIR="${HOME}/.ccache"
+        # Remove any stale .lock files left by cancelled builds
+        find "${CCACHE_DIR}" -name "*.lock" -type f -delete 2>/dev/null && echo "Cleaned stale locks" || true
+        # Run cleanup to remove broken cache entries
+        ccache --cleanup 2>/dev/null || true
+        # Zero stats for this build
+        ccache -z 2>/dev/null || true
+
+    - name: Show ccache stats before build
+      shell: bash
+      run: |
+        echo "=== ccache stats before build ==="
+        ccache --show-stats --verbose || ccache -sv || ccache -s

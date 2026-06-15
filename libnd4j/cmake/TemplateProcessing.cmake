@@ -80,25 +80,14 @@ if(SD_GCC_FUNCTRACE)
         set(_per_job_mb 512)
     endif()
 
-    # Empirical: chunk target 8 → ~225MB, so ~28MB per instantiation slot.
-    # PERFORMANCE OPTIMIZATION: Increase chunk sizes to reduce file count
-    # OLD: Limited to 6-48 per chunk
-    # NEW: Allow up to 96 per chunk for faster builds (fewer files = less overhead)
-    math(EXPR _chunk_target "${_per_job_mb} / 28")
-    if(_chunk_target LESS 12)
-        set(_chunk_target 12)  # Increased from 6
-    elseif(_chunk_target GREATER 96)
-        set(_chunk_target 96)  # Increased from 48
-    endif()
-
-    # Direct instantiation chunks - also increased
-    math(EXPR _direct_chunk "${_chunk_target} * 13 / 20")
-    if(_direct_chunk LESS 8)
-        set(_direct_chunk 8)  # Increased from 4
-    endif()
-    if(_direct_chunk GREATER _chunk_target)
-        set(_direct_chunk ${_chunk_target})
-    endif()
+    # Note: We now count actual template lines, not combinations
+    # REDUCED from 30 to 3 for functrace+CUDA builds to avoid .eh_frame PC32 relocation overflow
+    # AND reduce memory usage during compilation (each CUDA compilation uses 500MB-1GB RAM)
+    # Each template instantiation generates ~200+ symbols due to template expansion, inline functions, etc.
+    # With 30 instantiations per file, we get 6000+ symbols which exceeds PC32 relocation limits
+    # Reduced to 3 to allow more parallel jobs without OOM
+    set(_chunk_target 3)
+    set(_direct_chunk 3)
 
     set(CHUNK_TARGET_INSTANTIATIONS "${_chunk_target}" CACHE STRING "Adaptive chunk size for functrace builds" FORCE)
     set(MULTI_PASS_CHUNK_SIZE "${_direct_chunk}" CACHE STRING "Adaptive direct chunk size for functrace builds" FORCE)
@@ -106,7 +95,7 @@ if(SD_GCC_FUNCTRACE)
         set(CHUNK_MAX_INSTANTIATIONS "${CHUNK_TARGET_INSTANTIATIONS}" CACHE STRING "Maximum template instantiations per chunk file (aligned with target)" FORCE)
     endif()
 
-    message(STATUS "Functrace chunk sizing: target=${CHUNK_TARGET_INSTANTIATIONS}, direct=${MULTI_PASS_CHUNK_SIZE}, jobs=${_functrace_jobs}, per-job-limit≈${_per_job_mb}MB (60% of ${_functrace_total_mb}MB)")
+    message(STATUS "Functrace chunk sizing: target=${CHUNK_TARGET_INSTANTIATIONS} template lines, jobs=${_functrace_jobs}, per-job-limit≈${_per_job_mb}MB (75% of ${_functrace_total_mb}MB)")
     message(STATUS "⚠️  WARNING: Functrace builds still create ~3GB binaries (may exceed linker limits)")
 else()
     if(NOT DEFINED CHUNK_TARGET_INSTANTIATIONS)
@@ -115,9 +104,8 @@ else()
     if(NOT DEFINED CHUNK_MAX_INSTANTIATIONS)
         set(CHUNK_MAX_INSTANTIATIONS "10" CACHE STRING "Maximum template instantiations per chunk file")
     endif()
-    if(NOT DEFINED MULTI_PASS_CHUNK_SIZE)
-        set(MULTI_PASS_CHUNK_SIZE "20" CACHE STRING "Chunk size for direct instantiation files")
-    endif()
+    # Force chunk size to 10 for CUDA builds - 30 templates = ~8min, 10 = ~2.5min per file
+    set(MULTI_PASS_CHUNK_SIZE "10" CACHE STRING "Chunk size for direct instantiation files" FORCE)
 endif()
 
 # Enable selective rendering diagnostics in debug builds
@@ -424,9 +412,10 @@ function(handle_specials_double t1 t2 content_var)
     # [existing validation code]
     
     string(APPEND content "namespace sd {\n")
-    
-    # Only generate TypeCast for actual conversions - using sd::LongType as canonical form
-    add_unique_instantiation("template void TypeCast::convertGeneric<${t1}, ${t2}>(void**, void*, sd::LongType, void*);" dedupe_set content)
+
+    # Only generate SpecialTypeConverter for actual conversions - using sd::LongType as canonical form
+    # Note: This is SpecialTypeConverter (from specials.h), NOT TypeCast (from type_conversions.h)
+    add_unique_instantiation("template void SpecialTypeConverter::convertGeneric<${t1}, ${t2}>(sd::Pointer*, void*, sd::LongType, void*);" dedupe_set content)
 
     # DoubleMethods instantiations for sorting operations
     add_unique_instantiation("template void DoubleMethods<${t1}, ${t2}>::sortByKey(sd::NDArray*, sd::NDArray*, bool);" dedupe_set content)
@@ -531,27 +520,7 @@ function(normalize_to_canonical_type cpp_type canonical_var)
     set(${canonical_var} "${canonical}" PARENT_SCOPE)
 endfunction()
 
-# Handler for broadcast_int templates
-function(handle_broadcast_int t1 content_var is_cuda)
-    set(content "${${content_var}}")
-    set(dedupe_set "")
-    
-    
-    foreach(type ${type_variants})
-        if(is_cuda)
-            add_unique_instantiation("template class BroadcastInt<${type}>;" dedupe_set content)
-        else()
-            add_unique_instantiation("template void functions::broadcast::BroadcastInt<${type}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
-            add_unique_instantiation("template void functions::broadcast::BroadcastInt<${type}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo);" dedupe_set content)
-            add_unique_instantiation("template void functions::broadcast::BroadcastInt<${type}>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
-        endif()
-    endforeach()
-    
-    set(${content_var} "${content}" PARENT_SCOPE)
-endfunction()
-
-
-
+# NOTE: First handle_random definition - subsequent definitions override this
 function(handle_random t1 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
@@ -773,7 +742,7 @@ function(handle_reduce3 t1 t2 content_var is_cuda)
     if(is_cuda)
         # Existing CUDA instantiations - these are correct
         add_unique_instantiation("template void functions::reduce3::Reduce3<${t1}, ${t2}>::exec(dim3 launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* extraParams, void* vz, sd::LongType const* zShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, int postProcessOrNot, sd::LongType* allocationPointer, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets);" dedupe_set content)
-        add_unique_instantiation("template void functions::reduce3::Reduce3<${t1}, ${t2}>::execAll(dim3 launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* extraParams, void* vz, sd::LongType const* zShapeInfo, sd::LongType* dimension, long long int dimensionLength, int postProcessOrNot, sd::LongType* allocationPointer, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets);" dedupe_set content)
+        add_unique_instantiation("template void functions::reduce3::Reduce3<${t1}, ${t2}>::execAll(dim3 launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* extraParams, void* vz, sd::LongType const* zShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, int postProcessOrNot, sd::LongType* allocationPointer, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets);" dedupe_set content)
         add_unique_instantiation("template void functions::reduce3::Reduce3<${t1}, ${t2}>::execScalar(dim3 launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* extraParams, void* vz, sd::LongType const* zShapeInfo, sd::LongType* allocationPointer, void* reductionBuffer, sd::LongType const* tadOnlyShapeInfo);" dedupe_set content)
     else()
         # CPU instantiations - all signatures from the implementation file
@@ -984,7 +953,7 @@ function(handle_reduce3 t1 t2 content_var is_cuda)
     # Generate instantiations
     if(is_cuda)
         add_unique_instantiation("template void functions::reduce3::Reduce3<${t1}, ${t2}>::exec(dim3 launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* extraParams, void* vz, sd::LongType const* zShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, int postProcessOrNot, sd::LongType* allocationPointer, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets);" dedupe_set content)
-        add_unique_instantiation("template void functions::reduce3::Reduce3<${t1}, ${t2}>::execAll(dim3 launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* extraParams, void* vz, sd::LongType const* zShapeInfo, sd::LongType* dimension, long long int dimensionLength, int postProcessOrNot, sd::LongType* allocationPointer, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets);" dedupe_set content)
+        add_unique_instantiation("template void functions::reduce3::Reduce3<${t1}, ${t2}>::execAll(dim3 launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* extraParams, void* vz, sd::LongType const* zShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, int postProcessOrNot, sd::LongType* allocationPointer, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets);" dedupe_set content)
         add_unique_instantiation("template void functions::reduce3::Reduce3<${t1}, ${t2}>::execScalar(dim3 launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* extraParams, void* vz, sd::LongType const* zShapeInfo, sd::LongType* allocationPointer, void* reductionBuffer, sd::LongType const* tadOnlyShapeInfo);" dedupe_set content)
     else()
         add_unique_instantiation("template void functions::reduce3::Reduce3<${t1}, ${t2}>::exec(int opNum, void const* x, sd::LongType const* xShapeInfo, void* extraParams, void const* y, sd::LongType const* yShapeInfo, void* z, sd::LongType const* zShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType start, sd::LongType stop);" dedupe_set content)
@@ -1072,7 +1041,7 @@ function(handle_reduce_float t1 t2 content_var is_cuda)
     # Generate instantiations
     if(is_cuda)
         add_unique_instantiation("template void functions::reduce::ReduceFloatFunction<${t1}, ${t2}>::execReduce(dim3 launchDims, cudaStream_t* stream, const int opNum, const void* x, const sd::LongType* dXShapeInfo, const sd::LongType* hXShapeInfo, void* extraParams, void* vreductionBuffer, void* z, const sd::LongType* dZShapeInfo, const sd::LongType* hZShapeInfo, const sd::LongType* dims);" dedupe_set content)
-        add_unique_instantiation("template void functions::reduce::ReduceFloatFunction<${t1}, ${t2}>::execReduceScalar(dim3 launchDims, cudaStream_t* stream, const int opNum, const void* x, const sd::LongType* xShapeInfo, const sd::LongType* hXShapeInfo, void* extraParams, void* z, const sd::LongType* dZShapeInfo, const sd::LongType* hZShapeInfo, sd::LongType* dimension, long long int dimensionLength, void* reductionBuffer, const sd::LongType* tadOnlyShapeInfo);" dedupe_set content)
+        add_unique_instantiation("template void functions::reduce::ReduceFloatFunction<${t1}, ${t2}>::execReduceScalar(dim3 launchDims, cudaStream_t* stream, const int opNum, const void* x, const sd::LongType* xShapeInfo, const sd::LongType* hXShapeInfo, void* extraParams, void* z, const sd::LongType* dZShapeInfo, const sd::LongType* hZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, void* reductionBuffer, const sd::LongType* tadOnlyShapeInfo);" dedupe_set content)
     else()
         add_unique_instantiation("template void functions::reduce::ReduceFloatFunction<${t1}, ${t2}>::exec(int opNum, sd::memory::Workspace* workspace, void const* x, sd::LongType const* xShapeInfo, void* extraParams, void* z, sd::LongType const* zShapeInfo, sd::LongType const* dimension);" dedupe_set content)
         add_unique_instantiation("template void functions::reduce::ReduceFloatFunction<${t1}, ${t2}>::execScalar(int opNum, void const* x, sd::LongType const* xShapeInfo, void* extraParams, void* z, sd::LongType const* zShapeInfo);" dedupe_set content)
@@ -1154,11 +1123,405 @@ function(handle_reduce_long t1 t2 content_var is_cuda)
     # Generate instantiations using types from types.h (sd::LongType = long long)
     # Generate ONLY for types.h typedefs (sd::LongType, sd::UnsignedLong)
     if(is_cuda)
-        # CUDA reduce_long implementations (if needed)
+        add_unique_instantiation("template void functions::reduce::ReduceLongFunction<${t1}, ${t2}>::execReduce(dim3 launchDims, cudaStream_t* stream, int opNum, const void* x, sd::LongType* dXShapeInfo, sd::LongType* hXShapeInfo, void* extraParams, void* vreductionBuffer, void* z, sd::LongType* dZShapeInfo, sd::LongType* hZShapeInfo, sd::LongType* dims);" dedupe_set content)
+        add_unique_instantiation("template void functions::reduce::ReduceLongFunction<${t1}, ${t2}>::execReduceScalar(dim3 launchDims, cudaStream_t* stream, const int opNum, const void* x, sd::LongType* xShapeInfo, sd::LongType* hXShapeInfo, void* extraParams, void* z, sd::LongType* zShapeInfo, sd::LongType* hZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, void* reductionBuffer, sd::LongType* tadOnlyShapeInfo);" dedupe_set content)
     else()
         add_unique_instantiation("template void functions::reduce::ReduceLongFunction<${t1}, ${t2}>::exec(int, sd::memory::Workspace*, void const*, sd::LongType const*, void*, void*, sd::LongType const*, sd::LongType*);" dedupe_set content)
         add_unique_instantiation("template void functions::reduce::ReduceLongFunction<${t1}, ${t2}>::execScalar(int, void const*, sd::LongType const*, void*, void*, sd::LongType const*);" dedupe_set content)
         add_unique_instantiation("template class sd::ReductionLongLoops<${t1}, ${t2}>;" dedupe_set content)
+    endif()
+
+    set(${content_var} "${content}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# Handler for pairwise_int templates (single type - integer only operations)
+# ============================================================================
+
+function(handle_pairwise_int t1 content_var is_cuda)
+    set(content "${${content_var}}")
+    set(dedupe_set "")
+
+    # Normalize type
+    normalize_to_canonical_type("${t1}" norm_t1)
+
+    # Skip redundant type aliases
+    if(NOT t1 STREQUAL norm_t1)
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Map to enum for validation - only integer types
+    map_cpp_to_enum("${norm_t1}" type1_enum)
+    if(NOT type1_enum MATCHES "INT8|UINT8|INT16|UINT16|INT32|UINT32|INT64|UINT64")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Generate instantiations
+    if(is_cuda)
+        add_unique_instantiation("template void functions::pairwise_transforms::PairWiseIntTransform<${t1}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* vz, sd::LongType const* zShapeInfo, void* vextraParams);" dedupe_set content)
+    else()
+        add_unique_instantiation("template class functions::pairwise_transforms::PairWiseIntTransform<${t1}>;" dedupe_set content)
+    endif()
+
+    set(${content_var} "${content}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# Handler for pairwise_bool templates (two types - input and bool output)
+# ============================================================================
+
+function(handle_pairwise_bool t1 t2 content_var is_cuda)
+    set(content "${${content_var}}")
+    set(dedupe_set "")
+
+    # Only process if t2 is bool
+    if(NOT "${t2}" STREQUAL "bool")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Normalize t1
+    normalize_to_canonical_type("${t1}" norm_t1)
+
+    # Skip string types
+    if(norm_t1 MATCHES "std::string|std::u16string|std::u32string")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Map to enum for validation
+    map_cpp_to_enum("${norm_t1}" type1_enum)
+    if(type1_enum STREQUAL "")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Validate pair
+    _internal_srcore_is_valid_pair("${type1_enum}" "BOOL" is_valid)
+    if(NOT is_valid)
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Generate instantiations
+    if(is_cuda)
+        add_unique_instantiation("template void functions::pairwise_transforms::PairWiseBoolTransform<${t1}, bool>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* vz, sd::LongType const* zShapeInfo, void* vextraParams);" dedupe_set content)
+    else()
+        add_unique_instantiation("template class functions::pairwise_transforms::PairWiseBoolTransform<${t1}, bool>;" dedupe_set content)
+    endif()
+
+    set(${content_var} "${content}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# Handler for scalar_int templates (single type - integer only operations)
+# ============================================================================
+
+function(handle_scalar_int t1 content_var is_cuda)
+    set(content "${${content_var}}")
+    set(dedupe_set "")
+
+    # Normalize type
+    normalize_to_canonical_type("${t1}" norm_t1)
+
+    # Skip redundant type aliases
+    if(NOT t1 STREQUAL norm_t1)
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Map to enum for validation - only integer types
+    map_cpp_to_enum("${norm_t1}" type1_enum)
+    if(NOT type1_enum MATCHES "INT8|UINT8|INT16|UINT16|INT32|UINT32|INT64|UINT64")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Generate instantiations
+    if(is_cuda)
+        add_unique_instantiation("template void functions::scalar::ScalarIntTransform<${t1}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void* vz, sd::LongType const* zShapeInfo, void const* vscalar, void* vextraParams);" dedupe_set content)
+        add_unique_instantiation("template void functions::scalar::ScalarIntTransform<${t1}>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void* vz, sd::LongType const* zShapeInfo, void const* vscalars, void* vextraParams, sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ);" dedupe_set content)
+    else()
+        add_unique_instantiation("template class functions::scalar::ScalarIntTransform<${t1}>;" dedupe_set content)
+    endif()
+
+    set(${content_var} "${content}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# Handler for scalar_bool templates (two types - input and bool output)
+# ============================================================================
+
+function(handle_scalar_bool t1 t2 content_var is_cuda)
+    set(content "${${content_var}}")
+    set(dedupe_set "")
+
+    # Only process if t2 is bool
+    if(NOT "${t2}" STREQUAL "bool")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Normalize t1
+    normalize_to_canonical_type("${t1}" norm_t1)
+
+    # Skip string types
+    if(norm_t1 MATCHES "std::string|std::u16string|std::u32string")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Map to enum for validation
+    map_cpp_to_enum("${norm_t1}" type1_enum)
+    if(type1_enum STREQUAL "")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Validate pair
+    _internal_srcore_is_valid_pair("${type1_enum}" "BOOL" is_valid)
+    if(NOT is_valid)
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Generate instantiations
+    if(is_cuda)
+        add_unique_instantiation("template void functions::scalar::ScalarBoolTransform<${t1}, bool>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void* vz, sd::LongType const* zShapeInfo, void const* vscalar, void const* vextraParams);" dedupe_set content)
+        add_unique_instantiation("template void functions::scalar::ScalarBoolTransform<${t1}, bool>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void* vz, sd::LongType const* zShapeInfo, void const* vscalars, void* vextraParams, sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ);" dedupe_set content)
+    else()
+        add_unique_instantiation("template class functions::scalar::ScalarBoolTransform<${t1}, bool>;" dedupe_set content)
+    endif()
+
+    set(${content_var} "${content}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# Handler for summarystatsreduce templates
+# ============================================================================
+
+function(handle_summarystatsreduce t1 t2 content_var is_cuda)
+    set(content "${${content_var}}")
+    set(dedupe_set "")
+
+    # Normalize types
+    normalize_to_canonical_type("${t1}" norm_t1)
+    normalize_to_canonical_type("${t2}" norm_t2)
+
+    # Only process if t2 is a float type
+    if(NOT norm_t2 MATCHES "float|double|float16|bfloat16")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Map to enum for validation
+    map_cpp_to_enum("${norm_t1}" type1_enum)
+    map_cpp_to_enum("${norm_t2}" type2_enum)
+
+    _internal_srcore_is_valid_pair("${type1_enum}" "${type2_enum}" is_valid)
+    if(NOT is_valid)
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Generate instantiations
+    if(is_cuda)
+        add_unique_instantiation("template void functions::summarystats::SummaryStatsReduce<${t1}, ${t2}>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t* stream, int opNum, void const* x, sd::LongType const* xShapeInfo, sd::LongType const* hXShapeInfo, void* extraParams, void* z, sd::LongType const* zShapeInfo, sd::LongType const* hZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, bool biasCorrected, void* reductionBuffer);" dedupe_set content)
+        add_unique_instantiation("template void functions::summarystats::SummaryStatsReduce<${t1}, ${t2}>::execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t* stream, int opNum, void const* x, sd::LongType const* xShapeInfo, sd::LongType const* hXShapeInfo, void* extraParams, void* z, sd::LongType const* zShapeInfo, sd::LongType const* hZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, bool biasCorrected, void* reductionBuffer);" dedupe_set content)
+    else()
+        add_unique_instantiation("template class functions::summarystats::SummaryStatsReduce<${t1}, ${t2}>;" dedupe_set content)
+    endif()
+
+    set(${content_var} "${content}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# Handler for transform_any templates (single type)
+# ============================================================================
+
+function(handle_transform_any t1 content_var is_cuda)
+    set(content "${${content_var}}")
+    set(dedupe_set "")
+
+    # Normalize type
+    normalize_to_canonical_type("${t1}" norm_t1)
+
+    # Skip redundant type aliases
+    if(NOT t1 STREQUAL norm_t1)
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Skip string types
+    if(norm_t1 MATCHES "std::string|std::u16string|std::u32string")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Generate instantiations
+    if(is_cuda)
+        add_unique_instantiation("template void functions::transform::TransformAny<${t1}>::executeTransformShaped(dim3 launchDims, cudaStream_t* stream, int opNum, void const* x, sd::LongType const* xShape, sd::LongType xRank, void* params, void* z, sd::LongType const* zShape, sd::LongType zRank, sd::LongType* allocationPointer, void* reductionPointer, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets);" dedupe_set content)
+    else()
+        add_unique_instantiation("template class functions::transform::TransformAny<${t1}>;" dedupe_set content)
+    endif()
+
+    set(${content_var} "${content}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# Handler for transform_bool templates (two types - input and bool output)
+# ============================================================================
+
+function(handle_transform_bool t1 t2 content_var is_cuda)
+    set(content "${${content_var}}")
+    set(dedupe_set "")
+
+    # Only process if t2 is bool
+    if(NOT "${t2}" STREQUAL "bool")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Normalize t1
+    normalize_to_canonical_type("${t1}" norm_t1)
+
+    # Skip string types
+    if(norm_t1 MATCHES "std::string|std::u16string|std::u32string")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Map to enum for validation
+    map_cpp_to_enum("${norm_t1}" type1_enum)
+    if(type1_enum STREQUAL "")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Validate pair
+    _internal_srcore_is_valid_pair("${type1_enum}" "BOOL" is_valid)
+    if(NOT is_valid)
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Generate instantiations
+    if(is_cuda)
+        add_unique_instantiation("template void functions::transform::TransformBool<${t1}, bool>::executeTransformShaped(dim3 launchDims, cudaStream_t* stream, int opNum, void const* x, sd::LongType const* xShape, sd::LongType xRank, void* params, void* z, sd::LongType const* zShape, sd::LongType zRank, sd::LongType* allocationPointer, void* reductionPointer, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets);" dedupe_set content)
+    else()
+        add_unique_instantiation("template class functions::transform::TransformBool<${t1}, bool>;" dedupe_set content)
+    endif()
+
+    set(${content_var} "${content}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# Handler for transform_float templates (two types)
+# ============================================================================
+
+function(handle_transform_float t1 t2 content_var is_cuda)
+    set(content "${${content_var}}")
+    set(dedupe_set "")
+
+    # Normalize types
+    normalize_to_canonical_type("${t1}" norm_t1)
+    normalize_to_canonical_type("${t2}" norm_t2)
+
+    # Only process if t2 is a float type
+    if(NOT norm_t2 MATCHES "float|double|float16|bfloat16")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Skip string types
+    if(norm_t1 MATCHES "std::string|std::u16string|std::u32string")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Map to enum for validation
+    map_cpp_to_enum("${norm_t1}" type1_enum)
+    map_cpp_to_enum("${norm_t2}" type2_enum)
+
+    _internal_srcore_is_valid_pair("${type1_enum}" "${type2_enum}" is_valid)
+    if(NOT is_valid)
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Generate instantiations
+    if(is_cuda)
+        add_unique_instantiation("template void functions::transform::TransformFloat<${t1}, ${t2}>::executeTransformShaped(dim3 launchDims, cudaStream_t* stream, int opNum, void const* x, sd::LongType const* xShape, sd::LongType xRank, void* params, void* z, sd::LongType const* zShape, sd::LongType zRank, sd::LongType* allocationPointer, void* reductionPointer, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets);" dedupe_set content)
+    else()
+        add_unique_instantiation("template class functions::transform::TransformFloat<${t1}, ${t2}>;" dedupe_set content)
+    endif()
+
+    set(${content_var} "${content}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# Handler for transform_same templates (single type)
+# ============================================================================
+
+function(handle_transform_same t1 content_var is_cuda)
+    set(content "${${content_var}}")
+    set(dedupe_set "")
+
+    # Normalize type
+    normalize_to_canonical_type("${t1}" norm_t1)
+
+    # Skip redundant type aliases
+    if(NOT t1 STREQUAL norm_t1)
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Skip string types
+    if(norm_t1 MATCHES "std::string|std::u16string|std::u32string")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Generate instantiations
+    if(is_cuda)
+        add_unique_instantiation("template void functions::transform::TransformSame<${t1}>::executeTransformShaped(dim3 launchDims, cudaStream_t* stream, int opNum, void const* x, sd::LongType const* xShape, sd::LongType xRank, void* params, void* z, sd::LongType const* zShape, sd::LongType zRank, sd::LongType* allocationPointer, void* reductionPointer, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets);" dedupe_set content)
+    else()
+        add_unique_instantiation("template class functions::transform::TransformSame<${t1}>;" dedupe_set content)
+    endif()
+
+    set(${content_var} "${content}" PARENT_SCOPE)
+endfunction()
+
+# ============================================================================
+# Handler for transform_strict templates (single float type)
+# ============================================================================
+
+function(handle_transform_strict t1 content_var is_cuda)
+    set(content "${${content_var}}")
+    set(dedupe_set "")
+
+    # Normalize type
+    normalize_to_canonical_type("${t1}" norm_t1)
+
+    # Skip redundant type aliases
+    if(NOT t1 STREQUAL norm_t1)
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Only process float types
+    if(NOT norm_t1 MATCHES "float|double|float16|bfloat16")
+        set(${content_var} "${content}" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Generate instantiations
+    if(is_cuda)
+        add_unique_instantiation("template void functions::transform::TransformStrict<${t1}>::executeTransformShaped(dim3 launchDims, cudaStream_t* stream, int opNum, void const* x, sd::LongType const* xShape, sd::LongType xRank, void* params, void* z, sd::LongType const* zShape, sd::LongType zRank, sd::LongType* allocationPointer, void* reductionPointer, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets);" dedupe_set content)
+    else()
+        add_unique_instantiation("template class functions::transform::TransformStrict<${t1}>;" dedupe_set content)
     endif()
 
     set(${content_var} "${content}" PARENT_SCOPE)
@@ -1248,6 +1611,18 @@ function(genCompilation FL_ITEM generated_sources_var)
 endfunction()
 
 # ============================================================================
+# Write-if-changed helper: only updates the file (and its mtime) when content
+# actually differs.  This prevents Make from recompiling unchanged generated
+# files on every CMake reconfigure.
+# ============================================================================
+function(write_file_if_changed file_path content)
+    set(_tmp "${file_path}.tmp")
+    file(WRITE "${_tmp}" "${content}")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_tmp}" "${file_path}")
+    file(REMOVE "${_tmp}")
+endfunction()
+
+# ============================================================================
 # Direct instantiation file creation
 # ============================================================================
 
@@ -1309,11 +1684,53 @@ endfunction()
 function(create_direct_instantiation_file template_file combinations output_dir generated_sources_var)
     get_filename_component(template_name ${template_file} NAME_WE)
     file(READ "${template_file}" template_content)
+
+    # MEMORY OPTIMIZATION: Check if template has @OP_GROUP@ placeholder
+    # If yes, generate 3 versions (one per op group) to reduce per-file memory usage
+    string(FIND "${template_content}" "@OP_GROUP@" has_op_group)
+    if(NOT has_op_group EQUAL -1)
+        message(STATUS "🔧 Op group template detected: ${template_name} - generating 3 op group versions")
+        set(local_generated_sources ${${generated_sources_var}})
+
+        foreach(op_group 1 2 3)
+            # Create a modified template content with the op group set
+            string(REPLACE "@OP_GROUP@" "${op_group}" group_template_content "${template_content}")
+
+            # Write temporary template file for this op group
+            set(temp_template_file "${output_dir}/${template_name}_opgroup${op_group}.cu.in.tmp")
+            file(WRITE "${temp_template_file}" "${group_template_content}")
+
+            # Recursively call to process this op group version
+            # Use a different name to avoid conflicts
+            create_direct_instantiation_file_impl(
+                "${temp_template_file}"
+                "${combinations}"
+                "${output_dir}"
+                local_generated_sources
+                "${template_name}_g${op_group}")
+
+            # Clean up temp file
+            file(REMOVE "${temp_template_file}")
+        endforeach()
+
+        set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
+        return()
+    endif()
+
+    # No @OP_GROUP@ - proceed normally
+    create_direct_instantiation_file_impl("${template_file}" "${combinations}" "${output_dir}" ${generated_sources_var} "${template_name}")
+    set(${generated_sources_var} ${${generated_sources_var}} PARENT_SCOPE)
+endfunction()
+
+# Implementation function for create_direct_instantiation_file
+function(create_direct_instantiation_file_impl template_file combinations output_dir generated_sources_var output_name)
+    set(template_name "${output_name}")
+    file(READ "${template_file}" template_content)
     string(REGEX MATCHALL "#include[^\n]*" includes "${template_content}")
 
-    # Determine file extension
+    # Determine file extension (handle both .cu.in and .cu.in.tmp for temp files)
     set(IS_CUDA_FILE FALSE)
-    if(template_file MATCHES "\\.cu\\.in$")
+    if(template_file MATCHES "\\.cu\\.in" OR template_file MATCHES "\\.cu\\.in\\.tmp$")
         set(IS_CUDA_FILE TRUE)
         set(file_extension "cu")
     else()
@@ -1415,16 +1832,25 @@ function(create_direct_instantiation_file template_file combinations output_dir 
         endif()
         list(APPEND processed_normalized_combinations "${normalized_combo}")
 
+        # Count template lines before dispatch
+        string(REGEX MATCHALL "template [^\n]+" templates_before "${chunk_content}")
+        list(LENGTH templates_before count_before)
+
         # Dispatch to appropriate handler
         dispatch_to_handler("${template_name}" "${t1}" "${t2}" "${t3}" "${parts_count}" chunk_content ${IS_CUDA_FILE})
-        
-        math(EXPR instantiation_count "${instantiation_count} + 1")
-        math(EXPR total_instantiations "${total_instantiations} + 1")
-        
-        # Write chunk if limit reached
+
+        # Count template lines after dispatch to get actual instantiations added
+        string(REGEX MATCHALL "template [^\n]+" templates_after "${chunk_content}")
+        list(LENGTH templates_after count_after)
+        math(EXPR templates_added "${count_after} - ${count_before}")
+
+        math(EXPR instantiation_count "${instantiation_count} + ${templates_added}")
+        math(EXPR total_instantiations "${total_instantiations} + ${templates_added}")
+
+        # Write chunk if limit reached (now counting actual template instantiations)
         if(instantiation_count GREATER_EQUAL ${MULTI_PASS_CHUNK_SIZE})
             set(chunk_file "${output_dir}/${template_name}_direct_${chunk_index}.${file_extension}")
-            file(WRITE "${chunk_file}" "${chunk_content}")
+            write_file_if_changed("${chunk_file}" "${chunk_content}")
             list(APPEND local_generated_sources "${chunk_file}")
 
             set(chunk_content "${file_header}")
@@ -1442,12 +1868,12 @@ function(create_direct_instantiation_file template_file combinations output_dir 
         else()
             set(chunk_file "${output_dir}/${template_name}_direct_final.${file_extension}")
         endif()
-        file(WRITE "${chunk_file}" "${chunk_content}")
+        write_file_if_changed("${chunk_file}" "${chunk_content}")
         list(APPEND local_generated_sources "${chunk_file}")
     endif()
 
     set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
-    
+
     if(IS_CUDA_FILE)
         message(STATUS "✅ Generated CUDA instantiation files for ${template_name}: ${total_instantiations} instantiations")
     else()
@@ -1904,12 +2330,182 @@ elseif(template_name MATCHES ".*reduce_long.*" AND parts_count EQUAL 2)
             endif()
         endforeach()
     endforeach()
+
+    # Pairwise int (single type - integer only)
+    elseif(template_name MATCHES ".*pairwise_int.*" AND parts_count EQUAL 1)
+        foreach(type IN LISTS t1_list)
+            normalize_to_canonical_type("${type}" norm_type)
+
+            set(combo_key "${norm_type}")
+            list(FIND template_dedupe_set "${combo_key}" found_idx)
+            if(found_idx EQUAL -1)
+                handle_pairwise_int("${norm_type}" content ${is_cuda})
+                list(APPEND template_dedupe_set "${combo_key}")
+            endif()
+        endforeach()
+
+    # Pairwise bool (two types)
+    elseif(template_name MATCHES ".*pairwise_bool.*" AND parts_count EQUAL 2)
+        foreach(v1 IN LISTS t1_list)
+            foreach(v2 IN LISTS t2_list)
+                if(v2 STREQUAL "bool")
+                    normalize_to_canonical_type("${v1}" norm_v1)
+                    set(combo_key "${norm_v1},bool")
+                    list(FIND template_dedupe_set "${combo_key}" found_idx)
+                    if(found_idx EQUAL -1)
+                        handle_pairwise_bool("${norm_v1}" "bool" content ${is_cuda})
+                        list(APPEND template_dedupe_set "${combo_key}")
+                    endif()
+                endif()
+            endforeach()
+        endforeach()
+
+    # Scalar int (single type - integer only)
+    elseif(template_name MATCHES ".*scalar_int.*" AND parts_count EQUAL 1)
+        foreach(type IN LISTS t1_list)
+            normalize_to_canonical_type("${type}" norm_type)
+
+            set(combo_key "${norm_type}")
+            list(FIND template_dedupe_set "${combo_key}" found_idx)
+            if(found_idx EQUAL -1)
+                handle_scalar_int("${norm_type}" content ${is_cuda})
+                list(APPEND template_dedupe_set "${combo_key}")
+            endif()
+        endforeach()
+
+    # Scalar bool (two types)
+    elseif(template_name MATCHES ".*scalar_bool.*" AND parts_count EQUAL 2)
+        foreach(v1 IN LISTS t1_list)
+            foreach(v2 IN LISTS t2_list)
+                if(v2 STREQUAL "bool")
+                    normalize_to_canonical_type("${v1}" norm_v1)
+                    set(combo_key "${norm_v1},bool")
+                    list(FIND template_dedupe_set "${combo_key}" found_idx)
+                    if(found_idx EQUAL -1)
+                        handle_scalar_bool("${norm_v1}" "bool" content ${is_cuda})
+                        list(APPEND template_dedupe_set "${combo_key}")
+                    endif()
+                endif()
+            endforeach()
+        endforeach()
+
+    # Summary stats reduce (two types)
+    elseif(template_name MATCHES ".*summarystats.*" AND parts_count EQUAL 2)
+        foreach(v1 IN LISTS t1_list)
+            foreach(v2 IN LISTS t2_list)
+                normalize_to_canonical_type("${v1}" norm_v1)
+                normalize_to_canonical_type("${v2}" norm_v2)
+
+                if(norm_v2 MATCHES "float|double|float16|bfloat16")
+                    set(combo_key "${norm_v1},${norm_v2}")
+                    list(FIND template_dedupe_set "${combo_key}" found_idx)
+                    if(found_idx EQUAL -1)
+                        map_cpp_to_enum("${norm_v1}" v1_enum)
+                        map_cpp_to_enum("${norm_v2}" v2_enum)
+                        if(NOT v1_enum STREQUAL "" AND NOT v2_enum STREQUAL "")
+                            _internal_srcore_is_valid_pair("${v1_enum}" "${v2_enum}" is_valid)
+                            if(is_valid)
+                                handle_summarystatsreduce("${norm_v1}" "${norm_v2}" content ${is_cuda})
+                                list(APPEND template_dedupe_set "${combo_key}")
+                            endif()
+                        endif()
+                    endif()
+                endif()
+            endforeach()
+        endforeach()
+
+    # Transform any (single type)
+    elseif(template_name MATCHES ".*transform_any.*" AND parts_count EQUAL 1)
+        foreach(type IN LISTS t1_list)
+            normalize_to_canonical_type("${type}" norm_type)
+
+            set(combo_key "${norm_type}")
+            list(FIND template_dedupe_set "${combo_key}" found_idx)
+            if(found_idx EQUAL -1)
+                if(NOT norm_type MATCHES "std::string|std::u16string|std::u32string")
+                    handle_transform_any("${norm_type}" content ${is_cuda})
+                    list(APPEND template_dedupe_set "${combo_key}")
+                endif()
+            endif()
+        endforeach()
+
+    # Transform bool (two types)
+    elseif(template_name MATCHES ".*transform_bool.*" AND parts_count EQUAL 2)
+        foreach(v1 IN LISTS t1_list)
+            foreach(v2 IN LISTS t2_list)
+                if(v2 STREQUAL "bool")
+                    normalize_to_canonical_type("${v1}" norm_v1)
+                    set(combo_key "${norm_v1},bool")
+                    list(FIND template_dedupe_set "${combo_key}" found_idx)
+                    if(found_idx EQUAL -1)
+                        handle_transform_bool("${norm_v1}" "bool" content ${is_cuda})
+                        list(APPEND template_dedupe_set "${combo_key}")
+                    endif()
+                endif()
+            endforeach()
+        endforeach()
+
+    # Transform float (two types)
+    elseif(template_name MATCHES ".*transform_float.*" AND parts_count EQUAL 2)
+        foreach(v1 IN LISTS t1_list)
+            foreach(v2 IN LISTS t2_list)
+                normalize_to_canonical_type("${v1}" norm_v1)
+                normalize_to_canonical_type("${v2}" norm_v2)
+
+                if(norm_v2 MATCHES "float|double|float16|bfloat16")
+                    set(combo_key "${norm_v1},${norm_v2}")
+                    list(FIND template_dedupe_set "${combo_key}" found_idx)
+                    if(found_idx EQUAL -1)
+                        map_cpp_to_enum("${norm_v1}" v1_enum)
+                        map_cpp_to_enum("${norm_v2}" v2_enum)
+                        if(NOT v1_enum STREQUAL "" AND NOT v2_enum STREQUAL "")
+                            _internal_srcore_is_valid_pair("${v1_enum}" "${v2_enum}" is_valid)
+                            if(is_valid)
+                                handle_transform_float("${norm_v1}" "${norm_v2}" content ${is_cuda})
+                                list(APPEND template_dedupe_set "${combo_key}")
+                            endif()
+                        endif()
+                    endif()
+                endif()
+            endforeach()
+        endforeach()
+
+    # Transform same (single type)
+    elseif(template_name MATCHES ".*transform_same.*" AND parts_count EQUAL 1)
+        foreach(type IN LISTS t1_list)
+            normalize_to_canonical_type("${type}" norm_type)
+
+            set(combo_key "${norm_type}")
+            list(FIND template_dedupe_set "${combo_key}" found_idx)
+            if(found_idx EQUAL -1)
+                if(NOT norm_type MATCHES "std::string|std::u16string|std::u32string")
+                    handle_transform_same("${norm_type}" content ${is_cuda})
+                    list(APPEND template_dedupe_set "${combo_key}")
+                endif()
+            endif()
+        endforeach()
+
+    # Transform strict (single float type)
+    elseif(template_name MATCHES ".*transform_strict.*" AND parts_count EQUAL 1)
+        foreach(type IN LISTS t1_list)
+            normalize_to_canonical_type("${type}" norm_type)
+
+            set(combo_key "${norm_type}")
+            list(FIND template_dedupe_set "${combo_key}" found_idx)
+            if(found_idx EQUAL -1)
+                if(norm_type MATCHES "float|double|float16|bfloat16")
+                    handle_transform_strict("${norm_type}" content ${is_cuda})
+                    list(APPEND template_dedupe_set "${combo_key}")
+                endif()
+            endif()
+        endforeach()
+
     else()
         if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             message(STATUS "No handler for template: ${template_name} with ${parts_count} types")
         endif()
     endif()
-    
+
     # Save the updated template-specific dedupe set
     set_property(GLOBAL PROPERTY ${dedupe_property_name} "${template_dedupe_set}")
     
@@ -1973,6 +2569,16 @@ function(process_cuda_comb_templates output_dir generated_sources_var)
         set(COMBINATIONS_1 "")
         set(COMBINATIONS_2 ${UNIFIED_COMBINATIONS_2})
         set(COMBINATIONS_3 ${UNIFIED_COMBINATIONS_3})
+        # Same-type only combinations for BUILD_SINGLE_SELECTOR_THRICE templates (e.g., Broadcast)
+        if(DEFINED UNIFIED_COMBINATIONS_3_SAME)
+            set(COMBINATIONS_3_SAME ${UNIFIED_COMBINATIONS_3_SAME})
+        else()
+            # Fallback: generate same-type combinations from COMBINATIONS_1
+            set(COMBINATIONS_3_SAME "")
+            foreach(idx ${COMBINATIONS_1})
+                list(APPEND COMBINATIONS_3_SAME "${idx},${idx},${idx}")
+            endforeach()
+        endif()
 
         # Generate 1-type combinations from 2-type combinations
         foreach(combination ${COMBINATIONS_2})
@@ -1998,11 +2604,12 @@ function(process_cuda_comb_templates output_dir generated_sources_var)
                 endif()
             endforeach()
         endforeach()
-        
+
         list(LENGTH COMBINATIONS_1 combo_1_count)
         list(LENGTH COMBINATIONS_2 combo_2_count)
         list(LENGTH COMBINATIONS_3 combo_3_count)
-        message(STATUS "🎯 Using selective CUDA combinations: 1-type=${combo_1_count}, 2-type=${combo_2_count}, 3-type=${combo_3_count}")
+        list(LENGTH COMBINATIONS_3_SAME combo_3_same_count)
+        message(STATUS "🎯 Using selective CUDA combinations: 1-type=${combo_1_count}, 2-type=${combo_2_count}, 3-type=${combo_3_count}, 3-type-same=${combo_3_same_count}")
     endif()
 
     foreach(TEMPLATE_FILE ${CUDA_COMB_TEMPLATES})
@@ -2015,6 +2622,16 @@ function(process_cuda_comb_templates output_dir generated_sources_var)
         elseif(template_name MATCHES ".*_template_2\$")
             set(combinations_to_use ${COMBINATIONS_2})
             message(STATUS "🔄 Processing 2-type CUDA template: ${template_name}")
+        elseif(template_name MATCHES "^(broadcast|pairwise|scalar)_(instantiation_template_3|exec_.*)\$")
+            # OPTIMIZATION: These templates use BUILD_SINGLE_SELECTOR_THRICE which only dispatches (T, T, T)
+            # Cross-type combinations are NEVER used at runtime, so only generate same-type
+            # Templates matched:
+            # - broadcast_instantiation_template_3, broadcast_exec_broadcast_with_dimension, broadcast_exec_inverse_broadcast
+            # - pairwise_instantiation_template_3, pairwise_exec_cuda_shaped
+            # - scalar_instantiation_template_3, scalar_exec_cuda_along_dimension, scalar_exec_cuda_shaped
+            set(combinations_to_use ${COMBINATIONS_3_SAME})
+            list(LENGTH COMBINATIONS_3_SAME same_count)
+            message(STATUS "🔄 Processing 3-type SAME-TYPE CUDA template: ${template_name} (${same_count} combinations instead of ${combo_3_count})")
         elseif(template_name MATCHES ".*_template_3\$")
             set(combinations_to_use ${COMBINATIONS_3})
             message(STATUS "🔄 Processing 3-type CUDA template: ${template_name}")
@@ -2120,18 +2737,32 @@ function(execute_template_generation)
         set(CPU_INST_DIR "${CMAKE_BINARY_DIR}/cpu_instantiations")
         file(MAKE_DIRECTORY "${CPU_INST_DIR}")
 
+        # Generate same-type 3-type combinations for BUILD_SINGLE_SELECTOR_THRICE templates
+        if(DEFINED UNIFIED_COMBINATIONS_3_SAME)
+            set(COMBINATIONS_3_SAME ${UNIFIED_COMBINATIONS_3_SAME})
+        else()
+            # Fallback: generate same-type combinations from COMBINATIONS_1
+            set(COMBINATIONS_3_SAME "")
+            foreach(idx ${COMBINATIONS_1})
+                list(APPEND COMBINATIONS_3_SAME "${idx},${idx},${idx}")
+            endforeach()
+        endif()
+        list(LENGTH COMBINATIONS_3_SAME combo_3_same_count)
+        message(STATUS "   - 3-type same-type: ${combo_3_same_count} combinations")
+
         # Process all CPU template files
-        
-        # 3-type templates (use COMBINATIONS_3)
-        set(TEMPLATES_3
+
+        # 3-type same-type templates (pairwise, scalar, broadcast use BUILD_SINGLE_SELECTOR_THRICE)
+        # These only dispatch (T, T, T) at runtime, so cross-type combinations are wasted
+        set(TEMPLATES_3_SAME
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_3.cpp.in"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/scalar_instantiation_template_3.cpp.in"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/broadcast_instantiation_template_3.cpp.in")
 
-        foreach(TEMPLATE_FILE ${TEMPLATES_3})
+        foreach(TEMPLATE_FILE ${TEMPLATES_3_SAME})
             if(EXISTS "${TEMPLATE_FILE}")
-                message(STATUS "   Processing 3-type template: ${TEMPLATE_FILE}")
-                create_direct_instantiation_file("${TEMPLATE_FILE}" "${COMBINATIONS_3}" "${CPU_INST_DIR}" ALL_GENERATED_SOURCES)
+                message(STATUS "   Processing 3-type SAME-TYPE template: ${TEMPLATE_FILE} (${combo_3_same_count} combinations instead of ${combo_3_count})")
+                create_direct_instantiation_file("${TEMPLATE_FILE}" "${COMBINATIONS_3_SAME}" "${CPU_INST_DIR}" ALL_GENERATED_SOURCES)
             else()
                 message(WARNING "   Template file not found: ${TEMPLATE_FILE}")
             endif()

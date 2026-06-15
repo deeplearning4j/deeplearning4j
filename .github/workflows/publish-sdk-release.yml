@@ -1,0 +1,170 @@
+name: Publish SDK Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseVersion:
+        description: 'Release version (e.g., 1.0.0-M3). Used as the GitHub Release tag: sdk-v<version>'
+        required: true
+        default: 1.0.0-M3
+
+      collectFromRunId:
+        description: >
+          Optional: workflow run ID to download SDK artifacts from.
+          If empty, only creates/updates the release (individual build workflows upload assets directly).
+        required: false
+        default: ''
+
+      prerelease:
+        description: 'Mark the release as a pre-release'
+        required: false
+        default: 'true'
+
+jobs:
+  publish-sdk-release:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout (for action access)
+        uses: actions/checkout@v4
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: sdk-v${{ github.event.inputs.releaseVersion }}
+          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+          PRERELEASE: ${{ github.event.inputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          PRERELEASE_FLAG=""
+          if [ "${PRERELEASE}" == "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Release ${RELEASE_TAG} already exists — updating notes"
+            gh release edit "${RELEASE_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "SDX Runtime SDK ${RELEASE_VERSION}" \
+              ${PRERELEASE_FLAG} \
+              --notes "Per-platform SDX Runtime SDK packages for release ${RELEASE_VERSION}.
+
+          Each asset contains the C++ runtime library, C header, language binding wrappers, and manifest schema for a specific platform/variant combination.
+
+          **Platforms:** Linux x86_64, Linux ARM64, macOS x86_64, macOS ARM64, Windows x86_64, Android ARM64, Android x86_64
+          **Variants:** CPU, CUDA 12.6, CUDA 12.9 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)
+
+          **Usage:**
+          1. Download the SDK zip for your platform
+          2. Extract and link against \`lib/libnd4j*\`
+          3. Include \`include/dsp/runtime/dsp_runtime_c.h\`
+          4. See \`wrappers/\` for language-specific binding examples"
+          else
+            echo "Creating GitHub Release ${RELEASE_TAG}"
+            gh release create "${RELEASE_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "SDX Runtime SDK ${RELEASE_VERSION}" \
+              ${PRERELEASE_FLAG} \
+              --notes "Per-platform SDX Runtime SDK packages for release ${RELEASE_VERSION}.
+
+          Each asset contains the C++ runtime library, C header, language binding wrappers, and manifest schema for a specific platform/variant combination.
+
+          **Platforms:** Linux x86_64, Linux ARM64, macOS x86_64, macOS ARM64, Windows x86_64, Android ARM64, Android x86_64
+          **Variants:** CPU, CUDA 12.6, CUDA 12.9 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)
+
+          **Usage:**
+          1. Download the SDK zip for your platform
+          2. Extract and link against \`lib/libnd4j*\`
+          3. Include \`include/dsp/runtime/dsp_runtime_c.h\`
+          4. See \`wrappers/\` for language-specific binding examples"
+          fi
+
+      - name: Download native SDK artifacts from workflow run
+        if: github.event.inputs.collectFromRunId != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.inputs.collectFromRunId }}
+        run: |
+          set -euo pipefail
+          mkdir -p sdk-artifacts
+
+          echo "Downloading native SDK artifacts from run ${RUN_ID}"
+          gh run download "${RUN_ID}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --dir sdk-artifacts \
+            --pattern "sdx-runtime-sdk-*" \
+          || echo "WARNING: Some native SDK artifacts may not be available"
+
+          echo "Downloaded native SDK artifacts:"
+          find sdk-artifacts -type f \( -name "*.zip" -o -name "*.aar" -o -name "*.xcframework" \) | head -50
+
+      - name: Download JAR artifacts from workflow run
+        if: github.event.inputs.collectFromRunId != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.inputs.collectFromRunId }}
+        run: |
+          set -euo pipefail
+          mkdir -p jar-artifacts
+
+          echo "Downloading JAR artifacts from run ${RUN_ID}"
+          gh run download "${RUN_ID}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --dir jar-artifacts \
+            --pattern "sdk-jars-*" \
+          || echo "WARNING: Some JAR artifacts may not be available"
+
+          echo "Downloaded JAR artifacts:"
+          find jar-artifacts -type f -name "*.jar" | head -50
+
+      - name: Upload collected native SDK artifacts to release
+        if: github.event.inputs.collectFromRunId != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: sdk-v${{ github.event.inputs.releaseVersion }}
+        run: |
+          set -euo pipefail
+
+          UPLOAD_COUNT=0
+          while IFS= read -r -d '' dist_file; do
+            BASENAME="$(basename "${dist_file}")"
+            echo "Uploading ${BASENAME} to release ${RELEASE_TAG}"
+            gh release upload "${RELEASE_TAG}" "${dist_file}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --clobber \
+            || echo "WARNING: Failed to upload ${BASENAME}"
+            UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
+          done < <(find sdk-artifacts -type f \( -name "*.zip" -o -name "*.aar" -o -name "*.xcframework" \) -print0)
+
+          echo "Uploaded ${UPLOAD_COUNT} native SDK asset(s) to release ${RELEASE_TAG}"
+
+      - name: Upload collected JAR artifacts to release
+        if: github.event.inputs.collectFromRunId != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: sdk-v${{ github.event.inputs.releaseVersion }}
+        run: |
+          set -euo pipefail
+
+          UPLOAD_COUNT=0
+          while IFS= read -r -d '' jar_file; do
+            BASENAME="$(basename "${jar_file}")"
+            echo "Uploading ${BASENAME} to release ${RELEASE_TAG}"
+            gh release upload "${RELEASE_TAG}" "${jar_file}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --clobber \
+            || echo "WARNING: Failed to upload ${BASENAME}"
+            UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
+          done < <(find jar-artifacts -type f -name "*.jar" -print0)
+
+          echo "Uploaded ${UPLOAD_COUNT} JAR(s) to release ${RELEASE_TAG}"
+
+      - name: List release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: sdk-v${{ github.event.inputs.releaseVersion }}
+        run: |
+          echo "=== Release assets for ${RELEASE_TAG} ==="
+          gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --json assets --jq '.assets[].name'

@@ -254,7 +254,7 @@ function(generate_recommendations MISSING_COUNT UNUSED_COUNT)
     file(WRITE ${recommend_file} "=== ACTIONABLE RECOMMENDATIONS ===\n\n")
     
     if(MISSING_COUNT GREATER 0)
-        file(APPEND ${recommend_file} "⚠️  CRITICAL: ${MISSING_COUNT} missing template instantiations detected!\n")
+        file(APPEND ${recommend_file} "⚠️   ${MISSING_COUNT} missing template instantiations detected!\n")
         file(APPEND ${recommend_file} "These WILL cause link-time errors.\n\n")
         file(APPEND ${recommend_file} "SOLUTION:\n")
         file(APPEND ${recommend_file} "1. Add the file '${INST_DIR}/fixes/missing_instantiations.cpp' to your build\n")

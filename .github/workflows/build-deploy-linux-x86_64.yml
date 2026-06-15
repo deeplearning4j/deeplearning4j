@@ -26,11 +26,6 @@ on:
         required: false
         default: central
 
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default: ''
-
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
@@ -62,8 +57,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [onednn,""]
-        extension: [avx2,avx512,""]
+        helper: [onednn, compile, ""]
+        extension: [avx2, avx512, ""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
@@ -96,10 +91,6 @@ jobs:
             experimental: true
             name: Server id
 
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: Release repository id
-
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags to use as part of the build
@@ -115,11 +106,6 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     steps:
       - uses: AutoModality/action-clean@v1
-
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
 
       - uses: actions/checkout@v4
 
@@ -194,8 +180,10 @@ jobs:
            echo "Building libnd4j from source"
            modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
-          command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
-          if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+          command="mvn -X ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu --also-make --batch-mode deploy -DskipTests"
+          if [ "${{ matrix.helper }}" == 'compile' ]; then
+                 mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=linux-x86_64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
+          elif [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                  mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
           elif [ "${{ matrix.helper }}" != '' ]; then
                  mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}"
@@ -213,29 +201,35 @@ jobs:
 
       - uses: ./.github/actions/update-deps-linux
 
-      - name: Cache cmake install
-        uses: actions/cache@v4
-        id: cache-cmake
-        with:
-          path: /opt/cmake
-          key: ${{ runner.os }}-cmake-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-cmake-
+      - name: Install DWARF headers for stack trace support
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libdw-dev libelf-dev libdwarf-dev
 
-      - name: Cache protobuf install
-        uses: actions/cache@v4
-        id: cache-protobuf
+      - name: Install LLVM/MLIR toolchain
+        if: matrix.helper == 'compile'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y llvm-18-dev mlir-18-tools || sudo apt-get install -y llvm-dev libmlir-dev mlir-tools || true
+
+      - name: Setup sccache (distributed per-object cache)
+        id: setup-sccache
+        uses: ./.github/actions/setup-sccache-linux
         with:
-          path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-protobuf-
+          cache-suffix: linux-x86_64
+
+      - name: Show sccache stats before build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== sccache stats before build ==="
+          sccache --show-stats || true
 
       - uses: ./.github/actions/install-protobuf-linux
-        if: steps.cache-protobuf.outputs.cache-hit != 'true'
 
       - uses: ./.github/actions/install-cmake-linux
-        if: steps.cache-cmake.outputs.cache-hit != 'true'
 
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v4
@@ -247,7 +241,6 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
 
       - name: Setup libnd4j home if a download url is specified
         shell: bash
@@ -319,13 +312,51 @@ jobs:
           cmake --version
           protoc --version
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
+          export C_INCLUDE_PATH="/usr/include/libdwarf:${C_INCLUDE_PATH:-}"
+          export CPLUS_INCLUDE_PATH="/usr/include/libdwarf:${CPLUS_INCLUDE_PATH:-}"
           
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
                    else
                        echo "Running build and deploying to snapshots"
-                       eval "${COMMAND}"
+                       BACKOFF=(0 60 180 300 420)
+                       for attempt in 1 2 3 4 5; do
+                         eval "${COMMAND}" && break
+                         DELAY=${BACKOFF[$attempt]:-420}
+                         echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in ${DELAY}s..."
+                         sleep $DELAY
+                       done
           fi
+
+      - name: Show sccache stats after build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== sccache stats after build ==="
+          sccache --show-stats || true
+          sccache --stop-server || true
+          echo "=== sccache server log (last 100 lines) ==="
+          tail -100 /tmp/sccache-server.log 2>/dev/null || echo "no server log found"
+
+      - name: Publish SDX runtime SDK artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdx-runtime-sdk
+        with:
+          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
+          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
+
+      - name: Publish SDK JAR artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdk-jars
+        with:
+          artifact-name: sdk-jars-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          backend: cpu
+          platform: linux-x86_64
+          platform-extension: ${{ matrix.helper != '' && matrix.extension != '' && format('-{0}-{1}', matrix.helper, matrix.extension) || matrix.helper != '' && format('-{0}', matrix.helper) || matrix.extension != '' && format('-{0}', matrix.extension) || '' }}
+          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
 
       - name: Show memory usage summary
         if: always()
@@ -335,14 +366,14 @@ jobs:
           if [ -n "$MONITOR_PID" ]; then
             kill $MONITOR_PID 2>/dev/null || true
           fi
-          
+
           echo "=== Final memory status ==="
           free -h
           if swapon --show | grep -q "/"; then
             echo "=== Swap usage ==="
             swapon --show
           fi
-          
+
           echo "=== Memory usage during build ==="
           if [ -f memory_monitor.log ]; then
             cat memory_monitor.log

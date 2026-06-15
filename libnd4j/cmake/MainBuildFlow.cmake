@@ -11,6 +11,9 @@
 # This inconsistency caused build to stop at 98% missing files 48-64.
 # =============================================================================
 
+# Include partial linking support for large binaries (>2GB with debug/trace)
+include(${CMAKE_CURRENT_LIST_DIR}/PartialLinking.cmake)
+
 # =============================================================================
 # SECTION 1: HELPER FUNCTION DEFINITIONS
 # All functions are defined first to ensure they are available when called.
@@ -146,6 +149,19 @@ endfunction()
 # --- Platform environment setup functions ---
 function(setup_cpu_environment)
     message(STATUS "🔧 Setting up CPU environment")
+
+    # ==========================================================================
+    # TMPDIR Configuration - Use build directory instead of /tmp (tmpfs)
+    # Large template instantiations can create significant temp files.
+    # By using a directory under the build tree, we use disk storage instead.
+    # ==========================================================================
+    set(CPU_TMPDIR "${CMAKE_BINARY_DIR}/compiler_tmp")
+    file(MAKE_DIRECTORY "${CPU_TMPDIR}")
+    set(ENV{TMPDIR} "${CPU_TMPDIR}")
+    set(ENV{TMP} "${CPU_TMPDIR}")
+    set(ENV{TEMP} "${CPU_TMPDIR}")
+    message(STATUS "📁 Compiler temp directory: ${CPU_TMPDIR}")
+
     add_definitions(-D__CPUBLAS__=true)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -170,6 +186,83 @@ function(collect_all_sources out_source_list)
     file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp)
     file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp)
     file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp)
+    # Exclude ALL GPU backend files (NVRTC, PTX, GpuKernelLauncher, Triton) for CPU builds
+    # These files are guarded by #ifdef SD_CUDA / #if HAVE_TRITON but shouldn't be
+    # collected at all for CPU builds — they are CUDA-only infrastructure
+    if(NOT SD_CUDA)
+        file(GLOB_RECURSE _gpu_backend_sources ./include/graph/gpu/*.cpp)
+        if(_gpu_backend_sources)
+            list(REMOVE_ITEM GRAPH_SOURCES ${_gpu_backend_sources})
+            list(LENGTH _gpu_backend_sources _gpu_count)
+            message(STATUS "Excluded ${_gpu_count} GPU backend files (non-CUDA build)")
+        endif()
+    else()
+        # CUDA build: only exclude Triton files when Triton is not available (they require MLIR headers)
+        if(NOT HAVE_TRITON)
+            file(GLOB_RECURSE _triton_gpu_sources
+                ./include/graph/gpu/Triton*.cpp
+            )
+            if(_triton_gpu_sources)
+                list(REMOVE_ITEM GRAPH_SOURCES ${_triton_gpu_sources})
+                list(LENGTH _triton_gpu_sources _triton_count)
+                message(STATUS "Excluded ${_triton_count} Triton GPU backend files (HAVE_TRITON=OFF)")
+            endif()
+        endif()
+    endif()
+    # Exclude MLIR CPU backend files when MLIR is not available (they require MLIR headers)
+    if(NOT HAVE_MLIR)
+        file(GLOB_RECURSE _mlir_cpu_sources
+            ./include/graph/cpu/MlirCpu*.cpp
+            ./include/graph/cpu/CpuIRBuilder.cpp
+            ./include/graph/cpu/ArmHybridGraphBackend.cpp
+        )
+        if(_mlir_cpu_sources)
+            list(REMOVE_ITEM GRAPH_SOURCES ${_mlir_cpu_sources})
+            list(LENGTH _mlir_cpu_sources _mlir_count)
+            message(STATUS "Excluded ${_mlir_count} MLIR CPU backend files (HAVE_MLIR=OFF)")
+        endif()
+    endif()
+    # Exclude NNAPI backend files when not on Android (requires <android/NeuralNetworks.h>)
+    if(NOT HAVE_NNAPI)
+        file(GLOB_RECURSE _nnapi_sources
+            ./include/graph/cpu/NnapiGraphBackend.cpp
+        )
+        if(_nnapi_sources)
+            list(REMOVE_ITEM GRAPH_SOURCES ${_nnapi_sources})
+            message(STATUS "Excluded NNAPI backend files (HAVE_NNAPI=OFF)")
+        endif()
+    endif()
+    # Exclude MLX CPU backend files when MLX is not available (they require MLX headers + C++20)
+    if(NOT HAVE_MLX)
+        file(GLOB_RECURSE _mlx_cpu_sources
+            ./include/graph/cpu/MlxGraph*.cpp
+            ./include/graph/cpu/MlxIRBuilder.cpp
+        )
+        if(_mlx_cpu_sources)
+            list(REMOVE_ITEM GRAPH_SOURCES ${_mlx_cpu_sources})
+            list(LENGTH _mlx_cpu_sources _mlx_count)
+            message(STATUS "Excluded ${_mlx_count} MLX CPU backend files (HAVE_MLX=OFF)")
+        endif()
+    endif()
+    # Exclude OpenVINO CPU backend files when OpenVINO is not available
+    if(NOT HAVE_OPENVINO)
+        file(GLOB_RECURSE _openvino_cpu_sources
+            ./include/graph/cpu/OpenVinoGraphBackend.cpp
+        )
+        if(_openvino_cpu_sources)
+            list(REMOVE_ITEM GRAPH_SOURCES ${_openvino_cpu_sources})
+            message(STATUS "Excluded OpenVINO backend files (HAVE_OPENVINO=OFF)")
+        endif()
+    endif()
+    # MLX sources require C++20 (MLX API uses concepts, designated initializers, etc.)
+    if(HAVE_MLX)
+        file(GLOB_RECURSE _mlx_cxx20_sources ./include/graph/cpu/Mlx*.cpp)
+        if(_mlx_cxx20_sources)
+            set_source_files_properties(${_mlx_cxx20_sources} PROPERTIES COMPILE_FLAGS "-std=c++20")
+            list(LENGTH _mlx_cxx20_sources _mlx_cxx20_count)
+            message(STATUS "Set C++20 for ${_mlx_cxx20_count} MLX source files")
+        endif()
+    endif()
     file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
     file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp)
     file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp)
@@ -189,21 +282,39 @@ function(collect_all_sources out_source_list)
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES ./include/ops/declarable/helpers/cuda/*.cu ./include/ops/declarable/helpers/impl/*.cpp)
         file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp ./include/helpers/cuda/*.cu)
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/impl/*.cpp)
-        file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu)
+        file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu ./include/legacy/cuda/*.cu)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA ./include/loops/*.cu ./include/loops/cuda/**/*.cu)
+        file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
+        file(GLOB_RECURSE GRAPH_CUDA_SOURCES ./include/graph/*.cu)
+        # Exclude Triton .cu files when Triton is not available (they require MLIR headers)
+        if(NOT HAVE_TRITON)
+            file(GLOB_RECURSE _triton_cu_sources ./include/graph/gpu/Triton*.cu)
+            if(_triton_cu_sources)
+                list(REMOVE_ITEM GRAPH_CUDA_SOURCES ${_triton_cu_sources})
+                list(LENGTH _triton_cu_sources _triton_cu_count)
+                message(STATUS "Excluded ${_triton_cu_count} Triton .cu files (HAVE_TRITON=OFF)")
+            endif()
+        endif()
         file(GLOB_RECURSE VALIDATION_SOURCES ./include/array/DataTypeValidation.cpp)
         file(GLOB CPU_HELPERS_TO_EXCLUDE ./include/legacy/cpu/*.cpp ./include/helpers/cpu/*.cpp ./include/array/cpu/*.cpp)
 
         list(APPEND ALL_SOURCES_LIST
                 ${EXEC_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES}
                 ${HELPERS_SOURCES} ${LOOPS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES_CUDA}
-                ${VALIDATION_SOURCES}
+                ${GRAPH_CUDA_SOURCES} ${VALIDATION_SOURCES} ${SYSTEM_CONFIG_SOURCES}
         )
         list(REMOVE_ITEM ALL_SOURCES_LIST ${CPU_HELPERS_TO_EXCLUDE})
 
         if(HAVE_CUDNN)
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ./include/ops/declarable/platform/cudnn/*.cu)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_CUDNN_SOURCES})
+        endif()
+
+        # ZLUDA MIOpen support for AMD GPUs (cuDNN alternative)
+        if(HAVE_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "AMD" AND HAVE_MIOPEN)
+            file(GLOB_RECURSE CUSTOMOPS_MIOPEN_SOURCES ./include/ops/declarable/platform/miopen/*.cpp)
+            list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MIOPEN_SOURCES})
+            message(STATUS "✅ Added MIOpen platform sources for ZLUDA AMD")
         endif()
 
         message(STATUS "🚀 CUDA build: Enhanced template system will generate additional CUDA instantiations")
@@ -216,20 +327,93 @@ function(collect_all_sources out_source_list)
         file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp)
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp)
+        file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
 
         list(APPEND ALL_SOURCES_LIST
                 ${EXEC_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
                 ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${HELPERS_SOURCES} ${LEGACY_SOURCES}
-                ${LOOPS_SOURCES}
+                ${LOOPS_SOURCES} ${SYSTEM_CONFIG_SOURCES}
         )
 
+        # --- Multi-Helper Source Collection (CPU Build) ---
+        # All enabled helpers are compiled simultaneously for dynamic kernel selection
+
+        # OneDNN / MKL-DNN helper
         if(HAVE_ONEDNN)
             file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES ./include/ops/declarable/platform/mkldnn/*.cpp)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_ONEDNN_SOURCES})
+            list(LENGTH CUSTOMOPS_ONEDNN_SOURCES onednn_count)
+            message(STATUS "✅ Added OneDNN platform sources: ${onednn_count} files")
         endif()
+
+        # ARM Compute Library helper
         if(HAVE_ARMCOMPUTE)
             file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES ./include/ops/declarable/platform/armcompute/*.cpp)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
+            list(LENGTH CUSTOMOPS_ARMCOMPUTE_SOURCES armcompute_count)
+            message(STATUS "✅ Added ARM Compute platform sources: ${armcompute_count} files")
+        endif()
+
+        # MLIR/LLVM JIT helper
+        if(HAVE_MLIR)
+            file(GLOB_RECURSE CUSTOMOPS_MLIR_SOURCES ./include/ops/declarable/platform/mlir/*.cpp)
+            file(GLOB_RECURSE MLIR_DIALECT_SOURCES ./include/mlir/**/*.cpp)
+            list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MLIR_SOURCES} ${MLIR_DIALECT_SOURCES})
+            list(LENGTH CUSTOMOPS_MLIR_SOURCES mlir_count)
+            message(STATUS "✅ Added MLIR platform sources: ${mlir_count} files")
+        endif()
+
+        # Metal Performance Shaders helper (macOS/iOS)
+        if(HAVE_MPS)
+            file(GLOB_RECURSE CUSTOMOPS_MPS_SOURCES ./include/ops/declarable/platform/mps/*.mm)
+            list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MPS_SOURCES})
+            list(LENGTH CUSTOMOPS_MPS_SOURCES mps_count)
+            message(STATUS "✅ Added MPS platform sources: ${mps_count} files")
+        endif()
+
+        # Apple Accelerate framework helper (macOS/iOS)
+        if(HAVE_ACCELERATE)
+            file(GLOB_RECURSE CUSTOMOPS_ACCELERATE_SOURCES ./include/ops/declarable/platform/accelerate/*.cpp ./include/ops/declarable/platform/accelerate/*.mm)
+            list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_ACCELERATE_SOURCES})
+            list(LENGTH CUSTOMOPS_ACCELERATE_SOURCES accelerate_count)
+            message(STATUS "✅ Added Accelerate platform sources: ${accelerate_count} files")
+        endif()
+
+        # LlamaCpp helper (for LLM operations)
+        if(HAVE_LLAMACPP)
+            file(GLOB_RECURSE CUSTOMOPS_LLAMACPP_SOURCES ./include/ops/declarable/platform/llamacpp/*.cpp)
+            if(CUSTOMOPS_LLAMACPP_SOURCES)
+                list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_LLAMACPP_SOURCES})
+                list(LENGTH CUSTOMOPS_LLAMACPP_SOURCES llamacpp_count)
+                message(STATUS "✅ Added LlamaCpp platform sources: ${llamacpp_count} files")
+            endif()
+        endif()
+
+        # VLM (Vision-Language Model) operations
+        if(HAVE_VLM)
+            file(GLOB_RECURSE CUSTOMOPS_VLM_SOURCES ./include/ops/declarable/platform/vlm/*.cpp)
+            if(CUSTOMOPS_VLM_SOURCES)
+                list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_VLM_SOURCES})
+                list(LENGTH CUSTOMOPS_VLM_SOURCES vlm_count)
+                message(STATUS "✅ Added VLM platform sources: ${vlm_count} files")
+            endif()
+        endif()
+
+        # --- Multi-Backend Dispatcher Sources ---
+        # Always include multi-platform dispatcher for dynamic kernel selection
+        if(SD_DYNAMIC_KERNEL_SELECTION)
+            file(GLOB_RECURSE MULTI_PLATFORM_DISPATCHER_SOURCES
+                ./include/ops/declarable/MultiPlatformDispatcher.h
+                ./include/ops/declarable/impl/MultiPlatformDispatcher.cpp
+                ./include/helpers/KernelSelectionEnvironment.h
+                ./include/helpers/impl/KernelSelectionEnvironment.cpp
+                ./include/helpers/KernelAutoTuner.h
+                ./include/helpers/impl/KernelAutoTuner.cpp
+                ./include/helpers/KernelPerformanceRegistry.h
+                ./include/helpers/impl/KernelPerformanceRegistry.cpp
+            )
+            list(APPEND ALL_SOURCES_LIST ${MULTI_PLATFORM_DISPATCHER_SOURCES})
+            message(STATUS "✅ Added Multi-Platform Dispatcher sources for dynamic kernel selection")
         endif()
 
         message(STATUS "🖥️  CPU build: Enhanced template system will generate optimized CPU instantiations")
@@ -258,13 +442,148 @@ function(collect_all_sources out_source_list)
 endfunction()
 
 function(configure_cpu_linking main_target_name)
+    # Core libraries
+    # CMAKE_DL_LIBS provides -ldl on Linux (needed for dlopen/dlsym in DynamicKernelLoader)
     target_link_libraries(${main_target_name} PUBLIC
-            ${ONEDNN} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES}
-            ${BLAS_LIBRARIES} ${JVM_LIBRARY} flatbuffers_interface)
+            ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${JVM_LIBRARY} flatbuffers_interface ${CMAKE_DL_LIBS})
+
+    # --- Multi-Helper Library Linking ---
+    # Link all enabled helper libraries for multi-backend support
+
+    # OneDNN/MKL-DNN
+    if(HAVE_ONEDNN AND DEFINED ONEDNN)
+        target_link_libraries(${main_target_name} PUBLIC ${ONEDNN})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_ONEDNN=1)
+        message(STATUS "🔗 Linking OneDNN helper")
+    endif()
+
+    # ARM Compute Library
+    if(HAVE_ARMCOMPUTE AND DEFINED ARMCOMPUTE_LIBRARIES)
+        target_link_libraries(${main_target_name} PUBLIC ${ARMCOMPUTE_LIBRARIES})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_ARMCOMPUTE=1)
+        message(STATUS "🔗 Linking ARM Compute helper")
+    endif()
+
+    # MLIR/LLVM JIT
+    if(HAVE_MLIR AND DEFINED MLIR)
+        target_link_libraries(${main_target_name} PUBLIC ${MLIR})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_MLIR=1)
+        message(STATUS "🔗 Linking MLIR helper")
+    endif()
+
+    # Metal Performance Shaders (macOS/iOS)
+    if(HAVE_MPS AND DEFINED MPS_LIBRARIES)
+        target_link_libraries(${main_target_name} PUBLIC ${MPS_LIBRARIES})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_MPS=1)
+        message(STATUS "🔗 Linking MPS helper")
+    endif()
+
+    # Triton GPU Compiler
+    if(HAVE_TRITON AND DEFINED TRITON)
+        target_link_libraries(${main_target_name} PUBLIC ${TRITON})
+        # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
+        # Global -D flags change every file's compiler command line, breaking ccache
+        # for the 276 generated .cu template instantiation files.
+        message(STATUS "🔗 Linking Triton GPU compiler backend")
+    endif()
+
+    # OpenVINO CPU Graph Backend
+    if(HAVE_OPENVINO AND TARGET openvino_interface)
+        target_link_libraries(${main_target_name} PUBLIC openvino_interface)
+        message(STATUS "🔗 Linking OpenVINO CPU graph backend")
+    endif()
+
+    # CUTLASS (Header-only CUDA GEMM Templates)
+    if(HAVE_CUTLASS AND TARGET cutlass_interface)
+        target_link_libraries(${main_target_name} PUBLIC cutlass_interface)
+        # HAVE_CUTLASS is provided via generated config.h, not as a global -D flag.
+        message(STATUS "Linking CUTLASS header-only templates")
+    endif()
+
+    # MLX (Apple Metal GPU Compute)
+    if(HAVE_MLX AND DEFINED MLX)
+        target_link_libraries(${main_target_name} PUBLIC ${MLX})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_MLX=1)
+        message(STATUS "🔗 Linking MLX Apple Silicon backend")
+    endif()
+
+    # OpenVINO (Intel CPU Graph Backend)
+    if(HAVE_OPENVINO AND DEFINED OPENVINO_LIB)
+        target_link_libraries(${main_target_name} PUBLIC ${OPENVINO_LIB})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_OPENVINO=1)
+        message(STATUS "🔗 Linking OpenVINO CPU graph backend")
+
+        # Bundle TBB shared library alongside libnd4jcpu.so so JavaCPP packaging
+        # can include it in the native jar. libtbb.so.12 is OpenVINO's threading
+        # runtime — it is always a shared library (no static variant in OpenVINO's build).
+        # The pom.xml copy step globs all *.so / *.so.* from CMAKE_BINARY_DIR into
+        # the jar. Without this step, libtbb.so.12 only exists at the absolute build
+        # path that is baked into RUNPATH; after a clean build that path no longer exists.
+        if(NOT WIN32)
+            set(_OV_TBB_SRC_DIR "${CMAKE_BINARY_DIR}/openvino_install/runtime/3rdparty/tbb/lib64")
+            if(EXISTS "${_OV_TBB_SRC_DIR}")
+                # Copy at configure time for the "already built" reuse path
+                file(GLOB _tbb_so_files "${_OV_TBB_SRC_DIR}/libtbb.so*"
+                                        "${_OV_TBB_SRC_DIR}/libtbbmalloc.so*"
+                                        "${_OV_TBB_SRC_DIR}/libtbbmalloc_proxy.so*")
+                foreach(_f ${_tbb_so_files})
+                    get_filename_component(_fname "${_f}" NAME)
+                    if(NOT EXISTS "${CMAKE_BINARY_DIR}/${_fname}")
+                        message(STATUS "  Copying TBB library for bundling: ${_fname}")
+                        execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${_f}" "${CMAKE_BINARY_DIR}/${_fname}")
+                    endif()
+                endforeach()
+            endif()
+            # Also copy at build time (POST_BUILD) for the case where OpenVINO is
+            # built as part of this cmake invocation (ExternalProject path).
+            add_custom_command(TARGET ${main_target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND}
+                    -D_OV_TBB_SRC_DIR=${CMAKE_BINARY_DIR}/openvino_install/runtime/3rdparty/tbb/lib64
+                    -D_DST_DIR=${CMAKE_BINARY_DIR}
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/copy_tbb_libs.cmake"
+                COMMENT "Copying OpenVINO TBB shared libraries to output directory for jar bundling"
+            )
+        endif()
+    endif()
+
+    # NCCL (Multi-GPU Collective Communications)
+    if(HAVE_NCCL AND DEFINED NCCL_LIB)
+        target_link_libraries(${main_target_name} PUBLIC ${NCCL_LIB})
+        target_include_directories(${main_target_name} PUBLIC ${NCCL_INCLUDE_DIRS})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_NCCL=1)
+        message(STATUS "🔗 Linking NCCL for multi-GPU collective communications")
+    endif()
+
+    # Apple Accelerate Framework (macOS/iOS)
+    if(HAVE_ACCELERATE)
+        find_library(ACCELERATE_FRAMEWORK Accelerate)
+        if(ACCELERATE_FRAMEWORK)
+            target_link_libraries(${main_target_name} PUBLIC ${ACCELERATE_FRAMEWORK})
+            target_compile_definitions(${main_target_name} PUBLIC HAVE_ACCELERATE=1)
+            message(STATUS "🔗 Linking Accelerate helper")
+        endif()
+    endif()
+
+    # Dynamic kernel selection compile definitions
+    if(SD_DYNAMIC_KERNEL_SELECTION)
+        target_compile_definitions(${main_target_name} PUBLIC SD_DYNAMIC_KERNEL_SELECTION=1)
+        target_compile_definitions(${main_target_name} PUBLIC SD_KERNEL_STRATEGY="${SD_KERNEL_STRATEGY}")
+        if(SD_KERNEL_AUTOTUNING)
+            target_compile_definitions(${main_target_name} PUBLIC SD_KERNEL_AUTOTUNING=1)
+        endif()
+        if(SD_KERNEL_CACHING)
+            target_compile_definitions(${main_target_name} PUBLIC SD_KERNEL_CACHING=1)
+        endif()
+        # Pass helper priority as compile definition
+        if(SD_HELPER_PRIORITY)
+            string(REPLACE ";" "," HELPER_PRIORITY_CSV "${SD_HELPER_PRIORITY}")
+            target_compile_definitions(${main_target_name} PUBLIC SD_HELPER_PRIORITY="${HELPER_PRIORITY_CSV}")
+        endif()
+    endif()
 
     # Add debug libraries when SD_GCC_FUNCTRACE is enabled
     if(SD_GCC_FUNCTRACE)
-        # CRITICAL FIX (Session #1045): Do NOT link libunwind!
+        # FIX (Session #1045): Do NOT link libunwind!
         # - We removed --unwindlib=libunwind from compile flags in CompilerFlags.cmake
         # - Using system libgcc_s for exception handling (JVM compatible)
         # - libunwind would conflict with JVM's libgcc_s causing _Unwind_SetGR crashes
@@ -274,51 +593,75 @@ function(configure_cpu_linking main_target_name)
         message(STATUS "✅ Added debug libraries for SD_GCC_FUNCTRACE (using libgcc_s for unwinding, JVM compatible)")
     endif()
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        find_package(OpenMP)
-        if(OpenMP_CXX_FOUND)
-            target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
-        else()
-            target_link_libraries(${main_target_name} PUBLIC "-fopenmp")
+    # On macOS, Homebrew's libomp is keg-only and not found by default.
+    # Set hints so find_package(OpenMP) can locate it.
+    if(APPLE AND EXISTS "/opt/homebrew/opt/libomp")
+        set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
+        set(OpenMP_C_FLAGS "-Xclang -fopenmp" CACHE STRING "" FORCE)
+        set(OpenMP_CXX_FLAGS "-Xclang -fopenmp" CACHE STRING "" FORCE)
+        set(OpenMP_C_LIB_NAMES "omp" CACHE STRING "" FORCE)
+        set(OpenMP_CXX_LIB_NAMES "omp" CACHE STRING "" FORCE)
+        set(OpenMP_omp_LIBRARY "/opt/homebrew/opt/libomp/lib/libomp.dylib" CACHE FILEPATH "" FORCE)
+        include_directories("/opt/homebrew/opt/libomp/include")
+    elseif(APPLE AND EXISTS "/usr/local/opt/libomp")
+        set(OpenMP_ROOT "/usr/local/opt/libomp")
+        set(OpenMP_C_FLAGS "-Xclang -fopenmp" CACHE STRING "" FORCE)
+        set(OpenMP_CXX_FLAGS "-Xclang -fopenmp" CACHE STRING "" FORCE)
+        set(OpenMP_C_LIB_NAMES "omp" CACHE STRING "" FORCE)
+        set(OpenMP_CXX_LIB_NAMES "omp" CACHE STRING "" FORCE)
+        set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib" CACHE FILEPATH "" FORCE)
+        include_directories("/usr/local/opt/libomp/include")
+    endif()
+
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
+
+        # Android NDK: OpenMP::OpenMP_CXX imported target may not propagate the
+        # link flag correctly through the NDK toolchain file. The NDK bundles a
+        # static libomp.a — explicitly add -fopenmp -static-openmp so the linker
+        # resolves __kmpc_* symbols.
+        if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+            target_link_libraries(${main_target_name} PUBLIC "-fopenmp" "-static-openmp")
+            message(STATUS "✅ Android: added -fopenmp -static-openmp to linker for ${main_target_name}")
         endif()
-    endif()
-endfunction()
 
-# UPDATED: Modern CUDA linking with improved cuDNN detection
-function(configure_cuda_linking main_target_name)
-    # Find the CUDAToolkit to define the CUDA::toolkit target
-    find_package(CUDAToolkit REQUIRED)
-
-    # Setup modern cuDNN detection
-    setup_modern_cudnn()
-
-    # Modern CMake uses imported targets which handle all necessary dependencies.
-    # Linking against CUDA::toolkit automatically adds include directories,
-    # runtime libraries, and all other required flags.
-    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit ${JVM_LIBRARY})
-
-    # If cuDNN was found, link against its imported target
-    if(HAVE_CUDNN AND TARGET CUDNN::cudnn)
-        message(STATUS "✅ Linking with modern CUDNN::cudnn target")
-        target_link_libraries(${main_target_name} PUBLIC CUDNN::cudnn)
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
-    elseif(HAVE_CUDNN AND CUDNN_LIBRARIES)
-        message(STATUS "✅ Linking with cuDNN libraries: ${CUDNN_LIBRARIES}")
-        target_link_libraries(${main_target_name} PUBLIC ${CUDNN_LIBRARIES})
-        target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
-    elseif(HAVE_CUDNN AND CUDNN_INCLUDE_DIR)
-        message(STATUS "✅ Linking with cuDNN include-only (embedded in CUDA)")
-        target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
+        # Bundle OpenMP runtime library for cross-platform deployment
+        if(NOT WIN32 AND NOT ANDROID AND OpenMP_omp_LIBRARY AND EXISTS "${OpenMP_omp_LIBRARY}")
+            message(STATUS "📦 Bundling OpenMP library: ${OpenMP_omp_LIBRARY}")
+            add_custom_command(TARGET ${main_target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenMP_omp_LIBRARY}" "${CMAKE_BINARY_DIR}/libomp.dylib"
+                COMMENT "Copying libomp to output directory for bundling"
+            )
+        endif()
+    elseif(NOT APPLE)
+        # Only use -fopenmp fallback on non-Apple platforms (Apple Clang rejects it)
+        target_link_libraries(${main_target_name} PUBLIC "-fopenmp")
     else()
-        message(STATUS "ℹ️  Building without cuDNN support")
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=0)
+        message(WARNING "⚠️ OpenMP not found on macOS — building without OpenMP support")
     endif()
 
-    target_include_directories("${main_target_name}" PUBLIC "${CUDA_INCLUDE_DIRS}")
-    target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
+    # SDZ SameDiff archives are ZIP/DEFLATE by default, so link zlib when available.
+    find_package(ZLIB QUIET)
+    if(ZLIB_FOUND)
+        set(_sdx_object_target "${main_target_name}_object")
+        if(TARGET ${_sdx_object_target})
+            target_compile_definitions(${_sdx_object_target} PUBLIC HAVE_ZLIB=1)
+            target_link_libraries(${_sdx_object_target} PUBLIC ZLIB::ZLIB)
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC ZLIB::ZLIB)
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_ZLIB=1)
+        message(STATUS "🔗 Linking zlib for SDZ DEFLATE support")
+    else()
+        message(WARNING "⚠️ zlib not found - SDZ reader supports STORED ZIP entries only")
+    endif()
+
+    install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
+
+# NOTE: configure_cuda_linking() is defined in CudaConfiguration.cmake (included at line ~879).
+# Do NOT redefine it here — cmake uses the last definition, and the CudaConfiguration version
+# already handles: CUDA toolkit, nvrtc, cuda driver, cuDNN, OpenBLAS, Triton, JVM, OpenMP.
 
 # --- Enhanced library creation function ---
 function(create_and_link_library)
@@ -329,6 +672,225 @@ function(create_and_link_library)
         add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
         target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
+
+        # OpenMP: add compile flags to the OBJECT target.
+        # find_package(OpenMP) runs inside setup_cpu_environment() which has function
+        # scope — OpenMP_CXX_FOUND isn't visible here. Re-find at this scope.
+        find_package(OpenMP QUIET)
+        if(OpenMP_CXX_FOUND)
+            # Use generator expressions so -fopenmp only applies to C/CXX, not CUDA.
+            # nvcc does not understand -fopenmp and fatals on Windows CUDA builds.
+            # MSVC needs /openmp:experimental for #pragma omp simd support.
+            if(MSVC)
+                target_compile_options(${OBJECT_LIB_NAME} PUBLIC
+                    $<$<COMPILE_LANGUAGE:CXX>:/openmp:experimental>
+                    $<$<COMPILE_LANGUAGE:C>:/openmp:experimental>)
+            elseif(APPLE)
+                # Apple Clang needs -Xclang -fopenmp (bare -fopenmp is unsupported).
+                # OpenMP_CXX_FLAGS is set to "-Xclang -fopenmp" by the Homebrew hints
+                # in configure_cpu_linking(). Use separate_arguments to split the string.
+                separate_arguments(_omp_cxx_flags UNIX_COMMAND "${OpenMP_CXX_FLAGS}")
+                separate_arguments(_omp_c_flags UNIX_COMMAND "${OpenMP_C_FLAGS}")
+                target_compile_options(${OBJECT_LIB_NAME} PUBLIC
+                    $<$<COMPILE_LANGUAGE:CXX>:${_omp_cxx_flags}>
+                    $<$<COMPILE_LANGUAGE:C>:${_omp_c_flags}>)
+            else()
+                target_compile_options(${OBJECT_LIB_NAME} PUBLIC
+                    $<$<COMPILE_LANGUAGE:CXX>:-fopenmp>
+                    $<$<COMPILE_LANGUAGE:C>:-fopenmp>)
+            endif()
+            message(STATUS "✅ OpenMP added to OBJECT target ${OBJECT_LIB_NAME} (language-guarded)")
+        else()
+            message(STATUS "⚠️ OpenMP NOT found — ${OBJECT_LIB_NAME} will be single-threaded")
+        endif()
+
+        # Generated instantiation sources compile into nested object directories
+        # under CMakeFiles/<target>.dir. Create those paths up front so clean
+        # parallel Makefile builds do not race the first generated compiles.
+        set(_generated_object_dir "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${OBJECT_LIB_NAME}.dir")
+        file(MAKE_DIRECTORY
+                "${_generated_object_dir}"
+                "${_generated_object_dir}/compilation_units")
+        if(SD_CUDA)
+            file(MAKE_DIRECTORY "${_generated_object_dir}/cuda_instantiations")
+        else()
+            file(MAKE_DIRECTORY "${_generated_object_dir}/cpu_instantiations")
+        endif()
+
+        # =========================================================================
+        # UNITY BUILD EXCLUSIONS
+        # =========================================================================
+        # Generated template-instantiation compilation units (e.g. specials_single_direct_*.cpp,
+        # pairwise_instantiation_*.cpp, etc.) each #include the same impl header for
+        # their type slice. In unity builds, multiple such .cpp files get merged into
+        # one TU, causing redefinition errors — #pragma once fails on MinGW GCC due
+        # to mixed-slash relative paths (..\..\include/...).
+        # These files are intentionally split for parallel compilation and type-based
+        # chunking, so excluding them from unity batching is correct.
+        # =========================================================================
+        # =========================================================================
+        # EXCLUDE GENERATED FILES FROM UNITY BUILD AND PCH
+        # =========================================================================
+        # Generated instantiation and compilation-unit files are intentionally split
+        # for parallel compilation and type-based chunking, so they must be excluded
+        # from unity batching.
+        #
+        # They also only include their specific template headers (e.g.
+        # <loops/cpu/broadcasting_bool.hpp>) and do NOT need the project-wide PCH.
+        # Applying PCH to these files causes ccache to disable depend_mode
+        # (ccache disables depend_mode when PCH is detected), falling back to
+        # slower preprocessor-based caching with cache keys that change whenever
+        # any PCH header changes — causing cache misses on every rebuild.
+        # =========================================================================
+        foreach(_src ${ALL_SOURCES})
+            get_filename_component(_dir "${_src}" DIRECTORY)
+            if(_dir MATCHES "compilation_units|cpu_instantiations|cuda_instantiations")
+                set_source_files_properties(${_src} PROPERTIES
+                    SKIP_PRECOMPILE_HEADERS ON)
+                if(SD_UNITY_BUILD)
+                    set_source_files_properties(${_src} PROPERTIES
+                        SKIP_UNITY_BUILD_INCLUSION ON)
+                endif()
+            endif()
+        endforeach()
+
+        # =========================================================================
+        # NOTE ON EXCEPTION TABLE REDUCTION (ABANDONED APPROACH)
+        # =========================================================================
+        # We attempted to use -fno-exceptions to reduce .gcc_except_table sections
+        # that cause PC32 relocation overflow in >2GB binaries. However, this approach
+        # was abandoned because DirectShapeTrie.h (which uses try/catch at line 106)
+        # is included transitively by virtually ALL source files through the header
+        # chain (via ConstantShapeHelper.h and other helpers).
+        #
+        # The relocation overflow issue is instead solved via:
+        # 1. Partial linking (PartialLinking.cmake) - pre-links object files in small
+        #    groups to resolve internal relocations before the final link
+        # 2. Gold linker with appropriate flags for large binaries
+        # 3. -mcmodel=medium for 64-bit data addressing
+        # =========================================================================
+
+        # =========================================================================
+        # EXTERNAL DEPENDENCY BLOCKING
+        # =========================================================================
+        # External helper libraries MUST complete building before object files compile.
+        # This prevents "header not found" errors (e.g., dnnl.hpp) when helpers are enabled.
+        # =========================================================================
+
+        # OneDNN helper - MUST complete before object files that include dnnl.hpp
+        if(HELPERS_onednn STREQUAL "ON" AND TARGET onednn_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: OneDNN                                      ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for OneDNN to finish    ║")
+            message(STATUS "║  OneDNN build may take 5-15 minutes...                            ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} onednn_external)
+            if(TARGET onednn_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC onednn_interface)
+            endif()
+        endif()
+
+        # ARM Compute helper
+        if(HELPERS_armcompute STREQUAL "ON" AND TARGET armcompute_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: ARM Compute Library                         ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for ARM Compute         ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} armcompute_external)
+            if(TARGET armcompute_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC armcompute_interface)
+            endif()
+        endif()
+
+        # ZLUDA helper
+        if(SD_ZLUDA AND TARGET zluda_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: ZLUDA                                       ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for ZLUDA               ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} zluda_external)
+            if(TARGET zluda_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC zluda_interface)
+            endif()
+        endif()
+
+        # Triton GPU compiler helper - MUST complete before object files that include Triton headers
+        if(HAVE_TRITON AND TARGET triton_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: Triton                                       ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for Triton               ║")
+            message(STATUS "║  Triton build may take 15-30 minutes (builds LLVM internally)...   ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} triton_external)
+            if(TARGET triton_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC triton_interface)
+                # Explicitly add Triton/LLVM include dirs and HAVE_TRITON define to OBJECT library.
+                # CMake OBJECT libraries may not fully propagate INTERFACE properties
+                # from linked targets in all versions.
+                set(_TRITON_INSTALL "${CMAKE_BINARY_DIR}/triton_install")
+                set(_TRITON_LLVM_INSTALL "${CMAKE_BINARY_DIR}/triton_llvm_install")
+                # Use SYSTEM includes to prevent Triton/LLVM headers from conflicting
+                # with libnd4j's DataType enum names (BOOL, INT8, FLOAT32 etc.)
+                target_include_directories(${OBJECT_LIB_NAME} SYSTEM PUBLIC
+                    "${_TRITON_INSTALL}/include"
+                    "${_TRITON_LLVM_INSTALL}/include"
+                )
+                # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
+                message(STATUS "✅ Triton include dirs added to ${OBJECT_LIB_NAME} (HAVE_TRITON via config.h)")
+            endif()
+        endif()
+
+        # MIOpen helper
+        if(HELPERS_miopen STREQUAL "ON" AND TARGET miopen_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: MIOpen                                      ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for MIOpen              ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} miopen_external)
+            if(TARGET miopen_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC miopen_interface)
+            endif()
+        endif()
+
+        # OpenVINO CPU graph backend
+        if(HAVE_OPENVINO AND TARGET openvino_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: OpenVINO                                     ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for OpenVINO             ║")
+            message(STATUS "║  OpenVINO build may take 10-20 minutes...                          ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} openvino_external)
+            if(TARGET openvino_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC openvino_interface)
+                set(_OV_INSTALL "${CMAKE_BINARY_DIR}/openvino_install")
+                target_include_directories(${OBJECT_LIB_NAME} SYSTEM PUBLIC
+                    "${_OV_INSTALL}/runtime/include"
+                    "${_OV_INSTALL}/include"
+                )
+                message(STATUS "✅ OpenVINO include dirs added to ${OBJECT_LIB_NAME} (HAVE_OPENVINO via config.h)")
+            endif()
+        endif()
+
+        # CUTLASS header-only templates
+        if(HAVE_CUTLASS AND TARGET cutlass_external)
+            add_dependencies(${OBJECT_LIB_NAME} cutlass_external)
+            if(TARGET cutlass_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC cutlass_interface)
+                message(STATUS "CUTLASS include dirs added to ${OBJECT_LIB_NAME} (HAVE_CUTLASS via config.h)")
+            endif()
+        endif()
 
         # picking up incomplete flatbuffers.h from libnd4j/include/flatbuffers/
         # The ExternalProject downloads full headers to flatbuffers-src/include
@@ -377,7 +939,6 @@ function(create_and_link_library)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/generated"
                 "${CMAKE_BINARY_DIR}/compilation_units"
-                "${CMAKE_BINARY_DIR}/cpu_instantiations"
         )
 
         if(SD_CUDA)
@@ -400,83 +961,136 @@ function(create_and_link_library)
         setup_type_definitions_for_target(${OBJECT_LIB_NAME})
 
         # Enable precompiled headers for large commonly-included headers
-        # This significantly speeds up incremental builds when these headers change
-        # PERMANENTLY DISABLED: Causes cache staleness issues when SD_GCC_FUNCTRACE changes
-        # The CMake cache can hold stale values causing build failures
-        if(FALSE)  # Disabled to prevent cache staleness issues
-            message(STATUS "🚀 Enabling precompiled headers for ${OBJECT_LIB_NAME}")
-            target_precompile_headers(${OBJECT_LIB_NAME} PRIVATE
-                <system/op_boilerplate.h>
-                <system/type_boilerplate.h>
-            )
-            message(STATUS "✅ Precompiled headers enabled for op_boilerplate.h and type_boilerplate.h")
-        elseif(SD_GCC_FUNCTRACE)
-            message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
+        # NOTE: PCH disabled for CUDA builds - nvcc doesn't support PCH well
+        # This significantly speeds up builds by avoiding re-parsing 11,000+ lines of headers per file
+        # PCH is ONLY enabled when SD_GCC_FUNCTRACE is OFF and NOT a CUDA build
+        # SD_DISABLE_PCH env var: CI sets this because PCH breaks ccache across runner restores
+        # (fresh SDK installs have new header mtimes, invalidating all PCH manifest entries)
+        # PCH is now DISABLED by default because it breaks ccache depend_mode.
+        # ccache falls back to preprocessor mode when PCH is detected, making
+        # cache keys include ALL PCH headers — any change to shape.h, templatemath.h,
+        # etc. invalidates all ~841 source files instead of just affected ones.
+        # Set SD_ENABLE_PCH=1 to force-enable PCH (e.g., for cold builds without ccache).
+        if(DEFINED ENV{SD_DISABLE_PCH})
+            set(_SD_PCH_DISABLED_BY_ENV TRUE)
+        elseif(NOT DEFINED ENV{SD_ENABLE_PCH})
+            set(_SD_PCH_DISABLED_BY_ENV TRUE)
         else()
-            message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
+            set(_SD_PCH_DISABLED_BY_ENV FALSE)
+        endif()
+        if(NOT SD_GCC_FUNCTRACE AND NOT SD_CUDA AND NOT _SD_PCH_DISABLED_BY_ENV)
+            message(STATUS "🚀 Enabling precompiled headers for ${OBJECT_LIB_NAME}")
+            # On Windows, include <windows.h> first so that _WINDOWS_ is defined
+            # before types.h processes its constexpr alias guards. Without this,
+            # the PCH bakes in constexpr aliases (BOOL, INT32, etc.) that conflict
+            # with Windows SDK typedefs when source files later include <windows.h>.
+            if(WIN32)
+                target_compile_definitions(${OBJECT_LIB_NAME} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+                target_precompile_headers(${OBJECT_LIB_NAME} PRIVATE
+                    <windows.h>
+                    <system/op_boilerplate.h>
+                    <system/type_boilerplate.h>
+                    <math/templatemath.h>
+                    <helpers/shape.h>
+                )
+            else()
+                target_precompile_headers(${OBJECT_LIB_NAME} PRIVATE
+                    <system/op_boilerplate.h>
+                    <system/type_boilerplate.h>
+                    <math/templatemath.h>
+                    <helpers/shape.h>
+                )
+            endif()
+            message(STATUS "✅ Precompiled headers enabled (op_boilerplate.h, type_boilerplate.h, templatemath.h, shape.h)")
+        elseif(SD_CUDA)
+            message(STATUS "⚠️ Precompiled headers DISABLED for CUDA build (nvcc compatibility)")
+        elseif(_SD_PCH_DISABLED_BY_ENV)
+            message(STATUS "⚠️ Precompiled headers DISABLED (default — breaks ccache depend_mode). Set SD_ENABLE_PCH=1 to enable.")
+        else()
+            message(STATUS "⚠️ Precompiled headers DISABLED for functrace build (use clean build when switching)")
         endif()
     endif()
 
     if(NOT TARGET ${MAIN_LIB_NAME})
-        add_library(${MAIN_LIB_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
-        set_target_properties(${MAIN_LIB_NAME} PROPERTIES OUTPUT_NAME ${MAIN_LIB_NAME})
+        # Check if partial linking is needed for large binary support
+        sd_should_use_partial_linking(USE_PARTIAL_LINKING)
 
-        # Code model configuration is now centralized in CompilerFlags.cmake to avoid conflicts
-        # (CMAKE_SHARED_LINKER_FLAGS is set there with -mcmodel=large for sanitizer builds)
-        # Removed: target_link_options setting to prevent duplicate -mcmodel flags in link command
-        # if(SD_X86_BUILD AND NOT WIN32 AND DEFINED SD_SANITIZERS AND NOT SD_SANITIZERS STREQUAL "")
-        #     target_link_options(${MAIN_LIB_NAME} PRIVATE "-mcmodel=large")
-        #     message(STATUS "Applied -mcmodel=large to linker for ${MAIN_LIB_NAME}")
-        # endif()
-        message(STATUS "Code model configuration deferred to CompilerFlags.cmake (via CMAKE_SHARED_LINKER_FLAGS)")
-
-        # No CUDA includes needed here, they are handled by the linking function
-        target_include_directories(${MAIN_LIB_NAME} PUBLIC
-                "${OPENBLAS_PATH}/include"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/blas"
-                "${CMAKE_CURRENT_BINARY_DIR}/include"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/array"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/execution"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/exceptions"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/graph"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/loops"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/memory"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/ops"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/types"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/system"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/performance"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/generated"
-                "${CMAKE_BINARY_DIR}/compilation_units"
-                "${CMAKE_BINARY_DIR}/cpu_instantiations"
-                "${CMAKE_BINARY_DIR}/cuda_instantiations")
-
-        if(SD_CUDA)
-            target_include_directories(${MAIN_LIB_NAME} PUBLIC
-                    "${CMAKE_BINARY_DIR}/cuda_instantiations"
-            )
+        if(USE_PARTIAL_LINKING)
+            message(STATUS "")
+            message(STATUS "╔══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  LARGE BINARY BUILD DETECTED (SD_GCC_FUNCTRACE + SD_CUDA)        ║")
+            message(STATUS "║  Using partial linking to handle >2GB .eh_frame relocations      ║")
+            message(STATUS "╚══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            sd_create_library_with_partial_linking(${MAIN_LIB_NAME} ${OBJECT_LIB_NAME})
         else()
-            target_include_directories(${MAIN_LIB_NAME} PUBLIC
-                    "${OPENBLAS_PATH}/include"
-                    "${CMAKE_BINARY_DIR}/cpu_instantiations"
-            )
-        endif ()
+            add_library(${MAIN_LIB_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
+        endif()
 
-        # 🔧 ALSO apply type definitions to the shared library (for completeness)
-        message(STATUS "🔧 Applying type definitions to SHARED library: ${MAIN_LIB_NAME}")
-        setup_type_definitions_for_target(${MAIN_LIB_NAME})
+        # For IMPORTED targets (created by partial linking), properties and includes
+        # are already set in PartialLinking.cmake. Skip these operations.
+        if(NOT SD_PARTIAL_LINKED_TARGET)
+            set_target_properties(${MAIN_LIB_NAME} PROPERTIES OUTPUT_NAME ${MAIN_LIB_NAME})
+
+            # Code model configuration is now centralized in CompilerFlags.cmake to avoid conflicts
+            # (CMAKE_SHARED_LINKER_FLAGS is set there with -mcmodel=large for sanitizer builds)
+            message(STATUS "Code model configuration deferred to CompilerFlags.cmake (via CMAKE_SHARED_LINKER_FLAGS)")
+
+            # No CUDA includes needed here, they are handled by the linking function
+            target_include_directories(${MAIN_LIB_NAME} PUBLIC
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/blas"
+                    "${CMAKE_CURRENT_BINARY_DIR}/include"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/array"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/execution"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/exceptions"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/graph"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/loops"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/memory"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/ops"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/types"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/system"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/performance"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/generated"
+                    "${CMAKE_BINARY_DIR}/compilation_units"
+            )
+
+            if(SD_CUDA)
+                target_include_directories(${MAIN_LIB_NAME} PUBLIC
+                        "${CMAKE_BINARY_DIR}/cuda_instantiations"
+                )
+            else()
+                target_include_directories(${MAIN_LIB_NAME} PUBLIC
+                        "${OPENBLAS_PATH}/include"
+                        "${CMAKE_BINARY_DIR}/cpu_instantiations"
+                )
+            endif ()
+
+            # 🔧 ALSO apply type definitions to the shared library (for completeness)
+            message(STATUS "🔧 Applying type definitions to SHARED library: ${MAIN_LIB_NAME}")
+            setup_type_definitions_for_target(${MAIN_LIB_NAME})
+        else()
+            message(STATUS "Skipping target configuration for IMPORTED target (partial linking)")
+        endif()
     endif()
 
     # Remove the old call since we're now applying to both targets explicitly
     # apply_libnd4j_type_definitions_auto()
 
-    if(SD_CUDA)
-        configure_cuda_linking(${MAIN_LIB_NAME})
+    # For IMPORTED targets (partial linking), linking is handled by PartialLinking.cmake
+    message(STATUS "DEBUG: SD_PARTIAL_LINKED_TARGET=${SD_PARTIAL_LINKED_TARGET}, SD_CUDA=${SD_CUDA}, MAIN_LIB_NAME=${MAIN_LIB_NAME}")
+    if(NOT SD_PARTIAL_LINKED_TARGET)
+        if(SD_CUDA)
+            message(STATUS "DEBUG: About to call configure_cuda_linking(${MAIN_LIB_NAME})")
+            configure_cuda_linking(${MAIN_LIB_NAME})
+        else()
+            configure_cpu_linking(${MAIN_LIB_NAME})
+        endif()
     else()
-        configure_cpu_linking(${MAIN_LIB_NAME})
+        message(STATUS "Skipping linking configuration for IMPORTED target (handled by partial linking)")
     endif()
 endfunction()
 
@@ -545,15 +1159,34 @@ if(SD_CUDA)
     print_status_colored("SUCCESS" "CUDA initialization complete with enhanced template support")
 endif()
 
+# --- ZLUDA Transpiler Configuration ---
+if(SD_ZLUDA)
+    print_status_colored("INFO" "=== ZLUDA TRANSPILER CONFIGURATION ===")
+    include(ZludaConfiguration)
+    setup_zluda()
+    if(HAVE_ZLUDA)
+        configure_zluda_cuda_flags()
+        print_status_colored("SUCCESS" "ZLUDA configuration complete (target: ${ZLUDA_TARGET_BACKEND})")
+    else()
+        print_status_colored("WARNING" "ZLUDA configuration failed - falling back to standard CUDA if available")
+    endif()
+endif()
+
 # --- Phase 2: Handle Dependencies & Operations ---
 print_status_colored("INFO" "=== 2. INITIALIZING DEPENDENCIES & OPERATIONS ===")
 
 include(DuplicateInstantiationDetection)
 include(TemplateProcessing)
 include(CompilerFlags)
+include(HelperConfiguration)
 setup_platform_optimizations()
 setup_onednn()
+# Setup MKL VML for vectorized math operations (vsErf, vdErf, etc.)
+# Must be called after setup_onednn() since it depends on HELPERS_onednn
+setup_mkl_vml()
 setup_armcompute()
+setup_llamacpp()
+setup_vlm()
 
 # UPDATED: Modern cuDNN setup
 if(SD_CUDA)
@@ -574,12 +1207,42 @@ else()
 endif()
 
 setup_blas()
-setup_blas()
+setup_mlir()
+setup_mps()
+setup_triton()
+setup_mlx()
+setup_cutlass()
+setup_nccl()
+setup_openvino()
 message(STATUS "🔍 DEBUG: After setup_blas() - OPENBLAS_PATH='${OPENBLAS_PATH}', HAVE_OPENBLAS='${HAVE_OPENBLAS}'")
 message(STATUS "Dependencies initialization complete.")
-message(STATUS "Dependencies initialization complete.")
 
-message(STATUS "🔧 Helper Configuration: ONEDNN=${HAVE_ONEDNN}, ARMCOMPUTE=${HAVE_ARMCOMPUTE}, CUDNN=${HAVE_CUDNN}")
+# Print comprehensive helper configuration summary
+message(STATUS "")
+message(STATUS "🔧 === Helper Configuration ===")
+message(STATUS "   ONEDNN:      ${HAVE_ONEDNN}")
+message(STATUS "   MKL_VML:     ${HAVE_MKL_VML}")
+message(STATUS "   MKL_BLAS:    ${HAVE_MKL}")
+message(STATUS "   ARMCOMPUTE:  ${HAVE_ARMCOMPUTE}")
+message(STATUS "   CUDNN:       ${HAVE_CUDNN}")
+message(STATUS "   MLIR:        ${HAVE_MLIR}")
+message(STATUS "   MPS:         ${HAVE_MPS}")
+message(STATUS "   ACCELERATE:  ${HAVE_ACCELERATE}")
+message(STATUS "   MIOPEN:      ${HAVE_MIOPEN}")
+message(STATUS "   PJRT:        ${HAVE_PJRT}")
+message(STATUS "   LLAMACPP:    ${HAVE_LLAMACPP}")
+message(STATUS "   VLM:         ${HAVE_VLM}")
+message(STATUS "   TRITON:      ${HAVE_TRITON}")
+message(STATUS "   CUTLASS:     ${HAVE_CUTLASS}")
+message(STATUS "   NCCL:        ${HAVE_NCCL}")
+message(STATUS "   OPENVINO:    ${HAVE_OPENVINO}")
+message(STATUS "")
+message(STATUS "🔧 === Dynamic Kernel Selection ===")
+message(STATUS "   Enabled:     ${SD_DYNAMIC_KERNEL_SELECTION}")
+message(STATUS "   Strategy:    ${SD_KERNEL_STRATEGY}")
+message(STATUS "   Auto-tuning: ${SD_KERNEL_AUTOTUNING}")
+message(STATUS "   Priority:    ${SD_HELPER_PRIORITY}")
+message(STATUS "")
 
 # --- Build TYPE_DEFINES string before generating config.h ---
 # This ensures config.h has all HAS_* macros defined from the start
@@ -650,10 +1313,12 @@ else()
     string(APPEND TYPE_DEFINES "#define HAS_STD_U32STRING 1\n")
 endif()
 
-# --- Generate config.h AFTER setting all variables including TYPE_DEFINES ---
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
+# --- config.h generation is handled solely by PostBuild.cmake ---
+# PostBuild.cmake reads config.h.in directly and performs all #cmakedefine01,
+# @VAR@, and TYPE_DEFINES substitutions, with write-if-different to preserve
+# PCH timestamps. A redundant configure_file() call here can produce an
+# intermediate config.h with unprocessed #cmakedefine01 directives that
+# compilation sees before PostBuild.cmake runs.
 
 set(DEFINITIONS_CONTENT "")
 if(SD_ALL_OPS OR "${SD_OPS_LIST}" STREQUAL "")
@@ -676,7 +1341,7 @@ setup_selective_rendering_unified_safe(
         TYPE_PROFILE "${SD_TYPE_PROFILE}"
         OUTPUT_DIR "${CMAKE_BINARY_DIR}/include")
 if(NOT DEFINED UNIFIED_COMBINATIONS_3 OR NOT UNIFIED_COMBINATIONS_3)
-    message(FATAL_ERROR "❌ CRITICAL: Unified selective rendering setup failed!")
+    message(FATAL_ERROR "❌  Unified selective rendering setup failed!")
 endif()
 list(LENGTH UNIFIED_ACTIVE_TYPES type_count)
 list(LENGTH UNIFIED_COMBINATIONS_3 combo_3_count)
@@ -689,7 +1354,7 @@ endif()
 if(DEFINED HAS_FLOAT16 AND HAS_FLOAT16)
     list(FIND UNIFIED_ACTIVE_TYPES "float16" float16_pos)
     if(float16_pos LESS 0)
-        message(FATAL_ERROR "❌ CRITICAL: float16 missing despite HAS_FLOAT16=TRUE! This will cause build errors.")
+        message(FATAL_ERROR "❌  float16 missing despite HAS_FLOAT16=TRUE! This will cause build errors.")
     else()
         message(STATUS "✅ VERIFIED: float16 present at position ${float16_pos}")
     endif()
@@ -702,6 +1367,12 @@ print_status_colored("INFO" "=== 4. CREATING AND LINKING FINAL LIBRARY WITH ENHA
 collect_all_sources(ALL_SOURCES)
 create_and_link_library()
 message(STATUS "Final library target created and linked with enhanced template support.")
+
+# --- SDX Standalone Runtime (no JVM dependency) ---
+if(SD_BUILD_SDX_STANDALONE)
+    include(BuildSDX)
+    build_sdx_library()
+endif()
 
 # --- Phase 5: Enhanced Final Reports and Summaries ---
 if(DEFINED SD_GENERATE_TYPE_REPORT AND SD_GENERATE_TYPE_REPORT)
@@ -824,28 +1495,266 @@ if(SD_EXTRACT_INSTANTIATIONS)
     return()
 endif()
 
-# Precompiled headers PERMANENTLY DISABLED to prevent CMake cache staleness issues
-# When SD_GCC_FUNCTRACE or other flags change, stale cache can cause build failures
-if(FALSE)  # Disabled to prevent cache staleness issues
-    target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
-            <vector>
-            <memory>
-            <algorithm>
-            <functional>
-            <cstring>
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansioons.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/DataType.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/NDArray.hXX"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/types/types.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/math/platformmath.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
+# Enable precompiled headers for non-CUDA, non-functrace builds
+# NOTE: PCH disabled for CUDA builds - nvcc doesn't support PCH well
+# This dramatically reduces compile time by pre-compiling 11,000+ lines of headers
+# Users switching between functrace and normal builds should do a clean build
+if(NOT SD_GCC_FUNCTRACE AND NOT SD_CUDA AND NOT _SD_PCH_DISABLED_BY_ENV AND TARGET ${SD_LIBRARY_NAME})
+    if(WIN32)
+        target_compile_definitions(${SD_LIBRARY_NAME} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+        target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
+                <windows.h>
+                <vector>
+                <memory>
+                <algorithm>
+                <functional>
+                <cstring>
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansions.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/shape.h"
+        )
+    else()
+        target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
+                <vector>
+                <memory>
+                <algorithm>
+                <functional>
+                <cstring>
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansions.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/shape.h"
+        )
+    endif()
+    message(STATUS "✅ Precompiled headers enabled for main library ${SD_LIBRARY_NAME}")
+elseif(SD_CUDA)
+    message(STATUS "⚠️ Precompiled headers DISABLED for CUDA build (nvcc compatibility)")
+elseif(SD_GCC_FUNCTRACE)
+    message(STATUS "⚠️ Precompiled headers DISABLED for functrace build")
+endif()
+
+# SDX C runtime SDK packaging: stage runtime library + public C header for embedding.
+set(SDX_RUNTIME_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/dsp_runtime_c.h")
+set(SDX_RUNTIME_README "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/README.md")
+set(SDX_RUNTIME_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/../resources/dsp/manifest.schema.json")
+set(SDX_RUNTIME_BINDINGS_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SdxRuntimePackage.cmake")
+set(SDX_RUNTIME_LANGUAGE_BINDINGS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/bindings")
+set(SDX_RUNTIME_SDK_DIR "${CMAKE_BINARY_DIR}/sdx-runtime-sdk" CACHE PATH
+    "Output directory for staged SDX C runtime SDK artifacts")
+
+if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
+    set(_sdx_sdk_include_dir "${SDX_RUNTIME_SDK_DIR}/include/dsp/runtime")
+    set(_sdx_sdk_lib_dir "${SDX_RUNTIME_SDK_DIR}/lib")
+    set(_sdx_sdk_schema_dir "${SDX_RUNTIME_SDK_DIR}/share/dsp")
+    set(_sdx_sdk_wrappers_dir "${SDX_RUNTIME_SDK_DIR}/wrappers")
+    set(_sdx_schema_stage_cmds "")
+    if(EXISTS "${SDX_RUNTIME_SCHEMA}")
+        list(APPEND _sdx_schema_stage_cmds
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_schema_dir}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_RUNTIME_SCHEMA}" "${_sdx_sdk_schema_dir}/manifest.schema.json")
+    endif()
+    set(_sdx_readme_stage_cmds "")
+    if(EXISTS "${SDX_RUNTIME_README}")
+        list(APPEND _sdx_readme_stage_cmds
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_RUNTIME_README}" "${_sdx_sdk_include_dir}/README.md")
+    endif()
+    set(_sdx_wrapper_stage_cmds "")
+    if(EXISTS "${SDX_RUNTIME_LANGUAGE_BINDINGS_DIR}")
+        list(APPEND _sdx_wrapper_stage_cmds
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_wrappers_dir}"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${SDX_RUNTIME_LANGUAGE_BINDINGS_DIR}" "${_sdx_sdk_wrappers_dir}")
+    endif()
+
+    # Use standalone SDX library when available, otherwise fall back to monolithic
+    if(SD_BUILD_SDX_STANDALONE AND DEFINED SDX_STANDALONE_TARGET AND TARGET ${SDX_STANDALONE_TARGET})
+        set(_sdx_sdk_target ${SDX_STANDALONE_TARGET})
+    else()
+        set(_sdx_sdk_target ${SD_LIBRARY_NAME})
+    endif()
+
+    add_custom_target(sdx_runtime_sdk
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_include_dir}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_lib_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_RUNTIME_HEADER}" "${_sdx_sdk_include_dir}/dsp_runtime_c.h"
+        ${_sdx_readme_stage_cmds}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${_sdx_sdk_target}>" "${_sdx_sdk_lib_dir}/$<TARGET_FILE_NAME:${_sdx_sdk_target}>"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_LINKER_FILE:${_sdx_sdk_target}>" "${_sdx_sdk_lib_dir}/$<TARGET_LINKER_FILE_NAME:${_sdx_sdk_target}>"
+        ${_sdx_schema_stage_cmds}
+        ${_sdx_wrapper_stage_cmds}
+        DEPENDS ${_sdx_sdk_target}
+        COMMENT "Staging SDX C runtime SDK artifacts in ${SDX_RUNTIME_SDK_DIR} (target: ${_sdx_sdk_target})"
+        VERBATIM
     )
-    message(STATUS "✅ Precompiled headers enabled for main library")
-else()
-    message(STATUS "⚠️ Precompiled headers DISABLED (prevents CMake cache staleness issues)")
+
+    # Platform-specific binding packaging (zip/AAR/XCFramework where applicable).
+    set(_sdx_os "")
+    set(_sdx_arch_raw "${CMAKE_SYSTEM_PROCESSOR}")
+    if(NOT _sdx_arch_raw)
+        set(_sdx_arch_raw "${CMAKE_HOST_SYSTEM_PROCESSOR}")
+    endif()
+    string(TOLOWER "${_sdx_arch_raw}" _sdx_arch)
+    if(_sdx_arch MATCHES "^(x86_64|amd64)$")
+        set(_sdx_arch "x86_64")
+    elseif(_sdx_arch MATCHES "^(aarch64|arm64)$")
+        set(_sdx_arch "arm64")
+    elseif(_sdx_arch MATCHES "^(armv7l|armv7)$")
+        set(_sdx_arch "armv7")
+    endif()
+
+    set(_sdx_android_abi "")
+    if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+        set(_sdx_os "android")
+        if(DEFINED CMAKE_ANDROID_ARCH_ABI AND NOT CMAKE_ANDROID_ARCH_ABI STREQUAL "")
+            set(_sdx_android_abi "${CMAKE_ANDROID_ARCH_ABI}")
+        elseif(DEFINED ANDROID_ABI AND NOT ANDROID_ABI STREQUAL "")
+            set(_sdx_android_abi "${ANDROID_ABI}")
+        endif()
+
+        if(_sdx_android_abi STREQUAL "arm64-v8a")
+            set(_sdx_arch "arm64")
+        elseif(_sdx_android_abi STREQUAL "armeabi-v7a")
+            set(_sdx_arch "armv7")
+        elseif(_sdx_android_abi STREQUAL "x86_64")
+            set(_sdx_arch "x86_64")
+        elseif(_sdx_android_abi STREQUAL "x86")
+            set(_sdx_arch "x86")
+        endif()
+
+        if(_sdx_android_abi STREQUAL "")
+            if(_sdx_arch STREQUAL "arm64")
+                set(_sdx_android_abi "arm64-v8a")
+            elseif(_sdx_arch STREQUAL "armv7")
+                set(_sdx_android_abi "armeabi-v7a")
+            elseif(_sdx_arch STREQUAL "x86_64")
+                set(_sdx_android_abi "x86_64")
+            elseif(_sdx_arch STREQUAL "x86")
+                set(_sdx_android_abi "x86")
+            endif()
+        endif()
+    elseif(IOS)
+        set(_sdx_os "ios")
+    elseif(APPLE)
+        set(_sdx_os "macos")
+    elseif(WIN32)
+        set(_sdx_os "windows")
+    else()
+        set(_sdx_os "linux")
+    endif()
+
+    set(_sdx_platform_id "${_sdx_os}-${_sdx_arch}")
+    if(IOS AND DEFINED CMAKE_OSX_SYSROOT AND CMAKE_OSX_SYSROOT MATCHES "iphonesimulator")
+        set(_sdx_platform_id "ios-simulator-${_sdx_arch}")
+    endif()
+
+    set(_sdx_have_cuda 0)
+    if(SD_CUDA)
+        set(_sdx_have_cuda 1)
+    endif()
+    set(_sdx_have_zluda 0)
+    if(HAVE_ZLUDA)
+        set(_sdx_have_zluda 1)
+    endif()
+    set(_sdx_have_triton 0)
+    if(HAVE_TRITON)
+        set(_sdx_have_triton 1)
+    endif()
+    set(_sdx_have_mlir 0)
+    if(HAVE_MLIR)
+        set(_sdx_have_mlir 1)
+    endif()
+    set(_sdx_have_mlx 0)
+    if(HAVE_MLX)
+        set(_sdx_have_mlx 1)
+    endif()
+    set(_sdx_have_nnapi 0)
+    if(HAVE_NNAPI)
+        set(_sdx_have_nnapi 1)
+    endif()
+    set(_sdx_have_onednn 0)
+    if(HAVE_ONEDNN)
+        set(_sdx_have_onednn 1)
+    endif()
+    set(_sdx_have_armcompute 0)
+    if(HAVE_ARMCOMPUTE)
+        set(_sdx_have_armcompute 1)
+    endif()
+
+    set(_sdx_enable_android_aar 0)
+    if(_sdx_os STREQUAL "android")
+        set(_sdx_enable_android_aar 1)
+    endif()
+
+    set(_sdx_enable_apple_xcframework 0)
+    if(APPLE)
+        set(_sdx_enable_apple_xcframework 1)
+    endif()
+
+    set(_sdx_runtime_variants "cpu")
+    if(_sdx_have_cuda)
+        list(APPEND _sdx_runtime_variants "cuda")
+    endif()
+    if(_sdx_have_zluda)
+        list(APPEND _sdx_runtime_variants "amd")
+    endif()
+    list(REMOVE_DUPLICATES _sdx_runtime_variants)
+
+    set(_sdx_binding_package_cmds "")
+    foreach(_sdx_variant IN LISTS _sdx_runtime_variants)
+        set(_sdx_default_gpu_target "AUTO")
+        if(_sdx_variant STREQUAL "cuda")
+            set(_sdx_default_gpu_target "CUDA")
+        elseif(_sdx_variant STREQUAL "amd")
+            set(_sdx_default_gpu_target "AMD")
+        endif()
+
+        list(APPEND _sdx_binding_package_cmds
+            COMMAND ${CMAKE_COMMAND}
+                "-DSDX_SDK_DIR=${SDX_RUNTIME_SDK_DIR}"
+                "-DSDX_PLATFORM_ID=${_sdx_platform_id}"
+                "-DSDX_OS=${_sdx_os}"
+                "-DSDX_ARCH=${_sdx_arch}"
+                "-DSDX_ANDROID_ABI=${_sdx_android_abi}"
+                "-DSDX_VARIANT=${_sdx_variant}"
+                "-DSDX_DEFAULT_GPU_TARGET=${_sdx_default_gpu_target}"
+                "-DSDX_LIBRARY_FILE=$<TARGET_FILE:${SD_LIBRARY_NAME}>"
+                "-DSDX_LINKER_FILE=$<TARGET_LINKER_FILE:${SD_LIBRARY_NAME}>"
+                "-DSDX_HEADER_FILE=${SDX_RUNTIME_HEADER}"
+                "-DSDX_README_FILE=${SDX_RUNTIME_README}"
+                "-DSDX_SCHEMA_FILE=${SDX_RUNTIME_SCHEMA}"
+                "-DSDX_BINDINGS_TEMPLATE_DIR=${SDX_RUNTIME_LANGUAGE_BINDINGS_DIR}"
+                "-DSDX_RUNTIME_ABI=1"
+                "-DSDX_HAVE_CUDA=${_sdx_have_cuda}"
+                "-DSDX_HAVE_ZLUDA=${_sdx_have_zluda}"
+                "-DSDX_HAVE_TRITON=${_sdx_have_triton}"
+                "-DSDX_HAVE_MLIR=${_sdx_have_mlir}"
+                "-DSDX_HAVE_MLX=${_sdx_have_mlx}"
+                "-DSDX_HAVE_NNAPI=${_sdx_have_nnapi}"
+                "-DSDX_HAVE_ONEDNN=${_sdx_have_onednn}"
+                "-DSDX_HAVE_ARMCOMPUTE=${_sdx_have_armcompute}"
+                "-DSDX_ENABLE_ANDROID_AAR=${_sdx_enable_android_aar}"
+                "-DSDX_ENABLE_APPLE_XCFRAMEWORK=${_sdx_enable_apple_xcframework}"
+                -P "${SDX_RUNTIME_BINDINGS_SCRIPT}")
+    endforeach()
+
+    if(EXISTS "${SDX_RUNTIME_BINDINGS_SCRIPT}")
+        add_custom_target(sdx_runtime_bindings ALL
+            ${_sdx_binding_package_cmds}
+            DEPENDS sdx_runtime_sdk
+            COMMENT "Packaging platform-specific SDX runtime bindings for ${_sdx_platform_id}"
+            VERBATIM
+        )
+    endif()
+
+    install(FILES "${SDX_RUNTIME_HEADER}" DESTINATION include/dsp/runtime)
+    if(EXISTS "${SDX_RUNTIME_README}")
+        install(FILES "${SDX_RUNTIME_README}" DESTINATION share/dsp/runtime)
+    endif()
+    if(EXISTS "${SDX_RUNTIME_SCHEMA}")
+        install(FILES "${SDX_RUNTIME_SCHEMA}" DESTINATION share/dsp)
+    endif()
 endif()
 
 include(PostBuild)
