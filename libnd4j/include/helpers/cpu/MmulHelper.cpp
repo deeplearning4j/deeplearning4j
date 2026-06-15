@@ -23,11 +23,18 @@
 #include "../MmulHelper.h"
 
 #include <array/NDArrayFactory.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <system/env_functions.h>
+#include <system/openmp_pragmas.h>
 namespace sd {
+
+// CPU stubs for cast cache methods (only used on CUDA)
+void MmulHelper::clearCastCache() {}
+void MmulHelper::resetCastCacheIndices() {}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN              -> actual sequence of axes doesn't matter
@@ -35,6 +42,17 @@ template <typename T1, typename T2, typename T3>
 static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
                       const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
                       const double beta) {
+  // Validate type sizes match template types to prevent buffer overrun from type-punned pointer arithmetic.
+  // usualGemm reinterprets buffer memory as T1/T2/T3 pointers; if the actual element size differs,
+  // pointer arithmetic advances by sizeof(T) bytes but elements are sizeof(actual) bytes apart,
+  // producing out-of-bounds accesses (SEGV_ACCERR on guard page).
+  if (sizeof(T1) != DataTypeUtils::sizeOf(vA->dataType()))
+    THROW_EXCEPTION("usualGemm: type size mismatch for A — pointer arithmetic would overrun buffer");
+  if (sizeof(T2) != DataTypeUtils::sizeOf(vB->dataType()))
+    THROW_EXCEPTION("usualGemm: type size mismatch for B — pointer arithmetic would overrun buffer");
+  if (sizeof(T3) != DataTypeUtils::sizeOf(vC->dataType()))
+    THROW_EXCEPTION("usualGemm: type size mismatch for C — pointer arithmetic would overrun buffer");
+
   T1* A = vA->bufferAsT<T1>();
   T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
@@ -48,7 +66,7 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
     THROW_EXCEPTION("usualGemm: C is nullptr");
   }
 
-  const T3 alphaZ = static_cast<T3> (alpha);
+  const T3 alphaZ = static_cast<T3>(alpha);
   const T3 betaZ = static_cast<T3>(beta);
 
   const bool betaPresent = beta;
@@ -60,52 +78,127 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
   const int aRank = vA->rankOf();
   const int bRank = vB->rankOf();
   const int cRank = vC->rankOf();
-  const sd::LongType cLen = vC->lengthOf();
+  const int M = vC->sizeAt(cMaxis);
+  const int N = vC->sizeAt(cNaxis);
   const int K = vA->sizeAt(aKaxis);
 
-  sd::LongType *cShape = shape::shapeOf(cShapeInfo);
-  sd::LongType *aShape = shape::shapeOf(aShapeInfo);
-  sd::LongType *bShape = shape::shapeOf(bShapeInfo);
   sd::LongType *aStride = shape::stride(aShapeInfo);
   sd::LongType *bStride = shape::stride(bShapeInfo);
   sd::LongType *cStride = shape::stride(cShapeInfo);
 
-  auto func = PRAGMA_THREADS_FOR {
-    std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
+  // Check array layouts for fast paths
+  // Row-major: stride[last]=1, stride[first]=num_cols
+  // Column-major: stride[first]=1, stride[last]=num_rows
+  const bool aRowMajor = (aStride[aKaxis] == 1) && (aStride[aMaxis] == K);
+  const bool bRowMajor = (bStride[bNaxis] == 1) && (bStride[bKaxis] == N);
+  const bool cRowMajor = (cStride[cNaxis] == 1) && (cStride[cMaxis] == N);
+  const bool cColMajor = (cStride[cMaxis] == 1) && (cStride[cNaxis] == M);
 
-    for (auto i = start; i < stop; i++) {
-      // evaluate C coordinates
-      INDEX2COORDS(i, cRank, shape::shapeOf(cShapeInfo), cCoords.data());
+  if (aRowMajor && bRowMajor && cRowMajor) {
+    // Fast path: all row-major - cache-friendly loop order
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto m = start; m < stop; ++m) {
+        T1* aRow = A + m * K;
+        T3* cRow = C + m * N;
 
-      // evaluate A coordinates
-      aCoords[aMaxis] = cCoords[cMaxis];
-      aCoords[aKaxis] = 0;
+        // Initialize output row
+        if (betaPresent) {
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            cRow[n] *= betaZ;
+          }
+        } else {
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            cRow[n] = static_cast<T3>(0);
+          }
+        }
 
-      // evaluate B coordinates
-      bCoords[bKaxis] = 0;
-      bCoords[bNaxis] = cCoords[cNaxis];
-
-      sd::LongType aOffset, bOffset, cOffset;
-      COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
-      COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
-
-      T3 val = A[aOffset] * B[bOffset];  // first iteration
-
-      for (int j = 1; j < K; j++) {  // rest iterations
-        aOffset += aStride[aKaxis];
-        bOffset += bStride[bKaxis];
-        val += A[aOffset] * B[bOffset];
+        // Cache-friendly loop order: k outer, n inner
+        for (int k = 0; k < K; ++k) {
+          const T3 aVal = alphaZ * static_cast<T3>(aRow[k]);
+          const T2* bRow = B + k * N;
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            cRow[n] += aVal * static_cast<T3>(bRow[n]);
+          }
+        }
       }
+    };
+    samediff::Threads::parallel_tad(func, 0, M);
+  } else if (aRowMajor && bRowMajor && cColMajor) {
+    // Fast path: A,B row-major, C column-major (common from tensorDot)
+    // C column-major means C[m,n] is at offset m + n*M
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto m = start; m < stop; ++m) {
+        T1* aRow = A + m * K;
 
-      COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
-      if (betaPresent) {
-        C[cOffset] = alphaZ * val + betaZ * C[cOffset];
-      } else {
-        C[cOffset] = alphaZ * val;
+        // Initialize output column elements for this row
+        if (betaPresent) {
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            C[m + n * M] *= betaZ;
+          }
+        } else {
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            C[m + n * M] = static_cast<T3>(0);
+          }
+        }
+
+        // k outer for A cache locality, n inner for B cache locality
+        for (int k = 0; k < K; ++k) {
+          const T3 aVal = alphaZ * static_cast<T3>(aRow[k]);
+          const T2* bRow = B + k * N;
+          PRAGMA_OMP_SIMD
+          for (int n = 0; n < N; ++n) {
+            C[m + n * M] += aVal * static_cast<T3>(bRow[n]);
+          }
+        }
       }
-    }
-  };
-  samediff::Threads::parallel_tad(func, 0, cLen);
+    };
+    samediff::Threads::parallel_tad(func, 0, M);
+  } else {
+    // General strided path - original implementation
+    const sd::LongType cLen = vC->lengthOf();
+
+    auto func = PRAGMA_THREADS_FOR {
+      std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
+
+      for (auto i = start; i < stop; i++) {
+        // evaluate C coordinates
+        INDEX2COORDS(i, cRank, shape::shapeOf(cShapeInfo), cCoords.data());
+
+        // evaluate A coordinates
+        aCoords[aMaxis] = cCoords[cMaxis];
+        aCoords[aKaxis] = 0;
+
+        // evaluate B coordinates
+        bCoords[bKaxis] = 0;
+        bCoords[bNaxis] = cCoords[cNaxis];
+
+        sd::LongType aOffset, bOffset, cOffset;
+        COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
+        COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
+
+        T3 val = A[aOffset] * B[bOffset];  // first iteration
+
+        for (int j = 1; j < K; j++) {  // rest iterations
+          aOffset += aStride[aKaxis];
+          bOffset += bStride[bKaxis];
+          val += A[aOffset] * B[bOffset];
+        }
+
+        COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
+        if (betaPresent) {
+          C[cOffset] = alphaZ * val + betaZ * C[cOffset];
+        } else {
+          C[cOffset] = alphaZ * val;
+        }
+      }
+    };
+    samediff::Threads::parallel_tad(func, 0, cLen);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -190,37 +283,24 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
 NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double alpha, const double beta,
                               const char outOrder) {
 
-  auto M = A->sizeAt(0);
-  auto K = A->sizeAt(1);
-  auto N = B->sizeAt(1);
+  // Cache dimensions to avoid repeated virtual calls
+  const auto M = A->sizeAt(0);
+  const auto K = A->sizeAt(1);
+  const auto N = B->sizeAt(1);
 
+  // Validate inputs (lazy error message construction)
   if (C != nullptr && C->rankOf() != 2) {
-    std::string errorMessage = "MmulHelper::mmulMxM: rank of C array should be equal to 2, but got " +
-                               std::to_string(C->rankOf()) + ". ";
-    errorMessage += "C datatype: " + DataTypeUtils::asString(C->dataType());
-    THROW_EXCEPTION(errorMessage.c_str());
+    THROW_EXCEPTION("MmulHelper::mmulMxM: rank of C array should be equal to 2");
   }
   if (B->sizeAt(0) != K) {
-    std::string errorMessage = "MmulHelper::mmulMxM: B array should have the same number of rows as A has columns. ";
-    errorMessage += "A columns: " + std::to_string(K) + ", ";
-    errorMessage += "B rows: " + std::to_string(B->sizeAt(0));
-    THROW_EXCEPTION(errorMessage.c_str());
+    THROW_EXCEPTION("MmulHelper::mmulMxM: B rows must equal A columns");
   }
-  if (C != nullptr && C->sizeAt(0) != M) {
-    std::string errorMessage = "MmulHelper::mmulMxM: C array should have the same number of rows as A. ";
-    errorMessage += "A rows: " + std::to_string(M) + ", ";
-    errorMessage += "C rows: " + std::to_string(C->sizeAt(0));
-    THROW_EXCEPTION(errorMessage.c_str());}
-
-  if (C != nullptr && C->sizeAt(1) != N) {
-    std::string errorMessage = "MmulHelper::mmulMxM: C array should have the same number of columns as B. ";
-    errorMessage += "B columns: " + std::to_string(N) + ", ";
-    errorMessage += "C columns: " + std::to_string(C->sizeAt(1));
-    THROW_EXCEPTION(errorMessage.c_str());
+  if (C != nullptr && (C->sizeAt(0) != M || C->sizeAt(1) != N)) {
+    THROW_EXCEPTION("MmulHelper::mmulMxM: C shape must match [M, N]");
   }
 
   if (C == nullptr) {
-    std::vector<sd::LongType> shape = {M,N};
+    std::vector<sd::LongType> shape = {M, N};
     C = new NDArray(outOrder, shape, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
                     A->getContext());
   }
@@ -230,18 +310,146 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
   const auto bType = B->dataType();
   const auto cType = C->dataType();
 
-  const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
-  const bool hasGemm = BlasHelper::getInstance().hasGEMM(aType);
+  const bool ABC = (aType == bType) && (aType == cType);
 
+  // Fast path: check for row-major contiguous arrays (most common case in BERT)
+  // Row-major means stride(-1)=1 and stride(-2)=ncols
+  const bool aRowMajor = (A->strideAt(1) == 1) && (A->strideAt(0) == K);
+  const bool bRowMajor = (B->strideAt(1) == 1) && (B->strideAt(0) == N);
+  const bool cRowMajor = (C->strideAt(1) == 1) && (C->strideAt(0) == N);
+
+  if (ABC && aRowMajor && bRowMajor && cRowMajor && sd::env_isEnableBlas()) {
+    // Validate dimensions before BLAS call to prevent crashes
+    if (M <= 0 || N <= 0 || K <= 0) {
+      std::string errorMessage = "MmulHelper::mmul (fast path): Invalid matrix dimensions. ";
+      errorMessage += "M=" + std::to_string(M) + ", N=" + std::to_string(N) + ", K=" + std::to_string(K);
+      errorMessage += ". Shapes: A=" + ShapeUtils::shapeAsString(A) + ", B=" + ShapeUtils::shapeAsString(B) + ", C=" + ShapeUtils::shapeAsString(C);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    // Optimized fast path for contiguous row-major arrays
+    auto& blasHelper = BlasHelper::getInstance();
+    auto blasLock = blasHelper.lockBlas();
+
+    if (aType == DataType::FLOAT32 && blasHelper.hasGEMM(aType)) {
+      blasHelper.sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
+                         A->bufferAsT<float>(), K, B->bufferAsT<float>(), N, (float)beta,
+                         C->bufferAsT<float>(), N);
+      return C;
+    } else if (aType == DataType::DOUBLE && blasHelper.hasGEMM(aType)) {
+      blasHelper.dgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, alpha,
+                         A->bufferAsT<double>(), K, B->bufferAsT<double>(), N, beta,
+                         C->bufferAsT<double>(), N);
+      return C;
+    } else if ((aType == DataType::HALF || aType == DataType::BFLOAT16) && blasHelper.hasGEMM(DataType::FLOAT32)) {
+      // FP16/BF16 pre-cast path: cast to FP32, run sgemm, cast result back.
+      // Avoids per-element half→float→half conversion in usualGemm inner loop.
+      auto *aF32 = A->cast(DataType::FLOAT32);
+      auto *bF32 = B->cast(DataType::FLOAT32);
+      std::vector<LongType> cShape = {M, N};
+      NDArray cF32('c', cShape, DataType::FLOAT32, A->getContext());
+      blasHelper.sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
+                         aF32->bufferAsT<float>(), K, bF32->bufferAsT<float>(), N, (float)beta,
+                         cF32.bufferAsT<float>(), N);
+      C->assign(&cF32);
+      delete aF32;
+      delete bF32;
+      return C;
+    }
+  }
+
+  // General path for non-contiguous or non-standard layouts
+  const bool hasGemm = BlasHelper::getInstance().hasGEMM(aType);
   const bool typeDouble = hasGemm && ABC && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemm && ABC && aType == DataType::FLOAT32;
 
-  if ((!typeFloat && !typeDouble) || !Environment::getInstance().isEnableBlas()) {
-    BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
-  } else {
-    std::vector<NDArray*> toDelete;
+  // FP16/BF16 pre-cast for non-contiguous layouts — cast to FP32 and use sgemm
+  if ((!typeFloat && !typeDouble) && (aType == DataType::HALF || aType == DataType::BFLOAT16)
+      && ABC && BlasHelper::getInstance().hasGEMM(DataType::FLOAT32) && sd::env_isEnableBlas()) {
+    auto *aF32 = A->cast(DataType::FLOAT32);
+    auto *bF32 = B->cast(DataType::FLOAT32);
+    std::vector<LongType> cShape = {M, N};
+    NDArray cF32('c', cShape, DataType::FLOAT32, A->getContext());
+    auto blasLock2 = BlasHelper::getInstance().lockBlas();
+    BlasHelper::getInstance().sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
+                       aF32->bufferAsT<float>(), K, bF32->bufferAsT<float>(), N, (float)beta,
+                       cF32.bufferAsT<float>(), N);
+    C->assign(&cF32);
+    delete aF32;
+    delete bF32;
+    return C;
+  }
 
-    NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));
+  // Mixed-type safe path: when A is FP32/FP64 but types don't all match (ABC=false),
+  // usualGemm would reinterpret B and C buffers using float pointer arithmetic — this
+  // produces wrong element offsets for non-FP32 B (e.g., FLOAT16: 2 bytes/element but
+  // accessed as 4 bytes/element → buffer overrun → SEGV_ACCERR on guard page).
+  // Fix: cast all inputs to A's type, use a tight-packed temp C, then assign back.
+  if (!ABC && sd::env_isEnableBlas()) {
+    if (aType == DataType::FLOAT32 && BlasHelper::getInstance().hasGEMM(DataType::FLOAT32)) {
+      // Cast A and B to contiguous FP32; use a tight FP32 temp for C.
+      NDArray* aF32 = (aType == DataType::FLOAT32 && A->strideAt(1) == 1 && A->strideAt(0) == K)
+                          ? nullptr : A->cast(DataType::FLOAT32);
+      NDArray* bF32 = (bType == DataType::FLOAT32 && B->strideAt(1) == 1 && B->strideAt(0) == N)
+                          ? nullptr : B->cast(DataType::FLOAT32);
+      NDArray* aEff = (aF32 != nullptr) ? aF32 : const_cast<NDArray*>(A);
+      NDArray* bEff = (bF32 != nullptr) ? bF32 : const_cast<NDArray*>(B);
+      std::vector<LongType> cShape = {M, N};
+      NDArray cF32('c', cShape, DataType::FLOAT32, A->getContext());
+      auto blasLock3 = BlasHelper::getInstance().lockBlas();
+      BlasHelper::getInstance().sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
+                         aEff->bufferAsT<float>(), K, bEff->bufferAsT<float>(), N, (float)beta,
+                         cF32.bufferAsT<float>(), N);
+      C->assign(&cF32);
+      delete aF32;
+      delete bF32;
+      return C;
+    } else if (aType == DataType::DOUBLE && BlasHelper::getInstance().hasGEMM(DataType::DOUBLE)) {
+      NDArray* aF64 = (aType == DataType::DOUBLE && A->strideAt(1) == 1 && A->strideAt(0) == K)
+                          ? nullptr : A->cast(DataType::DOUBLE);
+      NDArray* bF64 = (bType == DataType::DOUBLE && B->strideAt(1) == 1 && B->strideAt(0) == N)
+                          ? nullptr : B->cast(DataType::DOUBLE);
+      NDArray* aEff = (aF64 != nullptr) ? aF64 : const_cast<NDArray*>(A);
+      NDArray* bEff = (bF64 != nullptr) ? bF64 : const_cast<NDArray*>(B);
+      std::vector<LongType> cShape = {M, N};
+      NDArray cF64('c', cShape, DataType::DOUBLE, A->getContext());
+      auto blasLock4 = BlasHelper::getInstance().lockBlas();
+      BlasHelper::getInstance().dgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, alpha,
+                         aEff->bufferAsT<double>(), K, bEff->bufferAsT<double>(), N, beta,
+                         cF64.bufferAsT<double>(), N);
+      C->assign(&cF64);
+      delete aF64;
+      delete bF64;
+      return C;
+    }
+  }
+
+  if ((!typeFloat && !typeDouble) || !sd::env_isEnableBlas()) {
+    // When all three types match, usualGemm is safe as-is.
+    // When types differ (ABC=false), we must cast to a common type first —
+    // BUILD_SINGLE_SELECTOR_THRICE uses aType for all template params,
+    // which would reinterpret B/C buffers with wrong element size.
+    if (!ABC) {
+      // Promote to A's type — cast B and C if they differ.
+      NDArray* castB = (bType != aType) ? new NDArray(B->cast(aType)) : nullptr;
+      std::vector<LongType> cShape = {M, N};
+      NDArray* castC = (cType != aType) ? new NDArray(NDArray('c', cShape, aType, C->getContext())) : nullptr;
+      NDArray* effB = (castB != nullptr) ? castB : const_cast<NDArray*>(B);
+      NDArray* effC = (castC != nullptr) ? castC : const_cast<NDArray*>(C);
+      BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, effB, effC, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
+      if (castC != nullptr) {
+        C->assign(effC);
+      }
+      delete castB;
+      delete castC;
+    } else {
+      BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
+    }
+  } else {
+    NDArray *pA = const_cast<NDArray*>(A);
+    NDArray *pB = const_cast<NDArray*>(B);
+    NDArray *pC = const_cast<NDArray*>(C);
+    NDArray *tempA = nullptr, *tempB = nullptr, *tempC = nullptr;
 
     bool aMcont = M == 1 || A->strideAt(0) == 1;
     bool aKcont = K == 1 || A->strideAt(1) == 1;
@@ -251,18 +459,15 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     bool cNcont = N == 1 || C->strideAt(1) == 1;
 
     if (!aMcont && !aKcont) {
-      pA = A->dup('f', false);
-      toDelete.push_back(pA);
+      tempA = pA = A->dup('f', false);
       aMcont = true;
     }
     if (!bKcont && !bNcont) {
-      pB = B->dup('f', false);
-      toDelete.push_back(pB);
+      tempB = pB = B->dup('f', false);
       bKcont = true;
     }
     if (!cMcont && !cNcont) {
-      pC = C->dup('f', false);
-      toDelete.push_back(pC);
+      tempC = pC = C->dup('f', false);
       cMcont = true;
     }
 
@@ -278,8 +483,23 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     const int ldb = (bKcont && bNcont) ? K : !bKcont ? pB->strideAt(0) : pB->strideAt(1);
     const int ldc = (cMcont && cNcont) ? M : !cMcont ? pC->strideAt(0) : pC->strideAt(1);
 
+    // Validate BLAS parameters before calling to prevent crashes
+    // For row-major: lda >= K (or M if transposed), ldb >= N (or K if transposed), ldc >= N (or M if transposed)
+    // For col-major: lda >= M (or K if transposed), ldb >= K (or N if transposed), ldc >= M (or N if transposed)
+    if (lda <= 0 || ldb <= 0 || ldc <= 0) {
+      std::string errorMessage = "MmulHelper::mmul: Invalid leading dimension(s). ";
+      errorMessage += "lda=" + std::to_string(lda) + ", ldb=" + std::to_string(ldb) + ", ldc=" + std::to_string(ldc);
+      errorMessage += ". Shapes: A=" + ShapeUtils::shapeAsString(pA) + ", B=" + ShapeUtils::shapeAsString(pB) + ", C=" + ShapeUtils::shapeAsString(pC);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    if (M <= 0 || N <= 0 || K <= 0) {
+      std::string errorMessage = "MmulHelper::mmul: Invalid matrix dimensions. ";
+      errorMessage += "M=" + std::to_string(M) + ", N=" + std::to_string(N) + ", K=" + std::to_string(K);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
     // Acquire BLAS lock to prevent OpenBLAS TLS corruption and race conditions
-    // This serializes external BLAS calls while allowing OpenBLAS to use multiple threads internally
     auto blasLock = BlasHelper::getInstance().lockBlas();
 
     if (typeFloat) {
@@ -296,9 +516,9 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
       C->assign(pC);
     }
 
-    for (auto* arr : toDelete) {
-      delete arr;
-    }
+    delete tempA;
+    delete tempB;
+    delete tempC;
   }
 
   return C;
@@ -356,7 +576,7 @@ NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const doub
   const bool typeDouble = hasGemv && AXY && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemv && AXY && aType == DataType::FLOAT32;
 
-  if ((!typeDouble && !typeFloat) || !Environment::getInstance().isEnableBlas()) {
+  if ((!typeDouble && !typeFloat) || !sd::env_isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemv, (A, X, Y, incx, incy, 0, alpha, beta), SD_NUMERIC_TYPES);
   } else {
     NDArray* pA(const_cast<NDArray*>(A));
@@ -473,7 +693,7 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
   const T3 alphaZ = static_cast<T3>(alpha);
   const T3 betaZ = static_cast<T3>(beta);
 
-  const bool betaPersent = beta;
+  const bool betaPresent = beta;
 
   const sd::LongType* aShapeInfo = vA->shapeInfo();
   const sd::LongType* bShapeInfo = vB->shapeInfo();
@@ -483,61 +703,124 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
   const sd::LongType bRank = vB->rankOf();
   const sd::LongType cRank = vC->rankOf();
 
-  const sd::LongType cLen = vC->lengthOf();
-
+  const sd::LongType M = vC->sizeAt(cMaxis);
+  const sd::LongType N = vC->sizeAt(cNaxis);
   const sd::LongType K = vA->sizeAt(aKaxis);
 
-  sd::LongType *cShape = shape::shapeOf(cShapeInfo);
-  sd::LongType *aShape = shape::shapeOf(aShapeInfo);
-  sd::LongType *bShape = shape::shapeOf(bShapeInfo);
   sd::LongType *aStride = shape::stride(aShapeInfo);
   sd::LongType *bStride = shape::stride(bShapeInfo);
   sd::LongType *cStride = shape::stride(cShapeInfo);
 
+  // Check for contiguous 3D case: [batch, M, K] x [batch, K, N] = [batch, M, N]
+  // All arrays must be rank 3 with row-major layout (last dim stride=1, second-to-last=N or K)
+  const bool is3D = (aRank == 3) && (bRank == 3) && (cRank == 3);
+  const bool aRowMajor = (aStride[aKaxis] == 1) && (aStride[aMaxis] == K);
+  const bool bRowMajor = (bStride[bNaxis] == 1) && (bStride[bKaxis] == N);
+  const bool cRowMajor = (cStride[cNaxis] == 1) && (cStride[cMaxis] == N);
+  const bool allRowMajor = aRowMajor && bRowMajor && cRowMajor;
 
-  auto func = PRAGMA_THREADS_FOR {
-    std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
+  // Check batch strides for contiguity
+  const bool aBatchContiguous = is3D && (aStride[0] == M * K);
+  const bool bBatchContiguous = is3D && (bStride[0] == K * N);
+  const bool cBatchContiguous = is3D && (cStride[0] == M * N);
+  const bool allBatchContiguous = aBatchContiguous && bBatchContiguous && cBatchContiguous;
 
-    for (sd::LongType i = start; i < stop; ++i) {
-      // evaluate C coordinates
-      INDEX2COORDS(i, cRank,cShape, cCoords.data());
+  if (is3D && allRowMajor && allBatchContiguous) {
+    // Fast path for contiguous 3D: parallelize over (batch * M) rows
+    const sd::LongType batchSize = vA->sizeAt(0);
+    const sd::LongType totalRows = batchSize * M;
+    const sd::LongType strideA = M * K;
+    const sd::LongType strideB = K * N;
+    const sd::LongType strideC = M * N;
 
-      // calculate index of current batch
-      sd::LongType batchInd;
-      if (cRank > 2) COORDS2INDEX(cRank, cStride, cCoords.data(), batchInd);
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto rowIdx = start; rowIdx < stop; ++rowIdx) {
+        const sd::LongType b = rowIdx / M;
+        const sd::LongType m = rowIdx % M;
+        T1* aRow = A + b * strideA + m * K;
+        T2* bBase = B + b * strideB;
+        T3* cRow = C + b * strideC + m * N;
 
-      // evaluate A coordinates
-      if (aRank > 2) INDEX2COORDS(batchInd, aRank, aShape, aCoords.data());
-      aCoords[aMaxis] = cCoords[cMaxis];
-      aCoords[aKaxis] = 0;
+        // Initialize output row
+        if (betaPresent) {
+          PRAGMA_OMP_SIMD
+          for (sd::LongType n = 0; n < N; ++n) {
+            cRow[n] *= betaZ;
+          }
+        } else {
+          PRAGMA_OMP_SIMD
+          for (sd::LongType n = 0; n < N; ++n) {
+            cRow[n] = static_cast<T3>(0);
+          }
+        }
 
-      // evaluate B coordinates
-      if (bRank > 2) INDEX2COORDS(batchInd, bRank, bShape, bCoords.data());
-      bCoords[bKaxis] = 0;
-      bCoords[bNaxis] = cCoords[cNaxis];
-
-      sd::LongType aOffset, bOffset, cOffset;
-      COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
-      COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
-
-      T3 val = A[aOffset] * B[bOffset];  // first iteration
-
-      for (int j = 1; j < K; ++j) {  // rest iterations
-        aOffset += aStride[aKaxis];
-        bOffset += bStride[bKaxis];
-        val = val + A[aOffset] * B[bOffset];
+        // Cache-friendly loop order: k outer, n inner
+        for (sd::LongType k = 0; k < K; ++k) {
+          const T3 aVal = alphaZ * static_cast<T3>(aRow[k]);
+          const T2* bRow = bBase + k * N;
+          PRAGMA_OMP_SIMD
+          for (sd::LongType n = 0; n < N; ++n) {
+            cRow[n] += aVal * static_cast<T3>(bRow[n]);
+          }
+        }
       }
+    };
+    samediff::Threads::parallel_tad(func, 0, totalRows);
+  } else {
+    // General strided path - original implementation
+    const sd::LongType cLen = vC->lengthOf();
 
-      COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
+    sd::LongType *cShape = shape::shapeOf(cShapeInfo);
 
-      if (betaPersent)
-        C[cOffset] = alphaZ * val + betaZ * C[cOffset];
-      else
-        C[cOffset] = alphaZ * val;
-    }
-  };
+    auto func = PRAGMA_THREADS_FOR {
+      std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
 
-  samediff::Threads::parallel_tad(func, 0, cLen);
+      for (sd::LongType i = start; i < stop; ++i) {
+        // evaluate C coordinates
+        INDEX2COORDS(i, cRank, cShape, cCoords.data());
+
+        // evaluate A coordinates: copy batch dims directly from C coords.
+        // Batch dims are always the leading dims: [0..rank-3] for each array.
+        // The previous approach (batchInd via COORDS2INDEX + INDEX2COORDS roundtrip)
+        // was incorrect for ranks > 3 because cCoords includes the M/N matrix dims,
+        // making batchInd exceed A's element count and producing wrong batch coordinates.
+        if (aRank > 2) {
+          // Copy shared batch dimensions from C to A (batch dims are 0..aRank-3)
+          for (sd::LongType d = 0; d < aRank - 2; ++d) aCoords[d] = cCoords[d];
+        }
+        aCoords[aMaxis] = cCoords[cMaxis];
+        aCoords[aKaxis] = 0;
+
+        // evaluate B coordinates: same direct-copy approach for batch dims
+        if (bRank > 2) {
+          for (sd::LongType d = 0; d < bRank - 2; ++d) bCoords[d] = cCoords[d];
+        }
+        bCoords[bKaxis] = 0;
+        bCoords[bNaxis] = cCoords[cNaxis];
+
+        sd::LongType aOffset, bOffset, cOffset;
+        COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
+        COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
+
+        T3 val = A[aOffset] * B[bOffset];  // first iteration
+
+        for (sd::LongType j = 1; j < K; ++j) {  // rest iterations
+          aOffset += aStride[aKaxis];
+          bOffset += bStride[bKaxis];
+          val = val + A[aOffset] * B[bOffset];
+        }
+
+        COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
+
+        if (betaPresent)
+          C[cOffset] = alphaZ * val + betaZ * C[cOffset];
+        else
+          C[cOffset] = alphaZ * val;
+      }
+    };
+
+    samediff::Threads::parallel_tad(func, 0, cLen);
+  }
 }
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double alpha, const double beta,
@@ -581,31 +864,32 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
                                std::to_string(B->sizeAt(-2)) + "). Full shapes: A " + shapeToString(A) + ", B " + shapeToString(B);
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  // validation of C array
-  std::vector<sd::LongType> *cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
-  (*cExpectedShape)[cExpectedShape->size() - 2] = A->sizeAt(-2);
-  (*cExpectedShape)[cExpectedShape->size() - 1] = B->sizeAt(-1);
+  // validation of C array - build expected shape without allocation
+  const sd::LongType maxRank = aRank > bRank ? aRank : bRank;
+  std::vector<sd::LongType> cExpectedShape(maxRank);
+  NDArray* sourceArr = aRank > bRank ? A : B;
+  for (sd::LongType i = 0; i < maxRank; ++i) {
+    cExpectedShape[i] = sourceArr->sizeAt(i);
+  }
+  cExpectedShape[maxRank - 2] = A->sizeAt(-2);
+  cExpectedShape[maxRank - 1] = B->sizeAt(-1);
 
   if (C != nullptr) {
-    if (!C->isSameShape(*cExpectedShape)) {
+    if (!C->isSameShape(cExpectedShape)) {
       std::string errorMessage = "MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix multiplication! "
                                  "Expected shape: [";
-      for (size_t i = 0; i < cExpectedShape->size(); ++i) {
-        errorMessage += std::to_string((*cExpectedShape)[i]);
-        if (i < cExpectedShape->size() - 1) errorMessage += ",";
+      for (size_t i = 0; i < cExpectedShape.size(); ++i) {
+        errorMessage += std::to_string(cExpectedShape[i]);
+        if (i < cExpectedShape.size() - 1) errorMessage += ",";
       }
       errorMessage += "], but got: " + shapeToString(C) + ". A shape: " + shapeToString(A) + ", B shape: " + shapeToString(B);
-      delete cExpectedShape;
       THROW_EXCEPTION(errorMessage.c_str());
     }
   } else {
-    C = new NDArray(outOrder, *cExpectedShape, B->dataType());
+    C = new NDArray(outOrder, cExpectedShape, B->dataType());
   }
 
-  if (C->isEmpty()) {
-    delete cExpectedShape;
-    return C;
-  }
+  if (C->isEmpty()) return C;
 
   const sd::LongType cRank = C->rankOf();
 
@@ -651,8 +935,6 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
     delete bBatchDims;
   if(cBatchDims != nullptr)
     delete cBatchDims;
-  
-  delete cExpectedShape;
 
   return C;
 }

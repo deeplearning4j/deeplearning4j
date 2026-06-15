@@ -21,7 +21,7 @@
 //
 
 #ifndef SD_CUDA
-#include <exceptions/cuda_exception.h>
+
 #include <helpers/PointersManager.h>
 #include <helpers/logger.h>
 #include <memory/Workspace.h>
