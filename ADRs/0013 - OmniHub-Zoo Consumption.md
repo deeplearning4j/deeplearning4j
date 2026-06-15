@@ -1,7 +1,7 @@
 # Model Hub Zoo Download Implementation
 
 ## Status
-**Accepted**
+Accepted
 
 Proposed by: Adam Gibson (3rd Jan 2022)
 
@@ -13,7 +13,7 @@ is needed to allow people to download models. Due to the sheer volume
 of models out there on the market now a scalable way of interfacing with
 various pretrained models from java is needed. 
 
-## Proposal
+## Decision
 
 An interface allowing people to create pretrained model instances
  using a new interface. Note that this will supplant the old dl4j

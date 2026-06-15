@@ -17,7 +17,7 @@ To improve performance and manage memory usage, we can take advantage of the fac
 Since most workloads repeatedly allocate the same ndarrays, we create a memory abstraction known as "workspaces" to avoid redundant memory allocation.
 This approach helps to optimize memory usage and enhance overall performance.
 
-## Proposal
+## Decision
 
 This architecture decision record discusses the implementation of the workspaces concept using ringbuffers within a
 namespace-like abstraction and Java's try/with resources for memory allocation and garbage collection. 

@@ -70,7 +70,7 @@ More on this decision making can be found [here](https://github.com/KonduitAI/dl
 
 
 
-## Proposal
+## Decision
 
 We expose a symbol based mapping in libnd4j in protobuf format, similar to how
 other frameworks are doing it, as a bridge/intermediary format.

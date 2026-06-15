@@ -1,7 +1,7 @@
 # Model Hub Zoo - Download
 
 ## Status
-**Discussion**
+Superseded by [ADR 0013](0013%20-%20OmniHub-Zoo%20Consumption.md) and [ADR 0076](0076%20-%20OmniHub%20Model%20Repository%20Abstraction.md)
 
 Proposed by: Adam Gibson (1st Jan 2022)
 
@@ -24,7 +24,7 @@ Model hubs provide SDKs for downloading and using models within python.
 
 
 
-## Proposal
+## Decision
 
 The goal is to interop with these model hubs using an integrated python library
 and add the appropriate tooling for converting these models to something consumable

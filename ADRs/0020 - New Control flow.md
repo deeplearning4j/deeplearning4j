@@ -1,7 +1,7 @@
 # Control flow
 
 ## Status
-**Discussion**
+Discussion
 
 Proposed by: Adam Gibson (10th April 2022)
 
@@ -29,7 +29,7 @@ for(int i = 0; i < maxIterations && cond; i++) {
 The loop body is represented as a sub graph attribute on the operation.
 
 
-## Proposal
+## Decision
 
 Similar to onnx's loop operation coupled with [Invoke](./0019%20-%20Invoke.md)
 we provide a new loop that leverages invoke and some fixed conventions of the graph to use a loop body:

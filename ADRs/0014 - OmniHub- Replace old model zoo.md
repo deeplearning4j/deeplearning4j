@@ -1,7 +1,7 @@
 # Replace old model zoo
 
 ## Status
-**Accepted**
+Accepted
 
 Proposed by: Adam Gibson (3rd Jan 2022)
 
@@ -15,7 +15,7 @@ and does not allow deeplearning4j to benefit from the innovation happening in th
 There is also no samediff support in this current model zoo.
 
 
-## Proposal
+## Decision
 Replace the model zoo with omnihub. Migrate existing models
 from the azure hosting to the omnihub github repo at:
 https://github.com/KonduitAI/omnihub-zoo

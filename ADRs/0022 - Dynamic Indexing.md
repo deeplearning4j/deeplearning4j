@@ -1,7 +1,7 @@
 # Dynamic Indexing
 
 ## Status
-**Discussion**
+Discussion
 
 Proposed by: Adam Gibson (30th April 2022)
 
@@ -21,7 +21,7 @@ Previously, the indexing would not allow initialization with a negative index wi
 
 
 
-## Proposal
+## Decision
 
 
 We support the ability to dynamically resolve indices during execution. This happens as follows:

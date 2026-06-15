@@ -1,7 +1,7 @@
 # Import node pre processing
 
 ## Status
-Discsusion
+Discussion
 
 Proposed by: Adam Gibson (11-25-2021)
 
