@@ -22,6 +22,10 @@ package org.nd4j.ggml.format;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.ggml.GGMLImportException;
+import org.nd4j.ggml.quantization.DequantizerFactory;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Closeable;
 import java.io.File;
@@ -33,9 +37,13 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.LinkedHashSet;
 
 /**
  * Reader for GGUF (GGML Universal Format) files.
@@ -290,6 +298,207 @@ public class GGUFReader implements Closeable {
      */
     public long getDataOffset() {
         return dataOffset;
+    }
+
+    // ========== Static factory methods ==========
+
+    /**
+     * Open a GGUF reader for the given file.
+     */
+    public static GGUFReader open(File file) throws IOException {
+        return new GGUFReader(file);
+    }
+
+    /**
+     * Open a GGUF reader for the file at the given path.
+     */
+    public static GGUFReader open(String path) throws IOException {
+        return new GGUFReader(new File(path));
+    }
+
+    // ========== High-level INDArray access ==========
+
+    /**
+     * Get the names of all tensors in the file. Parses header and tensor infos if not yet done.
+     */
+    public Set<String> getTensorNames() throws IOException, GGMLImportException {
+        List<GGMLTensorInfo> infos = getTensorInfos();
+        Set<String> names = new LinkedHashSet<>(infos.size());
+        for (GGMLTensorInfo info : infos) {
+            names.add(info.getName());
+        }
+        return names;
+    }
+
+    /**
+     * Get the number of tensors in the file.
+     */
+    public int getTensorCount() throws IOException, GGMLImportException {
+        return getTensorInfos().size();
+    }
+
+    /**
+     * Get the tensor info for a tensor by name, or {@code null} if not found.
+     */
+    public GGMLTensorInfo getTensorInfo(String name) throws IOException, GGMLImportException {
+        for (GGMLTensorInfo info : getTensorInfos()) {
+            if (info.getName().equals(name)) {
+                return info;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Read a tensor by name, dequantizing quantized types to float32.
+     *
+     * @param name tensor name
+     * @return INDArray with the tensor data
+     * @throws IllegalArgumentException if the tensor is not found
+     */
+    public INDArray readTensor(String name) throws IOException, GGMLImportException {
+        return readTensor(name, true);
+    }
+
+    /**
+     * Read a tensor by name.
+     *
+     * @param name       tensor name
+     * @param dequantize if true, dequantize quantized tensors to float32; if false, return raw bytes
+     * @return INDArray with the tensor data
+     * @throws IllegalArgumentException if the tensor is not found
+     */
+    public INDArray readTensor(String name, boolean dequantize) throws IOException, GGMLImportException {
+        GGMLTensorInfo info = getTensorInfo(name);
+        if (info == null) {
+            throw new IllegalArgumentException("Tensor not found: " + name);
+        }
+        return readTensorAsArray(info, dequantize);
+    }
+
+    /**
+     * Read all tensors from the file, dequantizing quantized types to float32.
+     * Tensors whose types are unsupported (e.g. exotic quantization variants) are skipped with a warning.
+     *
+     * @return ordered map of tensor name to INDArray
+     */
+    public Map<String, INDArray> readAllTensors() throws IOException, GGMLImportException {
+        return readAllTensors(true);
+    }
+
+    /**
+     * Read all tensors from the file.
+     *
+     * @param dequantize if true, dequantize quantized tensors to float32
+     * @return ordered map of tensor name to INDArray
+     */
+    public Map<String, INDArray> readAllTensors(boolean dequantize) throws IOException, GGMLImportException {
+        Map<String, INDArray> result = new LinkedHashMap<>();
+        for (GGMLTensorInfo info : getTensorInfos()) {
+            try {
+                result.put(info.getName(), readTensorAsArray(info, dequantize));
+            } catch (UnsupportedOperationException e) {
+                log.warn("Skipping unsupported tensor {}: {}", info.getName(), e.getMessage());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Read a subset of tensors from the file.
+     *
+     * @param names      tensor names to read
+     * @param dequantize if true, dequantize quantized tensors to float32
+     * @return ordered map of tensor name to INDArray (only found tensors are included)
+     */
+    public Map<String, INDArray> readTensors(Collection<String> names, boolean dequantize)
+            throws IOException, GGMLImportException {
+        Map<String, INDArray> result = new LinkedHashMap<>();
+        for (String name : names) {
+            GGMLTensorInfo info = getTensorInfo(name);
+            if (info == null) {
+                log.warn("Tensor not found in file: {}", name);
+                continue;
+            }
+            try {
+                result.put(name, readTensorAsArray(info, dequantize));
+            } catch (UnsupportedOperationException e) {
+                log.warn("Skipping unsupported tensor {}: {}", name, e.getMessage());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Internal: convert a GGMLTensorInfo to an INDArray.
+     */
+    private INDArray readTensorAsArray(GGMLTensorInfo info, boolean dequantize)
+            throws IOException, GGMLImportException {
+        GGMLDataType dtype = info.getDataType();
+        long[] shape = info.getShape();
+        if (shape == null || shape.length == 0) {
+            shape = new long[]{1};
+        }
+        long elementCount = info.getNumElements();
+
+        if (dtype.isQuantized()) {
+            byte[] raw = readTensorData(info);
+            if (dequantize) {
+                return DequantizerFactory.dequantizeToArray(raw, dtype, shape, DataType.FLOAT);
+            } else {
+                // Return raw quantized bytes as an INT8 row vector
+                return Nd4j.createFromArray(raw).reshape(1, raw.length);
+            }
+        }
+
+        // Non-quantized: read via direct ByteBuffer for efficiency
+        ByteBuffer buf = readTensorDataDirect(info);
+        DataType nd4jType = dtype.getNd4jType();
+        if (nd4jType == null) {
+            throw new UnsupportedOperationException("Unsupported GGML type for direct read: " + dtype);
+        }
+
+        switch (dtype) {
+            case GGML_TYPE_F32: {
+                float[] floats = new float[(int) elementCount];
+                buf.asFloatBuffer().get(floats);
+                return Nd4j.create(floats, shape, 'c');
+            }
+            case GGML_TYPE_F16:
+            case GGML_TYPE_BF16: {
+                short[] halfs = new short[(int) elementCount];
+                buf.asShortBuffer().get(halfs);
+                org.nd4j.linalg.api.buffer.DataBuffer db = Nd4j.createTypedBuffer(halfs, nd4jType);
+                return Nd4j.create(db, shape, Nd4j.getStrides(shape, 'c'), 0, 'c', nd4jType);
+            }
+            case GGML_TYPE_F64: {
+                double[] doubles = new double[(int) elementCount];
+                buf.asDoubleBuffer().get(doubles);
+                return Nd4j.create(doubles, shape, 'c');
+            }
+            case GGML_TYPE_I32: {
+                int[] ints = new int[(int) elementCount];
+                buf.asIntBuffer().get(ints);
+                return Nd4j.createFromArray(ints).reshape(shape);
+            }
+            case GGML_TYPE_I64: {
+                long[] longs = new long[(int) elementCount];
+                buf.asLongBuffer().get(longs);
+                return Nd4j.createFromArray(longs).reshape(shape);
+            }
+            case GGML_TYPE_I8: {
+                byte[] bytes = new byte[(int) elementCount];
+                buf.get(bytes);
+                return Nd4j.createFromArray(bytes).reshape(shape);
+            }
+            case GGML_TYPE_I16: {
+                short[] shorts = new short[(int) elementCount];
+                buf.asShortBuffer().get(shorts);
+                return Nd4j.createFromArray(shorts).reshape(shape);
+            }
+            default:
+                throw new UnsupportedOperationException("Unsupported GGML type: " + dtype);
+        }
     }
 
     // Private helper methods

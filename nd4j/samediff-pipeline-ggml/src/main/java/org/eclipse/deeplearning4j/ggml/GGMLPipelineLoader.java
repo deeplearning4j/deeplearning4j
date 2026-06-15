@@ -1,6 +1,7 @@
 /*
  *  ******************************************************************************
  *  *
+ *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
  *  * https://www.apache.org/licenses/LICENSE-2.0.
@@ -22,6 +23,8 @@ package org.eclipse.deeplearning4j.ggml;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.pipeline.*;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.ggml.format.GGUFHeader;
+import org.nd4j.ggml.format.GGUFReader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;
@@ -31,6 +34,7 @@ import java.util.*;
 /**
  * Pipeline loader for GGUF/GGML format.
  * Loads llama.cpp compatible models and converts weights to SameDiff variables.
+ * Uses {@link GGUFReader} from nd4j-ggml as the canonical GGUF reader.
  */
 @Slf4j
 public class GGMLPipelineLoader implements PipelineLoader {
@@ -98,6 +102,8 @@ public class GGMLPipelineLoader implements PipelineLoader {
 
             log.info("Loaded {} variables from GGUF (architecture: {})",
                     sd.variables().size(), header.getArchitecture());
+        } catch (org.nd4j.ggml.GGMLImportException e) {
+            throw new IOException("Failed to read GGUF file: " + file, e);
         }
 
         return sd;
@@ -124,19 +130,36 @@ public class GGMLPipelineLoader implements PipelineLoader {
         return name.replace("/", "_").replace(".", "_").replace(":", "_");
     }
 
+    /**
+     * Inspect a GGUF file and return its header metadata without loading tensors.
+     */
     public static GGUFHeader inspectFile(File file) throws IOException {
-        return GGUFHeader.fromFile(file);
-    }
-
-    public static Map<String, INDArray> loadWeights(File file, boolean dequantize) throws IOException {
         try (GGUFReader reader = GGUFReader.open(file)) {
-            return reader.readAllTensors(dequantize);
+            return reader.getHeader();
+        } catch (org.nd4j.ggml.GGMLImportException e) {
+            throw new IOException("Failed to inspect GGUF file: " + file, e);
         }
     }
 
+    /**
+     * Load all tensor weights from a GGUF file.
+     */
+    public static Map<String, INDArray> loadWeights(File file, boolean dequantize) throws IOException {
+        try (GGUFReader reader = GGUFReader.open(file)) {
+            return reader.readAllTensors(dequantize);
+        } catch (org.nd4j.ggml.GGMLImportException e) {
+            throw new IOException("Failed to load weights from GGUF file: " + file, e);
+        }
+    }
+
+    /**
+     * Load raw metadata key-value pairs from a GGUF file.
+     */
     public static Map<String, Object> loadMetadata(File file) throws IOException {
         try (GGUFReader reader = GGUFReader.open(file)) {
-            return reader.getMetadata();
+            return reader.getHeader().getMetadata();
+        } catch (org.nd4j.ggml.GGMLImportException e) {
+            throw new IOException("Failed to load metadata from GGUF file: " + file, e);
         }
     }
 }
