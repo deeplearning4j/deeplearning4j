@@ -25,6 +25,8 @@ import lombok.NonNull;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.HybridDataBuffer;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
@@ -2900,6 +2902,150 @@ public interface INDArray extends Serializable, AutoCloseable {
         if(isEmpty())
             return null;
         return data().getParentWorkspace();
+    }
+
+    // ========================
+    // Device-Aware Operations
+    // ========================
+
+    /**
+     * Get the device where this array's data currently resides.
+     * Uses the underlying OpaqueDataBuffer's deviceId if available.
+     *
+     * @return the device descriptor, or CPU if not on a specific device
+     */
+    default DeviceDescriptor getDevice() {
+        DataBuffer buffer = data();
+        if (buffer != null && buffer.opaqueBuffer() != null) {
+            int deviceId = buffer.opaqueBuffer().deviceId();
+            // Device ID 0 typically means CPU or default device
+            // Positive device IDs are GPU devices
+            if (deviceId > 0) {
+                return DeviceDescriptor.cuda(deviceId - 1);  // Adjust for 0-based GPU index
+            }
+        }
+        return DeviceDescriptor.cpu();
+    }
+
+    /**
+     * Check if this array's data buffer supports hybrid (multi-device) operations.
+     *
+     * @return true if the underlying buffer is a HybridDataBuffer
+     */
+    default boolean isHybrid() {
+        DataBuffer buffer = data();
+        return buffer != null && buffer.isHybrid();
+    }
+
+    /**
+     * Get this array's data buffer as a HybridDataBuffer if supported.
+     *
+     * @return the HybridDataBuffer, or null if not a hybrid buffer
+     */
+    default HybridDataBuffer getHybridBuffer() {
+        DataBuffer buffer = data();
+        if (buffer != null && buffer.isHybrid()) {
+            return buffer.asHybrid();
+        }
+        return null;
+    }
+
+    /**
+     * Ensure this array's data is synchronized to the host (CPU) memory.
+     * This is useful before reading data on the host after GPU operations.
+     *
+     * <p>Uses the OpaqueDataBuffer's syncToPrimary() method which calls
+     * the native DataBuffer::syncToPrimary() to copy device data to host.</p>
+     */
+    default void syncToHost() {
+        DataBuffer buffer = data();
+        if (buffer != null && buffer.opaqueBuffer() != null) {
+            buffer.opaqueBuffer().syncToPrimary();
+        }
+    }
+
+    /**
+     * Ensure this array's data is synchronized to the device (GPU) memory.
+     * This is useful before running GPU operations after host modifications.
+     *
+     * <p>Uses the OpaqueDataBuffer's syncToSpecial() method which calls
+     * the native DataBuffer::syncToSpecial() to copy host data to device.</p>
+     */
+    default void syncToDevice() {
+        DataBuffer buffer = data();
+        if (buffer != null && buffer.opaqueBuffer() != null) {
+            buffer.opaqueBuffer().syncToSpecial();
+        }
+    }
+
+    /**
+     * Check if this array has a valid device (special) buffer allocated.
+     *
+     * @return true if device buffer exists
+     */
+    default boolean hasDeviceBuffer() {
+        DataBuffer buffer = data();
+        if (buffer != null && buffer.opaqueBuffer() != null) {
+            var special = buffer.opaqueBuffer().specialBuffer();
+            return special != null && !special.isNull();
+        }
+        return false;
+    }
+
+    /**
+     * Check if this array has a valid host (primary) buffer allocated.
+     *
+     * @return true if host buffer exists
+     */
+    default boolean hasHostBuffer() {
+        DataBuffer buffer = data();
+        if (buffer != null && buffer.opaqueBuffer() != null) {
+            var primary = buffer.opaqueBuffer().primaryBuffer();
+            return primary != null && !primary.isNull();
+        }
+        return false;
+    }
+
+    /**
+     * Get the native device ID from the underlying OpaqueDataBuffer.
+     * This corresponds to the device affinity set at the C++ level.
+     *
+     * @return the native device ID, or 0 if not available
+     */
+    default int getNativeDeviceId() {
+        DataBuffer buffer = data();
+        if (buffer != null && buffer.opaqueBuffer() != null) {
+            return buffer.opaqueBuffer().deviceId();
+        }
+        return 0;
+    }
+
+    /**
+     * Get the host memory address for this array's data.
+     *
+     * @return the host buffer address, or 0 if not available
+     */
+    default long getHostAddress() {
+        DataBuffer buffer = data();
+        if (buffer != null && buffer.opaqueBuffer() != null) {
+            var primary = buffer.opaqueBuffer().primaryBuffer();
+            return primary != null ? primary.address() : 0;
+        }
+        return 0;
+    }
+
+    /**
+     * Get the device memory address for this array's data.
+     *
+     * @return the device buffer address, or 0 if not available
+     */
+    default long getDeviceAddress() {
+        DataBuffer buffer = data();
+        if (buffer != null && buffer.opaqueBuffer() != null) {
+            var special = buffer.opaqueBuffer().specialBuffer();
+            return special != null ? special.address() : 0;
+        }
+        return 0;
     }
 
 }

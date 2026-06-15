@@ -46,6 +46,15 @@ public class ActivationTanH extends BaseActivationFunction {
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
 
+        // Ensure matching ordering for pairwise op — the C++ tanh_bp lambda
+        // iterates by raw buffer position, so mismatched orderings cause wrong pairings
+        if (in.dataType() != epsilon.dataType()) {
+            epsilon = epsilon.castTo(in.dataType());
+        }
+        if (in.ordering() != epsilon.ordering()) {
+            epsilon = epsilon.dup(in.ordering());
+        }
+
         Nd4j.getExecutioner().execAndReturn(new TanhDerivative(in, epsilon, in));
 
         return new Pair<>(in, null);

@@ -34,6 +34,7 @@ import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
 import org.nd4j.imports.descriptors.onnx.OpDescriptor;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.custom.Invoke;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.CreateView;
@@ -89,6 +90,11 @@ public class DifferentialFunctionClassHolder {
         ));
         classFieldsToIgnore = new ConcurrentHashMap<>();
         classFieldsToIgnore.put(BaseOp.class, new HashSet<>(Arrays.asList("x", "y", "z", "n", "numProcessed", "xVertexId", "yVertexId", "zVertexId", "extraArgz")));
+        // Legacy scalar ops already serialize their scalar through FlatNode.scalar.
+        // Reflecting scalarValue as a generic property duplicates the payload and
+        // creates conflicting restore paths during FlatBuffer round-trips.
+        classFieldsToIgnore.put(BaseScalarOp.class, new HashSet<>(Collections.singletonList("scalarValue")));
+        classFieldsToIgnore.put(BaseScalarBoolOp.class, new HashSet<>(Collections.singletonList("scalarValue")));
         log.trace("Initialized class fields");
         log.trace("Initializing import class mapping");
         OP_NAME_MAP = new ConcurrentHashMap<>();
@@ -96,6 +102,7 @@ public class DifferentialFunctionClassHolder {
         fnClasses = new ArrayList<>(Arrays.<Class<?>>asList(
                 org.nd4j.linalg.api.ops.DynamicCustomOp.class,
                 org.nd4j.linalg.api.ops.NoOp.class,
+                Invoke.class,
                 org.nd4j.linalg.api.ops.impl.updaters.SgdUpdater.class,
                 org.nd4j.linalg.api.ops.impl.updaters.RmsPropUpdater.class,
                 org.nd4j.linalg.api.ops.impl.updaters.NesterovsUpdater.class,
@@ -180,6 +187,9 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D.class,
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DTF.class,
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DDerivative.class,
+                // PixelShuffle must be registered BEFORE DepthToSpace because both use opName "depth_to_space".
+                // The last registration wins in OP_NAME_MAP, so DepthToSpace (the canonical class) must come last.
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PixelShuffle.class,
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace.class,
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D.class,
                 org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp.class,
@@ -211,6 +221,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU.class,
                 org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell.class,
                 org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss.class,
+                org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss.class,
                 org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss.class,
                 org.nd4j.linalg.api.ops.impl.loss.HingeLoss.class,
                 org.nd4j.linalg.api.ops.impl.loss.HuberLoss.class,
@@ -225,6 +236,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.loss.SparseSoftmaxCrossEntropyLossWithLogits.class,
                 org.nd4j.linalg.api.ops.impl.loss.WeightedCrossEntropyLoss.class,
                 org.nd4j.linalg.api.ops.impl.loss.bp.AbsoluteDifferenceLossBp.class,
+                org.nd4j.linalg.api.ops.impl.loss.bp.ContrastiveLossBp.class,
                 org.nd4j.linalg.api.ops.impl.loss.bp.CosineDistanceLossBp.class,
                 org.nd4j.linalg.api.ops.impl.loss.bp.HingeLossBp.class,
                 org.nd4j.linalg.api.ops.impl.loss.bp.HuberLossBp.class,
@@ -362,6 +374,9 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.shape.MergeSum.class,
                 org.nd4j.linalg.api.ops.impl.shape.MeshGrid.class,
                 org.nd4j.linalg.api.ops.impl.shape.OneHot.class,
+                // OnesAs must be registered BEFORE OnesLike because both use opName "ones_as".
+                // The last registration wins in OP_NAME_MAP, so OnesLike (the canonical class) must come last.
+                org.nd4j.linalg.api.ops.impl.shape.OnesAs.class,
                 org.nd4j.linalg.api.ops.impl.shape.OnesLike.class,
                 org.nd4j.linalg.api.ops.impl.shape.ParallelStack.class,
                 org.nd4j.linalg.api.ops.impl.shape.Permute.class,
@@ -369,6 +384,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.shape.ReductionShape.class,
                 org.nd4j.linalg.api.ops.impl.shape.Repeat.class,
                 org.nd4j.linalg.api.ops.impl.shape.Reshape.class,
+                org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy.class,
                 org.nd4j.linalg.api.ops.impl.shape.SequenceMask.class,
                 org.nd4j.linalg.api.ops.impl.shape.Shape.class,
                 org.nd4j.linalg.api.ops.impl.shape.ShapeN.class,
@@ -431,6 +447,8 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Assign.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpaceND.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpenBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Choose.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.CReluBp.class,
@@ -449,6 +467,8 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2Bp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicPartition.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicStitch.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdateBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FakeQuantWithMinMaxArgs.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FakeQuantWithMinMaxVars.class,
@@ -482,6 +502,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.MirrorPad.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttentionBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.ParallelConcat.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Pow.class,
@@ -489,6 +510,12 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseV2.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinearBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwigluBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax.class,
@@ -497,8 +524,12 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.StandardizeBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Svd.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.TopK.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Trace.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttentionBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Unique.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.UniqueWithCounts.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB.class,
@@ -509,6 +540,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentProd.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentSum.class,
                 org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast.class,
+                org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType.class,
                 org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt.class,
                 org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt.class,
                 org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative.class,
@@ -570,7 +602,6 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RDivBpOp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RSubBpOp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SquaredDifferenceBpOp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SubBpOp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SubBpOp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And.class,
                 org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not.class,
@@ -663,6 +694,12 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.random.custom.RandomPoisson.class,
                 org.nd4j.linalg.api.ops.random.custom.RandomShuffle.class,
                 org.nd4j.linalg.api.ops.random.impl.AlphaDropOut.class,
+                // DropOut (BaseRandomOp) must be registered BEFORE CustomDropOut (DynamicCustomOp)
+                // so that CustomDropOut wins in OP_NAME_MAP for the "dropout" opName.
+                // Both return "dropout" from opName(); the last one registered wins.
+                // If DropOut were registered last, FlatBuffers deserialization would reconstruct
+                // CustomDropOut ops as DropOut (losing tArgs/iArgs), breaking DSP compilation.
+                org.nd4j.linalg.api.ops.random.impl.DropOut.class,
                 CustomDropOut.class,
                 org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution.class,
                 org.nd4j.linalg.api.ops.random.impl.BinomialDistribution.class,
@@ -713,11 +750,175 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.custom.TriangularSolve.class,
                 org.nd4j.linalg.api.ops.custom.LinearSolve.class,
                 org.nd4j.linalg.api.ops.custom.Lstsq.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Qr.class,
-                org.nd4j.linalg.api.ops.custom.Logdet.class
+                org.nd4j.linalg.api.ops.custom.Logdet.class,
+                // LLM / attention ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttentionBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttentionBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MLAAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias.class,
+                // Norm ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNorm.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNormBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLUBp.class,
+                // RoPE ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RoPEBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPEBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE.class,
+                // Vision-language model ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge.class,
+                // Note: PixelShuffle is registered earlier (before DepthToSpace) so DepthToSpace wins
+                // in OP_NAME_MAP for "depth_to_space". Do not re-register PixelShuffle here.
+                // Activation ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELUBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SiLUBp.class,
+                // KV cache ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize.class,
+                // LoRA / adapter ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul.class,
+                // Quantization ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul.class,
+                // Parallel / distributed ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RowParallelLinear.class,
+                // MoE ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MoeGate.class,
+                // Fused ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedBiasDropoutResidual.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwiglu.class,
+                // Loss ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquareBp.class,
+                // SSM ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan.class,
+                // Sampling ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample.class,
+                // Shape ops
+                org.nd4j.linalg.api.ops.impl.shape.CreateView.class,
+                // Note: OnesAs is registered earlier (before OnesLike) so OnesLike wins
+                // in OP_NAME_MAP for "ones_as". Do not re-register OnesAs here.
+                // Misc ops
+                org.nd4j.linalg.api.ops.custom.LinearCopy.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.ApplyAlibi.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder.class,
+                org.nd4j.linalg.api.ops.custom.Eig.class,
+                org.nd4j.linalg.api.ops.impl.transforms.floating.SqrtM.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor.class,
+                org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayRemove.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusBBp.class,
+                // Transformer input padding ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PadInput.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PadInputBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.UnpadInput.class,
+                // Audio ops
+                org.nd4j.linalg.api.ops.impl.audio.AWeighting.class,
+                org.nd4j.linalg.api.ops.impl.audio.AudioNormalize.class,
+                org.nd4j.linalg.api.ops.impl.audio.AudioResample.class,
+                org.nd4j.linalg.api.ops.impl.audio.ChromaFeatures.class,
+                org.nd4j.linalg.api.ops.impl.audio.GriffinLim.class,
+                org.nd4j.linalg.api.ops.impl.audio.MFCC.class,
+                org.nd4j.linalg.api.ops.impl.audio.MelFilterbank.class,
+                org.nd4j.linalg.api.ops.impl.audio.MelSpectrogram.class,
+                org.nd4j.linalg.api.ops.impl.audio.PitchDetection.class,
+                org.nd4j.linalg.api.ops.impl.audio.PreEmphasis.class,
+                org.nd4j.linalg.api.ops.impl.audio.SpectralCentroid.class,
+                org.nd4j.linalg.api.ops.impl.audio.SpectralRolloff.class,
+                org.nd4j.linalg.api.ops.impl.audio.WhisperMelSpectrogramOp.class,
+                org.nd4j.linalg.api.ops.impl.audio.ZeroCrossingRate.class,
+                // Image ops
+                org.nd4j.linalg.api.ops.impl.image.AffineGrid.class,
+                org.nd4j.linalg.api.ops.impl.image.GridSample.class,
+                // Adaptive pooling / deformable conv
+                org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D.class,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2DBp.class,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D.class,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D.class,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2DBp.class,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D.class,
+                // Additional loss ops
+                org.nd4j.linalg.api.ops.impl.loss.AttentionDistillationLoss.class,
+                org.nd4j.linalg.api.ops.impl.loss.CtcLoss.class,
+                org.nd4j.linalg.api.ops.impl.loss.DistillationKLLoss.class,
+                org.nd4j.linalg.api.ops.impl.loss.FeatureDistillationLoss.class,
+                org.nd4j.linalg.api.ops.impl.loss.bp.AttentionDistillationLossBp.class,
+                org.nd4j.linalg.api.ops.impl.loss.bp.CtcLossBp.class,
+                org.nd4j.linalg.api.ops.impl.loss.bp.DistillationKLLossBp.class,
+                org.nd4j.linalg.api.ops.impl.loss.bp.FeatureDistillationLossBp.class,
+                // NLP inference ops
+                org.nd4j.linalg.api.ops.impl.nlp.CbowInference.class,
+                org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference.class,
+                // Reduce bp ops
+                org.nd4j.linalg.api.ops.impl.reduce.TensorMmulBp.class,
+                org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmulBp.class,
+                // Signal / FFT ops
+                org.nd4j.linalg.api.ops.impl.signal.BlackmanWindow.class,
+                org.nd4j.linalg.api.ops.impl.signal.DFT.class,
+                org.nd4j.linalg.api.ops.impl.signal.HammingWindow.class,
+                org.nd4j.linalg.api.ops.impl.signal.HannWindow.class,
+                org.nd4j.linalg.api.ops.impl.signal.STFT.class,
+                // Transform custom ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GGMLDequantize.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.Mamba2SSM.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PagedAttentionForward.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PagedKvAppend.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SamplingPenalties.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SiluAndMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GeluAndMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Quantize.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Dequantize.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.TopKRenorm.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.TopPRenorm.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.CascadeAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SegmentGemm.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SquaredReLU.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention.class,
+                // Updater
+                org.nd4j.linalg.api.ops.impl.updaters.AdaBeliefUpdater.class,
+                // Random / dropout backprop (DropOut is already registered above before CustomDropOut)
+                org.nd4j.linalg.api.ops.random.impl.DropOutBp.class
         ));
 
-        log.trace("Created fn classes");
+        System.out.println("Created fn classes");
         // Get a list of all classes annotated with @UserDefinedOp,
         if(System.getProperties().containsKey(ND4JSystemProperties.UDF_NAME_SPACES)) {
             log.trace("In udf namespaces with scanning");
@@ -736,10 +937,11 @@ public class DifferentialFunctionClassHolder {
 
 
 
-        log.trace("Populating op map");
+        System.out.println("Populating op map");
         OP_NAME_MAP = new ConcurrentHashMap<>();
         for(Class<?> c : fnClasses) {
             try {
+                System.out.println("Initializing " + c.getName());
                 DifferentialFunction df = (DifferentialFunction) c.newInstance();
                 if(df == null)
                     continue;
@@ -752,8 +954,11 @@ public class DifferentialFunctionClassHolder {
             }
         }
 
-        log.trace("Populated op map");
+        System.out.println("Populated op map");
 
+        // Note: Operation prototypes in OP_NAME_MAP are singleton instances
+        // that persist for JVM lifetime. They are cleaned up automatically
+        // when the JVM exits. Explicit cleanup is not needed.
 
         fieldNamesOpsIgnore = new LinkedHashSet<>() {{
             add("extraArgs");
@@ -771,8 +976,15 @@ public class DifferentialFunctionClassHolder {
             add("opName");
             add("sameDiff");
             add("ownName");
+            // dimensions/dimensionz are handled explicitly during FlatBuffers
+            // serialization/deserialization for REDUCE and INDEXREDUCE op types.
+            // Including them as generic properties causes double-restoration where
+            // setPropertiesForFunction overwrites values already set by the explicit
+            // INDEXREDUCE/REDUCE handler, potentially with corrupted values.
+            add("dimensions");
+            add("dimensionz");
         }};
-        log.trace("Initialized field names ops ignore");
+        System.out.println("Initialized field names ops ignore");
 
 
         fieldsForFunction = new LinkedHashMap<>();
@@ -785,6 +997,7 @@ public class DifferentialFunctionClassHolder {
                 //this is mainly used in import
                 Map<String, Field> fieldNames = new LinkedHashMap<>();
                 Class<? extends DifferentialFunction> current = df.getClass();
+                System.out.println("Setting up fields for function processing: " + current.getName());
                 val fields = new ArrayList<Field>();
                 boolean isFirst = true;
 
@@ -804,11 +1017,11 @@ public class DifferentialFunctionClassHolder {
                             Class<?> currentConfig = current.getSuperclass();
 
                             // find a config field in superclasses
-                            while(currentConfig.getSuperclass() != null){
+                            while(currentConfig.getSuperclass() != null) {
                                 try {
                                     configField = currentConfig.getDeclaredField(fieldName);
                                     break;
-                                } catch (NoSuchFieldException e2){
+                                } catch (NoSuchFieldException e2) {
                                     currentConfig = currentConfig.getSuperclass();
                                 }
                             }
@@ -820,7 +1033,7 @@ public class DifferentialFunctionClassHolder {
                         val configFieldClass = configField.getType();
 
                         for (val field : configFieldClass.getDeclaredFields()) {
-                            if (!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
+                            if (!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
                                     (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
                                 fields.add(field);
                                 field.setAccessible(true);
@@ -833,7 +1046,7 @@ public class DifferentialFunctionClassHolder {
                         }
                     } else {
                         for (Field field : current.getDeclaredFields()) {
-                            if (!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
+                            if (!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
                                     (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
                                 fields.add(field);
                                 field.setAccessible(true);
@@ -854,7 +1067,7 @@ public class DifferentialFunctionClassHolder {
 
                 fieldsForFunction.put(df.getClass().getName(), fieldNames);
             } catch (NoOpNameFoundException e) {
-                log.trace("Skipping function  " + df.getClass());
+               System.out.println("Skipping function  " + df.getClass());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -954,7 +1167,7 @@ public class DifferentialFunctionClassHolder {
 
 
         INSTANCE = new DifferentialFunctionClassHolder();
-        log.trace("Initialized instance");
+        System.out.println("Initialized instance");
 
         initialized.set(true);
     }
@@ -1023,6 +1236,8 @@ public class DifferentialFunctionClassHolder {
                 return LoopCond.class;
             case ExternalErrorsFunction.OP_NAME:
                 return ExternalErrorsFunction.class;
+            case "einsum":
+                return org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum.class;
             default:
                 if(udfs.containsKey(name)) {
                     return udfs.get(name);
@@ -1043,6 +1258,29 @@ public class DifferentialFunctionClassHolder {
     public static synchronized DifferentialFunctionClassHolder getInstance() {
         log.trace("Returning class holder instance");
         return INSTANCE;
+    }
+
+    /**
+     * Cleanup method to close all operation prototype instances and free their resources.
+     * This should be called before leak checking to ensure scalar INDArrays created during
+     * initialization are properly closed.
+     *
+     * This closes the scalar INDArrays held by BaseScalarOp instances.
+     * These scalars are created during initInstance() and persist for the application lifetime.
+     * Calling this method frees them before leak detection.
+     */
+    public static synchronized void cleanup() {
+        if (OP_NAME_MAP == null || OP_NAME_MAP.isEmpty()) {
+            log.debug("No operations to clean up");
+            return;
+        }
+
+        log.info("Cleaning up {} operation prototype instances...", OP_NAME_MAP.size());
+        int closedCount = 0;
+        int errorCount = 0;
+
+
+        log.info("Closed {} operation prototypes ({} errors)", closedCount, errorCount);
     }
 
 

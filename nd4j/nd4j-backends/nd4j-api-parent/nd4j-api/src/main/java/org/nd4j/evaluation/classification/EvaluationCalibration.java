@@ -248,7 +248,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
         labelCountsEachClass.addi(labels2d.sum(0).castTo(labelCountsEachClass.dataType()));
         //For prediction counts: do an IsMax op, but we need to take masking into account...
-        INDArray isPredictedClass = Nd4j.getExecutioner().exec(new IsMax(p, p.ulike(), 1))[0];
+        INDArray isPredictedClass = Nd4j.getExecutioner().exec(new IsMax(p, Nd4j.createUninitialized(DataType.BOOL, p.shape()), 1))[0]
+                .castTo(p.dataType());
         if (maskArray != null) {
             LossUtil.applyMask(isPredictedClass, maskArray);
         }
@@ -374,7 +375,27 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
         if (excludeEmptyBins) {
             val condition = new MatchCondition(totalCountBins, Conditions.equals(0));
-            int numZeroBins = Nd4j.getExecutioner().exec(condition).getInt(0);
+            INDArray zeroCheckResult = null;
+            int numZeroBins = 0;
+            try {
+                zeroCheckResult = Nd4j.getExecutioner().exec(condition);
+                numZeroBins = zeroCheckResult.getInt(0);
+            } finally {
+                // Clean up result array
+                if (zeroCheckResult != null) {
+                    try {
+                        zeroCheckResult.close();
+                    } catch (Exception e) {
+                        // Ignore close errors
+                    }
+                }
+                // Clean up MatchCondition operation (closes internal dimensionz array)
+                try {
+                    condition.clearArrays();
+                } catch (Exception e) {
+                    // Ignore errors
+                }
+            }
             if (numZeroBins != 0) {
                 double[] mpb = meanPredictionBins;
                 double[] fp = fracPositives;

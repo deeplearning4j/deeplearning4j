@@ -26,7 +26,9 @@ import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.ReferenceQueue;
@@ -82,7 +84,7 @@ public class DeallocatorService {
     //for the amount of memory overhead it has. String compression
     //with a large number of objects is more important over throughput.
     @Getter
-    private Map<Long,DeallocatableReference> referenceMap = Collections.synchronizedMap(new WeakHashMap<>());
+    private Map<Long,DeallocatableReference> referenceMap = new ConcurrentHashMap<>();
 
     @Getter
     private Map<Long,String> referenceTypes = new ConcurrentHashMap<>();
@@ -94,11 +96,126 @@ public class DeallocatorService {
 
     private static AtomicBoolean blockDeallocator = new AtomicBoolean(false);
 
+    /**
+     * When true, the deallocator threads skip native deallocation entirely.
+     * Set during JVM shutdown to avoid calling free() on potentially corrupted heap
+     * metadata. The OS reclaims all process memory on exit anyway.
+     */
+    @Getter
+    private static final AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
+
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
     private Boolean noPointerGc;
     private  int numThreads =  Integer.parseInt(System.getProperty(ND4JSystemProperties.DEALLOCATOR_SERVICE_GC_THREADS,"1"));
 
     private final transient AtomicLong counter = new AtomicLong(0);
+
+    private final Set<Object> pendingConstants = Collections.synchronizedSet(
+        Collections.newSetFromMap(new IdentityHashMap<>()));
+
+    /**
+     * Registers an object as a "pending constant" - holding a strong reference to prevent
+     * GC from collecting it before setConstant(true) can be called.
+     *
+     * IMPORTANT: This method now IMMEDIATELY marks the buffer as constant when registering
+     * an INDArray. This narrows the race condition window between buffer allocation and
+     * constant flag setting. Without this, the following race can occur:
+     *
+     * 1. Native allocateDataBuffer() returns OpaqueDataBuffer
+     * 2. JavaCPP attaches NativeDeallocator
+     * 3. GC runs and finalizes buffer BEFORE registerPendingConstant() is called
+     * 4. registerPendingConstant() is called on already-freed buffer
+     *
+     * By marking constant immediately, we ensure that even if GC runs after this method
+     * is called, the buffer won't be deallocated (constant buffers are protected).
+     *
+     * @param object The array or buffer to protect from GC
+     * @return The same object, for chaining
+     */
+    public <T> T registerPendingConstant(T object) {
+        if (object != null) {
+            // Add to pending set FIRST to hold strong reference
+            pendingConstants.add(object);
+
+            // IMMEDIATELY mark as constant to narrow the race window
+            // This must happen ASAP after the strong reference is established
+            if (object instanceof INDArray) {
+                INDArray arr = (INDArray) object;
+                try {
+                    DataBuffer data = arr.data();
+                    if (data != null && !data.isConstant()) {
+                        data.setConstant(true);
+                    }
+                    DataBuffer shapeInfo = arr.shapeInfoDataBuffer();
+                    if (shapeInfo != null && !shapeInfo.isConstant()) {
+                        shapeInfo.setConstant(true);
+                    }
+                    arr.setCloseable(false);
+                } catch (IllegalStateException e) {
+                    // Buffer was already freed by GC - this is a race condition
+                    // Log for debugging but don't throw - caller will encounter error when using buffer
+                    log.warn("registerPendingConstant: Buffer already freed for array - race condition detected. " +
+                             "This may cause use-after-free errors downstream. Error: {}", e.getMessage());
+                }
+            } else if (object instanceof DataBuffer) {
+                DataBuffer buf = (DataBuffer) object;
+                try {
+                    if (!buf.isConstant()) {
+                        buf.setConstant(true);
+                    }
+                } catch (IllegalStateException e) {
+                    log.warn("registerPendingConstant: Buffer already freed - race condition detected. " +
+                             "Error: {}", e.getMessage());
+                }
+            }
+
+            if (log.isTraceEnabled()) {
+                log.trace("Registered pending constant: {} (total pending: {})",
+                        object.getClass().getSimpleName(), pendingConstants.size());
+            }
+        }
+        return object;
+    }
+
+    /**
+     * Releases an object from the "pending constants" set after setConstant(true) has been called.
+     *
+     * Once an array is marked as constant, it won't be deallocated by DeallocatorService anyway,
+     * so we can release the strong reference.
+     *
+     * @param object The array or buffer that was previously registered
+     */
+    public void releasePendingConstant(Object object) {
+        if (object != null) {
+            boolean removed = pendingConstants.remove(object);
+            if (log.isTraceEnabled() && removed) {
+                log.trace("Released pending constant: {} (remaining: {})",
+                        object.getClass().getSimpleName(), pendingConstants.size());
+            }
+        }
+    }
+
+    /**
+     * Returns the number of objects currently being held as pending constants.
+     * Useful for debugging memory issues.
+     *
+     * @return The count of pending constants
+     */
+    public int getPendingConstantCount() {
+        return pendingConstants.size();
+    }
+
+    /**
+     * Clears all pending constants. This should only be called during shutdown or testing.
+     * WARNING: Calling this while arrays are still being marked as constant can cause use-after-free!
+     */
+    public void clearPendingConstants() {
+        int count = pendingConstants.size();
+        pendingConstants.clear();
+        if (count > 0) {
+            log.info("Cleared {} pending constants", count);
+        }
+    }
 
     // Time-series tracking fields - only active when functrace is enabled
     private volatile boolean timeSeriesTrackingEnabled = false;
@@ -196,6 +313,22 @@ public class DeallocatorService {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
+        // Ensure we have at least 1 device to prevent division by zero and empty deviceMap
+        if (numDevices < 1) {
+            log.warn("AffinityManager reported {} devices, defaulting to 1", numDevices);
+            numDevices = 1;
+        }
+
+        // Scale deallocator threads with device count if user hasn't overridden.
+        // With high-throughput execution (e.g. DSP vision encoder), a single thread
+        // cannot keep up with PhantomReference processing, causing massive GC pressure
+        // (5000+ Full GCs). Using max(numDevices, 2) ensures at least 1 thread per
+        // GPU device for device-affine deallocation, with a minimum of 2.
+        String userThreads = System.getProperty(ND4JSystemProperties.DEALLOCATOR_SERVICE_GC_THREADS);
+        if (userThreads == null) {
+            numThreads = Math.max(numDevices, 2);
+        }
+
         for (int e = 0; e < numDevices; e++)
             deviceMap.add(new ArrayList<>());
 
@@ -223,6 +356,14 @@ public class DeallocatorService {
 
         // Initialize time-series tracking if functrace is enabled
         initializeTimeSeriesTracking();
+
+        // Register shutdown hook to signal deallocator threads to use the safe
+        // deallocation path (GPU-only free, skip host free). Without this, the
+        // deallocator threads call dbClose() → free() during JVM shutdown, which
+        // hits corrupted glibc heap metadata from C++ op buffer overruns → SIGABRT.
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            shutdownInProgress.set(true);
+        }, "DeallocatorService-ShutdownHook"));
     }
 
     /**
@@ -299,6 +440,43 @@ public class DeallocatorService {
         blockDeallocator.set(shouldBlock);
     }
 
+    /**
+     * Force-flush all entries in the referenceMap by invoking their deallocators.
+     * Call this after closing a model when you need to guarantee GPU memory is freed
+     * immediately, rather than waiting for GC to enqueue PhantomReferences.
+     *
+     * <p>This is necessary because System.gc() is advisory and PhantomReference
+     * processing is asynchronous — after model.close(), hundreds of DataBuffer
+     * and OpaqueNDArray deallocators may remain in the refMap holding GPU memory.
+     * Without this flush, sequential model configs can OOM because the previous
+     * model's GPU memory hasn't been reclaimed.</p>
+     *
+     * @return the number of entries that were deallocated
+     */
+    public int forceFlushAll() {
+        int flushed = 0;
+        int errors = 0;
+        // Snapshot the keys to avoid ConcurrentModificationException
+        for (Long id : new java.util.ArrayList<>(referenceMap.keySet())) {
+            DeallocatableReference ref = referenceMap.get(id);
+            if (ref == null) continue;
+            try {
+                ref.deallocate();
+                flushed++;
+            } catch (Exception e) {
+                errors++;
+                if (log.isDebugEnabled()) {
+                    log.debug("forceFlushAll: error deallocating id={}: {}", id, e.getMessage());
+                }
+            }
+            referenceMap.remove(id);
+        }
+        if (flushed > 0 || errors > 0) {
+            log.info("DeallocatorService.forceFlushAll: deallocated {} entries ({} errors), refMap now {}",
+                    flushed, errors, referenceMap.size());
+        }
+        return flushed;
+    }
 
     public long nextValue() {
         return counter.incrementAndGet();
@@ -312,11 +490,37 @@ public class DeallocatorService {
     public long pickObject(@NonNull Deallocatable deallocatable) {
         if(!noPointerGc) {
 
-            val desiredDevice = deallocatable.targetDevice();
-            val map = deviceMap.get(desiredDevice);
+            int desiredDevice = deallocatable.targetDevice();
 
+            // Safety check: ensure deviceMap is not empty and desiredDevice is in bounds
+            if (deviceMap.isEmpty()) {
+                log.error("DeallocatorService deviceMap is empty - cannot register buffer for deallocation");
+                throw new IllegalStateException("DeallocatorService has no devices initialized. " +
+                        "Ensure Nd4j is properly initialized before allocating buffers.");
+            }
 
-            val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, numThreads)));
+            // Clamp device ID to valid range
+            if (desiredDevice < 0 || desiredDevice >= deviceMap.size()) {
+                log.trace("Device {} out of range [0, {}), falling back to device 0",
+                        desiredDevice, deviceMap.size());
+                desiredDevice = 0;
+            }
+
+            List<ReferenceQueue<Deallocatable>> queueList = deviceMap.get(desiredDevice);
+
+            // Safety check: if no queues for this device, fall back to device 0's queues
+            // This can happen when numDevices > numThreads
+            if (queueList.isEmpty()) {
+                // Fall back to device 0 which is guaranteed to have at least one queue
+                queueList = deviceMap.get(0);
+                if (queueList.isEmpty()) {
+                    log.error("No deallocator queues available - cannot register buffer for deallocation");
+                    throw new IllegalStateException("DeallocatorService has no queues initialized. " +
+                            "Ensure Nd4j is properly initialized before allocating buffers.");
+                }
+            }
+
+            val reference = new DeallocatableReference(deallocatable, queueList.get(RandomUtils.nextInt(0, queueList.size())));
             referenceMap.put(deallocatable.getUniqueId(), reference);
             return deallocatable.getUniqueId();
         }
@@ -342,11 +546,15 @@ public class DeallocatorService {
         @SneakyThrows
         @Override
         public void run() {
-            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
+            DeviceMemoryManager.getInstance().switchDevice(deviceId, "DeallocatorService", "worker-init");
             boolean canRun = true;
             while (canRun) {
                 while(blockDeallocator.get()) {
-                    Thread.sleep(1000);
+                    // Use a short sleep (1ms) instead of 1000ms to avoid massive memory buildup
+                    // During profiling, ops block deallocation briefly (milliseconds) but if the
+                    // deallocator sleeps for 1 second, it misses the unblock window and memory
+                    // accumulates rapidly. With thousands of ops per second, this causes OOM.
+                    Thread.sleep(1);
                 }
                 // if periodicGc is enabled, only first thread will call for it
                 if (threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
@@ -355,20 +563,29 @@ public class DeallocatorService {
                         val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
                         try {
                             Thread.sleep(timeout);
-                            Nd4j.getMemoryManager().invokeGc();
+                            // Memory-ratio based GC: only invoke System.gc() when Java heap
+                            // usage exceeds 75% of max. This avoids constant Full GC churn
+                            // when there's plenty of heap (e.g., during model loading or DSP
+                            // execution where native memory is managed directly).
+                            Runtime rt = Runtime.getRuntime();
+                            long used = rt.totalMemory() - rt.freeMemory();
+                            long max = rt.maxMemory();
+                            if (used > max * 3 / 4) {
+                                Nd4j.getMemoryManager().invokeGc();
+                            }
                         } catch (InterruptedException e) {
                             canRun = false;
                         }
                     } else {
                         // invoking deallocator
                         if (reference != null) {
-                            if(!listeners.isEmpty()) {
+                            if(listeners.isEmpty()) {
+                                // No listeners, deallocate directly
                                 reference.deallocate();
                                 if(referenceMap.containsKey(reference.getId()))
                                     referenceMap.remove(reference.getId());
-                            }
-
-                            else {
+                            } else {
+                                // Delegate to listeners for custom deallocation timing
                                 for(CustomDeallocatorListener listener : listeners)
                                     listener.addForDeallocation(reference);
                             }
@@ -382,14 +599,13 @@ public class DeallocatorService {
                         if (reference == null)
                             continue;
 
-                        if(!listeners.isEmpty()) {
+                        if(listeners.isEmpty()) {
+                            // No listeners, deallocate directly
                             reference.deallocate();
                             if(referenceMap.containsKey(reference.getId()))
                                 referenceMap.remove(reference.getId());
-
-                        }
-
-                        else {
+                        } else {
+                            // Delegate to listeners for custom deallocation timing
                             for(CustomDeallocatorListener listener : listeners)
                                 listener.addForDeallocation(reference);
                         }
@@ -619,6 +835,56 @@ public class DeallocatorService {
         peakBytes.set(0);
         snapshotHistory.clear();
         trackingStartTime.set(Instant.now());
+    }
+
+    /**
+     * Get the singleton instance.
+     * Uses Nd4j.getDeallocatorService() directly to avoid infinite recursion through
+     * MemoryManager.getDeallocatorService() which may call back to this method.
+     * @return the deallocator service instance
+     */
+    public static DeallocatorService getInstance() {
+        return Nd4j.getDeallocatorService();
+    }
+
+    /**
+     * Check if shutdown is in progress.
+     * @return true if shutdown in progress
+     */
+    public static boolean shutdownInProgress() {
+        return DeallocatorService.shutdownInProgress.get();
+    }
+
+    /**
+     * Set whether to block the deallocator.
+     * @param block true to block
+     */
+    public static void setBlockDeallocator(boolean block) {
+        DeallocatorService.blockDeallocator.set(block);
+    }
+
+    /**
+     * Check if deallocator is blocked.
+     * @return true if blocked
+     */
+    public static boolean isBlockDeallocator() {
+        return DeallocatorService.blockDeallocator.get();
+    }
+
+    /**
+     * Get the number of deallocator threads.
+     * @return number of threads
+     */
+    public int getNumThreads() {
+        return numThreads;
+    }
+
+    /**
+     * Get the deallocated counter.
+     * @return deallocated counter
+     */
+    public Counter<String> getDeallocated() {
+        return deallocated;
     }
 
 }

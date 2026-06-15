@@ -1349,8 +1349,12 @@ public class ArrayUtil {
         if (mult.isEmpty())
             return 0;
         long ret = 1;
-        for (int i = 0; i < mult.size(); i++)
-            ret *= mult.get(i).longValue();
+        for (int i = 0; i < mult.size(); i++) {
+            long val = mult.get(i).longValue();
+            // Skip -1 sentinel values (unknown/dynamic dimensions from placeholders)
+            if (val < 0) continue;
+            ret *= val;
+        }
         return ret;
     }
 
@@ -1365,8 +1369,11 @@ public class ArrayUtil {
         if (mult.length < 1)
             return 0;
         long ret = 1;
-        for (int i = 0; i < mult.length; i++)
+        for (int i = 0; i < mult.length; i++) {
+            // Skip -1 sentinel values (unknown/dynamic dimensions from placeholders)
+            if (mult[i] < 0) continue;
             ret *= mult[i];
+        }
         return ret;
     }
 
@@ -1374,8 +1381,11 @@ public class ArrayUtil {
         if (mult.length < 1)
             return 0;
         long ret = 1;
-        for (int i = 0; i < mult.length; i++)
+        for (int i = 0; i < mult.length; i++) {
+            // Skip -1 sentinel values (unknown/dynamic dimensions from placeholders)
+            if (mult[i] < 0) continue;
             ret *= mult[i];
+        }
         return ret;
     }
 
@@ -1974,28 +1984,28 @@ public class ArrayUtil {
 
 
     public static short[] toShorts(boolean[] ints) {
-        val ret = new short[ints.length];
+        short[] ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) (ints[i] ? 1 : 0);
         return ret;
     }
 
     public static short[] toShorts(int[] ints) {
-        val ret = new short[ints.length];
+        short[] ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
         return ret;
     }
 
     public static short[] toShorts(float[] ints) {
-        val ret = new short[ints.length];
+        short[] ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
         return ret;
     }
 
     public static short[] toShorts(double[] ints) {
-        val ret = new short[ints.length];
+        short[] ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
         return ret;
@@ -2785,6 +2795,11 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStridesFortran(int[] shape, int startNum) {
+        if(shape.length <= 1) {
+            return new int[]{1};
+        }
+
+
         if (shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
             int[] ret = new int[2];
             Arrays.fill(ret, startNum);
@@ -2975,6 +2990,9 @@ public class ArrayUtil {
     }
 
     public static long[] calcStrides(long[] shape) {
+        if(shape.length <= 1) {
+            return new long[]{1};
+        }
         return calcStrides(shape, 1);
     }
 

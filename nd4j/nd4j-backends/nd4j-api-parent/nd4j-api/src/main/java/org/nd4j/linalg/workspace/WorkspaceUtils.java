@@ -158,26 +158,12 @@ public class WorkspaceUtils {
 
     /**
      * Returns the total amount of memory required per array for workspaces.
-     * Typically for CPU it will be shape buffer + size of data type array
-     * following:
-     * getAligned(arr.length() * arr.dataType().width()) + getAligned(arr.shapeInfoJava().length * DataType.INT64.width())
-     * where getAligned is {@link #getAligned(int)}
-     * GPUS will only be:
-     * etAligned(arr.length() * arr.dataType().width())
+     * This is the data buffer size aligned to {@link Nd4jWorkspace#alignmentBase}.
      *
-     * This is due to shape buffers from cuda only being allocated
-     * from a cache rather than workspaces itself.
      * @param arr the array to get the required memory for.
-     * @return
+     * @return total aligned memory in bytes
      */
     public static int getTotalRequiredMemoryForWorkspace(INDArray arr) {
-        if(!Nd4j.getBackend().getNDArrayClass().getName().toLowerCase().contains("cu")) {
-            long ret =  getAligned(arr.length() * arr.dataType().width());
-            return (int) ret;
-        } else {
-            long ret = getAligned(arr.length() * arr.dataType().width());
-            return (int) ret;
-        }
-
+        return getAligned(arr.length() * arr.dataType().width());
     }
 }

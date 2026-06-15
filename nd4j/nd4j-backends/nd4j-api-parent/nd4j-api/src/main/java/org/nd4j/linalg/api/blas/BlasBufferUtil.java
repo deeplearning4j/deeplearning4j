@@ -49,6 +49,14 @@ public class BlasBufferUtil {
      * @return the blas stride
      */
     public static int getBlasStride(INDArray arr) {
+        if (arr.isColumnVector()) {
+            // F-order column vector [N,1] has strides [1, N] — stride(-1) returns N
+            // which would cause BLAS to read out of bounds. The element stride is stride(0).
+            return arr.stride(0);
+        }
+        // For rank-1 vectors, row vectors [1,N], and matrices: stride(-1) gives the
+        // correct element stride. For F-order row vector [1,N] derived from a larger
+        // matrix, stride(-1) = stride(1) = batch_size, which correctly walks the columns.
         return arr.stride(-1);
     }
 

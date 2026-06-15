@@ -32,6 +32,7 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.ReflectionUtils;
 import org.nd4j.context.Nd4jContext;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +103,15 @@ public class NativeOpsHolder {
                deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
                initOps();
 
+               // Register this NativeOps with MultiBackendNativeOpsHolder so it won't
+               // try to load the same backend again when multi-backend mode is enabled.
+               registerWithMultiBackendHolder(name);
+
+               // Load any native plugin libraries from the plugin directory.
+               // This must happen AFTER the main native library is initialized,
+               // since plugins may depend on symbols from the primary backend.
+               NativePluginLoader.loadPlugins();
+
                // Register shutdown hook to set the shutdown flag EARLY.
                // This prevents SIGSEGV crashes if any code accidentally calls
                // clearTADCache() during JVM shutdown (e.g., finalizers, GC, or other hooks).
@@ -115,9 +125,18 @@ public class NativeOpsHolder {
                //   Nd4j.clearTADCache() and Nd4j.clearShapeCache() directly.
                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                    try {
-                       // Set the shutdown flag - this makes clearTADCache() safe to call
-                       // (it will return early without traversing potentially corrupted memory)
+                       // Set the plan cache shutdown flag FIRST — this prevents unpinPlan()
+                       // and LRU eviction from calling cudaStreamDestroy/cudaFree/cudaGraphExecDestroy
+                       // while the CUDA context is being torn down (SIGSEGV fix).
+                       deviceNativeOps.setPlanCacheShutdownInProgress(true);
+                       // Set the shutdown flags - this makes clearTADCache() and clearShapeCache()
+                       // safe to call (they will return early without traversing potentially corrupted memory)
                        deviceNativeOps.setTADCacheShutdownInProgress(true);
+                       deviceNativeOps.setShapeCacheShutdownInProgress(true);
+                       // Stop the DeallocatorService from calling native free() during shutdown.
+                       // Heap metadata may be corrupted from prior buffer overruns, and calling
+                       // free() triggers SIGABRT. The OS reclaims all memory on process exit.
+                       org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
                    } catch (Throwable t) {
                        // Ignore errors during shutdown - we're just trying to be safe
                    }
@@ -157,6 +176,60 @@ public class NativeOpsHolder {
                         getCores(Runtime.getRuntime().availableProcessors()));
         }
 
+        // Configure OpenBLAS threads separately from OMP threads.
+        // Default to 1 thread to prevent SEGV_ACCERR crashes caused by OpenBLAS's
+        // thread-local storage (TLS) corruption when called from Java thread pools.
+        // This can be overridden via ND4J_OPENBLAS_THREADS environment variable.
+        int openBlasThreads = 1; // Safe default
+        String openBlasThreadsString = System.getenv(ND4JEnvironmentVars.ND4J_OPENBLAS_THREADS);
+        if (openBlasThreadsString != null && !openBlasThreadsString.isEmpty()) {
+            try {
+                openBlasThreads = Integer.parseInt(openBlasThreadsString);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for ND4J_OPENBLAS_THREADS: '{}', using default of 1", openBlasThreadsString);
+            }
+        }
+        deviceNativeOps.setOpenBlasThreads(openBlasThreads);
+
+        // Configure BLAS call serialization.
+        // Default is true (enabled) for safety with OpenBLAS in multi-threaded environments.
+        // This can be disabled via ND4J_BLAS_SERIALIZE=false environment variable.
+        boolean serializeBlasCalls = true; // Safe default
+        String serializeBlasString = System.getenv(ND4JEnvironmentVars.ND4J_BLAS_SERIALIZE);
+        if (serializeBlasString != null && !serializeBlasString.isEmpty()) {
+            String val = serializeBlasString.toLowerCase().trim();
+            if (val.equals("false") || val.equals("0") || val.equals("no")) {
+                serializeBlasCalls = false;
+            }
+        }
+        deviceNativeOps.setSerializeBlasCalls(serializeBlasCalls);
+
+        // Propagate DSP execution mode from -Dnd4j.dsp.executionMode into libnd4j.
+        // Controls slot-by-slot lifecycle gating: whether actuality ticks, host/device
+        // resyncs, and orphan closes run on buffers owned by an in-flight DSP plan.
+        // Values: LEGACY_UNAWARE | COEXIST_SAFE (default) | STRICT_ISOLATED, or 0/1/2.
+        String dspModeProp = System.getProperty(ND4JSystemProperties.DSP_EXECUTION_MODE);
+        if (dspModeProp != null && !dspModeProp.isEmpty()) {
+            int dspModeValue;
+            String trimmed = dspModeProp.trim();
+            try {
+                dspModeValue = Integer.parseInt(trimmed);
+            } catch (NumberFormatException ex) {
+                String upper = trimmed.toUpperCase();
+                if (upper.equals("LEGACY_UNAWARE") || upper.equals("LEGACY")) {
+                    dspModeValue = 0;
+                } else if (upper.equals("STRICT_ISOLATED") || upper.equals("STRICT")) {
+                    dspModeValue = 2;
+                } else {
+                    dspModeValue = 1;
+                }
+            }
+            deviceNativeOps.dspSetExecutionMode(dspModeValue);
+            if (log.isDebugEnabled()) {
+                log.debug("DSP execution mode set to {} ({})", dspModeValue, dspModeProp);
+            }
+        }
+
         String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
         boolean logInit = Boolean.parseBoolean(logInitProperty);
 
@@ -181,6 +254,8 @@ public class NativeOpsHolder {
 
         if (logInit) {
             log.info("Number of threads used for linear algebra: {}", deviceNativeOps.ompGetMaxThreads());
+            log.info("Number of threads used for OpenBLAS operations: {} (set ND4J_OPENBLAS_THREADS to override)", openBlasThreads);
+            log.info("BLAS call serialization: {} (set ND4J_BLAS_SERIALIZE=false to disable)", serializeBlasCalls ? "enabled" : "disabled");
         }
 
         // DISABLED: Custom signal handlers interfere with JVM's crash handling chain
@@ -217,5 +292,39 @@ public class NativeOpsHolder {
 
     public static NativeOpsHolder getInstance() {
         return INSTANCE;
+    }
+
+    /**
+     * Register the loaded NativeOps with MultiBackendNativeOpsHolder.
+     * This allows MultiBackendNativeOpsHolder to reuse this instance instead of
+     * loading the same backend again.
+     *
+     * @param className the class name of the NativeOps implementation
+     */
+    private void registerWithMultiBackendHolder(String className) {
+        try {
+            DeviceType deviceType = null;
+
+            // Determine device type from class name
+            if (className.contains("Nd4jCpu") || className.contains("cpu")) {
+                deviceType = DeviceType.CPU;
+            } else if (className.contains("Nd4jCuda") || className.contains("cuda") || className.contains("jcublas")) {
+                deviceType = DeviceType.CUDA_GPU;
+            } else if (className.contains("Nd4jZluda") || className.contains("zluda")) {
+                deviceType = DeviceType.ROCM_GPU;
+            } else if (className.contains("Nd4jTpu") || className.contains("tpu")) {
+                deviceType = DeviceType.TPU;
+            } else if (className.contains("Nd4jMetal") || className.contains("metal")) {
+                deviceType = DeviceType.METAL_GPU;
+            }
+
+            if (deviceType != null && deviceNativeOps != null) {
+                MultiBackendNativeOpsHolder.getInstance().registerPreloadedBackend(deviceType, deviceNativeOps);
+                log.debug("Registered primary backend {} with MultiBackendNativeOpsHolder", deviceType);
+            }
+        } catch (Exception e) {
+            // Non-fatal - multi-backend mode may still work by loading backends fresh
+            log.debug("Could not register with MultiBackendNativeOpsHolder: {}", e.getMessage());
+        }
     }
 }

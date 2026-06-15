@@ -23,8 +23,6 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
@@ -33,9 +31,7 @@ import org.nd4j.linalg.factory.Nd4j;
 @Slf4j
 public class VGG16ImagePreProcessor implements DataNormalization {
 
-    public static final INDArray VGG_MEAN_OFFSET_BGR = Nd4j.create(new double[] {103.939, 116.779, 123.68});
-    public static final INDArray VGG_MEAN_OFFSET_BGR_FLOAT = VGG_MEAN_OFFSET_BGR.castTo(DataType.FLOAT);
-    public static final INDArray VGG_MEAN_OFFSET_BGR_FLOAT16 = VGG_MEAN_OFFSET_BGR.castTo(DataType.HALF);
+    public static final double[] VGG_MEAN_OFFSET_BGR_VALUES = new double[] {103.939, 116.779, 123.68};
 
     /**
      * Fit a dataset (only compute
@@ -68,7 +64,7 @@ public class VGG16ImagePreProcessor implements DataNormalization {
 
     public void preProcess(INDArray features) {
         INDArray mean = getMeanFor(features);
-        Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(features.dup(), mean, features, 1));
+        features.subi(mean);
     }
 
     /**
@@ -113,7 +109,7 @@ public class VGG16ImagePreProcessor implements DataNormalization {
     @Override
     public void revertFeatures(INDArray features) {
         INDArray mean = getMeanFor(features);
-        Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(features.dup(), mean, features, 1));
+        features.addi(mean);
     }
 
     @Override
@@ -144,15 +140,15 @@ public class VGG16ImagePreProcessor implements DataNormalization {
     }
 
     protected static INDArray getMeanFor(INDArray features){
-        switch (features.dataType()){
-            case DOUBLE:
-                return VGG_MEAN_OFFSET_BGR;
-            case FLOAT:
-                return VGG_MEAN_OFFSET_BGR_FLOAT;
-            case HALF:
-                return VGG_MEAN_OFFSET_BGR_FLOAT16;
-            default:
-                throw new UnsupportedOperationException("Cannot preprocess features in non-floating point datatype: " + features.dataType());
+        DataType dt = features.dataType();
+        if (dt != DataType.DOUBLE && dt != DataType.FLOAT && dt != DataType.HALF) {
+            throw new UnsupportedOperationException("Cannot preprocess features in non-floating point datatype: " + dt);
         }
+        long[] featShape = features.shape();
+        if (featShape.length == 4) {
+            // NCHW format: create [1, 3, 1, 1] shaped mean for proper broadcasting
+            return Nd4j.create(VGG_MEAN_OFFSET_BGR_VALUES).castTo(dt).reshape(1, 3, 1, 1);
+        }
+        return Nd4j.create(VGG_MEAN_OFFSET_BGR_VALUES).castTo(dt);
     }
 }

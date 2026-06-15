@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.exception;
 
-public class ND4JIllegalStateException extends ND4JException {
+public class ND4JIllegalStateException extends IllegalStateException {
     public ND4JIllegalStateException() {}
 
     public ND4JIllegalStateException(String message) {

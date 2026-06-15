@@ -84,7 +84,7 @@ public @Data class GemmParams {
                 } else {
                     this.m = c.rows();
                     this.n = c.columns();
-                    this.k = b.columns();
+                    this.k = a.columns();
                 }
 
                 this.lda = a.rows();
@@ -149,16 +149,15 @@ public @Data class GemmParams {
 
     private INDArray copyIfNeccessary(INDArray arr) {
         //See also: Shape.toMmulCompatible - want same conditions here and there
-        //Check if matrix values are contiguous in memory. If not: dup
-        //Contiguous for c if: stride[0] == shape[1] and stride[1] = 1
-        //Contiguous for f if: stride[0] == 1 and stride[1] == shape[0]
-        if (!Nd4j.allowsSpecifyOrdering() && arr.ordering() == 'c'
-                && (arr.stride(0) != arr.size(1) || arr.stride(1) != 1))
-            return arr.dup();
-        else if (arr.ordering() == 'f' && (arr.stride(0) != 1 || arr.stride(1) != arr.size(0)))
-            return arr.dup();
-        else if (arr.isView())
-            return arr.dup();
+        //Always convert to 'f' order for BLAS compatibility - the 'c' order transpose trick
+        //causes incorrect results with some array sizes due to how BLAS interprets strides
+        if (arr.ordering() == 'c') {
+            return arr.dup('f');
+        } else if (arr.ordering() == 'f' && (arr.stride(0) != 1 || arr.stride(1) != arr.size(0))) {
+            return arr.dup('f');
+        } else if (arr.isView()) {
+            return arr.dup(arr.ordering());
+        }
         return arr;
     }
 }

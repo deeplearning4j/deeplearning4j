@@ -88,7 +88,6 @@ public interface DataBufferFactory {
      */
      DataBuffer createTypedBuffer(String[] data,DataType dataType);
 
-
     /**
      * Create a double data buffer
      *
@@ -444,6 +443,23 @@ public interface DataBufferFactory {
     DataBuffer create(FloatPointer floatPointer, long length);
 
     DataBuffer createBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length);
+
+    /**
+     * Creates a data buffer from a ByteBuffer with CPU-only allocation.
+     * On GPU backends, this allocates only the host (CPU) buffer and defers
+     * GPU allocation until the data is actually needed on the device.
+     * This is useful for model loading where weights can be loaded to CPU
+     * first and lazily transferred to GPU as needed during execution.
+     *
+     * @param underlyingBuffer the underlying ByteBuffer containing the data
+     * @param dataType the data type
+     * @param length the number of elements
+     * @return a DataBuffer with CPU-only allocation (GPU allocation deferred)
+     */
+    default DataBuffer createBufferCpuOnly(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        // Default implementation falls back to regular createBuffer for CPU backends
+        return createBuffer(underlyingBuffer, dataType, length);
+    }
 
     /**
      * Creates half-precision data buffer

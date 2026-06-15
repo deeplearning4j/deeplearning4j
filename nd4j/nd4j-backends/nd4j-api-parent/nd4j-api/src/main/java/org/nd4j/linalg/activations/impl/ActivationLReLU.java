@@ -59,6 +59,13 @@ public class ActivationLReLU extends BaseActivationFunction {
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
 
+        if (in.dataType() != epsilon.dataType()) {
+            epsilon = epsilon.castTo(in.dataType());
+        }
+        if (in.ordering() != epsilon.ordering()) {
+            epsilon = epsilon.dup(in.ordering());
+        }
+
         Nd4j.getExecutioner().execAndReturn(new LeakyReLUBp(in, epsilon, in, alpha));
 
         return new Pair<>(in, null);

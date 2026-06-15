@@ -230,6 +230,13 @@ public class DataTypeUtil {
                 return DataType.BFLOAT16;
             case "float16":
                 return DataType.FLOAT16;
+            case "float8":
+            case "fp8":
+            case "float8_e4m3":
+                return DataType.FLOAT8;
+            case "float8_e5m2":
+            case "fp8_e5m2":
+                return DataType.FLOAT8_E5M2;
             default:
                 throw new ND4JIllegalStateException("Unknown data type used: [" + dataType + "]");
         }

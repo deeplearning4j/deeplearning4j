@@ -39,13 +39,23 @@ public class ActivationSoftmax extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        Nd4j.getExecutioner().execAndReturn(new SoftMax(in, in));
+        INDArray result = in.ulike();
+        Nd4j.getExecutioner().exec(new SoftMax(in, result, -1));
+        in.assign(result);
         return in;
     }
 
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
+
+        if (in.dataType() != epsilon.dataType()) {
+            epsilon = epsilon.castTo(in.dataType());
+        }
+        if (in.ordering() != epsilon.ordering()) {
+            epsilon = epsilon.dup(in.ordering());
+        }
+
         //need to compute softmax of input here. Assign is then called on the output.
         INDArray out = getActivation(in,true);
         Nd4j.getExecutioner().execAndReturn(new SoftmaxBp(in, epsilon, in, out, -1));

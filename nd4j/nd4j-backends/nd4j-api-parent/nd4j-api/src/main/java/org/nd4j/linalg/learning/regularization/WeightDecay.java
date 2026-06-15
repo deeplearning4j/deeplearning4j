@@ -23,7 +23,6 @@ package org.nd4j.linalg.learning.regularization;
 import lombok.Data;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.FixedSchedule;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -66,7 +65,7 @@ public class WeightDecay implements Regularization {
         if(applyLR){
             scale *= lr;
         }
-        Nd4j.exec(new Axpy(param, gradView, gradView, scale));    //update = scale * param + update
+        Nd4j.getBlasWrapper().level1().axpy(param.length(), scale, param, gradView);    //update = scale * param + update
     }
 
     @Override

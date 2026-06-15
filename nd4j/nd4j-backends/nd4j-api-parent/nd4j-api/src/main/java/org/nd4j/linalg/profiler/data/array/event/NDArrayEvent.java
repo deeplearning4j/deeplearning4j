@@ -21,8 +21,9 @@ package org.nd4j.linalg.profiler.data.array.event;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.val;
+import lombok.Setter;
 import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.array.event.dict.*;
@@ -95,7 +96,7 @@ public class NDArrayEvent implements Serializable {
      */
     public static NDArrayEventDictionary groupByPointOfOrigin(List<NDArrayEvent> events) {
         NDArrayEventDictionary ret = new NDArrayEventDictionary();
-        for(val event : events) {
+        for(NDArrayEvent event : events) {
             if(!ret.containsKey(event.getPointOfOrigin())) {
                 ret.put(event.getPointOfOrigin(),new HashMap<>());
             }
@@ -123,9 +124,9 @@ public class NDArrayEvent implements Serializable {
             NDArrayEventDictionary eventsBySessionAndLineNumber) {
         NDArrayEventDictionary ret = new NDArrayEventDictionary();
         //sorted by line number with each map being the session index and the list of events
-        for(val entry : eventsBySessionAndLineNumber.entrySet()) {
+        for(Map.Entry<StackTraceElement, Map<StackTraceElement, List<NDArrayEvent>>> entry : eventsBySessionAndLineNumber.entrySet()) {
             if(!entry.getValue().isEmpty()) {
-                for(val entry1 : entry.getValue().entrySet()) {
+                for(Map.Entry<StackTraceElement, List<NDArrayEvent>> entry1 : entry.getValue().entrySet()) {
                     //filter by relevant event type
                     entry1.getValue().stream()
                             .collect(Collectors.groupingBy(NDArrayEvent::getPointOfOrigin)).entrySet().stream()
@@ -239,9 +240,9 @@ public class NDArrayEvent implements Serializable {
 
         Map<String, Set<BreakDownComparison>> stringSetMap = comparisonsForStackFrame(stackTraceBaseClass, stackTraceBaseMethod, stackTraceBaseLineNumber, pointOfOriginFilters, eventFilters);
         Map<String,Set<EventDifference>> ret = new LinkedHashMap<>();
-        for(val entry : stringSetMap.entrySet()) {
+        for(Map.Entry<String, Set<BreakDownComparison>> entry : stringSetMap.entrySet()) {
             Set<EventDifference> differences = new LinkedHashSet<>();
-            for(val comparison : entry.getValue()) {
+            for(BreakDownComparison comparison : entry.getValue()) {
                 EventDifference eventDifference = comparison.calculateDifference();
                 differences.add(eventDifference);
             }

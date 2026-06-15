@@ -62,6 +62,14 @@ public class ActivationThresholdedReLU extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
+
+        if (in.dataType() != epsilon.dataType()) {
+            epsilon = epsilon.castTo(in.dataType());
+        }
+        if (in.ordering() != epsilon.ordering()) {
+            epsilon = epsilon.dup(in.ordering());
+        }
+
         DynamicCustomOp threshReluBp = DynamicCustomOp.builder("thresholdedrelu_bp")
                 .addInputs(in, epsilon).addOutputs(in).addFloatingPointArguments(theta).build();
         Nd4j.getExecutioner().execAndReturn(threshReluBp);

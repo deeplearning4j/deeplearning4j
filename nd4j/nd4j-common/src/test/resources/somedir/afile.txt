@@ -1,1 +1,0 @@
-This file is to test ClassPathResource directory extracting in IntelliJ

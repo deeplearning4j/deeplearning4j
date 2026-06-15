@@ -164,8 +164,12 @@ public class EvaluationUtils {
         } else if (labelsShape[2] == 1) {
             labels2d = labels.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
         } else {
-            labels2d = labels.permute(0, 2, 1);
-            labels2d = labels2d.reshape('f', labelsShape[0] * labelsShape[2], labelsShape[1]);
+            // Permute [minibatch, nClasses, timeSteps] -> [minibatch, timeSteps, nClasses]
+            // Then dup to C-order contiguous to ensure correct element mapping during reshape.
+            // The C++ INDEX2COORDS macro uses C-order decomposition, so reshaping non-contiguous
+            // F-order views directly produces scrambled data.
+            labels2d = BaseEvaluation.dupSafe(labels.permute(0, 2, 1));
+            labels2d = labels2d.reshape('c', labelsShape[0] * labelsShape[2], labelsShape[1]);
         }
         return labels2d;
     }
@@ -177,11 +181,6 @@ public class EvaluationUtils {
                             + Arrays.toString(labels.shape()) + ", predictions=" + Arrays.toString(predicted.shape()));
         }
 
-        //Reshaping here: basically RnnToFeedForwardPreProcessor...
-        //Dup to f order, to ensure consistent buffer for reshaping
-        labels = labels.dup('f');
-        predicted = predicted.dup('f');
-
         INDArray labels2d = EvaluationUtils.reshapeTimeSeriesTo2d(labels);
         INDArray predicted2d = EvaluationUtils.reshapeTimeSeriesTo2d(predicted);
 
@@ -190,7 +189,7 @@ public class EvaluationUtils {
         }
 
         INDArray oneDMask = reshapeTimeSeriesMaskToVector(outputMask);
-        float[] f = oneDMask.dup().data().asFloat();
+        float[] f = BaseEvaluation.dupSafe(oneDMask).data().asFloat();
         int[] rowsToPull = new int[f.length];
         int usedCount = 0;
         for (int i = 0; i < f.length; i++) {
@@ -211,7 +210,8 @@ public class EvaluationUtils {
     }
 
     /**
-     * Reshape time series mask arrays. This should match the assumptions (f order, etc) in RnnOutputLayer
+     * Reshape time series mask arrays. This should match the assumptions in RnnOutputLayer.
+     * Uses C-order to match the data reshape in reshapeTimeSeriesTo2d.
      * @param timeSeriesMask    Mask array to reshape to a column vector
      * @return                  Mask array as a column vector
      */
@@ -219,9 +219,9 @@ public class EvaluationUtils {
         if (timeSeriesMask.rank() != 2)
             throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
 
-        if (timeSeriesMask.ordering() != 'f')
-            timeSeriesMask = timeSeriesMask.dup('f');
+        if (timeSeriesMask.ordering() != 'c')
+            timeSeriesMask = BaseEvaluation.dupSafe(timeSeriesMask);
 
-        return timeSeriesMask.reshape('f', timeSeriesMask.length(), 1);
+        return timeSeriesMask.reshape('c', timeSeriesMask.length(), 1);
     }
 }

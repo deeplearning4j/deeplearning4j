@@ -58,7 +58,7 @@ public class L2Regularization implements Regularization {
         //L = loss + l2 * 0.5 * sum_i x[i]^2
         //dL/dx[i] = dloss/dx[i] + l2 * x[i]
         double coeff = l2.valueAt(iteration, epoch);
-        Nd4j.exec(new Axpy(param, gradView, gradView, coeff));    //Gradient = scale * param + gradient
+        Nd4j.getBlasWrapper().level1().axpy(param.length(), coeff, param, gradView);
     }
 
     @Override

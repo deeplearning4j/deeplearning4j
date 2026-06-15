@@ -30,10 +30,12 @@ import lombok.val;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -292,10 +294,11 @@ public class Shape {
         } else if(right.length == 1 && left.length > 1) {
             return left;
         }
-        if (containsZeros(left))
-            return left;
-        else if (containsZeros(right))
-            return right;
+        // Handle shapes with zeros - broadcast normally, treating 0 like 1 for broadcasting
+        // except when both dimensions are 0 (result is 0)
+        // - 0 with 0 = 0 (both empty)
+        // - 0 with 1 = 0 (empty dimension stays empty when broadcasting with singleton)
+        // - 0 with N>1 = N (empty dimension broadcasts to N)
 
         assertBroadcastable(left, right);
         if(Arrays.equals(left,right))
@@ -305,19 +308,27 @@ public class Shape {
         int leftIdx = left.length - 1;
         int rightIdx = right.length - 1;
         for(int i = n - 1; i >= 0; i--) {
-            if(leftIdx < 0) {
-                dims.add(right[rightIdx]);
-            }
-            else if(rightIdx < 0) {
-                dims.add(left[leftIdx]);
-            }
-            else if(left[leftIdx] != right[rightIdx] && right[rightIdx] == 1 || left[leftIdx] == 1) {
-                dims.add(Math.max(left[leftIdx],right[rightIdx]));
-            }
-            else if(left[leftIdx] == right[rightIdx]) {
-                dims.add(left[leftIdx]);
-            }
-            else {
+            long leftDim = leftIdx < 0 ? 1 : left[leftIdx];
+            long rightDim = rightIdx < 0 ? 1 : right[rightIdx];
+            
+            // Handle zero dimensions specially
+            if (leftDim == 0 && rightDim == 0) {
+                dims.add(0L);
+            } else if (leftDim == 0 && rightDim == 1) {
+                dims.add(0L);
+            } else if (rightDim == 0 && leftDim == 1) {
+                dims.add(0L);
+            } else if (leftDim == 0) {
+                // leftDim is 0, rightDim > 1: broadcast to rightDim
+                dims.add(rightDim);
+            } else if (rightDim == 0) {
+                // rightDim is 0, leftDim > 1: broadcast to leftDim
+                dims.add(leftDim);
+            } else if (leftDim != rightDim && (rightDim == 1 || leftDim == 1)) {
+                dims.add(Math.max(leftDim,rightDim));
+            } else if (leftDim == rightDim) {
+                dims.add(leftDim);
+            } else {
                 throw new IllegalArgumentException("Unable to broadcast dimension " + i + " due to shape mismatch. Right shape must be 1.");
             }
 
@@ -404,27 +415,27 @@ public class Shape {
      *
      * @return true if the dimension length is equal to the rank,
      * the dimension is null or the dimension length is 1 and the first entry is
-     * {@link Integer#MAX_VALUE}
+     * -1 (sentinel for "reduce all dimensions")
      */
     public static boolean isWholeArray(int rank, int... dimension) {
         return rank == 0 || dimension == null || dimension.length == 0 ||
-                (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) || dimension.length == rank;
+                (dimension.length == 1 && dimension[0] == -1) || dimension.length == rank;
     }
 
     /**
      * Returns true if the dimension is null
      * or the dimension length is 1 and the first entry
-     * is {@link Integer#MAX_VALUE}
+     * is -1 (sentinel for "reduce all dimensions")
      * @param rank the rank of the input array
      * @param dimension the dimensions specified
      *
      * @return true if the dimension length is equal to the rank,
      * the dimension is null or the dimension length is 1 and the first entry is
-     * {@link Integer#MAX_VALUE}
+     * -1 (sentinel for "reduce all dimensions")
      */
     public static boolean isWholeArray(long rank, long... dimension) {
         return rank == 0 || dimension == null || dimension.length == 0 ||
-                (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) || dimension.length == rank;
+                (dimension.length == 1 && dimension[0] == -1) || dimension.length == rank;
     }
 
     public static long[] getReducedShape(long[] wholeShape, long[] dimensions) {
@@ -2499,16 +2510,22 @@ public class Shape {
     public static long length(int[] buffer) {
         long ret = 1;
         int limit = Shape.rank(buffer) + 1;
-        for (int i = 1; i < limit; i++)
+        for (int i = 1; i < limit; i++) {
+            // Skip -1 sentinel values (unknown/dynamic dimensions from placeholders)
+            if (buffer[i] < 0) continue;
             ret *= buffer[i];
+        }
         return ret;
     }
 
     public static long length(long[] buffer) {
         long ret = 1;
         int limit = Shape.rank(buffer) + 1;
-        for (int i = 1; i < limit; i++)
+        for (int i = 1; i < limit; i++) {
+            // Skip -1 sentinel values (unknown/dynamic dimensions from placeholders)
+            if (buffer[i] < 0) continue;
             ret *= buffer[i];
+        }
         return ret;
     }
 
@@ -3057,13 +3074,14 @@ public class Shape {
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty,boolean isView) {
         boolean isEmpty = empty;
-        if (!empty)
+        if (!empty && shape.length > 0) {
             for (val v:shape) {
                 if (v == 0) {
                     isEmpty = true;
                     break;
                 }
             }
+        }
 
         DataBuffer ret =  Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType, isEmpty, isView);
         if(ret.getLong(0) == 0) {
@@ -3090,7 +3108,6 @@ public class Shape {
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
         val dtype = ArrayOptionsHelper.dataType(extras);
-        //just propagate extra // it is the same value in the backend
         return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras);
     }
 
@@ -3166,10 +3183,17 @@ public class Shape {
      * Returns true if the given array
      * is meant for the whole dimension
      * @param arr the array to test
-     * @return true if arr.length == 1 && arr[0] is Integer.MAX_VALUE
+     * @return true if arr.length == 1 && arr[0] is -1 (sentinel for "reduce all")
      */
     public static boolean wholeArrayDimension(long... arr) {
-        return arr == null || arr.length == 0 || (arr.length == 1 && arr[0] == Integer.MAX_VALUE);
+        // null or empty means "reduce all dimensions".
+        // {Integer.MAX_VALUE} is also a sentinel for "reduce all" used by
+        // NDArray.sum(Integer.MAX_VALUE) etc.
+        // NOTE: {-1} is NOT treated as "reduce all" because -1 also means
+        // "last axis" in NumPy/ONNX convention. Callers that want "reduce all"
+        // should pass null or empty array, not {-1}.
+        return arr == null || arr.length == 0
+                || (arr.length == 1 && arr[0] == Integer.MAX_VALUE);
     }
 
     public static long[] uniquify(long[] array) {
@@ -3199,15 +3223,25 @@ public class Shape {
     }
 
     public static long[] normalizeAxis(long rank, long... axis) {
+        // Empty or null axis means "reduce all dimensions" - return empty array
+        // Native code handles empty dimensions as "full array reduction"
         if (axis == null || axis.length == 0)
-            return new long[] {Integer.MAX_VALUE};
+            return new long[0];
 
-        // first we should get rid of all negative axis
+        // Integer.MAX_VALUE is a sentinel for "reduce all dimensions"
+        if (axis.length == 1 && axis[0] == Integer.MAX_VALUE)
+            return new long[0];
+
+        // Normalize negative axes: -1 -> rank-1, -2 -> rank-2, etc.
+        // Note: -1 means "last axis", NOT "reduce all". This follows NumPy convention.
         long[] tmp = new long[axis.length];
 
         int cnt = 0;
         for (val v: axis) {
             val t = v < 0 ? v + rank : v;
+            if (t < 0 || t >= rank) {
+                throw new ND4JIllegalStateException("Axis value " + v + " (normalized: " + t + ") is out of range for rank " + rank + ". Valid range: [" + (-rank) + ", " + (rank - 1) + "]");
+            }
             tmp[cnt++] =  t;
         }
 
@@ -3556,16 +3590,11 @@ public class Shape {
         if (!rX && rY)
             return typeY;
 
-        // if both data types are float - return biggest one
+        // if both data types are float - always return the higher-precision type.
+        // HALF+FLOAT must produce FLOAT regardless of operand order.
+        // precisionBoostAllowed only gates integer type promotions.
         if (rX && rY) {
-            // if we allow precision boost, then we pick bigger data type
-            if (Nd4j.isPrecisionBoostAllowed()) {
-                return max(typeX, typeY);
-            } else {
-                // and we return first operand otherwise
-                return typeX;
-            }
-
+            return max(typeX, typeY);
         }
 
         // if that's not real type, we apply same rules
@@ -3607,8 +3636,9 @@ public class Shape {
     public static INDArray ndArrayDimFromInt(int... dimensions) {
         if (dimensions == null || dimensions.length == 0)
             return Nd4j.empty(DataType.INT);
-        else
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             return Nd4j.createFromArray(dimensions);
+        }
     }
 
     /**
@@ -3618,10 +3648,29 @@ public class Shape {
      * @return Dimensions as an INDArray
      */
     public static INDArray ndArrayDimFromLong(long... dimensions) {
-        if (dimensions == null || dimensions.length == 0)
-            return Nd4j.empty(DataType.LONG);
-        else
-            return Nd4j.createFromArray(dimensions);
+        INDArray result;
+        if (dimensions == null || dimensions.length == 0) {
+            // Empty dimensions = "reduce all". Return null.
+            // NOTE: Do NOT use Nd4j.createFromArray(-1L) here. The -1 sentinel
+            // conflicts with NumPy convention where -1 means "last axis".
+            // normalizeAxis() would convert -1 to rank-1, causing reduce ops
+            // to only reduce along the last axis instead of all dimensions.
+            return null;
+        } else {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                result = Nd4j.createFromArray(dimensions);
+            }
+        }
+        if (result != null) {
+            if (result.data() != null) {
+                result.data().setConstant(true);
+            }
+            if (result.shapeInfoDataBuffer() != null) {
+                result.shapeInfoDataBuffer().setConstant(true);
+            }
+            result.setCloseable(false);
+        }
+        return result;
     }
 
     /**
@@ -3633,11 +3682,14 @@ public class Shape {
      * @return             Shape of the output array for the reduction
      */
     public static long[] reductionShape(INDArray x, long[] dimension, boolean newFormat, boolean keepDims) {
-        boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
+        // Normalize negative axes BEFORE checking wholeArrayDimension,
+        // so that dimension={-1} (meaning "last axis") is converted to
+        // dimension={rank-1} and NOT misinterpreted as "reduce all" sentinel.
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += x.rank();
         }
+        boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
 
         long[] retShape;
         if(!newFormat) {
@@ -3720,6 +3772,7 @@ public class Shape {
         LongPointer longPointer = new LongPointer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(opaqueConstantShapeBuffer));
         longPointer.capacity(Shape.shapeInfoLength(descriptor.rank()));
         DataBuffer ret = Nd4j.createBuffer(longPointer,Shape.shapeInfoLength(descriptor.rank()),DataType.INT64);
+        ret.setConstant(true);
         return  ret;
     }
 }

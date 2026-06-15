@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeformableConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
@@ -43,6 +44,189 @@ public class NDCNN {
   }
 
   /**
+   * Adaptive Average Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models like ResNet, VGG for global pooling.<br>
+   * <br>
+   * For global average pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public INDArray adaptiveAvgPooling2d(INDArray input, int outputHeight, int outputWidth,
+      boolean nchw) {
+    NDValidation.validateNumerical("adaptiveAvgPooling2d", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D(input, outputHeight, outputWidth, nchw));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Adaptive Average Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models like ResNet, VGG for global pooling.<br>
+   * <br>
+   * For global average pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public INDArray adaptiveAvgPooling2d(INDArray input, int outputHeight, int outputWidth) {
+    NDValidation.validateNumerical("adaptiveAvgPooling2d", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D(input, outputHeight, outputWidth, true));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Adaptive Average Pooling 3D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. For 3D data like video or volumetric data.<br>
+   * <br>
+   * For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (NUMERIC type)
+   * @param outputDepth Target output depth
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @param ncdhw If true: input is in NCDHW format. False: NDHWC format
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public INDArray adaptiveAvgPooling3d(INDArray input, int outputDepth, int outputHeight,
+      int outputWidth, boolean ncdhw) {
+    NDValidation.validateNumerical("adaptiveAvgPooling3d", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D(input, outputDepth, outputHeight, outputWidth, ncdhw));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Adaptive Average Pooling 3D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. For 3D data like video or volumetric data.<br>
+   * <br>
+   * For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (NUMERIC type)
+   * @param outputDepth Target output depth
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @return output Result after applying adaptive average pooling on the input (NUMERIC type)
+   */
+  public INDArray adaptiveAvgPooling3d(INDArray input, int outputDepth, int outputHeight,
+      int outputWidth) {
+    NDValidation.validateNumerical("adaptiveAvgPooling3d", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D(input, outputDepth, outputHeight, outputWidth, true));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Adaptive Max Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models for flexible output sizing.<br>
+   * <br>
+   * For global max pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @return output Result after applying adaptive max pooling on the input (NUMERIC type)
+   */
+  public INDArray adaptiveMaxPooling2d(INDArray input, int outputHeight, int outputWidth,
+      boolean nchw) {
+    NDValidation.validateNumerical("adaptiveMaxPooling2d", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D(input, outputHeight, outputWidth, nchw));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Adaptive Max Pooling 2D operation.<br>
+   * <br>
+   * Automatically computes kernel size and stride to produce output of the specified<br>
+   * spatial dimensions. Common in vision models for flexible output sizing.<br>
+   * <br>
+   * For global max pooling, use outputHeight=1, outputWidth=1.<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param outputHeight Target output height
+   * @param outputWidth Target output width
+   * @return output Result after applying adaptive max pooling on the input (NUMERIC type)
+   */
+  public INDArray adaptiveMaxPooling2d(INDArray input, int outputHeight, int outputWidth) {
+    NDValidation.validateNumerical("adaptiveMaxPooling2d", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D(input, outputHeight, outputWidth, true));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * 2D Convolution layer operation - average pooling 2d<br>
    *
    * @param input the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
@@ -51,7 +235,18 @@ public class NDCNN {
    */
   public INDArray avgPooling2d(INDArray input, Pooling2DConfig Pooling2DConfig) {
     NDValidation.validateNumerical("avgPooling2d", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D(input, Pooling2DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D(input, Pooling2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -63,7 +258,18 @@ public class NDCNN {
    */
   public INDArray avgPooling3d(INDArray input, Pooling3DConfig Pooling3DConfig) {
     NDValidation.validateNumerical("avgPooling3d", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D(input, Pooling3DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D(input, Pooling3DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -81,7 +287,18 @@ public class NDCNN {
     Preconditions.checkArgument(blocks.length == 2, "blocks has incorrect size/length. Expected: blocks.length == 2, got %s", blocks.length);
     Preconditions.checkArgument(croppingTop.length == 2, "croppingTop has incorrect size/length. Expected: croppingTop.length == 2, got %s", croppingTop.length);
     Preconditions.checkArgument(croppingBottom.length == 2, "croppingBottom has incorrect size/length. Expected: croppingBottom.length == 2, got %s", croppingBottom.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace(x, blocks, croppingTop, croppingBottom))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace(x, blocks, croppingTop, croppingBottom));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -94,7 +311,18 @@ public class NDCNN {
    */
   public INDArray col2Im(INDArray in, Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("col2Im", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im(in, Conv2DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im(in, Conv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -110,8 +338,21 @@ public class NDCNN {
       Conv1DConfig Conv1DConfig) {
     NDValidation.validateNumerical("conv1d", "input", input);
     NDValidation.validateNumerical("conv1d", "weights", weights);
-    NDValidation.validateNumerical("conv1d", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(input, weights, bias, Conv1DConfig))[0];
+    if (bias != null) {
+      NDValidation.validateNumerical("conv1d", "bias", bias);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(input, weights, bias, Conv1DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -125,7 +366,18 @@ public class NDCNN {
   public INDArray conv1d(INDArray input, INDArray weights, Conv1DConfig Conv1DConfig) {
     NDValidation.validateNumerical("conv1d", "input", input);
     NDValidation.validateNumerical("conv1d", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(input, weights, null, Conv1DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(input, weights, null, Conv1DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -141,8 +393,21 @@ public class NDCNN {
       Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("conv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("conv2d", "weights", weights);
-    NDValidation.validateNumerical("conv2d", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(layerInput, weights, bias, Conv2DConfig))[0];
+    if (bias != null) {
+      NDValidation.validateNumerical("conv2d", "bias", bias);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(layerInput, weights, bias, Conv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -156,7 +421,18 @@ public class NDCNN {
   public INDArray conv2d(INDArray layerInput, INDArray weights, Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("conv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("conv2d", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(layerInput, weights, null, Conv2DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(layerInput, weights, null, Conv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -172,8 +448,21 @@ public class NDCNN {
       Conv3DConfig Conv3DConfig) {
     NDValidation.validateNumerical("conv3d", "input", input);
     NDValidation.validateNumerical("conv3d", "weights", weights);
-    NDValidation.validateNumerical("conv3d", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(input, weights, bias, Conv3DConfig))[0];
+    if (bias != null) {
+      NDValidation.validateNumerical("conv3d", "bias", bias);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(input, weights, bias, Conv3DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -187,7 +476,18 @@ public class NDCNN {
   public INDArray conv3d(INDArray input, INDArray weights, Conv3DConfig Conv3DConfig) {
     NDValidation.validateNumerical("conv3d", "input", input);
     NDValidation.validateNumerical("conv3d", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(input, weights, null, Conv3DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(input, weights, null, Conv3DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -203,8 +503,21 @@ public class NDCNN {
       DeConv2DConfig DeConv2DConfig) {
     NDValidation.validateNumerical("deconv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("deconv2d", "weights", weights);
-    NDValidation.validateNumerical("deconv2d", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(layerInput, weights, bias, DeConv2DConfig))[0];
+    if (bias != null) {
+      NDValidation.validateNumerical("deconv2d", "bias", bias);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(layerInput, weights, bias, DeConv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -218,7 +531,18 @@ public class NDCNN {
   public INDArray deconv2d(INDArray layerInput, INDArray weights, DeConv2DConfig DeConv2DConfig) {
     NDValidation.validateNumerical("deconv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("deconv2d", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(layerInput, weights, null, DeConv2DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(layerInput, weights, null, DeConv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -234,8 +558,21 @@ public class NDCNN {
       DeConv3DConfig DeConv3DConfig) {
     NDValidation.validateNumerical("deconv3d", "input", input);
     NDValidation.validateNumerical("deconv3d", "weights", weights);
-    NDValidation.validateNumerical("deconv3d", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(input, weights, bias, DeConv3DConfig))[0];
+    if (bias != null) {
+      NDValidation.validateNumerical("deconv3d", "bias", bias);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(input, weights, bias, DeConv3DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -249,7 +586,102 @@ public class NDCNN {
   public INDArray deconv3d(INDArray input, INDArray weights, DeConv3DConfig DeConv3DConfig) {
     NDValidation.validateNumerical("deconv3d", "input", input);
     NDValidation.validateNumerical("deconv3d", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(input, weights, null, DeConv3DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(input, weights, null, DeConv3DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Deformable Convolution 2D operation.<br>
+   * <br>
+   * Implements deformable convolution where learned offsets are added to the regular<br>
+   * sampling grid, allowing the convolution to adapt to geometric transformations<br>
+   * in the input. Used in object detection models like Deformable DETR.<br>
+   * <br>
+   * v1 (without mask): Uses only offsets for deformation<br>
+   * v2 (with mask): Adds modulation mask for learnable importance weights<br>
+   * <br>
+   * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)<br>
+   *            "Deformable ConvNets v2" (Zhu et al., 2019)<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
+   * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
+   * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
+   * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param mask Optional modulation mask for Deformable Conv v2. Shape: [batch, kH*kW*deformableGroups, outputHeight, outputWidth]. May be null. (NUMERIC type)
+   * @param DeformableConv2DConfig Configuration Object
+   * @return output Result of deformable convolution (NUMERIC type)
+   */
+  public INDArray deformableConv2d(INDArray input, INDArray weights, INDArray offset, INDArray bias,
+      INDArray mask, DeformableConv2DConfig DeformableConv2DConfig) {
+    NDValidation.validateNumerical("deformableConv2d", "input", input);
+    NDValidation.validateNumerical("deformableConv2d", "weights", weights);
+    NDValidation.validateNumerical("deformableConv2d", "offset", offset);
+    if (bias != null) {
+      NDValidation.validateNumerical("deformableConv2d", "bias", bias);
+    }
+    if (mask != null) {
+      NDValidation.validateNumerical("deformableConv2d", "mask", mask);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(input, weights, offset, bias, mask, DeformableConv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Deformable Convolution 2D operation.<br>
+   * <br>
+   * Implements deformable convolution where learned offsets are added to the regular<br>
+   * sampling grid, allowing the convolution to adapt to geometric transformations<br>
+   * in the input. Used in object detection models like Deformable DETR.<br>
+   * <br>
+   * v1 (without mask): Uses only offsets for deformation<br>
+   * v2 (with mask): Adds modulation mask for learnable importance weights<br>
+   * <br>
+   * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)<br>
+   *            "Deformable ConvNets v2" (Zhu et al., 2019)<br>
+   *
+   * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
+   * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
+   * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
+   * @param DeformableConv2DConfig Configuration Object
+   * @return output Result of deformable convolution (NUMERIC type)
+   */
+  public INDArray deformableConv2d(INDArray input, INDArray weights, INDArray offset,
+      DeformableConv2DConfig DeformableConv2DConfig) {
+    NDValidation.validateNumerical("deformableConv2d", "input", input);
+    NDValidation.validateNumerical("deformableConv2d", "weights", weights);
+    NDValidation.validateNumerical("deformableConv2d", "offset", offset);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(input, weights, offset, null, null, DeformableConv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -265,7 +697,18 @@ public class NDCNN {
    */
   public INDArray depthToSpace(INDArray x, int blockSize, DataFormat dataFormat) {
     NDValidation.validateNumerical("depthToSpace", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace(x, blockSize, dataFormat))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace(x, blockSize, dataFormat));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -281,8 +724,21 @@ public class NDCNN {
       Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("depthWiseConv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("depthWiseConv2d", "depthWeights", depthWeights);
-    NDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(layerInput, depthWeights, bias, Conv2DConfig))[0];
+    if (bias != null) {
+      NDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(layerInput, depthWeights, bias, Conv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -297,7 +753,18 @@ public class NDCNN {
       Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("depthWiseConv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("depthWiseConv2d", "depthWeights", depthWeights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(layerInput, depthWeights, null, Conv2DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(layerInput, depthWeights, null, Conv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -316,7 +783,18 @@ public class NDCNN {
     NDValidation.validateNumerical("dilation2D", "weights", weights);
     Preconditions.checkArgument(strides.length == 2, "strides has incorrect size/length. Expected: strides.length == 2, got %s", strides.length);
     Preconditions.checkArgument(rates.length == 2, "rates has incorrect size/length. Expected: rates.length == 2, got %s", rates.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D(df, weights, strides, rates, isSameMode))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D(df, weights, strides, rates, isSameMode));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -335,7 +813,18 @@ public class NDCNN {
   public INDArray extractImagePatches(INDArray input, int kH, int kW, int sH, int sW, int rH,
       int rW, boolean sameMode) {
     NDValidation.validateNumerical("extractImagePatches", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches(input, kH, kW, sH, sW, rH, rW, sameMode))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches(input, kH, kW, sH, sW, rH, rW, sameMode));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -348,7 +837,18 @@ public class NDCNN {
    */
   public INDArray im2Col(INDArray in, Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("im2Col", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col(in, Conv2DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col(in, Conv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -361,7 +861,18 @@ public class NDCNN {
   public INDArray localResponseNormalization(INDArray input,
       LocalResponseNormalizationConfig LocalResponseNormalizationConfig) {
     NDValidation.validateNumerical("localResponseNormalization", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization(input, LocalResponseNormalizationConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization(input, LocalResponseNormalizationConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -384,7 +895,18 @@ public class NDCNN {
    */
   public INDArray maxPooling2d(INDArray input, Pooling2DConfig Pooling2DConfig) {
     NDValidation.validateNumerical("maxPooling2d", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D(input, Pooling2DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D(input, Pooling2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -396,7 +918,18 @@ public class NDCNN {
    */
   public INDArray maxPooling3d(INDArray input, Pooling3DConfig Pooling3DConfig) {
     NDValidation.validateNumerical("maxPooling3d", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D(input, Pooling3DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D(input, Pooling3DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -414,8 +947,21 @@ public class NDCNN {
     NDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
     NDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
-    NDValidation.validateNumerical("separableConv2d", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(layerInput, depthWeights, pointWeights, bias, Conv2DConfig))[0];
+    if (bias != null) {
+      NDValidation.validateNumerical("separableConv2d", "bias", bias);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(layerInput, depthWeights, pointWeights, bias, Conv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -432,7 +978,18 @@ public class NDCNN {
     NDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
     NDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(layerInput, depthWeights, pointWeights, null, Conv2DConfig))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(layerInput, depthWeights, pointWeights, null, Conv2DConfig));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -450,7 +1007,18 @@ public class NDCNN {
     Preconditions.checkArgument(blocks.length == 2, "blocks has incorrect size/length. Expected: blocks.length == 2, got %s", blocks.length);
     Preconditions.checkArgument(paddingTop.length == 2, "paddingTop has incorrect size/length. Expected: paddingTop.length == 2, got %s", paddingTop.length);
     Preconditions.checkArgument(paddingBottom.length == 2, "paddingBottom has incorrect size/length. Expected: paddingBottom.length == 2, got %s", paddingBottom.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatch(x, blocks, paddingTop, paddingBottom))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatch(x, blocks, paddingTop, paddingBottom));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -466,7 +1034,18 @@ public class NDCNN {
    */
   public INDArray spaceToDepth(INDArray x, int blockSize, DataFormat dataFormat) {
     NDValidation.validateNumerical("spaceToDepth", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth(x, blockSize, dataFormat))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth(x, blockSize, dataFormat));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -479,7 +1058,18 @@ public class NDCNN {
    */
   public INDArray upsampling2d(INDArray input, int scale) {
     NDValidation.validateNumerical("upsampling2d", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, scale))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, scale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -493,11 +1083,22 @@ public class NDCNN {
    */
   public INDArray upsampling2d(INDArray input, int scaleH, int scaleW, boolean nchw) {
     NDValidation.validateNumerical("upsampling2d", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, scaleH, scaleW, nchw))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, scaleH, scaleW, nchw));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
-   * 3D Convolution layer operation - Upsampling 3d <br>
+   * 3D Convolution layer operation - Upsampling 3d<br>
    *
    * @param input Input in NCHW format (NUMERIC type)
    * @param ncdhw If true: input is in NCDHW (minibatch, channels, depth, height, width) format. False: NDHWC format
@@ -508,6 +1109,17 @@ public class NDCNN {
    */
   public INDArray upsampling3d(INDArray input, boolean ncdhw, int scaleD, int scaleH, int scaleW) {
     NDValidation.validateNumerical("upsampling3d", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d(input, ncdhw, scaleD, scaleH, scaleW))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d(input, ncdhw, scaleD, scaleH, scaleW));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 }

@@ -6,8 +6,6 @@
  *  * terms of the Apache License, Version 2.0 which is available at
  *  * https://www.apache.org/licenses/LICENSE-2.0.
  *  *
- *  *  See the NOTICE file distributed with this work for additional
- *  *  information regarding copyright ownership.
  *  * Unless required by applicable law or agreed to in writing, software
  *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -20,6 +18,7 @@
 
 package org.nd4j.linalg.dataset.api.preprocessor.classimbalance;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -55,7 +54,10 @@ public abstract class BaseUnderSamplingPreProcessor {
         }
         validateData(label, labelMask);
 
-        INDArray bernoullis = Nd4j.zeros(labelMask.shape());
+        // Use FLOAT explicitly: the C++ BernoulliDistribution relativeT<double>() divides uint64 by
+        // UINT32_MAX instead of UINT64_MAX, producing RNG values > 1.0 ~50% of the time, which causes
+        // systematic under-sampling when the probabilities array uses DOUBLE dtype.
+        INDArray bernoullis = Nd4j.zeros(DataType.FLOAT, labelMask.shape());
         long currentTimeSliceEnd = label.size(2);
         //iterate over each tbptt window
         while (currentTimeSliceEnd > 0) {
@@ -81,20 +83,21 @@ public abstract class BaseUnderSamplingPreProcessor {
             }
 
             //calculate required probabilities and write into the view
-            currentWindowBernoulli.assign(calculateBernoulli(currentLabel, currentMask, targetDist));
+            INDArray calcResult = calculateBernoulli(currentLabel, currentMask, targetDist);
+            currentWindowBernoulli.assign(calcResult);
 
             currentTimeSliceEnd = currentTimeSliceStart;
         }
 
         return Nd4j.getExecutioner().exec(
-                        new BernoulliDistribution(Nd4j.createUninitialized(bernoullis.shape()), bernoullis),
+                        new BernoulliDistribution(Nd4j.createUninitialized(DataType.FLOAT, bernoullis.shape()), bernoullis),
                         Nd4j.getRandom());
     }
 
     /*
     Given a list of labels return the bernoulli prob that the masks
     will be sampled at to meet the target minority label distribution
-    
+
     Masks at time steps where label is the minority class will always be one
         i.e a bernoulli with p = 1
     Masks at time steps where label is the majority class will be sampled from
@@ -103,23 +106,25 @@ public abstract class BaseUnderSamplingPreProcessor {
     */
     private INDArray calculateBernoulli(INDArray minorityLabels, INDArray labelMask, double targetMinorityDist) {
 
-        INDArray minorityClass = minorityLabels.castTo(Nd4j.defaultFloatingPointType()).muli(labelMask);
-        INDArray majorityClass = minorityLabels.rsub(1.0).muli(labelMask);      //rsub(1.0) is equivalent to swapping 0s and 1s
+        INDArray minorityClass = minorityLabels.castTo(DataType.FLOAT).mul(labelMask);
+        INDArray majorityClass = minorityLabels.castTo(DataType.FLOAT).rsub(1.0f).mul(labelMask);
 
         //all minorityLabel class, keep masks as is
-        //presence of minoriy class and donotmask minority windows set to true return label as is
+        //presence of minority class and donotmask minority windows set to true return label as is
         if (majorityClass.sumNumber().intValue() == 0
                         || (minorityClass.sumNumber().intValue() > 0 && donotMaskMinorityWindows))
-            return labelMask;
+            return labelMask.castTo(DataType.FLOAT).dup();
         //all majority class and set to not mask all majority windows sample majority class by 1-targetMinorityDist
         if (minorityClass.sumNumber().intValue() == 0 && !maskAllMajorityWindows)
-            return labelMask.muli(1 - targetMinorityDist);
+            return labelMask.castTo(DataType.FLOAT).mul(1 - targetMinorityDist);
 
         //Probabilities to be used for bernoulli sampling
         INDArray minoritymajorityRatio = minorityClass.sum(1).div(majorityClass.sum(1));
-        INDArray majorityBernoulliP = minoritymajorityRatio.muli(1 - targetMinorityDist).divi(targetMinorityDist);
+        INDArray majorityBernoulliP = minoritymajorityRatio.mul(1 - targetMinorityDist).div(targetMinorityDist);
         BooleanIndexing.replaceWhere(majorityBernoulliP, 1.0, Conditions.greaterThan(1.0)); //if minority ratio is already met round down to 1.0
-        return majorityClass.muliColumnVector(majorityBernoulliP).addi(minorityClass);
+        // Clamp to [0, 1] to ensure valid Bernoulli probabilities
+        BooleanIndexing.replaceWhere(majorityBernoulliP, 0.0, Conditions.lessThan(0.0));
+        return majorityClass.castTo(DataType.FLOAT).muliColumnVector(majorityBernoulliP).addi(minorityClass);
     }
 
     private void validateData(INDArray label, INDArray labelMask) {

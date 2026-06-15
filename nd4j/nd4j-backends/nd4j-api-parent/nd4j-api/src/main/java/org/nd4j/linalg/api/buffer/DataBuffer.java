@@ -698,4 +698,26 @@ public interface DataBuffer extends Serializable, AutoCloseable, Deallocatable {
      * @return true if was closed, false otherwise
      */
     boolean wasClosed();
+
+    // ============================================================
+    // Hybrid Buffer Support (Multi-Backend)
+    // ============================================================
+
+    /**
+     * Check if this is a hybrid buffer that supports multiple device locations.
+     *
+     * @return true if this is a HybridDataBuffer
+     */
+    default boolean isHybrid() {
+        return false;
+    }
+
+    /**
+     * Get this buffer as a HybridDataBuffer if it supports multi-device.
+     *
+     * @return this as HybridDataBuffer, or null if not hybrid
+     */
+    default HybridDataBuffer asHybrid() {
+        return null;
+    }
 }

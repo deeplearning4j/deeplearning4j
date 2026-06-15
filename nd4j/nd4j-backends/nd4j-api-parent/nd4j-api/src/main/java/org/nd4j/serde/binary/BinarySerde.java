@@ -82,7 +82,7 @@ public class BinarySerde {
         //get the shape buffer length to create the shape information buffer
         int shapeBufferLength = Shape.shapeInfoLength(rank);
         //create the ndarray shape information
-        DataBuffer shapeBuff = Nd4j.createBufferDetached(new int[shapeBufferLength]);
+        DataBuffer shapeBuff = Nd4j.createBufferDetached(new long[shapeBufferLength]);
 
         //compute the databuffer opType from the index
         DataType type = DataType.values()[byteBuffer.getInt()];
@@ -93,7 +93,9 @@ public class BinarySerde {
         //after the rank,data opType, shape buffer (of length shape buffer length) * sizeof(int)
         if (type != DataType.COMPRESSED) {
             ByteBuffer slice = byteBuffer.slice();
-            DataBuffer buff = Nd4j.createBuffer(slice, type, shapeBufferLength);
+            // Compute actual data length from shape info
+            long dataLength = Shape.length(shapeBuff.asLong());
+            DataBuffer buff = Nd4j.createBuffer(slice, type, (int) dataLength);
             //advance past the data
             int position = byteBuffer.position() + (buff.getElementSize() * (int) buff.length());
             byteBuffer.position(position);

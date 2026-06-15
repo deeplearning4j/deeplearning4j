@@ -45,6 +45,14 @@ public class ActivationHardSigmoid extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
+
+        if (in.dataType() != epsilon.dataType()) {
+            epsilon = epsilon.castTo(in.dataType());
+        }
+        if (in.ordering() != epsilon.ordering()) {
+            epsilon = epsilon.dup(in.ordering());
+        }
+
         Nd4j.getExecutioner().execAndReturn(new HardSigmoidBp(in, epsilon, in));
 
         return new Pair<>(in, null);

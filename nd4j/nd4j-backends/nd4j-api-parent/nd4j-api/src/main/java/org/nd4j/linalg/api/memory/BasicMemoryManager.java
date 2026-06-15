@@ -45,7 +45,7 @@ public abstract class BasicMemoryManager implements MemoryManager {
 
     protected AtomicInteger averageLoopTime = new AtomicInteger(0);
 
-    protected AtomicInteger noGcWindow = new AtomicInteger(100);
+    protected AtomicInteger noGcWindow = new AtomicInteger(5000);
 
     protected AtomicBoolean averagingEnabled = new AtomicBoolean(false);
 

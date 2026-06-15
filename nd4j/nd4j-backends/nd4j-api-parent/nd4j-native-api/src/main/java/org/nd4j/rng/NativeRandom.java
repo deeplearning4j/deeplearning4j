@@ -83,12 +83,15 @@ public abstract class NativeRandom implements Random {
 
     @Override
     public int nextInt(int to) {
-        int r = nextInt();
+        // Mask to non-negative 31-bit value, matching java.util.Random.next(31).
+        // The native RNG's nextInt() can return any 32-bit value including negatives.
+        // Both the power-of-2 fast path and the rejection loop require non-negative input.
+        int r = nextInt() >>> 1;
         int m = to - 1;
         if ((to & m) == 0) // i.e., bound is a power of 2
             r = (int) ((to * (long) r) >> 31);
         else {
-            for (int u = r; u - (r = u % to) + m < 0; u = nextInt());
+            for (int u = r; u - (r = u % to) + m < 0; u = nextInt() >>> 1);
         }
         return r;
     }
