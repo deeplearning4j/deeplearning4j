@@ -3997,7 +3997,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
         }
 
-        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.Evaluation(labelsList, topN))[0];
+        return (T)doEvaluation(iterator, new org.nd4j.evaluation.classification.Evaluation(labelsList, topN))[0];
     }
 
     /**
@@ -4014,7 +4014,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if(getConfiguration().isValidateOutputLayerConfig()){
             OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
         }
-        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.Evaluation(labelsList, topN))[0];
+        return (T)doEvaluation(iterator, new org.nd4j.evaluation.classification.Evaluation(labelsList, topN))[0];
     }
 
     /**
@@ -4045,7 +4045,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Regression evaluation
      */
     public <T extends RegressionEvaluation> T evaluateRegression(DataSetIterator iterator, List<String> columnNames) {
-        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.RegressionEvaluation(columnNames))[0];
+        return (T)doEvaluation(iterator, new org.nd4j.evaluation.regression.RegressionEvaluation(columnNames))[0];
     }
 
     /**
@@ -4055,7 +4055,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Regression evaluation
      */
     public <T extends RegressionEvaluation> T evaluateRegression(MultiDataSetIterator iterator, List<String> columnNames) {
-        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.RegressionEvaluation(columnNames))[0];
+        return (T)doEvaluation(iterator, new org.nd4j.evaluation.regression.RegressionEvaluation(columnNames))[0];
     }
 
 
@@ -4079,7 +4079,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if(getConfiguration().isValidateOutputLayerConfig()){
             OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
         }
-        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
+        return (T)doEvaluation(iterator, new org.nd4j.evaluation.classification.ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -4102,7 +4102,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if(getConfiguration().isValidateOutputLayerConfig()){
             OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
         }
-        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
+        return (T)doEvaluation(iterator, new org.nd4j.evaluation.classification.ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -4125,7 +4125,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if(getConfiguration().isValidateOutputLayerConfig()){
             OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
         }
-        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
+        return (T)doEvaluation(iterator, new org.nd4j.evaluation.classification.ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -4140,7 +4140,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if(getConfiguration().isValidateOutputLayerConfig()){
             OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
         }
-        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
+        return (T)doEvaluation(iterator, new org.nd4j.evaluation.classification.ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**

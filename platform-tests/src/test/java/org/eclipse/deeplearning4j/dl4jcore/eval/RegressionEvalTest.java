@@ -21,7 +21,7 @@ package org.eclipse.deeplearning4j.dl4jcore.eval;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
-import org.deeplearning4j.eval.RegressionEvaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
