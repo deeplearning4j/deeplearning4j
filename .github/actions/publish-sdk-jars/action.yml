@@ -52,7 +52,7 @@ runs:
           if [ -z "${CUDA_VERSION}" ]; then
             echo "ERROR: cuda-version is required when backend=cuda"
             echo "found=0" >> "${GITHUB_OUTPUT}"
-            exit 0
+            exit 1
           fi
           BACKEND_MODULE="nd4j-cuda-${CUDA_VERSION}"
           PRESET_MODULE="nd4j-cuda-${CUDA_VERSION}-preset"
