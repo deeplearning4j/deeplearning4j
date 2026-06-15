@@ -1,0 +1,17 @@
+[package]
+name = "sdx-runtime"
+version = "0.0.1"
+edition = "2021"
+description = "Rust wrapper for the SDX runtime C ABI"
+license = "Apache-2.0"
+
+[lib]
+name = "sdx_runtime"
+path = "src/lib.rs"
+
+[features]
+default = []
+cuda = []
+amd = []
+
+# Example moved to deeplearning4j-examples/sdx-runtime-examples/rust/

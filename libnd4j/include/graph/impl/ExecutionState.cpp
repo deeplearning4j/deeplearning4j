@@ -18,6 +18,7 @@
 
 #include <graph/ExecutionState.h>
 #include <graph/DspDiagnostics.h>
+#include <system/common.h>
 
 #include <cstring>
 #include <sstream>
@@ -81,7 +82,7 @@ void ExecutionState::bindToCurrentThread() {
       std::ostringstream ss;
       ss << "ExecutionState bound to thread " << ownerThread_
          << " but called from thread " << currentId;
-      throw std::runtime_error(ss.str());
+      THROW_EXCEPTION(ss.str().c_str());
     }
   }
 }
@@ -92,7 +93,7 @@ void ExecutionState::assertBoundThread() const {
     std::ostringstream ss;
     ss << "ExecutionState bound to thread " << ownerThread_
        << " but called from thread " << std::this_thread::get_id();
-    throw std::runtime_error(ss.str());
+    THROW_EXCEPTION(ss.str().c_str());
   }
 }
 

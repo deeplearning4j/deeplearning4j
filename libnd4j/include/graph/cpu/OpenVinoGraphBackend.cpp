@@ -33,6 +33,7 @@
 #include <unordered_set>
 #include <openvino/runtime/properties.hpp>
 #include <system/Environment.h>
+#include <system/common.h>
 
 #if defined(__F16C__) || defined(__AVX2__)
 #include <immintrin.h>
@@ -702,7 +703,7 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
                           "' missing input source " + std::to_string(srcIdx) +
                           " (upstream slot must have failed to compile)";
         DSP_DIAG(COMPILE, "%s", msg.c_str());
-        throw std::runtime_error(msg);
+        THROW_EXCEPTION(msg.c_str());
       }
       inputs.push_back(it->second);
     }

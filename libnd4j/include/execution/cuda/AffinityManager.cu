@@ -19,44 +19,61 @@
 //
 // @author raver119@gmail.com
 //
-#include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
+#include <string>
+#include <execution/ContextBuffers.h>
 #include <execution/LaunchContext.h>
 #include <helpers/logger.h>
 
 thread_local int globalThreadToDevice = -1;
 
+// Defined in LaunchContext.cu - returns per-device ContextBuffers for current CUDA device
+extern sd::ContextBuffers& contextBuffersForCurrentDevice();
+
 namespace sd {
+
 std::mutex AffinityManager::_currentMutex;
 std::mutex AffinityManager::_numberMutex;
 int AffinityManager::_numberOfDevices = -1;
+std::vector<int> AffinityManager::_availableDevices;
+
+/**
+ * Check if the given device ID represents the CPU.
+ * CPU is represented as device -1.
+ */
+bool isCpuDevice(int deviceId) {
+  return deviceId == CPU_DEVICE_ID;
+}
+
+/**
+ * Returns the CPU device ID constant.
+ */
+int getCpuDeviceId() {
+  return CPU_DEVICE_ID;
+}
 
 int AffinityManager::currentDeviceId() {
-  // if there's no affinity set - set it now
-  if (globalThreadToDevice < 0) {
-    // this block must be thread-local
-    _currentMutex.lock();
-
-    globalThreadToDevice = _lastDevice++;
-
-    // we need to check if we've got deviceId >= number of actual devices, and reset to zero otherwise
-    if (globalThreadToDevice >= numberOfDevices()) {
-      globalThreadToDevice = 0;
-      _lastDevice = numberOfDevices() > 1 ? 1 : 0;
-    }
-
-    _currentMutex.unlock();
-
-    setCurrentNativeDevice(globalThreadToDevice);
-  }
-
-  // if we already know affinity - just return it
-  if (globalThreadToDevice >= 0) return globalThreadToDevice;
+  // Always query CUDA for the current device and sync our thread-local state.
+  // This prevents race conditions where native code auto-assigns a device before Java
+  // has a chance to set it via setDevice(). Java controls thread-device affinity through
+  // CudaAffinityManager, and native code should respect whatever device Java has set.
+  //
+  // Previous behavior: Native code would auto-assign devices using its own round-robin,
+  // which could conflict with Java's assignment when multiple threads start simultaneously.
 
   int dev = 0;
   auto res = cudaGetDevice(&dev);
 
-  if (res != 0) throw cuda_exception::build("cudaGetDevice failed", res);
+  if (res != 0) {
+    std::string msg = "cudaGetDevice failed; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
+
+  // Sync thread-local cache with actual CUDA device
+  // This ensures subsequent calls return the correct device without CUDA API overhead
+  if (globalThreadToDevice != dev) {
+    globalThreadToDevice = dev;
+  }
 
   return dev;
 }
@@ -65,7 +82,10 @@ int AffinityManager::currentNativeDeviceId() {
   int dev = 0;
   auto res = cudaGetDevice(&dev);
 
-  if (res != 0) throw cuda_exception::build("cudaGetDevice failed", res);
+  if (res != 0) {
+    std::string msg = "cudaGetDevice failed; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   return dev;
 }
@@ -77,7 +97,10 @@ int AffinityManager::numberOfDevices() {
     int dev = 0;
     auto res = cudaGetDeviceCount(&dev);
 
-    if (res != 0) throw cuda_exception::build("cudaGetDeviceCount failed", res);
+    if (res != 0) {
+      std::string msg = "cudaGetDeviceCount failed; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
 
     _numberOfDevices = dev;
   }
@@ -88,31 +111,76 @@ int AffinityManager::numberOfDevices() {
 
 void AffinityManager::setCurrentNativeDevice(int deviceId) {
   auto res = cudaSetDevice(deviceId);
-  if (res != 0) throw cuda_exception::build("setCurrentDevice failed", res);
+  if (res != 0) {
+    std::string msg = "setCurrentDevice failed; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
 }
 
 void AffinityManager::setCurrentDevice(int deviceId) {
   auto previousDeviceId = globalThreadToDevice;
-  if (previousDeviceId >= 0 && LaunchContext::isInitialized()) {
-    auto res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
-    if (res != 0) throw cuda_exception::build("setCurrentDevice -> sync failed", res);
 
-    res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaSpecialStream());
-    if (res != 0) throw cuda_exception::build("setCurrentDevice -> specialSync failed", res);
+  // With per-device ContextBuffers map, no need to release buffers when switching
+  // devices. Each device has its own persistent buffers (streams, workspace).
+  // The per-device map in LaunchContext.cu handles routing automatically.
 
-    if (deviceId != previousDeviceId) {
-      // discard existing stuff
-      LaunchContext::releaseBuffers();
-    }
-  }
-
-  if (deviceId != previousDeviceId) {
-    auto res = cudaSetDevice(deviceId);
-    if (res != 0) throw cuda_exception::build("cudaSetDevice failed", res);
+  // Switch to target device
+  auto res = cudaSetDevice(deviceId);
+  if (res != 0) {
+    std::string msg = "cudaSetDevice failed; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
   }
 
   // update thread-device affinity
   globalThreadToDevice = deviceId;
+}
+
+void AffinityManager::syncThreadDeviceId(int deviceId) {
+  // Sync the thread-local device ID with the specified device
+  globalThreadToDevice = deviceId;
+}
+
+void AffinityManager::setAvailableDevices(const std::vector<int> &devices) {
+  std::lock_guard<std::mutex> lock(_currentMutex);
+  _availableDevices = devices;
+
+  if (_availableDevices.empty()) return;
+
+  int currentDevice = -1;
+  cudaError_t currentErr = cudaGetDevice(&currentDevice);
+  bool currentAllowed = false;
+  if (currentErr == cudaSuccess) {
+    for (auto device : _availableDevices) {
+      if (device == currentDevice) {
+        currentAllowed = true;
+        break;
+      }
+    }
+  } else {
+    cudaGetLastError();
+  }
+
+  if (currentAllowed) {
+    globalThreadToDevice = currentDevice;
+    return;
+  }
+
+  cudaError_t lastErr = cudaSuccess;
+  for (auto device : _availableDevices) {
+    lastErr = cudaSetDevice(device);
+    if (lastErr == cudaSuccess) {
+      globalThreadToDevice = device;
+      cudaGetLastError();
+      return;
+    }
+
+    sd_printf("AffinityManager: WARNING - cudaSetDevice(%d) failed while applying available devices: %s\n",
+              device, cudaGetErrorString(lastErr));
+    cudaGetLastError();
+  }
+
+  std::string msg = "setAvailableDevices failed to select any configured CUDA device; Error code: [" + std::to_string((int)lastErr) + "]";
+  THROW_EXCEPTION(msg.c_str());
 }
 
 std::atomic<int> AffinityManager::_lastDevice;  // = std::atomic<int>(initialV);

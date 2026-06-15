@@ -43,6 +43,7 @@
 #include <graph/DspStreamGuard.h>
 #include <helpers/DebugHelper.h>
 #include <system/Environment.h>
+#include <system/common.h>
 
 #include <cuda_runtime.h>
 #include <cstring>
@@ -157,7 +158,7 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
                  "The CUDA graph has the old address baked in and will read garbage.",
                  diagTag, idx, name, it->second, currentAddr, executeCount_);
         DSP_DIAG(VERIFY, "%s", msg);
-        throw std::runtime_error(msg);
+        THROW_EXCEPTION(msg);
       }
     }
 
