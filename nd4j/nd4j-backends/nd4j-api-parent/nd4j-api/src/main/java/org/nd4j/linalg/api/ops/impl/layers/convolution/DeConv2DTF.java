@@ -181,34 +181,8 @@ public class DeConv2DTF extends DynamicCustomOp {
 
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
-        Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
-        Map<String, AttributeAdapter> tfMappings = new LinkedHashMap<>();
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        throw new RuntimeException();
 
-
-        //TF uses [kH, kW, outC, inC] always for weights
-        tfMappings.put("kH", new NDArrayShapeAdapter(0));
-        tfMappings.put("kW", new NDArrayShapeAdapter(1));
-//        tfMappings.put("sH", new IntArrayIntIndexAdpater(1));
-//        tfMappings.put("sW", new IntArrayIntIndexAdpater(2));
-        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
-        tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-        tfMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
-
-
-        Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("kH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
-        onnxMappings.put("kW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
-        onnxMappings.put("dH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
-        onnxMappings.put("dW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
-        onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
-        onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
-        onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-        onnxMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
-
-        ret.put(tensorflowName(), tfMappings);
-        return ret;
     }
 
 

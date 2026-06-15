@@ -24,8 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -77,5 +80,26 @@ public class Unique extends DynamicCustomOp {
         if(dataTypes.size() > 1)
             log.warn("Using returning first data type of type " + dataTypes.get(0) + " for input");
         return Arrays.asList(dataTypes.get(0), (idxDataType == null ? DEFAULT_IDX_DTYPE : idxDataType));
+    }
+
+    @Override
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        // Unique output shape depends on how many distinct values are in the input.
+        // This changes every inference step, so never cache — always recompute from native.
+        if (oc == null)
+            return Nd4j.getExecutioner().calculateOutputShape(this);
+        else
+            return Nd4j.getExecutioner().calculateOutputShape(this, oc);
+    }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
+
+    @Override
+    public boolean requiresZeroedOutput() {
+        // Unique outputs vary in size based on input data values
+        return true;
     }
 }

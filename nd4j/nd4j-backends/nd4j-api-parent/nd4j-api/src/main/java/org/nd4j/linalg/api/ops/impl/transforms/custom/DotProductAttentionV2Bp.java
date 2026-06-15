@@ -37,6 +37,25 @@ import java.util.List;
 public class DotProductAttentionV2Bp extends DynamicCustomOp {
 
 
+    /**
+     * Create a backpropagation op for dot product attention.
+     *
+     * @param sameDiff The SameDiff instance
+     * @param queries Query tensor [batch, Tq, dim]
+     * @param values Value tensor [batch, Tv, dim]
+     * @param keys Key tensor [batch, Tv, dim]
+     * @param eps Gradient from upstream [batch, Tq, dim]
+     * @param queryMask Query mask [batch, Tq] or null
+     * @param valueMask Value mask [batch, Tv] or null
+     * @param attentionScoresOut Forward pass attention output
+     * @param attentionScoreWeights Forward pass attention weights (after softmax)
+     * @param attentionScoresLogits Forward pass attention logits (before softmax)
+     * @param dropoutMask Forward pass dropout mask or null
+     * @param scaleFactor Scale factor for attention scores
+     * @param dropout Dropout probability
+     * @param useCausalMask Whether causal mask was applied
+     * @param training Whether in training mode
+     */
     public DotProductAttentionV2Bp(SameDiff sameDiff,
                                    SDVariable queries,
                                    SDVariable values,
@@ -47,20 +66,17 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
                                    SDVariable attentionScoresOut,
                                    SDVariable attentionScoreWeights,
                                    SDVariable attentionScoresLogits,
-                                   SDVariable dropoutWeights,
+                                   SDVariable dropoutMask,
                                    double scaleFactor,
                                    double dropout,
-                                   int scoreMode,
                                    boolean useCausalMask,
-                                   boolean withWeights,
                                    boolean training) {
-        super(null, sameDiff,inputs(sameDiff,queries,values,keys,attentionScoresOut,attentionScoreWeights,attentionScoresLogits,eps,queryMask,valueMask,dropoutWeights), false);
-        addIArgument(scoreMode);
-
-        addTArgument(scaleFactor);
-        addTArgument(dropout);
-        addBArgument(useCausalMask);
-        addBArgument(training);
+        super(null, sameDiff, inputs(sameDiff, queries, values, keys, attentionScoresOut,
+                attentionScoreWeights, attentionScoresLogits, eps, dropoutMask, queryMask, valueMask), false);
+        // T_ARG order: scale, dropout (same as forward pass)
+        addTArgument(scaleFactor, dropout);
+        // B_ARG order: useCausalMask, training (same as forward pass)
+        addBArgument(useCausalMask, training);
     }
 
     private static SDVariable[] inputs(SameDiff sd,
@@ -71,24 +87,28 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
                                        SDVariable attentionScoreWeights,
                                        SDVariable attentionScoresLogits,
                                        SDVariable eps,
+                                       SDVariable dropoutMask,
                                        SDVariable queryMask,
-                                       SDVariable valueMask,
-                                       SDVariable dropoutWeights) {
+                                       SDVariable valueMask) {
+        // C++ expects inputs in this order:
+        // 0: queries, 1: values, 2: keys
+        // 3: attentionScoresOut, 4: attentionScoreWeights, 5: attentionScoreLogits
+        // 6: eps
+        // 7: dropoutMask (if exists, else empty)
+        // 8: queryMask, 9: valueMask
         List<SDVariable> inputs = new ArrayList<>();
-        inputs.add(queries);
-        inputs.add(values);
-        inputs.add(keys == null ? values : keys);
-        inputs.add(attentionScoresOut);
-        inputs.add(attentionScoreWeights);
-        inputs.add(attentionScoresLogits);
-        inputs.add(eps);
-        if(dropoutWeights != null) {
-            inputs.add(dropoutWeights);
-        }
-        inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);
-        inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);
+        inputs.add(queries);                                    // 0
+        inputs.add(values);                                     // 1
+        inputs.add(keys == null ? values : keys);               // 2
+        inputs.add(attentionScoresOut);                         // 3
+        inputs.add(attentionScoreWeights);                      // 4
+        inputs.add(attentionScoresLogits);                      // 5
+        inputs.add(eps);                                        // 6
+        // Always add dropout mask at position 7 (empty if null) to keep mask positions consistent
+        inputs.add(dropoutMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : dropoutMask);  // 7
+        inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);      // 8
+        inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);      // 9
         return inputs.toArray(new SDVariable[inputs.size()]);
-
     }
 
 

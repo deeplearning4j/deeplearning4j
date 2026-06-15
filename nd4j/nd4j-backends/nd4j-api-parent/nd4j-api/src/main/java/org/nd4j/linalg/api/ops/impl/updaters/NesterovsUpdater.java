@@ -21,13 +21,24 @@
 package org.nd4j.linalg.api.ops.impl.updaters;
 
 import lombok.NonNull;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class NesterovsUpdater extends DynamicCustomOp {
 
     public NesterovsUpdater() {
         //
+    }
+
+    public NesterovsUpdater(@NonNull SameDiff sameDiff, @NonNull SDVariable gradients, @NonNull SDVariable state, double lr, double momentum) {
+        super(sameDiff, new SDVariable[]{gradients, state});
+        addTArgument(lr, momentum);
     }
 
     public NesterovsUpdater(@NonNull INDArray gradients, @NonNull INDArray state, double lr, double momentum) {
@@ -43,5 +54,11 @@ public class NesterovsUpdater extends DynamicCustomOp {
     @Override
     public String opName() {
         return "nesterovs_updater";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        DataType dt = inputDataTypes.get(0);
+        return Arrays.asList(dt, dt);
     }
 }

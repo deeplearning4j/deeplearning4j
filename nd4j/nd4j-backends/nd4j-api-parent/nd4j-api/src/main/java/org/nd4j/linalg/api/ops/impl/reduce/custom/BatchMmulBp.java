@@ -53,13 +53,13 @@ public class BatchMmulBp extends DynamicCustomOp {
         super(null, sameDiff,
                 ArrayUtil.concat(SDVariable.class,
                         new SDVariable[]{
-                                sameDiff.var(Nd4j.ones(matrices[0].dataType(), matrices.length / 2)), // alphas
-                                sameDiff.var(Nd4j.zeros(matrices[1].dataType(), matrices.length / 2))
+                                sameDiff.var(Nd4j.ones(matrices[0].dataType(), matrices.length / 3)), // alphas
+                                sameDiff.var(Nd4j.zeros(matrices[1].dataType(), matrices.length / 3))
                         }, // betas
                         matrices));
         this.transposeA = transposeA ? 1 : 0;
         this.transposeB = transposeB ? 1 : 0;
-        this.batchSize = matrices.length / 2;
+        this.batchSize = matrices.length / 3;
 
     }
 
@@ -134,16 +134,18 @@ public class BatchMmulBp extends DynamicCustomOp {
     public void configureWithSameDiff(SameDiff sameDiff) {
         super.configureWithSameDiff(sameDiff);
         SDVariable[] matrices = args();
-        Preconditions.checkState(matrices.length % 2 == 0, "The number of provided matrices needs" +
-                "to be divisible by two.");
-        this.batchSize = (matrices.length - 2) / 2;
+        // BP inputs: alpha, beta, batchSize*A, batchSize*B, batchSize*dLdC
+        // So (matrices.length - 2) must be divisible by 3
+        Preconditions.checkState((matrices.length - 2) % 3 == 0, "The number of provided matrices (minus alpha/beta) needs" +
+                " to be divisible by three, got %s total args.", matrices.length);
+        this.batchSize = (matrices.length - 2) / 3;
 
         SDVariable firstMatrix = matrices[2];
         long[] firstShape = firstMatrix.getShape();
 
-        SDVariable lastMatrix = matrices[matrices.length - 1];
-        long[] lastShape = lastMatrix.getShape();
-        /**/
+        // B matrix is at offset 2 + batchSize, not the last element (which is dLdC)
+        SDVariable bMatrix = matrices[2 + batchSize];
+        long[] lastShape = bMatrix.getShape();
 
         if(firstShape != null) {
             this.M = transposeA > 0 ? (int) firstShape[1]: (int) firstShape[0];
@@ -157,13 +159,9 @@ public class BatchMmulBp extends DynamicCustomOp {
             this.ldc = this.M;
         }
 
-        this.batchSize = (args().length -  2) / 2;
-
-
         //only add arguments when fully initialized
         if(M > 0 && N > 0 && K > 0 && firstShape != null && lastShape != null) {
             addArgs();
-
         }
     }
 

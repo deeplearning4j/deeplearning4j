@@ -69,7 +69,7 @@ public class Moments extends DynamicCustomOp {
     }
 
     public Moments(INDArray in, INDArray outMean, INDArray outStd, long... axes) {
-        super(null, new INDArray[]{in}, new INDArray[]{outMean, outStd}, null, axes);
+        super(null, new INDArray[]{in}, new INDArray[]{outMean, outStd});
         this.dimensions = axes;
         addArgs();
     }
@@ -157,8 +157,8 @@ public class Moments extends DynamicCustomOp {
     protected void addArgs() {
         addBArgument(keepDims);
         if(dimensions != null && dimensions.length > 0) {
-            if(dimensions.length != 1 || dimensions[0] != Integer.MAX_VALUE) {
-                //Integer.MAX_VALUE means "full array" but here no dimension args == full array
+            // -1 or Integer.MAX_VALUE means "full array" - don't pass dimension args for full array reduction
+            if(dimensions.length != 1 || (dimensions[0] != -1 && dimensions[0] != Integer.MAX_VALUE)) {
                 addIArgument(dimensions);
             }
         }

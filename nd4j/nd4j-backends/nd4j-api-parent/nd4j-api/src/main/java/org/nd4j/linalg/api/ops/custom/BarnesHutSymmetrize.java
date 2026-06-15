@@ -55,7 +55,7 @@ public class BarnesHutSymmetrize extends DynamicCustomOp {
                 }
             }
         }
-        int outputCols = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
+        int outputCols = rowCounts.sum(-1).getInt(0);  // -1 means sum all dimensions
         output = Nd4j.create(1, outputCols);
         outCols = Nd4j.create(new int[]{1, outputCols}, DataType.INT);
 

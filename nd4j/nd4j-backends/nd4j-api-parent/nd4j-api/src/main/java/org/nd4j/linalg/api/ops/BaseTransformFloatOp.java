@@ -108,16 +108,22 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
 
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
+        List<DataBuffer> ret;
         if(x.isEmpty()) {
-            List<DataBuffer> ret = new ArrayList<>();
+            ret = new ArrayList<>();
             LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.emptyWithShape(x.shape(),x.dataType());
             ret.add(Nd4j.createBuffer(longShapeDescriptor.toShapeInfo()));
-            return ret;
+        } else {
+            ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(x.shape(), x.isR() ? x.dataType() : Nd4j.defaultFloatingPointType()).toShapeInfo()));
         }
-        return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(x.shape(), x.isR() ? x.dataType() : Nd4j.defaultFloatingPointType()).toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
+        return ret;
     }
 
     @Override

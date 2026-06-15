@@ -177,4 +177,9 @@ public class Tile extends DynamicCustomOp {
         //Output type is same as input type
         return Collections.singletonList(dataTypes.get(0));
     }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

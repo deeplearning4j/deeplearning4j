@@ -21,13 +21,24 @@
 package org.nd4j.linalg.api.ops.impl.updaters;
 
 import lombok.NonNull;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class AdaDeltaUpdater extends DynamicCustomOp {
 
     public AdaDeltaUpdater() {
         //
+    }
+
+    public AdaDeltaUpdater(@NonNull SameDiff sameDiff, @NonNull SDVariable gradients, @NonNull SDVariable stateMsg, @NonNull SDVariable stateMsdx, double rho, double epsilon) {
+        super(sameDiff, new SDVariable[]{gradients, stateMsg, stateMsdx});
+        addTArgument(rho, epsilon);
     }
 
     public AdaDeltaUpdater(@NonNull INDArray gradients, @NonNull INDArray stateMsg, @NonNull INDArray stateMsdx, double rho, double epsilon) {
@@ -43,5 +54,11 @@ public class AdaDeltaUpdater extends DynamicCustomOp {
     @Override
     public String opName() {
         return "ada_delta_updater";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        DataType dt = inputDataTypes.get(0);
+        return Arrays.asList(dt, dt, dt);
     }
 }

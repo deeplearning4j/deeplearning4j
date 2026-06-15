@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -75,12 +76,15 @@ public class Fill extends DynamicCustomOp {
     }
 
     public Fill(INDArray shape, INDArray value, INDArray result) {
-        super(null, new INDArray[]{shape, value}, new INDArray[]{result});
+        super(null, new INDArray[]{shape, value}, result == null ? null : new INDArray[]{result});
     }
 
 
     protected void addArgs() {
         addTArgument(value);
+        if (dtype != null) {
+            addDArgument(dtype);
+        }
     }
 
     @Override
@@ -147,5 +151,10 @@ public class Fill extends DynamicCustomOp {
                 "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
         Preconditions.checkNotNull(dtype, "Output datatype was null (not set)");
         return Collections.singletonList(dtype);
+    }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
     }
 }

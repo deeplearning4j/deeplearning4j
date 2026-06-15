@@ -48,14 +48,17 @@ public abstract class BaseDynamicCustomIndexReduction extends BaseDynamicCustomR
 
     public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex) {
         super(sameDiff, args, keepDims, isComplex);
+        addDArgument(DataType.INT64);
     }
 
     public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(sameDiff, args, keepDims, isComplex, dimensions);
+        addDArgument(DataType.INT64);
     }
 
     public BaseDynamicCustomIndexReduction(INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
+        addDArgument(DataType.INT64);
     }
 
     public BaseDynamicCustomIndexReduction(INDArray[] inputs, INDArray[] outputs, boolean keepDims) {

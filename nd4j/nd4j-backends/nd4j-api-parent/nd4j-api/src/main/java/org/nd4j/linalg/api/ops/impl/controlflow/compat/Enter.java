@@ -41,6 +41,7 @@ public class Enter extends BaseCompatOp {
     protected boolean isConstant;
 
     public Enter() {
+        System.out.println();
     }
 
     public Enter(SameDiff sameDiff, SDVariable[] inputs){

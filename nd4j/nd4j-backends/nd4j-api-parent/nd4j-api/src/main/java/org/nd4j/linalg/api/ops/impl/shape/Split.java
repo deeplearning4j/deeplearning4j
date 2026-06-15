@@ -35,6 +35,13 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.factory.Nd4j;
+
 /**
  * Split op
  */
@@ -169,5 +176,82 @@ public class Split extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Arrays.asList(new Concat(sameDiff,splitDim,f1.toArray(new SDVariable[f1.size()])).outputVariables());
+    }
+
+    /**
+     * Split output shapes: each output has the same shape as input, except the split dimension
+     * is divided by numSplit.
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 1) {
+            return null;
+        }
+
+        // Get numSplit and splitDim from iArgs
+        List<Long> iArgs = oc.getIArguments();
+        int numSplits;
+        int splitAxis;
+
+        if (iArgs != null && iArgs.size() >= 2) {
+            numSplits = iArgs.get(0).intValue();
+            splitAxis = iArgs.get(1).intValue();
+        } else if (iArgs != null && iArgs.size() == 1) {
+            // Single iArg might be just the axis with numSplit from field
+            numSplits = this.numSplit;
+            splitAxis = iArgs.get(0).intValue();
+        } else {
+            numSplits = this.numSplit;
+            splitAxis = this.splitDim;
+        }
+
+        if (numSplits <= 0) {
+            return null; // Invalid - fall back to C++
+        }
+
+        INDArray input = oc.getInputArray(0);
+        if (input == null) {
+            return null;
+        }
+
+        long[] inputShape = input.shape();
+        int rank = inputShape.length;
+
+        // Normalize negative axis
+        if (splitAxis < 0) {
+            splitAxis += rank;
+        }
+
+        if (splitAxis < 0 || splitAxis >= rank) {
+            return null; // Invalid axis - fall back to C++
+        }
+
+        // Check if split dimension is evenly divisible
+        long splitDimSize = inputShape[splitAxis];
+        if (splitDimSize % numSplits != 0) {
+            return null; // Not evenly divisible - fall back to C++
+        }
+
+        long splitSize = splitDimSize / numSplits;
+
+        // Build output shape (same as input except split dimension)
+        long[] outputShape = inputShape.clone();
+        outputShape[splitAxis] = splitSize;
+
+        DataType dtype = input.dataType();
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+
+        // All outputs have the same shape
+        List<DataBuffer> results = new ArrayList<>(numSplits);
+        for (int i = 0; i < numSplits; i++) {
+            results.add(shapeInfo);
+        }
+        return results;
     }
 }

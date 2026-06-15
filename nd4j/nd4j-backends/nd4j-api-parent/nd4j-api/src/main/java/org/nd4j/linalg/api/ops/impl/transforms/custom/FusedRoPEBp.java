@@ -1,0 +1,118 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
+package org.nd4j.linalg.api.ops.impl.transforms.custom;
+
+import lombok.NoArgsConstructor;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Backward pass for Fused Rotary Position Embedding
+ *
+ * Computes the gradient by applying the inverse rotation.
+ *
+ * @author Adam Gibson
+ */
+@NoArgsConstructor
+public class FusedRoPEBp extends DynamicCustomOp {
+
+    private int ropeType = 0;
+    private int positionOffset = 0;
+    private double freqBase = 10000.0;
+    private double freqScale = 1.0;
+    private int rotaryDims = 0;
+
+    public FusedRoPEBp(SameDiff sameDiff, SDVariable input, SDVariable gradOut,
+                       int ropeType, int positionOffset, double freqBase, double freqScale) {
+        this(sameDiff, input, gradOut, ropeType, positionOffset, freqBase, freqScale, 0);
+    }
+
+    public FusedRoPEBp(SameDiff sameDiff, SDVariable input, SDVariable gradOut,
+                       int ropeType, int positionOffset, double freqBase, double freqScale,
+                       int rotaryDims) {
+        super(null, sameDiff, new SDVariable[]{input, gradOut}, false);
+        this.ropeType = ropeType;
+        this.positionOffset = positionOffset;
+        this.freqBase = freqBase;
+        this.freqScale = freqScale;
+        this.rotaryDims = rotaryDims;
+
+        addIArgument(ropeType, positionOffset, rotaryDims);
+        addTArgument(freqBase, freqScale);
+    }
+
+    public FusedRoPEBp(INDArray input, INDArray gradOut, INDArray gradIn,
+                       int ropeType, int positionOffset, double freqBase, double freqScale) {
+        this(input, gradOut, gradIn, ropeType, positionOffset, freqBase, freqScale, 0);
+    }
+
+    public FusedRoPEBp(INDArray input, INDArray gradOut, INDArray gradIn,
+                       int ropeType, int positionOffset, double freqBase, double freqScale,
+                       int rotaryDims) {
+        super(new INDArray[]{input, gradOut}, gradIn != null ? new INDArray[]{gradIn} : null);
+        this.ropeType = ropeType;
+        this.positionOffset = positionOffset;
+        this.freqBase = freqBase;
+        this.freqScale = freqScale;
+        this.rotaryDims = rotaryDims;
+
+        addIArgument(ropeType, positionOffset, rotaryDims);
+        addTArgument(freqBase, freqScale);
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if (iArguments.size() > 0) {
+            this.ropeType = iArguments.get(0).intValue();
+        }
+        if (iArguments.size() > 1) {
+            this.positionOffset = iArguments.get(1).intValue();
+        }
+        if (tArguments.size() > 0) {
+            this.freqBase = tArguments.get(0);
+        }
+        if (tArguments.size() > 1) {
+            this.freqScale = tArguments.get(1);
+        }
+    }
+
+    @Override
+    public String opName() {
+        return "fused_rope_bp";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        return Collections.singletonList(inputDataTypes.get(0));
+    }
+
+    @Override
+    public int getNumOutputs() {
+        return 1;
+    }
+}

@@ -85,4 +85,9 @@ public class BroadcastTo extends DynamicCustomOp {
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected 2 input datatype for %s, got %s", getClass(), dataTypes);
         return Collections.singletonList(dataTypes.get(0));
     }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

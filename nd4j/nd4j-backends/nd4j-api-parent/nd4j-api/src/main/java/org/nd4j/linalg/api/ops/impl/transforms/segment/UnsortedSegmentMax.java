@@ -72,6 +72,25 @@ public class UnsortedSegmentMax extends DynamicCustomOp {
     }
 
     @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if (numIArguments() > 0 && getIArgument(0) != null) {
+            numSegments = getIArgument(0).intValue();
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if (properties != null && properties.containsKey("numOfClasses") && !properties.containsKey("numSegments")) {
+            properties = new LinkedHashMap<>(properties);
+            properties.put("numSegments", properties.get("numOfClasses"));
+        }
+
+        super.setPropertiesForFunction(properties);
+        configureFromArguments();
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         if(!dArguments.isEmpty()) {
             return Collections.singletonList(dArguments.get(0));

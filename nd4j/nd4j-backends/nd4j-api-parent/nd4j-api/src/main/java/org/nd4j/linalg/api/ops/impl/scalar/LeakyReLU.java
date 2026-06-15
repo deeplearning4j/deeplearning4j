@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUBp;
@@ -103,6 +104,17 @@ public class LeakyReLU extends BaseScalarOp {
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
         super.setPropertiesForFunction(properties);
+        // After reflection sets the 'alpha' field, sync the scalar value
+        // so the C++ kernel receives the correct alpha during execution.
+        // Without this, ONNX import leaves scalarValue=null (from no-arg constructor)
+        // while the alpha field has the correct value from the attribute mapping.
+        this.extraArgs = new Object[]{alpha};
+        // Use setScalar(INDArray) to avoid NPE from setScalar(Number) calling x.dataType()
+        // when x is not yet set during import-time property initialization.
+        // Use the input array's dtype if available, otherwise default to DOUBLE to preserve
+        // precision for non-FLOAT inputs (e.g. DOUBLE input must produce DOUBLE output).
+        DataType scalarType = (x != null) ? x.dataType() : DataType.DOUBLE;
+        this.setScalar(Nd4j.scalar(scalarType, alpha));
     }
 
 
@@ -120,6 +132,11 @@ public class LeakyReLU extends BaseScalarOp {
             GraphDef graph) {
         alpha = attributesForNode.get("alpha").getF();
         extraArgs = new Object[]{alpha};
-        this.setScalar(Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.FLOAT, alpha));
+        // TensorFlow attribute "alpha" is always a float32 scalar in the protobuf, but the
+        // op's output dtype must match the input tensor's dtype.  Use x.dataType() when
+        // available; fall back to DOUBLE (not FLOAT) so that DOUBLE inputs are not silently
+        // downcast to FLOAT.
+        DataType scalarType = (x != null) ? x.dataType() : DataType.DOUBLE;
+        this.setScalar(Nd4j.scalar(scalarType, alpha));
     }
 }

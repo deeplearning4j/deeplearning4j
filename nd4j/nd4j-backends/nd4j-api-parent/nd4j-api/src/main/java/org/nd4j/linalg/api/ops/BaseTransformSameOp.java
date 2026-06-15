@@ -125,14 +125,21 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
 
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
+        List<DataBuffer> ret;
         if(x.isEmpty()) {
             LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.emptyWithShape(x.shape(),x.dataType());
-            return Collections.singletonList(Nd4j.createBuffer(longShapeDescriptor.toShapeInfo()));
+            ret = Collections.singletonList(Nd4j.createBuffer(longShapeDescriptor.toShapeInfo()));
+        } else {
+            ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(x.shape(), x.dataType()).toShapeInfo()));
         }
-        return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(x.shape(), x.dataType()).toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
+        return ret;
     }
 
     @Override

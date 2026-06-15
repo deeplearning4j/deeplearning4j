@@ -141,6 +141,28 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
         return new SDVariable[]{out};
     }
 
+    /**
+     * Override diff() rather than doDiff() to avoid the standard gradient accumulation in
+     * DifferentialFunction.diff(). ExternalErrorsFunction injects externally-provided gradient
+     * arrays as placeholders — there is no upstream gradient to accumulate, only injection.
+     * The standard diff() path checks whether "arg-grad" already exists (from doDiff), and if
+     * so calls .add(gradVar) without ever calling setGradientForVariableName, leaving the
+     * gradient link unset and causing validation to fail.
+     */
+    @Override
+    public List<SDVariable> diff(List<SDVariable> i_v1) {
+        List<SDVariable> gradVars = doDiff(i_v1);
+        SDVariable[] inputVars = args();
+        for (int i = 0; i < inputVars.length; i++) {
+            SDVariable inputVar = inputVars[i];
+            SDVariable gradVar = gradVars.get(i);
+            // Register the gradient placeholder as the gradient for this input variable.
+            // Do not accumulate — external errors are directly injected, not summed.
+            sameDiff.setGradientForVariableName(inputVar.name(), gradVar);
+        }
+        return gradVars;
+    }
+
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         List<SDVariable> out = new ArrayList<>();
@@ -158,7 +180,6 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
                 } else {
                     grad = sameDiff.var(n, VariableType.PLACEHOLDER, null, dt);
                 }
-                sameDiff.setGradientForVariableName(arg.name(),grad);
                 gradVariables.put(arg.name(), grad);
                 out.add(grad);
             }

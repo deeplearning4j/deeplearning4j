@@ -27,7 +27,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Pow extends BaseScalarOp {
     private double pow;
@@ -82,6 +84,22 @@ public class Pow extends BaseScalarOp {
     @Override
     public String tensorflowName() {
         return "Pow";
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("pow", pow);
+        return ret;
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        Object value = properties.get("pow");
+        if (value instanceof Number) {
+            this.pow = ((Number) value).doubleValue();
+            this.extraArgs = new Object[]{this.pow};
+        }
     }
 
     @Override

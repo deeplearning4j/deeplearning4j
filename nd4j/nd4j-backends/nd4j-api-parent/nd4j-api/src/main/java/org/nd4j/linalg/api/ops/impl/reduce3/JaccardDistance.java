@@ -129,12 +129,13 @@ public class JaccardDistance extends BaseReduce3Op {
         SDVariable yIsMin = sameDiff.eq(min, rarg()).castTo(d);
         SDVariable yIsMax = sameDiff.eq(max, rarg()).castTo(d);
 
-        SDVariable sqSumMax = sameDiff.math.square(sumMax);
+        //Add epsilon to avoid divide-by-zero when all values are zero
+        SDVariable sqSumMax = sameDiff.math().max(sameDiff.math.square(sumMax), sameDiff.constant(1e-8));
         SDVariable dldx = xIsMax.mul(sumMin).sub(xIsMin.mul(sumMax)).div(sqSumMax);
         SDVariable dldy = yIsMax.mul(sumMin).sub(yIsMin.mul(sumMax)).div(sqSumMax);
 
         SDVariable bcGradOut;
-        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE)){
+        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && (dimensions[0] == Integer.MAX_VALUE || dimensions[0] == -1))){
             //KeepDims or full array reduction - already broadcastable
             bcGradOut = f1.get(0);
         } else {

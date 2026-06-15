@@ -74,6 +74,14 @@ public class UnsortedSegmentProd extends DynamicCustomOp {
     }
 
     @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if (numIArguments() > 0 && getIArgument(0) != null) {
+            numSegments = getIArgument(0).intValue();
+        }
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         if(!dArguments.isEmpty()) {
             return Collections.singletonList(dArguments.get(0));

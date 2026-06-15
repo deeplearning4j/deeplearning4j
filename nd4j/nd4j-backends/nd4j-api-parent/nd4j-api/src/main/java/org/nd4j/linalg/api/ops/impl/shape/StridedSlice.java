@@ -31,8 +31,10 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -353,6 +355,156 @@ public class StridedSlice extends DynamicCustomOp {
     }
 
     @Override
+    public boolean initializeOutputs(OpContext ctx) {
+        // DSP allocates its own output buffers. The view created below has
+        // non-standard strides (input.stride * slice_stride) which corrupt
+        // DynamicShapePlanCompiler's shape capture for the native plan.
+        // Only skip for SameDiff graph execution (sameDiff != null), not direct imperative ops.
+        if (sameDiff != null && org.nd4j.autodiff.samediff.internal.InferenceSession.isDynamicShapePlanEnabled()) {
+            return super.initializeOutputs(ctx);
+        }
+
+        // Ensure fields are populated from iArguments
+        configureFromArguments();
+
+        // Need begin/end/strides to compute the view.
+        // When they're null or zero-length (DSP mode: begin/end/strides come as input tensors,
+        // not iArgs — configureFromArguments() creates zero-length arrays when iArgs has only
+        // the 5 mask values), read them from the input arrays.
+        // DSP already synced INT/LONG inputs to host.
+        if (begin == null || end == null || strides == null
+                || begin.length == 0 || end.length == 0 || strides.length == 0) {
+            List<INDArray> inputs = inputArguments();
+            if (inputs != null && inputs.size() >= 4) {
+                if (begin == null || begin.length == 0) begin = inputs.get(1).toLongVector();
+                if (end == null || end.length == 0) end = inputs.get(2).toLongVector();
+                if (strides == null || strides.length == 0) strides = inputs.get(3).toLongVector();
+            }
+        }
+
+        if (begin == null || end == null || strides == null
+                || begin.length == 0 || end.length == 0 || strides.length == 0) {
+            return super.initializeOutputs(ctx);
+        }
+
+        List<INDArray> inputs = inputArguments();
+        if (inputs == null || inputs.isEmpty()) {
+            return super.initializeOutputs(ctx);
+        }
+
+        INDArray input = inputs.get(0);
+        if (input == null || input.isEmpty()) {
+            return super.initializeOutputs(ctx);
+        }
+
+        int inputRank = input.rank();
+
+        // Can't create view with newAxisMask (adds dimensions) or negative strides
+        if (newAxisMask != 0) {
+            return super.initializeOutputs(ctx);
+        }
+        for (long s : strides) {
+            if (s <= 0) {
+                return super.initializeOutputs(ctx);
+            }
+        }
+
+        // Compute effective begin/end per dimension, applying masks
+        int sliceDims = begin.length;
+        long[] effectiveBegin = new long[inputRank];
+        long[] effectiveEnd = new long[inputRank];
+        long[] effectiveStrides = new long[inputRank];
+
+        for (int i = 0; i < inputRank; i++) {
+            long dimSize = input.size(i);
+            if (i < sliceDims) {
+                // Begin
+                if ((beginMask & (1 << i)) != 0) {
+                    effectiveBegin[i] = 0;
+                } else {
+                    effectiveBegin[i] = begin[i] < 0 ? begin[i] + dimSize : begin[i];
+                    effectiveBegin[i] = Math.max(0, Math.min(effectiveBegin[i], dimSize));
+                }
+                // End
+                if ((endMask & (1 << i)) != 0) {
+                    effectiveEnd[i] = dimSize;
+                } else {
+                    effectiveEnd[i] = end[i] < 0 ? end[i] + dimSize : end[i];
+                    effectiveEnd[i] = Math.max(0, Math.min(effectiveEnd[i], dimSize));
+                }
+                // Strides
+                effectiveStrides[i] = strides[i];
+                // Shrink axis: single element slice
+                if ((shrinkAxisMask & (1 << i)) != 0) {
+                    effectiveEnd[i] = effectiveBegin[i] + 1;
+                    effectiveStrides[i] = 1;
+                }
+            } else {
+                // Dimensions beyond slice spec: take full dimension
+                effectiveBegin[i] = 0;
+                effectiveEnd[i] = dimSize;
+                effectiveStrides[i] = 1;
+            }
+        }
+
+        // Compute output shape and strides
+        // First pass: compute pre-shrink shape/strides (all dims)
+        long[] preShape = new long[inputRank];
+        long[] preStrides = new long[inputRank];
+        long viewOffset = input.offset();
+
+        for (int i = 0; i < inputRank; i++) {
+            long range = effectiveEnd[i] - effectiveBegin[i];
+            if (range <= 0) {
+                // Empty slice — fall back to C++ which handles empty arrays
+                return super.initializeOutputs(ctx);
+            }
+            preShape[i] = (range + effectiveStrides[i] - 1) / effectiveStrides[i]; // ceil division
+            preStrides[i] = input.stride(i) * effectiveStrides[i];
+            viewOffset += effectiveBegin[i] * input.stride(i);
+        }
+
+        // Second pass: remove shrink_axis dimensions
+        int outputRank = inputRank;
+        for (int i = 0; i < inputRank; i++) {
+            if ((shrinkAxisMask & (1 << i)) != 0 && i < sliceDims) {
+                outputRank--;
+            }
+        }
+
+        long[] outShape;
+        long[] outStrides;
+        if (outputRank == inputRank) {
+            // No shrink axes
+            outShape = preShape;
+            outStrides = preStrides;
+        } else {
+            outShape = new long[outputRank];
+            outStrides = new long[outputRank];
+            int j = 0;
+            for (int i = 0; i < inputRank; i++) {
+                if ((shrinkAxisMask & (1 << i)) != 0 && i < sliceDims) {
+                    continue; // skip shrunk dimensions
+                }
+                outShape[j] = preShape[i];
+                outStrides[j] = preStrides[i];
+                j++;
+            }
+        }
+
+        // Handle scalar output (all dims shrunk)
+        if (outputRank == 0) {
+            return super.initializeOutputs(ctx);
+        }
+
+        // Create view sharing the input's data buffer
+        char order = input.ordering();
+        INDArray view = Nd4j.create(input.data(), outShape, outStrides, viewOffset, order);
+        addOutputArgument(view);
+        return false;
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         if(args().length == 1) {
             //Array inputs for begin/end/strides
@@ -374,6 +526,11 @@ public class StridedSlice extends DynamicCustomOp {
         }
         //Output type is same as input type. 1 or 4 depending on whether using iargs or arrays (for TF import etc)
         return Collections.singletonList(dataTypes.get(0));
+    }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
     }
 
 }

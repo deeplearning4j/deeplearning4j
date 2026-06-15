@@ -57,18 +57,31 @@ public class DynamicStitch extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        // DynamicPartition and DynamicStitch are mutually inverse
+        // Gradient of dynamicStitch: for each input data[i], its gradient is gathered
+        // from the output gradient at the corresponding indices[i] positions.
+        // Forward:  output[indices[i][j]] = data[i][j]
+        // Backward: grad_data[i][j] = grad_output[indices[i][j]]
         SDVariable gradient = i_v.get(0);
-        SDVariable[] partitionData = new SDVariable[indices.length];
-        for (int i = 0; i < indices.length; i++)
-            partitionData[i] = sameDiff.onesLike(indices[i]).mul(i);
-        SDVariable partitions = sameDiff.dynamicStitch(indices, partitionData);
 
-        SDVariable[] partition = sameDiff.dynamicPartition(gradient, partitions, numPartitions);
+        // Derive numPartitions from args - total args = 2 * numPartitions (indices + data)
+        SDVariable[] allArgs = args();
+        int numParts = allArgs.length / 2;
+
         List<SDVariable> ret = new ArrayList<>();
-        for (SDVariable i : indices)
-            ret.add(sameDiff.zerosLike(i));
-        Collections.addAll(ret, partition);
+
+        // Zero gradients for index arrays (first numParts args)
+        for (int i = 0; i < numParts; i++) {
+            ret.add(sameDiff.zerosLike(allArgs[i]));
+        }
+
+        // Gradient for each data array: gather from output gradient using indices
+        for (int i = 0; i < numParts; i++) {
+            SDVariable indices = allArgs[i];
+            // Gather elements from gradient at positions specified by indices
+            SDVariable dataGrad = sameDiff.gather(gradient, indices, 0);
+            ret.add(dataGrad);
+        }
+
         return ret;
     }
 
@@ -100,18 +113,28 @@ public class DynamicStitch extends DynamicCustomOp {
         }
 
         if(properties.containsKey("numPartitions")) {
-            Integer numPartitions = (Integer) properties.get("numPartitions");
-            this.numPartitions = numPartitions;
+            Object val = properties.get("numPartitions");
+            if (val instanceof Number) {
+                this.numPartitions = ((Number) val).intValue();
+            }
         }
 
     }
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> base =  super.propertiesForFunction();
-        base.put("numPartitions",numPartitions);
-        base.put("indices",indices);
-        return base;
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("numPartitions", numPartitions);
+        if (indices != null) {
+            String[] indicesNames = new String[indices.length];
+            for (int i = 0; i < indices.length; i++) {
+                indicesNames[i] = indices[i].name();
+            }
+            ret.put("indices", indicesNames);
+        } else if (indexNames != null) {
+            ret.put("indices", indexNames);
+        }
+        return ret;
     }
 
     @Override

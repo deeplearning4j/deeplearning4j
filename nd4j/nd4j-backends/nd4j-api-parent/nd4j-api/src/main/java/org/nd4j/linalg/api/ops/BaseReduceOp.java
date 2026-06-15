@@ -31,6 +31,7 @@ import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -56,8 +57,10 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
                         long[] dimensions, boolean keepDims) {
         super(sameDiff, null);
         if (i_v != null) {
-            if(dimensions == null || dimensions.length < 1)
-                dimensions = new long[] {Integer.MAX_VALUE};
+            // Don't convert null/empty to {-1}. Empty dimensions means "reduce all".
+            // -1 means "last dimension", not "reduce all".
+            if(dimensions == null)
+                dimensions = new long[0];
 
             this.dimensions = dimensions;
             SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
@@ -77,8 +80,10 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
                         long[] dimensions, boolean keepDims) {
         super(sameDiff,null);
         if (i_v != null) {
-            if(dimensions == null || dimensions.length < 1)
-                dimensions = new long[] {Integer.MAX_VALUE};
+            // Don't convert null/empty to {-1}. Empty dimensions means "reduce all".
+            // -1 means "last dimension", not "reduce all".
+            if(dimensions == null)
+                dimensions = new long[0];
 
             this.dimensions = dimensions;
 
@@ -132,8 +137,10 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
                         boolean keepDims) {
         super(sameDiff, null);
         if (i_v != null) {
-            if(dimensions == null || dimensions.length < 1)
-                dimensions = new long[] {Integer.MAX_VALUE};
+            // Don't convert null/empty to {-1}. Empty dimensions means "reduce all".
+            // -1 means "last dimension", not "reduce all".
+            if(dimensions == null)
+                dimensions = new long[0];
 
             SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
             this.keepDims = keepDims;
@@ -223,8 +230,19 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
             } else {
                 long[] shape = x.shape();
                 if(dimensions == null || Shape.isWholeArray(shape, dimensions)){
-                    //Return scalar
-                    return x.reshape().dup();
+                    // Return scalar only if input has exactly 1 element
+                    // This is a true no-op for whole-array reduction of a single element
+                    if (x.length() == 1) {
+                        return x.reshape().dup();
+                    } else {
+                        // If x has more than 1 element, this shouldn't be called as a noOp
+                        // Log a warning and return a dup - caller should have done actual reduction
+                        log.warn("noOp() called for whole-array reduction on array with {} elements. " +
+                            "Input shape: {}, dimensions: {}. Returning dup instead.",
+                            x.length(), java.util.Arrays.toString(shape),
+                            (dimensions == null ? "null" : java.util.Arrays.toString(dimensions)));
+                        return x.dup();
+                    }
                 } else {
                     //Strip out size 1 dimensions
                     long[] outShape = ArrayUtil.removeIndex(shape, dimensions);
@@ -246,7 +264,9 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         if (!attributesForNode.containsKey("axis") && !hasReductionIndices(nodeDef)) {
-            this.dimensions = new long[] { Integer.MAX_VALUE };
+            // No axis specified = reduce all dimensions. Use empty array, not {-1}.
+            // -1 means "last dimension", not "reduce all".
+            this.dimensions = new long[0];
         }   //Otherwise: dimensions are dynamically set during execution in InferenceSession
 
         if(attributesForNode.containsKey("keep_dims")) {
@@ -305,6 +325,22 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         if(properties.containsKey("dimensionz")) {
             INDArray array = (INDArray) properties.get("dimensionz");
             this.dimensionz = array;
+            if (this.dimensionz != null) {
+                // If loaded array has null data buffer, treat as "reduce all" (null)
+                // NOTE: Do NOT use Nd4j.createFromArray(-1L) here. The -1 sentinel
+                // conflicts with NumPy convention where -1 means "last axis".
+                if (this.dimensionz.data() == null || this.dimensionz.isEmpty()) {
+                    this.dimensionz = null;
+                }
+                // Mark dimension arrays as constant to prevent GC from freeing them
+                if (this.dimensionz.data() != null) {
+                    this.dimensionz.data().setConstant(true);
+                }
+                if (this.dimensionz.shapeInfoDataBuffer() != null) {
+                    this.dimensionz.shapeInfoDataBuffer().setConstant(true);
+                }
+                this.dimensionz.setCloseable(false);
+            }
         }
 
         if(properties.containsKey("dimensionVariable") && properties.get("dimensionVariable") != null) {

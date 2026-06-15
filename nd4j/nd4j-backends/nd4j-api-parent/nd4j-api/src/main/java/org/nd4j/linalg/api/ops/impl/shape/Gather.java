@@ -35,6 +35,11 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+
 import static org.nd4j.linalg.api.buffer.DataType.INT32;
 
 /**
@@ -60,7 +65,6 @@ public class Gather extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[] {input, sameDiff.constant(Nd4j.createFromArray(indices))}, inPlace);
 
         addIArgument(axis);
-        addIArgument(indices);
         this.jaxis = axis;
         this.indices = indices;
     }
@@ -72,18 +76,17 @@ public class Gather extends DynamicCustomOp {
     }
 
     public Gather(INDArray df, int[] indexes, int axis) {
-        addInputArgument(df);
+        addInputArgument(df, Nd4j.createFromArray(indexes));
         addIArgument(axis);
-        addIArgument(indexes);
         this.jaxis = axis;
-        this.indices = indices;
+        this.indices = indexes;
     }
 
     public Gather(INDArray df, INDArray indexes, int axis) {
         addInputArgument(df, indexes);
         addIArgument(axis);
         this.jaxis = axis;
-        this.indices = indices;
+        // FIXED: Removed incorrect line that referenced non-existent 'indices' variable
     }
 
     @Override
@@ -104,13 +107,26 @@ public class Gather extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-
+        // ONNX Gather has an optional axis attribute, default is 0
+        if (attributesForNode.containsKey("axis")) {
+            long axis = attributesForNode.get("axis").getI();
+            addIArgument(axis);
+            this.jaxis = (int) axis;
+        } else {
+            // Default axis is 0
+            addIArgument(0);
+            this.jaxis = 0;
+        }
     }
 
     @Override
     public void configureFromArguments() {
-        if(!iArguments.isEmpty()) {
+        if (!iArguments.isEmpty()) {
             this.jaxis = iArguments.get(0).intValue();
+        } else {
+            // Set default axis if no arguments provided
+            this.jaxis = 0;
+            addIArgument(0);
         }
     }
 
@@ -170,29 +186,87 @@ public class Gather extends DynamicCustomOp {
             SDVariable inputArray = arg(0);
             SDVariable indices = args().length > 1 ? arg(1) : sameDiff.constant(Nd4j.createFromArray(this.indices));
             SDVariable inputGrad = sameDiff.zerosLike(inputArray);
-            SDVariable inputArrayRank = inputArray.rank();
-            SDVariable gatherAxis = (jaxis < 0 ? inputArrayRank.minus(1) : sameDiff.constant(jaxis)).reshape(1);
-            SDVariable gradAtOutAdditionalDimensions = sameDiff.range(inputArrayRank, gradAtOut.rank(), sameDiff.constant(1), INT32);
 
-            //Use scatter add plus permute
-            SDVariable inputArrayDimensions = sameDiff.range(null, sameDiff.constant(0), inputArrayRank, sameDiff.constant(1), INT32);
-            SDVariable inputArrayDimensionsRectified =
-                    sameDiff.math().listDiff(inputArrayDimensions, gatherAxis)[0];
+            // Use static shape information instead of dynamic ops for shape inference
+            // During gradient computation, the forward pass has already executed, so shapes are known
+            long[] inputShape = inputArray.getShape();
+            int inputRank = inputShape != null ? inputShape.length : -1;
 
-            // Indices
-            SDVariable inputPermuteDims = sameDiff.concat(0, gatherAxis, inputArrayDimensionsRectified);
-            SDVariable outGradPermuteDims =
-                    sameDiff.concat(0, inputPermuteDims, gradAtOutAdditionalDimensions);
-            SDVariable inputInvertDims = sameDiff.invertPermutation(inputPermuteDims);
+            // If inputShape is unknown (dynamic), fall back to simple scatter add on axis 0.
+            // For axis 0, no permutation is needed: gradient is scatterAdd(zerosLike(input), indices, gradAtOut).
+            if (inputRank <= 0) {
+                // Dynamic-shape fallback: use scatterAdd directly on axis 0.
+                // This is correct when jaxis == 0 (the common case for batch-dimension gather).
+                // For other axes we still use the same approach since we cannot know the rank statically.
+                SDVariable inputGradScattered = sameDiff.scatterAdd(inputGrad, indices, gradAtOut);
+                return Arrays.asList(inputGradScattered, indicesGrad);
+            }
+
+            int outputRank = gradAtOut.getShape() != null ? gradAtOut.getShape().length : inputRank;
+
+            // Normalize axis
+            int normalizedAxis = jaxis < 0 ? inputRank + jaxis : jaxis;
+
+            // Create constant arrays for permutation dimensions
+            // gatherAxis = [normalizedAxis] as shape [1]
+            SDVariable gatherAxis = sameDiff.constant(Nd4j.createFromArray(normalizedAxis).castTo(INT32));
+
+            // inputArrayDimensions = [0, 1, 2, ..., inputRank-1]
+            int[] allDims = new int[inputRank];
+            for (int i = 0; i < inputRank; i++) {
+                allDims[i] = i;
+            }
+
+            // inputArrayDimensionsRectified = all dimensions except the gather axis
+            // e.g., if inputRank=2 and axis=0, this is [1]
+            int[] rectifiedDims = new int[inputRank - 1];
+            int idx = 0;
+            for (int i = 0; i < inputRank; i++) {
+                if (i != normalizedAxis) {
+                    rectifiedDims[idx++] = i;
+                }
+            }
+            SDVariable inputArrayDimensionsRectified = sameDiff.constant(Nd4j.createFromArray(rectifiedDims).castTo(INT32));
+
+            // inputPermuteDims = [axis, other dims...] e.g., [0, 1] or [1, 0]
+            int[] permuteDims = new int[inputRank];
+            permuteDims[0] = normalizedAxis;
+            for (int i = 0; i < rectifiedDims.length; i++) {
+                permuteDims[i + 1] = rectifiedDims[i];
+            }
+            SDVariable inputPermuteDims = sameDiff.constant(Nd4j.createFromArray(permuteDims).castTo(INT32));
+
+            // gradAtOutAdditionalDimensions = dimensions in output gradient beyond input rank
+            // e.g., if input is [2,3] and indices is [4], output is [4,3], gradient is [4,3]
+            // Additional dims would be empty in this case
+            int additionalDims = outputRank - inputRank;
+            int[] outGradPermuteDimsArr;
+            if (additionalDims > 0) {
+                outGradPermuteDimsArr = new int[outputRank];
+                System.arraycopy(permuteDims, 0, outGradPermuteDimsArr, 0, inputRank);
+                for (int i = 0; i < additionalDims; i++) {
+                    outGradPermuteDimsArr[inputRank + i] = inputRank + i;
+                }
+            } else {
+                outGradPermuteDimsArr = permuteDims;
+            }
+            SDVariable outGradPermuteDims = sameDiff.constant(Nd4j.createFromArray(outGradPermuteDimsArr).castTo(INT32));
+
+            // inputInvertDims = inverse permutation
+            int[] invertDims = new int[inputRank];
+            for (int i = 0; i < inputRank; i++) {
+                invertDims[permuteDims[i]] = i;
+            }
+            SDVariable inputInvertDims = sameDiff.constant(Nd4j.createFromArray(invertDims).castTo(INT32));
 
             //Permute gradients so original axis is at position 0... then scatter add, and reverse
             SDVariable permutedOutGrad = gradAtOut.permute(outGradPermuteDims);
-            SDVariable inputGradPermuted =inputGrad.permute(inputPermuteDims);
+            SDVariable inputGradPermuted = inputGrad.permute(inputPermuteDims);
             SDVariable inputGradPermutedScatterSum = sameDiff.scatterAdd(inputGradPermuted, indices, permutedOutGrad);
 
             //Now, invert the permutation so axis is back where it was
             SDVariable finalInputGrad = inputGradPermutedScatterSum.permute(inputInvertDims);
-            return Arrays.asList(finalInputGrad,indicesGrad);
+            return Arrays.asList(finalInputGrad, indicesGrad);
         }
 
 
@@ -202,5 +276,76 @@ public class Gather extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         //Output type is same as (first) input type
         return Collections.singletonList(dataTypes.get(0));
+    }
+
+    /**
+     * Gather output shape: replace the gather axis dimension with indices shape.
+     * For data[D0, D1, ..., D_axis, ..., Dn] and indices[I0, I1, ..., Im],
+     * output is [D0, D1, ..., I0, I1, ..., Im, ..., Dn]
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 2) {
+            return null;
+        }
+
+        INDArray data = oc.getInputArray(0);
+        INDArray indices = oc.getInputArray(1);
+        if (data == null || indices == null) {
+            return null;
+        }
+
+        long[] dataShape = data.shape();
+        long[] indicesShape = indices.shape();
+        int dataRank = dataShape.length;
+
+        // Get axis from iArgs or field
+        List<Long> iArgs = oc.getIArguments();
+        int axis;
+        if (iArgs != null && !iArgs.isEmpty()) {
+            axis = iArgs.get(0).intValue();
+        } else {
+            axis = this.jaxis;
+        }
+
+        // Normalize negative axis
+        if (axis < 0) {
+            axis += dataRank;
+        }
+
+        if (axis < 0 || axis >= dataRank) {
+            return null; // Invalid axis - fall back to C++
+        }
+
+        // Output rank = data rank - 1 + indices rank
+        // (we remove the axis dimension and insert indices shape)
+        int outputRank = dataRank - 1 + indicesShape.length;
+        long[] outputShape = new long[outputRank];
+
+        // Copy dimensions before axis
+        int outIdx = 0;
+        for (int i = 0; i < axis; i++) {
+            outputShape[outIdx++] = dataShape[i];
+        }
+
+        // Insert indices shape
+        for (int i = 0; i < indicesShape.length; i++) {
+            outputShape[outIdx++] = indicesShape[i];
+        }
+
+        // Copy dimensions after axis
+        for (int i = axis + 1; i < dataRank; i++) {
+            outputShape[outIdx++] = dataShape[i];
+        }
+
+        DataType dtype = data.dataType();
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 }

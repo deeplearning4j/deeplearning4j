@@ -87,9 +87,10 @@ public class Create extends DynamicCustomOp {
     }
 
     public Create(SameDiff sd, SDVariable shape, DataType dataType, String order, boolean initialize) {
-        this(sd,shape,dataType);
-        addIArgument(order.charAt(0),dataType.toInt());
+        super(sd, new SDVariable[]{shape});
+        addDArgument(dataType);
         addBArgument(initialize);
+        addIArgument(order.charAt(0), dataType.toInt());
         this.outputType = dataType;
     }
 
@@ -149,5 +150,10 @@ public class Create extends DynamicCustomOp {
             //Output type is same as input type
             return dataTypes;
         }
+    }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
     }
 }

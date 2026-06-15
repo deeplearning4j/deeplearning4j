@@ -43,6 +43,17 @@ public class Reverse extends DynamicCustomOp {
         addIArgument(dimensions);
     }
 
+    /**
+     * Constructor for Reverse with axis as SDVariable (for TF ReverseV2 import)
+     * @param sameDiff SameDiff instance
+     * @param input Input tensor to reverse
+     * @param axis Axis tensor specifying which dimensions to reverse
+     */
+    public Reverse(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable axis) {
+        super(sameDiff, new SDVariable[]{input, axis});
+        // Axis will be extracted from the axis variable in configureFromArguments
+    }
+
     public Reverse() {
     }
 
@@ -111,8 +122,19 @@ public class Reverse extends DynamicCustomOp {
 
     @Override
     public void configureFromArguments() {
+        // First try to get axis from iArguments (static case)
         if(!iArguments.isEmpty()) {
             this.dimensions = Longs.toArray(iArguments);
+        } else {
+            // Try to get axis from second input variable (TF ReverseV2 case)
+            SDVariable[] args = args();
+            if (args != null && args.length >= 2) {
+                var axisArr = args[1].getArr();
+                if (axisArr != null) {
+                    this.dimensions = axisArr.toLongVector();
+                    addIArgument(this.dimensions);
+                }
+            }
         }
     }
 

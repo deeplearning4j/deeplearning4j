@@ -142,4 +142,9 @@ public class Range extends DynamicCustomOp {
                 "Expected no input datatypes (no args) or 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(dataType == null ? DEFAULT_DTYPE : dataType);
     }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

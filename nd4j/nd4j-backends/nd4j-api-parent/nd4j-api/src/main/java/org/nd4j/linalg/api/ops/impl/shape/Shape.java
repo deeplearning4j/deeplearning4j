@@ -37,6 +37,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
+
 /**
  * Returns the shape of the input array.
  *
@@ -122,5 +127,34 @@ public class Shape extends DynamicCustomOp {
             dArguments.add(dataType);
         }
         return Collections.singletonList(dataType == null ? DataType.LONG : dataType);
+    }
+
+    /**
+     * Shape op output is always a 1D tensor containing the input shape.
+     * Output shape = [input.rank()], dtype = LONG (or configured dataType).
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 1) {
+            return null;
+        }
+
+        INDArray input = oc.getInputArray(0);
+        if (input == null) {
+            return null;
+        }
+
+        // Output is 1D tensor with length = input rank
+        long[] outputShape = new long[]{input.rank()};
+
+        // Use configured dataType or default to LONG
+        List<DataType> dArgs = oc.getDArguments();
+        DataType dtype = (dArgs != null && !dArgs.isEmpty()) ? dArgs.get(0) :
+                (this.dataType != null ? this.dataType : DataType.LONG);
+
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, false);
+        DataBuffer shapeInfo = org.nd4j.linalg.api.shape.Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 }

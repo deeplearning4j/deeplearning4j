@@ -24,10 +24,15 @@ import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftmaxBp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -107,5 +112,32 @@ public class SoftMax extends BaseDynamicTransformOp {
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), dataTypes);
         Preconditions.checkState(dataTypes.get(0).isFPType(), "Input must be a floating point type, got %s", dataTypes.get(0));
         return Collections.singletonList(dataTypes.get(0));
+    }
+
+    /**
+     * Softmax preserves input shape - output shape equals input shape.
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 1) {
+            return null;
+        }
+
+        INDArray x = oc.getInputArray(0);
+        if (x == null) {
+            return null;
+        }
+
+        long[] shape = x.shape();
+        DataType dtype = x.dataType();
+
+        long[] strides = Nd4j.getStrides(shape, 'c');
+        boolean isEmpty = false;
+        for (long dim : shape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(shape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 }
