@@ -1,0 +1,177 @@
+name: Publish SDK JARs
+
+description: >
+  Collect platform-classified backend JARs (nd4j-native / nd4j-cuda with native libraries)
+  and upload them as workflow artifacts and optionally to a GitHub Release.
+
+inputs:
+  artifact-name:
+    description: Artifact name for the uploaded JAR set.
+    required: true
+  backend:
+    description: 'Backend type: "cpu" or "cuda"'
+    required: true
+  cuda-version:
+    description: 'CUDA version (e.g., 12.9, 12.6). Required when backend=cuda.'
+    required: false
+    default: ""
+  platform:
+    description: 'JavaCPP platform identifier (e.g., linux-x86_64, macosx-arm64, windows-x86_64, android-arm64)'
+    required: true
+  platform-extension:
+    description: 'JavaCPP platform extension including leading dash (e.g., -avx2, -onednn, -cudnn, -compile). Empty for base variant.'
+    required: false
+    default: ""
+  release-version:
+    description: >
+      When set, upload JARs to a GitHub Release with tag sdk-v<version>.
+      The release is created if it does not already exist.
+    required: false
+    default: ""
+  retention-days:
+    description: Artifact retention in days.
+    required: false
+    default: "14"
+
+runs:
+  using: composite
+  steps:
+    - id: collect_jars
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        BACKEND="${{ inputs.backend }}"
+        CUDA_VERSION="${{ inputs.cuda-version }}"
+        PLATFORM="${{ inputs.platform }}"
+        EXTENSION="${{ inputs.platform-extension }}"
+        CLASSIFIER="${PLATFORM}${EXTENSION}"
+
+        # Determine module names based on backend
+        if [ "${BACKEND}" == "cuda" ]; then
+          if [ -z "${CUDA_VERSION}" ]; then
+            echo "ERROR: cuda-version is required when backend=cuda"
+            echo "found=0" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          BACKEND_MODULE="nd4j-cuda-${CUDA_VERSION}"
+          PRESET_MODULE="nd4j-cuda-${CUDA_VERSION}-preset"
+        else
+          BACKEND_MODULE="nd4j-native"
+          PRESET_MODULE="nd4j-native-preset"
+        fi
+
+        echo "Collecting JARs for ${BACKEND_MODULE} / ${PRESET_MODULE} with classifier ${CLASSIFIER}"
+
+        STAGING_DIR="${GITHUB_WORKSPACE}/sdk-jars-staging"
+        mkdir -p "${STAGING_DIR}"
+
+        FOUND=0
+
+        # Search in Maven local repo and target directories
+        # Priority: target/ dirs first (freshest build output), then ~/.m2
+        for SEARCH_ROOT in "${GITHUB_WORKSPACE}" "${HOME}/.m2/repository"; do
+          # Find classified JARs (contain native .so/.dll/.dylib)
+          while IFS= read -r -d '' jar; do
+            BASENAME="$(basename "${jar}")"
+            # Skip if already collected (from higher-priority location)
+            if [ ! -f "${STAGING_DIR}/${BASENAME}" ]; then
+              cp "${jar}" "${STAGING_DIR}/"
+              echo "  Collected: ${BASENAME} (from ${jar})"
+              FOUND=1
+            fi
+          done < <(find "${SEARCH_ROOT}" -type f -name "${BACKEND_MODULE}-*-${CLASSIFIER}.jar" -print0 2>/dev/null)
+
+          while IFS= read -r -d '' jar; do
+            BASENAME="$(basename "${jar}")"
+            if [ ! -f "${STAGING_DIR}/${BASENAME}" ]; then
+              cp "${jar}" "${STAGING_DIR}/"
+              echo "  Collected: ${BASENAME} (from ${jar})"
+              FOUND=1
+            fi
+          done < <(find "${SEARCH_ROOT}" -type f -name "${PRESET_MODULE}-*-${CLASSIFIER}.jar" -print0 2>/dev/null)
+        done
+
+        # Also collect the non-classified (pure Java) JARs — but only one copy
+        for MODULE in "${BACKEND_MODULE}" "${PRESET_MODULE}"; do
+          while IFS= read -r -d '' jar; do
+            BASENAME="$(basename "${jar}")"
+            # Skip classified JARs (already collected above) and sources/javadoc
+            if echo "${BASENAME}" | grep -qE "(-sources|-javadoc|-tests)\.jar$"; then
+              continue
+            fi
+            # Skip if it has a platform classifier (already collected)
+            if echo "${BASENAME}" | grep -qE "(linux|macos|windows|android|ios)-"; then
+              continue
+            fi
+            if [ ! -f "${STAGING_DIR}/${BASENAME}" ]; then
+              cp "${jar}" "${STAGING_DIR}/"
+              echo "  Collected: ${BASENAME} (from ${jar})"
+              FOUND=1
+            fi
+          done < <(find "${GITHUB_WORKSPACE}" -path "*/target/${MODULE}-*.jar" -type f -print0 2>/dev/null | head -z -n 5)
+        done
+
+        if [ "${FOUND}" -eq 1 ]; then
+          echo "found=1" >> "${GITHUB_OUTPUT}"
+          echo ""
+          echo "=== Collected JARs ==="
+          ls -lh "${STAGING_DIR}/"
+        else
+          echo "found=0" >> "${GITHUB_OUTPUT}"
+          echo "WARNING: No SDK JARs found for ${BACKEND_MODULE} / ${PRESET_MODULE} with classifier ${CLASSIFIER}"
+        fi
+
+        echo "staging-dir=${STAGING_DIR}" >> "${GITHUB_OUTPUT}"
+
+    - name: Upload SDK JARs as workflow artifacts
+      if: steps.collect_jars.outputs.found == '1'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.collect_jars.outputs.staging-dir }}/*.jar
+        if-no-files-found: warn
+        retention-days: ${{ inputs.retention-days }}
+
+    - name: Upload SDK JARs to GitHub Release
+      if: steps.collect_jars.outputs.found == '1' && inputs.release-version != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RELEASE_TAG: sdk-v${{ inputs.release-version }}
+        RELEASE_VERSION: ${{ inputs.release-version }}
+        STAGING_DIR: ${{ steps.collect_jars.outputs.staging-dir }}
+      run: |
+        set -euo pipefail
+
+        # Create the release if it does not exist yet
+        if ! gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+          echo "Creating GitHub Release ${RELEASE_TAG}"
+          gh release create "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "SDX Runtime SDK ${RELEASE_VERSION}" \
+            --notes "Per-platform SDX Runtime SDK packages for release ${RELEASE_VERSION}.
+
+        Contains both native C++ SDK packages and platform-classified Java JAR artifacts.
+
+        **Platforms:** Linux x86_64, Linux ARM64, macOS x86_64, macOS ARM64, Windows x86_64, Android ARM64, Android x86_64
+        **Variants:** CPU, CUDA 12.6, CUDA 12.9 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)" \
+            --prerelease \
+          || echo "Release may have been created by another job (expected in parallel builds)"
+        fi
+
+        # Upload all JARs
+        UPLOAD_COUNT=0
+        for jar in "${STAGING_DIR}"/*.jar; do
+          if [ -f "${jar}" ]; then
+            BASENAME="$(basename "${jar}")"
+            echo "Uploading ${BASENAME} to release ${RELEASE_TAG}"
+            gh release upload "${RELEASE_TAG}" "${jar}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --clobber \
+            || echo "WARNING: Failed to upload ${BASENAME}"
+            UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
+          fi
+        done
+
+        echo "Uploaded ${UPLOAD_COUNT} JAR(s) to release ${RELEASE_TAG}"

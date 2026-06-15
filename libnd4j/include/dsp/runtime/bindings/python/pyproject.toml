@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdx-runtime"
+version = "0.0.1"
+description = "Python wrapper for the SDX runtime C ABI"
+license = "Apache-2.0"
+requires-python = ">=3.8"
+
+[project.optional-dependencies]
+numpy = ["numpy>=1.20"]
+runner = ["fastapi>=0.100", "uvicorn[standard]>=0.20", "grpcio>=1.50", "numpy>=1.20", "protobuf>=4.0"]
+
+[tool.setuptools]
+py-modules = ["sdx_runtime", "sdx_tensor_transport", "sdx_sdk_runner"]

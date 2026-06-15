@@ -1,0 +1,129 @@
+name: Publish SDX Runtime SDK
+
+description: Build sdx_runtime_bindings in detected libnd4j build dirs and upload generated SDK artifacts.
+
+inputs:
+  artifact-name:
+    description: Artifact name for uploaded SDX runtime SDK package set.
+    required: true
+  build-root:
+    description: Relative path to libnd4j blasbuild root.
+    required: false
+    default: libnd4j/blasbuild
+  threads:
+    description: Parallel build threads for cmake --build.
+    required: false
+    default: "2"
+  retention-days:
+    description: Artifact retention in days.
+    required: false
+    default: "14"
+  release-version:
+    description: >
+      When set, upload SDK dist files to a GitHub Release with this tag.
+      The release is created if it does not already exist.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - id: build_sdx
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        BUILD_ROOT="${GITHUB_WORKSPACE}/${{ inputs.build-root }}"
+        THREADS="${{ inputs.threads }}"
+
+        if [ ! -d "${BUILD_ROOT}" ]; then
+          echo "No libnd4j build root found at ${BUILD_ROOT}. Skipping SDX SDK build step."
+          echo "found=0" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+
+        FOUND_BUILD_DIR=0
+        for CANDIDATE in \
+          cpu \
+          cuda \
+          linux-arm64 \
+          linux-x86_64 \
+          android-arm64 \
+          android-x86_64 \
+          macos-arm64 \
+          macos-x86_64 \
+          windows-x86_64 \
+          ios-arm64 \
+          ios-x86_64; do
+          BUILD_DIR="${BUILD_ROOT}/${CANDIDATE}"
+          if [ -f "${BUILD_DIR}/CMakeCache.txt" ]; then
+            FOUND_BUILD_DIR=1
+            echo "Building sdx_runtime_bindings in ${BUILD_DIR}"
+            if ! cmake --build "${BUILD_DIR}" --target sdx_runtime_bindings --parallel "${THREADS}" \
+                 && ! cmake --build "${BUILD_DIR}" --target sdx_runtime_bindings; then
+              echo "WARNING: Failed to build sdx_runtime_bindings in ${BUILD_DIR}. Continuing to artifact discovery."
+            fi
+          fi
+        done
+
+        if [ "${FOUND_BUILD_DIR}" -eq 0 ]; then
+          echo "No candidate libnd4j CMake directories found for SDX SDK packaging under ${BUILD_ROOT}."
+        fi
+
+        if find "${BUILD_ROOT}" -type f -path "*/sdx-runtime-sdk/dist/*" -print -quit 2>/dev/null | grep -q .; then
+          echo "found=1" >> "${GITHUB_OUTPUT}"
+        else
+          echo "found=0" >> "${GITHUB_OUTPUT}"
+        fi
+
+    - name: Upload SDX runtime SDK artifacts
+      if: steps.build_sdx.outputs.found == '1'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          ${{ inputs.build-root }}/**/sdx-runtime-sdk/dist/**
+          ${{ inputs.build-root }}/**/sdx-runtime-sdk/bindings/**
+        if-no-files-found: warn
+        retention-days: ${{ inputs.retention-days }}
+
+    - name: Upload SDK to GitHub Release
+      if: steps.build_sdx.outputs.found == '1' && inputs.release-version != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RELEASE_TAG: sdk-v${{ inputs.release-version }}
+        RELEASE_VERSION: ${{ inputs.release-version }}
+        BUILD_ROOT: ${{ inputs.build-root }}
+      run: |
+        set -euo pipefail
+
+        # Create the release if it does not exist yet (concurrent builds may race here)
+        if ! gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+          echo "Creating GitHub Release ${RELEASE_TAG}"
+          gh release create "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "SDX Runtime SDK ${RELEASE_VERSION}" \
+            --notes "Per-platform SDX Runtime SDK packages for release ${RELEASE_VERSION}.
+
+        Each asset contains the C++ runtime library, C header, language binding wrappers, and manifest schema for a specific platform/variant combination.
+
+        **Platforms:** Linux x86_64, Linux ARM64, macOS x86_64, macOS ARM64, Windows x86_64, Android ARM64, Android x86_64
+        **Variants:** CPU, CUDA 12.6, CUDA 12.9 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)" \
+            --prerelease \
+          || echo "Release may have been created by another job (expected in parallel builds)"
+        fi
+
+        # Upload all dist files (zips, aars, xcframeworks) to the release
+        UPLOAD_COUNT=0
+        while IFS= read -r -d '' dist_file; do
+          BASENAME="$(basename "${dist_file}")"
+          echo "Uploading ${BASENAME} to release ${RELEASE_TAG}"
+          gh release upload "${RELEASE_TAG}" "${dist_file}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber \
+          || echo "WARNING: Failed to upload ${BASENAME}"
+          UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
+        done < <(find "${GITHUB_WORKSPACE}/${BUILD_ROOT}" -type f -path "*/sdx-runtime-sdk/dist/*" -print0)
+
+        echo "Uploaded ${UPLOAD_COUNT} SDK asset(s) to release ${RELEASE_TAG}"

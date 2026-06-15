@@ -1,0 +1,5 @@
+module CSdxRuntime [system] {
+    header "shim.h"
+    link "nd4jcpu"
+    export *
+}

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>Nd4j.Dsp.Runtime</RootNamespace>
+    <AssemblyName>SdxRuntime</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Version>0.0.1</Version>
+    <Description>C# wrapper for the SDX runtime C ABI</Description>
+  </PropertyGroup>
+
+</Project>
