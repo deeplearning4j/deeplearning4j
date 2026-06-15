@@ -23,7 +23,7 @@
 #include "../MmulHelper.h"
 
 #include <array/NDArrayFactory.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>

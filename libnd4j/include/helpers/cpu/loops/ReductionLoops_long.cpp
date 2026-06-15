@@ -36,9 +36,7 @@ template <typename OpType>
 void ReductionLongLoops<X, Z>::innerloopReduce(sd::memory::Workspace* workspace, const X* x,
                                                const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                                                const LongType* dims, X* extraParams) {
-#ifndef SD_LOOPS_INLINED
   ReductionLoops<X, Z, X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
-#endif
 }
 
 template <typename X, typename Z>

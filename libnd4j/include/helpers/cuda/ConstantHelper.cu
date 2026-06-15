@@ -25,8 +25,8 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cstring>
-#include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
+#include <string>
 #include <execution/LaunchContext.h>
 #include <helpers/ConstantHelper.h>
 #include <helpers/logger.h>
@@ -62,7 +62,8 @@ void * ConstantHelper::getConstantSpace() {
   void* ptr = memory::CudaMemoryPool::getInstance().allocate(CONSTANT_LIMIT, deviceId, nullptr);
   if (ptr == nullptr) {
     cudaGetLastError();  // Clear error state
-    throw cuda_exception::build("Failed to allocate constant space", cudaErrorMemoryAllocation);
+    std::string msg = "Failed to allocate constant space; Error code: [" + std::to_string((int)cudaErrorMemoryAllocation) + "]";
+    THROW_EXCEPTION(msg.c_str());
   }
   return ptr;
 }
@@ -92,7 +93,8 @@ ConstantHelper::ConstantHelper() {
     auto res = cudaSetDevice(e);
     if (res != 0) {
       cudaGetLastError();  // Clear error before throwing
-      throw cuda_exception::build("cudaSetDevice failed", res);
+      std::string msg = "cudaSetDevice failed; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
     auto constant = getConstantSpace();
 
@@ -108,7 +110,8 @@ ConstantHelper::ConstantHelper() {
   auto res = cudaSetDevice(initialDevice);
   if (res != 0) {
     cudaGetLastError();  // Clear error before throwing
-    throw cuda_exception::build("Final cudaSetDevice failed", res);
+    std::string msg = "Final cudaSetDevice failed; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
   }
 
   // Clear any errors that may have accumulated

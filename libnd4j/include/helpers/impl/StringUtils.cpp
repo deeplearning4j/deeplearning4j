@@ -22,7 +22,6 @@
 // Created by raver119 on 20/04/18.
 // @author Oleg Semeniv <oleg.semeniv@gmail.com>
 //
-#include <exceptions/datatype_exception.h>
 #include <helpers/BitwiseUtils.h>
 #include <helpers/StringUtils.h>
 
@@ -247,8 +246,11 @@ LongType StringUtils::countSubarrays(const void* haystack, LongType haystackLeng
 }
 
 LongType StringUtils::byteLength(NDArray& array) {
-  if (!array.isS())
-    THROW_EXCEPTION(datatype_exception::build("StringUtils::byteLength expects one of String types;", array.dataType()).what());
+  if (!array.isS()) {
+    std::string __dt_msg = std::string("StringUtils::byteLength expects one of String types;") +
+        "; Actual: [" + DataTypeUtils::asString(array.dataType()) + "]";
+    THROW_EXCEPTION(__dt_msg.c_str());
+  }
 
   auto buffer = array.bufferAsT<LongType>();
   return buffer[array.lengthOf()];
