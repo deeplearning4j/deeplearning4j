@@ -20,7 +20,15 @@
 package org.eclipse.deeplearning4j.dl4jcore.eval;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.eval.*;
+import org.nd4j.evaluation.BaseEvaluation;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.EvaluationBinary;
+import org.nd4j.evaluation.classification.EvaluationCalibration;
+import org.nd4j.evaluation.classification.ROC;
+import org.nd4j.evaluation.classification.ROCBinary;
+import org.nd4j.evaluation.classification.ROCMultiClass;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;

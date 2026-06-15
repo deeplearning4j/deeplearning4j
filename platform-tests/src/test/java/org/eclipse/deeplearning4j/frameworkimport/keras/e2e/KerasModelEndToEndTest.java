@@ -21,7 +21,7 @@ package org.eclipse.deeplearning4j.frameworkimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.deeplearning4j.eval.ROCMultiClass;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
