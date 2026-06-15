@@ -70,8 +70,8 @@ CUSTOM_OP_IMPL(loha_matmul, 6, 1, false, 0, 0) {
   auto inFeatures = weight->sizeAt(1);
 
   std::vector<sd::LongType> prodShape = {outFeatures, inFeatures};
-  auto prod1 = NDArrayFactory::create<float>('c', prodShape, input->getContext());
-  auto prod2 = NDArrayFactory::create<float>('c', prodShape, input->getContext());
+  auto prod1 = NDArrayFactory::create(input->dataType(), 'c', prodShape, input->getContext());
+  auto prod2 = NDArrayFactory::create(input->dataType(), 'c', prodShape, input->getContext());
 
   {
     sd::ops::matmul mmulOp;
@@ -177,8 +177,8 @@ CUSTOM_OP_IMPL(loha_matmul_bp, 7, 6, false, 0, 0) {
   auto inFeatures = weight->sizeAt(1);
 
   std::vector<sd::LongType> prodShape = {outFeatures, inFeatures};
-  auto prod1 = NDArrayFactory::create<float>('c', prodShape, input->getContext());
-  auto prod2 = NDArrayFactory::create<float>('c', prodShape, input->getContext());
+  auto prod1 = NDArrayFactory::create(input->dataType(), 'c', prodShape, input->getContext());
+  auto prod2 = NDArrayFactory::create(input->dataType(), 'c', prodShape, input->getContext());
 
   {
     sd::ops::matmul mmulOp;
@@ -214,7 +214,7 @@ CUSTOM_OP_IMPL(loha_matmul_bp, 7, 6, false, 0, 0) {
   delete dLdInputLoha;
 
   // Gradient w.r.t. LoHa components
-  auto dLdOutTimesInput = NDArrayFactory::create<float>('c', prodShape, input->getContext());
+  auto dLdOutTimesInput = NDArrayFactory::create(input->dataType(), 'c', prodShape, input->getContext());
   {
     auto dLdOutT = dLdOut->transpose();
     sd::ops::matmul mmulOp;

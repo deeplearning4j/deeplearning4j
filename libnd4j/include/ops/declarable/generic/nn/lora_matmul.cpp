@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(lora_matmul, 4, 1, false, 0, 0) {
   auto batch = input->sizeAt(0);
 
   std::vector<sd::LongType> temp1Shape = {batch, r};
-  auto temp1 = NDArrayFactory::create<float>('c', temp1Shape, input->getContext());
+  auto temp1 = NDArrayFactory::create('c', temp1Shape, input->dataType(), input->getContext());
 
   {
     sd::ops::matmul mmulOp;
@@ -181,7 +181,7 @@ CUSTOM_OP_IMPL(lora_matmul_bp, 5, 4, false, 0, 0) {
 
   // dLdOut @ B -> [batch, r]
   std::vector<sd::LongType> tempShape = {batch, r};
-  auto temp = NDArrayFactory::create<float>('c', tempShape, input->getContext());
+  auto temp = NDArrayFactory::create('c', tempShape, input->dataType(), input->getContext());
   {
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {dLdOut, loraB};
@@ -215,7 +215,7 @@ CUSTOM_OP_IMPL(lora_matmul_bp, 5, 4, false, 0, 0) {
 
   // Gradient w.r.t. loraB
   std::vector<sd::LongType> temp1Shape = {batch, r};
-  auto temp1 = NDArrayFactory::create<float>('c', temp1Shape, input->getContext());
+  auto temp1 = NDArrayFactory::create('c', temp1Shape, input->dataType(), input->getContext());
   {
     sd::ops::matmul mmulOp;
     std::vector<double> tArgs;

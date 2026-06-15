@@ -47,29 +47,13 @@ namespace ops {
 //   0: patches [batch, num_patches, patch_size*patch_size*channels]
 //   1: num_patches_per_image  — INT64 scalar (= (H/patch_size)*(W/patch_size))
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(vision_encode_patches, 1, 2, false, 0, 2) {
-    auto image = INPUT_VARIABLE(0);
-    auto patches = OUTPUT_VARIABLE(0);
-    auto numPatchesOut = OUTPUT_VARIABLE(1);
-
-    REQUIRE_TRUE(image->rankOf() == 4, 0,
-        "vision_encode_patches: expected 4-D image [batch, channels, H, W], got rank %d",
-        image->rankOf());
-
-    int patchSize = INT_ARG(0);
-    // INT_ARG(1) is hidden_dim — not used in patch extraction
-
-    REQUIRE_TRUE(patchSize > 0, 0,
-        "vision_encode_patches: patch_size must be positive, got %d", patchSize);
-
+template <typename T>
+static Status vision_encode_patches_impl(NDArray* image, NDArray* patches, NDArray* numPatchesOut,
+                                          int patchSize) {
     const LongType batch    = image->sizeAt(0);
     const LongType channels = image->sizeAt(1);
     const LongType height   = image->sizeAt(2);
     const LongType width    = image->sizeAt(3);
-
-    REQUIRE_TRUE(height % patchSize == 0 && width % patchSize == 0, 0,
-        "vision_encode_patches: image dimensions (%lld x %lld) must be divisible by "
-        "patch_size (%d)", (long long)height, (long long)width, patchSize);
 
     const LongType numPatchesH = height / patchSize;
     const LongType numPatchesW = width  / patchSize;
@@ -80,10 +64,8 @@ CUSTOM_OP_IMPL(vision_encode_patches, 1, 2, false, 0, 2) {
     double numPatchesVal = static_cast<double>(numPatches);
     numPatchesOut->assign(numPatchesVal);
 
-    // Extract patches: for each (batch, patch_h, patch_w) extract all
-    // (channel, row, col) values and pack into output row.
-    auto imageBuf   = image->bufferAsT<float>();
-    auto patchesBuf = patches->bufferAsT<float>();
+    auto imageBuf   = image->bufferAsT<T>();
+    auto patchesBuf = patches->bufferAsT<T>();
 
     PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < batch; ++b) {
@@ -109,6 +91,33 @@ CUSTOM_OP_IMPL(vision_encode_patches, 1, 2, false, 0, 2) {
     }
 
     return Status::OK;
+}
+
+CUSTOM_OP_IMPL(vision_encode_patches, 1, 2, false, 0, 2) {
+    auto image = INPUT_VARIABLE(0);
+    auto patches = OUTPUT_VARIABLE(0);
+    auto numPatchesOut = OUTPUT_VARIABLE(1);
+
+    REQUIRE_TRUE(image->rankOf() == 4, 0,
+        "vision_encode_patches: expected 4-D image [batch, channels, H, W], got rank %d",
+        image->rankOf());
+
+    int patchSize = INT_ARG(0);
+    // INT_ARG(1) is hidden_dim — not used in patch extraction
+
+    REQUIRE_TRUE(patchSize > 0, 0,
+        "vision_encode_patches: patch_size must be positive, got %d", patchSize);
+
+    const LongType height = image->sizeAt(2);
+    const LongType width  = image->sizeAt(3);
+
+    REQUIRE_TRUE(height % patchSize == 0 && width % patchSize == 0, 0,
+        "vision_encode_patches: image dimensions (%lld x %lld) must be divisible by "
+        "patch_size (%d)", (long long)height, (long long)width, patchSize);
+
+    auto imageType = image->dataType();
+    BUILD_SINGLE_SELECTOR(imageType, return vision_encode_patches_impl,
+                          (image, patches, numPatchesOut, patchSize), SD_FLOAT_TYPES);
 }
 
 DECLARE_SHAPE_FN(vision_encode_patches) {

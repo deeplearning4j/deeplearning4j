@@ -39,17 +39,9 @@
 namespace sd {
 namespace ops {
 
-CUSTOM_OP_IMPL(selective_scan, 5, 1, false, 0, 0) {
-    auto x = INPUT_VARIABLE(0);       // [batch, seq_len, dim]
-    auto A = INPUT_VARIABLE(1);       // [batch, seq_len, state_dim] discretized A
-    auto B = INPUT_VARIABLE(2);       // [batch, seq_len, state_dim] discretized B
-    auto C = INPUT_VARIABLE(3);       // [batch, seq_len, state_dim] output projection
-    auto D = INPUT_VARIABLE(4);       // [dim] skip connection (feed-through)
-    auto output = OUTPUT_VARIABLE(0); // [batch, seq_len, dim]
-
-    // Optional: initial hidden state
-    NDArray* h0 = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
-
+template <typename T>
+static sd::Status selective_scan_impl(NDArray* x, NDArray* A, NDArray* B, NDArray* C, NDArray* D,
+                                      NDArray* output, NDArray* h0) {
     auto batch = x->sizeAt(0);
     auto seqLen = x->sizeAt(1);
     auto dim = x->sizeAt(2);
@@ -57,7 +49,7 @@ CUSTOM_OP_IMPL(selective_scan, 5, 1, false, 0, 0) {
 
     // CPU fallback: sequential scan
     // h: [batch, dim, state_dim]
-    auto h = NDArrayFactory::create<float>('c', {batch, dim, stateDim});
+    NDArray* h = NDArrayFactory::create<T>('c', {batch, dim, stateDim});
     if (h0 != nullptr) {
         h->assign(h0);
     }
@@ -71,13 +63,13 @@ CUSTOM_OP_IMPL(selective_scan, 5, 1, false, 0, 0) {
     h->syncToHost();
 
     // Get typed buffers for direct access — eliminates O(n^2) sync from p()/e() in loops
-    const float* xBuf = x->bufferAsT<float>();
-    const float* aBuf = A->bufferAsT<float>();
-    const float* bBuf = B->bufferAsT<float>();
-    const float* cBuf = C->bufferAsT<float>();
-    const float* dBuf = D->bufferAsT<float>();
-    float* hBuf = h->bufferAsT<float>();
-    float* outBuf = output->bufferAsT<float>();
+    const T* xBuf = x->bufferAsT<T>();
+    const T* aBuf = A->bufferAsT<T>();
+    const T* bBuf = B->bufferAsT<T>();
+    const T* cBuf = C->bufferAsT<T>();
+    const T* dBuf = D->bufferAsT<T>();
+    T* hBuf = h->bufferAsT<T>();
+    T* outBuf = output->bufferAsT<T>();
 
     // Cache strides for offset computation — inputs may be non-contiguous (views)
     // x, A, B, C are rank-3: [batch, seq_len, dim/state_dim]
@@ -95,18 +87,18 @@ CUSTOM_OP_IMPL(selective_scan, 5, 1, false, 0, 0) {
     for (sd::LongType t = 0; t < seqLen; ++t) {
         for (sd::LongType b_idx = 0; b_idx < batch; ++b_idx) {
             for (sd::LongType d = 0; d < dim; ++d) {
-                float x_val = xBuf[b_idx * xStride0 + t * xStride1 + d * xStride2];
-                float y_val = 0.0f;
+                T x_val = xBuf[b_idx * xStride0 + t * xStride1 + d * xStride2];
+                T y_val = static_cast<T>(0);
 
                 for (sd::LongType s = 0; s < stateDim; ++s) {
-                    float a_val = aBuf[b_idx * aStride0 + t * aStride1 + s * aStride2];
-                    float b_val = bBuf[b_idx * bStride0 + t * bStride1 + s * bStride2];
-                    float c_val = cBuf[b_idx * cStride0 + t * cStride1 + s * cStride2];
+                    T a_val = aBuf[b_idx * aStride0 + t * aStride1 + s * aStride2];
+                    T b_val = bBuf[b_idx * bStride0 + t * bStride1 + s * bStride2];
+                    T c_val = cBuf[b_idx * cStride0 + t * cStride1 + s * cStride2];
 
                     // State update: h = A * h + B * x
                     sd::LongType hOffset = b_idx * hStride0 + d * hStride1 + s * hStride2;
-                    float h_prev = hBuf[hOffset];
-                    float h_new = a_val * h_prev + b_val * x_val;
+                    T h_prev = hBuf[hOffset];
+                    T h_new = a_val * h_prev + b_val * x_val;
                     hBuf[hOffset] = h_new;
 
                     // Output contribution: y += C * h
@@ -130,6 +122,21 @@ CUSTOM_OP_IMPL(selective_scan, 5, 1, false, 0, 0) {
     delete h;
 
     return sd::Status::OK;
+}
+
+CUSTOM_OP_IMPL(selective_scan, 5, 1, false, 0, 0) {
+    auto x = INPUT_VARIABLE(0);       // [batch, seq_len, dim]
+    auto A = INPUT_VARIABLE(1);       // [batch, seq_len, state_dim] discretized A
+    auto B = INPUT_VARIABLE(2);       // [batch, seq_len, state_dim] discretized B
+    auto C = INPUT_VARIABLE(3);       // [batch, seq_len, state_dim] output projection
+    auto D = INPUT_VARIABLE(4);       // [dim] skip connection (feed-through)
+    auto output = OUTPUT_VARIABLE(0); // [batch, seq_len, dim]
+
+    // Optional: initial hidden state
+    NDArray* h0 = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
+
+    auto xType = x->dataType();
+    BUILD_SINGLE_SELECTOR(xType, return selective_scan_impl, (x, A, B, C, D, output, h0), SD_FLOAT_TYPES);
 }
 
 DECLARE_TYPES(selective_scan) {
