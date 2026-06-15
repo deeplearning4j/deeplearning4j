@@ -156,12 +156,6 @@ runs:
 
         echo "SD_DISABLE_PCH=1" >> $GITHUB_ENV
 
-        # Diagnostic logging — remove after confirming RetryLayer is working
-        export SCCACHE_LOG=debug
-        export SCCACHE_ERROR_LOG=/tmp/sccache-server.log
-        echo "SCCACHE_LOG=debug" >> $GITHUB_ENV
-        echo "SCCACHE_ERROR_LOG=/tmp/sccache-server.log" >> $GITHUB_ENV
-
         # Start sccache server — only set compiler launcher if server starts successfully
         if sccache --start-server 2>&1; then
           echo "sccache server started successfully"

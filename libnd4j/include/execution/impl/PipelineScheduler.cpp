@@ -22,6 +22,7 @@
 
 #include <execution/PipelineScheduler.h>
 #include <execution/DataTransferManager.h>
+#include <system/Environment.h>
 
 #include <chrono>
 #include <algorithm>
@@ -683,6 +684,7 @@ void PipelineScheduler::clearMicroBatches() {
 }
 
 void PipelineScheduler::printSchedule() const {
+    if (!sd::Environment::getInstance().isVerbose()) return;
     std::cout << "=== Pipeline Schedule ===" << std::endl;
     std::cout << "Type: ";
     switch (_schedule) {
@@ -709,6 +711,7 @@ void PipelineScheduler::printSchedule() const {
 }
 
 void PipelineScheduler::printStats() const {
+    if (!sd::Environment::getInstance().isVerbose()) return;
     std::cout << "=== Pipeline Statistics ===" << std::endl;
     std::cout << "Total time: " << _lastResult.totalTimeMs << " ms" << std::endl;
     std::cout << "Compute time: " << _lastResult.computeTimeMs << " ms" << std::endl;

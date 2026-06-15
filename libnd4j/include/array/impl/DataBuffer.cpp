@@ -540,8 +540,7 @@ void DataBuffer::validateIntegrity() const {
   if (_workspace == nullptr && _lenInBytes > 0 && _primaryBuffer != nullptr && _primaryAllocBytes > _lenInBytes) {
     const uint64_t* canary = reinterpret_cast<const uint64_t*>(
         static_cast<const int8_t*>(_primaryBuffer) + _lenInBytes);
-    static constexpr size_t HOST_ALLOC_PADDING = 65536;
-    size_t numCanaries = (HOST_ALLOC_PADDING / sizeof(uint64_t));
+    size_t numCanaries = (static_cast<size_t>(HOST_ALLOC_PADDING) / sizeof(uint64_t));
     for (size_t i = 0; i < numCanaries; i++) {
       if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
         std::stringstream ss;
@@ -640,8 +639,7 @@ void DataBuffer::allocatePrimary() {
     // Add padding for non-workspace heap allocations. C++ ops can overrun output
     // buffers by a few bytes, corrupting adjacent glibc malloc chunk headers.
     // Workspace allocations use bump allocation where overruns are harmless.
-    static constexpr size_t HOST_ALLOC_PADDING = 65536;
-    size_t allocSize = getLenInBytes() + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
+    size_t allocSize = getLenInBytes() + (_workspace == nullptr ? static_cast<size_t>(HOST_ALLOC_PADDING) : 0);
     ALLOCATE(_primaryBuffer, _workspace, allocSize, int8_t);
     _isOwnerPrimary = true;
     _primaryAllocBytes = allocSize;
@@ -650,7 +648,7 @@ void DataBuffer::allocatePrimary() {
     if (_workspace == nullptr && _primaryBuffer != nullptr) {
       uint64_t* canary = reinterpret_cast<uint64_t*>(
           static_cast<int8_t*>(_primaryBuffer) + getLenInBytes());
-      for (size_t i = 0; i < (HOST_ALLOC_PADDING / sizeof(uint64_t)); i++) {
+      for (size_t i = 0; i < (static_cast<size_t>(HOST_ALLOC_PADDING) / sizeof(uint64_t)); i++) {
         canary[i] = 0xDEADBEEFCAFEBABEULL;
       }
     }
@@ -700,17 +698,19 @@ void DataBuffer::deletePrimary() {
       for (size_t i = 0; i < checkCount; i++) {
         if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
           canaryCorrupted = true;
-          fprintf(stderr, "\n!!! CANARY CORRUPTED in deletePrimary — LEAKING BUFFER TO PREVENT CRASH !!!\n");
-          fprintf(stderr, "  buffer=%p, lenInBytes=%zu, allocBytes=%zu, dtype=%d\n",
-                  _primaryBuffer, _lenInBytes, _primaryAllocBytes, static_cast<int>(_dataType));
-          fprintf(stderr, "  First corrupted canary at offset %zu (byte offset %zu from data end)\n",
-                  i, i * sizeof(uint64_t));
-          fprintf(stderr, "  Canary values: ");
-          for (size_t j = 0; j < checkCount && j < 8; j++) {
-            fprintf(stderr, "%016lx ", static_cast<unsigned long>(canary[j]));
+          if (sd::Environment::getInstance().isDebug()) {
+            fprintf(stderr, "\n!!! CANARY CORRUPTED in deletePrimary — LEAKING BUFFER TO PREVENT CRASH !!!\n");
+            fprintf(stderr, "  buffer=%p, lenInBytes=%zu, allocBytes=%zu, dtype=%d\n",
+                    _primaryBuffer, _lenInBytes, _primaryAllocBytes, static_cast<int>(_dataType));
+            fprintf(stderr, "  First corrupted canary at offset %zu (byte offset %zu from data end)\n",
+                    i, i * sizeof(uint64_t));
+            fprintf(stderr, "  Canary values: ");
+            for (size_t j = 0; j < checkCount && j < 8; j++) {
+              fprintf(stderr, "%016lx ", static_cast<unsigned long>(canary[j]));
+            }
+            fprintf(stderr, "\n");
+            fflush(stderr);
           }
-          fprintf(stderr, "\n");
-          fflush(stderr);
           break;
         }
       }

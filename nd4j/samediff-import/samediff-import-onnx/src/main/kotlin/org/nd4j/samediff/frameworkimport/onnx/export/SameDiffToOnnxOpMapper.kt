@@ -150,6 +150,7 @@ object SameDiffToOnnxOpMapper {
         "and" to "And",
         "not" to "Not",
         "bitwise_xor" to "Xor",
+        "boolean_xor" to "Xor",
 
         // Special operations
         "identity" to "Identity",

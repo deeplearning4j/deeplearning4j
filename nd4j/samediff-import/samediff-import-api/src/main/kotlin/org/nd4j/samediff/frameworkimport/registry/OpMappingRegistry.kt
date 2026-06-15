@@ -40,6 +40,7 @@ import org.tensorflow.framework.OpDef
 import java.io.File
 import java.lang.IllegalArgumentException
 import java.nio.charset.Charset
+import org.slf4j.LoggerFactory
 
 
 class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
@@ -49,6 +50,8 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
         DATA_TYPE: ProtocolMessageEnum,
         ATTRIBUTE_TYPE : GeneratedMessageV3,
         ATTRIBUTE_VALUE_TYPE: GeneratedMessageV3>(inputFrameworkName: String,nd4jOpDescriptors: OpNamespace.OpDescriptorList) {
+
+    private val logger = LoggerFactory.getLogger(OpMappingRegistry::class.java)
 
     val registeredOps: MultiValuedMap<String, MappingProcess<GRAPH_TYPE, OP_DEF_TYPE, NODE_TYPE,
             TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>> = HashSetValuedHashMap()
@@ -231,7 +234,7 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
                 val process = mappingProcessLoader.createProcess(it)
                 this.registerMappingProcess(it.inputFrameworkOpName, process)
             } catch (e: Exception) {
-                System.err.println("WARNING: Skipping mapping for op ${it.inputFrameworkOpName} -> ${it.opName}: ${e.message}")
+                logger.warn("Skipping mapping for op {} -> {}: {}", it.inputFrameworkOpName, it.opName, e.message)
             }
         }
 

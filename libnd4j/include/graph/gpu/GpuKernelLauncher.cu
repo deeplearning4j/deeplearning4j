@@ -60,19 +60,21 @@ void* loadPtxModule(const char* ptxText, size_t ptxSize) {
   if (res != CUDA_SUCCESS) {
     const char* errStr = nullptr;
     cuGetErrorString(res, &errStr);
-    fprintf(stderr,
-            "GpuKernelLauncher::loadPtxModule: cuModuleLoadDataEx failed: %s\n"
-            "  PTX size: %zu bytes\n"
-            "  JIT error log: %s\n"
-            "  JIT info log: %s\n",
-            errStr ? errStr : "unknown",
-            ptxSize,
-            jitErr[0] ? jitErr : "<empty>",
-            jitInfo[0] ? jitInfo : "<empty>");
+    if (sd::Environment::getInstance().isDebug()) {
+      fprintf(stderr,
+              "GpuKernelLauncher::loadPtxModule: cuModuleLoadDataEx failed: %s\n"
+              "  PTX size: %zu bytes\n"
+              "  JIT error log: %s\n"
+              "  JIT info log: %s\n",
+              errStr ? errStr : "unknown",
+              ptxSize,
+              jitErr[0] ? jitErr : "<empty>",
+              jitInfo[0] ? jitInfo : "<empty>");
 
-    size_t previewLen = ptxSize < 512 ? ptxSize : 512;
-    fprintf(stderr, "  PTX preview (%zu bytes):\n%.*s\n",
-            previewLen, static_cast<int>(previewLen), ptxText);
+      size_t previewLen = ptxSize < 512 ? ptxSize : 512;
+      fprintf(stderr, "  PTX preview (%zu bytes):\n%.*s\n",
+              previewLen, static_cast<int>(previewLen), ptxText);
+    }
     return nullptr;
   }
   return static_cast<void*>(module);
@@ -86,8 +88,10 @@ void* getKernelFunc(void* module, const char* kernelName) {
   if (res != CUDA_SUCCESS) {
     const char* errStr = nullptr;
     cuGetErrorString(res, &errStr);
-    fprintf(stderr,"GpuKernelLauncher::getKernelFunc: cuModuleGetFunction('%s') failed: %s\n",
-              kernelName, errStr ? errStr : "unknown");
+    if (sd::Environment::getInstance().isDebug()) {
+      fprintf(stderr,"GpuKernelLauncher::getKernelFunc: cuModuleGetFunction('%s') failed: %s\n",
+                kernelName, errStr ? errStr : "unknown");
+    }
     return nullptr;
   }
   return static_cast<void*>(func);
@@ -111,8 +115,10 @@ bool launchKernel(void* func,
   if (res != CUDA_SUCCESS) {
     const char* errStr = nullptr;
     cuGetErrorString(res, &errStr);
-    fprintf(stderr,"GpuKernelLauncher::launchKernel: cuLaunchKernel failed: %s\n",
-              errStr ? errStr : "unknown");
+    if (sd::Environment::getInstance().isDebug()) {
+      fprintf(stderr,"GpuKernelLauncher::launchKernel: cuLaunchKernel failed: %s\n",
+                errStr ? errStr : "unknown");
+    }
     return false;
   }
   return true;

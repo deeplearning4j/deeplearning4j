@@ -29,6 +29,7 @@
 #include <array/DataBuffer.h>
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
+#include <system/Environment.h>
 #include <mutex>
 #include <atomic>
 
@@ -461,6 +462,7 @@ void resetLocalityStatistics() {
  * Print locality information for an array
  */
 void printArrayLocalityInfo(const NDArray* array, const char* name) {
+    if (!sd::Environment::getInstance().isVerbose()) return;
     if (array == nullptr) {
         printf("%s: NULL\n", name ? name : "array");
         return;
@@ -500,8 +502,10 @@ bool validateInputLocality(const std::vector<const NDArray*>& inputs, int expect
         int inputDevice = input->getDeviceId();
         if (inputDevice != expectedDevice) {
             // Log warning about locality mismatch
-            printf("WARNING: Input on device %d but operation targets device %d\n",
-                   inputDevice, expectedDevice);
+            if (sd::Environment::getInstance().isVerbose()) {
+                printf("WARNING: Input on device %d but operation targets device %d\n",
+                       inputDevice, expectedDevice);
+            }
             return false;
         }
     }

@@ -4066,7 +4066,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   }
 
   // Dump TTIR module for diagnostics (before Triton pipeline)
-  {
+  if (sd::Environment::getInstance().isDebug()) {
     std::string ttirDump;
     llvm::raw_string_ostream os(ttirDump);
     moduleOp.print(os);
@@ -7803,7 +7803,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   result.valid = true;
 
   // Dump TTIR module for diagnostics
-  {
+  if (sd::Environment::getInstance().isDebug()) {
     std::string ttirDump;
     llvm::raw_string_ostream os(ttirDump);
     moduleOp.print(os);

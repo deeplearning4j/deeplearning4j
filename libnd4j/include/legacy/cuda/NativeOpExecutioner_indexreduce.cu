@@ -62,9 +62,6 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
   auto reductionPointer = lc->getReductionPointer();
   auto allocationPointer = lc->getAllocationPointer();
 
-  if (sd::env_isDebugAndVerbose()) {
-    printf("F2 opType:[%i]\n", opNum);
-  }
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(zType)) {

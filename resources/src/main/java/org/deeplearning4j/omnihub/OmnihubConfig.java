@@ -42,7 +42,7 @@ public class OmnihubConfig {
     }
 
     public final static String HUGGING_FACE_ORG = "OMNIHUB_HF_ORG";
-    public static final String DEFAULT_HUGGING_FACE_ORG = "KompileAI";
+    public static final String DEFAULT_HUGGING_FACE_ORG = "eclipse-deeplearning4j";
 
     /**
      * Return the HuggingFace organization, defaulting to

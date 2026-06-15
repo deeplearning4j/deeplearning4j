@@ -4249,7 +4249,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
      * - Output: input_ids_int32, dtype=INT
      * - Crash: "free(): invalid pointer" (SIGABRT)
      *
-     * @see <a href="https://github.com/deeplearning4j/deeplearning4j/issues/XXXX">Issue tracker</a>
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

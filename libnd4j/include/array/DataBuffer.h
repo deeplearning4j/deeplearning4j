@@ -157,6 +157,11 @@ class SD_LIB_EXPORT DataBuffer {
   // Set in constructor, cleared in destructor, checked before use
   // Helps detect use-after-free and corrupted pointers
   static constexpr uint32_t MAGIC_NUMBER = 0xDA7ABF01;  // "DA7ABF01" (DataBuffer v01)
+
+  // Padding appended to non-workspace host allocations to absorb minor buffer overruns.
+  // The padding region is filled with canary values (0xDEADBEEFCAFEBABE) so that
+  // deletePrimary() can detect overruns before calling free().
+  static constexpr sd::LongType HOST_ALLOC_PADDING = 65536;
   uint32_t _magicNumber = MAGIC_NUMBER;
 
   void *_primaryBuffer = nullptr;

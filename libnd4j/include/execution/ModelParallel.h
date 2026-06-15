@@ -55,6 +55,7 @@
 #define SD_MODEL_PARALLEL_H
 
 // Core model parallelism components
+#include <system/Environment.h>
 #include <execution/ModelParallelConfig.h>
 #include <execution/DeviceManager.h>
 #include <execution/TensorPartition.h>
@@ -227,6 +228,7 @@ inline ParallelCapabilities getCapabilities() {
  * Print system information for model parallelism
  */
 inline void printSystemInfo() {
+    if (!sd::Environment::getInstance().isVerbose()) return;
     auto& dm = DeviceManager::getInstance();
     dm.printDeviceInfo();
 

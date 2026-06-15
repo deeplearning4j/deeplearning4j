@@ -726,6 +726,7 @@ std::string DeviceManager::deviceToString(const DeviceInfo& device) const {
 }
 
 void DeviceManager::printDeviceInfo() const {
+    if (!sd::Environment::getInstance().isVerbose()) return;
     std::lock_guard<std::mutex> lock(_mutex);
 
     std::cout << "=== Device Manager ===" << std::endl;

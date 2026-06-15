@@ -27,6 +27,7 @@
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
 #include <array/DataBuffer.h>
+#include <system/Environment.h>
 #include <mutex>
 #include <atomic>
 #include <unordered_map>
@@ -385,6 +386,7 @@ std::string getBackendCapabilitySummary(GgmlBackend backend) {
  * Print all backend capabilities
  */
 void printAllBackendCapabilities() {
+    if (!sd::Environment::getInstance().isVerbose()) return;
     initializeBackendCapabilities();
 
     std::lock_guard<std::mutex> lock(g_capabilityMutex);

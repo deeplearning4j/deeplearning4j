@@ -232,8 +232,10 @@ int handleNonPeerFailover(void*& buffer, size_t allocSize, int requestedDevice, 
     // Managed memory — accessible from all devices. Advise prefetch to requesting device
     // for better first-access latency (driver will migrate pages on demand regardless).
     cudaMemPrefetchAsync(buffer, allocSize, requestedDevice, nullptr);
-    sd_printf("%s: Non-peer failover (device %d → %d) — managed memory, accessible via UVA (no pinned replacement needed)\n",
-              caller, requestedDevice, actualDevice);
+    if (sd::Environment::getInstance().isVerbose()) {
+      sd_printf("%s: Non-peer failover (device %d → %d) — managed memory, accessible via UVA (no pinned replacement needed)\n",
+                caller, requestedDevice, actualDevice);
+    }
     return actualDevice;
   }
   if (queryErr != cudaSuccess) {
@@ -243,8 +245,10 @@ int handleNonPeerFailover(void*& buffer, size_t allocSize, int requestedDevice, 
   // Non-managed, non-peer device memory — would cause CUDA error 700 on requestedDevice.
   // This path should not be hit with the current pool implementation (which uses
   // cudaMallocManaged for non-peer failover), but handle it defensively with pinned host.
-  sd_printf("%s: Non-peer failover (device %d → %d) — non-managed memory, switching to pinned host\n",
-            caller, requestedDevice, actualDevice);
+  if (sd::Environment::getInstance().isVerbose()) {
+    sd_printf("%s: Non-peer failover (device %d → %d) — non-managed memory, switching to pinned host\n",
+              caller, requestedDevice, actualDevice);
+  }
 
   void* pinnedPtr = nullptr;
   cudaError_t err = cudaMallocHost(&pinnedPtr, allocSize);
@@ -331,8 +335,7 @@ void DataBuffer::expand(const uint64_t size) {
 #endif
 
     // copy data from existing buffer
-    static constexpr size_t HOST_ALLOC_PADDING = 65536;
-    size_t hostAllocSize = size + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
+    size_t hostAllocSize = size + (_workspace == nullptr ? static_cast<size_t>(HOST_ALLOC_PADDING) : 0);
     if (_primaryBuffer != nullptr) {
       // there's non-zero chance that primary buffer doesn't exist yet
       ALLOCATE(newBuffer, _workspace, hostAllocSize, int8_t);
@@ -343,7 +346,7 @@ void DataBuffer::expand(const uint64_t size) {
       // Write canary values in the padding region (same as allocatePrimary)
       if (_workspace == nullptr) {
         uint64_t* canary = reinterpret_cast<uint64_t*>(newBuffer + size);
-        for (size_t i = 0; i < (HOST_ALLOC_PADDING / sizeof(uint64_t)); i++) {
+        for (size_t i = 0; i < (static_cast<size_t>(HOST_ALLOC_PADDING) / sizeof(uint64_t)); i++) {
           canary[i] = 0xDEADBEEFCAFEBABEULL;
         }
       }

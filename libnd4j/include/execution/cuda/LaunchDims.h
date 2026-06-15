@@ -912,11 +912,6 @@ dim3 digammaDims(int length);
 
 dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int dtypeSize);
 
-// KV scatter: copies present KV entries into static cache buffers
-#define GRID_SIZE_KV_SCATTER getEnvVariable("GRID_SIZE_KV_SCATTER", 256)
-#define BLOCK_SIZE_KV_SCATTER getEnvVariable("BLOCK_SIZE_KV_SCATTER", 256)
-#define SHARED_MEM_SIZE_KV_SCATTER getEnvVariable("SHARED_MEM_SIZE_KV_SCATTER", 0)
-
 // Shared KV attention (Gemma 4 pattern): one block per (batch, head, query_pos)
 #define GRID_SIZE_SHARED_KV_ATTENTION getEnvVariable("GRID_SIZE_SHARED_KV_ATTENTION", 256)
 #define BLOCK_SIZE_SHARED_KV_ATTENTION getEnvVariable("BLOCK_SIZE_SHARED_KV_ATTENTION", 128)

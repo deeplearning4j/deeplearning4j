@@ -1145,6 +1145,14 @@ public class ND4JSystemProperties {
     public static final String OPTIMIZER_FP16 = "nd4j.optimizer.fp16";
 
     /**
+     * Applicability: SameDiff graph optimizer<br>
+     * Description: Enable BF16 optimizations in the graph optimizer. Takes precedence over FP16 if both are set.
+     * <p>
+     * Default: false
+     */
+    public static final String OPTIMIZER_BF16 = "nd4j.optimizer.bf16";
+
+    /**
      * Applicability: DynamicShapePlan-based inference<br>
      * Description: When true, disables attention override optimization in DSP execution.
      * <p>
