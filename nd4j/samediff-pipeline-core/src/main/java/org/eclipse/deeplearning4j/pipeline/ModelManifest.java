@@ -243,11 +243,12 @@ public class ModelManifest {
     }
 
     /**
-     * Get the ChatTemplate for this model if available.
+     * Get the raw chat template string for this model if available.
+     * Returns the Jinja2 template string from tokenizer_config.json, or null if not present.
      */
-    public ChatTemplate getChatTemplate() {
+    public String getChatTemplateString() {
         if (tokenizerConfig == null) return null;
-        return ChatTemplate.fromConfigs(tokenizerConfig, specialTokensMap);
+        return tokenizerConfig.getChatTemplate();
     }
 
     /**
