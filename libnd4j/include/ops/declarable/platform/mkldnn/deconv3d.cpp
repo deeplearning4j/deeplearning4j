@@ -116,11 +116,11 @@ static void deconv3dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDAr
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // operation primitive description
-  dnnl::deconvolution_forward::desc op_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::deconvolution_direct,
-                                            x_mkl_md, w_mkl_md, b_mkl_md, z_mkl_md, strides, dilation, padding,
-                                            padding_r);
-  dnnl::deconvolution_forward::primitive_desc op_prim_desc(op_desc, engine);
+  // operation primitive description (OneDNN 3.x API)
+  dnnl::deconvolution_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                            dnnl::algorithm::deconvolution_direct,
+                                                            x_mkl_md, w_mkl_md, b_mkl_md, z_mkl_md,
+                                                            strides, dilation, padding, padding_r);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -245,23 +245,24 @@ static void deconv3dBackPropMKLDNN(NDArray* input, NDArray* weights, NDArray* gr
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // forward primitive description
-  dnnl::deconvolution_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference,
-                                               dnnl::algorithm::deconvolution_direct, x_mkl_md, w_mkl_md, gradB_mkl_md,
-                                               gradO_mkl_md, strides, dilation, padding, padding_r);
-  dnnl::deconvolution_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // forward primitive description (OneDNN 3.x API) - used as hint for backward
+  dnnl::deconvolution_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_inference,
+                                                               dnnl::algorithm::deconvolution_direct,
+                                                               x_mkl_md, w_mkl_md, gradB_mkl_md, gradO_mkl_md,
+                                                               strides, dilation, padding, padding_r);
 
-  // backward data primitive description
-  dnnl::deconvolution_backward_data::desc op_data_bp_desc(dnnl::algorithm::deconvolution_direct, gradI_mkl_md, w_mkl_md,
-                                                          gradO_mkl_md, strides, dilation, padding, padding_r);
-  dnnl::deconvolution_backward_data::primitive_desc op_data_bp_prim_desc(op_data_bp_desc, engine, op_ff_prim_desc);
+  // backward data primitive description (OneDNN 3.x API)
+  dnnl::deconvolution_backward_data::primitive_desc op_data_bp_prim_desc(engine, dnnl::algorithm::deconvolution_direct,
+                                                                          gradI_mkl_md, w_mkl_md, gradO_mkl_md,
+                                                                          strides, dilation, padding, padding_r,
+                                                                          op_ff_prim_desc);
 
-  // backward weights primitive description
-  dnnl::deconvolution_backward_weights::desc op_weights_bp_desc(dnnl::algorithm::deconvolution_direct, x_mkl_md,
-                                                                gradW_mkl_md, gradB_mkl_md, gradO_mkl_md, strides,
-                                                                dilation, padding, padding_r);
-  dnnl::deconvolution_backward_weights::primitive_desc op_weights_bp_prim_desc(op_weights_bp_desc, engine,
-                                                                               op_ff_prim_desc);
+  // backward weights primitive description (OneDNN 3.x API)
+  dnnl::deconvolution_backward_weights::primitive_desc op_weights_bp_prim_desc(engine,
+                                                                                dnnl::algorithm::deconvolution_direct,
+                                                                                x_mkl_md, gradW_mkl_md, gradB_mkl_md,
+                                                                                gradO_mkl_md, strides, dilation,
+                                                                                padding, padding_r, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -394,8 +395,7 @@ PLATFORM_CHECK(deconv3d, ENGINE_CPU) {
   int isSameMode = INT_ARG(12);  // 0-SAME,  1-VALID
 
   Requirements req("ONEDNN DECONV3d OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectLessEq(makeInfoVariable(dD, "Dilation depth"), 1) &&
+  req.expectLessEq(makeInfoVariable(dD, "Dilation depth"), 1) &&
       req.expectLessEq(makeInfoVariable(dH, "Dilation height"), 1) &&
       req.expectLessEq(makeInfoVariable(dW, "Dilation width"), 1) &&
       req.expectFalse(makeInfoVariable(isSameMode, "isSameMode")) &&
@@ -514,8 +514,7 @@ PLATFORM_CHECK(deconv3d_bp, ENGINE_CPU) {
   int isSameMode = INT_ARG(12);  // 0-SAME,  1-VALID
 
   Requirements req("ONEDNN DECONV3d_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectLessEq(makeInfoVariable(dD, "Dilation depth"), 1) &&
+  req.expectLessEq(makeInfoVariable(dD, "Dilation depth"), 1) &&
       req.expectLessEq(makeInfoVariable(dH, "Dilation height"), 1) &&
       req.expectLessEq(makeInfoVariable(dW, "Dilation width"), 1) &&
       req.expectFalse(makeInfoVariable(isSameMode, "isSameMode")) &&
@@ -528,6 +527,13 @@ PLATFORM_CHECK(deconv3d_bp, ENGINE_CPU) {
                            const DataType gradIType = gradI->dataType();
                            const DataType gradWType = gradW->dataType();
                            const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
+                           // BF16 requires AVX512_CORE_BF16 ISA at runtime
+                           if (xType == DataType::BFLOAT16 || wType == DataType::BFLOAT16 ||
+                               gradOType == DataType::BFLOAT16 || gradIType == DataType::BFLOAT16 ||
+                               gradWType == DataType::BFLOAT16 || gradBType == DataType::BFLOAT16) {
+                             dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+                             if (isa < dnnl_cpu_isa_avx512_core_bf16) return false;
+                           }
                            return ((xType == DataType::FLOAT32 || xType == DataType::BFLOAT16) &&
                                    (wType == DataType::FLOAT32 || wType == DataType::BFLOAT16) &&
                                    (gradOType == DataType::FLOAT32 || gradOType == DataType::BFLOAT16) &&

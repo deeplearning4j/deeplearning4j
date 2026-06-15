@@ -41,9 +41,12 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
   const LongType xRank = input->rankOf();
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, stream));
 
-  const std::vector<int> xShape = input->getShapeAsVectorInt();  // input and output have same shapes
+  auto* xShapePtr = input->getShapeAsVectorInt();
+  const std::vector<int> xShape = *xShapePtr;  // input and output have same shapes
+  delete xShapePtr;
 
   std::vector<int> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
   if (isSpatialMode) {                          // 1xCx1x1
@@ -53,7 +56,9 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
     paramsStrides = xRank == 4 ? std::vector<int>({iC * stride0, stride0, 1, 1})
                                : std::vector<int>({iC * stride0, stride0, 1, 1, 1});
   } else {
-    paramsShape = std::vector<int>(mean->getShapeAsVector().begin(), mean->getShapeAsVector().end());
+    auto* meanShapePtr = mean->getShapeAsVector();
+    paramsShape = std::vector<int>(meanShapePtr->begin(), meanShapePtr->end());
+    delete meanShapePtr;
     paramsStrides = xRank == 4
                     ? std::vector<int>({static_cast<int>(mean->strideAt(0)), static_cast<int>(mean->strideAt(1)), static_cast<int>(mean->strideAt(2)),
                                         static_cast<int>(mean->strideAt(3))})
@@ -73,6 +78,7 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
   cudnnTensorFormat_t format = CUDNN_TENSOR_NCHW;
 
   // input descriptor
+  CudnnTensor x;
     x.set(dataType, xRank, xShape.data(), xStrides.data());
 
   // output descriptor
@@ -84,8 +90,8 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
     params.set(dataType, xRank, paramsShape.data(), paramsStrides.data());
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* ptrAlpha =
       output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* ptrBeta =
@@ -101,8 +107,10 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
           input->specialBuffer(), z, output->specialBuffer(), params, gamma->specialBuffer(), beta->specialBuffer(),
           mean->specialBuffer(), variance->specialBuffer(), epsilon));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("batchnormCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("batchnormCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  }
 
   NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
 }
@@ -122,9 +130,12 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
   const int xRank = input->rankOf();
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  cudnnStatus_t err = cudnnSetStream(*handle, stream);
 
-  const std::vector<int> xShape = input->getShapeAsVectorInt();  // input and output have same shapes
+  auto* xShapePtr2 = input->getShapeAsVectorInt();
+  const std::vector<int> xShape = *xShapePtr2;  // input and output have same shapes
+  delete xShapePtr2;
 
   std::vector<int> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
   if (isSpatialMode) {                          // 1xCx1x1
@@ -134,7 +145,9 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
     paramsStrides = xRank == 4 ? std::vector<int>({iC * stride0, stride0, 1, 1})
                                : std::vector<int>({iC * stride0, stride0, 1, 1, 1});
   } else {
-    paramsShape = std::vector<int>(mean->getShapeAsVector().begin(), mean->getShapeAsVector().end());
+    auto* meanShapePtr = mean->getShapeAsVector();
+    paramsShape = std::vector<int>(meanShapePtr->begin(), meanShapePtr->end());
+    delete meanShapePtr;
     paramsStrides = xRank == 4
                     ? std::vector<int>({static_cast<int>(mean->strideAt(0)), static_cast<int>(mean->strideAt(1)), static_cast<int>(mean->strideAt(2)),
                                         static_cast<int>(mean->strideAt(3))})
@@ -174,7 +187,7 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
     params.set(dataType, xRank, paramsShape.data(), paramsStrides.data());
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
+  static const float alpha32(1), beta32(0);
   double alpha64(1), beta64(0);
   const void* ptrAlpha =
       input->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
@@ -193,8 +206,10 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
                                       gamma->specialBuffer(), gradG->specialBuffer(), gradB->specialBuffer(), epsilon,
                                       nullptr /*mean->specialBuffer()*/, nullptr /*variance->specialBuffer()*/));
 
-  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  if (cudaErr != 0) throw cuda_exception::build("batchnormBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    auto cudaErr = cudaStreamSynchronize(stream);
+    if (cudaErr != 0) throw cuda_exception::build("batchnormBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+  }
 
   NDArray::registerSpecialUse({gradI, gradG, gradB}, {input, mean, variance, gamma, gradO});
 }
@@ -271,8 +286,8 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
   if (needPermut) {  // if NHWC
     std::vector<LongType> perm =
         inRank == 4 ? std::vector<LongType>({0, 3, 1, 2}) : std::vector<LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
-    tmpInput.reset(new NDArray(input->permute(perm)));
-    tmpOutput.reset(new NDArray(output->permute(perm)));
+    tmpInput.reset(input->permute(perm, false, false));
+    tmpOutput.reset(output->permute(perm, false, false));
     input = tmpInput.get();
     output = tmpOutput.get();
   }
@@ -347,7 +362,9 @@ PLATFORM_CHECK(batchnorm, ENGINE_CUDA) {
   if (axes.size() == 1) {
     req.expectIn(makeInfoVariable(mean->lengthOf(), LENGTH_MSG_INPUT1), {-1, 1});
   } else {
-    auto inputShapeModif = input->getShapeAsVector();  // [dim0,dim1,dim2,dim3] 4D or [dim0,dim1,dim2,dim3,dim4]
+    auto* inputShapeModifPtr = input->getShapeAsVector();
+    std::vector<LongType> inputShapeModif = *inputShapeModifPtr;
+    delete inputShapeModifPtr;
     inputShapeModif[0] = 1;
     // mean [1,dim1,dim2,dim3] 4D or [1,dim1,dim2,dim3,dim4]
     req.expect(
@@ -444,9 +461,9 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
   if (needPermut) {  // if NHWC
     std::vector<LongType> perm =
         inRank == 4 ? std::vector<LongType>({0, 3, 1, 2}) : std::vector<LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
-    tmpInput.reset(new NDArray(input->permute(perm)));
-    tmpGradO.reset(new NDArray(gradO->permute(perm)));
-    tmpGradI.reset(new NDArray(gradI->permute(perm)));
+    tmpInput.reset(input->permute(perm, false, false));
+    tmpGradO.reset(gradO->permute(perm, false, false));
+    tmpGradI.reset(gradI->permute(perm, false, false));
     input = tmpInput.get();
     gradO = tmpGradO.get();
     gradI = tmpGradI.get();
@@ -539,7 +556,9 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CUDA) {
     //     isFormatGood = mean->lengthOf() == input->sizeAt(1) || mean->lengthOf() == input->sizeAt(-1);   // mean [C]
     req.expectIn(makeInfoVariable(mean->lengthOf(), LENGTH_MSG_INPUT1), {-1, 1});
   } else {
-    auto inputShapeModif = input->getShapeAsVector();  // [dim0,dim1,dim2,dim3] 4D or [dim0,dim1,dim2,dim3,dim4]
+    auto* inputShapeModifPtr = input->getShapeAsVector();
+    std::vector<LongType> inputShapeModif = *inputShapeModifPtr;
+    delete inputShapeModifPtr;
     inputShapeModif[0] = 1;
     //     isFormatGood = mean->isSameShape(inputShapeModif);    // mean [1,dim1,dim2,dim3] 4D or
     //     [1,dim1,dim2,dim3,dim4]

@@ -49,7 +49,8 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context, NDArray* input, N
   mC = weights->sizeAt(1);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
   PointersManager manager(context, __func__);
@@ -85,10 +86,15 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context, NDArray* input, N
   cudnnConvolutionFwdAlgo_t algo;
   cudnnConvolutionFwdAlgoPerf_t algoPerf;
   int count = 0;
-  // CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionForwardAlgorithm), cudnnGetConvolutionForwardAlgorithm(
-  // *handle, x, w, conv, z, CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 0, &algo));
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
-                          cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  // During CUDA graph capture, cudnnFindConvolutionForwardAlgorithm runs GPU benchmarks on internal
+  // cuDNN streams that escape from the capture graph, invalidating it. Use heuristic _v7 instead.
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionForwardAlgorithm_v7),
+                            cudnnGetConvolutionForwardAlgorithm_v7(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
+                            cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  }
   if (count == 0)
     throw cuda_exception::build("depthwiseConv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed", 0);
   algo = algoPerf.algo;
@@ -100,8 +106,8 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context, NDArray* input, N
   void* wsData = manager.allocateDevMem(wsSize);
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* alpha =
       output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta =
@@ -149,7 +155,8 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context, NDArray* input,
   mC = weights->sizeAt(1);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
   PointersManager manager(context, __func__);
@@ -193,12 +200,16 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context, NDArray* input,
   cudnnConvolutionBwdFilterAlgo_t algoGradW;
   cudnnConvolutionBwdFilterAlgoPerf_t algoGradWPerf;
   int count = 0;
-  // CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionBackwardFilterAlgorithm),
-  // cudnnGetConvolutionBackwardFilterAlgorithm( *handle, x, dz, conv, dw, CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
-  // 0, &algoGradW));
-  CHECK_CUDNN_FAILURE_MSG(
-      STRINGIZE(cudnnFindConvolutionBackwardFilterAlgorithm),
-      cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
+  // During CUDA graph capture, use heuristic _v7 to avoid capture invalidation.
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnGetConvolutionBackwardFilterAlgorithm_v7),
+        cudnnGetConvolutionBackwardFilterAlgorithm_v7(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnFindConvolutionBackwardFilterAlgorithm),
+        cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
+  }
   if (count == 0)
     throw cuda_exception::build(
         "depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed as the count is 0 ", 0);
@@ -208,9 +219,15 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context, NDArray* input,
   cudnnConvolutionBwdDataAlgo_t algoGradI;
   cudnnConvolutionBwdDataAlgoPerf_t algoGradIPerf;
 
-  CHECK_CUDNN_FAILURE_MSG(
-      STRINGIZE(cudnnFindConvolutionBackwardDataAlgorithm),
-      cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnGetConvolutionBackwardDataAlgorithm_v7),
+        cudnnGetConvolutionBackwardDataAlgorithm_v7(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnFindConvolutionBackwardDataAlgorithm),
+        cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
+  }
   if (count == 0)
     throw cuda_exception::build(
         "depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed as the count is 0 ", 0);
@@ -231,8 +248,8 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context, NDArray* input,
   void* wsGradIData = manager.allocateDevMem(wsGradISize);
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* alpha =
       gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta =
@@ -332,8 +349,9 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
   std::vector<sd::LongType > perm =  {iC, mC, kH, kW};
   NDArray * uNewWeights =  new NDArray(weights->ordering(),perm, weights->dataType(), weights->getContext());
 
-  NDArray assign = weights->permute(wPermut,false,false);
-  uNewWeights->assign(&assign);
+  NDArray* assign = weights->permute(wPermut,false,false);
+  uNewWeights->assign(assign);
+  delete assign;
   std::unique_ptr<NDArray> tmpInput = {};
 
   if (paddingMode == 1) {  // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
@@ -459,8 +477,9 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
   NDArray * uNewWeights =
       new NDArray(weights->ordering(),shape, weights->dataType(), weights->getContext());
 
-  NDArray assign = weights->permute(wPermut,false,false);
-  uNewWeights->assign(&assign);
+  NDArray* assign = weights->permute(wPermut,false,false);
+  uNewWeights->assign(assign);
+  delete assign;
 
   NDArray* newInput = input;
   NDArray* newGradI = gradI;
@@ -479,11 +498,11 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
 
   if (newInput != input) {
     if (isNCHW) {
-      NDArray assign = (*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3)});
-      gradI->assign(&assign);
+      auto assign = (*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3)});
+      gradI->assign(assign);
     } else {
-      NDArray assign = (*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, 0});
-      gradI->assign(&assign);
+      auto assign = (*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, 0});
+      gradI->assign(assign);
     }
   }
 

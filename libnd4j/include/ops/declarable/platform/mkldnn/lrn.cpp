@@ -50,12 +50,13 @@ PLATFORM_IMPL(lrn, ENGINE_CPU) {
   onednnUtils::getONEDNNMemoryDescLrn(input, nullptr, output, &lrn_src_md, nullptr, &lrn_dst_md, &user_src_md, nullptr,
                                       &user_dst_md, input->rankOf() - 1);
 
-  auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, algorithm::lrn_across_channels, lrn_src_md,
-                                    (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
-
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
   dnnl::stream stream(engine);
-  auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
+
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, local_size, alpha, beta, k)
+  auto lrn_prim_desc = lrn_forward::primitive_desc(engine, prop_kind::forward_inference, algorithm::lrn_across_channels,
+                                                    lrn_src_md, lrn_dst_md, (2 * depth + 1),
+                                                    alpha * (2 * depth + 1), beta, bias);
   auto user_src_memory = dnnl::memory(user_src_md, engine, input->buffer());
   auto user_dst_memory = dnnl::memory(user_dst_md, engine, output->buffer());
 
@@ -86,8 +87,7 @@ PLATFORM_CHECK(lrn, ENGINE_CPU) {
   auto output = OUTPUT_VARIABLE(0);
 
   Requirements req("ONEDNN LRN OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED);
+  req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED);
   req.logTheSuccess();
   return req;
 }
