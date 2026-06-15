@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Disabled;
 
@@ -52,6 +53,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
+@Slf4j
 @NativeTag
 @Tag(TagNames.FILE_IO)
 public class ValidationUtilTests extends BaseNd4jTestWithBackends {

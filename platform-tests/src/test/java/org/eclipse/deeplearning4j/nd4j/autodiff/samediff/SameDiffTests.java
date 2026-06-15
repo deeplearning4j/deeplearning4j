@@ -315,7 +315,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 999999999L;
+        return 600000;
     }
 
 

@@ -123,12 +123,12 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
         //Execute forward pass:
         INDArray loss = sd.output(placeholderData, "mse").get("mse");
-        System.out.println("MSE: " + loss);
+        log.info("MSE: {}", loss);
 
         //Calculate gradients:
         Map<String,INDArray> gradMap = sd.calculateGradients(placeholderData, "weights");
-        System.out.println("Weights gradient:");
-        System.out.println(gradMap.get("weights"));
+        log.debug("Weights gradient:");
+        log.debug("{}", gradMap.get("weights"));
 
         //Mock random dataset for training
         INDArray indFeature = Nd4j.rand(new long[] {NUM_SAMPLES, nIn});
@@ -241,7 +241,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
             sd.evaluateMultiple(iter, evalMap);
 
-            System.out.println(e.stats());
+            log.info("{}", e.stats());
 
             double acc = e.accuracy();
             assertTrue( acc >= 0.75,u + " - " + acc);
@@ -255,23 +255,23 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         INDArray zArr = Nd4j.create(new float[][]{{1,0,0},{0,1,0}});
         INDArray labelArr = Nd4j.create(new float[][]{{1,0,0},{0,1,0}});
         INDArray softmax = Nd4j.nn().softmax(zArr.dup(), 1);
-        System.out.println("Reference softmax:\n" + softmax);
+        log.debug("Reference softmax:\n{}", softmax);
 
         // Test A: gradient of sum(logSoftmax(z)) - simpler than mean
         {
-            System.out.println("=== Test A: sum(logSoftmax) gradient ===");
+            log.info("=== Test A: sum(logSoftmax) gradient ===");
             SameDiff sd = SameDiff.create();
             SDVariable z = sd.var("z", zArr.dup());
             SDVariable loss = sd.nn().logSoftmax(z, -1).sum("loss");
             sd.setLossVariables(loss);
             Map<String, INDArray> grads = sd.calculateGradients(Collections.emptyMap(), "z");
-            System.out.println("z grad:\n" + grads.get("z"));
+            log.debug("z grad:\n{}", grads.get("z"));
             // Expected per sample: (1 - K * softmax_j) where K=3
         }
 
         // Test B: gradient of sum(label * z) — no logSoftmax
         {
-            System.out.println("=== Test B: sum(label*z) gradient (no logSoftmax) ===");
+            log.info("=== Test B: sum(label*z) gradient (no logSoftmax) ===");
             SameDiff sd = SameDiff.create();
             SDVariable z = sd.var("z", zArr.dup());
             SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
@@ -280,12 +280,12 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             Map<String, INDArray> ph = new HashMap<>();
             ph.put("label", labelArr.dup());
             Map<String, INDArray> grads = sd.calculateGradients(ph, "z");
-            System.out.println("z grad: " + grads.get("z") + " (expected: same as label)");
+            log.debug("z grad: {} (expected: same as label)", grads.get("z"));
         }
 
         // Test C: gradient of sum(label * logSoftmax(z)) — no neg/mean
         {
-            System.out.println("=== Test C: sum(label * logSoftmax(z)) gradient ===");
+            log.info("=== Test C: sum(label * logSoftmax(z)) gradient ===");
             SameDiff sd = SameDiff.create();
             SDVariable z = sd.var("z", zArr.dup());
             SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
@@ -294,15 +294,15 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             Map<String, INDArray> ph = new HashMap<>();
             ph.put("label", labelArr.dup());
             Map<String, INDArray> grads = sd.calculateGradients(ph, "z");
-            System.out.println("z grad:\n" + grads.get("z"));
+            log.debug("z grad:\n{}", grads.get("z"));
             // Expected: label - softmax for each sample, then sum across samples
             INDArray expected = labelArr.sub(softmax);
-            System.out.println("expected per sample:\n" + expected);
+            log.debug("expected per sample:\n{}", expected);
         }
 
         // Test D: softmaxCrossEntropy — known correct
         {
-            System.out.println("=== Test D: softmaxCrossEntropy gradient ===");
+            log.info("=== Test D: softmaxCrossEntropy gradient ===");
             SameDiff sd = SameDiff.create();
             SDVariable z = sd.var("z", zArr.dup());
             SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
@@ -311,12 +311,12 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             Map<String, INDArray> ph = new HashMap<>();
             ph.put("label", labelArr.dup());
             Map<String, INDArray> grads = sd.calculateGradients(ph, "z");
-            System.out.println("z grad:\n" + grads.get("z") + " (known correct)");
+            log.debug("z grad:\n{} (known correct)", grads.get("z"));
         }
 
         // Test E: full manual cross-entropy
         {
-            System.out.println("=== Test E: label.mul(logSoftmax).sum(1).neg().mean() ===");
+            log.info("=== Test E: label.mul(logSoftmax).sum(1).neg().mean() ===");
             SameDiff sd = SameDiff.create();
             SDVariable z = sd.var("z", zArr.dup());
             SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
@@ -325,13 +325,13 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             Map<String, INDArray> ph = new HashMap<>();
             ph.put("label", labelArr.dup());
             Map<String, INDArray> grads = sd.calculateGradients(ph, "z");
-            System.out.println("z grad:\n" + grads.get("z"));
-            System.out.println("expected:\n" + softmax.sub(labelArr).div(2));
+            log.debug("z grad:\n{}", grads.get("z"));
+            log.debug("expected:\n{}", softmax.sub(labelArr).div(2));
         }
 
         // Test F: use softmax + manual log + sum instead of logSoftmax
         {
-            System.out.println("=== Test F: label*log(softmax) instead of logSoftmax ===");
+            log.info("=== Test F: label*log(softmax) instead of logSoftmax ===");
             SameDiff sd = SameDiff.create();
             SDVariable z = sd.var("z", zArr.dup());
             SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
@@ -342,7 +342,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             Map<String, INDArray> ph = new HashMap<>();
             ph.put("label", labelArr.dup());
             Map<String, INDArray> grads = sd.calculateGradients(ph, "z");
-            System.out.println("z grad:\n" + grads.get("z"));
+            log.debug("z grad:\n{}", grads.get("z"));
         }
     }
 
@@ -390,15 +390,15 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         Map<String, INDArray> grads = sd.calculateGradients(placeholders, "b1", "w1", "b0", "w0");
 
         INDArray b1Grad = grads.get("b1");
-        System.out.println("b1 gradient: " + b1Grad);
-        System.out.println("b1 gradient shape: " + java.util.Arrays.toString(b1Grad.shape()));
-        System.out.println("b1 gradient min: " + b1Grad.minNumber());
-        System.out.println("b1 gradient max: " + b1Grad.maxNumber());
-        System.out.println("b1 gradient mean: " + b1Grad.meanNumber());
+        log.debug("b1 gradient: {}", b1Grad);
+        log.debug("b1 gradient shape: {}", java.util.Arrays.toString(b1Grad.shape()));
+        log.debug("b1 gradient min: {}", b1Grad.minNumber());
+        log.debug("b1 gradient max: {}", b1Grad.maxNumber());
+        log.debug("b1 gradient mean: {}", b1Grad.meanNumber());
 
         INDArray w1Grad = grads.get("w1");
-        System.out.println("w1 gradient mean: " + w1Grad.meanNumber());
-        System.out.println("w1 gradient absMax: " + w1Grad.ameanNumber());
+        log.debug("w1 gradient mean: {}", w1Grad.meanNumber());
+        log.debug("w1 gradient absMax: {}", w1Grad.ameanNumber());
 
         // The b1 gradient should NOT be uniform [2/3, 2/3, 2/3]
         // For a properly computed gradient of cross-entropy loss w.r.t. output bias,
@@ -406,22 +406,22 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         // in which case they should be ~0 for balanced classes)
         double b1GradMax = b1Grad.maxNumber().doubleValue();
         double b1GradMin = b1Grad.minNumber().doubleValue();
-        System.out.println("b1 gradient range: " + (b1GradMax - b1GradMin));
+        log.debug("b1 gradient range: {}", (b1GradMax - b1GradMin));
 
         // Also verify loss value is reasonable
         Map<String, INDArray> output = sd.output(placeholders, "loss");
-        System.out.println("Loss value: " + output.get("loss"));
+        log.debug("Loss value: {}", output.get("loss"));
 
         // Forward pass: check softmax outputs
         Map<String, INDArray> predictions = sd.output(placeholders, "prediction");
         INDArray pred = predictions.get("prediction");
-        System.out.println("Prediction shape: " + java.util.Arrays.toString(pred.shape()));
-        System.out.println("Prediction row 0: " + pred.getRow(0));
-        System.out.println("Prediction mean per class: " + pred.mean(0));
+        log.debug("Prediction shape: {}", java.util.Arrays.toString(pred.shape()));
+        log.debug("Prediction row 0: {}", pred.getRow(0));
+        log.debug("Prediction mean per class: {}", pred.mean(0));
 
         // Also compute softmax of predictions to verify
         INDArray softmaxPred = Nd4j.nn().softmax(pred, 1);
-        System.out.println("Softmax mean per class: " + softmaxPred.mean(0));
+        log.debug("Softmax mean per class: {}", softmaxPred.mean(0));
     }
 
     @ParameterizedTest
@@ -516,7 +516,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         evalMap.put("prediction", Collections.singletonList(e));
         sd.evaluateMultiple(iter, evalMap);
 
-        System.out.println(e.stats());
+        log.info("{}", e.stats());
 
         double acc = e.accuracy();
 
@@ -569,7 +569,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         evalMap.put("prediction", Collections.singletonList(e));
         sd.evaluateMultiple(iter, evalMap);
 
-        System.out.println(e.stats());
+        log.info("{}", e.stats());
 
         double acc = e.accuracy();
 

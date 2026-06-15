@@ -389,7 +389,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return Long.MAX_VALUE;
+        return 600000;
     }
 
     @ParameterizedTest

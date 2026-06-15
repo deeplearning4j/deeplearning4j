@@ -263,7 +263,7 @@ class Keras2ModelConfigurationTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 999999999L;
+        return 600000;
     }
 
     @Test

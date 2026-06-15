@@ -49,7 +49,7 @@ class KerasModelImportTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 9999999999999L;
+        return 600000;
     }
 
 

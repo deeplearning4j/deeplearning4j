@@ -49,7 +49,7 @@ public class TestLossOpValidation extends BaseOpValidation {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return Long.MAX_VALUE;
+        return 600000;
     }
 
     // All tested Loss Ops have backprop at the moment 2019/01/30
