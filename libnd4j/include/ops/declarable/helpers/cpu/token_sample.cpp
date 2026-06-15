@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/token_sample.h>
 #include <ops/declarable/helpers/sampling_penalties.h>
+#include <system/op_boilerplate.h>
 #include <algorithm>
 #include <cmath>
 #include <numeric>
@@ -30,9 +31,10 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-void tokenSampleCpu(NDArray* logits, NDArray* output,
-                    double temperature, int topK, double topP,
-                    LongType seed, LaunchContext* context) {
+template <typename T>
+static void tokenSampleCpu_(NDArray* logits, NDArray* output,
+                             double temperature, int topK, double topP,
+                             LongType seed, LaunchContext* context) {
   auto rank = logits->rankOf();
   LongType batch = 1;
   LongType vocabSize;
@@ -64,11 +66,11 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
       for (LongType v = 0; v < vocabSize; v++) {
         float val;
         if (rank == 1) {
-          val = logits->e<float>(v);
+          val = static_cast<float>(logits->e<T>(v));
         } else if (rank == 2) {
-          val = logits->e<float>(b, v);
+          val = static_cast<float>(logits->e<T>(b, v));
         } else {
-          val = logits->e<float>(b, seqPos, v);
+          val = static_cast<float>(logits->e<T>(b, seqPos, v));
         }
         if (val > maxVal) {
           maxVal = val;
@@ -85,11 +87,11 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
       std::vector<float> logitsVec(vocabSize);
       for (LongType v = 0; v < vocabSize; v++) {
         if (rank == 1) {
-          logitsVec[v] = logits->e<float>(v);
+          logitsVec[v] = static_cast<float>(logits->e<T>(v));
         } else if (rank == 2) {
-          logitsVec[v] = logits->e<float>(b, v);
+          logitsVec[v] = static_cast<float>(logits->e<T>(b, v));
         } else {
-          logitsVec[v] = logits->e<float>(b, seqPos, v);
+          logitsVec[v] = static_cast<float>(logits->e<T>(b, seqPos, v));
         }
       }
 
@@ -154,6 +156,19 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
       }
     }
   }
+}
+
+BUILD_SINGLE_TEMPLATE(static void tokenSampleCpu_, (NDArray* logits, NDArray* output,
+                      double temperature, int topK, double topP,
+                      LongType seed, LaunchContext* context),
+                      SD_FLOAT_TYPES);
+
+void tokenSampleCpu(NDArray* logits, NDArray* output,
+                    double temperature, int topK, double topP,
+                    LongType seed, LaunchContext* context) {
+  BUILD_SINGLE_SELECTOR(logits->dataType(), tokenSampleCpu_,
+                        (logits, output, temperature, topK, topP, seed, context),
+                        SD_FLOAT_TYPES);
 }
 
 void tokenSampleWithPenaltiesCpu(NDArray* logits, NDArray* output,

@@ -19,6 +19,7 @@
  */
 
 #include <ops/declarable/helpers/top_k_renorm.h>
+#include <system/op_boilerplate.h>
 #include <algorithm>
 #include <cmath>
 #include <numeric>
@@ -28,7 +29,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-void topKRenorm(LaunchContext* context, NDArray* logits, NDArray* output, int k) {
+template <typename T>
+static void topKRenorm_(LaunchContext* context, NDArray* logits, NDArray* output, int k) {
     auto rank = logits->rankOf();
     LongType batch = 1;
     LongType vocabSize;
@@ -45,17 +47,17 @@ void topKRenorm(LaunchContext* context, NDArray* logits, NDArray* output, int k)
         for (LongType b = 0; b < batch; b++) {
             float maxLogit = -std::numeric_limits<float>::infinity();
             for (LongType v = 0; v < vocabSize; v++) {
-                float val = (rank == 1) ? logits->e<float>(v) : logits->e<float>(b, v);
+                float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
                 if (val > maxLogit) maxLogit = val;
             }
             float sumExp = 0.0f;
             for (LongType v = 0; v < vocabSize; v++) {
-                float val = (rank == 1) ? logits->e<float>(v) : logits->e<float>(b, v);
+                float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
                 float prob = std::exp(val - maxLogit);
                 sumExp += prob;
             }
             for (LongType v = 0; v < vocabSize; v++) {
-                float val = (rank == 1) ? logits->e<float>(v) : logits->e<float>(b, v);
+                float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
                 float prob = std::exp(val - maxLogit) / sumExp;
                 if (rank == 1) {
                     output->p(v, prob);
@@ -72,12 +74,12 @@ void topKRenorm(LaunchContext* context, NDArray* logits, NDArray* output, int k)
         std::vector<float> probs(vocabSize);
         float maxLogit = -std::numeric_limits<float>::infinity();
         for (LongType v = 0; v < vocabSize; v++) {
-            float val = (rank == 1) ? logits->e<float>(v) : logits->e<float>(b, v);
+            float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
             if (val > maxLogit) maxLogit = val;
         }
         float sumExp = 0.0f;
         for (LongType v = 0; v < vocabSize; v++) {
-            float val = (rank == 1) ? logits->e<float>(v) : logits->e<float>(b, v);
+            float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
             probs[v] = std::exp(val - maxLogit);
             sumExp += probs[v];
         }
@@ -119,7 +121,15 @@ void topKRenorm(LaunchContext* context, NDArray* logits, NDArray* output, int k)
     }
 }
 
-void topPRenorm(LaunchContext* context, NDArray* logits, NDArray* output, double p) {
+BUILD_SINGLE_TEMPLATE(static void topKRenorm_, (LaunchContext* context, NDArray* logits, NDArray* output, int k),
+                      SD_FLOAT_TYPES);
+
+void topKRenorm(LaunchContext* context, NDArray* logits, NDArray* output, int k) {
+    BUILD_SINGLE_SELECTOR(logits->dataType(), topKRenorm_, (context, logits, output, k), SD_FLOAT_TYPES);
+}
+
+template <typename T>
+static void topPRenorm_(LaunchContext* context, NDArray* logits, NDArray* output, double p) {
     auto rank = logits->rankOf();
     LongType batch = 1;
     LongType vocabSize;
@@ -136,12 +146,12 @@ void topPRenorm(LaunchContext* context, NDArray* logits, NDArray* output, double
         std::vector<float> probs(vocabSize);
         float maxLogit = -std::numeric_limits<float>::infinity();
         for (LongType v = 0; v < vocabSize; v++) {
-            float val = (rank == 1) ? logits->e<float>(v) : logits->e<float>(b, v);
+            float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
             if (val > maxLogit) maxLogit = val;
         }
         float sumExp = 0.0f;
         for (LongType v = 0; v < vocabSize; v++) {
-            float val = (rank == 1) ? logits->e<float>(v) : logits->e<float>(b, v);
+            float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
             probs[v] = std::exp(val - maxLogit);
             sumExp += probs[v];
         }
@@ -191,6 +201,13 @@ void topPRenorm(LaunchContext* context, NDArray* logits, NDArray* output, double
             }
         }
     }
+}
+
+BUILD_SINGLE_TEMPLATE(static void topPRenorm_, (LaunchContext* context, NDArray* logits, NDArray* output, double p),
+                      SD_FLOAT_TYPES);
+
+void topPRenorm(LaunchContext* context, NDArray* logits, NDArray* output, double p) {
+    BUILD_SINGLE_SELECTOR(logits->dataType(), topPRenorm_, (context, logits, output, p), SD_FLOAT_TYPES);
 }
 
 }  // namespace helpers
