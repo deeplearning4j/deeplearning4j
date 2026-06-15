@@ -293,7 +293,7 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
                                sd::LongType numPlaceholders,
                                int graphExecutionMode) {
   try {
-    if (!cacheHandle) throw std::runtime_error("dispatchNativePlan: cacheHandle is null");
+    if (!cacheHandle) THROW_EXCEPTION("dispatchNativePlan: cacheHandle is null");
 
     auto* cache = reinterpret_cast<sd::graph::NativePlanCache*>(cacheHandle);
 

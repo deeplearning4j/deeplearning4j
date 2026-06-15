@@ -20,7 +20,7 @@
 //  @author raver119@gmail.com
 //
 #include <execution/LaunchContext.h>
-#include <exceptions/cuda_exception.h>
+#include <string>
 #include <system/op_boilerplate.h>
 #include <loops/reduce_float.h>
 #include <loops/scalar.h>
@@ -358,8 +358,8 @@ SD_HOST void ReduceFloatFunction<X,Z>::intermediate(
         cudaMemcpyHostToDevice,
         *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceFloatFunction<X,Z>::intermediate: failed to copy temporary scalar", res);
+      std::string msg = "ReduceFloatFunction<X,Z>::intermediate: failed to copy temporary scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
 
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
@@ -422,8 +422,8 @@ SD_HOST void ReduceFloatFunction<X,Z>::intermediateScalar(
 
     auto res = cudaMemcpyAsync(z, &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceFloatFunction<X,Z>::intermediateScalar: failed to copy resulting scalar", res);
+      std::string msg = "ReduceFloatFunction<X,Z>::intermediateScalar: failed to copy resulting scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
   } else {
     simpleScalar<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(

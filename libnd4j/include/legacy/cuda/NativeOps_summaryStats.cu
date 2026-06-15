@@ -21,7 +21,7 @@
 //
 
 #include <cuda.h>
-#include <exceptions/cuda_exception.h>
+
 #include <execution/LaunchContext.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>

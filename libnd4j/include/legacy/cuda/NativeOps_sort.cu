@@ -22,7 +22,7 @@
 
 #include <cuda.h>
 #include <array/NDArray.h>
-#include <exceptions/cuda_exception.h>
+
 #include <execution/LaunchContext.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>

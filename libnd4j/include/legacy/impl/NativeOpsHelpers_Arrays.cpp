@@ -35,7 +35,7 @@
 
 #include <cstdio>
 #include <string>
-#include <exceptions/allocation_exception.h>
+
 #include <fcntl.h>
 
 #include <helpers/BlasHelper.h>

@@ -17,8 +17,7 @@
  ******************************************************************************/
 
 #include <cuda.h>
-#include <exceptions/cuda_exception.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/AffinityManager.h>
 
 #include <helpers/BlasHelper.h>

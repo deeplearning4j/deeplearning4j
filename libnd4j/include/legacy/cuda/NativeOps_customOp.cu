@@ -23,7 +23,7 @@
 #include <cuda.h>
 #include <cstdio>
 #include <string>
-#include <exceptions/cuda_exception.h>
+
 #include <execution/LaunchContext.h>
 #include <graph/DspLifecycleContext.h>
 #include <legacy/NativeOps.h>
@@ -54,7 +54,7 @@ sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, Context 
     // Retrieve the operation based on the hash
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
     if (op == nullptr) {
-      throw std::invalid_argument("Operation not found for the given hash.");
+      THROW_EXCEPTION("Operation not found for the given hash.");
     }
 
 #if defined(SD_GCC_FUNCTRACE)

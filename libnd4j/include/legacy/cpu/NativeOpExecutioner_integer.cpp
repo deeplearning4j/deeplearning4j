@@ -14,7 +14,6 @@
 #include <system/selective_rendering/uint_types.h>
 
 #include <array/DataTypeUtils.h>
-#include <exceptions/datatype_exception.h>
 #include <execution/Threads.h>
 #include <helpers/LoopKind.h>
 #include <legacy/NativeOpExecutioner.h>
@@ -36,11 +35,15 @@ void NativeOpExecutioner::execBroadcastInt(
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
 
-  if (xType != yType || xType != zType)
-    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt", zType, xType, yType).what());
+  if (xType != yType || xType != zType) {
+    std::string dtMsg = std::string("NativeOpExecutioner::execBroadcastInt") + "; Expected: [" + sd::DataTypeUtils::asString(zType) + "]; Actual: [" + sd::DataTypeUtils::asString(xType) + ", " + sd::DataTypeUtils::asString(yType) + "]";
+    THROW_EXCEPTION(dtMsg.c_str());
+  }
 
-  if (!sd::DataTypeUtils::isZ(zType))
-    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType).what());
+  if (!sd::DataTypeUtils::isZ(zType)) {
+    std::string dtMsg = std::string("NativeOpExecutioner::execBroadcastInt requires integer data type") + "; Actual: [" + sd::DataTypeUtils::asString(zType) + "]";
+    THROW_EXCEPTION(dtMsg.c_str());
+  }
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt,
                           ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength,
@@ -67,11 +70,15 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext *lc, const int opNu
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
 
-  if (xType != yType || xType != zType)
-    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt", zType, xType, yType).what());
+  if (xType != yType || xType != zType) {
+    std::string dtMsg = std::string("NativeOpExecutioner::execBroadcastInt") + "; Expected: [" + sd::DataTypeUtils::asString(zType) + "]; Actual: [" + sd::DataTypeUtils::asString(xType) + ", " + sd::DataTypeUtils::asString(yType) + "]";
+    THROW_EXCEPTION(dtMsg.c_str());
+  }
 
-  if (!sd::DataTypeUtils::isZ(zType))
-    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType).what());
+  if (!sd::DataTypeUtils::isZ(zType)) {
+    std::string dtMsg = std::string("NativeOpExecutioner::execBroadcastInt requires integer data type") + "; Actual: [" + sd::DataTypeUtils::asString(zType) + "]";
+    THROW_EXCEPTION(dtMsg.c_str());
+  }
   BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt,
                         ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo), SD_INTEGER_TYPES);
 }
@@ -87,12 +94,15 @@ void NativeOpExecutioner::execInverseBroadcastInt(
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
 
-  if (xType != yType || xType != zType)
-    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execInverseBroadcastInt", zType, xType, yType).what());
+  if (xType != yType || xType != zType) {
+    std::string dtMsg = std::string("NativeOpExecutioner::execInverseBroadcastInt") + "; Expected: [" + sd::DataTypeUtils::asString(zType) + "]; Actual: [" + sd::DataTypeUtils::asString(xType) + ", " + sd::DataTypeUtils::asString(yType) + "]";
+    THROW_EXCEPTION(dtMsg.c_str());
+  }
 
-  if (!sd::DataTypeUtils::isZ(zType))
-    THROW_EXCEPTION(sd::datatype_exception::build("NativeOpExecutioner::execInverseBroadcastInt requires integer data type",
-                                        zType).what());
+  if (!sd::DataTypeUtils::isZ(zType)) {
+    std::string dtMsg = std::string("NativeOpExecutioner::execInverseBroadcastInt requires integer data type") + "; Actual: [" + sd::DataTypeUtils::asString(zType) + "]";
+    THROW_EXCEPTION(dtMsg.c_str());
+  }
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR(
         xType, functions::broadcast::BroadcastInt,

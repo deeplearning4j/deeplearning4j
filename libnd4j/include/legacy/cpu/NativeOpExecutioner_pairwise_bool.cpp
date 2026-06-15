@@ -7,7 +7,7 @@
 #include <system/op_boilerplate.h>
 
 #include <array/DataTypeUtils.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/pairwise_bool.h>

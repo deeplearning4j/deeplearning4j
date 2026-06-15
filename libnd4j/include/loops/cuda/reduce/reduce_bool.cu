@@ -20,8 +20,8 @@
 //  @author raver119@gmail.com
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
-#include <exceptions/cuda_exception.h>
 #include <execution/LaunchContext.h>
+#include <string>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/StringUtils.h>
@@ -350,8 +350,8 @@ SD_HOST SD_INLINE void ReduceBoolFunction<X, Z>::intermediate(
         cudaMemcpyHostToDevice,
         *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceBoolFunction<X,Z>::intermediate: failed to copy temporary scalar", res);
+      std::string msg = "ReduceBoolFunction<X,Z>::intermediate: failed to copy temporary scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
 
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
@@ -421,8 +421,8 @@ SD_HOST SD_INLINE void ReduceBoolFunction<X, Z>::intermediateScalar(
         cudaMemcpyHostToDevice,
         *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceBoolFunction<X,Z>::intermediateScalar: failed to copy resulting scalar", res);
+      std::string msg = "ReduceBoolFunction<X,Z>::intermediateScalar: failed to copy resulting scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
     sd::DebugHelper::checkErrorCode(stream, "reduceBoolScalar empty(...) failed");
   } else {
