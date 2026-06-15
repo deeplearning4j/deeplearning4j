@@ -20,7 +20,6 @@
 
 package org.deeplearning4j.eval.meta;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data

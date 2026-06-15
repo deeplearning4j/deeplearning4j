@@ -20,7 +20,6 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.GradientNormalization;
