@@ -33,6 +33,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
@@ -117,16 +118,53 @@ public class Convolution1DUtils {
     public static INDArray reshapeWeightArrayOrGradientForFormat(INDArray w, WeightsFormat wFormat) {
        if(w.rank() < 4)
            return w;
+        // Drop the padded spatial dimension (size 1) from the 4D Conv1D weight tensor
+        // and reorder to [kW, iC, oC] format expected by the Conv1D C++ op (wFormat=0).
+        long oC, iC, kW;
+        INDArray result;
         switch(wFormat) {
             case OIYX:
-                return w.reshape(w.size(0),w.size(1),w.size(3));
+                // Conv1D 4D: [O, I, 1, K] -> need [K, I, O]
+                oC = w.size(0); iC = w.size(1); kW = w.size(3);
+                result = Nd4j.create(w.dataType(), kW, iC, oC);
+                // w4d[o, i, 0, k] -> result[k, i, o]
+                result.assign(w.reshape(oC, iC, kW).permute(2, 1, 0));
+                return result;
             case YXIO:
-                return w.reshape(w.size(1),w.size(2),w.size(3));
-            case OYXI:
+                // Conv1D 4D: [K, 1, I, O] -> drop padded dim 1 -> [K, I, O] (already correct)
                 return w.reshape(w.size(0),w.size(2),w.size(3));
+            case OYXI:
+                // Conv1D 4D: [O, 1, K, I] -> need [K, I, O]
+                oC = w.size(0); kW = w.size(2); iC = w.size(3);
+                result = Nd4j.create(w.dataType(), kW, iC, oC);
+                // w4d[o, 0, k, i] -> result[k, i, o]
+                result.assign(w.reshape(oC, kW, iC).permute(1, 2, 0));
+                return result;
             default:
                 throw new IllegalArgumentException("Illegal weights format " + wFormat);
 
+        }
+    }
+
+    /**
+     * Convert a {@link WeightsFormat} to the Conv1D C++ wFormat integer.
+     * Conv1D wFormat: 0=[kW,iC,oC], 1=[oC,iC,kW], 2=[oC,kW,iC]
+     * @param wFormat the weights format
+     * @return the Conv1D wFormat integer
+     */
+    public static long conv1dWFormatFromWeightsFormat(WeightsFormat wFormat) {
+        switch(wFormat) {
+            case YXIO:
+                // After dropping padded dim: [K, I, O] = [kW, iC, oC] -> wFormat=0
+                return 0;
+            case OIYX:
+                // After dropping padded dim: [O, I, K] = [oC, iC, kW] -> wFormat=1
+                return 1;
+            case OYXI:
+                // After dropping padded dim: [O, K, I] = [oC, kW, iC] -> wFormat=2
+                return 2;
+            default:
+                throw new IllegalArgumentException("Unknown weights format: " + wFormat);
         }
     }
 
@@ -196,17 +234,11 @@ public class Convolution1DUtils {
     public static long getOutputSizeLong(INDArray inputData, long kernel, long strides, long padding,
                                          ConvolutionMode convolutionMode, long dilation) {
         long inH = inputData.size(2);
-        long dilatedFilterSize = kernel + (kernel - 1) * (dilation - 1);
-        long outputLength;
-        if (convolutionMode == ConvolutionMode.Same) {
-            outputLength = inH - dilatedFilterSize + 1;
-        } else if (convolutionMode == ConvolutionMode.Causal) {
-            outputLength = inH + dilatedFilterSize - 1;
-        } else {
-            throw new IllegalArgumentException("Unsupported convolution mode: " + convolutionMode);
+        long eKernel = effectiveKernelSize(kernel, dilation);
+        if (convolutionMode == ConvolutionMode.Same || convolutionMode == ConvolutionMode.Causal) {
+            return (long) Math.ceil(inH / ((double) strides));
         }
-
-        return (outputLength + strides - 1) / strides;
+        return (inH - eKernel + 2 * padding) / strides + 1;
     }
 
     public static void validateShapes(INDArray inputData, int eKernel, int strides, int padding,

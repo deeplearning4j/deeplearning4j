@@ -25,14 +25,9 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
@@ -56,45 +51,32 @@ public class Upsampling1D extends Upsampling2D {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        long[] size = ((BaseUpsamplingLayer) layerConf()).getSize();
-        epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
-        // we replicate the error term times "size" so that backprop works properly on it
-        epsilon = epsilon.repeat(3, size[0]);
+        // Reshape 3D epsilon [N, C, L*factor] to 4D [N, C, L*factor, 1] for the upsampling_bp op
+        INDArray epsilon4d = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
 
+        // Reshape 3D input [N, C, L] to 4D [N, C, L, 1]
         INDArray originalInput = input;
         input = input.castTo(dataType).reshape(input.size(0), input.size(1), input.size(2), 1);
 
-        long miniBatch = input.size(0);
-        long inDepth = input.size(1);
-        long inH = input.size(2);
-        long inW = input.size(3);
+        // Delegate to parent which calls upsampling_bp op with 4D tensors
+        Pair<Gradient, INDArray> result = super.backpropGradient(epsilon4d, workspaceMgr);
 
-
-        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), miniBatch * inDepth * inH * inW);
-        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
-
-        int[] intArgs = new int[] {1}; // 1 is for NCHW
-
-        CustomOp op = DynamicCustomOp.builder("upsampling_bp")
-                .addIntegerArguments(intArgs)
-                .addInputs(input, epsilon)
-                .addOutputs(reshapedEpsilon)
-                .callInplace(false)
-                .build();
-        Nd4j.getExecutioner().exec(op);
-
-        Gradient gradient = new DefaultGradient();
-
-        reshapedEpsilon = reshapedEpsilon.slice(0, 3);
+        // Restore original 3D input
         input = originalInput;
 
-        // Since we aggregate the gradient across "size" slices, we need to normalize afterwards.
-        return new Pair<>(gradient, reshapedEpsilon.divi(size[0]));
+        // Reshape the 4D result [N, C, L, 1] back to 3D [N, C, L]
+        INDArray epsOut4d = result.getSecond();
+        INDArray epsOut3d = epsOut4d.reshape(epsOut4d.size(0), epsOut4d.size(1), epsOut4d.size(2));
+
+        return new Pair<>(result.getFirst(), epsOut3d);
     }
 
     @Override
     protected long[] getSize(){
-        return ((org.deeplearning4j.nn.conf.layers.Upsampling1D)conf.getLayer()).getSize();
+        long[] fullSize = ((org.deeplearning4j.nn.conf.layers.Upsampling1D)conf.getLayer()).getSize();
+        // For 1D upsampling we only upsample the length (H) dimension.
+        // The W dimension is a singleton placeholder and must stay at 1.
+        return new long[]{fullSize[0], 1};
     }
 
     @Override

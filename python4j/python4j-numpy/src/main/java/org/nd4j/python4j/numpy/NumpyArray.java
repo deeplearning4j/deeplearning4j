@@ -83,10 +83,17 @@ public class NumpyArray extends PythonType<INDArray> {
             //See: https://numpy.org/doc/1.17/reference/c-api.array.html#importing-the-api
             //DO NOT REMOVE
             if(Boolean.parseBoolean(System.getProperty(ADD_JAVACPP_NUMPY_TO_PATH,DEFAULT_ADD_JAVACPP_NUMPY_TO_PATH))) {
+               // Append each numpy package directory to sys.path using PyList_Append.
+               // PySys_SetObject("path", ...) is intentionally NOT used here — it replaces
+               // the entire sys.path list with a single string, which corrupts the path and
+               // causes "No module named 'numpy'" when _import_array() is called.
+               // initPythonPath() already appends these dirs, but we also do it here for
+               // robustness in case init() is called without initPythonPath().
+               PyObject sysPath = PySys_GetObject("path");
                for(File packageDir : numpy.cachePackages()) {
-                   PyObject pythonPath = PyUnicode_FromString(packageDir.getAbsolutePath());
-                   PySys_SetObject("path", pythonPath);
-                   Py_DecRef(pythonPath);
+                   PyObject pyStr = PyUnicode_FromString(packageDir.getAbsolutePath());
+                   PyList_Append(sysPath, pyStr);
+                   PythonRefCount.decRef(pyStr);
                }
 
             }
@@ -97,8 +104,11 @@ public class NumpyArray extends PythonType<INDArray> {
 
             int err = numpy._import_array();
             if (err < 0){
-                System.out.println("Numpy import failed!");
-                throw new PythonException("Numpy import failed!");
+                // Print the Python error to stderr so it's visible in test output
+                if (PyErr_Occurred() != null) {
+                    PyErr_Print();
+                }
+                throw new PythonException("Numpy import failed! (numpy._import_array() returned " + err + ")");
             }
         }
 
@@ -120,12 +130,12 @@ public class NumpyArray extends PythonType<INDArray> {
         PyObject np = PyImport_ImportModule("numpy");
         PyObject ndarray = PyObject_GetAttrString(np, "ndarray");
         if (PyObject_IsInstance(pythonObject.getNativePythonObject(), ndarray) != 1) {
-            Py_DecRef(ndarray);
-            Py_DecRef(np);
+            PythonRefCount.decRef(ndarray);
+            PythonRefCount.decRef(np);
             throw new PythonException("Object is not a numpy array! Use Python.ndarray() to convert object to a numpy array.");
         }
-        Py_DecRef(ndarray);
-        Py_DecRef(np);
+        PythonRefCount.decRef(ndarray);
+        PythonRefCount.decRef(np);
         PyArrayObject npArr = new PyArrayObject(pythonObject.getNativePythonObject());
         long[] shape = new long[PyArray_NDIM(npArr)];
         SizeTPointer shapePtr = PyArray_SHAPE(npArr);
@@ -300,7 +310,7 @@ public class NumpyArray extends PythonType<INDArray> {
                 PythonExecutioner.exec(code);
                 log.debug("exec done.");
                 PythonObject ret = PythonExecutioner.getVariable("npArr");
-                Py_IncRef(ret.getNativePythonObject());
+                PythonRefCount.incRef(ret.getNativePythonObject());
                 return ret;
 
             }

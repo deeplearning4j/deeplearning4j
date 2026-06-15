@@ -103,35 +103,51 @@ public class ModelNamespaceGenerator {
                 .addException(Exception.class)
                 .addJavadoc(model.documentation());
         c.addParameter(ParameterSpec.builder(TypeName.BOOLEAN,"forceDownload").build());
-        String[] segmented = model.modelUrl().split("/");
-        String modelFileName = segmented[segmented.length - 1];
-        switch(model.framework()) {
-            case DL4J:
-                switch(model.modelType()) {
-                    case COMP_GRAPH:
-                        c.returns(ComputationGraph.class);
-                        c.addStatement(CodeBlock.builder()
-                                .add(String.format("return org.eclipse.deeplearning4j.omnihub.OmniHubUtils.loadCompGraph(\"%s\",forceDownload)",modelFileName))
-                                .build());
-                        break;
-                    case SEQUENTIAL:
-                        c.returns(MultiLayerNetwork.class);
-                        c.addStatement(CodeBlock.builder()
-                                .add(String.format("return org.eclipse.deeplearning4j.omnihub.OmniHubUtils.loadNetwork(\"%s\",forceDownload)",modelFileName))
-                                .build());
-                        break;
-                }
-                break;
-            case SAMEDIFF:
+
+        if (model.modelType() == org.eclipse.deeplearning4j.omnihub.api.ModelType.SAMEDIFF_PIPELINE) {
+            // Pipeline-based model: download from HuggingFace and load via AutoModel
+            c.returns(SameDiff.class);
+            String hfId = model.huggingFaceId();
+            String filePattern = model.filePattern();
+            if (filePattern != null) {
                 c.addStatement(CodeBlock.builder()
-                        .add(String.format("return org.eclipse.deeplearning4j.omnihub.OmniHubUtils.loadSameDiffModel(\"%s\",forceDownload)",modelFileName))
+                        .add(String.format("return org.eclipse.deeplearning4j.omnihub.OmniHubUtils.loadFromHuggingFace(\"%s\",\"%s\",forceDownload)",
+                                hfId, filePattern))
                         .build());
-                c.returns(SameDiff.class);
-                break;
+            } else {
+                c.addStatement(CodeBlock.builder()
+                        .add(String.format("return org.eclipse.deeplearning4j.omnihub.OmniHubUtils.loadFromHuggingFace(\"%s\",null,forceDownload)",
+                                hfId))
+                        .build());
+            }
+        } else {
+            String[] segmented = model.modelUrl().split("/");
+            String modelFileName = segmented[segmented.length - 1];
+            switch(model.framework()) {
+                case DL4J:
+                    switch(model.modelType()) {
+                        case COMP_GRAPH:
+                            c.returns(ComputationGraph.class);
+                            c.addStatement(CodeBlock.builder()
+                                    .add(String.format("return org.eclipse.deeplearning4j.omnihub.OmniHubUtils.loadCompGraph(\"%s\",forceDownload)",modelFileName))
+                                    .build());
+                            break;
+                        case SEQUENTIAL:
+                            c.returns(MultiLayerNetwork.class);
+                            c.addStatement(CodeBlock.builder()
+                                    .add(String.format("return org.eclipse.deeplearning4j.omnihub.OmniHubUtils.loadNetwork(\"%s\",forceDownload)",modelFileName))
+                                    .build());
+                            break;
+                    }
+                    break;
+                case SAMEDIFF:
+                    c.addStatement(CodeBlock.builder()
+                            .add(String.format("return org.eclipse.deeplearning4j.omnihub.OmniHubUtils.loadSameDiffModel(\"%s\",forceDownload)",modelFileName))
+                            .build());
+                    c.returns(SameDiff.class);
+                    break;
+            }
         }
-
-
-
 
         return c.build();
     }

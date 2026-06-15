@@ -154,7 +154,13 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
         long[] inSize = df == Convolution3D.DataFormat.NCDHW ? new long[]{(int)input.size(2), (int)input.size(3), (int)input.size(4)} : new long[]{(int)input.size(1), (int)input.size(2), (int)input.size(3)};
         if (cm == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getDeconvolution3DOutputSizeLong(input, kernel, strides, null, dilation, cm, layerConf().getDataFormat()); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, inSize, kernel, strides, dilation );
+            // For deconvolution same mode, padding = (effectiveKernel - stride) / 2
+            // This differs from convolution's getSameModeTopLeftPadding which computes conv-style padding
+            pad = new long[kernel.length];
+            for (int i = 0; i < kernel.length; i++) {
+                long eKernel = dilation[i] * (kernel[i] - 1) + 1;
+                pad[i] = Math.max(0, (eKernel - strides[i]) / 2);
+            }
         } else {
             pad = layerConf().getPadding();
             outSize = ConvolutionUtils.getDeconvolution3DOutputSizeLong(input, kernel, strides, pad, dilation, cm, layerConf().getDataFormat()); //Also performs validation

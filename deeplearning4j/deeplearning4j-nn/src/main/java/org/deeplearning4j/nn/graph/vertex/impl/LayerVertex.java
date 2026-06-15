@@ -155,8 +155,10 @@ public class LayerVertex extends BaseGraphVertex {
 
         if (layerPreProcessor != null) {
             INDArray eps = pair.getSecond();
-            eps = layerPreProcessor.backprop(eps, graph.batchSize(), workspaceMgr);
-            pair.setSecond(eps);
+            if (eps != null) {
+                eps = layerPreProcessor.backprop(eps, graph.batchSize(), workspaceMgr);
+                pair.setSecond(eps);
+            }
         }
 
         //Layers always have single activations input -> always have single epsilon output during backprop
@@ -249,7 +251,7 @@ public class LayerVertex extends BaseGraphVertex {
         }
         //Edge case: output layer - never did forward pass hence layer.setInput was never called...
         if(!setLayerInput) {
-            applyPreprocessorAndSetInput(LayerWorkspaceMgr.noWorkspaces()); //TODO
+            applyPreprocessorAndSetInput(workspaceMgr);
         }
 
         IOutputLayer ol = (IOutputLayer)layer;

@@ -41,6 +41,10 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.*;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
@@ -213,7 +217,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             if(e.getMessage().contains("@class")) {
                 try {
                     //JSON may be legacy (1.0.0-alpha or earlier), attempt to load it using old format
-                    return JsonMappers.getLegacyMapper().readValue(json, MultiLayerConfiguration.class);
+                    MultiLayerConfiguration legacyConf = JsonMappers.getLegacyMapper().readValue(json, MultiLayerConfiguration.class);
+                    // Apply legacy updater backward compatibility — getLegacyMapper does not register the
+                    // MultiLayerConfigurationDeserializer, so updater enum -> IUpdater conversion must be done here.
+                    applyLegacyUpdaterFromJson(legacyConf, json, mapper);
+                    return legacyConf;
                 } catch (InvalidTypeIdException e2) {
                     //Check for legacy custom layers: "Could not resolve type id 'CustomLayer' as a subtype of [simple type, class org.deeplearning4j.nn.conf.layers.Layer]: known type ids = [Bidirectional, CenterLossOutputLayer, CnnLossLayer, ..."
                     //1.0.0-beta5: dropping support for custom layers defined in pre-1.0.0-beta format. Built-in layers from these formats still work
@@ -407,6 +415,196 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         }
         return true;
 
+    }
+
+    /**
+     * Apply legacy backward compatibility for configs deserialized via the legacy mapper (1.0.0-alpha and earlier
+     * format). The legacy mapper does not register {@link org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer},
+     * so updater enum -&gt; IUpdater, activationFunction string -&gt; IActivation, weightInit string -&gt; IWeightInit, and
+     * lossFunction enum -&gt; ILossFunction conversions must be applied manually here.
+     */
+    private static void applyLegacyUpdaterFromJson(MultiLayerConfiguration conf, String json, ObjectMapper mapper) {
+        try {
+            JsonNode rootNode = mapper.readTree(json);
+            JsonNode confsNode = rootNode.get("confs");
+            if (!(confsNode instanceof ArrayNode)) return;
+            ArrayNode layerConfs = (ArrayNode) confsNode;
+
+            int layerCount = 0;
+            for (NeuralNetConfiguration nnc : conf.getConfs()) {
+                Layer l = nnc.getLayer();
+
+                JsonNode nncNode = layerConfs.get(layerCount);
+                if (nncNode == null) { layerCount++; continue; }
+                JsonNode layerWrapperNode = nncNode.get("layer");
+                if (layerWrapperNode == null) { layerCount++; continue; }
+                // Handle two legacy formats:
+                // - @class format (1.0.0-alpha): layer node has @class field and all properties inline
+                // - wrapper format (pre-1.0.0-alpha): layer node has a single child keyed by type name
+                JsonNode layerNode;
+                if (layerWrapperNode.has("@class")) {
+                    layerNode = layerWrapperNode;
+                } else if (layerWrapperNode.size() == 1) {
+                    layerNode = layerWrapperNode.elements().next();
+                } else {
+                    layerCount++;
+                    continue;
+                }
+
+                if (l instanceof BaseLayer) {
+                    BaseLayer bl = (BaseLayer) l;
+
+                    // updater: "NESTEROVS" -> Nesterovs instance
+                    if (bl.getIUpdater() == null) {
+                        try {
+                            JsonNode updaterNode = layerNode.get("updater");
+                            if (updaterNode != null) {
+                                String updaterName = updaterNode.asText();
+                                Updater u = Updater.valueOf(updaterName);
+                                IUpdater iu = u.getIUpdaterWithDefaultConfig();
+                                double lr = layerNode.has("learningRate") ? layerNode.get("learningRate").asDouble() : Double.NaN;
+                                double eps = layerNode.has("epsilon") ? layerNode.get("epsilon").asDouble() : Double.NaN;
+                                double rho = layerNode.has("rho") ? layerNode.get("rho").asDouble() : Double.NaN;
+                                switch (u) {
+                                    case SGD:
+                                        if (!Double.isNaN(lr)) ((Sgd) iu).setLearningRate(lr);
+                                        break;
+                                    case ADAM:
+                                        if (Double.isNaN(eps)) eps = Adam.DEFAULT_ADAM_EPSILON;
+                                        if (!Double.isNaN(lr)) ((Adam) iu).setLearningRate(lr);
+                                        if (layerNode.has("adamMeanDecay")) ((Adam) iu).setBeta1(layerNode.get("adamMeanDecay").asDouble());
+                                        if (layerNode.has("adamVarDecay")) ((Adam) iu).setBeta2(layerNode.get("adamVarDecay").asDouble());
+                                        ((Adam) iu).setEpsilon(eps);
+                                        break;
+                                    case ADAMAX:
+                                        if (Double.isNaN(eps)) eps = AdaMax.DEFAULT_ADAMAX_EPSILON;
+                                        if (!Double.isNaN(lr)) ((AdaMax) iu).setLearningRate(lr);
+                                        if (layerNode.has("adamMeanDecay")) ((AdaMax) iu).setBeta1(layerNode.get("adamMeanDecay").asDouble());
+                                        if (layerNode.has("adamVarDecay")) ((AdaMax) iu).setBeta2(layerNode.get("adamVarDecay").asDouble());
+                                        ((AdaMax) iu).setEpsilon(eps);
+                                        break;
+                                    case ADADELTA:
+                                        if (Double.isNaN(eps)) eps = AdaDelta.DEFAULT_ADADELTA_EPSILON;
+                                        if (!Double.isNaN(rho)) ((AdaDelta) iu).setRho(rho);
+                                        ((AdaDelta) iu).setEpsilon(eps);
+                                        break;
+                                    case NESTEROVS:
+                                        if (!Double.isNaN(lr)) ((Nesterovs) iu).setLearningRate(lr);
+                                        if (layerNode.has("momentum")) ((Nesterovs) iu).setMomentum(layerNode.get("momentum").asDouble());
+                                        break;
+                                    case NADAM:
+                                        if (Double.isNaN(eps)) eps = Nadam.DEFAULT_NADAM_EPSILON;
+                                        if (!Double.isNaN(lr)) ((Nadam) iu).setLearningRate(lr);
+                                        if (layerNode.has("adamMeanDecay")) ((Nadam) iu).setBeta1(layerNode.get("adamMeanDecay").asDouble());
+                                        if (layerNode.has("adamVarDecay")) ((Nadam) iu).setBeta2(layerNode.get("adamVarDecay").asDouble());
+                                        ((Nadam) iu).setEpsilon(eps);
+                                        break;
+                                    case ADAGRAD:
+                                        if (Double.isNaN(eps)) eps = AdaGrad.DEFAULT_ADAGRAD_EPSILON;
+                                        if (!Double.isNaN(lr)) ((AdaGrad) iu).setLearningRate(lr);
+                                        ((AdaGrad) iu).setEpsilon(eps);
+                                        break;
+                                    case RMSPROP:
+                                        if (Double.isNaN(eps)) eps = RmsProp.DEFAULT_RMSPROP_EPSILON;
+                                        if (!Double.isNaN(lr)) ((RmsProp) iu).setLearningRate(lr);
+                                        ((RmsProp) iu).setEpsilon(eps);
+                                        if (layerNode.has("rmsDecay")) ((RmsProp) iu).setRmsDecay(layerNode.get("rmsDecay").asDouble());
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                bl.setIUpdater(iu);
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to apply legacy updater backward compatibility for layer {}", l.getLayerName(), e);
+                        }
+                    }
+
+                    // activationFunction: "relu" string -> IActivation
+                    if (bl.getActivationFn() == null) {
+                        try {
+                            JsonNode activationFunction = layerNode.get("activationFunction");
+                            if (activationFunction != null) {
+                                IActivation ia = Activation.fromString(activationFunction.asText()).getActivationFunction();
+                                bl.setActivationFn(ia);
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to apply legacy activationFunction backward compatibility for layer {}", l.getLayerName(), e);
+                        }
+                    }
+
+                    // weightInit: "XAVIER" string -> IWeightInit
+                    if (bl.getWeightInitFn() == null) {
+                        try {
+                            JsonNode weightInit = layerNode.get("weightInit");
+                            JsonNode distribution = layerNode.get("dist");
+                            Distribution dist = null;
+                            if (distribution != null && !distribution.isNull()) {
+                                dist = mapper.treeToValue(distribution, Distribution.class);
+                            }
+                            if (weightInit != null) {
+                                IWeightInit wi = WeightInit.valueOf(weightInit.asText()).getWeightInitFunction(dist);
+                                bl.setWeightInitFn(wi);
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to apply legacy weightInit backward compatibility for layer {}", l.getLayerName(), e);
+                        }
+                    }
+
+                    // l2/l1 -> WeightDecay/L1Regularization migration (1.0.0-alpha and earlier)
+                    if (bl.getRegularization() == null || bl.getRegularization().isEmpty()) {
+                        try {
+                            if (bl.getRegularization() == null) bl.setRegularization(new ArrayList<>());
+                            if (bl.getRegularizationBias() == null) bl.setRegularizationBias(new ArrayList<>());
+                            if (layerNode.has("l2")) {
+                                double l2 = layerNode.get("l2").asDouble();
+                                if (l2 > 0.0) bl.getRegularization().add(new WeightDecay(l2, false));
+                            }
+                            if (layerNode.has("l1")) {
+                                double l1 = layerNode.get("l1").asDouble();
+                                if (l1 > 0.0) bl.getRegularization().add(new L1Regularization(l1));
+                            }
+                            if (layerNode.has("l2Bias")) {
+                                double l2b = layerNode.get("l2Bias").asDouble();
+                                if (l2b > 0.0) bl.getRegularizationBias().add(new WeightDecay(l2b, false));
+                            }
+                            if (layerNode.has("l1Bias")) {
+                                double l1b = layerNode.get("l1Bias").asDouble();
+                                if (l1b > 0.0) bl.getRegularizationBias().add(new L1Regularization(l1b));
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to apply legacy l2/l1 regularization backward compatibility for layer {}", l.getLayerName(), e);
+                        }
+                    }
+                }
+
+                // lossFunction: "MCXENT" enum string -> ILossFunction (for output layers)
+                if (l instanceof BaseOutputLayer && ((BaseOutputLayer) l).getLossFn() == null) {
+                    try {
+                        JsonNode lossFunctionNode = layerNode.get("lossFunction");
+                        if (lossFunctionNode != null) {
+                            String lfStr = lossFunctionNode.asText();
+                            LossFunctions.LossFunction lf = LossFunctions.LossFunction.valueOf(lfStr);
+                            switch (lf) {
+                                case MSE: ((BaseOutputLayer) l).setLossFn(new LossMSE()); break;
+                                case XENT: ((BaseOutputLayer) l).setLossFn(new LossBinaryXENT()); break;
+                                case NEGATIVELOGLIKELIHOOD: ((BaseOutputLayer) l).setLossFn(new LossNegativeLogLikelihood()); break;
+                                case MCXENT: ((BaseOutputLayer) l).setLossFn(new LossMCXENT()); break;
+                                default:
+                                    log.warn("Legacy lossFunction not handled: {}", lf);
+                                    break;
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to apply legacy lossFunction backward compatibility for layer {}", l.getLayerName(), e);
+                    }
+                }
+
+                layerCount++;
+            }
+        } catch (IOException e) {
+            log.warn("Failed to parse JSON for legacy backward compatibility", e);
+        }
     }
 
     @Override

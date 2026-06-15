@@ -115,6 +115,10 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         } else {
             //As per FeedForwardToRnnPreprocessor
             INDArray permuted3d = output.permute(0, 2, 1);
+            //Dup to 'f' to ensure contiguous strides before reshape - reshape('f') on a
+            //non-contiguous permuted view may not correctly respect the 'f' ordering
+            if (permuted3d.ordering() != 'f' || !Shape.hasDefaultStridesForShape(permuted3d))
+                permuted3d = permuted3d.dup('f');
             output2d = permuted3d.reshape('f', shape[0] * shape[2], shape[1]);
         }
 

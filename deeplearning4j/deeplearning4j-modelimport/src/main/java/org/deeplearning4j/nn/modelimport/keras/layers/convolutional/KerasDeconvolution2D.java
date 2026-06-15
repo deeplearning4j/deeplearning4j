@@ -96,6 +96,7 @@ public class KerasDeconvolution2D extends KerasConvolution {
                 .weightInit(init)
                 .dataFormat(KerasConvolutionUtils.getDataFormatFromConfig(layerConfig,conf))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization).l2Bias(this.biasL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)

@@ -61,7 +61,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer) conf.getLayer();
 
-        poolingDimensions = ArrayUtil.toLongArray(layerConf.getPoolingDimensions());
+        poolingDimensions = layerConf.getPoolingDimensions() != null
+                ? ArrayUtil.toLongArray(layerConf.getPoolingDimensions()) : null;
         poolingType = layerConf.getPoolingType();
         pNorm = layerConf.getPnorm();
     }
@@ -274,7 +275,9 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         switch (poolingType) {
             case MAX:
-                INDArray isMax = Nd4j.exec(new IsMax(inputArray, inputArray.ulike(), poolDim))[0];
+                INDArray isMaxOut = Nd4j.createUninitialized(DataType.BOOL, inputArray.shape(), inputArray.ordering());
+                Nd4j.exec(new IsMax(inputArray, isMaxOut, poolDim));
+                INDArray isMax = isMaxOut.castTo(inputArray.dataType());
                 return Nd4j.getExecutioner().exec(new BroadcastMulOp(isMax, epsilon, isMax, broadcastDims));
             case AVG:
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut

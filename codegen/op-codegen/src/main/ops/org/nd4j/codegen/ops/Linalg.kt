@@ -20,6 +20,7 @@
 
 package org.nd4j.codegen.ops
 
+import org.nd4j.codegen.api.AtLeast
 import org.nd4j.codegen.api.DataType
 import org.nd4j.codegen.api.DataType.*
 import org.nd4j.codegen.api.Language
@@ -115,7 +116,7 @@ fun Linalg() =  Namespace("Linalg") {
         Input(DataType.NUMERIC, "a") {description = "input tensor"}
         Input(DataType.NUMERIC, "b") {description = "input tensor"}
         Arg(DataType.FLOATING_POINT,"alpha",{defaultValue = 1.0; description = "Defaults to 1.0: the scalar multiplier for the product of a* b "})
-        Arg(DataType.FLOATING_POINT,"beta",{defaultValue = 1.0; description = "Defaults to 1.0: the scalar multiplier for c "})
+        Arg(DataType.FLOATING_POINT,"beta",{defaultValue = 0.0; description = "Defaults to 0.0: the scalar multiplier for c "})
         Arg(DataType.BOOL,"transA",{defaultValue = false; description = "Whether to transpose a when running multiply "})
         Arg(DataType.BOOL,"transB",{defaultValue = false; description = "Whether to transpose b when running multiply "})
         Output(DataType.FLOATING_POINT, "output")
@@ -317,6 +318,32 @@ fun Linalg() =  Namespace("Linalg") {
             """.trimIndent()
         }
     }
-    
+
+    Op("einsum") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "Einsum"
+        Arg(DataType.STRING, "equation") { description = "Einstein summation equation string" }
+        Input(DataType.NUMERIC, "inputs") { count = AtLeast(1); description = "Input tensors" }
+        Output(DataType.NUMERIC, "output") { description = "Output tensor" }
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Einsum (Einstein summation) operation.
+
+             Provides a powerful way to express tensor operations using Einstein summation notation.
+             The equation string specifies the subscripts for each input tensor and the output tensor.
+
+             Examples:
+             - Matrix multiplication: "ij,jk->ik"
+             - Transpose: "ij->ji"
+             - Diagonal: "ii->i"
+             - Trace: "ii->"
+             - Batch matmul: "bij,bjk->bik"
+             - Dot product: "i,i->"
+             - Outer product: "i,j->ij"
+            """.trimIndent()
+        }
+    }
+
     Alias(SDBaseOps(), "mmul")
 }

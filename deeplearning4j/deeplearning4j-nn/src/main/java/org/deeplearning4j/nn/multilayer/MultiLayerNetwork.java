@@ -129,6 +129,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Getter
     protected transient Map<String,Pointer> helperWorkspaces = new HashMap<>();
 
+    private static INDArray asRowVectorView(INDArray flatArray) {
+        if (flatArray.rank() == 2 && flatArray.isRowVector()) {
+            return flatArray;
+        }
+
+        long length = flatArray.length();
+        return Nd4j.create(flatArray.data(), new long[]{1, length}, new long[]{length, 1},
+                flatArray.offset(), 'c', true);
+    }
+
+    private static INDArray flatBufferView(INDArray flatArray, long from, long to) {
+        INDArray rowVector = asRowVectorView(flatArray);
+        long innerStride = rowVector.stride(1);
+        return Nd4j.create(rowVector.data(), new long[]{to - from}, new long[]{innerStride},
+                rowVector.offset() + from * innerStride, 'c', true);
+    }
+
 
     /**
      * Workspace for working memory for a single layer: forward pass and backward pass
@@ -696,9 +713,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 initializeParams = false;
             }
 
-            INDArray flattenedParamsReshape = null;
             if(flattenedParams != null) {
-                flattenedParamsReshape = flattenedParams.reshape(flattenedParams.length());
+                flattenedParams = asRowVectorView(flattenedParams);
             }
 
             //Set RNG seed, for repeatability between initializations when set
@@ -711,8 +727,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             for (int i = 0; i < nLayers; i++) {
                 INDArray paramsView;
                 if (nParamsPerLayer[i] > 0) {
-                    paramsView = flattenedParamsReshape.get(
-                            NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
+                    paramsView = flatBufferView(flattenedParams, paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]);
                 } else {
                     paramsView = null;
                 }
@@ -786,18 +801,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
 
             if(paramLength > 0) {
-                flattenedGradients = Nd4j.create(flattenedParams.dataType(), new long[]{1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
+                flattenedGradients = Nd4j.create(flattenedParams.dataType(), new long[]{1, paramLength}, 'f');
             } else if(paramLength == 0) {
                 return;
             }
 
-            INDArray flattenedGradientsReshape = flattenedGradients.reshape(flattenedGradients.length());
             long paramsSoFar = 0;
             for (int i = 0; i < layers.length; i++) {
                 if (nParamsPerLayer[i] == 0)
                     continue; //This layer doesn't have any parameters...
-                INDArray thisLayerGradView = flattenedGradientsReshape.get(
-                        NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParamsPerLayer[i]));
+                INDArray thisLayerGradView = flatBufferView(flattenedGradients, paramsSoFar,
+                        paramsSoFar + nParamsPerLayer[i]);
                 layers[i].setBackpropGradientsViewArray(thisLayerGradView);
                 paramsSoFar += nParamsPerLayer[i];
             }
@@ -1019,6 +1033,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
+        //Save the initial workspace so we can restore it after processing - prevents workspace state leakage
+        MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
         List<INDArray> out = new ArrayList<>();
         out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Should  be unnecessary (and no op), if layer is implemented correctly
 
@@ -1069,6 +1086,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 FF_CACHE
         };
         workspaceMgr.closeWorkspace(toClose);
+
+        //Restore the initial workspace to prevent workspace state from leaking to callers
+        Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
         return out;
     }
@@ -1176,8 +1196,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 BP_WORKING_MEM,
                 RNN_FF_LOOP_WORKING_MEM,
                 RNN_BP_LOOP_WORKING_MEM,
-                UPDATER_WORKING_MEM,
-                FF_CACHE
+                UPDATER_WORKING_MEM
+                // FF_CACHE intentionally excluded: WS_ALL_LAYERS_ACT is opened and managed
+                // by the caller (e.g. computeGradientAndScore). Closing it here causes
+                // ND4JWorkspaceException when the caller subsequently accesses ACTIVATIONS.
         };
         workspaceMgr.closeWorkspace(toClose);
 
@@ -1559,8 +1581,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     @Override
     public INDArray params() {
-        if(flattenedParams == null)
+        if(flattenedParams == null || flattenedParams.length() == 0)
             return Nd4j.zeros(DataType.FLOAT,0);
+        // If the params array has been closed (e.g. after net.close()), return it directly
+        // so callers can check wasClosed() without triggering a reshape on a released buffer
+        if(flattenedParams.wasClosed())
+            return flattenedParams;
         if(flattenedParams.rank() > 1)
             return flattenedParams.reshape(flattenedParams.length());
         return flattenedParams;
@@ -1579,24 +1605,29 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             return; //No op
         }
 
-        INDArray paramsReshape = params.reshape(params.length());
-        if (flattenedParams != null && params.length() == flattenedParams.length()) {
-            if (params != flattenedParams) {
-                flattenedParams.assign(params);
+        INDArray rowVectorParams = asRowVectorView(params);
+        INDArray paramsSource;
+        if (flattenedParams != null && rowVectorParams.length() == flattenedParams.length()) {
+            if (rowVectorParams != flattenedParams) {
+                flattenedParams.assign(rowVectorParams);
             }
+            paramsSource = flattenedParams;
         } else {
             if (flattenedParams == null)
-                flattenedParams = params.dup();
-            int idx = 0;
-            for (int i = 0; i < getLayers().length; i++) {
-                Layer layer = getLayer(i);
-                long range = layer.numParams();
-                if (range <= 0)
-                    continue; //Some layers: no parameters (subsampling, etc)
-                INDArray get = paramsReshape.get(NDArrayIndex.interval(idx, range + idx));
-                layer.setParams(get);
-                idx += range;
-            }
+                flattenedParams = asRowVectorView(rowVectorParams.dup());
+            paramsSource = flattenedParams;
+        }
+
+        int idx = 0;
+        for (int i = 0; i < getLayers().length; i++) {
+            Layer layer = getLayer(i);
+            long range = layer.numParams();
+            if (range <= 0)
+                continue; //Some layers: no parameters (subsampling, etc)
+            INDArray get = flatBufferView(paramsSource, idx, range + idx);
+            layer.setParamsViewArray(get);
+            layer.setParamTable(layer.conf().getLayer().initializer().init(layer.conf(), get, false));
+            idx += range;
         }
     }
 
@@ -1613,12 +1644,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         int paramsSoFar = 0;
-        INDArray gradientsReshape = gradients.reshape(gradients.length());
         for (Layer layer : layers) {
             if (layer.numParams() == 0)
                 continue;
-            layer.setBackpropGradientsViewArray(gradientsReshape.get(
-                    NDArrayIndex.interval(paramsSoFar, paramsSoFar + layer.numParams())));
+            layer.setBackpropGradientsViewArray(flatBufferView(gradients, paramsSoFar, paramsSoFar + layer.numParams()));
             paramsSoFar += layer.numParams();
         }
     }
@@ -1855,8 +1884,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             INDArray inputToOutputLayer = activations.get(activations.size() - 1);
             if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null) {
-                inputToOutputLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
-                        .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr);
+                inputToOutputLayer = mgr.dup(ArrayType.ACTIVATIONS,
+                        layerWiseConfigurations.getInputPreProcess(layers.length - 1)
+                        .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr));
                 //Validate activations location
             }
             getOutputLayer().setInput(inputToOutputLayer, mgr);
@@ -1932,11 +1962,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .build();
 
 
-            mgrEven.setCurrentWorkspace(ArrayType.INPUT);
             if(epsilon == null) {
+                mgrEven.setCurrentWorkspace(ArrayType.INPUT);
                 //If epsilon is non-null: external errors use case -> inputs are already detached
                 mgrEven.assertCurrentWorkspace(ArrayType.INPUT, "calcBackPropGradients workspace must be the INPUT type");
                 mgrOdd.assertCurrentWorkspace(ArrayType.INPUT, "calcBackPropGradients workspace must be the INPUT type");
+            } else {
+                //External backprop: inputs are already detached, no need for WS_ALL_LAYERS_ACT
+                mgrEven.setScopedOutFor(ArrayType.INPUT);
+                mgrOdd.setScopedOutFor(ArrayType.INPUT);
             }
         }
 
@@ -2019,6 +2053,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, i,
                                 false, "Backprop");
                     }
+
 
                     for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
                         String origName = entry.getKey();
@@ -2797,8 +2832,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             INDArray inputToOutputLayer = activations.get(activations.size() - 1);
             if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null) {
-                inputToOutputLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
-                        .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr);
+                inputToOutputLayer = mgr.dup(ArrayType.ACTIVATIONS,
+                        layerWiseConfigurations.getInputPreProcess(layers.length - 1)
+                        .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr));
                 //Validate activations location
             }
             getOutputLayer().setInput(inputToOutputLayer, mgr);

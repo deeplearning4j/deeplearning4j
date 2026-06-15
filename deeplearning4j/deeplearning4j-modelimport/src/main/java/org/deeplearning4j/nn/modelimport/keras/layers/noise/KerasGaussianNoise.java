@@ -77,7 +77,7 @@ public class KerasGaussianNoise extends KerasLayer {
                     + conf.getLAYER_FIELD_GAUSSIAN_VARIANCE() + " parameter" +
                     "needed for GaussianNoise");
         }
-        double stddev = (double) innerConfig.get(conf.getLAYER_FIELD_GAUSSIAN_VARIANCE());
+        double stddev = ((Number) innerConfig.get(conf.getLAYER_FIELD_GAUSSIAN_VARIANCE())).doubleValue();
 
         this.layer = new DropoutLayer.Builder().name(this.layerName)
                 .dropOut(new GaussianNoise(stddev)).build();

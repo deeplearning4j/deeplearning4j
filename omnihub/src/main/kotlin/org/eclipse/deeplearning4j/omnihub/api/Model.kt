@@ -26,6 +26,9 @@ interface ModelLike {
     fun documentation(): String
     fun framework(): FrameworkNamespace
     fun modelType(): ModelType
+    fun huggingFaceId(): String?
+    fun modelFormat(): String?
+    fun filePattern(): String?
 
 }
 
@@ -34,12 +37,18 @@ data class Model(val modelUrl: String,
                  val pretrained: Boolean,
                  val documentation: String,
                  val framework: FrameworkNamespace,
-                 val modelType: ModelType = ModelType.COMP_GRAPH): ModelLike {
+                 val modelType: ModelType = ModelType.COMP_GRAPH,
+                 val huggingFaceId: String? = null,
+                 val modelFormat: String? = null,
+                 val filePattern: String? = null): ModelLike {
     override fun modelUrl() = modelUrl
     override fun modelName() = modelName
     override fun pretrained() = pretrained
     override fun documentation() = documentation
     override fun framework() = framework
     override fun modelType() = modelType
+    override fun huggingFaceId() = huggingFaceId
+    override fun modelFormat() = modelFormat
+    override fun filePattern() = filePattern
 
 }

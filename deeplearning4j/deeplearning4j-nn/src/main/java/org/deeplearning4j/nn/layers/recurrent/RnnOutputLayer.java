@@ -39,6 +39,11 @@ import java.util.Arrays;
 
 public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.RnnOutputLayer> {
 
+    //Original 2D mask [batch, time] stored for applying in 3D space where ordering is unambiguous.
+    //The reshaped maskArray (inherited) may have inconsistent ordering with reshape3dTo2d output
+    //depending on whether reshape is a no-copy view (F-order) or copy (C-order).
+    private INDArray originalMask2d;
+
     public RnnOutputLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
     }
@@ -147,17 +152,30 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input.castTo(W.dataType()), workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         INDArray act2d = layerConf().getActivationFn().getActivation(input2d.mmul(W).addiRowVector(b), training);
-        if (maskArray != null) {
+
+        //Reshape back to 3D before applying mask - this avoids ordering mismatch issues
+        //between reshape3dTo2d (which may produce F-ordered or C-ordered output depending
+        //on whether the reshape is a no-copy view or requires a data copy) and the mask vector.
+        INDArray ret = TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0), workspaceMgr, ArrayType.ACTIVATIONS);
+
+        //Apply mask in 3D space where (batch, feature, time) semantics are unambiguous
+        if (originalMask2d != null) {
+            //Per time step masking: mask [batch, time] broadcast to [batch, 1, time] for NCW format
+            long batch = ret.size(0);
+            long time = ret.size(2);
+            ret.muli(originalMask2d.castTo(ret.dataType()).reshape(batch, 1, time));
+        } else if (maskArray != null) {
+            //Per output masking (rank 3 mask → reshaped to 2D): apply in 2D as before
+            //This path handles rank-3 masks which don't have the ordering issue
             if(!maskArray.isColumnVectorOrScalar() || Arrays.equals(maskArray.shape(), act2d.shape())){
-                //Per output masking
                 act2d.muli(maskArray.castTo(act2d.dataType()));
             } else {
-                //Per time step masking
                 act2d.muliColumnVector(maskArray.castTo(act2d.dataType()));
             }
+            //Re-reshape since we modified act2d after the initial reshape2dTo3d
+            ret = TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0), workspaceMgr, ArrayType.ACTIVATIONS);
         }
 
-        INDArray ret = TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0), workspaceMgr, ArrayType.ACTIVATIONS);
         if (layerConf().getRnnDataFormat() == RNNFormat.NWC) {
             ret = ret.permute(0, 2, 1);
         }
@@ -168,11 +186,20 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     public void setMaskArray(INDArray maskArray) {
         if (maskArray != null) {
             //Two possible cases:
-            //(a) per time step masking - rank 2 mask array -> reshape to rank 1 (column vector)
-            //(b) per output masking - rank 3 mask array  -> reshape to rank 2 (
+            //(a) per time step masking - rank 2 mask array -> store original for 3D masking
+            //(b) per output masking - rank 3 mask array  -> reshape to rank 2
             if (maskArray.rank() == 2) {
-                this.maskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray, LayerWorkspaceMgr.noWorkspacesImmutable(), ArrayType.INPUT);
+                //Store original 2D mask for applying in 3D space in activate().
+                //Also create a reshaped version for use in computeScore/loss functions.
+                this.originalMask2d = maskArray;
+                //For loss function path: reshape mask to match reshape3dTo2d output.
+                //Use dup to ensure contiguous data, then reshape matching the data path.
+                long batch = maskArray.size(0);
+                long time = maskArray.size(1);
+                INDArray mask3d = maskArray.dup('f').reshape('f', batch, 1, time);
+                this.maskArray = TimeSeriesUtils.reshape3dTo2d(mask3d, LayerWorkspaceMgr.noWorkspacesImmutable(), ArrayType.INPUT);
             } else if (maskArray.rank() == 3) {
+                this.originalMask2d = null;
                 this.maskArray = TimeSeriesUtils.reshape3dTo2d(maskArray, LayerWorkspaceMgr.noWorkspacesImmutable(), ArrayType.INPUT);
             } else {
                 throw new UnsupportedOperationException(
@@ -181,6 +208,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             }
         } else {
             this.maskArray = null;
+            this.originalMask2d = null;
         }
     }
 

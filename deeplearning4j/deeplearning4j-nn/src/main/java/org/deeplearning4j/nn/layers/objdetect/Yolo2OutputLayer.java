@@ -409,6 +409,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
      * @return IOU and gradients
      */
     private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXYinGridBox, INDArray objectPresentMask, INDArray objectPresentMaskBool){
+        //Ensure objectPresentMask has the same dtype as predictedWH to avoid type mismatch in broadcast ops
+        objectPresentMask = objectPresentMask.castTo(predictedWH.dataType());
 
         long mb = labelTL.size(0);
         long h = labelTL.size(2);

@@ -79,6 +79,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         Pair<INDArray, INDArray> zAndPreNorm = preOutputWithPreNorm(true, true, workspaceMgr);
         INDArray z = zAndPreNorm.getFirst(); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
         INDArray preNorm = zAndPreNorm.getSecond();
+
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
@@ -95,7 +96,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.dataType(), new long[]{W.size(0), delta.size(0)}, 'f');
+        INDArray epsilonNext = backpropEpsilon(W, delta, workspaceMgr);
         if(hasLayerNorm()) {
             INDArray g = getParam(DefaultParamInitializer.GAIN_KEY);
 
@@ -105,16 +106,21 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         }
 
-        epsilonNext = W.mmuli(delta.transpose(),epsilonNext).transpose();   //W.mmul(delta.transpose()).transpose();
-
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
-        Nd4j.gemm(input.castTo(weightGrad.dataType()), delta, weightGrad, true, false, 1.0, 0.0);           //TODO avoid castTo?
+        Nd4j.gemm(input.castTo(weightGrad.dataType()), delta, weightGrad, true, false, 1.0, 0.0);
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
 
         weightNoiseParams.clear();
 
         epsilonNext = backpropDropOutIfPresent(epsilonNext);
         return new Pair<>(ret, epsilonNext);
+    }
+
+    protected INDArray backpropEpsilon(INDArray weights, INDArray delta, LayerWorkspaceMgr workspaceMgr) {
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.dataType(),
+                new long[]{delta.size(0), weights.size(0)}, 'c');
+        Nd4j.gemm(delta, weights.castTo(delta.dataType()), epsilonNext, false, true, 1.0, 0.0);
+        return epsilonNext;
     }
 
     public void fit() {

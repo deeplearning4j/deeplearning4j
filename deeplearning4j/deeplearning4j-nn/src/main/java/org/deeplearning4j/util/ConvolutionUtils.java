@@ -131,16 +131,20 @@ public class ConvolutionUtils {
     }
 
     /**
-     * For NCHW we expect:
-     * 4D input with shape [minibatch, inputChannels, inputHeight, inputWidth]
-     * for NHWC:
-     * 4D input with shape [minibatch, inputHeight, inputWidth, inputChannels]
-     * Note this is also tied to convolutions.h weightShape
-     * @param format
-     * @return
+     * Returns the weight format for the given CNN2D data format.
+     * Both NCHW and NHWC use YXIO [kH, kW, iC, oC] so that parameter flat buffers
+     * have the same byte layout regardless of the input data format. This allows
+     * assigning params between NCHW and NHWC networks (e.g. in format-conversion tests)
+     * without changing the kernel values seen by the underlying convolution op.
+     * The C++ conv2d op natively supports wFormat=0 (YXIO) for both NCHW and NHWC input.
+     *
+     * @param format the CNN2D data format (NCHW or NHWC) — ignored, kept for API compatibility
+     * @return always WeightsFormat.YXIO
      */
     public static WeightsFormat getWeightFormat(CNN2DFormat format) {
-        return format == CNN2DFormat.NCHW ? WeightsFormat.YXIO : WeightsFormat.OIYX;
+        // Always YXIO [kH, kW, iC, oC] — same layout for both NCHW and NHWC.
+        // The C++ conv2d op handles both input formats correctly with wFormat=0.
+        return WeightsFormat.YXIO;
     }
 
 
@@ -177,7 +181,8 @@ public class ConvolutionUtils {
     @Deprecated
     public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                       ConvolutionMode convolutionMode) {
-        return getOutputSize(inputData, kernel, strides, padding, convolutionMode, ONES);
+        int[] pad = padding != null ? padding : new int[]{0, 0};
+        return getOutputSize(inputData, kernel, strides, pad, convolutionMode, ONES);
     }
 
 
@@ -309,7 +314,8 @@ public class ConvolutionUtils {
     @Deprecated
     public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                       ConvolutionMode convolutionMode, int[] dilation) {
-        return Arrays.stream(getOutputSize(inputData, toLongArray(kernel), toLongArray(strides), toLongArray(padding),
+        return Arrays.stream(getOutputSize(inputData, toLongArray(kernel), toLongArray(strides),
+                padding != null ? toLongArray(padding) : null,
                 convolutionMode, toLongArray(dilation), CNN2DFormat.NCHW)).mapToInt(Math::toIntExact).toArray();
     }
 
@@ -337,11 +343,19 @@ public class ConvolutionUtils {
         if (strides.length != 2) {
             throw new IllegalArgumentException("Strides must be an array of length 2 (received array of length " + strides.length + ")");
         }
-        if (padding.length != 2) {
-            throw new IllegalArgumentException("Padding must be an array of length 2 (received array of length " + padding.length + ")");
-        }
         if (dilation.length != 2) {
             throw new IllegalArgumentException("Dilation must be an array of length 2 (received array of length " + dilation.length + ")");
+        }
+
+        // For Same/Causal mode, padding is not used; default to zeros if null
+        if (padding == null) {
+            if (convolutionMode != ConvolutionMode.Same && convolutionMode != ConvolutionMode.Causal) {
+                throw new IllegalArgumentException("Padding must not be null for convolution mode " + convolutionMode);
+            }
+            padding = new long[]{0, 0};
+        }
+        if (padding.length != 2) {
+            throw new IllegalArgumentException("Padding must be an array of length 2 (received array of length " + padding.length + ")");
         }
 
         long inH = format == CNN2DFormat.NCHW ? inputData.size(2) : inputData.size(1);
@@ -359,13 +373,38 @@ public class ConvolutionUtils {
         long dH = dilation[0];
         long dW = dilation[1];
 
+        // Effective kernel size accounting for dilation
+        long eKH = (kH - 1) * dH + 1;
+        long eKW = (kW - 1) * dW + 1;
+
         long outH, outW;
-        if (convolutionMode == ConvolutionMode.Same) {
+        if (convolutionMode == ConvolutionMode.Same || convolutionMode == ConvolutionMode.Causal) {
             outH = (long) Math.ceil(inH / (double) sH);
             outW = (long) Math.ceil(inW / (double) sW);
+        } else if (convolutionMode == ConvolutionMode.Strict) {
+            long hRemainder = (inH + 2 * padH - eKH) % sH;
+            long wRemainder = (inW + 2 * padW - eKW) % sW;
+            if (hRemainder != 0 || wRemainder != 0) {
+                throw new DL4JInvalidConfigException(
+                        "ConvolutionMode.Strict: output size is not an integer. Input size [h,w] = [" + inH + "," + inW
+                                + "], kernel = [" + kH + "," + kW + "], strides = [" + sH + "," + sW
+                                + "], padding = [" + padH + "," + padW + "], dilation = [" + dH + "," + dW + "]."
+                                + " To truncate extra input, use ConvolutionMode.Truncate; to use padding, use ConvolutionMode.Same");
+            }
+            outH = (inH + 2 * padH - eKH) / sH + 1;
+            outW = (inW + 2 * padW - eKW) / sW + 1;
         } else {
-            outH = (long) Math.ceil((inH - (kH - 1) * dH + 2 * padH) / (double) sH);
-            outW = (long) Math.ceil((inW - (kW - 1) * dW + 2 * padW) / (double) sW);
+            // Truncate mode: floor division
+            outH = (inH + 2 * padH - eKH) / sH + 1;
+            outW = (inW + 2 * padW - eKW) / sW + 1;
+        }
+
+        if (outH <= 0 || outW <= 0) {
+            throw new DL4JInvalidInputException("Invalid input data or configuration: output size is not positive. "
+                    + "Input size [h,w] = [" + inH + "," + inW + "], kernel = [" + kH + "," + kW
+                    + "], strides = [" + sH + "," + sW + "], padding = [" + padH + "," + padW
+                    + "], dilation = [" + dH + "," + dW + "], output size = [" + outH + "," + outW + "]. "
+                    + "Possible cause: kernel size is larger than the input size.");
         }
 
         return new long[]{outH, outW};
@@ -518,7 +557,7 @@ public class ConvolutionUtils {
 
         long oH, oW;
 
-        if (convolutionMode == ConvolutionMode.Truncate) {  // valid
+        if (convolutionMode == ConvolutionMode.Truncate || convolutionMode == ConvolutionMode.Strict) {  // valid
             oH = (inputHeight + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
             oW = (inputWidth + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
         } else if (convolutionMode == ConvolutionMode.Same) {  // same
@@ -537,15 +576,24 @@ public class ConvolutionUtils {
             oH = (inputHeight + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
             oW = (inputWidth + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
         } else if (convolutionMode == ConvolutionMode.Causal) {  // causal
-            // Update the padding values for causal convolution
+            // Causal padding: pad only on the left side (temporal past), not symmetric.
+            // With left-only padding of (kH-1)*dH, output size = ceil(inputHeight / sH)
             pH = (kH - 1) * dH;
             pW = (kW - 1) * dW;
 
-            // Calculate the output height and width with the updated padding
-            oH = (inputHeight + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
-            oW = (inputWidth + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
+            // Single-sided padding: effective padded length = inputHeight + pH (not 2*pH)
+            oH = (inputHeight + pH - (kH - 1) * dH - 1) / sH + 1;
+            oW = (inputWidth + pW - (kW - 1) * dW - 1) / sW + 1;
         } else {
             throw new IllegalArgumentException("Unknown convolution mode: " + convolutionMode);
+        }
+
+        if (oH <= 0 || oW <= 0) {
+            throw new DL4JInvalidInputException("Invalid input data or configuration: output size is not positive. "
+                    + "Input size [h,w] = [" + inputHeight + "," + inputWidth + "], kernel = [" + kH + "," + kW
+                    + "], strides = [" + sH + "," + sW + "], padding = [" + pH + "," + pW
+                    + "], dilation = [" + dH + "," + dW + "], output size = [" + oH + "," + oW + "]. "
+                    + "Possible cause: kernel size is larger than the input size.");
         }
 
         return new long[]{oH, oW};
@@ -1367,12 +1415,20 @@ public class ConvolutionUtils {
         long[] d;
         if (inMask.size(3) == 1) {
             //[mb,x,y,1] case -> pool mask along height
+            if (convolutionMode == ConvolutionMode.Same && stride[0] == 1) {
+                //Same mode, stride 1 in the relevant dimension -> output height == input height -> no change needed
+                return inMask;
+            }
             k = new long[]{kernel[0], 1};
             s = new long[]{stride[0], 1};
             p = new long[]{padding[0], 0};
             d = new long[]{dilation[0], 1};
         } else if (inMask.size(2) == 1) {
             //[mb,x,1,z] case -> pool mask along width
+            if (convolutionMode == ConvolutionMode.Same && stride[1] == 1) {
+                //Same mode, stride 1 in the relevant dimension -> output width == input width -> no change needed
+                return inMask;
+            }
             k = new long[]{1, kernel[1]};
             s = new long[]{1, stride[1]};
             p = new long[]{0, padding[1]};
@@ -1385,10 +1441,14 @@ public class ConvolutionUtils {
             d = dilation;
         }
 
-        long[] outSize = getOutputSizeLong(inMask.shape(), k, s, p, convolutionMode, d,CNN2DFormat.NCHW); //Also performs validation
+        // Use Truncate (valid) mode with pre-computed padding so the native op output shape matches what we compute here.
+        // getOutputSizeLong already accounts for Same-mode padding by returning the Java-computed padding values,
+        // but passing Same to the native op causes it to recompute padding differently (causing shape mismatches).
+        long[] outSize = getOutputSizeLong(inMask.shape(), k, s, p, ConvolutionMode.Truncate, d, CNN2DFormat.NCHW);
         boolean allEq = true;
         for (int i = 0; i < outSize.length; i++) {
-            if (outSize[i] != inMask.size(i)) {
+            // outSize[0]=H, outSize[1]=W — compare against inMask dims 2 and 3 (not 0 and 1)
+            if (outSize[i] != inMask.size(i + 2)) {
                 allEq = false;
                 break;
             }
@@ -1398,15 +1458,28 @@ public class ConvolutionUtils {
             return inMask;
         }
 
+        // Compute explicit padding for Same mode before switching to Truncate for the pool op
+        long[] effectivePadding = p;
+        if (convolutionMode == ConvolutionMode.Same) {
+            // Re-compute padding that Same mode would apply, then use Truncate with explicit padding
+            long oH = (inMask.size(2) + s[0] - 1) / s[0];
+            long oW = (inMask.size(3) + s[1] - 1) / s[1];
+            long padH = Math.max(0, ((oH - 1) * s[0] + (k[0] - 1) * d[0] + 1 - inMask.size(2)) / 2);
+            long padW = Math.max(0, ((oW - 1) * s[1] + (k[1] - 1) * d[1] + 1 - inMask.size(3)) / 2);
+            effectivePadding = new long[]{padH, padW};
+            // Recompute outSize with the explicit padding in Truncate mode
+            outSize = getOutputSizeLong(inMask.shape(), k, s, effectivePadding, ConvolutionMode.Truncate, d, CNN2DFormat.NCHW);
+        }
+
         long[] outArraySize = new long[]{inMask.size(0), inMask.size(1), outSize[0], outSize[1]};
         INDArray outMask = Nd4j.createUninitialized(inMask.dataType(), outArraySize);
 
         DynamicCustomOp op = new MaxPooling2D(inMask, outMask, Pooling2DConfig.builder()
                 .kH(k[0]).kW(k[1])
                 .sH(s[0]).sW(s[1])
-                .pH(p[0]).pW(p[1])
+                .pH(effectivePadding[0]).pW(effectivePadding[1])
                 .dH(d[0]).dW(d[1])
-                .paddingMode(ConvolutionMode.mapToMode(convolutionMode))
+                .paddingMode(PaddingMode.VALID)
                 .isNHWC(false)
                 .build());
 

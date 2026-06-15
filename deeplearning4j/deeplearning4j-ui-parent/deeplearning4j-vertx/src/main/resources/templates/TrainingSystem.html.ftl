@@ -66,6 +66,10 @@
                         <li class="nav-item"><a class="nav-link" href="overview"><i class="nav-icon cui-chart"></i>${train\.nav\.overview}</a></li>
                         <li class="nav-item"><a class="nav-link" href="model"><i class="nav-icon cui-graph"></i>${train\.nav\.model}</a></li>
                         <li class="nav-item"><a class="nav-link" href="system"><i class="nav-icon cui-speedometer"></i>${train\.nav\.system}</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/dsp"><i class="nav-icon cui-dashboard"></i>DSP Diagnostics</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/samediff"><i class="nav-icon cui-share"></i>SameDiff</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/models"><i class="nav-icon cui-cloud-download"></i>Model Manager</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/modelview"><i class="nav-icon cui-layers"></i>Model Viewer</a></li>
                         <li class="nav-item nav-dropdown">
                             <a class="nav-link nav-dropdown-toggle" href="#">
                                 <i class="nav-icon cui-globe"></i> ${train\.nav\.language}

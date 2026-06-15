@@ -75,6 +75,10 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
             ret = input.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
         } else {
             INDArray permuted = input.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            //Dup to 'f' to ensure contiguous strides before reshape - reshape('f') on a
+            //non-contiguous permuted view may not correctly respect the 'f' ordering
+            if (permuted.ordering() != 'f' || !Shape.hasDefaultStridesForShape(permuted))
+                permuted = workspaceMgr.dup(ArrayType.ACTIVATIONS, permuted, 'f');
             ret = permuted.reshape('f', shape[0] * shape[2], shape[1]);
         }
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);

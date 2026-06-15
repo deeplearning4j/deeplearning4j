@@ -189,13 +189,13 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, LayerWorkspaceMgr workspaceMgr) {
         if (model instanceof ComputationGraph) {
-            ComputationGraph graph = (ComputationGraph) model;
-            if (computationGraphUpdater == null) {
+            if (updater == null) {
                 try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    computationGraphUpdater = new ComputationGraphUpdater(graph);
+                    updater = model.createUpdater();
                 }
             }
-            computationGraphUpdater.update(gradient, NetworkUtils.getIterationCount(model), NetworkUtils.getEpochCount(model), batchSize, workspaceMgr);
+            ComputationGraphUpdater cgUpdater = (ComputationGraphUpdater) updater;
+            cgUpdater.update(gradient, NetworkUtils.getIterationCount(model), NetworkUtils.getEpochCount(model), batchSize, workspaceMgr);
         } else {
             if (updater == null) {
                 try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {

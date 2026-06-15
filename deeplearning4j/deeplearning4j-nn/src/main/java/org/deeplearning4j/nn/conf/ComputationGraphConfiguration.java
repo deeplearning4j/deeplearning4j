@@ -809,6 +809,17 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             this.tbpttBackLength = clonedConf.getTbpttBackLength();
             this.globalConfiguration = globalConfiguration;
             //this.getGlobalConfiguration().setSeed(clonedConf.getDefaultConfiguration().getSeed());
+
+            // Preserve workspace modes from original config when the global configuration
+            // still has defaults (i.e., FineTuneConfiguration didn't explicitly override them)
+            if (globalConfiguration.trainingWorkspaceMode == WorkspaceMode.ENABLED
+                    && clonedConf.getTrainingWorkspaceMode() != WorkspaceMode.ENABLED) {
+                globalConfiguration.trainingWorkspaceMode(clonedConf.getTrainingWorkspaceMode());
+            }
+            if (globalConfiguration.inferenceWorkspaceMode == WorkspaceMode.ENABLED
+                    && clonedConf.getInferenceWorkspaceMode() != WorkspaceMode.ENABLED) {
+                globalConfiguration.inferenceWorkspaceMode(clonedConf.getInferenceWorkspaceMode());
+            }
         }
 
         /**

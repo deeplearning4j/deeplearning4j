@@ -54,6 +54,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_GAUSSIAN_DROPOUT = "GaussianDropout";
     private final String LAYER_CLASS_NAME_GAUSSIAN_NOISE = "GaussianNoise";
     private final String LAYER_CLASS_NAME_DENSE = "Dense";
+    private final String LAYER_CLASS_NAME_EINSUM_DENSE = "EinsumDense";
 
     private final String LAYER_CLASS_NAME_LSTM = "LSTM";
     private final String LAYER_CLASS_NAME_SIMPLE_RNN = "SimpleRNN";
@@ -96,10 +97,22 @@ public class KerasLayerConfiguration {
 
 
     private final String LAYER_CLASS_NAME_ATTENTION = "Attention";
+    private final String LAYER_CLASS_NAME_MULTI_HEAD_ATTENTION = "MultiHeadAttention";
+    private final String LAYER_CLASS_NAME_ADDITIVE_ATTENTION = "AdditiveAttention";
 
+    /* Core layers */
+    private final String LAYER_CLASS_NAME_IDENTITY = "Identity";
+    private final String LAYER_CLASS_NAME_ACTIVITY_REGULARIZATION = "ActivityRegularization";
+
+    /* Recurrent layers */
+    private final String LAYER_CLASS_NAME_GRU = "GRU";
 
     private final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
+    private final String LAYER_CLASS_NAME_GROUP_NORMALIZATION = "GroupNormalization";
+    private final String LAYER_CLASS_NAME_UNIT_NORMALIZATION = "UnitNormalization";
+    private final String LAYER_CLASS_NAME_LAYER_NORMALIZATION = "LayerNormalization";
     private final String LAYER_CLASS_NAME_EMBEDDING = "Embedding";
+    private final String LAYER_CLASS_NAME_EMBEDDING_2D = "Embedding2D";
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D = "GlobalMaxPooling1D";
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D = "GlobalMaxPooling2D";
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_3D = "GlobalMaxPooling3D";
@@ -124,8 +137,10 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_DEPTHWISE_CONVOLUTION_2D = "DepthwiseConv2D"; // Keras 2 only
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_1D = "SeparableConv1D"; // Keras 2 only
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2D, 2: SeparableConv2D
+    private final String LAYER_CLASS_NAME_DECONVOLUTION_1D = "Conv1DTranspose"; // Keras 2 only
     private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = ""; // 1: Deconvolution2D, 2: Conv2DTranspose
     private final String LAYER_CLASS_NAME_DECONVOLUTION_3D = "Conv3DTranspose"; // Keras 2 only
+    private final String LAYER_CLASS_NAME_SPACE_TO_DEPTH = "SpaceToDepth";
 
     // Locally connected layers
     private final String LAYER_CLASS_NAME_LOCALLY_CONNECTED_2D = "LocallyConnected2D";

@@ -47,7 +47,6 @@ public class KerasInitilizationUtils {
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
 
 
-        // TODO: Identity and VarianceScaling need "scale" factor
         if (kerasInit != null) {
             if (kerasInit.equals(conf.getINIT_GLOROT_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_GLOROT_NORMAL_ALIAS())) {
@@ -79,57 +78,57 @@ public class KerasInitilizationUtils {
                     kerasInit.equals(conf.getINIT_RANDOM_UNIFORM()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_UNIFORM_ALIAS())) {
                 if (kerasMajorVersion == 2) {
-                    double minVal = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MINVAL());
-                    double maxVal = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MAXVAL());
+                    double minVal = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_MINVAL())).doubleValue();
+                    double maxVal = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_MAXVAL())).doubleValue();
                     return new WeightInitDistribution(new UniformDistribution(minVal, maxVal));
                 } else {
                     double scale = 0.05;
                     if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
-                        scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                        scale = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE())).doubleValue();
                     return new WeightInitDistribution(new UniformDistribution(-scale, scale));
                 }
             } else if (kerasInit.equals(conf.getINIT_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_NORMAL_ALIAS())) {
                 if (kerasMajorVersion == 2) {
-                    double mean = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MEAN());
-                    double stdDev = (double) initConfig.get(conf.getLAYER_FIELD_INIT_STDDEV());
+                    double mean = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_MEAN())).doubleValue();
+                    double stdDev = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_STDDEV())).doubleValue();
                     return new WeightInitDistribution(new NormalDistribution(mean, stdDev));
                 } else {
                     double scale = 0.05;
                     if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
-                        scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                        scale = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE())).doubleValue();
                     return new WeightInitDistribution(new NormalDistribution(0, scale));
                 }
             } else if (kerasInit.equals(conf.getINIT_CONSTANT()) ||
                     kerasInit.equals(conf.getINIT_CONSTANT_ALIAS())) {
-                double value = (double) initConfig.get(conf.getLAYER_FIELD_INIT_VALUE());
+                double value = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_VALUE())).doubleValue();
                 return new WeightInitDistribution(new ConstantDistribution(value));
             } else if (kerasInit.equals(conf.getINIT_ORTHOGONAL()) ||
                     kerasInit.equals(conf.getINIT_ORTHOGONAL_ALIAS())) {
                 if (kerasMajorVersion == 2) {
                     double gain;
                     try {
-                        gain = (double) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN());
+                        gain = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN())).doubleValue();
                     } catch (Exception e) {
-                        gain = (int) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN());
+                        gain = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN())).doubleValue();
                     }
                     return new WeightInitDistribution(new OrthogonalDistribution(gain));
                 } else {
                     double scale = 1.1;
                     if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
-                        scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                        scale = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE())).doubleValue();
                     return new WeightInitDistribution(new OrthogonalDistribution(scale));
                 }
             } else if (kerasInit.equals(conf.getINIT_TRUNCATED_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_TRUNCATED_NORMAL_ALIAS())) {
-                double mean = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MEAN());
-                double stdDev = (double) initConfig.get(conf.getLAYER_FIELD_INIT_STDDEV());
+                double mean = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_MEAN())).doubleValue();
+                double stdDev = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_STDDEV())).doubleValue();
                 return new WeightInitDistribution(new TruncatedNormalDistribution(mean, stdDev));
             } else if (kerasInit.equals(conf.getINIT_IDENTITY()) ||
                     kerasInit.equals(conf.getINIT_IDENTITY_ALIAS())) {
                 if (kerasMajorVersion == 2) {
-                    double gain = (double) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN());
+                    double gain = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN())).doubleValue();
                     if (gain != 1.0)
                     if (gain != 1.0) {
                         return new WeightInitIdentity(gain);
@@ -139,7 +138,7 @@ public class KerasInitilizationUtils {
                 } else {
                     double scale = 1.;
                     if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
-                        scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                        scale = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE())).doubleValue();
                     if (scale != 1.0) {
                         return new WeightInitIdentity(scale);
                     } else {
@@ -149,9 +148,9 @@ public class KerasInitilizationUtils {
             } else if (kerasInit.equals(conf.getINIT_VARIANCE_SCALING())) {
                 double scale;
                 try {
-                    scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                    scale = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE())).doubleValue();
                 } catch (Exception e) {
-                    scale = (int) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                    scale = ((Number) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE())).doubleValue();
                 }
                 String mode = (String) initConfig.get(conf.getLAYER_FIELD_INIT_MODE());
                 String distribution = (String) initConfig.get(conf.getLAYER_FIELD_INIT_DISTRIBUTION());

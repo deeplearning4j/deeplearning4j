@@ -124,8 +124,24 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
             return true;
         }
 
-        //For NDArrayWritable: we use strict equality. Otherwise, we can have a.equals(b) but a.hashCode() != b.hashCode()
-        return this.array.equalsWithEps(io, 0.0);
+        // Check shape equality first
+        if (!Arrays.equals(this.array.shape(), io.shape())) {
+            return false;
+        }
+
+        // Compare values element-by-element using doubles for cross-datatype comparison
+        // This is consistent with hashCode() which also uses getDouble() for all elements
+        long length = this.array.length();
+        NdIndexIterator iter = new NdIndexIterator('c', this.array.shape());
+        for (long i = 0; i < length; i++) {
+            long[] idx = iter.next();
+            double val1 = this.array.getDouble(idx);
+            double val2 = io.getDouble(idx);
+            if (Double.compare(val1, val2) != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

@@ -60,8 +60,8 @@ public class KerasLRN extends KerasLayer {
         Map<String, Object> lrnParams = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
 
         LocalResponseNormalization.Builder builder = new LocalResponseNormalization.Builder().name(this.layerName)
-                        .dropOut(this.dropout).alpha((double) lrnParams.get("alpha"))
-                        .beta((double) lrnParams.get("beta")).k((int) lrnParams.get("k")).n((int) lrnParams.get("n"));
+                        .dropOut(this.dropout).alpha(((Number) lrnParams.get("alpha")).doubleValue())
+                        .beta(((Number) lrnParams.get("beta")).doubleValue()).k(((Number) lrnParams.get("k")).intValue()).n(((Number) lrnParams.get("n")).intValue());
         this.layer = builder.build();
         this.vertex = null;
     }

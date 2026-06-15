@@ -62,7 +62,7 @@ public class Python {
         try {
             return new PythonObject(PyObject_GetAttrString(builtins, attrName));
         } finally {
-            Py_DecRef(builtins);
+            PythonRefCount.decRef(builtins);
         }
     }
 
@@ -473,7 +473,7 @@ public class Python {
         PythonGIL.assertThreadSafe();
         PyObject main = PyImport_ImportModule("__main__");
         PyObject globals = PyModule_GetDict(main);
-        Py_DecRef(main);
+        PythonRefCount.decRef(main);
         return new PythonObject(globals, false);
     }
 
@@ -501,12 +501,12 @@ public class Python {
         try {
             for (int i = 0; i < type.length; i++) {
                 PythonObject x = type[i];
-                Py_IncRef(x.getNativePythonObject());
+                PythonRefCount.incRef(x.getNativePythonObject());
                 PyTuple_SetItem(argsTuple, i, x.getNativePythonObject());
             }
             return PyObject_IsInstance(obj.getNativePythonObject(), argsTuple) != 0;
         } finally {
-            Py_DecRef(argsTuple);
+            PythonRefCount.decRef(argsTuple);
         }
 
     }
@@ -526,9 +526,9 @@ public class Python {
         try {
             return new PythonObject(PyEval_EvalCode(compiledCode, globals, locals));
         } finally {
-            Py_DecRef(main);
-            Py_DecRef(locals);
-            Py_DecRef(compiledCode);
+            PythonRefCount.decRef(main);
+            PythonRefCount.decRef(locals);
+            PythonRefCount.decRef(compiledCode);
         }
 
     }

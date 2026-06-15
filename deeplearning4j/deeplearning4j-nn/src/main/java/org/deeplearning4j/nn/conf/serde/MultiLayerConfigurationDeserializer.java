@@ -95,7 +95,6 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
         boolean requiresLegacyLossHandling = requiresLegacyLossHandling(layers);
         ObjectMapper mapper = mapper();
         if(attemptIUpdaterFromLegacy || requiresLegacyRegularizationHandling || requiresLegacyWeightInitHandling) {
-            System.out.println("Legacy mapping");
             JsonLocation endLocation = jp.getCurrentLocation();
             long charOffsetEnd = endLocation.getCharOffset();
             Object sourceRef = endLocation.getSourceRef();
@@ -104,8 +103,12 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
                 //Workaround: sometimes sourceRef is a String, sometimes a StringReader
                 ((StringReader) sourceRef).reset();
                 s = IOUtils.toString((StringReader)sourceRef);
-            } else {
+            } else if (sourceRef != null) {
                 s = sourceRef.toString();
+            } else {
+                //sourceRef can be null when parsing from byte streams (e.g. ParallelInference replica init)
+                //Skip legacy handling — config was already deserialized by defaultDeserializer
+                return conf;
             }
             String jsonSubString = s.substring((int) charOffsetStart - 1, (int) charOffsetEnd);
 

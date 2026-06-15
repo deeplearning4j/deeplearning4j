@@ -55,4 +55,7 @@ class ConstructionTest {
 
     @Test
     fun nn() { NN() }
+
+    @Test
+    fun signal() { SDSignal() }
 }

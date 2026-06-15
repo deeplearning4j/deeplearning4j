@@ -134,7 +134,12 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
                 } else {
                     eps = Double.NaN;
                 }
-                double rho = on.get("rho").asDouble();
+                double rho;
+                if(on.has("rho")){
+                    rho = on.get("rho").asDouble();
+                } else {
+                    rho = Double.NaN;
+                }
                 switch (u){
                     case SGD:
                         ((Sgd)iu).setLearningRate(lr);

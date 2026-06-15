@@ -97,6 +97,7 @@ public class KerasConvolution1D extends KerasConvolution {
                 .activation(KerasActivationUtils.getIActivationFromConfig(layerConfig, conf))
                 .weightInit(init)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization).l2Bias(this.biasL2Regularization)
                 .convolutionMode(KerasConvolutionUtils.getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(KerasConvolutionUtils.getKernelSizeFromConfig(layerConfig, 1,  conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)
@@ -185,23 +186,33 @@ public class KerasConvolution1D extends KerasConvolution {
         if (weights.containsKey(conf.getKERAS_PARAM_NAME_W())) {
             INDArray kerasParamValue = weights.get(conf.getKERAS_PARAM_NAME_W());
             INDArray paramValue;
-            switch (this.getDimOrder()) {
-                case TENSORFLOW:
-                    paramValue = kerasParamValue;
-                    paramValue = paramValue.reshape(
-                            paramValue.size(0), paramValue.size(1),
-                            paramValue.size(2), 1);
-                    break;
 
-                case THEANO:
-                    //Convert from keras [k,nIn,nOut] to DL4J conv2d [nOut, nIn, k, 1]
-                    long k = kerasParamValue.size(0);
-                    long nIn = kerasParamValue.size(1);
-                    long nOut = kerasParamValue.size(2);
-                    paramValue = kerasParamValue.dup('c').reshape(nOut, nIn, k, 1);
-                    break;
-                default:
-                    throw new InvalidKerasConfigurationException("Unknown keras backend " + this.getDimOrder());
+            /* Determine actual weight storage order from the backend, NOT from dimOrder.
+             * dimOrder reflects data_format (channels_first/last) which affects activation
+             * layout but NOT weight storage. Weight storage depends on the actual backend
+             * (TF always stores as [k, nIn, nOut], Theano as [nOut, nIn, k]).
+             * For Keras 2 with channels_first, dimOrder=THEANO but backend=tensorflow. */
+            boolean tfWeightOrder;
+            if (originalLayerConfig != null && originalLayerConfig.containsKey(conf.getLAYER_FIELD_BACKEND())) {
+                String backend = (String) originalLayerConfig.get(conf.getLAYER_FIELD_BACKEND());
+                tfWeightOrder = "tensorflow".equals(backend) || "cntk".equals(backend);
+            } else {
+                // No backend field (Keras 1) — use dimOrder as fallback
+                tfWeightOrder = (this.getDimOrder() == KerasLayer.DimOrder.TENSORFLOW);
+            }
+
+            if (tfWeightOrder) {
+                /* TF backend stores 1D weights as [k, nIn, nOut].
+                 * DL4J Conv1D uses YXIO weight format internally: [k, 1, nIn, nOut].
+                 * No permute needed — TF already stores weights in kW-major order
+                 * matching DL4J's YXIO layout. Simply reshape to [k, 1, nIn, nOut]. */
+                paramValue = kerasParamValue.dup('c');
+                paramValue = paramValue.reshape('c', paramValue.size(0), 1, paramValue.size(1), paramValue.size(2));
+            } else {
+                /* Theano backend stores 1D weights as [nOut, nIn, k].
+                 * Layer expects YXIO: [k, 1, nIn, nOut]. */
+                paramValue = kerasParamValue.permute(2, 1, 0).dup('c');
+                paramValue = paramValue.reshape('c', paramValue.size(0), 1, paramValue.size(1), paramValue.size(2));
             }
 
             this.weights.put(ConvolutionParamInitializer.WEIGHT_KEY, paramValue);

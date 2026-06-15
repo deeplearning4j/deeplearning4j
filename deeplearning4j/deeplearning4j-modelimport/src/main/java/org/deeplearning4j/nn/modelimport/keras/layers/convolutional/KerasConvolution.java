@@ -136,18 +136,24 @@ abstract public class KerasConvolution extends KerasLayer {
                     paramValue = kerasParamValue.permute(3, 2, 0, 1);
                 break;
             case THEANO:
-                /* Theano convolutional weights match DL4J: # outputs, # inputs, # rows, # cols
-                 * Theano's default behavior is to rotate filters by 180 degree before application.
+                /* Theano HDF5 weights are (nOut, nIn, kH, kW). DL4J with NCHW uses YXIO weight
+                 * format (kH, kW, nIn, nOut). Permute to produce genuine YXIO C-order data,
+                 * then rotate filters 180 degrees to convert Theano's true convolution to
+                 * DL4J's cross-correlation.
                  */
-                paramValue = kerasParamValue.dup();
-                for (int i = 0; i < paramValue.tensorsAlongDimension(2, 3); i++) {
-                    //dup required since we only want data from the view not the whole array
-                    INDArray copyFilter = paramValue.tensorAlongDimension(i, 2, 3).dup();
+                if (kerasParamValue.rank() == 5)
+                    // 3D conv: (nOut, nIn, kD, kH, kW) -> (kD, kH, kW, nIn, nOut)
+                    paramValue = kerasParamValue.permute(2, 3, 4, 1, 0);
+                else
+                    // 2D conv: (nOut, nIn, kH, kW) -> (kH, kW, nIn, nOut)
+                    paramValue = kerasParamValue.permute(2, 3, 1, 0);
+                paramValue = paramValue.dup();
+                for (int i = 0; i < paramValue.tensorsAlongDimension(0, 1); i++) {
+                    INDArray copyFilter = paramValue.tensorAlongDimension(i, 0, 1).dup();
                     double[] flattenedFilter = copyFilter.ravel().data().asDouble();
                     ArrayUtils.reverse(flattenedFilter);
                     INDArray newFilter = Nd4j.create(flattenedFilter, copyFilter.shape());
-                    //manipulating weights in place to save memory
-                    INDArray inPlaceFilter = paramValue.tensorAlongDimension(i, 2, 3);
+                    INDArray inPlaceFilter = paramValue.tensorAlongDimension(i, 0, 1);
                     inPlaceFilter.muli(0).addi(newFilter.castTo(inPlaceFilter.dataType()));
                 }
                 break;

@@ -640,7 +640,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
             } else {
                 //Align end
                 //Only practical differences here are: (a) offset, and (b) masking
-                startOffset = longestSequence[i] - sequence.size();
+                startOffset = maxTSLength - sequence.size();
             }
 
             if (timeSeriesRandomOffset) {

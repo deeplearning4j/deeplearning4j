@@ -69,11 +69,11 @@ public class KerasOptimizerUtils {
 
         switch (optimizerName.toLowerCase()) {
             case "adam": {
-                double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
-                double beta1 = (double) optimizerParameters.get(BETA_1);
-                double beta2 = (double) optimizerParameters.get(BETA_2);
-                double epsilon = (double) optimizerParameters.get(EPSILON);
-                double decay = (double) (optimizerParameters.containsKey(DECAY) ? optimizerParameters.get(DECAY) : Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY);
+                double lr = ((Number) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2))).doubleValue();
+                double beta1 = ((Number) optimizerParameters.get(BETA_1)).doubleValue();
+                double beta2 = ((Number) optimizerParameters.get(BETA_2)).doubleValue();
+                double epsilon = ((Number) optimizerParameters.get(EPSILON)).doubleValue();
+                double decay = ((Number) (optimizerParameters.containsKey(DECAY) ? optimizerParameters.get(DECAY) : Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY)).doubleValue();
 
                 dl4jOptimizer = new Adam.Builder()
                         .beta1(beta1).beta2(beta2)
@@ -83,8 +83,8 @@ public class KerasOptimizerUtils {
                 break;
             }
             case "adadelta": {
-                double rho = (double) optimizerParameters.get(RHO);
-                double epsilon = (double) optimizerParameters.get(EPSILON);
+                double rho = ((Number) optimizerParameters.get(RHO)).doubleValue();
+                double epsilon = ((Number) optimizerParameters.get(EPSILON)).doubleValue();
 
                 dl4jOptimizer = new AdaDelta.Builder()
                         .epsilon(epsilon).rho(rho)
@@ -92,9 +92,9 @@ public class KerasOptimizerUtils {
                 break;
             }
             case "adagrad": {
-                double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
-                double epsilon = (double) optimizerParameters.get(EPSILON);
-                double decay = (double) optimizerParameters.get(DECAY);
+                double lr = ((Number) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2))).doubleValue();
+                double epsilon = ((Number) optimizerParameters.get(EPSILON)).doubleValue();
+                double decay = ((Number) optimizerParameters.get(DECAY)).doubleValue();
 
                 dl4jOptimizer = new AdaGrad.Builder()
                         .epsilon(epsilon).learningRate(lr)
@@ -103,20 +103,20 @@ public class KerasOptimizerUtils {
                 break;
             }
             case "adamax": {
-                double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
-                double beta1 = (double) optimizerParameters.get(BETA_1);
-                double beta2 = (double) optimizerParameters.get(BETA_2);
-                double epsilon = (double) optimizerParameters.get(EPSILON);
+                double lr = ((Number) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2))).doubleValue();
+                double beta1 = ((Number) optimizerParameters.get(BETA_1)).doubleValue();
+                double beta2 = ((Number) optimizerParameters.get(BETA_2)).doubleValue();
+                double epsilon = ((Number) optimizerParameters.get(EPSILON)).doubleValue();
 
                 dl4jOptimizer = new AdaMax(lr, beta1, beta2, epsilon);
                 break;
             }
             case "nadam": {
-                double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
-                double beta1 = (double) optimizerParameters.get(BETA_1);
-                double beta2 = (double) optimizerParameters.get(BETA_2);
-                double epsilon = (double) optimizerParameters.get(EPSILON);
-                double scheduleDecay = (double) optimizerParameters.getOrDefault(SCHEDULE_DECAY,0.0);
+                double lr = ((Number) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2))).doubleValue();
+                double beta1 = ((Number) optimizerParameters.get(BETA_1)).doubleValue();
+                double beta2 = ((Number) optimizerParameters.get(BETA_2)).doubleValue();
+                double epsilon = ((Number) optimizerParameters.get(EPSILON)).doubleValue();
+                double scheduleDecay = ((Number) optimizerParameters.getOrDefault(SCHEDULE_DECAY,0.0)).doubleValue();
 
                 dl4jOptimizer = new Nadam.Builder()
                         .beta1(beta1).beta2(beta2)
@@ -127,10 +127,10 @@ public class KerasOptimizerUtils {
                 break;
             }
             case "sgd": {
-                double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
-                double momentum = (double) (optimizerParameters.containsKey(EPSILON) ? optimizerParameters.get(EPSILON) : optimizerParameters.get(MOMENTUM));
+                double lr = ((Number) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2))).doubleValue();
+                double momentum = ((Number) (optimizerParameters.containsKey(EPSILON) ? optimizerParameters.get(EPSILON) : optimizerParameters.get(MOMENTUM))).doubleValue();
 
-                double decay = (double) optimizerParameters.get(DECAY);
+                double decay = ((Number) optimizerParameters.get(DECAY)).doubleValue();
 
                 dl4jOptimizer = new Nesterovs.Builder()
                         .momentum(momentum).learningRate(lr)
@@ -139,10 +139,10 @@ public class KerasOptimizerUtils {
                 break;
             }
             case "rmsprop": {
-                double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
-                double rho = (double) optimizerParameters.get(RHO);
-                double epsilon = (double) optimizerParameters.get(EPSILON);
-                double decay = (double) optimizerParameters.get(DECAY);
+                double lr = ((Number) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2))).doubleValue();
+                double rho = ((Number) optimizerParameters.get(RHO)).doubleValue();
+                double epsilon = ((Number) optimizerParameters.get(EPSILON)).doubleValue();
+                double decay = ((Number) optimizerParameters.get(DECAY)).doubleValue();
 
                 dl4jOptimizer = new RmsProp.Builder()
                         .epsilon(epsilon).rmsDecay(rho).learningRate(lr)

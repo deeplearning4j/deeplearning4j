@@ -26,13 +26,12 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.nd4j.linalg.learning.regularization.L1Regularization;
-import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 public class LayerValidation {
@@ -96,7 +95,7 @@ public class LayerValidation {
             if (layer.getConstraints() == null || layer.constraints.isEmpty()) {
                 List<LayerConstraint> allConstraints = new ArrayList<>();
                 if (allParamConstraints != null && !layer.initializer().paramKeys(layer).isEmpty()) {
-                    for (LayerConstraint c : allConstraints) {
+                    for (LayerConstraint c : allParamConstraints) {
                         LayerConstraint c2 = c.clone();
                         c2.setParams(new HashSet<>(layer.initializer().paramKeys(layer)));
                         allConstraints.add(c2);
@@ -135,25 +134,17 @@ public class LayerValidation {
             if (bLayerRegs == null || bLayerRegs.isEmpty()) {
                 bLayer.setRegularization(regularization);
             } else {
-                boolean hasL1 = false;
-                boolean hasL2 = false;
-                final List<Regularization> regContext = regularization;
-                for (final Regularization reg : bLayerRegs) {
-                    if (reg instanceof L1Regularization) {
-                        hasL1 = true;
-                    } else if (reg instanceof L2Regularization) {
-                        hasL2 = true;
-                    }
+                // Build a set of regularization classes already present on the layer to avoid duplicates.
+                // This handles L1, L2, WeightDecay, and any future regularization types uniformly.
+                Set<Class<? extends Regularization>> existingClasses = new HashSet<>();
+                for (Regularization reg : bLayerRegs) {
+                    existingClasses.add(reg.getClass());
                 }
-                for (final Regularization reg : regContext) {
-                    if (reg instanceof L1Regularization) {
-                        if (!hasL1)
-                            bLayerRegs.add(reg);
-                    } else if (reg instanceof L2Regularization) {
-                        if (!hasL2)
-                            bLayerRegs.add(reg);
-                    } else
+                for (Regularization reg : regularization) {
+                    if (!existingClasses.contains(reg.getClass())) {
                         bLayerRegs.add(reg);
+                        existingClasses.add(reg.getClass());
+                    }
                 }
             }
 
@@ -162,30 +153,20 @@ public class LayerValidation {
 
 
         if (regularizationBias != null && !regularizationBias.isEmpty()) {
-            final List<Regularization> bLayerRegs = bLayer.getRegularizationBias();
+            final List<Regularization> bLayerRegs = new ArrayList<>(bLayer.getRegularizationBias());
             if (bLayerRegs == null || bLayerRegs.isEmpty()) {
                 bLayer.setRegularizationBias(regularizationBias);
             } else {
-                boolean hasL1 = false;
-                boolean hasL2 = false;
-                final List<Regularization> regContext = regularizationBias;
-                for (final Regularization reg : bLayerRegs) {
-                    if (reg instanceof L1Regularization) {
-                        hasL1 = true;
-                    } else if (reg instanceof L2Regularization) {
-                        hasL2 = true;
-                    }
+                // Build a set of regularization classes already present on the layer to avoid duplicates.
+                Set<Class<? extends Regularization>> existingClasses = new HashSet<>();
+                for (Regularization reg : bLayerRegs) {
+                    existingClasses.add(reg.getClass());
                 }
-                for (final Regularization reg : regContext) {
-                    if (reg instanceof L1Regularization) {
-                        if (!hasL1)
-                            bLayerRegs.add(reg);
-                    } else if (reg instanceof L2Regularization) {
-
-                        if (!hasL2)
-                            bLayerRegs.add(reg);
-                    } else
+                for (Regularization reg : regularizationBias) {
+                    if (!existingClasses.contains(reg.getClass())) {
                         bLayerRegs.add(reg);
+                        existingClasses.add(reg.getClass());
+                    }
                 }
             }
 

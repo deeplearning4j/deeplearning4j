@@ -28,20 +28,29 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.attention.KerasAttentionLayer;
+import org.deeplearning4j.nn.modelimport.keras.layers.attention.KerasMultiHeadAttention;
+import org.deeplearning4j.nn.modelimport.keras.layers.attention.KerasAdditiveAttention;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
+import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.Keras2DEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.local.KerasLocallyConnected1D;
+import org.deeplearning4j.nn.modelimport.keras.layers.local.KerasLocallyConnected2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasAlphaDropout;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasGaussianDropout;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasGaussianNoise;
 import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasBatchNormalization;
+import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasGroupNormalization;
+import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasLayerNormalization;
+import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasUnitNormalization;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasGlobalPooling;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling3D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLSTM;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
+import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasGRU;
+import org.deeplearning4j.nn.modelimport.keras.layers.regularization.KerasActivityRegularization;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -91,34 +100,22 @@ public class KerasLayerUtils {
                                                            boolean enforceTrainingConfig,
                                                            KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_B_REGULARIZER())) {
-            Map<String, Object> regularizerConfig =
-                    (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_B_REGULARIZER());
-            if (regularizerConfig != null && regularizerConfig.containsKey(conf.getREGULARIZATION_TYPE_L1()))
-                throw new UnsupportedKerasConfigurationException("L1 regularization for bias parameter not supported");
-        }
-        return 0.0;
+        return KerasRegularizerUtils.getWeightRegularizerFromConfig(
+                layerConfig, conf, conf.getLAYER_FIELD_B_REGULARIZER(), conf.getREGULARIZATION_TYPE_L1());
     }
 
     /**
      * Get L2 bias regularization (if any) from Keras bias regularization configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @return L1 regularization strength (0.0 if none)
+     * @return L2 regularization strength (0.0 if none)
      */
-    private static double getBiasL2RegularizationFromConfig(Map<String, Object> layerConfig,
+    public static double getBiasL2RegularizationFromConfig(Map<String, Object> layerConfig,
                                                             boolean enforceTrainingConfig,
                                                             KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_B_REGULARIZER())) {
-            Map<String, Object> regularizerConfig =
-                    (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_B_REGULARIZER());
-            if (regularizerConfig != null && regularizerConfig.containsKey(conf.getREGULARIZATION_TYPE_L2()))
-                throw new UnsupportedKerasConfigurationException("L2 regularization for bias parameter not supported");
-        }
-        return 0.0;
+        return KerasRegularizerUtils.getWeightRegularizerFromConfig(
+                layerConfig, conf, conf.getLAYER_FIELD_B_REGULARIZER(), conf.getREGULARIZATION_TYPE_L2());
     }
 
     /**
@@ -219,6 +216,8 @@ public class KerasLayerUtils {
             layer = new KerasLSTM(layerConfig, enforceTrainingConfig, previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SIMPLE_RNN())) {
             layer = new KerasSimpleRnn(layerConfig, enforceTrainingConfig, previousLayers);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GRU())) {
+            layer = new KerasGRU(layerConfig, enforceTrainingConfig, previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_3D())) {
             layer = new KerasConvolution3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_2D())) {
@@ -237,6 +236,8 @@ public class KerasLayerUtils {
             layer = new KerasDepthwiseConvolution2D(layerConfig, previousLayers, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D())) {
             layer = new KerasSeparableConvolution2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_1D())) {
+            layer = new KerasSeparableConvolution1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_3D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_3D())) {
             layer = new KerasPooling3D(layerConfig, enforceTrainingConfig);
@@ -255,8 +256,16 @@ public class KerasLayerUtils {
             layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_BATCHNORMALIZATION())) {
             layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig, previousLayers);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GROUP_NORMALIZATION())) {
+            layer = new KerasGroupNormalization(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UNIT_NORMALIZATION())) {
+            layer = new KerasUnitNormalization(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAYER_NORMALIZATION())) {
+            layer = new KerasLayerNormalization(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_EMBEDDING())) {
             layer = new KerasEmbedding(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_EMBEDDING_2D())) {
+            layer = new Keras2DEmbedding(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_INPUT())) {
             layer = new KerasInput(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_REPEAT())) {
@@ -307,6 +316,10 @@ public class KerasLayerUtils {
             layer = new KerasCropping1D(layerConfig, enforceTrainingConfig);
         } else if(layerClassName.equals(conf.getLAYER_CLASS_NAME_ATTENTION())) {
             layer = new KerasAttentionLayer(layerConfig,enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MULTI_HEAD_ATTENTION())) {
+            layer = new KerasMultiHeadAttention(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ADDITIVE_ATTENTION())) {
+            layer = new KerasAdditiveAttention(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA())) {
             String lambdaLayerName = KerasLayerUtils.getLayerNameFromConfig(layerConfig, conf);
             if (!lambdaLayers.containsKey(lambdaLayerName) && !customLayers.containsKey(layerClassName)) {
@@ -327,6 +340,18 @@ public class KerasLayerUtils {
             layer = new KerasSoftmax(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LOCALLY_CONNECTED_1D())) {
             layer = new KerasLocallyConnected1D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LOCALLY_CONNECTED_2D())) {
+            layer = new KerasLocallyConnected2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_EINSUM_DENSE())) {
+            layer = new KerasEinsumDense(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DECONVOLUTION_1D())) {
+            layer = new KerasDeconvolution1D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SPACE_TO_DEPTH())) {
+            layer = new KerasSpaceToDepth(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_IDENTITY())) {
+            layer = new KerasIdentity(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ACTIVITY_REGULARIZATION())) {
+            layer = new KerasActivityRegularization(layerConfig, enforceTrainingConfig);
         } else if (conf instanceof Keras2LayerConfiguration) {
             Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration) conf;
             if (layerClassName.equals(k2conf.getTENSORFLOW_OP_LAYER())) {
@@ -551,13 +576,13 @@ public class KerasLayerUtils {
         int nOut;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_OUTPUT_DIM()))
             /* Most feedforward layers: Dense, RNN, etc. */
-            nOut = (int) innerConfig.get(conf.getLAYER_FIELD_OUTPUT_DIM());
+            nOut = ((Number) innerConfig.get(conf.getLAYER_FIELD_OUTPUT_DIM())).intValue();
         else if (innerConfig.containsKey(conf.getLAYER_FIELD_EMBEDDING_OUTPUT_DIM()))
             /* Embedding layers. */
-            nOut = (int) innerConfig.get(conf.getLAYER_FIELD_EMBEDDING_OUTPUT_DIM());
+            nOut = ((Number) innerConfig.get(conf.getLAYER_FIELD_EMBEDDING_OUTPUT_DIM())).intValue();
         else if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_FILTER()))
             /* Convolutional layers. */
-            nOut = (int) innerConfig.get(conf.getLAYER_FIELD_NB_FILTER());
+            nOut = ((Number) innerConfig.get(conf.getLAYER_FIELD_NB_FILTER())).intValue();
         else
             throw new InvalidKerasConfigurationException("Could not determine number of outputs for layer: no "
                     + conf.getLAYER_FIELD_OUTPUT_DIM() + " or " + conf.getLAYER_FIELD_NB_FILTER() + " field found");
@@ -592,17 +617,17 @@ public class KerasLayerUtils {
         if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT())) {
             /* For most feedforward layers. */
             try {
-                dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT());
+                dropout = 1.0 - ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT())).doubleValue();
             } catch (Exception e) {
-                int kerasDropout = (int) innerConfig.get(conf.getLAYER_FIELD_DROPOUT());
+                double kerasDropout = ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT())).doubleValue();
                 dropout = 1.0 - kerasDropout;
             }
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_W())) {
             /* For LSTMs. */
             try {
-                dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W());
+                dropout = 1.0 - ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W())).doubleValue();
             } catch (Exception e) {
-                int kerasDropout = (int) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W());
+                double kerasDropout = ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W())).doubleValue();
                 dropout = 1.0 - kerasDropout;
             }
         }
@@ -659,7 +684,7 @@ public class KerasLayerUtils {
         double maskValue = 0.0;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_MASK_VALUE())) {
             try {
-                maskValue = (double) innerConfig.get(conf.getLAYER_FIELD_MASK_VALUE());
+                maskValue = ((Number) innerConfig.get(conf.getLAYER_FIELD_MASK_VALUE())).doubleValue();
             } catch (Exception e) {
                 log.warn("Couldn't read masking value, default to 0.0");
             }

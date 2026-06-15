@@ -953,6 +953,36 @@ public class TransferLearning {
             return this;
         }
 
+        private void stabilizeVertexOrder() {
+            Map<String, GraphVertex> currentVertices = editedConfigBuilder.getVertices();
+            Map<String, List<String>> currentVertexInputs = editedConfigBuilder.getVertexInputs();
+
+            LinkedHashMap<String, GraphVertex> orderedVertices = new LinkedHashMap<>();
+            LinkedHashMap<String, List<String>> orderedVertexInputs = new LinkedHashMap<>();
+
+            for (String vertexName : origConfig.getVertices().keySet()) {
+                GraphVertex currentVertex = currentVertices.get(vertexName);
+                if (currentVertex != null) {
+                    orderedVertices.put(vertexName, currentVertex);
+                    if (currentVertexInputs.containsKey(vertexName)) {
+                        orderedVertexInputs.put(vertexName, currentVertexInputs.get(vertexName));
+                    }
+                }
+            }
+
+            for (Map.Entry<String, GraphVertex> entry : currentVertices.entrySet()) {
+                if (!orderedVertices.containsKey(entry.getKey())) {
+                    orderedVertices.put(entry.getKey(), entry.getValue());
+                    if (currentVertexInputs.containsKey(entry.getKey())) {
+                        orderedVertexInputs.put(entry.getKey(), currentVertexInputs.get(entry.getKey()));
+                    }
+                }
+            }
+
+            editedConfigBuilder.setVertices(orderedVertices);
+            editedConfigBuilder.setVertexInputs(orderedVertexInputs);
+        }
+
         /**
          * Returns a computation graph build to specifications.
          * Init has been internally called. Can be fit directly.
@@ -960,6 +990,7 @@ public class TransferLearning {
          */
         public ComputationGraph build() {
             initBuilderIfReq();
+            stabilizeVertexOrder();
 
             ComputationGraphConfiguration newConfig = editedConfigBuilder
                     .validateOutputLayerConfig(validateOutputLayerConfig == null ? true : validateOutputLayerConfig).build();
@@ -970,8 +1001,9 @@ public class TransferLearning {
 
             int[] topologicalOrder = newGraph.topologicalSortOrder();
             org.deeplearning4j.nn.graph.vertex.GraphVertex[] vertices = newGraph.getVertices();
-            if (!editedVertices.isEmpty()) {
+            if (!editedVertices.isEmpty() || newGraph.numParams() != origGraph.numParams()) {
                 //set params from orig graph as necessary to new graph
+                //Per-layer copy is required when vertices were edited or removed (param count differs)
                 for (int i = 0; i < topologicalOrder.length; i++) {
 
                     if (!vertices[topologicalOrder[i]].hasLayer())
@@ -984,8 +1016,11 @@ public class TransferLearning {
                         continue; //some layers have no params
                     if (editedVertices.contains(layerName))
                         continue; //keep the changed params
-                    INDArray origParams = origGraph.getLayer(layerName).params();
-                    layer.setParams(origParams.dup()); //copy over origGraph params
+                    org.deeplearning4j.nn.api.Layer origLayer = origGraph.getLayer(layerName);
+                    if (origLayer != null) {
+                        INDArray origParams = origLayer.params();
+                        layer.setParams(origParams.dup()); //copy over origGraph params
+                    }
                 }
             } else {
                 newGraph.setParams(origGraph.params());

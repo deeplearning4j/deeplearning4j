@@ -31,14 +31,16 @@ public enum Framework {
     KERAS(3),
     DL4J(4),
     ONNX(5),
-    HUGGINGFACE(6);
+    HUGGINGFACE(6),
+    GGUF(7),
+    SAFETENSORS(8);
 
     private final int frameworkIndex;
     Framework(int index) { this.frameworkIndex = index; }
     public int frameworkIndex() { return frameworkIndex; }
 
     /**
-     * Returns true if the framework is an input framework (pytorch, keras, tensorflow,onnx)
+     * Returns true if the framework is an input framework (pytorch, keras, tensorflow, onnx, gguf, safetensors)
      * @param framework the input framework
      * @return
      */
@@ -48,6 +50,8 @@ public enum Framework {
             case KERAS:
             case PYTORCH:
             case ONNX:
+            case GGUF:
+            case SAFETENSORS:
                 return true;
             default:
                 return false;
@@ -80,6 +84,8 @@ public enum Framework {
             case ONNX:
             case PYTORCH:
             case TENSORFLOW:
+            case GGUF:
+            case SAFETENSORS:
                 return SAMEDIFF;
             default:
                 return DL4J;

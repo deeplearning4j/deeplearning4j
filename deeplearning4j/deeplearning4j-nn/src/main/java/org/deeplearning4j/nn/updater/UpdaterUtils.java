@@ -38,7 +38,13 @@ public class UpdaterUtils {
         //(b) If one or more of the params are pretrainable params, they are in the same layer
         //    This last point is necessary as we don't want to modify the pretrain gradient/updater state during
         //    backprop, or modify the pretrain gradient/updater state of one layer while training another
-        if (!u1.equals(u2)) {
+        //Handle null updaters (can occur when loading legacy models without explicit updater config)
+        if (u1 == null && u2 == null) {
+            //Both null - treat as equal (both will use default SGD fallback)
+        } else if (u1 == null || u2 == null) {
+            //One null, one non-null - not equal
+            return false;
+        } else if (!u1.equals(u2)) {
             //Different updaters or different config
             return false;
         }

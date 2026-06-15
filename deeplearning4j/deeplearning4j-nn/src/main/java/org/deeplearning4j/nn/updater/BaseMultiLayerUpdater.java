@@ -40,10 +40,13 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.Sgd;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
 @Getter
+@Slf4j
 public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater {
 
     protected final T network;
@@ -88,13 +91,19 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                     String var = variables.get(j);
                     long paramSizeThisVariable = layerParamTable.get(var).length();
                     IUpdater u = layers[i].getConfig().getUpdaterByParam(var);
-                    Preconditions.checkNotNull(u, "Updater for parameter %s, layer \"%s\" was null", var, layers[i].getConfig().getLayerName());
+                    if (u == null) {
+                        // Fall back to a default Sgd updater if none is configured
+                        // This can happen when loading models saved without updater configuration
+                        u = new Sgd();
+                        log.warn("No updater configured for parameter {} in layer \"{}\". Using default Sgd updater.",
+                                var, layers[i].getConfig().getLayerName());
+                    }
                     int updaterStateSizeThisVariable = (int) u.stateSize(paramSizeThisVariable);
 
                     INDArray gradientViewSubset = null;
                     INDArray paramsViewSubset = null;
-                    INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
-                    INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
+                    INDArray paramsViewReshape = paramsView.rank() == 1 ? paramsView : paramsView.reshape(paramsView.length());
+                    INDArray gradientViewReshape = gradientView.rank() == 1 ? gradientView : gradientView.reshape(gradientView.length());
                     if (paramSizeThisVariable > 0) {
                         paramsViewSubset = paramsViewReshape.get(NDArrayIndex.interval(paramsViewSoFar,
                                 paramsViewSoFar + paramSizeThisVariable));
@@ -168,7 +177,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             }
 
             if (gradSize > 0) {
-                INDArray gradientViewSubset = gradientView.reshape(gradientView.length()).get(
+                INDArray grad1d = gradientView.rank() == 1 ? gradientView : gradientView.reshape(gradientView.length());
+                INDArray gradientViewSubset = grad1d.get(
                         NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + gradSize));
                 ub.setGradientView(gradientViewSubset);
             }
@@ -262,8 +272,14 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
         //First: check if gradient is standard or external...
         //In a MultiLayerNetwork, the INDArray returned by .gradient() is always the standard full view array
-        // hence should be the same object under normal circumstances
-        boolean isExternal = gradient.gradient() != getFlattenedGradientsView();
+        // hence should share the same underlying data buffer under normal circumstances.
+        // Note: gradient.gradient() may reshape the array (rank-2 -> rank-1), creating a new Java object
+        // that is a view of the same DataBuffer. We compare data buffers and lengths to handle this case.
+        INDArray gradArr = gradient.gradient();
+        INDArray flatView = getFlattenedGradientsView();
+        boolean isExternal = gradArr != flatView &&
+                !(flatView != null && gradArr != null &&
+                  gradArr.data() == flatView.data() && gradArr.length() == flatView.length());
 
         //Split up the gradients on a per-layer basis, for pre-apply
         Map<String, Gradient> layerGradients = new HashMap<>();
@@ -306,18 +322,13 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
         for (UpdaterBlock ub : updaterBlocks) {
             if (ub.skipDueToPretrainConfig(this instanceof LayerUpdater)) {
-                //Should skip some updater blocks sometimes
-                //For example, VAE decoder params while doing supervised backprop
                 continue;
             }
             if (isExternal) {
-                //RL4J etc type case: calculate gradients in 1 net, update them in another
-                ub.updateExternalGradient(iteration, epoch, gradient.gradient(), getParams());
+                ub.updateExternalGradient(iteration, epoch, gradArr, getParams());
             } else {
-                //Standard case
                 ub.update(iteration, epoch);
             }
-
         }
     }
 
@@ -343,7 +354,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     }
 
     protected List<INDArray> getMinibatchDivisionSubsets(INDArray from){
-        from = from.reshape(from.length());
+        from = from.rank() == 1 ? from : from.reshape(from.length());
         List<INDArray> out = new ArrayList<>();
         long paramsSoFar = 0;
         long currentStart = 0;
@@ -370,7 +381,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
         if(currentEnd > currentStart && currentStart < from.length()){
             //Process last part of the gradient view array
-            INDArray subset = from.reshape(from.length()).get( NDArrayIndex.interval(currentStart, currentEnd));
+            INDArray from1d = from.rank() == 1 ? from : from.reshape(from.length());
+            INDArray subset = from1d.get( NDArrayIndex.interval(currentStart, currentEnd));
             out.add(subset);
         }
         return out;
@@ -379,6 +391,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     protected boolean isSingleLayerUpdater() {
         return false;
     }
+
 
     /**
      * Pre-apply: Apply gradient normalization/clipping

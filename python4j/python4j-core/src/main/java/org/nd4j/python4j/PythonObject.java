@@ -72,7 +72,7 @@ public class PythonObject {
         try (PythonGC gc = PythonGC.pause()) {
             PythonObject type = Python.type(this);
             boolean ret = Python.type(this).toString().equals("<class 'NoneType'>") && toString().equals("None");
-            Py_DecRef(type.nativePythonObject);
+            PythonRefCount.decRef(type.nativePythonObject);
             return ret;
         }
     }
@@ -80,7 +80,7 @@ public class PythonObject {
     public void del() {
         PythonGIL.assertThreadSafe();
         if (owned && nativePythonObject != null && !PythonGC.isWatching()) {
-            Py_DecRef(nativePythonObject);
+            PythonRefCount.decRef(nativePythonObject);
             nativePythonObject = null;
         }
     }
@@ -99,7 +99,7 @@ public class PythonObject {
             throw new PythonException("Expected kwargs to be dict. Received: " + kwargs.toString());
         }
         PythonObject ret = new PythonObject(PyObject_Call(nativePythonObject, tuple, dict));
-        Py_DecRef(tuple);
+        PythonRefCount.decRef(tuple);
         return ret;
     }
 
@@ -125,7 +125,7 @@ public class PythonObject {
             }
             return new PythonObject(PyObject_Call(nativePythonObject, tuple, kwargs == null ? null : kwargs.nativePythonObject));
         } finally {
-            if (ownsTuple) Py_DecRef(tuple);
+            if (ownsTuple) PythonRefCount.decRef(tuple);
         }
 
     }

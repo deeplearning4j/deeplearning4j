@@ -296,9 +296,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 score = doExec(items, null);
             }
         } else if(item == null && !items.isEmpty()) {
-            if(items.size() >= configuration.getBatchSize()) {
-                score = doExec(items, null);
-            }
+            // Flush all remaining items regardless of batch size (finish/flush call)
+            score = doExec(items, null);
         }
 
         return score;

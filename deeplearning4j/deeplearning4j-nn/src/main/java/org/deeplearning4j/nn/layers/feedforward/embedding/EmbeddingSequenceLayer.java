@@ -34,7 +34,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterAdd;
-import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
@@ -61,10 +60,15 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         boolean ncw = layerConf().getOutputFormat() == RNNFormat.NCW;
 
         if (maskArray != null) {
+            INDArray mask = maskArray.castTo(z.dataType());
+            INDArray deltaCast = delta.castTo(z.dataType());
+            long mb = deltaCast.size(0);
             if(ncw){
-                delta = Broadcast.mul(delta.castTo(z.dataType()), maskArray.castTo(z.dataType()), delta.castTo(z.dataType()), 0, 2);
+                // delta: [mb, nOut, seqLen], mask: [mb, seqLen] -> reshape mask to [mb, 1, seqLen]
+                delta = deltaCast.muli(mask.reshape(mb, 1, mask.size(1)));
             } else {
-                delta = Broadcast.mul(delta.castTo(z.dataType()), maskArray.castTo(z.dataType()), delta.castTo(z.dataType()), 0, 1);
+                // delta: [mb, seqLen, nOut], mask: [mb, seqLen] -> reshape mask to [mb, seqLen, 1]
+                delta = deltaCast.muli(mask.reshape(mb, mask.size(1), 1));
             }
         }
 
@@ -90,7 +94,6 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         INDArray indices = Nd4j.createFromArray(indexes);
         ScatterAdd scatterAdd = new ScatterAdd(weightGradients, indices, delta);
-
         Nd4j.getExecutioner().exec(scatterAdd);
 
         Gradient ret = new DefaultGradient();
@@ -196,12 +199,14 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
                         ", mask shape: " + Arrays.toString(maskArray.shape()));
             }
             boolean ncw = layerConf().getOutputFormat() == RNNFormat.NCW;
+            INDArray mask = maskArray.castTo(ret.dataType());
+            long mb = ret.size(0);
             if(ncw){
                 //Returned array: rank 3, shape [mb, vector, seqLength]. mask shape: [mb, seqLength]
-                Broadcast.mul(ret, maskArray.castTo(ret.dataType()), ret, 0, 2);
+                ret.muli(mask.reshape(mb, 1, mask.size(1)));
             } else {
                 //Returned array: rank 3, shape [mb, seqLength, vector]. mask shape: [mb, seqLength]
-                Broadcast.mul(ret, maskArray.castTo(ret.dataType()), ret, 0, 1);
+                ret.muli(mask.reshape(mb, mask.size(1), 1));
             }
         }
         return ret;

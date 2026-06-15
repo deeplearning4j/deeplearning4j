@@ -91,7 +91,7 @@ public class KerasRepeatVector extends KerasLayer {
     static int getRepeatMultiplier(Map<String, Object> layerConfig, KerasLayerConfiguration conf)
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        return  (int) innerConfig.get(conf.getLAYER_FIELD_REPEAT_MULTIPLIER());
+        return ((Number) innerConfig.get(conf.getLAYER_FIELD_REPEAT_MULTIPLIER())).intValue();
     }
 
 

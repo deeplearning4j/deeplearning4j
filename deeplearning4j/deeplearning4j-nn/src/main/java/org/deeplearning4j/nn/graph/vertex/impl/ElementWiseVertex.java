@@ -204,8 +204,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                             out[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
                         } else {
                             long[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
-                            out[i] = epsilon.sum(true, bcDim);
-
+                            out[i] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilon.sum(true, bcDim));
                         }
                     }
                 }
@@ -214,10 +213,10 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 INDArray[] outAverage = new INDArray[nInForwardPass];
                 for (int i = 0; i < nInForwardPass; i++) {
                     if(inputs[i].equalShapes(epsilon)) {
-                        outAverage[i] = epsilon.div(nInForwardPass);
+                        outAverage[i] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilon.div(nInForwardPass));
                     } else {
                         long[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
-                        outAverage[i] = epsilon.div(nInForwardPass).sum(true, bcDim);
+                        outAverage[i] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilon.div(nInForwardPass).sum(true, bcDim));
                     }
                 }
 
@@ -232,12 +231,11 @@ public class ElementWiseVertex extends BaseGraphVertex {
                         //Second input is smaller/broadcast
                         out2[0] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
                         long[] bcDim = Shape.getBroadcastDimensions(inputs[1].shape(), epsilon.shape());
-                        out2[1] = epsilon.sum(true, bcDim).negi();
-
+                        out2[1] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilon.sum(true, bcDim).negi());
                     } else {
                         //First input is smaller/broadcast
                         long[] bcDim = Shape.getBroadcastDimensions(inputs[0].shape(), epsilon.shape());
-                        out2[0] = epsilon.sum(true, bcDim);
+                        out2[0] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilon.sum(true, bcDim));
                         out2[1] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon).negi();
                     }
                 }
@@ -266,8 +264,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
                     if(!inputs[i].equalShapes(epsilon)) {
                         long[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
-                        out_product[i] = out_product[i].sum(true, bcDim);
-
+                        out_product[i] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, out_product[i].sum(true, bcDim));
                     }
                 }
                 return new Pair<>(null, out_product);
@@ -305,8 +302,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                         //Broadcast  for ths input
                         outMax[i] = outMax[i].castTo(epsilon.dataType()).mul(epsilon);
                         long[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
-                        outMax[i] = outMax[i].sum(true, bcDim);
-
+                        outMax[i] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, outMax[i].sum(true, bcDim));
                     } else {
                         //Standard case
                         outMax[i] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, outMax[i].castTo(epsilon.dataType()).muli(epsilon));
