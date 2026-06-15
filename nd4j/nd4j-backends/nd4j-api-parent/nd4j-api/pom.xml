@@ -120,11 +120,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>commons-net</groupId>
-            <artifactId>commons-net</artifactId>
-            <version>${commons-net.version}</version>
-        </dependency>
-        <dependency>
             <groupId>net.ericaro</groupId>
             <artifactId>neoitertools</artifactId>
             <version>${neoitertools.version}</version>

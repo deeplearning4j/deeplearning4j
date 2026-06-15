@@ -10,7 +10,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/net/java/dev/jna/jna-platform/4.3.0/jna-platform-4.3.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/net/java/dev/jna/jna/4.3.0/jna-4.3.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/threeten/threetenbp/1.3.3/threetenbp-1.3.3.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/commons-net/commons-net/3.1/commons-net-3.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/net/ericaro/neoitertools/1.0.0/neoitertools-1.0.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/onnxruntime-platform/1.24.1-1.5.13/onnxruntime-platform-1.24.1-1.5.13.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/bytedeco/dnnl-platform/3.11-1.5.13/dnnl-platform-3.11-1.5.13.jar" enabled="true" runInBatchMode="false"/>

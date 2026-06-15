@@ -78,8 +78,7 @@
 
     <properties>
         <backend.requires></backend.requires>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.release>11</maven.compiler.release>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
         <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
@@ -134,8 +133,7 @@
         <nd4j.cuda.basedir />
 
 
-        <moditect.generate.skip>true</moditect.generate.skip>
-        <moditect.add.skip>false</moditect.add.skip>
+        <moditect.skip>false</moditect.skip>
         <moditect.version>1.2.2.Final</moditect.version>
 
         <python.version>3.14.3</python.version>
@@ -164,7 +162,6 @@
         <commons-lang.version>2.6</commons-lang.version>
         <commons-lang3.version>${commonslang.version}</commons-lang3.version>
         <commons-logging.version>1.2</commons-logging.version>
-        <commons-net.version>3.1</commons-net.version>
         <commons-io.version>${commonsio.version}</commons-io.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.1</commons-collections4.version>
@@ -309,105 +306,21 @@
                     <groupId>org.moditect</groupId>
                     <artifactId>moditect-maven-plugin</artifactId>
                     <version>${moditect.version}</version>
-                    <configuration>
-                        <skip>${moditect.generate.skip}</skip>
-                        <outputDirectory>${project.build.directory}/modules</outputDirectory>
-                        <overwriteExistingFiles>true</overwriteExistingFiles>
-                        <modules>
-                            <module>
-                                <artifact>
-                                    <groupId>org.eclipse.deeplearning4j</groupId>
-                                    <artifactId>nd4j-api</artifactId>
-                                    <version>${project.version}</version>
-                                </artifact>
-                                <moduleInfo>
-                                    <name>org.nd4j.api</name>
-                                    <exports>
-                                        org.nd4j.linalg.api.*;
-                                        org.nd4j.autodiff.*;
-                                        org.nd4j.evaluation.*;
-                                    </exports>
-                                    <requires>
-                                        java.base;
-                                        org.nd4j.common;
-                                        org.bytedeco.javacpp;
-                                    </requires>
-                                </moduleInfo>
-                            </module>
-
-                            <module>
-                                <artifact>
-                                    <groupId>org.eclipse.deeplearning4j</groupId>
-                                    <artifactId>nd4j-common</artifactId>
-                                    <version>${project.version}</version>
-                                </artifact>
-                                <moduleInfo>
-                                    <name>org.nd4j.common</name>
-                                    <exports>
-                                        org.nd4j.common.*;
-                                    </exports>
-                                    <requires>
-                                        java.base;
-                                        org.bytedeco.javacpp;
-                                    </requires>
-                                </moduleInfo>
-                            </module>
-
-                            <module>
-                                <artifact>
-                                    <groupId>org.eclipse.deeplearning4j</groupId>
-                                    <artifactId>nd4j-native</artifactId>
-                                    <version>${project.version}</version>
-                                </artifact>
-                                <moduleInfo>
-                                    <name>org.nd4j.cpu</name>
-                                    <exports>
-                                        org.nd4j.linalg.cpu.nativecpu.*;
-                                    </exports>
-                                    <requires>
-                                        java.base;
-                                        org.nd4j.common;
-                                        org.nd4j.api;
-                                        org.bytedeco.javacpp;
-                                        org.bytedeco.openblas;
-                                    </requires>
-                                </moduleInfo>
-                            </module>
-
-                            <module>
-                                <artifact>
-                                    <groupId>org.eclipse.deeplearning4j</groupId>
-                                    <artifactId>nd4j-cuda-12.9</artifactId>
-                                    <version>${project.version}</version>
-                                </artifact>
-                                <moduleInfo>
-                                    <name>org.nd4j.cuda</name>
-                                    <exports>
-                                        org.nd4j.linalg.cuda.*;
-                                    </exports>
-                                    <requires>
-                                        java.base;
-                                        org.nd4j.common;
-                                        org.nd4j.api;
-                                        org.bytedeco.javacpp;
-                                        org.bytedeco.cuda;
-                                    </requires>
-                                </moduleInfo>
-                            </module>
-                        </modules>
-                        <jdepsExtraArgs>
-                            <arg>--ignore-missing-deps</arg>
-                            <arg>--multi-release</arg>
-                            <arg>11</arg>
-                        </jdepsExtraArgs>
-                    </configuration>
                     <executions>
                         <execution>
-                            <id>generate-module-info</id>
-                            <phase>generate-sources</phase>
+                            <id>add-module-info</id>
+                            <phase>package</phase>
                             <goals>
-                                <goal>generate-module-info</goal>
+                                <goal>add-module-info</goal>
                             </goals>
+                            <configuration>
+                                <skip>${moditect.skip}</skip>
+                                <jvmVersion>9</jvmVersion>
+                                <overwriteExistingFiles>true</overwriteExistingFiles>
+                                <module>
+                                    <moduleInfoFile>${project.basedir}/src/main/java9/module-info.java</moduleInfoFile>
+                                </module>
+                            </configuration>
                         </execution>
                     </executions>
                 </plugin>
@@ -524,8 +437,7 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
-                        <source>${maven.compiler.source}</source>
-                        <target>${maven.compiler.target}</target>
+                        <release>${maven.compiler.release}</release>
                         <compilerArgs>
                         </compilerArgs>
                     </configuration>
@@ -850,24 +762,6 @@
             </build>
         </profile>
 
-        <profile>
-            <id>1.9build</id>
-            <activation>
-                <jdk>1.9</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.release>7</maven.compiler.release>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-toolchains-plugin</artifactId>
-                        <version>3.1.0</version>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
         <profile>
             <id>libnd4jhome-defined</id>
             <activation>
