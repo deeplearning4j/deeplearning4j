@@ -551,7 +551,7 @@ class LogNormalDistribution {
         if (epm < zLength) {
           INDEX2COORDS(epm,zRank, zShape, coords);
           COORDS2INDEX(zRank, zStride, coords, zOffset);
-          COORDS2INDEX(yRank, yShape, coords, yOffset);
+          COORDS2INDEX(yRank, yStride, coords, yOffset);
           realMean = y == z ? mean : y[yOffset];
           z[zOffset] =
               sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *

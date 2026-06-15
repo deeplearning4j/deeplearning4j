@@ -469,17 +469,17 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    bool cNcont = N == 1 || C->strideAt(1) == 1;
 
    if (!aMcont && !aKcont) {
-     pA = new NDArray(A->dup('f'));
+     pA = A->dup('f');
      toDelete.push_back(pA);
      aMcont = true;
    }
    if (!bKcont && !bNcont) {
-     pB = new NDArray(B->dup('f'));
+     pB = B->dup('f');
      toDelete.push_back(pB);
      bKcont = true;
    }
    if (!cMcont) {
-     pC = new NDArray(C->dup('f'));
+     pC = C->dup('f');
      toDelete.push_back(pC);
      cMcont = true;
    }
@@ -600,7 +600,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
    bool aNcont = N == 1 || A->strideAt(1) == 1;
 
    if (!aMcont && !aNcont) {
-     pA = new NDArray(A->dup('f'));
+     pA = A->dup('f');  // dup() already returns NDArray*, no need for new
      aMcont = true;
    }
 
@@ -708,7 +708,9 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    THROW_EXCEPTION("MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
  }
  // validation of C array
- std::vector<LongType> cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
+ auto* cExpectedShapePtr = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
+ std::vector<LongType> cExpectedShape = *cExpectedShapePtr;
+ delete cExpectedShapePtr;
  cExpectedShape[cExpectedShape.size() - 2] = A->sizeAt(-2);
  cExpectedShape[cExpectedShape.size() - 1] = B->sizeAt(-1);
 
