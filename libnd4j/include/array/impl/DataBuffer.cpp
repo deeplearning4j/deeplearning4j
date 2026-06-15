@@ -26,6 +26,7 @@
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
+#include <system/Environment.h>
 #include <system/env_functions.h>
 #include <sstream>
 
