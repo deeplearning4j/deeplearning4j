@@ -41,15 +41,17 @@ static void rollFunctorLinear_(NDArray* input, NDArray* output, int shift, bool 
     int shiftCount = fullLen / actualShift - 1;
     int remainShift = fullLen % actualShift;
 
+    auto outputBuf = output->bufferAsT<T>();
+
     // stage 1) swap last actualShift elements with first ones.
     for (int e = 0; e < actualShift; ++e) {
       int sourceIndex = fullLen - actualShift + e;
 
-      auto _e0 = output->e<T>(e);
-      auto _e1 = output->e<T>(sourceIndex);
+      T _e0 = outputBuf[e];
+      T _e1 = outputBuf[sourceIndex];
 
-      output->p<T>(e, _e1);
-      output->p<T>(sourceIndex, _e0);
+      outputBuf[e] = _e1;
+      outputBuf[sourceIndex] = _e0;
     }
 
     // stage 2) swap swapped actualShift elements with rest remainShiftCount times.
@@ -58,22 +60,25 @@ static void rollFunctorLinear_(NDArray* input, NDArray* output, int shift, bool 
         int destinationIndex = fullLen - (count + 1) * actualShift + e;
         int sourceIndex = fullLen - count * actualShift + e;
 
-        auto _e0 = output->e<T>(destinationIndex);
-        auto _e1 = output->e<T>(sourceIndex);
+        T _e0 = outputBuf[destinationIndex];
+        T _e1 = outputBuf[sourceIndex];
 
-        output->p<T>(destinationIndex, _e1);
-        output->p<T>(sourceIndex, _e0);
+        outputBuf[destinationIndex] = _e1;
+        outputBuf[sourceIndex] = _e0;
       }
     }
 
     // stage 3) swap remainder of items.
     if (remainShift && shiftCount)
       for (int i = actualShift; i < 2 * actualShift; ++i) {
-        auto _e0 = output->e<T>(i);
-        auto _e1 = output->e<T>(i + remainShift);
-        output->p<T>(i, _e1);
-        output->p<T>(i + remainShift, _e0);
+        T _e0 = outputBuf[i];
+        T _e1 = outputBuf[i + remainShift];
+        outputBuf[i] = _e1;
+        outputBuf[i + remainShift] = _e0;
       }
+
+    output->tickWriteHost();
+    output->syncToDevice();
   }
 }
 

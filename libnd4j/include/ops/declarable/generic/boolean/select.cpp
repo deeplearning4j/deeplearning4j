@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_select)
 
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/boolean.h>
 
 namespace sd {
 namespace ops {
@@ -66,21 +66,43 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
     if (same) {
       auto z = OUTPUT_VARIABLE(0);
 
-      for (int e = 0; e < cond->lengthOf(); e++) {
-        if (y->isR()) {
+      // Sync all inputs to host for direct buffer access, avoiding O(n^2) sync from per-element p()/e()
+      cond->syncToHost();
+      x->syncToHost();
+      y->syncToHost();
+
+      auto condBuf = cond->bufferAsT<bool>();
+      auto len = cond->lengthOf();
+
+      if (y->isR()) {
 #ifdef HAS_DOUBLE
-          auto r = !cond->e<bool>(e) ? y->e<double>(e) : x->e<double>(e);
+        auto xBuf = x->bufferAsT<double>();
+        auto yBuf = y->bufferAsT<double>();
+        auto zBuf = z->bufferAsT<double>();
+        for (int e = 0; e < len; e++) {
+          zBuf[e] = !condBuf[e] ? yBuf[e] : xBuf[e];
+        }
 #elif defined(HAS_FLOAT32)
-          auto r = !cond->e<bool>(e) ? y->e<float>(e) : x->e<float>(e);
+        auto xBuf = x->bufferAsT<float>();
+        auto yBuf = y->bufferAsT<float>();
+        auto zBuf = z->bufferAsT<float>();
+        for (int e = 0; e < len; e++) {
+          zBuf[e] = !condBuf[e] ? yBuf[e] : xBuf[e];
+        }
 #else
 #error "No floating-point type available for select operation"
 #endif
-          z->p(e, r);
-        } else {
-          auto r = !cond->e<bool>(e) ? y->e<LongType>(e) : x->e<LongType>(e);
-          z->p(e, r);
+      } else {
+        auto xBuf = x->bufferAsT<LongType>();
+        auto yBuf = y->bufferAsT<LongType>();
+        auto zBuf = z->bufferAsT<LongType>();
+        for (int e = 0; e < len; e++) {
+          zBuf[e] = !condBuf[e] ? yBuf[e] : xBuf[e];
         }
       }
+
+      z->tickWriteHost();
+      z->syncToDevice();
     } else {
       REQUIRE_TRUE(cond->lengthOf() == x->sizeAt(0), 0,
                    "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead",
@@ -119,7 +141,8 @@ DECLARE_TYPES(select) {
       ->setAllowedInputTypes(0, BOOL)
       ->setAllowedInputTypes(1, ANY)
       ->setAllowedInputTypes(2, ANY)
-      ->setAllowedOutputTypes(1, INHERIT);
+      ->setAllowedOutputTypes(1, INHERIT)
+      ->addTraits(OP_TRAIT_TERNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

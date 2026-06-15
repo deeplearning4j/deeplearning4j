@@ -22,10 +22,12 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_range)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/range.h>
+#include <system/env_functions.h>
 
 namespace sd {
 namespace ops {
@@ -121,12 +123,14 @@ DECLARE_SHAPE_FN(range) {
   // FIXED: Don't access INPUT_VARIABLE(0) when there are no input arrays!
   // Range can be called with T_args or I_args instead of input arrays.
   // Each branch below will set the correct dataType based on the input mode.
-  DataType dataType = block.numD() ? D_ARG(0) : (numInArrs > 0 ? INPUT_VARIABLE(0)->dataType() : Environment::getInstance().defaultFloatDataType());
+  // Track if D_ARG was used so we don't override it later
+  const bool hasDArg = block.numD() > 0;
+  DataType dataType = hasDArg ? D_ARG(0) : (numInArrs > 0 ? ArrayOptions::dataType(inputShape->at(0)) : static_cast<sd::DataType>(sd::env_defaultFloatDataType()));
 
   if (numInArrs > 0) {
-    auto isR = INPUT_VARIABLE(0)->isR();
-    auto isZ = INPUT_VARIABLE(0)->isZ();
-    auto dtype = INPUT_VARIABLE(0)->dataType();
+    auto dtype = ArrayOptions::dataType(inputShape->at(0));
+    auto isR = DataTypeUtils::isR(dtype);
+    auto isZ = DataTypeUtils::isZ(dtype);
 
     if (isR) {
       double start(0), limit, delta(1);
@@ -143,8 +147,8 @@ DECLARE_SHAPE_FN(range) {
       }
 
       if (limit == start) {
-        // Return [0] to match TF
-        std::vector<LongType> shape = {};
+        // Return empty 1D array [0] to match TF
+        std::vector<LongType> shape = {0};
         return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype, shape));
       }
 
@@ -152,7 +156,7 @@ DECLARE_SHAPE_FN(range) {
 
       steps = static_cast<LongType>((limit - start) / delta);
 
-      if (!block.numD()) dataType = INPUT_VARIABLE(0)->dataType();
+      if (!hasDArg) dataType = dtype;
 
       if(steps <= 0) {
         std::string errorMessage;
@@ -207,7 +211,7 @@ DECLARE_SHAPE_FN(range) {
 
       steps = static_cast<LongType>((limit - start) / delta);
 
-      if (!block.numD()) dataType = INPUT_VARIABLE(0)->dataType();
+      if (!hasDArg) dataType = dtype;
 
       if (math::sd_abs<double,double>(start + steps * delta) < math::sd_abs<double,double>(limit)) ++steps;
 
@@ -248,7 +252,7 @@ DECLARE_SHAPE_FN(range) {
 
     REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
-    if (!block.numD()) {
+    if (!hasDArg) {
       if (limit > DataTypeUtils::max<int>())
         dataType = INT64;
       else
@@ -292,18 +296,18 @@ DECLARE_SHAPE_FN(range) {
       // Return [0] to match TF
       std::vector<LongType> shape = {0};
       return SHAPELIST(
-          ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(Environment::getInstance().defaultFloatDataType(),shape));
+          ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(static_cast<sd::DataType>(sd::env_defaultFloatDataType()),shape));
     }
 
     REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
     steps = static_cast<LongType>((limit - start) / delta);
 
-    if (!block.numD()) {
-      if (Environment::getInstance().precisionBoostAllowed())
+    if (!hasDArg) {
+      if (sd::env_precisionBoostAllowed())
         dataType = DOUBLE;
       else
-        dataType = Environment::getInstance().defaultFloatDataType();
+        dataType = static_cast<sd::DataType>(sd::env_defaultFloatDataType());
     }
 
     if(steps <= 0) {
@@ -339,6 +343,7 @@ DECLARE_SHAPE_FN(range) {
 
 DECLARE_TYPES(range) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 }  // namespace ops
 }  // namespace sd

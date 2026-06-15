@@ -21,13 +21,20 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
+#pragma once
+
 #include <array/NDArray.h>
 #include <helpers/Loops.h>
+#include <cstring>
+#include <algorithm>
+#include <functional>
+#include <vector>
 
 #include <helpers/shape.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/specials.h>
 #include <types/types.h>
+#include <system/env_functions.h>
 
 namespace sd {
 
@@ -75,27 +82,39 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
   T *zBuff = output.bufferAsT<T>();
 
   bool shapeExtendedWithOnes = isShapeExtendedWithOnes(output, axis);
-  bool followEws1 = false;
   bool matchesOutputOrdering = true;
+  bool allInputsContiguous = !shape::isViewConst(output.shapeInfo());
+  const char outputOrdering = output.ordering();
   for (int i = 0; i < numOfInArrs; ++i) {
-    shapeExtendedWithOnes = shapeExtendedWithOnes && isShapeExtendedWithOnes(*inArrs[i], axis);
-    matchesOutputOrdering = matchesOutputOrdering && inArrs[i]->ordering() == output.ordering();
+    // Early exit if conditions already failed
+    if (shapeExtendedWithOnes) {
+      shapeExtendedWithOnes = isShapeExtendedWithOnes(*inArrs[i], axis);
+    }
+    if (matchesOutputOrdering) {
+      matchesOutputOrdering = inArrs[i]->ordering() == outputOrdering;
+    }
+    if (allInputsContiguous) {
+      allInputsContiguous = !shape::isViewConst(inArrs[i]->shapeInfo());
+    }
+    // If all are false, no need to continue checking
+    if (!shapeExtendedWithOnes && !matchesOutputOrdering && !allInputsContiguous) break;
   }
 
-  bool copyCaseEws1 = followEws1 & matchesOutputOrdering;
-  bool copyCase1 = numOfInArrs > 1 ? copyCaseEws1 & shapeExtendedWithOnes : copyCaseEws1;
+  // OPTIMIZATION: Removed ews (element-wise stride) checks as they're no longer used
+  // Fast paths require all inputs to be contiguous (not views) since they use memcpy
+  bool copyCase1 = matchesOutputOrdering && shapeExtendedWithOnes && allInputsContiguous;
 
-  if (copyCase1) {
+  if (copyCase1 && numOfInArrs > 1) {
     // copyCase1:
-    // When NdArrays follow the same order and unit elementwise stride and
-    // the concantneation axis is 0th or has only 1 before it {1, 1, ..., axis} for "c"
+    // When NdArrays follow the same order and
+    // the concatenation axis is 0th or has only 1 before it {1, 1, ..., axis} for "c"
     // or axis is (rank-1)th or has only 1 after it {axis, 1, 1, ..., 1} for "f"
     // we will concatenate them by sequential copying of the whole buffers
 
-    std::vector<T *> zPtrList;
+    std::vector<T *> zPtrList(numOfInArrs);
     T *z = output.bufferAsT<T>();
     for (sd::LongType i = 0; i < numOfInArrs; i++) {
-      zPtrList.push_back(z);
+      zPtrList[i] = z;
       z += inArrs[i]->lengthOf();
     }
     auto func = [&inArrs, &zPtrList](sd::LongType thread_id, sd::LongType start, sd::LongType stop,
@@ -105,9 +124,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
         const auto inputPtr = inArrs[i]->bufferAsT<T>();
 
         auto zPtr = zPtrList[i];
-        for (int j = 0; j < memAmountToCopy; j++) {
-          zPtr[j] = inputPtr[j];
-        }
+        // Use memcpy for contiguous data - much faster than element-by-element
+        std::memcpy(zPtr, inputPtr, memAmountToCopy * sizeof(T));
       }
     };
 
@@ -120,7 +138,10 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
     output.assign(inArrs[0]);
     return;
   }
-  bool copyCase2 = copyCaseEws1 && output.ordering() == 'c';
+  
+  // OPTIMIZATION: Simplified copyCase2 without ews checks
+  // Views with non-contiguous strides cannot use memcpy
+  bool copyCase2 = matchesOutputOrdering && outputOrdering == 'c' && allInputsContiguous;
   if (copyCase2) {
     sd::LongType times = 1;
     auto shapes = shape::shapeOf(output.shapeInfo());
@@ -132,27 +153,61 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
 
     sd::LongType totalCopySize = output.lengthOf() / times;
 
-    std::vector<InputArgsCase2<T>> inputArgs;
+    std::vector<InputArgsCase2<T>> inputArgs(numOfInArrs);
     for (sd::LongType i = 0; i < numOfInArrs; i++) {
-      InputArgsCase2<T> input = {inArrs[i]->bufferAsT<T>(),
-                                 static_cast<int>(inArrs[i]->lengthOf()) / static_cast<int>(times)};
-      inputArgs.push_back(input);
+      inputArgs[i] = {inArrs[i]->bufferAsT<T>(),
+                      static_cast<int>(inArrs[i]->lengthOf()) / static_cast<int>(times)};
     }
 
-    auto func = [&inputArgs, z, totalCopySize](uint64_t thread_id, int64_t start, int64_t stop,
+    auto func = [&inputArgs, z, totalCopySize, numOfInArrs](uint64_t thread_id, int64_t start, int64_t stop,
                                                int64_t increment) -> void {
       auto outPtr = &(z[start * totalCopySize]);
-      auto numOfInArrs = inputArgs.size();
       for (int i = start; i < stop; i++) {
-        for (size_t j = 0; j < numOfInArrs; j++) {
+        for (sd::LongType j = 0; j < numOfInArrs; j++) {
           auto inputCopySize = inputArgs[j].size;
           const T *inputBasePtr = inputArgs[j].ptr;
           auto inputPtr = &(inputBasePtr[i * inputCopySize]);
-          // copy
-          PRAGMA_OMP_SIMD
-          for (int k = 0; k < inputCopySize; k++) {
-            outPtr[k] = inputPtr[k];
-          }
+          // Use memcpy for faster copy - data is contiguous and non-overlapping
+          std::memcpy(outPtr, inputPtr, inputCopySize * sizeof(T));
+          outPtr += inputCopySize;
+        }
+      }
+    };
+    samediff::Threads::parallel_tad(func, 0, times, 1);
+    return;
+  }
+
+  // OPTIMIZATION: copyCase3 for F-order (mirrors copyCase2)
+  // Views with non-contiguous strides cannot use memcpy
+  bool copyCase3 = matchesOutputOrdering && outputOrdering == 'f' && allInputsContiguous;
+  if (copyCase3) {
+    sd::LongType times = 1;
+    auto shapes = shape::shapeOf(output.shapeInfo());
+    auto rank = output.rankOf();
+
+    T *z = output.bufferAsT<T>();
+    // For F-order, count dimensions after the axis
+    for (int i = axis + 1; i < rank; i++) {
+      times = times * shapes[i];
+    }
+
+    sd::LongType totalCopySize = output.lengthOf() / times;
+
+    std::vector<InputArgsCase2<T>> inputArgs(numOfInArrs);
+    for (sd::LongType i = 0; i < numOfInArrs; i++) {
+      inputArgs[i] = {inArrs[i]->bufferAsT<T>(),
+                      static_cast<int>(inArrs[i]->lengthOf()) / static_cast<int>(times)};
+    }
+
+    auto func = [&inputArgs, z, totalCopySize, numOfInArrs](uint64_t thread_id, int64_t start, int64_t stop,
+                                               int64_t increment) -> void {
+      auto outPtr = &(z[start * totalCopySize]);
+      for (int i = start; i < stop; i++) {
+        for (sd::LongType j = 0; j < numOfInArrs; j++) {
+          auto inputCopySize = inputArgs[j].size;
+          const T *inputBasePtr = inputArgs[j].ptr;
+          auto inputPtr = &(inputBasePtr[i * inputCopySize]);
+          std::memcpy(outPtr, inputPtr, inputCopySize * sizeof(T));
           outPtr += inputCopySize;
         }
       }
@@ -166,15 +221,17 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
   const sd::LongType* zShape = shape::shapeOf(output.shapeInfo());
   const sd::LongType* zStride = shape::stride(output.shapeInfo());
 
-  // Pre-cache input arrays' shape information
-  std::vector<const sd::LongType*> inShapes(numOfInArrs);
+  // Pre-cache input arrays' shape information, axis dimensions, and buffer pointers
   std::vector<const sd::LongType*> inStrides(numOfInArrs);
   std::vector<sd::LongType> inRanks(numOfInArrs);
+  std::vector<sd::LongType> inAxisDims(numOfInArrs);  // Cache sizeAt(axis) for each input
+  std::vector<const T*> inBuffers(numOfInArrs);       // Cache buffer pointers
 
   for (sd::LongType i = 0; i < numOfInArrs; i++) {
     inRanks[i] = shape::rank(inArrs[i]->shapeInfo());
-    inShapes[i] = shape::shapeOf(inArrs[i]->shapeInfo());
     inStrides[i] = shape::stride(inArrs[i]->shapeInfo());
+    inAxisDims[i] = inArrs[i]->sizeAt(axis);
+    inBuffers[i] = inArrs[i]->bufferAsT<T>();
   }
 
   // general case
@@ -188,19 +245,18 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
       COORDS2INDEX(zRank, zStride, coords, zOffset);
 
       sd::LongType inArrIdx = 0;
-      sd::LongType xDim = inArrs[inArrIdx]->sizeAt(axis);
+      sd::LongType xDim = inAxisDims[0];
 
       temp = coords[axis];
       while (coords[axis] >= xDim) {
         coords[axis] -= xDim;
-        xDim = inArrs[++inArrIdx]->sizeAt(axis);
+        xDim = inAxisDims[++inArrIdx];
       }
 
-      const T *x = inArrs[inArrIdx]->bufferAsT<T>();
       sd::LongType xOffset;
       COORDS2INDEX(inRanks[inArrIdx], inStrides[inArrIdx], coords, xOffset);
 
-      zBuff[zOffset] = x[xOffset];
+      zBuff[zOffset] = inBuffers[inArrIdx][xOffset];
 
       coords[axis] = temp;
     }
@@ -209,7 +265,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
   samediff::Threads::parallel_for(func, 0, output.lengthOf());
 }
 /**
- * Concatneate multi array of the same shape together
+ * Concatenate multi array of the same shape together
  * along a particular dimension
  */
 template <typename T>
@@ -296,9 +352,53 @@ void SpecialMethods<T>::splitCpuGeneric(NDArray& input, const std::vector<NDArra
 
 template <typename T>
 void SpecialMethods<T>::sortGeneric(NDArray *input, bool descending) {
-  auto x = input->bufferAsT<T>();
-  auto xShapeInfo = input->shapeInfo();
-  quickSort_parallel(input, Environment::getInstance().maxMasterThreads(), descending);
+  auto length = input->lengthOf();
+  if (length <= 1) return;
+
+  // Check if the array is contiguous (strides match expected layout)
+  bool contiguous = shape::strideDescendingCAscendingF(input->shapeInfo());
+
+  if (contiguous) {
+    // Direct buffer sort — std::sort is well-tested and efficient
+    auto x = input->bufferAsT<T>();
+    if (descending) {
+      std::sort(x, x + length, std::greater<T>());
+    } else {
+      std::sort(x, x + length);
+    }
+  } else {
+    // Non-contiguous (view): extract values via INDEX2COORDS/COORDS2INDEX, sort, write back
+    auto xBuf = input->bufferAsT<T>();
+    auto xShapeInfo = input->shapeInfo();
+    int rank = shape::rank(xShapeInfo);
+    auto xShape = shape::shapeOf(xShapeInfo);
+    auto xStride = shape::stride(xShapeInfo);
+
+    // Extract values into contiguous temp buffer
+    std::vector<T> temp(length);
+    sd::LongType coords[SD_MAX_RANK];
+    for (sd::LongType i = 0; i < length; i++) {
+      INDEX2COORDS(i, rank, xShape, coords);
+      sd::LongType offset;
+      COORDS2INDEX(rank, xStride, coords, offset);
+      temp[i] = xBuf[offset];
+    }
+
+    // Sort the temp buffer
+    if (descending) {
+      std::sort(temp.begin(), temp.end(), std::greater<T>());
+    } else {
+      std::sort(temp.begin(), temp.end());
+    }
+
+    // Write sorted values back using the same coord mapping
+    for (sd::LongType i = 0; i < length; i++) {
+      INDEX2COORDS(i, rank, xShape, coords);
+      sd::LongType offset;
+      COORDS2INDEX(rank, xStride, coords, offset);
+      xBuf[offset] = temp[i];
+    }
+  }
 }
 
 template <typename T>
@@ -419,19 +519,19 @@ void SpecialMethods<T>::quickSort_parallel(NDArray *x, int numThreads, bool desc
 
 template <typename T>
 void SpecialMethods<T>::sortTadGeneric(NDArray *input, sd::LongType *dimension, int dimensionLength, bool descending) {
-  auto x = input->bufferAsT<T>();
   sd::LongType xLength = input->lengthOf();
   sd::LongType xTadLength = shape::tadLength(input->shapeInfo(), dimension, dimensionLength);
   int numTads = xLength / xTadLength;
 
   const std::vector<sd::LongType> dimVector(dimension, dimension + dimensionLength);
   auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
-      const_cast<sd::LongType *>(input->shapeInfo()), const_cast<sd::LongType *>(dimVector.data()), false);
+      const_cast<sd::LongType *>(input->shapeInfo()), const_cast<sd::LongType *>(dimVector.data()), dimensionLength);
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
       NDArray *dx = pack->extractTadView(input, r);
-      quickSort_parallel(dx,  xTadLength, descending);
+      // Use sortGeneric which handles both contiguous and non-contiguous views
+      sortGeneric(dx, descending);
       delete dx;
     }
   };

@@ -31,7 +31,7 @@ namespace ops {
 DeclarableReductionOp::DeclarableReductionOp(int numInputs, int numOutputs, const char* opName, bool allowsInplace,
                                              int tArgs, int iArgs)
     : DeclarableOp(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
-  //
+  _descriptor->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 ShapeList* DeclarableReductionOp::calculateOutputShape(ShapeList* inputShape, Context& block) {

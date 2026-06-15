@@ -20,13 +20,12 @@
 //  @author Adam Gibson
 //
 
-#include <ops/declarable/headers/boolean.h>
 #include <system/op_boilerplate.h>
 
 #if NOT_EXCLUDED(OP_where_np)
 
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/boolean.h>
 
 namespace sd {
 namespace ops {
@@ -41,62 +40,87 @@ CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
     int numMatches = 0;
     // if cond matches x/y shape - we have per-element mask
     if (condition->isSameShape(x)) {
-      // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
+      // Sync all inputs to host for direct buffer access, avoiding O(n^2) sync from per-element p()/e()
+      condition->syncToHost();
+      x->syncToHost();
+      y->syncToHost();
+
+      auto condBuf = condition->bufferAsT<bool>();
+      auto len = condition->lengthOf();
+
       if (y->isScalar()) {
         if (y->isR()) {
-          for (int e = 0; e < condition->lengthOf(); e++) {
 #ifdef HAS_DOUBLE
-            auto r = condition->e<bool>(e) ? y->e<double>(0) : x->e<double>(e);
+          auto xBuf = x->bufferAsT<double>();
+          auto zBuf = z->bufferAsT<double>();
+          auto yVal = y->bufferAsT<double>()[0];
+          for (int e = 0; e < len; e++) {
+            zBuf[e] = condBuf[e] ? yVal : xBuf[e];
+          }
 #elif defined(HAS_FLOAT32)
-            auto r = condition->e<bool>(e) ? y->e<float>(0) : x->e<float>(e);
+          auto xBuf = x->bufferAsT<float>();
+          auto zBuf = z->bufferAsT<float>();
+          auto yVal = y->bufferAsT<float>()[0];
+          for (int e = 0; e < len; e++) {
+            zBuf[e] = condBuf[e] ? yVal : xBuf[e];
+          }
 #else
 #error "No floating-point type available for where_np operation"
 #endif
-            z->p(e, r);
-          }
-        } else{
-          for (int e = 0; e < condition->lengthOf(); e++) {
-            auto r = condition->e<bool>(e) ? y->e<LongType>(0) : x->e<LongType>(e);
-            z->p(e, r);
+        } else {
+          auto xBuf = x->bufferAsT<LongType>();
+          auto zBuf = z->bufferAsT<LongType>();
+          auto yVal = y->bufferAsT<LongType>()[0];
+          for (int e = 0; e < len; e++) {
+            zBuf[e] = condBuf[e] ? yVal : xBuf[e];
           }
         }
       } else {
         if (y->isR()) {
-          for (int e = 0; e < condition->lengthOf(); e++) {
-            if (condition->e<bool>(e)) {
 #ifdef HAS_DOUBLE
-              auto r = y->e<double>(numMatches);
-#elif defined(HAS_FLOAT32)
-              auto r = y->e<float>(numMatches);
-#else
-#error "No floating-point type available for where_np operation"
-#endif
-              z->p(e, r);
+          auto xBuf = x->bufferAsT<double>();
+          auto yBuf = y->bufferAsT<double>();
+          auto zBuf = z->bufferAsT<double>();
+          for (int e = 0; e < len; e++) {
+            if (condBuf[e]) {
+              zBuf[e] = yBuf[numMatches];
               numMatches++;
             } else {
-#ifdef HAS_DOUBLE
-              auto r = x->e<double>(e);
-#elif defined(HAS_FLOAT32)
-              auto r = x->e<float>(e);
-#else
-#error "No floating-point type available for where_np operation"
-#endif
-              z->p(e, r);
+              zBuf[e] = xBuf[e];
             }
           }
-        } else {
-          for (int e = 0; e < condition->lengthOf(); e++) {
-            if (condition->e<bool>(e)) {
-              auto r = y->e<LongType>(numMatches);
-              z->p(e, r);
+#elif defined(HAS_FLOAT32)
+          auto xBuf = x->bufferAsT<float>();
+          auto yBuf = y->bufferAsT<float>();
+          auto zBuf = z->bufferAsT<float>();
+          for (int e = 0; e < len; e++) {
+            if (condBuf[e]) {
+              zBuf[e] = yBuf[numMatches];
               numMatches++;
             } else {
-              auto r = x->e<LongType>(e);
-              z->p(e, r);
+              zBuf[e] = xBuf[e];
+            }
+          }
+#else
+#error "No floating-point type available for where_np operation"
+#endif
+        } else {
+          auto xBuf = x->bufferAsT<LongType>();
+          auto yBuf = y->bufferAsT<LongType>();
+          auto zBuf = z->bufferAsT<LongType>();
+          for (int e = 0; e < len; e++) {
+            if (condBuf[e]) {
+              zBuf[e] = yBuf[numMatches];
+              numMatches++;
+            } else {
+              zBuf[e] = xBuf[e];
             }
           }
         }
       }
+
+      z->tickWriteHost();
+      z->syncToDevice();
     } else {
       REQUIRE_TRUE(condition->lengthOf() == x->sizeAt(0), 0,
                    "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead",
@@ -131,11 +155,20 @@ CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
     NDArray* whereTrue = res.at(0);
 
     if (whereTrue->isEmpty()) return Status::OK;
+
+    // Sync whereTrue to host for direct buffer access, avoiding O(n^2) sync from per-element p()/e()
+    whereTrue->syncToHost();
+
     for (LongType outNext = 0; outNext < width; ++outNext) {
       auto output = OUTPUT_VARIABLE(outNext);
-      for (LongType e = 0; e < output->lengthOf(); ++e) {
-        output->p<LongType>(e, whereTrue->e<LongType>(e, outNext));
+      auto outBuf = output->bufferAsT<LongType>();
+      auto outLen = output->lengthOf();
+      for (LongType e = 0; e < outLen; ++e) {
+        // whereTrue is 2D [numTrue, rank], read element at (e, outNext)
+        outBuf[e] = whereTrue->e<LongType>(e, outNext);
       }
+      output->tickWriteHost();
+      output->syncToDevice();
     }
   }
 
@@ -150,9 +183,15 @@ DECLARE_SHAPE_FN(where_np) {
   } else {
     auto condition = INPUT_VARIABLE(0);
 
+    // Sync condition to host before accessing data via e<T>()
+    condition->syncToHost();
+
     LongType numOfTrue = 0LL;  // condition->reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
     for (LongType i = 0; i < condition->lengthOf(); ++i)
       if (condition->e<bool>(i)) numOfTrue++;
+
+    // Sync back to device so subsequent GPU kernels see current device buffer
+    condition->syncToDevice();
 
     // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
     if (numOfTrue) {

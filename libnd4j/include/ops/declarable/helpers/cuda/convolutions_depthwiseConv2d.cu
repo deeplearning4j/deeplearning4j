@@ -21,6 +21,8 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
+#include <array/NDArrayFactory.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/addBias.h>
@@ -73,7 +75,7 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
     modifOutput = {{3, 0, 1, 2, 4},
                    {iC, bS * oH * oW, mC}};             // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
     std::vector<sd::LongType> permuteVec = {0, 3, 1, 2};
-    input = input->permute(permuteVec, false, false);  // permute() already returns NDArray*
+    input = input->permute(permuteVec, false, false);
   } else {
     outReShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
     modifOutput = {{1, 0, 3, 4, 2},
@@ -93,18 +95,25 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
   std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
 
   NDArray columns(input->ordering(),colShape, input->dataType(), input->getContext());
-  NDArray outputReshaped = output->reshape(output->ordering(), outReShape, false);
+  NDArray* outputReshaped = output->reshape(output->ordering(), outReShape, false);
 
-  NDArray zero = NDArrayFactory::create(0.f, input->getContext());
+  NDArray* zero = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *output->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-      zero);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-  MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, modifWeights,
+      *zero);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+  MmulHelper::tensorDot(&columns, weights, outputReshaped, modifColumns, modifWeights,
                         modifOutput);  // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 
   if (bias)
     helpers::addBias(block, *output, *bias, *output, isNCHW);
 
+  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    cudaStreamSynchronize(*output->getContext()->getCudaStream());
+  }
+
+  delete zero;
+  delete outputReshaped;
   if (!isNCHW) delete input;
 }
 

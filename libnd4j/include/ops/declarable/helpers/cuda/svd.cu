@@ -23,6 +23,8 @@
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
 #include <exceptions/cuda_exception.h>
+#include <memory/cuda/CudaMemoryPool.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/svd.h>
@@ -53,27 +55,36 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
 
   if (A->rankOf() != 2) THROW_EXCEPTION("svdQR: rank of A array is not equal 2 !");
 
-  auto m = A->sizeAt(0);
-  auto n = A->sizeAt(1);
-  const int minDim = m < n ? m : n;
+  LongType m = A->sizeAt(0);
+  LongType n = A->sizeAt(1);
+  const LongType minDim = m < n ? m : n;
   const char orderA = A->ordering();
 
   if (m < n) THROW_EXCEPTION("svdQR: due to cuda api input constrains given shape of A array are not valid !");
 
-  if (std::vector<LongType>({minDim}) != S->getShapeAsVector())
+  // Check S shape - should be [minDim]
+  if (S->rankOf() != 1 || S->sizeAt(0) != minDim)
     THROW_EXCEPTION("svdQR: wrong shape of S array !");
 
   if (calcUV) {
-    if (fullUV && std::vector<LongType>({m, m}) != U->getShapeAsVector()) {
+    // U should be [m, m] if fullUV, otherwise [m, minDim]
+    if (U->rankOf() != 2) {
       THROW_EXCEPTION("svdQR: wrong shape of U array !");
-    } else if (!fullUV && std::vector<LongType>({m, minDim}) != U->getShapeAsVector()) {
+    }
+    if (fullUV && (U->sizeAt(0) != m || U->sizeAt(1) != m)) {
+      THROW_EXCEPTION("svdQR: wrong shape of U array !");
+    } else if (!fullUV && (U->sizeAt(0) != m || U->sizeAt(1) != minDim)) {
       THROW_EXCEPTION("svdQR: wrong shape of U array !");
     }
 
-    if (fullUV && std::vector<LongType>({n, n}) != VT->getShapeAsVector()) {
+    // VT should be [n, n] if fullUV, otherwise [minDim, n]
+    if (VT->rankOf() != 2) {
       THROW_EXCEPTION("svdQR: wrong shape of VT array !");
     }
-    else if (!fullUV && std::vector<LongType>({minDim, n}) != VT->getShapeAsVector()) {
+    if (fullUV && (VT->sizeAt(0) != n || VT->sizeAt(1) != n)) {
+      THROW_EXCEPTION("svdQR: wrong shape of VT array !");
+    }
+    else if (!fullUV && (VT->sizeAt(0) != minDim || VT->sizeAt(1) != n)) {
       THROW_EXCEPTION("svdQR: wrong shape of VT array !");
     }
   }
@@ -129,8 +140,9 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
 
   // allocate memory for dWork
   void* dWork = nullptr;
-  cudaError_t status2 = cudaMalloc((void**)&dWork, A->sizeOfT() * lwork);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdQR: cuda failed !", status2);
+  int svdDevId = 0; cudaGetDevice(&svdDevId);
+  dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId, nullptr);
+  if (dWork == nullptr) THROW_EXCEPTION("svdQR: Cannot allocate memory for dWork");
 
   signed char jobu, jobvt;
 
@@ -188,9 +200,7 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
 
   //for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 
-  // if (devInfo) cudaFree(devInfo);
-  // if (dWork) cudaFree(dWork);
-  // if (rWork) cudaFree(rWork);
+  if (dWork) sd::memory::CudaMemoryPool::getInstance().free(dWork, svdDevId, nullptr);
 
 }
 
@@ -204,21 +214,36 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
 
   if (A->rankOf() != 2) THROW_EXCEPTION("svdJcb: rank of A array is not equal 2 !");
 
-  int m = A->sizeAt(0);
-  int n = A->sizeAt(1);
-  const int minDim = m < n ? m : n;
+  LongType m = A->sizeAt(0);
+  LongType n = A->sizeAt(1);
+  const LongType minDim = m < n ? m : n;
 
-  if (std::vector<LongType>({minDim}) != S->getShapeAsVector()) THROW_EXCEPTION("svdJcb: wrong shape of S array !");
-
-  if (fullUV && U != nullptr && std::vector<LongType>({m, m}) != U->getShapeAsVector()) {
-    THROW_EXCEPTION("svdJcb: wrong shape of U array !");
-  } else if (!fullUV && U != nullptr && std::vector<LongType>({m, minDim}) != U->getShapeAsVector()) {
-    THROW_EXCEPTION("svdJcb: wrong shape of U array !");
+  // Check S shape - should be [minDim]
+  if (S->rankOf() != 1 || S->sizeAt(0) != minDim) {
+    THROW_EXCEPTION("svdJcb: wrong shape of S array !");
   }
-  if (fullUV && V != nullptr && std::vector<LongType>({n, n}) != V->getShapeAsVector()) {
-    THROW_EXCEPTION("svdJcb: wrong shape of V array !");
-  } else if (!fullUV && V != nullptr && std::vector<LongType>({n, minDim}) != V->getShapeAsVector()) {
-    THROW_EXCEPTION("svdJcb: wrong shape of V array !");
+
+  if (U != nullptr) {
+    // U should be [m, m] if fullUV, otherwise [m, minDim]
+    if (U->rankOf() != 2) {
+      THROW_EXCEPTION("svdJcb: wrong shape of U array !");
+    }
+    if (fullUV && (U->sizeAt(0) != m || U->sizeAt(1) != m)) {
+      THROW_EXCEPTION("svdJcb: wrong shape of U array !");
+    } else if (!fullUV && (U->sizeAt(0) != m || U->sizeAt(1) != minDim)) {
+      THROW_EXCEPTION("svdJcb: wrong shape of U array !");
+    }
+  }
+  if (V != nullptr) {
+    // V should be [n, n] if fullUV, otherwise [n, minDim]
+    if (V->rankOf() != 2) {
+      THROW_EXCEPTION("svdJcb: wrong shape of V array !");
+    }
+    if (fullUV && (V->sizeAt(0) != n || V->sizeAt(1) != n)) {
+      THROW_EXCEPTION("svdJcb: wrong shape of V array !");
+    } else if (!fullUV && (V->sizeAt(0) != n || V->sizeAt(1) != minDim)) {
+      THROW_EXCEPTION("svdJcb: wrong shape of V array !");
+    }
   }
 
   NDArray* pA = const_cast<NDArray*>(A);
@@ -293,7 +318,7 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
   const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
   const int econ = !fullUV;
 
-  if (transA) math::sd_swap<int>(m, n);
+  if (transA) math::sd_swap<LongType>(m, n);
 
   // *** avoid bug in cuda API ***
   void* nullPtr = nullptr;
@@ -331,8 +356,9 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
 
   // allocate memory dWork
   void* dWork = nullptr;
-  auto status2 = cudaMalloc((void**)&dWork, A->sizeOfT() * lwork);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);
+  int svdDevId2 = 0; cudaGetDevice(&svdDevId2);
+  dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId2, nullptr);
+  if (dWork == nullptr) THROW_EXCEPTION("svdJcb: Cannot allocate memory for dWork");
 
   PointersManager manager(context, "svdJcb");
 
@@ -371,8 +397,8 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
 
   for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 
-  if (devInfo) cudaFree(devInfo);
-  if (dWork) cudaFree(dWork);
+  if (devInfo) sd::memory::CudaMemoryPool::getInstance().free(devInfo, svdDevId2, nullptr);
+  if (dWork) sd::memory::CudaMemoryPool::getInstance().free(dWork, svdDevId2, nullptr);
   if (gesvdjParams) cusolverDnDestroyGesvdjInfo(gesvdjParams);
 
 
@@ -455,9 +481,13 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
 
   // devInfo
   int* devInfo = nullptr;
-  auto status2 = cudaMalloc((void**)&devInfo, sizeof(LongType) * bS);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
-  status2 = cudaDeviceSynchronize();
+  int svdDevId3 = 0; cudaGetDevice(&svdDevId3);
+  devInfo = reinterpret_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType) * bS, svdDevId3, nullptr));
+  if (devInfo == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for devInfo");
+  // During CUDA graph capture, synchronous calls are illegal.
+  cudaError_t status2 = cudaSuccess;
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
   if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);
 
   const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
@@ -491,9 +521,10 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
 
   // allocate memory dWork
   void* dWork = nullptr;
-  status2 = cudaMalloc((void**)&dWork, A->sizeOfT() * lwork);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
-  status2 = cudaDeviceSynchronize();
+  dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId3, nullptr);
+  if (dWork == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for dWork");
+  // During CUDA graph capture, synchronous calls are illegal.
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
   if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
 
   PointersManager manager(context, "svdBatched");
@@ -531,8 +562,8 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
 
   for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 
-  if (devInfo) cudaFree(devInfo);
-  if (dWork) cudaFree(dWork);
+  if (devInfo) sd::memory::CudaMemoryPool::getInstance().free(devInfo, svdDevId3, nullptr);
+  if (dWork) sd::memory::CudaMemoryPool::getInstance().free(dWork, svdDevId3, nullptr);
   if (handle) cusolverDnDestroy(handle);
   if (gesvdjParams) cusolverDnDestroyGesvdjInfo(gesvdjParams);
 

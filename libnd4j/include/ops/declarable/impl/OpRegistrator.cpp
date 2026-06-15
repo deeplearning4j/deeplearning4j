@@ -22,6 +22,7 @@
 
 #include <ops/declarable/OpRegistrator.h>
 
+#include <mutex>
 #include <sstream>
 
 namespace sd {
@@ -51,8 +52,12 @@ __registratorSynonym<OpName>::__registratorSynonym(const char* name, const char*
 ///////////////////////////////
 
 OpRegistrator& OpRegistrator::getInstance() {
-  static OpRegistrator instance;
-  return instance;
+  static OpRegistrator* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new OpRegistrator();
+  });
+  return *instance;
 }
 
 void OpRegistrator::updateMSVC(LongType newHash, std::string& oldName) {
@@ -85,6 +90,12 @@ std::string OpRegistrator::local_to_string(int value) {
 }
 
 OpRegistrator::~OpRegistrator() {
+  // Clean up OpExecTrace objects - must happen in both debug and release builds
+  for (auto trace : opexecTrace) {
+    delete trace;
+  }
+  opexecTrace.clear();
+
 #ifndef _RELEASE
   _msvc.clear();
 
@@ -99,7 +110,6 @@ OpRegistrator::~OpRegistrator() {
   _declarablesD.clear();
 
   _declarablesLD.clear();
-
 #endif
 }
 
@@ -150,6 +160,9 @@ void OpRegistrator::toggleTraceOps(bool traceOps) {
 }
 
 void OpRegistrator::purgeOpExecs() {
+  for (auto trace : this->opexecTrace) {
+    delete trace;
+  }
   this->opexecTrace.clear();
 }
 
@@ -197,25 +210,34 @@ DeclarableOp* OpRegistrator::getOperation(const char* name) {
  * @return
  */
 DeclarableOp* OpRegistrator::getOperation(LongType hash) {
-  if (!_declarablesLD.count(hash)) {
-    if (!_msvc.count(hash)) {
-      sd_printf("Unknown D operation requested by hash: [%lld]\n", hash);
-      return nullptr;
-    } else {
-      _locker.lock();
+  // All accesses to _declarablesLD must be under the lock because concurrent
+  // insert() can trigger a rehash, invalidating iterators/buckets that a
+  // lockless count()/at() is traversing → heap corruption.
+  _locker.lock();
 
-      auto str = _msvc.at(hash);
-      auto op = _declarablesD.at(str);
-      auto oHash = op->getOpDescriptor()->getHash();
-
-      std::pair<LongType, DeclarableOp*> pair(oHash, op);
-      _declarablesLD.insert(pair);
-
-      _locker.unlock();
-    }
+  auto it = _declarablesLD.find(hash);
+  if (it != _declarablesLD.end()) {
+    auto* op = it->second;
+    _locker.unlock();
+    return op;
   }
 
-  return _declarablesLD.at(hash);
+  // Not in the fast-lookup map — check the string-keyed map
+  if (!_msvc.count(hash)) {
+    _locker.unlock();
+    sd_printf("Unknown D operation requested by hash: [%lld]\n", hash);
+    return nullptr;
+  }
+
+  auto str = _msvc.at(hash);
+  auto op = _declarablesD.at(str);
+  auto oHash = op->getOpDescriptor()->getHash();
+
+  std::pair<LongType, DeclarableOp*> pair(oHash, op);
+  _declarablesLD.insert(pair);
+
+  _locker.unlock();
+  return op;
 }
 
 DeclarableOp* OpRegistrator::getOperation(std::string& name) {
@@ -240,7 +262,50 @@ bool OpRegistrator::hasHelper(LongType hash, samediff::Engine engine) {
   return _helpersLH.count(p) > 0;
 }
 
+bool OpRegistrator::hasAnyHelper(LongType hash) {
+  for (const auto& entry : _helpersLH) {
+    if (entry.first.first == hash) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::vector<platforms::PlatformHelper*> OpRegistrator::getAllHelpersForOp(LongType hash) {
+  std::vector<platforms::PlatformHelper*> result;
+
+  for (const auto& entry : _helpersLH) {
+    if (entry.first.first == hash) {
+      result.push_back(entry.second);
+    }
+  }
+
+  return result;
+}
+
+std::vector<samediff::Engine> OpRegistrator::getAvailableEnginesForOp(LongType hash) {
+  std::vector<samediff::Engine> result;
+
+  for (const auto& entry : _helpersLH) {
+    if (entry.first.first == hash) {
+      result.push_back(entry.first.second);
+    }
+  }
+
+  return result;
+}
+
 int OpRegistrator::numberOfOperations() { return (int)_declarablesLD.size(); }
+
+std::vector<std::string> OpRegistrator::getAllRegisteredOpNames() {
+  std::vector<std::string> result;
+
+  for (const auto& entry : _declarablesD) {
+    result.push_back(entry.first);
+  }
+
+  return result;
+}
 
 std::vector<LongType> OpRegistrator::getAllHashes() {
   std::vector<LongType> result;

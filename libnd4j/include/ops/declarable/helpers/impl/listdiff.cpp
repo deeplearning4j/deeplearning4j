@@ -76,8 +76,8 @@ static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* outp
   }
 
   if (saved.size() == 0) {
-    sd_printf("ListDiff: search returned no results", "");
-    THROW_EXCEPTION("Op validation failed");
+    // Empty result is valid - both output arrays should have length 0
+    return sd::Status::OK;
   } else {
     auto z0 = output1;
     auto z1 = output2;
@@ -92,6 +92,8 @@ static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* outp
       THROW_EXCEPTION("Op validation failed");
     }
     memcpy(z0->buffer(), saved.data(), saved.size() * sizeof(T));
+    z0->tickWriteHost();
+    z0->syncToDevice();
     for (size_t e = 0; e < indices.size(); e++) {
       z1->p(e, indices[e]);
     }
@@ -117,6 +119,8 @@ sd::Status listDiffFunctor(sd::LaunchContext* context, NDArray* values, NDArray*
   }
 
   NDArray::registerPrimaryUse({output1, output2}, {values, keep});
+  output1->syncToDevice();
+  output2->syncToDevice();
 
   return result;
 }

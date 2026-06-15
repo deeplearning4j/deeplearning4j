@@ -21,9 +21,10 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_im2col)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/convo.h>
 #include <ops/declarable/helpers/col2im.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
@@ -138,14 +139,16 @@ DECLARE_TYPES(im2col) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedOutputTypes(0, DataType::INHERIT)
-      ->setSameMode(true);
+      ->setSameMode(true)
+      ->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(im2col_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedOutputTypes(0, DataType::INHERIT)
-      ->setSameMode(true);
+      ->setSameMode(true)
+      ->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(im2col_bp) {

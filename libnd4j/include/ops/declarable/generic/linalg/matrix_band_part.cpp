@@ -22,12 +22,12 @@
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_matrix_band_part)
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/matrix_band.h>
 
 namespace sd {
 namespace ops {
-CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 0) {
+CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
 
   auto output = OUTPUT_VARIABLE(0);
@@ -52,10 +52,12 @@ CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 0) {
   REQUIRE_TRUE(input->rankOf() >= 2, 0, "matrix_band_part: Input rank should be 2 or greater.");
   LongType N = input->sizeAt(-2);
   LongType M = input->sizeAt(-1);
-  REQUIRE_TRUE(minLower > -N && minLower < N, 0, "matrix_band_part: lower diagonal count %i should be less than %i.",
-               minLower, N);
-  REQUIRE_TRUE(maxUpper > -M && maxUpper < M, 0, "matrix_band_part: upper diagonal count %i should be less than %i.",
-               maxUpper, M);
+  // Negative values mean "keep all bands on that side", so they are always valid
+  // Non-negative values must be < N (for lower) or < M (for upper)
+  REQUIRE_TRUE(minLower < 0 || minLower < N, 0, "matrix_band_part: lower diagonal count %lld should be negative (keep all) or less than %lld.",
+               static_cast<long long>(minLower), static_cast<long long>(N));
+  REQUIRE_TRUE(maxUpper < 0 || maxUpper < M, 0, "matrix_band_part: upper diagonal count %lld should be negative (keep all) or less than %lld.",
+               static_cast<long long>(maxUpper), static_cast<long long>(M));
 
   helpers::matrixBandPart(block.launchContext(), input, output, minLower, maxUpper);
   return Status::OK;

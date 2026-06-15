@@ -22,7 +22,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_mirror_pad)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
@@ -48,34 +48,34 @@ DECLARE_TYPES(mirror_pad) {
 }
 
 DECLARE_SHAPE_FN(mirror_pad) {
-  auto input = INPUT_VARIABLE(0);
+  auto inShapeInfo = inputShape->at(0);
   auto paddings = INPUT_VARIABLE(1);
 
   const int includeBorder = static_cast<bool>(INT_ARG(0)) ? 0 : 1;
 
-  if (input->isScalar()) {
-    sd::LongType len = input->isScalar() ? 1 + paddings->e<sd::LongType>(0)  + paddings->e<sd::LongType>(1) : input->lengthOf() + paddings->e<sd::LongType>(0) + paddings->e<sd::LongType>(1);
-    return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(len, input->dataType()));
+  if (shape::isScalar(inShapeInfo)) {
+    sd::LongType len = 1 + paddings->e<sd::LongType>(0) + paddings->e<sd::LongType>(1);
+    return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(len, ArrayOptions::dataType(inShapeInfo)));
   }
 
   sd::LongType* outShapeInfo(nullptr);
-  int rank = input->rankOf();
+  int rank = shape::rank(inShapeInfo);
 
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
   outShapeInfo[0] = rank;
-  if(paddings->isVector()) {
+  if(shape::rank(inputShape->at(1)) == 1) {
     for (int i = 0; i < rank; ++i) {
-      outShapeInfo[i + 1] = input->sizeAt(i) + paddings->e<sd::LongType>(0) + paddings->e<sd::LongType>(1);
+      outShapeInfo[i + 1] = shape::sizeAt(inShapeInfo, static_cast<sd::LongType>(i)) + paddings->e<sd::LongType>(0) + paddings->e<sd::LongType>(1);
 
     }
   } else {
     for (int i = 0; i < rank; ++i) {
-      outShapeInfo[i + 1] = input->sizeAt(i) + paddings->e<sd::LongType>(i, 0) + paddings->e<sd::LongType>(i, 1);
+      outShapeInfo[i + 1] = shape::sizeAt(inShapeInfo, static_cast<sd::LongType>(i)) + paddings->e<sd::LongType>(i, 0) + paddings->e<sd::LongType>(i, 1);
 
     }
   }
 
-  ShapeUtils::updateStridesAndType(outShapeInfo, input->shapeInfo(), input->ordering());
+  ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfo, shape::order(inShapeInfo));
 
   return SHAPELIST(CONSTANT(outShapeInfo));
 }

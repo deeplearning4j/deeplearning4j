@@ -21,9 +21,10 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_normalize_moments)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 
 namespace sd {
 namespace ops {
@@ -76,7 +77,7 @@ DECLARE_SHAPE_FN(normalize_moments) {
 }
 
 DECLARE_TYPES(normalize_moments) {
-  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS})->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 

@@ -22,6 +22,7 @@
 //
 #include <cublas_v2.h>
 #include <exceptions/cuda_exception.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/batched_gemm.h>
 #include <ops/specials_cuda.h>
@@ -31,20 +32,36 @@
 #include <indexing/NDIndexUtils.h>
 #include <ops/declarable/CustomOperations.h>
 
+extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
+extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
+extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
+extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
+
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
+static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
+  // Skip during CUDA graph capture: workspace was pre-set by setCublasWorkspaceForCapture
+  // before cudaStreamBeginCapture; calling cublasSetWorkspace on a capturing stream may
+  // inject a host-callback node into the graph.
+  if (!tl_graphExecutionActive && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+    cublasSetWorkspace(handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
+  }
+}
+
 
 void bgemm(NDArray *a, NDArray *b, NDArray *c,  NDArray *alphas,  NDArray *betas,
                   int transA, int transB, int M, int N, int K, int lda, int ldb, int ldc, NDArray *all) {
+  bool shouldDeleteAll = false;
   NDArray *allIndex = nullptr;
   if(all != nullptr)
     allIndex = all;
   else {
-    NDArray allLocal = NDIndexUtils::createAll();
-    all = &allLocal;
+    allIndex = NDIndexUtils::createAll();
+    all = allIndex;
+    shouldDeleteAll = true;
   }
 
 
@@ -62,16 +79,20 @@ void bgemm(NDArray *a, NDArray *b, NDArray *c,  NDArray *alphas,  NDArray *betas
   //divide by 2: queries and keys
   for(int i = 0; i < batchSize; i++) {
     auto point = NDIndexUtils::createPoint(i);
-    auto aSlice = createView.evaluate({a,&point,all,all},{},{});
-    auto bSlice = createView.evaluate({b,&point,all,all},{},{});
-    auto outSlice = createView.evaluate({c,&point,all,all},{},{});
+    auto aSlice = createView.evaluate({a, point, all, all},{},{});
+    auto bSlice = createView.evaluate({b, point, all, all},{},{});
+    auto outSlice = createView.evaluate({c, point, all, all},{},{});
     inputs.push_back(aSlice.at(0));
     keyInputs.push_back(bSlice.at(0));
     outputs.push_back(outSlice.at(0));
+    delete point;  // Clean up created point
   }
 
   bgemm(inputs,keyInputs,outputs,alphas,betas,transA,transB,M,N,K,lda,ldb,ldc);
 
+  if (shouldDeleteAll) {
+    delete allIndex;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -151,9 +172,13 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   auto handle = reinterpret_cast<cublasHandle_t*>(context->getCublasHandle());
   auto stream = context->getCudaStream();
 
-  auto status = cublasSetStream_v2(*handle, *stream);
-
-  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda set stream failed ! Please double check the passed in handle.", status);
+  // Skip cublasSetStream_v2 during CUDA graph capture (see MmulHelper mmulMxM comment).
+  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
+  if (!tl_graphExecutionActive) {
+    status = cublasSetStream_v2(*handle, *stream);
+    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda set stream failed ! Please double check the passed in handle.", status);
+  }
+  reapplyCublasWorkspace(*handle);
 
   const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
@@ -170,10 +195,14 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
     status = cublasSgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const float**)aBuffers, lda,
                                 (const float**)bBuffers, ldb, &beta, (float**)cBuffers, ldc, bS);
   } else if (ABC && aType == HALF) {
-    __half alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
-    __half beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;
-    status = cublasHgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const __half**)aBuffers, lda,
-                                (const __half**)bBuffers, ldb, &beta, (__half**)cBuffers, ldc, bS);
+    // Use GemmBatchedEx with FP32 accumulation — cublasHgemmBatched accumulates in FP16.
+    float alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
+    float beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;
+    status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha,
+                                 (const void**)aBuffers, CUDA_R_16F, lda,
+                                 (const void**)bBuffers, CUDA_R_16F, ldb,
+                                 &beta, (void**)cBuffers, CUDA_R_16F, ldc, bS,
+                                 CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
   } else if (AB && aType == INT8 && cType == FLOAT32) {
     float alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
     float beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;
@@ -192,9 +221,13 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
     throw cuda_exception::build("MmulHelper::mmulMxM cuda execution failed !", status);
   }
 
-  auto cudaResult = cudaStreamSynchronize(*stream);
-  if (cudaResult != 0) {
-    throw cuda_exception::build("MmulHelper::mmulMxM cuda stream synchronize failed !", cudaResult);
+  // During CUDA graph capture, cudaStreamSynchronize is illegal. Stream
+  // ordering guarantees cuBLAS results are available to downstream kernels.
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    auto cudaResult = cudaStreamSynchronize(*stream);
+    if (cudaResult != 0) {
+      throw cuda_exception::build("MmulHelper::mmulMxM cuda stream synchronize failed !", cudaResult);
+    }
   }
 
   for (int i = 0; i < bS; ++i)

@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss_with_logits)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/loss.h>
 
 namespace sd {
 namespace ops {
@@ -47,33 +47,43 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
                classesDim, logits->rankOf());
 
   std::vector<LongType> dimension = {classesDim};
+  auto ctx = block.launchContext();
 
-  // Compute softmax log
-  NDArray* maxAlongDim_ptr = logits->reduceAlongDimension(reduce::Max, &dimension, true);
-  NDArray maxAlongDim = *maxAlongDim_ptr;
-  delete maxAlongDim_ptr;
-  
-  NDArray* shiftedLogits_ptr = (*logits) - maxAlongDim;
-  NDArray* logExp_ptr = shiftedLogits_ptr->transform(transform::Exp);
-  delete shiftedLogits_ptr;
-  NDArray logExp = *logExp_ptr;
-  delete logExp_ptr;
-  
-  NDArray* sumLogExp_ptr = logExp.reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray sumLogExp = *sumLogExp_ptr;
-  delete sumLogExp_ptr;
-  
-  NDArray* softmaxRatio_ptr = logExp / sumLogExp;
-  NDArray* logSoftMax_ptr = softmaxRatio_ptr->transform(transform::Log);
-  delete softmaxRatio_ptr;
-  NDArray logSoftMax = *logSoftMax_ptr;
-  delete logSoftMax_ptr;
+  // maxAlongDim: heap (reduceAlongDimension)
+  NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
 
-  // Compute cross entropy: -labels * log(softmax)
-  NDArray negLabels = -(*labels);  // unary negation returns value
-  NDArray* product_ptr = negLabels * logSoftMax;
-  product_ptr->reduceAlongDimension(reduce::Sum, output, &dimension);
-  delete product_ptr;
+  // shiftedLogits = logits - maxAlongDim  (broadcast subtract for keepDims shape)
+  NDArray shiftedLogits(logits->shapeInfo(), false, ctx);
+  logits->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), maxAlongDim, &shiftedLogits, false);
+
+  // logExp = exp(shiftedLogits)  (stack)
+  NDArray logExp(shiftedLogits.shapeInfo(), false, ctx);
+  shiftedLogits.applyTransform(transform::Exp, &logExp);
+
+  // sumLogExp: heap (reduceAlongDimension)
+  NDArray* sumLogExp = logExp.reduceAlongDimension(reduce::Sum, &dimension, true);
+
+  // softmaxRatio = logExp / sumLogExp  (broadcast divide for keepDims shape)
+  NDArray softmaxRatio(logExp.shapeInfo(), false, ctx);
+  logExp.applyTrueBroadcast(BroadcastOpsTuple::Divide(), sumLogExp, &softmaxRatio, false);
+
+  // logSoftMax = log(softmaxRatio)  (stack)
+  NDArray logSoftMax(softmaxRatio.shapeInfo(), false, ctx);
+  softmaxRatio.applyTransform(transform::Log, &logSoftMax);
+
+  // negLabels = -labels  (stack)
+  NDArray negLabels(labels->shapeInfo(), false, ctx);
+  labels->applyTransform(transform::Neg, &negLabels);
+
+  // product = negLabels * logSoftMax  (stack)
+  NDArray product(negLabels.shapeInfo(), false, ctx);
+  negLabels.applyPairwiseTransform(pairwise::Multiply, &logSoftMax, &product);
+
+  product.reduceAlongDimension(reduce::Sum, output, &dimension);
+
+  // Clean up heap-allocated intermediates
+  delete maxAlongDim;
+  delete sumLogExp;
 
   return Status::OK;
 }
@@ -108,12 +118,11 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_with_logits) {
 CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
   auto logits = INPUT_VARIABLE(0);
   auto labels = INPUT_VARIABLE(1);
-  auto output = OUTPUT_VARIABLE(0);
 
   auto dLdp = OUTPUT_VARIABLE(0);  // dL/dlogits
   auto dLdl = OUTPUT_VARIABLE(1);  // dL/dlabels
 
-  const int classesDim = block.getIArguments()->size() > 0 ? INT_ARG(0) : logits->rankOf()-1;
+  const int classesDim = block.getIArguments()->size() > 0 ? INT_ARG(0) : logits->rankOf() - 1;
 
   // input validation
   REQUIRE_TRUE(labels->isSameShape(logits), 0,
@@ -125,46 +134,55 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
                "but got %i and %i correspondingly !",
                classesDim, logits->rankOf());
 
-
   std::vector<LongType> dimension = {classesDim};
+  auto ctx = block.launchContext();
 
   // Compute softmax
-  NDArray* maxAlongDim_ptr = logits->reduceAlongDimension(reduce::Max, &dimension, true);
-  NDArray maxAlongDim = *maxAlongDim_ptr;
-  delete maxAlongDim_ptr;
-  
-  NDArray* shiftedLogits_ptr = (*logits) - maxAlongDim;
-  NDArray* softmax_ptr = shiftedLogits_ptr->transform(transform::Exp);
-  delete shiftedLogits_ptr;
-  NDArray softmax = *softmax_ptr;
-  delete softmax_ptr;
-  
-  NDArray* sumSoftmax_ptr = softmax.reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray sumSoftmax = *sumSoftmax_ptr;
-  delete sumSoftmax_ptr;
-  
-  softmax /= sumSoftmax;
+  // maxAlongDim: heap
+  NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
+
+  // shiftedLogits = logits - maxAlongDim  (broadcast subtract for keepDims shape)
+  NDArray shiftedLogits(logits->shapeInfo(), false, ctx);
+  logits->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), maxAlongDim, &shiftedLogits, false);
+
+  // softmax = exp(shiftedLogits)  (stack, then divide in-place)
+  NDArray softmax(shiftedLogits.shapeInfo(), false, ctx);
+  shiftedLogits.applyTransform(transform::Exp, &softmax);
+
+  // sumSoftmax: heap
+  NDArray* sumSoftmax = softmax.reduceAlongDimension(reduce::Sum, &dimension, true);
+
+  // Normalise: softmax /= sumSoftmax  (broadcast divide for keepDims shape)
+  softmax.applyTrueBroadcast(BroadcastOpsTuple::Divide(), sumSoftmax, &softmax, false);
 
   // dEdp = softmax * sum_i(labels_i) - labels
-  // note the eps is to account for exact 0s in the log calculation being nan
-  NDArray* labelsPlusEps_ptr = (*labels) + 1e-6;
-  NDArray labelsPlusEps = *labelsPlusEps_ptr;
-  delete labelsPlusEps_ptr;
-  
-  NDArray* labelSum_ptr = labelsPlusEps.reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray labelSum = *labelSum_ptr;
-  delete labelSum_ptr;
-  
-  NDArray* softmaxTimesLabelSum_ptr = softmax * labelSum;
-  NDArray* dLdpTemp_ptr = (*softmaxTimesLabelSum_ptr) - labelsPlusEps;
-  delete softmaxTimesLabelSum_ptr;
-  dLdp->assign(dLdpTemp_ptr);
-  delete dLdpTemp_ptr;
-  
+  // labelsPlusEps = labels + 1e-6  (stack)
+  NDArray labelsPlusEps(labels->shapeInfo(), false, ctx);
+  labels->applyScalar(scalar::Add, (double)1e-6, &labelsPlusEps);
+
+  // labelSum: heap
+  NDArray* labelSum = labelsPlusEps.reduceAlongDimension(reduce::Sum, &dimension, true);
+
+  // softmaxTimesLabelSum = softmax * labelSum  (broadcast multiply for keepDims shape)
+  NDArray softmaxTimesLabelSum(softmax.shapeInfo(), false, ctx);
+  softmax.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), labelSum, &softmaxTimesLabelSum, false);
+
+  // dLdp = softmaxTimesLabelSum - labels  (write directly to output)
+  softmaxTimesLabelSum.applyPairwiseTransform(pairwise::Subtract, labels, dLdp);
+
   // dEdl = -log(softmax)
-  softmax.applyTransform(transform::Log, dLdl);
-  dLdl->applyTransform(transform::Neg, dLdl);
-  
+  // logSoftmax = log(softmax)  (stack)
+  NDArray logSoftmax(softmax.shapeInfo(), false, ctx);
+  softmax.applyTransform(transform::Log, &logSoftmax);
+
+  // dLdl = -logSoftmax  (negate directly into output)
+  logSoftmax.applyTransform(transform::Neg, dLdl);
+
+  // Clean up heap-allocated intermediates
+  delete maxAlongDim;
+  delete sumSoftmax;
+  delete labelSum;
+
   return Status::OK;
 }
 

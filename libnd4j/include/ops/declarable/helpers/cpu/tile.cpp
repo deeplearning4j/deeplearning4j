@@ -32,6 +32,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void tileBP_(NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<sd::LongType> reps) {
+  (void)reps;
   T* gradIBuff = reinterpret_cast<T*>(gradI.buffer());
   auto gradOBuff = reinterpret_cast<T const*>(gradO.buffer());
   const sd::LongType gradILen = gradI.lengthOf();
@@ -54,7 +55,9 @@ static void tileBP_(NDArray& gradO /*input*/, NDArray& gradI /*output*/, const s
   for (sd::LongType i = 0; i < gradOLen; ++i) {
     INDEX2COORDS(i,gradORank, gradOShape, gradOCoords);
     COORDS2INDEX(gradORank, gradOStride, gradOCoords, gradOOffset);
-    INDEX2COORDS(i, gradIRank, gradIShape, gradICoords);
+    for (sd::LongType d = 0; d < gradIRank; ++d) {
+      gradICoords[d] = gradOCoords[d] % gradIShape[d];
+    }
     COORDS2INDEX(gradIRank, gradIStride, gradICoords, gradIOffset);
     gradI.p(gradIOffset, gradI.e<T>(gradIOffset) + gradOBuff[gradOOffset]);
   }

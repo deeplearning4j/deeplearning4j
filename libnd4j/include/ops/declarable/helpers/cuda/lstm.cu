@@ -73,39 +73,78 @@ void lstmCell(LaunchContext* context, NDArray* xt, NDArray* ht_1, NDArray* ct_1,
   const int numProj = ht_1->sizeAt(1);
   const int nOut = ct_1->sizeAt(1);
 
-  auto z = mmul(*xt, *Wx) + mmul(*ht_1, *Wh) + *b;  // [bS x 4*nOut] + [bS x 4*nOut] + [1 x 4*nOut] = [bS x 4*nOut]
+  NDArray *mmulXt = mmul(*xt, *Wx);
+  NDArray *mmulHt = mmul(*ht_1, *Wh);
+  NDArray *addMmuls = (*mmulXt) + (*mmulHt);
+  NDArray *z = (*addMmuls) + (*b);  // [bS x 4*nOut] + [bS x 4*nOut] + [1 x 4*nOut] = [bS x 4*nOut]
+  delete mmulXt;
+  delete mmulHt;
+  delete addMmuls;
 
-  auto zit = z({0, 0, 0, nOut});             // z for input gate,  = mmul(Wxi,xt) + mmul(Whi,ht_1) + bi    = [bS x nOut]
-  auto zft = z({0, 0, nOut, 2 * nOut});      // z for forget gate, = mmul(Wxf,xt) + mmul(Whf,ht_1) + bf    = [bS x nOut]
-  auto zct = z({0, 0, 2 * nOut, 3 * nOut});  // z for cell state,  = mmul(Wxc,xt) + mmul(Whc,ht_1) + bc    = [bS x nOut]
-  auto zot = z({0, 0, 3 * nOut, 4 * nOut});  // z for output gate, = mmul(Wxo,xt) + mmul(Who,ht_1) + bo    = [bS x nOut]
+  NDArray *zit = (*z)({0, 0, 0, nOut});             // z for input gate,  = mmul(Wxi,xt) + mmul(Whi,ht_1) + bi    = [bS x nOut]
+  NDArray *zft = (*z)({0, 0, nOut, 2 * nOut});      // z for forget gate, = mmul(Wxf,xt) + mmul(Whf,ht_1) + bf    = [bS x nOut]
+  NDArray *zct = (*z)({0, 0, 2 * nOut, 3 * nOut});  // z for cell state,  = mmul(Wxc,xt) + mmul(Whc,ht_1) + bc    = [bS x nOut]
+  NDArray *zot = (*z)({0, 0, 3 * nOut, 4 * nOut});  // z for output gate, = mmul(Wxo,xt) + mmul(Who,ht_1) + bo    = [bS x nOut]
 
   if (peephole) {                              // add peephole connections: z  +  ct_1*Wc
-    zit += (*ct_1) * (*Wc)({0, nOut});         // add peephole connections to input gate
-    zft += (*ct_1) * (*Wc)({nOut, 2 * nOut});  // add peephole connections to forget gate
+    NDArray *wcFirst = (*Wc)({0, nOut});
+    NDArray *wcSecond = (*Wc)({nOut, 2 * nOut});
+    NDArray *peepholeFirst = (*ct_1) * (*wcFirst);
+    NDArray *peepholeSecond = (*ct_1) * (*wcSecond);
+    *zit += (*peepholeFirst);   // add peephole connections to input gate
+    *zft += (*peepholeSecond);  // add peephole connections to forget gate
+    delete peepholeFirst;
+    delete peepholeSecond;
+    delete wcFirst;
+    delete wcSecond;
   }
 
   // current sell state = ft*ct_1 + it*tanh(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
-  NDArray zftPlusForgetBias = zft + forgetBias;
-  NDArray toAssign = sigmoid(zftPlusForgetBias) * (*ct_1) + sigmoid(zit) * tanh(zct);
-  ct->assign(&toAssign);
+  NDArray *zftPlusBias = (*zft) + forgetBias;
+  NDArray sigmoidZft = sigmoid(*zftPlusBias);
+  NDArray sigmoidZit = sigmoid(*zit);
+  NDArray tanhZct = tanh(*zct);
+  NDArray *sigmoidZftMulCt1 = sigmoidZft * (*ct_1);
+  NDArray *sigmoidZitMulTanhZct = sigmoidZit * tanhZct;
+  NDArray *sigmoidOut = (*sigmoidZftMulCt1) + (*sigmoidZitMulTanhZct);
+  ct->assign(sigmoidOut);
+  delete zftPlusBias;
+  delete sigmoidZftMulCt1;
+  delete sigmoidZitMulTanhZct;
+  delete sigmoidOut;
 
   // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
   if (clippingCellValue > 0.0) ct->applyScalar(scalar::LstmClip, clippingCellValue, ct);
 
-  if (peephole) zot += (*ct) * (*Wc)({{2 * nOut, 3 * nOut}});  // add peephole connections to output gate zot + ct*Wc
+  if (peephole) {
+    NDArray *wcThird = (*Wc)({{2 * nOut, 3 * nOut}});
+    NDArray *peepholeThird = (*ct) * (*wcThird);
+    *zot += (*peepholeThird);  // add peephole connections to output gate zot + ct*Wc
+    delete peepholeThird;
+    delete wcThird;
+  }
 
   // current cell output = ot*tanh(ct)
-  auto htNoPeepHole = sigmoid(zot) * tanh(*ct);  // = [bS x nOut]
+  NDArray sigmoidZot = sigmoid(*zot);
+  NDArray tanhCt = tanh(*ct);
+  NDArray *htNoPeepHole = sigmoidZot * tanhCt;  // = [bS x nOut]
 
   // apply projection
   if (projection) {
-    NDArray restultOne = mmul(htNoPeepHole, *Wp);
-    ht->assign(&restultOne);  // [bS x nOut] * [ nOut x numProj] = [bS x numProj]
+    NDArray *assign = mmul(*htNoPeepHole, *Wp);
+    ht->assign(assign);  // [bS x nOut] * [ nOut x numProj] = [bS x numProj]
+    delete assign;
     // if clipping projection is provided then projected cell output state is clipped by this value
     if (clippingProjValue != 0.) ht->applyScalar(scalar::LstmClip, clippingProjValue, ht);
   } else
-    ht->assign(&htNoPeepHole);
+    ht->assign(htNoPeepHole);
+
+  delete htNoPeepHole;
+  delete z;
+  delete zit;
+  delete zft;
+  delete zct;
+  delete zot;
 }
 
 void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDArray* Wci,
@@ -145,53 +184,66 @@ void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDAr
   const int nIn = xt->sizeAt(1);
   const int nOut = cLast->sizeAt(1);
 
-  std::vector<sd::LongType> shape = {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)};
+  std::vector<sd::LongType> cOutShape = {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)};
   // Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
-  NDArray concatOut(xt->ordering(), shape, xt->dataType(),
+  NDArray concatOut(xt->ordering(), cOutShape, xt->dataType(),
                     xt->getContext());
   concat(xt->getContext(), {const_cast<NDArray*>(xt), const_cast<NDArray*>(yLast)}, concatOut, {1});
 
-  auto m = mmul(concatOut, *W);  // mmul: [bs, (nIn+nOut)] * [(nIn+nOut), 4*nOut] = [bs, 4*nOut]
-  m += (*b);                     // addiRowVector
+  NDArray *m = mmul(concatOut, *W);  // mmul: [bs, (nIn+nOut)] * [(nIn+nOut), 4*nOut] = [bs, 4*nOut]
+  *m += (*b);                        // addiRowVector
 
   // Note: weights are ordered [inputGate, blockInput, forgetGate, outputGate] to match TF (TF code comments state
   // [i,f,z/ci,o] but behaviour is [i,z,f,o])
-  auto zi = m({0, 0, 0, nOut});             // z for input modulation gate, [bS, nOut]
-  auto zz = m({0, 0, nOut, 2 * nOut});      // z for block input, [bS, nOut]
-  auto zf = m({0, 0, 2 * nOut, 3 * nOut});  // z for forget gate, [bS, nOut]
-  auto zo = m({0, 0, 3 * nOut, 4 * nOut});  // z for output gate, [bS, nOut]
+  NDArray *zi = (*m)({0, 0, 0, nOut});             // z for input modulation gate, [bS, nOut]
+  NDArray *zz = (*m)({0, 0, nOut, 2 * nOut});      // z for block input, [bS, nOut]
+  NDArray *zf = (*m)({0, 0, 2 * nOut, 3 * nOut});  // z for forget gate, [bS, nOut]
+  NDArray *zo = (*m)({0, 0, 3 * nOut, 4 * nOut});  // z for output gate, [bS, nOut]
 
-  if (peephole) {             // add peephole connections: z  +  ct_1*Wc
-    zi += (*cLast) * (*Wci);  // add peephole connections to input gate
-    zf += (*cLast) * (*Wcf);  // add peephole connections to forget gate
+  if (peephole) {                // add peephole connections: z  +  ct_1*Wc
+    NDArray *peepholeI = (*cLast) * (*Wci);
+    NDArray *peepholeF = (*cLast) * (*Wcf);
+    *zi += (*peepholeI);  // add peephole connections to input gate
+    *zf += (*peepholeF);  // add peephole connections to forget gate
+    delete peepholeI;
+    delete peepholeF;
   }
 
   // current sell state = ft*cLast + it*tanh(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
-  if (forgetBias != 0.0) zf += forgetBias;
+  if (forgetBias != 0.0) *zf += forgetBias;
 
-  zz.applyTransform(transform::Tanh, z);     // z = tanh(zz)
-  zi.applyTransform(transform::Sigmoid, i);  // i = sigmoid(zi)
-  zf.applyTransform(transform::Sigmoid, f);  // f = sigmoid(zf);
+  zz->applyTransform(transform::Tanh, z);     // z = tanh(zz)
+  zi->applyTransform(transform::Sigmoid, i);  // i = sigmoid(zi)
+  zf->applyTransform(transform::Sigmoid, f);  // f = sigmoid(zf);
 
   // cell state = blockInput .* inputGate + prevCellState .* forgetGate
   z->applyPairwiseTransform(pairwise::Multiply, i, c);  // c = z * i
-  auto temp = (*f) * (*cLast);
-  *c += temp;                              // c = (i * z) + (zf * (*cLast))
+  NDArray *temp = (*f) * (*cLast);
+  *c += (*temp);                           // c = (i * z) + (zf * (*cLast))
+  delete temp;
   c->applyTransform(transform::Tanh, h);  // h = tanh(c)
 
   // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
   if (clippingCellValue > 0.0) c->applyScalar(scalar::LstmClip, clippingCellValue, c);
 
+  // add peephole connections to output gate zot + ct*Wc
   if (peephole) {
-    // add peephole connections to output gate zot + ct*Wc
-    auto prod = *c * (*Wco);
-    zo += prod;
+    NDArray *prod = (*c) * (*Wco);
+    *zo += (*prod);
+    delete prod;
   }
-  zo.applyTransform(transform::Sigmoid, o);  // o = sigmoid(zo)
+
+  zo->applyTransform(transform::Sigmoid, o);  // o = sigmoid(zo)
 
   // current cell output = ot*tanh(ct)
   c->applyTransform(transform::Tanh, h);                 // h = tanh(c)
   o->applyPairwiseTransform(pairwise::Multiply, h, y);  // y = o * h
+
+  delete m;
+  delete zi;
+  delete zz;
+  delete zf;
+  delete zo;
 }
 
 }  // namespace helpers

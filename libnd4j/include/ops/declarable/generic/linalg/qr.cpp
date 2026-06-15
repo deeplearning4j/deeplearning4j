@@ -22,7 +22,7 @@
 // Created by GS <sgazeos@gmail.com> at 12/20/2019
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/qr.h>
 #include <system/op_boilerplate.h>
 

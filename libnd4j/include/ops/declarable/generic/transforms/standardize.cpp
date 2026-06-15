@@ -25,8 +25,10 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_standardize)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/transforms.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/reverse.h>
+#include <helpers/ShapeUtils.h>
 
 namespace sd {
 namespace ops {
@@ -34,6 +36,12 @@ namespace ops {
 CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
+
+  // Handle empty input gracefully - nothing to standardize
+  if (input->isEmpty() || input->lengthOf() == 0) {
+    return sd::Status::OK;
+  }
+
   output->nullify();
   std::vector<sd::LongType> axis;
 
@@ -46,32 +54,32 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
 
   shape::checkDimensions(input->rankOf(), &axis);
 
-  // Compute mean with keepDims=true for broadcasting
-  auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
+  // Pre-compute shape for mean/stdev with keepDims=true to avoid heap allocations
+  // This creates the shape [1, ..., 1, dim, 1, ..., 1] where reduced dims are 1
+  auto reducedShapeInfo = ShapeUtils::evalReduceShapeInfo('c', &axis, input->shapeInfo(), true, false, block.getWorkspace());
 
-  // Compute VARIANCE (not stdev) - uses Welford's algorithm internally
-  // biasCorrected=false gives population variance (divide by N, not N-1)
-  auto varianceRaw = input->varianceAlongDimension(variance::SummaryStatsVariance, false, &axis);
+  // Create mean and stdev arrays on stack with pre-computed shape
+  NDArray means(reducedShapeInfo, true, block.launchContext());
+  NDArray stdev(reducedShapeInfo, true, block.launchContext());
 
-  // Reshape variance to match means shape for broadcasting (use reshape instead of reshapei)
-  auto meansShape = means->getShapeAsVector();
-  auto variance = varianceRaw->reshape(varianceRaw->ordering(), *meansShape);
-  delete meansShape;
-  delete varianceRaw;
+  // Compute mean directly into pre-allocated array
+  input->reduceAlongDimension(reduce::Mean, &means, &axis, true, false);
 
-  // Add epsilon BEFORE sqrt: stdev = sqrt(variance + epsilon)
-  // This is the numerically stable formula for LayerNorm
-  NDArray* varPlusEps = *variance + 1e-5;
-  NDArray* stdev = varPlusEps->transform(transform::Sqrt);
+  // Compute standard deviation directly into stdev array
+  // Using SummaryStatsStandardDeviation to get std = sqrt(variance)
+  // For plain standardization, we do NOT add epsilon (unlike layer_norm)
+  input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, stdev, false, &axis);
+
+  // When stdev == 0 (all values in the group are identical), replace 0 with 1
+  // so the result is (x - mean) / 1 = 0 (since x == mean when stdev == 0).
+  // CompareAndSetTransform params: [compare_value, set_value, eps, mode]
+  // mode=0 means "equals": if |elem - compare| <= eps, replace with set_value
+  ExtraArguments stdevArgs({0.0, 1.0, 1e-6, 0.0});
+  stdev.applyTransform(transform::SameOps::CompareAndSetTransform, &stdev, &stdevArgs);
 
   // output = (input - mean) / stdev
-  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, output, false);
-  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
-
-  delete means;
-  delete variance;
-  delete varPlusEps;
-  delete stdev;
+  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, output, false);
+  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, output, false);
 
   return sd::Status::OK;
 }
@@ -87,6 +95,12 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   auto eps = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);
 
   auto output = OUTPUT_VARIABLE(0);
+
+  // Handle empty input gracefully - nothing to backpropagate
+  if (input->isEmpty() || input->lengthOf() == 0) {
+    return sd::Status::OK;
+  }
+
   std::vector<sd::LongType> axis;
 
   if (block.width() == 3)
@@ -110,6 +124,11 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   auto stdev = stdevRaw->reshape(stdevRaw->ordering(), *meansShape);
   delete meansShape;
   delete stdevRaw;
+
+  // When stdev == 0, replace with 1 to match the forward pass zero-stdev handling.
+  // This prevents Inf in the backward pass when dividing by zero stdev.
+  ExtraArguments zeroStdevBpArgs({0.0, 1.0, 1e-6, 0.0});
+  stdev->applyTransform(transform::SameOps::CompareAndSetTransform, stdev, &zeroStdevBpArgs);
 
   eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, output, false);
 

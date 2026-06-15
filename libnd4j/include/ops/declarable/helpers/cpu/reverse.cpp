@@ -106,36 +106,44 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
 template <typename T>
 static void reverseSequence_(sd::LaunchContext* context, NDArray* input, NDArray* seqLengths,
                              NDArray* output, int seqDim, const int batchDim) {
-  int posOfNonUnityDim = -1;
-  if (input->isVector() || shape::isLikeVector(input->shapeInfo(), posOfNonUnityDim)) {
-    if ((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
-      output->assign(input);
-    else
-      helpers::reverseArray<T>(context, const_cast<NDArray*>(input)->buffer(), const_cast<NDArray*>(input)->shapeInfo(),
-                               output->buffer(), output->shapeInfo(), seqLengths->e<int>(0));
-  } else {
-    if (seqDim > batchDim) --seqDim;
-
-    std::vector<sd::LongType> batchDimVec = {batchDim};
-    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,batchDimVec.data());
-
-    auto inSubArrsSet = input->allTensorsAlongDimension(*dimensions);
-    auto outSubArrsSet = output->allTensorsAlongDimension(*dimensions);
-    delete dimensions;
+  // Simple element-wise copy with reversal along seqDim for each batch element
+  auto inBuf = input->bufferAsT<T>();
+  auto outBuf = output->bufferAsT<T>();
+  sd::LongType totalElements = input->lengthOf();
+  
+  // Calculate strides for seqDim and batchDim
+  sd::LongType seqStride = input->strideAt(seqDim);
+  sd::LongType batchStride = input->strideAt(batchDim);
+  sd::LongType seqSize = input->sizeAt(seqDim);
+  sd::LongType batchSize = input->sizeAt(batchDim);
+  
+  // Iterate over all elements
+  for (sd::LongType i = 0; i < totalElements; ++i) {
+    // Calculate coordinates
+    sd::LongType remaining = i;
+    sd::LongType batchIdx = 0;
+    sd::LongType seqIdx = 0;
     
-    for (int i = 0; i < inSubArrsSet.size(); ++i) {
-      sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(i);
-
-      if (numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
-        outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
-      } else {
-        auto inInnerSet = inSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
-        auto outInnerSet = outSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
-        for (int j = 0; j < inInnerSet.size(); ++j)
-          helpers::reverseArray<T>(context, inInnerSet.at(j)->buffer(), inInnerSet.at(j)->shapeInfo(),
-                                   outInnerSet.at(j)->buffer(), outInnerSet.at(j)->shapeInfo(), numOfElemsToReverse);
-      }
+    // Extract batch and seq indices from linear index
+    for (int d = 0; d < input->rankOf(); ++d) {
+      sd::LongType coord = remaining / input->strideAt(d);
+      remaining -= coord * input->strideAt(d);
+      if (d == batchDim) batchIdx = coord;
+      if (d == seqDim) seqIdx = coord;
     }
+    
+    // Get sequence length for this batch element
+    sd::LongType seqLen = seqLengths->e<sd::LongType>(batchIdx);
+    
+    // Determine output position
+    sd::LongType outSeqIdx = seqIdx;
+    if (seqIdx < seqLen) {
+      outSeqIdx = seqLen - 1 - seqIdx;  // Reverse within sequence
+    }
+    
+    // Calculate output linear index
+    sd::LongType outIdx = i + (outSeqIdx - seqIdx) * seqStride;
+    outBuf[outIdx] = inBuf[i];
   }
 }
 

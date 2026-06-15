@@ -23,6 +23,7 @@
 #include <helpers/shape.h>
 #include <ops/random_ops.h>
 #include <ops/specials_cuda.h>
+#include <system/env_functions.h>
 
 namespace randomOps {
 
@@ -38,7 +39,48 @@ class Choice {
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
                                                 T const *y, sd::LongType const *yShapeBuffer, T *z,
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
-    // ... (CUDA implementation remains unchanged)
+    sd::LongType zLength = shape::length(zShapeBuffer);
+    sd::LongType yLength = shape::length(yShapeBuffer);
+
+    sd::LongType zRank = shape::rank(zShapeBuffer);
+    sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
+    sd::LongType *zStride = shape::stride(zShapeBuffer);
+    sd::LongType yRank = shape::rank(yShapeBuffer);
+    sd::LongType *yShape = shape::shapeOf(yShapeBuffer);
+    sd::LongType *yStride = shape::stride(yShapeBuffer);
+    sd::LongType *xShape = shape::shapeOf(xShapeBuffer);
+    sd::LongType xRank = shape::rank(xShapeBuffer);
+    sd::LongType *xStride = shape::stride(xShapeBuffer);
+    sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int step = blockDim.x * gridDim.x;
+
+    for (sd::LongType e = tid; e < zLength; e += step) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(e, zRank, zShape, coords);
+      sd::LongType zOffset;
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
+      T prob = rng->relativeT<T>(e);
+      T cumProb = (T)0.0f;
+      for (sd::LongType f = 0; f < yLength; f++) {
+        sd::LongType yCoords[SD_MAX_RANK];
+        INDEX2COORDS(f, yRank, yShape, yCoords);
+        sd::LongType yOffset;
+        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+        T relProb = y[yOffset];
+        cumProb += relProb;
+
+        if (prob <= cumProb || f == yLength - 1) {
+          sd::LongType xCoords[SD_MAX_RANK];
+          INDEX2COORDS(f, xRank, xShape, xCoords);
+          sd::LongType xOffset;
+          COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+          z[zOffset] = x[xOffset];
+          break;
+        }
+      }
+    }
   }
 #endif
 
@@ -49,8 +91,8 @@ class Choice {
     sd::LongType yLength = shape::length(yShapeBuffer);
 
     int elementsPerThread = zLength / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::env_maxThreads());
     sd::LongType zRank = shape::rank(zShapeBuffer);
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
@@ -105,7 +147,53 @@ class GaussianDistribution {
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
                                                 T const *y, sd::LongType const *yShapeBuffer, T *z,
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
-    // ... (CUDA implementation remains unchanged)
+    const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
+
+    sd::LongType zLength = shape::length(zShapeBuffer);
+    sd::LongType middle = zLength % 2 + zLength / 2;
+
+    sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
+    const T mean = extraArguments[0];
+    const T stddev = extraArguments[1];
+    const T epsilon = static_cast<T>(1e-5);
+
+    sd::LongType zRank = shape::rank(zShapeBuffer);
+    sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
+    sd::LongType *zStride = shape::stride(zShapeBuffer);
+    sd::LongType yRank = shape::rank(yShapeBuffer);
+    sd::LongType *yShape = shape::shapeOf(yShapeBuffer);
+    sd::LongType *yStride = shape::stride(yShapeBuffer);
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int step = blockDim.x * gridDim.x;
+
+    for (sd::LongType e = tid; e < middle; e += step) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(e, zRank, zShape, coords);
+      sd::LongType zOffset;
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
+      sd::LongType epm = e + middle;
+
+      // we need to get random values
+      T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+      T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
+
+      sd::LongType yOffset;
+      COORDS2INDEX(yRank, yStride, coords, yOffset);
+      T realMean0 = y == z ? mean : y[yOffset];
+
+      z[zOffset] = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
+                    sd::math::sd_cos<T, T>(two_pi * r1)) * stddev + realMean0;
+
+      if (epm < zLength) {
+        INDEX2COORDS(epm, zRank, zShape, coords);
+        COORDS2INDEX(zRank, zStride, coords, zOffset);
+        COORDS2INDEX(yRank, yStride, coords, yOffset);
+        T realMean1 = y == z ? mean : y[yOffset];
+        z[zOffset] = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
+                      sd::math::sd_sin<T, T>(two_pi * r1)) * stddev + realMean1;
+      }
+    }
   }
 #endif
 
@@ -118,8 +206,8 @@ class GaussianDistribution {
     auto middle = zLength % 2 + zLength / 2;
 
     int elementsPerThread = middle / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::env_maxThreads());
 
     sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
     const T mean = extraArguments[0];
@@ -181,7 +269,38 @@ class BinomialDistribution {
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
                                                 T const *y, sd::LongType const *yShapeBuffer, T *z,
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
-    // ... (CUDA implementation remains unchanged)
+    int trials = (int)extraArguments[0];
+    T prob = extraArguments[1];
+
+    sd::LongType zLength = shape::length(zShapeBuffer);
+    sd::LongType zRank = shape::rank(zShapeBuffer);
+    sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
+    sd::LongType *zStride = shape::stride(zShapeBuffer);
+    sd::LongType yRank = shape::rank(yShapeBuffer);
+    sd::LongType *yStride = shape::stride(yShapeBuffer);
+    sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int step = blockDim.x * gridDim.x;
+
+    for (sd::LongType e = tid; e < zLength; e += step) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(e, zRank, zShape, coords);
+      sd::LongType zOffset;
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
+      int success = 0;
+      T localProb = prob;
+      for (int t = 1; t <= trials; t++) {
+        T randVal = rng->relativeT<T>((e + 1) * t);
+        if (y != z) {
+          sd::LongType yOffset;
+          COORDS2INDEX(yRank, yStride, coords, yOffset);
+          localProb = y[yOffset];
+        }
+        if (randVal < localProb) success++;
+      }
+      z[zOffset] = static_cast<T>(success);
+    }
   }
 #endif
 
@@ -193,8 +312,8 @@ class BinomialDistribution {
     sd::LongType zLength = shape::length(zShapeBuffer);
 
     int elementsPerThread = zLength / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::env_maxThreads());
 
     T prob = extraArguments[1];
     sd::LongType zRank = shape::rank(zShapeBuffer);
@@ -247,7 +366,38 @@ class BinomialDistributionEx {
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
                                                 T const *y, sd::LongType const *yShapeBuffer, T *z,
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
-    // ... (CUDA implementation remains unchanged)
+    int trials = (int)extraArguments[0];
+    T prob = extraArguments[1];
+
+    sd::LongType zLength = shape::length(zShapeBuffer);
+    sd::LongType zRank = shape::rank(zShapeBuffer);
+    sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
+    sd::LongType *zStride = shape::stride(zShapeBuffer);
+    sd::LongType yRank = shape::rank(yShapeBuffer);
+    sd::LongType *yStride = shape::stride(yShapeBuffer);
+    sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int step = blockDim.x * gridDim.x;
+
+    for (sd::LongType e = tid; e < zLength; e += step) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(e, zRank, zShape, coords);
+      sd::LongType zOffset;
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
+      int success = 0;
+      T localProb = prob;
+      for (int t = 1; t <= trials; t++) {
+        T randVal = rng->relativeT<T>((e + 1) * t);
+        if (y != z) {
+          sd::LongType yOffset;
+          COORDS2INDEX(yRank, yStride, coords, yOffset);
+          localProb = y[yOffset];
+        }
+        if (randVal < localProb) success++;
+      }
+      z[zOffset] = static_cast<T>(success);
+    }
   }
 #endif
 
@@ -259,8 +409,8 @@ class BinomialDistributionEx {
     sd::LongType zLength = shape::length(zShapeBuffer);
 
     int elementsPerThread = zLength / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::env_maxThreads());
     sd::LongType zRank = shape::rank(zShapeBuffer);
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
@@ -341,7 +491,37 @@ class TruncatedNormalDistribution {
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
                                                 T const *y, sd::LongType const *yShapeBuffer, T *z,
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
-    // ... (CUDA implementation remains unchanged)
+    // First fill with Gaussian
+    GaussianDistribution<T>::specialOpCuda(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+    __syncthreads();
+
+    sd::LongType zLength = shape::length(zShapeBuffer);
+    sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
+    T mean = extraArguments[0];
+    T stddev = extraArguments[1];
+    T ds = sd::math::sd_abs<T, T>(stddev) * (T)2.0f;
+    sd::LongType middle = zLength / 2 + (zLength % 2);
+
+    sd::LongType zRank = shape::rank(zShapeBuffer);
+    sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
+    sd::LongType *zStride = shape::stride(zShapeBuffer);
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int gridStep = blockDim.x * gridDim.x;
+
+    for (sd::LongType e = tid; e < zLength; e += gridStep) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(e, zRank, zShape, coords);
+      sd::LongType zOffset;
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
+
+      if (z[zOffset] > mean + ds || z[zOffset] < mean - ds) {
+        z[zOffset] = step(rng, mean, stddev, e, middle, z[zOffset]);
+        if (z[zOffset] > mean + ds || z[zOffset] < mean - ds) {
+          z[zOffset] = mean + sd::DataTypeUtils::min_positive<T>();
+        }
+      }
+    }
   }
 #endif
 
@@ -356,8 +536,8 @@ class TruncatedNormalDistribution {
     T ds = sd::math::sd_abs<T,T>(stddev) * (T)2.0f;
     sd::LongType middle = zLength / 2 + (zLength % 2);
     int elementsPerThread = middle / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::env_maxThreads());
     sd::LongType zRank = shape::rank(zShapeBuffer);
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
@@ -487,8 +667,16 @@ class LogNormalDistribution {
                                  realMean);
 
       if (epm < zLength) {
-        realMean = y == z ? mean : y[epm + yOffset];
-        z[epm + zOffset] =
+        // Compute proper coordinate-based offsets for epm (not epm + offset-of-e)
+        sd::LongType epmCoords[SD_MAX_RANK];
+        sd::LongType yEpmOffset;
+        sd::LongType zEpmOffset;
+        INDEX2COORDS(epm, yRank, yShape, epmCoords);
+        COORDS2INDEX(yRank, yStride, epmCoords, yEpmOffset);
+        INDEX2COORDS(epm, zRank, zShape, epmCoords);
+        COORDS2INDEX(zRank, zStride, epmCoords, zEpmOffset);
+        realMean = y == z ? mean : y[yEpmOffset];
+        z[zEpmOffset] =
             sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                                     sd::math::sd_sin<T, T>(two_pi * r1)) *
                                        stddev +
@@ -507,8 +695,8 @@ class LogNormalDistribution {
     auto middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
 
     int elementsPerThread = middle / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::env_maxThreads());
 
     auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
 
@@ -551,7 +739,7 @@ class LogNormalDistribution {
         if (epm < zLength) {
           INDEX2COORDS(epm,zRank, zShape, coords);
           COORDS2INDEX(zRank, zStride, coords, zOffset);
-          COORDS2INDEX(yRank, yShape, coords, yOffset);
+          COORDS2INDEX(yRank, yStride, coords, yOffset);
           realMean = y == z ? mean : y[yOffset];
           z[zOffset] =
               sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *

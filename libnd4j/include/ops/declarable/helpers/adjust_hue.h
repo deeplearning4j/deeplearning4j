@@ -37,8 +37,8 @@ SD_INLINE SD_HOST_DEVICE void rgbToHsv(const T& r, const T& g, const T& b, T& h,
   // h values are in range [0, 360)
   // s and v values are in range [0, 1]
 
-  const T max = math::sd_max<T>(r, math::sd_max<T>(g, b));
-  const T min = math::sd_min<T>(r, math::sd_min<T>(g, b));
+  const T max = math::sd_max(r, math::sd_max(g, b));
+  const T min = math::sd_min(r, math::sd_min(g, b));
   const T c = max - min;
   const T _p6 = (T)1 / (T)6;
   // calculate h

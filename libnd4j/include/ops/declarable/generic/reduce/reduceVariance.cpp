@@ -20,7 +20,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 04.06.2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/reductions.h>
 #if NOT_EXCLUDED(OP_reduce_variance)
@@ -38,6 +38,11 @@ CUSTOM_OP_IMPL(reduce_variance, -1, 1, false, 0, 0) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input unchanged)
+    if (dimensions.empty()) {
+      output->assign(input);
+      return sd::Status::OK;
+    }
   }
 
   if (block.getBArguments()->size()) {
@@ -65,9 +70,14 @@ CUSTOM_OP_IMPL(reduce_variance, -1, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(reduce_variance) {
   bool keepDims = false;  // block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
   auto dimensions = *block.getIArguments();
+  auto in0 = inputShape->at(0);
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(in0), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input shape unchanged)
+    if (dimensions.empty()) {
+      return SHAPELIST(CONSTANT(inputShape->at(0)));
+    }
   }
 
   if (block.getBArguments()->size()) {
@@ -77,7 +87,7 @@ DECLARE_SHAPE_FN(reduce_variance) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= static_cast<size_t>(INPUT_VARIABLE(0)->rankOf()), 0,
+      dimensions.size() <= static_cast<size_t>(shape::rank(in0)), 0,
       "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -94,7 +104,7 @@ DECLARE_SHAPE_FN(reduce_variance) {
 }
 
 DECLARE_TYPES(reduce_variance) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS})->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -154,13 +164,12 @@ CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
     auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
     auto grad0Shape = ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims);
     auto* reshaped = !gradO->isScalar() ? gradO->reshape(gradO->ordering(), grad0Shape) : gradO;  // for example could be something like [a,b] -> [1,a,1,b];
-    *gradI *= (*reshaped);  // for example could be something like [a,b] -> [1,a,1,b]
-    //reshape can vary and may have the same buffer as the original
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), reshaped, gradI);
     if(reshaped != gradO && reshaped->buffer() != gradO->buffer() && reshaped->specialBuffer() != gradI->specialBuffer())
       delete reshaped;
 
   } else {
-    *gradI *= (*gradO);  // automatic broadcasting happens here
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
   }
   return sd::Status::OK;
 }

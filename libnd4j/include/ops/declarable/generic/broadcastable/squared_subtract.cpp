@@ -21,9 +21,10 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_squaredsubtract)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {
@@ -34,6 +35,12 @@ BROADCASTABLE_OP_IMPL(squaredsubtract, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
 
   BROADCAST_CHECK_EMPTY(x, y, z);
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::SquaredSubtract, y, z, nullptr);
+    return Status::OK;
+  }
 
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(SquaredSubtract), x, y, z);
   if (tZ == nullptr)
@@ -50,7 +57,8 @@ DECLARE_TYPES(squaredsubtract) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, INHERIT);
+      ->setAllowedOutputTypes(0, INHERIT)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {

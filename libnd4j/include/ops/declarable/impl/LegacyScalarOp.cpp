@@ -36,7 +36,7 @@ LegacyScalarOp::LegacyScalarOp(int opNum) : LegacyOp(1, opNum) {
 LegacyOp *LegacyScalarOp::clone() { return new LegacyScalarOp(this->_opNum, *this->_scalar); }
 
 LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar) : LegacyOp(1, opNum) {
-  _scalar = new NDArray(scalar.dup(scalar.ordering(), false));
+  _scalar = scalar.dup(scalar.ordering(), false);
 }
 
 ShapeList *LegacyScalarOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
@@ -55,7 +55,6 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
   int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
   ExtraArguments extras(*block.getTArguments());
-  PointersManager manager(block.launchContext(), "LegacyScalarOp");
 
   if (block.width() > 1) {
     auto y = INPUT_VARIABLE(1);
@@ -69,10 +68,32 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
 
     NDArray::registerSpecialUse({z}, {x, y});
   } else if (block.getTArguments()->size() > 0) {
-    auto y = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
+    // Cache the scalar NDArray in _scalar to avoid creating and destroying a
+    // temporary on every call.  During CUDA graph capture the kernel records
+    // the device address of the scalar buffer; if that buffer is freed before
+    // replay the graph reads stale/garbage memory for the scalar value.
+    // Caching keeps the buffer alive for the entire op lifetime, which covers
+    // both capture and all subsequent replays.
+    double scalarVal = T_ARG(0);
+    auto xDt = x->dataType();
+    if (_scalar == nullptr || !_cachedScalarValid ||
+        _cachedScalarType != xDt || _cachedScalarValue != scalarVal) {
+      delete _scalar;
+      _scalar = NDArrayFactory::create(xDt, scalarVal, block.launchContext());
+      _cachedScalarValid = true;
+      _cachedScalarValue = scalarVal;
+      _cachedScalarType = xDt;
+    }
 
-    x->applyScalarArr(static_cast<scalar::Ops>(opNum), &y, z);
-    manager.synchronize();
+    NDArray::prepareSpecialUse({z}, {x, _scalar});
+
+    NativeOpExecutioner::execScalar(
+        block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(),
+        _scalar->specialBuffer(), _scalar->specialShapeInfo(),
+        extras.length() > 1 ? extras.argumentsAsT(z->dataType(), 1) : nullptr);
+
+    NDArray::registerSpecialUse({z}, {x, _scalar});
   } else {
     NDArray::prepareSpecialUse({z}, {x, _scalar});
 

@@ -25,7 +25,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_resize_bicubic)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/images.h>
 #include <ops/declarable/helpers/image_resize.h>
 
 namespace sd {
@@ -110,12 +110,12 @@ DECLARE_SHAPE_FN(resize_bicubic) {
   int width;
   int height;
   auto newImageSize = INPUT_VARIABLE(1);
-  REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_bicubic: Resize params is a pair of values, not %i.",
-               newImageSize->lengthOf());
+  REQUIRE_TRUE(shape::length(inputShape->at(1)) == 2, 0, "resize_bicubic: Resize params is a pair of values, not %i.",
+               shape::length(inputShape->at(1)));
   REQUIRE_TRUE(block.numI() <= 1, 0,
                "resize_bicubic: Resize params already given by the second param. Int params are expensive.");
-  width = newImageSize->e<int>(0);
-  height = newImageSize->e<int>(1);
+  height = newImageSize->e<int>(0);
+  width = newImageSize->e<int>(1);
 
   REQUIRE_TRUE(inRank == 4 || inRank == 3, 0, "resize_bicubic: Source tensor should have rank 4, but %i given.",
                inRank);
@@ -124,12 +124,12 @@ DECLARE_SHAPE_FN(resize_bicubic) {
   outputShape[0] = inRank;
   if (inRank == 4) {
     outputShape[1] = in[1];
-    outputShape[2] = width;
-    outputShape[3] = height;
+    outputShape[2] = height;
+    outputShape[3] = width;
     outputShape[4] = in[4];
   } else {
-    outputShape[1] = width;
-    outputShape[2] = height;
+    outputShape[1] = height;
+    outputShape[2] = width;
     outputShape[3] = in[3];
   }
   ShapeUtils::updateStridesAndType(outputShape, FLOAT32, shape::order(in));

@@ -18,7 +18,8 @@
 // @author AbdelRauf
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <array/NDArrayFactory.h>
+#include <ops/declarable/headers/loss.h>
 #include <ops/declarable/helpers/ctc.h>
 #include <system/op_boilerplate.h>
 

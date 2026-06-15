@@ -27,8 +27,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_xw_plus_b)
 
-#include <helpers/MmulHelper.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
+#include <ops/declarable/headers/blas.h>
 #include <ops/declarable/helpers/matmul.h>
 
 namespace sd {
@@ -44,6 +44,26 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
 
   if (x->isEmpty() || w->isEmpty() || b->isEmpty()) return Status::OK;
+
+  // Auto-cast to matching dtype if inputs differ (same as tensormmul behavior).
+  NDArray* xCast = nullptr;
+  NDArray* wCast = nullptr;
+  NDArray* bCast = nullptr;
+  if (x->dataType() != w->dataType()) {
+    auto higherType = DataTypeUtils::pickPairwiseResultType(x->dataType(), w->dataType());
+    if (x->dataType() != higherType) {
+      xCast = x->cast(higherType);
+      x = xCast;
+    }
+    if (w->dataType() != higherType) {
+      wCast = w->cast(higherType);
+      w = wCast;
+    }
+  }
+  if (b->dataType() != x->dataType()) {
+    bCast = b->cast(x->dataType());
+    b = bCast;
+  }
 
   // Handle higher rank inputs by reshaping to 2D for matmul
   // This supports inputs like [batch, 1, 1, hidden] from ONNX pooler operations
@@ -68,11 +88,11 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
     sd::LongType inputLastDim = x->sizeAt(-1);
     sd::LongType outputLastDim = z->sizeAt(-1);
 
-    // Reshape to 2D - these create new NDArray objects
+    // Reshape to 2D - create views (not copies) so matmul writes into the original buffer
     std::vector<sd::LongType> xShape2D = {batchSize, inputLastDim};
     std::vector<sd::LongType> zShape2D = {batchSize, outputLastDim};
-    xEffective = x->reshape('c', xShape2D);
-    zEffective = z->reshape('c', zShape2D);
+    xEffective = x->reshape('c', xShape2D, false);
+    zEffective = z->reshape('c', zShape2D, false);
     deleteX = true;
     deleteZ = true;
   } else {
@@ -113,7 +133,11 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
                zEffective->rankOf());
 
   // Perform matrix multiplication: z = x @ w
-  MmulHelper::mmul(xEffective, wEffective, zEffective, 1.0, 0.0);
+  // Use ops::matmul to leverage OneDNN platform helper for acceleration.
+  // Transposes were ALREADY applied to xEffective/wEffective above (lines 84-103),
+  // so matmul must see {0, 0} — passing the original flags would double-transpose.
+  matmul mmulOp;
+  mmulOp.execute({xEffective, wEffective}, {zEffective}, {}, {0, 0}, {});
 
   // Add bias - ALWAYS as a row vector since output is [batch, features]
   // The bias vector has shape [features] and should broadcast across the batch dimension
@@ -137,6 +161,9 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   if (deleteW) delete wEffective;
   if (deleteX) delete xEffective;
   if (deleteZ) delete zEffective;
+  delete xCast;
+  delete wCast;
+  delete bCast;
 
   return Status::OK;
 }
@@ -148,46 +175,39 @@ DECLARE_SHAPE_FN(xw_plus_b) {
   bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
   bool cTranspose = (block.getIArguments()->size() > 2 ? INT_ARG(2) == 1 : false);
 
-  int nWeightsFormat = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
-
-  auto weightsShape =
-      (1 == nWeightsFormat) ? ShapeUtils::evalTransposeShapeInfo(*weights, block.getWorkspace()) : inputShape->at(1);
+  const LongType* weightsShape = inputShape->at(1);
+  auto outType = DataTypeUtils::pickPairwiseResultType(ArrayOptions::dataType(xShape),
+                                                       ArrayOptions::dataType(weightsShape));
 
   // Handle higher rank inputs
   if (shape::rank(xShape) > 2) {
-    // Calculate 2D shapes for matmul
     sd::LongType batchSize = 1;
     for (int i = 0; i < shape::rank(xShape) - 1; i++) {
       batchSize *= shape::sizeAt(xShape, i);
     }
     sd::LongType lastDim = shape::sizeAt(xShape, shape::rank(xShape) - 1);
-    
-    // Create temporary 2D shape for x
+
     std::vector<sd::LongType> x2dShape = {batchSize, lastDim};
-    auto x2dShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShape), 
-                                                                         'c', x2dShape);
-    
-    // Get the output shape from matmul
-    auto matmulOutput = ShapeUtils::matrixProductShape(x2dShapeInfo, const_cast<sd::LongType *>(weightsShape), 
+    auto x2dShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(outType, 'c', x2dShape);
+
+    auto matmulOutput = ShapeUtils::matrixProductShape(x2dShapeInfo, const_cast<sd::LongType *>(weightsShape),
                                                        aTranspose, bTranspose,
-                                                       ArrayOptions::dataType(xShape), block.getWorkspace());
-    
-    // Calculate final output shape
+                                                       outType, block.getWorkspace());
+
     std::vector<sd::LongType> outputShape;
     for (int i = 0; i < shape::rank(xShape) - 1; i++) {
       outputShape.push_back(shape::sizeAt(xShape, i));
     }
-    // Add the output dimension from the weights
     outputShape.push_back(shape::sizeAt(matmulOutput, 1));
-    
-    auto finalShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShape), 
-                                                                         'c', outputShape);
+
+    auto finalShape = ConstantShapeHelper::getInstance().createShapeInfo(outType, 'c', outputShape);
     return SHAPELIST(finalShape);
   } else {
-    // Original behavior for rank 2 inputs
-    auto outputShape = ShapeUtils::matrixProductShape(xShape, const_cast<sd::LongType *>(weightsShape), aTranspose,
+    auto matmulOutput = ShapeUtils::matrixProductShape(xShape, const_cast<sd::LongType *>(weightsShape), aTranspose,
                                                       bTranspose,
-                                                      ArrayOptions::dataType(xShape), block.getWorkspace());
+                                                      outType, block.getWorkspace());
+    std::vector<sd::LongType> outDims = {shape::sizeAt(matmulOutput, 0), shape::sizeAt(matmulOutput, 1)};
+    auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(outType, 'c', outDims);
     return SHAPELIST(outputShape);
   }
 }
@@ -200,13 +220,13 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
 
   bool aTranspose = (block.getIArguments()->size() > 0 ? INT_ARG(0) == 1 : false);
   bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
-  auto x = aTranspose ? INPUT_VARIABLE(0)->transpose() : INPUT_VARIABLE(0);  // transpose() already returns NDArray*
+  auto x = aTranspose ? INPUT_VARIABLE(0)->transpose() : INPUT_VARIABLE(0);
   auto b = INPUT_VARIABLE(2);
   auto dLdz = INPUT_VARIABLE(3);
 
   if (x->isEmpty() || INPUT_VARIABLE(1)->isEmpty() || b->isEmpty() || dLdz->isEmpty()) return Status::OK;
 
-  auto w = bTranspose ? INPUT_VARIABLE(1)->transpose() : INPUT_VARIABLE(1);  // transpose() already returns NDArray*
+  auto w = bTranspose ? INPUT_VARIABLE(1)->transpose() : INPUT_VARIABLE(1);
 
   REQUIRE_TRUE(x->rankOf() == 2, 0, "xw_plus_b BP: Input x array should have rank equal 2, but got instead %i!",
                x->rankOf());
@@ -215,10 +235,10 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
   REQUIRE_TRUE(dLdz->rankOf() == 2, 0, "xw_plus_b BP: Output array should have rank equal 2, but got instead %i!",
                dLdz->rankOf());
 
-  auto dLdx = aTranspose ? OUTPUT_VARIABLE(0)->transpose() : OUTPUT_VARIABLE(0);  // transpose() already returns NDArray*
+  auto dLdx = aTranspose ? OUTPUT_VARIABLE(0)->transpose() : OUTPUT_VARIABLE(0);
   auto dLdb = OUTPUT_VARIABLE(2);
 
-  auto dLdw = (bTranspose) ? OUTPUT_VARIABLE(1)->transpose() : OUTPUT_VARIABLE(1);  // transpose() already returns NDArray*
+  auto dLdw = (bTranspose) ? OUTPUT_VARIABLE(1)->transpose() : OUTPUT_VARIABLE(1);
 
   // dLdb - reduceAlongDimension returns pointer
   std::vector<LongType> dims({0});
@@ -228,13 +248,6 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
 
   matmul_bp mmul_bp;
   mmul_bp.execute({x, w, dLdz}, std::vector<NDArray*>{dLdx, dLdw}, {}, {}, {});
-
-  // Transpose views are managed by parent arrays - no deletion needed
-  // x is from INPUT_VARIABLE(0)->transpose() if aTranspose
-  // w is from INPUT_VARIABLE(1)->transpose() if bTranspose
-  // dLdx is from OUTPUT_VARIABLE(0)->transpose() if aTranspose
-  // dLdw is from OUTPUT_VARIABLE(1)->transpose() if bTranspose
-  // All are views managed by their parent arrays
 
   return Status::OK;
 }

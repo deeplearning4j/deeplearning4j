@@ -22,7 +22,7 @@
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_sqrtm)
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/blas.h>
 #include <ops/declarable/helpers/sqrtm.h>
 
 namespace sd {

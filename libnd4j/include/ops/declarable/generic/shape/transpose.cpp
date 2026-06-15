@@ -25,7 +25,7 @@
 #if NOT_EXCLUDED(OP_transpose)
 
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
 
 namespace sd {
 namespace ops {
@@ -44,8 +44,8 @@ CUSTOM_OP_IMPL(transpose, 1, 1, false, 0, 0) {
   NDArray* castedPermute = nullptr;
   std::vector<LongType> permutationVector;
   if (block.width() > 1) {
-    castedPermute = INPUT_VARIABLE(1)->cast(INT64);
-    permutationVector = castedPermute->asVectorT<LongType>();
+    // Read permutation indices using bulk host sync — avoids per-element GPU->CPU copies.
+    permutationVector = ShapeUtils::readIntParams(INPUT_VARIABLE(1));
   } else {
     permutationVector = *block.getIArguments();
   }
@@ -91,7 +91,13 @@ DECLARE_SHAPE_FN(transpose) {
 
   if(rank < 1)
     return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(x->dataType()));
-  std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->cast(INT64)->asVectorT<LongType>() : *block.getIArguments();
+  std::vector<LongType> permutationVector;
+  if (block.width() > 1) {
+    // Read permutation indices using bulk host sync — avoids per-element GPU->CPU copies.
+    permutationVector = ShapeUtils::readIntParams(INPUT_VARIABLE(1));
+  } else {
+    permutationVector = *block.getIArguments();
+  }
 
   if (permutationVector.size() == 0) {
     auto temp = ShapeUtils::evalTransposeShapeInfo(*x, nullptr, true);
@@ -118,12 +124,19 @@ DECLARE_SHAPE_FN(transpose) {
   }
 
 
-  //note: do not deallocate this buffer. they are kept around.
-  auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, true);
   if(x->isEmpty()) {
+    // For empty arrays, create shape with ARRAY_EMPTY flag set
+    auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, false);
     ArrayOptions::setPropertyBit(permEvalShapeInfo, ARRAY_EMPTY);
+    auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(permEvalShapeInfo)->primary();
+    RELEASE(permEvalShapeInfo, nullptr);
+    return SHAPELIST(ret);
   }
-  auto ret = CONSTANT(permEvalShapeInfo);
+
+  // Non-empty case: use cached shape directly
+  auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, true);
+  auto ret = ConstantShapeHelper::getInstance().createFromExisting(permEvalShapeInfo);
+  RELEASE(permEvalShapeInfo, nullptr);
   return SHAPELIST(ret);
 }
 

@@ -37,7 +37,7 @@ static void histogram_(void const *xBuffer, sd::LongType const *xShapeInfo, void
 
   // FIXME: this op should be parallelized
   {
-    int *bins = new int[numBins];
+    int *bins = new int[numBins + SD_SHAPE_ALLOC_PADDING]();
     std::memset(bins, 0, sizeof(int) * numBins);
 
     PRAGMA_OMP_SIMD

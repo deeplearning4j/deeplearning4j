@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_thresholdedrelu)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/activations.h>
 #include <ops/declarable/helpers/activations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 namespace sd {
@@ -59,8 +59,8 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
 DECLARE_TYPES(thresholdedrelu_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
-      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 }  // namespace ops

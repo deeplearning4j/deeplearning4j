@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_zero_fraction)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 
 namespace sd {
 namespace ops {
@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(zero_fraction, 1, 1, false, 0, 0) {
   return Status::OK;
 }
 DECLARE_SHAPE_FN(zero_fraction) {
-  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::DOUBLE));
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::FLOAT32));
 }
 
 DECLARE_TYPES(zero_fraction) {

@@ -29,7 +29,7 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(random_bernoulli, 1, 1, true, 1, 0) {
-  auto rng = block.getRng();
+  auto& rng = block.randomGenerator();
   auto z = OUTPUT_VARIABLE(0);
   auto f = T_ARG(0);
 
@@ -41,8 +41,10 @@ CUSTOM_OP_IMPL(random_bernoulli, 1, 1, true, 1, 0) {
 DECLARE_SHAPE_FN(random_bernoulli) {
   auto in = INPUT_VARIABLE(0);
   auto shape = in->template asVectorT<LongType>();
-
-  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
+  // Input[0] is the shape descriptor (may be INT or FLOAT), not the value dtype.
+  // Use D arg if explicitly provided; otherwise default to FLOAT32.
+  auto dtype = block.getDArguments()->size() > 0 ? D_ARG(0) : FLOAT32;
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
   return SHAPELIST(newShape);
 }
 

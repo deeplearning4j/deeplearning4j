@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_maximum)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/helpers/minimax.h>
 namespace sd {
@@ -34,6 +34,22 @@ BROADCASTABLE_OP_IMPL(maximum, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
 
   BROADCAST_CHECK_EMPTY(x, y, z);
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::MaxPairwise, y, z, nullptr);
+    return Status::OK;
+  }
+
+  // Fast path: scalar broadcast - common for clamping (e.g., maximum(x, 0))
+  if (y->isScalar()) {
+    x->applyScalarArr(scalar::MaxPairwise, y, z);
+    return Status::OK;
+  }
+  if (x->isScalar()) {
+    y->applyScalarArr(scalar::MaxPairwise, x, z);
+    return Status::OK;
+  }
 
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(MaxPairwise), x, y, z);
   if (tZ == nullptr)
@@ -49,7 +65,8 @@ DECLARE_TYPES(maximum) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, INHERIT);
+      ->setAllowedOutputTypes(0, INHERIT)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(maximum_bp) {

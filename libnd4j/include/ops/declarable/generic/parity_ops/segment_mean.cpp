@@ -20,9 +20,10 @@
 // Created by george@skymind.io on 2/21/2018.
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/segment.h>
 #if NOT_EXCLUDED(OP_segment_mean)
+#include <array/NDArrayFactory.h>
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(segment_mean, 2, 1, false, 0, 0) {
@@ -56,7 +57,7 @@ DECLARE_SHAPE_FN(segment_mean) {
   auto in = inputShape->at(0);
   LongType outRank = shape::rank(in);
   LongType* outputShape = nullptr;
-  LongType val = (*idxVector).e<LongType>(idxVector->lengthOf() - 1);
+  LongType val = (*idxVector).e<LongType>(shape::length(inputShape->at(1)) - 1);
 
   LongType numOfClasses = val + 1;
 
@@ -101,5 +102,6 @@ DECLARE_TYPES(segment_mean_bp) {
       ->setSameMode(false);
 }
 }  // namespace ops
+#include <array/NDArrayFactory.h>
 }  // namespace sd
 #endif

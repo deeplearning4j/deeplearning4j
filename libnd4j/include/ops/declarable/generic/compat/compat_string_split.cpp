@@ -23,11 +23,13 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_split_string)
 
+#include <array/NDArrayFactory.h>
 #include <helpers/StringUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/compat.h>
 
 namespace sd {
 namespace ops {
+
 CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto delim = INPUT_VARIABLE(1);

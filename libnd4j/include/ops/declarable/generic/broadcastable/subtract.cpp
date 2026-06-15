@@ -23,8 +23,9 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_subtract)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
+#include <ops/declarable/helpers/broadcastableFused.h>
 
 namespace sd {
 namespace ops {
@@ -35,13 +36,85 @@ BROADCASTABLE_OP_IMPL(subtract, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
+  // When input types differ, cast to output type to avoid type-punning in kernels
+  NDArray *castX = nullptr, *castY = nullptr;
+  auto cleanupCasts = [&]() { delete castX; delete castY; };
+  if (x->dataType() != z->dataType()) {
+    castX = x->cast(z->dataType());
+    x = castX;
+  }
+  if (y->dataType() != z->dataType()) {
+    castY = y->cast(z->dataType());
+    y = castY;
+  }
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    // Ultra-fast path for contiguous same-shape arrays
+    const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo()) && !shape::isViewConst(x->shapeInfo());
+    const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo()) && !shape::isViewConst(y->shapeInfo());
+    const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo()) && !shape::isViewConst(z->shapeInfo());
+
+    if (xContiguous && yContiguous && zContiguous) {
+      helpers::fusedSubtractContiguous(*x, *y, *z);
+      cleanupCasts();
+      return Status::OK;
+    }
+
+    x->applyPairwiseTransform(pairwise::Subtract, y, z, nullptr);
+    cleanupCasts();
+    return Status::OK;
+  }
+
+  // Fast path: scalar or effectively-scalar (length 1) broadcast
+  const auto xLen = x->lengthOf();
+  const auto yLen = y->lengthOf();
+
+  if (yLen == 1) {
+    x->applyScalarArr(scalar::Subtract, y, z);
+    cleanupCasts();
+    return Status::OK;
+  }
+  if (xLen == 1) {
+    // x - y where x is scalar: use ReverseSubtract
+    y->applyScalarArr(scalar::ReverseSubtract, x, z);
+    cleanupCasts();
+    return Status::OK;
+  }
+
+  // Fast path: 1D-like array broadcast along last dimension
+  const auto xRank = x->rankOf();
+  const auto yRank = y->rankOf();
+
+  if (xRank > 1 && yLen == x->sizeAt(-1)) {
+    bool compatible = true;
+    for (int i = 0; i < yRank - 1; i++) {
+      if (y->sizeAt(i) != 1) { compatible = false; break; }
+    }
+    if (compatible && (yRank == 1 || y->sizeAt(-1) == x->sizeAt(-1))) {
+      std::vector<sd::LongType> dims = {xRank - 1};
+      if (yRank > 1) {
+        std::vector<sd::LongType> yShape = {yLen};
+        auto yReshaped = y->reshape(y->ordering(), yShape, false);
+        x->applyBroadcast(broadcast::Subtract, &dims, yReshaped, z);
+        delete yReshaped;
+      } else {
+        x->applyBroadcast(broadcast::Subtract, &dims, y, z);
+      }
+      cleanupCasts();
+      return Status::OK;
+    }
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Subtract(), x, y, z);
-  if (tZ == nullptr)
+  if (tZ == nullptr) {
+    cleanupCasts();
     return Status::KERNEL_FAILURE;
-  else if (tZ != z) {
+  } else if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
+  cleanupCasts();
   return Status::OK;
 }
 DECLARE_SYN(Sub, subtract);
@@ -51,7 +124,8 @@ DECLARE_TYPES(subtract) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, INHERIT);
+      ->setAllowedOutputTypes(0, INHERIT)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(subtract_bp, 3, 2, false, 0, 0) {

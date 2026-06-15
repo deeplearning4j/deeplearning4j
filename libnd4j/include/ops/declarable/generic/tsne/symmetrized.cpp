@@ -21,9 +21,10 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_barnes_symmetrized)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/BarnesHutTsne.h>
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
 namespace sd {
@@ -73,7 +74,6 @@ DECLARE_SHAPE_FN(barnes_symmetrized) {
   LongType len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
   rowCounts->syncToHost();
   if (len <= 0) {
-    // CRITICAL: Clean up allocated array before throwing exception to prevent memory leak
     delete rowCounts;
     THROW_EXCEPTION("barnes_symmetrized: Cannot allocate shape due non-positive len.");
   }

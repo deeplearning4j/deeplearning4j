@@ -24,7 +24,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_gruCell)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/recurrent.h>
 #include <ops/declarable/helpers/gru.h>
 
 namespace sd {

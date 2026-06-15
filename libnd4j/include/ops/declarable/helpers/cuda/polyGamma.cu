@@ -39,37 +39,39 @@ SD_KERNEL static void polyGammaCuda(const void *vn, const LongType *nShapeInfo, 
   auto z = reinterpret_cast<T *>(vz);
 
   __shared__ LongType len;
-  __shared__ bool sameOffsetNX, sameOffsetNZ;
+  __shared__ LongType nRank, xRank, zRank;
+  __shared__ const LongType *nShape, *nStride, *xShape, *xStride, *zShape, *zStride;
 
   if (threadIdx.x == 0) {
     len = shape::length(nShapeInfo);
-    sameOffsetNX = shape::haveSameShapeAndStrides(xShapeInfo, nShapeInfo);
-    sameOffsetNZ = shape::haveSameShapeAndStrides(zShapeInfo, nShapeInfo);
+    nRank = shape::rank(nShapeInfo);
+    nShape = shape::shapeOf(nShapeInfo);
+    nStride = shape::stride(nShapeInfo);
+    xRank = shape::rank(xShapeInfo);
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto totalThreads = gridDim.x * blockDim.x;
 
+  LongType nCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
+
   for (LongType i = tid; i < len; i += totalThreads) {
     LongType nOffset, xOffset, zOffset;
 
-    // Compute offsets for n
-    nOffset = i * (sameOffsetNX ? 0 : shape::stride(nShapeInfo)[0]);
+    INDEX2COORDS(i, nRank, nShape, nCoords);
+    COORDS2INDEX(nRank, nStride, nCoords, nOffset);
 
-    // Compute offsets for x
-    if (sameOffsetNX) {
-      xOffset = nOffset;
-    } else {
-      xOffset = i * shape::stride(xShapeInfo)[0];
-    }
+    INDEX2COORDS(i, xRank, xShape, xCoords);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
 
-    // Compute offsets for z
-    if (sameOffsetNZ) {
-      zOffset = nOffset;
-    } else {
-      zOffset = i * shape::stride(zShapeInfo)[0];
-    }
+    INDEX2COORDS(i, zRank, zShape, zCoords);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
     const T order = n[nOffset];
     const int sign = ((static_cast<int>(order) + 1) % 2 == 0) ? 1 : -1;

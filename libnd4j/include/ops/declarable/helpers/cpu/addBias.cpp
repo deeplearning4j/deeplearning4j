@@ -28,6 +28,7 @@
 #include <execution/Threads.h>
 #include <helpers/LoopsCoordsHelper.h>
 #include <ops/declarable/helpers/addBias.h>
+#include <system/env_functions.h>
 #include <exceptions/datatype_exception.h>
 
 #include <cmath>
@@ -743,7 +744,25 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
   }
 
   if (same_order && same_stride) {
-    isContinuous = shape::elementWiseStride(x_shapeInfo) == 1 && shape::elementWiseStride(z_shapeInfo) == 1;
+    // Check contiguity by verifying strides match C-order pattern
+    bool xContiguous = true;
+    bool zContiguous = true;
+    sd::LongType expectedStride = 1;
+    for (int i = rank - 1; i >= 0; --i) {
+      if (bases[i] == 1) continue;
+      if (x_strides[i] != expectedStride) { xContiguous = false; break; }
+      expectedStride *= bases[i];
+    }
+    if (xContiguous) {
+      expectedStride = 1;
+      for (int i = rank - 1; i >= 0; --i) {
+        if (z_strides[i] == 0 && bases[i] > 1) { zContiguous = false; break; }
+        if (bases[i] == 1) continue;
+        if (z_strides[i] != expectedStride) { zContiguous = false; break; }
+        expectedStride *= bases[i];
+      }
+    }
+    isContinuous = xContiguous && zContiguous;
   }
 
   bool treat_as_lastC = false;
@@ -823,7 +842,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
       if (isContinuous) {
         // we can choose other inc and index for that case
         // but for now lets choose all till the last one
-        sd::LongType req_numThreads = sd::Environment::getInstance().maxMasterThreads();
+        sd::LongType req_numThreads = sd::env_maxMasterThreads();
         isContinuous = false;
         if (rank > 2) {
           if (req_numThreads < 2 || bases[rank - 1] >= req_numThreads) {
@@ -961,7 +980,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
     if (order == 'c' && isContinuous) {
       // sometimes last dimension is too big and multithreading could suffer using unfair partitioning
       // so we will do it only when inc is smaller our value or multithreading turned off
-      sd::LongType req_numThreads = sd::Environment::getInstance().maxMasterThreads();
+      sd::LongType req_numThreads = sd::env_maxMasterThreads();
       if (req_numThreads < 2 || numNC >= static_cast<size_t>(req_numThreads)  || inc <= 2 * 8196 || rank == 3) {
         inc = numHW;
       } else {

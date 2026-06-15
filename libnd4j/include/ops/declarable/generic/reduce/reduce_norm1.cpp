@@ -21,7 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 
 namespace sd {
@@ -72,7 +72,7 @@ DECLARE_SHAPE_FN(reduce_norm1) {
   std::vector<sd::LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
 
@@ -92,7 +92,7 @@ DECLARE_SHAPE_FN(reduce_norm1) {
 }
 
 DECLARE_TYPES(reduce_norm1) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS})->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 #if NOT_EXCLUDED(OP_reduce_norm1_bp)
@@ -144,10 +144,12 @@ CUSTOM_OP_IMPL(reduce_norm1_bp, -1, 1, false, 0, 0) {
         gradOShapeKeepDims);
     auto reshaped = gradO->reshape(gradO->ordering(),
                                    shape);
-    *gradI *= *reshaped;  // for example could be something like [a,b] -> [1,a,1,b]
-    delete reshaped;
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), reshaped, gradI);
+    if (reshaped != nullptr && !reshaped->isView()) {
+      delete reshaped;
+    }
   } else
-    *gradI *= *gradO;
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
 
   return sd::Status::OK;
 }
@@ -156,7 +158,7 @@ DECLARE_SHAPE_FN(reduce_norm1_bp) {
   auto dimensions = *block.getIArguments();
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
   }
 
   REQUIRE_TRUE(

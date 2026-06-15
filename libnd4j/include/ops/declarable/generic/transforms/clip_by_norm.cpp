@@ -21,15 +21,16 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_clipbynorm)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
 namespace ops {
 
-CONFIGURABLE_OP_IMPL(clipbynorm, 1, 1, true, 1, 0) {
+CONFIGURABLE_OP_IMPL(clipbynorm, 1, 1, false, 1, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   if (block.numT() > 0) {

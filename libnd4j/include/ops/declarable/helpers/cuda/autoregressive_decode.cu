@@ -1,0 +1,1091 @@
+/* ******************************************************************************
+ *
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+#include <system/op_boilerplate.h>
+#include <system/env_functions.h>
+#include <helpers/logger.h>
+#include <ops/declarable/helpers/autoregressive_decode.h>
+#include <ops/declarable/helpers/token_sample.h>
+#include <ops/declarable/helpers/kv_scatter.h>
+#include <graph/Context.h>
+#include <graph/NativeDynamicShapePlan.h>
+#include <array/NDArray.h>
+#include <array/NDArrayFactory.h>
+#include <helpers/DebugHelper.h>
+#include <cuda_runtime.h>
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <vector>
+
+#include "execution/cuda/LaunchDims.h"
+
+namespace sd {
+namespace ops {
+namespace helpers {
+
+// ─── CUDA Kernels ────────────────────────────────────────────────────────────
+
+/**
+ * CUDA kernel: look up a single row from the embedding table.
+ *
+ * Given embeddingTable [vocabSize, hidden] and a token ID, copies
+ * embeddingTable[tokenId, :] into outputEmbed [1, 1, hidden].
+ *
+ * One block, blockDim.x threads — each thread copies hidden/blockDim.x elements.
+ */
+template <typename T>
+static SD_KERNEL void embedLookupKernel(const void* vEmbTable,
+                                         void* vOutput,
+                                         LongType tokenId,
+                                         LongType hidden,
+                                         LongType tableRowStride) {
+    auto embTable = reinterpret_cast<const T*>(vEmbTable);
+    auto output = reinterpret_cast<T*>(vOutput);
+
+    LongType baseOffset = tokenId * tableRowStride;
+    for (LongType i = threadIdx.x; i < hidden; i += blockDim.x) {
+        output[i] = embTable[baseOffset + i];
+    }
+}
+
+/**
+ * Launcher for embedLookupKernel — called via BUILD_SINGLE_SELECTOR.
+ */
+template <typename T>
+static void embedLookupLauncher(const cudaStream_t* stream, const void* embTable,
+                                 void* output, LongType tokenId,
+                                 LongType hidden, LongType tableRowStride) {
+    embedLookupKernel<T><<<1, 256, 0, *stream>>>(embTable, output, tokenId, hidden, tableRowStride);
+}
+
+/**
+ * CUDA kernel: update attention mask for the next decode step.
+ *
+ * Sets mask[position] = 1.0 (unmask the new position).
+ * The mask is [1, 1, 1, maxKvLen] for single-token decode.
+ */
+template <typename T>
+static SD_KERNEL void updateAttentionMaskKernel(void* vMask,
+                                                  LongType position,
+                                                  LongType maxKvLen) {
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        auto mask = reinterpret_cast<T*>(vMask);
+        if (position < maxKvLen) {
+            mask[position] = static_cast<T>(1);
+        }
+    }
+}
+
+/**
+ * Launcher for updateAttentionMaskKernel — called via BUILD_SINGLE_SELECTOR.
+ */
+template <typename T>
+static void updateAttentionMaskLauncher(const cudaStream_t* stream,
+                                         void* vMask,
+                                         LongType position,
+                                         LongType maxKvLen) {
+    updateAttentionMaskKernel<T><<<1, 1, 0, *stream>>>(vMask, position, maxKvLen);
+}
+
+/**
+ * CUDA kernel: update position_ids for the next decode step.
+ *
+ * Sets positionIds[0] = newPosition.
+ */
+static SD_KERNEL void updatePositionIdsKernel(void* vPositionIds,
+                                                LongType newPosition) {
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        auto posIds = reinterpret_cast<LongType*>(vPositionIds);
+        posIds[0] = newPosition;
+    }
+}
+
+/**
+ * CUDA kernel: update input_ids for the next decode step.
+ *
+ * Sets inputIds[0] = newTokenId.
+ */
+static SD_KERNEL void updateInputIdsKernel(void* vInputIds,
+                                             LongType newTokenId) {
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        auto inputIds = reinterpret_cast<LongType*>(vInputIds);
+        inputIds[0] = newTokenId;
+    }
+}
+
+/**
+ * CUDA kernel: update causal mask for the next decode step.
+ *
+ * Sets causalMask[position] = 0.0f (unmask the new position).
+ * The causal mask is [1, 1, 1, maskLen] FLOAT for single-token decode,
+ * filled with MASK_FILL (-3.4028235e+38f) for masked positions and 0.0f
+ * for unmasked positions. Each decode step unmasks one more position.
+ */
+template <typename T>
+static SD_KERNEL void updateCausalMaskKernel(void* vMask,
+                                               LongType position,
+                                               LongType maskLen) {
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        auto mask = reinterpret_cast<T*>(vMask);
+        if (position < maskLen) {
+            mask[position] = static_cast<T>(0);
+        }
+    }
+}
+
+/**
+ * Launcher for updateCausalMaskKernel — called via BUILD_SINGLE_SELECTOR.
+ */
+template <typename T>
+static void updateCausalMaskLauncher(const cudaStream_t* stream,
+                                      void* vMask,
+                                      LongType position,
+                                      LongType maskLen) {
+    updateCausalMaskKernel<T><<<1, 1, 0, *stream>>>(vMask, position, maskLen);
+}
+
+/**
+ * CUDA kernel: build initial attention mask from prefill length.
+ *
+ * Sets mask[0..prefillSeqLen-1] = 1, rest stays 0.
+ * Mask is pre-zeroed by the caller.
+ */
+template <typename T>
+static SD_KERNEL void buildInitialMaskKernel(void* vMask, LongType prefillSeqLen, LongType maxKvLen) {
+    LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < prefillSeqLen && idx < maxKvLen) {
+        reinterpret_cast<T*>(vMask)[idx] = static_cast<T>(1);
+    }
+}
+
+/**
+ * Launcher for buildInitialMaskKernel.
+ */
+template <typename T>
+static void buildInitialMaskLauncher(const cudaStream_t* stream, void* vMask,
+                                      LongType prefillSeqLen, LongType maxKvLen) {
+    int threads = 256;
+    int blocks = (prefillSeqLen + threads - 1) / threads;
+    buildInitialMaskKernel<T><<<blocks, threads, 0, *stream>>>(vMask, prefillSeqLen, maxKvLen);
+}
+
+// ─── Argmax helper (greedy decode) ───────────────────────────────────────────
+
+/**
+ * CUDA kernel: find argmax over a float/half row [vocabSize].
+ * Writes the index to output[0] as INT64.
+ *
+ * Block-level reduction using shared memory.
+ */
+template <typename T>
+static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType vocabSize) {
+    extern __shared__ char smem[];
+    auto sMaxVal = reinterpret_cast<T*>(smem);
+    auto sMaxIdx = reinterpret_cast<LongType*>(smem + blockDim.x * sizeof(T));
+
+    auto logits = reinterpret_cast<const T*>(vLogits);
+    auto output = reinterpret_cast<LongType*>(vOutput);
+
+    T localMax = static_cast<T>(-1e30);
+    LongType localIdx = 0;
+
+    for (LongType i = threadIdx.x; i < vocabSize; i += blockDim.x) {
+        T val = logits[i];
+        if (val > localMax) {
+            localMax = val;
+            localIdx = i;
+        }
+    }
+
+    sMaxVal[threadIdx.x] = localMax;
+    sMaxIdx[threadIdx.x] = localIdx;
+    __syncthreads();
+
+    // Reduction
+    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+        if (threadIdx.x < stride) {
+            if (sMaxVal[threadIdx.x + stride] > sMaxVal[threadIdx.x]) {
+                sMaxVal[threadIdx.x] = sMaxVal[threadIdx.x + stride];
+                sMaxIdx[threadIdx.x] = sMaxIdx[threadIdx.x + stride];
+            }
+        }
+        __syncthreads();
+    }
+
+    if (threadIdx.x == 0) {
+        output[0] = sMaxIdx[0];
+    }
+}
+
+/**
+ * Launcher for argmaxKernel — called via BUILD_SINGLE_SELECTOR.
+ */
+template <typename T>
+static void argmaxLauncher(const cudaStream_t* stream, const void* logitsPtr,
+                            void* outputPtr, LongType vocabSize) {
+    int threads = 256;
+    int smemSize = threads * (sizeof(T) + sizeof(LongType));
+    argmaxKernel<T><<<1, threads, smemSize, *stream>>>(logitsPtr, outputPtr, vocabSize);
+}
+
+// ─── Main Implementation ─────────────────────────────────────────────────────
+
+void autoregressiveDecodeCuda(
+    NDArray* prefillEmbeddings,
+    NDArray* embeddingTable,
+    NDArray* inputIds,
+    NDArray* attentionMask,
+    NDArray* positionIds,
+    NDArray** staticKvBuffers,
+    int numKvPairs,
+    NDArray* generatedTokenIds,
+    NDArray* tokenCount,
+    NDArray* timingInfo,
+    int maxNewTokens,
+    int prefillSeqLen,
+    const std::vector<int>& stopTokenIds,
+    double temperature,
+    int topK,
+    double topP,
+    double repPenalty,
+    LaunchContext* context,
+    AutoregressiveDecodeConfig* config) {
+
+    auto stream = context->getCudaStream();
+
+    // Initialize outputs
+    LongType zero = 0;
+    float zeroF = 0.0f;
+    generatedTokenIds->assign(zero);
+    tokenCount->assign(zero);
+    timingInfo->assign(zeroF);
+
+    // Validate that we have a plan to execute — hard error, not silent return.
+    REQUIRE_TRUE(config != nullptr && config->planHandle != nullptr, 0,
+                 "autoregressive_decode: no plan handle provided. "
+                 "The Java side MUST pass a compiled NativeDynamicShapePlan via config->planHandle. "
+                 "config=%p planHandle=%p",
+                 config, config ? config->planHandle : nullptr);
+
+    auto plan = config->planHandle;
+
+    if (env_isVerbose()) {
+        sd_printf("AUTOREGRESSIVE_DECODE_CUDA: ENTERED plan=%p maxNewTokens=%d prefillSeqLen=%d "
+                  "embExtIdx=%d maskExtIdx=%d posExtIdx=%d idsExtIdx=%d causalExtIdx=%d "
+                  "attnReformatExtIdx=%d numKvPairs=%d logitsOutIdx=%d\n",
+                  plan, maxNewTokens, prefillSeqLen,
+                  config->embeddingsExtIdx, config->maskExtIdx, config->posIdsExtIdx,
+                  config->inputIdsExtIdx, config->causalMaskExtIdx,
+                  config->attnMaskReformatExtIdx, numKvPairs, config->logitsOutputIdx);
+    }
+
+    // ── Timing ──
+    std::vector<double> stepTimesMs;
+    stepTimesMs.reserve(maxNewTokens);
+    auto loopStart = std::chrono::high_resolution_clock::now();
+
+    // ── Internal state ──
+    LongType currentPosition = static_cast<LongType>(prefillSeqLen);
+    auto hidden = embeddingTable->sizeAt(1);
+    auto vocabSize = embeddingTable->sizeAt(0);
+    auto embTableRowStride = embeddingTable->strideAt(0);
+
+    // ── Build internal attention mask if not provided ──
+    // Shape: [1, 1, 1, maxKvLen] — single-token decode mask
+    NDArray* internalMask = nullptr;
+    LongType maxKvLen = 0;
+    if (attentionMask != nullptr) {
+        maxKvLen = attentionMask->sizeAt(-1);
+    } else {
+        // Allocate: maxKvLen = prefillSeqLen + maxNewTokens
+        maxKvLen = prefillSeqLen + maxNewTokens;
+        std::vector<LongType> maskShape = {1, 1, 1, maxKvLen};
+        internalMask = NDArrayFactory::create('c', maskShape, DataType::FLOAT32, context);
+        internalMask->assign(zeroF);
+        // Fill prefill positions
+        NDArray::prepareSpecialUse({internalMask}, {});
+        BUILD_SINGLE_SELECTOR(internalMask->dataType(), buildInitialMaskLauncher,
+                              (stream, internalMask->specialBuffer(), prefillSeqLen, maxKvLen),
+                              SD_COMMON_TYPES);
+        NDArray::registerSpecialUse({internalMask}, {});
+        attentionMask = internalMask;
+    }
+
+    // ── Build internal position_ids if not provided ──
+    // Shape: [1, 1] — single-token decode
+    NDArray* internalPosIds = nullptr;
+    if (positionIds == nullptr) {
+        std::vector<LongType> posShape = {1, 1};
+        internalPosIds = NDArrayFactory::create('c', posShape, DataType::INT64, context);
+        internalPosIds->p(0, static_cast<LongType>(prefillSeqLen));
+        positionIds = internalPosIds;
+    }
+
+    // ── Working buffers ──
+    // Reuse prefillEmbeddings (Java's decodeEmbeddings [1,1,hidden]) for embed lookup.
+    // CRITICAL: Do NOT allocate a new NDArray — the CUDA graph was captured with
+    // prefillEmbeddings' device address as the embeddings ext input. Using a new
+    // allocation would change the address, causing externalAddrsMatch() to fail,
+    // which forces fallback to phaseReplay (broken ext input sync → degenerate output).
+    NDArray* decodeEmbedding = prefillEmbeddings;
+
+    // Token sample output: single INT64 scalar
+    std::vector<LongType> sampleShape = {1};
+    NDArray* sampledToken = NDArrayFactory::create('c', sampleShape, DataType::INT64, context);
+
+    // Logits slice: [vocabSize] — last-position logits from plan output
+    // We'll point into the plan's output buffer directly when possible
+
+    int tokensGenerated = 0;
+
+    // ── Get plan's external inputs from the persistent OpaqueContext ──
+    // The Java DynamicShapePlanExecutor caches an OpaqueContext with all ext inputs
+    // registered via setGraphContextInputArray(). That context persists across calls.
+    // We read NDArray* pointers from it via ctx->array(i).
+    auto* extCtx = reinterpret_cast<graph::Context*>(config->extInputContext);
+    int numExtInputs = config->numPlanExternalInputs;
+
+    // Build ext inputs array from the context's registered inputs
+    std::vector<NDArray*> extInputsVec(numExtInputs);
+    if (extCtx != nullptr) {
+        for (int i = 0; i < numExtInputs; i++) {
+            extInputsVec[i] = extCtx->array(i);
+        }
+    } else if (config->planExternalInputs != nullptr) {
+        // Fallback: use directly passed array (legacy path)
+        for (int i = 0; i < numExtInputs; i++) {
+            extInputsVec[i] = config->planExternalInputs[i];
+        }
+    }
+    NDArray** extInputs = extInputsVec.data();
+
+    // ── Extract causal mask from ext inputs (if present) ──
+    // The causal mask is a plan external input at config->causalMaskExtIdx.
+    // It's [1, 1, 1, maskLen] FLOAT, filled with MASK_FILL for masked positions.
+    // We need to update it per step: unmask position currentPosition with 0.0f.
+    NDArray* causalMask = nullptr;
+    LongType causalMaskLen = 0;
+    if (config->causalMaskExtIdx >= 0 && config->causalMaskExtIdx < numExtInputs) {
+        causalMask = extInputsVec[config->causalMaskExtIdx];
+        if (causalMask != nullptr) {
+            causalMaskLen = causalMask->sizeAt(-1);
+        }
+    }
+
+    // ── Extract attn_mask_reformat from ext inputs (if present) ──
+    // The attn_mask_reformat override bypasses the model's internal subgraph
+    // which produces incorrect masks for padded static-KV decode. We delta-update
+    // it each step just like the causal mask.
+    NDArray* attnMaskReformat = nullptr;
+    LongType attnMaskReformatLen = 0;
+    if (config->attnMaskReformatExtIdx >= 0 && config->attnMaskReformatExtIdx < numExtInputs) {
+        attnMaskReformat = extInputsVec[config->attnMaskReformatExtIdx];
+        if (attnMaskReformat != nullptr) {
+            attnMaskReformatLen = attnMaskReformat->sizeAt(-1);
+        }
+    }
+
+    // Plan outputs: allocate array for plan to fill
+    int numPlanOutputs = plan->getNumRequestedOutputs();
+    std::vector<NDArray*> planOutputsVec(numPlanOutputs, nullptr);
+    NDArray** planOutputs = planOutputsVec.data();
+
+    REQUIRE_TRUE(extCtx != nullptr || config->planExternalInputs != nullptr, 0,
+                 "autoregressive_decode: no external input source. "
+                 "Either extInputContext (OpaqueContext*) or planExternalInputs (NDArray**) "
+                 "must be non-null. Both are null — cannot wire plan inputs.");
+
+    bool stepTimingEnabled = plan->isExecutionTimingEnabled();
+
+    // Tier 1c: Pinned memory for D2H token readback — enables true async DMA
+    // instead of driver-managed staging through a bounce buffer.
+    LongType* pinnedTokenId = nullptr;
+    cudaError_t pinErr = cudaMallocHost(&pinnedTokenId, sizeof(LongType));
+    if (pinErr != cudaSuccess) {
+        // Fallback: use stack variable (unpinned, staging copy)
+        pinnedTokenId = nullptr;
+    }
+    LongType stackTokenId = 0;  // fallback if pinned alloc fails
+
+    // ── Mark decode-loop-modified ext inputs as VARIABLE ────────────────────
+    if (env_isVerbose()) {
+        sd_printf("AUTOREGRESSIVE_DECODE_CUDA: about to call markExternalInputVariable "
+                  "plan=%p numExternalInputs=%d\n", plan, numExtInputs);
+    }
+    // The native decode loop writes fresh data to these ext inputs every step
+    // (embed lookup, mask update, position update, input_ids update). The plan's
+    // default classification marks them as non-variable (SOURCE_VARIABLE = model
+    // weight), which means:
+    //   1. No staging buffers allocated for them
+    //   2. ensureAndSyncStagingBuffers skips D2D refresh
+    //   3. Merged CUDA graphs that captured gap ops reading from the Java-side
+    //      warmup addresses will read stale data if the OpaqueContext provides
+    //      different NDArray pointers.
+    //
+    // markExternalInputVariable fixes this by:
+    //   - Allocating plan-owned staging buffers for these inputs
+    //   - D2D-refreshing them each step in ensureAndSyncStagingBuffers
+    //   - Invalidating arg tables so they point to the stable staging addresses
+    //
+    // This MUST happen before the decode loop so the first execution allocates
+    // staging buffers and subsequent executions refresh them.
+    // Placeholder inputs: host-written by Java each step → force H2D on DSP stream
+    if (config->embeddingsExtIdx >= 0) plan->markExternalInputPlaceholder(config->embeddingsExtIdx);
+    if (config->maskExtIdx >= 0) plan->markExternalInputPlaceholder(config->maskExtIdx);
+    if (config->posIdsExtIdx >= 0) plan->markExternalInputPlaceholder(config->posIdsExtIdx);
+    if (config->inputIdsExtIdx >= 0) plan->markExternalInputPlaceholder(config->inputIdsExtIdx);
+    if (config->causalMaskExtIdx >= 0) plan->markExternalInputPlaceholder(config->causalMaskExtIdx);
+    if (config->attnMaskReformatExtIdx >= 0) plan->markExternalInputPlaceholder(config->attnMaskReformatExtIdx);
+    if (config->positionOffsetExtIdx >= 0) plan->markExternalInputPlaceholder(config->positionOffsetExtIdx);
+    if (config->cachePositionExtIdx >= 0) plan->markExternalInputPlaceholder(config->cachePositionExtIdx);
+    // GDN/conv state: device-written via D2D copy on DSP stream each step.
+    // Mark as variable (participates in dependency tracking) but NOT placeholder
+    // (must NOT H2D — device buffer is authoritative, host buffer is stale).
+    if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr) {
+        for (int s = 0; s < config->numGdnStatePairs; s++) {
+            int extIdx = config->gdnStateExtIndices[s];
+            if (extIdx >= 0) plan->markExternalInputVariable(extIdx);
+        }
+    }
+    if (config->numConvStatePairs > 0 && config->convStateExtIndices != nullptr) {
+        for (int s = 0; s < config->numConvStatePairs; s++) {
+            int extIdx = config->convStateExtIndices[s];
+            if (extIdx >= 0) plan->markExternalInputVariable(extIdx);
+        }
+    }
+    // KV cache: device-written by attention kernels in-place each step.
+    // Mark as variable but NOT placeholder — staging buffer D2D handles sync.
+    if (config->kvInputExtIndices != nullptr) {
+        for (int kv = 0; kv < 2 * numKvPairs; kv++) {
+            int kvIdx = config->kvInputExtIndices[kv];
+            if (kvIdx >= 0) plan->markExternalInputVariable(kvIdx);
+        }
+    }
+
+    for (int step = 0; step < maxNewTokens; step++) {
+        auto stepStart = std::chrono::high_resolution_clock::now();
+
+        // ── Step 1: Update plan external inputs for this decode step ──
+        // decodeEmbedding IS prefillEmbeddings (same NDArray, same device address).
+        // The embed lookup kernel writes into it in-place each step, keeping the
+        // device address stable for CUDA graph replay (externalAddrsMatch).
+        if (config->embeddingsExtIdx >= 0 && config->embeddingsExtIdx < numExtInputs) {
+            extInputs[config->embeddingsExtIdx] = decodeEmbedding;
+        }
+
+        // Attention mask
+        if (config->maskExtIdx >= 0 && config->maskExtIdx < numExtInputs) {
+            extInputs[config->maskExtIdx] = attentionMask;
+        }
+
+        // Position IDs
+        if (config->posIdsExtIdx >= 0 && config->posIdsExtIdx < numExtInputs) {
+            extInputs[config->posIdsExtIdx] = positionIds;
+        }
+
+        // Input IDs
+        if (config->inputIdsExtIdx >= 0 && config->inputIdsExtIdx < numExtInputs) {
+            extInputs[config->inputIdsExtIdx] = inputIds;
+        }
+
+        // Causal mask: wire into ext inputs (same pointer every step, updated in-place)
+        if (causalMask != nullptr && config->causalMaskExtIdx >= 0 && config->causalMaskExtIdx < numExtInputs) {
+            extInputs[config->causalMaskExtIdx] = causalMask;
+        }
+
+        // KV cache inputs: point to static buffers
+        if (config->kvInputExtIndices != nullptr && staticKvBuffers != nullptr) {
+            for (int kv = 0; kv < 2 * numKvPairs; kv++) {
+                int kvIdx = config->kvInputExtIndices[kv];
+                if (kvIdx >= 0 && kvIdx < numExtInputs) {
+                    extInputs[kvIdx] = staticKvBuffers[kv];
+                }
+            }
+        }
+
+
+        // ── Step 1b: Pre-unmask the CURRENT position in causal mask ──
+        // The attention op writes KV at cache_position = currentPosition, then attends
+        // to the full buffer including that position. If the causal mask masks the current
+        // position, the token can't attend to its own KV entry → wrong attention output.
+        // The post-execution mask update (below) only unmasks for the NEXT step.
+        if (causalMask != nullptr && currentPosition >= 0 && currentPosition < causalMaskLen) {
+            NDArray::prepareSpecialUse({causalMask}, {});
+            BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskLauncher,
+                                  (stream, causalMask->specialBuffer(), currentPosition, causalMaskLen),
+                                  SD_FLOAT_TYPES);
+            NDArray::registerSpecialUse({causalMask}, {});
+        }
+        if (attnMaskReformat != nullptr && currentPosition >= 0 && currentPosition < attnMaskReformatLen) {
+            NDArray::prepareSpecialUse({attnMaskReformat}, {});
+            BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskLauncher,
+                                  (stream, attnMaskReformat->specialBuffer(), currentPosition, attnMaskReformatLen),
+                                  SD_FLOAT_TYPES);
+            NDArray::registerSpecialUse({attnMaskReformat}, {});
+        }
+        // Also unmask the attention mask (0/1 mask)
+        if (currentPosition >= 0 && currentPosition < maxKvLen) {
+            NDArray::prepareSpecialUse({attentionMask}, {});
+            BUILD_SINGLE_SELECTOR(attentionMask->dataType(), updateAttentionMaskLauncher,
+                                  (stream, attentionMask->specialBuffer(), currentPosition, maxKvLen),
+                                  SD_COMMON_TYPES);
+            NDArray::registerSpecialUse({attentionMask}, {});
+        }
+
+        auto tWireEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
+
+        // ── Step 2: Execute plan ──
+        // Use executeSteadyState() for the hot decode path. For step >= 4 in
+        // REPLAYING phase, this eliminates ~200ms/step of CPU overhead (slot
+        // scans, lifecycle checks, shape validation). For earlier steps or
+        // pre-REPLAYING phase, it automatically falls back to full execute().
+        //
+        // GDN/conv state ext inputs are marked variable (NOT placeholder) via
+        // markExternalInputVariable(). Placeholder inputs (input_ids etc.) are
+        // marked via markExternalInputPlaceholder(). performPreReplaySync() only
+        // forces H2D for placeholders; device-written variables (GDN/conv state)
+        // use isPrimaryActual() — the D2D copy above left device authoritative,
+        // so H2D is correctly skipped (would clobber with stale host data).
+        Status planStatus = plan->executeSteadyState(
+            extInputs, numExtInputs,
+            planOutputs, numPlanOutputs,
+            reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+
+        // Validate plan output every step — these are O(1) pointer/flag checks,
+        // negligible cost compared to the plan execution itself.
+        REQUIRE_TRUE(planStatus == Status::OK, 0,
+                     "autoregressive_decode: plan execution FAILED at step %d with status %d. "
+                     "Plan state: frozen=%d numExt=%d numOutputs=%d. "
+                     "This is NOT recoverable — fix the plan execution failure.",
+                     step, static_cast<int>(planStatus),
+                     plan->isShapesFrozen() ? 1 : 0,
+                     numExtInputs, numPlanOutputs);
+
+        REQUIRE_TRUE(config->logitsOutputIdx >= 0 && config->logitsOutputIdx < numPlanOutputs, 0,
+                     "autoregressive_decode: logitsOutputIdx=%d out of range [0,%d) at step %d. "
+                     "The plan has fewer outputs than expected or logitsOutputIdx was not set.",
+                     config->logitsOutputIdx, numPlanOutputs, step);
+        REQUIRE_TRUE(planOutputs[config->logitsOutputIdx] != nullptr, 0,
+                     "autoregressive_decode: logits output NDArray* is null at step %d (idx=%d). "
+                     "Plan returned OK but did not populate the logits output slot.",
+                     step, config->logitsOutputIdx);
+
+        {
+            NDArray* logitsArr = planOutputs[config->logitsOutputIdx];
+            auto* logitsDb = logitsArr->dataBuffer();
+            REQUIRE_TRUE(logitsDb != nullptr, 0,
+                         "autoregressive_decode: logits DataBuffer is null at step %d. "
+                         "Output array exists but has no backing buffer — likely a stale slot.",
+                         step);
+            REQUIRE_TRUE(!logitsDb->isClosed(), 0,
+                         "autoregressive_decode: logits DataBuffer is CLOSED at step %d. "
+                         "The plan reused a freed buffer — stale slot reuse bug.",
+                         step);
+            REQUIRE_TRUE(logitsArr->specialBuffer() != nullptr, 0,
+                         "autoregressive_decode: logits specialBuffer (device ptr) is null at step %d. "
+                         "Buffer exists but has no device allocation — missing syncToDevice or stale buffer.",
+                         step);
+        }
+
+        // NOTE: Do NOT call plan->setShapesFrozen(true) here.
+        // The plan auto-seals during its first executeSteadyState() call
+        // (which falls back to execute() for the warmup steps), setting
+        // shapesFrozen=true and triggering Triton compilation. Calling
+        // setShapesFrozen manually after execution violates the plan lifecycle
+        // (executeCount > 0) and would skip the warmup/capture phase.
+        // Auto-seal handles the transition correctly.
+
+        auto tPlanEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
+
+        // ── Step 2b: GDN/conv recurrent state feedback ──
+        // Copy state outputs back to ext inputs for the next decode step.
+        // Critical for hybrid architectures (e.g. Qwen with GDN layers).
+        // Without this, GDN layers see frozen state from warmup and degenerate.
+        //
+        // CRITICAL: Use explicit cudaMemcpyAsync on the DECODE LOOP's stream,
+        // NOT assign(). assign() uses the array's LaunchContext stream which may
+        // differ from the plan execution stream (ctx->dspStream vs LC default).
+        // This caused a stream ordering race: assign's memcpy ran on the LC
+        // default stream while the next plan->execute() read ext inputs on the
+        // DSP stream, with no event synchronization between them.
+        //
+        // Both plan outputs and ext inputs are always C-contiguous [B,H,D_k,D_v]
+        // with same type/length (guaranteed by gated_delta_rule op shape function),
+        // so raw memcpy is safe and avoids the stream mismatch entirely.
+        if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr
+            && config->gdnStateOutputIndices != nullptr) {
+            for (int s = 0; s < config->numGdnStatePairs; s++) {
+                int outIdx = config->gdnStateOutputIndices[s];
+                int extIdx = config->gdnStateExtIndices[s];
+                if (outIdx >= 0 && outIdx < numPlanOutputs && planOutputs[outIdx] != nullptr
+                    && extIdx >= 0 && extIdx < numExtInputs && extInputs[extIdx] != nullptr) {
+                    NDArray* src = planOutputs[outIdx];
+                    NDArray* dst = extInputs[extIdx];
+                    if (src->lengthOf() == dst->lengthOf() && src->dataType() == dst->dataType()) {
+                        size_t bytes = src->lengthOf() * src->sizeOfT();
+                        cudaMemcpyAsync(dst->specialBuffer(), src->specialBuffer(),
+                                        bytes, cudaMemcpyDeviceToDevice, *stream);
+                        dst->tickWriteDevice();
+                    }
+                }
+            }
+        }
+        if (config->numConvStatePairs > 0 && config->convStateExtIndices != nullptr
+            && config->convStateOutputIndices != nullptr) {
+            for (int s = 0; s < config->numConvStatePairs; s++) {
+                int outIdx = config->convStateOutputIndices[s];
+                int extIdx = config->convStateExtIndices[s];
+                if (outIdx >= 0 && outIdx < numPlanOutputs && planOutputs[outIdx] != nullptr
+                    && extIdx >= 0 && extIdx < numExtInputs && extInputs[extIdx] != nullptr) {
+                    NDArray* src = planOutputs[outIdx];
+                    NDArray* dst = extInputs[extIdx];
+                    if (src->lengthOf() == dst->lengthOf() && src->dataType() == dst->dataType()) {
+                        size_t bytes = src->lengthOf() * src->sizeOfT();
+                        cudaMemcpyAsync(dst->specialBuffer(), src->specialBuffer(),
+                                        bytes, cudaMemcpyDeviceToDevice, *stream);
+                        dst->tickWriteDevice();
+                    }
+                }
+            }
+        }
+
+        // ── Step 3: Token sampling ──
+        // Get logits from plan output at config->logitsOutputIdx
+        NDArray* logitsOutput = planOutputs[config->logitsOutputIdx];
+
+        // Validate logits rank before accessing shape dimensions.
+        // Expected: rank 2 [batch, vocabSize] or rank 3 [batch, seqLen, vocabSize].
+        // A rank-0 (scalar) output means the plan returned a wrong/stale output slot.
+        auto logitsRank = logitsOutput->rankOf();
+        REQUIRE_TRUE(logitsRank >= 2 && logitsRank <= 3, 0,
+                     "autoregressive_decode: logitsOutput rank is %lld (expected 2 or 3) at step %d. "
+                     "lengthOf=%lld, logitsOutputIdx=%d, numPlanOutputs=%d. "
+                     "The plan output at this index is not logits — check logitsOutputIdx mapping.",
+                     (long long)logitsRank, step,
+                     (long long)logitsOutput->lengthOf(),
+                     config->logitsOutputIdx, numPlanOutputs);
+
+        // logitsOutput shape: [batch, seqLen, vocabSize] (rank 3) or [batch, vocabSize] (rank 2)
+        // For rank 3: decode steps have seqLen=1 → [1, 1, vocabSize], prefill → [1, N, vocabSize]
+        // For rank 2: always [batch, vocabSize] — treat as seqLen=1
+        LongType logitsSeqLen;
+        LongType logitsVocab;
+        if (logitsRank == 3) {
+            logitsSeqLen = logitsOutput->sizeAt(1);
+            logitsVocab = logitsOutput->sizeAt(2);
+        } else {
+            // rank 2: [batch, vocabSize]
+            logitsSeqLen = 1;
+            logitsVocab = logitsOutput->sizeAt(1);
+        }
+
+        // Diagnostic: print logits pointer, buffer identity, and first few values
+        if (step < 10 && env_isVerbose()) {
+            cudaStreamSynchronize(*stream);  // ensure plan outputs are ready
+            float topVals[4] = {0};
+            LongType lastPosOff = (logitsSeqLen - 1) * logitsVocab;
+            const void* logitsSrc = static_cast<const char*>(logitsOutput->specialBuffer())
+                                    + lastPosOff * logitsOutput->sizeOfT();
+            if (logitsOutput->dataType() == sd::DataType::FLOAT32) {
+                cudaMemcpy(topVals, logitsSrc, 4 * sizeof(float), cudaMemcpyDeviceToHost);
+            } else if (logitsOutput->dataType() == sd::DataType::HALF) {
+                half hvals[4];
+                cudaMemcpy(hvals, logitsSrc, 4 * sizeof(half), cudaMemcpyDeviceToHost);
+                for (int i = 0; i < 4; i++) topVals[i] = __half2float(hvals[i]);
+            }
+            // Also get the argmax on host for comparison
+            float maxVal = -1e30f;
+            LongType maxIdx = -1;
+            if (logitsVocab <= 262144) {  // only for reasonable vocab sizes
+                std::vector<float> hostLogits(logitsVocab);
+                if (logitsOutput->dataType() == sd::DataType::FLOAT32) {
+                    cudaMemcpy(hostLogits.data(), logitsSrc, logitsVocab * sizeof(float), cudaMemcpyDeviceToHost);
+                } else if (logitsOutput->dataType() == sd::DataType::HALF) {
+                    std::vector<half> hLogits(logitsVocab);
+                    cudaMemcpy(hLogits.data(), logitsSrc, logitsVocab * sizeof(half), cudaMemcpyDeviceToHost);
+                    for (LongType i = 0; i < logitsVocab; i++) hostLogits[i] = __half2float(hLogits[i]);
+                }
+                for (LongType i = 0; i < logitsVocab; i++) {
+                    if (hostLogits[i] > maxVal) { maxVal = hostLogits[i]; maxIdx = i; }
+                }
+            }
+            sd_printf("CUDA_LOGITS_DIAG[step=%d]: logitsOutput=%p specialBuf=%p dataType=%d seqLen=%lld vocab=%lld\n",
+                      step, logitsOutput, logitsOutput->specialBuffer(),
+                      (int)logitsOutput->dataType(), (long long)logitsSeqLen, (long long)logitsVocab);
+            sd_printf("CUDA_LOGITS_DIAG[step=%d]: firstVals=[%.4f, %.4f, %.4f, %.4f] hostArgmax=%lld (val=%.4f)\n",
+                      step, topVals[0], topVals[1], topVals[2], topVals[3],
+                      (long long)maxIdx, maxVal);
+        }
+
+        // Get pointer to last-position logits (already on device)
+        NDArray::prepareSpecialUse({sampledToken}, {logitsOutput});
+
+        if (temperature <= 0.0 || (topK <= 1 && topP <= 0.0)) {
+            // Greedy: argmax over last-position logits
+            REQUIRE_TRUE(logitsVocab > 0, 0,
+                         "autoregressive_decode: logits vocab dimension is 0 at step %d. "
+                         "Cannot perform argmax on empty vocabulary.",
+                         step);
+            // Compute offset to last position: (logitsSeqLen-1) * vocabSize
+            LongType lastPosOffset = (logitsSeqLen - 1) * logitsVocab;
+            const void* logitsPtr = static_cast<const char*>(logitsOutput->specialBuffer())
+                                    + lastPosOffset * logitsOutput->sizeOfT();
+
+            BUILD_SINGLE_SELECTOR(logitsOutput->dataType(), argmaxLauncher,
+                                  (stream, logitsPtr, sampledToken->specialBuffer(), logitsVocab),
+                                  SD_COMMON_TYPES);
+        } else {
+            // Sampling with repetition penalty: use tokenSampleWithPenaltiesCuda
+            // Build a view of generated tokens so far for repetition penalty.
+            // generatedTokenIds is [maxNewTokens] but only indices 0..step-1 are valid.
+            // Pass a view so the penalty kernel only reads valid tokens.
+            if (step > 0) {
+                std::vector<LongType> range = {0, static_cast<LongType>(step)};
+                NDArray* tokensSoFar = (*generatedTokenIds)(range, true);
+                tokenSampleWithPenaltiesCuda(logitsOutput, sampledToken, tokensSoFar,
+                                             temperature, topK, topP, 0.0 /*minP*/,
+                                             repPenalty, 0.0 /*freqPenalty*/, 0.0 /*presPenalty*/,
+                                             static_cast<LongType>(step), context);
+                delete tokensSoFar;
+            } else {
+                // No tokens generated yet — sample without penalty
+                tokenSampleCuda(logitsOutput, sampledToken, temperature, topK, topP,
+                                static_cast<LongType>(step), context);
+            }
+        }
+
+        NDArray::registerSpecialUse({sampledToken}, {logitsOutput});
+
+        // Diagnostic: verify GPU argmax result matches host argmax
+        if (step < 10 && env_isVerbose()) {
+            cudaStreamSynchronize(*stream);
+            LongType gpuArgmax = 0;
+            cudaMemcpy(&gpuArgmax, sampledToken->specialBuffer(), sizeof(LongType), cudaMemcpyDeviceToHost);
+            sd_printf("CUDA_ARGMAX_DIAG[step=%d]: gpuArgmax=%lld sampledTokenBuf=%p\n",
+                      step, (long long)gpuArgmax, sampledToken->specialBuffer());
+        }
+
+        // ── Tier 1a: Store token via D2D copy (avoids p() hidden H2D + stream 0 sync) ──
+        // generatedTokenIds->p() does host write → syncToDevice() → cudaMemcpyAsync
+        // on stream 0 + cudaStreamSynchronize(stream_0) — a hidden pipeline drain.
+        // Direct D2D from sampledToken to generatedTokenIds stays on the decode stream.
+        {
+            void* dstPtr = static_cast<char*>(generatedTokenIds->specialBuffer())
+                           + tokensGenerated * sizeof(LongType);
+            cudaMemcpyAsync(dstPtr, sampledToken->specialBuffer(),
+                            sizeof(LongType), cudaMemcpyDeviceToDevice, *stream);
+            generatedTokenIds->tickWriteDevice();
+        }
+        tokensGenerated++;
+
+        // ── Tier 1b: Pre-sync GPU work ──
+        // Everything below until the cudaStreamSynchronize only depends on
+        // currentPosition (CPU counter) and plan output pointers (already on
+        // device). None of it needs the token ID from D2H. Launching these
+        // kernels BEFORE the sync overlaps their GPU execution with the
+        // async D2H copy and hides their latency behind the sync wait.
+        //
+        // Advance position BEFORE updates for the NEXT decode step.
+        currentPosition++;
+        LongType kvJustWritten = currentPosition - 1;
+
+        // ── KV scatter — copy present KV into static buffers ──
+        // Moved BEFORE sync: scatter only needs currentPosition (CPU counter)
+        // and plan output device pointers. Both are available without the token
+        // ID. Since scatter and the next plan execution are on the same stream,
+        // CUDA ordering guarantees scatter completes before the next read.
+        // Skip manual scatter when the plan's native KV scatter is active
+        // (planOwnsKvScatter) — executeKvScatterPostExec handles it with its
+        // own device-side position counter via executeSteadyState.
+        if (!config->planOwnsKvScatter &&
+            config->kvOutputIndices != nullptr && staticKvBuffers != nullptr && numKvPairs > 0) {
+            // Build batched KV scatter entries.
+            std::vector<KvScatterEntry> entries(2 * numKvPairs);
+            for (int kv = 0; kv < 2 * numKvPairs; kv++) {
+                int kvOutIdx = config->kvOutputIndices[kv];
+                NDArray* presentKv = planOutputs[kvOutIdx];
+                NDArray* staticBuf = staticKvBuffers[kv];
+
+                REQUIRE_TRUE(kvOutIdx >= 0 && kvOutIdx < numPlanOutputs, 0,
+                             "autoregressive_decode: KV output index %d out of range [0,%d) "
+                             "at step %d kv=%d",
+                             kvOutIdx, numPlanOutputs, step, kv);
+                REQUIRE_TRUE(presentKv != nullptr, 0,
+                             "autoregressive_decode: KV output[%d] (planOutput[%d]) is null "
+                             "at step %d — plan did not produce this output.",
+                             kv, kvOutIdx, step);
+                REQUIRE_TRUE(staticBuf != nullptr, 0,
+                             "autoregressive_decode: static KV buffer[%d] is null at step %d.",
+                             kv, step);
+                REQUIRE_TRUE(presentKv->specialBuffer() != nullptr, 0,
+                             "autoregressive_decode: KV output[%d] has null device buffer "
+                             "at step %d — stale or uninitialized output.",
+                             kv, step);
+                REQUIRE_TRUE(staticBuf->specialBuffer() != nullptr, 0,
+                             "autoregressive_decode: static KV[%d] has null device buffer "
+                             "at step %d — buffer was freed or never allocated.",
+                             kv, step);
+
+                entries[kv].srcPtr = presentKv->specialBuffer();
+                entries[kv].dstPtr = staticBuf->specialBuffer();
+                entries[kv].heads = presentKv->sizeAt(1);
+                entries[kv].srcSeqLen = presentKv->sizeAt(2);
+                entries[kv].dstSeqLen = staticBuf->sizeAt(2);
+                entries[kv].dim = presentKv->sizeAt(3);
+                entries[kv].lastPos = presentKv->sizeAt(2) - 1;
+                entries[kv].cachePos = kvJustWritten;  // currentPosition - 1
+            }
+
+            REQUIRE_TRUE(staticKvBuffers[0] != nullptr, 0,
+                         "autoregressive_decode: staticKvBuffers[0] is null at step %d — "
+                         "cannot determine KV data type for scatter.",
+                         step);
+            kvScatterBatched(entries.data(), 2 * numKvPairs,
+                             staticKvBuffers[0]->dataType(), context);
+
+            // Mark static KV buffers as device-authoritative after scatter.
+            for (int kv = 0; kv < 2 * numKvPairs; kv++) {
+                staticKvBuffers[kv]->tickWriteDevice();
+            }
+        }
+
+        // Update attention mask: unmask the KV position that was JUST written.
+        if (kvJustWritten >= 0 && kvJustWritten < maxKvLen) {
+            NDArray::prepareSpecialUse({attentionMask}, {});
+            BUILD_SINGLE_SELECTOR(attentionMask->dataType(), updateAttentionMaskLauncher,
+                                  (stream, attentionMask->specialBuffer(), kvJustWritten, maxKvLen),
+                                  SD_COMMON_TYPES);
+            NDArray::registerSpecialUse({attentionMask}, {});
+        }
+
+        // Update causal mask: unmask the KV position that was JUST written (set to 0.0f)
+        if (causalMask != nullptr && kvJustWritten >= 0 && kvJustWritten < causalMaskLen) {
+            NDArray::prepareSpecialUse({causalMask}, {});
+            BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskLauncher,
+                                  (stream, causalMask->specialBuffer(), kvJustWritten, causalMaskLen),
+                                  SD_FLOAT_TYPES);
+            NDArray::registerSpecialUse({causalMask}, {});
+        }
+
+        // Update attn_mask_reformat: unmask the just-written KV position (set to 0.0f)
+        if (attnMaskReformat != nullptr && kvJustWritten >= 0 && kvJustWritten < attnMaskReformatLen) {
+            NDArray::prepareSpecialUse({attnMaskReformat}, {});
+            BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskLauncher,
+                                  (stream, attnMaskReformat->specialBuffer(), kvJustWritten, attnMaskReformatLen),
+                                  SD_FLOAT_TYPES);
+            NDArray::registerSpecialUse({attnMaskReformat}, {});
+        }
+
+        // Update position_ids: set to next step's position
+        NDArray::prepareSpecialUse({positionIds}, {});
+        updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+            positionIds->specialBuffer(),
+            currentPosition);
+        NDArray::registerSpecialUse({positionIds}, {});
+
+        // ── D2H token readback via pinned memory ──
+        // Read sampled token ID back to host (single int64).
+        // Issue D2H copy on the SAME stream as the argmax kernel — FIFO ordering
+        // guarantees the copy starts after argmax completes.
+        // Using pinned memory enables true async DMA (no driver bounce buffer).
+        //
+        // All GPU work that doesn't need the token ID (KV scatter, mask updates,
+        // position updates) is launched ABOVE this point. The sync below waits for
+        // everything on the stream, including those overlapped kernels.
+        LongType* tokenDst = pinnedTokenId ? pinnedTokenId : &stackTokenId;
+        *tokenDst = 0;
+        auto tSyncStart = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
+        cudaMemcpyAsync(tokenDst, sampledToken->specialBuffer(),
+                        sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+        cudaStreamSynchronize(*stream);
+        auto tSyncEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
+        LongType nextTokenId = *tokenDst;
+
+        if (step < 10 && env_isVerbose()) {
+            sd_printf("DECODE_STEP[%d]: nextTokenId=%lld currentPosition=%lld\n",
+                      step, (long long)nextTokenId, (long long)currentPosition);
+        }
+
+        // ── Check stop condition ──
+        bool shouldStop = false;
+        for (int s : stopTokenIds) {
+            if (nextTokenId == static_cast<LongType>(s)) {
+                shouldStop = true;
+                break;
+            }
+        }
+
+        auto tStopCheck = std::chrono::high_resolution_clock::now();
+
+        // Compute step time using the stop check timestamp
+        // Always measure real wall-clock step time — needed for lateSteady metric even
+        // when detailed sub-step timing (stepTimingEnabled) is off.
+        double stepMs = std::chrono::duration<double, std::milli>(tStopCheck - stepStart).count();
+        stepTimesMs.push_back(stepMs);
+
+        if (shouldStop) break;
+
+        // ── Step 6: Embedding lookup for next token ──
+        // Only perform embedding lookup if we have an embeddings ext input to update.
+        // In single-model mode (embeddingsExtIdx == -1), the model handles its own
+        // embedding lookup internally, so we skip this step.
+        if (config->embeddingsExtIdx >= 0) {
+            REQUIRE_TRUE(nextTokenId >= 0 && nextTokenId < vocabSize, 0,
+                         "autoregressive_decode: nextTokenId=%lld out of range [0,%lld) at step %d. "
+                         "Argmax/sampling returned an invalid token ID.",
+                         (long long)nextTokenId, (long long)vocabSize, step);
+            NDArray::prepareSpecialUse({decodeEmbedding}, {embeddingTable});
+            BUILD_SINGLE_SELECTOR(embeddingTable->dataType(), embedLookupLauncher,
+                                  (stream, embeddingTable->specialBuffer(),
+                                   decodeEmbedding->specialBuffer(),
+                                   nextTokenId, hidden, embTableRowStride),
+                                  SD_COMMON_TYPES);
+            NDArray::registerSpecialUse({decodeEmbedding}, {embeddingTable});
+        }
+
+        // Update input_ids: set to next token (needs nextTokenId from D2H)
+        NDArray::prepareSpecialUse({inputIds}, {});
+        updateInputIdsKernel<<<1, 1, 0, *stream>>>(
+            inputIds->specialBuffer(),
+            nextTokenId);
+        NDArray::registerSpecialUse({inputIds}, {});
+
+        // Diagnostic: verify input_ids buffer address consistency
+        if (step < 5 && env_isVerbose()) {
+            void* extBuf = (config->inputIdsExtIdx >= 0 && config->inputIdsExtIdx < numExtInputs)
+                           ? extInputs[config->inputIdsExtIdx]->specialBuffer() : nullptr;
+            sd_printf("INPUT_IDS_ADDR[step=%d]: inputIds->specialBuffer()=%p "
+                      "extInputs[%d]->specialBuffer()=%p MATCH=%d nextToken=%lld\n",
+                      step, inputIds->specialBuffer(),
+                      config->inputIdsExtIdx, extBuf,
+                      (int)(inputIds->specialBuffer() == extBuf),
+                      (long long)nextTokenId);
+        }
+
+        // ── Update in-graph KV cache scalars (GGUF pattern) ──
+        // position_offset and cache_position are scalar ext inputs that the
+        // attention op reads for RoPE position and KV write position.
+        if (config->positionOffsetExtIdx >= 0 && config->positionOffsetExtIdx < numExtInputs) {
+            NDArray* posOffset = extInputs[config->positionOffsetExtIdx];
+            if (posOffset != nullptr) {
+                NDArray::prepareSpecialUse({posOffset}, {});
+                updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+                    posOffset->specialBuffer(),
+                    currentPosition);
+                NDArray::registerSpecialUse({posOffset}, {});
+            }
+        }
+        if (config->cachePositionExtIdx >= 0 && config->cachePositionExtIdx < numExtInputs) {
+            NDArray* cachePosArr = extInputs[config->cachePositionExtIdx];
+            if (cachePosArr != nullptr) {
+                NDArray::prepareSpecialUse({cachePosArr}, {});
+                updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+                    cachePosArr->specialBuffer(),
+                    currentPosition);
+                NDArray::registerSpecialUse({cachePosArr}, {});
+            }
+        }
+
+        // Per-step timing breakdown (gated behind executionTimingEnabled only — print every step)
+        // Note: "preSyncGpu" = argmax + KV scatter + mask/posId updates (all before sync).
+        //       "syncOnly" = just the cudaStreamSynchronize wait.
+        //       "postSync" = embed lookup + input_ids update + GGUF scalars.
+        if (stepTimingEnabled) {
+            auto tLoopEnd = std::chrono::high_resolution_clock::now();
+            auto wireUs = std::chrono::duration_cast<std::chrono::microseconds>(tWireEnd - stepStart).count();
+            auto planUs = std::chrono::duration_cast<std::chrono::microseconds>(tPlanEnd - tWireEnd).count();
+            auto preSyncGpuUs = std::chrono::duration_cast<std::chrono::microseconds>(tSyncStart - tPlanEnd).count();
+            auto syncOnlyUs = std::chrono::duration_cast<std::chrono::microseconds>(tSyncEnd - tSyncStart).count();
+            auto postSyncUs = std::chrono::duration_cast<std::chrono::microseconds>(tLoopEnd - tSyncEnd).count();
+            auto totalStepUs = std::chrono::duration_cast<std::chrono::microseconds>(tLoopEnd - stepStart).count();
+            sd_printf("DECODE_STEP_TIMING[%d]: total=%lldus wire=%lldus plan=%lldus "
+                      "preSyncGpu=%lldus syncOnly=%lldus postSync=%lldus\n",
+                      step, totalStepUs, wireUs, planUs,
+                      preSyncGpuUs, syncOnlyUs, postSyncUs);
+        }
+    }
+
+    // ── Final sync ──
+    cudaStreamSynchronize(*stream);
+
+    // Free pinned memory (Tier 1c)
+    if (pinnedTokenId != nullptr) {
+        cudaFreeHost(pinnedTokenId);
+        pinnedTokenId = nullptr;
+    }
+
+    // ── Write token count ──
+    tokenCount->p(0, static_cast<LongType>(tokensGenerated));
+
+    // ── Compute timing stats ──
+    auto loopEnd = std::chrono::high_resolution_clock::now();
+    double totalMs = std::chrono::duration<double, std::milli>(loopEnd - loopStart).count();
+
+    if (!stepTimesMs.empty()) {
+        double avgMs = totalMs / stepTimesMs.size();
+        double tokPerSec = stepTimesMs.size() > 0 ? (stepTimesMs.size() * 1000.0 / totalMs) : 0.0;
+
+        std::vector<double> sorted = stepTimesMs;
+        std::sort(sorted.begin(), sorted.end());
+        double p50 = sorted[sorted.size() / 2];
+        double p99 = sorted[std::min<size_t>(sorted.size() - 1,
+                                              static_cast<size_t>(sorted.size() * 0.99))];
+
+        timingInfo->p(0, static_cast<float>(totalMs));
+        timingInfo->p(1, static_cast<float>(avgMs));
+        timingInfo->p(2, static_cast<float>(tokPerSec));
+        timingInfo->p(3, static_cast<float>(p50));
+        timingInfo->p(4, static_cast<float>(p99));
+
+        // Late-steady throughput (steps 60+): excludes warmup bimodal oscillation.
+        // DSP warmup takes ~60 steps to converge to true steady-state.
+        constexpr int LATE_STEADY_START = 60;
+        if (static_cast<int>(stepTimesMs.size()) > LATE_STEADY_START) {
+            double lateSteadyTotalMs = 0.0;
+            int lateSteadyCount = 0;
+            for (int i = LATE_STEADY_START; i < static_cast<int>(stepTimesMs.size()); i++) {
+                lateSteadyTotalMs += stepTimesMs[i];
+                lateSteadyCount++;
+            }
+            double lateSteadyAvgMs = lateSteadyTotalMs / lateSteadyCount;
+            double lateSteadyTokPerSec = lateSteadyCount * 1000.0 / lateSteadyTotalMs;
+            timingInfo->p(5, static_cast<float>(lateSteadyTokPerSec));
+            timingInfo->p(6, static_cast<float>(lateSteadyAvgMs));
+        } else {
+            // Not enough steps — fall back to overall
+            timingInfo->p(5, static_cast<float>(tokPerSec));
+            timingInfo->p(6, static_cast<float>(avgMs));
+        }
+    }
+
+    // ── Cleanup internal allocations ──
+    // decodeEmbedding is NOT deleted — it's prefillEmbeddings, owned by the caller.
+    delete sampledToken;
+    if (internalMask != nullptr) {
+        delete internalMask;
+    }
+    if (internalPosIds != nullptr) {
+        delete internalPosIds;
+    }
+}
+
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

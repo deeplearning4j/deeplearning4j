@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_evaluate_reduction_shape)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
 
 namespace sd {
 namespace ops {
@@ -57,23 +57,22 @@ DECLARE_TYPES(evaluate_reduction_shape) {
 }
 
 DECLARE_SHAPE_FN(evaluate_reduction_shape) {
-  auto input = INPUT_VARIABLE(0);
   auto axis = INPUT_VARIABLE(1)->asVectorT<int>();
 
   auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
   auto oldFormat = block.numB() > 1 ? B_ARG(1) : false;
 
-  LongType length = input->lengthOf();
+  LongType length = shape::length(inputShape->at(0));
 
   if (keepDims) {
     if (oldFormat) {
       // for oldFormat we can't go below rank 2
-      length = sd::math::sd_max<int>(2, length);
+      length = sd::math::sd_max(2, length);
     }
   } else {
     length -= axis.size();
     if (oldFormat) {
-      length = sd::math::sd_max<int>(2, length);
+      length = sd::math::sd_max(2, length);
     }
   }
 

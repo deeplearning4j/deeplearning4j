@@ -21,6 +21,7 @@
 //
 #include <exceptions/cuda_exception.h>
 #include <legacy/NativeOps.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/dropout.h>
 #include <helpers/DebugHelper.h>
 #include <memory>
@@ -35,16 +36,18 @@ namespace helpers {
 
 template <typename T>
 static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* inputShape, void* outputBuf,
-                                          LongType const* outputShape, double probVal, int inLen,
-                                          RandomGenerator* nodeRng) {
+                                          LongType const* outputShape, void* maskBuf, LongType const* maskShape,
+                                          double probVal, int inLen, RandomGenerator* nodeRng) {
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
   T const* input = reinterpret_cast<T const*>(inputBuf);
   T* output = reinterpret_cast<T*>(outputBuf);
+  T* mask = (maskBuf != nullptr) ? reinterpret_cast<T*>(maskBuf) : nullptr;
 
-  __shared__ LongType inputRank, outputRank;
+  __shared__ LongType inputRank, outputRank, maskRank;
   __shared__ const LongType *inputShapePtr, *inputStridePtr;
   __shared__ const LongType *outputShapePtr, *outputStridePtr;
+  __shared__ const LongType *maskShapePtr, *maskStridePtr;
 
   if (threadIdx.x == 0) {
     inputRank = shape::rank(inputShape);
@@ -54,27 +57,39 @@ static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* 
     outputRank = shape::rank(outputShape);
     outputShapePtr = shape::shapeOf(outputShape);
     outputStridePtr = shape::stride(outputShape);
+
+    if (maskShape != nullptr) {
+      maskRank = shape::rank(maskShape);
+      maskShapePtr = shape::shapeOf(maskShape);
+      maskStridePtr = shape::stride(maskShape);
+    }
   }
   __syncthreads();
 
   LongType inputCoords[SD_MAX_RANK];
   LongType outputCoords[SD_MAX_RANK];
+  LongType maskCoords[SD_MAX_RANK];
   LongType inputOffset;
   LongType outputOffset;
+  LongType maskOffset;
 
-  // Loop through all elements and nullify based on probability
   for (LongType e = tid; e < inLen; e += step) {
     T val = nodeRng->relativeT(e, T(0.f), T(1.f));
+    bool keep = double(val) < probVal;
 
-    // If probability is acceptable, save the scaled value
-    if (double(val) < probVal) {
-      INDEX2COORDS(e, outputRank, outputShapePtr, outputCoords);
-      COORDS2INDEX(outputRank, outputStridePtr, outputCoords, outputOffset);
+    INDEX2COORDS(e, outputRank, outputShapePtr, outputCoords);
+    COORDS2INDEX(outputRank, outputStridePtr, outputCoords, outputOffset);
 
+    if (mask != nullptr) {
+      INDEX2COORDS(e, maskRank, maskShapePtr, maskCoords);
+      COORDS2INDEX(maskRank, maskStridePtr, maskCoords, maskOffset);
+      mask[maskOffset] = keep ? T(1) : T(0);
+    }
+
+    if (keep) {
       INDEX2COORDS(e, inputRank, inputShapePtr, inputCoords);
       COORDS2INDEX(inputRank, inputStridePtr, inputCoords, inputOffset);
-
-      output[outputOffset] = T(input[inputOffset] / probVal);
+      output[outputOffset] = input[inputOffset];
     }
   }
 }
@@ -82,38 +97,41 @@ static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* 
 
 template <typename T>
 static void dropoutSimple(LaunchContext* context, NDArray * input, NDArray* output, double probValue,
-                          int seed) {
+                          int seed, NDArray* mask) {
   RandomGenerator nodeRng(3019L, seed);
   int inLen = input->lengthOf();
   RandomGenerator* dRandom;
   auto stream = context->getCudaStream();
-  NDArray::prepareSpecialUse({output}, {input});
+  NDArray::prepareSpecialUse({output, mask}, {input});
 
-  auto err = cudaMalloc(&dRandom, sizeof(RandomGenerator));
-  if (err) {
-    throw cuda_exception::build("helpers::dropoutSimple: Cannot allocate device memory for random generator.", err);
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  dRandom = reinterpret_cast<RandomGenerator*>(memory::CudaMemoryPool::getInstance().allocate(sizeof(RandomGenerator), deviceId, *stream));
+  if (dRandom == nullptr) {
+    throw cuda_exception::build("helpers::dropoutSimple: Cannot allocate device memory for random generator.", cudaErrorMemoryAllocation);
   }
-  err = cudaMemcpy(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice);
+  auto err = cudaMemcpyAsync(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice, *stream);
   if (err) {
     throw cuda_exception::build("helpers::dropoutSimple: Cannot set up device memory for random generator.", err);
   }
 
+  void* maskBuf = (mask != nullptr) ? mask->specialBuffer() : nullptr;
+  LongType const* maskShape = (mask != nullptr) ? mask->specialShapeInfo() : nullptr;
+
   dim3 getDims = getLaunchDims("dropout");
   dropoutSimpleKernel<T><<<getDims.x, getDims.y, getDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
-                                                                       output->specialBuffer(), output->specialShapeInfo(), probValue,
+                                                                       output->specialBuffer(), output->specialShapeInfo(),
+                                                                       maskBuf, maskShape, probValue,
                                                                        inLen, dRandom);
-  err = cudaFree(dRandom);
-  if (err) {
-    throw cuda_exception::build("helpers::dropoutSimple: Cannot deallocate device memory for random generator.", err);
-  }
-  NDArray::registerSpecialUse({output}, {input});
+  memory::CudaMemoryPool::getInstance().free(dRandom, deviceId, *stream);
+  NDArray::registerSpecialUse({output, mask}, {input});
 }
 
 template <typename T>
 Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed,
-                       double probValue) {
+                       double probValue, NDArray* mask) {
   if (reduceShape == nullptr) {
-    dropoutSimple<T>(context.launchContext(), input, output, probValue, seed);
+    dropoutSimple<T>(context.launchContext(), input, output, probValue, seed, mask);
   } else {
     REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
 
@@ -138,7 +156,7 @@ Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* out
     float one = 1.f;
     chunk->assign(one);
 
-    dropoutSimple<T>(context.launchContext(), chunk.get(), chunk.get(), probValue, seed);
+    dropoutSimple<T>(context.launchContext(), chunk.get(), chunk.get(), probValue, seed, nullptr);
     // broadcast chunk to full matrix
     std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
     dropOutMultiplier->assign(one);
@@ -146,8 +164,9 @@ Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* out
     *dropOutMultiplier += *chunk;
 
     // FIXME: we could do this in one step, aren't we?
-    NDArray ret = *input * *dropOutMultiplier;
-    output->assign(&ret);
+    NDArray* ret = (*input) * (*dropOutMultiplier);
+    output->assign(ret);
+    delete ret;
   }
 
   return Status::OK;
@@ -155,12 +174,9 @@ Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* out
 
 Status dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue, NDArray* mask) {
   auto xType = input->dataType();
-  NDArray::prepareSpecialUse({output}, {input});
 
-  BUILD_SINGLE_SELECTOR(xType, return _dropOutFunctor, (context, input, output, reduceShape, seed, probValue),
+  BUILD_SINGLE_SELECTOR(xType, return _dropOutFunctor, (context, input, output, reduceShape, seed, probValue, mask),
                         SD_FLOAT_TYPES);
-
-  NDArray::registerSpecialUse({output}, {input});
 }
 
 /////////////////////////////////// backpropagations ///////////////////////////////////////////////
@@ -285,13 +301,15 @@ static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray*
                                double probValue, double alpha, double alpha1, double beta) {
   RandomGenerator nodeRng(3019L, seed), *dRandom;
   auto stream = context->getCudaStream();
-  auto err = cudaMalloc(&dRandom, sizeof(RandomGenerator));
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  dRandom = reinterpret_cast<RandomGenerator*>(memory::CudaMemoryPool::getInstance().allocate(sizeof(RandomGenerator), deviceId, *stream));
   NDArray::prepareSpecialUse({output}, {input});
-  if (err) {
+  if (dRandom == nullptr) {
     throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot allocate device memory for random generator.",
-                                err);
+                                cudaErrorMemoryAllocation);
   }
-  err = cudaMemcpy(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice);
+  auto err = cudaMemcpyAsync(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice, *stream);
   if (err) {
     throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot set up device memory for random generator.", err);
   }
@@ -303,11 +321,7 @@ static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray*
 
   DebugHelper::checkGlobalErrorCode( "alphaDropoutSimpleKernel(...) failed");
 
-  err = cudaFree(dRandom);
-  if (err) {
-    throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot deallocate device memory for random generator.",
-                                err);
-  }
+  memory::CudaMemoryPool::getInstance().free(dRandom, deviceId, *stream);
   NDArray::registerSpecialUse({output}, {input});
 }
 
@@ -348,9 +362,9 @@ static Status alphaDropOutFunctor_(sd::graph::Context& context, NDArray* input, 
     dropOutMultiplier->assign(one);
 
     *dropOutMultiplier += *chunk;
-    NDArray ret = *input * *dropOutMultiplier;
-    output->assign(&ret);
-
+    NDArray* ret = (*input) * (*dropOutMultiplier);
+    output->assign(ret);
+    delete ret;
   }
 
   return Status::OK;

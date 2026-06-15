@@ -36,7 +36,8 @@ BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
-  x->applyTrueBroadcast(BroadcastOpsTuple::custom(scalar::Atan2, pairwise::Atan2, broadcast::Atan2), y, z, true);
+  // tf_atan2 inputs: [0]=y, [1]=x.  atan2(y, x) => y->apply(Atan2, x, z)
+  y->applyTrueBroadcast(BroadcastOpsTuple::custom(scalar::Atan2, pairwise::Atan2, broadcast::Atan2), x, z, true);
 
 
   return Status::OK;
@@ -46,7 +47,8 @@ DECLARE_TYPES(tf_atan2) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, INHERIT);
+      ->setAllowedOutputTypes(0, INHERIT)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

@@ -23,7 +23,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_shapes_of)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
+#include <cstdio>
 
 namespace sd {
 namespace ops {
@@ -43,12 +44,32 @@ DECLARE_SHAPE_FN(create) {
 
   REQUIRE_TRUE(order == 'c' || order == 'f', 0, "create: order must be either c or f");
 
-  auto shape = shapeInput->getBufferAsVector<LongType>();
+  // Read shape values directly from synced host buffer to avoid e<T>() bugs on CUDA.
+  shapeInput->syncToHost();
+  std::vector<LongType> shape;
+  auto* db = shapeInput->dataBuffer();
+  auto numEl = shapeInput->lengthOf();
+  auto inputDtype = shapeInput->dataType();
+  auto arrOffset = shapeInput->offset();
+  if (inputDtype == INT64) {
+    auto* hostLongs = reinterpret_cast<LongType*>(db->primary()) + arrOffset;
+    for (sd::LongType i = 0; i < numEl; i++)
+      shape.push_back(hostLongs[i]);
+  } else if (inputDtype == INT32) {
+    auto* hostInts = reinterpret_cast<int*>(db->primary()) + arrOffset;
+    for (sd::LongType i = 0; i < numEl; i++)
+      shape.push_back(static_cast<LongType>(hostInts[i]));
+  } else {
+    shape = shapeInput->getBufferAsVector<LongType>();
+  }
 
   return SHAPELIST(sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, shape));
 }
 
-DECLARE_TYPES(create) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes(ANY); }
+DECLARE_TYPES(create) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_INTS, sd::DataType::BOOL})->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+}
 }  // namespace ops
 }  // namespace sd
 

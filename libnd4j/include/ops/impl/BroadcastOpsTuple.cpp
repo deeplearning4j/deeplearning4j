@@ -61,4 +61,16 @@ BroadcastOpsTuple BroadcastOpsTuple::PowDerivative() {
   return custom(sd::scalar::PowDerivative, sd::pairwise::PowDerivative, sd::broadcast::PowDerivative);
 }
 
+BroadcastOpsTuple BroadcastOpsTuple::Xdivy() {
+  return custom(sd::scalar::Xdivy, sd::pairwise::Xdivy, sd::broadcast::Xdivy);
+}
+
+BroadcastOpsTuple BroadcastOpsTuple::Xlogy() {
+  return custom(sd::scalar::Xlogy, sd::pairwise::Xlogy, sd::broadcast::Xlogy);
+}
+
+BroadcastOpsTuple BroadcastOpsTuple::Xlog1py() {
+  return custom(sd::scalar::Xlog1py, sd::pairwise::Xlog1py, sd::broadcast::Xlog1py);
+}
+
 }  // namespace sd

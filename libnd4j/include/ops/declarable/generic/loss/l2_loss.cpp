@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_l2_loss)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/loss.h>
 
 namespace sd {
 namespace ops {
@@ -33,12 +33,10 @@ CUSTOM_OP_IMPL(l2_loss, 1, 1, false, 0, 0) {
 
   REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
-  // FIXME: output should be used directly here, to avoid sum
-  auto* result = input->reduceNumber(reduce::SquaredNorm);
-  NDArray* divided = (*result) / 2.;
-  output->assign(divided);
-  delete divided;
-  delete result;
+  // l2_loss = sum(x^2) / 2
+  input->reduceNumber(reduce::SquaredNorm, output);
+  double two = 2.0;
+  output->applyScalar(scalar::Divide, two, output);
 
   return Status::OK;
 }

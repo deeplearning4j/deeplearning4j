@@ -21,7 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 
 #if NOT_EXCLUDED(OP_reduce_prod)
@@ -43,6 +43,11 @@ CUSTOM_OP_IMPL(reduce_prod, -1, 1, false, 0, 0) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input unchanged)
+    if (dimensions.empty()) {
+      output->assign(input);
+      return sd::Status::OK;
+    }
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
 
@@ -77,9 +82,17 @@ DECLARE_SHAPE_FN(reduce_prod) {
   std::vector<sd::LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input shape unchanged)
+    if (dimensions.empty()) {
+      return SHAPELIST(CONSTANT(inputShape->at(0)));
+    }
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
+
+  // When dimensions are empty (no axes specified), this means "reduce all dimensions".
+  // The TF case where empty axis tensor means "no reduction" is already handled
+  // inside the (block.width() > 1) branch above.
 
   REQUIRE_TRUE(
       dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
@@ -96,7 +109,7 @@ DECLARE_SHAPE_FN(reduce_prod) {
 }
 
 DECLARE_TYPES(reduce_prod) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS})->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 
@@ -107,11 +120,10 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
   auto gradI = OUTPUT_VARIABLE(0);
 
   if (gradO->lengthOf() == 1) {
-    auto* assign = input->reduceNumber(sd::reduce::Prod);
-    gradI->assign(assign);
-    // FIXED: Check if view before deletion
-    if (assign != nullptr && !assign->isView()) {
-      delete assign;
+    auto* prodResult = input->reduceNumber(sd::reduce::Prod);
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), prodResult, gradI);
+    if (prodResult != nullptr && !prodResult->isView()) {
+      delete prodResult;
     }
     *gradI /= *input;
     *gradI *= gradO->e(0);
@@ -156,13 +168,12 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
       auto* reshaped = gradO->reshape(gradO->ordering(), shape);
-      *gradI *= (*reshaped);  // for example could be something like [a,b] -> [1,a,1,b]
-      // FIXED: reshape() may return view - check before deletion
+      gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), reshaped, gradI);
       if (reshaped != nullptr && !reshaped->isView()) {
         delete reshaped;
       }
     } else
-      *gradI *= (*gradO);
+      gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
   }
 
   return sd::Status::OK;
@@ -172,7 +183,7 @@ DECLARE_SHAPE_FN(reduce_prod_bp) {
   auto dimensions = *block.getIArguments();
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
   }
 
   REQUIRE_TRUE(

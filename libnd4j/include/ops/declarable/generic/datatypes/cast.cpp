@@ -25,7 +25,7 @@
 #if NOT_EXCLUDED(OP_cast)
 
 #include <array/DataTypeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/datatypes.h>
 #include <ops/declarable/helpers/assign.h>
 namespace sd {
 namespace ops {
@@ -38,7 +38,12 @@ CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
     return sd::Status::OK;
   }
 
-  if (!block.isInplace()) {
+  // Fast path: same data type - no conversion needed
+  if (input->dataType() == output->dataType()) {
+    if (!block.isInplace()) {
+      output->assign(input);
+    }
+  } else if (!block.isInplace()) {
     helpers::assign(block.launchContext(), output, input);
   }
 
@@ -49,14 +54,36 @@ DECLARE_SYN(Cast, cast);
 
 DECLARE_SHAPE_FN(cast) {
   auto inShape = inputShape->at(0);
+
+  // Check empty from both native shape info AND from the NDArray object.
+  // Java-created empty singletons (Nd4j.empty()) may lack the ARRAY_EMPTY bit
+  // in the native C++ shape pointer even though isEmpty() returns true on the Java side.
+  // NDArray::isEmpty() has a fallback: rank==0 && _buffer==nullptr catches these.
+  bool wasEmptyFromShape = ArrayOptions::hasPropertyBitSet(inShape, ARRAY_EMPTY);
+  bool wasEmptyFromArray = false;
+  if (block.isFastPath()) {
+    const auto& fp = block.fastpath_in();
+    if (fp.size() > 0 && fp[0] != nullptr) wasEmptyFromArray = fp[0]->isEmpty();
+  }
+  bool wasEmpty = wasEmptyFromShape || wasEmptyFromArray;
+
   if(!block.getDArguments()->empty()) {
     DataType newType = block.dataType(0);
+
+    if (wasEmpty) {
+      // Return rank-0 empty shape with the new dtype
+      auto desc = ShapeBuilders::emptyShapeInfo(newType);
+      auto ret = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(desc)->primary());
+      delete[] desc;
+      return ret;
+    }
+
     auto desc = new ShapeDescriptor(inShape, newType, true);
     auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-    
+
     // FIX: Clean up the ShapeDescriptor after use
     delete desc;
-    
+
     auto compDataType = ArrayOptions::dataType(newShapeInfo);
     if(compDataType != newType) {
       std::string errorMessage;
@@ -73,13 +100,24 @@ DECLARE_SHAPE_FN(cast) {
   } else {
     auto it = INT_ARG(0);
     DataType newType = DataTypeUtils::fromInt(it);
-    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().castToDataType(inShape,newType));
+
+    if (wasEmpty) {
+      // Return rank-0 empty shape with the new dtype
+      auto desc = ShapeBuilders::emptyShapeInfo(newType);
+      auto ret = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(desc)->primary());
+      delete[] desc;
+      return ret;
+    }
+
+    auto resultShapeInfo = ConstantShapeHelper::getInstance().castToDataType(inShape, newType);
+    auto ret = SHAPELIST(resultShapeInfo);
     return ret;
   }
 }
 
 DECLARE_TYPES(cast) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_CAST);
 }
 }  // namespace ops
 }  // namespace sd

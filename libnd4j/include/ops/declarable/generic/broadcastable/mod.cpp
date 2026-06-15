@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_mod)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {
@@ -34,6 +34,12 @@ BROADCASTABLE_OP_IMPL(mod, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
 
   BROADCAST_CHECK_EMPTY(x, y, z);
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::Mod, y, z, nullptr);
+    return Status::OK;
+  }
 
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(Mod), x, y, z);
   if (tZ == nullptr)
@@ -49,7 +55,8 @@ DECLARE_TYPES(mod) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, INHERIT);
+      ->setAllowedOutputTypes(0, INHERIT)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(mod_bp) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }

@@ -24,7 +24,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_maxpool2d)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/convo.h>
 #include <ops/declarable/helpers/convolutions.h>
 
 namespace sd {
@@ -64,12 +64,12 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
 
   if (!isNCHW) {
     std::vector<sd::LongType> perm = {0, 3, 1, 2};
-    input = input->permute(perm, false, false);    // [bS, iH, iW, iC] -> [bS, iC, iH, iW] - permute() already returns NDArray*
-    output = output->permute(perm, false, false);  // [bS, oH, oW, iC] -> [bS, iC, oH, oW] - permute() already returns NDArray*
+    input = input->permute(perm, false, false);    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    output = output->permute(perm, false, false);  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
-  if (isSameMode) ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+  if (isSameMode) ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, isSameMode);
 
   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width;
   // poolingMode; 9 - divisor;

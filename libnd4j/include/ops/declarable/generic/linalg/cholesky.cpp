@@ -20,7 +20,7 @@
 // Created by GS <sgazeos@gmail.com> at 11/12/2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/lup.h>
 #include <system/op_boilerplate.h>
 

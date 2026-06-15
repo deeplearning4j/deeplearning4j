@@ -43,14 +43,16 @@ static void split_(NDArray& input, const std::vector<NDArray*>& outArrs, const L
   const sd::LongType* xStride = shape::stride(xShapeInfo);
   const int xRank = input.rankOf();
 
-  // Fast path 1: Continuous memory case
+  // Fast path 1: Continuous memory case - check strides for contiguity
+  const bool inputContiguous = shape::strideDescendingCAscendingF(input.shapeInfo());
   bool luckCase1 = ((axis == 0 && input.ordering() == 'c') ||
                     (axis == xRank - 1 && input.ordering() == 'f')) &&
-                   input.ews() == 1;
+                   inputContiguous;
 
   if (luckCase1) {
     for (sd::LongType i = 0; i < numSplits; ++i) {
-      luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
+      const bool outContiguous = shape::strideDescendingCAscendingF(outArrs[i]->shapeInfo());
+      luckCase1 &= outArrs[i]->ordering() == input.ordering() && outContiguous;
       if (!luckCase1) break;
     }
   }

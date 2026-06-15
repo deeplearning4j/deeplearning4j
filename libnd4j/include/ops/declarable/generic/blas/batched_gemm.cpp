@@ -215,7 +215,8 @@ DECLARE_SHAPE_FN(batched_gemm) {
 DECLARE_TYPES(batched_gemm) {
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})
-      ->setAllowedOutputTypes({ALL_FLOATS});
+      ->setAllowedOutputTypes({ALL_FLOATS})
+      ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 
@@ -285,31 +286,34 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 2) {
   int transABlas = transA ? 112 : 111;
   int transBBlas = transB ? 112 : 111;
 
-  // First gradient computation: dL/dA = dL/dC @ B^T (or B if transB)
-  int transA1 = 0;
-  int transB1 = transB;
-  int M1 = dlDOut[0]->sizeAt(0);
-  int N1 = transB ? matricesB[0]->sizeAt(0) : matricesB[0]->sizeAt(1);
-  int k1 = dlDOut[0]->sizeAt(1);
+  // First gradient computation: dL/dA = dL/dC @ B^T
+  // Forward: C = op(A) * op(B) where op(X) = X if no-trans, X^T if trans
+  // Backward: dL/dA = dL/dC @ op(B)^T when transA=0, or dL/dA = op(B)^T @ dL/dC^T when transA=1
+  // We need to flip the B transpose relative to forward pass
+  int transB1 = transB ? 0 : 1;  // flip B transpose for gradient
+  // bgemm params: M1 x N1 result, k1 = shared dimension
+  int M1 = dldXOutputs[0]->sizeAt(0);  // rows of dL/dA = rows of op(A)
+  int N1 = dldXOutputs[0]->sizeAt(1);  // cols of dL/dA = cols of op(A)
+  int k1 = dlDOut[0]->sizeAt(1);       // shared dim = cols of dL/dC = N of original
   int lda1 = dlDOut[0]->sizeAt(0);
   int ldb1 = matricesB[0]->sizeAt(0);
   int ldc1 = dldXOutputs[0]->sizeAt(0);
-  
-  helpers::bgemm(dlDOut, matricesB, dldXOutputs, alphaInput, betaInput, 
-                 transA1 ? 112 : 111, transB1 ? 112 : 111, M1, N1, k1, lda1, ldb1, ldc1);
 
-  // Second gradient computation: dL/dB = A^T @ dL/dC (or A if transA)
-  int transA2 = transA ? 0 : 1;
-  int transB2 = 0;
-  int M2 = transA ? matricesA[0]->sizeAt(1) : matricesA[0]->sizeAt(0);
-  int N2 = dlDOut[0]->sizeAt(1);
-  int k2 = transA ? matricesA[0]->sizeAt(0) : matricesA[0]->sizeAt(1);
+  helpers::bgemm(dlDOut, matricesB, dldXOutputs, alphaInput, betaInput,
+                 111, transB1 ? 112 : 111, M1, N1, k1, lda1, ldb1, ldc1);
+
+  // Second gradient computation: dL/dB = A^T @ dL/dC
+  // We need to flip the A transpose relative to forward pass
+  int transA2 = transA ? 0 : 1;  // flip A transpose for gradient
+  int M2 = dldYOutputs[0]->sizeAt(0);  // rows of dL/dB
+  int N2 = dldYOutputs[0]->sizeAt(1);  // cols of dL/dB
+  int k2 = dlDOut[0]->sizeAt(0);       // shared dim = rows of dL/dC = M of original
   int lda2 = matricesA[0]->sizeAt(0);
   int ldb2 = dlDOut[0]->sizeAt(0);
   int ldc2 = dldYOutputs[0]->sizeAt(0);
-  
-  helpers::bgemm(matricesA, dlDOut, dldYOutputs, alphaInput, betaInput, 
-                 transA2 ? 112 : 111, transB2 ? 112 : 111, M2, N2, k2, lda2, ldb2, ldc2);
+
+  helpers::bgemm(matricesA, dlDOut, dldYOutputs, alphaInput, betaInput,
+                 transA2 ? 112 : 111, 111, M2, N2, k2, lda2, ldb2, ldc2);
 
   if(alphaInput != alpha) {
     delete alphaInput;
@@ -346,7 +350,8 @@ DECLARE_SHAPE_FN(batched_gemm_bp) {
 DECLARE_TYPES(batched_gemm_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})
-      ->setAllowedOutputTypes({ALL_FLOATS});
+      ->setAllowedOutputTypes({ALL_FLOATS})
+      ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

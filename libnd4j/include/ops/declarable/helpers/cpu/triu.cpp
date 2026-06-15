@@ -31,29 +31,13 @@ namespace helpers {
 template <typename T>
 static void triuBP_(sd::LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,
                     const int diagonal) {
-  if(gradO.isScalar()) {
-    auto firstElement = gradO.e(0);
-    gradI.assign(&firstElement);
+  if (gradO.isScalar()) {
+    auto scalar = gradO.e<T>(0);
+    gradI.assign(scalar);
   } else {
-    auto dOdI = NDArray(&gradO);  // dO/dI
-    char direction = diagonal <= 0  || diagonal > 0 ? 'l': 'u';
-
-    const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, diagonal, dOdI, direction,false);
-    int dLen = dOdI.lengthOf();
-
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        if (dOdI.t<T>(i) != static_cast<T>(0.f)) dOdI.r<T>(i) = static_cast<T>(1.f);
-      }
-    };
-    samediff::Threads::parallel_for(func, 0, dLen);
-
-    NDArray *ref = dOdI * gradO;
-    gradI.assign(ref);  // chain rule: dLoss/dI = dO/dI * dLoss/dO
-    delete ref;
+    gradI.assign(&gradO);
   }
-
-
+  gradI.fillAsTriangular<T>(0.0f, diagonal, diagonal, gradI, 'l', false);
 }
 
 void triuBP(sd::LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,

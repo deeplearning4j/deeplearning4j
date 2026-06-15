@@ -20,7 +20,7 @@
 // Created by GS <sgazeos@gmail.com>
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/random.h>
 #include <ops/declarable/helpers/random_crop.h>
 #if NOT_EXCLUDED(OP_random_crop)
 namespace sd {

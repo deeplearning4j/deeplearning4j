@@ -119,27 +119,33 @@ static void histogram_(LaunchContext *context, void *xBuffer, const LongType *xS
                        const LongType *dxShapeInfo, void *zBuffer, const LongType *zShapeInfo, LongType numBins, void *min_val, void *max_val) {
   dim3 histogramDims = getHistogramDims(shape::length(xShapeInfo),numBins);
   int workspaceSize = histogramDims.x * numBins;
-  auto tmp = NDArrayFactory::create<Z>('c', {workspaceSize}, context);
+  NDArray* tmp = NDArrayFactory::create<Z>('c', {workspaceSize}, context);
 
   histogramKernel<X, Z><<<histogramDims.x, histogramDims.y, histogramDims.z, *context->getCudaStream()>>>(
-      xBuffer, dxShapeInfo, zBuffer, zShapeInfo, tmp.specialBuffer(), context->getReductionPointer(), numBins,
+      xBuffer, dxShapeInfo, zBuffer, zShapeInfo, tmp->specialBuffer(), context->getReductionPointer(), numBins,
       reinterpret_cast<X *>(min_val), reinterpret_cast<X *>(max_val));
   DebugHelper::checkErrorCode(context->getCudaStream(),"histogramKernel failed");
 
-  cudaStreamSynchronize(*context->getCudaStream());
+  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    cudaStreamSynchronize(*context->getCudaStream());
+    delete tmp;
+  }
 }
 
 void histogramHelper(LaunchContext *context, NDArray &input, NDArray &output) {
   LongType numBins = output.lengthOf();
   NDArray::registerSpecialUse({&output}, {&input});
 
-  auto min_val = input.reduceNumber(reduce::SameOps::Min);
-  auto max_val = input.reduceNumber(reduce::SameOps::Max);
+  NDArray* min_val = input.reduceNumber(reduce::SameOps::Min);
+  NDArray* max_val = input.reduceNumber(reduce::SameOps::Max);
   BUILD_DOUBLE_SELECTOR(
       input.dataType(), output.dataType(), histogram_,
       (context, input.specialBuffer(), input.shapeInfo(), input.specialShapeInfo(), output.specialBuffer(),
-       output.specialShapeInfo(), numBins, min_val.specialBuffer(), max_val.specialBuffer()),
+       output.specialShapeInfo(), numBins, min_val->specialBuffer(), max_val->specialBuffer()),
       SD_COMMON_TYPES, SD_INTEGER_TYPES);
+  delete min_val;
+  delete max_val;
   NDArray::registerSpecialUse({&output}, {&input});
 }
 }  // namespace helpers

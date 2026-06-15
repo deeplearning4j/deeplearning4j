@@ -64,20 +64,53 @@ void mergeMaxIndex(sd::LaunchContext* context, const std::vector<NDArray*>& inAr
 template <typename T>
 static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
   const sd::LongType numArgs = inArrs.size();
-  auto x = inArrs[0];
+  const sd::LongType length = output.lengthOf();
+  const int rank = output.rankOf();
+  
+  // Check if all inputs have same shape and strides as output
+  auto outputShape = output.shapeInfo();
+  std::vector<bool> vbSameShapeAndStrides(numArgs);
+  std::vector<sd::LongType*> vShapePtrs(numArgs);
+  std::vector<sd::LongType*> vStridePtrs(numArgs);
+  std::vector<sd::LongType> vRanks(numArgs);
+  std::vector<const T*> vBuffers(numArgs);
+  
+  for (int i = 0; i < numArgs; ++i) {
+    vbSameShapeAndStrides[i] = shape::haveSameShapeAndStrides(outputShape, inArrs[i]->shapeInfo());
+    vShapePtrs[i] = shape::shapeOf(inArrs[i]->shapeInfo());
+    vStridePtrs[i] = shape::stride(inArrs[i]->shapeInfo());
+    vRanks[i] = shape::rank(inArrs[i]->shapeInfo());
+    vBuffers[i] = inArrs[i]->bufferAsT<T>();
+  }
+  
+  sd::LongType *outputShapeOf = shape::shapeOf(outputShape);
+  sd::LongType *outputStride = shape::stride(outputShape);
+  T* outBuffer = output.bufferAsT<T>();
 
   auto func = PRAGMA_THREADS_FOR {
+    sd::LongType coords[SD_MAX_RANK];
     for (auto e = start; e < stop; e++) {
+      INDEX2COORDS(e, rank, outputShapeOf, coords);
+      
+      sd::LongType outOffset;
+      COORDS2INDEX(rank, outputStride, coords, outOffset);
+      
       T max = -DataTypeUtils::max<T>();
       for (sd::LongType i = 0; i < numArgs; i++) {
-        T v = inArrs[i]->e<T>(e);
+        sd::LongType xOffset;
+        if (vbSameShapeAndStrides[i]) {
+          xOffset = outOffset;
+        } else {
+          COORDS2INDEX(vRanks[i], vStridePtrs[i], coords, xOffset);
+        }
+        T v = vBuffers[i][xOffset];
         if (v > max) max = v;
       }
-      output.p(e, max);
+      outBuffer[outOffset] = max;
     }
   };
 
-  samediff::Threads::parallel_for(func, 0, x->lengthOf());
+  samediff::Threads::parallel_for(func, 0, length);
 }
 
 void mergeMax(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {

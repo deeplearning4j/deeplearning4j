@@ -36,6 +36,7 @@ class SD_LIB_EXPORT LegacyReduceLongOp : public LegacyOp {
 
   ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
   LegacyOp* clone() override;
+  void registerTypes() override;
 };
 }  // namespace ops
 }  // namespace sd

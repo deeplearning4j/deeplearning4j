@@ -25,7 +25,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_lstmBlock)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/recurrent.h>
 #include <ops/declarable/helpers/lstmBlock.h>
 
 namespace sd {

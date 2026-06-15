@@ -25,7 +25,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_triangual_solve)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/triangular_solve.h>
 namespace sd {
 namespace ops {
@@ -62,6 +62,7 @@ CUSTOM_OP_IMPL(triangular_solve, 2, 1, false, 0, 0) {
   auto input = a;
   if (useAdjoint) {
     auto adjointA = a->ulike();
+    adjointA->nullify();
     helpers::adjointMatrix(block.launchContext(), a, isLower, adjointA);
     input = new NDArray(adjointA);
     isLower = !isLower;

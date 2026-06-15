@@ -20,15 +20,13 @@
 // Created by george@skymind.io on 9/6/2018.
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/segment.h>
 #if NOT_EXCLUDED(OP_unsorted_segment_sqrt_n)
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(unsorted_segment_sqrt_n, 2, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
-  auto reshapedInput = input;
-
   auto idxSegments = INPUT_VARIABLE(1);
   auto reshapedSegments = idxSegments;
   if (!idxSegments->isVector() && idxSegments->rankOf() > 1) {
@@ -51,12 +49,11 @@ CUSTOM_OP_IMPL(unsorted_segment_sqrt_n, 2, 1, false, 0, 0) {
   REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), reshapedSegments, numOfClasses, wrong),
                0, "unsorted_segment_sqrt_n: segment indices should be in range [0, %ld), but %ld != %ld", numOfClasses,
                wrong, numOfClasses);
-  helpers::unsortedSegmentSqrtNFunctor(block.launchContext(), reshapedInput, reshapedSegments, numOfClasses,
+  helpers::unsortedSegmentSqrtNFunctor(block.launchContext(), input, reshapedSegments, numOfClasses,
                                        segmentedOutput);
-
-
-  delete reshapedInput;
-  delete reshapedSegments;
+  if (reshapedSegments != idxSegments) {
+    delete reshapedSegments;
+  }
   return Status::OK;
 }
 
@@ -66,7 +63,7 @@ DECLARE_SHAPE_FN(unsorted_segment_sqrt_n) {
   LongType* outputShape = nullptr;
   LongType numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<LongType>(0) : INT_ARG(0);
 
-  if (INPUT_VARIABLE(0)->rankOf() >= 2) {
+  if (shape::rank(in) >= 2) {
     ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
     outputShape[0] = outRank;
     outputShape[1] = numOfClasses;

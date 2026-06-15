@@ -136,31 +136,33 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
 template <typename T>
 static sd::Status inTopKFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* target,
                                  NDArray* result, const sd::LongType k) {
-  std::vector<sd::LongType> shapeI(input->rankOf());
-  for (int i = 0; i < input->rankOf() - 1; i++) shapeI[i] = input->sizeAt(i);
-  shapeI[input->rankOf() - 1] = k;
-  std::unique_ptr<NDArray> indices(NDArrayFactory::create_<sd::LongType>(input->ordering(), shapeI, context));
-  NDArray* values = nullptr;
-  sd::Status status = topKFunctor(context, input, values, indices.get(), k, true);
-  int assign = 0;
-  result->assign(assign);
-  if (status == sd::Status::OK) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto e = start; e < stop; e++) {
-        bool found = false;
-        for (sd::LongType j = 0; j < k; j++) {
-          if (target->e<sd::LongType>(e) == indices->e<sd::LongType>(e * k + j)) {
-            found = true;
-            break;
-          }
-        }
-        if (found) result->p<bool>(e, true);
-      }
-    };
+  result->nullify();
 
-    samediff::Threads::parallel_tad(func, 0, target->lengthOf());
-  }
-  return status;
+  sd::LongType numRows = input->sizeAt(0);
+  sd::LongType width = input->sizeAt(1);
+
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto e = start; e < stop; e++) {
+      sd::LongType targetIdx = target->e<sd::LongType>(e);
+      T targetVal = input->e<T>(e, targetIdx);
+
+      // Count values strictly greater than targetVal in this row
+      sd::LongType countGreater = 0;
+      for (sd::LongType j = 0; j < width; j++) {
+        if (input->e<T>(e, j) > targetVal) {
+          countGreater++;
+        }
+      }
+
+      // Target is in top-k if fewer than k values are strictly greater
+      if (countGreater < k) {
+        result->p<bool>(e, true);
+      }
+    }
+  };
+
+  samediff::Threads::parallel_tad(func, 0, numRows);
+  return sd::Status::OK;
 }
 
 sd::Status topKFunctor(sd::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,

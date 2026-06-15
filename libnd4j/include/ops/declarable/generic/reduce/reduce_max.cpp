@@ -21,7 +21,8 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <helpers/ShapeUtils.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/transforms.h>
 
@@ -46,6 +47,11 @@ CUSTOM_OP_IMPL(reduce_max, -1, 1, false, 0, 0) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input unchanged)
+    if (dimensions.empty()) {
+      output->assign(input);
+      return sd::Status::OK;
+    }
   }
 
   REQUIRE_TRUE(
@@ -80,8 +86,16 @@ DECLARE_SHAPE_FN(reduce_max) {
   auto dimensions = *block.getIArguments();
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input shape unchanged)
+    if (dimensions.empty()) {
+      return SHAPELIST(CONSTANT(inputShape->at(0)));
+    }
   }
+
+  // When dimensions are empty (no axes specified), this means "reduce all dimensions".
+  // The TF case where empty axis tensor means "no reduction" is already handled
+  // inside the (block.width() > 1) branch above.
 
   REQUIRE_TRUE(
       dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
@@ -99,7 +113,7 @@ DECLARE_SHAPE_FN(reduce_max) {
   return SHAPELIST(outShapeInfo);
 }
 
-DECLARE_TYPES(reduce_max) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(reduce_max) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true)->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING); }
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -129,6 +143,8 @@ CUSTOM_OP_IMPL(reduce_max_bp, -1, 1, false, 0, 0) {
   // *** calculations *** //
 
   *gradI = 0;
+  // Ensure the zero fill is visible on host before scatterSimple writes host-side
+  gradI->syncToHost();
 
   if (gradO->lengthOf() == 1) {
     auto indOfMaxElem = input->indexReduceNumber(sd::indexreduce::IndexMax);
@@ -138,11 +154,9 @@ CUSTOM_OP_IMPL(reduce_max_bp, -1, 1, false, 0, 0) {
 
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMax, &dimensions);
-  auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());
     helpers::scatterSimple(
         block.launchContext(), 6, *gradI, *gradO, *indicesArr,
-        *vec);  // 6 corresponds to copy operation
-    delete vec;
+        dimensions);  // 6 corresponds to copy operation; TADs are along reduction dims
     delete indicesArr;
   }
 
@@ -154,7 +168,7 @@ DECLARE_SHAPE_FN(reduce_max_bp) {
 
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
   }
 
   REQUIRE_TRUE(

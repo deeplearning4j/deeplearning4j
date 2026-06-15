@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_onehot)
 
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/one_hot.h>
 
 namespace sd {

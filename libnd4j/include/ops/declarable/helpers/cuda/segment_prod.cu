@@ -40,195 +40,114 @@ namespace helpers {
 // -------------------------------------------------------------------------------------------------------------- //
 
 template <typename T, typename I>
-static SD_KERNEL void segmentProdLinearKernel(void* input, LongType const* inputShape, LongType* starts,
+static SD_KERNEL SD_INLINE void segmentProdLinearKernel(void* input, LongType const* inputShape, LongType* starts,
                                               LongType* lengths, LongType numOfClasses, void* output,
                                               LongType const* outputShape) {
+  // One block per segment. Shared memory reduction (multiplication) — no global atomics.
+  extern __shared__ char shmem[];
+  T* sdata = reinterpret_cast<T*>(shmem);
 
-  // Shared memory for caching shape, stride, and rank information
-  __shared__ LongType inputRank;
-  __shared__ const LongType* inputShapePtr;
-  __shared__ const LongType* inputStridePtr;
+  auto segment = blockIdx.x;
+  if (segment >= numOfClasses) return;
 
-  __shared__ LongType outputRank;
-  __shared__ const LongType* outputShapePtr;
-  __shared__ const LongType* outputStridePtr;
+  const T* x = reinterpret_cast<const T*>(input);
+  T* z = reinterpret_cast<T*>(output);
 
-  // Shared memory for pointers and lengths initialized by thread 0
-  __shared__ T* x;
-  __shared__ T* z;
-  __shared__ LongType xLen;
-  __shared__ LongType zLen;
+  auto start = starts[segment];
+  auto len = lengths[segment];
+  if (len == 0) return;
+  auto finish = start + len;
 
-  if (threadIdx.x == 0) {
-    // Cache rank, shape, and stride for inputShape
-    inputRank = shape::rank(inputShape);
-    inputShapePtr = shape::shapeOf(inputShape);
-    inputStridePtr = shape::stride(inputShape);
+  const LongType* inputStridePtr = shape::stride(inputShape);
+  const LongType* outputStridePtr = shape::stride(outputShape);
 
-    // Cache rank, shape, and stride for outputShape
-    outputRank = shape::rank(outputShape);
-    outputShapePtr = shape::shapeOf(outputShape);
-    outputStridePtr = shape::stride(outputShape);
-
-    // Cache lengths
-    xLen = shape::length(inputShape);
-    zLen = shape::length(outputShape);
-
-    // Initialize pointers
-    x = reinterpret_cast<T*>(input);
-    z = reinterpret_cast<T*>(output);
+  // Each thread computes product over its stripe
+  T threadProd = static_cast<T>(1);
+  for (auto e = start + threadIdx.x; e < finish; e += blockDim.x) {
+    LongType eCoords[] = {e};
+    LongType xIndex;
+    COORDS2INDEX(1, inputStridePtr, eCoords, xIndex);
+    threadProd *= x[xIndex];
   }
+
+  sdata[threadIdx.x] = threadProd;
   __syncthreads();
 
-  // Calculate global thread index and step size
-  LongType startIdx = threadIdx.x + blockIdx.x * blockDim.x;
-  LongType step = blockDim.x * gridDim.x;
-
-  // Coordinate arrays
-  LongType inputCoords[SD_MAX_RANK];
-  LongType outputCoords[SD_MAX_RANK];
-
-  // Offset variables
-  LongType xIndex;
-  LongType zIndex;
-
-  // Iterate over each class segment assigned to this block
-  for (LongType segment = blockIdx.x; segment < numOfClasses; segment += gridDim.x) {
-    // Convert segment index to coordinates for outputShape
-    INDEX2COORDS(segment, outputRank, outputShapePtr, outputCoords);
-    // Convert coordinates back to linear index for outputShape
-    COORDS2INDEX(outputRank, outputStridePtr, outputCoords, zIndex);
-
-    // Skip processing if zIndex is out of bounds
-    if (zIndex >= zLen)
-      continue;
-
-    // Retrieve start and finish indices for the current segment
-    auto start = starts[segment];
-    auto finish = start + lengths[segment];
-
-    // Skip processing if the length for the segment is zero
-    if (lengths[segment] == 0) {
-      continue;
+  // Parallel reduction in shared memory (multiplication)
+  for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
+    if (threadIdx.x < s && (threadIdx.x + s) < blockDim.x) {
+      sdata[threadIdx.x] *= sdata[threadIdx.x + s];
     }
+    __syncthreads();
+  }
 
-    // Iterate over elements within the segment, distributing work among threads
-    for (LongType e = startIdx; e < finish; e += step) {
-      // Convert linear index to coordinates for inputShape
-      INDEX2COORDS(e, inputRank, inputShapePtr, inputCoords);
-      // Convert coordinates back to linear index for inputShape
-      COORDS2INDEX(inputRank, inputStridePtr, inputCoords, xIndex);
-
-      // Skip processing if xIndex is out of bounds
-      if (xIndex >= xLen)
-        continue;
-
-      // Perform atomic multiplication on the output buffer
-      math::atomics::sd_atomicMul(&z[zIndex], x[xIndex]);
-    }
+  // Thread 0 writes result
+  if (threadIdx.x == 0) {
+    LongType segmentCoords[] = {segment};
+    LongType zIndex;
+    COORDS2INDEX(1, outputStridePtr, segmentCoords, zIndex);
+    z[zIndex] = sdata[0];
   }
 }
 
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void unsortedSegmentProdLinearKernel(T* input, LongType const* inputShape, I* indices,
+static SD_KERNEL void unsortedSegmentProdLinearKernel(void* input, LongType const* inputShape, void* indices,
                                                       LongType const* indicesShape, LongType* starts, LongType* lengths,
-                                                      LongType numOfClasses, T* output, LongType const* outputShape) {
+                                                      LongType numOfClasses, void* output, LongType const* outputShape) {
+  // One block per segment. Shared memory reduction (multiplication) — no global atomics.
+  extern __shared__ char shmem[];
+  T* sdata = reinterpret_cast<T*>(shmem);
 
-  // Shared memory for caching shape, stride, and rank information
-  __shared__ LongType inputRank;
-  __shared__ const LongType* inputShapePtr;
-  __shared__ const LongType* inputStridePtr;
+  auto segment = blockIdx.x;
+  if (segment >= numOfClasses) return;
+  if (lengths[segment] == 0) return;
 
-  __shared__ LongType indicesRank;
-  __shared__ const LongType* indicesShapePtr;
-  __shared__ const LongType* indicesStridePtr;
+  const T* x = reinterpret_cast<const T*>(input);
+  T* z = reinterpret_cast<T*>(output);
+  const I* y = reinterpret_cast<const I*>(indices);
 
-  __shared__ LongType outputRank;
-  __shared__ const LongType* outputShapePtr;
-  __shared__ const LongType* outputStridePtr;
+  LongType xLen = shape::length(inputShape);
+  const LongType* inputStridePtr = shape::stride(inputShape);
+  const LongType* indicesStridePtr = shape::stride(indicesShape);
+  const LongType* outputStridePtr = shape::stride(outputShape);
 
-  // Shared memory for pointers and lengths initialized by thread 0
-  __shared__ T* x;
-  __shared__ I* y;
-  __shared__ T* z;
-  __shared__ LongType xLen;
-  __shared__ LongType zLen;
-
-  if (threadIdx.x == 0) {
-    // Cache rank, shape, and stride for inputShape
-    inputRank = shape::rank(inputShape);
-    inputShapePtr = shape::shapeOf(inputShape);
-    inputStridePtr = shape::stride(inputShape);
-
-    // Cache rank, shape, and stride for indicesShape
-    indicesRank = shape::rank(indicesShape);
-    indicesShapePtr = shape::shapeOf(indicesShape);
-    indicesStridePtr = shape::stride(indicesShape);
-
-    // Cache rank, shape, and stride for outputShape
-    outputRank = shape::rank(outputShape);
-    outputShapePtr = shape::shapeOf(outputShape);
-    outputStridePtr = shape::stride(outputShape);
-
-    // Cache lengths
-    xLen = shape::length(inputShape);
-    zLen = shape::length(outputShape);
-
-    // Initialize pointers
-    x = input;
-    y = indices;
-    z = output;
+  // Each thread computes product over its stripe of matching elements
+  T threadProd = static_cast<T>(1);
+  for (auto e = threadIdx.x; e < xLen; e += blockDim.x) {
+    LongType eCoords[] = {e};
+    LongType xIndex, yIndex;
+    COORDS2INDEX(1, inputStridePtr, eCoords, xIndex);
+    COORDS2INDEX(1, indicesStridePtr, eCoords, yIndex);
+    if (y[yIndex] == static_cast<I>(segment)) {
+      threadProd *= x[xIndex];
+    }
   }
+
+  sdata[threadIdx.x] = threadProd;
   __syncthreads();
 
-  // Calculate global thread index and step size
-  LongType startIdx = threadIdx.x + blockIdx.x * blockDim.x;
-  LongType step = blockDim.x * gridDim.x;
-
-  // Coordinate arrays
-  LongType xCoords[SD_MAX_RANK];
-  LongType yCoords[SD_MAX_RANK];
-  LongType zCoords[SD_MAX_RANK];
-
-  // Offset variables
-  LongType xIndex;
-  LongType yIndex;
-  LongType zIndex;
-
-  for (LongType idx = startIdx; idx < xLen; idx += step) {
-    // Convert linear index to coordinates for inputShape
-    INDEX2COORDS(idx, inputRank, inputShapePtr, xCoords);
-    // Convert coordinates back to linear index for inputShape
-    COORDS2INDEX(inputRank, inputStridePtr, xCoords, xIndex);
-
-    // Convert linear index to coordinates for indicesShape
-    INDEX2COORDS(idx, indicesRank, indicesShapePtr, yCoords);
-    // Convert coordinates back to linear index for indicesShape
-    COORDS2INDEX(indicesRank, indicesStridePtr, yCoords, yIndex);
-
-    // Retrieve the segment index from indices
-    auto segment = y[yIndex];
-
-    // Convert segment index to coordinates for outputShape
-    INDEX2COORDS(segment, outputRank, outputShapePtr, zCoords);
-    // Convert coordinates back to linear index for outputShape
-    COORDS2INDEX(outputRank, outputStridePtr, zCoords, zIndex);
-
-    // Skip processing if the length for the segment is zero
-    if (lengths[segment] == 0) {
-      continue;
+  // Parallel reduction in shared memory (multiplication)
+  for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
+    if (threadIdx.x < s && (threadIdx.x + s) < blockDim.x) {
+      sdata[threadIdx.x] *= sdata[threadIdx.x + s];
     }
+    __syncthreads();
+  }
 
-    // Perform atomic multiplication on the output buffer
-    math::atomics::sd_atomicMul(&z[zIndex], x[xIndex]);
+  // Thread 0 writes result
+  if (threadIdx.x == 0) {
+    LongType segmentCoords[] = {segment};
+    LongType zIndex;
+    COORDS2INDEX(1, outputStridePtr, segmentCoords, zIndex);
+    z[zIndex] = sdata[0];
   }
 }
 
 // -------------------------------------------------------------------------------------------------------------- //
 // SegmentProd kernel
 template <typename T, typename I>
-static SD_KERNEL void segmentProdTadKernel(void* inputBuf, LongType const* inputShape, LongType const* inputTads,
+static SD_KERNEL SD_INLINE void segmentProdTadKernel(void* inputBuf, LongType const* inputShape, LongType const* inputTads,
                                            LongType const* inputTadOffsets,
                                            I* indices, LongType* starts,
                                            LongType* lengths, LongType numOfClasses, void* outputBuf,
@@ -344,22 +263,31 @@ template <typename T, typename I>
 static void segmentProdFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
   auto stream = context->getCudaStream();
   LongType numClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
-  NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
-  NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
+  auto classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
+  auto classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   sd::LongType zero = 0;
   sd::LongType  one = 1;
   sd::LongType  len = indices->lengthOf();
   output->assign(one);
-  classesRangesBegs.assign(len);
-  classesRangesLens.assign(zero);
+  classesRangesBegs->assign(len);
+  classesRangesLens->assign(zero);
 
-  fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
-  LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
-  LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
+  fillUpSegments(indices, numClasses, *classesRangesBegs, *classesRangesLens);
+  LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs->specialBuffer());
+  LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens->specialBuffer());
 
   if (input->isVector()  || input->isScalar()) {
     dim3 launchDims = segmentDims(indices->lengthOf(),input->lengthOf());
-    segmentProdLinearKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins,
+    // Round threads up to next power of 2 for correct shared memory reduction
+    unsigned int threads = launchDims.x;
+    threads--;
+    threads |= threads >> 1; threads |= threads >> 2; threads |= threads >> 4;
+    threads |= threads >> 8; threads |= threads >> 16;
+    threads++;
+    if (threads < 1) threads = 1;
+    LongType shmemSize = threads * sizeof(T);
+    if (shmemSize < static_cast<LongType>(launchDims.z)) shmemSize = launchDims.z;
+    segmentProdLinearKernel<T, I><<<launchDims.y, threads, shmemSize, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins,
                                                                                          lengths, numClasses, output->specialBuffer(),
                                                                                          output->specialShapeInfo());
     sd::DebugHelper::checkErrorCode(stream, "segmentProdLinearKernel failed");
@@ -382,6 +310,8 @@ static void segmentProdFunctor_(LaunchContext* context, NDArray* input, NDArray*
 
     delete dimensions;
   }
+  delete classesRangesBegs;
+  delete classesRangesLens;
 }
 // -------------------------------------------------------------------------------------------------------------- //
 void segmentProdFunctor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
@@ -397,24 +327,32 @@ void segmentProdFunctor(LaunchContext* context, NDArray* input, NDArray* indices
 template <typename T, typename I>
 static void unsortedSegmentProdFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses, NDArray* output) {
   auto stream = context->getCudaStream();
-  NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
-  NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
+  auto classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
+  auto classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
   sd::LongType zero = 0;
   sd::LongType  one = 1;
   sd::LongType  len = indices->lengthOf();
-  classesRangesBegs.assign(len);
-  classesRangesLens.assign(zero);
+  classesRangesBegs->assign(len);
+  classesRangesLens->assign(zero);
   dim3 dims = getFillUpSegmentsDims(numOfClasses,indices->lengthOf());
-  fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
-  LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
-  LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
+  fillUpSegments(indices, numOfClasses, *classesRangesBegs, *classesRangesLens);
+  LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs->specialBuffer());
+  LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens->specialBuffer());
   output->assign(one);
 
-  dim3 launchDims = getLaunchDims("unsorted_segment_prod_2");
   if (input->isVector()) {
-    unsortedSegmentProdLinearKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
-        input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), indices->dataBuffer()->specialAsT<I>(),
-        indices->specialShapeInfo(), begins, lengths, numOfClasses, output->dataBuffer()->specialAsT<T>(),
+    // One block per class, threads = input length (capped at 256), rounded to power of 2
+    unsigned int threads = static_cast<unsigned int>(input->lengthOf());
+    if (threads > 256) threads = 256;
+    threads--;
+    threads |= threads >> 1; threads |= threads >> 2; threads |= threads >> 4;
+    threads |= threads >> 8; threads |= threads >> 16;
+    threads++;
+    if (threads < 1) threads = 1;
+    LongType shmemSize = threads * sizeof(T);
+    unsortedSegmentProdLinearKernel<T, I><<<numOfClasses, threads, shmemSize, *stream>>>(
+        input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(),
+        indices->specialShapeInfo(), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo());
     sd::DebugHelper::checkErrorCode(stream, "unsortedSegmentProdLinearKernel failed");
 
@@ -428,7 +366,7 @@ static void unsortedSegmentProdFunctor_(LaunchContext* context, NDArray* input, 
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
     dims.x = input->sizeAt(0);
-    segmentProdTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+    segmentProdTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
@@ -436,6 +374,8 @@ static void unsortedSegmentProdFunctor_(LaunchContext* context, NDArray* input, 
 
     delete dimensions;
   }
+  delete classesRangesBegs;
+  delete classesRangesLens;
 }
 // -------------------------------------------------------------------------------------------------------------- //
 void unsortedSegmentProdFunctor(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses,
@@ -450,7 +390,7 @@ void unsortedSegmentProdFunctor(LaunchContext* context, NDArray* input, NDArray*
 
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void segmentProdBPLinearKernel(void* inputBuf, LongType const* inputShape, void* forwardOutput,
+static SD_KERNEL SD_INLINE void segmentProdBPLinearKernel(void* inputBuf, LongType const* inputShape, void* forwardOutput,
                                                 LongType const* forwardShape, void* eps, LongType const* epsShape,
                                                 void* indicesBuf, LongType const* indicesShape, void* outputBuf,
                                                 LongType const* outputShape) {
@@ -579,7 +519,7 @@ static SD_KERNEL void segmentProdBPLinearKernel(void* inputBuf, LongType const* 
 
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void segmentProdBPTadKernel(void* inputBuf, LongType const* inputShape, void* forwardOutput,
+static SD_KERNEL SD_INLINE void segmentProdBPTadKernel(void* inputBuf, LongType const* inputShape, void* forwardOutput,
                                              LongType const* forwardShape, void* eps, LongType const* epsShape,
                                              void* indicesBuf, LongType const* indicesShape, void* outputBuf,
                                              LongType const* outputShape, LongType const* inputTad,
@@ -736,17 +676,14 @@ template <typename T, typename I>
 Status segmentProdFunctorBP_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                  NDArray* output) {
   auto stream = context->getCudaStream();
-  auto outShape = gradOut->getShapeAsVector();
-
-  NDArray tempRes(gradOut->ordering(), outShape, DataTypeUtils::fromT<T>(),
-                  context);  //->shapeInfo(), context);
-  segmentProdFunctor_<T, I>(context, input, indices, &tempRes);
+  auto tempRes = gradOut->ulike();
+  segmentProdFunctor_<T, I>(context, input, indices, tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
   if (input->isVector()) {
     LongType loopSize = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();  // indices->e<sd::LongType>(loop_size - 1);
     segmentProdBPLinearKernel<T, I><<<gradOut->lengthOf(), loopSize, 256, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
+        input->specialBuffer(), input->specialShapeInfo(), tempRes->specialBuffer(), tempRes->specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo());
     sd::DebugHelper::checkErrorCode(stream, "segmentProdBPLinearKernel failed");
@@ -756,7 +693,7 @@ Status segmentProdFunctorBP_(LaunchContext* context, NDArray* input, NDArray* in
     std::vector<LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto packGradIn = ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
+    auto packGradIn = ConstantTadHelper::getInstance().tadForDimensions(tempRes->shapeInfo(), dimensions);
     auto packGradOut = ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
     auto inputTadOffsets = packX->specialOffsets();
@@ -769,7 +706,7 @@ Status segmentProdFunctorBP_(LaunchContext* context, NDArray* input, NDArray* in
     dim3 segmentBpTad2 = segmentBpTad(gradOut->lengthOf(),input->lengthOf());
 
     segmentProdBPTadKernel<T, I><<<segmentBpTad2.y,segmentBpTad2.x, segmentBpTad2.z, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
+        input->specialBuffer(), input->specialShapeInfo(), tempRes->specialBuffer(), tempRes->specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo(), inputTads, inputTadOffsets, gradInTads, gradInTadOffsets,
         gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets);
@@ -778,8 +715,10 @@ Status segmentProdFunctorBP_(LaunchContext* context, NDArray* input, NDArray* in
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, gradOut});
+  delete tempRes;
   return Status::OK;
 }
+BUILD_DOUBLE_TEMPLATE(Status segmentProdFunctorBP_, (LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 
 // -------------------------------------------------------------------------------------------------------------- //
 
@@ -800,17 +739,15 @@ static Status unsortedSegmentProdFunctorBP_(LaunchContext* context, NDArray* inp
                                                 NDArray* gradOut,
                                             LongType numOfClasses, NDArray* output) {
   auto stream = context->getCudaStream();
-  auto outShape = gradOut->getShapeAsVector();
-  NDArray tempRes(gradOut->ordering(),outShape, DataTypeUtils::fromT<T>(),
-                  context);
-  unsortedSegmentProdFunctor_<T, I>(context, input, indices, numOfClasses, &tempRes);
+  auto tempRes = gradOut->ulike();
+  unsortedSegmentProdFunctor_<T, I>(context, input, indices, numOfClasses, tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
   if (input->isVector()) {
     LongType loopSize = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();
     dim3 segmentBpTad2 = segmentBpDims(gradOut->lengthOf(),input->lengthOf());
     segmentProdBPLinearKernel<T, I><<<segmentBpTad2.y, segmentBpTad2.x,segmentBpTad2.z, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
+        input->specialBuffer(), input->specialShapeInfo(), tempRes->specialBuffer(), tempRes->specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo());
     sd::DebugHelper::checkErrorCode(stream, "segmentProdBPLinearKernel failed");
@@ -820,7 +757,7 @@ static Status unsortedSegmentProdFunctorBP_(LaunchContext* context, NDArray* inp
     std::vector<LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto packGradIn = ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
+    auto packGradIn = ConstantTadHelper::getInstance().tadForDimensions(tempRes->shapeInfo(), dimensions);
     auto packGradOut = ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
     auto inputTadOffsets = packX->specialOffsets();
@@ -832,7 +769,7 @@ static Status unsortedSegmentProdFunctorBP_(LaunchContext* context, NDArray* inp
     auto gradOutTadOffsets = packGradOut->specialOffsets();
     dim3 segmentBpTad2 = segmentBpTad(gradOut->lengthOf(),input->lengthOf());
     segmentProdBPTadKernel<T, I><<<indices->lengthOf(), input->lengthOf(), 256, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
+        input->specialBuffer(), input->specialShapeInfo(), tempRes->specialBuffer(), tempRes->specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo(), inputTads, inputTadOffsets, gradInTads, gradInTadOffsets,
         gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets);
@@ -841,6 +778,7 @@ static Status unsortedSegmentProdFunctorBP_(LaunchContext* context, NDArray* inp
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, gradOut});
+  delete tempRes;
   return Status::OK;
 }
 

@@ -129,7 +129,7 @@ void reduceNorm1(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSeco
 template <typename T>
 static void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
-    return sd::math::sd_max<T>(x, (T)0.f) - x * y +
+    return sd::math::sd_max(x, (T)0.f) - x * y +
            sd::math::sd_log<T, T>((T)1.f + sd::math::sd_exp<T, T>(-sd::math::sd_abs<T,T>(x)));
   });
 

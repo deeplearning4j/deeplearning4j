@@ -21,153 +21,187 @@
 //
 #include <array/NDArrayFactory.h>
 #include <helpers/MmulHelper.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/qr.h>
 
 #include "execution/cuda/LaunchDims.h"
 #include "helpers/DebugHelper.h"
 
-
 namespace sd {
 namespace ops {
 namespace helpers {
 
+// Fused Modified Gram-Schmidt QR kernel.
+// One block per matrix. Threads parallelize over rows within each column step.
+// Shared memory used for parallel reductions (norm, dot product).
+// Work buffer in global memory (C-contiguous [M x N]).
 template <typename T>
-static SD_KERNEL void matrixMinorKernel(T* outBuffer, LongType* outShape, T* inBuffer, LongType* inShape,
-                                        LongType column, LongType rows, LongType columns) {
+static SD_KERNEL void qrModifiedGramSchmidtKernel(
+    const T* __restrict__ input, const LongType* __restrict__ inputShape,
+    T* __restrict__ qBuf, const LongType* __restrict__ qShape,
+    T* __restrict__ rBuf, const LongType* __restrict__ rShape,
+    T* __restrict__ work,
+    LongType M, LongType N, LongType K, LongType Qcols,
+    bool fullMatrices) {
 
-  for (auto i = blockIdx.x; i < rows; i += gridDim.x)
-    for (auto j = threadIdx.x; j < columns; j += blockDim.x) {
-      LongType pos[] = {i, j};
+  extern __shared__ char sharedMem[];
+  T* sdata = reinterpret_cast<T*>(sharedMem);
 
-      LongType zIndex;
-      COORDS2INDEX(shape::rank(outShape), shape::stride(outShape), pos, zIndex);
+  const int tid = threadIdx.x;
+  const int numThreads = blockDim.x;
 
-      LongType xIndex;
-      COORDS2INDEX(shape::rank(inShape), shape::stride(inShape), pos, xIndex);
+  // Strides from device shape info
+  const LongType inS0 = shape::stride(inputShape)[0];
+  const LongType inS1 = shape::stride(inputShape)[1];
+  const LongType qS0 = shape::stride(qShape)[0];
+  const LongType qS1 = shape::stride(qShape)[1];
+  const LongType rS0 = shape::stride(rShape)[0];
+  const LongType rS1 = shape::stride(rShape)[1];
 
-      if (i < column || j < column) {
-        outBuffer[zIndex] = i != j ? T(0.f) : T(1.f);
-      } else {
-        outBuffer[zIndex] = inBuffer[xIndex];  // m.t<T>(i,j) = in.t<T>(i,j);
+  // Copy input to C-contiguous work buffer using input strides
+  for (LongType idx = tid; idx < M * N; idx += numThreads) {
+    LongType i = idx / N;
+    LongType j = idx % N;
+    work[idx] = input[i * inS0 + j * inS1];
+  }
+
+  // Zero Q
+  for (LongType idx = tid; idx < M * Qcols; idx += numThreads) {
+    LongType i = idx / Qcols;
+    LongType j = idx % Qcols;
+    qBuf[i * qS0 + j * qS1] = T(0);
+  }
+
+  // Zero R
+  for (LongType idx = tid; idx < K * N; idx += numThreads) {
+    LongType i = idx / N;
+    LongType j = idx % N;
+    rBuf[i * rS0 + j * rS1] = T(0);
+  }
+  __syncthreads();
+
+  // Modified Gram-Schmidt: sequential over columns, parallel over rows
+  for (LongType j = 0; j < K; j++) {
+    // 1. Compute ||work[:,j]||^2 via parallel reduction
+    T partial = T(0);
+    for (LongType i = tid; i < M; i += numThreads) {
+      T v = work[i * N + j];
+      partial += v * v;
+    }
+    sdata[tid] = partial;
+    __syncthreads();
+
+    // Tree reduction (blockDim.x must be power of 2, or we guard with bounds check)
+    for (unsigned int s = numThreads / 2; s > 0; s >>= 1) {
+      if (tid < s) {
+        sdata[tid] += sdata[tid + s];
       }
+      __syncthreads();
     }
-}
 
-template <typename T>
-NDArray matrixMinor(LaunchContext* context, NDArray& in, LongType col) {
-  NDArray *m = in.ulike();
-  m->setIdentity();
-  NDArray view = *m;
-  NDArray assign = in({col, m->rows(), col, m->columns()});
-  view({col, m->rows(), col, m->columns()}).assign(&assign);
+    T norm = math::sd_sqrt<T, T>(sdata[0]);
 
-  m->tickWriteDevice();
-  return *m;
-}
-
-/* m = I - v v^T */
-template <typename T>
-static SD_KERNEL void vmulKernel(T* resBuf, const LongType* resShape, T const* vBuff, LongType const* vShape,
-                                 LongType n) {
-  for (auto i = blockIdx.x; i < n; i += gridDim.x)
-    for (auto j = threadIdx.x; j < n; j += blockDim.x) {
-      LongType posR[] = {i, j};
-      LongType indexR, indexX, indexY;
-      COORDS2INDEX(shape::rank(resShape), shape::stride(resShape), posR, indexR);
-      COORDS2INDEX(1, shape::stride(vShape), &i, indexX);
-      COORDS2INDEX(1, shape::stride(vShape), &j, indexY);
-
-      resBuf[indexR] = T(-2.f) * vBuff[indexX] * vBuff[indexY] + (i != j ? T(0.f) : T(1.f));
+    // Skip near-zero columns (linearly dependent)
+    if (norm < T(1e-10)) {
+      continue;
     }
-}
 
-template <typename T>
-NDArray vmul(LaunchContext* context, NDArray& v, int n) {
-  std::vector<LongType> shape = {n, n};
-  NDArray res('c', shape, v.dataType(), context);  // x = matrix_new(n, n);
+    // 2. Q[:,j] = work[:,j] / norm
+    for (LongType i = tid; i < M; i += numThreads) {
+      qBuf[i * qS0 + j * qS1] = work[i * N + j] / norm;
+    }
 
-  auto stream = context->getCudaStream();
-  dim3 launchDims = getLaunchDims("qr");
-  vmulKernel<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(res.dataBuffer()->specialAsT<T>(), res.specialShapeInfo(),
-                                            reinterpret_cast<T const*>(v.specialBuffer()), v.specialShapeInfo(), n);
-  sd::DebugHelper::checkErrorCode(stream, "vmulKernel failed");
+    // 3. R[j,j] = norm (single thread)
+    if (tid == 0) {
+      rBuf[j * rS0 + j * rS1] = norm;
+    }
+    __syncthreads();
 
-  return res;
-}
+    // 4. Orthogonalize remaining columns against Q[:,j]
+    for (LongType k = j + 1; k < N; k++) {
+      // Dot product: Q[:,j]^T * work[:,k]
+      T partialDot = T(0);
+      for (LongType i = tid; i < M; i += numThreads) {
+        partialDot += qBuf[i * qS0 + j * qS1] * work[i * N + k];
+      }
+      sdata[tid] = partialDot;
+      __syncthreads();
 
-template <typename T>
-static bool diagonalIsPositive(NDArray* matrix, LongType k) {
-  T hVal;
-  LongType pos[] = {k, k};
-  LongType shift;
-  COORDS2INDEX(shape::rank(matrix->shapeInfo()), shape::stride(matrix->shapeInfo()), pos, shift);
-  cudaMemcpy(&hVal, matrix->specialBuffer(), sizeof(T), cudaMemcpyDeviceToHost);
-  return hVal > T(0.f);
+      for (unsigned int s = numThreads / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+          sdata[tid] += sdata[tid + s];
+        }
+        __syncthreads();
+      }
+
+      T dot = sdata[0];
+
+      // R[j,k] = dot (single thread)
+      if (tid == 0) {
+        rBuf[j * rS0 + k * rS1] = dot;
+      }
+
+      // work[:,k] -= dot * Q[:,j]
+      for (LongType i = tid; i < M; i += numThreads) {
+        work[i * N + k] -= dot * qBuf[i * qS0 + j * qS1];
+      }
+      __syncthreads();
+    }
+  }
+
+  // Full matrices: identity columns for Q beyond K
+  if (fullMatrices && M > K) {
+    for (LongType j = K + tid; j < M; j += numThreads) {
+      qBuf[j * qS0 + j * qS1] = T(1);
+    }
+  }
 }
 
 template <typename T>
 void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatrices) {
   LongType M = matrix->sizeAt(0);
   LongType N = matrix->sizeAt(1);
-  auto resQ = fullMatrices ? *Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
-  auto resR = fullMatrices ? R->ulike() : matrix->ulike();
-  std::vector<NDArray*> q(M, nullptr);
-  NDArray z = *matrix;
-  std::vector<LongType> shape = {M};
+  LongType K = std::min(M, N);
+  LongType Qcols = Q->sizeAt(1);
 
-  NDArray e('c', shape, DataTypeUtils::fromT<T>(), context);  // two internal buffers and scalar for squared norm
-  for (auto k = 0; k < N && k < M - 1; k++) {               // loop for columns, but not further then row number
-    e.nullify();
-    z = matrixMinor<T>(context, z,
-                       k);  // minor computing for current column with given matrix z (initally is a input matrix)
+  NDArray::prepareSpecialUse({Q, R}, {matrix});
 
-    auto currentColumn = z({0, 0, k, k + 1});  // retrieve k column from z to x buffer
-    std::vector<LongType> zero = {0};
-    auto norm = currentColumn.reduceAlongDimension(reduce::Norm2, &zero);
-    if (diagonalIsPositive<T>(matrix, k))  // matrix->t<T>(k,k) > T(0.f)) // negate on positive matrix diagonal element
-      norm.applyTransform(transform::Neg, &norm);  // *= -1.f;//-norm.t<T>(0);
+  auto stream = context->getCudaStream();
 
-    e.p(k, &norm);        // e - is filled by 0 vector except diagonal element (filled by 1)
-    e += currentColumn;  // e[i] = x[i] + a * e[i] for each i from 0 to n - 1
-    auto normE = e.reduceAlongDimension(reduce::Norm2, &zero);
-    e /= normE;
-    q[k] = new NDArray(vmul<T>(context, e, M));
-    auto qQ = z.ulike();
-    MmulHelper::matmul(q[k], &z, qQ, false, false,1.0,0.0,qQ);
-    z = std::move(*qQ);
+  // Allocate C-contiguous work buffer on device via pool
+  int deviceId = sd::AffinityManager::currentDeviceId();
+  T* work = reinterpret_cast<T*>(
+      sd::memory::CudaMemoryPool::getInstance().allocate(M * N * sizeof(T), deviceId, *stream));
+  if (work == nullptr) {
+    THROW_EXCEPTION("qr: Failed to allocate work buffer on device");
   }
-  resQ.assign(q[0]);
+  // Power-of-2 block size for shared memory reductions
+  const int blockSize = 256;
+  const int sharedMem = blockSize * sizeof(T);
 
-  for (int i = 1; i < N && i < M - 1; i++) {
-    auto tempResQ = resQ;
-    MmulHelper::matmul(q[i],&resQ, &tempResQ, false, false,1.0,0.0,&tempResQ);
-    resQ = std::move(tempResQ);
-  }
-  MmulHelper::matmul(&resQ, matrix, resR, false, false,1.0,0.0,resR);
-  // resR *= -1.f;
-  resQ.transposei();
+  qrModifiedGramSchmidtKernel<T><<<1, blockSize, sharedMem, *stream>>>(
+      reinterpret_cast<const T*>(matrix->specialBuffer()), matrix->specialShapeInfo(),
+      reinterpret_cast<T*>(Q->specialBuffer()), Q->specialShapeInfo(),
+      reinterpret_cast<T*>(R->specialBuffer()), R->specialShapeInfo(),
+      work, M, N, K, Qcols, fullMatrices);
 
-  if (fullMatrices) {
-    Q->assign(&resQ);
-    R->assign(resR);
-  } else {
-    NDArray resRRef = *resR;
-    NDArray qAssign = resQ({0, 0, 0, N});
-    Q->assign(&qAssign);
-    NDArray rAssign = resRRef({0, N, 0, 0});
-    R->assign(&rAssign);
-  }
+  sd::DebugHelper::checkErrorCode(stream, "qrModifiedGramSchmidtKernel failed");
 
-  // Clean up allocated NDArrays in q vector
-  for (LongType i = 0; i < M; i++) {
-    if (q[i] != nullptr) {
-      delete q[i];
-    }
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(work, deviceId, *stream);
+
+  NDArray::registerSpecialUse({Q, R}, {matrix});
 }
+BUILD_SINGLE_TEMPLATE(void qrSingle, (LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatrices), SD_FLOAT_TYPES);
 
 template <typename T>
-void qr_(LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+void qr_(LaunchContext* context, NDArray* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+  // For 2D (unbatched) inputs, allTensorsAlongDimension({0,1}) produces rank-0 TADs
+  // which causes sizeAt(1) to throw in qrSingle. Process the single matrix directly.
+  if (input->rankOf() == 2) {
+    qrSingle<T>(context, input, outputQ, outputR, fullMatricies);
+    return;
+  }
+
   LongType lastDim = input->rankOf() - 1;
   LongType preLastDim = input->rankOf() - 2;
 
@@ -175,18 +209,15 @@ void qr_(LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* out
   ResultSet listOutQ(outputQ->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
   ResultSet listOutR(outputR->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
   ResultSet listInput(input->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
-  auto start = 0;
-  auto stop = listInput.size();
-  auto increment = 1;
 
-  for (auto batch = start; batch < stop; batch += increment) {
-    // qr here
+  for (LongType batch = 0; batch < listInput.size(); batch++) {
     qrSingle<T>(context, listInput.at(batch), listOutQ.at(batch), listOutR.at(batch), fullMatricies);
   }
   NDArray::registerSpecialUse({outputQ, outputR}, {input});
 }
+BUILD_SINGLE_TEMPLATE(void qr_, (LaunchContext* context, NDArray* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies), SD_FLOAT_TYPES);
 
-void qr(LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* outputR,
+void qr(LaunchContext* context, NDArray* input, NDArray* outputQ, NDArray* outputR,
         bool const fullMatricies) {
   BUILD_SINGLE_SELECTOR(input->dataType(), qr_, (context, input, outputQ, outputR, fullMatricies), SD_FLOAT_TYPES);
 }

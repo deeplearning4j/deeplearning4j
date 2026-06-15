@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/loss.h>
 
 namespace sd {
 namespace ops {
@@ -66,123 +66,126 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
                  ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(labels).c_str());
   }
 
-  // If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 -
-  // label_smoothing) + label_smoothing / num_classes num_classes = labels->sizeAt(1)
-  NDArray* cLabels = labels->cast(weights->dataType());  // cast() already returns NDArray*
+  auto ctx = block.launchContext();
+
+  // If label_smoothing is nonzero, smooth the labels towards 1/num_classes.
+  // cLabels is heap-allocated by cast(); newLabels may also be heap-allocated.
+  NDArray* cLabels = labels->cast(weights->dataType());
   NDArray* newLabels = cLabels;
   if (labelsSmoothing != 0.) {
-    newLabels = new NDArray(cLabels);
-    NDArray* term1 = (1.f - labelsSmoothing) * (*cLabels);
-    NDArray* term2 = (*term1) + (labelsSmoothing / cLabels->sizeAt(1));
-    delete term1;
-    newLabels->assign(term2);
-    delete term2;
+    newLabels = new NDArray(cLabels->shapeInfo(), false, ctx);
+    // newLabels = (1 - labelsSmoothing) * cLabels + (labelsSmoothing / numClasses)
+    cLabels->applyScalar(scalar::Multiply, (1.0 - labelsSmoothing), newLabels);
+    double addVal = labelsSmoothing / cLabels->sizeAt(1);
+    newLabels->applyScalar(scalar::Add, addVal, newLabels);
   }
 
-  // main formula: result = - sum_i(lables_i * log(softmax_i)) - sum over last dimension
-  // softmax_i = exp(logits_i) / sum_j(exp(logits_j))
-  // so result = sum_i( lables_i * (log(sum_j(exp(logits_j))) - logits_i) )
-  // for numerical stability we use shifted logits (one can approve this using simple math):
-  // softmax_i = exp(logits_i - maxLogit) / sum_j(exp(logits_j - maxLogit))
-  // maxLogit is max among logits_i
-
   std::vector<LongType> dimensions = {-1};
+
+  // maxLogits: heap (reduceAlongDimension)
   NDArray* maxLogits = logits->reduceAlongDimension(reduce::Max, &dimensions, true);
-  NDArray* shiftedLogits_ptr = (*logits) - (*maxLogits);
-  delete maxLogits;
-  NDArray shiftedLogits = *shiftedLogits_ptr;
-  delete shiftedLogits_ptr;
-  
-  NDArray* expShifted = shiftedLogits.transform(transform::Exp);
-  NDArray* sumExp = expShifted->reduceAlongDimension(reduce::Sum, &dimensions, true);
-  delete expShifted;
-  NDArray* logSumExp_ptr = sumExp->transform(transform::Log);
-  delete sumExp;
-  NDArray logSumExp = *logSumExp_ptr;
-  delete logSumExp_ptr;
-  
-  // E = (newLabels * (logSumExp - shiftedLogits)).reduceAlongDimension(Sum)
-  NDArray* diff = logSumExp - shiftedLogits;
-  NDArray* product = (*newLabels) * (*diff);
-  delete diff;
-  NDArray* E_ptr = product->reduceAlongDimension(reduce::Sum, &dimensions);
-  delete product;
-  NDArray E = *E_ptr;
-  delete E_ptr;
+
+  // shiftedLogits = logits - maxLogits  (stack)
+  // maxLogits has shape [...,1] (keepDims); logits has shape [...,C] → must use broadcast subtract
+  NDArray shiftedLogits(logits->shapeInfo(), logits->dataType(), false, ctx);
+  logits->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), maxLogits, &shiftedLogits, false);
+
+  // expShifted = exp(shiftedLogits)  (stack)
+  NDArray expShifted(shiftedLogits.shapeInfo(), false, ctx);
+  shiftedLogits.applyTransform(transform::Exp, &expShifted);
+
+  // sumExp: heap (reduceAlongDimension)
+  NDArray* sumExp = expShifted.reduceAlongDimension(reduce::Sum, &dimensions, true);
+
+  // logSumExp = log(sumExp)  (stack, same shape as sumExp)
+  NDArray logSumExp(sumExp->shapeInfo(), false, ctx);
+  sumExp->applyTransform(transform::Log, &logSumExp);
+
+  // diff = logSumExp - shiftedLogits  (stack, same shape as logits)
+  // logSumExp has shape [...,1]; shiftedLogits has shape [...,C] → must use broadcast subtract
+  NDArray diff(logits->shapeInfo(), logits->dataType(), false, ctx);
+  logSumExp.applyTrueBroadcast(BroadcastOpsTuple::Subtract(), &shiftedLogits, &diff, false);
+
+  // product = newLabels * diff  (stack)
+  NDArray product(logits->shapeInfo(), false, ctx);
+  newLabels->applyPairwiseTransform(pairwise::Multiply, &diff, &product);
+
+  // E: heap (reduceAlongDimension, no keepDims)
+  NDArray* E = product.reduceAlongDimension(reduce::Sum, &dimensions);
 
   // perform weights broadcasting/tile to E if it is necessary
   auto weightsBroad = weights;
-  if (!weights->isScalar() && !weights->isSameShape(&E)) {
+  if (!weights->isScalar() && !weights->isSameShape(E)) {
     std::vector<LongType> weightsShape = {weights->lengthOf()};
-    if (E.rankOf() == 1 && weights->isVector() && weights->rankOf() > 1)
+    if (E->rankOf() == 1 && weights->isVector() && weights->rankOf() > 1)
       weightsBroad = weights->reshape(weights->ordering(), weightsShape);
     else
-      weightsBroad = new NDArray(weights->tileToShape(E.shapeInfo()));
+      weightsBroad = new NDArray(weights->tileToShape(E->shapeInfo()));
   }
 
-  // multiply E on weights
-  E *= *weightsBroad;
+  // multiply E on weights (original approach — in-place pairwise multiply)
+  *E *= *weightsBroad;
 
   switch (reductionMode) {
     case 0:  // 0 - "none", un-reduced weighted losses with the same shape as labels.
-      output->assign(&E);
+      output->assign(E);
       break;
 
     case 1: {  // 1 - "weighted_sum", output is scalar and equal to sum of all elements of E array
-      E.reduceNumber(reduce::Sum, output);
+      E->reduceNumber(reduce::Sum, output);
       break;
     }
-    case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
-      // all elements of weightsBroad array
+    case 2: {  // 2 - "weighted_mean"
       double sum;
       if (weights->isScalar())
-        sum = weights->e<double>(0) * E.lengthOf();
+        sum = weights->e<double>(0) * E->lengthOf();
       else {
         NDArray* sumPtr = weightsBroad->reduceNumber(reduce::Sum);
         sum = sumPtr->e<double>(0);
         delete sumPtr;
       }
 
-      if (sum == 0.)
+      if (sum == 0.) {
         *output = 0.;
-      else {
-        NDArray* eSum = E.reduceNumber(reduce::Sum);
+      } else {
+        NDArray* eSum = E->reduceNumber(reduce::Sum);
         NDArray* result = (*eSum) / sum;
-        delete eSum;
         output->assign(result);
+        delete eSum;
         delete result;
       }
       break;
     }
-    case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
-      // array divided by number of non-zero weights
+    case 3: {  // 3 - "weighted_sum_by_nonzero_weights"
       LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
-        if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
+        if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E->lengthOf();
       } else {
         NDArray* countNonZero = weightsBroad->reduceNumber(reduce::CountNonZero);
         numOfNonZeroWeights = countNonZero->e<LongType>(0);
         delete countNonZero;
       }
 
-      if (numOfNonZeroWeights == 0)
-        *output = 0.;
-      else {
-        NDArray* eSum = E.reduceNumber(reduce::Sum);
-        NDArray* result = (*eSum) / double(numOfNonZeroWeights);
+      if (numOfNonZeroWeights == 0) {
+        double zero = 0.0;
+        output->assign(zero);
+      } else {
+        NDArray* eSum = E->reduceNumber(reduce::Sum);
+        double eSumVal = eSum->e<double>(0);
         delete eSum;
+        double result = eSumVal / double(numOfNonZeroWeights);
         output->assign(result);
-        delete result;
       }
-
       break;
     }
   }
 
+  // Clean up heap-allocated intermediates
+  delete maxLogits;
+  delete sumExp;
+  delete E;
   if (weightsBroad != weights) delete weightsBroad;
-
   if (newLabels != cLabels) delete newLabels;
-
   delete cLabels;
 
   return Status::OK;
@@ -252,116 +255,157 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
   // take into account Alex's proposition to treat "none" the same as "weighted_sum" mode when calculating gradients
   if (reductionMode == 0) reductionMode = 1;
 
-  std::vector<LongType> *dimensions =  new std::vector<LongType>({-1});
+  std::vector<LongType> *dimensions = new std::vector<LongType>({-1});
 
   // input validation
   REQUIRE_TRUE(labels->isSameShape(logits), 0,
                "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: labels and logits arrays must have the same shapes, but got %s and "
                "%s correspondingly !",
                ShapeUtils::shapeAsString(labels).c_str(), ShapeUtils::shapeAsString(logits).c_str());
-  // only 4 possible reduction modes exist
   REQUIRE_TRUE(reductionMode == 0 || reductionMode == 1 || reductionMode == 2 || reductionMode == 3, 0,
                "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: reduction mode value is not acceptable, possible values are 0, 1, "
                "2, 3, but got %i instead!",
                reductionMode);
   auto lossShapeInfo = ShapeUtils::evalReduceShapeInfo(logits->ordering(), dimensions, logits->shapeInfo(), false,
                                                        false, block.getWorkspace());
-  // weights array can be single scalar or has the same shape as loss, and must be broadcastable to loss shape
   REQUIRE_TRUE(weights->isScalar() || weights->rankOf() == shape::rank(lossShapeInfo), 0,
                "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: weights array should be scalar or have the same rank as loss "
                "array, but got %i and %i correspondingly!",
                weights->rankOf(), shape::rank(lossShapeInfo));
-  // check whether broadcast operation is possible for weights array
   REQUIRE_TRUE(weights->isScalar() || ShapeUtils::areShapesBroadcastable(weights->shapeInfo(), lossShapeInfo), 0,
                "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: shapes of weights and loss arrays should be broadcastable, but got "
                "weights = %s and loss = %s instead!",
                ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(lossShapeInfo).c_str());
-  // smoothing is possible for rank of logits/labels > 1
   REQUIRE_TRUE(labels->rankOf() > 1 || (labels->rankOf() == 1 && labelsSmoothing == 0.), 0,
                "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: smoothing is not possible when rank of labels/ logits = 1 !");
 
-  // If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 -
-  // label_smoothing) + label_smoothing / num_classes num_classes = labels->sizeAt(1)
-  NDArray* cLabels = labels->cast(weights->dataType());  // cast() already returns NDArray*
+  auto ctx = block.launchContext();
+
+  // If label_smoothing is nonzero, smooth the labels towards 1/num_classes.
+  NDArray* cLabels = labels->cast(weights->dataType());
   NDArray* newLabels = cLabels;
   if (labelsSmoothing != 0.) {
-    newLabels = new NDArray(labels->shapeInfo(), dLdl->dataType(), false, block.launchContext());
-    NDArray* term1 = (1.f - labelsSmoothing) * (*cLabels);
-    NDArray* term2 = (*term1) + (labelsSmoothing / cLabels->sizeAt(1));
-    delete term1;
-    newLabels->assign(term2);
-    delete term2;
+    newLabels = new NDArray(cLabels->shapeInfo(), false, ctx);
+    // newLabels = (1 - labelsSmoothing) * cLabels + (labelsSmoothing / numClasses)
+    cLabels->applyScalar(scalar::Multiply, (1.0 - labelsSmoothing), newLabels);
+    double addVal = labelsSmoothing / cLabels->sizeAt(1);
+    newLabels->applyScalar(scalar::Add, addVal, newLabels);
   }
 
   // Compute softmax
+  // maxLogits: heap
   NDArray* maxLogits = logits->reduceAlongDimension(reduce::Max, dimensions, true);
-  NDArray* shiftedLogits_ptr = (*logits) - (*maxLogits);
-  delete maxLogits;
-  NDArray* expShifted = shiftedLogits_ptr->transform(transform::Exp);
-  delete shiftedLogits_ptr;
-  NDArray* sumExp = expShifted->reduceAlongDimension(reduce::Sum, dimensions, true);
-  NDArray* softmax_ptr = (*expShifted) / (*sumExp);
-  delete expShifted;
-  delete sumExp;
-  NDArray softmax = *softmax_ptr;
-  delete softmax_ptr;
 
-  // dEdp = softmax * sum_i(lables_i) - labels
+  // shiftedLogits = logits - maxLogits  (stack)
+  // maxLogits has shape [...,1] (keepDims); logits has shape [...,C] → must use broadcast subtract
+  NDArray shiftedLogits(logits->shapeInfo(), logits->dataType(), false, ctx);
+  logits->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), maxLogits, &shiftedLogits, false);
+
+  // expShifted = exp(shiftedLogits)  (stack)
+  NDArray expShifted(shiftedLogits.shapeInfo(), false, ctx);
+  shiftedLogits.applyTransform(transform::Exp, &expShifted);
+
+  // sumExp: heap
+  NDArray* sumExp = expShifted.reduceAlongDimension(reduce::Sum, dimensions, true);
+
+  // softmax = expShifted / sumExp  (stack)
+  // sumExp has shape [...,1] (keepDims); expShifted has shape [...,C] → must use broadcast divide
+  NDArray softmax(expShifted.shapeInfo(), expShifted.dataType(), false, ctx);
+  expShifted.applyTrueBroadcast(BroadcastOpsTuple::Divide(), sumExp, &softmax, false);
+
+  // dEdp = softmax * sum_i(labels_i) - newLabels
+  // labelSum: heap
   NDArray* labelSum = newLabels->reduceAlongDimension(reduce::Sum, dimensions, true);
-  NDArray* softmaxTimesLabelSum = softmax * (*labelSum);
-  delete labelSum;
-  NDArray* dLdpTemp_ptr = (*softmaxTimesLabelSum) - (*newLabels);
-  delete softmaxTimesLabelSum;
-  dLdp->assign(dLdpTemp_ptr);
-  delete dLdpTemp_ptr;
-  
-  // dEdl = -log(softmax)
-  NDArray* logSoftmax = softmax.transform(transform::Log);
-  NDArray negLogSoftmax = -(*logSoftmax);  // unary negation returns value
-  delete logSoftmax;
-  NDArray* dLdlTemp_ptr = negLogSoftmax * (1.f - labelsSmoothing);
-  dLdl->assign(dLdlTemp_ptr);
-  delete dLdlTemp_ptr;
 
-  // Compute E for gradient calculations
+  // softmaxTimesLabelSum = softmax * labelSum  (stack)
+  // labelSum has shape [...,1] (keepDims); softmax has shape [...,C] → must use broadcast multiply
+  NDArray softmaxTimesLabelSum(softmax.shapeInfo(), softmax.dataType(), false, ctx);
+  softmax.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), labelSum, &softmaxTimesLabelSum, false);
+
+  // dLdp = softmaxTimesLabelSum - newLabels  (write directly to output)
+  softmaxTimesLabelSum.applyPairwiseTransform(pairwise::Subtract, newLabels, dLdp);
+
+  // dEdl = -(1 - labelsSmoothing) * log(softmax)
+  // logSoftmax = log(softmax)  (stack)
+  NDArray logSoftmax(softmax.shapeInfo(), false, ctx);
+  softmax.applyTransform(transform::Log, &logSoftmax);
+
+  // negLogSoftmax = -logSoftmax  (stack)
+  NDArray negLogSoftmax(logSoftmax.shapeInfo(), false, ctx);
+  logSoftmax.applyTransform(transform::Neg, &negLogSoftmax);
+
+  // dLdl = negLogSoftmax * (1 - labelsSmoothing)
+  negLogSoftmax.applyScalar(scalar::Multiply, (1.0 - labelsSmoothing), dLdl);
+
+  // Recompute E for gradient weight calculations
+  // maxLogits2: heap
   NDArray* maxLogits2 = logits->reduceAlongDimension(reduce::Max, dimensions, true);
-  NDArray* shiftedLogits2_ptr = (*logits) - (*maxLogits2);
-  delete maxLogits2;
-  NDArray shiftedLogits = *shiftedLogits2_ptr;
-  delete shiftedLogits2_ptr;
-  
-  NDArray* expShifted2 = shiftedLogits.transform(transform::Exp);
-  NDArray* sumExp2 = expShifted2->reduceAlongDimension(reduce::Sum, dimensions, true);
-  delete expShifted2;
-  NDArray* logSumExp_ptr = sumExp2->transform(transform::Log);
-  delete sumExp2;
-  NDArray logSumExp = *logSumExp_ptr;
-  delete logSumExp_ptr;
-  
-  NDArray* diff = logSumExp - shiftedLogits;
-  NDArray* product = (*newLabels) * (*diff);
-  delete diff;
-  NDArray* E_ptr = product->reduceAlongDimension(reduce::Sum, dimensions);
-  delete product;
-  NDArray E = *E_ptr;
-  delete E_ptr;
+
+  // shiftedLogits2 = logits - maxLogits2  (stack)
+  // maxLogits2 has shape [...,1] (keepDims); logits has shape [...,C] → must use broadcast subtract
+  NDArray shiftedLogits2(logits->shapeInfo(), logits->dataType(), false, ctx);
+  logits->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), maxLogits2, &shiftedLogits2, false);
+
+  // expShifted2 = exp(shiftedLogits2)  (stack)
+  NDArray expShifted2(shiftedLogits2.shapeInfo(), false, ctx);
+  shiftedLogits2.applyTransform(transform::Exp, &expShifted2);
+
+  // sumExp2: heap
+  NDArray* sumExp2 = expShifted2.reduceAlongDimension(reduce::Sum, dimensions, true);
+
+  // logSumExp = log(sumExp2)  (stack)
+  NDArray logSumExp(sumExp2->shapeInfo(), false, ctx);
+  sumExp2->applyTransform(transform::Log, &logSumExp);
+
+  // diff = logSumExp - shiftedLogits2  (stack)
+  // logSumExp has shape [...,1]; shiftedLogits2 has shape [...,C] → must use broadcast subtract
+  NDArray diff(logits->shapeInfo(), logits->dataType(), false, ctx);
+  logSumExp.applyTrueBroadcast(BroadcastOpsTuple::Subtract(), &shiftedLogits2, &diff, false);
+
+  // product = newLabels * diff  (stack)
+  NDArray product(logits->shapeInfo(), false, ctx);
+  newLabels->applyPairwiseTransform(pairwise::Multiply, &diff, &product);
+
+  // E: heap
+  NDArray* E = product.reduceAlongDimension(reduce::Sum, dimensions);
 
   // perform weights broadcasting/tile to E if it is necessary
   auto weightsBroad = weights;
-  if (!weights->isScalar() && !weights->isSameShape(&E))
-    weightsBroad = new NDArray(weights->tileToShape(E.shapeInfo()));
+  if (!weights->isScalar() && !weights->isSameShape(E))
+    weightsBroad = new NDArray(weights->tileToShape(E->shapeInfo()));
+
+  // Also tile weights to dLdp shape for logit/label gradient scaling.
+  // dLdp has shape [..., numClasses] while weightsBroad has shape [...] (1 fewer dim).
+  // For perExample [N]: reshape to [N,1] then tile to [N,C] for row-wise scaling.
+  // For perOutput [N,C]: same shape as dLdp, no tiling needed.
+  auto weightsBroadFull = weights;
+  if (!weights->isScalar() && !weights->isSameShape(dLdp)) {
+    if (weightsBroad->rankOf() < dLdp->rankOf()) {
+      // weightsBroad has shape [...] (e.g. [N]); dLdp has shape [..., C] (e.g. [N, C]).
+      // Append a trailing 1 to weightsBroad's shape, then tile to dLdp's shape.
+      // This gives row-wise scaling: result[i,j] = weightsBroad[i] for all j.
+      std::vector<LongType> wColShape(weightsBroad->rankOf() + 1);
+      for (int _d = 0; _d < weightsBroad->rankOf(); _d++) wColShape[_d] = weightsBroad->sizeAt(_d);
+      wColShape[weightsBroad->rankOf()] = 1;
+      NDArray* wbColPtr = weightsBroad->reshape('c', wColShape);
+      weightsBroadFull = new NDArray(wbColPtr->tileToShape(dLdp->shapeInfo()));
+      delete wbColPtr;
+    } else {
+      weightsBroadFull = new NDArray(weightsBroad->tileToShape(dLdp->shapeInfo()));
+    }
+  }
 
   auto excludeDims = ShapeUtils::evalDimsToExclude(dLdp->rankOf(), dimensions->size(), dimensions->data());
 
   switch (reductionMode) {
-    case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
-
+    case 1: {  // 1 - "none" and "weighted_sum"
       if (weights->isScalar() || weights->lengthOf() == 1) {
-        NDArray* eSum = E.reduceNumber(reduce::Sum);
-        dLdw->assign(eSum);
-        delete eSum;
-        *dLdp *= *weights;
-        *dLdl *= *weights;
+        NDArray eSum(E->dataType(), ctx);
+        E->reduceNumber(reduce::Sum, &eSum);
+        dLdw->assign(&eSum);
+        double wVal = weights->e<double>(0);
+        dLdp->applyScalar(scalar::Multiply, wVal, dLdp);
+        dLdl->applyScalar(scalar::Multiply, wVal, dLdl);
       } else {
         dLdp->applyBroadcast(broadcast::Multiply, excludeDims, weightsBroad, dLdp);
         dLdl->applyBroadcast(broadcast::Multiply, excludeDims, weightsBroad, dLdl);
@@ -369,92 +413,83 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
         if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-          E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
+          E->reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
         } else
-          dLdw->assign(&E);
+          dLdw->assign(E);
       }
-
       break;
     }
-    case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
-      // all elements of weightsBroad array
-      NDArray* sum_ptr = nullptr;
-      if (weights->isScalar())
-        sum_ptr = (*weights) * E.lengthOf();
-      else
-        sum_ptr = weightsBroad->reduceNumber(reduce::Sum);
-      
-      NDArray sum = *sum_ptr;
-      delete sum_ptr;
+    case 2: {  // 2 - "weighted_mean"
+      double sumD;
+      if (weights->isScalar()) {
+        sumD = weights->e<double>(0) * E->lengthOf();
+      } else {
+        NDArray* sumPtr = weightsBroad->reduceNumber(reduce::Sum);
+        sumD = sumPtr->e<double>(0);
+        delete sumPtr;
+      }
 
-      if (sum.e<double>(0) == 0.) {
-        *dLdp = 0.;
-        *dLdl = 0.;
-        *dLdw = 0.;
+      if (sumD == 0.) {
+        double zero = 0.0;
+        dLdp->assign(zero);
+        dLdl->assign(zero);
+        dLdw->assign(zero);
       } else {
         if (weights->isScalar() || weights->lengthOf() == 1) {
-          NDArray* temp_ptr = (*weights) / sum;
-          NDArray temp = *temp_ptr;
-          delete temp_ptr;
-          *dLdp *= temp;
-          *dLdl *= temp;
-          *dLdw = 0.;
+          // dLdp *= weights / sumD
+          double wVal = weights->e<double>(0);
+          double wDivSum = wVal / sumD;
+          dLdp->applyScalar(scalar::Multiply, wDivSum, dLdp);
+          dLdl->applyScalar(scalar::Multiply, wDivSum, dLdl);
+          double zero = 0.0;
+          dLdw->assign(zero);
         } else {
-          NDArray* temp_ptr = (*weightsBroad) / sum;
-          NDArray temp = *temp_ptr;
-          delete temp_ptr;
-          dLdp->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdp);
-          dLdl->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdl);
+          // Scale dLdp and dLdl by (w / sumW) row-wise.
+          // weightsBroadFull has shape matching dLdp (tiled in the setup above).
+          NDArray wbDivSum(dLdp->shapeInfo(), false, ctx);
+          weightsBroadFull->applyScalar(scalar::Divide, sumD, &wbDivSum);
+          dLdp->applyPairwiseTransform(pairwise::Multiply, &wbDivSum, dLdp);
+          dLdl->applyPairwiseTransform(pairwise::Multiply, &wbDivSum, dLdl);
+
+          // dLdw = (E * sumD - E * sum(weightsBroad)) / sumD^2
+          // ETimesSum = E * sumD  (stack)
+          NDArray ETimesSum(E->shapeInfo(), false, ctx);
+          E->applyScalar(scalar::Multiply, sumD, &ETimesSum);
+
+          // ETimesWeights = E * weightsBroad  (stack)
+          NDArray ETimesWeights(E->shapeInfo(), false, ctx);
+          E->applyPairwiseTransform(pairwise::Multiply, weightsBroad, &ETimesWeights);
+
+          // ETimesWeightsSum: heap via no-target overload (avoids type-check issues)
+          NDArray* ETimesWeightsSum = ETimesWeights.reduceNumber(reduce::Sum);
+          double ewsVal = ETimesWeightsSum->e<double>(0);
+          delete ETimesWeightsSum;
+
+          // numerator = ETimesSum - ewsVal  (stack)
+          // ETimesSum - ewsVal = ETimesSum + (-ewsVal)
+          NDArray numerator(ETimesSum.shapeInfo(), false, ctx);
+          ETimesSum.applyScalar(scalar::Add, -ewsVal, &numerator);
+
+          double sumSquared = sumD * sumD;
+          // result = numerator / sumSquared  (stack)
+          NDArray result(numerator.shapeInfo(), false, ctx);
+          numerator.applyScalar(scalar::Divide, sumSquared, &result);
 
           if (weights != weightsBroad) {
             std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-            
-            // Compute (E * sum - (E * weightsBroad).reduceNumber(Sum)) / (sum * sum)
-            NDArray* ETimesSum = E * sum;
-            NDArray* ETimesWeights = E * (*weightsBroad);
-            NDArray* ETimesWeightsSum = ETimesWeights->reduceNumber(reduce::Sum);
-            delete ETimesWeights;
-            
-            NDArray* numerator = (*ETimesSum) - (*ETimesWeightsSum);
-            delete ETimesSum;
-            delete ETimesWeightsSum;
-            
-            NDArray* sumSquared = sum * sum;
-            NDArray* result = (*numerator) / (*sumSquared);
-            delete numerator;
-            delete sumSquared;
-            
-            result->reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
-            delete result;
+            result.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
           } else {
-            // Compute (E * sum - (E * weightsBroad).reduceNumber(Sum)) / (sum * sum)
-            NDArray* ETimesSum = E * sum;
-            NDArray* ETimesWeights = E * (*weightsBroad);
-            NDArray* ETimesWeightsSum = ETimesWeights->reduceNumber(reduce::Sum);
-            delete ETimesWeights;
-            
-            NDArray* numerator = (*ETimesSum) - (*ETimesWeightsSum);
-            delete ETimesSum;
-            delete ETimesWeightsSum;
-            
-            NDArray* sumSquared = sum * sum;
-            NDArray* result = (*numerator) / (*sumSquared);
-            delete numerator;
-            delete sumSquared;
-            
-            dLdw->assign(result);
-            delete result;
+            dLdw->assign(&result);
           }
         }
       }
       break;
     }
-    case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
-      // array divided by number of non-zero weights
+    case 3: {  // 3 - "weighted_sum_by_nonzero_weights"
       LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
-        if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
+        if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E->lengthOf();
       } else {
         NDArray* countNonZero = weightsBroad->reduceNumber(reduce::CountNonZero);
         numOfNonZeroWeights = countNonZero->e<LongType>(0);
@@ -462,38 +497,40 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
       }
 
       if (numOfNonZeroWeights == 0) {
-        *dLdp = 0.;
-        *dLdl = 0.;
-        *dLdw = 0.;
+        double zero = 0.0;
+        dLdp->assign(zero);
+        dLdl->assign(zero);
+        dLdw->assign(zero);
       } else {
         if (weights->isScalar() || weights->lengthOf() == 1) {
-          NDArray* temp_ptr = (*weights) / numOfNonZeroWeights;
-          NDArray temp = *temp_ptr;
-          delete temp_ptr;
-          *dLdp *= temp;
-          *dLdl *= temp;
-          
-          NDArray* eSum = E.reduceNumber(reduce::Sum);
-          NDArray* result = (*eSum) / numOfNonZeroWeights;
+          double wVal = weights->e<double>(0);
+          double wDivNum = wVal / numOfNonZeroWeights;
+          dLdp->applyScalar(scalar::Multiply, wDivNum, dLdp);
+          dLdl->applyScalar(scalar::Multiply, wDivNum, dLdl);
+
+          NDArray* eSum = E->reduceNumber(reduce::Sum);
+          double eSumVal = eSum->e<double>(0);
           delete eSum;
+          double result = eSumVal / double(numOfNonZeroWeights);
           dLdw->assign(result);
-          delete result;
         } else {
-          NDArray* temp_ptr = (*weightsBroad) / numOfNonZeroWeights;
-          NDArray temp = *temp_ptr;
-          delete temp_ptr;
-          dLdp->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdp);
-          dLdl->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdl);
+          // Scale dLdp and dLdl by (w / numNonZeroWeights) row-wise.
+          // weightsBroadFull has shape matching dLdp (tiled in the setup above).
+          NDArray wbDivNum(dLdp->shapeInfo(), false, ctx);
+          weightsBroadFull->applyScalar(scalar::Divide, double(numOfNonZeroWeights), &wbDivNum);
+          dLdp->applyPairwiseTransform(pairwise::Multiply, &wbDivNum, dLdp);
+          dLdl->applyPairwiseTransform(pairwise::Multiply, &wbDivNum, dLdl);
 
           if (weights != weightsBroad) {
             std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-            E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
-            *dLdw /= numOfNonZeroWeights;
+            E->reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
+            dLdw->applyScalar(scalar::Divide, double(numOfNonZeroWeights), dLdw);
           } else {
-            NDArray* eDivNum = E / numOfNonZeroWeights;
-            dLdw->assign(eDivNum);
-            delete eDivNum;
+            // eDivNum = E / numOfNonZeroWeights  (stack)
+            NDArray eDivNum(E->shapeInfo(), false, ctx);
+            E->applyScalar(scalar::Divide, double(numOfNonZeroWeights), &eDivNum);
+            dLdw->assign(&eDivNum);
           }
         }
       }
@@ -501,11 +538,19 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
     }
   }
 
+  // Clean up heap-allocated intermediates
+  delete maxLogits;
+  delete sumExp;
+  delete labelSum;
+  delete maxLogits2;
+  delete sumExp2;
+  delete E;
   if (weightsBroad != weights) delete weightsBroad;
-
+  if (weightsBroadFull != weights && weightsBroadFull != weightsBroad) delete weightsBroadFull;
   if (newLabels != cLabels) delete newLabels;
-
   delete cLabels;
+  delete dimensions;
+  delete excludeDims;
 
   return Status::OK;
 }

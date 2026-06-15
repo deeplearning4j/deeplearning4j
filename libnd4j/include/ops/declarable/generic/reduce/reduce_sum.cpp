@@ -21,7 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 
 #if NOT_EXCLUDED(OP_reduce_sum)
@@ -37,6 +37,11 @@ CUSTOM_OP_IMPL(reduce_sum, -1, 1, false, 0, 0) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input unchanged)
+    if (dimensions.empty()) {
+      output->assign(input);
+      return sd::Status::OK;
+    }
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
 
@@ -71,9 +76,19 @@ DECLARE_SHAPE_FN(reduce_sum) {
   std::vector<sd::LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input shape unchanged)
+    if (dimensions.empty()) {
+      return SHAPELIST(CONSTANT(inputShape->at(0)));
+    }
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
+
+  // When dimensions are empty (no axes specified), this means "reduce all dimensions".
+  // The TF case where empty axis tensor means "no reduction" is already handled
+  // inside the (block.width() > 1) branch above. For the iArgs/no-input path,
+  // empty dimensions correctly falls through to evalReduceShapeInfo which returns
+  // scalar (keepDims=false) or all-ones shape (keepDims=true).
 
   REQUIRE_TRUE(
       dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
@@ -89,7 +104,7 @@ DECLARE_SHAPE_FN(reduce_sum) {
                                                    keepDims, false, block.getWorkspace()));
 }
 
-DECLARE_TYPES(reduce_sum) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(reduce_sum) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true)->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING); }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_sum_bp, -1, 1, false, 0, 0) {
@@ -142,7 +157,7 @@ DECLARE_SHAPE_FN(reduce_sum_bp) {
   auto dimensions = *block.getIArguments();
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
   }
 
   REQUIRE_TRUE(

@@ -23,7 +23,9 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_gather)
 
-#include <ops/declarable/CustomOperations.h>
+#include <graph/DspLifecycleContext.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/gather.h>
 #include <ops/declarable/helpers/scatter.h>
 
@@ -36,12 +38,19 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
   auto indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
   auto output = OUTPUT_VARIABLE(0);
 
-  const bool checkIndices = block.getBArguments()->empty() ? true : B_ARG(0);
+  // Skip index validation during DSP capture/replay — indices were validated during warmup
+  const bool checkIndices = graph::DspLifecycleContext::isOwned()
+      ? false
+      : (block.getBArguments()->empty() ? true : B_ARG(0));
 
-  // Edge case: empty indices -> empty output
-  if (indices != nullptr && indices->isEmpty()) {
-    REQUIRE_TRUE(output->isEmpty(), 0, "Gather op: If indices are empty, output must also be empty");
-    return sd::Status::OK;  // No op
+  // Edge case: empty indices or empty input -> empty output
+  bool indicesEmpty = indices != nullptr && (indices->isEmpty() || indices->lengthOf() == 0);
+  bool inputEmpty = input->isEmpty() || input->lengthOf() == 0;
+  bool outputEmpty = output->isEmpty() || output->lengthOf() == 0;
+
+  if (indicesEmpty || inputEmpty || outputEmpty) {
+    // For empty arrays, just return - nothing to gather
+    return sd::Status::OK;
   }
 
   const sd::LongType numOfIntArgs = block.numI();
@@ -50,16 +59,23 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
   if (block.width() > 2) {
     intArgs = INPUT_VARIABLE(2)->template asVectorT<sd::LongType>();
   } else {
-    if (numOfIntArgs == 0)
+    if (numOfIntArgs == 0) {
       intArgs.emplace_back(0);
-    else
-      for (sd::LongType i = 0; i < numOfIntArgs; i++) intArgs.emplace_back(block.getIArguments()->at(i));
+    } else {
+      intArgs.reserve(numOfIntArgs);
+      auto iArgs = block.getIArguments();
+      for (sd::LongType i = 0; i < numOfIntArgs; i++) {
+        intArgs.emplace_back(iArgs->at(i));
+      }
+    }
   }
 
   const sd::LongType inputRank = input->rankOf();
   if (intArgs[0] < 0) intArgs[0] += inputRank;
 
   // input validation
+  REQUIRE_TRUE(intArgs[0] >= 0, 0,
+               "GATHER op: input axis must be non-negative after normalization, but got %i!", intArgs[0]);
   REQUIRE_TRUE(intArgs[0] < inputRank, 0,
                "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!",
                intArgs[0], inputRank);
@@ -85,6 +101,48 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
       pIndices = nullptr;
     }
 
+    // Diagnostic: dump actual index values when OOB detected
+    if (numOfBadIndx > 0) {
+      sd::LongType axis = intArgs[0];
+      sd::LongType dimSize = input->sizeAt(axis);
+      // Sync indices to host for reading
+      if (indices != nullptr) {
+        indices->syncToHost();
+        sd_printf("GATHER OOB DIAGNOSTIC: axis=%lld dimSize=%lld indicesShape=", axis, dimSize);
+        for (int r = 0; r < indices->rankOf(); r++) {
+          sd_printf("%s%lld", r > 0 ? "x" : "", indices->sizeAt(r));
+        }
+        sd_printf(" dtype=%d\n", (int)indices->dataType());
+        // Also print full stride info for indices
+        sd_printf("GATHER OOB STRIDES: indicesStrides=[");
+        const sd::LongType* _istrides = indices->stridesOf();
+        for (int r = 0; r < indices->rankOf(); r++) {
+          sd_printf("%s%lld", r > 0 ? "," : "", (long long)_istrides[r]);
+        }
+        sd_printf("] order=%c offset=%lld bufAddr=%p\n", indices->ordering(),
+                  (long long)indices->offset(),
+                  indices->dataBuffer() ? indices->dataBuffer()->primary() : nullptr);
+        // Print first 32 index values to understand pattern
+        sd::LongType dumpCount = std::min(indices->lengthOf(), (sd::LongType)32);
+        for (sd::LongType idx = 0; idx < dumpCount; idx++) {
+          auto val = indices->e<sd::LongType>(idx);
+          sd_printf("  indices[%lld] = %lld %s\n", idx, val,
+                    (val < 0 || val >= dimSize) ? "<-- OOB" : "");
+        }
+        // Also print input tensor shape/stride for context
+        sd_printf("GATHER OOB INPUT: inputShape=[");
+        for (int r = 0; r < input->rankOf(); r++) {
+          sd_printf("%s%lld", r > 0 ? "x" : "", (long long)input->sizeAt(r));
+        }
+        sd_printf("] inputStrides=[");
+        const sd::LongType* _in_strides = input->stridesOf();
+        for (int r = 0; r < input->rankOf(); r++) {
+          sd_printf("%s%lld", r > 0 ? "," : "", (long long)_in_strides[r]);
+        }
+        sd_printf("] order=%c offset=%lld\n", input->ordering(), (long long)input->offset());
+      }
+    }
+
     // Check condition after cleanup
     REQUIRE_TRUE(numOfBadIndx == 0, 0,
                  "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!",
@@ -97,9 +155,10 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 }
 
 DECLARE_TYPES(gather) {
-  getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS});
-  getOpDescriptor()->setAllowedInputTypes(1, {ALL_INTS,ALL_FLOATS});
-  getOpDescriptor()->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS, BOOL});
+  getOpDescriptor()->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS, BOOL});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_GATHER);
 }
 
 DECLARE_SHAPE_FN(gather) {
@@ -117,6 +176,8 @@ DECLARE_SHAPE_FN(gather) {
   sd::LongType inputRank = shape::rank(inputShapeInfo);
   if (axis < 0) axis += inputRank;
 
+  REQUIRE_TRUE(axis >= 0, 0,
+               "GATHER op: input axis must be non-negative after normalization, but got %i!", axis);
   REQUIRE_TRUE(axis < inputRank, 0,
                "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis,
                inputRank);
@@ -129,6 +190,12 @@ DECLARE_SHAPE_FN(gather) {
     sd::LongType indicesRank = shape::rank(indicesShapeInfo);
 
     sd::LongType outputRank = inputRank + indicesRank - 1;
+
+    // Special handling for scalar output (rank 0)
+    if (outputRank == 0) {
+      auto result = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShapeInfo));
+      return SHAPELIST(result);
+    }
 
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), sd::LongType);
 
@@ -145,6 +212,13 @@ DECLARE_SHAPE_FN(gather) {
     int indicesRank = block.numI() == 2 ? 0 : 1;
 
     sd::LongType outputRank = inputRank + indicesRank - 1;
+
+    // Special handling for scalar output (rank 0)
+    if (outputRank == 0) {
+      auto result = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShapeInfo));
+      return SHAPELIST(result);
+    }
+
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), sd::LongType);
 
     // building shape manually
@@ -161,7 +235,8 @@ DECLARE_SHAPE_FN(gather) {
 
   ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
-  if (isEmpty) {
+  // Check if output has any zero dimensions (making it empty)
+  if (shape::length(outputShapeInfo) == 0) {
     ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
   }
 

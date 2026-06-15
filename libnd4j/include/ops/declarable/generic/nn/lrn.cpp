@@ -25,7 +25,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_lrn)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/lrn.h>
 
 namespace sd {

@@ -22,9 +22,10 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_sconv2d)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/convo.h>
 #include <ops/declarable/helpers/convolutions.h>
 
 #include <memory>
@@ -341,6 +342,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
     auto gradIDepth =
         NDArrayFactory::create_(resultFF->ordering(), gradIDepthShape, resultFF->dataType(),
                                 block.launchContext());  // [bS, oH, oW, iC*mC]  (NHWC) or [bS, iC*mC, oH, oW] (NCHW)
+    gradIDepth->nullify();  // col2im uses += (accumulation), so output must be pre-zeroed
 
     ConvolutionUtils::conv2dBP(block, resultFF, weightsPoint, bias, gradO, gradIDepth, gradWP, gradB, 1, 1, 1, 1, 0, 0,
                                1, 1, isSameMode, isNCHW, wFormat);  // in this case oH=iH and oW=iW

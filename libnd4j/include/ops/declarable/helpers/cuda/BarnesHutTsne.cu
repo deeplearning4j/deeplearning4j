@@ -19,6 +19,7 @@
 //
 // @author George A. Shulinok <sgazeos@gmail.com>, created on 4/18/2019
 //
+#include <array/NDArrayFactory.h>
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
 
@@ -277,13 +278,23 @@ bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, LongType dim
   auto cornerMinusWidth = *corner - *width;
   auto cornerPlusWidth = *corner + *width;
   // executes on host side, so sync all to host memory
-  cornerMinusWidth.syncToHost();
-  cornerPlusWidth.syncToHost();
+  cornerMinusWidth->syncToHost();
+  cornerPlusWidth->syncToHost();
   for (LongType i = 0; i < dimension; i++) {
-    if (cornerMinusWidth.e<double>(i) > point->e<double>(i)) return false;
-    if (cornerPlusWidth.e<double>(i) < point->e<double>(i)) return false;
+    if (cornerMinusWidth->e<double>(i) > point->e<double>(i)) {
+      delete cornerMinusWidth;
+      delete cornerPlusWidth;
+      return false;
+    }
+    if (cornerPlusWidth->e<double>(i) < point->e<double>(i)) {
+      delete cornerMinusWidth;
+      delete cornerPlusWidth;
+      return false;
+    }
   }
 
+  delete cornerMinusWidth;
+  delete cornerPlusWidth;
   return true;
 }
 }  // namespace helpers

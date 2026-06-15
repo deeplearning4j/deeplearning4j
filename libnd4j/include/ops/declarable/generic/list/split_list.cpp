@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_split_list)
 
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/list.h>
 
 namespace sd {
 namespace ops {

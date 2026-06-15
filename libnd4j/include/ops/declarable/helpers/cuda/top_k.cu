@@ -21,6 +21,7 @@
 //
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/top_k.h>
 
 #include "execution/cuda/LaunchDims.h"
@@ -299,57 +300,66 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
     auto i = reinterpret_cast<Y*>(vi) + iTadOffsets[t];
     auto z = reinterpret_cast<X*>(vz) + zTadOffsets[t];
 
-    // we'll do multiple reads here
-    for (int p = 0; p < k; p += scanWidth) {
-      // resetting temporary storage
-      for (int p = 0; p < scanWidth; p++) {
-        tempValues[p] = -DataTypeUtils::max<X>();
-        tempIndices[p] = DataTypeUtils::max<Y>();
-      }
+    // Reset localMaximum for each new TAD
+    if (threadIdx.x == 0) {
+      localMaximum = DataTypeUtils::max<X>();
+    }
+    __syncthreads();
 
-      // local max values/indices
-      for (int e = threadIdx.x; e < tadLength; e++) {
+    // we'll do multiple reads here - find top k values one at a time
+    for (int kIdx = 0; kIdx < k; kIdx++) {
+      // resetting temporary storage for this thread
+      tempValues[0] = -DataTypeUtils::max<X>();
+      tempIndices[0] = -1;
+
+      // Each thread finds max value in its portion of the array
+      for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
         LongType xCoords[SD_MAX_RANK];
         LongType xOffset;
         INDEX2COORDS(e, xRank, xShape, xCoords);
         COORDS2INDEX(xRank, xStride, xCoords, xOffset);
         auto value = x[xOffset];
 
-        // we'll compare this value to current stored ones
-        for (int f = 0; f < scanWidth; f++) {
-          if (value > tempValues[f] && (p == 0 || value < localMaximum)) {
-            tempValues[f] = value;
-            tempIndices[f] = e;
-          }
+        // Only consider values smaller than current threshold (localMaximum)
+        // For the first iteration (kIdx==0), localMaximum is max<X>(), so all values pass
+        if (value < localMaximum && value > tempValues[0]) {
+          tempValues[0] = value;
+          tempIndices[0] = e;
         }
       }
       __syncthreads();
 
-      // at this point we have local part ready for merge and define global maximum for this iteration
+      // Parallel reduction to find global max across all threads
+      // Use shared memory layout: each thread's data is at index threadIdx.x * scanWidth
       for (LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
         if (threadIdx.x < activeThreads) {
-          if (tempValues[0] < tempValues[0 + activeThreads * scanWidth]) {
-            tempValues[0] = tempValues[0 + activeThreads * scanWidth];
-            tempIndices[0] = tempIndices[0 + activeThreads * scanWidth];
+          X* otherValues = reinterpret_cast<X*>(_shmem) + (threadIdx.x + activeThreads) * scanWidth;
+          Y* otherIndices = reinterpret_cast<Y*>(reinterpret_cast<X*>(_shmem) + blockDim.x * scanWidth) + (threadIdx.x + activeThreads) * scanWidth;
+
+          if (otherValues[0] > tempValues[0]) {
+            tempValues[0] = otherValues[0];
+            tempIndices[0] = otherIndices[0];
           }
         }
         __syncthreads();
       }
-      __syncthreads();
 
-      // at this point we know local minimum for next iteration
+      // Thread 0 writes the result for this k index
       if (threadIdx.x == 0) {
-        localMaximum = tempValues[scanWidth - 1];
+        // Update localMaximum to be the value we just found (for next iteration)
+        localMaximum = tempValues[0];
+
         LongType zCoords[SD_MAX_RANK];
         LongType zOffset;
-        INDEX2COORDS(p, zRank, zShape, zCoords);
+        INDEX2COORDS(kIdx, zRank, zShape, zCoords);
         COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-        z[zOffset] = tempValues[scanWidth - 1];
+        z[zOffset] = tempValues[0];
+
         LongType iCoords[SD_MAX_RANK];
         LongType iOffset;
-        INDEX2COORDS(p, iRank, iShape, iCoords);
+        INDEX2COORDS(kIdx, iRank, iShape, iCoords);
         COORDS2INDEX(iRank, iStride, iCoords, iOffset);
-        i[iOffset] = tempIndices[scanWidth - 1];
+        i[iOffset] = tempIndices[0];
       }
       __syncthreads();
     }
@@ -433,34 +443,95 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
 template <typename X, typename Y>
 static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,
                            const LongType k, bool needSort) {
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {input->rankOf() - 1});
-  auto packI = ConstantTadHelper::getInstance().tadForDimensions(indices->shapeInfo(), {input->rankOf() - 1});
-  auto packZ = ConstantTadHelper::getInstance().tadForDimensions(values->shapeInfo(), {input->rankOf() - 1});
+  // For 1D arrays, tadForDimensions({0}) creates N scalar TADs instead of 1 TAD of length N
+  // We need to handle 1D arrays specially by using the array's own shape info
 
-  auto tadLength = shape::length(packX->primaryShapeInfo());
+  LongType tadLength;
+  LongType numTads;
+  const LongType* xTadShapeInfo;
+  const LongType* xTadOffsets;
+  const LongType* iTadShapeInfo;
+  const LongType* iTadOffsets;
+  const LongType* zTadShapeInfo;
+  const LongType* zTadOffsets;
+
+  // Device memory for zero offset (needed for async kernel execution)
+  LongType* deviceZeroOffset = nullptr;
+  int topkDevId = context->getDeviceID();
+
+  std::shared_ptr<TadPack> packX, packI, packZ;
+
+  if (input->rankOf() == 1) {
+    // For 1D input, treat the entire array as one TAD
+    // Use the array's own shape info directly
+    tadLength = input->lengthOf();
+    numTads = 1;
+
+    // Use the arrays' own shape info (they represent the TAD shape for 1D case)
+    xTadShapeInfo = input->specialShapeInfo();
+    iTadShapeInfo = indices->specialShapeInfo();
+    zTadShapeInfo = values->specialShapeInfo();
+
+    // Allocate device memory for the zero offset
+    deviceZeroOffset = reinterpret_cast<LongType*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), topkDevId, *context->getCudaStream()));
+    if (deviceZeroOffset == nullptr) THROW_EXCEPTION("Cannot allocate memory for top_k zero offset");
+    cudaMemsetAsync(deviceZeroOffset, 0, sizeof(LongType), *context->getCudaStream());
+
+    // Single TAD starting at offset 0
+    xTadOffsets = deviceZeroOffset;
+    iTadOffsets = deviceZeroOffset;
+    zTadOffsets = deviceZeroOffset;
+  } else {
+    // For multi-dimensional arrays, use standard TAD along last dimension
+    packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {input->rankOf() - 1});
+    packI = ConstantTadHelper::getInstance().tadForDimensions(indices->shapeInfo(), {input->rankOf() - 1});
+    packZ = ConstantTadHelper::getInstance().tadForDimensions(values->shapeInfo(), {input->rankOf() - 1});
+
+    tadLength = shape::length(packX->primaryShapeInfo());
+    numTads = packX->numberOfTads();
+
+    xTadShapeInfo = packX->platformShapeInfo();
+    xTadOffsets = packX->platformOffsets();
+    iTadShapeInfo = packI->platformShapeInfo();
+    iTadOffsets = packI->platformOffsets();
+    zTadShapeInfo = packZ->platformShapeInfo();
+    zTadOffsets = packZ->platformOffsets();
+  }
 
   // we get top K values first
-  if (k == 1) {
+  if (k == 1 && input->rankOf() > 1) {
+    // k==1 optimization using IndexMax — only for multi-dimensional input.
+    // For 1D input, applyIndexReduce with dims={0} produces a scalar result
+    // which doesn't match the [1]-shaped indices output, causing memory errors.
     std::vector<LongType> dims = {input->rankOf() - 1};
     input->applyIndexReduce(indexreduce::IndexMax, indices, &dims);
 
     dim3 launchDims = getLaunchDims("top_k_mover");
     // copy values on specified indices
     topValuesMover<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
-        input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), indices->specialBuffer(),
-        packI->platformShapeInfo(), packI->platformOffsets(), values->specialBuffer(), packZ->platformShapeInfo(),
-        packZ->platformOffsets(), tadLength, packX->numberOfTads(), k);
+        input->specialBuffer(), xTadShapeInfo, xTadOffsets, indices->specialBuffer(),
+        iTadShapeInfo, iTadOffsets, values->specialBuffer(), zTadShapeInfo,
+        zTadOffsets, tadLength, numTads, k);
     sd::DebugHelper::checkErrorCode(context->getCudaStream(), "topValuesMover failed");
 
   } else {
     int scanWidth = 1;
     dim3 topKIndices2 = topKIndices(scanWidth, sizeof(X), sizeof(Y));
     indicesAlongDimension<X, Y><<<topKIndices2.y, topKIndices2.x, topKIndices2.z, *context->getCudaStream()>>>(
-        input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), indices->specialBuffer(),
-        packI->platformShapeInfo(), packI->platformOffsets(), values->specialBuffer(), packZ->platformShapeInfo(),
-        packZ->platformOffsets(), tadLength, packX->numberOfTads(), k, scanWidth, needSort);
+        input->specialBuffer(), xTadShapeInfo, xTadOffsets, indices->specialBuffer(),
+        iTadShapeInfo, iTadOffsets, values->specialBuffer(), zTadShapeInfo,
+        zTadOffsets, tadLength, numTads, k, scanWidth, needSort);
     sd::DebugHelper::checkErrorCode(context->getCudaStream(), "indicesAlongDimension failed");
 
+  }
+
+  // Clean up device memory for 1D case (after kernel completes via stream sync in caller)
+  if (deviceZeroOffset != nullptr) {
+    // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+    if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+      cudaStreamSynchronize(*context->getCudaStream());
+      sd::memory::CudaMemoryPool::getInstance().free(deviceZeroOffset, topkDevId, *context->getCudaStream());
+    }
   }
 
   return Status::OK;
@@ -468,13 +539,16 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
 
 Status topKFunctor(LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,
                        const LongType k, bool needSort) {
-  input->syncToDevice();
+  PointersManager manager(context, "top_k");
+
+  NDArray::prepareSpecialUse({values, indices}, {input});
 
   BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), topKFunctor_,
                         (context, input, values, indices, k, needSort), SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
-  values->tickWriteDevice();
-  indices->tickWriteDevice();
+  NDArray::registerSpecialUse({values, indices}, {input});
+
+  manager.synchronize();
 
   return Status::OK;
 }

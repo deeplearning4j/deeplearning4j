@@ -112,14 +112,38 @@ static void activationDeriv(NDArray* x, const int opId, const float alpha, const
       thresholdReluDerivative(x->getContext(), x, alpha, z, z);
       break;
     case 6: {
-      auto func = PRAGMA_THREADS_FOR {
-        for (sd::LongType i = start; i < stop; ++i) {
-          auto val = beta * x->e<float>(i);
-          z->p<float>(
-              i, alpha * beta * (1.f - sd::math::sd_tanh<float, float>(val) * sd::math::sd_tanh<float, float>(val)));
-        }
-      };
-      samediff::Threads::parallel_for(func, 0, x->lengthOf());
+      // Direct buffer access to avoid O(n^2) sync from per-element p()/e() calls
+      NDArray::prepareSpecialUse({z}, {x});
+      const bool isDouble = x->dataType() == DataType::DOUBLE;
+      if (isDouble) {
+        auto xBuf = x->bufferAsT<double>();
+        auto zBuf = z->bufferAsT<double>();
+        auto func = PRAGMA_THREADS_FOR {
+          for (sd::LongType i = start; i < stop; ++i) {
+            auto xOffset = x->getOffset(i);
+            auto val = static_cast<double>(beta) * xBuf[xOffset];
+            auto zOffset = z->getOffset(i);
+            zBuf[zOffset] = static_cast<double>(alpha) * static_cast<double>(beta) *
+                            (1.0 - sd::math::sd_tanh<double, double>(val) * sd::math::sd_tanh<double, double>(val));
+          }
+        };
+        samediff::Threads::parallel_for(func, 0, x->lengthOf());
+      } else {
+        auto xBuf = x->bufferAsT<float>();
+        auto zBuf = z->bufferAsT<float>();
+        auto func = PRAGMA_THREADS_FOR {
+          for (sd::LongType i = start; i < stop; ++i) {
+            auto xOffset = x->getOffset(i);
+            auto val = beta * xBuf[xOffset];
+            auto zOffset = z->getOffset(i);
+            zBuf[zOffset] = alpha * beta * (1.f - sd::math::sd_tanh<float, float>(val) * sd::math::sd_tanh<float, float>(val));
+          }
+        };
+        samediff::Threads::parallel_for(func, 0, x->lengthOf());
+      }
+      z->tickWriteHost();
+      z->syncToDevice();
+      NDArray::registerSpecialUse({z}, {x});
       break;
     }
     case 7:
@@ -132,13 +156,37 @@ static void activationDeriv(NDArray* x, const int opId, const float alpha, const
       x->applyTransform(transform::SoftSignDerivative, z);
       break;
     case 10: {
-      auto func = PRAGMA_THREADS_FOR {
-        for (sd::LongType i = start; i < stop; ++i) {
-          auto val = sd::math::sd_exp<float, float>(x->e<float>(i));
-          z->p<float>(i, val / (1.f + val));
-        }
-      };
-      samediff::Threads::parallel_for(func, 0, x->lengthOf());
+      // Direct buffer access to avoid O(n^2) sync from per-element p()/e() calls
+      NDArray::prepareSpecialUse({z}, {x});
+      const bool isDouble = x->dataType() == DataType::DOUBLE;
+      if (isDouble) {
+        auto xBuf = x->bufferAsT<double>();
+        auto zBuf = z->bufferAsT<double>();
+        auto func = PRAGMA_THREADS_FOR {
+          for (sd::LongType i = start; i < stop; ++i) {
+            auto xOffset = x->getOffset(i);
+            auto val = sd::math::sd_exp<double, double>(xBuf[xOffset]);
+            auto zOffset = z->getOffset(i);
+            zBuf[zOffset] = val / (1.0 + val);
+          }
+        };
+        samediff::Threads::parallel_for(func, 0, x->lengthOf());
+      } else {
+        auto xBuf = x->bufferAsT<float>();
+        auto zBuf = z->bufferAsT<float>();
+        auto func = PRAGMA_THREADS_FOR {
+          for (sd::LongType i = start; i < stop; ++i) {
+            auto xOffset = x->getOffset(i);
+            auto val = sd::math::sd_exp<float, float>(xBuf[xOffset]);
+            auto zOffset = z->getOffset(i);
+            zBuf[zOffset] = val / (1.f + val);
+          }
+        };
+        samediff::Threads::parallel_for(func, 0, x->lengthOf());
+      }
+      z->tickWriteHost();
+      z->syncToDevice();
+      NDArray::registerSpecialUse({z}, {x});
       break;
     }
     default:
@@ -151,18 +199,61 @@ static void activationDeriv(NDArray* x, const int opId, const float alpha, const
 static void clipDeriv(const float clipVal, NDArray& c, NDArray& z0, NDArray& z1, NDArray& z2, NDArray& z3) {
   if (clipVal == 0) return;
 
-  auto func = PRAGMA_THREADS_FOR {
-    for (sd::LongType i = start; i < stop; ++i) {
-      const auto val = c.e<float>(i);
-      if (val == -clipVal || val == clipVal) {
-        z0.p<float>(i, 0.f);
-        z1.p<float>(i, 0.f);
-        z2.p<float>(i, 0.f);
-        z3.p<float>(i, 0.f);
+  // Direct buffer access to avoid O(n^2) sync from per-element p()/e() calls
+  NDArray::prepareSpecialUse({&z0, &z1, &z2, &z3}, {&c});
+  const bool isDouble = c.dataType() == DataType::DOUBLE;
+  if (isDouble) {
+    auto cBuf = c.bufferAsT<double>();
+    auto z0Buf = z0.bufferAsT<double>();
+    auto z1Buf = z1.bufferAsT<double>();
+    auto z2Buf = z2.bufferAsT<double>();
+    auto z3Buf = z3.bufferAsT<double>();
+
+    auto func = PRAGMA_THREADS_FOR {
+      for (sd::LongType i = start; i < stop; ++i) {
+        auto cOffset = c.getOffset(i);
+        const auto val = cBuf[cOffset];
+        if (val == -static_cast<double>(clipVal) || val == static_cast<double>(clipVal)) {
+          z0Buf[z0.getOffset(i)] = 0.0;
+          z1Buf[z1.getOffset(i)] = 0.0;
+          z2Buf[z2.getOffset(i)] = 0.0;
+          z3Buf[z3.getOffset(i)] = 0.0;
+        }
       }
-    }
-  };
-  samediff::Threads::parallel_for(func, 0, c.lengthOf());
+    };
+    samediff::Threads::parallel_for(func, 0, c.lengthOf());
+  } else {
+    auto cBuf = c.bufferAsT<float>();
+    auto z0Buf = z0.bufferAsT<float>();
+    auto z1Buf = z1.bufferAsT<float>();
+    auto z2Buf = z2.bufferAsT<float>();
+    auto z3Buf = z3.bufferAsT<float>();
+
+    auto func = PRAGMA_THREADS_FOR {
+      for (sd::LongType i = start; i < stop; ++i) {
+        auto cOffset = c.getOffset(i);
+        const auto val = cBuf[cOffset];
+        if (val == -clipVal || val == clipVal) {
+          z0Buf[z0.getOffset(i)] = 0.f;
+          z1Buf[z1.getOffset(i)] = 0.f;
+          z2Buf[z2.getOffset(i)] = 0.f;
+          z3Buf[z3.getOffset(i)] = 0.f;
+        }
+      }
+    };
+    samediff::Threads::parallel_for(func, 0, c.lengthOf());
+  }
+
+  // Single sync after all writes
+  z0.tickWriteHost();
+  z0.syncToDevice();
+  z1.tickWriteHost();
+  z1.syncToDevice();
+  z2.tickWriteHost();
+  z2.syncToDevice();
+  z3.tickWriteHost();
+  z3.syncToDevice();
+  NDArray::registerSpecialUse({&z0, &z1, &z2, &z3}, {&c});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -252,7 +343,7 @@ void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI
   delete hIMulWr;
 
   // add biases if they are given
-  if (b != nullptr) *z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
+  if (b != nullptr) z->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), b, z, false);  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
 
   auto zi = x->rankOf() == 1 ? (*z)({0, nOut}) : (*z)({0, 0, 0, nOut});                // input gate it, [bS, nOut](or[nOut])
   auto zf = x->rankOf() == 1 ? (*z)({nOut, 2 * nOut}) : (*z)({0, 0, nOut, 2 * nOut});  // forget gate ft, [bS, nOut](or[nOut])
@@ -326,7 +417,7 @@ void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI
   delete zAssign;
   
   // add biases if they are given
-  if (b != nullptr) *z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
+  if (b != nullptr) z->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), b, z, false);  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
 
   auto zi = x->rankOf() == 1 ? (*z)({0, nOut}) : (*z)({0, 0, 0, nOut});  // input gate it, [bS, nOut](or[nOut])
   auto zf =

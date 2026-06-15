@@ -23,7 +23,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_crelu)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/activations.h>
+#include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <ops/declarable/helpers/transforms.h>
 namespace sd {
@@ -95,8 +96,8 @@ CUSTOM_OP_IMPL(crelu_bp, 2, 1, false, 0, 0) {
 DECLARE_TYPES(crelu_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
-      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(crelu_bp) {

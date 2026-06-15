@@ -100,15 +100,15 @@ void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output,
   // oW = W - cropLeft - cropRight
 
   std::vector<sd::LongType> rearrShape =  {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)};
-  NDArray inputRearranged0 = input.reshape(
+  auto inputRearranged0 = input.reshape(
       input.ordering(), rearrShape,false);
-  inputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false, false);
+  inputRearranged0->permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
-    output.assign(&inputRearranged0);
+    output.assign(inputRearranged0);
   } else {
     std::vector<sd::LongType> outputShape =  {output.sizeAt(0), input.sizeAt(1) * blockSize, input.sizeAt(2) * blockSize, input.sizeAt(3)};
-    NDArray inputRearranged1 = inputRearranged0.reshape(
+    auto inputRearranged1 = inputRearranged0->reshape(
         input.ordering(),
         outputShape);
 
@@ -118,16 +118,18 @@ void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output,
 
     PointersManager manager(context, "batchToSpace");
 
-    NDArray::prepareSpecialUse({&output}, {&inputRearranged1});
+    NDArray::prepareSpecialUse({&output}, {inputRearranged1});
     BUILD_SINGLE_SELECTOR(
         input.dataType(), batchToSpaceCudaLauncher,
-        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), inputRearranged1.specialBuffer(),
-         inputRearranged1.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), cropBottom, cropLeft),
+        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), inputRearranged1->specialBuffer(),
+         inputRearranged1->specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), cropBottom, cropLeft),
         SD_COMMON_TYPES);
-    NDArray::registerSpecialUse({&output}, {&inputRearranged1});
+    NDArray::registerSpecialUse({&output}, {inputRearranged1});
 
     manager.synchronize();
+    delete inputRearranged1;
   }
+  delete inputRearranged0;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -218,7 +220,7 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
   temp[i++] = output.sizeAt(0);
   for (int j = 1; j < rank; ++i, ++j) temp[i] = input.sizeAt(j);
 
-  NDArray inputRearranged0 = input.reshape(input.ordering(), temp);
+  auto inputRearranged0 = input.reshape(input.ordering(), temp);
 
   //*** construct permuting std::vector for permutation of input array ***//
 
@@ -230,10 +232,10 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
   }
   for (i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i) temp[i] = i;
 
-  inputRearranged0.permutei(temp, 0, false);
+  inputRearranged0->permutei(temp, 0, false);
 
   if (input.lengthOf() == output.lengthOf()) {
-    output.assign(&inputRearranged0);
+    output.assign(inputRearranged0);
   } else {
     //*** construct reshaping std::vector for second reshape of input array ***//
 
@@ -244,23 +246,25 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
     for (i = 1; i < rank; ++i)
       temp[i] = (i <= numOfSpatialDims) ? input.sizeAt(i) * blockShape.e<LongType>(i - 1) : input.sizeAt(i);
 
-    NDArray inputRearranged1 = inputRearranged0.reshape(input.ordering(), temp);
+    auto inputRearranged1 = inputRearranged0->reshape(input.ordering(), temp);
 
     dim3 launchDims = batchToSpaceNdLaunch(output.lengthOf(),output.rankOf());
 
     PointersManager manager(context, "batchToSpaceND");
 
-    NDArray::prepareSpecialUse({&output}, {&inputRearranged1, &crop});
+    NDArray::prepareSpecialUse({&output}, {inputRearranged1, &crop});
     BUILD_DOUBLE_SELECTOR(
         input.dataType(), crop.dataType(), batchToSpaceNDCudaLauncher,
-        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), inputRearranged1.specialBuffer(),
-         inputRearranged1.specialShapeInfo(), crop.specialBuffer(), crop.specialShapeInfo(), output.specialBuffer(),
+        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), inputRearranged1->specialBuffer(),
+         inputRearranged1->specialShapeInfo(), crop.specialBuffer(), crop.specialShapeInfo(), output.specialBuffer(),
          output.specialShapeInfo(), numOfSpatialDims),
         SD_COMMON_TYPES, SD_INTEGER_TYPES);
-    NDArray::registerSpecialUse({&output}, {&inputRearranged1, &crop});
+    NDArray::registerSpecialUse({&output}, {inputRearranged1, &crop});
 
     manager.synchronize();
+    delete inputRearranged1;
   }
+  delete inputRearranged0;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -343,16 +347,16 @@ void spaceToBatch(LaunchContext* context, NDArray& input, NDArray& output, const
   // padLeft + padRight)/blockSize, iC]
 
   std::vector<sd::LongType> outputShape = {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), input.sizeAt(3)};
-  NDArray outputRearranged0 = output.reshape(
+  auto outputRearranged0 = output.reshape(
       output.ordering(), outputShape,
       false);
-  outputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false, false);
+  outputRearranged0->permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
-    outputRearranged0.assign(&input);
+    outputRearranged0->assign(&input);
   } else {
     std::vector<sd::LongType> outReArrShape =  {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, input.sizeAt(3)};
-    NDArray outputRearranged1 = outputRearranged0.reshape(
+    auto outputRearranged1 = outputRearranged0->reshape(
         output.ordering(),
         outReArrShape, false);
 
@@ -361,18 +365,20 @@ void spaceToBatch(LaunchContext* context, NDArray& input, NDArray& output, const
 
     PointersManager manager(context, "spaceToBatch");
 
-    NDArray::prepareSpecialUse({&outputRearranged1}, {&input});
+    NDArray::prepareSpecialUse({outputRearranged1}, {&input});
     BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatchCudaLauncher,
                           (launchDims.y,launchDims.x,launchDims.z, context->getCudaStream(), input.specialBuffer(),
-                           input.specialShapeInfo(), outputRearranged1.specialBuffer(),
-                           outputRearranged1.specialShapeInfo(), padBottom, padTop, padLeft, padRight),
+                           input.specialShapeInfo(), outputRearranged1->specialBuffer(),
+                           outputRearranged1->specialShapeInfo(), padBottom, padTop, padLeft, padRight),
                           SD_COMMON_TYPES);
-    NDArray::registerSpecialUse({&outputRearranged1}, {&input});
+    NDArray::registerSpecialUse({outputRearranged1}, {&input});
 
     manager.synchronize();
 
-    if (output.specialBuffer() != outputRearranged1.specialBuffer()) outputRearranged0.assign(&outputRearranged1);
+    if (output.specialBuffer() != outputRearranged1->specialBuffer()) outputRearranged0->assign(outputRearranged1);
+    delete outputRearranged1;
   }
+  delete outputRearranged0;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -479,7 +485,7 @@ void spaceToBatchND(LaunchContext* context, NDArray& input, NDArray& blockShape,
   temp[i++] = input.sizeAt(0);
   for (int j = 1; j < rank; ++i, ++j) temp[i] = output.sizeAt(j);
 
-  NDArray outputRearranged0 = output.reshape(output.ordering(), temp, false);
+  auto outputRearranged0 = output.reshape(output.ordering(), temp, false);
 
   //*** construct permuting std::vector for permutation of output array ***//
 
@@ -491,12 +497,12 @@ void spaceToBatchND(LaunchContext* context, NDArray& input, NDArray& blockShape,
   }
   for (i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i) temp[i] = i;
 
-  outputRearranged0.permutei(temp, false, false);
+  outputRearranged0->permutei(temp, false, false);
 
   // ****** //
 
   if (input.lengthOf() == output.lengthOf()) {
-    outputRearranged0.assign(&input);
+    outputRearranged0->assign(&input);
   } else {
     //*** construct reshaping std::vector for second reshape of output array ***//
     temp.resize(rank);
@@ -506,23 +512,25 @@ void spaceToBatchND(LaunchContext* context, NDArray& input, NDArray& blockShape,
     for (i = 1; i < rank; ++i)
       temp[i] = (i <= numOfSpatialDims) ? output.sizeAt(i) * blockShape.e<LongType>(i - 1) : output.sizeAt(i);
 
-    NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), temp, false);
+    auto outputRearranged1 = outputRearranged0->reshape(output.ordering(), temp, false);
 
     dim3 launchDims = spaceToBatchNdLaunch(output.lengthOf(),output.rankOf());
     PointersManager manager(context, "spaceToBatchND");
 
-    NDArray::prepareSpecialUse({&outputRearranged1}, {&input, &padding});
+    NDArray::prepareSpecialUse({outputRearranged1}, {&input, &padding});
     BUILD_DOUBLE_SELECTOR(input.dataType(), padding.dataType(), spaceToBatchNDCudaLauncher,
                           (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), input.specialBuffer(),
                            input.specialShapeInfo(), padding.specialBuffer(), padding.specialShapeInfo(),
-                           outputRearranged1.specialBuffer(), outputRearranged1.specialShapeInfo(), numOfSpatialDims),
+                           outputRearranged1->specialBuffer(), outputRearranged1->specialShapeInfo(), numOfSpatialDims),
                           SD_COMMON_TYPES, SD_INTEGER_TYPES);
-    NDArray::registerSpecialUse({&outputRearranged1}, {&input, &padding});
+    NDArray::registerSpecialUse({outputRearranged1}, {&input, &padding});
 
     manager.synchronize();
 
-    if (output.specialBuffer() != outputRearranged1.specialBuffer()) outputRearranged0.assign(&outputRearranged1);
+    if (output.specialBuffer() != outputRearranged1->specialBuffer()) outputRearranged0->assign(outputRearranged1);
+    delete outputRearranged1;
   }
+  delete outputRearranged0;
 }
 
 

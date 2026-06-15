@@ -27,7 +27,7 @@ namespace sd {
 namespace ops {
 BroadcastableBoolOp::BroadcastableBoolOp(const char *name, int numTArgs, int numIArgs)
     : DeclarableCustomOp::DeclarableCustomOp(2, 1, name, false, numTArgs, numIArgs) {
-  //
+  _descriptor->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_COMPARISON);
 }
 ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
   auto shapeList = SHAPELIST();
@@ -35,9 +35,20 @@ ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::
   auto y = inputShape->at(1);
   sd::DataType dtype = sd::DataType::BOOL;
 
-  if (shape::isEmptyConst(x) || shape::isEmptyConst(y)) {
+  // Also check using the NDArray objects when available (fastpath).
+  // The native shape info may not have the ARRAY_EMPTY bit set for Java-created empty arrays.
+  bool xEmptyFromArray = false, yEmptyFromArray = false;
+  if (block.isFastPath()) {
+    const auto& fp = block.fastpath_in();
+    if (fp.size() > 0 && fp[0] != nullptr) xEmptyFromArray = fp[0]->isEmpty();
+    if (fp.size() > 1 && fp[1] != nullptr) yEmptyFromArray = fp[1]->isEmpty();
+  }
+
+  if (shape::isEmptyConst(x) || shape::isEmptyConst(y) || xEmptyFromArray || yEmptyFromArray) {
     // this is edge case, [3, 4] + [] = []
-    if ((shape::isEmptyConst(x) && shape::rank(x) == 0) || (shape::isEmptyConst(y) && shape::rank(y) == 0)) {
+    bool xIsRank0Empty = (shape::isEmptyConst(x) && shape::rank(x) == 0) || (xEmptyFromArray && shape::rank(x) == 0);
+    bool yIsRank0Empty = (shape::isEmptyConst(y) && shape::rank(y) == 0) || (yEmptyFromArray && shape::rank(y) == 0);
+    if (xIsRank0Empty || yIsRank0Empty) {
       shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor::emptyDescriptor(dtype)));
       return shapeList;
     }

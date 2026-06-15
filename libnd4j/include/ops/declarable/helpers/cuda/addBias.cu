@@ -149,7 +149,7 @@ void addBias(graph::Context& block, NDArray& input, NDArray& bias, NDArray& outp
                           SD_FLOAT_TYPES, SD_FLOAT_TYPES);
   }
   NDArray::registerSpecialUse({&output}, {&input, &bias});
-  manager.synchronize();
+  // Don't sync - let CUDA operations run asynchronously
 }
 
 }  // namespace helpers

@@ -23,10 +23,11 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_randomuniform)
 
 #include <helpers/RandomLauncher.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/random.h>
 #include <ops/declarable/helpers/random.h>
 
 namespace sd {
@@ -42,7 +43,7 @@ namespace ops {
  */
 CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   // uniform distribution
-  auto rng = block.randomGenerator();
+  auto& rng = block.randomGenerator();
   auto dtype = FLOAT32;
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
 
@@ -85,7 +86,7 @@ DECLARE_SHAPE_FN(randomuniform) {
 
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
   if (block.width() > 1)
-  REQUIRE_TRUE(dtype == INPUT_VARIABLE(1)->dataType(), 0,
+  REQUIRE_TRUE(dtype == ArrayOptions::dataType(inputShape->at(1)), 0,
                "RandomUniform: data type of output and min/max args should be the same");
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);

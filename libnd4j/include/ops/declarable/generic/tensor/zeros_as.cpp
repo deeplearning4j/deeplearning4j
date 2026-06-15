@@ -23,12 +23,18 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_zeros_as)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(zeros_as, 1, 1, false, 0, 0) {
   auto out = OUTPUT_VARIABLE(0);
+  
+  // For empty arrays, just return - no need to fill
+  if (out->isEmpty() || out->lengthOf() == 0) {
+    return Status::OK;
+  }
+  
   int zero = 0;
   out->assign(zero);  // output is filled by zero by default
 
@@ -39,22 +45,22 @@ DECLARE_SYN(zeros_like, zeros_as);
 
 DECLARE_SHAPE_FN(zeros_as) {
   auto in = inputShape->at(0);
-  auto dtype = block.numD() ? D_ARG(0) : ArrayOptions::dataType(in);
-  if(shape::isEmptyConst(in)) {
+  // Always use input's data type - don't rely on D_ARG which may not be set
+  auto dtype = ArrayOptions::dataType(in);
+  
+  // Check both ARRAY_EMPTY flag and actual length to handle all empty array cases
+  if(shape::isEmptyConst(in) || shape::length(in) == 0) {
     if(shape::rank(in) < 1) {
       return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(dtype));
-
     }
     std::vector<LongType> inShape;
     auto inShape2 = shape::shapeOf(in);
     for(int i = 0; i < shape::rank(in); i++) {
       inShape.emplace_back(inShape2[i]);
     }
-
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype,inShape));
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype, inShape));
   }
   auto shape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, in);
-
   return SHAPELIST(shape);
 }
 
@@ -62,7 +68,8 @@ DECLARE_TYPES(zeros_as) {
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(ANY)
-      ->setSameMode(false);
+      ->setSameMode(false)
+      ->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

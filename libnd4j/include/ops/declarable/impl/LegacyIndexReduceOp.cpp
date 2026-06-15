@@ -21,6 +21,7 @@
 //
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <system/env_functions.h>
 
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -38,30 +39,23 @@ LegacyIndexReduceOp::LegacyIndexReduceOp(int opNum) : LegacyOp(1, opNum) {
 
 LegacyOp *LegacyIndexReduceOp::clone() { return new LegacyIndexReduceOp(this->_opNum); }
 
+void LegacyIndexReduceOp::registerTypes() {
+  // Index-reduce ops (argmax, argmin, firstindex, lastindex) produce INT64 output regardless of input type.
+  this->getOpDescriptor()->setSameMode(false);
+  this->getOpDescriptor()->setAllowedOutputTypes({INT64});
+  this->getOpDescriptor()->setAllowedInputTypes(ANY);
+}
+
 ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
+  auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
 
   if (block.getAxis()->size() == 0 && block.width() == 1) {
-    LongType *newShape;
-    // in this case we just return scalar
-    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);
-    newShape[0] = 2;
-    newShape[1] = 1;
-    newShape[2] = 1;
-    newShape[3] = 1;
-    newShape[4] = 1;
-    newShape[6] = 1;
-    newShape[7] = 99;
-
-    auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShape);
-    RELEASE(newShape, block.getWorkspace());
-    return SHAPELIST(result->primary());
+    // scalar: reduce all dimensions
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(INT64));
   } else if (block.getAxis()->size()) {
-    // in this case we're building proper shape for reduction
-    auto array = INPUT_VARIABLE(0);
-
     auto newShape =
-        ShapeUtils::evalReduceShapeInfo('c', block.getAxis(), *array, INT64, false, true, block.workspace());
+        ShapeUtils::evalReduceShapeInfo('c', block.getAxis(), inShape, INT64, keepDims, false, block.workspace());
     return SHAPELIST(newShape);
   } else {
     bool allAxes = false;
@@ -71,31 +65,14 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, Cont
 
     std::vector<LongType> axis(indices->lengthOf());
     for (int e = 0; e < indices->lengthOf(); e++) {
-      // lol otherwise we segfault on macOS
       int f = indices->e<int>(e);
       axis[e] = f >= 0 ? f : f += rank;
     }
     if (allAxes) {
-      LongType *newShape;
-      // in this case we just return scalar
-      ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);
-      newShape[0] = 2;
-      newShape[1] = 1;
-      newShape[2] = 1;
-      newShape[3] = 1;
-      newShape[4] = 1;
-      newShape[6] = 1;
-      newShape[7] = 99;
-
-      auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShape);
-
-      RELEASE(newShape, block.getWorkspace());
-      return SHAPELIST(result->primary());
+      return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(INT64));
     } else {
-      // in this case we're building proper shape for reduction
-      auto array = INPUT_VARIABLE(0);
       return SHAPELIST(
-          ShapeUtils::evalReduceShapeInfo('c', &axis, *array, DataType::INT64, false, true, block.workspace()));
+          ShapeUtils::evalReduceShapeInfo('c', &axis, inShape, DataType::INT64, keepDims, false, block.workspace()));
     }
   }
 }
@@ -142,8 +119,8 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
           extras.argumentsAsT(x->dataType()), reinterpret_cast<LongType *>(z->buffer()), z->shapeInfo(),
           z->specialBuffer(), z->specialShapeInfo(), nullptr, (int)dims.size(),
-          Environment::getInstance().isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
-          Environment::getInstance().isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
+          sd::env_isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
+          sd::env_isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
     }
   } else {
     // TF mode
@@ -172,8 +149,8 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
           extras.argumentsAsT(x->dataType()), reinterpret_cast<LongType *>(z->buffer()), z->shapeInfo(),
           z->specialBuffer(), z->specialShapeInfo(), nullptr, (int)axis.size(),
-          Environment::getInstance().isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
-          Environment::getInstance().isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
+          sd::env_isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
+          sd::env_isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
     }
   }
 

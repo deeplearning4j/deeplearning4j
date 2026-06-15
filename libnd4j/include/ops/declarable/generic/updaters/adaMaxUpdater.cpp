@@ -25,7 +25,7 @@
 #include <array/NDArray.h>
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/updaters.h>
 #include <ops/declarable/headers/updaters.h>
 #if NOT_EXCLUDED(OP_ada_max_updater)
 namespace sd {

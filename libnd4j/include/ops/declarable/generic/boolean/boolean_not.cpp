@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_boolean_not)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/boolean.h>
 
 namespace sd {
 namespace ops {
@@ -31,13 +31,18 @@ OP_IMPL(boolean_not, 1, 1, true) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  x->applyTransform(transform::Not, z);
+  // Use the built-in Not transform which dispatches to CUDA kernel on GPU.
+  // The previous host-side loop (syncToHost + CPU loop + syncToDevice) was
+  // capture-incompatible: the H2D/D2H copies invalidated CUDA graph capture,
+  // preventing composite replay and dropping throughput from 60+ to 5 tok/s.
+  x->applyTransform(sd::transform::BoolOps::Not, z);
 
   return Status::OK;
 }
 
 DECLARE_TYPES(boolean_not) {
   getOpDescriptor()->setAllowedInputTypes(0, BOOL)->setAllowedOutputTypes(0, BOOL);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_LOGICAL);
 }
 }  // namespace ops
 }  // namespace sd

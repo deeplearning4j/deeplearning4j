@@ -23,13 +23,13 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_ones_as)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(ones_as, 1, 1, false, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
-  int one = one;
+  int one = 1;
   output->assign(one);
 
   return Status::OK;
@@ -48,7 +48,8 @@ DECLARE_TYPES(ones_as) {
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(ANY)
-      ->setSameMode(false);
+      ->setSameMode(false)
+      ->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

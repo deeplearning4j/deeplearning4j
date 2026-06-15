@@ -20,7 +20,7 @@
 // Created by GS <sgazeos@gmail.com> at 3/30/2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/image_suppression.h>
 
 namespace sd {
@@ -118,11 +118,13 @@ DECLARE_SHAPE_FN(non_max_suppression) {
 }
 DECLARE_TYPES(non_max_suppression) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INDICES});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT);
 }
 #endif
 #if NOT_EXCLUDED(OP_non_max_suppression_v3)
 DECLARE_TYPES(non_max_suppression_v3) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INDICES});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT);
 }
 
 CUSTOM_OP_IMPL(non_max_suppression_v3, 2, 1, false, 0, 0) {

@@ -36,58 +36,55 @@ namespace ops {
 namespace helpers {
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void unsortedSegmentSqrtNLinearKernel(T* input, LongType const* inputShape, I* indices,
-                                                       LongType const* indicesShape, LongType* starts,
-                                                       LongType* lengths, LongType numOfClasses, T* output,
+static SD_KERNEL void unsortedSegmentSqrtNLinearKernel(const void* input, LongType const* inputShape,
+                                                       const void* indices, LongType const* indicesShape,
+                                                       LongType* starts, LongType* lengths,
+                                                       LongType numOfClasses, void* output,
                                                        LongType const* outputShape) {
-  __shared__ LongType xLen, zLen;
-  __shared__ sd::LongType inputRank, outputRank, indicesRank;
-  __shared__ const sd::LongType* inputShapePtr;
-  __shared__ const sd::LongType* outputShapePtr;
-  __shared__ const sd::LongType* indicesShapePtr;
-  __shared__ const sd::LongType* inputStridePtr;
-  __shared__ const sd::LongType* outputStridePtr;
-  __shared__ const sd::LongType* indicesStridePtr;
+  // One block per segment — same pattern as unsortedSegmentSumLinearKernel
+  __shared__ LongType xLen, zLen, segment, zIndex;
+  __shared__ const T* x;
+  __shared__ T* z;
+  __shared__ const I* y;
 
   if (threadIdx.x == 0) {
+    segment = blockIdx.x;
+    x = reinterpret_cast<const T*>(input);
+    z = reinterpret_cast<T*>(output);
+    y = reinterpret_cast<const I*>(indices);
     xLen = shape::length(inputShape);
     zLen = shape::length(outputShape);
 
-    inputRank = shape::rank(inputShape);
-    outputRank = shape::rank(outputShape);
-    indicesRank = shape::rank(indicesShape);
-
-    inputShapePtr = shape::shapeOf(inputShape);
-    outputShapePtr = shape::shapeOf(outputShape);
-    indicesShapePtr = shape::shapeOf(indicesShape);
-
-    inputStridePtr = shape::stride(inputShape);
-    outputStridePtr = shape::stride(outputShape);
-    indicesStridePtr = shape::stride(indicesShape);
+    LongType zCoords[SD_MAX_RANK];
+    INDEX2COORDS(segment, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
+    // z[zIndex] is already 0 from nullify — thread 0 sets first matching element
+    if (lengths[segment] > 0) {
+      LongType xCoords[SD_MAX_RANK];
+      LongType xOffset;
+      INDEX2COORDS(starts[segment], shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
+      z[zIndex] = x[xOffset] / math::sd_sqrt<LongType, T>(lengths[segment]);
+    }
   }
   __syncthreads();
 
-  auto start = threadIdx.x + blockIdx.x * blockDim.x;
-  auto step = blockDim.x * gridDim.x;
+  if (lengths[segment] > 0) {
+    for (auto e = threadIdx.x; e < xLen; e += blockDim.x) {
+      LongType xCoords[SD_MAX_RANK];
+      LongType yCoords[SD_MAX_RANK];
+      LongType xIndex;
+      LongType yIndex;
 
-  LongType yCoords[SD_MAX_RANK];
-  LongType zCoords[SD_MAX_RANK];
-  LongType xCoords[SD_MAX_RANK];
-  LongType yIndex;
-  LongType zIndex;
-  LongType xIndex;
+      INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xIndex);
+      INDEX2COORDS(e, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
+      COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yIndex);
 
-  for (auto idx = start; idx < xLen; idx += step) {
-    INDEX2COORDS(idx, indicesRank, indicesShapePtr, yCoords);
-    COORDS2INDEX(indicesRank, indicesStridePtr, yCoords, yIndex);
-    auto segment = indices[yIndex];
-    INDEX2COORDS(segment, outputRank, outputShapePtr, zCoords);
-    COORDS2INDEX(outputRank, outputStridePtr, zCoords, zIndex);
-    if (lengths[segment] == 0) continue;
-    INDEX2COORDS(idx, inputRank, inputShapePtr, xCoords);
-    COORDS2INDEX(inputRank, inputStridePtr, xCoords, xIndex);
-    if (xIndex >= xLen) continue;
-    math::atomics::sd_atomicAdd(&output[zIndex], input[xIndex] / math::sd_sqrt<LongType, T>(lengths[segment]));
+      if (y[yIndex] == segment && e != starts[segment]) {
+        math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex] / math::sd_sqrt<LongType, T>(lengths[segment]));
+      }
+    }
   }
 }
 
@@ -148,22 +145,23 @@ template <typename T, typename I>
 static void unsortedSegmentSqrtNFunctor_(LaunchContext* context, NDArray* input, NDArray* indices,
                                         LongType numOfClasses, NDArray* output) {
  auto stream = context->getCudaStream();
- NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
- NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
+ auto classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
+ auto classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
  sd::LongType zero = 0;
  sd::LongType  one = 1;
  sd::LongType  len = indices->lengthOf();
- classesRangesBegs.assign(len);
- classesRangesLens.assign(zero);
+ classesRangesBegs->assign(len);
+ classesRangesLens->assign(zero);
  dim3 dims= getLaunchDims("segmentSqrtN");
- fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
- LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
- LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
+ fillUpSegments(indices, numOfClasses, *classesRangesBegs, *classesRangesLens);
+ LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs->specialBuffer());
+ LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens->specialBuffer());
  output->nullify();
  if (input->isVector()  || input->isScalar()) {
-   unsortedSegmentSqrtNLinearKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
-       input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), indices->dataBuffer()->specialAsT<I>(),
-       indices->specialShapeInfo(), begins, lengths, numOfClasses, output->dataBuffer()->specialAsT<T>(),
+   dim3 launchDims = getSegmentSumDims(numOfClasses, indices->lengthOf());
+   unsortedSegmentSqrtNLinearKernel<T, I><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+       input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(),
+       indices->specialShapeInfo(), begins, lengths, numOfClasses, output->specialBuffer(),
        output->specialShapeInfo());
    sd::DebugHelper::checkErrorCode(stream, "unsortedSegmentSqrtNLinearKernel failed");
 
@@ -179,13 +177,15 @@ static void unsortedSegmentSqrtNFunctor_(LaunchContext* context, NDArray* input,
    auto outputTadOffsets = packZ->specialOffsets();
    dims.x = input->sizeAt(0);
    segmentSqrtNTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
-       input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), inputTads, inputTadOffsets,
-       indices->dataBuffer()->specialAsT<I>(), begins, lengths, numOfClasses, output->specialBuffer(),
+       input->dataBuffer()->template specialAsT<T>(), input->specialShapeInfo(), inputTads, inputTadOffsets,
+       indices->dataBuffer()->template specialAsT<I>(), begins, lengths, numOfClasses, output->specialBuffer(),
        output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
    sd::DebugHelper::checkErrorCode(stream, "segmentSqrtNTadKernel failed");
 
    delete dimensions;
  }
+ delete classesRangesBegs;
+ delete classesRangesLens;
 }
 // -------------------------------------------------------------------------------------------------------------- //
 void unsortedSegmentSqrtNFunctor(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses, NDArray* output) {
@@ -340,18 +340,16 @@ static Status unsortedSegmentSqrtNFunctorBP_(LaunchContext* context, NDArray* in
                                             NDArray* gradOut,
                                             LongType numOfClasses, NDArray* output) {
  auto stream = context->getCudaStream();
- NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
- auto numClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
- NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
- NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
+ auto classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
+ auto classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
  sd::LongType zero = 0;
  sd::LongType  one = 1;
  sd::LongType  len = indices->lengthOf();
- classesRangesBegs.assign(len);
- classesRangesLens.assign(zero);
- fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
- LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
- LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
+ classesRangesBegs->assign(len);
+ classesRangesLens->assign(zero);
+ fillUpSegments(indices, numOfClasses, *classesRangesBegs, *classesRangesLens);
+ LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs->specialBuffer());
+ LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens->specialBuffer());
 
  if (input->isVector()  || input->isScalar()) {
    LongType loop_size = input->lengthOf();
@@ -385,7 +383,8 @@ static Status unsortedSegmentSqrtNFunctorBP_(LaunchContext* context, NDArray* in
 
    delete dimensions;
  }
- NDArray::registerSpecialUse({output}, {input, indices, gradOut});
+ delete classesRangesBegs;
+ delete classesRangesLens;
 
  return Status::OK;
 }

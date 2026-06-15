@@ -20,9 +20,10 @@
 // Created by george@skymind.io on 2/21/2018.
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/segment.h>
 #if NOT_EXCLUDED(OP_segment_sum)
+#include <array/NDArrayFactory.h>
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(segment_sum, 2, 1, false, 0, 0) {
@@ -56,7 +57,7 @@ DECLARE_SHAPE_FN(segment_sum) {
   auto in = inputShape->at(0);
   int outRank = shape::rank(in);
   LongType* outputShape = nullptr;
-  int val = (*idxVector).e<int>(idxVector->lengthOf() - 1);
+  int val = (*idxVector).e<int>(shape::length(inputShape->at(1)) - 1);
 
   int numOfClasses = static_cast<int>(val) + 1;
 
@@ -91,5 +92,6 @@ DECLARE_TYPES(segment_sum_bp) {
 }
 }  // namespace ops
 
+#include <array/NDArrayFactory.h>
 }  // namespace sd
 #endif

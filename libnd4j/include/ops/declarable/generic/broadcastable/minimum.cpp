@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_minimum)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/helpers/minimax.h>
 
@@ -35,6 +35,22 @@ BROADCASTABLE_OP_IMPL(minimum, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
 
   BROADCAST_CHECK_EMPTY(x, y, z);
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::MinPairwise, y, z, nullptr);
+    return Status::OK;
+  }
+
+  // Fast path: scalar broadcast - common for clamping (e.g., minimum(x, max_val))
+  if (y->isScalar()) {
+    x->applyScalarArr(scalar::MinPairwise, y, z);
+    return Status::OK;
+  }
+  if (x->isScalar()) {
+    y->applyScalarArr(scalar::MinPairwise, x, z);
+    return Status::OK;
+  }
 
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(MinPairwise), x, y, z);
   if (tZ == nullptr)
@@ -50,7 +66,8 @@ DECLARE_TYPES(minimum) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, INHERIT);
+      ->setAllowedOutputTypes(0, INHERIT)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(minimum_bp) {

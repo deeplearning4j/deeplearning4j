@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_set_seed)
 
 #include <legacy/NativeOps.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/random.h>
 
 namespace sd {
 namespace ops {

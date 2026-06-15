@@ -27,12 +27,57 @@
 #include <helpers/helper_hash.h>
 #include <ops/InputType.h>
 
+#include <cstdlib>
 #include <initializer_list>
 #include <string>
 #include <vector>
 
 namespace sd {
 namespace ops {
+
+/**
+ * Op trait flags — intrinsic properties of ops that replace scattered hardcoded lists.
+ *
+ * Set once at op registration time (auto-derived from class hierarchy or from the
+ * centralized OpTraitTable). Consumers query traits via OpDescriptor instead of
+ * maintaining their own brittle op name sets.
+ */
+enum OpTraits : uint32_t {
+  OP_TRAIT_NONE                   = 0,
+  OP_TRAIT_UNARY_ELEMENTWISE      = 1 << 0,
+  OP_TRAIT_BINARY_ELEMENTWISE     = 1 << 1,
+  OP_TRAIT_TERNARY_ELEMENTWISE    = 1 << 2,
+  OP_TRAIT_REDUCTION              = 1 << 3,
+  OP_TRAIT_NORMALIZATION          = 1 << 4,
+  OP_TRAIT_MATMUL                 = 1 << 5,
+  OP_TRAIT_FULLY_WRITING          = 1 << 6,
+  OP_TRAIT_VIEW_PRODUCING         = 1 << 7,
+  OP_TRAIT_VALUE_DEPENDENT_SHAPE  = 1 << 8,
+  OP_TRAIT_DATA_DEPENDENT         = 1 << 9,
+  OP_TRAIT_SHAPE_ONLY_OUTPUT      = 1 << 10,
+  OP_TRAIT_ACTIVATION             = 1 << 11,
+  OP_TRAIT_COMPARISON             = 1 << 12,
+  OP_TRAIT_LOGICAL                = 1 << 13,
+  OP_TRAIT_IDENTITY               = 1 << 14,
+  OP_TRAIT_DATA_MOVEMENT          = 1 << 15,
+  OP_TRAIT_CONSTANT_GENERATION    = 1 << 16,
+  OP_TRAIT_ATTENTION              = 1 << 17,
+  OP_TRAIT_GATHER                 = 1 << 18,
+  OP_TRAIT_GATHER_ND             = 1 << 19,
+  OP_TRAIT_CONCAT                = 1 << 20,
+  OP_TRAIT_SPLIT                 = 1 << 21,
+  OP_TRAIT_SPLIT_V               = 1 << 22,
+  OP_TRAIT_STACK                 = 1 << 23,
+  OP_TRAIT_SLICE                 = 1 << 24,
+  OP_TRAIT_TILE                  = 1 << 25,
+  OP_TRAIT_SCATTER_ND            = 1 << 26,
+  OP_TRAIT_SCATTER_ND_UPDATE     = 1 << 27,
+  OP_TRAIT_CAST                  = 1 << 28,
+  OP_TRAIT_BACKWARD              = 1 << 29,  // marks backprop / gradient ops (_bp suffix)
+  OP_TRAIT_EXTERNAL_WORKSPACE    = 1 << 30,  // op uses external library workspace (cuBLAS, etc.) — capture-unsafe by default
+  OP_TRAIT_DYNAMIC_OUTPUT_SIZE   = 1u << 31, // output size depends on runtime data (Where, NonZero) — non-capturable in CUDA graphs
+};
+
 class SD_LIB_EXPORT OpExecTrace {
  public:
   std::vector<const LongType*> *inputShapeBuffers;
@@ -89,7 +134,34 @@ class SD_LIB_EXPORT OpExecTrace {
 
   OpExecTrace() = default;
 
-  ~OpExecTrace() = default;
+  ~OpExecTrace() {
+    if (inputShapeBuffers != nullptr) {
+      delete inputShapeBuffers;
+      inputShapeBuffers = nullptr;
+    }
+    if (outputShapeBuffers != nullptr) {
+      delete outputShapeBuffers;
+      outputShapeBuffers = nullptr;
+    }
+  }
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  static void* operator new(size_t size) {
+    return std::malloc(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return std::malloc(size + 4096);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    std::free(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    std::free(ptr);
+  }
+#endif
 
   std::vector<const LongType*>* getInputShapeBuffers() const { return inputShapeBuffers; }
   void setInputShapeBuffers(std::vector<const LongType*>* inputShapeBuffersIn) {
@@ -167,6 +239,9 @@ class SD_LIB_EXPORT OpDescriptor {
 
   // field for ops that allow data type override at runtime
   bool _dtypeOverride = false;
+
+  // Op trait flags (see OpTraits enum)
+  uint32_t _traits = 0;
 
   bool checkDataTypesMatch(DataType needle, std::vector<DataType>& haystack) const;
 
@@ -263,6 +338,31 @@ class SD_LIB_EXPORT OpDescriptor {
   bool isSameMode();
 
   bool isInherit(int index);
+
+  // ─── Op trait accessors ────────────────────────────────────────────────
+  OpDescriptor* setTraits(uint32_t traits);
+  OpDescriptor* addTraits(uint32_t traits);
+  bool hasAllTraits(uint32_t traits) const;
+  bool hasAnyTrait(uint32_t traits) const;
+  uint32_t getTraits() const;
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  static void* operator new(size_t size) {
+    return std::malloc(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return std::malloc(size + 4096);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    std::free(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    std::free(ptr);
+  }
+#endif
 };
 }  // namespace ops
 }  // namespace sd

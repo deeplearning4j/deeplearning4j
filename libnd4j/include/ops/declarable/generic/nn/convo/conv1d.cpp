@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_conv1d)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/convo.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/helpers/convolutions.h>
 
@@ -61,7 +61,15 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
   LongType   iC = ConvolutionUtils::inChannels(weights->shapeInfo(), wFormat);
   LongType    iW = ConvolutionUtils::inputWidth(input->shapeInfo(), isNCW);
   LongType    oC = ConvolutionUtils::outChannels(weights->shapeInfo(), wFormat);
-  LongType   oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
+  
+  // Calculate output width
+  LongType oW;
+  if (paddingMode == 1) {
+    // SAME padding: output = ceil(input / stride)
+    oW = (iW + sW - 1) / sW;
+  } else {
+    oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);
+  }
 
 
   std::vector<LongType> reshapeForInput, reshapeForOutput;
@@ -130,7 +138,14 @@ DECLARE_SHAPE_FN(conv1d) {
   LongType   iC = ConvolutionUtils::inChannels(weightsShapeInfo, wFormat);
   LongType    iW = ConvolutionUtils::inputWidth(inputShapeInfo, isNCW);
   LongType    oC = ConvolutionUtils::outChannels(weightsShapeInfo, wFormat);
-  LongType   oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
+  
+  // For SAME padding, calculate output directly
+  LongType oW;
+  if (paddingMode == 1) {
+    oW = (iW + sW - 1) / sW;
+  } else {
+    oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);
+  }
   LongType* outputShapeInfo = nullptr;
   ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
 
@@ -144,9 +159,11 @@ DECLARE_SHAPE_FN(conv1d) {
     outputShapeInfo[3] = oC;
   }
 
-  sd::LongType * second = shape::calcStridesFortran(outputShapeInfo,shape::rank(outputShapeInfo));
-  shape::setStride(outputShapeInfo,second);
-  shape::setOrder(outputShapeInfo, 'f');
+  sd::LongType * second = shape::calcStrides(shape::shapeOf(outputShapeInfo), shape::rank(outputShapeInfo));
+  shape::setStride(outputShapeInfo, second);
+  outputShapeInfo[2 * rank + 1] = 0;  // zero extra flags before setDataType reads it
+  outputShapeInfo[2 * rank + 2] = 1;  // EWS = 1 for contiguous C-order
+  shape::setOrder(outputShapeInfo, 'c');
   ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
   delete[] second;
   return SHAPELIST(CONSTANT(outputShapeInfo));

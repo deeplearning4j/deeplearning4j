@@ -76,25 +76,6 @@ static void adamUpdater_(NDArray& gradient, NDArray& initStateU, NDArray& initSt
   T epsilonT = lr * sd::math::sd_sqrt<T, T>(1. - beta2T) / (1.0 - beta1T);
   if (sd::math::sd_isnan(epsilonT) || 0 == epsilonT || sd::math::sd_isinf(epsilonT)) epsilonT = epsilon;
 
-  bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateM.ews() && 1 == initStateM.ews() &&
-               1 == stateU.ews() && 1 == initStateU.ews();
-  bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateU.ordering() &&
-                       stateU.ordering() == initStateU.ordering() && stateU.ordering() == initStateM.ordering() &&
-                       stateM.ordering() == initStateM.ordering();
-
-  if (bEws1 && bSameOrdering) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        stM[i] = beta1 * initM[i] + grad[i] * (1 - beta1);
-        stU[i] = beta2 * initU[i] + grad[i] * grad[i] * (1 - beta2);
-        up[i] = (stM[i] * epsilonT) / (sd::math::sd_sqrt<T, T>(stU[i]) + epsilon);
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
-    return;
-  }
-
   bool bXZsame = shape::haveSameShapeAndStrides(gradientShapeInfo, updateShapeInfo);
   bool bXInVSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateUShapeInfo);
   bool bXStVSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateUShapeInfo);

@@ -56,7 +56,12 @@ DECLARE_SHAPE_FN(listdiff) {
 
   auto saved = helpers::listDiffCount(block.launchContext(), values, keep);
 
-  REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
+  // Handle empty result case - return empty arrays with shape [0]
+  if (saved == 0) {
+    auto shapeX = ConstantShapeHelper::getInstance().vectorShapeInfo(0, values->dataType());
+    auto shapeY = ConstantShapeHelper::getInstance().vectorShapeInfo(0, DataType::INT64);
+    return SHAPELIST(shapeX, shapeY);
+  }
 
   auto shapeX = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, values->dataType());
   auto shapeY = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, DataType::INT64);

@@ -257,19 +257,31 @@ static void triuBPCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 
 }
 
+template <typename T>
+static void assignScalarToArray(NDArray& scalar, NDArray& target) {
+  auto scalarValue = scalar.e<T>(0);
+  target.assign(scalarValue);
+}
+
 ///////////////////////////////////////////////////////////////////
 void triuBP(LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,
            const int diagonal) {
+ if (gradO.isScalar()) {
+   BUILD_SINGLE_SELECTOR(gradI.dataType(), assignScalarToArray, (gradO, gradI), SD_COMMON_TYPES);
+ } else {
+   gradI.assign(&gradO);
+ }
+
  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
- const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
- const int sharedMem = threadsPerBlock * sizeof(LongType) * gradO.rankOf() + 128;
- dim3 triuDims2 = triuDims(gradO.lengthOf(),gradO.rankOf());
+ const int blocksPerGrid = (gradI.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+ const int sharedMem = threadsPerBlock * sizeof(LongType) * gradI.rankOf() + 128;
+ dim3 triuDims2 = triuDims(gradI.lengthOf(),gradI.rankOf());
  PointersManager manager(context, "triuBP");
 
  NDArray::prepareSpecialUse({&gradI}, {&gradO});
  BUILD_SINGLE_SELECTOR(gradI.dataType(), triuBPCudaLauncher,
-                       (triuDims2.y, triuDims2.x, triuDims2.z, context->getCudaStream(), gradO.specialBuffer(),
-                        gradO.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), diagonal),
+                       (triuDims2.y, triuDims2.x, triuDims2.z, context->getCudaStream(), gradI.specialBuffer(),
+                        gradI.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), diagonal),
                        SD_COMMON_TYPES);
  NDArray::registerSpecialUse({&gradI}, {&gradO});
 
@@ -337,7 +349,9 @@ static void tileBPCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 //////////////////////////////////////////////////////////////////////////
 void tileBP(LaunchContext* context, NDArray gradO /*input*/, NDArray& gradI /*output*/,
            const std::vector<LongType> reps) {
- auto grad0Shape = gradO.getShapeAsVector();
+ auto grad0ShapePtr = gradO.getShapeAsVector();
+ std::vector<LongType> grad0Shape(*grad0ShapePtr);
+ delete grad0ShapePtr;
  NDArray memBuff(
      'c', grad0Shape, INT64,
      context);  // empty auxiliary array for storing device memory which will be used in kernel calculations

@@ -60,9 +60,16 @@ static void batchnorm_(NDArray* input, NDArray* mean, NDArray* variance, NDArray
   OmpLaunchHelper info(lenBig, lenSmall);
 
   auto func = PRAGMA_THREADS_DO {
-    sd::LongType* xOffsets = new sd::LongType[steps];
-    sd::LongType* zOffsets = xzSameOffset ? xOffsets : new sd::LongType[steps];
-    sd::LongType * auxBuff = new sd::LongType [2 * input->rankOf()];
+    sd::LongType* xOffsets = nullptr;
+    ALLOCATE(xOffsets, nullptr, steps, sd::LongType);
+    sd::LongType* zOffsets = nullptr;
+    if (xzSameOffset) {
+      zOffsets = xOffsets;
+    } else {
+      ALLOCATE(zOffsets, nullptr, steps, sd::LongType);
+    }
+    sd::LongType* auxBuff = nullptr;
+    ALLOCATE(auxBuff, nullptr, 2 * input->rankOf(), sd::LongType);
 
     sd::LongType meanRank = shape::rank(mean->shapeInfo());
     sd::LongType varianceRank = shape::rank(variance->shapeInfo());
@@ -131,9 +138,9 @@ static void batchnorm_(NDArray* input, NDArray* mean, NDArray* variance, NDArray
       for (sd::LongType i = 0; i < steps; ++i) z[zOffsets[i]] = (x[xOffsets[i]] - meanVal) * sigmaInvGam + betaVal;
     }
 
-    delete[] auxBuff;
-    delete[] xOffsets;
-    if (!xzSameOffset) delete[] zOffsets;
+    RELEASE(auxBuff, nullptr);
+    RELEASE(xOffsets, nullptr);
+    if (!xzSameOffset) RELEASE(zOffsets, nullptr);
   };
 
   samediff::Threads::parallel_do(func, info._numThreads);

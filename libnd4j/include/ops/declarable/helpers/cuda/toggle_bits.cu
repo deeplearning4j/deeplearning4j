@@ -26,13 +26,26 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+
+template <typename T>
+SD_KERNEL void toggleBitsKernel(const void* inputBuf, void* outputBuf, sd::LongType length) {
+  auto input = reinterpret_cast<const T*>(inputBuf);
+  auto output = reinterpret_cast<T*>(outputBuf);
+  auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (sd::LongType i = tid; i < length; i += blockDim.x * gridDim.x) {
+    output[i] = ~input[i];
+  }
+}
+
 template <typename T>
 void toggle_bits__(LaunchContext* context, NDArray *in, NDArray *out) {
-  auto lambda = LAMBDA_T(_x) {
-    return ~_x;
-  });
-
-  in->applyLambda(lambda, out);
+  auto stream = context->getCudaStream();
+  auto length = in->lengthOf();
+  int threads = 256;
+  int blocks = (length + threads - 1) / threads;
+  if (blocks > 1024) blocks = 1024;
+  toggleBitsKernel<T><<<blocks, threads, 0, *stream>>>(
+      in->specialBuffer(), out->specialBuffer(), length);
 }
 BUILD_SINGLE_TEMPLATE( void toggle_bits__, (LaunchContext* context, NDArray* in, NDArray* out), SD_INTEGER_TYPES);
 

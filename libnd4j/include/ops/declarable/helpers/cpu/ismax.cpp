@@ -96,7 +96,12 @@ static void ismax_(LaunchContext* context, NDArray* input, NDArray* output,
 void ismax(LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
     NDArray::prepareSpecialUse({output}, {input});
 
-    BUILD_SINGLE_SELECTOR(input->dataType(), ismax_, (context, input, output, dimensions), SD_COMMON_TYPES);
+    // Dispatch on output datatype so that the template T matches the output element type.
+    // The output is always BOOL (ismax is a boolean predicate), so T=bool writes true/false
+    // into the output buffer correctly.  Using input->dataType() here caused ismax_<double>
+    // to be selected when the input was DOUBLE, which then did output->bufferAsT<double>()
+    // on a BOOL buffer and wrote 8-byte double values into 1-byte bool slots.
+    BUILD_SINGLE_SELECTOR(output->dataType(), ismax_, (context, input, output, dimensions), SD_COMMON_TYPES);
 
     NDArray::registerSpecialUse({output}, {input});
 }

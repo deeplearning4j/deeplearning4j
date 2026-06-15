@@ -35,7 +35,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void adaMaxUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinv,
+SD_KERNEL SD_INLINE void adaMaxUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinv,
                                  const LongType* invShapeInfo, const void* vinm, const LongType* inmShapeInfo,
                                  void* vz, const LongType* zShapeInfo, void* vstV, const LongType* stvShapeInfo,
                                  void* vstM, const LongType* stmShapeInfo, const T lr, const T beta1, const T beta2,
@@ -169,6 +169,7 @@ void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "adaMaxUpdaterCudaLauncher failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void adaMaxUpdaterCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory, const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, const void* vinv, const LongType* invShapeInfo, const void* vinm, const LongType* inmShapeInfo, void* vz, const LongType* zShapeInfo, void* vstV, const LongType* stvShapeInfo, void* vstM, const LongType* stmShapeInfo, const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration), SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 void updaterAdaMax(LaunchContext* context, NDArray& gradient, NDArray& initStateU,

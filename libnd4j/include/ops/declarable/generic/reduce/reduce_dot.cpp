@@ -21,7 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 
 #if NOT_EXCLUDED(OP_reduce_dot_bp)
@@ -118,7 +118,7 @@ DECLARE_SHAPE_FN(reduce_dot_bp) {
 
     if (block.width() > 3) {
       auto axesVector = INPUT_VARIABLE(3);
-      helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+      helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
     }
 
 

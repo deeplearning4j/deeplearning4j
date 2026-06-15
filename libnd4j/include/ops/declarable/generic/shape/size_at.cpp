@@ -24,6 +24,7 @@
 #if NOT_EXCLUDED(OP_size_at)
 
 #include <ops/declarable/headers/shape.h>
+#include <ops/declarable/helpers/shapeOpsHelper.h>
 
 namespace sd {
 namespace ops {
@@ -31,13 +32,13 @@ CUSTOM_OP_IMPL(size_at, 1, 1, false, 0, 1) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
+  const int rank = input->rankOf();
   auto dim = INT_ARG(0);
-  if (dim < 0) dim += input->rankOf();
+  if (dim < 0) dim += rank;
 
-  REQUIRE_TRUE(dim < input->rankOf(), 0, "Size_At: Dim can't be higher then input rank")
+  REQUIRE_TRUE(dim < rank, 0, "Size_At: Dim can't be higher then input rank")
 
-  output->p(0, input->sizeAt(dim));
-  output->syncToDevice();
+  helpers::sizeAtHelper(block.launchContext(), input, output, dim);
 
   return Status::OK;
 }
@@ -48,7 +49,8 @@ DECLARE_TYPES(size_at) {
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(INT64)
-      ->allowOverride(true);
+      ->allowOverride(true)
+      ->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

@@ -39,8 +39,11 @@ static SD_DEVICE void assign_(void *vx, LongType *xShapeInfo, void *vz, LongType
   auto x = reinterpret_cast<T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  const auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-  const auto step = blockDim.x * gridDim.x;
+  // Use only threadIdx.x within each block since meshgridKernel assigns
+  // different arrays to different blocks. Each block processes its assigned
+  // array independently using its threads.
+  const auto tid = threadIdx.x;
+  const auto step = blockDim.x;
 
   __shared__ LongType length, rankX, rankZ;
   __shared__ const LongType *shapeX, *strideX, *shapeZ, *strideZ;
@@ -149,10 +152,14 @@ static void meshgrid_(LaunchContext *context, const std::vector<NDArray *> &inAr
 //////////////////////////////////////////////////////////////////////////
 void meshgrid(LaunchContext *context, const std::vector<NDArray *> &inArrs, const std::vector<NDArray *> &outArrs,
               const bool swapFirst2Dims) {
+  // Prepare inputs and outputs for device access - syncs data to device if needed
+  NDArray::prepareSpecialUse(outArrs, inArrs);
+
   BUILD_SINGLE_SELECTOR(inArrs.at(0)->dataType(), meshgrid_, (context, inArrs, outArrs, swapFirst2Dims),
                         SD_NUMERIC_TYPES);
 
-  for (auto v : outArrs) v->tickWriteDevice();
+  // Register that outputs were written on device
+  NDArray::registerSpecialUse(outArrs, inArrs);
 }
 
 }  // namespace helpers

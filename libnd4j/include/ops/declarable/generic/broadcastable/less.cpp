@@ -20,7 +20,7 @@
 // @author raver119@gmail.com
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #if NOT_EXCLUDED(OP_less)
 
 namespace sd {
@@ -32,6 +32,11 @@ BROADCASTABLE_BOOL_OP_IMPL(less, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::LessThan, y, z, nullptr);
+    return Status::OK;
+  }
 
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST_BOOL(LessThan), x, y, z);
   if (tZ == nullptr)
@@ -47,7 +52,8 @@ DECLARE_TYPES(less) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, BOOL);
+      ->setAllowedOutputTypes(0, BOOL)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_COMPARISON);
 }
 }  // namespace ops
 }  // namespace sd

@@ -24,7 +24,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_stack_list)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/list.h>
 
 namespace sd {
 namespace ops {

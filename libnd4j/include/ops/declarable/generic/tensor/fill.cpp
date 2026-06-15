@@ -24,9 +24,17 @@
 #if NOT_EXCLUDED(OP_fill)
 
 #include <ops/declarable/headers/parity_ops.h>
+#include <system/env_functions.h>
 
 namespace sd {
 namespace ops {
+
+// Helper template function to handle scalar fill value
+template <typename T>
+static void fillWithScalar(NDArray* output, NDArray* fillValue) {
+  auto scalar = fillValue->e<T>(0);
+  output->assign(scalar);
+}
 
 CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
   auto shapeArray = INPUT_VARIABLE(0);
@@ -45,7 +53,13 @@ CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
   }
 
   if (w > 1) {
-    output->assign(INPUT_VARIABLE(1));
+    auto fillValue = INPUT_VARIABLE(1);
+    // If fill value is a scalar, use scalar broadcast assign
+    if (fillValue->isScalar()) {
+      BUILD_SINGLE_SELECTOR(output->dataType(), fillWithScalar, (output, fillValue), SD_COMMON_TYPES);
+    } else {
+      output->assign(fillValue);
+    }
   } else {
     if (t > 0) {
       output->assign(T_ARG(0));
@@ -64,15 +78,16 @@ DECLARE_TYPES(fill) {
       ->setAllowedInputTypes(0, {ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 
 DECLARE_SHAPE_FN(fill) {
   auto shapeArray = INPUT_VARIABLE(0);
 
-  const LongType len = shapeArray->lengthOf();
-  if (shapeArray->isEmpty()) {
+  const LongType len = shape::length(inputShape->at(0));
+  if (shape::isEmpty(inputShape->at(0))) {
     std::vector<LongType> shape = {0};
-    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(shapeArray->dataType()));
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
   }
   LongType *newShape = nullptr;
   ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), sd::LongType);
@@ -80,35 +95,37 @@ DECLARE_SHAPE_FN(fill) {
   newShape[0] = len;
   bool hasZeros = false;
   LongType totalLen = 1;
-  for (int e = 0; e < shapeArray->lengthOf(); e++) {
+  for (int e = 0; e < (int)len; e++) {
     newShape[e + 1] = shapeArray->e<LongType>(e);
     if(newShape[e + 1] == 0)
       hasZeros = true;
     totalLen *= newShape[e + 1];
   }
-  if(len > 1 && hasZeros) {
-    RELEASE(newShape, block.getWorkspace());
-    std::vector<LongType> shapeOnly = shapeArray->asVectorT<LongType>();
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(),shapeOnly));
-  }
-  if (totalLen < 1) {
-    RELEASE(newShape, block.getWorkspace());
-    std::vector<LongType> shape = {0};
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(), shape));
-  }
-
+  // Determine data type - check D_ARG first (explicit dtype), then infer from value
   DataType dataType;
-
-  if (block.width() > 1) {
-    dataType = INPUT_VARIABLE(1)->dataType();
+  if (block.numD() > 0) {
+    // Explicit dtype provided via DArgument - use it
+    dataType = D_ARG(0);
+  } else if (block.width() > 1) {
+    dataType = ArrayOptions::dataType(inputShape->at(1));
   } else if (block.numT() > 0) {
-    dataType = Environment::getInstance().defaultFloatDataType();
+    dataType = static_cast<sd::DataType>(sd::env_defaultFloatDataType());
   } else if (block.numI() > 0) {
     dataType = INT32;
   } else if (block.numB() > 0) {
     dataType = BOOL;
   } else
     THROW_EXCEPTION("Fill: missing value to fill output array with");
+
+  // Handle empty arrays (shape with zeros) - use the correct data type from value
+  // FIX: Always use the shape from shapeArray, even if totalLen is 0.
+  // The ARRAY_EMPTY flag indicates the array has zero elements, but the shape
+  // dimensions should still be preserved.
+  if (hasZeros || totalLen < 1) {
+    RELEASE(newShape, block.getWorkspace());
+    std::vector<LongType> shapeOnly = shapeArray->asVectorT<LongType>();
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dataType, shapeOnly));
+  }
 
   ShapeUtils::updateStridesAndType(newShape, dataType, 'c');
 

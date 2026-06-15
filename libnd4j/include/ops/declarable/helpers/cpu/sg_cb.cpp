@@ -450,16 +450,19 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
 
 
     int chunkSize = 1024;
-
+    // numThreads comes from the Java-side workers configuration.  When 0, parallel_tad will
+    // resolve it to maxMasterThreads() (all cores).  Passing it explicitly here allows callers
+    // to request serial execution (numThreads=1) which eliminates Hogwild!-style data races on
+    // shared Huffman-tree syn1 nodes and is essential for correct convergence on small vocabularies.
     if(targetsLen < chunkSize) {
-      samediff::Threads::parallel_tad(func,0,targetsLen,1);
+      samediff::Threads::parallel_tad(func,0,targetsLen,1,numThreads);
     } else {
       int chunks = targetsLen / chunkSize;
       for(int i = 0; i < chunks; i++) {
         int start = i * chunkSize;
         int potentialEnd = start + chunkSize;
-        int end = sd::math::sd_min<int>(targetsLen,potentialEnd);
-        samediff::Threads::parallel_tad(func,start,end,1);
+        int end = sd::math::sd_min(targetsLen,potentialEnd);
+        samediff::Threads::parallel_tad(func,start,end,1,numThreads);
       }
 
     }
@@ -753,7 +756,7 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, 
       for(int i = 0; i < chunks; i++) {
         int start = i * chunkSize;
         int potentialEnd = start + chunkSize;
-        int end = sd::math::sd_min<int>(targetsLen,potentialEnd);
+        int end = sd::math::sd_min(targetsLen,potentialEnd);
         samediff::Threads::parallel_tad(func,start,end,1);
       }
     }

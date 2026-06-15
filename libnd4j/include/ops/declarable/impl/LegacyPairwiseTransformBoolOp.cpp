@@ -35,6 +35,13 @@ LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp(int opNum) : Legacy
 
 LegacyOp *LegacyPairwiseTransformBoolOp::clone() { return new LegacyPairwiseTransformBoolOp(this->_opNum); }
 
+void LegacyPairwiseTransformBoolOp::registerTypes() {
+  // Pairwise-bool ops produce BOOL output regardless of input type.
+  this->getOpDescriptor()->setSameMode(false);
+  this->getOpDescriptor()->setAllowedOutputTypes({BOOL});
+  this->getOpDescriptor()->setAllowedInputTypes(ANY);
+}
+
 Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
@@ -52,7 +59,7 @@ Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
   ExtraArguments extras(*block.getTArguments());
   PointersManager manager(block.launchContext(), "LegacyPairwiseTransformBoolOp");
 
-  NativeOpExecutioner::execPairwiseTransform(
+  NativeOpExecutioner::execPairwiseBoolTransform(
       block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), y->buffer(),
       y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
       z->specialShapeInfo(), extras.argumentsAsT(x->dataType()));

@@ -20,14 +20,15 @@
 // Created by raver on 6/6/2018.
 //
 
+#include <ops/BroadcastBoolOpsTuple.h>
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_boolean_xor)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 
 namespace sd {
 namespace ops {
-BROADCASTABLE_OP_IMPL(boolean_xor, 0, 0) {
+BROADCASTABLE_BOOL_OP_IMPL(boolean_xor, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -35,11 +36,11 @@ BROADCASTABLE_OP_IMPL(boolean_xor, 0, 0) {
   BROADCAST_CHECK_EMPTY(x, y, z);
 
   auto tZ = BroadcastHelper::broadcastApply(
-      BroadcastOpsTuple::custom(scalar::LogicalXor, pairwise::LogicalXor, broadcast::LogicalXor), x, y, z);
+      BroadcastBoolOpsTuple::custom(scalar::Xor, pairwise::Xor, broadcast::Xor), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;
   else if (tZ != z)
-    THROW_EXCEPTION("boolean_xor: result was overwritten");
+    OVERWRITE_RESULT(tZ);
 
   return Status::OK;
 }
@@ -48,7 +49,8 @@ DECLARE_TYPES(boolean_xor) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, INHERIT);
+      ->setAllowedOutputTypes(0, BOOL)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_LOGICAL);
 }
 }  // namespace ops
 }  // namespace sd

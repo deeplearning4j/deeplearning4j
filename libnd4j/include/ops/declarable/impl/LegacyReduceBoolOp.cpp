@@ -37,6 +37,13 @@ LegacyReduceBoolOp::LegacyReduceBoolOp(int opNum) : LegacyOp(1, opNum) {
 
 LegacyOp* LegacyReduceBoolOp::clone() { return new LegacyReduceBoolOp(this->_opNum); }
 
+void LegacyReduceBoolOp::registerTypes() {
+  // Reduce-bool ops (any_true, any_false, etc.) produce BOOL output regardless of input type.
+  this->getOpDescriptor()->setSameMode(false);
+  this->getOpDescriptor()->setAllowedOutputTypes({BOOL});
+  this->getOpDescriptor()->setAllowedInputTypes(ANY);
+}
+
 Status LegacyReduceBoolOp::validateAndExecute(Context& block) {
   auto x = INPUT_VARIABLE(0);
 

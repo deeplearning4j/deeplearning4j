@@ -24,7 +24,7 @@
 #include <helpers/StringUtils.h>
 #if NOT_EXCLUDED(OP_assign)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {

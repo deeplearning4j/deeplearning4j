@@ -26,14 +26,14 @@
 #if NOT_EXCLUDED(OP_argmax)
 
 #include <helpers/ConstantTadHelper.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/reductions.h>
 
 namespace sd {
 namespace ops {
 DECLARE_TYPES(argmax) {
-  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setAllowedOutputTypes({ANY});
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setAllowedOutputTypes({ANY})->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
@@ -50,6 +50,7 @@ CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
     helpers::adjustAxis(input->rankOf(), axisVector, axis);
     helpers::argMax(*input, *output, axis);
   } else {
+    helpers::adjustAxis(input->rankOf(), axis);
     helpers::argMax(*input, *output, axis);
   }
 

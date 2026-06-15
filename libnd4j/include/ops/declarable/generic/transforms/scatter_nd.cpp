@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_scatter_nd)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/generic/helpers/ScatterHelper.h>
 
 namespace sd {
@@ -92,6 +92,7 @@ DECLARE_TYPES(scatter_nd) {
       ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_SCATTER_ND);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -100,9 +101,9 @@ DECLARE_SHAPE_FN(scatter_nd) {
   auto updShapeInfo = inputShape->at(1);
 
   LongType *outShapeInfo;
-  ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(shape->lengthOf()), sd::LongType);
+  ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(shape::length(inputShape->at(2))), sd::LongType);
 
-  outShapeInfo[0] = shape->lengthOf();
+  outShapeInfo[0] = shape::length(inputShape->at(2));
   for (int i = 0; i < outShapeInfo[0]; ++i) outShapeInfo[i + 1] = shape->e<LongType>(i);
 
   ShapeUtils::updateStridesAndType(outShapeInfo, updShapeInfo, shape::order(updShapeInfo));

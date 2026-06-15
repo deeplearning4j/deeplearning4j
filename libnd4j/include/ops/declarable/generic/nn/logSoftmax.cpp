@@ -23,24 +23,26 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_log_softmax)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/activations.h>
 
 namespace sd {
 namespace ops {
 
-DECLARE_TYPES(log_softmax) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(log_softmax) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true)->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING); }
 
 CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
   const int rank = input->rankOf();
-  const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+  int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+  // Normalize negative dimensions
+  if (dim < 0) dim += rank;
 
-  REQUIRE_TRUE(dim < rank, 0,
-               "LOG_SOFTMAX OP: the value of input integer parameter (dimension) must be less than input array rank "
-               "%i, but got dimension = %i instead !",
+  REQUIRE_TRUE(dim >= 0 && dim < rank, 0,
+               "LOG_SOFTMAX OP: the value of input integer parameter (dimension) must be in range [0, %i), "
+               "but got dimension = %i instead !",
                rank, dim);
 
   helpers::logSoftmax(block.launchContext(), input, output, dim);
@@ -62,11 +64,13 @@ CONFIGURABLE_OP_IMPL(log_softmax_bp, 3, 1, true, 0, 0) {
   auto gradI = OUTPUT_VARIABLE(0);
   gradI->assign(softmaxOut);
   const int rank = input->rankOf();
-  const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+  int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+  // Normalize negative dimensions
+  if (dim < 0) dim += rank;
 
-  REQUIRE_TRUE(dim < rank, 0,
-               "LOG_SOFTMAX_BP OP: the value of input integer parameter (dimension) must be less than input array rank "
-               "%i, but got dimension = %i instead !",
+  REQUIRE_TRUE(dim >= 0 && dim < rank, 0,
+               "LOG_SOFTMAX_BP OP: the value of input integer parameter (dimension) must be in range [0, %i), "
+               "but got dimension = %i instead !",
                rank, dim);
 
   helpers::softmax(block.launchContext(), input, gradI, dim);

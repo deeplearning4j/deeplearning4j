@@ -25,7 +25,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_dot_product_attention)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
+#include <ops/declarable/headers/blas.h>
 #include <ops/declarable/helpers/reverse.h>
 
 namespace sd {
@@ -81,30 +82,31 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
     *weights /= sqrt((double)keys->sizeAt(-2));
   }
 
-  if (mask != nullptr) {
+  if (mask != nullptr && !mask->isEmpty()) {
     NDArray *reshapedMask;
     if (weights->rankOf() == 4) {
       std::vector<sd::LongType> shape = {mask->sizeAt(0), 1, mask->sizeAt(1), 1};
-      reshapedMask = mask->reshape(mask->ordering(),shape);
+      reshapedMask = mask->reshape(mask->ordering(), shape);
     } else {
       std::vector<sd::LongType> shape = {mask->sizeAt(0), mask->sizeAt(1), 1};
-      reshapedMask = mask->reshape(mask->ordering(),shape);
+      reshapedMask = mask->reshape(mask->ordering(), shape);
     }
 
-    // the mask is 0 for positions we want to skip, and 1 for positions we want to keep. By subtracting 1 from
-    // it we get -1 for those we want to skip and 0 for those we want to keep. Multiplying it by 1e9 then
-    // turns all of those we want to skip into very large negative values. By adding this to the weights
-    // before going through the softmax, we effectively push all masked positions to zero after softmax.
-    //
-    // we are using 1e9 to mean effectively infinity
-    auto applyMask = *reshapedMask  * 1e9;
-    *weights -= *applyMask;
+    // The mask is 0 for positions we want to skip, and 1 for positions we want to keep.
+    // We compute (1 - mask) * 3.4028235e+38f to get a large value for skip positions and 0 for keep positions.
+    // Subtracting this from weights pushes skip positions to -FLT_MAX,
+    // which become ~0 after softmax. Keep positions are unchanged.
+    // Using 3.4028235e+38f (-FLT_MAX when subtracted) instead of 1e9 because with many
+    // padding positions, 1e9 is insufficient and leaks residual signal through softmax.
+    auto* maskComplement = new NDArray(1.0 - *reshapedMask);
+    *maskComplement *= 3.4028235e+38f;
+    weights->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), maskComplement, weights, false);
     delete reshapedMask;
-    delete applyMask;
-
+    delete maskComplement;
   }
 
-  int softmaxDim = -2;
+  // Use explicit positive dimension for softmax (rank-2 for second-to-last dimension)
+  int softmaxDim = weights->rankOf() - 2;
   sd::ops::softmax softmax;
   softmax.execute({weights}, std::vector<NDArray *>{weights}, {}, {softmaxDim}, {}, {}, true);
 
@@ -121,6 +123,7 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
 DECLARE_TYPES(dot_product_attention) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(dot_product_attention) {
@@ -191,7 +194,9 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
   mmul.execute({keys, queries}, {&preSoftmax}, {}, {1}, {});
 
   if (normalization) preSoftmax /= factor;
-  NDArray *reshapedMask;
+
+  // Initialize reshapedMask to nullptr to avoid undefined behavior
+  NDArray *reshapedMask = nullptr;
   if (mask != nullptr && !mask->isEmpty()) {
     if (preSoftmax.rankOf() == 4) {
       std::vector<sd::LongType> shape = {mask->sizeAt(0), 1, mask->sizeAt(1), 1};
@@ -201,30 +206,61 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
       reshapedMask = mask->reshape(mask->ordering(), shape);
     }
 
-    *reshapedMask  *= 1e9;
-    preSoftmax -= *reshapedMask;
+    // Apply mask: subtract large value for positions to skip (mask=0 means skip)
+    // Note: The mask convention is: 0 = skip, 1 = keep
+    // We subtract (1 - mask) * 3.4028235e+38f to push skipped positions to -FLT_MAX
+    // Using 3.4028235e+38f instead of 1e9 because with many padding positions,
+    // 1e9 is insufficient and leaks residual signal through softmax.
+    auto* maskComplement = new NDArray(1.0 - *reshapedMask);
+    *maskComplement *= 3.4028235e+38f;
+    preSoftmax.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), maskComplement, &preSoftmax, false);
+    delete maskComplement;
   }
 
-  int softmaxDim = -2;
+  // Use explicit positive dimension for softmax (rank-2 for second-to-last dimension)
+  // For rank 3 tensors: dim 1, for rank 4 tensors: dim 2
+  int softmaxDim = preSoftmax.rankOf() - 2;
 
   NDArray weights('c', weightShape, values->dataType(), block.launchContext());
   sd::ops::softmax softmax;
   softmax.execute({&preSoftmax}, {&weights}, {}, {softmaxDim}, {});
+
+  // Use heap allocation to avoid workspace issues
+  NDArray dLdw('c', weightShape, values->dataType(), block.launchContext());
   sd::ops::matmul_bp mmul_bp;
-  NDArray dLdw(weights.shapeInfo(), block.workspace());
   mmul_bp.execute({values, &weights, eps}, {dLdv, &dLdw}, {}, {}, {});
 
-  NDArray dLds(preSoftmax.shapeInfo(), block.workspace());
+  NDArray dLds('c', weightShape, values->dataType(), block.launchContext());
   sd::ops::softmax_bp softmax_bp;
-  softmax_bp.execute({&preSoftmax, &dLdw,&weights}, {&dLds}, {}, {softmaxDim}, {});
+  softmax_bp.execute({&preSoftmax, &dLdw, &weights}, {&dLds}, {}, {softmaxDim}, {});
 
   if (normalization) dLds /= factor;
-  if(mask != nullptr) {
-    dLds *= *reshapedMask;
-  }
-  mmul_bp.execute({keys, queries, &dLds}, std::vector<NDArray *>{dLdk, dLdq}, {}, {1}, {});
 
-  delete reshapedMask;
+
+  // Note: No need to mask dLds - the softmax_bp already produces zero gradients
+  // for masked positions because weights are zero there (softmax of -infinity = 0)
+
+  // Compute gradients for keys and queries manually using matmul
+  // Forward was: preSoftmax = matmul(keys, queries, {transX=1}) = K^T @ Q
+  // Shapes: K=[batch,feat,Tk], Q=[batch,feat,Tq], preSoftmax=[batch,Tk,Tq]
+  //
+  // For Z = K^T @ Q where Z[b,i,j] = sum_f K[b,f,i] * Q[b,f,j]:
+  //   dL/dK[b,f,i] = sum_j dL/dZ[b,i,j] * Q[b,f,j] = (Q @ dL/dZ^T)[b,f,i]
+  //   dL/dQ[b,f,j] = sum_i dL/dZ[b,i,j] * K[b,f,i] = (K @ dL/dZ)[b,f,j]
+  //
+  // Using direct matmul instead of matmul_bp for clarity:
+  //   dL/dK = Q @ dL/dZ^T = matmul(Q, dLds, {0, 1, 0}) where transY=1 gives dLds^T
+  //   dL/dQ = K @ dL/dZ = matmul(K, dLds, {0, 0, 0})
+  sd::ops::matmul mmul_dk;
+  mmul_dk.execute({queries, &dLds}, {dLdk}, {}, {0, 1, 0}, {});  // Q @ dLds^T
+
+  sd::ops::matmul mmul_dq;
+  mmul_dq.execute({keys, &dLds}, {dLdq}, {}, {0, 0, 0}, {});  // K @ dLds
+
+  // Only delete if it was allocated
+  if (reshapedMask != nullptr) {
+    delete reshapedMask;
+  }
 
   return sd::Status::OK;
 }
@@ -232,6 +268,7 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
 DECLARE_TYPES(dot_product_attention_bp) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(dot_product_attention_bp) {

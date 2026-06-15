@@ -20,7 +20,7 @@
 // Created by GS <sgazeos@gmail.com> at 10/17/2019
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/image_suppression.h>
 
 #if NOT_EXCLUDED(OP_non_max_suppression_overlaps)
