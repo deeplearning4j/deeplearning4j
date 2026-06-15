@@ -24,7 +24,7 @@
 #include <helpers/StringUtils.h>
 #include <loops/broadcasting_int.h>
 #include <loops/legacy_ops.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 #include <loops/pairwise_instantiations.h>
@@ -36,7 +36,7 @@ using namespace simdOps;
 //////////////////////////////////////////////////////////////////////////////
 // Cached kernel that caches shape info in shared memory and performs the broadcast
 template <typename X, typename OpClass>
-__global__ void broadcastIntSimpleCached(
+SD_KERNEL SD_INLINE void broadcastIntSimpleCached(
    void const* x,
    sd::LongType const* xShapeInfo,
    void const* y,
@@ -69,7 +69,7 @@ __global__ void broadcastIntSimpleCached(
 //////////////////////////////////////////////////////////////////////////////
 // Cached kernel that caches shape info in shared memory and performs the inverse broadcast
 template <typename X, typename OpClass>
-__global__ void broadcastIntInverseSimpleCached(
+SD_KERNEL SD_INLINE void broadcastIntInverseSimpleCached(
    void const* x,
    sd::LongType const* xShapeInfo,
    void const* y,
@@ -463,10 +463,90 @@ SD_DEVICE void BroadcastInt<X>::transformCuda(
 
 
 //////////////////////////////////////////////////////////////////////////////
+// Implementation of execBroadcast with dimensions
+template <typename X>
+SD_HOST void BroadcastInt<X>::execBroadcast(
+    dim3 launchDims,
+    cudaStream_t* stream,
+    int opNum,
+    const void* x,
+    const sd::LongType* xShapeInfo,
+    const void* y,
+    const sd::LongType* yShapeInfo,
+    void* z,
+    const sd::LongType* zShapeInfo,
+    sd::LongType* dimension,
+    sd::LongType dimensionLength,
+    const sd::LongType* tadOnlyShapeInfo,
+    const sd::LongType* tadOffsets,
+    const sd::LongType* tadOnlyShapeInfoZ,
+    const sd::LongType* tadOffsetsZ) {
+
+  DISPATCH_BY_OPNUM_T(
+      intermediateBroadcast,
+      PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo,
+             dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets,
+             tadOnlyShapeInfoZ, tadOffsetsZ),
+      BROADCAST_INT_OPS);
+
+  sd::DebugHelper::checkErrorCode(stream, "execBroadcast(...) failed");
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Implementation of execBroadcast without dimensions
+template <typename X>
+SD_HOST void BroadcastInt<X>::execBroadcast(
+    dim3 launchDims,
+    cudaStream_t* stream,
+    const int opNum,
+    const void* x,
+    const sd::LongType* xShapeInfo,
+    const void* y,
+    const sd::LongType* yShapeInfo,
+    void* z,
+    const sd::LongType* zShapeInfo) {
+
+  DISPATCH_BY_OPNUM_T(
+      intermediateBroadcast,
+      PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo),
+      BROADCAST_INT_OPS);
+
+  DEBUG_KERNEL(stream, opNum);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Implementation of execInverseBroadcast with dimensions
+template <typename X>
+SD_HOST void BroadcastInt<X>::execInverseBroadcast(
+    dim3 launchDims,
+    cudaStream_t* stream,
+    int opNum,
+    const void* x,
+    const sd::LongType* xShapeInfo,
+    const void* y,
+    const sd::LongType* yShapeInfo,
+    void* z,
+    const sd::LongType* zShapeInfo,
+    sd::LongType* dimension,
+    sd::LongType dimensionLength,
+    const sd::LongType* tadOnlyShapeInfo,
+    const sd::LongType* tadOffsets,
+    const sd::LongType* tadOnlyShapeInfoZ,
+    const sd::LongType* tadOffsetsZ) {
+
+  DISPATCH_BY_OPNUM_T(
+      intermediateInverseBroadcast,
+      PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo,
+             dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets,
+             tadOnlyShapeInfoZ, tadOffsetsZ),
+      BROADCAST_INT_OPS);
+
+  sd::DebugHelper::checkErrorCode(stream, "execInverseBroadcast(...) failed");
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // Instantiate templates for common integer types
-BUILD_SINGLE_TEMPLATE(
-   template class BroadcastInt, ,
-   SD_INTEGER_TYPES);
+BUILD_SINGLE_TEMPLATE(class BroadcastInt, , SD_INTEGER_TYPES);
 
 }  // namespace broadcast
 }  // namespace functions

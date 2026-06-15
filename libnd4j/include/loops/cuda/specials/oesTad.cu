@@ -23,7 +23,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
+SD_KERNEL SD_INLINE void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
                                    sd::LongType *dimension, long long int dimensionLength, sd::LongType const *tadShapeInfo,
                                    sd::LongType const *tadOffsets, bool descending) {
   auto x = static_cast<X *>(vx);
@@ -110,7 +110,7 @@ SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, voi
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, sd::LongType *dimension,
+SD_KERNEL SD_INLINE void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, sd::LongType *dimension,
                                 sd::LongType dimensionLength,
                                 sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending) {
   auto x = static_cast<T *>(vx);

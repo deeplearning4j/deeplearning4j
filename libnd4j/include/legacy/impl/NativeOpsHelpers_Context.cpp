@@ -16,10 +16,18 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
-#include <graph/GraphExecutioner.h>
-#include <graph/GraphHolder.h>
+// On Windows, include windows.h early so _WINDOWS_ is defined before types.h
+// constexpr alias guards are evaluated (avoids BOOL/INT64/etc. typedef conflicts)
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 #include <helpers/ConstantTadHelper.h>
 #include <legacy/NativeOps.h>
+#include <ops/OpTraitTable.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/OpExecutionLogger.h>
 
@@ -28,7 +36,6 @@
 
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
-#include <graph/GraphExecutioner.h>
 
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
@@ -51,25 +58,23 @@
 #include <io.h>
 #endif
 #include <errno.h>
-#include <ops/declarable/CustomOperations.h>
 #include <sys/types.h>
 
 
 extern bool experimentalSupport; // Defined in NativeOpsHelpers_Arrays.cpp
 
-// OpaqueNDArray allocation tracking
-static std::atomic<size_t> g_opaqueArrayCount{0};
-static std::atomic<size_t> g_opaqueArrayBytes{0};
-static std::mutex g_opaqueArrayMutex;
+// External references to allocation tracking variables (defined in NativeOpsHelpers_Arrays.cpp)
+extern std::atomic<size_t> g_opaqueArrayCount;
+extern std::atomic<size_t> g_opaqueArrayBytes;
+extern std::mutex g_opaqueArrayMutex;
 
-// InteropDataBuffer/OpaqueDataBuffer allocation tracking
-static std::atomic<size_t> g_dataBufferCount{0};
-static std::atomic<size_t> g_dataBufferBytes{0};
-static std::mutex g_dataBufferMutex;
+// DataBuffer allocation tracking (defined in NativeOpsHelpers_DataBuffers.cpp)
+extern std::atomic<size_t> g_dataBufferCount;
+extern std::atomic<size_t> g_dataBufferBytes;
+extern std::mutex g_dataBufferMutex;
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
-#include <graph/ResultWrapper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
 
@@ -81,6 +86,7 @@ static std::mutex g_dataBufferMutex;
 #endif
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
+#include <algorithm>
 
 
 
@@ -124,6 +130,33 @@ sd::LongType iArgumentAtNative(OpaqueContext* ptr, int idx) {
   return ptr->getIArguments()->at(idx);
 
 }
+
+namespace {
+
+constexpr sd::LongType kShapeValueSyncMaxElements = 4096;
+
+std::string normalizeShapeOpName(const std::string& opName) {
+  std::string normalized = opName;
+  std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return normalized;
+}
+
+bool requiresFullShapeValueSync(const std::string& opName) {
+  const auto normalized = normalizeShapeOpName(opName);
+  return normalized == "where" || normalized == "unique";
+}
+
+bool shouldSyncInputForShape(const std::string& opName, sd::NDArray* array) {
+  if (array == nullptr || array->isEmpty()) return false;
+  if (requiresFullShapeValueSync(opName)) return true;
+
+  // Shape functions typically inspect only small scalar/index/shape tensors.
+  // Skipping forceSyncToHost() for large data inputs avoids replay-time D2H traffic.
+  return array->isScalar() || array->lengthOf() <= kShapeValueSyncMaxElements;
+}
+
+}  // namespace
 
 sd::LongType numDNative(OpaqueContext* ptr) {
   if(ptr == nullptr)
@@ -187,32 +220,22 @@ void setGraphContextInputArray(OpaqueContext* ptr,int index,OpaqueNDArray arr) {
 }
 
 //note here for javacpp mapping we have to use this odd type alias as a pointer
-//to make the typedef work properly.
-void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) {
-  if (arr == nullptr) THROW_EXCEPTION("setGraphContextOutputArraysArr: Input arrays were null!");
+// OpaqueNDArrayArr is NDArray** (pointer to array of NDArray pointers).
+// Java passes this directly, so arr[i] gives the i-th NDArray*.
+void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr) {
+  if (arr == nullptr) THROW_EXCEPTION("setGraphContextOutputArraysArr: Output arrays were null!");
   if (ptr == nullptr) THROW_EXCEPTION("setGraphContextOutputArraysArr: Context was null!");
 
   for (int i = 0; i < numArrays; i++) {
     if (arr[i] == nullptr) {
       std::string errorMessage;
-      errorMessage += "setGraphContextOutputArraysArr: Input array at index ";
+      errorMessage += "setGraphContextOutputArraysArr: Output array at index ";
       errorMessage += std::to_string(i);
       errorMessage += " was null!";
       THROW_EXCEPTION(errorMessage.c_str());
     }
 
-    // Dereference the OpaqueNDArrayArr to get the OpaqueNDArray (NDArray*)
-    sd::NDArray* ndarray = *arr[i];
-    if (ndarray == nullptr) {
-      std::string errorMessage;
-      errorMessage += "setGraphContextOutputArraysArr: Dereferenced NDArray at index ";
-      errorMessage += std::to_string(i);
-      errorMessage += " was null!";
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
-
-    // Set the output array at the correct index (was using wrong loop variable before)
-    ptr->setOutputArray(i, ndarray, false);
+    ptr->setOutputArray(i, arr[i], false);
   }
 }
 
@@ -371,21 +394,6 @@ sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::Lon
 }
 void munmapFile(sd::Pointer *extraPointers, sd::LongType  *ptrMap, sd::LongType  length) {}
 
-ResultWrapper *executeFlatGraph(sd::Pointer *extraPointers, sd::Pointer flatBufferPointer) {
-#ifdef __cpp_exceptions
-  try {
-    return sd::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
-  } catch (std::exception &e) {
-    safeSetErrorContext(1, e.what());
-    return nullptr;
-  }
-#else
-  return sd::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
-#endif
-}
-
-sd::LongType  getResultWrapperSize(ResultWrapper *ptr) { return ptr->size(); }
-sd::Pointer getResultWrapperPointer(ResultWrapper *ptr) { return ptr->pointer(); }
 
 const char *getAllCustomOps() { return sd::ops::OpRegistrator::getInstance().getAllCustomOperations(); }
 
@@ -393,6 +401,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #ifdef __cpp_exceptions
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+    const std::string opName = op->getOpName() == nullptr ? "" : *op->getOpName();
 
 #if defined(SD_GCC_FUNCTRACE)
     // Set op name BEFORE calculateOutputShape so shape allocations are tagged
@@ -411,6 +420,87 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #endif
         THROW_EXCEPTION(errorMessage.c_str());
       }
+      if (shouldSyncInputForShape(opName, context->array(e))) {
+        context->array(e)->forceSyncToHost();
+      }
+      inShapes.push_back(context->array(e)->shapeInfo());
+    }
+
+    auto shapeList = op->calculateOutputShape(&inShapes, *context);
+
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+
+    return shapeList;
+  } catch (std::exception &e) {
+#if defined(SD_GCC_FUNCTRACE)
+    sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+    safeSetErrorContext(1, e.what());
+    return nullptr;
+  }
+#else
+  auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+  const std::string opName = op->getOpName() == nullptr ? "" : *op->getOpName();
+
+#if defined(SD_GCC_FUNCTRACE)
+  // Set op name BEFORE calculateOutputShape so shape allocations are tagged
+  if (op->getOpName() != nullptr) {
+      sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+  }
+#endif
+
+  sd::ShapeList inShapes;
+
+  for (size_t e = 0; e < context->width(); e++) {
+    if (context->array(e) == nullptr) {
+      std::string errorMessage = "Input array at index " + std::to_string(e) + " was null!";
+#if defined(SD_GCC_FUNCTRACE)
+      sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+      safeSetErrorContext(1, errorMessage.c_str());
+      return nullptr;
+    }
+    if (shouldSyncInputForShape(opName, context->array(e))) {
+      context->array(e)->forceSyncToHost();
+    }
+    inShapes.push_back(context->array(e)->shapeInfo());
+  }
+
+  auto shapeList = op->calculateOutputShape(&inShapes, *context);
+
+#if defined(SD_GCC_FUNCTRACE)
+  sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+
+  return shapeList;
+#endif
+}
+
+OpaqueShapeList *calculateOutputShapesNoSync(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context) {
+#ifdef __cpp_exceptions
+  try {
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+
+#if defined(SD_GCC_FUNCTRACE)
+    if (op->getOpName() != nullptr) {
+        sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+    }
+#endif
+
+    sd::ShapeList inShapes;
+
+    for (size_t e = 0; e < context->width(); e++) {
+      if (context->array(e) == nullptr) {
+        std::string errorMessage = "Input array at index " + std::to_string(e) + " was null!";
+#if defined(SD_GCC_FUNCTRACE)
+        sd::ops::OpExecutionLogger::clearCurrentOpName();
+#endif
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+      // NO forceSyncToHost() — caller guarantees shape function only reads shape info,
+      // not array values. Saves CUDA D2H synchronization overhead.
       inShapes.push_back(context->array(e)->shapeInfo());
     }
 
@@ -432,7 +522,6 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
   auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
 
 #if defined(SD_GCC_FUNCTRACE)
-  // Set op name BEFORE calculateOutputShape so shape allocations are tagged
   if (op->getOpName() != nullptr) {
       sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
   }
@@ -449,6 +538,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
       safeSetErrorContext(1, errorMessage.c_str());
       return nullptr;
     }
+    // NO forceSyncToHost() — see above
     inShapes.push_back(context->array(e)->shapeInfo());
   }
 
@@ -575,3 +665,17 @@ std::vector<ExecTrace*> * listOpTraces() {
   return sd::ops::OpRegistrator::getInstance().execTrace();
 }
 
+unsigned int getOpTraits(const char* opName) {
+  if (opName == nullptr) return 0;
+  std::string name(opName);
+  uint32_t traits = sd::ops::getOpTraitsByName(name);
+  // Fall back to the registered descriptor in case traits were attached at
+  // registration time but not listed in the hand-maintained trait table.
+  if (traits == 0) {
+    auto* op = sd::ops::OpRegistrator::getInstance().getOperation(name);
+    if (op != nullptr && op->getOpDescriptor() != nullptr) {
+      traits = op->getOpDescriptor()->getTraits();
+    }
+  }
+  return static_cast<unsigned int>(traits);
+}

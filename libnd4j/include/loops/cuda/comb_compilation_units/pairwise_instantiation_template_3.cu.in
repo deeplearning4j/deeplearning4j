@@ -20,6 +20,10 @@
 // Created by agibsonccc on 3/10/25.
 //
 
+// MEMORY OPTIMIZATION: Define op group to compile only a subset of operations
+// This reduces per-file memory usage by ~66%
+#define PAIRWISE_OP_GROUP @OP_GROUP@
+
 #include <loops/cuda/pairwise.chpp>
 #include <system/type_boilerplate.h>
 #include <loops/pairwise_instantiations_single.h>

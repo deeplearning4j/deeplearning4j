@@ -16,6 +16,8 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
+#pragma once
+
 //
 //  @author raver119@gmail.com
 //
@@ -27,7 +29,6 @@
 #include <loops/legacy_ops.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <cstdio>
 
 using namespace simdOps;
 
@@ -173,7 +174,22 @@ void Broadcast<X, Y, Z>::exec(const void* vx, const sd::LongType* xShapeInfo,
     if (isYVector && (isXRowVector || isXColumnVector || isXVector)) {
       // Vector to vector broadcasting
       if (isYRowVector && (isXRowVector || isXVector)) {
-        // Row vector to row vector
+        // Row vector to row vector (or 1D xTAD vs row-vector y).
+        //
+        // Two distinct layouts reach this branch:
+        //
+        // (A) xTAD and y have the SAME length — classic element-wise: walk both
+        //     with their respective strides (nCols == yLength).
+        //
+        // (B) xTAD length > y's non-broadcast dimension — e.g. x=[20,2] TAD'd
+        //     along axis-1 gives 1D TADs of length 20, while y=[1,2] has only 2
+        //     elements.  In this case the TAD index `i` selects which y element
+        //     to use (y[i * yColStride]) and that scalar is broadcast over the
+        //     entire TAD.  Walking y with i1*yStride would be an OOB read.
+        //
+        // Detect case (B): y's non-broadcast length (yLength) is less than nCols.
+        sd::LongType yLength = (yRank == 1) ? yShape[0] : yShape[1];
+
         for (auto i = start; i < stop; i++) {
           auto baseX = x + xTadOffset[i];
           auto baseZ = z + zTadOffset[i];
@@ -182,14 +198,26 @@ void Broadcast<X, Y, Z>::exec(const void* vx, const sd::LongType* xShapeInfo,
           sd::LongType yStride = yRank == 1 ? yStrides[0] : yStrides[1];
           sd::LongType zStride = zTadRank ? zTadStrides[zTadRank - 1] : zTadStrides[0];
 
+          if (yLength < nCols) {
+            // Case (B): use outer TAD index i to index into y, then broadcast
+            // that scalar over all nCols elements of this TAD.
+            // y's non-broadcast dim stride is yStride (last dim for a row vector).
+            Y scalarY = *(y + i * yStride);
 
-          PRAGMA_OMP_SIMD
-          for (sd::LongType i1 = 0; i1 < nCols; i1++) {
-            auto rX = baseX + i1 * xStride;
-            auto rY = y + i1 * yStride;
-            auto rZ = baseZ + i1 * zStride;
+            PRAGMA_OMP_SIMD
+            for (sd::LongType i1 = 0; i1 < nCols; i1++) {
+              *(baseZ + i1 * zStride) = OpType::op(*(baseX + i1 * xStride), scalarY);
+            }
+          } else {
+            // Case (A): lengths match — element-wise walk through both arrays.
+            PRAGMA_OMP_SIMD
+            for (sd::LongType i1 = 0; i1 < nCols; i1++) {
+              auto rX = baseX + i1 * xStride;
+              auto rY = y + i1 * yStride;
+              auto rZ = baseZ + i1 * zStride;
 
-            *rZ = OpType::op(*rX, *rY);
+              *rZ = OpType::op(*rX, *rY);
+            }
           }
         }
       }
@@ -222,10 +250,6 @@ void Broadcast<X, Y, Z>::exec(const void* vx, const sd::LongType* xShapeInfo,
             zStride = zTadStrides[0]; // For 2D column vector, use row stride
           }
 
-          // Verify dimensions match
-          sd::LongType xLen = isXColumnVector ? (xTadRank == 2 ? xTadShape[0] : xTadShape[0]) : xTadShape[0];
-          sd::LongType yLen = yRank == 2 ? yShape[0] : yShape[0];
-          printf("xLen: %lld; yLen: %lld nRows %lld,xStride %lld,yStride %lld, zStride %lld\n", xLen, yLen,nRows,xStride,yStride,zStride);
           PRAGMA_OMP_SIMD
           for (sd::LongType i1 = 0; i1 < nRows; i1++) {
             auto rX = baseX + i1 * xStride;
@@ -258,8 +282,6 @@ void Broadcast<X, Y, Z>::exec(const void* vx, const sd::LongType* xShapeInfo,
       else if (isYRowVector && isXColumnVector) {
         // Row vector to column vector (outer product)
         for (auto i = start; i < stop; i++) {
-          printf("4 2d tad: %lld\n", i);
-          fflush(stdout);
           auto baseX = x + (xTadOffset ? xTadOffset[i] : 0);
           auto baseZ = z + (zTadOffset ? zTadOffset[i] : 0);
 
@@ -703,24 +725,30 @@ void Broadcast<X, Y, Z>::exec(const void* vx, const sd::LongType* xShapeInfo,
     }
   }
   else {
-    // Default case for other ranks - general purpose implementation
-    sd::LongType xCoords[SD_MAX_RANK];
-    sd::LongType yCoords[SD_MAX_RANK];
-    sd::LongType zCoords[SD_MAX_RANK];
+    // Default TAD-based broadcast: iterate over TADs, apply Y to each TAD.
+    // start/stop are TAD indices (numTads), NOT element indices.
+    // Each TAD has shape matching Y's shape (along the broadcast dimension).
+    sd::LongType tadLength = shape::length(xTadShapeInfo);
 
     for (auto i = start; i < stop; i++) {
-      // Calculate independent coordinates for each array
-      INDEX2COORDS(i, xRank, xShape, xCoords);
-      INDEX2COORDS(i, yRank, yShape, yCoords);
-      INDEX2COORDS(i, zRank, zShape, zCoords);
+      auto oX = x + xTadOffset[i];
+      auto oZ = z + (zTadOffset ? zTadOffset[i] : xTadOffset[i]);
 
-      // Calculate offsets based on each array's coordinates and strides
-      sd::LongType xOffset, yOffset, zOffset;
-      COORDS2INDEX(xRank, xStrides, xCoords, xOffset);
-      COORDS2INDEX(yRank, yStrides, yCoords, yOffset);
-      COORDS2INDEX(zRank, zStrides, zCoords, zOffset);
+      for (sd::LongType f = 0; f < tadLength; f++) {
+        sd::LongType xCoord[SD_MAX_RANK], yCoord[SD_MAX_RANK], zCoord[SD_MAX_RANK];
+        sd::LongType xOff, yOff, zOff;
 
-      z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+        INDEX2COORDS(f, xTadRank, xTadShape, xCoord);
+        COORDS2INDEX(xTadRank, xTadStrides, xCoord, xOff);
+
+        INDEX2COORDS(f, yRank, yShape, yCoord);
+        COORDS2INDEX(yRank, yStrides, yCoord, yOff);
+
+        INDEX2COORDS(f, zTadRank, zTadShape, zCoord);
+        COORDS2INDEX(zTadRank, zTadStrides, zCoord, zOff);
+
+        oZ[zOff] = OpType::op(oX[xOff], y[yOff]);
+      }
     }
   }
 }
@@ -851,6 +879,42 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const Y *y, 
   sd::LongType yRank = shape::rank(yShapeInfo);
   sd::LongType zRank = shape::rank(zShapeInfo);
 
+  // Check if all arrays have same shape and are contiguous (no broadcasting needed, direct pairwise op)
+  bool allSameShapeContiguous = (xRank == yRank && yRank == zRank);
+  if (allSameShapeContiguous && zRank > 0) {
+    const sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+    const sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+    const sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+    const sd::LongType *xStride = shape::stride(xShapeInfo);
+    const sd::LongType *yStride = shape::stride(yShapeInfo);
+    const sd::LongType *zStride = shape::stride(zShapeInfo);
+
+    sd::LongType expectedStride = 1;
+    for (int i = zRank - 1; i >= 0; --i) {
+      if (zShape[i] == 1) continue;
+      // Check shape equality and contiguous strides for all arrays
+      if (xShape[i] != zShape[i] || yShape[i] != zShape[i] ||
+          xStride[i] != expectedStride || yStride[i] != expectedStride || zStride[i] != expectedStride) {
+        allSameShapeContiguous = false;
+        break;
+      }
+      expectedStride *= zShape[i];
+    }
+  }
+
+  if (allSameShapeContiguous) {
+    // Fast path: all arrays same shape and contiguous - direct indexing
+    sd::LongType length = shape::length(zShapeInfo);
+    auto func = [x, y, z, length](sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) -> void {
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; ++i) {
+        z[i] = OpType::op(x[i], y[i]);
+      }
+    };
+    samediff::Threads::parallel_for(func, static_cast<sd::LongType>(0), length);
+    return;
+  }
+
   // C-style arrays CANNOT be captured by value in lambdas - they decay to pointers
   // that point to stack memory. std::array CAN be captured by value, ensuring each
   // parallel thread gets its own copy of the data with guaranteed lifetime.
@@ -903,6 +967,158 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const Y *y, 
   samediff::Threads::parallel_for(func, static_cast<sd::LongType>(0), shape::length(zShapeInfo));
 }
 
+// Rank-1 optimized broadcast
+template <typename X, typename Y, typename Z, typename OpType>
+static void execRank1(const X *x, const sd::LongType *xShapeInfo, const Y *y, const sd::LongType *yShapeInfo, Z *z,
+                      const sd::LongType *zShapeInfo) {
+  const sd::LongType zLen = shape::length(zShapeInfo);
+  const sd::LongType xLen = shape::length(xShapeInfo);
+  const sd::LongType yLen = shape::length(yShapeInfo);
+
+  const sd::LongType xStride = shape::stride(xShapeInfo)[0];
+  const sd::LongType yStride = shape::stride(yShapeInfo)[0];
+  const sd::LongType zStride = shape::stride(zShapeInfo)[0];
+
+  auto func = [x, y, z, xLen, yLen, xStride, yStride, zStride](sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) -> void {
+    PRAGMA_OMP_SIMD
+    for (auto i = start; i < stop; ++i) {
+      sd::LongType xIdx = (xLen == 1) ? 0 : i % xLen;
+      sd::LongType yIdx = (yLen == 1) ? 0 : i % yLen;
+      z[i * zStride] = OpType::op(x[xIdx * xStride], y[yIdx * yStride]);
+    }
+  };
+  samediff::Threads::parallel_for(func, static_cast<sd::LongType>(0), zLen);
+}
+
+// Rank-2 optimized broadcast
+template <typename X, typename Y, typename Z, typename OpType>
+static void execRank2(const X *x, const sd::LongType *xShapeInfo, const Y *y, const sd::LongType *yShapeInfo, Z *z,
+                      const sd::LongType *zShapeInfo) {
+  const sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+  const sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  const sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+  const sd::LongType *zStrides = shape::stride(zShapeInfo);
+  const sd::LongType *xStrides = shape::stride(xShapeInfo);
+  const sd::LongType *yStrides = shape::stride(yShapeInfo);
+
+  const sd::LongType nRows = zShape[0];
+  const sd::LongType nCols = zShape[1];
+
+  auto func = [x, y, z, nRows, nCols, xShape, yShape, xStrides, yStrides, zStrides](
+      sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) -> void {
+    for (auto i0 = start; i0 < stop; ++i0) {
+      sd::LongType xI0 = (xShape[0] == 1) ? 0 : i0 % xShape[0];
+      sd::LongType yI0 = (yShape[0] == 1) ? 0 : i0 % yShape[0];
+
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i1 = 0; i1 < nCols; ++i1) {
+        sd::LongType xI1 = (xShape[1] == 1) ? 0 : i1 % xShape[1];
+        sd::LongType yI1 = (yShape[1] == 1) ? 0 : i1 % yShape[1];
+
+        sd::LongType xOffset = xI0 * xStrides[0] + xI1 * xStrides[1];
+        sd::LongType yOffset = yI0 * yStrides[0] + yI1 * yStrides[1];
+        sd::LongType zOffset = i0 * zStrides[0] + i1 * zStrides[1];
+
+        z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+      }
+    }
+  };
+  samediff::Threads::parallel_for(func, static_cast<sd::LongType>(0), nRows);
+}
+
+// Rank-3 optimized broadcast
+template <typename X, typename Y, typename Z, typename OpType>
+static void execRank3(const X *x, const sd::LongType *xShapeInfo, const Y *y, const sd::LongType *yShapeInfo, Z *z,
+                      const sd::LongType *zShapeInfo) {
+  const sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+  const sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  const sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+  const sd::LongType *zStrides = shape::stride(zShapeInfo);
+  const sd::LongType *xStrides = shape::stride(xShapeInfo);
+  const sd::LongType *yStrides = shape::stride(yShapeInfo);
+
+  const sd::LongType dim0 = zShape[0];
+  const sd::LongType dim1 = zShape[1];
+  const sd::LongType dim2 = zShape[2];
+
+  auto func = [x, y, z, dim0, dim1, dim2, xShape, yShape, xStrides, yStrides, zStrides](
+      sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) -> void {
+    for (auto i0 = start; i0 < stop; ++i0) {
+      sd::LongType xI0 = (xShape[0] == 1) ? 0 : i0 % xShape[0];
+      sd::LongType yI0 = (yShape[0] == 1) ? 0 : i0 % yShape[0];
+
+      for (sd::LongType i1 = 0; i1 < dim1; ++i1) {
+        sd::LongType xI1 = (xShape[1] == 1) ? 0 : i1 % xShape[1];
+        sd::LongType yI1 = (yShape[1] == 1) ? 0 : i1 % yShape[1];
+
+        PRAGMA_OMP_SIMD
+        for (sd::LongType i2 = 0; i2 < dim2; ++i2) {
+          sd::LongType xI2 = (xShape[2] == 1) ? 0 : i2 % xShape[2];
+          sd::LongType yI2 = (yShape[2] == 1) ? 0 : i2 % yShape[2];
+
+          sd::LongType xOffset = xI0 * xStrides[0] + xI1 * xStrides[1] + xI2 * xStrides[2];
+          sd::LongType yOffset = yI0 * yStrides[0] + yI1 * yStrides[1] + yI2 * yStrides[2];
+          sd::LongType zOffset = i0 * zStrides[0] + i1 * zStrides[1] + i2 * zStrides[2];
+
+          z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+        }
+      }
+    }
+  };
+  samediff::Threads::parallel_for(func, static_cast<sd::LongType>(0), dim0);
+}
+
+// Rank-4 optimized broadcast
+template <typename X, typename Y, typename Z, typename OpType>
+static void execRank4(const X *x, const sd::LongType *xShapeInfo, const Y *y, const sd::LongType *yShapeInfo, Z *z,
+                      const sd::LongType *zShapeInfo) {
+  const sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+  const sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  const sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+  const sd::LongType *zStrides = shape::stride(zShapeInfo);
+  const sd::LongType *xStrides = shape::stride(xShapeInfo);
+  const sd::LongType *yStrides = shape::stride(yShapeInfo);
+
+  const sd::LongType dim0 = zShape[0];
+  const sd::LongType dim1 = zShape[1];
+  const sd::LongType dim2 = zShape[2];
+  const sd::LongType dim3 = zShape[3];
+
+  // Parallelize over first two dimensions combined
+  const sd::LongType outerDims = dim0 * dim1;
+
+  auto func = [x, y, z, dim0, dim1, dim2, dim3, xShape, yShape, xStrides, yStrides, zStrides](
+      sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) -> void {
+    for (auto idx = start; idx < stop; ++idx) {
+      sd::LongType i0 = idx / dim1;
+      sd::LongType i1 = idx % dim1;
+
+      sd::LongType xI0 = (xShape[0] == 1) ? 0 : i0 % xShape[0];
+      sd::LongType yI0 = (yShape[0] == 1) ? 0 : i0 % yShape[0];
+      sd::LongType xI1 = (xShape[1] == 1) ? 0 : i1 % xShape[1];
+      sd::LongType yI1 = (yShape[1] == 1) ? 0 : i1 % yShape[1];
+
+      for (sd::LongType i2 = 0; i2 < dim2; ++i2) {
+        sd::LongType xI2 = (xShape[2] == 1) ? 0 : i2 % xShape[2];
+        sd::LongType yI2 = (yShape[2] == 1) ? 0 : i2 % yShape[2];
+
+        PRAGMA_OMP_SIMD
+        for (sd::LongType i3 = 0; i3 < dim3; ++i3) {
+          sd::LongType xI3 = (xShape[3] == 1) ? 0 : i3 % xShape[3];
+          sd::LongType yI3 = (yShape[3] == 1) ? 0 : i3 % yShape[3];
+
+          sd::LongType xOffset = xI0 * xStrides[0] + xI1 * xStrides[1] + xI2 * xStrides[2] + xI3 * xStrides[3];
+          sd::LongType yOffset = yI0 * yStrides[0] + yI1 * yStrides[1] + yI2 * yStrides[2] + yI3 * yStrides[3];
+          sd::LongType zOffset = i0 * zStrides[0] + i1 * zStrides[1] + i2 * zStrides[2] + i3 * zStrides[3];
+
+          z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+        }
+      }
+    }
+  };
+  samediff::Threads::parallel_for(func, static_cast<sd::LongType>(0), outerDims);
+}
+
 template <typename X, typename Y, typename Z>
 template <typename OpType>
 void Broadcast<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
@@ -911,9 +1127,22 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, co
   const Y *y = reinterpret_cast<const Y *>(vy);
   Z *z = reinterpret_cast<Z *>(vz);
 
-  const int rank = shape::rank(zShapeInfo);  // xRank = yRank = zRank
+  const int rank = shape::rank(zShapeInfo);
 
+  // Use rank-specific optimized paths to avoid coordinate calculation overhead
   switch (rank) {
+    case 1:
+      execRank1<X, Y, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo);
+      break;
+    case 2:
+      execRank2<X, Y, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo);
+      break;
+    case 3:
+      execRank3<X, Y, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo);
+      break;
+    case 4:
+      execRank4<X, Y, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo);
+      break;
     default:
       execDefault<X, Y, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo);
   }

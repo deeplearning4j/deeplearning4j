@@ -78,7 +78,7 @@ SD_DEVICE void averagingKernel(void **vdx, void *vdz, int n, LongType length, bo
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execAveragingKernel(void **vdx, void *vdz, int n, LongType length, bool propagate) {
+SD_KERNEL SD_INLINE void execAveragingKernel(void **vdx, void *vdz, int n, LongType length, bool propagate) {
   averagingKernel<T>(vdx, vdz, n, length, propagate);
 }
 

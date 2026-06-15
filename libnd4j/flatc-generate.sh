@@ -88,7 +88,8 @@ safe_copy_directory() {
 
 # Find flatbuffers directory in any subdirectory
 echo "🔍 Searching for flatbuffers directory..."
-FLATBUFFERS_DIR=$(find . -name "flatbuffers" -type d | head -1)
+# Use -quit to avoid broken pipe with head
+FLATBUFFERS_DIR=$(find . -name "flatbuffers" -type d -print -quit 2>/dev/null || true)
 
 if [ -z "$FLATBUFFERS_DIR" ]; then
     echo "⚠️  Warning: flatbuffers directory not found in any subdirectory"
@@ -225,10 +226,13 @@ if [ -d "./include/graph/generated" ]; then
     generated_count=$(find ./include/graph/generated -name "*.h" -o -name "*.java" | wc -l)
     echo "✅ Found $generated_count generated files in ./include/graph/generated"
 
-    # List some example files
-    find ./include/graph/generated -name "*.h" -o -name "*.java" | head -5 | while read -r file; do
+    # List some example files (use -quit-based approach to avoid SIGPIPE with set -o pipefail)
+    count=0
+    while IFS= read -r file; do
         echo "   - $file"
-    done
+        count=$((count + 1))
+        [ $count -ge 5 ] && break
+    done < <(find ./include/graph/generated -name "*.h" -o -name "*.java" 2>/dev/null)
 else
     echo "⚠️  Warning: Generated directory not found"
 fi

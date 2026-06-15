@@ -22,6 +22,7 @@
 #include <system/op_boilerplate.h>
 #include <loops/reduce3.h>
 #include <loops/legacy_ops.h>
+#include <ops/ops.h>
 #include <types/types.h>
 #include <ops/specials_cuda.h>
 
@@ -58,7 +59,7 @@ SD_KERNEL void execAllGeneric(const int opNum,
                               void *extraParams,
                               void *vz, sd::LongType const* zShapeInfo,
                               sd::LongType* dimension,
-                              long long int dimensionLength,
+                              sd::LongType dimensionLength,
                               int postProcessOrNot,
                               sd::LongType* allocationPointer,
                               sd::LongType const* tadOnlyShapeInfo,
@@ -158,26 +159,35 @@ SD_DEVICE void Reduce3<X, Z>::execScalarCuda(
   __shared__ Z extraZ[3];  // just 3 values used in logic below
   __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
 
-  // Cache rank/shape/stride for x and y in __shared__
+  // Cache rank and actual shape/stride VALUES (not pointers) to avoid address space issues
   __shared__ sd::LongType xRank;
-  __shared__ const sd::LongType* xShapePtr;
-  __shared__ const sd::LongType* xStridePtr;
+  __shared__ sd::LongType xShape[SD_MAX_RANK];
+  __shared__ sd::LongType xStride[SD_MAX_RANK];
 
   __shared__ sd::LongType yRank;
-  __shared__ const sd::LongType* yShapePtr;
-  __shared__ const sd::LongType* yStridePtr;
+  __shared__ sd::LongType yShape[SD_MAX_RANK];
+  __shared__ sd::LongType yStride[SD_MAX_RANK];
 
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (threadIdx.x == 0) {
-    length        = shape::length(xShapeInfo);
+    length = shape::length(xShapeInfo);
+    xRank  = shape::rank(xShapeInfo);
+    yRank  = shape::rank(yShapeInfo);
 
-    xRank         = shape::rank(xShapeInfo);
-    xShapePtr     = shape::shapeOf(xShapeInfo);
-    xStridePtr    = shape::stride(xShapeInfo);
+    // Copy shape and stride values to shared memory
+    const sd::LongType* xShapePtr = shape::shapeOf(xShapeInfo);
+    const sd::LongType* xStridePtr = shape::stride(xShapeInfo);
+    const sd::LongType* yShapePtr = shape::shapeOf(yShapeInfo);
+    const sd::LongType* yStridePtr = shape::stride(yShapeInfo);
 
-    yRank         = shape::rank(yShapeInfo);
-    yShapePtr     = shape::shapeOf(yShapeInfo);
-    yStridePtr    = shape::stride(yShapeInfo);
+    for (int i = 0; i < xRank; i++) {
+      xShape[i] = xShapePtr[i];
+      xStride[i] = xStridePtr[i];
+    }
+    for (int i = 0; i < yRank; i++) {
+      yShape[i] = yShapePtr[i];
+      yStride[i] = yStridePtr[i];
+    }
 
     extraZ[0] = (Z) 0.0f;
     extraZ[1] = (Z) 0.0f;
@@ -189,8 +199,6 @@ SD_DEVICE void Reduce3<X, Z>::execScalarCuda(
 
   sPartials[threadIdx.x] = OpType::startingValue(x);
 
-  char xOrder = shape::order(xShapeInfo);
-  char yOrder = shape::order(yShapeInfo);
   sd::LongType gridSize = gridDim.x * blockDim.x;
 
   // fill partial sums
@@ -200,11 +208,11 @@ SD_DEVICE void Reduce3<X, Z>::execScalarCuda(
     sd::LongType xOffset;
     sd::LongType yOffset;
 
-    INDEX2COORDS(i, xRank, xShapePtr, xCoords);
-    COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
+    INDEX2COORDS(i, xRank, xShape, xCoords);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
 
-    INDEX2COORDS(i, yRank, yShapePtr, yCoords);
-    COORDS2INDEX(yRank, yStridePtr, yCoords, yOffset);
+    INDEX2COORDS(i, yRank, yShape, yCoords);
+    COORDS2INDEX(yRank, yStride, yCoords, yOffset);
 
     sPartials[threadIdx.x] =
         OpType::update(sPartials[threadIdx.x],
@@ -444,11 +452,6 @@ SD_DEVICE void Reduce3<X, Z>::transform(
   __shared__ sd::LongType tadLen;
   __shared__ sd::LongType zLen;
   __shared__ sd::LongType yTadNum;
-  __shared__ sd::LongType xTadEws;
-  __shared__ sd::LongType yTadEws;
-  __shared__ char xTadOrder;
-  __shared__ char yTadOrder;
-
   // Cache shape info
   __shared__ sd::LongType xTadRank;
   __shared__ const sd::LongType* xTadShape;
@@ -466,11 +469,6 @@ SD_DEVICE void Reduce3<X, Z>::transform(
     tadLen     = shape::length(tadOnlyShapeInfo);
     zLen       = shape::length(zShapeInfo);
     yTadNum    = shape::length(yShapeInfo) / tadLen;
-    xTadEws    = shape::elementWiseStride(tadOnlyShapeInfo);
-    yTadEws    = shape::elementWiseStride(yTadOnlyShapeInfo);
-    xTadOrder  = shape::order(tadOnlyShapeInfo);
-    yTadOrder  = shape::order(yTadOnlyShapeInfo);
-
     xTadRank   = shape::rank(tadOnlyShapeInfo);
     xTadShape  = shape::shapeOf(tadOnlyShapeInfo);
     xTadStride = shape::stride(tadOnlyShapeInfo);
@@ -546,8 +544,8 @@ SD_DEVICE void Reduce3<X, Z>::transform(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_DEVICE void Reduce3<X, Y>::execCuda(
+template <typename X, typename Z>
+SD_DEVICE void Reduce3<X, Z>::execCuda(
     int opNum,
     void const* vx, sd::LongType const* xShapeInfo,
     void const* vy, sd::LongType const* yShapeInfo,
@@ -569,8 +567,8 @@ SD_DEVICE void Reduce3<X, Y>::execCuda(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_DEVICE void Reduce3<X, Y>::execAllCuda(
+template <typename X, typename Z>
+SD_DEVICE void Reduce3<X, Z>::execAllCuda(
     int opNum,
     void const* vx, sd::LongType const* xShapeInfo,
     void const* vy, sd::LongType const* yShapeInfo,
@@ -593,8 +591,8 @@ SD_DEVICE void Reduce3<X, Y>::execAllCuda(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_DEVICE void Reduce3<X, Y>::execScalarCuda(
+template <typename X, typename Z>
+SD_DEVICE void Reduce3<X, Z>::execScalarCuda(
     int opNum,
     void const* vx, sd::LongType const* xShapeInfo,
     void const* vy, sd::LongType const* yShapeInfo,
@@ -653,7 +651,7 @@ SD_HOST void Reduce3<X, Z>::execAll(
     void const* vy, sd::LongType const* yShapeInfo,
     void* extraParams,
     void* vz, sd::LongType const* zShapeInfo,
-    sd::LongType* dimension, long long int dimensionLength,
+    sd::LongType* dimension, sd::LongType dimensionLength,
     int postProcessOrNot,
     sd::LongType* allocationPointer,
     sd::LongType const* tadOnlyShapeInfo,

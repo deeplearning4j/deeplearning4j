@@ -15,6 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+#pragma once
 
 //
 //  @author raver119@gmail.com
@@ -27,6 +28,7 @@
 #include <loops/reduce_same.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+#include <system/env_functions.h>
 
 #include <chrono>
 
@@ -60,7 +62,7 @@ void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongTyp
   }
 
   auto startingValue = OpType::startingValue(x);
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   X intermediate[64];
 
   PRAGMA_OMP_SIMD

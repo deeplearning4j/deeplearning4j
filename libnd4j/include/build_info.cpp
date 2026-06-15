@@ -593,7 +593,7 @@ const char *buildInfo() {
   ret += "HAVE_EXTERNAL_BLAS\n";
 #endif
 
-#if defined(HAVE_OPENBLAS)
+#if HAVE_OPENBLAS
   ret += "HAVE_OPENBLAS\n";
 #endif
 

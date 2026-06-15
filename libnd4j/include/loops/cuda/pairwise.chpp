@@ -24,11 +24,26 @@
 #include <loops/pairwise_instantiations.h>
 
 #include "../pairwise_transform.h"
+
+// MEMORY OPTIMIZATION: Use PAIRWISE_OP_GROUP to compile only a subset of operations
+// This reduces per-file memory usage by ~66% (44 ops -> ~15 ops per file)
+// Define PAIRWISE_OP_GROUP=1, 2, or 3 to compile only that group
+// If not defined, compile all ops (backward compatible)
+#if defined(PAIRWISE_OP_GROUP) && PAIRWISE_OP_GROUP == 1
+  #define PAIRWISE_TRANSFORM_OPS_ACTIVE PAIRWISE_TRANSFORM_OPS_PART1
+#elif defined(PAIRWISE_OP_GROUP) && PAIRWISE_OP_GROUP == 2
+  #define PAIRWISE_TRANSFORM_OPS_ACTIVE PAIRWISE_TRANSFORM_OPS_PART2
+#elif defined(PAIRWISE_OP_GROUP) && PAIRWISE_OP_GROUP == 3
+  #define PAIRWISE_TRANSFORM_OPS_ACTIVE PAIRWISE_TRANSFORM_OPS_PART3
+#else
+  #define PAIRWISE_TRANSFORM_OPS_ACTIVE PAIRWISE_TRANSFORM_OPS
+#endif
+
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
-SD_KERNEL static void pairwiseSimpleShaped(void const* vx, sd::LongType const* xShapeInfo,
+SD_KERNEL void pairwiseSimpleShaped(void const* vx, sd::LongType const* xShapeInfo,
                                            void const* vy, sd::LongType const* yShapeInfo,
                                            void* vz, sd::LongType const* zShapeInfo,
                                            void* vextraParams) {
@@ -128,7 +143,7 @@ void SD_HOST PairWiseTransform<X, Y, Z>::executeCudaShaped(dim3& launchDims,
   DISPATCH_BY_OPNUM_TTT(
       intermediateShaped,
       PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams),
-      PAIRWISE_TRANSFORM_OPS);
+      PAIRWISE_TRANSFORM_OPS_ACTIVE);
 }
 
 }  // namespace pairwise_transforms

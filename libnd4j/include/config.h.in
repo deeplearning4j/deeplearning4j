@@ -8,11 +8,20 @@
 #cmakedefine01 HAVE_CUDNN
 #cmakedefine01 HAVE_OPENBLAS
 #cmakedefine01 HAVE_FLATBUFFERS
+#cmakedefine01 HAVE_TRITON
+#cmakedefine01 HAVE_TRITON_CPU
+#cmakedefine01 HAVE_MLIR
+#cmakedefine01 HAVE_MLX
+#cmakedefine01 HAVE_NNAPI
+#cmakedefine01 HAVE_CUTLASS
+#cmakedefine01 HAVE_OPENVINO
 
-#cmakedefine SD_LIBRARY_NAME "@SD_LIBRARY_NAME@"
-#cmakedefine ONEDNN_PATH "@ONEDNN_PATH@"
-#cmakedefine OPENBLAS_PATH "@OPENBLAS_PATH@"
-#cmakedefine FLATBUFFERS_PATH "@FLATBUFFERS_PATH@"
-#cmakedefine DEFAULT_ENGINE @DEFAULT_ENGINE@
+#define SD_LIBRARY_NAME "@SD_LIBRARY_NAME@"
+#define OPENBLAS_PATH "@OPENBLAS_PATH@"
+#define DEFAULT_ENGINE @DEFAULT_ENGINE@
+
+// Type system configuration - populated by CMake TypeValidation system
+#cmakedefine01 SD_SELECTIVE_TYPES
+@TYPE_DEFINES@
 
 #endif

@@ -15,6 +15,7 @@
 *
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
+#pragma once
 
 //
 //  @author raver119@gmail.com
@@ -27,6 +28,7 @@
 #include <loops/reduce_long.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+#include <system/env_functions.h>
 
 using namespace simdOps;
 
@@ -60,7 +62,7 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
     return;
   }
 
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   typename OpType::InterType intermediate[64];
 
   PRAGMA_OMP_SIMD
@@ -161,7 +163,7 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws
   // Converting double→LongType would truncate 0.5→0, breaking comparisons.
   auto compatibleExtraParams = reinterpret_cast<X*>(vextraParams);
 
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   typename OpType::InterType intermediate[64];
 
   PRAGMA_OMP_SIMD
@@ -171,15 +173,9 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws
 
 
   auto func = PRAGMA_THREADS_FOR {
-    if (xEws == 1) {
-      for (auto i = start; i < stop; i++) {
-        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], compatibleExtraParams), compatibleExtraParams);
-      }
-    } else {
-      for (auto i = start; i < stop; i++) {
-        intermediate[thread_id] =
-            OpType::update(intermediate[thread_id], OpType::op(x[i * xEws], compatibleExtraParams), compatibleExtraParams);
-      }
+    for (auto i = start; i < stop; i++) {
+      intermediate[thread_id] =
+          OpType::update(intermediate[thread_id], OpType::op(x[i * xEws], compatibleExtraParams), compatibleExtraParams);
     }
   };
 

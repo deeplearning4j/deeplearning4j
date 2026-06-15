@@ -1,3 +1,4 @@
+#pragma once
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/Loops.h>
 #include <helpers/OmpLaunchHelper.h>
@@ -7,6 +8,7 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 #include <algorithm>
+#include <system/env_functions.h>
 
 using namespace simdOps;
 
@@ -56,16 +58,13 @@ SD_INLINE void convertParams(const SourceType* source, TargetType* target, size_
 }
 
 /**
- * @brief Determine appropriate parameter type for mixed operations
- * For float16, use float for better compatibility; otherwise use Z type
+ * @brief Reduce-float ops consume extra params via X* or Z* overloads.
+ * Keep the converted parameter buffer on Z so mixed half-precision variants
+ * match the op interface used by the dimensional reduction loops.
  */
 template<typename X, typename Z>
 struct CompatibleParamType {
-  using type = typename std::conditional_t<
-      std::is_same_v<Z, float16> || std::is_same_v<Z, bfloat16>,
-      float,  // Use float for half-precision types
-      Z       // Use Z for all other types
-      >;
+  using type = Z;
 };
 
 } // namespace SafeTypeUtils
@@ -116,7 +115,7 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
   }
 
   auto startingValue = static_cast<typename OpType::InterType>(OpType::startingValue(x));
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   typename OpType::InterType intermediate[64];
 
   PRAGMA_OMP_SIMD
@@ -128,7 +127,12 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
   sd::LongType* xShape = shape::shapeOf(xShapeInfo);
   sd::LongType* xStride = shape::stride(xShapeInfo);
 
-  if(shape::isViewConst(xShapeInfo)) {
+  // Always use stride-aware (COORDS2INDEX) indexing for the scalar reduce so that
+  // non-contiguous arrays (e.g. TAD column views with stride > 1, F-order arrays,
+  // padded rows) are handled correctly.  The old "direct x[i]" fast-path only worked
+  // for contiguous C-order arrays and silently produced wrong results on TADs where
+  // the element-wise stride is not 1 (e.g. the ARRAY_IS_VIEW flag was not set).
+  {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         sd::LongType coords[SD_MAX_RANK];
@@ -137,25 +141,6 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
         COORDS2INDEX(xRank, xStride, coords, indexOffset);
 
         auto opResult = OpType::op(x[indexOffset], extraParams);
-        intermediate[thread_id] = OpType::update(
-            intermediate[thread_id],
-            opResult,
-            extraParams
-        );
-      }
-    };
-    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
-
-    PRAGMA_OMP_SIMD
-    for (int e = 1; e < maxThreads; e++) {
-      intermediate[0] = OpType::merge(intermediate[0], intermediate[e], extraParams);
-    }
-
-    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
-  } else {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        auto opResult = OpType::op(x[i], extraParams);
         intermediate[thread_id] = OpType::update(
             intermediate[thread_id],
             opResult,
@@ -329,7 +314,7 @@ Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, sd::LongType xEw
     }
   }
 
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   using InterType = typename OpType::InterType;
   InterType intermediate[64];
 
@@ -339,24 +324,13 @@ Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, sd::LongType xEw
   }
 
   auto func = PRAGMA_THREADS_FOR {
-    if (xEws == 1) {
-      for (auto i = start; i < stop; i++) {
-        auto opResult = OpType::op(x[i], compatibleExtraParams);
-        intermediate[thread_id] = OpType::update(
-            intermediate[thread_id],
-            SafeTypeUtils::safeCast<decltype(opResult), InterType>(opResult),
-            compatibleExtraParams
-        );
-      }
-    } else {
-      for (auto i = start; i < stop; i++) {
-        auto opResult = OpType::op(x[i * xEws], compatibleExtraParams);
-        intermediate[thread_id] = OpType::update(
-            intermediate[thread_id],
-            SafeTypeUtils::safeCast<decltype(opResult), InterType>(opResult),
-            compatibleExtraParams
-        );
-      }
+    for (auto i = start; i < stop; i++) {
+      auto opResult = OpType::op(x[i * xEws], compatibleExtraParams);
+      intermediate[thread_id] = OpType::update(
+          intermediate[thread_id],
+          SafeTypeUtils::safeCast<decltype(opResult), InterType>(opResult),
+          compatibleExtraParams
+      );
     }
   };
 

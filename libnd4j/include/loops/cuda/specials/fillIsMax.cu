@@ -25,7 +25,7 @@
     namespace sd {
 
   template <typename T>
-  SD_KERNEL void execFillIsMax(
+  SD_KERNEL SD_INLINE void execFillIsMax(
       void* vdZ,
       const LongType* xShapeInfo,
       LongType length,
@@ -63,7 +63,7 @@
       dim3 &launchDims,
       cudaStream_t *stream,
       void* dz,
-      const LongType* zShapeInfo,
+      LongType* zShapeInfo,
       LongType length,
       long idx) {
 
@@ -78,11 +78,11 @@
   }
 
   BUILD_SINGLE_TEMPLATE(
-      template void fillIsMaxGeneric,
+      void fillIsMaxGeneric,
       (dim3 & launchDims,
        cudaStream_t *stream,
        void *dz,
-       const sd::LongType *zShapeInfo,
+       sd::LongType *zShapeInfo,
        sd::LongType length,
        long idx),
       SD_COMMON_TYPES);

@@ -67,7 +67,7 @@ ITERATE_COMBINATIONS(
         const sd::LongType* dZShapeInfo,
         const sd::LongType* hZShapeInfo,
         sd::LongType* dimension,
-        long long int dimensionLength,
+        sd::LongType dimensionLength,
         void* reductionBuffer,
         const sd::LongType* tadOnlyShapeInfo);
 );

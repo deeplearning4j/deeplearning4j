@@ -85,7 +85,7 @@
   }
 
   template <typename T>
-  SD_KERNEL void execPullRowsKernel(
+  SD_KERNEL SD_INLINE void execPullRowsKernel(
       void* vx,
       void* vz,
       LongType len,
@@ -121,7 +121,7 @@
   }
 
   BUILD_SINGLE_TEMPLATE(
-      template void pullRowsKernelGeneric,
+      void pullRowsKernelGeneric,
       (dim3 &launchDims,
        cudaStream_t* stream,
        void* vx,

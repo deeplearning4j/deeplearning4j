@@ -33,6 +33,10 @@
 #include <ops/declarable/LegacyReduceSameOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
 #include <ops/declarable/LegacyTransformOp.h>
+#include <dsp/runtime/dsp_runtime_c.h>
+
+#include <cstdlib>
+#include <filesystem>
 
 #include "testlayers.h"
 using namespace sd;
@@ -41,6 +45,33 @@ using namespace sd::ops;
 class NativeOpsTests : public NDArrayTests {
  public:
 };
+
+namespace {
+std::string resolveSdzFixturePath() {
+  namespace fs = std::filesystem;
+  std::error_code ec;
+
+  if (const char* envPath = std::getenv("SDX_TEST_SDZ_PATH")) {
+    fs::path candidate(envPath);
+    if (fs::exists(candidate, ec) && fs::is_regular_file(candidate, ec) && fs::file_size(candidate, ec) > 0) {
+      return candidate.lexically_normal().string();
+    }
+  }
+
+  const char* relFixture = "platform-tests/multi-datatype-samediff-model.sdz";
+  fs::path cursor = fs::path(__FILE__).parent_path();
+  for (int i = 0; i < 8; i++) {
+    fs::path candidate = cursor / relFixture;
+    if (fs::exists(candidate, ec) && fs::is_regular_file(candidate, ec) && fs::file_size(candidate, ec) > 0) {
+      return candidate.lexically_normal().string();
+    }
+    if (cursor == cursor.parent_path()) break;
+    cursor = cursor.parent_path();
+  }
+
+  return "";
+}
+}  // namespace
 
 TEST_F(NativeOpsTests, CreateContextTests_1) {
   auto context = createContext();
@@ -1318,4 +1349,41 @@ TEST_F(NativeOpsTests, interop_databuffer_tests_1) {
   auto idb = allocateDataBuffer(100, 10, false);
   auto ptr = dbPrimaryBuffer(idb);
   deleteDataBuffer(idb);
+}
+
+TEST_F(NativeOpsTests, SdzCppLoader_1) {
+  const std::string sdzPath = resolveSdzFixturePath();
+  if (sdzPath.empty()) {
+    GTEST_SKIP() << "No SDZ fixture found. Set SDX_TEST_SDZ_PATH to a SameDiff .sdz file.";
+  }
+
+  auto modelHandle = loadModelFromFile(sdzPath.c_str());
+  ASSERT_NE(modelHandle, nullptr) << "loadModelFromFile failed for " << sdzPath;
+  freeLoadedModel(modelHandle);
+}
+
+TEST_F(NativeOpsTests, SdzCRuntimeLoader_1) {
+  const std::string sdzPath = resolveSdzFixturePath();
+  if (sdzPath.empty()) {
+    GTEST_SKIP() << "No SDZ fixture found. Set SDX_TEST_SDZ_PATH to a SameDiff .sdz file.";
+  }
+
+  sdx_runtime_t* runtime = nullptr;
+  ASSERT_EQ(sdxCreateRuntime(nullptr, &runtime), SDX_STATUS_OK);
+  ASSERT_NE(runtime, nullptr);
+
+  sdx_model_t* model = nullptr;
+  sdx_model_options_t options{};
+  options.struct_size = sizeof(sdx_model_options_t);
+  options.backend = SDX_BACKEND_AUTO;
+  options.strict_backend = 0;
+  options.allow_runtime_jit = 1;
+  options.gpu_target = SDX_GPU_TARGET_AUTO;
+
+  const auto status = sdxLoadBundle(runtime, sdzPath.c_str(), &options, &model);
+  ASSERT_EQ(status, SDX_STATUS_OK) << sdxGetLastError(runtime);
+  ASSERT_NE(model, nullptr);
+
+  sdxUnloadModel(model);
+  sdxDestroyRuntime(runtime);
 }

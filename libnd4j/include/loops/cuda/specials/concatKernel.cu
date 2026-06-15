@@ -230,7 +230,7 @@ SD_DEVICE void concatKernel(
 }
 
 template <typename T>
-SD_KERNEL void execConcatKernel(
+SD_KERNEL SD_INLINE void execConcatKernel(
    int numArrays,
    Pointer* data,
    Pointer* inputShapeInfos,

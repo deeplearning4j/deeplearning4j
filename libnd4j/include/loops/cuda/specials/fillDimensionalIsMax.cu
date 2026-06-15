@@ -81,7 +81,7 @@
   }
 
   template <typename T>
-  SD_KERNEL void execfillDimensionalIsMax(
+  SD_KERNEL SD_INLINE void execfillDimensionalIsMax(
       const void* dX,
       void* dZ,
       const LongType* zShapeInfo,
@@ -99,13 +99,13 @@
   SD_HOST void fillDimensionalIsMaxGeneric(
       dim3& launchDims,
       cudaStream_t* stream,
-      const void* dX,
+      void* dX,
       void* dZ,
-      const LongType* zShapeInfo,
-      const LongType* tadOnlyShapeInfo,
+      LongType* zShapeInfo,
+      LongType* tadOnlyShapeInfo,
       LongType* dimension,
       LongType dimensionLength,
-      const LongType* tadOffsets) {
+      LongType* tadOffsets) {
 
     execfillDimensionalIsMax<T>
         <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
@@ -116,16 +116,16 @@
   }
 
   BUILD_SINGLE_TEMPLATE(
-      template void fillDimensionalIsMaxGeneric,
+      void fillDimensionalIsMaxGeneric,
       (dim3 & launchDims,
        cudaStream_t *stream,
-       const void* dX,
+       void* dX,
        void* dZ,
-       const sd::LongType* zShapeInfo,
-       const sd::LongType* tadOnlyShapeInfo,
+       sd::LongType* zShapeInfo,
+       sd::LongType* tadOnlyShapeInfo,
        sd::LongType* dimension,
        sd::LongType dimensionLength,
-       const sd::LongType* tadOffsets),
+       sd::LongType* tadOffsets),
       SD_COMMON_TYPES);
 
 }  // namespace sd

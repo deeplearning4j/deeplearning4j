@@ -29,7 +29,6 @@
 
 #include <math/templatemath.h>
 #include <ops/ops.h>
-#include <system/Environment.h>
 #include <types/float16.h>
 #include <types/float8.h>
 #include <types/int16.h>

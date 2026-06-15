@@ -22,7 +22,7 @@
 #include <helpers/DebugHelper.h>
 #include <loops/legacy_ops.h>
 #include <loops/transform_same.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -30,8 +30,8 @@
 using namespace simdOps;
 
 template <typename X, typename OpType>
-SD_KERNEL void transformSameSimple(const void *x, const sd::LongType *xShapeInfo, long long int xRank, void *params, void *z,
-                                  const sd::LongType *zShapeInfo, long long int zRank,
+SD_KERNEL SD_INLINE void transformSameSimple(const void *x, const sd::LongType *xShapeInfo, sd::LongType xRank, void *params, void *z,
+                                  const sd::LongType *zShapeInfo, sd::LongType zRank,
                                   sd::LongType *allocationPointer,
                                   void *reductionPointer, const sd::LongType *tadShapeInfo,
                                   const sd::LongType *tadOffsets) {

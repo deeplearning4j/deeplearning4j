@@ -28,7 +28,7 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-SD_KERNEL static void pairwiseSimpleShaped(
+SD_KERNEL void pairwiseSimpleShaped(
     void const* vx,
     sd::LongType const* xShapeInfo,
     void const* vy,
@@ -131,8 +131,8 @@ void SD_HOST PairWiseBoolTransform<X,Z>::intermediateShaped(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-void PairWiseBoolTransform<X,Y>::executeCudaShaped(
+template <typename X, typename Z>
+void PairWiseBoolTransform<X,Z>::executeCudaShaped(
     dim3& launchDims,
     cudaStream_t* stream,
     int opNum,

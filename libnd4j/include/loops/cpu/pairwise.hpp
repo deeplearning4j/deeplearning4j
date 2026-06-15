@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+#pragma once
+
 //
 // Created by remote on 2018-09-20.
 //
@@ -28,7 +30,6 @@
 #include <ops/ops.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <array/ArrayOptions.hXX>
 
 using namespace simdOps;
 
@@ -55,6 +56,8 @@ template <typename OpType>
 SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx, sd::LongType xEws, const void *vy, sd::LongType yEws, void *vz,
                                                 sd::LongType zEws, void *vextraParams, sd::LongType n, sd::LongType start,
                                                 sd::LongType stop) {
+  // Guard against null data pointers from empty arrays.
+  if (vx == nullptr || vy == nullptr || vz == nullptr || start >= stop) return;
 
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);
@@ -62,17 +65,9 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx, sd::LongType xEw
 
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-
-  if (xEws == 1 && yEws == 1 && zEws == 1) {
-    for (sd::LongType i = start; i < stop; i++) {
-      z[i] = OpType::op(x[i], y[i], extraParams);
-    }
-
-  } else {
-    for (sd::LongType i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
+  for (sd::LongType i = start; i < stop; i++) {
+    z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
   }
-
-
 }
 
 template <typename X, typename Y, typename Z>
@@ -95,11 +90,16 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
                                                 void *vextraParams,
                                                 sd::LongType start,
                                                 sd::LongType stop) {
+  // Guard against null data pointers from empty arrays (e.g. Nd4j.empty() singletons).
+  // NativeOpExecutioner::execPairwiseTransform should have returned early already, but this
+  // provides defense-in-depth. Empty arrays have null buffers; dereferencing would SIGSEGV.
+  if (vx == nullptr || vy == nullptr || vz == nullptr || start >= stop) return;
 
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Z *>(vz);
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
+
   sd::LongType  xRank = shape::rank(xShapeInfo);
   sd::LongType  yRank = shape::rank(yShapeInfo);
   sd::LongType  zRank = shape::rank(zShapeInfo);
@@ -116,15 +116,36 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
       && !shape::isViewConst(xShapeInfo)
       &&  !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)
       && allSameOrder) {
-    sd::LongType zCoords[SD_MAX_RANK];
+    // Check if arrays are truly contiguous (strides match C-order pattern)
+    // For contiguous arrays, offset == index so we skip coordinate calculations
+    bool isContiguous = true;
+    if (zRank > 0) {
+      sd::LongType expectedStride = 1;
+      for (int i = zRank - 1; i >= 0; --i) {
+        if (zShape[i] == 1) continue;
+        if (zStride[i] != expectedStride) {
+          isContiguous = false;
+          break;
+        }
+        expectedStride *= zShape[i];
+      }
+    }
 
-
-    PRAGMA_OMP_SIMD
-    for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, zRank,zShape, zCoords);
-      sd::LongType xOffset, yOffset, zOffset;
-      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-      z[zOffset] = OpType::op(x[zOffset], y[zOffset], extraParams);
+    if (isContiguous) {
+      // Fast path: direct indexing without coordinate calculations
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        z[i] = OpType::op(x[i], y[i], extraParams);
+      }
+    } else {
+      sd::LongType zCoords[SD_MAX_RANK];
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        INDEX2COORDS(i, zRank,zShape, zCoords);
+        sd::LongType xOffset, yOffset, zOffset;
+        COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+        z[zOffset] = OpType::op(x[zOffset], y[zOffset], extraParams);
+      }
     }
   } else if ((shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
               || shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo))
@@ -158,7 +179,7 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
     sd::LongType zCoords[SD_MAX_RANK];
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, zRank,xShape, zCoords);
+      INDEX2COORDS(i, zRank, zShape, zCoords);
       sd::LongType xOffset, yOffset, zOffset;
       COORDS2INDEX(xRank, xStride, zCoords, xOffset);
       COORDS2INDEX(yRank, yStride, zCoords, yOffset);

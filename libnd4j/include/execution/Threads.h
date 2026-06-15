@@ -21,12 +21,12 @@
 //
 #ifndef SAMEDIFF_THREADS_H
 #define SAMEDIFF_THREADS_H
-#include <system/Environment.h>
 #include <system/common.h>
 #include <system/op_boilerplate.h>
 #include <system/op_enums.h>
 
 #include <functional>
+#include <mutex>
 
 namespace samediff {
 class SD_LIB_EXPORT ThreadsHelper {
@@ -122,8 +122,8 @@ class SD_LIB_EXPORT Threads {
    * @param increment
    * @return
    */
-  static int parallel_for(FUNC_1D function, long long int start, long long int stop, long long int increment = 1,
-                          long long int numThreads = sd::Environment::getInstance().maxMasterThreads());
+  static int parallel_for(FUNC_1D function, sd::LongType start, sd::LongType stop, sd::LongType increment = 1,
+                          sd::LongType numThreads = 0);
 
   /**
    * This function executes 1 dimensional loop for a given number of threads
@@ -135,8 +135,8 @@ class SD_LIB_EXPORT Threads {
    * @param numThreads
    * @return
    */
-  static int parallel_tad(FUNC_1D function, long long int start, long long int stop, long long int increment = 1,
-                          long long int numThreads = sd::Environment::getInstance().maxMasterThreads());
+  static int parallel_tad(FUNC_1D function, sd::LongType start, sd::LongType stop, sd::LongType increment = 1,
+                          sd::LongType numThreads = 0);
 
   /**
    * This method will execute function splitting 2 nested loops space with multiple threads
@@ -153,7 +153,7 @@ class SD_LIB_EXPORT Threads {
    */
   static int parallel_for(FUNC_2D function, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y,
                           int64_t stop_y, int64_t inc_y,
-                          uint64_t numThreads = sd::Environment::getInstance().maxMasterThreads(), bool debug = false);
+                          uint64_t numThreads = 0, bool debug = false);
 
   /**
    * This method will execute function splitting 3 nested loops space with multiple threads
@@ -173,7 +173,7 @@ class SD_LIB_EXPORT Threads {
    */
   static int parallel_for(FUNC_3D function, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y,
                           int64_t stop_y, int64_t inc_y, int64_t start_z, int64_t stop_z, int64_t inc_z,
-                          uint64_t numThreads = sd::Environment::getInstance().maxMasterThreads());
+                          uint64_t numThreads = 0);
 
   /**
    *
@@ -182,15 +182,15 @@ class SD_LIB_EXPORT Threads {
    * @return
    */
   static int parallel_do(FUNC_DO function,
-                         long long int numThreads = sd::Environment::getInstance().maxMasterThreads());
+                         sd::LongType numThreads = 0);
 
-  static int64_t parallel_long(FUNC_RL function, FUNC_AL aggregator, long long int start, long long int stop,
-                               long long int increment = 1,
-                               long long int numThreads = sd::Environment::getInstance().maxMasterThreads());
+  static int64_t parallel_long(FUNC_RL function, FUNC_AL aggregator, sd::LongType start, sd::LongType stop,
+                               sd::LongType increment = 1,
+                               sd::LongType numThreads = 0);
 
   static double parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t start, int64_t stop,
                                 int64_t increment = 1,
-                                uint64_t numThreads = sd::Environment::getInstance().maxMasterThreads());
+                                uint64_t numThreads = 0);
 
   /**
    * This method will execute function in parallel preserving the parts to be aligned increment size
@@ -199,7 +199,7 @@ class SD_LIB_EXPORT Threads {
    */
   static int parallel_aligned_increment(FUNC_1D function, int64_t start, int64_t stop, int64_t increment,
                                         size_t type_size = sizeof(float),
-                                        uint32_t req_numThreads = sd::Environment::getInstance().maxMasterThreads());
+                                        uint32_t req_numThreads = 0);
 };
 }  // namespace samediff
 

@@ -30,7 +30,12 @@ namespace sd {
 class SD_LIB_EXPORT ErrorReference {
  private:
   int _errorCode = 0;
-  std::string *_errorMessage;
+  // Fixed-size buffer to avoid heap allocation. Buffer overruns from C++ ops
+  // can corrupt adjacent heap metadata, causing free() crashes when
+  // setErrorMessage tries to delete the old std::string. A fixed char array
+  // has no heap pointer to corrupt.
+  static constexpr size_t ERROR_MSG_SIZE = 256;
+  char _errorMessage[ERROR_MSG_SIZE] = {0};
 
  public:
   ErrorReference() = default;

@@ -25,6 +25,23 @@
 # BUILD MODE OPTIONS:
 #   --cmake-only ON        Run CMake configuration only, skip build
 #   --link-only ON         Skip compilation, only relink (requires prior build)
+#   --triton ON|OFF        Enable/disable Triton GPU compiler integration (default: OFF)
+#
+# OOM KILLER OPTIONS (cross-platform: Linux, macOS, Windows/MSYS2):
+#   --oom-killer ON|OFF              Enable/disable OOM killer (default: ON)
+#   --oom-memory-threshold <1-99>    System memory usage % to trigger kill (default: 80)
+#   --oom-critical-threshold <1-99>  CRITICAL threshold: immediate SIGKILL, no grace (default: 92)
+#   --oom-monitor-interval <seconds> Check interval in seconds (default: 1)
+#   --oom-process-max-mb <MB>        Max process tree memory in MB before kill (default: 0=disabled)
+#   --oom-velocity-threshold <1-50>  Kill if memory grows faster than this %/5sec (default: 8)
+#
+#   The OOM killer monitors FOUR conditions (any triggers a kill):
+#   0. CRITICAL threshold exceeded - IMMEDIATE SIGKILL, no grace period (prevents OS freeze)
+#   1. System memory threshold exceeded (--oom-memory-threshold) - graceful then force kill
+#   2. Process tree memory limit exceeded (--oom-process-max-mb) - tracks build + all child compilers
+#   3. Rapid memory growth detected (--oom-velocity-threshold) - predictive kill before OOM
+#
+#   Note: On Windows, uses PowerShell/wmic for memory detection and taskkill for termination
 #
 # EXAMPLES:
 #   # Validate build configuration before building
@@ -33,11 +50,20 @@
 #   # Normal build
 #   ./buildnativeoperations.sh -a cpu -c ON --compiler clang -j 14
 #
+#   # Build with OOM killer enabled (basic - system memory threshold only)
+#   ./buildnativeoperations.sh -a cpu -j 8 --oom-killer ON --oom-memory-threshold 85
+#
+#   # Build with full OOM protection (recommended for large builds)
+#   ./buildnativeoperations.sh -a cuda -j 8 --oom-killer ON \
+#       --oom-memory-threshold 85 \
+#       --oom-process-max-mb 32000 \
+#       --oom-velocity-threshold 10
+#
 set -eu
 
 # cd to the directory containing this script
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$DIR"
+DIR="$( builtin cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+builtin cd "$DIR"
 
 
 # Check bash version and set compatibility mode
@@ -502,7 +528,30 @@ fi
 # Add load average limiting to prevent memory exhaustion
 # -l flag: only start new job if load average < limit
 # Load limit = 75% of available cores (24 for 32 cores)
-LOAD_LIMIT=$(($(nproc) * 3 / 4))
+CPU_COUNT=1
+if command -v nproc >/dev/null 2>&1; then
+    CPU_COUNT="$(nproc)"
+elif [[ "$(uname -s)" == "Darwin" ]] && command -v sysctl >/dev/null 2>&1; then
+    CPU_COUNT="$(sysctl -n hw.ncpu 2>/dev/null || echo 1)"
+fi
+
+if ! [[ "${CPU_COUNT}" =~ ^[0-9]+$ ]] || [[ "${CPU_COUNT}" -lt 1 ]]; then
+    CPU_COUNT=1
+fi
+
+# Use MAKEJ + 1 as load limit when explicitly set (CI), otherwise 75% of CPU count
+if [[ -n "${LIBND4J_LOAD_LIMIT:-}" ]]; then
+    LOAD_LIMIT="${LIBND4J_LOAD_LIMIT}"
+elif [[ "${MAKEJ}" -gt 1 ]]; then
+    # In CI with explicit -j, trust the caller and set load limit = MAKEJ + 1
+    LOAD_LIMIT=$((MAKEJ + 1))
+else
+    LOAD_LIMIT=$((CPU_COUNT * 3 / 4))
+fi
+if [[ "${LOAD_LIMIT}" -lt 1 ]]; then
+    LOAD_LIMIT=1
+fi
+export LOAD_LIMIT
 export MAKE_COMMAND="make -j${MAKEJ} -l${LOAD_LIMIT}"
 export MAKE_ARGUMENTS=
 echo eval $CMAKE_COMMAND
@@ -523,16 +572,33 @@ EXPERIMENTAL="${EXPERIMENTAL:-}"
 OPERATIONS="${OPERATIONS:-}"
 DATATYPES="${DATATYPES:-}"
 CLEAN="${CLEAN:-false}"
+CLEAN_ALL="${CLEAN_ALL:-false}"
 MINIFIER="${MINIFIER:-false}"
 TESTS="${TESTS:-false}"
 PRINT_INDICES="${PRINT_INDICES:-OFF}"
 VERBOSE="${VERBOSE:-true}"
 VERBOSE_ARG="${VERBOSE_ARG:-VERBOSE=1}"
 HELPER="${HELPER:-}"
+# Multi-helper support: comma-separated list of helpers
+HELPERS="${HELPERS:-}"
+# BLAS implementation selection: 'openblas', 'mkl', or empty for auto-detect
+# When using oneDNN, defaults to auto-detect (prefers MKL if available)
+# Set to 'openblas' to force OpenBLAS even with oneDNN
+BLAS_IMPL="${BLAS_IMPL:-}"
+# Dynamic kernel selection configuration
+DYNAMIC_KERNEL_SELECTION="${DYNAMIC_KERNEL_SELECTION:-ON}"
+KERNEL_STRATEGY="${KERNEL_STRATEGY:-fastest}"
+KERNEL_AUTOTUNING="${KERNEL_AUTOTUNING:-OFF}"
+KERNEL_CACHING="${KERNEL_CACHING:-ON}"
+HELPER_PRIORITY="${HELPER_PRIORITY:-}"
 CHECK_VECTORIZATION="${CHECK_VECTORIZATION:-OFF}"
 NAME="${NAME:-}"
 OP_OUTPUT_FILE="${OP_OUTPUT_FILE:-include/generated/include_ops.h}"
 USE_LTO="${USE_LTO:-}"
+# CUDA parallel compilation options (CUDA 11.2+)
+CUDA_LTO="${CUDA_LTO:-OFF}"           # Device LTO for better runtime performance
+CUDA_THREADS="${CUDA_THREADS:-0}"     # NVCC --threads (0=auto)
+CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE:-0}"  # NVCC --split-compile (0=auto)
 SANITIZE="${SANITIZE:-OFF}"
 OPTIMIZATION_LEVEL="${OPTIMIZATION_LEVEL:-}"
 SANITIZERS="${SANITIZERS:-address,undefined,float-divide-by-zero,float-cast-overflow}"
@@ -559,6 +625,699 @@ STRICT_TYPE_VALIDATION="${STRICT_TYPE_VALIDATION:-false}"
 SD_TYPES_VALIDATED="${SD_TYPES_VALIDATED:-false}"
 SD_VALIDATED_TYPES="${SD_VALIDATED_TYPES:-}"
 
+# MLIR JIT compilation variables
+MLIR="${MLIR:-OFF}"
+MLIR_VERSION="${MLIR_VERSION:-18}"
+MLIR_GPU="${MLIR_GPU:-OFF}"
+TRITON="${TRITON:-OFF}"
+BUILD_SDX_STANDALONE="${BUILD_SDX_STANDALONE:-OFF}"
+SDX_INCLUDE_TRITON="${SDX_INCLUDE_TRITON:-}"
+
+# Dependency cache - persists built dependencies across 'mvn clean'
+DEP_CACHE="${DEP_CACHE:-ON}"
+DEP_CACHE_DIR="${DEP_CACHE_DIR:-}"
+DEP_CACHE_CLEAR="${DEP_CACHE_CLEAR:-OFF}"
+DEP_CACHE_CLEAR_DEP="${DEP_CACHE_CLEAR_DEP:-}"
+
+# Unity build - combines source files for faster compilation
+UNITY_BUILD="${UNITY_BUILD:-OFF}"
+
+# OOM Killer configuration
+# Monitors memory usage during build and kills processes if threshold is exceeded
+OOM_KILLER_ENABLED="${OOM_KILLER_ENABLED:-ON}"
+OOM_MEMORY_THRESHOLD="${OOM_MEMORY_THRESHOLD:-80}"  # Percentage of system memory (1-99) - lowered from 85%
+OOM_CRITICAL_THRESHOLD="${OOM_CRITICAL_THRESHOLD:-92}"  # Immediate SIGKILL threshold, no grace period
+OOM_MONITOR_INTERVAL="${OOM_MONITOR_INTERVAL:-1}"   # Check interval in seconds (1s for fast response)
+OOM_PROCESS_MAX_MB="${OOM_PROCESS_MAX_MB:-0}"       # Process tree memory limit in MB (0=disabled)
+OOM_VELOCITY_THRESHOLD="${OOM_VELOCITY_THRESHOLD:-8}" # Kill if memory grows faster than this %/sec
+OOM_MONITOR_PID=""  # Will hold the PID of the background monitor
+
+# Velocity tracking arrays (simulated with temp file for subshell compatibility)
+OOM_VELOCITY_FILE=""
+
+# =============================================================================
+# OOM KILLER FUNCTIONS
+# =============================================================================
+
+# Detect platform for OOM killer (cached for performance)
+OOM_PLATFORM=""
+detect_oom_platform() {
+    if [[ -n "$OOM_PLATFORM" ]]; then
+        echo "$OOM_PLATFORM"
+        return
+    fi
+
+    local uname_out
+    uname_out="$(uname -s 2>/dev/null || echo "Unknown")"
+
+    case "$uname_out" in
+        Linux*)
+            OOM_PLATFORM="linux"
+            ;;
+        Darwin*)
+            OOM_PLATFORM="macos"
+            ;;
+        CYGWIN*|MINGW*|MSYS*|Windows_NT*)
+            OOM_PLATFORM="windows"
+            ;;
+        *)
+            # Check for Windows environment variables as fallback
+            if [[ -n "${WINDIR:-}" ]] || [[ -n "${SystemRoot:-}" ]]; then
+                OOM_PLATFORM="windows"
+            else
+                OOM_PLATFORM="unknown"
+            fi
+            ;;
+    esac
+
+    echo "$OOM_PLATFORM"
+}
+
+# Get current memory usage percentage
+get_memory_usage_percent() {
+    local platform
+    platform=$(detect_oom_platform)
+
+    case "$platform" in
+        linux)
+            # Linux: use /proc/meminfo
+            if [[ -f /proc/meminfo ]]; then
+                local mem_total mem_available
+                mem_total=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+                mem_available=$(grep MemAvailable /proc/meminfo | awk '{print $2}')
+                if [[ -n "$mem_total" && -n "$mem_available" && "$mem_total" -gt 0 ]]; then
+                    echo $(( (mem_total - mem_available) * 100 / mem_total ))
+                    return
+                fi
+            fi
+            ;;
+        macos)
+            # macOS: use vm_stat
+            if command -v vm_stat &>/dev/null; then
+                local pages_free pages_active pages_inactive pages_speculative pages_wired
+                pages_free=$(vm_stat | grep "Pages free" | awk '{print $3}' | tr -d '.')
+                pages_active=$(vm_stat | grep "Pages active" | awk '{print $3}' | tr -d '.')
+                pages_inactive=$(vm_stat | grep "Pages inactive" | awk '{print $3}' | tr -d '.')
+                pages_speculative=$(vm_stat | grep "Pages speculative" | awk '{print $4}' | tr -d '.')
+                pages_wired=$(vm_stat | grep "Pages wired" | awk '{print $4}' | tr -d '.')
+                local total_pages=$((pages_free + pages_active + pages_inactive + pages_speculative + pages_wired))
+                local used_pages=$((pages_active + pages_wired))
+                if [[ "$total_pages" -gt 0 ]]; then
+                    echo $(( used_pages * 100 / total_pages ))
+                    return
+                fi
+            fi
+            ;;
+        windows)
+            # Windows/MSYS2/MinGW/Cygwin: multiple detection methods
+
+            # Method 1: Try PowerShell (most reliable on Windows)
+            if command -v powershell.exe &>/dev/null; then
+                local ps_result
+                ps_result=$(powershell.exe -NoProfile -NonInteractive -Command \
+                    '$os = Get-CimInstance Win32_OperatingSystem; [math]::Round((($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / $os.TotalVisibleMemorySize) * 100)' 2>/dev/null | tr -d '\r\n')
+                if [[ "$ps_result" =~ ^[0-9]+$ ]]; then
+                    echo "$ps_result"
+                    return
+                fi
+            fi
+
+            # Method 2: Try wmic (older Windows, deprecated but still works)
+            if command -v wmic.exe &>/dev/null; then
+                local total_mem free_mem
+                total_mem=$(wmic.exe OS get TotalVisibleMemorySize /value 2>/dev/null | grep '=' | cut -d'=' -f2 | tr -d '\r\n')
+                free_mem=$(wmic.exe OS get FreePhysicalMemory /value 2>/dev/null | grep '=' | cut -d'=' -f2 | tr -d '\r\n')
+                if [[ -n "$total_mem" && -n "$free_mem" && "$total_mem" -gt 0 ]]; then
+                    echo $(( (total_mem - free_mem) * 100 / total_mem ))
+                    return
+                fi
+            fi
+
+            # Method 3: Try MSYS2/Cygwin /proc/meminfo (some MSYS2 builds support this)
+            if [[ -f /proc/meminfo ]]; then
+                local mem_total mem_available mem_free
+                mem_total=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}')
+                mem_available=$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}')
+                mem_free=$(grep MemFree /proc/meminfo 2>/dev/null | awk '{print $2}')
+                if [[ -n "$mem_total" && "$mem_total" -gt 0 ]]; then
+                    if [[ -n "$mem_available" ]]; then
+                        echo $(( (mem_total - mem_available) * 100 / mem_total ))
+                        return
+                    elif [[ -n "$mem_free" ]]; then
+                        echo $(( (mem_total - mem_free) * 100 / mem_total ))
+                        return
+                    fi
+                fi
+            fi
+
+            # Method 4: Try systeminfo (slowest, last resort)
+            if command -v systeminfo.exe &>/dev/null; then
+                local sysinfo_output total_phys avail_phys
+                sysinfo_output=$(systeminfo.exe 2>/dev/null)
+                # Parse "Total Physical Memory" and "Available Physical Memory"
+                total_phys=$(echo "$sysinfo_output" | grep -i "Total Physical Memory" | grep -oE '[0-9,]+' | tr -d ',')
+                avail_phys=$(echo "$sysinfo_output" | grep -i "Available Physical Memory" | grep -oE '[0-9,]+' | tr -d ',')
+                if [[ -n "$total_phys" && -n "$avail_phys" && "$total_phys" -gt 0 ]]; then
+                    echo $(( (total_phys - avail_phys) * 100 / total_phys ))
+                    return
+                fi
+            fi
+            ;;
+    esac
+
+    # Fallback: return 0 (no memory info available)
+    echo "0"
+}
+
+# Get memory usage in MB for a single process (from /proc/[pid]/status VmRSS)
+get_process_memory_mb() {
+    local pid="$1"
+    local platform
+    platform=$(detect_oom_platform)
+
+    case "$platform" in
+        linux)
+            if [[ -f "/proc/$pid/status" ]]; then
+                local vmrss
+                vmrss=$(grep VmRSS "/proc/$pid/status" 2>/dev/null | awk '{print $2}')
+                if [[ -n "$vmrss" && "$vmrss" =~ ^[0-9]+$ ]]; then
+                    # VmRSS is in kB, convert to MB
+                    echo $(( vmrss / 1024 ))
+                    return
+                fi
+            fi
+            ;;
+        macos)
+            # macOS: use ps to get RSS (resident set size) in KB
+            if command -v ps &>/dev/null; then
+                local rss
+                rss=$(ps -o rss= -p "$pid" 2>/dev/null | tr -d ' ')
+                if [[ -n "$rss" && "$rss" =~ ^[0-9]+$ ]]; then
+                    echo $(( rss / 1024 ))
+                    return
+                fi
+            fi
+            ;;
+        windows)
+            # Windows: use PowerShell to get WorkingSet
+            if command -v powershell.exe &>/dev/null; then
+                local ws_bytes
+                ws_bytes=$(powershell.exe -NoProfile -NonInteractive -Command \
+                    "(Get-Process -Id $pid -ErrorAction SilentlyContinue).WorkingSet64" 2>/dev/null | tr -d '\r\n')
+                if [[ -n "$ws_bytes" && "$ws_bytes" =~ ^[0-9]+$ ]]; then
+                    echo $(( ws_bytes / 1048576 ))  # bytes to MB
+                    return
+                fi
+            fi
+            ;;
+    esac
+
+    echo "0"
+}
+
+# Get total memory usage in MB for a process tree (process + all descendants)
+# Build processes spawn many children (make -> gcc/g++/nvcc/ld).
+# We must monitor the ENTIRE process tree to catch memory-hungry compilers/linkers.
+get_process_tree_memory_mb() {
+    local root_pid="$1"
+    local platform
+    platform=$(detect_oom_platform)
+    local total_mb=0
+
+    case "$platform" in
+        linux)
+            # Get root process memory
+            local root_mem
+            root_mem=$(get_process_memory_mb "$root_pid")
+            total_mb=$root_mem
+
+            # Find all descendant processes using /proc/[pid]/task/[tid]/children or pgrep
+            if command -v pgrep &>/dev/null; then
+                # Get all descendants recursively
+                local descendants
+                descendants=$(pgrep -P "$root_pid" 2>/dev/null || true)
+                for child_pid in $descendants; do
+                    if [[ -n "$child_pid" ]]; then
+                        # Recursively get child tree memory
+                        local child_tree_mem
+                        child_tree_mem=$(get_process_tree_memory_mb "$child_pid")
+                        total_mb=$((total_mb + child_tree_mem))
+                    fi
+                done
+            else
+                # Fallback: scan /proc for child processes
+                for child_dir in /proc/[0-9]*/; do
+                    local child_pid
+                    child_pid=$(basename "$child_dir" 2>/dev/null || true)
+                    if [[ -f "/proc/$child_pid/stat" ]]; then
+                        local ppid
+                        ppid=$(awk '{print $4}' "/proc/$child_pid/stat" 2>/dev/null || true)
+                        if [[ "$ppid" == "$root_pid" ]]; then
+                            local child_mem
+                            child_mem=$(get_process_memory_mb "$child_pid")
+                            total_mb=$((total_mb + child_mem))
+                        fi
+                    fi
+                done
+            fi
+            ;;
+        macos)
+            # macOS: use ps to get all processes in the tree
+            local root_mem
+            root_mem=$(get_process_memory_mb "$root_pid")
+            total_mb=$root_mem
+
+            if command -v pgrep &>/dev/null; then
+                local descendants
+                descendants=$(pgrep -P "$root_pid" 2>/dev/null || true)
+                for child_pid in $descendants; do
+                    if [[ -n "$child_pid" ]]; then
+                        local child_tree_mem
+                        child_tree_mem=$(get_process_tree_memory_mb "$child_pid")
+                        total_mb=$((total_mb + child_tree_mem))
+                    fi
+                done
+            fi
+            ;;
+        windows)
+            # Windows: use PowerShell to get process tree memory
+            if command -v powershell.exe &>/dev/null; then
+                local tree_mem
+                tree_mem=$(powershell.exe -NoProfile -NonInteractive -Command "
+                    function Get-ProcessTreeMemory {
+                        param(\$pid)
+                        \$total = 0
+                        \$proc = Get-Process -Id \$pid -ErrorAction SilentlyContinue
+                        if (\$proc) { \$total = \$proc.WorkingSet64 }
+                        \$children = Get-CimInstance Win32_Process | Where-Object { \$_.ParentProcessId -eq \$pid }
+                        foreach (\$child in \$children) {
+                            \$total += Get-ProcessTreeMemory -pid \$child.ProcessId
+                        }
+                        return \$total
+                    }
+                    [math]::Round((Get-ProcessTreeMemory -pid $root_pid) / 1MB)
+                " 2>/dev/null | tr -d '\r\n')
+                if [[ -n "$tree_mem" && "$tree_mem" =~ ^[0-9]+$ ]]; then
+                    echo "$tree_mem"
+                    return
+                fi
+            fi
+            # Fallback to single process
+            total_mb=$(get_process_memory_mb "$root_pid")
+            ;;
+    esac
+
+    echo "$total_mb"
+}
+
+# Get all descendant PIDs of a process (recursive)
+get_descendant_pids() {
+    local parent_pid="$1"
+    local descendants=""
+    local children
+
+    # Get direct children
+    children=$(pgrep -P "$parent_pid" 2>/dev/null) || true
+
+    for child in $children; do
+        descendants="$descendants $child"
+        # Recursively get descendants of each child
+        local child_descendants
+        child_descendants=$(get_descendant_pids "$child")
+        descendants="$descendants $child_descendants"
+    done
+
+    echo "$descendants"
+}
+
+# Kill a process tree (cross-platform)
+# This kills all descendants of the given PID, not just direct children
+kill_process_tree() {
+    local pid="$1"
+    local signal="${2:-TERM}"
+    local platform
+    platform=$(detect_oom_platform)
+
+    case "$platform" in
+        windows)
+            # Windows: use taskkill to kill process tree (//T flag handles descendants)
+            if command -v taskkill.exe &>/dev/null; then
+                case "$signal" in
+                    TERM|SIGTERM|15)
+                        # Graceful termination - taskkill without /F
+                        taskkill.exe //PID "$pid" //T 2>/dev/null || true
+                        ;;
+                    KILL|SIGKILL|9)
+                        # Force kill
+                        taskkill.exe //F //PID "$pid" //T 2>/dev/null || true
+                        ;;
+                    *)
+                        taskkill.exe //PID "$pid" //T 2>/dev/null || true
+                        ;;
+                esac
+            else
+                # Fallback to standard kill
+                kill -"$signal" "$pid" 2>/dev/null || true
+            fi
+            ;;
+        *)
+            # Unix-like systems (Linux, macOS)
+            # Get all descendants first (children, grandchildren, etc.)
+            local descendants
+            descendants=$(get_descendant_pids "$pid")
+
+            # Kill descendants first (bottom-up to avoid orphans re-parenting)
+            for desc_pid in $descendants; do
+                kill -"$signal" "$desc_pid" 2>/dev/null || true
+            done
+
+            # Kill the parent process
+            kill -"$signal" "$pid" 2>/dev/null || true
+            ;;
+    esac
+}
+
+# Check if a process is running (cross-platform)
+is_process_running() {
+    local pid="$1"
+    local platform
+    platform=$(detect_oom_platform)
+
+    case "$platform" in
+        windows)
+            # Windows: try multiple methods
+            if command -v tasklist.exe &>/dev/null; then
+                tasklist.exe //FI "PID eq $pid" 2>/dev/null | grep -q "$pid" && return 0
+            fi
+            # Fallback to kill -0
+            kill -0 "$pid" 2>/dev/null && return 0
+            return 1
+            ;;
+        *)
+            # Unix-like systems
+            kill -0 "$pid" 2>/dev/null && return 0
+            return 1
+            ;;
+    esac
+}
+
+# Start the OOM monitor in the background
+# This is the critical watchdog that ACTIVELY KILLS the build when memory is exceeded
+start_oom_monitor() {
+    local threshold="$1"
+    local interval="$2"
+    local build_pid="$3"
+    local process_max_mb="${4:-0}"
+    local velocity_threshold="${5:-8}"
+    local critical_threshold="${6:-92}"  # NEW: Critical threshold for immediate kill
+    local platform
+    platform=$(detect_oom_platform)
+
+    # Create temp file for velocity tracking (subshell can't share variables)
+    local velocity_file
+    velocity_file=$(mktemp /tmp/oom_velocity.XXXXXX 2>/dev/null || echo "/tmp/oom_velocity.$$")
+    echo "0 0 0 0 0" > "$velocity_file"  # Initialize with 5 readings
+
+    (
+        # Set up signal handlers and cleanup
+        cleanup_velocity_file() {
+            rm -f "$velocity_file" 2>/dev/null || true
+        }
+
+        case "$platform" in
+            windows)
+                trap 'cleanup_velocity_file; exit 0' TERM INT EXIT
+                ;;
+            *)
+                trap 'cleanup_velocity_file; exit 0' TERM INT HUP QUIT EXIT
+                ;;
+        esac
+
+        local check_count=0
+        local first_check=true
+
+        while true; do
+            # Check memory BEFORE sleeping on first iteration
+            # to catch OOM conditions immediately when monitor starts
+            if [[ "$first_check" == "true" ]]; then
+                first_check=false
+            else
+                sleep "$interval"
+            fi
+
+            # Check if build process is still running
+            if ! is_process_running "$build_pid"; then
+                exit 0
+            fi
+
+            check_count=$((check_count + 1))
+
+            # Get current system memory usage
+            local mem_usage
+            mem_usage=$(get_memory_usage_percent)
+
+            # Handle case where memory detection fails
+            if [[ "$mem_usage" == "0" ]]; then
+                continue
+            fi
+
+            # Get process tree memory if limit is set
+            local process_tree_mb=0
+            if [[ "$process_max_mb" -gt 0 ]]; then
+                process_tree_mb=$(get_process_tree_memory_mb "$build_pid")
+            fi
+
+            # Calculate memory velocity (change per second)
+            local velocity=0
+            if [[ -f "$velocity_file" ]]; then
+                # Read last 5 readings
+                local readings
+                readings=$(cat "$velocity_file" 2>/dev/null || echo "0 0 0 0 0")
+                local oldest newest
+                oldest=$(echo "$readings" | awk '{print $1}')
+                newest=$mem_usage
+
+                # Shift readings and add new one
+                echo "$readings $mem_usage" | awk '{print $2, $3, $4, $5, $6}' > "$velocity_file"
+
+                # Calculate velocity over 5 readings (5 seconds at 1s interval)
+                if [[ "$oldest" -gt 0 ]]; then
+                    velocity=$((newest - oldest))
+                    # Divide by 5 to get per-second rate (since we have 5 readings over 5 seconds)
+                    # But keep as integer for comparison
+                fi
+            fi
+
+            # Log periodically (every 30 checks = 30 seconds at 1s interval)
+            if [[ $((check_count % 30)) -eq 0 ]]; then
+                local status_msg="OOM Monitor: System ${mem_usage}%"
+                if [[ "$process_max_mb" -gt 0 ]]; then
+                    status_msg="${status_msg}, Process tree ${process_tree_mb}MB/${process_max_mb}MB"
+                fi
+                if [[ "$velocity" -ne 0 ]]; then
+                    status_msg="${status_msg}, Velocity ${velocity}%/5s"
+                fi
+                echo "$status_msg"
+            fi
+
+            local kill_reason=""
+            local kill_type=""
+            local is_critical=false
+
+            # CHECK 0: CRITICAL threshold - immediate kill, no grace period
+            if [[ "$mem_usage" -ge "$critical_threshold" ]]; then
+                kill_reason="CRITICAL MEMORY: ${mem_usage}% exceeds CRITICAL threshold of ${critical_threshold}%"
+                kill_type="CRITICAL"
+                is_critical=true
+            # CHECK 1: Process tree memory limit (most specific - kills only if OUR process is the problem)
+            elif [[ "$process_max_mb" -gt 0 && "$process_tree_mb" -ge "$process_max_mb" ]]; then
+                kill_reason="PROCESS MEMORY LIMIT: Build process tree using ${process_tree_mb}MB exceeds limit of ${process_max_mb}MB"
+                kill_type="PROCESS_LIMIT"
+            # CHECK 2: Rapid memory growth (predictive kill - memory growing too fast)
+            elif [[ "$velocity" -ge "$velocity_threshold" && "$mem_usage" -ge 70 ]]; then
+                kill_reason="RAPID MEMORY GROWTH: Memory growing at ${velocity}% per 5 seconds (threshold: ${velocity_threshold}%) at ${mem_usage}% usage"
+                kill_type="VELOCITY"
+            # CHECK 3: System memory threshold (traditional OOM killer)
+            elif [[ "$mem_usage" -ge "$threshold" ]]; then
+                kill_reason="SYSTEM MEMORY THRESHOLD: ${mem_usage}% exceeds threshold of ${threshold}%"
+                kill_type="THRESHOLD"
+            fi
+
+            if [[ -n "$kill_reason" ]]; then
+                echo ""
+                print_colored "red" "═══════════════════════════════════════════════════════════"
+                if [[ "$is_critical" == "true" ]]; then
+                    print_colored "red" "🚨🚨🚨 CRITICAL OOM - IMMEDIATE KILL! 🚨🚨🚨"
+                else
+                    print_colored "red" "🚨 OOM KILLER TRIGGERED! ($kill_type)"
+                fi
+                print_colored "red" "═══════════════════════════════════════════════════════════"
+                print_colored "red" "$kill_reason"
+                print_colored "yellow" ""
+                print_colored "yellow" "Status at kill time:"
+                print_colored "cyan" "  • System memory: ${mem_usage}%"
+                print_colored "cyan" "  • Process tree memory: ${process_tree_mb}MB"
+                print_colored "cyan" "  • Memory velocity: ${velocity}% per 5 seconds"
+                print_colored "cyan" "  • Build PID: $build_pid"
+                print_colored "yellow" ""
+
+                if [[ "$is_critical" == "true" ]]; then
+                    # Immediate SIGKILL - no time for graceful shutdown
+                    print_colored "red" "Sending immediate SIGKILL (no grace period)..."
+                    kill_process_tree "$build_pid" "KILL"
+                    sleep 0.5
+                else
+                    # Normal threshold: Try graceful first, but with shorter timeout
+                    print_colored "yellow" "Terminating build process tree..."
+                    kill_process_tree "$build_pid" "TERM"
+                    sleep 1  # Reduced from 2 seconds
+
+                    # Force kill if still running
+                    if is_process_running "$build_pid"; then
+                        print_colored "yellow" "Process still running, forcing termination..."
+                        kill_process_tree "$build_pid" "KILL"
+                        sleep 0.5
+                    fi
+                fi
+
+                # Kill any remaining child processes of the build (safer than blanket pkill)
+                # Only kill processes that are descendants of our build_pid
+                if [[ "$platform" == "windows" ]]; then
+                    # Windows taskkill with /T already kills the process tree, no extra action needed
+                    :
+                else
+                    # Linux/macOS: kill remaining descendants of the build process only
+                    if command -v pkill &>/dev/null; then
+                        # Use -P to kill only children of build_pid (not all matching processes system-wide)
+                        pkill -9 -P "$build_pid" 2>/dev/null || true
+                    fi
+                fi
+
+                print_colored "yellow" ""
+                print_colored "yellow" "SUGGESTIONS TO REDUCE MEMORY USAGE:"
+                print_colored "cyan" "  1. Reduce parallel jobs: -j 2 (currently: ${MAKEJ})"
+                print_colored "cyan" "  2. Reduce data types: --datatypes \"float32;int32;int64\""
+                print_colored "cyan" "  3. Increase swap/page file size"
+                print_colored "cyan" "  4. Close other memory-intensive applications"
+                print_colored "cyan" "  5. Increase thresholds: --oom-memory-threshold 95 --oom-process-max-mb 16384"
+                print_colored "yellow" ""
+                print_colored "yellow" "CMAKE BUILD CONFIGURATION OPTIONS:"
+                print_colored "cyan" "  6. Reduce type instantiation chunk size:"
+                print_colored "cyan" "     Edit cmake/TemplateProcessing.cmake: set(_chunk_target 2)"
+                print_colored "cyan" "  7. Reduce CUDA architectures: -DCMAKE_CUDA_ARCHITECTURES=\"86\""
+                if [[ "$platform" == "windows" ]]; then
+                    print_colored "cyan" "  8. Windows: Check Task Manager for memory-heavy processes"
+                    print_colored "cyan" "  9. Windows: Increase virtual memory in System Properties"
+                fi
+                print_colored "yellow" ""
+
+                cleanup_velocity_file
+                exit 137  # Standard OOM exit code
+            fi
+        done
+    ) &
+
+    OOM_MONITOR_PID=$!
+    local monitor_info="threshold: ${threshold}%,  ${critical_threshold}%, interval: ${interval}s"
+    if [[ "$process_max_mb" -gt 0 ]]; then
+        monitor_info="${monitor_info}, process limit: ${process_max_mb}MB"
+    fi
+    monitor_info="${monitor_info}, velocity: ${velocity_threshold}%/5s"
+    print_colored "green" "✓ OOM monitor ACTIVE (PID: $OOM_MONITOR_PID, $monitor_info, platform: $platform)"
+    print_colored "yellow" "  ⚠️  Memory thresholds: ${threshold}%=graceful kill, ${critical_threshold}%=IMMEDIATE SIGKILL"
+}
+
+# Stop the OOM monitor
+stop_oom_monitor() {
+    if [[ -n "$OOM_MONITOR_PID" ]]; then
+        if is_process_running "$OOM_MONITOR_PID"; then
+            kill_process_tree "$OOM_MONITOR_PID" "TERM"
+            # Wait for the monitor to exit (with timeout for Windows compatibility)
+            local wait_count=0
+            while is_process_running "$OOM_MONITOR_PID" && [[ $wait_count -lt 10 ]]; do
+                sleep 0.1 2>/dev/null || sleep 1
+                wait_count=$((wait_count + 1))
+            done
+            # Force kill if still running
+            if is_process_running "$OOM_MONITOR_PID"; then
+                kill_process_tree "$OOM_MONITOR_PID" "KILL"
+            fi
+        fi
+        wait "$OOM_MONITOR_PID" 2>/dev/null || true
+        OOM_MONITOR_PID=""
+    fi
+}
+
+# Wrapper to run a command with OOM monitoring
+run_with_oom_monitor() {
+    local cmd="$1"
+
+    # Auto-disable OOM monitor on Windows (see comment near main build section)
+    if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
+        local _oom_platform
+        _oom_platform=$(detect_oom_platform)
+        if [[ "$_oom_platform" == "windows" ]]; then
+            OOM_KILLER_ENABLED="OFF"
+        fi
+    fi
+
+    if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
+        # Validate threshold
+        if [[ ! "$OOM_MEMORY_THRESHOLD" =~ ^[0-9]+$ ]] || \
+           [[ "$OOM_MEMORY_THRESHOLD" -lt 1 ]] || \
+           [[ "$OOM_MEMORY_THRESHOLD" -gt 99 ]]; then
+            print_colored "red" "❌ ERROR: Invalid OOM memory threshold: $OOM_MEMORY_THRESHOLD"
+            print_colored "yellow" "   Must be a number between 1 and 99"
+            exit 1
+        fi
+
+        # Validate interval
+        if [[ ! "$OOM_MONITOR_INTERVAL" =~ ^[0-9]+$ ]] || \
+           [[ "$OOM_MONITOR_INTERVAL" -lt 1 ]]; then
+            print_colored "red" "❌ ERROR: Invalid OOM monitor interval: $OOM_MONITOR_INTERVAL"
+            print_colored "yellow" "   Must be a positive integer (seconds)"
+            exit 1
+        fi
+
+        print_colored "cyan" "═══════════════════════════════════════════════════════════"
+        print_colored "cyan" "🛡️  OOM KILLER ENABLED - ACTIVE MEMORY PROTECTION"
+        print_colored "cyan" "═══════════════════════════════════════════════════════════"
+        print_colored "blue" "System memory threshold: ${OOM_MEMORY_THRESHOLD}%"
+        print_colored "blue" "Monitor interval: ${OOM_MONITOR_INTERVAL}s"
+        if [[ "$OOM_PROCESS_MAX_MB" -gt 0 ]]; then
+            print_colored "blue" "Process tree limit: ${OOM_PROCESS_MAX_MB}MB"
+        else
+            print_colored "yellow" "Process tree limit: DISABLED (use --oom-process-max-mb to enable)"
+        fi
+        print_colored "blue" "Velocity threshold: ${OOM_VELOCITY_THRESHOLD}% per 5 seconds"
+
+        local current_mem
+        current_mem=$(get_memory_usage_percent)
+        print_colored "blue" "Current memory usage: ${current_mem}%"
+        echo ""
+
+        # Run the build command in background
+        eval "$cmd" &
+        local build_pid=$!
+
+        # Start the OOM monitor
+        start_oom_monitor "$OOM_MEMORY_THRESHOLD" "$OOM_MONITOR_INTERVAL" "$build_pid" "$OOM_PROCESS_MAX_MB" "$OOM_VELOCITY_THRESHOLD" "$OOM_CRITICAL_THRESHOLD"
+
+        # Wait for build to complete
+        wait "$build_pid"
+        local exit_code=$?
+
+        # Stop the OOM monitor
+        stop_oom_monitor
+
+        return $exit_code
+    else
+        # No OOM monitoring, run command directly
+        eval "$cmd"
+        return $?
+    fi
+}
+
 # =============================================================================
 # COMMAND LINE ARGUMENT PARSING
 # =============================================================================
@@ -571,8 +1330,10 @@ do
     case $key in
          --extract-instantiations)
         EXTRACT_INSTANTIATIONS="$value"
-        print_colored "blue" "✓ Template instantiation extraction enabled"
-        print_colored "yellow" "Build will extract instantiations and exit"
+        if [[ "$value" == "ON" ]]; then
+            print_colored "blue" "✓ Template instantiation extraction enabled"
+            print_colored "yellow" "Build will extract instantiations and exit"
+        fi
         shift # past argument
         ;;
 
@@ -644,6 +1405,144 @@ do
             HELPER="$value"
             shift # past argument
             ;;
+        --helpers)
+            HELPERS="$value"
+            print_colored "green" "✓ Multi-helper mode: $value"
+            shift # past argument
+            ;;
+        --dynamic-kernel-selection)
+            DYNAMIC_KERNEL_SELECTION="$value"
+            shift # past argument
+            ;;
+        --kernel-strategy)
+            KERNEL_STRATEGY="$value"
+            print_colored "blue" "✓ Kernel strategy: $value"
+            shift # past argument
+            ;;
+        --kernel-autotuning)
+            KERNEL_AUTOTUNING="$value"
+            shift # past argument
+            ;;
+        --kernel-caching)
+            KERNEL_CACHING="$value"
+            shift # past argument
+            ;;
+        --helper-priority)
+            HELPER_PRIORITY="$value"
+            if [ -n "$value" ]; then
+                print_colored "blue" "✓ Helper priority: $value"
+            fi
+            shift # past argument
+            ;;
+        --blas)
+            BLAS_IMPL="$value"
+            case "$value" in
+                openblas)
+                    print_colored "green" "✓ BLAS implementation: OpenBLAS (MKL disabled)"
+                    ;;
+                mkl)
+                    print_colored "green" "✓ BLAS implementation: Intel MKL"
+                    ;;
+                ""|auto)
+                    print_colored "blue" "✓ BLAS implementation: auto-detect"
+                    BLAS_IMPL=""
+                    ;;
+                *)
+                    print_colored "red" "❌ ERROR: Invalid BLAS implementation '$value'"
+                    print_colored "yellow" "    Valid options: openblas, mkl, auto (or empty)"
+                    exit 1
+                    ;;
+            esac
+            shift # past argument
+            ;;
+        --mlir)
+            MLIR="$value"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "green" "✓ MLIR JIT compilation enabled"
+            fi
+            shift # past argument
+            ;;
+        --mlir-version)
+            MLIR_VERSION="$value"
+            print_colored "blue" "✓ MLIR/LLVM version: $value"
+            shift # past argument
+            ;;
+        --mlir-gpu)
+            MLIR_GPU="$value"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "green" "✓ MLIR GPU backend enabled"
+            fi
+            shift # past argument
+            ;;
+        --triton)
+            TRITON="$value"
+            case "$value" in
+                ON)
+                    print_colored "green" "✓ Triton enabled"
+                    ;;
+                OFF)
+                    print_colored "blue" "✓ Triton disabled"
+                    ;;
+                *)
+                    print_colored "red" "❌ ERROR: Invalid Triton value '$value'"
+                    print_colored "yellow" "    Valid options: ON, OFF"
+                    exit 1
+                    ;;
+            esac
+            shift # past argument
+            ;;
+        --build-sdx-standalone)
+            BUILD_SDX_STANDALONE="$value"
+            case "$value" in
+                ON)
+                    print_colored "green" "✓ SDX standalone build enabled"
+                    ;;
+                OFF)
+                    print_colored "blue" "✓ SDX standalone build disabled"
+                    ;;
+                *)
+                    print_colored "red" "❌ ERROR: Invalid --build-sdx-standalone value '$value'"
+                    print_colored "yellow" "    Valid options: ON, OFF"
+                    exit 1
+                    ;;
+            esac
+            shift # past argument
+            ;;
+        --sdx-include-triton)
+            if [ -n "$value" ]; then
+                SDX_INCLUDE_TRITON="$value"
+                case "$value" in
+                    ON)
+                        print_colored "green" "✓ SDX will include Triton"
+                        ;;
+                    OFF)
+                        print_colored "green" "✓ SDX will exclude Triton (smaller binary)"
+                        ;;
+                    *)
+                        print_colored "red" "❌ ERROR: Invalid --sdx-include-triton value '$value'"
+                        print_colored "yellow" "    Valid options: ON, OFF (or empty to inherit from parent build)"
+                        exit 1
+                        ;;
+                esac
+            fi
+            shift # past argument
+            ;;
+        --dep-cache)
+            DEP_CACHE="$value"
+            shift # past argument
+            ;;
+        --dep-cache-dir)
+            DEP_CACHE_DIR="$value"
+            shift # past argument
+            ;;
+        --dep-cache-clear)
+            DEP_CACHE_CLEAR="$value"
+            shift # past argument
+            ;;
+        --dep-cache-clear-dep)
+            DEP_CACHE_CLEAR_DEP="$value"
+            shift # past argument
+            ;;
         -o|-platform|--platform)
             OS="$value"
             shift # past argument
@@ -705,6 +1604,18 @@ do
             USE_LTO="-DSD_USE_LTO=$value"
             shift # past argument
             ;;
+        --cuda-lto)
+            CUDA_LTO="$value"
+            shift # past argument
+            ;;
+        --cuda-threads)
+            CUDA_THREADS="$value"
+            shift # past argument
+            ;;
+        --cuda-split-compile)
+            CUDA_SPLIT_COMPILE="$value"
+            shift # past argument
+            ;;
         --name)
             NAME="$value"
             shift # past argument
@@ -719,6 +1630,11 @@ do
             ;;
         clean)
             CLEAN="true"
+            shift # past argument
+            ;;
+        clean-all)
+            CLEAN="true"
+            CLEAN_ALL="true"
             shift # past argument
             ;;
         -m|--minifier)
@@ -759,12 +1675,55 @@ do
             ;;
         --cmake-only|--configure-only)
             CMAKE_ONLY="$value"
-            print_colored "blue" "✓ CMake-only mode enabled - will exit after configuration"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "blue" "✓ CMake-only mode enabled - will exit after configuration"
+            fi
             shift # past argument
             ;;
         --link-only)
             LINK_ONLY="$value"
-            print_colored "blue" "✓ Link-only mode enabled - will skip compilation and only relink"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "blue" "✓ Link-only mode enabled - will skip compilation and only relink"
+            fi
+            shift # past argument
+            ;;
+        --unity-build)
+            UNITY_BUILD="$value"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "green" "✓ Unity build enabled - combining source files for faster compilation"
+            fi
+            shift # past argument
+            ;;
+        --oom-killer)
+            OOM_KILLER_ENABLED="$value"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "green" "✓ OOM killer enabled - will monitor memory during build"
+            fi
+            shift # past argument
+            ;;
+        --oom-memory-threshold)
+            OOM_MEMORY_THRESHOLD="$value"
+            print_colored "blue" "✓ OOM memory threshold set to: ${value}%"
+            shift # past argument
+            ;;
+        --oom-monitor-interval)
+            OOM_MONITOR_INTERVAL="$value"
+            print_colored "blue" "✓ OOM monitor interval set to: ${value}s"
+            shift # past argument
+            ;;
+        --oom-process-max-mb)
+            OOM_PROCESS_MAX_MB="$value"
+            print_colored "blue" "✓ OOM process memory limit set to: ${value}MB"
+            shift # past argument
+            ;;
+        --oom-velocity-threshold)
+            OOM_VELOCITY_THRESHOLD="$value"
+            print_colored "blue" "✓ OOM velocity threshold set to: ${value}% per 5 seconds"
+            shift # past argument
+            ;;
+        --oom-critical-threshold)
+            OOM_CRITICAL_THRESHOLD="$value"
+            print_colored "blue" "✓ OOM CRITICAL threshold set to: ${value}% (immediate SIGKILL)"
             shift # past argument
             ;;
         --dry-run)
@@ -794,6 +1753,9 @@ done
 # =============================================================================
 # POST-ARGUMENT PROCESSING AND TYPE VALIDATION
 # =============================================================================
+
+# Re-export MAKE_COMMAND with the parsed MAKEJ value (was set before arg parsing)
+export MAKE_COMMAND="make -j${MAKEJ} -l${LOAD_LIMIT}"
 
 print_colored "blue" "\n🔍 PROCESSING TYPE CONFIGURATION"
 
@@ -1120,10 +2082,36 @@ case "$OS" in
     windows*)
         # Do something under Windows NT platform
         if [ "$CHIP" == "cuda" ]; then
-            export CMAKE_COMMAND="cmake -G \"Ninja\""
-            export MAKE_COMMAND="ninja"
+            # MSVC (cl.exe) + Ninja for CUDA builds.
+            # CRITICAL: Must NOT use MinGW cmake (/mingw64/bin/cmake) because
+            # it automatically adds /mingw64/include as a system include dir,
+            # causing MSVC to pick up GCC-only headers (corecrt.h, math.h,
+            # stddef.h) from C:\msys64\mingw64\include, which are incompatible
+            # with MSVC. Find the system cmake (Windows-native) and use that.
+            _sys_cmake="cmake"
+            if [ -x "/c/Program Files/CMake/bin/cmake.exe" ]; then
+                _sys_cmake="/c/Program Files/CMake/bin/cmake.exe"
+            elif [ -x "/c/Program Files (x86)/CMake/bin/cmake.exe" ]; then
+                _sys_cmake="/c/Program Files (x86)/CMake/bin/cmake.exe"
+            else
+                # Try to find a non-MinGW cmake on PATH
+                while IFS= read -r -d: _dir; do
+                    if [[ "$_dir" != */mingw64/* ]] && [[ "$_dir" != */mingw32/* ]] && [ -x "$_dir/cmake.exe" ]; then
+                        _sys_cmake="$_dir/cmake.exe"
+                        break
+                    fi
+                done <<< "$PATH:"
+            fi
+            echo "Using cmake for MSVC build: $_sys_cmake"
+            export CMAKE_COMMAND="\"${_sys_cmake}\" -G \"Ninja\""
+            export MAKE_COMMAND="ninja -j${MAKEJ}"
             export CC="cl.exe"
             export CXX="cl.exe"
+            # Clear MinGW env vars that MSYS2 MINGW64 shell injects
+            unset CPATH
+            unset C_INCLUDE_PATH
+            unset CPLUS_INCLUDE_PATH
+            unset LIBRARY_PATH
             PARALLEL="true"
             VERBOSE_ARG="-v"
         else
@@ -1132,7 +2120,7 @@ case "$OS" in
             # prefixed. If the one in USR is used, errors like error: 'RTLD_LAZY' was not declared in this scope
             # may show up
             export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
-            export MAKE_COMMAND="make"
+            export MAKE_COMMAND="make -j${MAKEJ} -l${LOAD_LIMIT}"
             export CC=gcc
             export CXX=g++
             PARALLEL="true"
@@ -1181,6 +2169,14 @@ if [[ -z "$OPENBLAS_PATH" ]]; then
                 JAR_PATTERNS=("openblas-*-linux-arm64.jar" "openblas-*-linux-aarch64.jar")
                 OPENBLAS_SUBPATHS=("linux-arm64" "linux-aarch64")
                 ;;
+            macosx-arm64)
+                JAR_PATTERNS=("openblas-*-macosx-arm64.jar")
+                OPENBLAS_SUBPATHS=("macosx-arm64")
+                ;;
+            macosx-x86_64)
+                JAR_PATTERNS=("openblas-*-macosx-x86_64.jar")
+                OPENBLAS_SUBPATHS=("macosx-x86_64")
+                ;;
             *)
                 JAR_PATTERNS=("openblas-*-linux-x86_64.jar")
                 OPENBLAS_SUBPATHS=("linux-x86_64")
@@ -1208,6 +2204,139 @@ if [[ -z "$OPENBLAS_PATH" ]]; then
     fi
 fi
 
+# ============================================================================
+# MKL PATH DETECTION (for VML - Vector Math Library)
+# ============================================================================
+# MKL provides vectorized math functions (vsErf, vdErf, etc.) when used with oneDNN
+#
+# BLAS_IMPL controls which BLAS library to use:
+#   - "openblas": Force OpenBLAS, skip MKL detection entirely
+#   - "mkl": Force MKL (will error if not found)
+#   - "" or "auto": Auto-detect (prefer MKL if available, fallback to OpenBLAS)
+
+if [ -v MKL_PATH ]; then
+  echo "MKL_PATH is set: $MKL_PATH"
+else
+  MKL_PATH=""
+fi
+
+# Skip MKL detection if explicitly using OpenBLAS
+if [[ "$BLAS_IMPL" == "openblas" ]]; then
+    echo "ℹ️  BLAS implementation set to OpenBLAS - skipping MKL detection"
+    MKL_PATH=""
+# Auto-detect MKL path from JavaCPP cache when onednn helper is enabled
+elif [[ -z "$MKL_PATH" ]]; then
+    # Check if onednn is in HELPERS or HELPER
+    if [[ "$HELPERS" == *"onednn"* ]] || [[ "$HELPER" == *"onednn"* ]]; then
+        echo "Attempting to auto-detect MKL path for VML support..."
+
+        # Platform-specific subpaths
+        MKL_SUBPATHS=("linux-x86_64" "linux-aarch64" "macosx-x86_64" "macosx-arm64" "windows-x86_64")
+
+        # Search for MKL in JavaCPP cache locations
+        for JAVACPP_CACHE in "$HOME/.javacpp/cache" ".javacpp/cache" "../.javacpp/cache"; do
+            if [[ -d "$JAVACPP_CACHE" ]]; then
+                echo "  Searching in cache: $JAVACPP_CACHE"
+
+                # New JavaCPP cache structure: org.bytedeco/mkl/<version>/
+                if [[ -d "$JAVACPP_CACHE/org.bytedeco/mkl" ]]; then
+                    for MKL_VERSION_DIR in "$JAVACPP_CACHE/org.bytedeco/mkl"/*; do
+                        if [[ -d "$MKL_VERSION_DIR" ]]; then
+                            for subpath in "${MKL_SUBPATHS[@]}"; do
+                                # Check for include directory with mkl.h
+                                if [[ -f "$MKL_VERSION_DIR/$subpath/include/mkl.h" ]]; then
+                                    export MKL_PATH="$MKL_VERSION_DIR/$subpath"
+                                    echo "✅ Auto-detected MKL_PATH (new structure): $MKL_PATH"
+                                    break 3
+                                fi
+                                # Check nested org/bytedeco/mkl structure (from JAR extraction)
+                                if [[ -f "$MKL_VERSION_DIR/org/bytedeco/mkl/$subpath/include/mkl.h" ]]; then
+                                    export MKL_PATH="$MKL_VERSION_DIR/org/bytedeco/mkl/$subpath"
+                                    echo "✅ Auto-detected MKL_PATH (JAR structure): $MKL_PATH"
+                                    break 3
+                                fi
+                            done
+                        fi
+                    done
+                fi
+
+                # Old structure: mkl-<version>/ at top level
+                MKL_JAR=$(find "$JAVACPP_CACHE" -maxdepth 1 -name "mkl-*" -type d 2>/dev/null | head -1)
+                if [[ -n "$MKL_JAR" && -d "$MKL_JAR" ]]; then
+                    for subpath in "${MKL_SUBPATHS[@]}"; do
+                        if [[ -f "$MKL_JAR/org/bytedeco/mkl/$subpath/include/mkl.h" ]]; then
+                            export MKL_PATH="$MKL_JAR/org/bytedeco/mkl/$subpath"
+                            echo "✅ Auto-detected MKL_PATH (legacy structure): $MKL_PATH"
+                            break 2
+                        fi
+                    done
+                fi
+            fi
+        done
+
+        if [[ -z "$MKL_PATH" ]]; then
+            if [[ "$BLAS_IMPL" == "mkl" ]]; then
+                print_colored "red" "❌ ERROR: MKL explicitly requested but not found in JavaCPP cache"
+                print_colored "yellow" "    Ensure mkl artifact is in dependencies when using --blas mkl"
+                exit 1
+            else
+                echo "ℹ️  MKL not found in JavaCPP cache - VML will use scalar fallback"
+                echo "   To enable MKL VML, add -Dlibnd4j.blas=mkl to your build command"
+            fi
+        fi
+    fi
+fi
+
+# If MKL_PATH not found in JavaCPP cache, try to extract from Maven repository
+if [[ -z "$MKL_PATH" ]]; then
+    M2_MKL_DIR="$HOME/.m2/repository/org/bytedeco/mkl"
+    if [[ -d "$M2_MKL_DIR" ]]; then
+        echo "  Searching for MKL redist JAR in Maven repository..."
+        # Find the latest MKL version directory
+        MKL_VERSION_DIR=$(find "$M2_MKL_DIR" -maxdepth 1 -type d -name "*-1.5.*" | sort -V | tail -1)
+        if [[ -n "$MKL_VERSION_DIR" ]]; then
+            # Platform-specific redist JAR
+            case "$(uname -s)-$(uname -m)" in
+                Linux-x86_64)  PLATFORM_SUFFIX="linux-x86_64" ;;
+                Darwin-x86_64) PLATFORM_SUFFIX="macosx-x86_64" ;;
+                Darwin-arm64)  PLATFORM_SUFFIX="macosx-arm64" ;;
+                MINGW*|MSYS*|CYGWIN*) PLATFORM_SUFFIX="windows-x86_64" ;;
+                *) PLATFORM_SUFFIX="" ;;
+            esac
+
+            if [[ -n "$PLATFORM_SUFFIX" ]]; then
+                MKL_REDIST_JAR=$(find "$MKL_VERSION_DIR" -name "mkl-*-${PLATFORM_SUFFIX}-redist.jar" | head -1)
+                if [[ -f "$MKL_REDIST_JAR" ]]; then
+                    EXTRACT_DIR="${MKL_VERSION_DIR}/mkl-redist-extracted"
+                    if [[ ! -d "$EXTRACT_DIR/org/bytedeco/mkl/${PLATFORM_SUFFIX}/include" ]]; then
+                        echo "  Extracting MKL redist JAR: $MKL_REDIST_JAR"
+                        mkdir -p "$EXTRACT_DIR"
+                        unzip -q -o "$MKL_REDIST_JAR" -d "$EXTRACT_DIR" 2>/dev/null
+                    fi
+                    if [[ -f "$EXTRACT_DIR/org/bytedeco/mkl/${PLATFORM_SUFFIX}/include/mkl.h" ]]; then
+                        export MKL_PATH="$EXTRACT_DIR/org/bytedeco/mkl/${PLATFORM_SUFFIX}"
+                        echo "✅ Extracted MKL headers to: $MKL_PATH"
+                    fi
+                fi
+            fi
+        fi
+    fi
+fi
+
+# Export MKL_PATH for CMake
+if [[ -n "$MKL_PATH" ]]; then
+    MKL_CMAKE="-DMKL_ROOT=$MKL_PATH"
+    echo "✅ MKL VML enabled: $MKL_PATH"
+else
+    MKL_CMAKE=""
+fi
+
+# Also pass BLAS_IMPL to CMake for conditional compilation
+if [[ -n "$BLAS_IMPL" ]]; then
+    BLAS_CMAKE="-DBLAS_IMPL=$BLAS_IMPL"
+else
+    BLAS_CMAKE=""
+fi
 
 if [ ! -d "include/generated" ]; then
     mkdir -p "include/generated"
@@ -1235,6 +2364,19 @@ fi
 
 SOURCE_PATH="$DIR"
 BUILD_DIR="$DIR/blasbuild/$CHIP"
+
+# =============================================================================
+# TMPDIR Configuration - Use build directory instead of /tmp (tmpfs)
+# NVCC and GCC create large temporary files during compilation. By using
+# a directory under the build tree, we use disk storage instead of RAM.
+# This prevents /tmp from filling up during large CUDA/functrace builds.
+# =============================================================================
+COMPILER_TMPDIR="$BUILD_DIR/compiler_tmp"
+mkdir -p "$COMPILER_TMPDIR"
+export TMPDIR="$COMPILER_TMPDIR"
+export TMP="$COMPILER_TMPDIR"
+export TEMP="$COMPILER_TMPDIR"
+print_colored "cyan" "📁 Compiler temp directory: $COMPILER_TMPDIR"
 
 export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_SANITIZE=$SANITIZE -DSD_SANITIZERS=$SANITIZERS"
 
@@ -1286,6 +2428,11 @@ elif [ "$CHIP" == "aurora" ]; then
     BLAS_ARG="-DSD_AURORA=true -DBLAS=TRUE"
 elif [ "$CHIP" == "cuda" ]; then
     BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
+elif [ "$CHIP" == "tpu" ]; then
+    BLAS_ARG="-DSD_TPU=true -DBLAS=TRUE"
+else
+    # Handle CUDA version numbers like "12.9" - treat as CUDA build
+    BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
 fi
 
 if [ -z "$NAME" ]; then
@@ -1295,6 +2442,11 @@ if [ -z "$NAME" ]; then
         NAME="nd4jcuda"
     elif [ "$CHIP" == "aurora" ]; then
         NAME="nd4jaurora"
+    elif [ "$CHIP" == "tpu" ]; then
+        NAME="nd4jtpu"
+    else
+        # Handle CUDA version numbers like "12.9" - treat as CUDA build
+        NAME="nd4jcuda"
     fi
 fi
 
@@ -1374,37 +2526,161 @@ fi
 
 mkbuilddir() {
     if [ "$CLEAN" == "true" ]; then
-        echo "Removing blasbuild"
-        rm -Rf "$DIR/blasbuild"
+        if [ "$CLEAN_ALL" == "true" ]; then
+            echo "Removing ALL blasbuild directories (clean-all)"
+            rm -Rf "$DIR/blasbuild"
+        else
+            echo "Removing blasbuild for $CHIP only (use 'clean-all' to clean all backends)"
+            rm -Rf "$DIR/blasbuild/$CHIP"
+        fi
     fi
 
     mkdir -p "$BUILD_DIR"
-    cd "$BUILD_DIR"
+
+    # File locking to prevent concurrent builds of the same backend
+    LOCK_FILE="$BUILD_DIR/.build.lock"
+    exec 200>"$LOCK_FILE"
+    LOCK_WAIT_SECONDS="${LOCK_WAIT_SECONDS:-1200}"
+
+    if command -v flock >/dev/null 2>&1; then
+        # Some environments (notably certain macOS runner setups) may have flock
+        # installed but unable to lock file descriptors reliably.
+        FLOCK_TEST_FILE="$BUILD_DIR/.flock.test"
+        exec 201>"$FLOCK_TEST_FILE"
+        FLOCK_SUPPORTED=true
+        if ! flock -n 201 2>/dev/null; then
+            FLOCK_SUPPORTED=false
+        fi
+        exec 201>&-
+        rm -f "$FLOCK_TEST_FILE"
+
+        if [ "$FLOCK_SUPPORTED" = "true" ]; then
+            LOCK_START_TS=$(date +%s)
+            while ! flock -n 200 2>/dev/null; do
+                NOW_TS=$(date +%s)
+                ELAPSED=$((NOW_TS - LOCK_START_TS))
+                if [ "$ELAPSED" -ge "$LOCK_WAIT_SECONDS" ]; then
+                    print_colored "red" "ERROR: Another build is already running for backend '$CHIP'"
+                    print_colored "yellow" "Lock file: $LOCK_FILE"
+                    print_colored "yellow" "Waited ${LOCK_WAIT_SECONDS}s for lock. If no other build is running, remove the lock file manually"
+                    exit 1
+                fi
+                sleep 5
+            done
+        else
+            print_colored "yellow" "WARNING: flock is unavailable for this environment; skipping backend lock"
+        fi
+    else
+        print_colored "yellow" "WARNING: flock command not found; skipping backend lock"
+    fi
+    # Lock will be released when script exits (fd 200 closes)
+
+    builtin cd "$BUILD_DIR"
 }
 
-HELPERS=""
-if [ "$HELPER" == "" ]; then
-    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                 WARNING!                                                  !!"
-    echo "!!                                      No helper packages configured!                                       !!"
-    echo "!!                          You can specify helper by using -h key. I.e. <-h onednn>                         !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!                                                                                                           !!"
-    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-else
-    # If helpers were defined, we'll propagate them to CMake
+HELPERS_CMAKE=""
+
+# Auto-enable oneDNN when Triton is ON and we're on x86 (x86_64/amd64) for CPU builds only.
+# oneDNN provides the CPU graph backend for DSP and optimized math kernels.
+# CUDA builds must NOT use oneDNN — it causes linker errors (undefined dnnl_* symbols).
+if [ "$TRITON" == "ON" ] && [ "$CHIP" != "cuda" ]; then
+    MACHINE=$(uname -m)
+    if [[ "$MACHINE" == "x86_64" ]] || [[ "$MACHINE" == "amd64" ]]; then
+        if [[ -z "$HELPERS" ]] && [[ -z "$HELPER" ]]; then
+            HELPERS="onednn"
+            print_colored "green" "✓ Auto-enabling oneDNN helper (Triton=ON on x86, CPU build)"
+        elif [[ -n "$HELPERS" ]] && [[ "$HELPERS" != *"onednn"* ]]; then
+            HELPERS="${HELPERS},onednn"
+            print_colored "green" "✓ Auto-adding oneDNN to helpers (Triton=ON on x86, CPU build)"
+        elif [[ -n "$HELPER" ]] && [[ "$HELPER" != *"onednn"* ]]; then
+            HELPER="${HELPER},onednn"
+            print_colored "green" "✓ Auto-adding oneDNN to helper (Triton=ON on x86, CPU build)"
+        fi
+    fi
+fi
+
+# Process multi-helper configuration (--helpers flag)
+if [ -n "$HELPERS" ]; then
+    print_colored "blue" "=== Multi-Helper Configuration ==="
+    # Convert comma-separated list to CMake semicolon-separated list
+    HELPERS_LIST_CMAKE=$(echo "$HELPERS" | tr ',' ';')
+    HELPERS_CMAKE="-DHELPERS_LIST=\"${HELPERS_LIST_CMAKE}\""
+
+    # Also set individual helper flags for backwards compatibility
+    IFS=','
+    read -ra HLP <<< "$HELPERS"
+    for i in "${HLP[@]}"; do
+        # Trim whitespace
+        i=$(echo "$i" | tr -d ' ')
+        HELPERS_CMAKE="${HELPERS_CMAKE} -DHELPERS_$i=ON"
+        print_colored "green" "   ✓ Enabling helper: $i"
+    done
+    IFS=' '
+    print_colored "blue" "==================================="
+# Fallback to legacy single helper mode (-h flag)
+elif [ -n "$HELPER" ]; then
+    print_colored "yellow" "Using legacy single-helper mode (consider using --helpers for multi-backend support)"
     IFS=','
     read -ra HLP <<< "$HELPER"
     for i in "${HLP[@]}"; do
-        HELPERS="${HELPERS} -DHELPERS_$i=true"
+        HELPERS_CMAKE="${HELPERS_CMAKE} -DHELPERS_$i=ON"
     done
     IFS=' '
+else
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "!!                                                                                                           !!"
+    echo "!!                                                 WARNING!                                                  !!"
+    echo "!!                                      No helper packages configured!                                       !!"
+    echo "!!         You can specify helpers using --helpers key. I.e. <--helpers onednn,cudnn>                        !!"
+    echo "!!         Or use legacy mode with -h key. I.e. <-h onednn>                                                  !!"
+    echo "!!                                                                                                           !!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+fi
+
+# Dynamic kernel selection CMake arguments
+KERNEL_CMAKE=""
+if [ "$DYNAMIC_KERNEL_SELECTION" == "ON" ]; then
+    KERNEL_CMAKE="-DSD_DYNAMIC_KERNEL_SELECTION=ON"
+    KERNEL_CMAKE="${KERNEL_CMAKE} -DSD_KERNEL_STRATEGY=${KERNEL_STRATEGY}"
+
+    if [ "$KERNEL_AUTOTUNING" == "ON" ]; then
+        KERNEL_CMAKE="${KERNEL_CMAKE} -DSD_KERNEL_AUTOTUNING=ON"
+    fi
+    if [ "$KERNEL_CACHING" == "ON" ]; then
+        KERNEL_CMAKE="${KERNEL_CMAKE} -DSD_KERNEL_CACHING=ON"
+    fi
+    if [ -n "$HELPER_PRIORITY" ]; then
+        # Convert comma-separated to semicolon-separated for CMake
+        HELPER_PRIORITY_CMAKE=$(echo "$HELPER_PRIORITY" | tr ',' ';')
+        KERNEL_CMAKE="${KERNEL_CMAKE} -DSD_HELPER_PRIORITY=\"${HELPER_PRIORITY_CMAKE}\""
+    fi
+else
+    KERNEL_CMAKE="-DSD_DYNAMIC_KERNEL_SELECTION=OFF"
+fi
+
+# Build MLIR CMake arguments
+MLIR_ARG=""
+if [ "$MLIR" == "ON" ]; then
+    MLIR_ARG="-DHELPERS_mlir=ON -DMLIR_VERSION=${MLIR_VERSION}"
+    if [ "$MLIR_GPU" == "ON" ]; then
+        MLIR_ARG="${MLIR_ARG} -DMLIR_ENABLE_GPU=ON"
+    fi
+fi
+TRITON_CMAKE="-DSD_TRITON=${TRITON}"
+SDX_STANDALONE_CMAKE="-DSD_BUILD_SDX_STANDALONE=${BUILD_SDX_STANDALONE}"
+if [ -n "$SDX_INCLUDE_TRITON" ]; then
+    SDX_STANDALONE_CMAKE="${SDX_STANDALONE_CMAKE} -DSDX_INCLUDE_TRITON=${SDX_INCLUDE_TRITON}"
+fi
+UNITY_BUILD_CMAKE="-DSD_UNITY_BUILD=${UNITY_BUILD}"
+
+# Dependency cache CMake arguments
+DEP_CACHE_CMAKE="-DSD_DEP_CACHE=${DEP_CACHE}"
+if [ -n "$DEP_CACHE_DIR" ]; then
+    DEP_CACHE_CMAKE="${DEP_CACHE_CMAKE} -DSD_DEP_CACHE_DIR=${DEP_CACHE_DIR}"
+fi
+DEP_CACHE_CMAKE="${DEP_CACHE_CMAKE} -DSD_DEP_CACHE_CLEAR=${DEP_CACHE_CLEAR}"
+if [ -n "$DEP_CACHE_CLEAR_DEP" ]; then
+    DEP_CACHE_CMAKE="${DEP_CACHE_CMAKE} -DSD_DEP_CACHE_CLEAR_DEP=${DEP_CACHE_CLEAR_DEP}"
 fi
 
 echo PACKAGING           = "${PACKAGING}"
@@ -1423,9 +2699,26 @@ echo TESTS               = "${TESTS_ARG}"
 echo NAME                = "${NAME_ARG}"
 echo OPENBLAS_PATH       = "$OPENBLAS_PATH"
 echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
+echo HELPER              = "$HELPER"
 echo HELPERS             = "$HELPERS"
+echo HELPERS_CMAKE       = "$HELPERS_CMAKE"
+echo DYNAMIC_KERNEL_SEL  = "$DYNAMIC_KERNEL_SELECTION"
+echo KERNEL_STRATEGY     = "$KERNEL_STRATEGY"
+echo KERNEL_AUTOTUNING   = "$KERNEL_AUTOTUNING"
+echo KERNEL_CACHING      = "$KERNEL_CACHING"
+echo HELPER_PRIORITY     = "$HELPER_PRIORITY"
+echo MLIR                = "$MLIR"
+echo MLIR_VERSION        = "$MLIR_VERSION"
+echo MLIR_GPU            = "$MLIR_GPU"
+echo TRITON              = "$TRITON"
+echo SDX_STANDALONE      = "$BUILD_SDX_STANDALONE"
+echo SDX_INCLUDE_TRITON  = "$SDX_INCLUDE_TRITON"
+echo UNITY_BUILD         = "$UNITY_BUILD"
 echo OP_OUTPUT_FILE      = "$OP_OUTPUT_FILE"
 echo USE_LTO             = "$USE_LTO"
+echo CUDA_LTO            = "$CUDA_LTO"
+echo CUDA_THREADS        = "$CUDA_THREADS"
+echo CUDA_SPLIT_COMPILE  = "$CUDA_SPLIT_COMPILE"
 echo SANITIZE            = "$SANITIZE"
 echo FUNC_TRACE          = "$FUNC_TRACE"
 echo LOG_OUTPUT          = "$LOG_OUTPUT"
@@ -1460,7 +2753,7 @@ if [ -n "$COMPILER" ]; then
 fi
 
 # Configure CMake
-echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE $COMPILER_ARG $SOURCE_PATH"
+echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $MLIR_ARG $TRITON_CMAKE $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE $COMPILER_ARG $SOURCE_PATH"
 
 # Handle the PREPROCESS flag first - before any build
 if [ "$PREPROCESS" == "ON" ]; then
@@ -1476,7 +2769,17 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_SANITIZE="${SANITIZE}" \
             -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
             "$USE_LTO" \
-            "$HELPERS" \
+            -DSD_CUDA_DEVICE_LTO="${CUDA_LTO}" \
+            -DSD_CUDA_THREADS="${CUDA_THREADS}" \
+            -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
+            $HELPERS_CMAKE \
+            $KERNEL_CMAKE \
+            $DEP_CACHE_CMAKE \
+            $MLIR_ARG \
+            $TRITON_CMAKE \
+            $SDX_STANDALONE_CMAKE \
+        $UNITY_BUILD_CMAKE \
+            $UNITY_BUILD_CMAKE \
             "$SHARED_LIBS_ARG" \
             "$OPERATIONS_ARG" \
             "$DATATYPES_ARG" \
@@ -1484,6 +2787,8 @@ if [ "$PREPROCESS" == "ON" ]; then
             "$PACKAGING_ARG" \
             "$CUDA_COMPUTE" \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $MKL_CMAKE \
+            $BLAS_CMAKE \
             -DDEV=FALSE \
             -DCMAKE_NEED_RESPONSE=YES \
             -DMKL_MULTI_THREADED=TRUE \
@@ -1500,7 +2805,17 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_SANITIZE="${SANITIZE}" \
             -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
             "$USE_LTO" \
-            "$HELPERS" \
+            -DSD_CUDA_DEVICE_LTO="${CUDA_LTO}" \
+            -DSD_CUDA_THREADS="${CUDA_THREADS}" \
+            -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
+            $HELPERS_CMAKE \
+            $KERNEL_CMAKE \
+            $DEP_CACHE_CMAKE \
+            $MLIR_ARG \
+            $TRITON_CMAKE \
+            $SDX_STANDALONE_CMAKE \
+        $UNITY_BUILD_CMAKE \
+            $UNITY_BUILD_CMAKE \
             "$SHARED_LIBS_ARG" \
             "$OPERATIONS_ARG" \
             "$DATATYPES_ARG" \
@@ -1508,6 +2823,8 @@ if [ "$PREPROCESS" == "ON" ]; then
             "$PACKAGING_ARG" \
             "$CUDA_COMPUTE" \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $MKL_CMAKE \
+            $BLAS_CMAKE \
             -DDEV=FALSE \
             -DCMAKE_NEED_RESPONSE=YES \
             -DMKL_MULTI_THREADED=TRUE \
@@ -1558,7 +2875,16 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
         -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
         "$USE_LTO" \
-        "$HELPERS" \
+        -DSD_CUDA_DEVICE_LTO="${CUDA_LTO}" \
+        -DSD_CUDA_THREADS="${CUDA_THREADS}" \
+        -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
+        $HELPERS_CMAKE \
+        $KERNEL_CMAKE \
+        $DEP_CACHE_CMAKE \
+        $MLIR_ARG \
+        $TRITON_CMAKE \
+        $SDX_STANDALONE_CMAKE \
+        $UNITY_BUILD_CMAKE \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
         "$OPERATIONS_ARG" \
@@ -1568,6 +2894,8 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         "$TESTS_ARG" \
         "$CUDA_COMPUTE" \
         -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+        $MKL_CMAKE \
+        $BLAS_CMAKE \
         -DDEV=FALSE \
         -DCMAKE_NEED_RESPONSE=YES \
         -DMKL_MULTI_THREADED=TRUE \
@@ -1590,7 +2918,16 @@ else
         -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
         -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
         "$USE_LTO" \
-        "$HELPERS" \
+        -DSD_CUDA_DEVICE_LTO="${CUDA_LTO}" \
+        -DSD_CUDA_THREADS="${CUDA_THREADS}" \
+        -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
+        $HELPERS_CMAKE \
+        $KERNEL_CMAKE \
+        $DEP_CACHE_CMAKE \
+        $MLIR_ARG \
+        $TRITON_CMAKE \
+        $SDX_STANDALONE_CMAKE \
+        $UNITY_BUILD_CMAKE \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
         "$OPERATIONS_ARG" \
@@ -1600,6 +2937,8 @@ else
         "$TESTS_ARG" \
         "$CUDA_COMPUTE" \
         -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+        $MKL_CMAKE \
+        $BLAS_CMAKE \
         -DDEV=FALSE \
         -DCMAKE_NEED_RESPONSE=YES \
         -DMKL_MULTI_THREADED=TRUE \
@@ -1660,7 +2999,7 @@ if [ "$CMAKE_ONLY" == "ON" ]; then
         print_colored "blue" "=========================================="
         echo
 
-        cd "$DIR/preflight-checks"
+        builtin cd "$DIR/preflight-checks"
         if ./validate_build_config.sh --stage cmake --chip "$CHIP"; then
             print_colored "green" "✅ Configuration validation passed"
             echo
@@ -1780,7 +3119,13 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$BLAS_ARG" \
             "$ARCH_ARG" \
             "$NAME_ARG" \
+            $TRITON_CMAKE \
+            $SDX_STANDALONE_CMAKE \
+        $UNITY_BUILD_CMAKE \
+            $UNITY_BUILD_CMAKE \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $MKL_CMAKE \
+            $BLAS_CMAKE \
             $COMPILER_ARG \
             "$SOURCE_PATH"
     else
@@ -1789,11 +3134,17 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$BLAS_ARG" \
             "$ARCH_ARG" \
             "$NAME_ARG" \
+            $TRITON_CMAKE \
+            $SDX_STANDALONE_CMAKE \
+        $UNITY_BUILD_CMAKE \
+            $UNITY_BUILD_CMAKE \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $MKL_CMAKE \
+            $BLAS_CMAKE \
             $COMPILER_ARG \
             "$SOURCE_PATH" >> "$LOG_OUTPUT" 2>&1
     fi
-    
+
     # Build ppstep
     if [ "$LOG_OUTPUT" == "none" ]; then
         eval "$MAKE_COMMAND" ppstep
@@ -1805,7 +3156,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
     print_colored "cyan" "Wrapper created at: blasbuild/$CHIP/ppstep-nd4j"
     echo "Usage: ./blasbuild/$CHIP/ppstep-nd4j <source_file.cpp>"
     
-    # CRITICAL: EXIT EARLY like preprocess does
+    # Exit early like preprocess does
     exit 0
 fi
 
@@ -1823,14 +3174,14 @@ if [ "$LINK_ONLY" == "ON" ]; then
         exit 1
     fi
 
-    cd blasbuild/$CHIP
+    builtin cd blasbuild/$CHIP
 
     # Check if object files exist
     OBJ_COUNT=$(find . -name "*.o" 2>/dev/null | wc -l)
     if [ "$OBJ_COUNT" -eq 0 ]; then
         print_colored "red" "❌ ERROR: No object files found in blasbuild/$CHIP"
         print_colored "yellow" "   You must run a full build first before using --link-only"
-        cd ../..
+        builtin cd ../..
         exit 1
     fi
 
@@ -1842,6 +3193,8 @@ if [ "$LINK_ONLY" == "ON" ]; then
         LINK_TARGET="nd4jcpu"
     elif [ "$CHIP" == "cuda" ]; then
         LINK_TARGET="nd4jcuda"
+    elif [ "$CHIP" == "tpu" ]; then
+        LINK_TARGET="nd4jtpu"
     else
         LINK_TARGET="nd4j${CHIP}"
     fi
@@ -1850,9 +3203,9 @@ if [ "$LINK_ONLY" == "ON" ]; then
 
     # Run make with the specific target (CMake will skip up-to-date compilation)
     if [ "$LOG_OUTPUT" == "none" ]; then
-        eval "$MAKE_COMMAND" "$LINK_TARGET" && cd ../../..
+        eval "$MAKE_COMMAND" "$LINK_TARGET" && builtin cd ../../..
     else
-        eval "$MAKE_COMMAND" "$LINK_TARGET" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
+        eval "$MAKE_COMMAND" "$LINK_TARGET" >> "$LOG_OUTPUT" 2>&1 && builtin cd ../../..
     fi
 
     LINK_EXIT_CODE=$?
@@ -1874,16 +3227,119 @@ if [ "$LINK_ONLY" == "ON" ]; then
     # Don't exit here - let the script continue to the flatc section
 else
     # Normal build mode: full compilation and linking
-    # Determine script location
-    if [ "$LOG_OUTPUT" == "none" ]; then
-        eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && cd ../../..
+    BUILD_EXIT_CODE=0
+
+    # =========================================================================
+    # POST-CMAKE FIXUP: Strip MSVC PDB flags from Ninja build files on Windows
+    # =========================================================================
+    # CMake's Ninja generator injects -Xcompiler=-FdPath\,-FS into CUDA compile
+    # rules. nvcc misparses the backslash-comma, treating -FS as a second input
+    # file → "nvcc fatal: A single input file is required". We strip these flags
+    # from build.ninja and all .rsp files after cmake configure completes.
+    if [[ "$CHIP" == "cuda" ]] && [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -o 2>/dev/null)" == "Msys" ]]; then
+        if [ -f "build.ninja" ]; then
+            print_colored "cyan" "Patching Ninja build files: removing MSVC PDB flags from CUDA rules..."
+            # Count matches before patching for diagnostic output
+            MATCH_COUNT=$(grep -c 'Xcompiler.*-Fd\|Xcompiler.*\/Fd\|Xcompiler.*\/FS' build.ninja 2>/dev/null || echo 0)
+            # Remove -Xcompiler=-Fd...,-FS patterns (backslash-comma form)
+            sed -i 's/ -Xcompiler=-Fd[^ ]*,-FS//g' build.ninja 2>/dev/null || true
+            # Remove -Xcompiler=/Fd... patterns (forward-slash form)
+            sed -i 's/ -Xcompiler=\/Fd[^ ]*//g' build.ninja 2>/dev/null || true
+            # Remove standalone -Xcompiler=/FS
+            sed -i 's/ -Xcompiler=\/FS//g' build.ninja 2>/dev/null || true
+            # Also check rules.ninja if it exists (some cmake versions split rules)
+            if [ -f "rules.ninja" ]; then
+                sed -i 's/ -Xcompiler=-Fd[^ ]*,-FS//g' rules.ninja 2>/dev/null || true
+                sed -i 's/ -Xcompiler=\/Fd[^ ]*//g' rules.ninja 2>/dev/null || true
+                sed -i 's/ -Xcompiler=\/FS//g' rules.ninja 2>/dev/null || true
+            fi
+            REMAINING=$(grep -c 'Xcompiler.*-Fd\|Xcompiler.*\/Fd\|Xcompiler.*\/FS' build.ninja 2>/dev/null || echo 0)
+            print_colored "green" "Patched Ninja build files: removed $MATCH_COUNT MSVC PDB flag occurrences ($REMAINING remaining)"
+        fi
+    fi
+
+    # Auto-disable OOM monitor on Windows/MSYS2: powershell.exe startup is 500ms-2s,
+    # and the 1-second polling loop stacks PowerShell processes faster than they exit,
+    # deadlocking the build. Linux uses /proc/meminfo (~0ms), macOS uses vm_stat (~1ms).
+    # Windows GitHub Actions runners handle OOM at the OS level.
+    if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
+        _oom_platform=$(detect_oom_platform)
+        if [[ "$_oom_platform" == "windows" ]]; then
+            print_colored "yellow" "OOM monitor auto-disabled on Windows (powershell.exe polling causes deadlocks)"
+            OOM_KILLER_ENABLED="OFF"
+        fi
+    fi
+
+    if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
+        print_colored "cyan" "═══════════════════════════════════════════════════════════"
+        print_colored "cyan" "🛡️  OOM KILLER ENABLED - ACTIVE MEMORY PROTECTION"
+        print_colored "cyan" "═══════════════════════════════════════════════════════════"
+        print_colored "blue" "System memory threshold: ${OOM_MEMORY_THRESHOLD}%"
+        print_colored "blue" "Monitor interval: ${OOM_MONITOR_INTERVAL}s"
+        if [[ "$OOM_PROCESS_MAX_MB" -gt 0 ]]; then
+            print_colored "blue" "Process tree limit: ${OOM_PROCESS_MAX_MB}MB"
+        else
+            print_colored "yellow" "Process tree limit: DISABLED (use --oom-process-max-mb to enable)"
+        fi
+        print_colored "blue" "Velocity threshold: ${OOM_VELOCITY_THRESHOLD}% per 5 seconds"
+
+        local_current_mem=$(get_memory_usage_percent)
+        print_colored "blue" "Current memory usage: ${local_current_mem}%"
+        echo ""
+
+        # Validate threshold
+        if [[ ! "$OOM_MEMORY_THRESHOLD" =~ ^[0-9]+$ ]] || \
+           [[ "$OOM_MEMORY_THRESHOLD" -lt 1 ]] || \
+           [[ "$OOM_MEMORY_THRESHOLD" -gt 99 ]]; then
+            print_colored "red" "❌ ERROR: Invalid OOM memory threshold: $OOM_MEMORY_THRESHOLD"
+            print_colored "yellow" "   Must be a number between 1 and 99"
+            exit 1
+        fi
+
+        # Run build in background with OOM monitoring
+        if [ "$LOG_OUTPUT" == "none" ]; then
+            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" &
+        else
+            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 &
+        fi
+        BUILD_PID=$!
+
+        # Start OOM monitor with all parameters
+        start_oom_monitor "$OOM_MEMORY_THRESHOLD" "$OOM_MONITOR_INTERVAL" "$BUILD_PID" "$OOM_PROCESS_MAX_MB" "$OOM_VELOCITY_THRESHOLD" "$OOM_CRITICAL_THRESHOLD"
+
+        # Wait for build to complete
+        wait "$BUILD_PID"
+        BUILD_EXIT_CODE=$?
+
+        # Stop OOM monitor
+        stop_oom_monitor
+
+        if [ $BUILD_EXIT_CODE -eq 137 ]; then
+            print_colored "red" "═══════════════════════════════════════════════════════════"
+            print_colored "red" "❌ BUILD KILLED BY OOM KILLER"
+            print_colored "red" "═══════════════════════════════════════════════════════════"
+            builtin cd ../../..
+            exit 137
+        elif [ $BUILD_EXIT_CODE -ne 0 ]; then
+            print_colored "red" "❌ BUILD FAILED (exit code: $BUILD_EXIT_CODE)"
+            builtin cd ../../..
+            exit $BUILD_EXIT_CODE
+        fi
+
+        builtin cd ../../..
     else
-        eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
+        # Normal build without OOM monitoring
+        if [ "$LOG_OUTPUT" == "none" ]; then
+            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && builtin cd ../../..
+        else
+            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && builtin cd ../../..
+        fi
+        BUILD_EXIT_CODE=$?
     fi
 fi
 
 # Determine script location
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SCRIPT_DIR="$( builtin cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Find the libnd4j directory
 if [[ "$SCRIPT_DIR" == */libnd4j* ]]; then
     # Already in or under libnd4j directory
@@ -1907,7 +3363,7 @@ fi
 ORIGINAL_DIR=$(pwd)
 
 # cd to the script directory for the operations that need to be performed there
-cd "$SCRIPT_DIR"
+builtin cd "$SCRIPT_DIR"
 
 if [ "$GENERATE_FLATC" == "ON" ]; then
     echo "Copying flatc generated for java"
@@ -1916,6 +3372,6 @@ if [ "$GENERATE_FLATC" == "ON" ]; then
 fi
 
 # Return to the original directory where the script was launched from
-cd "$ORIGINAL_DIR"
+builtin cd "$ORIGINAL_DIR"
 
 echo "Build process completed successfully."

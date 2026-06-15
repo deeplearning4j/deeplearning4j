@@ -24,6 +24,7 @@
 
 #include <helpers/shape.h>
 #include <loops/summarystatsreduce.h>
+#include <ops/ops.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 

@@ -170,7 +170,7 @@ SD_DEVICE void prescanBlock(int *data, int blockIndex, int *blockSums) {
 }
 
 template <bool storeSum, bool isNP2>
-SD_KERNEL void prescan(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex) {
+SD_KERNEL SD_INLINE void prescan(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex) {
   int ai, bi, mem_ai, mem_bi, bankOffsetA, bankOffsetB;
   extern __shared__ int s_data[];
 
@@ -212,7 +212,7 @@ SD_DEVICE inline void encoderKernelP2Generic(void *dx, LongType n, void *dz) {
  * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
  */
 template <typename T>
-SD_KERNEL static void execEncoderKernelP1(const void *dx, LongType N, void *dz, float threshold) {
+SD_KERNEL void execEncoderKernelP1(const void *dx, LongType N, void *dz, float threshold) {
   auto x = reinterpret_cast<const T *>(dx);
   auto z = reinterpret_cast<int *>(dz);
 
@@ -251,7 +251,7 @@ BUILD_SINGLE_TEMPLATE( void encoderKernelP1Generic,
  * Based on: https://github.com/knotman90/cuStreamComp <-- efficient CUDA stream compaction algorithm
  */
 template <typename T>
-SD_KERNEL static void execEncoderKernelP3(void *dx, int *offsets, LongType N, void *dz) {
+SD_KERNEL void execEncoderKernelP3(void *dx, int *offsets, LongType N, void *dz) {
   auto x = reinterpret_cast<T *>(dx);
   auto z = reinterpret_cast<int *>(dz);
 
@@ -328,7 +328,7 @@ BUILD_SINGLE_TEMPLATE( void encoderKernelP3Generic,
  *   PLEASE NOTE: Z is expected to be memset to 0
  */
 template <typename T>
-SD_KERNEL static void execDecoderKernel(const void *dx, LongType N, void *dz) {
+SD_KERNEL void execDecoderKernel(const void *dx, LongType N, void *dz) {
   auto x = reinterpret_cast<const int *>(dx);
   auto z = reinterpret_cast<T *>(dz);
 
@@ -365,7 +365,7 @@ BUILD_SINGLE_TEMPLATE( void decoderKernelGeneric,
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void execCudaEncodeBitmapKernel(void *vdx, LongType N, int *dz, int *scalar, int *reductionBuffer,
+SD_KERNEL void execCudaEncodeBitmapKernel(void *vdx, LongType N, int *dz, int *scalar, int *reductionBuffer,
                                                  float threshold) {
   auto dx = reinterpret_cast<T *>(vdx);
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -448,7 +448,7 @@ BUILD_SINGLE_TEMPLATE( void cudaEncodeBitmapGeneric,
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void execCudaDecodeBitmapKernel(const void *dx, LongType N, void *vdz) {
+SD_KERNEL void execCudaDecodeBitmapKernel(const void *dx, LongType N, void *vdz) {
   auto dz = static_cast<T *>(vdz);
 
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -520,22 +520,28 @@ SD_HOST void prescanLauncher(dim3 &blocks, dim3 &threads, int shmem, cudaStream_
 };
 
 template <typename S, typename T>
-SD_KERNEL void convertKernel(void *dx, LongType N, void *dz) {
+SD_KERNEL SD_INLINE void convertKernel(void *dx, LongType N, void *dz) {
   auto x = reinterpret_cast<S *>(dx);
   auto z = reinterpret_cast<T *>(dz);
 
   sd::convertKernelGeneric(x, N, z);
 }
 
-#define LIBND4J_BOOLS_LOCAL (randomName0, 0), (randomName1, 1)
-
 BUILD_DOUBLE_TEMPLATE( void TypeCast::convertGenericCuda,
                       (sd::Pointer * extras, void *dx, sd::LongType N, void *dz), SD_COMMON_TYPES,
                       SD_COMMON_TYPES);
-BUILD_DOUBLE_TEMPLATE( void prescanLauncher,
-                      (dim3 & blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata,
-                       int *g_blockSums, int n, int blockIndex, int baseIndex),
-                      LIBND4J_BOOLS_LOCAL, LIBND4J_BOOLS_LOCAL);
 
-#undef LIBND4J_BOOLS_LOCAL
+// Explicit template instantiations for prescanLauncher with boolean non-type template parameters
+template SD_HOST void prescanLauncher<false, false>(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream,
+                                                     int *g_odata, const int *g_idata, int *g_blockSums, int n,
+                                                     int blockIndex, int baseIndex);
+template SD_HOST void prescanLauncher<false, true>(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream,
+                                                    int *g_odata, const int *g_idata, int *g_blockSums, int n,
+                                                    int blockIndex, int baseIndex);
+template SD_HOST void prescanLauncher<true, false>(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream,
+                                                    int *g_odata, const int *g_idata, int *g_blockSums, int n,
+                                                    int blockIndex, int baseIndex);
+template SD_HOST void prescanLauncher<true, true>(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream,
+                                                   int *g_odata, const int *g_idata, int *g_blockSums, int n,
+                                                   int blockIndex, int baseIndex);
 }  // namespace sd

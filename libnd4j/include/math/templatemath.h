@@ -72,6 +72,21 @@ The BODY parameter is evaluated to compute the result, which is then cast to typ
 * */
 // Macro to define functions with advanced type promotion and debugging
 // Updated SD_PROMOTE_FUNC macro
+// Note: NVCC+MSVC has issues with SFINAE enable_if on non-type template params,
+// so we skip the is_arithmetic check on that combination. The static_assert inside
+// the function body catches any misuse at compile time.
+#if defined(_MSC_VER)
+#define SD_PROMOTE_FUNC(FUNC_NAME, BODY)                                \
+template<typename T, typename U = T, typename Z = T>                    \
+SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
+   using calc_type = typename promote_type3<T, U, Z>::type;            \
+   calc_type promoted_val1 = static_cast<calc_type>(val1);             \
+   calc_type promoted_val2 = static_cast<calc_type>(val2);             \
+   calc_type result = BODY;                                            \
+   SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
+   return static_cast<Z>(result);                                      \
+}
+#else
 #define SD_PROMOTE_FUNC(FUNC_NAME, BODY)                                \
 template<typename T, typename U = T, typename Z = T,                    \
          typename std::enable_if<                                       \
@@ -86,7 +101,27 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
    SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
    return static_cast<Z>(result);                                      \
 }
+#endif
 
+#if defined(_MSC_VER)
+#define SD_PROMOTE_FUNC3(FUNC_NAME, BODY)                                \
+template<typename T, typename U = T, typename V = T, typename Z = T>     \
+SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2, V eps) {            \
+   using calc_type = typename promote_type3<T, U, Z>::type;             \
+   calc_type promoted_val1 = static_cast<calc_type>(val1);              \
+   calc_type promoted_val2 = static_cast<calc_type>(val2);              \
+   calc_type promoted_eps = static_cast<calc_type>(eps);                \
+   calc_type result; \
+   if constexpr (std::is_same_v<calc_type COMMA_MATH bool> || std::is_same_v<calc_type COMMA_MATH bfloat16> || std::is_same_v<calc_type COMMA_MATH float16>) { \
+     bool bool_result = BODY; \
+     result = static_cast<calc_type>(bool_result ? 1 : 0); \
+   } else { \
+     result = BODY; \
+   } \
+   SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
+   return static_cast<Z>(result);                                       \
+}
+#else
 #define SD_PROMOTE_FUNC3(FUNC_NAME, BODY)                                \
 template<typename T, typename U = T, typename V = T, typename Z = T,     \
          typename std::enable_if<                                        \
@@ -109,6 +144,7 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2, V eps) {            \
    SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
    return static_cast<Z>(result);                                       \
 }
+#endif
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_abs(T value);
 
@@ -270,7 +306,12 @@ SD_HOST_DEVICE SD_INLINE Z sd_sinh(T val);
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_softplus(T val) {
- Z result = sd_log<T, Z>((Z)1.0f + sd_exp<T, Z>(val));
+ // Numerically stable softplus: max(0,x) + log(1 + exp(-|x|))
+ // Avoids exp(x) overflow for large positive x.
+ Z x = static_cast<Z>(val);
+ Z absX = x < static_cast<Z>(0) ? -x : x;
+ Z maxVal = x > static_cast<Z>(0) ? x : static_cast<Z>(0);
+ Z result = maxVal + sd_log<Z, Z>(static_cast<Z>(1) + sd_exp<Z, Z>(-absX));
  SD_PRINT_MATH_FUNC("sd_softplus", val, result,Z);
  return result;
 }
@@ -485,13 +526,6 @@ SD_HOST_DEVICE SD_INLINE sd::LongType sd_abs<sd::LongType, sd::LongType>(sd::Lon
  SD_PRINT_MATH_FUNC("sd_abs<sd::LongType>", value, result,sd::LongType);
  return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE long sd_abs<long, long>(long value) {
- long result = labs(value);
- SD_PRINT_MATH_FUNC("sd_abs<long>", value, result,long);
- return result;
-}
 #endif // HAS_LONG
 
 #ifdef HAS_BOOL
@@ -516,12 +550,6 @@ SD_HOST_DEVICE SD_INLINE uint16_t sd_abs<uint16_t>(uint16_t value) {
  SD_PRINT_MATH_FUNC("sd_abs<uint16_t>", value, value,uint16_t);
  return value;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE unsigned short sd_abs<unsigned short, unsigned short>(unsigned short value) {
- SD_PRINT_MATH_FUNC("sd_abs<unsigned short>", value, value,unsigned short);
- return value;
-}
 #endif // HAS_UINT16
 
 #ifdef HAS_UINT32
@@ -530,20 +558,16 @@ SD_HOST_DEVICE SD_INLINE uint32_t sd_abs<uint32_t>(uint32_t value) {
  SD_PRINT_MATH_FUNC("sd_abs<uint32_t>", value, value,uint32_t);
  return value;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE unsigned int sd_abs<unsigned int, unsigned int>(unsigned int value) {
- SD_PRINT_MATH_FUNC("sd_abs<unsigned int>", value, value,unsigned int);
- return value;
-}
 #endif // HAS_UINT32
 
 #ifdef HAS_UINT64
 template <>
 SD_HOST_DEVICE SD_INLINE sd::UnsignedLong sd_abs<sd::UnsignedLong>(sd::UnsignedLong value) {
- SD_PRINT_MATH_FUNC("sd_abs<sd::UnsignedLong>", value, value,sd::UnsignedLong);
+ SD_PRINT_MATH_FUNC("sd_abs<sd::UnsignedLong>", value, value, sd::UnsignedLong);
  return value;
 }
+
+
 #endif
 
 #ifdef HAS_INT8
@@ -567,13 +591,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE int16_t sd_abs<int16_t>(int16_t value) {
  int16_t result = value < 0 ? -value : value;
  SD_PRINT_MATH_FUNC("sd_abs<int16_t>", value, result,int16_t);
- return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE short sd_abs<short, short>(short value) {
- short result = value < 0 ? -value : value;
- SD_PRINT_MATH_FUNC("sd_abs<short>", value, result,short);
  return result;
 }
 #endif // HAS_INT16
@@ -631,13 +648,6 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint32_t>(uint32_t value) {
   SD_PRINT_MATH_FUNC("sd_isnan<uint32_t>", value, result,uint32_t);
   return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<unsigned int>(unsigned int value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<unsigned int>", value, result,unsigned int);
-  return result;
-}
 #endif // HAS_UINT32
 
 #ifdef HAS_UINT16
@@ -645,13 +655,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint16_t>(uint16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<uint16_t>", value, result,uint16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<unsigned short>(unsigned short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<unsigned short>", value, result,unsigned short);
   return result;
 }
 #endif // HAS_UINT16
@@ -670,13 +673,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int16_t>(int16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isnan<int16_t>", value, result,int16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<short>(short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<short>", value, result,short);
   return result;
 }
 #endif // HAS_INT16
@@ -715,24 +711,18 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::LongType>(sd::LongType value) {
   return result;
 }
 
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<long>(long value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<long>", value, result,long);
-  return result;
-}
 #endif // HAS_LONG
 
 #ifdef HAS_UINT64
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result,sd::UnsignedLong);
+  SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result, sd::UnsignedLong);
   return result;
 }
 
 
-#endif // HAS_UNSIGNEDLONG
+#endif // HAS_UINT64
 
 // sd_isinf specializations with HAS_* guards
 
@@ -796,13 +786,6 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint32_t>(uint32_t value) {
   SD_PRINT_MATH_FUNC("sd_isinf<uint32_t>", value, result,uint32_t);
   return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned int>(unsigned int value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<unsigned int>", value, result,unsigned int);
-  return result;
-}
 #endif // HAS_UINT32
 
 #ifdef HAS_UINT16
@@ -810,13 +793,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint16_t>(uint16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<uint16_t>", value, result,uint16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned short>(unsigned short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<unsigned short>", value, result,unsigned short);
   return result;
 }
 #endif // HAS_UINT16
@@ -828,13 +804,6 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint8_t>(uint8_t value) {
   SD_PRINT_MATH_FUNC("sd_isinf<uint8_t>", value, result,uint8_t);
   return result;
 }
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<unsigned short>(unsigned short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<unsigned short>", value, result,unsigned short);
-  return result;
-}
 #endif // HAS_UINT8
 
 #ifdef HAS_INT16
@@ -842,13 +811,6 @@ template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int16_t>(int16_t value) {
   bool result = false;
   SD_PRINT_MATH_FUNC("sd_isinf<int16_t>", value, result,int16_t);
-  return result;
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<short>(short value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<short>", value, result,short);
   return result;
 }
 #endif // HAS_INT16
@@ -886,23 +848,16 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::LongType>(sd::LongType value) {
   return result;
 }
 
-template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<long>(long value) {
-  bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<long>", value, result,long);
-  return result;
-}
-
-
 #endif // HAS_LONG
 
 #ifdef HAS_UINT64
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result,sd::UnsignedLong);
+  SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result, sd::UnsignedLong);
   return result;
 }
+
 
 #endif // HAS_UINT64
 
@@ -1094,13 +1049,31 @@ SD_HOST_DEVICE SD_INLINE Z sd_cos(X val) {
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_exp(X val) {
+  // Clamp input to prevent overflow - exp(88) ≈ 1.6e38 (near float32 max)
+  // exp(89) overflows to Inf, which then propagates as NaN through the network
+  // This is critical for numerical stability in deep networks like BERT/transformers
+  const X maxExp = static_cast<X>(88.0f);
+  const X minExp = static_cast<X>(-88.0f);
+  X clampedVal = val;
+  if (clampedVal > maxExp) clampedVal = maxExp;
+  if (clampedVal < minExp) clampedVal = minExp;
+  return static_cast<Z>(p_exp<X>(clampedVal));
+}
+
+// Unclamped exp for cases where the caller handles bounds checking
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_exp_unclamped(X val) {
   return static_cast<Z>(p_exp<X>(val));
 }
 
 #ifdef HAS_BFLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_exp<bfloat16, bfloat16>(bfloat16 val) {
-  bfloat16 result = (bfloat16)p_exp<float>((float)val);
+  // Clamp input to prevent overflow
+  float fval = (float)val;
+  if (fval > 88.0f) fval = 88.0f;
+  if (fval < -88.0f) fval = -88.0f;
+  bfloat16 result = (bfloat16)p_exp<float>(fval);
   SD_PRINT_MATH_FUNC("sd_exp<bfloat16>", val, result, bfloat16);
   return result;
 }
@@ -1109,8 +1082,15 @@ SD_HOST_DEVICE SD_INLINE bfloat16 sd_exp<bfloat16, bfloat16>(bfloat16 val) {
 #ifdef HAS_FLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE float16 sd_exp<float16, float16>(float16 val) {
-  float16 result = (float16)p_exp<float>((float)val);
-  SD_PRINT_MATH_FUNC("sd_exp<bfloat16>", val, result, float16);
+  // Clamp input to prevent overflow
+  float fval = (float)val;
+  if (fval > 88.0f) fval = 88.0f;
+  if (fval < -88.0f) fval = -88.0f;
+  float result_f32 = p_exp<float>(fval);
+  // Clamp to float16 max to prevent overflow on cast (exp(11.09) ≈ 65504 = float16 max)
+  if (result_f32 > 65504.0f) result_f32 = 65504.0f;
+  float16 result = (float16)result_f32;
+  SD_PRINT_MATH_FUNC("sd_exp<float16>", val, result, float16);
   return result;
 }
 #endif // HAS_FLOAT16
@@ -1616,11 +1596,12 @@ inline SD_DEVICE sd::LongType sd_atomicCAS<sd::LongType>(sd::LongType* address, 
 #ifdef HAS_DOUBLE
 template <>
 inline SD_DEVICE double sd_atomicCAS<double>(double* address, double compare, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
   unsigned long long int compare_as_ull = __double_as_longlong(compare);
   unsigned long long int val_as_ull = __double_as_longlong(val);
 
-  unsigned long long int old_as_ull = atomicCAS(address_as_ull, compare_as_ull, val_as_ull);
+  unsigned long long int old_as_ull = ::atomicCAS(address_as_ull, compare_as_ull, val_as_ull);
 
   return __longlong_as_double(old_as_ull);
 }
@@ -1737,11 +1718,12 @@ SD_DEVICE SD_INLINE float16 __ushort_as_half(unsigned short u) {
 #ifdef HAS_FLOAT32
 template <>
 inline SD_DEVICE float sd_atomicMin<float>(float* address, float val) {
-  int* address_as_ull = (int*)address;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  int* address_as_int = reinterpret_cast<int*>(address);
   int old = __float_as_int(val), assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, __float_as_int(math::sd_min(val, __int_as_float(assumed))));
+    old = ::atomicCAS(address_as_int, assumed, __float_as_int(math::sd_min(val, __int_as_float(assumed))));
   } while (assumed != old);
   return __int_as_float(old);
 }
@@ -1750,12 +1732,13 @@ inline SD_DEVICE float sd_atomicMin<float>(float* address, float val) {
 #ifdef HAS_DOUBLE
 template <>
 inline SD_DEVICE double sd_atomicMin<double>(double* address, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
   unsigned long long int old = __double_as_longlong(val), assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed,
-                    __double_as_longlong(math::sd_min(val, __longlong_as_double(assumed))));
+    old = ::atomicCAS(address_as_ull, assumed,
+                      __double_as_longlong(math::sd_min(val, __longlong_as_double(assumed))));
   } while (assumed != old);
   return __longlong_as_double(old);
 }
@@ -1765,13 +1748,15 @@ inline SD_DEVICE double sd_atomicMin<double>(double* address, double val) {
 template <>
 inline SD_DEVICE uint64_t sd_atomicMin<uint64_t>(uint64_t* address, uint64_t val) {
 #if __CUDA_ARCH__ >= 350
-  return atomicMin((unsigned long long*)address, (unsigned long long)val);
+  // Use reinterpret_cast to preserve address space qualifiers
+  return ::atomicMin(reinterpret_cast<unsigned long long*>(address), static_cast<unsigned long long>(val));
 #else
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
-  unsigned long long int old = __double_as_longlong(val), assumed;
+  // Fallback for older architectures
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
+  unsigned long long int old = static_cast<unsigned long long>(val), assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, math::sd_min((unsigned long long)val, assumed));
+    old = ::atomicCAS(address_as_ull, assumed, math::sd_min(static_cast<unsigned long long>(val), assumed));
   } while (assumed != old);
   return old;
 #endif
@@ -1782,15 +1767,19 @@ inline SD_DEVICE uint64_t sd_atomicMin<uint64_t>(uint64_t* address, uint64_t val
 template <>
 inline SD_DEVICE sd::LongType sd_atomicMin<sd::LongType>(sd::LongType* address, sd::LongType val) {
 #if __CUDA_ARCH__ >= 350
-  return atomicMin((unsigned long long*)address, (unsigned long long)val);
+  // Use reinterpret_cast to preserve address space qualifiers
+  return static_cast<sd::LongType>(::atomicMin(reinterpret_cast<unsigned long long*>(address),
+                                                static_cast<unsigned long long>(val)));
 #else
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
-  unsigned long long int old = (unsigned long long)val, assumed;
+  // Fallback for older architectures
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
+  unsigned long long int old = static_cast<unsigned long long>(val), assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, math::sd_min(val, (sd::LongType)assumed));
+    old = ::atomicCAS(address_as_ull, assumed,
+                      static_cast<unsigned long long>(math::sd_min(val, static_cast<sd::LongType>(assumed))));
   } while (assumed != old);
-  return old;
+  return static_cast<sd::LongType>(old);
 #endif
 }
 #endif // HAS_LONG
@@ -1859,12 +1848,13 @@ SD_DEVICE SD_INLINE  unsigned long sd_atomicMax<unsigned long>(unsigned long* ad
 #ifdef HAS_DOUBLE
 template <>
 SD_DEVICE SD_INLINE  double sd_atomicMax<double>(double* address, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
   unsigned long long int old = __double_as_longlong(val), assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed,
-                    __double_as_longlong(math::sd_max(val, __longlong_as_double(assumed))));
+    old = ::atomicCAS(address_as_ull, assumed,
+                      __double_as_longlong(math::sd_max(val, __longlong_as_double(assumed))));
   } while (assumed != old);
   return __longlong_as_double(old);
 }
@@ -1873,11 +1863,12 @@ SD_DEVICE SD_INLINE  double sd_atomicMax<double>(double* address, double val) {
 #ifdef HAS_FLOAT32
 template <>
 SD_DEVICE SD_INLINE  float sd_atomicMax<float>(float* address, float val) {
-  int* address_as_ull = (int*)address;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  int* address_as_int = reinterpret_cast<int*>(address);
   int old = __float_as_int(val), assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, __float_as_int(math::sd_max(val, __int_as_float(assumed))));
+    old = ::atomicCAS(address_as_int, assumed, __float_as_int(math::sd_max(val, __int_as_float(assumed))));
   } while (assumed != old);
   return __int_as_float(old);
 }
@@ -2128,91 +2119,109 @@ SD_INLINE SD_DEVICE bfloat16 sd_atomicMax<bfloat16>(bfloat16* address, bfloat16 
 #ifdef HAS_LONG
 template <>
 inline SD_DEVICE sd::LongType sd_atomicMax<sd::LongType>(sd::LongType* address, sd::LongType val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
 
   unsigned long long int old = *address_as_ull, assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, (unsigned long long) sd::math::sd_max<LongType>(val, (sd::LongType)assumed));
+    old = ::atomicCAS(address_as_ull, assumed,
+                      static_cast<unsigned long long>(sd::math::sd_max<LongType>(val, static_cast<sd::LongType>(assumed))));
   } while (assumed != old);
-  return old;
+  return static_cast<sd::LongType>(old);
 }
 #endif // HAS_LONG
+
+// On Linux x86_64, uint64_t == unsigned long, so the unsigned long specialization
+// above (line ~1830) already covers uint64_t. Only compile this when they differ
+// (e.g., Windows where uint64_t = unsigned long long).
+#if defined(HAS_UINT64) && !defined(__linux__)
+template <>
+inline SD_DEVICE uint64_t sd_atomicMax<uint64_t>(uint64_t* address, uint64_t val) {
+  unsigned long long* address_as_ull = reinterpret_cast<unsigned long long*>(address);
+  unsigned long long old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = ::atomicCAS(address_as_ull, assumed,
+                      static_cast<unsigned long long>(math::sd_max<uint64_t>(val, static_cast<uint64_t>(assumed))));
+  } while (assumed != old);
+  return static_cast<uint64_t>(old);
+}
+#endif // HAS_UINT64
 
 #ifdef HAS_DOUBLE
 template <>
 inline SD_DEVICE double sd_atomicAdd<double>(double* address, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+#if __CUDA_ARCH__ >= 600
+  // Use native atomicAdd for double on compute capability 6.0+
+  // This properly handles both global and shared memory address spaces
+  return ::atomicAdd(address, val);
+#else
+  // Fallback for older architectures using CAS loop
+  // Use reinterpret_cast to preserve address space qualifiers
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
   unsigned long long int old = *address_as_ull, assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, __double_as_longlong(val + __longlong_as_double(assumed)));
+    old = ::atomicCAS(address_as_ull, assumed, __double_as_longlong(val + __longlong_as_double(assumed)));
   } while (assumed != old);
   return __longlong_as_double(old);
+#endif
 }
 #endif // HAS_DOUBLE
 
 #ifdef HAS_LONG
+// Use CUDA's native atomicAdd for LongType (int64_t / unsigned long long) - available on all compute capabilities
 template <>
 inline SD_DEVICE sd::LongType sd_atomicAdd<sd::LongType>(sd::LongType* address, sd::LongType val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
-
-  unsigned long long int old = *address_as_ull, assumed;
-  do {
-    assumed = old;
-    old = atomicCAS(address_as_ull, assumed, val + assumed);
-  } while (assumed != old);
-  return old;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  // CUDA native atomicAdd for unsigned long long handles both global and shared memory
+  return static_cast<sd::LongType>(::atomicAdd(
+      reinterpret_cast<unsigned long long int*>(address),
+      static_cast<unsigned long long int>(val)));
 }
 
+// Only define sd_atomicAdd<long> when long is 32-bit (different from sd::LongType which is int64_t)
+// On 64-bit Linux, long is 64-bit and equals int64_t, causing duplicate definition
+#if LONG_MAX == 2147483647L
 template <>
 inline SD_DEVICE long sd_atomicAdd<long>(long* address, long val) {
-  unsigned long long* address_as_ull = (unsigned long long int*)address;
-
-  //    return atomicAdd(address, val);
-  unsigned long int old = *address_as_ull, assumed;
-  do {
-    assumed = old;
-    old = atomicCAS(address_as_ull, assumed, val + assumed);
-  } while (assumed != old);
-  return old;
+  // For 32-bit long, use CUDA's native atomicAdd for int
+  return static_cast<long>(::atomicAdd(
+      reinterpret_cast<int*>(address),
+      static_cast<int>(val)));
 }
+#endif // LONG_MAX == 2147483647L
+
 #endif // HAS_LONG
 
-// Custom atomicAdd for uint32_t
-SD_DEVICE SD_INLINE uint32_t atomicAdd(uint32_t* address, uint32_t val) {
-  uint32_t old = *address, assumed;
-  do {
-    assumed = old;
-    old = atomicCAS(address, assumed, assumed + val);
-  } while (assumed != old);
-  return old;
+// Use CUDA's native atomicAdd for uint32_t (available on all compute capabilities)
+// Native atomicAdd properly handles address space qualifiers for both global and shared memory
+SD_DEVICE SD_INLINE uint32_t sd_native_atomicAdd(uint32_t* address, uint32_t val) {
+  return atomicAdd(reinterpret_cast<unsigned int*>(address), static_cast<unsigned int>(val));
 }
 
-// Custom atomicAdd for uint64_t
-SD_DEVICE SD_INLINE uint64_t atomicAdd(uint64_t* address, uint64_t val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
-  unsigned long long int old = *address_as_ull, assumed;
-  do {
-    assumed = old;
-    old = atomicCAS(address_as_ull, assumed, assumed + val);
-  } while (assumed != old);
-  return old;
+// Use CUDA's native atomicAdd for uint64_t (available on all compute capabilities for unsigned long long)
+// Native atomicAdd properly handles address space qualifiers for both global and shared memory
+SD_DEVICE SD_INLINE uint64_t sd_native_atomicAdd(uint64_t* address, uint64_t val) {
+  return atomicAdd(reinterpret_cast<unsigned long long*>(address), static_cast<unsigned long long>(val));
 }
 
 #ifdef HAS_UINT32
-// Updated sd_atomicAdd implementation for uint32_t
+// Use CUDA's native atomicAdd for uint32_t (unsigned int) - available on all compute capabilities
 template <>
 inline SD_DEVICE uint32_t sd_atomicAdd<uint32_t>(uint32_t* address, uint32_t val) {
-  return atomicAdd(address, val);
+  // CUDA native atomicAdd for unsigned int handles both global and shared memory
+  return ::atomicAdd(reinterpret_cast<unsigned int*>(address), static_cast<unsigned int>(val));
 }
 #endif // HAS_UINT32
 
 #ifdef HAS_UINT64
-// Updated sd_atomicAdd implementation for uint64_t
+// Use CUDA's native atomicAdd for uint64_t (unsigned long long) - available on all compute capabilities
 template <>
 inline SD_DEVICE uint64_t sd_atomicAdd<uint64_t>(uint64_t* address, uint64_t val) {
-  return atomicAdd(address, val);
+  // CUDA native atomicAdd for unsigned long long handles both global and shared memory
+  return ::atomicAdd(reinterpret_cast<unsigned long long*>(address), static_cast<unsigned long long>(val));
 }
 #endif // HAS_UINT64
 
@@ -2220,31 +2229,32 @@ inline SD_DEVICE uint64_t sd_atomicAdd<uint64_t>(uint64_t* address, uint64_t val
 template <>
 inline SD_DEVICE float16 sd_atomicAdd<float16>(float16* address, float16 val) {
 #if __CUDA_ARCH__ >= 700 && CUDA_VERSION_MAJOR >= 10
-  atomicAdd(reinterpret_cast<__half*>(address), val.data);
+  // Use native atomicAdd for __half on compute capability 7.0+
+  ::atomicAdd(reinterpret_cast<__half*>(address), val.data);
 #else
-  auto address_as_ull = (int*)address;
-
-  long addr = (long)address;
+  // Fallback for older architectures - use 32-bit CAS to update 16-bit value
+  // Calculate aligned base address using reinterpret_cast to preserve address space qualifiers
+  size_t addr = reinterpret_cast<size_t>(address);
   bool misaligned = addr & 0x3;
 
-  if (misaligned) address_as_ull = (int*)(address - 1);
+  int* address_as_int = reinterpret_cast<int*>(reinterpret_cast<char*>(address) - (misaligned ? 2 : 0));
 
   PAIR old, assumed, fresh;
 
-  old.W = *address_as_ull;
+  old.W = *address_as_int;
   do {
     if (!misaligned) {
-      float16 res = ((float16)old.B.H) + val;
+      float16 res = (static_cast<float16>(old.B.H)) + val;
       fresh.B.H = res.data;
       fresh.B.L = old.B.L;
     } else {
-      float16 res = ((float16)old.B.L) + val;
+      float16 res = (static_cast<float16>(old.B.L)) + val;
       fresh.B.L = res.data;
       fresh.B.H = old.B.H;
     }
 
     assumed.W = old.W;
-    old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+    old.W = ::atomicCAS(address_as_int, assumed.W, fresh.W);
   } while (assumed.W != old.W);
 
   if (!misaligned)
@@ -2258,16 +2268,16 @@ inline SD_DEVICE float16 sd_atomicAdd<float16>(float16* address, float16 val) {
 #ifdef HAS_BFLOAT16
 template <>
 inline SD_DEVICE bfloat16 sd_atomicAdd<bfloat16>(bfloat16* address, bfloat16 val) {
-  auto address_as_ull = (int*)address;
-
-  auto addr = (long)(address);
+  // Use 32-bit CAS to update 16-bit value - calculate aligned base address
+  // using reinterpret_cast to preserve address space qualifiers
+  size_t addr = reinterpret_cast<size_t>(address);
   bool misaligned = addr & 0x3;
 
-  if (misaligned) address_as_ull = (int*)(address - 1);
+  int* address_as_int = reinterpret_cast<int*>(reinterpret_cast<char*>(address) - (misaligned ? 2 : 0));
 
   BPAIR old, assumed, fresh;
 
-  old.W = *address_as_ull;
+  old.W = *address_as_int;
   do {
     if (!misaligned) {
       bfloat16 res = old.B.H + val;
@@ -2280,7 +2290,7 @@ inline SD_DEVICE bfloat16 sd_atomicAdd<bfloat16>(bfloat16* address, bfloat16 val
     }
 
     assumed.W = old.W;
-    old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+    old.W = ::atomicCAS(address_as_int, assumed.W, fresh.W);
   } while (assumed.W != old.W);
 
   if (!misaligned)
@@ -2420,11 +2430,12 @@ inline SD_DEVICE double sd_atomicSub<double>(double* address, double val) {
 
 template <>
 inline SD_DEVICE double sd_atomicMul<double>(double* address, double val) {
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
   unsigned long long int old = *address_as_ull, assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, __double_as_longlong(val * __longlong_as_double(assumed)));
+    old = ::atomicCAS(address_as_ull, assumed, __double_as_longlong(val * __longlong_as_double(assumed)));
   } while (assumed != old);
   return __longlong_as_double(old);
 }
@@ -2435,48 +2446,16 @@ inline SD_DEVICE double sd_atomicDiv<double>(double* address, double val) {
 }
 #endif // HAS_DOUBLE
 
-// Helper functions for float-int conversions
-SD_DEVICE SD_INLINE unsigned int __float_as_uint(float f) {
-  return *reinterpret_cast<unsigned int*>(&f);
-}
-
-SD_DEVICE SD_INLINE float __uint_as_float(unsigned int u) {
-  return *reinterpret_cast<float*>(&u);
-}
-
-// Custom atomicAdd for float
-SD_DEVICE SD_INLINE float atomicAdd(float* address, float val) {
-  unsigned int* address_as_uint = (unsigned int*)address;
-  unsigned int old = *address_as_uint, assumed;
-
-  do {
-    assumed = old;
-    old = atomicCAS(address_as_uint, assumed,
-                    __float_as_uint(val + __uint_as_float(assumed)));
-  } while (assumed != old);
-
-  return __uint_as_float(old);
-}
-
-// Custom atomicAdd for int32_t
-SD_DEVICE SD_INLINE int32_t atomicAdd(int32_t* address, int32_t val) {
-  unsigned int* address_as_uint = (unsigned int*)address;
-  unsigned int old = *address_as_uint, assumed;
-
-  do {
-    assumed = old;
-    old = atomicCAS(address_as_uint, assumed,
-                    (unsigned int)((int)assumed + val));
-  } while (assumed != old);
-
-  return (int32_t)old;
-}
+// CUDA provides native atomicAdd for float and int on all compute capabilities
+// DO NOT define custom atomicAdd for these types - it would shadow CUDA's native implementation
+// and cause address space qualifier issues with shared memory
 
 #ifdef HAS_FLOAT32
-// Updated sd_atomicAdd implementation for float
+// Use CUDA's native atomicAdd for float (available on all compute capabilities)
+// Native atomicAdd properly handles address space qualifiers for both global and shared memory
 template <>
 inline SD_DEVICE float sd_atomicAdd<float>(float* address, float val) {
-  return atomicAdd(address, val);
+  return ::atomicAdd(address, val);  // Use global namespace to ensure CUDA's native atomicAdd
 }
 
 template <>
@@ -2486,11 +2465,12 @@ inline SD_DEVICE float sd_atomicSub<float>(float* address, float val) {
 
 template <>
 inline SD_DEVICE float sd_atomicMul<float>(float* address, float val) {
-  int* address_as_ull = (int*)address;
-  int old = *address_as_ull, assumed;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  int* address_as_int = reinterpret_cast<int*>(address);
+  int old = *address_as_int, assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, __float_as_int(val * __int_as_float(assumed)));
+    old = ::atomicCAS(address_as_int, assumed, __float_as_int(val * __int_as_float(assumed)));
   } while (assumed != old);
   return __int_as_float(old);
 }
@@ -2502,12 +2482,17 @@ inline SD_DEVICE float sd_atomicDiv<float>(float* address, float val) {
 #endif // HAS_FLOAT32
 
 #ifdef HAS_INT32
-// Updated sd_atomicAdd implementation for int32_t
+// Use CUDA's native atomicAdd for int32_t (int) - available on all compute capabilities
 template <>
 inline SD_DEVICE int32_t sd_atomicAdd<int32_t>(int32_t* address, int32_t val) {
-  return atomicAdd(address, val);
+  // CUDA native atomicAdd for int handles both global and shared memory
+  return ::atomicAdd(reinterpret_cast<int*>(address), static_cast<int>(val));
 }
 #endif // HAS_INT32
+
+// Forward declaration for internal_16bit_atomicMul
+template <typename T>
+static SD_INLINE SD_DEVICE T internal_16bit_atomicMul(T* address, T val);
 
 #ifdef HAS_FLOAT16
 template <>
@@ -2660,11 +2645,10 @@ inline SD_DEVICE int sd_atomicMul<int>(int* address, int val) {
 #ifdef HAS_UINT32
 template <>
 inline SD_DEVICE unsigned int sd_atomicMul<unsigned int>(unsigned int* address, unsigned int val) {
-  unsigned int* res_address = address;
-  unsigned int old = *res_address, assumed;
+  unsigned int old = *address, assumed;
   do {
     assumed = old;
-    old = atomicCAS(res_address, assumed, val * assumed);
+    old = ::atomicCAS(address, assumed, val * assumed);
   } while (assumed != old);
   return old;
 }
@@ -2673,41 +2657,33 @@ inline SD_DEVICE unsigned int sd_atomicMul<unsigned int>(unsigned int* address, 
 #ifdef HAS_LONG
 template <>
 inline SD_DEVICE int64_t sd_atomicMul<int64_t>(int64_t* address, int64_t val) {
-  unsigned long long int* res_address = (unsigned long long int*)address;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  unsigned long long int* res_address = reinterpret_cast<unsigned long long int*>(address);
   unsigned long long int old = *res_address, assumed;
   do {
     assumed = old;
-    old = atomicCAS(res_address, assumed, val * assumed);
+    old = ::atomicCAS(res_address, assumed, static_cast<unsigned long long>(val) * assumed);
   } while (assumed != old);
-  return (int64_t)old;
+  return static_cast<int64_t>(old);
 }
 #endif // HAS_LONG
 
 #ifdef HAS_UINT64
 template <>
 inline SD_DEVICE uint64_t sd_atomicMul<uint64_t>(uint64_t* address, uint64_t val) {
-  unsigned long long int* res_address = (unsigned long long int*)address;
+  // Use reinterpret_cast to preserve address space qualifiers for both global and shared memory
+  unsigned long long int* res_address = reinterpret_cast<unsigned long long int*>(address);
   unsigned long long int old = *res_address, assumed;
   do {
     assumed = old;
-    old = atomicCAS(res_address, assumed, val * assumed);
+    old = ::atomicCAS(res_address, assumed, static_cast<unsigned long long>(val) * assumed);
   } while (assumed != old);
-  return (uint64_t)old;
+  return static_cast<uint64_t>(old);
 }
 #endif // HAS_UINT64
 
-#if !defined(_WIN32) && !defined(_WIN64) && defined(HAS_LONG)
-template <>
-inline SD_DEVICE sd::LongType sd_atomicMul<sd::LongType>(sd::LongType* address, sd::LongType val) {
-  unsigned long long int* res_address = (unsigned long long*)address;
-  unsigned long long int old = *res_address, assumed;
-  do {
-    assumed = old;
-    old = atomicCAS(res_address, assumed, val * assumed);
-  } while (assumed != old);
-  return (sd::LongType)old;
-}
-#endif
+// Note: sd_atomicMul<sd::LongType> is not needed separately because sd::LongType is int64_t,
+// and the sd_atomicMul<int64_t> specialization above handles it.
 
 #ifdef HAS_FLOAT16
 template <>

@@ -25,7 +25,7 @@
     namespace sd {
 
   template <typename T>
-  SD_KERNEL void swapUnsafeKernel(
+  SD_KERNEL SD_INLINE void swapUnsafeKernel(
       void* theFirstBuffer,
       LongType const* theFirstShape,
       void* theSecondBuffer,
@@ -102,7 +102,7 @@
   }
 
   BUILD_SINGLE_TEMPLATE(
-       SD_KERNEL void swapUnsafeKernel,
+       SD_KERNEL SD_INLINE void swapUnsafeKernel,
       (void* theFirstBuffer,
        sd::LongType const* theFirstShape,
        void* theSecondBuffer,
