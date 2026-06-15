@@ -20,11 +20,12 @@
 
 package org.nd4j.autodiff.samediff.optimize;
 
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 
-import java.util.Properties;
+import java.util.Set;
 
 /**
  * @author Alex Black
@@ -40,5 +41,16 @@ public interface Optimizer {
      * @return True if the optimization was applied
      */
     boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op, ArrayHolder constantArrays, ArrayHolder variablesArrays);
+
+    /**
+     * Returns the set of op types this optimizer is interested in.
+     * If null or empty, the optimizer will be called for all ops.
+     * This allows for significant performance improvement by filtering ops early.
+     *
+     * @return Set of DifferentialFunction classes this optimizer handles, or null for all ops
+     */
+    default Set<Class<? extends DifferentialFunction>> getApplicableOpTypes() {
+        return null;  // Default: check all ops
+    }
 
 }

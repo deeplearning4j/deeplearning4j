@@ -226,25 +226,35 @@ public class ForwardExecutionDAG {
     
     private boolean hasCycle(ExecutionNode node, Set<String> visited, Set<String> visiting, Set<String> issues) {
         String nodeName = node.getOperationName();
-        
+
         if (visiting.contains(nodeName)) {
-            return true; // Cycle detected
+            // Control flow operations (While, Merge, NextIteration, etc.) inherently
+            // create cycles in the dependency graph. These are handled at execution time
+            // by the frame/iteration machinery, so they are not true errors.
+            if (node.getNodeType() == ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP) {
+                return false;
+            }
+            return true; // Cycle detected in non-control-flow ops
         }
-        
+
         if (visited.contains(nodeName)) {
             return false;
         }
-        
+
         visiting.add(nodeName);
-        
+
         // Check dependencies
         for (String depName : node.getDependsOnOperations()) {
             ExecutionNode depNode = operationNodes.get(depName);
             if (depNode != null && hasCycle(depNode, visited, visiting, issues)) {
+                // Allow cycles that pass through control flow operations
+                if (depNode.getNodeType() == ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP) {
+                    continue;
+                }
                 return true;
             }
         }
-        
+
         visiting.remove(nodeName);
         visited.add(nodeName);
         return false;
