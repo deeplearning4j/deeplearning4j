@@ -19,7 +19,12 @@
  */
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;

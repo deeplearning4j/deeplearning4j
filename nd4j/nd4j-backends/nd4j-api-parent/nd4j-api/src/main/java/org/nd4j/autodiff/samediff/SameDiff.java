@@ -21,8 +21,14 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import lombok.*;
+
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+
 import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
