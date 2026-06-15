@@ -203,22 +203,6 @@
                 <version>${netty.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>org.apache.maven.surefire</groupId>
                 <artifactId>maven-surefire-common</artifactId>
                 <version>${maven-surefire.version}</version>
@@ -517,21 +501,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-parallel-wrapper</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-vertx</artifactId>
-            <version>${project.version}</version>
-
         </dependency>
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
@@ -546,25 +518,6 @@
 
 
         </dependency>
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-
-        </dependency>
-
-        <!-- Needed for running tests on command line:
-        https://github.com/junit-team/junit5/issues/2813
-        -->
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
-
-        </dependency>
-
 
         <dependency>
             <groupId>com.h2database</groupId>
