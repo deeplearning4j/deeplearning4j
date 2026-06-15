@@ -19,7 +19,12 @@
  */
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.convolution;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
