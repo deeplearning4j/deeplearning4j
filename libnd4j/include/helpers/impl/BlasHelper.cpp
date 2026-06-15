@@ -20,7 +20,22 @@
 //  @author raver119@gmail.com
 //
 #include <helpers/BlasHelper.h>
+#include <cstdlib>
+#include <string>
+
+// OpenBLAS thread control function declaration
+#if HAVE_OPENBLAS
+extern "C" void openblas_set_num_threads(int num_threads);
+extern "C" int openblas_get_num_threads(void);
+#endif
+
 namespace sd {
+
+BlasHelper::BlasHelper() {
+  // Initialize BLAS threading configuration from environment
+  initializeBlasThreading();
+}
+
 BlasHelper &BlasHelper::getInstance() {
   static BlasHelper instance;
   return instance;
@@ -395,6 +410,113 @@ LapackeDgesvd BlasHelper::dgesvd() { return this->lapackeDgesvd; }
 LapackeDgesdd BlasHelper::dgesdd() { return this->lapackeDgesdd; }
 #endif
 #endif
+
+// BLAS call serialization implementation
+
+std::unique_lock<std::mutex> BlasHelper::lockBlas() const {
+  if (_serializeBlasCalls.load()) {
+    return std::unique_lock<std::mutex>(_blasMutex);
+  }
+  // Return an unlocked lock if serialization is disabled
+  return std::unique_lock<std::mutex>(_blasMutex, std::defer_lock);
+}
+
+bool BlasHelper::isSerializeBlasCalls() const {
+  return _serializeBlasCalls.load();
+}
+
+void BlasHelper::setSerializeBlasCalls(bool serialize) {
+  _serializeBlasCalls.store(serialize);
+}
+
+int BlasHelper::getOpenblasThreads() const {
+  return _openblasThreads.load();
+}
+
+void BlasHelper::setOpenblasThreads(int threads) {
+  _openblasThreads.store(threads);
+#if HAVE_OPENBLAS
+  if (threads > 0) {
+    openblas_set_num_threads(threads);
+    sd_debug("OpenBLAS threads set to %d\n", threads);
+  }
+#endif
+}
+
+void BlasHelper::initializeBlasThreading() {
+  // Check SD_BLAS_SERIALIZE environment variable
+  // Default is true (serialization enabled) for OpenBLAS safety
+  const char* serializeEnv = std::getenv("SD_BLAS_SERIALIZE");
+  if (serializeEnv != nullptr) {
+    std::string val(serializeEnv);
+    if (val == "0" || val == "false" || val == "FALSE" || val == "no" || val == "NO") {
+      _serializeBlasCalls.store(false);
+      sd_debug("BLAS call serialization DISABLED via SD_BLAS_SERIALIZE=%s\n", serializeEnv);
+    } else {
+      _serializeBlasCalls.store(true);
+      sd_debug("BLAS call serialization ENABLED via SD_BLAS_SERIALIZE=%s\n", serializeEnv);
+    }
+  } else {
+    // Default: enable serialization for OpenBLAS safety
+    _serializeBlasCalls.store(true);
+    sd_debug("BLAS call serialization ENABLED by default (set SD_BLAS_SERIALIZE=0 to disable)\n", "");
+  }
+
+  // Check SD_OPENBLAS_THREADS environment variable for OpenBLAS thread count
+  // This is separate from the serialization - you can have both:
+  // - Serialization ON + multi-threaded OpenBLAS = safe concurrent BLAS with internal parallelism
+  // - Serialization OFF + single-threaded OpenBLAS = original behavior
+  const char* threadsEnv = std::getenv("SD_OPENBLAS_THREADS");
+  if (threadsEnv != nullptr) {
+#ifdef __cpp_exceptions
+    try {
+      int threads = std::stoi(std::string(threadsEnv));
+      if (threads > 0) {
+        _openblasThreads.store(threads);
+#if HAVE_OPENBLAS
+        openblas_set_num_threads(threads);
+        sd_debug("OpenBLAS threads set to %d via SD_OPENBLAS_THREADS\n", threads);
+#endif
+      }
+    } catch (...) {
+      // Invalid value, ignore
+    }
+#else
+    int threads = std::atoi(threadsEnv);
+    if (threads > 0) {
+      _openblasThreads.store(threads);
+#if HAVE_OPENBLAS
+      openblas_set_num_threads(threads);
+      sd_debug("OpenBLAS threads set to %d via SD_OPENBLAS_THREADS\n", threads);
+#endif
+    }
+#endif
+  }
+
+  // Also check OPENBLAS_NUM_THREADS (standard OpenBLAS env var) if SD_OPENBLAS_THREADS not set
+  if (_openblasThreads.load() == 0) {
+    const char* openblasEnv = std::getenv("OPENBLAS_NUM_THREADS");
+    if (openblasEnv != nullptr) {
+#ifdef __cpp_exceptions
+      try {
+        int threads = std::stoi(std::string(openblasEnv));
+        if (threads > 0) {
+          _openblasThreads.store(threads);
+          sd_debug("OpenBLAS threads detected from OPENBLAS_NUM_THREADS=%d\n", threads);
+        }
+      } catch (...) {
+        // Invalid value, ignore
+      }
+#else
+      int threads = std::atoi(openblasEnv);
+      if (threads > 0) {
+        _openblasThreads.store(threads);
+        sd_debug("OpenBLAS threads detected from OPENBLAS_NUM_THREADS=%d\n", threads);
+      }
+#endif
+    }
+  }
+}
 
 // destructor
 BlasHelper::~BlasHelper() noexcept {}

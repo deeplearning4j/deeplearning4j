@@ -51,6 +51,8 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/OpExecutionLogger.h>
 #include <graph/OpContextLifecycleTracker.h>
+#include <array/NDArrayLifecycleTracker.h>
+#include <array/DataBufferLifecycleTracker.h>
 #include <sys/types.h>
 
 #include <execution/Threads.h>
@@ -328,6 +330,46 @@ int ompGetNumThreads() { return omp_get_num_threads(); }
  * Sets the number of openmp threads
  */
 void setOmpNumThreads(int threads) { omp_set_num_threads(threads); }
+
+/**
+ * Sets the number of threads used by OpenBLAS for BLAS operations.
+ * This is separate from OMP threads and specifically controls OpenBLAS's internal threading.
+ * Default should be 1 to prevent TLS corruption crashes in multi-threaded Java applications.
+ */
+void setOpenBlasThreads(int threads) {
+#if defined(__OPENBLAS)
+  openblas_set_num_threads(threads);
+#elif defined(__MKL)
+  // MKL uses a different function
+  MKL_Set_Num_Threads(threads);
+#else
+  // No OpenBLAS or MKL - this is a no-op
+  // The OMP thread setting may still affect BLAS behavior in some configurations
+#endif
+  // Also update the Environment setting
+  sd::Environment::getInstance().setOpenBlasThreads(threads);
+}
+
+/**
+ * Gets the number of threads OpenBLAS is configured to use.
+ */
+int getOpenBlasThreads() {
+  return sd::Environment::getInstance().getOpenBlasThreads();
+}
+
+/**
+ * Check if BLAS call serialization is enabled.
+ */
+bool isSerializeBlasCalls() {
+  return sd::Environment::getInstance().isSerializeBlasCalls();
+}
+
+/**
+ * Enable or disable BLAS call serialization.
+ */
+void setSerializeBlasCalls(bool serialize) {
+  sd::Environment::getInstance().setSerializeBlasCalls(serialize);
+}
 
 sd::Pointer createContext() { return 0L; }
 
@@ -872,16 +914,31 @@ void sortTad(sd::Pointer *extraPointers, OpaqueNDArray  x,
 sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context) {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
 
-#if defined(SD_GCC_FUNCTRACE)
     // Set op name BEFORE execute() so allocations during execution are tagged
+    // This is done unconditionally so per-op tracking works even without SD_GCC_FUNCTRACE
     if (op->getOpName() != nullptr) {
-        sd::ops::OpExecutionLogger::setCurrentOpName(*op->getOpName());
+        const std::string& opName = *op->getOpName();
+
+        // Set the op context in ALL lifecycle trackers so allocations are tagged
+        sd::array::NDArrayLifecycleTracker::setCurrentOpContext(opName);
+        sd::array::DataBufferLifecycleTracker::setCurrentOpContext(opName);
+        sd::graph::OpContextLifecycleTracker::setCurrentOpContext(opName);
+
         // Also update the already-tracked context with the op name
-        sd::graph::OpContextLifecycleTracker::getInstance().updateContextOpName(context, *op->getOpName());
-    }
+        sd::graph::OpContextLifecycleTracker::getInstance().updateContextOpName(context, opName);
+
+#if defined(SD_GCC_FUNCTRACE)
+        // Also set for OpExecutionLogger when functrace is enabled
+        sd::ops::OpExecutionLogger::setCurrentOpName(opName);
 #endif
+    }
 
     auto result = op->execute(context);
+
+    // Clear op context after execution
+    sd::array::NDArrayLifecycleTracker::clearCurrentOpContext();
+    sd::array::DataBufferLifecycleTracker::clearCurrentOpContext();
+    sd::graph::OpContextLifecycleTracker::clearCurrentOpContext();
 
 #if defined(SD_GCC_FUNCTRACE)
     sd::ops::OpExecutionLogger::clearCurrentOpName();

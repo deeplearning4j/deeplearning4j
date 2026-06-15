@@ -21,8 +21,12 @@
 package org.deeplearning4j.models.fasttext;
 
 import com.github.jfasttext.JFastText;
-import lombok.*;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
