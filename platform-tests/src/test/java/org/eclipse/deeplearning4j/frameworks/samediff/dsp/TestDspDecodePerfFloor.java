@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.frameworks.samediff.dsp;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.frameworks.samediff.dsp.regression.DspRegressionHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

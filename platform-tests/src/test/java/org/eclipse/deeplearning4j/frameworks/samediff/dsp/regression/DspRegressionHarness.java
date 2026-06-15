@@ -20,6 +20,8 @@
 package org.eclipse.deeplearning4j.frameworks.samediff.dsp.regression;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
@@ -74,6 +76,31 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 @Slf4j
 public abstract class DspRegressionHarness {
+
+    // ─── Lifecycle / fixture ────────────────────────────────────────────────
+
+    /**
+     * The graph under test. Subclasses return a freshly-built SameDiff instance.
+     * Called once per test by {@link #snapshotEnv()} setup. Subclasses that do
+     * not need a per-test fixture can return {@code null}.
+     */
+    protected SameDiff buildFixture() {
+        return null;
+    }
+
+    private EnvSnapshot beforeSnapshot;
+
+    @BeforeEach
+    public void snapshotEnv() {
+        this.beforeSnapshot = EnvSnapshot.capture();
+    }
+
+    @AfterEach
+    public void restoreEnv() {
+        if (beforeSnapshot != null) {
+            beforeSnapshot.restore();
+        }
+    }
 
     // ─── Perf-floor defaults ────────────────────────────────────────────────
 
@@ -175,6 +202,75 @@ public abstract class DspRegressionHarness {
      */
     protected static void assertTokPerSecFloor(Runnable decodeStep, int iterations, double minTokPerSec) {
         assertTokPerSecFloor(decodeStep, DEFAULT_WARMUP_STEPS, iterations, minTokPerSec);
+    }
+
+    /**
+     * Whether the active backend is CUDA. Returns {@code false} if the backend
+     * cannot be determined. Tests that require CUDA can call
+     * {@code assumeTrue(isCudaAvailable(), "...")} to skip gracefully on CPU CI.
+     */
+    protected static boolean isCudaAvailable() {
+        try {
+            String name = Nd4j.getBackend().getClass().getName().toLowerCase(Locale.ROOT);
+            return name.contains("cuda") || name.contains("cublas") || name.contains("jcublas");
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * Default tok/s floor — resolves {@code dsp.perf.minTokPerSec} system property
+     * (legacy name used by the {@code dsp} package callers) or falls back to
+     * {@link #DEFAULT_TOK_PER_SEC_FLOOR}. Prefer {@link #resolveTokPerSecFloor()}
+     * for new code (which uses the {@code nd4j.dsp.perf.tokPerSec.floor} property).
+     */
+    protected static double defaultTokPerSecFloor() {
+        String s = System.getProperty("dsp.perf.minTokPerSec");
+        if (s != null && !s.isEmpty()) {
+            try {
+                return Double.parseDouble(s);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return resolveTokPerSecFloor();
+    }
+
+    /**
+     * Build a small synthetic decode-loop-ish graph: one matmul followed by a
+     * softmax, shaped so it can be driven for N steps cheaply. Subclasses that
+     * don't need anything exotic can return this from {@link #buildFixture()}.
+     *
+     * @param hidden number of hidden units (the matmul width)
+     * @param vocab  vocabulary / output size
+     */
+    protected static SameDiff buildTinyDecodeFixture(int hidden, int vocab) {
+        SameDiff sd = SameDiff.create();
+        INDArray wArr = Nd4j.randn(new long[]{hidden, vocab}).castTo(Nd4j.defaultFloatingPointType());
+        sd.constant("W", wArr);
+        sd.placeHolder("x", Nd4j.defaultFloatingPointType(), 1, hidden);
+        sd.nn().softmax("logits", sd.mmul(sd.getVariable("x"), sd.getVariable("W")), 1);
+        return sd;
+    }
+
+    /**
+     * SameDiff-based assertTokPerSecFloor overload for callers that drive the
+     * graph directly with a fixed input map. This is a convenience wrapper around
+     * {@link #assertTokPerSecFloor(Runnable, int, int, double)}.
+     *
+     * @param sd           the SameDiff graph to execute
+     * @param inputs       placeholder inputs (reused on every iteration)
+     * @param outputName   the output node to fetch
+     * @param warmup       number of warmup iterations (discarded from measurement)
+     * @param iterations   number of steady-state iterations to measure
+     * @param minTokPerSec floor — below this the test fails
+     */
+    protected static void assertTokPerSecFloor(SameDiff sd,
+                                               Map<String, INDArray> inputs,
+                                               String outputName,
+                                               int warmup,
+                                               int iterations,
+                                               double minTokPerSec) {
+        assertTokPerSecFloor(() -> sd.output(inputs, outputName), warmup, iterations, minTokPerSec);
     }
 
     /**
