@@ -150,7 +150,7 @@ void sruTimeLoop(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, ND
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ static void sruBICuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
+SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
                                  const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo,
                                  const void* vc0, const LongType* c0ShapeInfo, const void* vmask,
                                  const LongType* maskShapeInfo, void* vht, const LongType* htShapeInfo,
@@ -358,7 +358,7 @@ void sruBI(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* 
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
+SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
                                    const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo,
                                    const void* vc0, const LongType* c0ShapeInfo, const void* vmask,
                                    const LongType* maskShapeInfo, const void* vct, const LongType* ctShapeInfo,

@@ -43,7 +43,7 @@ constexpr int RMS_WARP_SIZE = 32;
 // Warp-level reduction for sum
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ __forceinline__ T rmsWarpReduceSum(T val) {
+SD_DEVICE SD_INLINE T rmsWarpReduceSum(T val) {
   for (int offset = RMS_WARP_SIZE / 2; offset > 0; offset /= 2) {
     val += __shfl_down_sync(0xffffffff, val, offset);
   }
@@ -54,7 +54,7 @@ __device__ __forceinline__ T rmsWarpReduceSum(T val) {
 // Block-level reduction for sum using shared memory
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ T rmsBlockReduceSum(T val, T* sharedMem) {
+SD_DEVICE T rmsBlockReduceSum(T val, T* sharedMem) {
   const int lane = threadIdx.x % RMS_WARP_SIZE;
   const int wid = threadIdx.x / RMS_WARP_SIZE;
   const int numWarps = (blockDim.x + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
@@ -88,7 +88,7 @@ __device__ T rmsBlockReduceSum(T val, T* sharedMem) {
 // Only ONE reduction pass needed (sum of squares), vs TWO for layer norm.
 //////////////////////////////////////////////////////////////////////////////
 template <typename T, typename G>
-__global__ void rmsNormKernel(
+SD_KERNEL void rmsNormKernel(
     const T* __restrict__ input,    // [numRows, rowLen]
     const G* __restrict__ gamma,    // [rowLen] or nullptr (may differ from T)
     T* __restrict__ output,         // [numRows, rowLen]
@@ -254,7 +254,7 @@ void rmsNorm(
 // Saves one kernel launch per transformer layer by eliminating separate add.
 //////////////////////////////////////////////////////////////////////////////
 template <typename T, typename G>
-__global__ void skipRmsNormKernel(
+SD_KERNEL void skipRmsNormKernel(
     const T* __restrict__ input,     // [numRows, rowLen]
     const T* __restrict__ skip,      // [numRows, rowLen]
     const G* __restrict__ gamma,     // [rowLen] (may differ from T)

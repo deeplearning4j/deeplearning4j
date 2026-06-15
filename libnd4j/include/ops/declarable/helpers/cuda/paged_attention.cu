@@ -46,7 +46,7 @@ namespace helpers {
 // ──────────────────────────────────────────────────────────────────────────────
 
 template <typename T>
-static __global__ __launch_bounds__(256, 2) void pagedAttentionDecodeKernel(
+static SD_KERNEL __launch_bounds__(256, 2) void pagedAttentionDecodeKernel(
     const T* __restrict__ query,          // [batch, 1, numHeads, headDim]
     const T* __restrict__ keyPool,        // [numBlocks, blockSize, numKvHeads, headDim]
     const T* __restrict__ valuePool,      // [numBlocks, blockSize, numKvHeads, headDim]
@@ -164,7 +164,7 @@ static __global__ __launch_bounds__(256, 2) void pagedAttentionDecodeKernel(
 // ──────────────────────────────────────────────────────────────────────────────
 
 template <typename T>
-static __global__ __launch_bounds__(256, 2) void pagedKvAppendKernel(
+static SD_KERNEL __launch_bounds__(256, 2) void pagedKvAppendKernel(
     T* __restrict__ keyPool,              // [numBlocks, blockSize, numKvHeads, headDim]
     T* __restrict__ valuePool,            // [numBlocks, blockSize, numKvHeads, headDim]
     const T* __restrict__ newKeys,        // [batch, newLen, numKvHeads, headDim]

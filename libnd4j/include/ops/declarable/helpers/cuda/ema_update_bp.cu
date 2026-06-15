@@ -26,7 +26,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-__global__ void emaUpdateBpKernel(const T* __restrict__ gradOutput,
+SD_KERNEL void emaUpdateBpKernel(const T* __restrict__ gradOutput,
                                    T* __restrict__ dLdModel,
                                    T* __restrict__ dLdShadow,
                                    const T oneMinusDecay,

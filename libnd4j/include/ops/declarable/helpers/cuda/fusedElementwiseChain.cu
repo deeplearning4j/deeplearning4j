@@ -33,7 +33,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-__device__ T deviceApplyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T clipMaxVal) {
+SD_DEVICE T deviceApplyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T clipMaxVal) {
     switch (op) {
         // Binary ops
         case FUSED_ADD:       return val + secondaryVal;
@@ -92,7 +92,7 @@ __device__ T deviceApplyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, 
  * for fast access (they fit in one cache line).
  */
 template <typename T>
-__global__ void fusedElemKernel(
+SD_KERNEL void fusedElemKernel(
         const T* __restrict__ input,
         T* __restrict__ output,
         sd::LongType length,

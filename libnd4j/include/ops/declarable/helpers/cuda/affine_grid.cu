@@ -29,7 +29,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-__global__ void affineGrid2DKernel(const T* theta, const sd::LongType* size,
+SD_KERNEL void affineGrid2DKernel(const T* theta, const sd::LongType* size,
                                     bool alignCorners, T* output,
                                     sd::LongType batchSize, sd::LongType H, sd::LongType W) {
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -64,7 +64,7 @@ __global__ void affineGrid2DKernel(const T* theta, const sd::LongType* size,
 }
 
 template <typename T>
-__global__ void affineGrid3DKernel(const T* theta, const sd::LongType* size,
+SD_KERNEL void affineGrid3DKernel(const T* theta, const sd::LongType* size,
                                     bool alignCorners, T* output,
                                     sd::LongType batchSize, sd::LongType D, sd::LongType H, sd::LongType W) {
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -169,7 +169,7 @@ void affineGrid(LaunchContext* context, NDArray* theta, NDArray* size,
 }
 
 template <typename T>
-__global__ void gridSample2DKernel(const T* input, const T* grid, T* output,
+SD_KERNEL void gridSample2DKernel(const T* input, const T* grid, T* output,
                                     int mode, int paddingMode, bool alignCorners,
                                     sd::LongType batchSize, sd::LongType channels,
                                     sd::LongType inH, sd::LongType inW,

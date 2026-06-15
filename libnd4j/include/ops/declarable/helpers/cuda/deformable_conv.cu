@@ -34,7 +34,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-__device__ static T bilinearInterpolateDevice(const T* input,
+SD_DEVICE static T bilinearInterpolateDevice(const T* input,
                                                sd::LongType batch,
                                                sd::LongType channel,
                                                double y, double x,
@@ -77,7 +77,7 @@ __device__ static T bilinearInterpolateDevice(const T* input,
 }
 
 template <typename T>
-__global__ static void deformableConv2dKernel(
+SD_KERNEL static void deformableConv2dKernel(
     const T* input,
     const T* weights,
     const T* offset,

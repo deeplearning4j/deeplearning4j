@@ -34,7 +34,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-__global__ static void inTopKCuda(const void* vx, const LongType* xShapeInfo, const void* vy,
+SD_KERNEL static void inTopKCuda(const void* vx, const LongType* xShapeInfo, const void* vy,
                                   const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo,
                                   const LongType* xTadShapeInfo, const LongType* xTadOffsets,
                                   const LongType k) {

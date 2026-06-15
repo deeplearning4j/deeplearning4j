@@ -32,7 +32,7 @@ static constexpr int CS_WARP_SIZE = 32;
 // Phase 1: Center and scale: output[b][f] = (input[b][f] - center[f]) / temperature
 // Phase 2: Row-wise softmax
 template <typename T>
-__global__ void centerAndSharpenKernel(const T* __restrict__ input,
+SD_KERNEL void centerAndSharpenKernel(const T* __restrict__ input,
                                         const T* __restrict__ center,
                                         T* __restrict__ output,
                                         const LongType batch,

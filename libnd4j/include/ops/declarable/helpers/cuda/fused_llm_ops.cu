@@ -43,7 +43,7 @@ constexpr int WARP_SIZE = 32;
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-__device__ __forceinline__ T warpReduceSum(T val) {
+SD_DEVICE SD_INLINE T warpReduceSum(T val) {
   for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
     val += __shfl_down_sync(0xffffffff, val, offset);
   }
@@ -51,7 +51,7 @@ __device__ __forceinline__ T warpReduceSum(T val) {
 }
 
 template <typename T>
-__device__ __forceinline__ T blockReduceSum(T val, T* sharedMem) {
+SD_DEVICE SD_INLINE T blockReduceSum(T val, T* sharedMem) {
   const int lane = threadIdx.x % WARP_SIZE;
   const int wid = threadIdx.x / WARP_SIZE;
   const int numWarps = (blockDim.x + WARP_SIZE - 1) / WARP_SIZE;
@@ -70,11 +70,11 @@ __device__ __forceinline__ T blockReduceSum(T val, T* sharedMem) {
   return val;
 }
 
-__device__ __forceinline__ float fastSigmoid(float x) {
+SD_DEVICE SD_INLINE float fastSigmoid(float x) {
   return 1.0f / (1.0f + __expf(-x));
 }
 
-__device__ __forceinline__ float silu(float x) {
+SD_DEVICE SD_INLINE float silu(float x) {
   return x * fastSigmoid(x);
 }
 
@@ -121,7 +121,7 @@ static SD_KERNEL __launch_bounds__(256, 2) void fusedGELUBackwardKernel(
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-__global__ __launch_bounds__(256, 2) void fusedLayerNormKernel(
+SD_KERNEL __launch_bounds__(256, 2) void fusedLayerNormKernel(
     const T* __restrict__ input,
     const T* __restrict__ gain,
     const T* __restrict__ bias,
@@ -271,7 +271,7 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedRoPEKernel(
 }
 
 template <typename T>
-__global__ __launch_bounds__(256, 2) void fusedRoPEBackwardKernel(
+SD_KERNEL __launch_bounds__(256, 2) void fusedRoPEBackwardKernel(
     const T* __restrict__ gradOut,
     T* __restrict__ gradIn,
     const LongType batch,
@@ -384,7 +384,7 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedRoPECachedKernel(
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-__global__ __launch_bounds__(256, 2) void fusedBiasDropoutResidualKernel(
+SD_KERNEL __launch_bounds__(256, 2) void fusedBiasDropoutResidualKernel(
     const T* __restrict__ input,
     const T* __restrict__ bias,
     const T* __restrict__ residual,

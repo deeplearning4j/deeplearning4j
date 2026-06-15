@@ -38,7 +38,7 @@ namespace helpers {
 // ──────────────────────────────────────────────────────────────────────────
 
 template <typename T>
-static __global__ __launch_bounds__(256, 2) void turboQuantAttentionKernel(
+static SD_KERNEL __launch_bounds__(256, 2) void turboQuantAttentionKernel(
     const T* __restrict__ query,         // [B, H, Sq, D]
     const T* __restrict__ kMse,          // [B, H, Sk, D]
     const int8_t* __restrict__ qjlSigns, // [B, H, Sk, D]

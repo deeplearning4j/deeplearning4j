@@ -32,7 +32,7 @@ static constexpr int TWA_BP_WARP_SIZE = 32;
 
 // Reuse logits kernel from forward (recompute attention weights)
 template <typename T>
-__global__ void bpCrossAttnLogitsKernel(
+SD_KERNEL void bpCrossAttnLogitsKernel(
     const T* __restrict__ Q,
     const T* __restrict__ K,
     float* __restrict__ logits,
@@ -71,7 +71,7 @@ __global__ void bpCrossAttnLogitsKernel(
 }
 
 // Row-wise softmax (in-place)
-__global__ void bpCrossAttnSoftmaxKernel(
+SD_KERNEL void bpCrossAttnSoftmaxKernel(
     float* __restrict__ logits,
     const LongType rows,
     const LongType cols) {
@@ -130,7 +130,7 @@ __global__ void bpCrossAttnSoftmaxKernel(
 
 // dL/dAttnWeights = gradOut @ V^T => dLdAttn[i][j] = sum_d(gradOut[i][d] * V[j][d])
 template <typename T>
-__global__ void bpDLdAttnKernel(
+SD_KERNEL void bpDLdAttnKernel(
     const T* __restrict__ gradOut,
     const T* __restrict__ V,
     float* __restrict__ dLdAttn,
@@ -169,7 +169,7 @@ __global__ void bpDLdAttnKernel(
 
 // dL/dV = attnWeights^T @ gradOut => dLdV[j][d] = sum_i(attnWeights[i][j] * gradOut[i][d])
 template <typename T>
-__global__ void bpDLdVKernel(
+SD_KERNEL void bpDLdVKernel(
     const float* __restrict__ attnWeights,
     const T* __restrict__ gradOut,
     T* __restrict__ dLdV,
@@ -192,7 +192,7 @@ __global__ void bpDLdVKernel(
 }
 
 // Softmax backward: dL/dLogits = attnWeights * (dLdAttn - rowwise_dot(dLdAttn, attnWeights))
-__global__ void bpSoftmaxBackwardKernel(
+SD_KERNEL void bpSoftmaxBackwardKernel(
     const float* __restrict__ attnWeights,
     float* __restrict__ dLdAttn,  // in: dL/dAttnWeights, out: dL/dLogits
     const LongType rows,
@@ -233,7 +233,7 @@ __global__ void bpSoftmaxBackwardKernel(
 
 // dL/dQ = dL/dLogits @ K * scale => dLdQ[i][d] = sum_j(dLdLogits[i][j] * K[j][d]) * scale
 template <typename T>
-__global__ void bpDLdQKernel(
+SD_KERNEL void bpDLdQKernel(
     const float* __restrict__ dLdLogits,
     const T* __restrict__ K,
     T* __restrict__ dLdQ,
@@ -258,7 +258,7 @@ __global__ void bpDLdQKernel(
 
 // dL/dK = dL/dLogits^T @ Q * scale => dLdK[j][d] = sum_i(dLdLogits[i][j] * Q[i][d]) * scale
 template <typename T>
-__global__ void bpDLdKKernel(
+SD_KERNEL void bpDLdKKernel(
     const float* __restrict__ dLdLogits,
     const T* __restrict__ Q,
     T* __restrict__ dLdK,
