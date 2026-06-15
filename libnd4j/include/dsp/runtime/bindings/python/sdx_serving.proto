@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package nd4j.sdx.runtime.v1;
+
+// This protocol is intentionally close to dsp_runtime_c.h to keep conversion logic simple.
+service SdxRuntimeService {
+  rpc Health(HealthRequest) returns (HealthResponse);
+  rpc LoadModel(LoadModelRequest) returns (LoadModelResponse);
+  rpc UnloadModel(UnloadModelRequest) returns (UnloadModelResponse);
+  rpc Run(RunRequest) returns (RunResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  int32 abi_version = 2;
+}
+
+message ModelOptions {
+  int32 backend = 1;
+  bool strict_backend = 2;
+  bool allow_runtime_jit = 3;
+  int32 gpu_target = 4;
+}
+
+message LoadModelRequest {
+  string model_path = 1;
+  ModelOptions options = 2;
+  repeated string requested_outputs = 3;
+}
+
+message LoadModelResponse {
+  string model_id = 1;
+  int32 abi_version = 2;
+}
+
+message UnloadModelRequest {
+  string model_id = 1;
+}
+
+message UnloadModelResponse {}
+
+message Tensor {
+  string name = 1;
+  int32 dtype = 2;
+  repeated int64 shape = 3;
+  bytes data = 4;
+}
+
+message TensorSpec {
+  string name = 1;
+  int32 dtype = 2;
+  repeated int64 shape = 3;
+}
+
+message RunOptions {
+  int32 backend = 1;
+  bool strict_signature = 2;
+  int32 gpu_target = 3;
+}
+
+message RunRequest {
+  string model_id = 1;
+  repeated Tensor inputs = 2;
+  repeated TensorSpec outputs = 3;
+  RunOptions options = 4;
+}
+
+message ExecutionReport {
+  int32 requested_backend = 1;
+  int32 applied_backend = 2;
+  int32 status_code = 3;
+  bool used_fallback = 4;
+  uint64 execution_time_ns = 5;
+  int32 requested_gpu_target = 6;
+  int32 applied_gpu_target = 7;
+}
+
+message RunResponse {
+  repeated Tensor outputs = 1;
+  ExecutionReport report = 2;
+}

@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deeplearning4j.org/schemas/dsp/manifest.schema.json",
+  "title": "DSP Bundle Manifest",
+  "description": "Schema for self-contained DSP bundle metadata.",
+  "type": "object",
+  "required": [
+    "formatVersion",
+    "modelId",
+    "modelPath",
+    "compatibility"
+  ],
+  "properties": {
+    "formatVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "modelId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "producer": {
+      "type": "object",
+      "properties": {
+        "tool": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool",
+        "version"
+      ],
+      "additionalProperties": true
+    },
+    "modelPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "graphSignature": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "type": "array"
+        },
+        "outputs": {
+          "type": "array"
+        },
+        "shapePolicy": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "segments": {
+      "type": "array"
+    },
+    "weights": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "runtimeRequirements": {
+      "type": "array"
+    },
+    "preferredBackends": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gpuTarget": {
+      "type": "string",
+      "enum": [
+        "AUTO",
+        "CUDA",
+        "AMD"
+      ]
+    },
+    "compatibility": {
+      "type": "object",
+      "required": [
+        "minRuntimeAbi",
+        "maxRuntimeAbi"
+      ],
+      "properties": {
+        "minRuntimeAbi": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxRuntimeAbi": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
