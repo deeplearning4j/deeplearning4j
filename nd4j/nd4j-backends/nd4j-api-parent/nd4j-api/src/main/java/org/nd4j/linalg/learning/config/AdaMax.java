@@ -20,7 +20,9 @@
 
 package org.nd4j.linalg.learning.config;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Data;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaMaxUpdater;
 import org.nd4j.linalg.learning.GradientUpdater;
