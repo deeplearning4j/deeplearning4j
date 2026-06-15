@@ -61,7 +61,7 @@ public abstract class AbstractSession<T, O> {
     @Getter
     protected final Map<VarId, SDValue> nodeValueOutputs = new LinkedHashMap<>(); // Key: variable (at a given frame +
     protected   SameDiffExecutionVisualizer visualizer;
-    protected boolean visualizationEnabled = true;                                              // iteration). Value: the calculated
+    protected boolean visualizationEnabled = false;                                             // iteration). Value: the calculated
 
     /*
      * The dependency tracker is responsible for determining what ops (at what
