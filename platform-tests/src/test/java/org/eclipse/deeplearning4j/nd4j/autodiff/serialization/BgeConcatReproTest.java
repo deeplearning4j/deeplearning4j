@@ -39,11 +39,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Reproduces the exact concat_9 failure seen when kompile-app-main's
- * embedding subprocess loads bge-base-en-v1.5 from the local registry
- * at ~/.kompile/models/bge-base-en-v1.5/model.sdz.
+ * Reproduces the exact concat_9 failure seen during bge-base-en-v1.5 model inference
+ * loaded from the local registry at ~/.kompile/models/bge-base-en-v1.5/model.sdz.
  *
- * The subprocess feeds:
+ * The inference subprocess feeds:
  *   input_ids -> shape=[1, 512], dtype=LONG
  *   first tokens: [101, 2023, 2003, 1037, 27354, ...] (CLS + "this is a validation...")
  *   output requested: "last_hidden_state"
@@ -53,21 +52,21 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  *   GenericDenseSameDiffEncoder -- Error during GenericDense encoding
  *   Model returned null embedding - inference failed silently
  *
- * This test uses NO Kompile or Anserini abstractions — pure SameDiff only.
+ * This test uses no external abstractions — pure SameDiff only.
  */
 @Slf4j
-public class BgeKompileReproTest extends BaseND4JTest {
+public class BgeConcatReproTest extends BaseND4JTest {
 
     /**
-     * Path to the exact model file used by the kompile subprocess.
-     * This is the model that the staging service writes to the local registry.
+     * Path to the BGE model file used for testing.
+     * This is the model written to the local registry.
      */
-    private static final String KOMPILE_MODEL_PATH =
+    private static final String BGE_MODEL_PATH =
             System.getProperty("user.home") + "/.kompile/models/bge-base-en-v1.5/model.sdz";
 
     /**
      * Path to the model used by the existing BgeModelLoadingTest (different file).
-     * Included for comparison if the kompile model is not available.
+     * Included for comparison if the BGE model is not available.
      */
     private static final String PLATFORM_TESTS_MODEL_PATH =
             System.getProperty("bge.model.path",
@@ -79,9 +78,9 @@ public class BgeKompileReproTest extends BaseND4JTest {
     }
 
     /**
-     * Exact reproduction of the kompile subprocess failure.
+     * Exact reproduction of the concat_9 failure.
      *
-     * The subprocess does:
+     * The inference subprocess does:
      * 1. Load model via SDZSerializer
      * 2. Discover inputs = [input_ids], outputs = [last_hidden_state, 1492]
      * 3. Create input_ids with shape [1, 512], fill with tokenized
@@ -90,13 +89,13 @@ public class BgeKompileReproTest extends BaseND4JTest {
      * 5. concat_9 fails
      */
     @Test
-    public void testKompileSubprocessReproduction() throws Exception {
-        File modelFile = new File(KOMPILE_MODEL_PATH);
+    public void testConcatFailureReproduction() throws Exception {
+        File modelFile = new File(BGE_MODEL_PATH);
         assumeTrue(modelFile.exists(),
-                "Kompile model not found at: " + KOMPILE_MODEL_PATH +
-                ". Stage the model via kompile-model-staging first.");
+                "BGE model not found at: " + BGE_MODEL_PATH +
+                ". Stage the model to the local registry first.");
 
-        log.info("=== KOMPILE SUBPROCESS REPRODUCTION TEST ===");
+        log.info("=== BGE CONCAT_9 REPRODUCTION TEST ===");
         log.info("Loading model from: {}", modelFile.getAbsolutePath());
         log.info("File size: {} MB", modelFile.length() / (1024 * 1024));
 
@@ -186,9 +185,9 @@ public class BgeKompileReproTest extends BaseND4JTest {
      */
     @Test
     public void testWithAttentionMask() throws Exception {
-        File modelFile = new File(KOMPILE_MODEL_PATH);
+        File modelFile = new File(BGE_MODEL_PATH);
         assumeTrue(modelFile.exists(),
-                "Kompile model not found at: " + KOMPILE_MODEL_PATH);
+                "BGE model not found at: " + BGE_MODEL_PATH);
 
         log.info("=== TEST WITH ATTENTION MASK ===");
         SameDiff model = SDZSerializer.load(modelFile, true);
@@ -284,9 +283,9 @@ public class BgeKompileReproTest extends BaseND4JTest {
      */
     @Test
     public void testDiagnoseConcat9() throws Exception {
-        File modelFile = new File(KOMPILE_MODEL_PATH);
+        File modelFile = new File(BGE_MODEL_PATH);
         assumeTrue(modelFile.exists(),
-                "Kompile model not found at: " + KOMPILE_MODEL_PATH);
+                "BGE model not found at: " + BGE_MODEL_PATH);
 
         log.info("=== DIAGNOSING concat_9 OPERATION ===");
         SameDiff model = SDZSerializer.load(modelFile, true);
@@ -367,27 +366,27 @@ public class BgeKompileReproTest extends BaseND4JTest {
     }
 
     /**
-     * Compare the kompile model vs the platform-tests model to find structural differences.
+     * Compare the BGE model vs the platform-tests model to find structural differences.
      */
     @Test
     public void testCompareModels() throws Exception {
-        File kompileModel = new File(KOMPILE_MODEL_PATH);
+        File bgeModel = new File(BGE_MODEL_PATH);
         File ptModel = new File(PLATFORM_TESTS_MODEL_PATH);
-        assumeTrue(kompileModel.exists(), "Kompile model not found");
+        assumeTrue(bgeModel.exists(), "BGE model not found");
         assumeTrue(ptModel.exists(), "Platform tests model not found");
 
         log.info("=== COMPARING MODELS ===");
 
-        SameDiff m1 = SDZSerializer.load(kompileModel, true);
+        SameDiff m1 = SDZSerializer.load(bgeModel, true);
         SameDiff m2 = SDZSerializer.load(ptModel, true);
 
-        log.info("Kompile model: inputs={}, outputs={}, vars={}, ops={}",
+        log.info("BGE model: inputs={}, outputs={}, vars={}, ops={}",
                 m1.inputs(), m1.outputs(), m1.variables().size(), m1.ops().length);
         log.info("Platform model: inputs={}, outputs={}, vars={}, ops={}",
                 m2.inputs(), m2.outputs(), m2.variables().size(), m2.ops().length);
 
         // Compare file sizes
-        log.info("Kompile model size: {} MB", kompileModel.length() / (1024 * 1024));
+        log.info("BGE model size: {} MB", bgeModel.length() / (1024 * 1024));
         log.info("Platform model size: {} MB", ptModel.length() / (1024 * 1024));
 
         // Check if they're the same model or different
@@ -401,21 +400,21 @@ public class BgeKompileReproTest extends BaseND4JTest {
         // Check input differences
         if (!m1.inputs().equals(m2.inputs())) {
             log.warn("DIFFERENT INPUTS:");
-            log.warn("  Kompile: {}", m1.inputs());
+            log.warn("  BGE model: {}", m1.inputs());
             log.warn("  Platform: {}", m2.inputs());
 
-            // Find inputs in platform model that are missing from kompile model
+            // Find inputs in platform model that are missing from BGE model
             for (String input : m2.inputs()) {
                 if (!m1.inputs().contains(input)) {
-                    log.warn("  Missing from kompile model: '{}'", input);
+                    log.warn("  Missing from BGE model: '{}'", input);
                 }
             }
         }
 
         // If platform model has more inputs (like attention_mask), that's likely the issue
         if (m2.inputs().size() > m1.inputs().size()) {
-            log.warn("Platform model has MORE inputs than Kompile model.");
-            log.warn("The Kompile model may have been exported/converted without attention_mask.");
+            log.warn("Platform model has MORE inputs than BGE model.");
+            log.warn("The BGE model may have been exported/converted without attention_mask.");
             log.warn("This could cause concat operations to fail due to missing shape information.");
         }
     }
