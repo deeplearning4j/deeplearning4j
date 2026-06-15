@@ -150,14 +150,10 @@ DECLARE_TYPES(vlm_image_embed) {
 //////////////////////////////////////////////////////////////////////////
 // vlm_patch_embed - Extract and embed patches
 #if NOT_EXCLUDED(OP_vlm_patch_embed)
-CUSTOM_OP_IMPL(vlm_patch_embed, 1, 1, false, 0, 0) {
-    auto input = INPUT_VARIABLE(0);
-    auto output = OUTPUT_VARIABLE(0);
 
-    int patchSize = block.getIArguments()->size() > 0 ? INT_ARG(0) : 16;
-    int stride = block.getIArguments()->size() > 1 ? INT_ARG(1) : patchSize;
-    bool includeCls = block.getIArguments()->size() > 2 ? INT_ARG(2) != 0 : true;
-
+template <typename T>
+static sd::Status vlm_patch_embed_impl(NDArray* input, NDArray* output,
+                                        int patchSize, int stride, bool includeCls) {
     auto batch = input->sizeAt(0);
     auto channels = input->sizeAt(1);
     auto height = input->sizeAt(2);
@@ -168,9 +164,11 @@ CUSTOM_OP_IMPL(vlm_patch_embed, 1, 1, false, 0, 0) {
     auto numPatches = numPatchesH * numPatchesW + (includeCls ? 1 : 0);
     auto patchDim = channels * patchSize * patchSize;
 
-    // Extract patches
-    auto inputBuf = input->bufferAsT<float>();
-    auto outputBuf = output->bufferAsT<float>();
+    input->syncToHost();
+    output->syncToHost();
+
+    const T* inputBuf = input->bufferAsT<T>();
+    T* outputBuf = output->bufferAsT<T>();
 
     for (LongType b = 0; b < batch; ++b) {
         LongType patchIdx = includeCls ? 1 : 0;
@@ -179,7 +177,7 @@ CUSTOM_OP_IMPL(vlm_patch_embed, 1, 1, false, 0, 0) {
         if (includeCls) {
             PRAGMA_OMP_SIMD
             for (LongType i = 0; i < patchDim; ++i) {
-                outputBuf[b * numPatches * patchDim + i] = 0.0f;
+                outputBuf[b * numPatches * patchDim + i] = static_cast<T>(0);
             }
         }
 
@@ -203,7 +201,27 @@ CUSTOM_OP_IMPL(vlm_patch_embed, 1, 1, false, 0, 0) {
         }
     }
 
-    return Status::OK;
+    output->tickWriteHost();
+    output->syncToDevice();
+
+    return sd::Status::OK;
+}
+
+BUILD_SINGLE_TEMPLATE(extern sd::Status vlm_patch_embed_impl,
+                      (NDArray* input, NDArray* output, int patchSize, int stride, bool includeCls),
+                      SD_FLOAT_TYPES);
+
+CUSTOM_OP_IMPL(vlm_patch_embed, 1, 1, false, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
+
+    int patchSize = block.getIArguments()->size() > 0 ? INT_ARG(0) : 16;
+    int stride = block.getIArguments()->size() > 1 ? INT_ARG(1) : patchSize;
+    bool includeCls = block.getIArguments()->size() > 2 ? INT_ARG(2) != 0 : true;
+
+    auto inputType = input->dataType();
+    BUILD_SINGLE_SELECTOR(inputType, return vlm_patch_embed_impl,
+                          (input, output, patchSize, stride, includeCls), SD_FLOAT_TYPES);
 }
 
 DECLARE_SHAPE_FN(vlm_patch_embed) {
@@ -237,6 +255,25 @@ DECLARE_TYPES(vlm_patch_embed) {
 //////////////////////////////////////////////////////////////////////////
 // vlm_cross_attention - Cross attention between vision and language
 #if NOT_EXCLUDED(OP_vlm_cross_attention)
+
+template <typename T>
+static void vlm_cross_attention_causal_mask(NDArray* scores, LongType seqLen, LongType kvLen) {
+    scores->syncToHost();
+    T* scoresBuf = scores->bufferAsT<T>();
+    for (LongType i = 0; i < seqLen; ++i) {
+        for (LongType j = i + 1; j < kvLen; ++j) {
+            // Mask future positions with a large negative value
+            scoresBuf[i * kvLen + j] = static_cast<T>(-1.0e9);
+        }
+    }
+    scores->tickWriteHost();
+    scores->syncToDevice();
+}
+
+BUILD_SINGLE_TEMPLATE(extern void vlm_cross_attention_causal_mask,
+                      (NDArray* scores, LongType seqLen, LongType kvLen),
+                      SD_FLOAT_TYPES);
+
 CUSTOM_OP_IMPL(vlm_cross_attention, 3, 1, false, 0, 0) {
     auto query = INPUT_VARIABLE(0);    // [batch, seq_len, dim]
     auto key = INPUT_VARIABLE(1);      // [batch, kv_len, dim]
@@ -260,13 +297,8 @@ CUSTOM_OP_IMPL(vlm_cross_attention, 3, 1, false, 0, 0) {
     if (isCausal) {
         auto seqLen = query->sizeAt(1);
         auto kvLen = key->sizeAt(1);
-        auto scoresBuf = scores->bufferAsT<float>();
-        for (LongType i = 0; i < seqLen; ++i) {
-            for (LongType j = i + 1; j < kvLen; ++j) {
-                // Mask future positions
-                scoresBuf[i * kvLen + j] = -1e9f;
-            }
-        }
+        BUILD_SINGLE_SELECTOR(scores->dataType(), vlm_cross_attention_causal_mask,
+                              (scores, seqLen, kvLen), SD_FLOAT_TYPES);
     }
 
     // Softmax - use exp and normalize manually
@@ -453,22 +485,13 @@ DECLARE_TYPES(vlm_image_preprocess) {
 //////////////////////////////////////////////////////////////////////////
 // vlm_2d_position_encode - 2D position encoding
 #if NOT_EXCLUDED(OP_vlm_2d_position_encode)
-CUSTOM_OP_IMPL(vlm_2d_position_encode, 1, 1, false, 0, 0) {
-    auto input = INPUT_VARIABLE(0);   // [batch, num_patches, dim]
-    auto output = OUTPUT_VARIABLE(0);
 
-    int height = block.getIArguments()->size() > 0 ? INT_ARG(0) : 14;
-    int width = block.getIArguments()->size() > 1 ? INT_ARG(1) : 14;
-    float temperature = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
-
-    // Copy input to output
-    output->assign(input);
-
-    auto batch = input->sizeAt(0);
-    auto numPatches = input->sizeAt(1);
-    auto dim = input->sizeAt(2);
-
-    auto outputBuf = output->bufferAsT<float>();
+template <typename T>
+static sd::Status vlm_2d_position_encode_impl(NDArray* output,
+                                               LongType batch, LongType numPatches, LongType dim,
+                                               int height, int width, float temperature) {
+    output->syncToHost();
+    T* outputBuf = output->bufferAsT<T>();
 
     int halfDim = dim / 2;
     int quarterDim = halfDim / 2;
@@ -484,21 +507,49 @@ CUSTOM_OP_IMPL(vlm_2d_position_encode, 1, 1, false, 0, 0) {
             PRAGMA_OMP_SIMD
             for (int i = 0; i < quarterDim; ++i) {
                 float freq = 1.0f / std::pow(temperature, (2.0f * i) / quarterDim);
-                outputBuf[outOffset + i] += std::sin(py * freq);
-                outputBuf[outOffset + quarterDim + i] += std::cos(py * freq);
+                outputBuf[outOffset + i] += static_cast<T>(std::sin(py * freq));
+                outputBuf[outOffset + quarterDim + i] += static_cast<T>(std::cos(py * freq));
             }
 
             // Width position encoding
             PRAGMA_OMP_SIMD
             for (int i = 0; i < quarterDim; ++i) {
                 float freq = 1.0f / std::pow(temperature, (2.0f * i) / quarterDim);
-                outputBuf[outOffset + halfDim + i] += std::sin(px * freq);
-                outputBuf[outOffset + halfDim + quarterDim + i] += std::cos(px * freq);
+                outputBuf[outOffset + halfDim + i] += static_cast<T>(std::sin(px * freq));
+                outputBuf[outOffset + halfDim + quarterDim + i] += static_cast<T>(std::cos(px * freq));
             }
         }
     }
 
-    return Status::OK;
+    output->tickWriteHost();
+    output->syncToDevice();
+
+    return sd::Status::OK;
+}
+
+BUILD_SINGLE_TEMPLATE(extern sd::Status vlm_2d_position_encode_impl,
+                      (NDArray* output, LongType batch, LongType numPatches, LongType dim,
+                       int height, int width, float temperature),
+                      SD_FLOAT_TYPES);
+
+CUSTOM_OP_IMPL(vlm_2d_position_encode, 1, 1, false, 0, 0) {
+    auto input = INPUT_VARIABLE(0);   // [batch, num_patches, dim]
+    auto output = OUTPUT_VARIABLE(0);
+
+    int height = block.getIArguments()->size() > 0 ? INT_ARG(0) : 14;
+    int width = block.getIArguments()->size() > 1 ? INT_ARG(1) : 14;
+    float temperature = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
+
+    // Copy input to output
+    output->assign(input);
+
+    auto batch = input->sizeAt(0);
+    auto numPatches = input->sizeAt(1);
+    auto dim = input->sizeAt(2);
+
+    BUILD_SINGLE_SELECTOR(output->dataType(), return vlm_2d_position_encode_impl,
+                          (output, batch, numPatches, dim, height, width, temperature),
+                          SD_FLOAT_TYPES);
 }
 
 DECLARE_SHAPE_FN(vlm_2d_position_encode) {

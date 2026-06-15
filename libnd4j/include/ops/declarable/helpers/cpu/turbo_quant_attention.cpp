@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/turbo_quant_attention.h>
 #include <array/NDArrayFactory.h>
+#include <system/op_boilerplate.h>
 #include <cmath>
 
 #if NOT_EXCLUDED(OP_turbo_quant_attention)
@@ -28,7 +29,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-void turboQuantAttentionForward(
+template <typename T>
+static void turboQuantAttentionForward_(
     NDArray* query,
     NDArray* kMse,
     NDArray* qjlSigns,
@@ -47,13 +49,13 @@ void turboQuantAttentionForward(
   auto headDim = query->sizeAt(3);
   auto seqK = kMse->sizeAt(2);
 
-  float scale = config.scale;
-  if (scale <= 0.0f) {
-    scale = 1.0f / std::sqrt(static_cast<float>(headDim));
+  T scale = static_cast<T>(config.scale);
+  if (config.scale <= 0.0f) {
+    scale = static_cast<T>(1.0f / std::sqrt(static_cast<float>(headDim)));
   }
 
   // QJL correction factor: sqrt(π/2) / m
-  float qjlCorrectionScale = std::sqrt(M_PI / 2.0) / static_cast<float>(headDim);
+  T qjlCorrectionScale = static_cast<T>(std::sqrt(M_PI / 2.0) / static_cast<float>(headDim));
 
   // Process each batch and head independently
   for (sd::LongType b = 0; b < batch; b++) {
@@ -72,47 +74,47 @@ void turboQuantAttentionForward(
         // q: [headDim]
 
         // First pass: compute scores and find max for numerical stability
-        float maxScore = -std::numeric_limits<float>::infinity();
-        std::vector<float> scores(seqK);
+        T maxScore = -std::numeric_limits<T>::infinity();
+        std::vector<T> scores(seqK);
 
         for (sd::LongType sk = 0; sk < seqK; sk++) {
           // Term 1: dot(q, k_mse)
-          float term1 = 0.0f;
+          T term1 = static_cast<T>(0);
           for (sd::LongType d = 0; d < headDim; d++) {
-            float qVal = query->e<float>(b, h, sq, d);
-            float kVal = kMse->e<float>(b, h, sk, d);
+            T qVal = query->e<T>(b, h, sq, d);
+            T kVal = kMse->e<T>(b, h, sk, d);
             term1 += qVal * kVal;
           }
 
           // Term 2: QJL correction
           // Project query: q_proj = q @ S^T
           // Then dot with signs
-          float qjlIp = 0.0f;
+          T qjlIp = static_cast<T>(0);
           for (sd::LongType d = 0; d < headDim; d++) {
             // q_proj[d] = sum_j q[j] * S[d][j]  (S is [D, D])
-            float qProjD = 0.0f;
+            T qProjD = static_cast<T>(0);
             for (sd::LongType j = 0; j < headDim; j++) {
-              qProjD += query->e<float>(b, h, sq, j) * qjlMatrix->e<float>(d, j);
+              qProjD += query->e<T>(b, h, sq, j) * qjlMatrix->e<T>(d, j);
             }
-            float signVal = static_cast<float>(qjlSigns->e<int8_t>(b, h, sk, d));
+            T signVal = static_cast<T>(qjlSigns->e<int8_t>(b, h, sk, d));
             qjlIp += qProjD * signVal;
           }
 
-          float residualNorm = residualNorms->e<float>(b, h, sk);
-          float term2 = residualNorm * qjlCorrectionScale * qjlIp;
+          T residualNorm = residualNorms->e<T>(b, h, sk);
+          T term2 = residualNorm * qjlCorrectionScale * qjlIp;
 
-          float score = (term1 + term2) * scale;
+          T score = (term1 + term2) * scale;
 
           // Apply attention mask
           if (attentionMask != nullptr && attentionMask->lengthOf() > 0) {
             // Broadcast mask: [B, 1, 1, Sk] or similar
-            float maskVal = 0.0f;
+            T maskVal = static_cast<T>(0);
             if (attentionMask->rankOf() == 4) {
               auto mb = std::min(b, attentionMask->sizeAt(0) - 1);
               auto mh = std::min((sd::LongType)0, attentionMask->sizeAt(1) - 1);
               auto msq = std::min((sd::LongType)0, attentionMask->sizeAt(2) - 1);
               auto msk = std::min(sk, attentionMask->sizeAt(3) - 1);
-              maskVal = attentionMask->e<float>(mb, mh, msq, msk);
+              maskVal = attentionMask->e<T>(mb, mh, msq, msk);
             }
             score += maskVal;
           }
@@ -122,13 +124,13 @@ void turboQuantAttentionForward(
         }
 
         // ---- Step 2: Softmax ----
-        float sumExp = 0.0f;
-        std::vector<float> weights(seqK);
+        T sumExp = static_cast<T>(0);
+        std::vector<T> weights(seqK);
         for (sd::LongType sk = 0; sk < seqK; sk++) {
-          weights[sk] = std::exp(scores[sk] - maxScore);
+          weights[sk] = static_cast<T>(std::exp(static_cast<float>(scores[sk] - maxScore)));
           sumExp += weights[sk];
         }
-        if (sumExp > 0.0f) {
+        if (sumExp > static_cast<T>(0)) {
           for (sd::LongType sk = 0; sk < seqK; sk++) {
             weights[sk] /= sumExp;
           }
@@ -136,16 +138,39 @@ void turboQuantAttentionForward(
 
         // ---- Step 3: Weighted sum of values ----
         for (sd::LongType d = 0; d < headDim; d++) {
-          float acc = 0.0f;
+          T acc = static_cast<T>(0);
           for (sd::LongType sk = 0; sk < seqK; sk++) {
-            acc += weights[sk] * values->e<float>(b, h, sk, d);
+            acc += weights[sk] * values->e<T>(b, h, sk, d);
           }
-          output->p(b, h, sq, d, acc);
+          output->p<T>(b, h, sq, d, acc);
         }
       }
     }
   }
 }
+
+void turboQuantAttentionForward(
+    NDArray* query,
+    NDArray* kMse,
+    NDArray* qjlSigns,
+    NDArray* residualNorms,
+    NDArray* qjlMatrix,
+    NDArray* values,
+    NDArray* attentionMask,
+    NDArray* output,
+    const TurboQuantAttentionConfig& config,
+    LaunchContext* context) {
+
+  BUILD_SINGLE_SELECTOR(query->dataType(), turboQuantAttentionForward_,
+                        (query, kMse, qjlSigns, residualNorms, qjlMatrix, values,
+                         attentionMask, output, config, context),
+                        SD_FLOAT_TYPES);
+}
+
+BUILD_SINGLE_TEMPLATE(template void turboQuantAttentionForward_,
+                      (NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*,
+                       NDArray*, NDArray*, const TurboQuantAttentionConfig&, LaunchContext*),
+                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

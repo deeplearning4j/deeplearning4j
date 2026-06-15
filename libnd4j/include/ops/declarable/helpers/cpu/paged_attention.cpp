@@ -24,6 +24,7 @@
 
 #include <ops/declarable/helpers/paged_attention.h>
 #include <array/NDArrayFactory.h>
+#include <system/op_boilerplate.h>
 #include <cmath>
 #include <cfloat>
 
@@ -31,7 +32,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-void pagedAttentionForward(
+template <typename T>
+static void pagedAttentionForward_(
     NDArray* query,
     NDArray* keyBlockPool,
     NDArray* valueBlockPool,
@@ -48,9 +50,9 @@ void pagedAttentionForward(
     int blockSize = config.blockSize;
     int maxBlocksPerSeq = static_cast<int>(pageTables->sizeAt(1));
 
-    float scale = config.scale;
-    if (scale <= 0.0f) {
-        scale = 1.0f / std::sqrt(static_cast<float>(headDim));
+    T scale = static_cast<T>(config.scale);
+    if (config.scale <= 0.0f) {
+        scale = static_cast<T>(1.0f / std::sqrt(static_cast<float>(headDim)));
     }
 
     // Simple CPU implementation: iterate over batch, heads, compute attention
@@ -63,8 +65,8 @@ void pagedAttentionForward(
                 ? (h * numKvHeads / numHeads) : h;
 
             // Compute attention scores
-            std::vector<float> scores(ctxLen);
-            float maxScore = -FLT_MAX;
+            std::vector<T> scores(ctxLen);
+            T maxScore = static_cast<T>(-FLT_MAX);
 
             for (int pos = 0; pos < ctxLen; pos++) {
                 int logicalBlock = pos / blockSize;
@@ -72,14 +74,14 @@ void pagedAttentionForward(
                 int physicalBlock = pageTables->e<int>(b, logicalBlock);
 
                 if (physicalBlock < 0) {
-                    scores[pos] = -FLT_MAX;
+                    scores[pos] = static_cast<T>(-FLT_MAX);
                     continue;
                 }
 
-                float score = 0.0f;
+                T score = static_cast<T>(0);
                 for (int d = 0; d < headDim; d++) {
-                    float q = query->e<float>(b, 0, h, d);
-                    float k = keyBlockPool->e<float>(physicalBlock, offsetInBlock, kvHead, d);
+                    T q = query->e<T>(b, 0, h, d);
+                    T k = keyBlockPool->e<T>(physicalBlock, offsetInBlock, kvHead, d);
                     score += q * k;
                 }
                 scores[pos] = score * scale;
@@ -87,35 +89,56 @@ void pagedAttentionForward(
             }
 
             // Softmax
-            float sumExp = 0.0f;
+            T sumExp = static_cast<T>(0);
             for (int pos = 0; pos < ctxLen; pos++) {
-                scores[pos] = std::exp(scores[pos] - maxScore);
+                scores[pos] = static_cast<T>(std::exp(static_cast<float>(scores[pos] - maxScore)));
                 sumExp += scores[pos];
             }
-            float invSum = 1.0f / (sumExp + 1e-8f);
+            T invSum = static_cast<T>(1) / (sumExp + static_cast<T>(1e-8f));
             for (int pos = 0; pos < ctxLen; pos++) {
                 scores[pos] *= invSum;
             }
 
             // Weighted sum of values
             for (int d = 0; d < headDim; d++) {
-                float acc = 0.0f;
+                T acc = static_cast<T>(0);
                 for (int pos = 0; pos < ctxLen; pos++) {
                     int logicalBlock = pos / blockSize;
                     int offsetInBlock = pos % blockSize;
                     int physicalBlock = pageTables->e<int>(b, logicalBlock);
                     if (physicalBlock < 0) continue;
 
-                    float v = valueBlockPool->e<float>(physicalBlock, offsetInBlock, kvHead, d);
+                    T v = valueBlockPool->e<T>(physicalBlock, offsetInBlock, kvHead, d);
                     acc += scores[pos] * v;
                 }
-                output->p(b, 0, h, d, acc);
+                output->p<T>(b, 0, h, d, acc);
             }
         }
     }
 }
 
-void pagedKvCacheAppend(
+void pagedAttentionForward(
+    NDArray* query,
+    NDArray* keyBlockPool,
+    NDArray* valueBlockPool,
+    NDArray* pageTables,
+    NDArray* contextLens,
+    NDArray* output,
+    const PagedAttentionConfig& config,
+    LaunchContext* context) {
+
+    BUILD_SINGLE_SELECTOR(query->dataType(), pagedAttentionForward_,
+                          (query, keyBlockPool, valueBlockPool, pageTables, contextLens, output, config, context),
+                          SD_FLOAT_TYPES);
+}
+
+BUILD_SINGLE_TEMPLATE(template void pagedAttentionForward_,
+                      (NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*,
+                       const PagedAttentionConfig&, LaunchContext*),
+                      SD_FLOAT_TYPES);
+
+template <typename T>
+static void pagedKvCacheAppend_(
     NDArray* keyBlockPool,
     NDArray* valueBlockPool,
     NDArray* newKeys,
@@ -146,15 +169,34 @@ void pagedKvCacheAppend(
 
             for (int h = 0; h < numKvHeads; h++) {
                 for (int d = 0; d < headDim; d++) {
-                    float kVal = newKeys->e<float>(b, t, h, d);
-                    float vVal = newValues->e<float>(b, t, h, d);
-                    keyBlockPool->p(physicalBlock, offsetInBlock, h, d, kVal);
-                    valueBlockPool->p(physicalBlock, offsetInBlock, h, d, vVal);
+                    T kVal = newKeys->e<T>(b, t, h, d);
+                    T vVal = newValues->e<T>(b, t, h, d);
+                    keyBlockPool->p<T>(physicalBlock, offsetInBlock, h, d, kVal);
+                    valueBlockPool->p<T>(physicalBlock, offsetInBlock, h, d, vVal);
                 }
             }
         }
     }
 }
+
+void pagedKvCacheAppend(
+    NDArray* keyBlockPool,
+    NDArray* valueBlockPool,
+    NDArray* newKeys,
+    NDArray* newValues,
+    NDArray* pageTables,
+    NDArray* contextLens,
+    int blockSize,
+    LaunchContext* context) {
+
+    BUILD_SINGLE_SELECTOR(newKeys->dataType(), pagedKvCacheAppend_,
+                          (keyBlockPool, valueBlockPool, newKeys, newValues, pageTables, contextLens, blockSize, context),
+                          SD_FLOAT_TYPES);
+}
+
+BUILD_SINGLE_TEMPLATE(template void pagedKvCacheAppend_,
+                      (NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, int, LaunchContext*),
+                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

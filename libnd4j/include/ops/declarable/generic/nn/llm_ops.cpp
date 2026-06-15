@@ -473,13 +473,13 @@ CUSTOM_OP_IMPL(grouped_query_attention_bp, 4, 3, false, 0, 0) {
 
     // Compute forward pass to get output and LSE for backward
     auto queryShape = query->getShapeAsVector();
-    auto computedOutput = NDArrayFactory::create_<float>('c', *queryShape);
+    auto computedOutput = NDArrayFactory::create_('c', *queryShape, query->dataType(), block.launchContext());
     delete queryShape;
     auto seqLen = query->sizeAt(1);
     auto numHeads = query->sizeAt(2);
     auto batch = query->sizeAt(0);
     std::vector<sd::LongType> lseShape = {batch, numHeads, seqLen};
-    auto computedLse = NDArrayFactory::create_<float>('c', lseShape);
+    auto computedLse = NDArrayFactory::create_('c', lseShape, query->dataType(), block.launchContext());
 
     FlashAttentionHelper::forward(query, key, value, computedOutput, config, computedLse, nullptr, nullptr, block.launchContext());
 
@@ -578,13 +578,13 @@ CUSTOM_OP_IMPL(flash_attention_bp, 4, 3, false, 0, 0) {
     if (output == nullptr || softmaxLse == nullptr) {
         // Allocate temporary arrays for forward pass results
         auto queryShapeVec = query->getShapeAsVector();
-        computedOutput = NDArrayFactory::create_<float>('c', *queryShapeVec);
+        computedOutput = NDArrayFactory::create_('c', *queryShapeVec, query->dataType(), block.launchContext());
         delete queryShapeVec;
         auto seqLen = query->sizeAt(1);
         auto numHeads = query->sizeAt(2);
         auto batch = query->sizeAt(0);
         std::vector<sd::LongType> lseShapeVec = {batch, numHeads, seqLen};
-        computedLse = NDArrayFactory::create_<float>('c', lseShapeVec);
+        computedLse = NDArrayFactory::create_('c', lseShapeVec, query->dataType(), block.launchContext());
 
         // Run forward pass to get output and LSE
         FlashAttentionHelper::forward(query, key, value, computedOutput, config, computedLse, nullptr, nullptr, block.launchContext());
@@ -718,11 +718,11 @@ CUSTOM_OP_IMPL(apply_alibi, 1, 1, false, 0, 0) {
                     LongType rowBase = ((b * numHeads + h) * seqLen + sq) * kvLen;
                     PRAGMA_OMP_SIMD
                     for (LongType sk = 0; sk < kvLen; ++sk) {
-                        float bias = -slope * std::abs(static_cast<float>(sq) - static_cast<float>(sk));
+                        double bias = -slope * std::abs(static_cast<double>(sq) - static_cast<double>(sk));
                         // Read, add bias, write back via NDArray (type-safe)
                         LongType flatIdx = rowBase + sk;
-                        float val = output->e<float>(flatIdx);
-                        output->p<float>(flatIdx, val + bias);
+                        double val = output->e<double>(flatIdx);
+                        output->p<double>(flatIdx, val + bias);
                     }
                 }
             }

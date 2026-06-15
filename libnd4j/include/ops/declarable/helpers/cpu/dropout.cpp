@@ -157,20 +157,20 @@ static Status alphaDropOutFunctor_(graph::Context& context, NDArray* input, NDAr
 
   // Get typed buffer pointers once to avoid O(n^2) sync overhead from per-element p()/e() calls
   NDArray::preparePrimaryUse({output, mask}, {input});
-  auto inputBuf = input->bufferAsT<float>();
-  auto outputBuf = output->bufferAsT<float>();
-  auto maskBuf = mask->bufferAsT<float>();
+  auto inputBuf = input->bufferAsT<T>();
+  auto outputBuf = output->bufferAsT<T>();
+  auto maskBuf = mask->bufferAsT<T>();
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
-      float randVal = nodeRng.relativeT(e, T(0.f), T(1.f));
+      T randVal = nodeRng.relativeT(e, T(0.f), T(1.f));
       auto inOffset = input->getOffset(e);
-      float xVal = inputBuf[inOffset];
-      float maskVal = randVal >= probValue ? alpha * beta + alpha1 : alpha * 1 + alpha1;
+      T xVal = inputBuf[inOffset];
+      T maskVal = randVal >= static_cast<T>(probValue) ? static_cast<T>(alpha * beta + alpha1) : static_cast<T>(alpha + alpha1);
       auto maskOffset = mask->getOffset(e);
       maskBuf[maskOffset] = maskVal;
       auto outOffset = output->getOffset(e);
-      outputBuf[outOffset] = randVal >= probValue ? alpha * beta + alpha1 : alpha * xVal + alpha1;
+      outputBuf[outOffset] = randVal >= static_cast<T>(probValue) ? static_cast<T>(alpha * beta + alpha1) : static_cast<T>(alpha * static_cast<double>(xVal) + alpha1);
     }
   };
 

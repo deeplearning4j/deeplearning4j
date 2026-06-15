@@ -178,21 +178,21 @@ static void decoderMaskedMhaCpu_(
                 const T* qHead = qPtr + qh * headDim;
 
                 // Compute attention scores: Q @ K^T for all positions up to seqLen
-                std::vector<float> scores(seqLen);
-                float maxScore = -1e30f;
+                std::vector<T> scores(seqLen);
+                T maxScore = static_cast<T>(-1e30);
 
                 for (LongType pos = 0; pos < seqLen; ++pos) {
                     LongType kOffset = ((b * numKvHeads + kvh) * kvCacheMaxSeq + pos) * headDim;
-                    float dot = 0.0f;
+                    T dot = static_cast<T>(0);
                     for (int d = 0; d < headDim; ++d) {
-                        dot += static_cast<float>(qHead[d]) * static_cast<float>(updatedKBuf[kOffset + d]);
+                        dot += static_cast<T>(qHead[d]) * static_cast<T>(updatedKBuf[kOffset + d]);
                     }
-                    dot *= attScale;
+                    dot *= static_cast<T>(attScale);
 
                     // Apply mask if present
                     if (maskBuf != nullptr) {
                         // mask layout: [B, 1, 1, seqLen]
-                        dot += static_cast<float>(maskBuf[b * seqLen + pos]);
+                        dot += static_cast<T>(maskBuf[b * seqLen + pos]);
                     }
 
                     scores[pos] = dot;
@@ -200,12 +200,12 @@ static void decoderMaskedMhaCpu_(
                 }
 
                 // Softmax
-                float sumExp = 0.0f;
+                T sumExp = static_cast<T>(0);
                 for (LongType pos = 0; pos < seqLen; ++pos) {
-                    scores[pos] = sd::math::sd_exp<float, float>(scores[pos] - maxScore);
+                    scores[pos] = sd::math::sd_exp<T, T>(scores[pos] - maxScore);
                     sumExp += scores[pos];
                 }
-                float invSumExp = 1.0f / sumExp;
+                T invSumExp = static_cast<T>(1) / sumExp;
                 for (LongType pos = 0; pos < seqLen; ++pos) {
                     scores[pos] *= invSumExp;
                 }

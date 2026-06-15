@@ -74,7 +74,7 @@ CUSTOM_OP_IMPL(lokr_matmul, 5, 1, false, 0, 2) {
   auto d1 = lokrB->sizeAt(0);
   auto d2 = lokrA->sizeAt(1);
   std::vector<sd::LongType> baShape = {d1, d2};
-  auto ba = NDArrayFactory::create<float>('c', baShape, input->getContext());
+  auto ba = NDArrayFactory::create(input->dataType(), 'c', baShape, input->getContext());
   {
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {lokrB, lokrA};
@@ -192,7 +192,7 @@ CUSTOM_OP_IMPL(lokr_matmul_bp, 6, 5, false, 0, 2) {
   auto d1 = lokrB->sizeAt(0);
   auto d2 = lokrA->sizeAt(1);
   std::vector<sd::LongType> baShape = {d1, d2};
-  auto ba = NDArrayFactory::create<float>('c', baShape, input->getContext());
+  auto ba = NDArrayFactory::create(input->dataType(), 'c', baShape, input->getContext());
   {
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {lokrB, lokrA};
