@@ -917,7 +917,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.random.impl.DropOutBp.class
         ));
 
-        System.out.println("Created fn classes");
+        log.debug("Created fn classes");
         // Get a list of all classes annotated with @UserDefinedOp,
         if(System.getProperties().containsKey(ND4JSystemProperties.UDF_NAME_SPACES)) {
             log.trace("In udf namespaces with scanning");
@@ -936,11 +936,11 @@ public class DifferentialFunctionClassHolder {
 
 
 
-        System.out.println("Populating op map");
+        log.debug("Populating op map");
         OP_NAME_MAP = new ConcurrentHashMap<>();
         for(Class<?> c : fnClasses) {
             try {
-                System.out.println("Initializing " + c.getName());
+                log.debug("Initializing {}", c.getName());
                 DifferentialFunction df = (DifferentialFunction) c.newInstance();
                 if(df == null)
                     continue;
@@ -953,7 +953,7 @@ public class DifferentialFunctionClassHolder {
             }
         }
 
-        System.out.println("Populated op map");
+        log.debug("Populated op map");
 
         // Note: Operation prototypes in OP_NAME_MAP are singleton instances
         // that persist for JVM lifetime. They are cleaned up automatically
@@ -983,7 +983,7 @@ public class DifferentialFunctionClassHolder {
             add("dimensions");
             add("dimensionz");
         }};
-        System.out.println("Initialized field names ops ignore");
+        log.debug("Initialized field names ops ignore");
 
 
         fieldsForFunction = new LinkedHashMap<>();
@@ -996,7 +996,7 @@ public class DifferentialFunctionClassHolder {
                 //this is mainly used in import
                 Map<String, Field> fieldNames = new LinkedHashMap<>();
                 Class<? extends DifferentialFunction> current = df.getClass();
-                System.out.println("Setting up fields for function processing: " + current.getName());
+                log.debug("Setting up fields for function processing: {}", current.getName());
                 val fields = new ArrayList<Field>();
                 boolean isFirst = true;
 
@@ -1066,7 +1066,7 @@ public class DifferentialFunctionClassHolder {
 
                 fieldsForFunction.put(df.getClass().getName(), fieldNames);
             } catch (NoOpNameFoundException e) {
-               System.out.println("Skipping function  " + df.getClass());
+               log.debug("Skipping function  {}", df.getClass());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -1166,7 +1166,7 @@ public class DifferentialFunctionClassHolder {
 
 
         INSTANCE = new DifferentialFunctionClassHolder();
-        System.out.println("Initialized instance");
+        log.debug("Initialized instance");
 
         initialized.set(true);
     }
