@@ -70,7 +70,6 @@
 #define OP_BOILERPLATE_HH
 
 #include <config.h>  // Required for HAS_* type availability macros
-#include <exceptions/allocation_exception.h>
 #include <map>
 #include <stdlib.h>
 #include <string.h>
@@ -2752,7 +2751,8 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 
 #define CHECK_ALLOC(PTR, MSG, BYTES)                   \
   if (PTR == nullptr) {                                \
-    THROW_EXCEPTION(sd::allocation_exception::build(MSG, BYTES).what()); \
+    std::string __alloc_msg = std::string(MSG) + "; Requested bytes: [" + std::to_string(BYTES) + "]"; \
+    THROW_EXCEPTION(__alloc_msg.c_str()); \
   };
 
 
