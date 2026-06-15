@@ -776,6 +776,11 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
         std::call_once(cloneDiagFlag, [&]() {
           try {
             // Rebuild same graph from scratch using local IDs
+            // Sentinel offsets for tensor IDs that are not found in the primary maps.
+            // These must be large enough to not collide with normal slot indices or
+            // cloneId values (which start at 80000).
+            static constexpr int DIAGNOSTIC_SRC_SENTINEL_OFFSET = 50000;
+            static constexpr int DIAGNOSTIC_OUT_SENTINEL_OFFSET = 60000;
             dg::graph cloneG(dnnl::engine::kind::cpu);
             size_t cloneId = 80000;
             std::unordered_map<size_t, dg::logical_tensor> cloneLTs;
@@ -804,7 +809,7 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
                 else {
                   auto eit = extToTensorId.find(-(srcIdx + 1));
                   if (eit != extToTensorId.end()) origId = eit->second;
-                  else origId = srcIdx + 50000;
+                  else origId = srcIdx + DIAGNOSTIC_SRC_SENTINEL_OFFSET;
                 }
                 if (origToClone.find(origId) == origToClone.end()) {
                   size_t cid = cloneId++;
@@ -827,7 +832,7 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
                 size_t origOutId = 0;
                 auto osit = slotToTensorId.find(outIdx);
                 if (osit != slotToTensorId.end()) origOutId = osit->second;
-                else origOutId = outIdx + 60000;
+                else origOutId = outIdx + DIAGNOSTIC_OUT_SENTINEL_OFFSET;
                 if (origToClone.find(origOutId) == origToClone.end()) {
                   size_t cid = cloneId++;
                   origToClone[origOutId] = cid;
