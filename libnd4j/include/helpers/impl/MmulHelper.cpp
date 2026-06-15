@@ -571,7 +571,9 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
 
   } else {
     // Batched matmul: loop over batch dimensions and call 2D gemm for each slice
-    // This is more reliable than mmulNxN which has bugs in batch index calculation
+    // WARNING: mmulNxN has known bugs in batch index calculation for 4D+ tensors.
+    // The 3D path below works around this with explicit slicing.
+    // TODO: Fix the batch index bug in mmulNxN so all ranks use the efficient path.
 
     // For 3D arrays [batch, M, K] x [batch, K, N] = [batch, M, N]
     // We iterate over batch dimension and call 2D mmul for each slice
