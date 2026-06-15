@@ -27,6 +27,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
 import lombok.Builder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.internal.ExecType;
 import org.nd4j.autodiff.samediff.internal.FrameIter;
@@ -40,6 +42,8 @@ import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
  * Includes integrated loop termination analysis capabilities.
  */
 public class SameDiffExecutionVisualizer {
+
+    private static final Logger log = LoggerFactory.getLogger(SameDiffExecutionVisualizer.class);
 
     private final List<ExecutionStep> executionSteps = new ArrayList<>();
     private final Map<String, Set<String>> frameDependencies = new HashMap<>();
@@ -152,8 +156,8 @@ public class SameDiffExecutionVisualizer {
 
             } catch (Exception loopAnalysisError) {
                 // Don't let loop analysis errors crash main execution
-                System.err.println("VISUALIZER_WARNING: Loop analysis error at step " + stepCounter.get() +
-                        ": " + loopAnalysisError.getMessage());
+                log.warn("VISUALIZER_WARNING: Loop analysis error at step {}: {}",
+                        stepCounter.get(), loopAnalysisError.getMessage(), loopAnalysisError);
             }
         }
     }
@@ -191,7 +195,7 @@ public class SameDiffExecutionVisualizer {
         boolean hasLoopPattern = detectLoopControlPattern(recentOps, currentOp);
 
         if (hasLoopPattern) {
-            System.out.println("LOOP_AUTO_DETECTION: Detected loop pattern in frame '" + frame + "' at operation: " + currentOp);
+            log.debug("LOOP_AUTO_DETECTION: Detected loop pattern in frame '{}' at operation: {}", frame, currentOp);
 
             try {
                 // Create synthetic FrameIter for the detected loop
@@ -209,7 +213,7 @@ public class SameDiffExecutionVisualizer {
                 loopAnalyzer.onLoopFrameEnter(frame, "auto_detected_from_pattern", loopFrameIter);
 
             } catch (Exception e) {
-                System.err.println("LOOP_DETECTION_ERROR: Failed to register auto-detected loop: " + e.getMessage());
+                log.warn("LOOP_DETECTION_ERROR: Failed to register auto-detected loop: {}", e.getMessage(), e);
             }
         }
     }
@@ -270,7 +274,7 @@ public class SameDiffExecutionVisualizer {
                     // Check if this condition indicates termination
                     boolean terminationTriggered = isTerminationCondition(conditionValue);
                     if (terminationTriggered) {
-                        System.out.println("LOOP_TERMINATION_DETECTED: Condition '" + name + "' triggered termination in frame '" + frameName + "'");
+                        log.debug("LOOP_TERMINATION_DETECTED: Condition '{}' triggered termination in frame '{}'", name, frameName);
                     }
 
                 } else if (isSwitchOperation(name)) {
@@ -278,7 +282,7 @@ public class SameDiffExecutionVisualizer {
                     String branchTaken = determineSwitchBranch(outputs, frameIter);
                     loopAnalyzer.onSwitchOperation(frameName, name, predicateValue, branchTaken, iteration);
 
-                    System.out.println("SWITCH_OPERATION: '" + name + "' took " + branchTaken + " branch in frame '" + frameName + "'");
+                    log.debug("SWITCH_OPERATION: '{}' took {} branch in frame '{}'", name, branchTaken, frameName);
 
                 } else if (isMergeOperation(name)) {
                     // Track merge operations as loop iteration indicators
@@ -304,7 +308,7 @@ public class SameDiffExecutionVisualizer {
 
                         loopAnalyzer.onLoopFrameEnter(frameName, name, loopFrameIter);
                     } catch (Exception e) {
-                        System.err.println("ENTER_OPERATION_ERROR: " + e.getMessage());
+                        log.warn("ENTER_OPERATION_ERROR: {}", e.getMessage(), e);
                     }
 
                 } else if (isNextIterationOperation(name)) {
@@ -415,7 +419,7 @@ public class SameDiffExecutionVisualizer {
 
         } catch (Exception e) {
             // If entire enhancement fails, return original names
-            System.err.println("VISUALIZER_WARNING: Value enhancement failed: " + e.getMessage());
+            log.warn("VISUALIZER_WARNING: Value enhancement failed: {}", e.getMessage(), e);
             return new ArrayList<>(variableNames);
         }
     }
@@ -449,7 +453,7 @@ public class SameDiffExecutionVisualizer {
                 }
             }
         } catch (Exception e) {
-            System.err.println("VISUALIZER_WARNING: Value extraction failed: " + e.getMessage());
+            log.warn("VISUALIZER_WARNING: Value extraction failed: {}", e.getMessage(), e);
         }
 
         return actualValues;
