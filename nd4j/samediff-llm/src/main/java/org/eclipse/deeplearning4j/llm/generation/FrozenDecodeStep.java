@@ -21,6 +21,8 @@
 package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheManager;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.UnifiedKvCacheManager;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;

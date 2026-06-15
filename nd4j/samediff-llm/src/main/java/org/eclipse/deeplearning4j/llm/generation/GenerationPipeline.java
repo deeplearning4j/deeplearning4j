@@ -22,6 +22,11 @@ package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.generation.sampling.Sampler;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplerUtils;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.generation.speculative.Speculator;
+import org.eclipse.deeplearning4j.llm.generation.speculative.DraftModelSpeculator;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
@@ -2596,31 +2601,6 @@ public class GenerationPipeline implements AutoCloseable {
             } catch (Exception e) {
                 log.warn("Error closing draftDecoder: {}", e.getMessage());
             }
-        }
-    }
-
-    /**
-     * Free all GPU memory held by a vision encoder's model arrays.
-     *
-     * <p>Call this after vision encoding is complete and the encoder is no longer needed.
-     * Clears placeholders, resets sessions, frees all constant/variable arrays, and
-     * closes the model. This reclaims the ~5GB+ of GPU memory used by vision encoder weights.</p>
-     *
-     * @param visionEncoder the vision encoder SameDiff model to free
-     */
-    public static void freeVisionEncoder(SameDiff visionEncoder) {
-        if (visionEncoder == null) {
-            return;
-        }
-        try {
-            visionEncoder.clearPlaceholders(true);
-            visionEncoder.clearOpInputs();
-            visionEncoder.resetSession();
-            SameDiffMemoryUtils.freeModelArrays(visionEncoder);
-            visionEncoder.close();
-            log.info("Vision encoder freed");
-        } catch (Exception e) {
-            log.warn("Error freeing vision encoder: {}", e.getMessage());
         }
     }
 

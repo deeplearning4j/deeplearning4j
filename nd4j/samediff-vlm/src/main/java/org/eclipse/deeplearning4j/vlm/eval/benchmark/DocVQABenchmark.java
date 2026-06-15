@@ -25,7 +25,7 @@ import org.eclipse.deeplearning4j.llm.eval.benchmark.OutputType;
 import org.eclipse.deeplearning4j.llm.eval.dataset.EvalDataset;
 import org.eclipse.deeplearning4j.llm.eval.dataset.EvalSample;
 import org.eclipse.deeplearning4j.llm.eval.dataset.HuggingFaceDataset;
-import org.eclipse.deeplearning4j.llm.eval.metrics.AnlsMetric;
+import org.eclipse.deeplearning4j.vlm.eval.metrics.AnlsMetric;
 import org.eclipse.deeplearning4j.llm.eval.metrics.EvalMetric;
 import org.eclipse.deeplearning4j.llm.eval.metrics.ExactMatchMetric;
 

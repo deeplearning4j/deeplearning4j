@@ -33,9 +33,22 @@ import java.util.function.Function;
 
 /**
  * Orchestrates evaluation of LLM models against benchmarks and custom datasets.
+ *
+ * <p>Subclasses may override the generation step by calling
+ * {@link #runCoreEvaluation} directly with a custom {@link SampleGenerator}.
  */
 @Slf4j
 public class EvalRunner {
+
+    /**
+     * Functional interface for the generation step inside the evaluation loop.
+     * Receives the current {@link EvalSample} and the formatted prompt string,
+     * and returns the raw model output.
+     */
+    @FunctionalInterface
+    public interface SampleGenerator {
+        String generate(EvalSample sample, String prompt, int maxTokens);
+    }
 
     public EvalResult evaluate(TextGenerator generator, BenchmarkTask task) throws IOException {
         return evaluate(generator, task, EvalConfig.builder().build());
@@ -65,8 +78,9 @@ public class EvalRunner {
             totalToEval = Math.min(totalToEval, config.getMaxSamples());
         }
 
-        return runEvaluation(generator, task.name(), dataset, evalStart, totalToEval,
-                fewShotExamples, task.primaryMetric(), task.allMetrics(),
+        SampleGenerator gen = (sample, prompt, tokens) -> generator.generate(prompt, tokens);
+        return runCoreEvaluation(gen, task.name(), dataset, evalStart, totalToEval,
+                task.primaryMetric(), task.allMetrics(),
                 sample -> task.formatPrompt(sample, fewShotExamples),
                 task::extractAnswer, maxTokens, config.isLogSamples(), config.getOutputFile());
     }
@@ -86,8 +100,9 @@ public class EvalRunner {
         int totalToEval = config.getMaxSamples() > 0 ?
                 Math.min(config.getMaxSamples(), dataset.size()) : dataset.size();
 
-        return runEvaluation(generator, dataset.name(), dataset, 0, totalToEval,
-                Collections.emptyList(), metric, List.of(metric),
+        SampleGenerator gen = (sample, prompt, tokens) -> generator.generate(prompt, tokens);
+        return runCoreEvaluation(gen, dataset.name(), dataset, 0, totalToEval,
+                metric, List.of(metric),
                 promptFormatter, answerExtractor, maxTokens,
                 config.isLogSamples(), config.getOutputFile());
     }
@@ -108,14 +123,30 @@ public class EvalRunner {
         return results;
     }
 
-    private EvalResult runEvaluation(TextGenerator generator, String benchmarkName,
-                                      EvalDataset dataset, int startIdx, int count,
-                                      List<EvalSample> fewShotExamples,
-                                      EvalMetric primaryMetric, List<EvalMetric> allMetrics,
-                                      Function<EvalSample, String> promptFormatter,
-                                      Function<String, String> answerExtractor,
-                                      int maxTokens, boolean logSamples,
-                                      java.io.File outputFile) {
+    /**
+     * Core evaluation loop shared by LLM and VLM runners.
+     *
+     * @param generator      strategy that produces a raw output string for each sample
+     * @param benchmarkName  name used in logs and result metadata
+     * @param dataset        the full dataset to draw samples from
+     * @param startIdx       index of the first sample to evaluate (skip few-shot examples)
+     * @param count          number of samples to evaluate
+     * @param primaryMetric  metric used for the headline score and category breakdowns
+     * @param allMetrics     full set of metrics to compute (must include primaryMetric)
+     * @param promptFormatter formats an {@link EvalSample} into a prompt string
+     * @param answerExtractor extracts the model's final answer from its raw output
+     * @param maxTokens      generation budget per sample
+     * @param logSamples     whether to store per-sample results in the returned object
+     * @param outputFile     optional file to write the JSON result to (may be null)
+     * @return aggregated {@link EvalResult}
+     */
+    protected EvalResult runCoreEvaluation(SampleGenerator generator, String benchmarkName,
+                                            EvalDataset dataset, int startIdx, int count,
+                                            EvalMetric primaryMetric, List<EvalMetric> allMetrics,
+                                            Function<EvalSample, String> promptFormatter,
+                                            Function<String, String> answerExtractor,
+                                            int maxTokens, boolean logSamples,
+                                            java.io.File outputFile) {
         long startTime = System.currentTimeMillis();
         List<SampleResult> sampleResults = new ArrayList<>();
         List<Double> primaryScores = new ArrayList<>();
@@ -135,7 +166,7 @@ public class EvalRunner {
 
             String rawOutput;
             try {
-                rawOutput = generator.generate(prompt, maxTokens);
+                rawOutput = generator.generate(sample, prompt, maxTokens);
             } catch (Exception e) {
                 log.warn("Generation failed for sample {}: {}", sample.getId(), e.getMessage());
                 rawOutput = "";

@@ -27,7 +27,7 @@ import org.eclipse.deeplearning4j.llm.eval.dataset.EvalSample;
 import org.eclipse.deeplearning4j.llm.eval.dataset.HuggingFaceDataset;
 import org.eclipse.deeplearning4j.llm.eval.metrics.EvalMetric;
 import org.eclipse.deeplearning4j.llm.eval.metrics.ExactMatchMetric;
-import org.eclipse.deeplearning4j.llm.eval.metrics.RelaxedAccuracyMetric;
+import org.eclipse.deeplearning4j.vlm.eval.metrics.RelaxedAccuracyMetric;
 
 import java.io.IOException;
 import java.util.List;

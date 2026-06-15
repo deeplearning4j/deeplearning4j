@@ -22,6 +22,15 @@ package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheManager;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.PagedKVCache;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.QuantizedPagedKVCache;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.UnifiedKvCacheManager;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.generation.speculative.Speculator;
+import org.eclipse.deeplearning4j.llm.generation.speculative.NgramSpeculator;
+import org.eclipse.deeplearning4j.llm.generation.speculative.DraftModelSpeculator;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;

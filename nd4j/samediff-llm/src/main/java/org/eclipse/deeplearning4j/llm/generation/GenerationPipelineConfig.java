@@ -24,6 +24,9 @@ import lombok.Builder;
 import lombok.Getter;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.generation.speculative.Speculator;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
 

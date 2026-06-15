@@ -34,6 +34,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.SimpleListMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.curation.audio.AudioDataProcessor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -466,61 +467,4 @@ public class TtsTrainingPipeline {
         return stepsPerEpoch * trainingConfig.getNumEpochs();
     }
 
-    // -------------------------------------------------------------------------
-    // Minimal in-memory MultiDataSetIterator
-    // -------------------------------------------------------------------------
-
-    /**
-     * Simple non-parallel {@link MultiDataSetIterator} backed by an in-memory list.
-     */
-    private static class SimpleListMultiDataSetIterator implements MultiDataSetIterator {
-
-        private final List<MultiDataSet> data;
-        private int cursor = 0;
-
-        SimpleListMultiDataSetIterator(List<MultiDataSet> data) {
-            this.data = data;
-        }
-
-        @Override
-        public org.nd4j.linalg.dataset.api.MultiDataSet next(int num) {
-            return next();
-        }
-
-        @Override
-        public void setPreProcessor(
-                org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor preProcessor) {
-            // No-op
-        }
-
-        @Override
-        public org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor getPreProcessor() {
-            return null;
-        }
-
-        @Override
-        public boolean resetSupported() {
-            return true;
-        }
-
-        @Override
-        public boolean asyncSupported() {
-            return false;
-        }
-
-        @Override
-        public void reset() {
-            cursor = 0;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return cursor < data.size();
-        }
-
-        @Override
-        public org.nd4j.linalg.dataset.api.MultiDataSet next() {
-            return data.get(cursor++);
-        }
-    }
 }

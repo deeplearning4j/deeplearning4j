@@ -26,7 +26,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.ModelConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
-import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VideoFrameExtractor;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VideoFrameSampler;
