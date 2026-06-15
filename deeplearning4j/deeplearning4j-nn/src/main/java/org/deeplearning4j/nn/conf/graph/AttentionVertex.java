@@ -20,7 +20,15 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import org.nd4j.shade.guava.base.Preconditions;
-import lombok.*;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.val;
+
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;

@@ -20,7 +20,12 @@
 
 package org.datavec.api.transform.sequence.expansion;
 
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
