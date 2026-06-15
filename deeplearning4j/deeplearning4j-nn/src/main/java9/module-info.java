@@ -22,9 +22,7 @@ open module deeplearning4j.nn {
     exports org.deeplearning4j.earlystopping.scorecalc.base;
     exports org.deeplearning4j.earlystopping.termination;
     exports org.deeplearning4j.earlystopping.trainer;
-    exports org.deeplearning4j.eval;
-    exports org.deeplearning4j.eval.curves;
-    exports org.deeplearning4j.eval.meta;
+
     exports org.deeplearning4j.exception;
     exports org.deeplearning4j.gradientcheck;
     exports org.deeplearning4j.nn.adapters;

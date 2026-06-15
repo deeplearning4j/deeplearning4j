@@ -23,7 +23,7 @@ package org.deeplearning4j.nn.layers.convolution;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
-import org.deeplearning4j.eval.Evaluation;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
