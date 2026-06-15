@@ -350,10 +350,10 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   config.numKvHeads = numKvHeads;
   
   // Cast attention bias to query dtype if needed
-  std::unique_ptr<NDArray> attnBiasCastOwner;
+  NDArray* attnBiasCastOwner = nullptr;
   if (attnBias != nullptr && attnBias->dataType() != query->dataType()) {
-    attnBiasCastOwner.reset(attnBias->cast(query->dataType()));
-    attnBias = attnBiasCastOwner.get();
+    attnBiasCastOwner = attnBias->cast(query->dataType());
+    attnBias = attnBiasCastOwner;
   }
 
   // Output in BSHD format [batch, seqQ, numHeads, headDim]
@@ -413,6 +413,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   delete valueCast;
   delete pastKeyCast;
   delete pastValueCast;
+  delete attnBiasCastOwner;
 
   return sd::Status::OK;
 }

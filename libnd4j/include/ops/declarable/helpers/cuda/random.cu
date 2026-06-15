@@ -29,7 +29,6 @@
 #include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/random.h>
 
-#include <memory>
 #include <vector>
 
 
@@ -327,11 +326,11 @@ static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& r
   PointersManager manager(context, "fillRandomPoisson");
   auto stream = context->getCudaStream();
   // fill up uniform with given length
-  std::unique_ptr<NDArray> tempOutputPtr(output->cast(DOUBLE));
+  NDArray* tempOutputPtr = output->cast(DOUBLE);
   RandomLauncher::fillUniform(context, rng, &uniform, 0., 1.);
 
-  std::unique_ptr<NDArray> tempLambdaPtr(lambda->cast(DOUBLE));
-  NDArray::prepareSpecialUse({output, tempOutputPtr.get()}, {lambda, tempLambdaPtr.get()});
+  NDArray* tempLambdaPtr = lambda->cast(DOUBLE);
+  NDArray::prepareSpecialUse({output, tempOutputPtr}, {lambda, tempLambdaPtr});
 
   dim3 launchDims = getLaunchDims("random_poisson");
   fillPoissonKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(uniform.dataBuffer()->template specialAsT<T>(), uniform.lengthOf(),
@@ -339,11 +338,15 @@ static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& r
                                                                               tempOutputPtr->dataBuffer()->template specialAsT<T>(), tempOutputPtr->specialShapeInfo());
 
   sd::DebugHelper::checkErrorCode(stream, "fillPoissonKernel failed");
-  std::unique_ptr<NDArray> retPtr(tempOutputPtr->cast(output->dataType()));
-  output->assign(retPtr.get());
-  NDArray::registerSpecialUse({output, tempOutputPtr.get()}, {lambda, tempLambdaPtr.get()});
+  NDArray* retPtr = tempOutputPtr->cast(output->dataType());
+  output->assign(retPtr);
+  NDArray::registerSpecialUse({output, tempOutputPtr}, {lambda, tempLambdaPtr});
 
   manager.synchronize();
+
+  delete tempOutputPtr;
+  delete tempLambdaPtr;
+  delete retPtr;
 }
 
 void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {

@@ -570,11 +570,6 @@ DECLARE_CUSTOM_OP(row_parallel_linear, 2, 1, false, 0, 0);
  *   0: attention_scale (default: 1/sqrt(head_dim))
  *   1: rope_freq_base (default: 10000.0)
  */
-// TODO: Implementation moved to /tmp/new_ops_backup/ — re-enable when fixed
-// #if NOT_EXCLUDED(OP_decoder_masked_mha)
-// DECLARE_CUSTOM_OP(decoder_masked_mha, 5, 3, false, 0, 0);
-// #endif
-
 /**
  * fused_gemm_swiglu - Fused GEMM + SiLU + Element-wise Multiply
  *
@@ -629,11 +624,6 @@ DECLARE_CUSTOM_OP(fused_gemm_swiglu_bp, 4, 3, false, 0, 0);
  *   0: aux_loss_weight (default: 0.01)
  *   1: jitter_eps (training noise, default: 0.0)
  */
-// TODO: Implementation moved to /tmp/new_ops_backup/ — re-enable when fixed
-// #if NOT_EXCLUDED(OP_moe_gate)
-// DECLARE_CUSTOM_OP(moe_gate, 2, 3, false, 0, 0);
-// #endif
-
 /**
  * selective_scan - Mamba/SSM Selective Scan
  *

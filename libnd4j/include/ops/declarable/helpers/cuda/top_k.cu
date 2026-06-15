@@ -459,7 +459,11 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
   LongType* deviceZeroOffset = nullptr;
   int topkDevId = context->getDeviceID();
 
-  std::shared_ptr<TadPack> packX, packI, packZ;
+  // TadPack instances from ConstantTadHelper are cached singletons — do NOT delete them.
+  // Use raw pointers to access the cached data; the cache owns the lifetime.
+  TadPack* packX = nullptr;
+  TadPack* packI = nullptr;
+  TadPack* packZ = nullptr;
 
   if (input->rankOf() == 1) {
     // For 1D input, treat the entire array as one TAD
@@ -482,10 +486,15 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
     iTadOffsets = deviceZeroOffset;
     zTadOffsets = deviceZeroOffset;
   } else {
-    // For multi-dimensional arrays, use standard TAD along last dimension
-    packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {input->rankOf() - 1});
-    packI = ConstantTadHelper::getInstance().tadForDimensions(indices->shapeInfo(), {input->rankOf() - 1});
-    packZ = ConstantTadHelper::getInstance().tadForDimensions(values->shapeInfo(), {input->rankOf() - 1});
+    // For multi-dimensional arrays, use standard TAD along last dimension.
+    // tadForDimensions returns shared_ptr to a cached singleton — extract raw pointer.
+    // The ConstantTadHelper cache owns the lifetime; do NOT delete these pointers.
+    auto sharedPackX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {input->rankOf() - 1});
+    auto sharedPackI = ConstantTadHelper::getInstance().tadForDimensions(indices->shapeInfo(), {input->rankOf() - 1});
+    auto sharedPackZ = ConstantTadHelper::getInstance().tadForDimensions(values->shapeInfo(), {input->rankOf() - 1});
+    packX = sharedPackX.get();
+    packI = sharedPackI.get();
+    packZ = sharedPackZ.get();
 
     tadLength = shape::length(packX->primaryShapeInfo());
     numTads = packX->numberOfTads();

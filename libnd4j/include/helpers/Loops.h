@@ -1144,11 +1144,13 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
     // Bounds checking for calculated offsets
     // These checks prevent segfaults when TAD shapes don't match or offsets are miscalculated
     if (xOffset < 0 || xOffset >= xLen) {
-      // Skip invalid offsets rather than crash - this can happen with malformed TADs
+      sd_debug("TransformLoops: skipping out-of-range xOffset %lld >= xLen %lld (malformed TAD)\n",
+               (long long)xOffset, (long long)xLen);
       continue;
     }
     if (zOffset < 0 || zOffset >= zLen) {
-      // Skip invalid offsets rather than crash
+      sd_debug("TransformLoops: skipping out-of-range zOffset %lld >= zLen %lld (malformed TAD)\n",
+               (long long)zOffset, (long long)zLen);
       continue;
     }
 

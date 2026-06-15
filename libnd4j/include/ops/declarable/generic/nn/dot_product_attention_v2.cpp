@@ -31,7 +31,6 @@
 #include <helpers/AttentionHelper.h>
 #include <helpers/FlashAttentionHelper.h>
 #include <cmath>
-#include <memory>
 
 namespace sd {
 namespace ops {
@@ -313,13 +312,13 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
   bool hasInputMasks = (qMask != nullptr) || (vMask != nullptr);
   bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
-  std::unique_ptr<NDArray> attentionBiasCastOwner;
+  NDArray* attentionBiasCastOwner = nullptr;
 
   // Additive bias/mask can arrive as BOOL/INT from importer graphs.
   // Cast once to query dtype for arithmetic in the helper path.
   if (hasAttentionBias && attentionBias->dataType() != queries->dataType()) {
-    attentionBiasCastOwner.reset(attentionBias->cast(queries->dataType()));
-    attentionBias = attentionBiasCastOwner.get();
+    attentionBiasCastOwner = attentionBias->cast(queries->dataType());
+    attentionBias = attentionBiasCastOwner;
   }
 
   // Auto-cast K/V to match Q dtype when they differ (e.g. FusedRoPE promotes
@@ -518,6 +517,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
   delete keysCastOwner;
   delete valuesCastOwner;
+  delete attentionBiasCastOwner;
 
   return sd::Status::OK;
 }
