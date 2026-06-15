@@ -32,6 +32,25 @@
 namespace sd {
 namespace graph {
 
+// ============================================================
+// PJRT/TPU Backend — STUB ONLY, not yet implemented.
+//
+// All methods in PjrtClientManager return false/nullptr/error.
+// Do NOT call any of these methods in production code paths.
+//
+// The stub exists to allow the TPU execution path (GEM_TPU mode,
+// TpuGraphBackend) to compile and link on non-TPU platforms without
+// requiring libtpu.so or pjrt_c_api.h headers at build time.
+//
+// Production TPU support requires:
+//   1. pjrt_c_api.h headers from XLA/libtpu SDK
+//   2. libtpu.so available at runtime
+//   3. Actual PJRT_Client_Create / PJRT_Client_Compile calls wired up
+//      in loadLibrary() and initClient() below.
+//
+// See ADR 0072 for the TPU backend roadmap and integration plan.
+// ============================================================
+
 /**
  * Singleton managing PJRT_Api* function table and PJRT_Client lifecycle.
  *
@@ -42,6 +61,9 @@ namespace graph {
  * All PJRT types are opaque void* since we dlopen at runtime and do not
  * link against any PJRT headers. The actual PJRT_Api struct is cast to
  * void* and function pointers are resolved from the symbol table.
+ *
+ * STUB STATUS: All methods currently return false/nullptr. See block comment
+ * above for the implementation roadmap.
  */
 class SD_LIB_EXPORT PjrtClientManager {
  public:

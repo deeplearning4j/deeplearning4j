@@ -1017,6 +1017,15 @@ void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
   }
 #endif
 
+  // GEM_TVM is deprecated — TVM backend was removed. Warn and fall through to
+  // SLOT_BY_SLOT via ModeContract default (isSlotBySlot=true, allowsFallback=true).
+  if (mode == GraphExecutionMode::GEM_TVM) {
+    sd_printf("WARNING: GraphExecutionMode::GEM_TVM (16) is deprecated — TVM backend "
+              "has been removed. Falling back to SLOT_BY_SLOT execution. "
+              "Use GEM_TRITON or GEM_NVRTC_JIT instead.\n");
+    DSP_DIAG(EXECUTE, "setGraphExecutionMode: GEM_TVM (deprecated) -> falling through to SLOT_BY_SLOT");
+  }
+
   if (graphExecutionMode_ == mode) return;  // idempotent: no-op if unchanged
   // Mode is set once at plan creation (part of cache key). Phase guard ensures
   // this is never called after the plan has advanced — one flow, no reclassification.

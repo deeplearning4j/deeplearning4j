@@ -152,7 +152,9 @@ struct ModeContract {
         c.isShapeInferenceOnly = true;
         return c;
 
-      case 16: // GEM_TVM (deprecated)
+      case 16: // GEM_TVM — DEPRECATED. TVM backend was removed; use GEM_TRITON (5)
+               // or triton-cpu instead. Falls through to SLOT_BY_SLOT for safe execution.
+               // setGraphExecutionMode() logs a warning when this mode is requested.
       default:
         c.allowsFallback = true;
         c.allowsPhaseStall = true;

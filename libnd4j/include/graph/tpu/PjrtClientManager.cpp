@@ -28,6 +28,12 @@
 namespace sd {
 namespace graph {
 
+// ============================================================
+// PJRT/TPU Backend — STUB ONLY, not yet implemented.
+// All methods return false/nullptr/error. Do not call in production.
+// See PjrtClientManager.h and ADR 0072 for the implementation roadmap.
+// ============================================================
+
 // ── PJRT C API function pointer types ───────────────────────────────────────
 // These mirror the PJRT C API signatures but are resolved at runtime via dlsym.
 // We use void* for all opaque PJRT handles to avoid header dependency.
