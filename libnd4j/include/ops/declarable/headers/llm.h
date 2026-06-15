@@ -536,44 +536,6 @@ DECLARE_CUSTOM_OP(column_parallel_linear, 2, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(row_parallel_linear, 2, 1, false, 0, 0);
 #endif
 
-/**
- * decoder_masked_mha - Fused Decoder Masked Multi-Head Attention
- *
- * Single fused kernel for decode-phase attention:
- * QKV projection + RoPE + KV cache write + masked attention + output projection
- *
- * Optimized for single-token decode (memory-bandwidth bound).
- * Eliminates all intermediate global memory traffic.
- *
- * Input:
- *   0: hidden_states [batch, 1, hidden_dim]
- *   1: qkv_weight [3 * hidden_dim, hidden_dim] (fused QKV projection)
- *   2: o_weight [hidden_dim, hidden_dim] (output projection)
- *   3: key_cache [batch, num_kv_heads, max_seq_len, head_dim]
- *   4: value_cache [batch, num_kv_heads, max_seq_len, head_dim]
- *   5: attention_mask [batch, 1, 1, seq_len] (optional)
- *   6: cos_cache [max_seq_len, head_dim/2] (RoPE cos, optional)
- *   7: sin_cache [max_seq_len, head_dim/2] (RoPE sin, optional)
- *
- * Output:
- *   0: output [batch, 1, hidden_dim]
- *   1: updated key_cache
- *   2: updated value_cache
- *
- * Integer arguments:
- *   0: num_heads (query heads)
- *   1: num_kv_heads (key-value heads, for GQA)
- *   2: cache_position (current position in KV cache)
- *   3: rope_type (0=none, 1=standard, 2=neox, default: 1)
- *
- * Float arguments:
- *   0: attention_scale (default: 1/sqrt(head_dim))
- *   1: rope_freq_base (default: 10000.0)
- */
-// TODO: Implementation moved to /tmp/new_ops_backup/ — re-enable when fixed
-// #if NOT_EXCLUDED(OP_decoder_masked_mha)
-// DECLARE_CUSTOM_OP(decoder_masked_mha, 5, 3, false, 0, 0);
-// #endif
 
 /**
  * fused_gemm_swiglu - Fused GEMM + SiLU + Element-wise Multiply
@@ -607,32 +569,6 @@ DECLARE_CUSTOM_OP(fused_gemm_swiglu, 3, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(fused_gemm_swiglu_bp, 4, 3, false, 0, 0);
 #endif
 
-/**
- * moe_gate - Mixture of Experts Gating
- *
- * Top-K expert selection with load balancing auxiliary loss.
- *
- * Input:
- *   0: hidden_states [batch, seq_len, hidden_dim]
- *   1: gate_weights [hidden_dim, num_experts]
- *
- * Output:
- *   0: expert_indices [batch * seq_len, top_k] (INT64)
- *   1: expert_weights [batch * seq_len, top_k] (softmax scores)
- *   2: aux_loss (scalar) - load balancing loss
- *
- * Integer arguments:
- *   0: num_experts (default: 8)
- *   1: top_k (experts per token, default: 2)
- *
- * Float arguments:
- *   0: aux_loss_weight (default: 0.01)
- *   1: jitter_eps (training noise, default: 0.0)
- */
-// TODO: Implementation moved to /tmp/new_ops_backup/ — re-enable when fixed
-// #if NOT_EXCLUDED(OP_moe_gate)
-// DECLARE_CUSTOM_OP(moe_gate, 2, 3, false, 0, 0);
-// #endif
 
 /**
  * selective_scan - Mamba/SSM Selective Scan

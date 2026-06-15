@@ -89,7 +89,7 @@ public class GraphOptimizer {
                 new MatMulChainOptimizations(),      // Fold constant matmul chains, absorb transposes into matmul flags
                 new ActivationFusionOptimizations(), // sigmoid(x)*x -> swish, SwiGLU detection (must run before rematerialization)
                 new NormalizationFusionOptimizations(), // RMSNorm detection (must run before rematerialization)
-                new GatedDeltaNetFusionOptimizations(), // GDN pattern fusion
+
                 new RematerializationOptimizations(), // Duplicate cheap ops to shorten live ranges (runs after fusion to avoid breaking patterns)
                 new LinearFusionOptimizations(),
                 new QuantizationOptimizations(),     // Remove redundant casts, FP16 quantization
