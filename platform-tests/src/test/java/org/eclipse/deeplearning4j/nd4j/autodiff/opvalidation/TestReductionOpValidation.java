@@ -489,7 +489,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return Long.MAX_VALUE;
+        return 600000;
     }
 
     @Order(Integer.MAX_VALUE - 1)

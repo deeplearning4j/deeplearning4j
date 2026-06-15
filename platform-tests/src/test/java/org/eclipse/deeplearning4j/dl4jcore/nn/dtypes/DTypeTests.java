@@ -189,7 +189,7 @@ public class DTypeTests extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 9999999L;
+        return 600000;
     }
 
     @AfterClass

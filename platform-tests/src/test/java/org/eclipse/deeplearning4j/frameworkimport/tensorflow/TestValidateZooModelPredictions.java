@@ -70,7 +70,7 @@ public class TestValidateZooModelPredictions extends BaseNd4jTestWithBackends {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return Long.MAX_VALUE;
+        return 600000;
     }
 
     @ParameterizedTest
