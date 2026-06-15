@@ -18,6 +18,8 @@
 
 package org.nd4j.common.tests.results;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -38,6 +40,7 @@ import java.util.stream.Stream;
  * This class is intentionally dependency-free beyond the JDK — no Jackson, no Gson.
  * JSON is simple enough to format inline for the flat structures we write.
  */
+@Slf4j
 public class TestResultStore {
 
     /** System property to override the results directory. */
@@ -143,7 +146,7 @@ public class TestResultStore {
             appendLine(getDailyFile(), sb.toString());
         } catch (Exception e) {
             // Never let recording break tests
-            System.err.println("[TestResultStore] Failed to record result: " + e.getMessage());
+            log.warn("Failed to record result: {}", e.getMessage());
         }
     }
 
@@ -168,7 +171,7 @@ public class TestResultStore {
             sb.append('}');
             appendLine(getMilestoneFile(), sb.toString());
         } catch (Exception e) {
-            System.err.println("[TestResultStore] Failed to record milestone: " + e.getMessage());
+            log.warn("Failed to record milestone: {}", e.getMessage());
         }
     }
 
@@ -268,7 +271,7 @@ public class TestResultStore {
             Files.write(file, Collections.singletonList(line), StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
-            System.err.println("[TestResultStore] Write failed to " + file + ": " + e.getMessage());
+            log.warn("Write failed to {}: {}", file, e.getMessage());
         }
     }
 
