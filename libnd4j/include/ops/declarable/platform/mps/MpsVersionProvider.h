@@ -230,6 +230,87 @@ class SD_LIB_EXPORT MpsVersionProvider {
   }
 };
 
+// ============================================================================
+// Convenience free functions for compile-time version detection.
+// Both use __MAC_OS_X_VERSION_MIN_REQUIRED__ (equivalent to
+// __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ on Apple toolchains).
+// On non-Apple platforms the macro is absent, so the functions return 0.
+// ============================================================================
+
+/**
+ * Returns the major macOS version from the deployment target.
+ * e.g. macOS 14.x → 14, macOS 11.x → 11, non-Apple → 0.
+ */
+constexpr int getMpsMajorVersion() {
+#if defined(__MAC_OS_X_VERSION_MIN_REQUIRED__)
+#  if __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 150000
+    return 15;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 140000
+    return 14;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 130000
+    return 13;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 120000
+    return 12;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 110000
+    return 11;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 101500
+    return 10;
+#  else
+    return 10;
+#  endif
+#else
+    return 0;
+#endif
+}
+
+/**
+ * Returns the minor macOS version from the deployment target.
+ * e.g. macOS 14.x → 0 (only major tracked), macOS 10.15 → 15.
+ * Non-Apple → 0.
+ */
+constexpr int getMpsMinorVersion() {
+#if defined(__MAC_OS_X_VERSION_MIN_REQUIRED__)
+#  if __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 150000
+    return 0;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 140000
+    return 0;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 130000
+    return 0;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 120000
+    return 0;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 110000
+    return 0;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 101500
+    return 15;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 101400
+    return 14;
+#  elif __MAC_OS_X_VERSION_MIN_REQUIRED__ >= 101300
+    return 13;
+#  else
+    return 0;
+#  endif
+#else
+    return 0;
+#endif
+}
+
+// Compile-time availability guards for specific MPS features.
+
+/** true when MPSGraph API is available (macOS 12+). */
+constexpr bool hasMPSGraphSupport() {
+    return getMpsMajorVersion() >= MPS_GRAPH_MACOS_MAJOR;
+}
+
+/** true when transformer / attention optimisations are present (macOS 14+). */
+constexpr bool hasMPSTransformerSupport() {
+    return getMpsMajorVersion() >= MPS_TRANSFORMER_MACOS_MAJOR;
+}
+
+/** true when flash-attention-like ops are available (macOS 14+). */
+constexpr bool hasMPSFlashAttentionSupport() {
+    return getMpsMajorVersion() >= MPS_FLASH_ATTN_MACOS_MAJOR;
+}
+
 }  // namespace mps
 }  // namespace platforms
 }  // namespace ops

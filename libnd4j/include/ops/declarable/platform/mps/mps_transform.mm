@@ -627,6 +627,38 @@ PLATFORM_CHECK(space_to_batch_nd, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS
+
+PLATFORM_IMPL(reshape, ENGINE_CPU)           { return sd::Status::OK; }
+PLATFORM_CHECK(reshape, ENGINE_CPU)          { return Requirements("MPS RESHAPE STUB"); }
+
+PLATFORM_IMPL(flatten, ENGINE_CPU)           { return sd::Status::OK; }
+PLATFORM_CHECK(flatten, ENGINE_CPU)          { return Requirements("MPS FLATTEN STUB"); }
+
+PLATFORM_IMPL(squeeze, ENGINE_CPU)           { return sd::Status::OK; }
+PLATFORM_CHECK(squeeze, ENGINE_CPU)          { return Requirements("MPS SQUEEZE STUB"); }
+
+PLATFORM_IMPL(expand_dims, ENGINE_CPU)       { return sd::Status::OK; }
+PLATFORM_CHECK(expand_dims, ENGINE_CPU)      { return Requirements("MPS EXPAND_DIMS STUB"); }
+
+PLATFORM_IMPL(permute, ENGINE_CPU)           { return sd::Status::OK; }
+PLATFORM_CHECK(permute, ENGINE_CPU)          { return Requirements("MPS PERMUTE STUB"); }
+
+PLATFORM_IMPL(split, ENGINE_CPU)             { return sd::Status::OK; }
+PLATFORM_CHECK(split, ENGINE_CPU)            { return Requirements("MPS SPLIT STUB"); }
+
+PLATFORM_IMPL(space_to_depth, ENGINE_CPU)    { return sd::Status::OK; }
+PLATFORM_CHECK(space_to_depth, ENGINE_CPU)   { return Requirements("MPS SPACE_TO_DEPTH STUB"); }
+
+PLATFORM_IMPL(depth_to_space, ENGINE_CPU)    { return sd::Status::OK; }
+PLATFORM_CHECK(depth_to_space, ENGINE_CPU)   { return Requirements("MPS DEPTH_TO_SPACE STUB"); }
+
+PLATFORM_IMPL(batch_to_space_nd, ENGINE_CPU)  { return sd::Status::OK; }
+PLATFORM_CHECK(batch_to_space_nd, ENGINE_CPU) { return Requirements("MPS BATCH_TO_SPACE_ND STUB"); }
+
+PLATFORM_IMPL(space_to_batch_nd, ENGINE_CPU)  { return sd::Status::OK; }
+PLATFORM_CHECK(space_to_batch_nd, ENGINE_CPU) { return Requirements("MPS SPACE_TO_BATCH_ND STUB"); }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

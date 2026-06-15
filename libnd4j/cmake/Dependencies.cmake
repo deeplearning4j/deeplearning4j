@@ -1373,7 +1373,14 @@ function(setup_mps)
 
     add_compile_definitions(HAVE_MPS=1)
 
-    message(STATUS "✅ MPS setup complete")
+    # Enable SD_METAL for MetalReplayHandle in the DSP framework
+    add_compile_definitions(SD_METAL=1)
+
+    # Enable Objective-C++ compilation for .mm files
+    enable_language(OBJCXX)
+
+    sd_register_helper("mps")
+    message(STATUS "✅ MPS setup complete with Metal ICB replay (SD_METAL)")
 endfunction()
 
 # =============================================================================

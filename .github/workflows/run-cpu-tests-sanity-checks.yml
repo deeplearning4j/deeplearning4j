@@ -92,6 +92,20 @@ jobs:
             runner: macos-14
             os: macos
 
+          - platform: macosx-arm64-mps
+            classifier: macosx-arm64-mps
+            javacpp_platform: macosx-arm64
+            javacpp_extension: '-mps'
+            runner: macos-14
+            os: macos
+
+          - platform: macosx-arm64-mps-compile
+            classifier: macosx-arm64-mps-compile
+            javacpp_platform: macosx-arm64
+            javacpp_extension: '-mps-compile'
+            runner: macos-14
+            os: macos
+
     runs-on: ${{ github.event.inputs.runsOn || matrix.runner }}
     timeout-minutes: 90
     name: ${{ matrix.platform }}

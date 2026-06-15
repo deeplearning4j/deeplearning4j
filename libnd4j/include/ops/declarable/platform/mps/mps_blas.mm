@@ -188,6 +188,68 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
     return req;
 }
 
+// ===========================================================================
+// batched_gemm
+// Loop over the batch dimension, applying matmulMPS for each slice.
+// Input shapes: A[bS, M, K], B[bS, K, N], output C[bS, M, N].
+// iArgs: 0=transA, 1=transB
+// tArgs: 0=alpha,  1=beta
+// ===========================================================================
+
+PLATFORM_IMPL(batched_gemm, ENGINE_CPU) {
+    auto A = INPUT_VARIABLE(0);
+    auto B = INPUT_VARIABLE(1);
+    auto C = OUTPUT_VARIABLE(0);
+
+    if (A->isEmpty() || B->isEmpty()) return sd::Status::OK;
+
+    bool transA = block.getIArguments()->size() > 0 ? (bool)INT_ARG(0) : false;
+    bool transB = block.getIArguments()->size() > 1 ? (bool)INT_ARG(1) : false;
+    double alpha = block.getTArguments()->size() > 0 ? T_ARG(0) : 1.0;
+    double beta  = block.getTArguments()->size() > 1 ? T_ARG(1) : 0.0;
+
+    sd::LongType rank = A->rankOf();
+    sd::LongType bS   = (rank >= 3) ? A->sizeAt(0) : 1;
+    sd::LongType M    = transA ? A->sizeAt(-1) : A->sizeAt(-2);
+    sd::LongType K    = transA ? A->sizeAt(-2) : A->sizeAt(-1);
+    sd::LongType N    = transB ? B->sizeAt(-2) : B->sizeAt(-1);
+
+    for (sd::LongType i = 0; i < bS; i++) {
+        // Slice each batch element and run matmul
+        auto aSlice = A->subarray({NDIndex::point(i), NDIndex::all(), NDIndex::all()});
+        auto bSlice = B->subarray({NDIndex::point(i), NDIndex::all(), NDIndex::all()});
+        auto cSlice = C->subarray({NDIndex::point(i), NDIndex::all(), NDIndex::all()});
+        matmulMPS(&aSlice, &bSlice, &cSlice, transA, transB, alpha, beta);
+    }
+
+    return sd::Status::OK;
+}
+
+PLATFORM_CHECK(batched_gemm, ENGINE_CPU) {
+    auto A = INPUT_VARIABLE(0);
+    auto B = INPUT_VARIABLE(1);
+    auto C = OUTPUT_VARIABLE(0);
+
+    Requirements req("MPS BATCHED_GEMM OP");
+
+    req.expectTrue(block.isUseMPS(), IS_USE_MPS_MSG);
+    req.expectTrue(mpsUtils::MPSDeviceManager::getInstance().isAvailable(),
+                   "MPS device must be available");
+    req.expectTrue(A->dataType() == DataType::FLOAT32,
+                   "Only float32 is currently supported by MPS batched_gemm");
+    req.expectTrue(A->dataType() == B->dataType(),
+                   "Input arrays must have the same data type");
+    req.expectTrue(mpsUtils::isContiguous(*A), "Input A must be contiguous");
+    req.expectTrue(mpsUtils::isContiguous(*B), "Input B must be contiguous");
+    req.expectFalse(A->isEmpty(), "Input A must not be empty");
+    req.expectFalse(B->isEmpty(), "Input B must not be empty");
+    req.expectTrue(A->rankOf() >= 2 && A->rankOf() <= 3,
+                   "batched_gemm expects rank 2 or 3 inputs");
+
+    req.logTheSuccess();
+    return req;
+}
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

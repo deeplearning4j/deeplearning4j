@@ -560,6 +560,35 @@ PLATFORM_CHECK(where_np, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS — register no-op stubs
+
+PLATFORM_IMPL(greater, ENGINE_CPU)       { return sd::Status::OK; }
+PLATFORM_CHECK(greater, ENGINE_CPU)      { return false; }
+
+PLATFORM_IMPL(greater_equal, ENGINE_CPU) { return sd::Status::OK; }
+PLATFORM_CHECK(greater_equal, ENGINE_CPU){ return false; }
+
+PLATFORM_IMPL(less, ENGINE_CPU)          { return sd::Status::OK; }
+PLATFORM_CHECK(less, ENGINE_CPU)         { return false; }
+
+PLATFORM_IMPL(less_equal, ENGINE_CPU)    { return sd::Status::OK; }
+PLATFORM_CHECK(less_equal, ENGINE_CPU)   { return false; }
+
+PLATFORM_IMPL(equals, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(equals, ENGINE_CPU)       { return false; }
+
+PLATFORM_IMPL(not_equals, ENGINE_CPU)    { return sd::Status::OK; }
+PLATFORM_CHECK(not_equals, ENGINE_CPU)   { return false; }
+
+PLATFORM_IMPL(maximum, ENGINE_CPU)       { return sd::Status::OK; }
+PLATFORM_CHECK(maximum, ENGINE_CPU)      { return false; }
+
+PLATFORM_IMPL(minimum, ENGINE_CPU)       { return sd::Status::OK; }
+PLATFORM_CHECK(minimum, ENGINE_CPU)      { return false; }
+
+PLATFORM_IMPL(where_np, ENGINE_CPU)      { return sd::Status::OK; }
+PLATFORM_CHECK(where_np, ENGINE_CPU)     { return false; }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

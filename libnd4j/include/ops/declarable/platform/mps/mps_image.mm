@@ -598,6 +598,20 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS
+
+PLATFORM_IMPL(resize_bilinear, ENGINE_CPU)    { return sd::Status::OK; }
+PLATFORM_CHECK(resize_bilinear, ENGINE_CPU)   { return Requirements("MPS RESIZE_BILINEAR STUB"); }
+
+PLATFORM_IMPL(resize_nearest, ENGINE_CPU)     { return sd::Status::OK; }
+PLATFORM_CHECK(resize_nearest, ENGINE_CPU)    { return Requirements("MPS RESIZE_NEAREST STUB"); }
+
+PLATFORM_IMPL(crop_and_resize, ENGINE_CPU)    { return sd::Status::OK; }
+PLATFORM_CHECK(crop_and_resize, ENGINE_CPU)   { return Requirements("MPS CROP_AND_RESIZE STUB"); }
+
+PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU)   { return sd::Status::OK; }
+PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU)  { return Requirements("MPS DEPTHWISE_CONV2D STUB"); }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

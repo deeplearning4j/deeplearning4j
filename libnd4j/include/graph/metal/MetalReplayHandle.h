@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+// Author: Adam Gibson
+
 #ifndef LIBND4J_METAL_REPLAY_HANDLE_H
 #define LIBND4J_METAL_REPLAY_HANDLE_H
 
@@ -124,24 +126,21 @@ class SD_LIB_EXPORT MetalReplayHandle : public GraphReplayHandle {
                             uint32_t threadsPerGroup,
                             uint32_t threadgroupsPerGrid);
 
-  /**
-   * Get the maximum number of commands the ICB can hold.
-   */
-  int getMaxCommands() const { return maxCommands_; }
+  /** Maximum number of commands the ICB can hold. */
+  int getMaxCommands() const;
 
   /**
-   * Set the maximum number of commands. Must be called before beginCapture()
-   * to take effect (triggers ICB recreation).
+   * Set the maximum command capacity.
+   * Must be called before beginCapture() to take effect; triggers ICB
+   * recreation if Metal is already initialized.
    */
   void setMaxCommands(int max);
 
-  /**
-   * Get the number of commands recorded in the current/last capture.
-   */
-  int getNumCommands() const { return numCommands_; }
+  /** Number of commands recorded in the current/last capture. */
+  int getNumCommands() const;
 
-  /** Get device ID this handle was created for. */
-  int getDeviceId() const { return deviceId_; }
+  /** Device ID this handle was created for. */
+  int getDeviceId() const;
 
  private:
   ReplayState state_ = ReplayState::EMPTY;

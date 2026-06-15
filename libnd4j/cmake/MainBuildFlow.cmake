@@ -366,9 +366,18 @@ function(collect_all_sources out_source_list)
         # Metal Performance Shaders helper (macOS/iOS)
         if(HAVE_MPS)
             file(GLOB_RECURSE CUSTOMOPS_MPS_SOURCES ./include/ops/declarable/platform/mps/*.mm)
-            list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MPS_SOURCES})
+            file(GLOB_RECURSE METAL_REPLAY_SOURCES ./include/graph/metal/*.mm)
+            list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MPS_SOURCES} ${METAL_REPLAY_SOURCES})
+            # Set ObjC++ properties on .mm files for proper ARC compilation
+            foreach(mm_source ${CUSTOMOPS_MPS_SOURCES} ${METAL_REPLAY_SOURCES})
+                set_source_files_properties(${mm_source} PROPERTIES
+                    LANGUAGE OBJCXX
+                    COMPILE_FLAGS "-fobjc-arc"
+                )
+            endforeach()
             list(LENGTH CUSTOMOPS_MPS_SOURCES mps_count)
-            message(STATUS "✅ Added MPS platform sources: ${mps_count} files")
+            list(LENGTH METAL_REPLAY_SOURCES metal_count)
+            message(STATUS "✅ Added MPS platform sources: ${mps_count} helpers, ${metal_count} Metal replay files")
         endif()
 
         # Apple Accelerate framework helper (macOS/iOS)
@@ -471,11 +480,11 @@ function(configure_cpu_linking main_target_name)
         message(STATUS "🔗 Linking MLIR helper")
     endif()
 
-    # Metal Performance Shaders (macOS/iOS)
+    # Metal Performance Shaders (macOS/iOS) + Metal ICB Replay for DSP
     if(HAVE_MPS AND DEFINED MPS_LIBRARIES)
         target_link_libraries(${main_target_name} PUBLIC ${MPS_LIBRARIES})
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_MPS=1)
-        message(STATUS "🔗 Linking MPS helper")
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_MPS=1 SD_METAL=1)
+        message(STATUS "🔗 Linking MPS helper + Metal ICB replay")
     endif()
 
     # Triton GPU Compiler

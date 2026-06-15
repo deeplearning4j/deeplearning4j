@@ -662,6 +662,38 @@ PLATFORM_CHECK(bincount, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS — register no-op stubs
+
+PLATFORM_IMPL(sort, ENGINE_CPU)              { return sd::Status::OK; }
+PLATFORM_CHECK(sort, ENGINE_CPU)             { return false; }
+
+PLATFORM_IMPL(argsort, ENGINE_CPU)           { return sd::Status::OK; }
+PLATFORM_CHECK(argsort, ENGINE_CPU)          { return false; }
+
+PLATFORM_IMPL(top_k, ENGINE_CPU)             { return sd::Status::OK; }
+PLATFORM_CHECK(top_k, ENGINE_CPU)            { return false; }
+
+PLATFORM_IMPL(in_top_k, ENGINE_CPU)          { return sd::Status::OK; }
+PLATFORM_CHECK(in_top_k, ENGINE_CPU)         { return false; }
+
+PLATFORM_IMPL(unique, ENGINE_CPU)            { return sd::Status::OK; }
+PLATFORM_CHECK(unique, ENGINE_CPU)           { return false; }
+
+PLATFORM_IMPL(unique_with_counts, ENGINE_CPU){ return sd::Status::OK; }
+PLATFORM_CHECK(unique_with_counts, ENGINE_CPU){ return false; }
+
+PLATFORM_IMPL(argmax, ENGINE_CPU)            { return sd::Status::OK; }
+PLATFORM_CHECK(argmax, ENGINE_CPU)           { return false; }
+
+PLATFORM_IMPL(argmin, ENGINE_CPU)            { return sd::Status::OK; }
+PLATFORM_CHECK(argmin, ENGINE_CPU)           { return false; }
+
+PLATFORM_IMPL(histogram, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(histogram, ENGINE_CPU)        { return false; }
+
+PLATFORM_IMPL(bincount, ENGINE_CPU)          { return sd::Status::OK; }
+PLATFORM_CHECK(bincount, ENGINE_CPU)         { return false; }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

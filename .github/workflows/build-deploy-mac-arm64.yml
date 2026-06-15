@@ -57,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [compile, ""]
+        helper: [compile, mps, mps-compile, ""]
         extension: [""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
@@ -133,7 +133,14 @@ jobs:
               fi
               # Determine helper/extension flags first so they apply to both phases.
               if [ "${{ matrix.helper }}" == 'compile' ]; then
+                  # DSP compile helper: MLIR + Triton JIT backend
                   mvn_ext=" -Dlibnd4j.triton=ON -Posx-aarch64-protoc -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=macosx-arm64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
+              elif [ "${{ matrix.helper }}" == 'mps' ]; then
+                  # MPS helper: Metal Performance Shaders GPU acceleration
+                  mvn_ext=" -Dlibnd4j.triton=ON -Posx-aarch64-protoc -Djavacpp.platform.extension=-mps -Dlibnd4j.classifier=macosx-arm64-mps -Dlibnd4j.helper=mps"
+              elif [ "${{ matrix.helper }}" == 'mps-compile' ]; then
+                  # MPS + DSP compile: Metal GPU + MLIR JIT (DSP framework uses Metal ICB replay)
+                  mvn_ext=" -Dlibnd4j.triton=ON -Posx-aarch64-protoc -Djavacpp.platform.extension=-mps-compile -Dlibnd4j.classifier=macosx-arm64-mps-compile -Dlibnd4j.helper=mps -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
               elif [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext="-Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-arm64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
               elif [ "${{ matrix.helper }}" != '' ]; then

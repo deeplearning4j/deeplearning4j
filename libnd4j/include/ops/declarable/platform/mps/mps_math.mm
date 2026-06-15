@@ -878,6 +878,83 @@ PLATFORM_CHECK(erfc, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS — register no-op stubs
+
+PLATFORM_IMPL(sin, ENGINE_CPU)          { return sd::Status::OK; }
+PLATFORM_CHECK(sin, ENGINE_CPU)         { return false; }
+
+PLATFORM_IMPL(cos, ENGINE_CPU)          { return sd::Status::OK; }
+PLATFORM_CHECK(cos, ENGINE_CPU)         { return false; }
+
+PLATFORM_IMPL(tan, ENGINE_CPU)          { return sd::Status::OK; }
+PLATFORM_CHECK(tan, ENGINE_CPU)         { return false; }
+
+PLATFORM_IMPL(asin, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(asin, ENGINE_CPU)        { return false; }
+
+PLATFORM_IMPL(acos, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(acos, ENGINE_CPU)        { return false; }
+
+PLATFORM_IMPL(atan, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(atan, ENGINE_CPU)        { return false; }
+
+PLATFORM_IMPL(atan2, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(atan2, ENGINE_CPU)       { return false; }
+
+PLATFORM_IMPL(sinh, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(sinh, ENGINE_CPU)        { return false; }
+
+PLATFORM_IMPL(cosh, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(cosh, ENGINE_CPU)        { return false; }
+
+PLATFORM_IMPL(asinh, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(asinh, ENGINE_CPU)       { return false; }
+
+PLATFORM_IMPL(acosh, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(acosh, ENGINE_CPU)       { return false; }
+
+PLATFORM_IMPL(atanh, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(atanh, ENGINE_CPU)       { return false; }
+
+PLATFORM_IMPL(Floor, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(Floor, ENGINE_CPU)       { return false; }
+
+PLATFORM_IMPL(Ceil, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(Ceil, ENGINE_CPU)        { return false; }
+
+PLATFORM_IMPL(Round, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(Round, ENGINE_CPU)       { return false; }
+
+PLATFORM_IMPL(Sign, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(Sign, ENGINE_CPU)        { return false; }
+
+PLATFORM_IMPL(clip_by_value, ENGINE_CPU){ return sd::Status::OK; }
+PLATFORM_CHECK(clip_by_value, ENGINE_CPU){ return false; }
+
+PLATFORM_IMPL(reciprocal, ENGINE_CPU)   { return sd::Status::OK; }
+PLATFORM_CHECK(reciprocal, ENGINE_CPU)  { return false; }
+
+PLATFORM_IMPL(square, ENGINE_CPU)       { return sd::Status::OK; }
+PLATFORM_CHECK(square, ENGINE_CPU)      { return false; }
+
+PLATFORM_IMPL(cube, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(cube, ENGINE_CPU)        { return false; }
+
+PLATFORM_IMPL(rsqrt, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(rsqrt, ENGINE_CPU)       { return false; }
+
+PLATFORM_IMPL(log1p, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(log1p, ENGINE_CPU)       { return false; }
+
+PLATFORM_IMPL(expm1, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(expm1, ENGINE_CPU)       { return false; }
+
+PLATFORM_IMPL(erf, ENGINE_CPU)          { return sd::Status::OK; }
+PLATFORM_CHECK(erf, ENGINE_CPU)         { return false; }
+
+PLATFORM_IMPL(erfc, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(erfc, ENGINE_CPU)        { return false; }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

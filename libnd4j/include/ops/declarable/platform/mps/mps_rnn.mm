@@ -395,6 +395,20 @@ PLATFORM_CHECK(static_bidirectional_rnn, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS
+
+PLATFORM_IMPL(simple_rnn, ENGINE_CPU)             { return sd::Status::OK; }
+PLATFORM_CHECK(simple_rnn, ENGINE_CPU)            { return Requirements("MPS SIMPLE_RNN STUB"); }
+
+PLATFORM_IMPL(lstmCell, ENGINE_CPU)               { return sd::Status::OK; }
+PLATFORM_CHECK(lstmCell, ENGINE_CPU)              { return Requirements("MPS LSTM_CELL STUB"); }
+
+PLATFORM_IMPL(gruCell, ENGINE_CPU)                { return sd::Status::OK; }
+PLATFORM_CHECK(gruCell, ENGINE_CPU)               { return Requirements("MPS GRU_CELL STUB"); }
+
+PLATFORM_IMPL(static_bidirectional_rnn, ENGINE_CPU)  { return sd::Status::OK; }
+PLATFORM_CHECK(static_bidirectional_rnn, ENGINE_CPU) { return Requirements("MPS BIDIRECTIONAL_RNN STUB"); }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

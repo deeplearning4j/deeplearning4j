@@ -30,12 +30,17 @@
 #include <graph/Context.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
-#include <system/Requirements.h>
+#include <system/RequirementsHelper.h>
+#include <ConstMessages.h>
 
 #ifdef HAVE_MPS
 #import <Metal/Metal.h>
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 #endif
+
+// IS_USE_MPS_MSG is declared as extern const char* in ConstMessages.h and
+// defined in ConstMessages.cpp.  The #include <ConstMessages.h> above makes
+// it available to all translation units that include this header.
 
 namespace sd {
 namespace ops {
@@ -389,167 +394,120 @@ DECLARE_PLATFORM(log_loss, ENGINE_CPU);
 
 namespace mpsUtils {
 
-#ifdef HAVE_MPS
+// ============================================================================
+// These declarations are available regardless of HAVE_MPS so that
+// PLATFORM_CHECK implementations compile on all platforms.
+// ============================================================================
 
 /**
- * MPS Device Manager - Singleton for managing Metal device and command queue
+ * Check if MPS helper is available at runtime.
+ * Returns false when HAVE_MPS is not defined.
+ */
+bool hasMPSSupport();
+
+/**
+ * Returns true when the NDArray is contiguous in C order (row-major).
+ * Available unconditionally so PLATFORM_CHECK can call it on any platform.
+ */
+bool isContiguous(const sd::NDArray& arr);
+
+/**
+ * Singleton device manager for MPS / Metal.
+ *
+ * On non-Apple platforms (or when HAVE_MPS is not defined) all methods
+ * are no-ops / return nullptr / false so the rest of the code compiles
+ * unconditionally.
  */
 class MPSDeviceManager {
 public:
     static MPSDeviceManager& getInstance();
 
-    /**
-     * Initialize the Metal device
-     * @return true if initialization successful
-     */
     bool initialize();
-
-    /**
-     * Shutdown and release Metal resources
-     */
     void shutdown();
 
-    /**
-     * Check if MPS is available on this system
-     */
-    bool isAvailable() const { return _device != nil; }
+    /** Returns true only when a Metal device was successfully acquired. */
+    bool isAvailable() const { return _initialized && _available; }
 
-    /**
-     * Get the Metal device
-     */
-    id<MTLDevice> getDevice() const { return _device; }
-
-    /**
-     * Get the command queue
-     */
-    id<MTLCommandQueue> getCommandQueue() const { return _commandQueue; }
-
-    /**
-     * Create a new command buffer
-     */
+#ifdef HAVE_MPS
+    id<MTLDevice>        getDevice()       const { return _device; }
+    id<MTLCommandQueue>  getCommandQueue() const { return _commandQueue; }
     id<MTLCommandBuffer> createCommandBuffer();
-
-    /**
-     * Get device name
-     */
-    std::string getDeviceName() const;
-
-    /**
-     * Get recommended max working set size (memory)
-     */
-    size_t getMaxMemory() const;
-
-    /**
-     * Check if the device supports a specific feature
-     */
-    bool supportsFamily(MTLGPUFamily family) const;
+    std::string          getDeviceName()   const;
+    size_t               getMaxMemory()    const;
+    bool                 supportsFamily(MTLGPUFamily family) const;
+#else
+    void* getDevice()       const { return nullptr; }
+    void* getCommandQueue() const { return nullptr; }
+#endif
 
 private:
     MPSDeviceManager();
     ~MPSDeviceManager();
-
     MPSDeviceManager(const MPSDeviceManager&) = delete;
     MPSDeviceManager& operator=(const MPSDeviceManager&) = delete;
 
-    id<MTLDevice> _device;
-    id<MTLCommandQueue> _commandQueue;
-    bool _initialized;
+    bool _initialized = false;
+    bool _available   = false;
+
+#ifdef HAVE_MPS
+    id<MTLDevice>       _device       = nil;
+    id<MTLCommandQueue> _commandQueue = nil;
+#endif
 };
 
-/**
- * Check if MPS is supported for the given data type
- * @param dtype The data type to check
- * @return true if the data type is supported by MPS
- */
+// ============================================================================
+// MPS-only helpers (compiled only when Metal is present)
+// ============================================================================
+
+#ifdef HAVE_MPS
+
+/** Returns true if the data type has a native MPS representation. */
 bool isMPSSupported(sd::DataType dtype);
 
-/**
- * Check if the array is suitable for MPS operations
- * @param arr The NDArray to check
- * @return true if the array can be used with MPS
- */
-bool isMPSFriendly(const NDArray& arr);
+/** Returns true if the array is contiguous and has a MPS-supported dtype. */
+bool isMPSFriendly(const sd::NDArray& arr);
 
-/**
- * Check if arrays are contiguous in memory
- */
-bool isContiguous(const NDArray& arr);
-
-/**
- * Get MPSDataType from ND4J DataType
- */
+/** Map a libnd4j DataType to the corresponding MPSDataType. */
 MPSDataType getMPSDataType(sd::DataType dtype);
 
-/**
- * Create an MPSMatrix from an NDArray
- * @param arr Source NDArray
- * @param device Metal device
- * @return MPSMatrix wrapping the array data
- */
-MPSMatrix* createMPSMatrix(const NDArray* arr, id<MTLDevice> device);
+/** Create an MPSMatrix wrapping the data in @p arr. */
+MPSMatrix* createMPSMatrix(const sd::NDArray* arr, id<MTLDevice> device);
 
-/**
- * Create an MPSImage from an NDArray (for CNN operations)
- * @param arr Source NDArray [N, C, H, W] or [N, H, W, C]
- * @param device Metal device
- * @return MPSImage wrapping the array data
- */
-MPSImage* createMPSImage(const NDArray* arr, id<MTLDevice> device);
+/** Create an MPSImage from a 4-D NDArray (NCHW). */
+MPSImage* createMPSImage(const sd::NDArray* arr, id<MTLDevice> device);
 
-/**
- * Copy data from MPSMatrix back to NDArray
- */
-void copyMPSMatrixToNDArray(MPSMatrix* matrix, NDArray* arr);
+/** Synchronously copy an MPSMatrix result back to @p arr. */
+void copyMPSMatrixToNDArray(MPSMatrix* matrix, sd::NDArray* arr);
 
-/**
- * Copy data from MPSImage back to NDArray
- */
-void copyMPSImageToNDArray(MPSImage* image, NDArray* arr);
+/** Synchronously copy an MPSImage result back to @p arr. */
+void copyMPSImageToNDArray(MPSImage* image, sd::NDArray* arr);
 
-/**
- * Synchronize and wait for GPU operations to complete
- */
+/** Wait for all pending GPU work to complete. */
 void synchronize();
 
-/**
- * RAII wrapper for MPS command buffer
- */
+/** RAII wrapper for an MTLCommandBuffer. */
 class MPSCommandBufferGuard {
 public:
     MPSCommandBufferGuard();
     ~MPSCommandBufferGuard();
 
-    id<MTLCommandBuffer> get() const { return _commandBuffer; }
+    id<MTLCommandBuffer> get()  const { return _commandBuffer; }
     operator id<MTLCommandBuffer>() const { return _commandBuffer; }
 
-    /**
-     * Commit the command buffer and wait for completion
-     */
     void commitAndWait();
-
-    /**
-     * Commit the command buffer without waiting
-     */
     void commit();
 
 private:
-    id<MTLCommandBuffer> _commandBuffer;
-    bool _committed;
+    id<MTLCommandBuffer> _commandBuffer = nil;
+    bool _committed = false;
 };
 
-/**
- * Add MPS requirements check to the requirements block
- */
-void checkMPSRequirements(Requirements& reqs, sd::graph::Context& block,
-                           const NDArray* input = nullptr, const NDArray* output = nullptr);
+/** Fill @p reqs with the standard MPS preconditions. */
+void checkMPSRequirements(sd::Requirements& reqs, sd::graph::Context& block,
+                           const sd::NDArray* input  = nullptr,
+                           const sd::NDArray* output = nullptr);
 
 #endif  // HAVE_MPS
-
-/**
- * Check if MPS helper is available at runtime
- * Works even when HAVE_MPS is not defined
- */
-bool hasMPSSupport();
 
 }  // namespace mpsUtils
 }  // namespace ops
