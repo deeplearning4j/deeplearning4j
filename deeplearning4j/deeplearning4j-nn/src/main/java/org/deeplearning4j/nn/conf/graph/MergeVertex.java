@@ -22,7 +22,6 @@ package org.deeplearning4j.nn.conf.graph;
 
 
 import lombok.Data;
-import lombok.Setter;
 import lombok.val;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
