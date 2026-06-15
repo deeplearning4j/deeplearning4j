@@ -256,10 +256,20 @@ endif()
 # ============================================================================
 # sccache handles nvcc natively — no nvcc_filter.py wrapper needed.
 # ccache needs nvcc_filter.py on Windows to expand response files.
-if(SCCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER)
-    # sccache handles nvcc natively on all platforms, including response files.
+if(SCCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT WIN32)
+    # sccache handles nvcc natively on Linux/macOS, including response files.
+    # On Windows, sccache wrapping nvcc breaks nvcc's tmpxft_* stderr redirect:
+    # sccache changes the working directory, so nvcc's relative temp file paths
+    # (compiler_tmp/tmpxft_*_stderr) resolve to the wrong location, causing
+    # "fatal: Could not open input file" on every .cu compilation.
+    # sccache still caches C/C++ compilation on Windows via CMAKE_C/CXX_COMPILER_LAUNCHER.
     set(CMAKE_CUDA_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher (sccache)" FORCE)
     message(STATUS "sccache enabled for CUDA compilation (no nvcc_filter.py needed)")
+
+elseif(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER AND SCCACHE_PROGRAM)
+    # sccache found on Windows but NOT used for CUDA (see comment above).
+    # C/C++ compilation still uses sccache via CMAKE_C/CXX_COMPILER_LAUNCHER.
+    message(STATUS "sccache SKIPPED for CUDA on Windows (tmpxft_* stderr redirect incompatibility)")
 
 elseif(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT SCCACHE_PROGRAM)
     # On Windows CUDA: use nvcc_filter.py wrapper to strip MSVC -Fd/-FS flags from
