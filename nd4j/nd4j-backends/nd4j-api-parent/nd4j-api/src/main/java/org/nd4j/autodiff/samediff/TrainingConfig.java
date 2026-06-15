@@ -22,6 +22,7 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.samediff.config.LossScaleConfig;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -52,6 +53,11 @@ public class TrainingConfig {
     private int epochCount;
     private DataType initialLossDataType;
 
+    // Mixed precision training configuration
+    private DataType computeDataType = DataType.FLOAT;      // Forward/backward compute dtype
+    private DataType masterWeightDataType = DataType.FLOAT; // Master weight dtype (for FP32 master weights)
+    private LossScaleConfig lossScaleConfig;                // Loss scaling configuration
+    private int gradientAccumulationSteps = 1;              // Number of steps to accumulate gradients
 
     private Map<String, List<IEvaluation>> trainEvaluations = new HashMap<>();
     private Map<String, Integer> trainEvaluationLabels = new HashMap<>();
@@ -73,7 +79,7 @@ public class TrainingConfig {
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, String dataSetFeatureMapping, String dataSetLabelMapping) {
         this(updater, regularization, true, Collections.singletonList(dataSetFeatureMapping), Collections.singletonList(dataSetLabelMapping),
-                Collections.<String>emptyList(), null,DataType.FLOAT);
+                Collections.<String>emptyList(), null, DataType.FLOAT);
     }
 
     /**
@@ -106,12 +112,17 @@ public class TrainingConfig {
     protected TrainingConfig(IUpdater updater, List<Regularization> regularization, boolean minimize, List<String> dataSetFeatureMapping, List<String> dataSetLabelMapping,
             List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping,
             Map<String, List<IEvaluation>> trainEvaluations, Map<String, Integer> trainEvaluationLabels,
-            Map<String, List<IEvaluation>> validationEvaluations, Map<String, Integer> validationEvaluationLabels,DataType initialLossDataType) {
-        this(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping, dataSetFeatureMaskMapping, dataSetLabelMaskMapping,initialLossDataType);
+            Map<String, List<IEvaluation>> validationEvaluations, Map<String, Integer> validationEvaluationLabels, DataType initialLossDataType,
+            DataType computeDataType, DataType masterWeightDataType, LossScaleConfig lossScaleConfig, int gradientAccumulationSteps) {
+        this(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping, dataSetFeatureMaskMapping, dataSetLabelMaskMapping, initialLossDataType);
         this.trainEvaluations = trainEvaluations;
         this.trainEvaluationLabels = trainEvaluationLabels;
         this.validationEvaluations = validationEvaluations;
         this.validationEvaluationLabels = validationEvaluationLabels;
+        this.computeDataType = computeDataType;
+        this.masterWeightDataType = masterWeightDataType;
+        this.lossScaleConfig = lossScaleConfig;
+        this.gradientAccumulationSteps = gradientAccumulationSteps;
     }
 
     /**
@@ -141,6 +152,34 @@ public class TrainingConfig {
         return dataSetLabelMapping.indexOf(s);
     }
 
+    /**
+     * Check if mixed precision training is enabled.
+     * Mixed precision is considered enabled if the compute data type differs from FLOAT.
+     *
+     * @return true if mixed precision training is enabled
+     */
+    public boolean isMixedPrecision() {
+        return computeDataType != null && computeDataType != DataType.FLOAT && computeDataType != DataType.DOUBLE;
+    }
+
+    /**
+     * Check if loss scaling is enabled.
+     *
+     * @return true if loss scaling configuration is set and enabled
+     */
+    public boolean isLossScalingEnabled() {
+        return lossScaleConfig != null && lossScaleConfig.isEnabled();
+    }
+
+    /**
+     * Check if gradient accumulation is enabled.
+     *
+     * @return true if gradient accumulation steps > 1
+     */
+    public boolean isGradientAccumulationEnabled() {
+        return gradientAccumulationSteps > 1;
+    }
+
     public static class Builder {
 
         private IUpdater updater;
@@ -153,6 +192,12 @@ public class TrainingConfig {
         private boolean skipValidation = false;
         private boolean markLabelsUnused = false;
         private DataType initialLossDataType = DataType.FLOAT;
+
+        // Mixed precision training configuration
+        private DataType computeDataType = DataType.FLOAT;
+        private DataType masterWeightDataType = DataType.FLOAT;
+        private LossScaleConfig lossScaleConfig;
+        private int gradientAccumulationSteps = 1;
 
         private Map<String, List<IEvaluation>> trainEvaluations = new HashMap<>();
         private Map<String, Integer> trainEvaluationLabels = new HashMap<>();
@@ -170,10 +215,95 @@ public class TrainingConfig {
          * This is critical when wanting more fine grained control over the data types
          * used in the training process.
          * @param initialLossDataType the initial loss data type
-         * @return
+         * @return this builder
          */
         public Builder initialLossDataType(DataType initialLossDataType) {
             this.initialLossDataType = initialLossDataType;
+            return this;
+        }
+
+        /**
+         * Set the data type used for forward and backward computations.
+         * For mixed precision training, this is typically FLOAT16 or BFLOAT16.
+         * Default: FLOAT
+         *
+         * @param computeDataType The data type for compute operations
+         * @return this builder
+         */
+        public Builder computeDataType(DataType computeDataType) {
+            this.computeDataType = computeDataType;
+            return this;
+        }
+
+        /**
+         * Set the data type used for master weights.
+         * Master weights maintain full precision (usually FLOAT) during mixed precision training.
+         * Default: FLOAT
+         *
+         * @param masterWeightDataType The data type for master weights
+         * @return this builder
+         */
+        public Builder masterWeightDataType(DataType masterWeightDataType) {
+            this.masterWeightDataType = masterWeightDataType;
+            return this;
+        }
+
+        /**
+         * Configure loss scaling for mixed precision training.
+         * Loss scaling helps prevent gradient underflow when training with FP16.
+         *
+         * @param lossScaleConfig The loss scale configuration
+         * @return this builder
+         */
+        public Builder lossScaling(LossScaleConfig lossScaleConfig) {
+            this.lossScaleConfig = lossScaleConfig;
+            return this;
+        }
+
+        /**
+         * Set the number of gradient accumulation steps.
+         * Gradients will be accumulated over this many mini-batches before
+         * being applied. This allows effective larger batch sizes when memory
+         * is limited.
+         * Default: 1 (no accumulation)
+         *
+         * @param steps Number of accumulation steps (must be >= 1)
+         * @return this builder
+         */
+        public Builder gradientAccumulationSteps(int steps) {
+            if (steps < 1) {
+                throw new IllegalArgumentException("gradientAccumulationSteps must be >= 1, got: " + steps);
+            }
+            this.gradientAccumulationSteps = steps;
+            return this;
+        }
+
+        /**
+         * Enable mixed precision training with FP16 compute and FP32 master weights.
+         * This is a convenience method that sets:
+         * - computeDataType to FLOAT16
+         * - masterWeightDataType to FLOAT
+         * - lossScaling to dynamic scaling with default parameters
+         *
+         * @return this builder
+         */
+        public Builder mixedPrecision() {
+            this.computeDataType = DataType.FLOAT16;
+            this.masterWeightDataType = DataType.FLOAT;
+            this.lossScaleConfig = LossScaleConfig.dynamicScaling();
+            return this;
+        }
+
+        /**
+         * Enable mixed precision training with BFLOAT16 compute and FP32 master weights.
+         * BFLOAT16 has the same dynamic range as FP32, so loss scaling is typically not needed.
+         *
+         * @return this builder
+         */
+        public Builder mixedPrecisionBfloat16() {
+            this.computeDataType = DataType.BFLOAT16;
+            this.masterWeightDataType = DataType.FLOAT;
+            this.lossScaleConfig = null; // BF16 typically doesn't need loss scaling
             return this;
         }
 
@@ -513,7 +643,8 @@ public class TrainingConfig {
 
             return new TrainingConfig(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping,
                     dataSetFeatureMaskMapping, dataSetLabelMaskMapping,
-                    trainEvaluations, trainEvaluationLabels, validationEvaluations, validationEvaluationLabels,initialLossDataType);
+                    trainEvaluations, trainEvaluationLabels, validationEvaluations, validationEvaluationLabels, initialLossDataType,
+                    computeDataType, masterWeightDataType, lossScaleConfig, gradientAccumulationSteps);
         }
     }
 
@@ -558,5 +689,51 @@ public class TrainingConfig {
         } catch (IOException e){
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Check if per-variable updater configuration is available.
+     * Subclasses can override this to indicate they support per-variable settings.
+     *
+     * @return true if this config supports per-variable updaters
+     */
+    public boolean hasPerVariableConfig() {
+        return false;
+    }
+
+    /**
+     * Get updater for a specific variable.
+     * Default implementation returns the global updater.
+     * Subclasses can override this for per-variable support.
+     *
+     * @param variableName The name of the variable
+     * @return The updater to use for this variable
+     */
+    public IUpdater getUpdaterForVariable(String variableName) {
+        return updater;
+    }
+
+    /**
+     * Get regularization for a specific variable.
+     * Default implementation returns the global regularization list.
+     * Subclasses can override this for per-variable support.
+     *
+     * @param variableName The name of the variable
+     * @return The regularization list for this variable
+     */
+    public List<Regularization> getRegularizationForVariable(String variableName) {
+        return regularization;
+    }
+
+    /**
+     * Check if a variable should be trained.
+     * Default implementation returns true for all variables.
+     * Subclasses can override this to support freezing.
+     *
+     * @param variableName The name of the variable
+     * @return true if the variable should be trained, false if frozen
+     */
+    public boolean isTrainable(String variableName) {
+        return true;
     }
 }

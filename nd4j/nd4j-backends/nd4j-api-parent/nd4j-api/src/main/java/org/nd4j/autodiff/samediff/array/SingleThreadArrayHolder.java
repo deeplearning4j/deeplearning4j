@@ -22,7 +22,9 @@ package org.nd4j.autodiff.samediff.array;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.ArrayHolder;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -45,7 +47,31 @@ public class SingleThreadArrayHolder implements ArrayHolder {
 
     @Override
     public void setArray(@NonNull String name, @NonNull INDArray array) {
-        map.put(name, array);
+        // Check if source array is constant - we'll propagate this flag to the stored copy.
+        // The caller (SameDiff.setArrayForVariable) is responsible for marking constants.
+        boolean sourceIsConstant = array.data() != null && array.data().isConstant();
+
+        INDArray toStore;
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            toStore = array.detach();
+        }
+
+        if (sourceIsConstant) {
+            toStore = Nd4j.getDeallocatorService().registerPendingConstant(toStore);
+            try {
+                if (toStore.data() != null) {
+                    toStore.data().setConstant(true);
+                }
+                if (toStore.shapeInfoDataBuffer() != null) {
+                    toStore.shapeInfoDataBuffer().setConstant(true);
+                }
+                toStore.setCloseable(false);
+            } finally {
+                Nd4j.getDeallocatorService().releasePendingConstant(toStore);
+            }
+        }
+
+        map.put(name, toStore);
     }
 
     @Override
@@ -63,7 +89,8 @@ public class SingleThreadArrayHolder implements ArrayHolder {
         map.clear();
         Collection<String> names = arrayHolder.arrayNames();
         for (String n : names) {
-            map.put(n, arrayHolder.getArray(n));
+            // Use setArray to ensure proper detaching
+            setArray(n, arrayHolder.getArray(n));
         }
     }
 

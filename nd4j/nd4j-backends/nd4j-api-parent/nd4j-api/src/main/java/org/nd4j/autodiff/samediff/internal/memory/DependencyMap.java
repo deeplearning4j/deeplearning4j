@@ -46,6 +46,9 @@ public class DependencyMap<K extends IDependeeGroup<INDArray>, V> implements IDe
     public void add(K dependeeGroup, V element) {
         long id = dependeeGroup.getId();
         Collection<INDArray> g = dependeeGroup.getCollection();
+        if (g == null) {
+            return;
+        }
         for (INDArray arr : g) {
             if (arr != null) {
                 HashSet<Pair<Long, V>> v = map.get(arr.getId());
@@ -68,6 +71,9 @@ public class DependencyMap<K extends IDependeeGroup<INDArray>, V> implements IDe
     public Iterable<V> getDependantsForEach(K dependeeGroup) {
         HashSet<V> combination = new HashSet<V>();
         Collection<INDArray> g = dependeeGroup.getCollection();
+        if (g == null) {
+            return combination;
+        }
         for (INDArray arr : g) {
             if (arr != null) {
                 HashSet<Pair<Long, V>> hashSet = map.get(arr.getId());
@@ -84,6 +90,9 @@ public class DependencyMap<K extends IDependeeGroup<INDArray>, V> implements IDe
     public Iterable<V> getDependantsForGroup(K dependeeGroup) {
         HashSet<V> combination = new HashSet<V>();
         Collection<INDArray> g = dependeeGroup.getCollection();
+        if (g == null) {
+            return combination;
+        }
         for (INDArray arr : g) {
             if (arr != null) {
                 HashSet<Pair<Long, V>> hashSet = map.get(arr.getId());
@@ -101,6 +110,9 @@ public class DependencyMap<K extends IDependeeGroup<INDArray>, V> implements IDe
 
     public boolean containsAnyForGroup(K dependeeGroup) {
         Collection<INDArray> g = dependeeGroup.getCollection();
+        if (g == null) {
+            return false;
+        }
         for (INDArray arr : g) {
             if (arr != null) {
                 HashSet<Pair<Long, V>> hashSet = map.get(arr.getId());
@@ -118,6 +130,9 @@ public class DependencyMap<K extends IDependeeGroup<INDArray>, V> implements IDe
 
     public void removeGroup(K dependeeGroup) {
         Collection<INDArray> g = dependeeGroup.getCollection();
+        if (g == null) {
+            return;
+        }
         for (INDArray arr : g) {
             if (arr != null) {
                 HashSet<Pair<Long, V>> hashSet = map.get(arr.getId());
@@ -146,6 +161,9 @@ public class DependencyMap<K extends IDependeeGroup<INDArray>, V> implements IDe
     public Iterable<V> removeGroupReturn(K dependeeGroup) {
         HashSet<V> combination = new HashSet<V>();
         Collection<INDArray> g = dependeeGroup.getCollection();
+        if (g == null) {
+            return combination;
+        }
         for (INDArray arr : g) {
             if (arr != null) {
                 HashSet<Pair<Long, V>> hashSet = map.get(arr.getId());
@@ -173,6 +191,9 @@ public class DependencyMap<K extends IDependeeGroup<INDArray>, V> implements IDe
 
     public void removeForEach(K dependeeGroup) {
         Collection<INDArray> g = dependeeGroup.getCollection();
+        if (g == null) {
+            return;
+        }
         for (INDArray arr : g) {
             if (arr != null) {
                 map.remove(arr.getId());
@@ -183,6 +204,9 @@ public class DependencyMap<K extends IDependeeGroup<INDArray>, V> implements IDe
     public Iterable<V> removeForEachResult(K dependeeGroup) {
         HashSet<V> combination = new HashSet<V>();
         Collection<INDArray> g = dependeeGroup.getCollection();
+        if (g == null) {
+            return combination;
+        }
         for (INDArray arr : g) {
             if (arr != null) {
                 HashSet<Pair<Long, V>> hashSet = map.remove(arr.getId());
@@ -200,6 +224,9 @@ public class DependencyMap<K extends IDependeeGroup<INDArray>, V> implements IDe
 
     public boolean containsAny(K dependeeGroup) {
         Collection<INDArray> g = dependeeGroup.getCollection();
+        if (g == null) {
+            return false;
+        }
         for (INDArray arr : g) {
             if (arr != null) {
                 if (map.containsKey(arr.getId()))
@@ -212,6 +239,9 @@ public class DependencyMap<K extends IDependeeGroup<INDArray>, V> implements IDe
     public Iterable<V> removeGroupReturn(K dependeeGroup, Predicate<V> predicate) {
         HashSet<V> combination = new HashSet<V>();
         Collection<INDArray> g = dependeeGroup.getCollection();
+        if (g == null) {
+            return combination;
+        }
         for (INDArray arr : g) {
             if (arr != null) {
                 long id = arr.getId();

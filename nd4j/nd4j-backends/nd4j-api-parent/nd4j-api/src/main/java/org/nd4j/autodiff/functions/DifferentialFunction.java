@@ -195,6 +195,13 @@ public abstract class DifferentialFunction {
         }
     }
 
+    // ─── Op trait methods ───────────────────────────────────────────────────
+    // These methods declare behavioral traits that the DSP compiler uses to
+    // determine output zeroing, view allocation, and data-dependent handling.
+    // Base classes override these so all subclasses inherit correct defaults.
+    // Individual ops may further override when their behavior differs from
+    // the base class default.
+
     /**
      * Returns the {@link AttributeAdapter} s for each of the
      * possible ops for import (typically tensorflow and onnx)
@@ -267,8 +274,13 @@ public abstract class DifferentialFunction {
 
     protected Boolean getBooleanFromProperty(String propertyName,Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
-            Boolean value = (Boolean) properties.get(propertyName);
-            return value;
+            Object value = properties.get(propertyName);
+            if (value instanceof Boolean) {
+                return (Boolean) value;
+            }
+            if (value instanceof Number) {
+                return ((Number) value).doubleValue() != 0.0;
+            }
         }
 
         return null;
@@ -308,8 +320,16 @@ public abstract class DifferentialFunction {
 
     protected Integer getIntValueFromProperty(String propertyName, Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
-            Number value = (Number) properties.get(propertyName);
-            return value.intValue();
+            Object value = properties.get(propertyName);
+            // Only convert integer-typed numbers to Integer. Floating-point values (Double, Float)
+            // must NOT be truncated — same class of bug as getLongValueFromProperty.
+            if (value instanceof Long || value instanceof Integer
+                    || value instanceof Short || value instanceof Byte) {
+                return ((Number) value).intValue();
+            }
+            if (value instanceof Boolean) {
+                return (Boolean) value ? 1 : 0;
+            }
         }
 
         return null;
@@ -318,8 +338,20 @@ public abstract class DifferentialFunction {
 
     protected Long getLongValueFromProperty(String propertyName, Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
-            Number value = (Number) properties.get(propertyName);
-            return value.longValue();
+            Object value = properties.get(propertyName);
+            // Only convert integer-typed numbers to Long. Floating-point values (Double, Float)
+            // must NOT be truncated — if a property like "step" holds -0.5, casting to long yields 0,
+            // which corrupts iArguments and triggers "delta should not be equal to zero" in range.cpp.
+            // The caller (DynamicCustomOp.setPropertiesForFunction) iterates both DOUBLE and INT64
+            // descriptors with the same arg name; returning null here prevents the INT64 path from
+            // overwriting tArguments with a zero-truncated iArgument.
+            if (value instanceof Long || value instanceof Integer
+                    || value instanceof Short || value instanceof Byte) {
+                return ((Number) value).longValue();
+            }
+            if (value instanceof Boolean) {
+                return (Boolean) value ? 1L : 0L;
+            }
         }
 
         return null;
@@ -327,8 +359,13 @@ public abstract class DifferentialFunction {
 
     protected Double getDoubleValueFromProperty(String propertyName, Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
-            Number value = (Number) properties.get(propertyName);
-            return value.doubleValue();
+            Object value = properties.get(propertyName);
+            if (value instanceof Number) {
+                return ((Number) value).doubleValue();
+            }
+            if (value instanceof Boolean) {
+                return (Boolean) value ? 1.0 : 0.0;
+            }
         }
 
         return null;
@@ -809,6 +846,14 @@ public abstract class DifferentialFunction {
         boolean copied = false;
         for(int i = 0; i < vals.size(); i++) {
             SDVariable var = outputVars[i];
+            // Constants never accumulate gradients — do not register a gradient variable for them.
+            // The gradient value is still computed (so backprop can continue through upstream ops),
+            // but the Variable's gradient pointer must stay null so that sd.grad("b") returns null
+            // for a constant b. Registering a gradient for a constant would falsely indicate that
+            // the constant is a trainable parameter.
+            if (var.getVariableType() == org.nd4j.autodiff.samediff.VariableType.CONSTANT) {
+                continue;
+            }
             SDVariable grad = var.hasGradient() ? var.getGradient() : null;
             if(grad != null) {
                 if(!copied) {
@@ -823,8 +868,16 @@ public abstract class DifferentialFunction {
             } else {
                 SDVariable gradVar = vals.get(i);
                 if(sameDiff.hasVariable(var.name() + "-grad")) {
-                    if(sameDiff.getVariable(var.name() + "-grad").dataType().isFPType())
-                        sameDiff.getVariable(var.name() + "-grad").add(gradVar);
+                    if(sameDiff.getVariable(var.name() + "-grad").dataType().isFPType()) {
+                        // Accumulate gradient: existing + new contribution.
+                        // Must capture the returned SDVariable and register it — the existing
+                        // variable is NOT mutated in-place, so discarding the result would leave
+                        // the gradient pointer pointing at the pre-accumulation value.
+                        SDVariable existing = sameDiff.getVariable(var.name() + "-grad");
+                        SDVariable accumulated = existing.add(gradVar);
+                        sameDiff.updateVariableNameAndReference(accumulated, var.name() + "-grad");
+                        sameDiff.setGradientForVariableName(var.name(), accumulated);
+                    }
                 } else {
                     sameDiff.updateVariableNameAndReference(gradVar,var.name() + "-grad");
                     sameDiff.setGradientForVariableName(var.name(), gradVar);

@@ -32,6 +32,7 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -138,10 +139,18 @@ public class GradCheckUtil {
             }
         }
 
-
+        // Analytical gradient computation runs with DSP fully enabled (auto-compile on).
+        // The DynamicShapePlanCompiler returns null for any plan that requests an external
+        // input (placeholder/variable) as an output, so backward graphs that reference
+        // forward activations fall through to the standard path automatically.
+        // DSP must remain enabled here so that ops like GRU/LSTM that rely on DSP for
+        // correct gradient propagation work correctly.
+        // These are declared before the try block so they're visible in the finally clause.
+        boolean dspAutoCompileSaved = sd.isDspAutoCompileEnabled();
+        boolean dspNativeAutoCompileSaved = sd.isDspNativeAutoCompileEnabled();
+        try {
 
         Map<String,INDArray> gm = sd.calculateGradients(placeholderValues, varsNeedingGrads);
-
 
         Map<String,INDArray> grad = new HashMap<>();
         for(SDVariable v : sd.variables()) {
@@ -168,6 +177,28 @@ public class GradCheckUtil {
             }
             grad.put(v.name(), ga.dup());
         }
+
+        // Close the gradient map arrays only on GPU backends — we've dup'd what we need into `grad`.
+        // On CPU, these arrays are internal SameDiff state references; closing them corrupts subsequent sd.output() calls.
+        if(Nd4j.getBackendDeviceType() == DeviceType.CUDA_GPU || Nd4j.getBackendDeviceType() == DeviceType.GPU) {
+            for(INDArray arr : gm.values()) {
+                if(arr != null) arr.close();
+            }
+        }
+        gm.clear();
+
+        // Disable DSP auto-compilation for the numerical gradient loop ONLY.
+        // The numerical gradient loop uses putScalar to perturb inputs, then calls sd.output().
+        // With DSP auto-compile enabled, DSP may compile a plan during the first sd.output() call
+        // and then reuse it (with cached slot values) for subsequent calls — making the in-place
+        // putScalar perturbation invisible to the plan's cached state.
+        // With auto-compile disabled, DSP either reuses an already-compiled plan (which correctly
+        // re-reads external inputs from the source arrays on each call) or falls back to the
+        // standard path. Either way, putScalar changes are visible.
+        // Note: The analytical gradient (calculateGradients above) runs with DSP ENABLED so that
+        // ops like GRU/LSTM that rely on DSP for correct backward computation work correctly.
+        sd.setDspAutoCompileEnabled(false);
+        sd.setDspNativeAutoCompileEnabled(false);
 
         //Validate gradients for each variable:
         int totalNFailures = 0;
@@ -240,10 +271,8 @@ public class GradCheckUtil {
             int i = 0;
             while(iter.hasNext()) {
                 long[] idx = iter.next();
-                String strIdx = null;
-                if(print){
-                    strIdx = Arrays.toString(idx).replaceAll(" ","");
-                }
+                // strIdx is always computed — it's used in FAILED log messages regardless of print flag
+                String strIdx = Arrays.toString(idx).replaceAll(" ","");
 
                 boolean maskValue = (varMask == null || (varMask.getDouble(idx) != 0));
                 if(!maskValue) {
@@ -255,16 +284,30 @@ public class GradCheckUtil {
                 double orig = a.getDouble(idx);
                 a.putScalar(idx, orig + eps);
                 double scorePlus = 0.0;
-                Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);//.get(outName).sumNumber().doubleValue();
+                Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);
                 for(INDArray arr : m.values()) {
                     scorePlus += arr.sumNumber().doubleValue();
                 }
+                // Close output arrays only on GPU backends — on CPU these are internal SameDiff state references
+                // and closing them corrupts subsequent sd.output() calls in the gradient check loop.
+                if(Nd4j.getBackendDeviceType() == DeviceType.CUDA_GPU || Nd4j.getBackendDeviceType() == DeviceType.GPU) {
+                    for(INDArray arr : m.values()) {
+                        if(arr != null) arr.close();
+                    }
+                }
+
                 a.putScalar(idx, orig-eps);
                 m = sd.output(placeholderValues, lossFnVariables);
                 double scoreMinus = 0.0;
                 for(INDArray arr : m.values()) {
                     scoreMinus += arr.sumNumber().doubleValue();
                 }
+                if(Nd4j.getBackendDeviceType() == DeviceType.CUDA_GPU || Nd4j.getBackendDeviceType() == DeviceType.GPU) {
+                    for(INDArray arr : m.values()) {
+                        if(arr != null) arr.close();
+                    }
+                }
+
                 a.putScalar(idx, orig);
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);
@@ -308,9 +351,9 @@ public class GradCheckUtil {
                                 + ", numericalGrad= " + numericalGrad + ", relError= " + relError
                                 + ", absError=" + absError
                                 + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
-                        if (exitOnFirstFailure)
-                            return false;
                         totalNFailures++;
+                        if (exitOnFirstFailure)
+                            break;
                     }
                 } else if (print) {
                     log.info("Param " + i + " (" + name + strIdx + ") passed: grad= " + analyticGrad + ", numericalGrad= "
@@ -324,11 +367,33 @@ public class GradCheckUtil {
         log.info("GradCheckUtil.checkGradients(): " + totalCount + " params checked, " + nPass + " passed, "
                 + totalNFailures + " failed. Largest relative error = " + maxError);
 
+        // Close gradient arrays to release GPU memory
+        for(INDArray arr : grad.values()) {
+            if(arr != null) arr.close();
+        }
+        grad.clear();
+
+        // Trim GPU memory pool to release freed memory back to the driver
+        try {
+            Nd4j.getExecutioner().commit();
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            for (int d = 0; d < numDevices; d++) {
+                Nd4j.getNativeOps().trimMemoryPool(d);
+            }
+        } catch (Exception e) {
+            // ignore — may fail on CPU backend
+        }
+
         if(debugMode && !debugBefore){
             sd.disableDebugging();
         }
 
         return totalNFailures == 0;
+        } finally {
+            // Restore DSP auto-compile flags that were disabled for the numerical gradient loop
+            sd.setDspAutoCompileEnabled(dspAutoCompileSaved);
+            sd.setDspNativeAutoCompileEnabled(dspNativeAutoCompileSaved);
+        }
     }
 
 
@@ -396,16 +461,39 @@ public class GradCheckUtil {
         }
 
 
-        //Now, check gradients
+        //Now, check gradients using placeholder overrides for DSP compatibility.
+        // The listener-based approach (ActivationGradientCheckListener) only works in non-DSP
+        // execution because it relies on mid-execution callbacks. In DSP mode, all listener
+        // callbacks fire AFTER the plan completes atomically, so perturbations have no effect.
+        // Instead, we use addPlaceholderOverride() to temporarily treat each activation variable
+        // as an external input. DSP then reads it from the placeholder map on each call, allowing
+        // direct perturbation via the placeholder values without any listener.
         int totalNFailures = 0;
         int totalCount = 0;
         double maxError = 0.0;
-        ActivationGradientCheckListener listener = new ActivationGradientCheckListener();
-        sd.setListeners(listener);
+
         Random r = new Random(12345);
         int maxPerParam = config.getMaxPerParam();
+        try {
         for(String s : actGrads){
+            // Step 1 (per-variable): Compute the unperturbed baseline value for this activation.
+            // This runs with NO placeholder overrides active, so the activation is computed
+            // naturally by the graph (e.g. sigmoid = tanh(mmul)).  We dup() immediately and
+            // mark setCloseable(false) so the buffer survives the addPlaceholderOverride() call
+            // below, which triggers invalidateAllPlanCaches() → clearAllCaches() →
+            // closeLatestRequestedOutputBuffers() and would otherwise close this buffer.
+            Map<String,INDArray> baselineRaw = sd.output(config.getPlaceholderValues(), Collections.singletonList(s));
+            INDArray baselineArr = baselineRaw.get(s).dup();
+            baselineArr.setCloseable(false);
 
+            // Step 2 (per-variable): Add a placeholder override ONLY for this activation.
+            // Overriding one variable at a time is essential for correctness when activations
+            // depend on each other (e.g. sigmoid = tanh(mmul)): if we override both, providing
+            // baseline-mmul when checking sigmoid gives wrong numerical gradients because DSP
+            // bypasses the mmul→sigmoid computation path.  One override = one independent perturbation.
+            sd.addPlaceholderOverride(s);
+
+            try {
             long n = gradientsForAct.get(s).length();
             if(config.isPrint()){
                 log.info("Starting test for variable \"{}\" with {} values", s, n);
@@ -447,8 +535,6 @@ public class GradCheckUtil {
 
             INDArray varMask = (config.getGradCheckMask() == null ? null : config.getGradCheckMask().get(s));
 
-            listener.setVariableName(s);
-
             int i=0;
             while(iter.hasNext()){
                 long[] idx = iter.next();
@@ -464,18 +550,26 @@ public class GradCheckUtil {
                     continue;
                 }
 
-                //Set listener to apply eps, then do forward pass:
-                listener.setIdx(idx);
-                listener.setEps(config.getEps());
+                // Perturb activation s at idx by +eps, inject as placeholder override value.
+                // Only s is overridden here; all other variables are computed naturally.
+                INDArray perturbedPlus = baselineArr.dup();
+                perturbedPlus.putScalar(idx, perturbedPlus.getDouble(idx) + config.getEps());
+                Map<String,INDArray> plusPlaceholders = new HashMap<>(config.getPlaceholderValues() != null ? config.getPlaceholderValues() : new HashMap<>());
+                plusPlaceholders.put(s, perturbedPlus);
                 double scorePlus = 0.0;
-                Map<String,INDArray> m = sd.output(config.getPlaceholderValues(), lossFnVariables);
-                for(INDArray arr : m.values()){
+                Map<String,INDArray> mPlus = sd.output(plusPlaceholders, lossFnVariables);
+                for(INDArray arr : mPlus.values()){
                     scorePlus += arr.sumNumber().doubleValue();
                 }
-                listener.setEps(-config.getEps());
-                m = sd.output(config.getPlaceholderValues(), lossFnVariables);
+
+                // Perturb activation s at idx by -eps, inject as placeholder override value
+                INDArray perturbedMinus = baselineArr.dup();
+                perturbedMinus.putScalar(idx, perturbedMinus.getDouble(idx) - config.getEps());
+                Map<String,INDArray> minusPlaceholders = new HashMap<>(config.getPlaceholderValues() != null ? config.getPlaceholderValues() : new HashMap<>());
+                minusPlaceholders.put(s, perturbedMinus);
                 double scoreMinus = 0.0;
-                for(INDArray arr : m.values()){
+                Map<String,INDArray> mMinus = sd.output(minusPlaceholders, lossFnVariables);
+                for(INDArray arr : mMinus.values()){
                     scoreMinus += arr.sumNumber().doubleValue();
                 }
 
@@ -526,9 +620,20 @@ public class GradCheckUtil {
                 i++;
 
             }
+            } finally {
+                // Remove the placeholder override for s and re-enable closeability on
+                // the baseline buffer.  Both must happen regardless of failure.
+                try { baselineArr.setCloseable(true); } catch (Exception ignored) {}
+                sd.removePlaceholderOverride(s);
+            }
         }
 
         return totalNFailures == 0;
+        } finally {
+            // Safety net: clear any overrides that may remain if an exception interrupted
+            // the per-variable finally blocks above.
+            sd.clearPlaceholderOverrides();
+        }
     }
 
     @Builder

@@ -23,7 +23,9 @@ package org.nd4j.autodiff.samediff.array;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.util.Collection;
@@ -57,15 +59,80 @@ public class ThreadSafeArrayHolder implements ArrayHolder {
 
     @Override
     public void setArray(@NonNull String name, @NonNull INDArray array) {
-        if (array.isView())
-            array = array.dup();    //Device local doesn't support views
+        // Check if source array is constant - we'll propagate this flag to copies.
+        // This is important because ThreadSafeArrayHolder is used for BOTH constantArrays
+        // (which SHOULD be constant) and variablesArrays (which should NOT be constant).
+        // The caller (SameDiff.setArrayForVariable) is responsible for marking constants.
+        boolean sourceIsConstant = array.data() != null && array.data().isConstant();
+
+        if (array.isView()) {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                array = array.dup();    //Device local doesn't support views
+            }
+            // Only mark view duplicates as constant if the source was constant.
+            // This preserves the distinction between CONSTANT and VARIABLE arrays.
+            if (sourceIsConstant) {
+                array = Nd4j.getDeallocatorService().registerPendingConstant(array);
+                try {
+                    if (array.data() != null) {
+                        array.data().setConstant(true);
+                    }
+                    if (array.shapeInfoDataBuffer() != null) {
+                        array.shapeInfoDataBuffer().setConstant(true);
+                    }
+                    array.setCloseable(false);
+                } finally {
+                    Nd4j.getDeallocatorService().releasePendingConstant(array);
+                }
+            }
+        }
         if (!map.containsKey(name)) {
-            INDArray toBroadcast = array.dataType() == DataType.UTF8 ? array.dup() : array;
+            INDArray toBroadcast;
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                toBroadcast = array.detach();
+            }
+
+            if (sourceIsConstant) {
+                toBroadcast = Nd4j.getDeallocatorService().registerPendingConstant(toBroadcast);
+                try {
+                    if (toBroadcast.data() != null) {
+                        toBroadcast.data().setConstant(true);
+                    }
+                    if (toBroadcast.shapeInfoDataBuffer() != null) {
+                        toBroadcast.shapeInfoDataBuffer().setConstant(true);
+                    }
+                    toBroadcast.setCloseable(false);
+                } finally {
+                    Nd4j.getDeallocatorService().releasePendingConstant(toBroadcast);
+                }
+            }
+
             DeviceLocalNDArray dla = new DeviceLocalNDArray(toBroadcast, lazyInit);
             map.put(name, dla);
         } else {
             DeviceLocalNDArray dla = map.get(name);
-            dla.update(array);
+            INDArray toUpdate;
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                toUpdate = array.detach();
+            }
+
+            // Propagate constant flag for update path too.
+            if (sourceIsConstant) {
+                toUpdate = Nd4j.getDeallocatorService().registerPendingConstant(toUpdate);
+                try {
+                    if (toUpdate.data() != null) {
+                        toUpdate.data().setConstant(true);
+                    }
+                    if (toUpdate.shapeInfoDataBuffer() != null) {
+                        toUpdate.shapeInfoDataBuffer().setConstant(true);
+                    }
+                    toUpdate.setCloseable(false);
+                } finally {
+                    Nd4j.getDeallocatorService().releasePendingConstant(toUpdate);
+                }
+            }
+
+            dla.update(toUpdate);
         }
     }
 

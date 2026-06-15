@@ -238,11 +238,17 @@ public class SDVariable implements Serializable {
      * @return Shape of the variable
      */
     public long[] getShape() {
-        if (variableType == VariableType.PLACEHOLDER  || shape != null) {
+        if (variableType == VariableType.PLACEHOLDER) {
             return shape;
         } else if(variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT) {
+            // Prefer the actual array shape over a cached shape field.
+            // After FlatBuffers deserialization, VARIABLE/CONSTANT shape is not written to the
+            // flatbuffer (only PLACEHOLDER shape is), so the shape field is deserialized as
+            // new long[0] (empty, non-null). Fall through to getArr() to get the real shape.
             if(getArr() != null)
                 return getArr().shape();
+            if(shape != null)
+                return shape;
         }
 
         return null;
@@ -261,13 +267,21 @@ public class SDVariable implements Serializable {
     }
 
     public DataType dataType() {
-        if(this.dataType == null) {
-            //Try to infer datatype instead of returning null
-            if(variableType != VariableType.ARRAY && getArr() != null) {
-                this.dataType = getArr().dataType();
-            }  else {
-                this.dataType = DataType.UNKNOWN;
+        // For VARIABLE/CONSTANT types, always prefer the actual array's dtype.
+        // Mirrors getShape() which also defers to getArr().shape() for these types.
+        // Without this, optimizer passes that replace arrays in the ArrayHolder
+        // (e.g. quantization, constant folding) leave a stale cached dtype, causing
+        // serialization manifest mismatches during dup().
+        if (variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT) {
+            INDArray arr = getArr();
+            if (arr != null) {
+                this.dataType = arr.dataType();
+                return this.dataType;
             }
+        }
+
+        if(this.dataType == null) {
+            this.dataType = DataType.UNKNOWN;
         }
 
         return this.dataType;
@@ -1552,7 +1566,10 @@ public class SDVariable implements Serializable {
      */
     public INDArray eval() {
         Map<String,INDArray> m = sameDiff.output((Map<String,INDArray>)null, name());
-        return m.get(name());
+        INDArray result = m.get(name());
+        // Return a detached copy so the caller's array survives session destruction
+        // (e.g., when convertToConstant/convertToVariable calls closeAllSessions).
+        return result != null ? result.dup() : null;
     }
 
 
@@ -1562,7 +1579,8 @@ public class SDVariable implements Serializable {
      */
     public INDArray eval(Map<String, INDArray> placeholders) {
         Map<String,INDArray> m = sameDiff.output(placeholders, name());
-        return m.get(name());
+        INDArray result = m.get(name());
+        return result != null ? result.dup() : null;
     }
 
 

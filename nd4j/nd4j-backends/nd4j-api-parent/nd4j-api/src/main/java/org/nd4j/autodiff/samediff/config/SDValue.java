@@ -20,12 +20,10 @@
 
 package org.nd4j.autodiff.samediff.config;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.*;
 import org.nd4j.autodiff.samediff.internal.IDependeeGroup;
 
@@ -37,15 +35,12 @@ import org.nd4j.autodiff.samediff.internal.IDependeeGroup;
  * @author Adam Gibson
  */
 @Getter
-@EqualsAndHashCode
 public class SDValue implements IDependeeGroup<INDArray> {
 
     private SDValueType sdValueType;
     private INDArray tensorValue;
     private Map<String, INDArray> dictValue;
     private List<INDArray> listValue;
-    private static final AtomicLong counter = new AtomicLong(0);
-    protected transient long id = counter.getAndIncrement();
 
     private SDValue() {
     }
@@ -69,12 +64,43 @@ public class SDValue implements IDependeeGroup<INDArray> {
         }
     }
 
+    /**
+     * Returns an ID based on the underlying array identity, NOT a unique SDValue ID.
+     * This is critical for DependencyMap to correctly track dependencies when the same
+     * array is wrapped in different SDValue instances. Two SDValues wrapping the same
+     * array(s) will return the same ID.
+     */
     public long getId() {
-        return id;
+        // Return ID based on array identity to match equals/hashCode semantics
+        if (tensorValue != null) {
+            return tensorValue.getId();
+        } else if (listValue != null && !listValue.isEmpty()) {
+            // For lists, combine array IDs - use first non-null array's ID as base
+            for (INDArray arr : listValue) {
+                if (arr != null) {
+                    return arr.getId();
+                }
+            }
+        } else if (dictValue != null && !dictValue.isEmpty()) {
+            // For dicts, use first non-null array's ID as base
+            for (INDArray arr : dictValue.values()) {
+                if (arr != null) {
+                    return arr.getId();
+                }
+            }
+        }
+        // Fallback for empty values - use hashCode which is also based on content
+        return hashCode();
     }
 
     public Collection<INDArray> getCollection() {
-        return getListValue();
+        if (tensorValue != null)
+            return Arrays.asList(tensorValue);
+        if (listValue != null)
+            return listValue;
+        if (dictValue != null)
+            return dictValue.values();
+        return Collections.emptyList();
     }
 
     /**
@@ -182,15 +208,87 @@ public class SDValue implements IDependeeGroup<INDArray> {
         return sdValue;
     }
 
+    /**
+     * Equality is based on the underlying array identity, NOT the SDValue wrapper's ID.
+     * This is critical for the dependency tracker to correctly identify when the same
+     * array is wrapped in different SDValue instances. Without this, constants and
+     * variables can be prematurely deallocated causing use-after-free bugs.
+     */
     @Override
     public boolean equals(Object o) {
-        SDValue sd = (SDValue) o;
-        return sd.getId() == this.getId();
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SDValue other = (SDValue) o;
+
+        if (this.sdValueType != other.sdValueType) return false;
+
+        switch (this.sdValueType) {
+            case TENSOR:
+                // Compare by array identity (getId()), not array content
+                if (this.tensorValue == null && other.tensorValue == null) return true;
+                if (this.tensorValue == null || other.tensorValue == null) return false;
+                return this.tensorValue.getId() == other.tensorValue.getId();
+            case LIST:
+                if (this.listValue == null && other.listValue == null) return true;
+                if (this.listValue == null || other.listValue == null) return false;
+                if (this.listValue.size() != other.listValue.size()) return false;
+                for (int i = 0; i < this.listValue.size(); i++) {
+                    INDArray thisArr = this.listValue.get(i);
+                    INDArray otherArr = other.listValue.get(i);
+                    if (thisArr == null && otherArr == null) continue;
+                    if (thisArr == null || otherArr == null) return false;
+                    if (thisArr.getId() != otherArr.getId()) return false;
+                }
+                return true;
+            case DICT:
+                if (this.dictValue == null && other.dictValue == null) return true;
+                if (this.dictValue == null || other.dictValue == null) return false;
+                if (!this.dictValue.keySet().equals(other.dictValue.keySet())) return false;
+                for (String key : this.dictValue.keySet()) {
+                    INDArray thisArr = this.dictValue.get(key);
+                    INDArray otherArr = other.dictValue.get(key);
+                    if (thisArr == null && otherArr == null) continue;
+                    if (thisArr == null || otherArr == null) return false;
+                    if (thisArr.getId() != otherArr.getId()) return false;
+                }
+                return true;
+            default:
+                return false;
+        }
     }
 
+    /**
+     * Hash code is based on the underlying array identity to match equals().
+     * Uses array IDs to ensure consistent hashing with equals().
+     */
     @Override
     public int hashCode() {
-        return Long.hashCode(this.getId());
+        int result = sdValueType != null ? sdValueType.hashCode() : 0;
+
+        switch (this.sdValueType) {
+            case TENSOR:
+                if (tensorValue != null) {
+                    result = 31 * result + Long.hashCode(tensorValue.getId());
+                }
+                break;
+            case LIST:
+                if (listValue != null) {
+                    for (INDArray arr : listValue) {
+                        result = 31 * result + (arr != null ? Long.hashCode(arr.getId()) : 0);
+                    }
+                }
+                break;
+            case DICT:
+                if (dictValue != null) {
+                    for (Map.Entry<String, INDArray> entry : dictValue.entrySet()) {
+                        result = 31 * result + entry.getKey().hashCode();
+                        result = 31 * result + (entry.getValue() != null ? Long.hashCode(entry.getValue().getId()) : 0);
+                    }
+                }
+                break;
+        }
+
+        return result;
     }
 
     @Override

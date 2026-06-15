@@ -20,6 +20,7 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,9 +43,32 @@ public interface SessionMemMgr extends Closeable {
     INDArray allocate(boolean detached, DataType dataType, long... shape);
 
     /**
+     * Allocate an array, optionally zeroing it for ops with sparse output patterns.
+     * Ops like where, scatter_nd, and unique don't fully write their output, so
+     * cached buffers must be zeroed to prevent stale data corruption.
+     *
+     * @param detached If true: the array is safe to return outside of the SameDiff session
+     * @param dataType Datatype of the returned array
+     * @param shape    Array shape
+     * @param requiresZeroed If true, zero the buffer before returning
+     * @return The newly allocated array (zeroed if requiresZeroed is true)
+     */
+    default INDArray allocate(boolean detached, DataType dataType, long[] shape, boolean requiresZeroed) {
+        // Default: ignore requiresZeroed flag for backwards compatibility
+        return allocate(detached, dataType, shape);
+    }
+
+    /**
      * As per {@link #allocate(boolean, DataType, long...)} but from a LongShapeDescriptor instead
      */
     INDArray allocate(boolean detached, LongShapeDescriptor descriptor);
+
+    /**
+     * Allocate from descriptor, optionally zeroing for ops with sparse output.
+     */
+    default INDArray allocate(boolean detached, LongShapeDescriptor descriptor, boolean requiresZeroed) {
+        return allocate(detached, descriptor);
+    }
 
     /**
      * Allocate an uninitialized array with the same datatype and shape as the specified array
@@ -66,9 +90,41 @@ public interface SessionMemMgr extends Closeable {
     void release(INDArray array);
 
     /**
+     * Enter scope before forward pass. Default: no-op.
+     * Implementations may use this to activate a workspace or prepare resources.
+     */
+    default void scopeIn() {}
+
+    /**
+     * Exit scope after forward pass. Default: no-op.
+     * Implementations may use this to reset a workspace or release cached arrays.
+     */
+    default void scopeOut() {}
+
+    /**
      * Close the session memory manager and clean up any memory / resources, if any
      */
     void close();
 
     INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer);
+
+    /**
+     * Allocate from shape descriptor, optionally zeroing for ops with sparse output.
+     */
+    default INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer, boolean requiresZeroed) {
+        return allocateFromDescriptor(detached, dataBuffer);
+    }
+
+    /**
+     * Returns a pointer to the native C++ Workspace object, suitable for passing to
+     * {@link org.nd4j.linalg.api.ops.OpContext#attachWorkspace(Pointer)}.
+     * Default implementation returns null (no native workspace available).
+     */
+    default Pointer getNativeWorkspacePointer() { return null; }
+
+    /**
+     * Returns true if this memory manager is backed by a native workspace,
+     * meaning allocations are bump-allocated from a pre-reserved region.
+     */
+    default boolean isWorkspaceBacked() { return false; }
 }
