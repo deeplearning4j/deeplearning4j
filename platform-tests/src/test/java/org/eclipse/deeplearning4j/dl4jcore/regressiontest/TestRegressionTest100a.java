@@ -126,7 +126,6 @@ public class TestRegressionTest100a extends BaseDL4JTest {
 
 
     @Test
-    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testYoloHouseNumber() throws Exception {
 
         File f = Resources.asFile("regression_testing/100a/HouseNumberDetection_100a.bin");
