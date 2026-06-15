@@ -28,6 +28,8 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import org.eclipse.deeplearning4j.llm.generation.batch.BatchGenerationState;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @NativeTag

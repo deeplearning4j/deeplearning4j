@@ -2,7 +2,7 @@ package org.eclipse.deeplearning4j.vlm;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
-import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
+import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
 import org.junit.jupiter.api.*;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;

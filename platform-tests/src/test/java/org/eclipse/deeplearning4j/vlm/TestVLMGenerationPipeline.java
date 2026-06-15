@@ -28,9 +28,9 @@ import org.eclipse.deeplearning4j.llm.generation.*;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
-import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
-import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
-import org.eclipse.deeplearning4j.vlm.model.VisionEncoderUtils;
+import org.eclipse.deeplearning4j.vlm.model.encoder.EmbeddingMerger;
+import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
+import org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderUtils;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
@@ -45,6 +45,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.awt.*;
@@ -134,7 +136,7 @@ public class TestVLMGenerationPipeline {
         }
         try {
             if (visionEncoder != null) {
-                GenerationPipeline.freeVisionEncoder(visionEncoder);
+                SameDiffMemoryUtils.freeVisionEncoder(visionEncoder);
                 visionEncoder = null;
             }
             if (decoder != null) {
@@ -296,7 +298,7 @@ public class TestVLMGenerationPipeline {
         log.info("Embedding merge: {}ms", embedMs);
 
         // Free vision encoder after encoding — reclaims ~5GB GPU memory
-        GenerationPipeline.freeVisionEncoder(visionEncoder);
+        SameDiffMemoryUtils.freeVisionEncoder(visionEncoder);
         visionEncoder = null;
 
         // Build GenerationPipeline with preprocessor config
@@ -378,7 +380,7 @@ public class TestVLMGenerationPipeline {
         log.info("Embedding merge: {}ms", embedMs);
 
         // Free vision encoder after encoding
-        GenerationPipeline.freeVisionEncoder(visionEncoder);
+        SameDiffMemoryUtils.freeVisionEncoder(visionEncoder);
         visionEncoder = null;
 
         // Build GenerationPipeline
@@ -436,7 +438,7 @@ public class TestVLMGenerationPipeline {
         MergedEmbeddings merged = mergeEmbeddings(testImage);
 
         // Free vision encoder after encoding
-        GenerationPipeline.freeVisionEncoder(visionEncoder);
+        SameDiffMemoryUtils.freeVisionEncoder(visionEncoder);
         visionEncoder = null;
 
         GenerationPipelineConfig pipelineConfig = GenerationPipelineConfig.builder()

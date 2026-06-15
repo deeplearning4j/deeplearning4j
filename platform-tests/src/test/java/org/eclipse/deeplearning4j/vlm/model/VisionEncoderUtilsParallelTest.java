@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.vlm.model;
 
+import org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderUtils;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -20,8 +20,8 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.deeplearning4j.llm.generation.TurboQuantCodebook;
-import org.eclipse.deeplearning4j.llm.generation.TurboQuantCodebook.Codebook;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.TurboQuantCodebook;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.TurboQuantCodebook.Codebook;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

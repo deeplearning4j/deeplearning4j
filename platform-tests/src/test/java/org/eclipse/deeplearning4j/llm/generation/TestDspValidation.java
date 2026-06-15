@@ -25,9 +25,9 @@ import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.model.benchmark.*;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
-import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
-import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
-import org.eclipse.deeplearning4j.vlm.model.VisionEncoderUtils;
+import org.eclipse.deeplearning4j.vlm.model.encoder.EmbeddingMerger;
+import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
+import org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderUtils;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
@@ -51,11 +51,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
@@ -559,7 +558,11 @@ public class TestDspValidation {
         // past_key_values: [1, numKvHeads, maxKvLen, headDim] with random data in [0:kvSeqLen]
         for (String inputName : decoder.inputs()) {
             if (inputName.startsWith("past_key_values.")) {
-                INDArray kv = DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize, maxKvLen);
+                INDArray kv = ModelIOConfig.createEmptyKvCache(decoder, inputName, 1, hiddenSize);
+                // Resize to maxKvLen if the method returned a 0-length sequence dim
+                if (kv.size(2) == 0) {
+                    kv = Nd4j.zeros(kv.dataType(), kv.size(0), kv.size(1), maxKvLen, kv.size(3));
+                }
                 // Fill first kvSeqLen positions with random data
                 if (kvSeqLen > 0 && kv.size(2) >= kvSeqLen) {
                     INDArray slice = kv.get(NDArrayIndex.all(), NDArrayIndex.all(),
@@ -777,12 +780,12 @@ public class TestDspValidation {
         placeholders.put("position_ids", Nd4j.createFromArray(new long[][]{posIds}));
 
         // Enumerate all model inputs and fill any past_key_values.* with empty KV caches.
-        // DecoderUtils.createEmptyKvCache discovers numHeads and headDim from the model graph
+        // ModelIOConfig.createEmptyKvCache discovers numHeads and headDim from the model graph
         // (handles GQA where numKvHeads != numQueryHeads). seqLen=0 for step-0 prefill.
         for (String inputName : decoder.inputs()) {
             if (inputName.startsWith("past_key_values.")) {
                 placeholders.put(inputName,
-                        DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                        ModelIOConfig.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
             }
         }
 
@@ -1857,8 +1860,8 @@ public class TestDspValidation {
         // Discover decoder I/O
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
         List<String> decoderInputNames = decoder.inputs();
-        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
-        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        String logitsOutputName = ModelIOConfig.findLogitsOutputName(decoder);
+        ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheOutputNames(decoder);
         List<String> presentKeyNames = kvNames.keyNames;
         List<String> presentValueNames = kvNames.valueNames;
 
@@ -2157,7 +2160,7 @@ public class TestDspValidation {
      *   B. clearPlaceholders(false) between steps
      *   C. associateArrayWithVariable for position_ids between steps
      *   D. New attention_mask array each step (growing shape)
-     *   E. Full DecoderUtils.buildDecoderInputMap path
+     *   E. Full DecoderInputBuilder.buildDecoderInputMap path
      *
      * The baseline (3 warmup steps with identical inputs) should show 0 MB/step growth.
      * Whichever variant shows ~256MB/step growth is the culprit.
@@ -2194,8 +2197,8 @@ public class TestDspValidation {
 
         List<String> decoderInputNames = decoder.inputs();
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
-        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        String logitsOutputName = ModelIOConfig.findLogitsOutputName(decoder);
+        ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheOutputNames(decoder);
 
         // Collect all output names
         List<String> allOutputNames = new ArrayList<>();
@@ -2322,10 +2325,10 @@ public class TestDspValidation {
             newMask.close();
         });
 
-        // ── VARIANT E: Full DecoderUtils.buildDecoderInputMap ──
+        // ── VARIANT E: Full DecoderInputBuilder.buildDecoderInputMap ──
         runVariant("E_FULL_BUILD_INPUT_MAP", nativeOps, device, 5, step -> {
             long cachePos = step + 1;
-            Map<String, INDArray> builtMap = DecoderUtils.buildDecoderInputMap(
+            Map<String, INDArray> builtMap = DecoderInputBuilder.buildDecoderInputMap(
                     ioConfig, decoderInputNames, decoder,
                     inputsEmbeds, inputIds,
                     /*pastSeqLen=*/ cachePos, /*currentSeqLen=*/ 1L,

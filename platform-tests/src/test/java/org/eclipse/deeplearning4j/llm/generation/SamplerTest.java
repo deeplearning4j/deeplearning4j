@@ -20,6 +20,11 @@
 
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.eclipse.deeplearning4j.llm.generation.sampling.CompositeSampler;
+import org.eclipse.deeplearning4j.llm.generation.sampling.GreedySampler;
+import org.eclipse.deeplearning4j.llm.generation.sampling.Sampler;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplerUtils;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;

@@ -1477,8 +1477,6 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <compilerArgs>
-                        <arg>--add-exports</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
                     </compilerArgs>
                 </configuration>
                 <executions>

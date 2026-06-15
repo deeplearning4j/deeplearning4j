@@ -20,6 +20,10 @@
 
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KVCacheDiskOffloader;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KVCacheHostOffloader;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.PagedKVCache;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.TieredKVCacheManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

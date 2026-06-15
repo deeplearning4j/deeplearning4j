@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Regression tests for the 4D attention mask semantics used by
- * {@link DecoderUtils#buildDecoderInputMap} when the attn_mask_reformat
+ * {@link DecoderInputBuilder#buildDecoderInputMap} when the attn_mask_reformat
  * placeholder override path is active.
  *
  * <p>The override path bypasses the internal SameDiff subgraph (Where + Unsqueeze + Tile)
@@ -45,13 +45,13 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class TestAttnMaskReformatRegression {
 
-    /** Mask fill value matching {@link DecoderUtils#MASK_FILL}. */
+    /** Mask fill value matching {@link ModelIOConfig#MASK_FILL}. */
     private static final float MASK_FILL = -3.4028235e+38f;
 
     /**
      * Test the initial 4D mask construction (no reuse, first call).
      *
-     * Simulates DecoderUtils.buildDecoderInputMap for the padded static KV path:
+     * Simulates DecoderInputBuilder.buildDecoderInputMap for the padded static KV path:
      * - numQHeads=24, maxKvLen=679, currentSeqLen=1, cachePos=678
      * - totalSeqLen = maxKvLen + currentSeqLen = 680
      * - Shape: [1, 24, 1, 680]
@@ -66,7 +66,7 @@ public class TestAttnMaskReformatRegression {
         int cachePos = 678;
         long totalSeqLen = maxKvLen + currentSeqLen; // 680
 
-        // Build 4D bias exactly as DecoderUtils does
+        // Build 4D bias exactly as DecoderInputBuilder does
         INDArray attnBias = Nd4j.valueArrayOf(
                 new long[]{1, numQHeads, currentSeqLen, totalSeqLen}, MASK_FILL, DataType.FLOAT);
 
@@ -231,7 +231,7 @@ public class TestAttnMaskReformatRegression {
      *   4. Tile across heads to [1, numQHeads, 1, totalSeqLen]
      *
      * This test builds that graph in SameDiff, executes it with a specific 1D mask
-     * pattern, and compares the result against the hand-built 4D mask from DecoderUtils.
+     * pattern, and compares the result against the hand-built 4D mask from DecoderInputBuilder.
      */
     @Test
     public void testMaskValuesMatchInternalSubgraph() {
@@ -277,7 +277,7 @@ public class TestAttnMaskReformatRegression {
         Map<String, INDArray> result = sd.output(feed, "tiled");
         INDArray subgraphOutput = result.get("tiled");
 
-        // === Build the hand-constructed 4D mask (DecoderUtils path) ===
+        // === Build the hand-constructed 4D mask (DecoderInputBuilder path) ===
         INDArray handBuilt = Nd4j.valueArrayOf(
                 new long[]{1, numQHeads, currentSeqLen, totalSeqLen}, MASK_FILL, DataType.FLOAT);
         // Unmask filled positions 0..cachePos

@@ -28,10 +28,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize;
 import org.nd4j.linalg.factory.Nd4j;
-import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
-import org.eclipse.deeplearning4j.llm.generation.PagedKVCache;
-import org.eclipse.deeplearning4j.llm.generation.UnifiedKvCacheManager;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.PagedKVCache;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.QuantizedPagedKVCache;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.UnifiedKvCacheManager;
 
 import static org.junit.jupiter.api.Assertions.*;
 

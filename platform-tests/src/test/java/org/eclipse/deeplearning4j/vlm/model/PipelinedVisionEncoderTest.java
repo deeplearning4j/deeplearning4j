@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.vlm.model;
 
+import org.eclipse.deeplearning4j.vlm.model.encoder.PipelinedVisionEncoder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.junit.jupiter.api.Test;
 

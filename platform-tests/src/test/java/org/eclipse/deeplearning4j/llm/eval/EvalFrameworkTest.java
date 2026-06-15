@@ -24,6 +24,9 @@ import org.eclipse.deeplearning4j.llm.eval.dataset.CustomDataset;
 import org.eclipse.deeplearning4j.llm.eval.dataset.EvalSample;
 import org.eclipse.deeplearning4j.llm.eval.dataset.JsonlDataset;
 import org.eclipse.deeplearning4j.llm.eval.metrics.*;
+import org.eclipse.deeplearning4j.vlm.eval.metrics.AnlsMetric;
+import org.eclipse.deeplearning4j.vlm.eval.metrics.RelaxedAccuracyMetric;
+import org.eclipse.deeplearning4j.vlm.eval.metrics.VqaAccuracyMetric;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

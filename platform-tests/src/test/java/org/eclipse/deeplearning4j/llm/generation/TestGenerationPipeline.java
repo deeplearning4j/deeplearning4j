@@ -24,8 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
-import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
-import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
+import org.eclipse.deeplearning4j.vlm.model.encoder.EmbeddingMerger;
+import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
@@ -36,6 +36,9 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

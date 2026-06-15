@@ -22,7 +22,7 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.samediff.vlm;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
-import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
+import org.eclipse.deeplearning4j.vlm.model.encoder.EmbeddingMerger;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VideoFrameSampler;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VideoPreprocessor;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;

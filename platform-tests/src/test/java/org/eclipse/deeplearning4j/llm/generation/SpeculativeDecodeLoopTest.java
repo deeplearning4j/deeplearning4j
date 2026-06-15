@@ -20,6 +20,8 @@
 
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.eclipse.deeplearning4j.llm.generation.speculative.NgramSpeculator;
+import org.eclipse.deeplearning4j.llm.generation.speculative.SpeculativeDecodeLoop;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

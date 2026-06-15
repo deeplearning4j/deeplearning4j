@@ -19,9 +19,9 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
+import org.eclipse.deeplearning4j.llm.generation.DecoderInputBuilder;
 import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
-import org.eclipse.deeplearning4j.llm.generation.UnifiedKvCacheManager;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.UnifiedKvCacheManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -93,7 +93,7 @@ public class PipelineInteractionRegressionTest {
         INDArray embeddings = Nd4j.randn(DataType.FLOAT, 1, (int) currentSeqLen, HIDDEN_SIZE);
         INDArray inputIds = Nd4j.createFromArray(new int[]{42, 43}).reshape(1, currentSeqLen).castTo(DataType.LONG);
 
-        Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> result = DecoderInputBuilder.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, null, true);
@@ -248,7 +248,7 @@ public class PipelineInteractionRegressionTest {
             int pos = cachePos + step;
             long pastSeqLen = 679 + step;
 
-            Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+            Map<String, INDArray> result = DecoderInputBuilder.buildDecoderInputMap(
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     pastSeqLen, currentSeqLen, staticKvBuffers, MAX_KV_LEN, pos,
                     true, HIDDEN_SIZE, reusableInputs, true);
@@ -311,7 +311,7 @@ public class PipelineInteractionRegressionTest {
             int pos = cachePos + step;
             long pastSeqLen = 679 + step;
 
-            Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+            Map<String, INDArray> result = DecoderInputBuilder.buildDecoderInputMap(
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     pastSeqLen, currentSeqLen, staticKvBuffers, MAX_KV_LEN, pos,
                     true, HIDDEN_SIZE, reusableInputs, true);
@@ -359,14 +359,14 @@ public class PipelineInteractionRegressionTest {
         INDArray inputIds = Nd4j.createFromArray(new int[]{42}).reshape(1, 1).castTo(DataType.LONG);
 
         // Legacy overload (no ModelIOConfig)
-        Map<String, INDArray> legacyResult = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> legacyResult = DecoderInputBuilder.buildDecoderInputMap(
                 inputNames, dummyDecoder, embeddings, inputIds,
                 pastSeqLen, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, null, true);
 
         // ModelIOConfig overload with default config
         ModelIOConfig defaultConfig = ModelIOConfig.builder().build();
-        Map<String, INDArray> configResult = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> configResult = DecoderInputBuilder.buildDecoderInputMap(
                 defaultConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 pastSeqLen, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, null, true);
@@ -489,7 +489,7 @@ public class PipelineInteractionRegressionTest {
         INDArray inputIds = Nd4j.createFromArray(new int[]{42}).reshape(1, 1).castTo(DataType.LONG);
 
         // First decode step after prefill
-        Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> result = DecoderInputBuilder.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, currentSeqLen, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, null, true);
@@ -550,7 +550,7 @@ public class PipelineInteractionRegressionTest {
         Map<String, INDArray> reusableInputs = new HashMap<>();
 
         // First call: establishes the reusable arrays
-        Map<String, INDArray> result0 = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> result0 = DecoderInputBuilder.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, reusableInputs, true);
@@ -563,7 +563,7 @@ public class PipelineInteractionRegressionTest {
 
         // Subsequent calls: must return same objects
         for (int step = 1; step < 10; step++) {
-            Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+            Map<String, INDArray> result = DecoderInputBuilder.buildDecoderInputMap(
                     ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                     679 + step, 1, staticKvBuffers, MAX_KV_LEN, cachePos + step,
                     true, HIDDEN_SIZE, reusableInputs, true);
@@ -601,13 +601,13 @@ public class PipelineInteractionRegressionTest {
         INDArray inputIds = Nd4j.createFromArray(new int[]{42}).reshape(1, 1).castTo(DataType.LONG);
 
         // Padded mode (dspActive=true)
-        Map<String, INDArray> paddedResult = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> paddedResult = DecoderInputBuilder.buildDecoderInputMap(
                 inputNames, dummyDecoder, embeddings, inputIds,
                 679, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, null, true);
 
         // View mode (dspActive=false)
-        Map<String, INDArray> viewResult = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> viewResult = DecoderInputBuilder.buildDecoderInputMap(
                 inputNames, dummyDecoder, embeddings, inputIds,
                 679, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, null, false);
@@ -654,13 +654,13 @@ public class PipelineInteractionRegressionTest {
         long pastSeqLen = 0;
         long totalSeqLen = pastSeqLen + prefillLen;
 
-        INDArray mask = DecoderUtils.buildCausalMask(prefillLen, totalSeqLen);
+        INDArray mask = ModelIOConfig.buildCausalMask(prefillLen, totalSeqLen);
 
         // Shape: [1, 1, prefillLen, totalSeqLen]
         assertArrayEquals(new long[]{1, 1, prefillLen, totalSeqLen}, mask.shape(),
                 "Causal mask shape should be [1,1," + prefillLen + "," + totalSeqLen + "]");
 
-        float maskFill = DecoderUtils.MASK_FILL;
+        float maskFill = ModelIOConfig.MASK_FILL;
 
         // Verify causal structure: q attends to k iff k <= pastSeqLen + q
         for (int q = 0; q < prefillLen; q++) {
@@ -680,7 +680,7 @@ public class PipelineInteractionRegressionTest {
         }
 
         // Verify single-token decode mask is all zeros (can attend to everything)
-        INDArray decodeMask = DecoderUtils.buildCausalMask(1, 10);
+        INDArray decodeMask = ModelIOConfig.buildCausalMask(1, 10);
         assertArrayEquals(new long[]{1, 1, 1, 10}, decodeMask.shape());
         assertEquals(0.0, decodeMask.sumNumber().doubleValue(), 1e-6,
                 "Single-token decode mask should be all zeros");
@@ -769,7 +769,7 @@ public class PipelineInteractionRegressionTest {
         INDArray embeddings = Nd4j.randn(DataType.FLOAT, 1, 1, HIDDEN_SIZE);
         INDArray inputIds = Nd4j.createFromArray(new int[]{42}).reshape(1, 1).castTo(DataType.LONG);
 
-        Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> result = DecoderInputBuilder.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
                 true, HIDDEN_SIZE, null, true);
@@ -785,7 +785,7 @@ public class PipelineInteractionRegressionTest {
                 "Near boundary: mask should have " + (cachePos + 1) + " ones");
 
         // Now test AT boundary: cachePos = maxKvLen (buffer full)
-        Map<String, INDArray> resultFull = DecoderUtils.buildDecoderInputMap(
+        Map<String, INDArray> resultFull = DecoderInputBuilder.buildDecoderInputMap(
                 ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
                 679, 1, staticKvBuffers, MAX_KV_LEN, MAX_KV_LEN,
                 true, HIDDEN_SIZE, null, true);

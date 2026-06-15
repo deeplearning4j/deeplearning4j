@@ -23,7 +23,7 @@ package org.eclipse.deeplearning4j.llm.pipeline;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
-import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.junit.jupiter.api.*;
 import org.nd4j.autodiff.samediff.SDVariable;

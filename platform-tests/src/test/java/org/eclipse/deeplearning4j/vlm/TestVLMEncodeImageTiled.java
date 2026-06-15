@@ -2,7 +2,7 @@ package org.eclipse.deeplearning4j.vlm;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
-import org.eclipse.deeplearning4j.vlm.model.VisionEncoderUtils;
+import org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderUtils;
 import org.eclipse.deeplearning4j.vlm.model.VisionLanguageModel;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
