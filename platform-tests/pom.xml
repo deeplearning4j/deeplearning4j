@@ -1659,7 +1659,7 @@
                         <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
                     </properties>
                     <environmentVariables>
-                        <LD_LIBRARY_PATH>/home/agibsonccc/.libnd4j/dep-cache/openvino/2026.0.0-afe75da4/install/runtime/3rdparty/tbb/lib64:/usr/local/cuda/targets/x86_64-linux/lib:/usr/local/cuda/lib64</LD_LIBRARY_PATH>
+                        <LD_LIBRARY_PATH>/usr/local/cuda/targets/x86_64-linux/lib:/usr/local/cuda/lib64</LD_LIBRARY_PATH>
                         <CUDA_LAUNCH_BLOCKING>${cuda.launch.blocking}</CUDA_LAUNCH_BLOCKING>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>${omp.num.threads}</OMP_NUM_THREADS>
