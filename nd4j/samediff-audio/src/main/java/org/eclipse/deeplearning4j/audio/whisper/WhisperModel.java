@@ -29,9 +29,9 @@ import org.eclipse.deeplearning4j.audio.transform.AudioPreprocessor;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
-import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
-import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.convert.GGMLToSameDiffConverter;
@@ -73,7 +73,6 @@ public class WhisperModel implements Closeable {
 
     private final SameDiff encoder;
     private final SameDiff decoder;
-    private final SameDiff decoderWithPast;
     private final WhisperTokenizer tokenizer;
     private final WhisperConfig config;
     private final WhisperMelSpectrogram melSpectrogram;
@@ -83,14 +82,13 @@ public class WhisperModel implements Closeable {
     private int maxTokens = 448;
 
     @Builder
-    private WhisperModel(SameDiff encoder, SameDiff decoder, SameDiff decoderWithPast,
+    private WhisperModel(SameDiff encoder, SameDiff decoder,
                          WhisperTokenizer tokenizer, WhisperConfig config,
                          WhisperMelSpectrogram melSpectrogram,
                          KvCacheStrategy kvCacheStrategy, SamplingConfig samplingConfig,
                          int maxTokens) {
         this.encoder = encoder;
         this.decoder = decoder;
-        this.decoderWithPast = decoderWithPast;
         this.tokenizer = tokenizer;
         this.config = config;
         this.melSpectrogram = melSpectrogram != null ? melSpectrogram : new WhisperMelSpectrogram(config);
@@ -112,7 +110,6 @@ public class WhisperModel implements Closeable {
     public static WhisperModel fromOnnx(File modelDir, WhisperConfig config) throws IOException {
         File encoderFile = new File(modelDir, "encoder_model.onnx");
         File decoderFile = new File(modelDir, "decoder_model.onnx");
-        File decoderWithPastFile = new File(modelDir, "decoder_with_past_model.onnx");
         File tokenizerFile = new File(modelDir, "tokenizer.json");
 
         if (!encoderFile.exists()) {
@@ -130,12 +127,6 @@ public class WhisperModel implements Closeable {
         log.info("Loading Whisper decoder from {}...", decoderFile);
         SameDiff decoder = importer.runImport(decoderFile.getAbsolutePath(), Collections.emptyMap(), false, false);
 
-        SameDiff decoderWithPast = null;
-        if (decoderWithPastFile.exists()) {
-            log.info("Loading Whisper decoder-with-past from {}...", decoderWithPastFile);
-            decoderWithPast = importer.runImport(decoderWithPastFile.getAbsolutePath(), Collections.emptyMap(), false, false);
-        }
-
         WhisperTokenizer tokenizer = null;
         if (tokenizerFile.exists()) {
             tokenizer = WhisperTokenizer.fromFile(tokenizerFile);
@@ -150,7 +141,6 @@ public class WhisperModel implements Closeable {
         return WhisperModel.builder()
                 .encoder(encoder)
                 .decoder(decoder)
-                .decoderWithPast(decoderWithPast)
                 .tokenizer(tokenizer)
                 .config(config)
                 .build();
@@ -474,9 +464,6 @@ public class WhisperModel implements Closeable {
         }
         if (decoder != null && decoder != encoder) {
             try { decoder.close(); } catch (Exception e) { log.debug("Error closing decoder", e); }
-        }
-        if (decoderWithPast != null) {
-            try { decoderWithPast.close(); } catch (Exception e) { log.debug("Error closing decoder-with-past", e); }
         }
     }
 }

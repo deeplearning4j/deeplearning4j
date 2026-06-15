@@ -192,6 +192,31 @@ public final class SameDiffMemoryUtils {
     }
 
     /**
+     * Free all GPU memory held by a vision encoder's model arrays.
+     *
+     * <p>Call this after vision encoding is complete and the encoder is no longer needed.
+     * Clears placeholders, resets sessions, frees all constant/variable arrays, and
+     * closes the model. This reclaims the ~5GB+ of GPU memory used by vision encoder weights.</p>
+     *
+     * @param visionEncoder the vision encoder SameDiff model to free
+     */
+    public static void freeVisionEncoder(SameDiff visionEncoder) {
+        if (visionEncoder == null) {
+            return;
+        }
+        try {
+            visionEncoder.clearPlaceholders(true);
+            visionEncoder.clearOpInputs();
+            visionEncoder.resetSession();
+            freeModelArrays(visionEncoder);
+            visionEncoder.close();
+            log.info("Vision encoder freed");
+        } catch (Exception e) {
+            log.warn("Error freeing vision encoder: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Trim CUDA memory pools on all devices.
      * Syncs pending cudaFreeAsync calls and releases physical memory back to the OS.
      */

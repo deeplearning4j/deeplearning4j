@@ -23,7 +23,7 @@ package org.eclipse.deeplearning4j.vlm.eval;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.eval.EvalConfig;
 import org.eclipse.deeplearning4j.llm.eval.EvalResult;
-import org.eclipse.deeplearning4j.llm.eval.SampleResult;
+import org.eclipse.deeplearning4j.llm.eval.EvalRunner;
 import org.eclipse.deeplearning4j.llm.eval.benchmark.BenchmarkTask;
 import org.eclipse.deeplearning4j.llm.eval.dataset.EvalDataset;
 import org.eclipse.deeplearning4j.llm.eval.dataset.EvalSample;
@@ -36,15 +36,20 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 
 /**
  * Evaluation runner for Vision-Language Models.
- * Handles image loading and VLM-specific evaluation.
+ *
+ * <p>Extends {@link EvalRunner} and supplies a VLM-specific {@link SampleGenerator}
+ * that loads the image attached to each sample before calling
+ * {@link VisionLanguageModel#generate}.  All aggregation, logging, and output
+ * logic is handled by the shared {@link #runCoreEvaluation} loop.
  */
 @Slf4j
-public class VlmEvalRunner {
+public class VlmEvalRunner extends EvalRunner {
 
     /**
      * Evaluate a VLM on a benchmark task with default config.
@@ -64,7 +69,8 @@ public class VlmEvalRunner {
                 Math.min(config.getMaxSamples(), dataset.size()) : dataset.size();
 
         List<EvalSample> fewShotExamples = Collections.emptyList();
-        return runVlmEvaluation(vlm, task.name(), dataset, 0, totalToEval,
+        SampleGenerator gen = vlmGenerator(vlm);
+        return runCoreEvaluation(gen, task.name(), dataset, 0, totalToEval,
                 task.primaryMetric(), task.allMetrics(),
                 sample -> task.formatPrompt(sample, fewShotExamples),
                 task::extractAnswer, maxTokens, config.isLogSamples(), config.getOutputFile());
@@ -91,103 +97,27 @@ public class VlmEvalRunner {
         int totalToEval = config.getMaxSamples() > 0 ?
                 Math.min(config.getMaxSamples(), dataset.size()) : dataset.size();
 
-        return runVlmEvaluation(vlm, dataset.name(), dataset, 0, totalToEval,
+        SampleGenerator gen = vlmGenerator(vlm);
+        return runCoreEvaluation(gen, dataset.name(), dataset, 0, totalToEval,
                 metric, List.of(metric), promptFormatter, answerExtractor,
                 maxTokens, config.isLogSamples(), config.getOutputFile());
     }
 
-    private EvalResult runVlmEvaluation(VisionLanguageModel vlm, String benchmarkName,
-                                          EvalDataset dataset, int startIdx, int count,
-                                          EvalMetric primaryMetric, List<EvalMetric> allMetrics,
-                                          Function<EvalSample, String> promptFormatter,
-                                          Function<String, String> answerExtractor,
-                                          int maxTokens, boolean logSamples,
-                                          File outputFile) {
-        long startTime = System.currentTimeMillis();
-        List<SampleResult> sampleResults = new ArrayList<>();
-        List<Double> primaryScores = new ArrayList<>();
-        Map<String, List<Double>> allScores = new LinkedHashMap<>();
-
-        for (EvalMetric m : allMetrics) {
-            allScores.put(m.name(), new ArrayList<>());
-        }
-
-        int correctCount = 0;
-        int evaluated = 0;
-
-        for (int i = startIdx; i < startIdx + count && i < dataset.size(); i++) {
-            EvalSample sample = dataset.get(i);
-            String prompt = promptFormatter.apply(sample);
-
-            String rawOutput;
-            try {
-                INDArray image = loadImage(sample.getImagePath());
-                if (image != null) {
-                    rawOutput = vlm.generate(image, prompt, maxTokens, 0.0, false);
-                } else {
-                    log.warn("No image for sample {}, skipping", sample.getId());
-                    rawOutput = "";
-                }
-            } catch (Exception e) {
-                log.warn("VLM generation failed for sample {}: {}", sample.getId(), e.getMessage());
-                rawOutput = "";
+    /**
+     * Builds a {@link SampleGenerator} that loads the image for each sample and
+     * delegates to {@link VisionLanguageModel#generate}.  Samples with no
+     * resolvable image path produce an empty string so that the evaluation loop
+     * can continue rather than abort.
+     */
+    private SampleGenerator vlmGenerator(VisionLanguageModel vlm) {
+        return (sample, prompt, maxTokens) -> {
+            INDArray image = loadImage(sample.getImagePath());
+            if (image == null) {
+                log.warn("No image for sample {}, skipping", sample.getId());
+                return "";
             }
-
-            String prediction = answerExtractor.apply(rawOutput);
-            double primaryScore = primaryMetric.score(prediction, sample.getReferences());
-            primaryScores.add(primaryScore);
-            boolean correct = primaryScore >= 1.0;
-            if (correct) correctCount++;
-
-            for (EvalMetric m : allMetrics) {
-                allScores.get(m.name()).add(m.score(prediction, sample.getReferences()));
-            }
-
-            if (logSamples) {
-                sampleResults.add(SampleResult.builder()
-                        .sampleId(sample.getId())
-                        .prediction(prediction)
-                        .references(sample.getReferences())
-                        .score(primaryScore)
-                        .correct(correct)
-                        .build());
-            }
-
-            evaluated++;
-            if (evaluated % 50 == 0) {
-                log.info("VLM eval progress: {}/{} samples", evaluated, count);
-            }
-        }
-
-        long evalTimeMs = System.currentTimeMillis() - startTime;
-
-        Map<String, Double> aggregatedMetrics = new LinkedHashMap<>();
-        for (EvalMetric m : allMetrics) {
-            aggregatedMetrics.put(m.name(), m.aggregate(allScores.get(m.name())));
-        }
-
-        EvalResult result = EvalResult.builder()
-                .benchmarkName(benchmarkName)
-                .primaryScore(primaryMetric.aggregate(primaryScores))
-                .metricScores(aggregatedMetrics)
-                .totalSamples(evaluated)
-                .correctSamples(correctCount)
-                .evaluationTimeMs(evalTimeMs)
-                .sampleResults(logSamples ? sampleResults : null)
-                .build();
-
-        log.info("VLM evaluation complete: {} - score={:.4f}, {}/{} correct, {}ms",
-                benchmarkName, result.getPrimaryScore(), correctCount, evaluated, evalTimeMs);
-
-        if (outputFile != null) {
-            try {
-                result.writeJson(outputFile);
-            } catch (Exception e) {
-                log.warn("Failed to write results: {}", e.getMessage());
-            }
-        }
-
-        return result;
+            return vlm.generate(image, prompt, maxTokens, 0.0, false);
+        };
     }
 
     private INDArray loadImage(String imagePath) {

@@ -26,20 +26,20 @@
  * <h2>Core Classes</h2>
  * <ul>
  *   <li>{@link org.eclipse.deeplearning4j.llm.generation.TextGenerator} - High-level text generation API</li>
- *   <li>{@link org.eclipse.deeplearning4j.llm.generation.SamplingConfig} - Configuration for sampling strategies</li>
+ *   <li>{@link org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig} - Configuration for sampling strategies</li>
  *   <li>{@link org.eclipse.deeplearning4j.llm.generation.GenerationResult} - Generation output with metadata</li>
  * </ul>
  *
  * <h2>Sampling Strategies</h2>
  * <ul>
- *   <li>{@link org.eclipse.deeplearning4j.llm.generation.Sampler} - Interface for sampling strategies</li>
- *   <li>{@link org.eclipse.deeplearning4j.llm.generation.GreedySampler} - Deterministic argmax selection</li>
- *   <li>{@link org.eclipse.deeplearning4j.llm.generation.CompositeSampler} - Combined temperature/top-k/top-p sampling</li>
+ *   <li>{@link org.eclipse.deeplearning4j.llm.generation.sampling.Sampler} - Interface for sampling strategies</li>
+ *   <li>{@link org.eclipse.deeplearning4j.llm.generation.sampling.GreedySampler} - Deterministic argmax selection</li>
+ *   <li>{@link org.eclipse.deeplearning4j.llm.generation.sampling.CompositeSampler} - Combined temperature/top-k/top-p sampling</li>
  * </ul>
  *
  * <h2>Utilities</h2>
  * <ul>
- *   <li>{@link org.eclipse.deeplearning4j.llm.generation.SamplerUtils} - Low-level sampling operations using Nd4j.math() and Nd4j.nn()</li>
+ *   <li>{@link org.eclipse.deeplearning4j.llm.generation.sampling.SamplerUtils} - Low-level sampling operations using Nd4j.math() and Nd4j.nn()</li>
  * </ul>
  *
  * <h2>Usage Example</h2>

@@ -23,8 +23,8 @@ package org.eclipse.deeplearning4j.llm.pipeline;
 import lombok.Builder;
 import lombok.Getter;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
-import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
-import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SameDiff;
 

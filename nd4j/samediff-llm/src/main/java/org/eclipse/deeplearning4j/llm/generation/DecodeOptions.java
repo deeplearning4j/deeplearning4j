@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.Builder;
 import lombok.Getter;
+import org.eclipse.deeplearning4j.llm.generation.speculative.Speculator;
 
 /**
  * Per-call decode options for {@link GenerationPipeline#generate(org.nd4j.linalg.api.ndarray.INDArray, int[], int, DecodeOptions)}.

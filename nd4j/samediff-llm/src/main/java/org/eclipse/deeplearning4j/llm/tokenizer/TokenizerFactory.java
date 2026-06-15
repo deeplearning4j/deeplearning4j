@@ -30,7 +30,6 @@ import java.io.IOException;
  * <ul>
  *   <li>tokenizer.json - HuggingFace fast tokenizer</li>
  *   <li>tokenizer.model / *.spiece - SentencePiece</li>
- *   <li>vocab.json + merges.txt - BPE (GPT-2, CLIP)</li>
  *   <li>vocab.txt - WordPiece (BERT)</li>
  * </ul>
  *
@@ -60,11 +59,6 @@ public class TokenizerFactory {
          * SentencePiece tokenizer (.model, .spiece).
          */
         SENTENCEPIECE,
-
-        /**
-         * CLIP BPE tokenizer (vocab.json + merges.txt).
-         */
-        CLIP,
 
         /**
          * WordPiece tokenizer (vocab.txt).
@@ -107,13 +101,6 @@ public class TokenizerFactory {
             return SentencePieceTokenizer.fromFile(spieceFiles[0]);
         }
 
-        // Check for CLIP-style tokenizer
-        File vocabJson = new File(directory, "vocab.json");
-        File mergesTxt = new File(directory, "merges.txt");
-        if (vocabJson.exists() && mergesTxt.exists()) {
-            return CLIPTokenizer.fromFiles(vocabJson, mergesTxt);
-        }
-
         // Check for vocab file (could be SentencePiece vocab)
         File vocabTxt = new File(directory, "vocab.txt");
         if (vocabTxt.exists()) {
@@ -146,29 +133,6 @@ public class TokenizerFactory {
     }
 
     /**
-     * Load a CLIP tokenizer from vocab and merges files.
-     *
-     * @param vocabFile the vocab.json file
-     * @param mergesFile the merges.txt file
-     * @return the tokenizer
-     * @throws IOException if loading fails
-     */
-    public static Tokenizer createCLIP(File vocabFile, File mergesFile) throws IOException {
-        return CLIPTokenizer.fromFiles(vocabFile, mergesFile);
-    }
-
-    /**
-     * Load a CLIP tokenizer from a directory.
-     *
-     * @param directory the directory containing vocab.json and merges.txt
-     * @return the tokenizer
-     * @throws IOException if loading fails
-     */
-    public static Tokenizer createCLIP(File directory) throws IOException {
-        return CLIPTokenizer.fromDirectory(directory);
-    }
-
-    /**
      * Detect the tokenizer type from a directory.
      *
      * @param directory the model directory
@@ -184,9 +148,6 @@ public class TokenizerFactory {
         File[] spieceFiles = directory.listFiles((dir, name) -> name.endsWith(".spiece"));
         if (spieceFiles != null && spieceFiles.length > 0) {
             return TokenizerType.SENTENCEPIECE;
-        }
-        if (new File(directory, "vocab.json").exists() && new File(directory, "merges.txt").exists()) {
-            return TokenizerType.CLIP;
         }
         if (new File(directory, "vocab.txt").exists()) {
             return TokenizerType.WORDPIECE;
@@ -223,14 +184,6 @@ public class TokenizerFactory {
                     }
                 }
                 return SentencePieceTokenizer.fromFile(tokenizerModel);
-
-            case CLIP:
-                File vocabJson = new File(directory, "vocab.json");
-                File mergesTxt = new File(directory, "merges.txt");
-                if (!vocabJson.exists() || !mergesTxt.exists()) {
-                    throw new TokenizerException("CLIP tokenizer files not found in: " + directory);
-                }
-                return CLIPTokenizer.fromFiles(vocabJson, mergesTxt);
 
             case WORDPIECE:
                 File vocabTxt = new File(directory, "vocab.txt");

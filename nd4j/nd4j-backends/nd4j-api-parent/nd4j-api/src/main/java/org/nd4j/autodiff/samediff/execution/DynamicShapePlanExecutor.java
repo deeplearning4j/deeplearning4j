@@ -1809,7 +1809,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         List<Long> kvMaxSizes = new ArrayList<>();
 
         // Get shapes from actual output arrays returned by the first execution step.
-        // Match logic mirrors DecoderUtils.findKVCacheOutputNames: present+key or present+value.
+        // Match logic mirrors ModelIOConfig.findKVCacheOutputNames: present+key or present+value.
         for (Map.Entry<String, INDArray> entry : firstStepResults.entrySet()) {
             String outputName = entry.getKey();
             boolean isExplicitKv = explicitKvOutputNames != null && explicitKvOutputNames.contains(outputName);

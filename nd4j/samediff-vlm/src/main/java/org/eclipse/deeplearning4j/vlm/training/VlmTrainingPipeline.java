@@ -32,8 +32,8 @@ import org.nd4j.autodiff.samediff.config.VlmTrainingConfig;
 import org.nd4j.autodiff.samediff.peft.PeftModel;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.SimpleListMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
@@ -473,61 +473,4 @@ public class VlmTrainingPipeline {
         return new SimpleListMultiDataSetIterator(datasets);
     }
 
-    // -------------------------------------------------------------------------
-    // Minimal in-memory MultiDataSetIterator implementation
-    // -------------------------------------------------------------------------
-
-    /**
-     * A simple, non-parallel {@link MultiDataSetIterator} backed by a list.
-     * Intended for small in-memory datasets and tests.
-     */
-    private static class SimpleListMultiDataSetIterator implements MultiDataSetIterator {
-
-        private final List<MultiDataSet> data;
-        private int cursor = 0;
-
-        SimpleListMultiDataSetIterator(List<MultiDataSet> data) {
-            this.data = data;
-        }
-
-        @Override
-        public MultiDataSet next(int num) {
-            return next();
-        }
-
-        @Override
-        public void setPreProcessor(MultiDataSetPreProcessor preProcessor) {
-            // No-op: pre-processing not needed for in-memory examples
-        }
-
-        @Override
-        public MultiDataSetPreProcessor getPreProcessor() {
-            return null;
-        }
-
-        @Override
-        public boolean resetSupported() {
-            return true;
-        }
-
-        @Override
-        public boolean asyncSupported() {
-            return false;
-        }
-
-        @Override
-        public void reset() {
-            cursor = 0;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return cursor < data.size();
-        }
-
-        @Override
-        public MultiDataSet next() {
-            return data.get(cursor++);
-        }
-    }
 }

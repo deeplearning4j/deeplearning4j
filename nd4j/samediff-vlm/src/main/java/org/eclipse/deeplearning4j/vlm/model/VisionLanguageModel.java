@@ -25,10 +25,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.ModelConfig;
-import org.eclipse.deeplearning4j.llm.generation.BatchGenerationState;
+import org.eclipse.deeplearning4j.llm.generation.batch.BatchGenerationState;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
-import org.eclipse.deeplearning4j.llm.generation.SamplerUtils;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplerUtils;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
@@ -36,14 +36,19 @@ import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.model.patching.SameDiffGraphPatch;
+import org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderIOConfig;
+import org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderUtils;
+import org.eclipse.deeplearning4j.vlm.model.encoder.EmbeddingMerger;
+import org.eclipse.deeplearning4j.vlm.model.loading.MultiPartModelLoader;
+import org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
-import org.eclipse.deeplearning4j.llm.generation.KvCacheManager;
-import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
-import org.eclipse.deeplearning4j.llm.generation.NgramSpeculator;
-import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheManager;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.speculative.NgramSpeculator;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -2555,19 +2560,6 @@ public class VisionLanguageModel implements AutoCloseable {
                 .config(loaded.getConfig())
                 .targetDevice(device)
                 .build();
-    }
-
-    /**
-     * Create a model-parallel VLM across multiple devices.
-     *
-     * @param modelDir the model directory
-     * @param devices devices for [visionEncoder, embedTokens, decoder]
-     * @return model-parallel VLM
-     * @throws IOException if loading fails
-     */
-    public static ModelParallelVLM forMultipleDevices(File modelDir, DeviceDescriptor... devices)
-            throws IOException {
-        return ModelParallelVLM.fromDirectory(modelDir, devices);
     }
 
     @Override

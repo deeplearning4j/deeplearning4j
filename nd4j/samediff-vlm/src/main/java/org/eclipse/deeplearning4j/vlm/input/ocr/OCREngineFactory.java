@@ -33,7 +33,7 @@ import java.util.List;
  * OCREngine ocr = OCREngineFactory.createDefault();
  *
  * // Create specific engine
- * OCREngine ocr = OCREngineFactory.create(EngineType.PADDLE_OCR, new File("models"));
+ * OCREngine ocr = OCREngineFactory.create(EngineType.TR_OCR, new File("models"));
  *
  * // Create best available engine
  * OCREngine ocr = OCREngineFactory.createBestAvailable();
@@ -53,19 +53,9 @@ public class OCREngineFactory {
         TESSERACT,
 
         /**
-         * PaddleOCR (ONNX models).
-         */
-        PADDLE_OCR,
-
-        /**
          * EasyOCR (Python wrapper).
          */
         EASY_OCR,
-
-        /**
-         * DeepSeek OCR (ONNX models).
-         */
-        DEEPSEEK_OCR,
 
         /**
          * TrOCR (Microsoft transformer-based OCR).
@@ -111,12 +101,8 @@ public class OCREngineFactory {
                         .modelPath(modelDirectory.getAbsolutePath())
                         .build();
                 return TesseractOCREngine.create(config);
-            case PADDLE_OCR:
-                return PaddleOCREngine.create(modelDirectory);
             case EASY_OCR:
                 return EasyOCREngine.create();
-            case DEEPSEEK_OCR:
-                return DeepSeekOCREngine.create(modelDirectory);
             case TR_OCR:
                 return TrOCREngine.create(modelDirectory);
             default:
@@ -138,12 +124,8 @@ public class OCREngineFactory {
         switch (type) {
             case TESSERACT:
                 return TesseractOCREngine.create(config);
-            case PADDLE_OCR:
-                return PaddleOCREngine.create(modelDirectory, config);
             case EASY_OCR:
                 return EasyOCREngine.create(config);
-            case DEEPSEEK_OCR:
-                return DeepSeekOCREngine.create(modelDirectory, config);
             case TR_OCR:
                 return TrOCREngine.create(modelDirectory, config);
             default:
