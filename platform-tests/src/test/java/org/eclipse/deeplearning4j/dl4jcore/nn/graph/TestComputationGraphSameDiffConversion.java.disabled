@@ -1,0 +1,562 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
+package org.eclipse.deeplearning4j.dl4jcore.nn.graph;
+
+import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Tests for ComputationGraph to SameDiff conversion and vice versa.
+ */
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
+public class TestComputationGraphSameDiffConversion extends BaseDL4JTest {
+
+    @Test
+    public void testSimpleDenseNetworkConversion() {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Create a simple dense network
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .dataType(DataType.FLOAT)
+                .activation(Activation.RELU)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.1))
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder().nIn(10).nOut(20).build(), "input")
+                .addLayer("dense2", new DenseLayer.Builder().nIn(20).nOut(15).build(), "dense1")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(15).nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "dense2")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        // Convert to SameDiff
+        SameDiff sd = cg.toSameDiff();
+
+        assertNotNull(sd, "SameDiff should not be null");
+
+        // Check that variables exist
+        assertTrue(sd.hasVariable("input"), "Should have input placeholder");
+        assertTrue(sd.hasVariable("dense1_W"), "Should have dense1 weights");
+        assertTrue(sd.hasVariable("dense2_W"), "Should have dense2 weights");
+        assertTrue(sd.hasVariable("output_W"), "Should have output weights");
+
+        // Test forward pass produces similar output
+        INDArray input = Nd4j.rand(DataType.FLOAT, 2, 10);
+
+        // ComputationGraph forward
+        INDArray cgOutput = cg.outputSingle(input);
+
+        // SameDiff forward
+        Map<String, INDArray> placeholders = Map.of("input", input);
+        Map<String, INDArray> sdOutputs = sd.output(placeholders, "output_act");
+        INDArray sdOutput = sdOutputs.get("output_act");
+
+        assertNotNull(sdOutput, "SameDiff output should not be null");
+        assertEquals(cgOutput.shape()[0], sdOutput.shape()[0], "Batch sizes should match");
+        assertEquals(cgOutput.shape()[1], sdOutput.shape()[1], "Output sizes should match");
+
+        // Values should be close (allowing for floating point differences)
+        double maxDiff = cgOutput.sub(sdOutput).amaxNumber().doubleValue();
+        assertTrue(maxDiff < 1e-5, "Outputs should be close, max diff: " + maxDiff);
+    }
+
+    @Test
+    public void testCNNConversion() {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Create a CNN
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .dataType(DataType.FLOAT)
+                .convolutionMode(ConvolutionMode.Same)
+                .activation(Activation.RELU)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.1))
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("conv1", new ConvolutionLayer.Builder()
+                        .kernelSize(3, 3)
+                        .stride(1, 1)
+                        .nIn(3).nOut(16)
+                        .build(), "input")
+                .addLayer("pool1", new SubsamplingLayer.Builder()
+                        .kernelSize(2, 2)
+                        .stride(2, 2)
+                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                        .build(), "conv1")
+                .addLayer("conv2", new ConvolutionLayer.Builder()
+                        .kernelSize(3, 3)
+                        .stride(1, 1)
+                        .nIn(16).nOut(32)
+                        .build(), "pool1")
+                .addLayer("global_pool", new GlobalPoolingLayer.Builder()
+                        .poolingType(PoolingType.AVG)
+                        .build(), "conv2")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(32).nOut(10)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "global_pool")
+                .setOutputs("output")
+                .setInputTypes(InputType.convolutional(28, 28, 3))
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        // Convert to SameDiff
+        SameDiff sd = cg.toSameDiff();
+
+        assertNotNull(sd, "SameDiff should not be null");
+
+        // Check that convolution weights exist
+        assertTrue(sd.hasVariable("conv1_W"), "Should have conv1 weights");
+        assertTrue(sd.hasVariable("conv2_W"), "Should have conv2 weights");
+
+        // Test forward pass
+        INDArray input = Nd4j.rand(DataType.FLOAT, 2, 3, 28, 28);
+        INDArray cgOutput = cg.outputSingle(input);
+
+        Map<String, INDArray> placeholders = Map.of("input", input);
+        Map<String, INDArray> sdOutputs = sd.output(placeholders, "output_act");
+        INDArray sdOutput = sdOutputs.get("output_act");
+
+        assertNotNull(sdOutput, "SameDiff output should not be null");
+        assertEquals(cgOutput.shape().length, sdOutput.shape().length, "Output ranks should match");
+    }
+
+    @Test
+    public void testBatchNormConversion() {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Create network with batch normalization
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .dataType(DataType.FLOAT)
+                .activation(Activation.RELU)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.1))
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder().nIn(10).nOut(20).build(), "input")
+                .addLayer("bn1", new BatchNormalization.Builder().nIn(20).nOut(20).build(), "dense1")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(20).nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "bn1")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        // Convert to SameDiff
+        SameDiff sd = cg.toSameDiff();
+
+        assertNotNull(sd, "SameDiff should not be null");
+
+        // Check that batch norm parameters exist
+        assertTrue(sd.hasVariable("bn1_gamma"), "Should have batch norm gamma");
+        assertTrue(sd.hasVariable("bn1_beta"), "Should have batch norm beta");
+        assertTrue(sd.hasVariable("bn1_mean"), "Should have batch norm mean");
+        assertTrue(sd.hasVariable("bn1_var"), "Should have batch norm variance");
+    }
+
+    @Test
+    public void testActivationLayerConversion() {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Test various activation functions
+        Activation[] activations = {
+                Activation.RELU,
+                Activation.SIGMOID,
+                Activation.TANH,
+                Activation.LEAKYRELU,
+                Activation.ELU,
+                Activation.SOFTPLUS
+        };
+
+        for (Activation activation : activations) {
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .dataType(DataType.FLOAT)
+                    .weightInit(WeightInit.XAVIER)
+                    .updater(new Sgd(0.1))
+                    .graphBuilder()
+                    .addInputs("input")
+                    .addLayer("dense1", new DenseLayer.Builder()
+                            .nIn(10).nOut(10)
+                            .activation(activation)
+                            .build(), "input")
+                    .addLayer("output", new OutputLayer.Builder()
+                            .nIn(10).nOut(5)
+                            .activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT)
+                            .build(), "dense1")
+                    .setOutputs("output")
+                    .build();
+
+            ComputationGraph cg = new ComputationGraph(conf);
+            cg.init();
+
+            // Convert to SameDiff
+            SameDiff sd = cg.toSameDiff();
+
+            assertNotNull(sd, "SameDiff should not be null for activation: " + activation);
+
+            // Test forward pass
+            INDArray input = Nd4j.rand(DataType.FLOAT, 2, 10);
+            INDArray cgOutput = cg.outputSingle(input);
+
+            Map<String, INDArray> placeholders = Map.of("input", input);
+            Map<String, INDArray> sdOutputs = sd.output(placeholders, "output_act");
+            INDArray sdOutput = sdOutputs.get("output_act");
+
+            assertNotNull(sdOutput, "SameDiff output should not be null for activation: " + activation);
+        }
+    }
+
+    @Test
+    public void testMergeVertexConversion() {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Create network with merge vertex
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .dataType(DataType.FLOAT)
+                .activation(Activation.RELU)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.1))
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("branch1", new DenseLayer.Builder().nIn(10).nOut(8).build(), "input")
+                .addLayer("branch2", new DenseLayer.Builder().nIn(10).nOut(8).build(), "input")
+                .addVertex("merge", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "branch1", "branch2")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(16).nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "merge")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        // Convert to SameDiff
+        SameDiff sd = cg.toSameDiff();
+
+        assertNotNull(sd, "SameDiff should not be null");
+
+        // Test forward pass
+        INDArray input = Nd4j.rand(DataType.FLOAT, 2, 10);
+        INDArray cgOutput = cg.outputSingle(input);
+
+        Map<String, INDArray> placeholders = Map.of("input", input);
+        Map<String, INDArray> sdOutputs = sd.output(placeholders, "output_act");
+        INDArray sdOutput = sdOutputs.get("output_act");
+
+        assertNotNull(sdOutput, "SameDiff output should not be null");
+        assertEquals(2, sdOutput.shape()[0], "Batch size should be 2");
+        assertEquals(5, sdOutput.shape()[1], "Output size should be 5");
+    }
+
+    @Test
+    public void testElementWiseVertexConversion() {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Create network with element-wise addition vertex
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .dataType(DataType.FLOAT)
+                .activation(Activation.RELU)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.1))
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("branch1", new DenseLayer.Builder().nIn(10).nOut(8).build(), "input")
+                .addLayer("branch2", new DenseLayer.Builder().nIn(10).nOut(8).build(), "input")
+                .addVertex("add", new org.deeplearning4j.nn.conf.graph.ElementWiseVertex(
+                        org.deeplearning4j.nn.conf.graph.ElementWiseVertex.Op.Add), "branch1", "branch2")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(8).nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "add")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        // Convert to SameDiff
+        SameDiff sd = cg.toSameDiff();
+
+        assertNotNull(sd, "SameDiff should not be null");
+
+        // Test forward pass
+        INDArray input = Nd4j.rand(DataType.FLOAT, 2, 10);
+        INDArray cgOutput = cg.outputSingle(input);
+
+        Map<String, INDArray> placeholders = Map.of("input", input);
+        Map<String, INDArray> sdOutputs = sd.output(placeholders, "output_act");
+        INDArray sdOutput = sdOutputs.get("output_act");
+
+        assertNotNull(sdOutput, "SameDiff output should not be null");
+    }
+
+    @Test
+    public void testParameterCopyingAccuracy() {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Create a simple network
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .dataType(DataType.FLOAT)
+                .activation(Activation.RELU)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.1))
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder().nIn(10).nOut(20).build(), "input")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(20).nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "dense1")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        // Get original parameters
+        INDArray originalDense1W = cg.getLayer("dense1").getParam("W").dup();
+        INDArray originalDense1B = cg.getLayer("dense1").getParam("b").dup();
+        INDArray originalOutputW = cg.getLayer("output").getParam("W").dup();
+        INDArray originalOutputB = cg.getLayer("output").getParam("b").dup();
+
+        // Convert to SameDiff
+        SameDiff sd = cg.toSameDiff();
+
+        // Get SameDiff parameters
+        INDArray sdDense1W = sd.getVariable("dense1_W").getArr();
+        INDArray sdDense1B = sd.getVariable("dense1_b").getArr();
+        INDArray sdOutputW = sd.getVariable("output_W").getArr();
+        INDArray sdOutputB = sd.getVariable("output_b").getArr();
+
+        // Verify parameters are equal
+        assertEquals(originalDense1W, sdDense1W, "Dense1 weights should be equal");
+        assertEquals(originalDense1B, sdDense1B, "Dense1 bias should be equal");
+        assertEquals(originalOutputW, sdOutputW, "Output weights should be equal");
+        assertEquals(originalOutputB, sdOutputB, "Output bias should be equal");
+    }
+
+    @Test
+    public void testMultipleInputsNetwork() {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Create network with multiple inputs
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .dataType(DataType.FLOAT)
+                .activation(Activation.RELU)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.1))
+                .graphBuilder()
+                .addInputs("input1", "input2")
+                .addLayer("dense1", new DenseLayer.Builder().nIn(10).nOut(8).build(), "input1")
+                .addLayer("dense2", new DenseLayer.Builder().nIn(5).nOut(8).build(), "input2")
+                .addVertex("merge", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "dense1", "dense2")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(16).nOut(3)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "merge")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        // Convert to SameDiff
+        SameDiff sd = cg.toSameDiff();
+
+        assertNotNull(sd, "SameDiff should not be null");
+
+        // Check that both input placeholders exist
+        assertTrue(sd.hasVariable("input1"), "Should have input1 placeholder");
+        assertTrue(sd.hasVariable("input2"), "Should have input2 placeholder");
+
+        // Test forward pass
+        INDArray input1 = Nd4j.rand(DataType.FLOAT, 2, 10);
+        INDArray input2 = Nd4j.rand(DataType.FLOAT, 2, 5);
+
+        INDArray cgOutput = cg.outputSingle(input1, input2);
+
+        Map<String, INDArray> placeholders = Map.of("input1", input1, "input2", input2);
+        Map<String, INDArray> sdOutputs = sd.output(placeholders, "output_act");
+        INDArray sdOutput = sdOutputs.get("output_act");
+
+        assertNotNull(sdOutput, "SameDiff output should not be null");
+        assertEquals(2, sdOutput.shape()[0], "Batch size should be 2");
+        assertEquals(3, sdOutput.shape()[1], "Output size should be 3");
+    }
+
+    @Test
+    public void testDropoutLayerConversion() {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Create network with dropout
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .dataType(DataType.FLOAT)
+                .activation(Activation.RELU)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.1))
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder().nIn(10).nOut(20).build(), "input")
+                .addLayer("dropout", new DropoutLayer.Builder(0.5).build(), "dense1")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(20).nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "dropout")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        // Convert to SameDiff
+        SameDiff sd = cg.toSameDiff();
+
+        assertNotNull(sd, "SameDiff should not be null");
+
+        // Dropout layer should be converted to identity in SameDiff
+        // (dropout is typically handled differently in SameDiff during training)
+    }
+
+    @Test
+    public void testNoBiasLayerConversion() {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Create network without bias
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .dataType(DataType.FLOAT)
+                .activation(Activation.RELU)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.1))
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder()
+                        .nIn(10).nOut(20)
+                        .hasBias(false)
+                        .build(), "input")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(20).nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "dense1")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        // Convert to SameDiff
+        SameDiff sd = cg.toSameDiff();
+
+        assertNotNull(sd, "SameDiff should not be null");
+
+        // Check that weights exist but no bias for dense1
+        assertTrue(sd.hasVariable("dense1_W"), "Should have dense1 weights");
+        assertFalse(sd.hasVariable("dense1_b"), "Should NOT have dense1 bias");
+
+        // Test forward pass
+        INDArray input = Nd4j.rand(DataType.FLOAT, 2, 10);
+        INDArray cgOutput = cg.outputSingle(input);
+
+        Map<String, INDArray> placeholders = Map.of("input", input);
+        Map<String, INDArray> sdOutputs = sd.output(placeholders, "output_act");
+        INDArray sdOutput = sdOutputs.get("output_act");
+
+        assertNotNull(sdOutput, "SameDiff output should not be null");
+    }
+
+    @Test
+    public void testUninitializedGraphThrowsException() {
+        // Create a graph but don't initialize it
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .dataType(DataType.FLOAT)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder().nIn(10).nOut(20).build(), "input")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(20).nOut(5)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "dense1")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        // Note: NOT calling cg.init()
+
+        // Should throw an exception
+        assertThrows(IllegalStateException.class, () -> cg.toSameDiff(),
+                "Should throw exception for uninitialized graph");
+    }
+}

@@ -93,7 +93,8 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         int w = 6;
         int h = 6;
 
-        INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[]{w, h}));
+        INDArray bbPriorRaw = Nd4j.rand(b, 2);
+        INDArray bbPrior = bbPriorRaw.muliRowVector(Nd4j.create(new double[]{w, h}).castTo(bbPriorRaw.dataType()));
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -182,7 +183,8 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         int w = 6;
         int h = 6;
 
-        INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[]{w, h}));
+        INDArray bbPriorRaw = Nd4j.rand(b, 2);
+        INDArray bbPrior = bbPriorRaw.muliRowVector(Nd4j.create(new double[]{w, h}).castTo(bbPriorRaw.dataType()));
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()

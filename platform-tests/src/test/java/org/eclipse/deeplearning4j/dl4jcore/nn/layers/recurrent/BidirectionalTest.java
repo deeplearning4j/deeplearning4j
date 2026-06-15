@@ -168,7 +168,8 @@ class BidirectionalTest extends BaseDL4JTest {
                 outExp = out2.add(out3).muli(0.5);
                 break;
             case CONCAT:
-                outExp = Nd4j.concat(1, out2, out3);
+                int concatDim = (rnnDataFormat == NWC) ? 2 : 1;
+                outExp = Nd4j.concat(concatDim, out2, out3);
                 break;
             default:
                 throw new RuntimeException();
@@ -185,7 +186,8 @@ class BidirectionalTest extends BaseDL4JTest {
             INDArray eps1;
             //in the bidirectional concat case when creating the epsilon array.
             if (mode == Bidirectional.Mode.CONCAT) {
-                eps1 = Nd4j.concat(1, eps, eps);
+                int epsConcatDim = (rnnDataFormat == NWC) ? 2 : 1;
+                eps1 = Nd4j.concat(epsConcatDim, eps, eps);
             } else {
                 eps1 = eps.dup();
             }
@@ -282,7 +284,8 @@ class BidirectionalTest extends BaseDL4JTest {
                 outExp = out2.add(out3).muli(0.5);
                 break;
             case CONCAT:
-                outExp = Nd4j.concat(1, out2, out3);
+                int concatDim2 = (rnnDataFormat == NWC) ? 2 : 1;
+                outExp = Nd4j.concat(concatDim2, out2, out3);
                 break;
             default:
                 throw new RuntimeException();
@@ -293,7 +296,8 @@ class BidirectionalTest extends BaseDL4JTest {
             INDArray eps = Nd4j.rand(inshape).castTo(DataType.DOUBLE);
             INDArray eps1;
             if (mode == Bidirectional.Mode.CONCAT) {
-                eps1 = Nd4j.concat(1, eps, eps);
+                int epsConcatDim2 = (rnnDataFormat == NWC) ? 2 : 1;
+                eps1 = Nd4j.concat(epsConcatDim2, eps, eps);
             } else {
                 eps1 = eps;
             }

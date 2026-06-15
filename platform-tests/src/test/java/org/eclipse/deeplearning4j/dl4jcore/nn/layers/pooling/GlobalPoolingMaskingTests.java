@@ -169,11 +169,12 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             INDArray inToBeMasked = Nd4j.rand(new int[] {minibatch, depthIn, height, width});
 
             //Shape for mask: [minibatch, 1, 1, width]
-            INDArray maskArray = Nd4j.create(new double[] {1, 1, 1, 1, 1, 0}, new int[]{1,1,1,width});
+            INDArray maskArray = Nd4j.create(new double[] {1, 1, 1, 1, 1, 0}, new int[]{1,1,1,width}).castTo(inToBeMasked.dataType());
 
             //Multiply the input by the mask array, to ensure the 0s in the mask correspond to 0s in the input vector
             // as would be the case in practice...
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 3));
+            // Use element-wise mul with broadcasting: mask [1,1,1,w] broadcasts correctly over input [mb,c,h,w]
+            inToBeMasked.muli(maskArray);
 
 
             net.setLayerMaskArrays(maskArray, null);
@@ -232,11 +233,12 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             INDArray inToBeMasked = Nd4j.rand(new int[] {minibatch, depthIn, height, width});
 
             //Shape for mask: [minibatch, width]
-            INDArray maskArray = Nd4j.create(new double[] {1, 1, 1, 1, 1, 0}, new int[]{1,1,height,1});
+            INDArray maskArray = Nd4j.create(new double[] {1, 1, 1, 1, 1, 0}, new int[]{1,1,height,1}).castTo(inToBeMasked.dataType());
 
             //Multiply the input by the mask array, to ensure the 0s in the mask correspond to 0s in the input vector
             // as would be the case in practice...
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 2));
+            // Use element-wise mul with broadcasting: mask [1,1,h,1] broadcasts correctly over input [mb,c,h,w]
+            inToBeMasked.muli(maskArray);
 
 
             net.setLayerMaskArrays(maskArray, null);
@@ -297,11 +299,12 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
             //Shape for mask: [minibatch, width]
             INDArray maskArray = Nd4j.create(new double[][] {{1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 0}, {1, 1, 1, 1, 0, 0}})
-                    .reshape('c', minibatch, 1, 1, width);
+                    .reshape('c', minibatch, 1, 1, width).castTo(inToBeMasked.dataType());
 
             //Multiply the input by the mask array, to ensure the 0s in the mask correspond to 0s in the input vector
             // as would be the case in practice...
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 3));
+            // Use element-wise mul with broadcasting: mask [mb,1,1,w] broadcasts correctly over input [mb,c,h,w]
+            inToBeMasked.muli(maskArray);
 
 
             net.setLayerMaskArrays(maskArray, null);
@@ -356,11 +359,12 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
             //Shape for mask: [minibatch, 1, height, 1] -> broadcast
             INDArray maskArray = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}})
-                    .reshape('c', minibatch, 1, height, 1);
+                    .reshape('c', minibatch, 1, height, 1).castTo(inToBeMasked.dataType());
 
             //Multiply the input by the mask array, to ensure the 0s in the mask correspond to 0s in the input vector
             // as would be the case in practice...
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 2));
+            // Use element-wise mul with broadcasting: mask [mb,1,h,1] broadcasts correctly over input [mb,c,h,w]
+            inToBeMasked.muli(maskArray);
 
 
             net.setLayerMaskArrays(maskArray, null);

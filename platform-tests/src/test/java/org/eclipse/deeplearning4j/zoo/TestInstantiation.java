@@ -160,12 +160,12 @@ public class TestInstantiation extends BaseDL4JTest {
         testInitPretrained(VGG19.builder().numClasses(0).build(), new long[]{1,3,224,224}, new long[]{1,1000});
     }
 
-    @Test @Disabled("AB 2019/05/28 - JVM crash on linux CUDA CI machines - Issue 7657")
+    @Test
     public void testInitPretrainedDarknet19() throws Exception {
         testInitPretrained(Darknet19.builder().numClasses(0).build(), new long[]{1,3,224,224}, new long[]{1,1000});
     }
 
-    @Test @Disabled("AB 2019/05/28 - JVM crash on linux CUDA CI machines - Issue 7657")
+    @Test
     public void testInitPretrainedDarknet19S2() throws Exception {
         testInitPretrained(Darknet19.builder().numClasses(0).inputShape(new int[]{3,448,448}).build(), new long[]{1,3,448,448}, new long[]{1,1000});
     }
@@ -237,7 +237,7 @@ public class TestInstantiation extends BaseDL4JTest {
         testInitRandomModel(Xception.builder().numClasses(1000).build(), new long[]{1,3,299,299}, new long[]{1,1000});
     }
 
-    @Test @Disabled("AB - 2019/05/28 - JVM crash on CI - intermittent? Issue 7657")
+    @Test
     public void testInitRandomModelSqueezenet() throws IOException {
         testInitRandomModel(SqueezeNet.builder().numClasses(1000).build(), new long[]{1,3,227,227}, new long[]{1,1000});
     }
@@ -247,7 +247,7 @@ public class TestInstantiation extends BaseDL4JTest {
         testInitRandomModel(FaceNetNN4Small2.builder().embeddingSize(100).numClasses(10).build(), new long[]{1,3,64,64}, new long[]{1,10});
     }
 
-    @Test @Disabled("AB 2019/05/29 - Crashing on CI linux-x86-64 CPU only - Issue #7657")
+    @Test
     public void testInitRandomModelUNet() throws IOException {
         testInitRandomModel(UNet.builder().build(), new long[]{1,3,512,512}, new long[]{1,1,512,512});
     }

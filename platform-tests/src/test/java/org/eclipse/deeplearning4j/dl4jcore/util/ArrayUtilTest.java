@@ -32,6 +32,7 @@ import org.junit.jupiter.api.DisplayName;
  */
 @DisplayName("Array Util Test")
 @Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SMOKE)
 class ArrayUtilTest extends BaseDL4JTest {
 
     @Test

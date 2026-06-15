@@ -209,6 +209,7 @@ public class TestUtils {
     }
 
     public static L2Regularization getL2Reg(List<Regularization> l){
+        if(l == null) return null;
         for(Regularization r : l){
             if(r instanceof L2Regularization){
                 return (L2Regularization) r;
@@ -222,6 +223,7 @@ public class TestUtils {
     }
 
     public static WeightDecay getWeightDecayReg(List<Regularization> l){
+        if(l == null) return null;
         for(Regularization r : l){
             if(r instanceof WeightDecay){
                 return (WeightDecay) r;
@@ -236,6 +238,7 @@ public class TestUtils {
     }
 
     public static double getL1(List<Regularization> l){
+        if(l == null) return 0.0;
         L1Regularization l1Reg = null;
         for(Regularization reg : l){
             if(reg instanceof L1Regularization)
@@ -251,6 +254,7 @@ public class TestUtils {
     }
 
     public static double getL2(List<Regularization> l){
+        if(l == null) return 0.0;
         L2Regularization l2Reg = null;
         for(Regularization reg : l){
             if(reg instanceof L2Regularization)
@@ -269,7 +273,9 @@ public class TestUtils {
     }
 
     public static double getWeightDecay(BaseLayer layer) {
-        return getWeightDecayReg(layer.getRegularization()).getCoeff().valueAt(0,0);
+        WeightDecay wd = getWeightDecayReg(layer.getRegularization());
+        if(wd == null) return 0.0;
+        return wd.getCoeff().valueAt(0,0);
     }
 
     public static void removeHelper(Layer layer) throws Exception {

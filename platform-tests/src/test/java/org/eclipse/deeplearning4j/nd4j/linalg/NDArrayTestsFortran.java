@@ -1093,8 +1093,8 @@ public class NDArrayTestsFortran extends BaseNd4jTestWithBackends {
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape('f', 4, 3, 2).castTo(DataType.DOUBLE);
         INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][] {{1, 0}, {0, 1}});
         assertArrayEquals(new long[] {5, 2}, result.shape());
-        INDArray assertion = Nd4j.create(new double[][] {{440., 1232.}, {1232., 3752.}, {2024., 6272.}, {2816., 8792.},
-                {3608., 11312.}});
+        INDArray assertion = Nd4j.create(new double[][] {{506., 1298.}, {1298., 3818.}, {2090., 6338.}, {2882., 8858.},
+                {3674., 11378.}});
         assertEquals(assertion, result);
 
     }

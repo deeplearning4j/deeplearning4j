@@ -46,6 +46,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Tag(TagNames.EVAL_METRICS)
+@Tag(TagNames.FULL_CI)
 @NativeTag
 public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
 

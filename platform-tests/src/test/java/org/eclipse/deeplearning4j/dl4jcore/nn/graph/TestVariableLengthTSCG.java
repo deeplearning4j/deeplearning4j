@@ -221,7 +221,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
             Map<String, INDArray> activations2 = net.feedForward();
 
             //Scores should differ here: masking the input, not the output. Therefore 4 vs. 5 time step outputs
-            assertNotEquals(score1, score2, 0.001);
+            assertNotEquals(score1, score2);
 
             Map<String, INDArray> g1map = g1.gradientForVariable();
             Map<String, INDArray> g2map = g2.gradientForVariable();

@@ -150,6 +150,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
                                 + ", miniBatchSize=" + 1;
                 assertTrue(gradOK,msg);
                 TestUtils.testModelSerialization(mln);
+                mln.close();
             }
         }
     }
@@ -280,6 +281,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
 
                 assertTrue(gradOK,msg);
                 TestUtils.testModelSerialization(net);
+                net.close();
             }
         }
     }
@@ -375,6 +377,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
                         .labels(labels).labelMask(labelMask));
 
                 assertTrue(gradOK,msg);
+                net.close();
 
 
                 //Check the equivalent compgraph:
@@ -399,6 +402,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
 
                 assertTrue(gradOK,msg + " (compgraph)");
                 TestUtils.testModelSerialization(graph);
+                graph.close();
             }
         }
     }

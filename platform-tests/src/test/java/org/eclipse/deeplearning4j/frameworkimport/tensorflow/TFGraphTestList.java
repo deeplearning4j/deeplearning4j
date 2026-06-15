@@ -45,8 +45,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 
-@Tag(TagNames.LONG_TEST)
-@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.TENSORFLOW)
 public class TFGraphTestList {
 
 
@@ -105,10 +104,10 @@ public class TFGraphTestList {
                 new TFGraphTestAllHelper.DefaultGraphLoader(inputs), maxRE, minAbs, printArraysDebugging);
     }
 
-    @Test @Disabled
+    @Disabled
     @ParameterizedTest
-    @MethodSource("org.nd4j.imports.tfgraphs.TFGraphTestList#data")
-    public void testAlsoIntermediate(@TempDir Path testDir,String modelName) throws IOException {
+    @MethodSource("data")
+    public void testAlsoIntermediate(String modelName) throws IOException {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.toFile();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);

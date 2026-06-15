@@ -99,9 +99,10 @@ class TransferLearningCompGraphTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Nout Changes")
     void testNoutChanges() {
+        long seed = 12345L;
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 2));
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1)).activation(Activation.IDENTITY);
-        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().updater(new Sgd(0.1)).activation(Activation.IDENTITY).build();
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().seed(seed).updater(new Sgd(0.1)).activation(Activation.IDENTITY);
+        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().seed(seed).updater(new Sgd(0.1)).activation(Activation.IDENTITY).build();
         ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In").addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(5).build(), "layer0In").addLayer("layer1", new DenseLayer.Builder().nIn(3).nOut(2).build(), "layer0").addLayer("layer2", new DenseLayer.Builder().nIn(2).nOut(3).build(), "layer1").addLayer("layer3", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "layer2").setOutputs("layer3").build());
         modelToFineTune.init();
         ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune).fineTuneConfiguration(fineTuneConfiguration).nOutReplace("layer3", 2, WeightInit.XAVIER).nOutReplace("layer0", 3, new NormalDistribution(1, 1e-1), WeightInit.XAVIER).build();
@@ -130,9 +131,10 @@ class TransferLearningCompGraphTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Remove And Add")
     void testRemoveAndAdd() {
+        long seed = 12345L;
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1)).activation(Activation.IDENTITY);
-        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().updater(new Sgd(0.1)).activation(Activation.IDENTITY).build();
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().seed(seed).updater(new Sgd(0.1)).activation(Activation.IDENTITY);
+        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().seed(seed).updater(new Sgd(0.1)).activation(Activation.IDENTITY).build();
         ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In").addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(5).build(), "layer0In").addLayer("layer1", new DenseLayer.Builder().nIn(5).nOut(2).build(), "layer0").addLayer("layer2", new DenseLayer.Builder().nIn(2).nOut(3).build(), "layer1").addLayer("layer3", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "layer2").setOutputs("layer3").build());
         modelToFineTune.init();
         ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune).fineTuneConfiguration(fineTuneConfiguration).nOutReplace("layer0", 7, WeightInit.XAVIER, WeightInit.XAVIER).nOutReplace("layer2", 5, WeightInit.XAVIER).removeVertexKeepConnections("layer3").addLayer("layer3", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(3).activation(Activation.SOFTMAX).build(), "layer2").build();

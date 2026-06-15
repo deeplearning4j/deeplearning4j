@@ -136,7 +136,8 @@ public class NormalizerStandardizeTest extends BaseNd4jTestWithBackends {
 
         myNormalizer.fit(normIterator);
 
-        double tolerancePerc = 0.10; //within 0.1%
+        // SEM = a/sqrt(n) = 5/sqrt(6400) = 0.0625; 4 sigma = 0.25% gives >99.99% coverage with fixed seed
+        double tolerancePerc = 0.25; //within 0.25% (4 sigma coverage for n=6400)
         sampleMean = myNormalizer.getMean();
         sampleMeanDelta = Transforms.abs(sampleMean.sub(normData.theoreticalMean));
         assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max().getDouble(0) < tolerancePerc);

@@ -19,15 +19,20 @@
  */
 package org.eclipse.deeplearning4j.nd4j.linalg;
 
+import org.eclipse.deeplearning4j.tests.extensions.BackendTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.shape.Tile;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+@BackendTest(description = "Comprehensive broadcast operations smoke tests for all backends")
+@Tag(TagNames.SMOKE)
 public class BroadcastingOpsSmokeTests {
 
     @Test
@@ -340,7 +345,7 @@ public class BroadcastingOpsSmokeTests {
 
         // Each column should equal original column
         for(int i = 0; i < 4; i++) {
-            INDArray col = result.getColumn(i);
+            INDArray col = result.getColumn(i, true);
             assertEquals(colVector, col);
         }
     }
@@ -881,7 +886,7 @@ public class BroadcastingOpsSmokeTests {
         }).castTo(DataType.DOUBLE);
 
         // Get column view
-        INDArray columnView = matrix.getColumn(1); // column [2, 5, 8]
+        INDArray columnView = matrix.getColumn(1, true); // column [2, 5, 8]
 
         // Create a vector to broadcast
         INDArray vector = Nd4j.create(new double[] {10, 20, 30}).reshape(3, 1).castTo(DataType.DOUBLE);
@@ -1018,7 +1023,7 @@ public class BroadcastingOpsSmokeTests {
 
         // Get views
         INDArray rowView = matrix.getRow(1);
-        INDArray colView = matrix.getColumn(1);
+        INDArray colView = matrix.getColumn(1, true);
         // Create vectors for broadcasting
         INDArray rowVector = Nd4j.create(new double[] {10, 20, 30});
         INDArray colVector = Nd4j.create(new double[] {10, 20, 30}).reshape(3, 1);
@@ -1079,7 +1084,7 @@ public class BroadcastingOpsSmokeTests {
 
         // Get views
         INDArray rowView = matrix.getRow(1);
-        INDArray colView = matrix.getColumn(1);
+        INDArray colView = matrix.getColumn(1, true);
         INDArray subView = matrix.get(
                 NDArrayIndex.interval(0, 2),
                 NDArrayIndex.interval(1, 3)

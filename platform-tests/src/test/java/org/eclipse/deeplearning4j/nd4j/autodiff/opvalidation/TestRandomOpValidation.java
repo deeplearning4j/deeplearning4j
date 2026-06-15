@@ -183,7 +183,7 @@ public class TestRandomOpValidation extends BaseOpValidation {
 //                .build());
 
 //        OpTestCase tc = new OpTestCase(new DistributionUniform(arr, Nd4j.createUninitialized(new long[]{100}), 0, 1));
-        OpTestCase tc = new OpTestCase(new RandomBernoulli(arr, Nd4j.createUninitialized(new long[]{100}), 0.5));
+        OpTestCase tc = new OpTestCase(new RandomBernoulli(arr, Nd4j.createUninitialized(DataType.FLOAT, 100), 0.5));
 
         tc.expectedOutput(0, LongShapeDescriptor.fromShape(new long[]{100}, DataType.FLOAT), in -> {
             double min = in.minNumber().doubleValue();

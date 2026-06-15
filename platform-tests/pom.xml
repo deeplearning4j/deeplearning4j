@@ -59,10 +59,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-native</backend.artifactId>
+        <backend.artifactId>nd4j-cuda-12.9</backend.artifactId>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.classes></org.nd4j.linalg.api.ops.udf.classes>
-        <lombok.version>1.18.42</lombok.version>
+        <lombok.version>1.18.44</lombok.version>
         <derby.version>10.13.1.1</derby.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
         <jackson.version>2.14.2</jackson.version>
@@ -87,15 +87,22 @@
         <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
         <log4j2.version>2.17.2</log4j2.version>
         <netty.version>4.1.74.Final</netty.version>
-        <test.heap.size>32g</test.heap.size>
-        <test.offheap.size>32g</test.offheap.size>
+        <test.heap.size>8g</test.heap.size>
+        <!-- maxPhysicalBytes must be larger than heap to accommodate off-heap NDArrays + CUDA driver overhead -->
+        <test.offheap.size>24g</test.offheap.size>
+        <!-- Separate physical bytes limit — defaults to offheap size but can be overridden for memory-intensive tests -->
+        <test.maxphysicalbytes>${test.offheap.size}</test.maxphysicalbytes>
         <!-- Note this will not use the embedded java shell script if forks is set to 0. Uset fork count 0 with address sanitizer only.-->
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
+        <!-- Test tier group filter. Empty = run all tests. Set by -Psmoke or -Pfull-ci profiles. -->
+        <surefire.groups></surefire.groups>
 
-        <test.nogc>true</test.nogc>
+        <test.nogc>false</test.nogc>
         <test.prefix></test.prefix>
-        <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
+        <nd4j.triton.verbose></nd4j.triton.verbose>
+        <nd4j.triton.alwaysCompile></nd4j.triton.alwaysCompile>
+        <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
         <test.asan.options></test.asan.options>
         <tests></tests>
@@ -116,11 +123,19 @@
             sudo sysctl vm.mmap_rnd_bits=28
             sudo sysctl -w kernel.randomize_va_space=0
         -->
+        <omp.num.threads>32</omp.num.threads>
         <preload></preload>
         <jemalloc.path></jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
         <!-- Used with the testing script when the valgrind script can't automatically identify where the libjvm.so is. -->
         <libjvm.path></libjvm.path>
+
+        <!-- libnd4j Native Test Configuration -->
+        <libnd4j.test.enabled>true</libnd4j.test.enabled>
+        <libnd4j.test.chip>cpu</libnd4j.test.chip>
+        <libnd4j.test.filter>*</libnd4j.test.filter>
+        <libnd4j.test.timeout>30</libnd4j.test.timeout>
+        <libnd4j.autobuild>false</libnd4j.autobuild>
     </properties>
 
 
@@ -427,12 +442,6 @@
             <version>${project.version}</version>
         </dependency>
 
-
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derby</artifactId>
@@ -568,6 +577,76 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Pipeline modules -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-pipeline-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-pipeline-safetensors</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-pipeline-ggml</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-pipeline-onnx</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- VLM (Vision-Language Model) support -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-vlm</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- LLM (Large Language Model) support -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-llm</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Audio/TTS support -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-audio</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Native HuggingFace tokenizers library (Rust-based, required for tokenization) -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>tokenizers-native</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>tokenizers-native</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform}</classifier>
+        </dependency>
+
+        <!-- GGML/GGUF model import support -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-ggml</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Apache PDFBox for PDF to image conversion -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.29</version>
+        </dependency>
+
     </dependencies>
     <profiles>
         <profile>
@@ -589,47 +668,7 @@
                 <org.nd4j.noarraygc>false</org.nd4j.noarraygc>
             </properties>
         </profile>
-        <profile>
-            <id>cuda-dep</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>backend.artifactId</name>
-                    <value>nd4j-cuda</value>
-                </property>
-            </activation>
-            <properties>
-                <cuda.version>12.3</cuda.version>
-                <cudnn.version>8.9</cudnn.version>
-                <javacpp-presets.cuda.version>1.5.10</javacpp-presets.cuda.version>
-                <test.heap.size>14g</test.heap.size>
-                <test.offheap.size>14g</test.offheap.size>
-                <surefire.threads>4</surefire.threads>
-                <org.nd4j.noarraygc>false</org.nd4j.noarraygc>
 
-                <!-- Uses the new system properties resolution on nd4j backend
-       to handle the backend selection. Note this only used to work via
-       environment variables.
-       -->
-                <org.nd4j.cpu.priority>0</org.nd4j.cpu.priority>
-                <org.nd4j.gpu.priority>10000</org.nd4j.gpu.priority>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>${backend.artifactId}</artifactId>
-                    <version>${dl4j.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-cuda</artifactId>
-                    <version>${dl4j.version}</version>
-                    <classifier>${platform.classifier}</classifier>
-                </dependency>
-
-            </dependencies>
-
-        </profile>
 
         <profile>
             <id>jemalloc</id>
@@ -822,10 +861,588 @@
                 </property>
             </activation>
             <properties>
-                <test.heap.size>34g</test.heap.size>
-                <test.offheap.size>34g</test.offheap.size>
+                <test.heap.size>8g</test.heap.size>
+                <test.offheap.size>24g</test.offheap.size>
+                <test.maxphysicalbytes>${test.offheap.size}</test.maxphysicalbytes>
                 <surefire.forks>1</surefire.forks>
                 <surefire.threads>1</surefire.threads>
+            </properties>
+        </profile>
+
+        <!-- Profile for running libnd4j native C++ tests only -->
+        <profile>
+            <id>native-tests</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <libnd4j.test.enabled>true</libnd4j.test.enabled>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/LibNd4jNativeTestRunner.java</include>
+                                <include>**/LibNd4jCategoryTests.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for running native tests with CUDA backend -->
+        <profile>
+            <id>native-tests-cuda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <libnd4j.test.enabled>true</libnd4j.test.enabled>
+                <libnd4j.test.chip>cuda</libnd4j.test.chip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/LibNd4jNativeTestRunner.java</include>
+                                <include>**/LibNd4jCategoryTests.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for running all tests including native -->
+        <profile>
+            <id>all-tests</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <libnd4j.test.enabled>true</libnd4j.test.enabled>
+            </properties>
+        </profile>
+
+        <!-- Profile to disable native tests -->
+        <profile>
+            <id>skip-native-tests</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <libnd4j.test.enabled>false</libnd4j.test.enabled>
+            </properties>
+        </profile>
+
+        <!-- ============================================================= -->
+        <!-- Multi-Backend Testing Profiles                                 -->
+        <!-- ============================================================= -->
+
+        <!-- Profile for multi-backend testing with all available helpers -->
+        <profile>
+            <id>multi-backend</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <!-- Enable all available helpers for testing -->
+                <sd.test.enable.all.helpers>true</sd.test.enable.all.helpers>
+                <sd.test.kernel.strategy>fastest</sd.test.kernel.strategy>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.all.helpers>${sd.test.enable.all.helpers}</sd.test.enable.all.helpers>
+                                <sd.test.kernel.strategy>${sd.test.kernel.strategy}</sd.test.kernel.strategy>
+                            </systemPropertyVariables>
+                            <!-- Include multi-backend tests -->
+                            <groups>multi-backend</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for OneDNN-specific testing -->
+        <profile>
+            <id>test-onednn</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.helpers>onednn</sd.test.helpers>
+                <sd.test.helper.priority>onednn,cpu</sd.test.helper.priority>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
+                                <sd.test.helper.priority>${sd.test.helper.priority}</sd.test.helper.priority>
+                            </systemPropertyVariables>
+                            <groups>onednn</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for cuDNN-specific testing -->
+        <profile>
+            <id>test-cudnn</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.helpers>cudnn</sd.test.helpers>
+                <sd.test.helper.priority>cudnn,cpu</sd.test.helper.priority>
+                <sd.test.backend>cuda</sd.test.backend>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
+                                <sd.test.helper.priority>${sd.test.helper.priority}</sd.test.helper.priority>
+                                <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                            </systemPropertyVariables>
+                            <groups>cudnn</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for ARM Compute-specific testing -->
+        <profile>
+            <id>test-armcompute</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.helpers>armcompute</sd.test.helpers>
+                <sd.test.helper.priority>armcompute,cpu</sd.test.helper.priority>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
+                                <sd.test.helper.priority>${sd.test.helper.priority}</sd.test.helper.priority>
+                            </systemPropertyVariables>
+                            <groups>armcompute</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for MPS (Metal Performance Shaders) testing on macOS -->
+        <profile>
+            <id>test-mps</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <properties>
+                <sd.test.helpers>mps,accelerate</sd.test.helpers>
+                <sd.test.helper.priority>mps,accelerate,cpu</sd.test.helper.priority>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
+                                <sd.test.helper.priority>${sd.test.helper.priority}</sd.test.helper.priority>
+                            </systemPropertyVariables>
+                            <groups>mps</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for testing with kernel auto-tuning enabled -->
+        <profile>
+            <id>test-autotuning</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.enable.all.helpers>true</sd.test.enable.all.helpers>
+                <sd.test.kernel.strategy>benchmark</sd.test.kernel.strategy>
+                <sd.test.kernel.autotuning>true</sd.test.kernel.autotuning>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.all.helpers>${sd.test.enable.all.helpers}</sd.test.enable.all.helpers>
+                                <sd.test.kernel.strategy>${sd.test.kernel.strategy}</sd.test.kernel.strategy>
+                                <SD_KERNEL_AUTOTUNING>1</SD_KERNEL_AUTOTUNING>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for helper comparison testing - runs same test on multiple helpers -->
+        <profile>
+            <id>test-helper-comparison</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.enable.all.helpers>true</sd.test.enable.all.helpers>
+                <sd.test.kernel.strategy>roundrobin</sd.test.kernel.strategy>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.all.helpers>${sd.test.enable.all.helpers}</sd.test.enable.all.helpers>
+                                <sd.test.kernel.strategy>${sd.test.kernel.strategy}</sd.test.kernel.strategy>
+                            </systemPropertyVariables>
+                            <!-- Only run tests tagged for multi-backend comparison -->
+                            <groups>multi-backend</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for CPU-only testing (skip all accelerated helpers) -->
+        <profile>
+            <id>test-cpu-only</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.helpers>cpu</sd.test.helpers>
+                <sd.test.skip.helpers>onednn,cudnn,armcompute,mps,accelerate,mlir</sd.test.skip.helpers>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.helpers>${sd.test.helpers}</sd.test.helpers>
+                                <sd.test.skip.helpers>${sd.test.skip.helpers}</sd.test.skip.helpers>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- ============================================================= -->
+        <!-- Multi-Backend Dual/Triple Backend Profiles                     -->
+        <!-- These profiles include multiple backend dependencies for       -->
+        <!-- true multi-device testing (CPU + GPU simultaneously)           -->
+        <!-- ============================================================= -->
+
+        <!-- Profile for dual-backend testing: CPU + CUDA -->
+        <profile>
+            <id>multi-backend-dual</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.enable.multi.backend>true</sd.test.enable.multi.backend>
+                <sd.test.enable.all.helpers>true</sd.test.enable.all.helpers>
+                <sd.test.kernel.strategy>fastest</sd.test.kernel.strategy>
+            </properties>
+            <dependencies>
+                <!-- CPU backend (nd4j-native) -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+                <!-- CUDA backend -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.multi.backend>${sd.test.enable.multi.backend}</sd.test.enable.multi.backend>
+                                <sd.test.enable.all.helpers>${sd.test.enable.all.helpers}</sd.test.enable.all.helpers>
+                                <sd.test.kernel.strategy>${sd.test.kernel.strategy}</sd.test.kernel.strategy>
+                            </systemPropertyVariables>
+                            <!-- Run multi-backend and multi-device tests -->
+                            <groups>multi-backend,multi-device</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for all available backends: CPU + CUDA + ZLUDA + TPU -->
+        <profile>
+            <id>multi-backend-all</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.enable.multi.backend>true</sd.test.enable.multi.backend>
+                <sd.test.enable.all.helpers>true</sd.test.enable.all.helpers>
+                <sd.test.kernel.strategy>fastest</sd.test.kernel.strategy>
+                <sd.test.discover.backends>true</sd.test.discover.backends>
+            </properties>
+            <dependencies>
+                <!-- CPU backend (nd4j-native) - always included -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+                <!-- CUDA backend -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+                <!-- ZLUDA backend (AMD/Intel GPUs) -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-zluda</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <!-- TPU backend -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-tpu</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.multi.backend>${sd.test.enable.multi.backend}</sd.test.enable.multi.backend>
+                                <sd.test.enable.all.helpers>${sd.test.enable.all.helpers}</sd.test.enable.all.helpers>
+                                <sd.test.kernel.strategy>${sd.test.kernel.strategy}</sd.test.kernel.strategy>
+                                <sd.test.discover.backends>${sd.test.discover.backends}</sd.test.discover.backends>
+                            </systemPropertyVariables>
+                            <!-- Run all multi-backend related tests -->
+                            <groups>multi-backend,multi-device,backend-discovery</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for ZLUDA-specific testing (AMD/Intel GPUs) -->
+        <profile>
+            <id>test-zluda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>env.ZLUDA_PATH</name>
+                </property>
+            </activation>
+            <properties>
+                <sd.test.backend>zluda</sd.test.backend>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-zluda</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                            </systemPropertyVariables>
+                            <groups>zluda,rocm,amd-gpu</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for TPU-specific testing -->
+        <profile>
+            <id>test-tpu</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.backend>tpu</sd.test.backend>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-tpu</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                            </systemPropertyVariables>
+                            <groups>tpu</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for testing device memory management and routing -->
+        <profile>
+            <id>test-device-routing</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.enable.multi.backend>true</sd.test.enable.multi.backend>
+                <sd.test.device.routing.enabled>true</sd.test.device.routing.enabled>
+                <sd.test.log.routing.decisions>true</sd.test.log.routing.decisions>
+                <sd.test.log.data.transfers>true</sd.test.log.data.transfers>
+            </properties>
+            <dependencies>
+                <!-- Include both backends for routing tests -->
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.enable.multi.backend>${sd.test.enable.multi.backend}</sd.test.enable.multi.backend>
+                                <sd.test.device.routing.enabled>${sd.test.device.routing.enabled}</sd.test.device.routing.enabled>
+                                <sd.test.log.routing.decisions>${sd.test.log.routing.decisions}</sd.test.log.routing.decisions>
+                                <sd.test.log.data.transfers>${sd.test.log.data.transfers}</sd.test.log.data.transfers>
+                            </systemPropertyVariables>
+                            <groups>device-routing,multi-device,memory-management</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!-- Quick sanity tier: ~30s, no GPU needed, no model downloads -->
+        <profile>
+            <id>smoke</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <surefire.groups>smoke</surefire.groups>
+            </properties>
+        </profile>
+
+        <!-- Full CI tier: ~5 min, includes DSP lifecycle, evaluation, op validation basics -->
+        <profile>
+            <id>full-ci</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <surefire.groups>smoke | full-ci</surefire.groups>
             </properties>
         </profile>
     </profiles>
@@ -943,7 +1560,7 @@
             <plugin>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok-maven-plugin</artifactId>
-                <version>1.18.12.0</version>
+                <version>1.18.20.0</version>
                 <executions>
                     <execution>
                         <id>delombok</id>
@@ -1030,6 +1647,7 @@
                 </dependencies>
                 <configuration>
                     <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
+                    <groups>${surefire.groups}</groups>
                     <excludedGroups>${excludedTests}</excludedGroups>
                     <trimStackTrace>false</trimStackTrace>
                     <reuseForks>false</reuseForks>
@@ -1038,22 +1656,104 @@
                     <testFailureIgnore>false</testFailureIgnore>
                     <properties>
                         <org.nd4j.imports.tfgraphs.failfast>true</org.nd4j.imports.tfgraphs.failfast>
-                        <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
+                        <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
                     </properties>
                     <environmentVariables>
-                        <CUDA_LAUNCH_BLOCKING>1</CUDA_LAUNCH_BLOCKING>
-                        <CUDA_VISIBLE_DEVICES>1</CUDA_VISIBLE_DEVICES>
+                        <LD_LIBRARY_PATH>/home/agibsonccc/.libnd4j/dep-cache/openvino/2026.0.0-afe75da4/install/runtime/3rdparty/tbb/lib64:/usr/local/cuda/targets/x86_64-linux/lib:/usr/local/cuda/lib64</LD_LIBRARY_PATH>
+                        <CUDA_LAUNCH_BLOCKING>${cuda.launch.blocking}</CUDA_LAUNCH_BLOCKING>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
-                        <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
+                        <OMP_NUM_THREADS>${omp.num.threads}</OMP_NUM_THREADS>
+                        <OPENBLAS_NUM_THREADS>${omp.num.threads}</OPENBLAS_NUM_THREADS>
+                        <MKL_NUM_THREADS>${omp.num.threads}</MKL_NUM_THREADS>
+                        <SD_OPENBLAS_THREADS>${omp.num.threads}</SD_OPENBLAS_THREADS>
+                        <ND4J_OPENBLAS_THREADS>${omp.num.threads}</ND4J_OPENBLAS_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
+                        <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                         <PRINT_MATH_FUNCTION_NAME></PRINT_MATH_FUNCTION_NAME>
                         <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>
-                        <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                         <!-- For usage with the wrapper script in bin. Do NOT delete that script. See the readme in the bin directory for more information.-->
                         <TEST_RUNNER_PREFIX>${test.prefix}</TEST_RUNNER_PREFIX>
                         <LIBJVM_PATH>${libjvm.path}</LIBJVM_PATH>
                         <TEST_FILTER></TEST_FILTER>
+                        <ND4J_DSP_DIAGNOSTICS>${nd4j.dsp.diagnostics}</ND4J_DSP_DIAGNOSTICS>
+                        <ND4J_DSP_DIAGNOSTICS_LEVEL>${nd4j.dsp.diagnostics.level}</ND4J_DSP_DIAGNOSTICS_LEVEL>
+                        <ND4J_DSP_DIAGNOSTICS_FILE>${nd4j.dsp.diagnostics.file}</ND4J_DSP_DIAGNOSTICS_FILE>
+                        <ND4J_DSP_PLAN_CACHE_DIR>${nd4j.dsp.planCache.diskDir}</ND4J_DSP_PLAN_CACHE_DIR>
+                        <ND4J_DSP_PLAN_CACHE_DISK_ENABLED>${nd4j.dsp.planCache.diskEnabled}</ND4J_DSP_PLAN_CACHE_DISK_ENABLED>
+                        <ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE>${nd4j.dsp.planCache.forceRecompile}</ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE>
+                        <ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR>${nd4j.dsp.planCache.overrideDir}</ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR>
+                        <ND4J_TRITON_VERIFY_KERNELS>${nd4j.triton.verifyKernels}</ND4J_TRITON_VERIFY_KERNELS>
+                        <ND4J_TRITON_VERIFY_KEEP_NATIVE>${nd4j.triton.verifyKeepNative}</ND4J_TRITON_VERIFY_KEEP_NATIVE>
+                        <ND4J_TRITON_FORCE_RECAPTURE>${nd4j.triton.forceRecapture}</ND4J_TRITON_FORCE_RECAPTURE>
+                        <ND4J_TRITON_CAPTURE_MIN_EXEC>${nd4j.triton.captureMinExec}</ND4J_TRITON_CAPTURE_MIN_EXEC>
+                        <ND4J_TRITON_GRAPH_CAPTURE>${nd4j.triton.graphCapture}</ND4J_TRITON_GRAPH_CAPTURE>
+                        <ND4J_TRITON_SKIP_KERNELS>${nd4j.triton.skipKernels}</ND4J_TRITON_SKIP_KERNELS>
+                        <ND4J_TRITON_GRAPH_REINSTANTIATE>${nd4j.triton.graphReinstantiate}</ND4J_TRITON_GRAPH_REINSTANTIATE>
+                        <ND4J_DSP_BATCHED_GEMM>${nd4j.dsp.batchedGemm}</ND4J_DSP_BATCHED_GEMM>
+                        <ND4J_DSP_BATCH_ZERO>${nd4j.dsp.batchZero}</ND4J_DSP_BATCH_ZERO>
+                        <ND4J_DSP_BATCH_ZERO_KERNEL>${nd4j.dsp.batchZeroKernel}</ND4J_DSP_BATCH_ZERO_KERNEL>
+                        <ND4J_DSP_BATCH_ZERO_VERBOSE>${nd4j.dsp.batchZeroVerbose}</ND4J_DSP_BATCH_ZERO_VERBOSE>
+                        <ND4J_DSP_CAST_SINK_MATMUL>${nd4j.dsp.castSinkMatmul}</ND4J_DSP_CAST_SINK_MATMUL>
+                        <ND4J_TRITON_WARMUP_ONLY>${nd4j.triton.warmupOnly}</ND4J_TRITON_WARMUP_ONLY>
+                        <ND4J_TRITON_SECTION_FUSION>${nd4j.triton.sectionFusion}</ND4J_TRITON_SECTION_FUSION>
+                        <ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>${nd4j.triton.fuseAttentionNeighborhoods}</ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>
+                        <CUDA_LOG_FILE>${cuda.log.file}</CUDA_LOG_FILE>
+                        <ND4J_CUBLAS_CAPTURE_WORKSPACE>${nd4j.cublas.captureWorkspace}</ND4J_CUBLAS_CAPTURE_WORKSPACE>
+                        <ND4J_TRITON_TF32>${nd4j.triton.tf32}</ND4J_TRITON_TF32>
+                        <ND4J_DSP_TRACE_SLOT>${nd4j.dsp.traceSlot}</ND4J_DSP_TRACE_SLOT>
+                        <ND4J_DSP_DISABLE_VIEW_FASTPATH>${nd4j.dsp.disableViewFastpath}</ND4J_DSP_DISABLE_VIEW_FASTPATH>
+                        <ND4J_DSP_DISABLE_CAST_HWM>${nd4j.dsp.disableCastHwm}</ND4J_DSP_DISABLE_CAST_HWM>
+                        <ND4J_DSP_DISABLE_WS_SKIP>${nd4j.dsp.disableWsSkip}</ND4J_DSP_DISABLE_WS_SKIP>
+                        <ND4J_DSP_CAPTURE_WORKSPACE_MB>${nd4j.dsp.captureWorkspaceMb}</ND4J_DSP_CAPTURE_WORKSPACE_MB>
+                        <ND4J_DSP_CAPTURE_HOST_WORKSPACE_MB>${nd4j.dsp.captureHostWorkspaceMb}</ND4J_DSP_CAPTURE_HOST_WORKSPACE_MB>
+                        <ND4J_DSP_MAX_CAPTURABLE_GAP_SLOTS>${nd4j.dsp.maxCapturableGapSlots}</ND4J_DSP_MAX_CAPTURABLE_GAP_SLOTS>
+                        <ND4J_DSP_GAP_CAPTURE_BLOCK_EXTERNAL_WORKSPACE>${nd4j.dsp.gapCaptureBlockExternalWorkspace}</ND4J_DSP_GAP_CAPTURE_BLOCK_EXTERNAL_WORKSPACE>
+                        <ND4J_DSP_GAP_TENSOR_CORE_WARMUP>${nd4j.dsp.gapTensorCoreWarmup}</ND4J_DSP_GAP_TENSOR_CORE_WARMUP>
+                        <ND4J_DSP_GAP_TENSOR_CORES>${nd4j.dsp.gapTensorCores}</ND4J_DSP_GAP_TENSOR_CORES>
+                        <ND4J_DEBUG>${nd4j.debug}</ND4J_DEBUG>
+                        <ND4J_VERBOSE>${nd4j.verbose}</ND4J_VERBOSE>
+                        <ND4J_TRITON_VERBOSE>${nd4j.triton.verbose}</ND4J_TRITON_VERBOSE>
+                        <ND4J_TRITON_ALWAYS_COMPILE>${nd4j.triton.alwaysCompile}</ND4J_TRITON_ALWAYS_COMPILE>
                     </environmentVariables>
+                    <systemPropertyVariables>
+                        <!-- libnd4j native test configuration -->
+                        <org.nd4j.libnd4j.test.enabled>${libnd4j.test.enabled}</org.nd4j.libnd4j.test.enabled>
+                        <org.nd4j.libnd4j.chip>${libnd4j.test.chip}</org.nd4j.libnd4j.chip>
+                        <org.nd4j.libnd4j.test.filter>${libnd4j.test.filter}</org.nd4j.libnd4j.test.filter>
+                        <org.nd4j.libnd4j.test.timeout>${libnd4j.test.timeout}</org.nd4j.libnd4j.test.timeout>
+                        <org.nd4j.libnd4j.autobuild>${libnd4j.autobuild}</org.nd4j.libnd4j.autobuild>
+                        <!-- VLM test configuration -->
+                        <vlm.test.pdf.path>${vlm.test.pdf.path}</vlm.test.pdf.path>
+                        <vlm.test.pdf.page>${vlm.test.pdf.page}</vlm.test.pdf.page>
+                        <vlm.test.pdf.startPage>${vlm.test.pdf.startPage}</vlm.test.pdf.startPage>
+                        <vlm.test.pdf.maxPages>${vlm.test.pdf.maxPages}</vlm.test.pdf.maxPages>
+                        <vlm.test.pdf.dpi>${vlm.test.pdf.dpi}</vlm.test.pdf.dpi>
+                        <vlm.test.maxTiles>${vlm.test.maxTiles}</vlm.test.maxTiles>
+                        <vlm.test.maxTokens>${vlm.test.maxTokens}</vlm.test.maxTokens>
+                        <vlm.test.configs>${vlm.test.configs}</vlm.test.configs>
+                        <!-- VLM optimizer and cache configuration -->
+                        <vlm.model.cache.disable>${vlm.model.cache.disable}</vlm.model.cache.disable>
+                        <nd4j.optimizer.enabled>${nd4j.optimizer.enabled}</nd4j.optimizer.enabled>
+                        <nd4j.optimizer.fp16>${nd4j.optimizer.fp16}</nd4j.optimizer.fp16>
+                        <nd4j.optimizer.skip>${nd4j.optimizer.skip}</nd4j.optimizer.skip>
+                        <!-- DSP debug properties -->
+                        <nd4j.dsp.native.dumpOutputs>${nd4j.dsp.native.dumpOutputs}</nd4j.dsp.native.dumpOutputs>
+                        <nd4j.dsp.java.dumpOutputs>${nd4j.dsp.java.dumpOutputs}</nd4j.dsp.java.dumpOutputs>
+                        <!-- DSP shape-only dry-run mode: skips op kernel execution, measures dispatch overhead -->
+                        <nd4j.dsp.shape.only>${nd4j.dsp.shape.only}</nd4j.dsp.shape.only>
+                        <!-- VLM speculative decoding -->
+                        <vlm.speculative.tokens>${vlm.speculative.tokens}</vlm.speculative.tokens>
+                        <vlm.speculative.draft>${vlm.speculative.draft}</vlm.speculative.draft>
+                        <!-- DSP freeze/merge -->
+                        <nd4j.dsp.freezeMergeSegments>${nd4j.dsp.freezeMergeSegments}</nd4j.dsp.freezeMergeSegments>
+                        <nd4j.dsp.freezeRecompile>${nd4j.dsp.freezeRecompile}</nd4j.dsp.freezeRecompile>
+                        <!-- Debug/verbose mode — picked up by DebugVerboseExtension -->
+                        <nd4j.debug>${nd4j.debug}</nd4j.debug>
+                        <nd4j.verbose>${nd4j.verbose}</nd4j.verbose>
+                        <!-- Test result recording -->
+                        <dl4j.test.results.disabled>${dl4j.test.results.disabled}</dl4j.test.results.disabled>
+                        <dl4j.test.results.dir>${dl4j.test.results.dir}</dl4j.test.results.dir>
+                    </systemPropertyVariables>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
                         <classpathDependencyExclude>com.google.android:android
@@ -1061,7 +1761,8 @@
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <shutdown>kill</shutdown>
-                    <argLine>-Djava.compiler=NONE -Dorg.bytedeco.javacpp.logger.debug=true   ${jdk9.exports}  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine>-Dorg.bytedeco.javacpp.logger.debug=false   ${jdk9.exports}  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.maxphysicalbytes} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>

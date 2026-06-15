@@ -24,7 +24,6 @@ import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.apache.commons.io.FileUtils;
@@ -72,7 +71,6 @@ import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
 
 @DisplayName("Record Reader Multi Data Set Iterator Test")
-@Disabled
 @Tag(TagNames.FILE_IO)
 class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
@@ -574,14 +572,20 @@ class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         CollectionSequenceRecordReader lR = new CollectionSequenceRecordReader(labels);
         SequenceRecordReaderDataSetIterator seqRRDSI = new SequenceRecordReaderDataSetIterator(fR, lR, 2, 2, false, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
         DataSet ds = seqRRDSI.next();
-        INDArray fMask = Nd4j.create(new double[][] { { 1, 1, 1 }, { 1, 1, 0 } });
-        INDArray lMask = Nd4j.create(new double[][] { { 0, 0, 1 }, { 0, 1, 0 } });
+        // ALIGN_END aligns sequences to the global maxTSLength (3).
+        // Shorter sequences are padded at the START (left-padded).
+        // Feature seq 0 (len 3): startOffset=0, fMask=[1,1,1]
+        // Feature seq 1 (len 2): startOffset=1, fMask=[0,1,1], data=[0,4,5]
+        // Label seq 0 (len 1): startOffset=2, lMask=[0,0,1]
+        // Label seq 1 (len 1): startOffset=2, lMask=[0,0,1], label at position 2
+        INDArray fMask = Nd4j.create(new double[][] { { 1, 1, 1 }, { 0, 1, 1 } });
+        INDArray lMask = Nd4j.create(new double[][] { { 0, 0, 1 }, { 0, 0, 1 } });
         assertEquals(fMask, ds.getFeaturesMaskArray());
         assertEquals(lMask, ds.getLabelsMaskArray());
-        INDArray f = Nd4j.create(new double[][] { { 1, 2, 3 }, { 4, 5, 0 } });
+        INDArray f = Nd4j.create(new double[][] { { 1, 2, 3 }, { 0, 4, 5 } });
         INDArray l = Nd4j.create(2, 2, 3);
         l.putScalar(0, 0, 2, 1.0);
-        l.putScalar(1, 1, 1, 1.0);
+        l.putScalar(1, 1, 2, 1.0);
         assertEquals(f, ds.getFeatures().get(all(), point(0), all()));
         assertEquals(l, ds.getLabels());
     }
@@ -593,7 +597,7 @@ class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Exclude String Col CSV")
     void testExcludeStringColCSV() throws Exception {
-        File csvFile = temporaryFolder.toFile();
+        File csvFile = temporaryFolder.resolve("test.csv").toFile();
         StringBuilder sb = new StringBuilder();
         for (int i = 1; i <= 10; i++) {
             if (i > 1) {

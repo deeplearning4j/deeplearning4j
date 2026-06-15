@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 @Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SMOKE)
 public class ConvConfigTests extends BaseNd4jTestWithBackends {
 
 

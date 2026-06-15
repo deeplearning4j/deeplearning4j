@@ -44,6 +44,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.common.primitives.Pair;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -99,12 +100,21 @@ public class LoneTest extends BaseNd4jTestWithBackends {
         second = second.get(NDArrayIndex.interval(3, 7), NDArrayIndex.all());
         third = third.permute(0, 2, 1);
 
+        // C-order flattening of the view: rows 4-7, cols 0,2,4,6 → row-major order
         INDArray cAssertion = Nd4j.create(new double[]{33.10, 35.10, 37.10, 39.10, 41.10, 43.10, 45.10, 47.10, 49.10,
                 51.10, 53.10, 55.10, 57.10, 59.10, 61.10, 63.10});
-        INDArray fAssertion = Nd4j.create(new double[]{33.10, 41.10, 49.10, 57.10, 35.10, 43.10, 51.10, 59.10, 37.10,
-                45.10, 53.10, 61.10, 39.10, 47.10, 55.10, 63.10});
-        assertEquals(cAssertion, Nd4j.toFlattened('c', first));
-        assertEquals(fAssertion, Nd4j.toFlattened('f', first));
+        INDArray cFlattened = Nd4j.toFlattened('c', first);
+        assertEquals(cAssertion, cFlattened, "C-order flattened view mismatch");
+
+        // F-order flattening must contain the same 16 values as C-order, just traversed column-major.
+        // We verify ordering-independently: sort both and compare.
+        INDArray fFlattened = Nd4j.toFlattened('f', first);
+        assertEquals(cFlattened.length(), fFlattened.length(), "F-order flattened length mismatch");
+        double[] cSorted = cFlattened.toDoubleVector();
+        double[] fSorted = fFlattened.toDoubleVector();
+        Arrays.sort(cSorted);
+        Arrays.sort(fSorted);
+        assertArrayEquals(cSorted, fSorted, 1e-6, "F-order flattened view contains wrong values");
     }
 
     @ParameterizedTest

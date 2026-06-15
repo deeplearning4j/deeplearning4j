@@ -60,6 +60,7 @@ import org.junit.jupiter.api.DisplayName;
 @DisplayName("Neural Net Configuration Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.SMOKE)
 class NeuralNetConfigurationTest extends BaseDL4JTest {
 
     final DataSet trainingSet = createData();

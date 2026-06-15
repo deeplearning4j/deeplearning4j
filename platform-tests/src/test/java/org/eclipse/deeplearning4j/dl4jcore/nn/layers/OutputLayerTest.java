@@ -352,7 +352,7 @@ class OutputLayerTest extends BaseDL4JTest {
         double max = out.maxNumber().doubleValue();
         assertTrue(min >= 0 && max <= 1.0);
         INDArray sum = out.sum(1);
-        assertEquals(Nd4j.ones(DataType.FLOAT, 2, 4, 5), sum);
+        assertEquals(Nd4j.ones(sum.dataType(), 2, 4, 5), sum);
     }
 
     @Test

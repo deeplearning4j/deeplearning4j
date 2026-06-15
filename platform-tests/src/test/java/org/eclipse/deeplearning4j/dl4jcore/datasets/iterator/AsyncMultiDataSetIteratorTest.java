@@ -31,59 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 
 @Slf4j
-/*
-    @Test
-    public void testResetBug() throws Exception {
-        // /home/raver119/develop/dl4j-examples/src/main/resources/uci/train/features
-
-        SequenceRecordReader trainFeatures = new CSVSequenceRecordReader();
-        trainFeatures.initialize(new NumberedFileInputSplit("/home/raver119/develop/dl4j-examples/src/main/resources/uci/train/features" + "/%d.csv", 0, 449));
-        RecordReader trainLabels = new CSVRecordReader();
-        trainLabels.initialize(new NumberedFileInputSplit("/home/raver119/develop/dl4j-examples/src/main/resources/uci/train/labels" + "/%d.csv", 0, 449));
-
-        int miniBatchSize = 10;
-        int numLabelClasses = 6;
-        MultiDataSetIterator trainData = new RecordReaderMultiDataSetIterator.Builder(miniBatchSize)
-                .addSequenceReader("features", trainFeatures)
-                .addReader("labels", trainLabels)
-                .addInput("features")
-                .addOutputOneHot("labels", 0, numLabelClasses)
-                .build();
-
-        //Normalize the training data
-        MultiDataNormalization normalizer = new MultiNormalizerStandardize();
-        normalizer.fit(trainData);              //Collect training data statistics
-        trainData.reset();
-
-
-        SequenceRecordReader testFeatures = new CSVSequenceRecordReader();
-        testFeatures.initialize(new NumberedFileInputSplit("/home/raver119/develop/dl4j-examples/src/main/resources/uci/test/features" + "/%d.csv", 0, 149));
-        RecordReader testLabels = new CSVRecordReader();
-        testLabels.initialize(new NumberedFileInputSplit("/home/raver119/develop/dl4j-examples/src/main/resources/uci/test/labels" + "/%d.csv", 0, 149));
-
-        MultiDataSetIterator testData = new RecordReaderMultiDataSetIterator.Builder(miniBatchSize)
-                .addSequenceReader("features", testFeatures)
-                .addReader("labels", testLabels)
-                .addInput("features")
-                .addOutputOneHot("labels", 0, numLabelClasses)
-                .build();
-
-        System.out.println("-------------- HASH 1----------------");
-        testData.reset();
-        while(testData.hasNext()){
-            System.out.println(Arrays.hashCode(testData.next().getFeatures(0).data().asFloat()));
-        }
-
-        System.out.println("-------------- HASH 2 ----------------");
-        testData.reset();
-        testData.hasNext();     //***** Remove this (or move to after async creation), and we get expected results *****
-        val adsi = new AsyncMultiDataSetIterator(testData, 4, true);    //OR remove this (keeping hasNext) and we get expected results
-        //val adsi = new AsyncShieldMultiDataSetIterator(testData);
-        while(adsi.hasNext()){
-            System.out.println(Arrays.hashCode(adsi.next().getFeatures(0).data().asFloat()));
-        }
-    }
-    */
 @DisplayName("Async Multi Data Set Iterator Test")
 @NativeTag
 class AsyncMultiDataSetIteratorTest extends BaseDL4JTest {
@@ -146,57 +93,4 @@ class AsyncMultiDataSetIteratorTest extends BaseDL4JTest {
             }
         }
     }
-    /*
-    @Test
-    public void testResetBug() throws Exception {
-        // /home/raver119/develop/dl4j-examples/src/main/resources/uci/train/features
-
-        SequenceRecordReader trainFeatures = new CSVSequenceRecordReader();
-        trainFeatures.initialize(new NumberedFileInputSplit("/home/raver119/develop/dl4j-examples/src/main/resources/uci/train/features" + "/%d.csv", 0, 449));
-        RecordReader trainLabels = new CSVRecordReader();
-        trainLabels.initialize(new NumberedFileInputSplit("/home/raver119/develop/dl4j-examples/src/main/resources/uci/train/labels" + "/%d.csv", 0, 449));
-
-        int miniBatchSize = 10;
-        int numLabelClasses = 6;
-        MultiDataSetIterator trainData = new RecordReaderMultiDataSetIterator.Builder(miniBatchSize)
-                .addSequenceReader("features", trainFeatures)
-                .addReader("labels", trainLabels)
-                .addInput("features")
-                .addOutputOneHot("labels", 0, numLabelClasses)
-                .build();
-
-        //Normalize the training data
-        MultiDataNormalization normalizer = new MultiNormalizerStandardize();
-        normalizer.fit(trainData);              //Collect training data statistics
-        trainData.reset();
-
-
-        SequenceRecordReader testFeatures = new CSVSequenceRecordReader();
-        testFeatures.initialize(new NumberedFileInputSplit("/home/raver119/develop/dl4j-examples/src/main/resources/uci/test/features" + "/%d.csv", 0, 149));
-        RecordReader testLabels = new CSVRecordReader();
-        testLabels.initialize(new NumberedFileInputSplit("/home/raver119/develop/dl4j-examples/src/main/resources/uci/test/labels" + "/%d.csv", 0, 149));
-
-        MultiDataSetIterator testData = new RecordReaderMultiDataSetIterator.Builder(miniBatchSize)
-                .addSequenceReader("features", testFeatures)
-                .addReader("labels", testLabels)
-                .addInput("features")
-                .addOutputOneHot("labels", 0, numLabelClasses)
-                .build();
-
-        System.out.println("-------------- HASH 1----------------");
-        testData.reset();
-        while(testData.hasNext()){
-            System.out.println(Arrays.hashCode(testData.next().getFeatures(0).data().asFloat()));
-        }
-
-        System.out.println("-------------- HASH 2 ----------------");
-        testData.reset();
-        testData.hasNext();     //***** Remove this (or move to after async creation), and we get expected results *****
-        val adsi = new AsyncMultiDataSetIterator(testData, 4, true);    //OR remove this (keeping hasNext) and we get expected results
-        //val adsi = new AsyncShieldMultiDataSetIterator(testData);
-        while(adsi.hasNext()){
-            System.out.println(Arrays.hashCode(adsi.next().getFeatures(0).data().asFloat()));
-        }
-    }
-    */
 }

@@ -377,7 +377,7 @@ public class TestImageRecordReader {
         NDArrayWritable l1c = new NDArrayWritable(Nd4j.create(new double[]{
                 expLabels.get(0).get(2).toDouble(),
                 expLabels.get(1).get(2).toDouble(),
-                expLabels.get(2).get(2).toDouble()}, new long[]{1,3}, DataType.FLOAT));
+                expLabels.get(2).get(2).toDouble()}, new long[]{3,1}, DataType.FLOAT));
 
 
         NDArrayWritable l2a = new NDArrayWritable(Nd4j.vstack(
@@ -391,7 +391,7 @@ public class TestImageRecordReader {
         NDArrayWritable l2c = new NDArrayWritable(Nd4j.create(new double[]{
                 expLabels.get(3).get(2).toDouble(),
                 expLabels.get(4).get(2).toDouble(),
-                expLabels.get(5).get(2).toDouble()}, new long[]{1,3}, DataType.FLOAT));
+                expLabels.get(5).get(2).toDouble()}, new long[]{3,1}, DataType.FLOAT));
 
 
 

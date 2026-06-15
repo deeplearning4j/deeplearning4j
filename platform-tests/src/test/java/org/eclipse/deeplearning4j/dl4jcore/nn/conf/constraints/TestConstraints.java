@@ -200,7 +200,6 @@ public class TestConstraints extends BaseDL4JTest {
 
             INDArray w0 = net.getParam("0_W");
 
-
             if (lc instanceof MaxNormConstraint) {
                 assertTrue(w0.norm2(0).maxNumber().doubleValue() <= 0.5);
 

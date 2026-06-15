@@ -276,7 +276,7 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
 
         for (String sourceType : new String[]{"int", "long", "float", "double", "short", "byte", "boolean"}) {
             for (DataType dt : DataType.values()) {
-                if (dt == DataType.UTF8 || dt == DataType.COMPRESSED || dt == DataType.UNKNOWN) {
+                if (dt == DataType.UTF8 || dt == DataType.UTF16 || dt == DataType.UTF32 || dt == DataType.COMPRESSED || dt == DataType.UNKNOWN || dt == DataType.FLOAT8 || dt == DataType.FLOAT8_E5M2) {
                     continue;
                 }
 
@@ -429,6 +429,46 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
         assertEquals(before, after);
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDataBufferSyncAfterResize(Nd4jBackend backend) {
+        // Test that DataBuffer operations remain correct after creating arrays of different sizes
+        // and triggering sync operations. This exercises the _primaryAllocBytes/_specialAllocBytes
+        // tracking that prevents buffer overruns when setPrimaryBuffer/setSpecialBuffer are called
+        // with different sizes.
+
+        // Create a small array, write data, then create a larger array and verify no corruption
+        INDArray small = Nd4j.createFromArray(1.0f, 2.0f, 3.0f);
+        INDArray large = Nd4j.createFromArray(10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f);
+
+        // Force sync to host
+        Nd4j.getAffinityManager().ensureLocation(small, AffinityManager.Location.HOST);
+        Nd4j.getAffinityManager().ensureLocation(large, AffinityManager.Location.HOST);
+
+        // Verify data integrity
+        assertEquals(1.0f, small.getFloat(0), 1e-5);
+        assertEquals(2.0f, small.getFloat(1), 1e-5);
+        assertEquals(3.0f, small.getFloat(2), 1e-5);
+        assertEquals(80.0f, large.getFloat(7), 1e-5);
+
+        // Create a dup (exercises copyBufferFrom with alloc tracking)
+        INDArray largeDup = large.dup();
+        Nd4j.getAffinityManager().ensureLocation(largeDup, AffinityManager.Location.HOST);
+        assertEquals(large, largeDup);
+
+        // Modify original and verify dup is independent
+        large.putScalar(0, 999.0f);
+        Nd4j.getAffinityManager().ensureLocation(large, AffinityManager.Location.HOST);
+        assertEquals(999.0f, large.getFloat(0), 1e-5);
+        assertEquals(10.0f, largeDup.getFloat(0), 1e-5);
+
+        // Test with assign (exercises buffer copy paths)
+        INDArray target = Nd4j.zeros(DataType.FLOAT, 8);
+        target.assign(largeDup);
+        Nd4j.getAffinityManager().ensureLocation(target, AffinityManager.Location.HOST);
+        assertEquals(largeDup, target);
+    }
 
     @Override
     public char ordering() {

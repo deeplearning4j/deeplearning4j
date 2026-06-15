@@ -539,7 +539,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
 //        System.out.println("3d");
         INDArray arr = Nd4j.ones(1, 4, 4);
         assertEquals(Nd4j.ones(1), arr.mean(1, 2));
-        assertEquals(Nd4j.ones(1).muli(16), arr.sum(1, 2));
+        assertEquals(Nd4j.ones(1).mul(16), arr.sum(1, 2));
 
 //        System.out.println("4d");
         INDArray arr4 = Nd4j.ones(1, 1, 4, 4);

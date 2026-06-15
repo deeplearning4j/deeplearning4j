@@ -57,7 +57,7 @@ public class LongShapeTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLongShape_1(Nd4jBackend backend) {
-        val exp = new long[]{2, 5, 3, 3, 1, 16384, 1, 99};
+        val exp = new long[]{2, 5, 3, 3, 1, 16384, -1, 99};
 
         val array = Nd4j.createUninitialized(DataType.DOUBLE, 5, 3);
         val buffer = array.shapeInfoDataBuffer();

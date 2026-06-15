@@ -58,7 +58,7 @@ import org.junit.jupiter.api.DisplayName;
 @DisplayName("Embedding Layer Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
-class EmbeddingLayerTest extends BaseDL4JTest {
+public class EmbeddingLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Embedding Layer Config")
@@ -273,6 +273,7 @@ class EmbeddingLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Embedding Layer RNN")
     void testEmbeddingLayerRNN() {
+        Nd4j.getRandom().setSeed(12345);
         int nClassesIn = 10;
         int batchSize = 3;
         int timeSeriesLength = 8;
@@ -377,34 +378,40 @@ class EmbeddingLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test W 2 V Inits")
     void testW2VInits() {
-        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
-        for (int i = 0; i < 2; i++) {
-            INDArray vectors = Nd4j.linspace(1, 15, 15, DataType.FLOAT).reshape(5, 3);
-            EmbeddingLayer el;
-            if (i == 0) {
-                el = new EmbeddingLayer.Builder().weightInit(vectors).build();
-            } else {
-                el = new EmbeddingLayer.Builder().weightInit(new WordVectorsMockup()).build();
+        DataType defaultDtype = Nd4j.defaultFloatingPointType();
+        DataType defaultDtypeBuffer = Nd4j.dataType();
+        try {
+            Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+            for (int i = 0; i < 2; i++) {
+                INDArray vectors = Nd4j.linspace(1, 15, 15, DataType.FLOAT).reshape(5, 3);
+                EmbeddingLayer el;
+                if (i == 0) {
+                    el = new EmbeddingLayer.Builder().weightInit(vectors).build();
+                } else {
+                    el = new EmbeddingLayer.Builder().weightInit(new WordVectorsMockup()).build();
+                }
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list().layer(el).layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(3).nOut(3).build()).layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3).nOut(4).build()).build();
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+                INDArray w = net.getParam("0_W");
+                assertEquals(vectors, w);
+                TestUtils.testModelSerialization(net);
+                // Test same thing for embedding sequence layer:
+                EmbeddingSequenceLayer esl;
+                if (i == 0) {
+                    esl = new EmbeddingSequenceLayer.Builder().weightInit(vectors).build();
+                } else {
+                    esl = new EmbeddingSequenceLayer.Builder().weightInit(new WordVectorsMockup()).build();
+                }
+                conf = new NeuralNetConfiguration.Builder().seed(12345).list().layer(esl).layer(new GlobalPoolingLayer()).layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(3).nOut(3).build()).layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3).nOut(4).build()).build();
+                net = new MultiLayerNetwork(conf);
+                net.init();
+                w = net.getParam("0_W");
+                assertEquals(vectors, w);
+                TestUtils.testModelSerialization(net);
             }
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list().layer(el).layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(3).nOut(3).build()).layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3).nOut(4).build()).build();
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
-            INDArray w = net.getParam("0_W");
-            assertEquals(vectors, w);
-            TestUtils.testModelSerialization(net);
-            // Test same thing for embedding sequence layer:
-            EmbeddingSequenceLayer esl;
-            if (i == 0) {
-                esl = new EmbeddingSequenceLayer.Builder().weightInit(vectors).build();
-            } else {
-                esl = new EmbeddingSequenceLayer.Builder().weightInit(new WordVectorsMockup()).build();
-            }
-            conf = new NeuralNetConfiguration.Builder().seed(12345).list().layer(esl).layer(new GlobalPoolingLayer()).layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(3).nOut(3).build()).layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3).nOut(4).build()).build();
-            net = new MultiLayerNetwork(conf);
-            net.init();
-            w = net.getParam("0_W");
-            assertEquals(vectors, w);
-            TestUtils.testModelSerialization(net);
+        } finally {
+            Nd4j.setDefaultDataTypes(defaultDtype, defaultDtypeBuffer);
         }
     }
 

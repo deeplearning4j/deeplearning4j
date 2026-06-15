@@ -19,6 +19,7 @@
  */
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.normalization;
 
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
@@ -83,7 +84,7 @@ class BatchNormalizationTest extends BaseDL4JTest {
     static {
         // Force Nd4j initialization, then set data type to double:
         Nd4j.zeros(1);
-        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
     }
 
     protected INDArray dnnInput = Nd4j.linspace(0, 31, 32, Nd4j.dataType()).reshape(2, 16);
@@ -170,8 +171,8 @@ class BatchNormalizationTest extends BaseDL4JTest {
         // Check backprop
         // dL/dy
         INDArray epsilon = Nd4j.rand(minibatch, nIn);
-        INDArray dldgammaExp = epsilon.mul(xHat).sum(true, 0);
-        INDArray dldbetaExp = epsilon.sum(true, 0);
+        INDArray dldgammaExp = epsilon.mul(xHat).sum(0);
+        INDArray dldbetaExp = epsilon.sum(0);
         INDArray dldxhat = epsilon.mulRowVector(gamma);
         INDArray dldvar = dldxhat.mul(input.subRowVector(mean)).mul(-0.5).mulRowVector(Transforms.pow(var.add(eps), -3.0 / 2.0, true)).sum(0);
         INDArray dldmu = dldxhat.mulRowVector(Transforms.pow(var.add(eps), -1.0 / 2.0, true)).neg().sum(0).add(dldvar.mul(input.subRowVector(mean).mul(-2.0).sum(0).div(minibatch)));
@@ -281,9 +282,7 @@ class BatchNormalizationTest extends BaseDL4JTest {
         INDArray epsilon = Nd4j.rand('c', new int[] { minibatch, nIn, hw, hw });
         int effectiveMinibatch = minibatch * hw * hw;
         INDArray dldgammaExp = epsilon.mul(xHat).sum(0, 2, 3);
-        dldgammaExp = dldgammaExp.reshape(1, dldgammaExp.length());
         INDArray dldbetaExp = epsilon.sum(0, 2, 3);
-        dldbetaExp = dldbetaExp.reshape(1, dldbetaExp.length());
         // epsilon.mulRowVector(gamma);
         INDArray dldxhat = Nd4j.getExecutioner().exec(new BroadcastMulOp(epsilon, gamma, epsilon.dup(), 1));
         INDArray inputSubMean = Nd4j.getExecutioner().exec(new BroadcastSubOp(input, mean, input.dup(), 1));
@@ -396,7 +395,7 @@ class BatchNormalizationTest extends BaseDL4JTest {
     void checkMeanVarianceEstimate() throws Exception {
         Nd4j.getRandom().setSeed(12345);
         // Check that the internal global mean/variance estimate is approximately correct
-        for (boolean useLogStd : new boolean[] { true, false }) {
+        for (boolean useLogStd : new boolean[] { false, true }) {
             // First, Mnist data as 2d input (NOT taking into account convolution property)
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.RMSPROP).seed(12345).list().layer(0, new BatchNormalization.Builder().nIn(10).nOut(10).eps(1e-5).decay(0.95).useLogStd(useLogStd).build()).layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY).nIn(10).nOut(10).build()).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -418,24 +417,15 @@ class BatchNormalizationTest extends BaseDL4JTest {
             INDArray estVar;
             if (useLogStd) {
                 INDArray log10std = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
-                estVar = Nd4j.valueArrayOf(log10std.shape(), 10.0).castTo(log10std.dataType());
-                // stdev = 10^(log10(stdev))
-                Transforms.pow(estVar, log10std, false);
-                estVar.muli(estVar);
+                // var = (10^log10std)^2 = exp(2 * log10std * ln(10))
+                estVar = Transforms.exp(log10std.mul(2.0 * Math.log(10.0)), true);
             } else {
                 estVar = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
             }
-            float[] fMeanExp = expMean.data().asFloat();
-            float[] fMeanAct = estMean.data().asFloat();
-            float[] fVarExp = expVar.data().asFloat();
-            float[] fVarAct = estVar.data().asFloat();
-            // System.out.println("Mean vs. estimated mean:");
-            // System.out.println(Arrays.toString(fMeanExp));
-            // System.out.println(Arrays.toString(fMeanAct));
-            // 
-            // System.out.println("Var vs. estimated var:");
-            // System.out.println(Arrays.toString(fVarExp));
-            // System.out.println(Arrays.toString(fVarAct));
+            float[] fMeanExp = expMean.toFloatVector();
+            float[] fMeanAct = estMean.toFloatVector();
+            float[] fVarExp = expVar.toFloatVector();
+            float[] fVarAct = estVar.toFloatVector();
             assertArrayEquals(fMeanExp, fMeanAct, 0.02f);
             assertArrayEquals(fVarExp, fVarAct, 0.02f);
         }
@@ -468,21 +458,19 @@ class BatchNormalizationTest extends BaseDL4JTest {
             INDArray estVar;
             if (useLogStd) {
                 INDArray log10std = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
-                estVar = Nd4j.valueArrayOf(log10std.shape(), 10.0).castTo(log10std.dataType());
-                // stdev = 10^(log10(stdev))
-                Transforms.pow(estVar, log10std, false);
-                estVar.muli(estVar);
+                // var = (10^log10std)^2 = exp(2 * log10std * ln(10))
+                estVar = Transforms.exp(log10std.mul(2.0 * Math.log(10.0)), true);
             } else {
                 estVar = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
             }
-            float[] fMeanExp = expMean.data().asFloat();
-            float[] fMeanAct = estMean.data().asFloat();
-            float[] fVarExp = expVar.data().asFloat();
-            float[] fVarAct = estVar.data().asFloat();
+            float[] fMeanExp = expMean.toFloatVector();
+            float[] fMeanAct = estMean.toFloatVector();
+            float[] fVarExp = expVar.toFloatVector();
+            float[] fVarAct = estVar.toFloatVector();
             // System.out.println("Mean vs. estimated mean:");
             // System.out.println(Arrays.toString(fMeanExp));
             // System.out.println(Arrays.toString(fMeanAct));
-            // 
+            //
             // System.out.println("Var vs. estimated var:");
             // System.out.println(Arrays.toString(fVarExp));
             // System.out.println(Arrays.toString(fVarAct));
@@ -513,10 +501,8 @@ class BatchNormalizationTest extends BaseDL4JTest {
             net2.fit(ds);
             INDArray globalVar = net.getParam("0_" + BatchNormalizationParamInitializer.GLOBAL_VAR);
             INDArray log10std = net2.getParam("0_" + BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
-            INDArray globalVar2 = Nd4j.valueArrayOf(log10std.shape(), 10.0).castTo(log10std.dataType());
-            // stdev = 10^(log10(stdev))
-            Transforms.pow(globalVar2, log10std, false);
-            globalVar2.muli(globalVar2);
+            // var = (10^log10std)^2 = exp(2 * log10std * ln(10))
+            INDArray globalVar2 = Transforms.exp(log10std.mul(2.0 * Math.log(10.0)), true);
             assertEquals(globalVar, globalVar2);
         }
     }

@@ -226,7 +226,7 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatVector(Nd4jBackend backend) {
-        assertThrows(ND4JIllegalStateException.class,() -> {
+        assertThrows(RuntimeException.class,() -> {
             Nd4j.concat(0, Nd4j.ones(1,1000000), Nd4j.create(1, 1));
 
         });

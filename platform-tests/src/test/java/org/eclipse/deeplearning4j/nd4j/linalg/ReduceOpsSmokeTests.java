@@ -22,11 +22,12 @@
 package org.eclipse.deeplearning4j.nd4j.linalg;
 
 import lombok.SneakyThrows;
+import org.eclipse.deeplearning4j.tests.extensions.BackendTest;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
+
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -41,52 +42,11 @@ import java.util.concurrent.Future;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@BackendTest(description = "Reduction operations smoke tests for all backends")
+@Tag(TagNames.SMOKE)
 public class ReduceOpsSmokeTests {
 
-    @SneakyThrows
-    @BeforeAll
-    public static void init() {
-        CudaEnvironment.getInstance().getConfiguration()
-                // Critical: Use DEVICE for firstMemory when in multi-threaded environment
-                .setFirstMemory(AllocationStatus.DEVICE)
 
-                // Set IMMEDIATE memory model for predictable allocation timing
-                .setMemoryModel(Configuration.MemoryModel.IMMEDIATE)
-
-                // Increase pool size to handle multiple threads
-                .setPoolSize(Math.max(32, Runtime.getRuntime().availableProcessors() * 4))
-
-                // Enable cross-device access for better thread coordination
-                .allowCrossDeviceAccess(true)
-
-                // Ensure command queue can handle parallel requests
-                .setCommandQueueLength(6)
-                .setCommandLanesNumber(4);
-
-        // Create a thread pool with the same size as your test threads
-        int numThreads = Runtime.getRuntime().availableProcessors();
-        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
-
-// Pre-initialize CUDA in each thread
-        List<Future<?>> futures = new ArrayList<>();
-        for (int i = 0; i < numThreads; i++) {
-            futures.add(executorService.submit(() -> {
-                // Force device selection for this thread
-                Nd4j.getAffinityManager().unsafeSetDevice(0);
-
-                // Create a small array to initialize CUDA context for this thread
-                Nd4j.create(1).addi(1);
-
-                return null;
-            }));
-        }
-
-// Wait for all initialization to complete
-        for (Future<?> future : futures) {
-            future.get();
-        }
-
-    }
 
     @Test
     public void test2DSumMeanNoDims() {

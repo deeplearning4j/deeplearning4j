@@ -23,7 +23,7 @@ package org.eclipse.deeplearning4j.integration;
 import org.deeplearning4j.BaseDL4JTest;
 
 import org.eclipse.deeplearning4j.integration.testcases.dl4j.*;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -47,7 +47,7 @@ public class IntegrationTestsDL4J extends BaseDL4JTest {
     }
 
 
-    @AfterEach
+    @AfterAll
     public static void afterClass(){
         IntegrationTestRunner.printCoverageInformation();
     }

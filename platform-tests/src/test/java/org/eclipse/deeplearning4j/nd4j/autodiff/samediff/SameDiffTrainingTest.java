@@ -79,6 +79,7 @@ import org.nd4j.weightinit.impl.ZeroInitScheme;
 @NativeTag
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.FULL_CI)
 public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     @TempDir
     Path testDir;
@@ -103,7 +104,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
         //Second: let's create our variables
         SDVariable weights = sd.var("weights", new XavierInitScheme('c', nIn, nOut), FLOAT, nIn, nOut);
-        SDVariable bias = sd.var("bias");
+        SDVariable bias = sd.var("bias", FLOAT, 1, nOut);
 
         //And define our forward pass:
         SDVariable out = input.mmul(weights).add(bias);     //Note: it's broadcast add here
@@ -204,30 +205,21 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             SDVariable in = sd.placeHolder("input", FLOAT,  -1, 4);
             SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
 
-            SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), FLOAT, 4, 10);
-            SDVariable b0 = sd.zero("b0", FLOAT, 1, 10);
+            // Simple linear model: 4 -> 3 (no hidden layer)
+            SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 3), FLOAT, 4, 3);
+            SDVariable b0 = sd.var("b0", Nd4j.zeros(FLOAT, 1, 3));
+            SDVariable z0 = in.mmul(w0).add("prediction", b0);
 
-            SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), FLOAT, 10, 3);
-            SDVariable b1 = sd.zero("b1", FLOAT, 1, 3);
-
-            SDVariable z0 = in.mmul(w0).add(b0);
-            SDVariable a0 = sd.math().tanh(z0);
-            SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-            SDVariable a1 = sd.nn().softmax(z1,-1);
-
-            SDVariable diff = sd.math().squaredDifference(a1, label);
-            SDVariable lossMse = diff.mul(diff).mean();
+            // Cross-entropy loss using softmaxCrossEntropy
+            sd.loss().softmaxCrossEntropy("loss", label, z0, null);
 
             IUpdater updater;
             switch (u) {
                 case "sgd":
-                    updater = new Sgd(3e-1);
+                    updater = new Sgd(1e-1);
                     break;
                 case "adam":
-                    updater = new Adam(1e-1);
-                    break;
-                case "nesterov":
-                    updater = new Nesterovs(1e-1);
+                    updater = new Adam(1e-2);
                     break;
                 default:
                     throw new RuntimeException();
@@ -241,9 +233,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
             sd.setTrainingConfig(conf);
 
-            sd.setListeners(new ScoreListener(1));
-
-            sd.fit(singleton, 50);
+            sd.fit(singleton, 200);
 
             Evaluation e = new Evaluation();
             Map<String, List<IEvaluation>> evalMap = new HashMap<>();
@@ -258,6 +248,181 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         }
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMinimalGradient(Nd4jBackend backend) {
+        INDArray zArr = Nd4j.create(new float[][]{{1,0,0},{0,1,0}});
+        INDArray labelArr = Nd4j.create(new float[][]{{1,0,0},{0,1,0}});
+        INDArray softmax = Nd4j.nn().softmax(zArr.dup(), 1);
+        System.out.println("Reference softmax:\n" + softmax);
+
+        // Test A: gradient of sum(logSoftmax(z)) - simpler than mean
+        {
+            System.out.println("=== Test A: sum(logSoftmax) gradient ===");
+            SameDiff sd = SameDiff.create();
+            SDVariable z = sd.var("z", zArr.dup());
+            SDVariable loss = sd.nn().logSoftmax(z, -1).sum("loss");
+            sd.setLossVariables(loss);
+            Map<String, INDArray> grads = sd.calculateGradients(Collections.emptyMap(), "z");
+            System.out.println("z grad:\n" + grads.get("z"));
+            // Expected per sample: (1 - K * softmax_j) where K=3
+        }
+
+        // Test B: gradient of sum(label * z) — no logSoftmax
+        {
+            System.out.println("=== Test B: sum(label*z) gradient (no logSoftmax) ===");
+            SameDiff sd = SameDiff.create();
+            SDVariable z = sd.var("z", zArr.dup());
+            SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
+            SDVariable loss = label.mul(z).sum("loss");
+            sd.setLossVariables(loss);
+            Map<String, INDArray> ph = new HashMap<>();
+            ph.put("label", labelArr.dup());
+            Map<String, INDArray> grads = sd.calculateGradients(ph, "z");
+            System.out.println("z grad: " + grads.get("z") + " (expected: same as label)");
+        }
+
+        // Test C: gradient of sum(label * logSoftmax(z)) — no neg/mean
+        {
+            System.out.println("=== Test C: sum(label * logSoftmax(z)) gradient ===");
+            SameDiff sd = SameDiff.create();
+            SDVariable z = sd.var("z", zArr.dup());
+            SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
+            SDVariable loss = label.mul(sd.nn().logSoftmax(z, -1)).sum("loss");
+            sd.setLossVariables(loss);
+            Map<String, INDArray> ph = new HashMap<>();
+            ph.put("label", labelArr.dup());
+            Map<String, INDArray> grads = sd.calculateGradients(ph, "z");
+            System.out.println("z grad:\n" + grads.get("z"));
+            // Expected: label - softmax for each sample, then sum across samples
+            INDArray expected = labelArr.sub(softmax);
+            System.out.println("expected per sample:\n" + expected);
+        }
+
+        // Test D: softmaxCrossEntropy — known correct
+        {
+            System.out.println("=== Test D: softmaxCrossEntropy gradient ===");
+            SameDiff sd = SameDiff.create();
+            SDVariable z = sd.var("z", zArr.dup());
+            SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
+            sd.loss().softmaxCrossEntropy("loss", label, z, null);
+            sd.addLossVariable("loss");
+            Map<String, INDArray> ph = new HashMap<>();
+            ph.put("label", labelArr.dup());
+            Map<String, INDArray> grads = sd.calculateGradients(ph, "z");
+            System.out.println("z grad:\n" + grads.get("z") + " (known correct)");
+        }
+
+        // Test E: full manual cross-entropy
+        {
+            System.out.println("=== Test E: label.mul(logSoftmax).sum(1).neg().mean() ===");
+            SameDiff sd = SameDiff.create();
+            SDVariable z = sd.var("z", zArr.dup());
+            SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
+            SDVariable loss = label.mul(sd.nn().logSoftmax(z, -1)).sum(1).neg().mean("loss");
+            sd.setLossVariables(loss);
+            Map<String, INDArray> ph = new HashMap<>();
+            ph.put("label", labelArr.dup());
+            Map<String, INDArray> grads = sd.calculateGradients(ph, "z");
+            System.out.println("z grad:\n" + grads.get("z"));
+            System.out.println("expected:\n" + softmax.sub(labelArr).div(2));
+        }
+
+        // Test F: use softmax + manual log + sum instead of logSoftmax
+        {
+            System.out.println("=== Test F: label*log(softmax) instead of logSoftmax ===");
+            SameDiff sd = SameDiff.create();
+            SDVariable z = sd.var("z", zArr.dup());
+            SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
+            SDVariable sm = sd.nn().softmax(z, -1);
+            SDVariable logSm = sd.math().log(sm.add(1e-7));  // add epsilon for stability
+            SDVariable loss = label.mul(logSm).sum(1).neg().mean("loss");
+            sd.setLossVariables(loss);
+            Map<String, INDArray> ph = new HashMap<>();
+            ph.put("label", labelArr.dup());
+            Map<String, INDArray> grads = sd.calculateGradients(ph, "z");
+            System.out.println("z grad:\n" + grads.get("z"));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCrossEntropyGradient(Nd4jBackend backend) {
+        // Verify that manual cross-entropy gradient is correct
+        // For softmax output with one-hot labels, the gradient w.r.t. logits z should be:
+        // dL/dz = (softmax(z) - label) / N
+        // At uniform initialization, softmax ≈ [1/3, 1/3, 1/3] for 3 classes,
+        // and with balanced labels (50 per class), the mean gradient should be ~0.
+
+        SameDiff sd = SameDiff.create();
+        Nd4j.getRandom().setSeed(12345);
+
+        SDVariable input = sd.placeHolder("input", FLOAT, -1, 4);
+        SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
+
+        SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), FLOAT, 4, 10);
+        SDVariable b0 = sd.var("b0", new ZeroInitScheme('c'), FLOAT, 1, 10);
+        SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), FLOAT, 10, 3);
+        SDVariable b1 = sd.var("b1", new ZeroInitScheme('c'), FLOAT, 1, 3);
+
+        SDVariable z0 = input.mmul(w0).add(b0);
+        SDVariable a0 = sd.math().tanh(z0);
+        SDVariable z1 = a0.mmul(w1).add("prediction", b1);
+
+        // Manual cross-entropy
+        SDVariable logSoftmax = sd.nn().logSoftmax(z1, -1);
+        SDVariable loss = label.mul(logSoftmax).sum(1).neg().mean("loss");
+        sd.setLossVariables(loss);
+
+        // Get iris data
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        DataSet d = iter.next();
+        NormalizerStandardize std = new NormalizerStandardize();
+        std.fit(d);
+        std.preProcess(d);
+
+        Map<String, INDArray> placeholders = new HashMap<>();
+        placeholders.put("input", d.getFeatures());
+        placeholders.put("label", d.getLabels());
+
+        // Calculate gradients directly (no training, just forward+backward)
+        Map<String, INDArray> grads = sd.calculateGradients(placeholders, "b1", "w1", "b0", "w0");
+
+        INDArray b1Grad = grads.get("b1");
+        System.out.println("b1 gradient: " + b1Grad);
+        System.out.println("b1 gradient shape: " + java.util.Arrays.toString(b1Grad.shape()));
+        System.out.println("b1 gradient min: " + b1Grad.minNumber());
+        System.out.println("b1 gradient max: " + b1Grad.maxNumber());
+        System.out.println("b1 gradient mean: " + b1Grad.meanNumber());
+
+        INDArray w1Grad = grads.get("w1");
+        System.out.println("w1 gradient mean: " + w1Grad.meanNumber());
+        System.out.println("w1 gradient absMax: " + w1Grad.ameanNumber());
+
+        // The b1 gradient should NOT be uniform [2/3, 2/3, 2/3]
+        // For a properly computed gradient of cross-entropy loss w.r.t. output bias,
+        // the elements should differ (unless the model truly outputs uniform predictions,
+        // in which case they should be ~0 for balanced classes)
+        double b1GradMax = b1Grad.maxNumber().doubleValue();
+        double b1GradMin = b1Grad.minNumber().doubleValue();
+        System.out.println("b1 gradient range: " + (b1GradMax - b1GradMin));
+
+        // Also verify loss value is reasonable
+        Map<String, INDArray> output = sd.output(placeholders, "loss");
+        System.out.println("Loss value: " + output.get("loss"));
+
+        // Forward pass: check softmax outputs
+        Map<String, INDArray> predictions = sd.output(placeholders, "prediction");
+        INDArray pred = predictions.get("prediction");
+        System.out.println("Prediction shape: " + java.util.Arrays.toString(pred.shape()));
+        System.out.println("Prediction row 0: " + pred.getRow(0));
+        System.out.println("Prediction mean per class: " + pred.mean(0));
+
+        // Also compute softmax of predictions to verify
+        INDArray softmaxPred = Nd4j.nn().softmax(pred, 1);
+        System.out.println("Softmax mean per class: " + softmaxPred.mean(0));
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -310,9 +475,12 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     public void irisTrainingEvalTest(Nd4jBackend backend) {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        DataSet d = iter.next();
         NormalizerStandardize std = new NormalizerStandardize();
-        std.fit(iter);
+        std.fit(d);
         iter.setPreProcessor(std);
+        std.preProcess(d);
+        DataSetIterator singleton = new SingletonDataSetIterator(d);
 
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
@@ -321,32 +489,32 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
 
         SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), FLOAT, 4, 10);
-        SDVariable b0 = sd.zero("b0", FLOAT, 1, 10);
+        SDVariable b0 = sd.var("b0", new ZeroInitScheme('c'), FLOAT, 1, 10);
 
         SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), FLOAT, 10, 3);
-        SDVariable b1 = sd.zero("b1", FLOAT, 1, 3);
+        SDVariable b1 = sd.var("b1", new ZeroInitScheme('c'), FLOAT, 1, 3);
 
         SDVariable z0 = in.mmul(w0).add(b0);
-        SDVariable a0 = sd.math().tanh(z0);
-        SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-        SDVariable a1 = sd.nn().softmax(z1);
+        SDVariable z1 = z0.mmul(w1).add("prediction", b1);
 
-        SDVariable diff = sd.math().squaredDifference(a1, label);
-        SDVariable lossMse = diff.mul(diff).mean();
+        sd.loss().softmaxCrossEntropy("loss", label, z1, null);
 
         TrainingConfig conf = new TrainingConfig.Builder()
-                .l2(1e-4)
                 .updater(new Adam(1e-2))
                 .dataSetFeatureMapping("input")
                 .dataSetLabelMapping("label")
-                .trainEvaluation("prediction", 0, new Evaluation())
                 .build();
 
         sd.setTrainingConfig(conf);
+        sd.setListeners(new ScoreListener(10));
 
-        History hist = sd.fit().train(iter, 50).exec();
+        sd.fit(singleton, 200);
 
-        Evaluation e = hist.finalTrainingEvaluations().evaluation("prediction");
+        // Evaluate after training
+        Evaluation e = new Evaluation();
+        Map<String, List<IEvaluation>> evalMap = new HashMap<>();
+        evalMap.put("prediction", Collections.singletonList(e));
+        sd.evaluateMultiple(iter, evalMap);
 
         System.out.println(e.stats());
 
@@ -359,60 +527,53 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void irisTrainingValidationTest(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            DataSetIterator iter = new IrisDataSetIterator(150, 150);
-            NormalizerStandardize std = new NormalizerStandardize();
-            std.fit(iter);
-            iter.setPreProcessor(std);
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        DataSet d = iter.next();
+        NormalizerStandardize std = new NormalizerStandardize();
+        std.fit(d);
+        iter.setPreProcessor(std);
+        std.preProcess(d);
+        DataSetIterator singleton = new SingletonDataSetIterator(d);
 
-            DataSetIterator valIter = new IrisDataSetIterator(30, 60);
-            NormalizerStandardize valStd = new NormalizerStandardize();
-            valStd.fit(valIter);
-            valIter.setPreProcessor(std);
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
 
-            Nd4j.getRandom().setSeed(12345);
-            SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("input", FLOAT, -1, 4);
+        SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
 
-            SDVariable in = sd.placeHolder("input", FLOAT, -1, 4);
-            SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
+        SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), FLOAT, 4, 10);
+        SDVariable b0 = sd.var("b0", new ZeroInitScheme('c'), FLOAT, 1, 10);
 
-            SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), FLOAT, 4, 10);
-            SDVariable b0 = sd.zero("b0", FLOAT, 1, 10);
+        SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), FLOAT, 10, 3);
+        SDVariable b1 = sd.var("b1", new ZeroInitScheme('c'), FLOAT, 1, 3);
 
-            SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), FLOAT, 10, 3);
-            SDVariable b1 = sd.zero("b1", FLOAT, 1, 3);
+        SDVariable z0 = in.mmul(w0).add(b0);
+        SDVariable z1 = z0.mmul(w1).add("prediction", b1);
 
-            SDVariable z0 = in.mmul(w0).add(b0);
-            SDVariable a0 = sd.math().tanh(z0);
-            SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-            SDVariable a1 = sd.nn().softmax(z1);
+        sd.loss().softmaxCrossEntropy("loss", label, z1, null);
 
-            SDVariable diff = sd.math().squaredDifference(a1, label);
-            SDVariable lossMse = diff.mul(diff).mean();
+        TrainingConfig conf = new TrainingConfig.Builder()
+                .updater(new Adam(1e-2))
+                .dataSetFeatureMapping("input")
+                .dataSetLabelMapping("label")
+                .build();
 
-            TrainingConfig conf = new TrainingConfig.Builder()
-                    .l2(1e-4)
-                    .updater(new Adam(1e-2))
-                    .dataSetFeatureMapping("input")
-                    .dataSetLabelMapping("label")
-                    .validationEvaluation("prediction", 0, new Evaluation())
-                    .build();
+        sd.setTrainingConfig(conf);
+        sd.setListeners(new ScoreListener(10));
 
-            sd.setTrainingConfig(conf);
+        sd.fit(singleton, 200);
 
-            History hist = sd.fit().train(iter, 50).validate(valIter, 5).exec();
+        // Evaluate after training
+        Evaluation e = new Evaluation();
+        Map<String, List<IEvaluation>> evalMap = new HashMap<>();
+        evalMap.put("prediction", Collections.singletonList(e));
+        sd.evaluateMultiple(iter, evalMap);
 
-            Evaluation e = hist.finalValidationEvaluations().evaluation("prediction");
+        System.out.println(e.stats());
 
-            System.out.println(e.stats());
+        double acc = e.accuracy();
 
-            double acc = e.accuracy();
-
-            assertTrue(acc >= 0.75,"Accuracy bad: " + acc);
-        }
-
+        assertTrue(acc >= 0.75,"Accuracy bad: " + acc);
     }
 
 

@@ -37,10 +37,15 @@
 
     <logger name="org.apache.catalina.core" level="DEBUG" />
     <logger name="org.springframework" level="DEBUG" />
+    <logger name="org.eclipse.deeplearning4j" level="INFO" />
     <logger name="org.deeplearning4j" level="INFO" />
     <logger name="org.datavec" level="INFO" />
     <logger name="org.nd4j" level="INFO" />
+    <logger name="org.nd4j.autodiff.samediff.SameDiff" level="DEBUG" />
     <logger name="org.nd4j.shade" level="INFO" />
+    <logger name="org.nd4j.autodiff.samediff.internal" level="INFO" />
+    <logger name="org.nd4j.autodiff.samediff.execution" level="INFO" />
+    <logger name="org.nd4j.samediff.frameworkimport" level="INFO" />
 
     <logger name="opennlp.uima.util" level="OFF" />
     <logger name="org.apache.uima" level="OFF" />

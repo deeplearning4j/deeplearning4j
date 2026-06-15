@@ -23,6 +23,7 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
@@ -43,7 +44,7 @@ public class DeviceLocalNDArrayTests extends BaseND4JTest {
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    Nd4j.getAffinityManager().unsafeSetDevice(f);
+                    DeviceMemoryManager.getInstance().switchDevice(f, "DeviceLocalNDArrayTests", "test-device-switch");
                     dl.get().addi(1.0);
                     Nd4j.getExecutioner().commit();
                 }
@@ -67,7 +68,7 @@ public class DeviceLocalNDArrayTests extends BaseND4JTest {
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    Nd4j.getAffinityManager().unsafeSetDevice(f);
+                    DeviceMemoryManager.getInstance().switchDevice(f, "DeviceLocalNDArrayTests", "test-device-switch");
                     for (int i = 0; i < 10; i++) {
                         val tmp = Nd4j.create(DataType.DOUBLE, shape);
                         tmp.addi(1.0);
@@ -88,7 +89,7 @@ public class DeviceLocalNDArrayTests extends BaseND4JTest {
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    Nd4j.getAffinityManager().unsafeSetDevice(f);
+                    DeviceMemoryManager.getInstance().switchDevice(f, "DeviceLocalNDArrayTests", "test-device-switch");
                     dl.get().addi(1.0);
                     Nd4j.getExecutioner().commit();
                 }

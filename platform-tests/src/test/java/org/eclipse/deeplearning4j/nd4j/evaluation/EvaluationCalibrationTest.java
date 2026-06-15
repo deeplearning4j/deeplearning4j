@@ -44,6 +44,7 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Tag(TagNames.EVAL_METRICS)
+@Tag(TagNames.FULL_CI)
 @NativeTag
 public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
 
@@ -58,12 +59,12 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
     public void testReliabilityDiagram (Nd4jBackend backend) {
 
         DataType dtypeBefore = Nd4j.defaultFloatingPointType();
-        EvaluationCalibration first = null;
-        String sFirst = null;
         try {
             for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT}) {
                 Nd4j.setDefaultDataTypes(globalDtype, globalDtype.isFPType() ? globalDtype : DataType.DOUBLE);
                 for (DataType lpDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                    EvaluationCalibration first = null;
+                    String sFirst = null;
 
 
                     //Test using 5 bins - format: binary softmax-style output
