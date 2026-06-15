@@ -159,6 +159,11 @@ class SD_LIB_EXPORT DataBuffer {
   static constexpr uint32_t MAGIC_NUMBER = 0xDA7ABF01;  // "DA7ABF01" (DataBuffer v01)
   uint32_t _magicNumber = MAGIC_NUMBER;
 
+  // Padding added beyond the requested allocation size when not using a workspace.
+  // The extra bytes are filled with canary values (0xDEADBEEFCAFEBABE) so that
+  // buffer overruns can be detected in deletePrimary() before calling free().
+  static constexpr sd::LongType HOST_ALLOC_PADDING = 65536;
+
   void *_primaryBuffer = nullptr;
   void *_specialBuffer = nullptr;
   std::atomic<int> _specialDeviceId{-1};  // Device ID where _specialBuffer was allocated (for multi-GPU)

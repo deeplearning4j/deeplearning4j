@@ -66,7 +66,6 @@ void DataBuffer::expand(const uint64_t size) {
   if (static_cast<LongType>(size) > _lenInBytes) {
     // allocate new buffer
     int8_t* newBuffer = nullptr;
-    static constexpr size_t HOST_ALLOC_PADDING = 65536;
     size_t allocSize = size + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
     ALLOCATE(newBuffer, _workspace, allocSize, int8_t);
 #if defined(SD_GCC_FUNCTRACE)
