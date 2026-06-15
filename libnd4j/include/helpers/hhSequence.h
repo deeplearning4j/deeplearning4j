@@ -33,12 +33,12 @@ class HHsequence {
   /*
    *  matrix containing the Householder vectors
    */
-  NDArray& _vectors;
+  NDArray *_vectors;
 
   /*
    *  vector containing the Householder coefficients
    */
-  NDArray& _coeffs;
+  NDArray *_coeffs;
 
   /*
    *  shift of the Householder sequence
@@ -58,7 +58,7 @@ class HHsequence {
   /*
    *  constructor
    */
-  HHsequence(NDArray& vectors, NDArray& coeffs, const char type);
+  HHsequence(NDArray* vectors, NDArray* coeffs, const char type);
   HHsequence() = delete;
   /**
    *  this method mathematically multiplies input matrix on Householder sequence from the left H0*H1*...Hn * matrix
@@ -66,22 +66,22 @@ class HHsequence {
    *  matrix - input matrix to be multiplied
    */
   template <typename T>
-  void mulLeft_(NDArray& matrix);
+  void mulLeft_(NDArray* matrix);
 
-  void mulLeft(NDArray& matrix);
+  void mulLeft(NDArray* matrix);
 
   NDArray getTail(const int idx) const;
 
   template <typename T>
-  void applyTo_(NDArray& dest);
+  void applyTo_(NDArray* dest);
 
-  void applyTo(NDArray& dest);
+  void applyTo(NDArray* dest);
 
   SD_INLINE int rows();
 };
 
 //////////////////////////////////////////////////////////////////////////
-SD_INLINE int HHsequence::rows() { return _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1); }
+SD_INLINE int HHsequence::rows() { return _type == 'u' ? _vectors->sizeAt(0) : _vectors->sizeAt(1); }
 
 }  // namespace helpers
 }  // namespace ops

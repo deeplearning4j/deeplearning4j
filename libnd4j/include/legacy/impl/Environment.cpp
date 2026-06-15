@@ -21,6 +21,7 @@
 //
 #include <system/Environment.h>
 
+#include <helpers/BlasHelper.h>
 #include <helpers/StringUtils.h>
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
@@ -30,6 +31,14 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+
+// Lifecycle tracker includes for enabling/disabling via Environment
+#include <array/NDArrayLifecycleTracker.h>
+#include <array/DataBufferLifecycleTracker.h>
+#include <array/TADCacheLifecycleTracker.h>
+#include <array/ShapeCacheLifecycleTracker.h>
+#include <array/DeallocatorServiceLifecycleTracker.h>
+#include <graph/OpContextLifecycleTracker.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -1134,6 +1143,25 @@ void Environment::setCudaDeviceSchedule(int schedule) {
 
  bool Environment::blasFallback() { return _blasFallback; }
 
+bool Environment::isSerializeBlasCalls() {
+  // Delegate to BlasHelper which manages the actual serialization
+  return BlasHelper::getInstance().isSerializeBlasCalls();
+}
+
+void Environment::setSerializeBlasCalls(bool serialize) {
+  _serializeBlasCallsSet.store(true);
+  BlasHelper::getInstance().setSerializeBlasCalls(serialize);
+}
+
+int Environment::getOpenBlasThreads() {
+  return BlasHelper::getInstance().getOpenblasThreads();
+}
+
+void Environment::setOpenBlasThreads(int threads) {
+  _openBlasThreads.store(threads);
+  BlasHelper::getInstance().setOpenblasThreads(threads);
+}
+
  Environment::~Environment() {
    //
  }
@@ -1313,4 +1341,40 @@ void Environment::setCudaDeviceSchedule(int schedule) {
  bool Environment::isTrackOperations() { return _trackOperations.load(); }
 
  void Environment::setTrackOperations(bool enabled) { _trackOperations.store(enabled); }
+
+ // Individual tracker enable/disable methods
+ bool Environment::isNDArrayTracking() { return _ndArrayTracking.load(); }
+
+ void Environment::setNDArrayTracking(bool enabled) {
+   _ndArrayTracking.store(enabled);
+   array::NDArrayLifecycleTracker::getInstance().setEnabled(enabled);
+ }
+
+ bool Environment::isDataBufferTracking() { return _dataBufferTracking.load(); }
+
+ void Environment::setDataBufferTracking(bool enabled) {
+   _dataBufferTracking.store(enabled);
+   array::DataBufferLifecycleTracker::getInstance().setEnabled(enabled);
+ }
+
+ bool Environment::isTADCacheTracking() { return _tadCacheTracking.load(); }
+
+ void Environment::setTADCacheTracking(bool enabled) {
+   _tadCacheTracking.store(enabled);
+   array::TADCacheLifecycleTracker::getInstance().setEnabled(enabled);
+ }
+
+ bool Environment::isShapeCacheTracking() { return _shapeCacheTracking.load(); }
+
+ void Environment::setShapeCacheTracking(bool enabled) {
+   _shapeCacheTracking.store(enabled);
+   array::ShapeCacheLifecycleTracker::getInstance().setEnabled(enabled);
+ }
+
+ bool Environment::isOpContextTracking() { return _opContextTracking.load(); }
+
+ void Environment::setOpContextTracking(bool enabled) {
+   _opContextTracking.store(enabled);
+   graph::OpContextLifecycleTracker::getInstance().setEnabled(enabled);
+ }
 }

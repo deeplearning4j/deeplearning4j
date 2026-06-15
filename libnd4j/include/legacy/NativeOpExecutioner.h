@@ -452,10 +452,19 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                          const sd::LongType *dYShapeBuffer, void *hZ, const sd::LongType *hZShapeBuffer, void *dZ,
                          const sd::LongType *dZShapeBuffer, void *extraArguments);
 
-   static void execSort(sd::NDArray *x, bool descending);
+  // Inline implementations to avoid source location exhaustion in separate compilation units
+  static inline void execSort(sd::NDArray *x, bool descending) {
+    auto xType = x->dataType();
+    BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortGeneric(x, descending), SD_COMMON_TYPES);
+  }
 
-  static void execSort(sd::NDArray *x, sd::LongType *dimension,  sd::LongType dimensionLength,
-                        bool descending) ;
+  static inline void execSort(sd::NDArray *x, sd::LongType *dimension, sd::LongType dimensionLength,
+                               bool descending) {
+    auto xType = x->dataType();
+    BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods,
+                          ::sortTadGeneric(x, dimension, dimensionLength, descending),
+                          SD_COMMON_TYPES);
+  }
 
 
 

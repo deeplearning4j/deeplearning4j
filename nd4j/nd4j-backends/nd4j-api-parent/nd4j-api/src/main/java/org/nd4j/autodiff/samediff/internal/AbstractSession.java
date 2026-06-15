@@ -20,8 +20,13 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
