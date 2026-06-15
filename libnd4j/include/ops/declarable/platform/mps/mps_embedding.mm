@@ -474,6 +474,32 @@ PLATFORM_CHECK(unsorted_segment_sum, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS
+
+PLATFORM_IMPL(embedding_lookup, ENGINE_CPU)    { return sd::Status::OK; }
+PLATFORM_CHECK(embedding_lookup, ENGINE_CPU)   { return Requirements("MPS EMBEDDING_LOOKUP STUB"); }
+
+PLATFORM_IMPL(onehot, ENGINE_CPU)              { return sd::Status::OK; }
+PLATFORM_CHECK(onehot, ENGINE_CPU)             { return Requirements("MPS ONEHOT STUB"); }
+
+PLATFORM_IMPL(segment_sum, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(segment_sum, ENGINE_CPU)        { return Requirements("MPS SEGMENT_SUM STUB"); }
+
+PLATFORM_IMPL(segment_mean, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(segment_mean, ENGINE_CPU)       { return Requirements("MPS SEGMENT_MEAN STUB"); }
+
+PLATFORM_IMPL(segment_max, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(segment_max, ENGINE_CPU)        { return Requirements("MPS SEGMENT_MAX STUB"); }
+
+PLATFORM_IMPL(segment_min, ENGINE_CPU)         { return sd::Status::OK; }
+PLATFORM_CHECK(segment_min, ENGINE_CPU)        { return Requirements("MPS SEGMENT_MIN STUB"); }
+
+PLATFORM_IMPL(segment_prod, ENGINE_CPU)        { return sd::Status::OK; }
+PLATFORM_CHECK(segment_prod, ENGINE_CPU)       { return Requirements("MPS SEGMENT_PROD STUB"); }
+
+PLATFORM_IMPL(unsorted_segment_sum, ENGINE_CPU)  { return sd::Status::OK; }
+PLATFORM_CHECK(unsorted_segment_sum, ENGINE_CPU) { return Requirements("MPS UNSORTED_SEGMENT_SUM STUB"); }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

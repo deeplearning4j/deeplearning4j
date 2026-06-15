@@ -570,6 +570,20 @@ PLATFORM_CHECK(self_attention, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS
+
+PLATFORM_IMPL(dot_product_attention, ENGINE_CPU)          { return sd::Status::OK; }
+PLATFORM_CHECK(dot_product_attention, ENGINE_CPU)         { return Requirements("MPS DOT_PRODUCT_ATTENTION STUB"); }
+
+PLATFORM_IMPL(multi_head_dot_product_attention, ENGINE_CPU)  { return sd::Status::OK; }
+PLATFORM_CHECK(multi_head_dot_product_attention, ENGINE_CPU) { return Requirements("MPS MULTI_HEAD_ATTENTION STUB"); }
+
+PLATFORM_IMPL(additive_attention, ENGINE_CPU)             { return sd::Status::OK; }
+PLATFORM_CHECK(additive_attention, ENGINE_CPU)            { return Requirements("MPS ADDITIVE_ATTENTION STUB"); }
+
+PLATFORM_IMPL(self_attention, ENGINE_CPU)                 { return sd::Status::OK; }
+PLATFORM_CHECK(self_attention, ENGINE_CPU)                { return Requirements("MPS SELF_ATTENTION STUB"); }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

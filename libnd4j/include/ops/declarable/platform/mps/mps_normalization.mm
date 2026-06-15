@@ -358,6 +358,24 @@ PLATFORM_CHECK(instance_norm, ENGINE_CPU) {
     return req;
 }
 
+// ===========================================================================
+// batchnorm_bp  (stub — backprop requires stateful training passes not
+//                readily available via the MPS inference API; defer to CPU)
+// ===========================================================================
+
+PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
+    // Stub: CPU op handles gradient computation.
+    return sd::Status::OK;
+}
+
+PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
+    Requirements req("MPS BATCHNORM_BP OP");
+    // Always fall back to CPU.
+    req.expectTrue(makeInfoVariable(false, "batchnorm_bp uses CPU fallback"), NO_MSG);
+    req.logTheSuccess();
+    return req;
+}
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

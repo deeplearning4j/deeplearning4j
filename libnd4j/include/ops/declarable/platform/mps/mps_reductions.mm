@@ -715,6 +715,29 @@ PLATFORM_CHECK(reduce_stdev, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS — register no-op stubs
+
+PLATFORM_IMPL(reduce_sum, ENGINE_CPU)      { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_sum, ENGINE_CPU)     { return false; }
+
+PLATFORM_IMPL(reduce_mean, ENGINE_CPU)     { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_mean, ENGINE_CPU)    { return false; }
+
+PLATFORM_IMPL(reduce_max, ENGINE_CPU)      { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_max, ENGINE_CPU)     { return false; }
+
+PLATFORM_IMPL(reduce_min, ENGINE_CPU)      { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_min, ENGINE_CPU)     { return false; }
+
+PLATFORM_IMPL(reduce_prod, ENGINE_CPU)     { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_prod, ENGINE_CPU)    { return false; }
+
+PLATFORM_IMPL(reduce_variance, ENGINE_CPU) { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_variance, ENGINE_CPU){ return false; }
+
+PLATFORM_IMPL(reduce_stdev, ENGINE_CPU)    { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_stdev, ENGINE_CPU)   { return false; }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

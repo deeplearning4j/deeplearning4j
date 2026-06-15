@@ -655,6 +655,38 @@ PLATFORM_CHECK(neg, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS — register no-op stubs so the helper entries exist on all builds
+
+PLATFORM_IMPL(add, ENGINE_CPU)      { return sd::Status::OK; }
+PLATFORM_CHECK(add, ENGINE_CPU)     { return false; }
+
+PLATFORM_IMPL(subtract, ENGINE_CPU) { return sd::Status::OK; }
+PLATFORM_CHECK(subtract, ENGINE_CPU){ return false; }
+
+PLATFORM_IMPL(multiply, ENGINE_CPU) { return sd::Status::OK; }
+PLATFORM_CHECK(multiply, ENGINE_CPU){ return false; }
+
+PLATFORM_IMPL(divide, ENGINE_CPU)   { return sd::Status::OK; }
+PLATFORM_CHECK(divide, ENGINE_CPU)  { return false; }
+
+PLATFORM_IMPL(pow, ENGINE_CPU)      { return sd::Status::OK; }
+PLATFORM_CHECK(pow, ENGINE_CPU)     { return false; }
+
+PLATFORM_IMPL(sqrt, ENGINE_CPU)     { return sd::Status::OK; }
+PLATFORM_CHECK(sqrt, ENGINE_CPU)    { return false; }
+
+PLATFORM_IMPL(exp, ENGINE_CPU)      { return sd::Status::OK; }
+PLATFORM_CHECK(exp, ENGINE_CPU)     { return false; }
+
+PLATFORM_IMPL(log, ENGINE_CPU)      { return sd::Status::OK; }
+PLATFORM_CHECK(log, ENGINE_CPU)     { return false; }
+
+PLATFORM_IMPL(abs, ENGINE_CPU)      { return sd::Status::OK; }
+PLATFORM_CHECK(abs, ENGINE_CPU)     { return false; }
+
+PLATFORM_IMPL(neg, ENGINE_CPU)      { return sd::Status::OK; }
+PLATFORM_CHECK(neg, ENGINE_CPU)     { return false; }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

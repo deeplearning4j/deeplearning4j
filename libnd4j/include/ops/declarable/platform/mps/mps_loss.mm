@@ -486,6 +486,35 @@ PLATFORM_CHECK(log_loss, ENGINE_CPU) {
     return req;
 }
 
+#else  // !HAVE_MPS
+
+PLATFORM_IMPL(mean_sqerr_loss, ENGINE_CPU)                           { return sd::Status::OK; }
+PLATFORM_CHECK(mean_sqerr_loss, ENGINE_CPU)                          { return Requirements("MPS MEAN_SQERR_LOSS STUB"); }
+
+PLATFORM_IMPL(mean_absolute_error, ENGINE_CPU)                       { return sd::Status::OK; }
+PLATFORM_CHECK(mean_absolute_error, ENGINE_CPU)                      { return Requirements("MPS MEAN_ABS_ERROR STUB"); }
+
+PLATFORM_IMPL(huber_loss, ENGINE_CPU)                                { return sd::Status::OK; }
+PLATFORM_CHECK(huber_loss, ENGINE_CPU)                               { return Requirements("MPS HUBER_LOSS STUB"); }
+
+PLATFORM_IMPL(sigm_cross_entropy_loss, ENGINE_CPU)                   { return sd::Status::OK; }
+PLATFORM_CHECK(sigm_cross_entropy_loss, ENGINE_CPU)                  { return Requirements("MPS SIGM_XENT_LOSS STUB"); }
+
+PLATFORM_IMPL(softmax_cross_entropy_loss, ENGINE_CPU)                { return sd::Status::OK; }
+PLATFORM_CHECK(softmax_cross_entropy_loss, ENGINE_CPU)               { return Requirements("MPS SOFTMAX_XENT_LOSS STUB"); }
+
+PLATFORM_IMPL(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU)  { return sd::Status::OK; }
+PLATFORM_CHECK(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) { return Requirements("MPS SPARSE_SOFTMAX_XENT STUB"); }
+
+PLATFORM_IMPL(cosine_distance_loss, ENGINE_CPU)                      { return sd::Status::OK; }
+PLATFORM_CHECK(cosine_distance_loss, ENGINE_CPU)                     { return Requirements("MPS COSINE_DIST_LOSS STUB"); }
+
+PLATFORM_IMPL(hinge_loss, ENGINE_CPU)                                { return sd::Status::OK; }
+PLATFORM_CHECK(hinge_loss, ENGINE_CPU)                               { return Requirements("MPS HINGE_LOSS STUB"); }
+
+PLATFORM_IMPL(log_loss, ENGINE_CPU)                                  { return sd::Status::OK; }
+PLATFORM_CHECK(log_loss, ENGINE_CPU)                                 { return Requirements("MPS LOG_LOSS STUB"); }
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms

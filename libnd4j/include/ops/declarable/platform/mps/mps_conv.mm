@@ -337,6 +337,84 @@ PLATFORM_CHECK(avgpool2d, ENGINE_CPU) {
     return req;
 }
 
+// ===========================================================================
+// conv2d_bp  (stub — MPS ConvolutionGradient requires full MPSNNGraph setup;
+//              fall back to CPU for now)
+// ===========================================================================
+
+PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
+    // Stub: let the generic CPU op handle gradient computation.
+    return sd::Status::OK;
+}
+
+PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
+    Requirements req("MPS CONV2D_BP OP");
+    // Always fall back to CPU — return false.
+    req.expectTrue(makeInfoVariable(false, "conv2d_bp uses CPU fallback"), NO_MSG);
+    req.logTheSuccess();
+    return req;
+}
+
+// ===========================================================================
+// depthwise_conv2d  (stub)
+// ===========================================================================
+
+PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
+    return sd::Status::OK;
+}
+
+PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
+    Requirements req("MPS DEPTHWISE_CONV2D OP");
+    req.expectTrue(makeInfoVariable(false, "depthwise_conv2d uses CPU fallback"), NO_MSG);
+    req.logTheSuccess();
+    return req;
+}
+
+// ===========================================================================
+// depthwise_conv2d_bp  (stub)
+// ===========================================================================
+
+PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CPU) {
+    return sd::Status::OK;
+}
+
+PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
+    Requirements req("MPS DEPTHWISE_CONV2D_BP OP");
+    req.expectTrue(makeInfoVariable(false, "depthwise_conv2d_bp uses CPU fallback"), NO_MSG);
+    req.logTheSuccess();
+    return req;
+}
+
+// ===========================================================================
+// maxpool2d_bp  (stub)
+// ===========================================================================
+
+PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
+    return sd::Status::OK;
+}
+
+PLATFORM_CHECK(maxpool2d_bp, ENGINE_CPU) {
+    Requirements req("MPS MAXPOOL2D_BP OP");
+    req.expectTrue(makeInfoVariable(false, "maxpool2d_bp uses CPU fallback"), NO_MSG);
+    req.logTheSuccess();
+    return req;
+}
+
+// ===========================================================================
+// avgpool2d_bp  (stub)
+// ===========================================================================
+
+PLATFORM_IMPL(avgpool2d_bp, ENGINE_CPU) {
+    return sd::Status::OK;
+}
+
+PLATFORM_CHECK(avgpool2d_bp, ENGINE_CPU) {
+    Requirements req("MPS AVGPOOL2D_BP OP");
+    req.expectTrue(makeInfoVariable(false, "avgpool2d_bp uses CPU fallback"), NO_MSG);
+    req.logTheSuccess();
+    return req;
+}
+
 #endif  // HAVE_MPS
 
 }  // namespace platforms
