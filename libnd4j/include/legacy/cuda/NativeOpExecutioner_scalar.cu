@@ -245,13 +245,6 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
                                     dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
         SD_COMMON_TYPES);
   }
-
-
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) {
-    std::string errorMessage = "execScalar B failed with error code: " + std::to_string(static_cast<int>(res));
-    THROW_EXCEPTION(errorMessage.c_str());
-  }}
+}
 
 ////////////////////////////////////////////////////////////////////////
