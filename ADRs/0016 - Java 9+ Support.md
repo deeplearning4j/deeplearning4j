@@ -1,7 +1,7 @@
 # Java 9+ Support
 
 ## Status
-**Discussion**
+Discussion
 
 Proposed by: Adam Gibson (7th Feb 2022)
 
@@ -14,7 +14,7 @@ with mdoule-info.java being present.
 This ADR addresses the changes made to support java 9 modules. Many of the changes are related to adding
 [module-info.java](https://www.oracle.com/corporate/features/understanding-java-9-modules.html)
 
-## Proposal
+## Decision
 
 1. [moditect plugin](https://github.com/moditect/moditect) metadata for every module
    a. Each module has a module.name with 1 inherited declaration in the root pom for generating and adding 

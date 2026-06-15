@@ -1,7 +1,7 @@
 # Replace old model zoo
 
 ## Status
-**Discussion**
+Discussion
 
 Proposed by: Adam Gibson (12th Jan 2022)
 
@@ -34,7 +34,7 @@ Relevant ADRs include:
 [Omnihub replace old model zoo](./0013%20-%20OmniHub-Zoo%20Consumption.md)
 
 
-## Proposal
+## Decision
 
 All resources are hosted on  github LFS.
 A  resource abstraction for binding the  various resource types in
