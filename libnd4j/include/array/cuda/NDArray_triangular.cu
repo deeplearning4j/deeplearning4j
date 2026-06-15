@@ -76,7 +76,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   if (!isSameShape(target) &&
       !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
-    throw std::string("NDArray::fillAsTriangular method: wrong shape of target array !");
+    THROW_EXCEPTION("NDArray::fillAsTriangular method: wrong shape of target array !");
 
   dim3 launchDims = getFillTriLaunchDims(target.lengthOf(), target.rankOf());
 

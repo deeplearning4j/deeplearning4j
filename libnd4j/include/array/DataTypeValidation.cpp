@@ -22,7 +22,7 @@
 
 #include <array/DataType.h>
 #include <array/DataTypeValidation.h>
-#include <exceptions/allocation_exception.h>
+
 #include <system/op_enums.h>
 
 #include <sstream>

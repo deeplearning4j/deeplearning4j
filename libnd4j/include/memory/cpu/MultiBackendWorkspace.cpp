@@ -18,6 +18,7 @@
 
 #include <memory/MultiBackendWorkspace.h>
 #include <helpers/logger.h>
+#include <system/common.h>
 #include <stdexcept>
 #include <cstring>
 
@@ -33,7 +34,7 @@ namespace {
 inline void checkCuda(cudaError_t err, const char* msg) {
     if (err != cudaSuccess) {
         std::string errorMsg = std::string(msg) + ": " + cudaGetErrorString(err);
-        throw std::runtime_error(errorMsg);
+        THROW_EXCEPTION(errorMsg.c_str());
     }
 }
 
@@ -387,7 +388,7 @@ void MultiBackendWorkspace::transferTo(const DeviceDescriptor& source,
 
     auto srcIt = _deviceAllocations.find(source);
     if (srcIt == _deviceAllocations.end() || srcIt->second.workspace == nullptr) {
-        throw std::runtime_error("Source device has no workspace allocation");
+        THROW_EXCEPTION("Source device has no workspace allocation");
     }
 
     // Ensure target workspace exists
@@ -405,7 +406,7 @@ void MultiBackendWorkspace::transferTo(const DeviceDescriptor& source,
     // Transfers with spills are not supported: spilled allocations are not contiguous and
     // cannot be safely mirrored without per-allocation metadata.
     if (srcWs->getSpilledSize() > 0 || srcWs->getSpilledSecondarySize() > 0) {
-        throw std::runtime_error("MultiBackendWorkspace::transferTo does not support spilled allocations");
+        THROW_EXCEPTION("MultiBackendWorkspace::transferTo does not support spilled allocations");
     }
 
     // Transfer actual data between workspaces using raw pointers.
@@ -431,7 +432,7 @@ void MultiBackendWorkspace::transferTo(const DeviceDescriptor& source,
                           "cudaMemcpy DeviceToHost failed");
                 syncDeviceIfNeeded(source.deviceIndex, true);
             } else {
-                throw std::runtime_error("Null pointer in GPU->CPU transfer");
+                THROW_EXCEPTION("Null pointer in GPU->CPU transfer");
             }
         } else if (!srcIsCuda && tgtIsCuda) {
             // CPU → GPU: host pointer → device pointer
@@ -444,7 +445,7 @@ void MultiBackendWorkspace::transferTo(const DeviceDescriptor& source,
                           "cudaMemcpy HostToDevice failed");
                 syncDeviceIfNeeded(target.deviceIndex, true);
             } else {
-                throw std::runtime_error("Null pointer in CPU->GPU transfer");
+                THROW_EXCEPTION("Null pointer in CPU->GPU transfer");
             }
         } else if (srcIsCuda && tgtIsCuda) {
             // GPU → GPU: device-to-device copy (peer if needed)
@@ -477,7 +478,7 @@ void MultiBackendWorkspace::transferTo(const DeviceDescriptor& source,
                         // Fallback: stage through host memory
                         void* hostPtr = tgtWs->getHostPointer();
                         if (hostPtr == nullptr) {
-                            throw std::runtime_error("Host staging buffer is null for GPU->GPU transfer");
+                            THROW_EXCEPTION("Host staging buffer is null for GPU->GPU transfer");
                         }
                         checkCuda(cudaSetDevice(srcDev), "cudaSetDevice failed");
                         checkCuda(cudaMemcpy(hostPtr, srcPtr, primaryBytes, cudaMemcpyDeviceToHost),
@@ -490,7 +491,7 @@ void MultiBackendWorkspace::transferTo(const DeviceDescriptor& source,
                 syncDeviceIfNeeded(srcDev, true);
                 syncDeviceIfNeeded(dstDev, true);
             } else {
-                throw std::runtime_error("Null pointer in GPU->GPU transfer");
+                THROW_EXCEPTION("Null pointer in GPU->GPU transfer");
             }
         } else
 #endif
@@ -501,7 +502,7 @@ void MultiBackendWorkspace::transferTo(const DeviceDescriptor& source,
             if (srcPtr != nullptr && tgtPtr != nullptr) {
                 std::memcpy(tgtPtr, srcPtr, primaryBytes);
             } else {
-                throw std::runtime_error("Null pointer in CPU->CPU transfer");
+                THROW_EXCEPTION("Null pointer in CPU->CPU transfer");
             }
         }
     }
@@ -511,7 +512,7 @@ void MultiBackendWorkspace::transferTo(const DeviceDescriptor& source,
         void* srcHost = srcWs->getHostPointer();
         void* tgtHost = tgtWs->getHostPointer();
         if (srcHost == nullptr || tgtHost == nullptr) {
-            throw std::runtime_error("Null host pointer in secondary transfer");
+            THROW_EXCEPTION("Null host pointer in secondary transfer");
         }
         std::memcpy(tgtHost, srcHost, secondaryBytes);
     }

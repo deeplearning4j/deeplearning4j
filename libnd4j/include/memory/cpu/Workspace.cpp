@@ -115,7 +115,11 @@ sd::LongType Workspace::getCurrentSize() { return _currentSize; }
 sd::LongType Workspace::getCurrentOffset() { return _offset.load(); }
 
 void *Workspace::allocateBytes(sd::LongType numBytes) {
-  if (numBytes < 1) THROW_EXCEPTION(allocation_exception::build("Number of bytes for allocation should be positive", numBytes).what());
+  if (numBytes < 1) {
+    std::string __alloc_msg = std::string("Number of bytes for allocation should be positive") +
+        "; Requested bytes: [" + std::to_string(numBytes) + "]";
+    THROW_EXCEPTION(__alloc_msg.c_str());
+  }
 
   // numBytes += 32;
   void *result = nullptr;

@@ -22,7 +22,6 @@
 //
 #include <array/DataBuffer.h>
 #include <array/DataTypeUtils.h>
-#include <exceptions/allocation_exception.h>
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
@@ -615,23 +614,29 @@ void DataBuffer::allocatePrimary() {
       // Proactive soft limit check: reject early if system RAM usage exceeds threshold.
       // This prevents cumulative exhaustion from many small allocations (e.g. DSP warmup)
       // that individually succeed but collectively push the system into swap/OOM.
-      if (!memory::MemoryCounter::getInstance().validateSoftLimit(getLenInBytes()))
-        THROW_EXCEPTION(allocation_exception::build("Allocation would breach CPU soft memory limit",
-                                          memory::MemoryCounter::getInstance().allocatedGroup(memory::MemoryType::HOST),
-                                          getLenInBytes()).what());
+      if (!memory::MemoryCounter::getInstance().validateSoftLimit(getLenInBytes())) {
+        std::string __alloc_msg = std::string("Allocation would breach CPU soft memory limit") +
+            "; Limit bytes: [" + std::to_string(memory::MemoryCounter::getInstance().allocatedGroup(memory::MemoryType::HOST)) +
+            "]; Requested bytes: [" + std::to_string(getLenInBytes()) + "]";
+        THROW_EXCEPTION(__alloc_msg.c_str());
+      }
 
       if (sd::env_isCPU()) {
         // on cpu backend we validate against device 0 for now
-        if (!memory::MemoryCounter::getInstance().validate(getLenInBytes()))
-          THROW_EXCEPTION(allocation_exception::build("Requested amount exceeds HOST device limits",
-                                            memory::MemoryCounter::getInstance().deviceLimit(deviceId),
-                                            getLenInBytes()).what());
+        if (!memory::MemoryCounter::getInstance().validate(getLenInBytes())) {
+          std::string __alloc_msg = std::string("Requested amount exceeds HOST device limits") +
+              "; Limit bytes: [" + std::to_string(memory::MemoryCounter::getInstance().deviceLimit(deviceId)) +
+              "]; Requested bytes: [" + std::to_string(getLenInBytes()) + "]";
+          THROW_EXCEPTION(__alloc_msg.c_str());
+        }
       } else {
         // in heterogenuous mode we validate against device group
-        if (!memory::MemoryCounter::getInstance().validateGroup(memory::MemoryType::HOST, getLenInBytes()))
-          THROW_EXCEPTION(allocation_exception::build(
-              "Requested amount exceeds HOST group limits",
-              memory::MemoryCounter::getInstance().groupLimit(memory::MemoryType::HOST), getLenInBytes()).what());
+        if (!memory::MemoryCounter::getInstance().validateGroup(memory::MemoryType::HOST, getLenInBytes())) {
+          std::string __alloc_msg = std::string("Requested amount exceeds HOST group limits") +
+              "; Limit bytes: [" + std::to_string(memory::MemoryCounter::getInstance().groupLimit(memory::MemoryType::HOST)) +
+              "]; Requested bytes: [" + std::to_string(getLenInBytes()) + "]";
+          THROW_EXCEPTION(__alloc_msg.c_str());
+        }
       }
     }
 

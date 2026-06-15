@@ -5,7 +5,7 @@
 
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
-#include <exceptions/cuda_exception.h>
+
 #include <helpers/PointersManager.h>
 #include <execution/AffinityManager.h>
 #include <system/Environment.h>
