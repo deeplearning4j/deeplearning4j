@@ -98,7 +98,6 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
 
-            System.out.println("[ATTN-DIAG-FUSE] FuseManualAttentionPattern checking: " + op.getName());
             log.debug("Checking matmul op: {}", op.getName());
 
             List<String> mmulInputs = op.getInputsToOp();
@@ -246,7 +245,6 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             String attentionOutputVar = attentionOutputs.get(0);
 
             log.debug("[ATTN] *** FUSING *** Q=" + components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + " (causalMask=" + components.useCausalMask + ")");
-            System.out.println("[ATTN-DIAG] FUSING Q=" + components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + " causalMask=" + components.useCausalMask);
 
             try {
                 SDVariable qSDVar = sd.getVariable(components.queryVar);
@@ -274,10 +272,8 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 log.debug("[ATTN-DIAG] Rank check (after inference): Q={}, K={}, V={}", qRank, kRank, vRank);
 
                 // Reject unknown ranks (-1) and rank 5+.
-                System.out.println("[ATTN-DIAG-RANK] Q=" + qRank + " K=" + kRank + " V=" + vRank + " for op: " + op.getName());
                 if (qRank < 2 || kRank < 2 || vRank < 2 || qRank > 4 || kRank > 4 || vRank > 4) {
                     log.debug("[ATTN-DIAG] Skipping: ranks not supported (Q={}, K={}, V={})", qRank, kRank, vRank);
-                    System.out.println("[ATTN-DIAG-RANK] SKIPPING due to bad ranks Q=" + qRank + " K=" + kRank + " V=" + vRank);
                     return false;
                 }
 
@@ -314,9 +310,6 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         kAbsorbed = absorbPermute0231(sd, helper, components.keyVar);
                         if (kAbsorbed != null) {
                             log.debug("[ATTN-R4] Absorbing K transpose-permute (0,2,3,1): {} -> {}", components.keyVar, kAbsorbed[0]);
-                            System.out.println("[ATTN-DIAG] Absorbed K 0231 permute: " + components.keyVar + " -> " + kAbsorbed[0]);
-                        } else {
-                            System.out.println("[ATTN-DIAG] K 0231 absorption FAILED for: " + components.keyVar);
                         }
                     }
                     if (kAbsorbed != null) {
@@ -1659,7 +1652,6 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
             log.debug("[ATTN-DEBUG] Fusing causal masked attention: Q=" +
                     components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + " into dot_product_attention_v2");
-            System.out.println("[ATTN-DIAG-CAUSAL] FuseAttentionWithCausalMask: Q=" + components.queryVar + ", K=" + components.keyVar + ", V=" + vVar);
 
             try {
                 SDVariable qSDVar = sd.getVariable(components.queryVar);
@@ -1687,12 +1679,10 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 String downstreamPermuteOpName = null;
                 String downstreamPermuteOutputVar = null;
 
-                System.out.println("[ATTN-DIAG-CAUSAL-RANK] qRank=" + qRank + " kRank=" + kRank + " vRank=" + vRank);
+                log.debug("[ATTN-CAUSAL] Rank check: Q={}, K={}, V={}", qRank, kRank, vRank);
                 if (qRank == 4 || kRank == 4 || vRank == 4) {
-                    System.out.println("[ATTN-DIAG-CAUSAL-R4] Entered rank-4 block");
                     // Absorb upstream permute([0,2,1,3]) on Q
                     String[] qAbsorbed = absorbPermute0213(sd, helper, components.queryVar);
-                    System.out.println("[ATTN-DIAG-CAUSAL-R4] qAbsorbed=" + (qAbsorbed != null ? qAbsorbed[0] + "/" + qAbsorbed[1] : "null"));
                     if (qAbsorbed != null) {
                         permuteOpsToRemove.add(qAbsorbed[1]);
                         permuteVarsToRemove.add(components.queryVar);
@@ -1712,7 +1702,6 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                             log.debug("[ATTN-R4-CAUSAL] Absorbing K transpose-permute (0,2,3,1): {} -> {}", components.keyVar, kAbsorbed[0]);
                         }
                     }
-                    System.out.println("[ATTN-DIAG-CAUSAL-R4] kAbsorbed=" + (kAbsorbed != null ? kAbsorbed[0] + "/" + kAbsorbed[1] : "null"));
                     if (kAbsorbed != null) {
                         permuteOpsToRemove.add(kAbsorbed[1]);
                         permuteVarsToRemove.add(components.keyVar);
@@ -1722,7 +1711,6 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
                     // Absorb upstream permute([0,2,1,3]) on V
                     String[] vAbsorbed = absorbPermute0213(sd, helper, vVar);
-                    System.out.println("[ATTN-DIAG-CAUSAL-R4] vAbsorbed=" + (vAbsorbed != null ? vAbsorbed[0] + "/" + vAbsorbed[1] : "null"));
                     if (vAbsorbed != null) {
                         permuteOpsToRemove.add(vAbsorbed[1]);
                         permuteVarsToRemove.add(vVar);
@@ -1748,10 +1736,8 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                     }
                 }
 
-                System.out.println("[ATTN-DIAG-CAUSAL-FINAL] Final Q=" + components.queryVar + " K=" + components.keyVar + " V=" + vVar + " downPerm=" + downstreamPermuteOutputVar + " scale=" + components.scaleFactor);
-                if (qSDVar != null) System.out.println("[ATTN-DIAG-CAUSAL-FINAL] qShape=" + java.util.Arrays.toString(qSDVar.getShape()));
-                if (kSDVar != null) System.out.println("[ATTN-DIAG-CAUSAL-FINAL] kShape=" + java.util.Arrays.toString(kSDVar.getShape()));
-                if (vSDVar != null) System.out.println("[ATTN-DIAG-CAUSAL-FINAL] vShape=" + java.util.Arrays.toString(vSDVar.getShape()));
+                log.debug("[ATTN-CAUSAL] Final Q={} K={} V={} downPerm={} scale={}",
+                        components.queryVar, components.keyVar, vVar, downstreamPermuteOutputVar, components.scaleFactor);
 
                 // Create dot_product_attention_v2 with causal mask enabled
                 SDVariable emptyQueryMask = sd.constant("attn_causal_empty_qmask_" + op.getName(), Nd4j.empty(DataType.FLOAT));
@@ -2115,7 +2101,6 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
             log.debug("[ATTN-DEBUG] Fusing masked attention: Q=" +
                     components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + ", mask=" + maskVar + " into dot_product_attention_v2");
-            System.out.println("[ATTN-DIAG-MASK] FuseAttentionWithMask: Q=" + components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + ", mask=" + maskVar);
 
             try {
                 SDVariable qSDVar = sd.getVariable(components.queryVar);
