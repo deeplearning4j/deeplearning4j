@@ -38,41 +38,35 @@ import java.util.List;
 
 public class TestCompGraphWorkSpaces {
     @Test
-    public void testWorkspaces() {
+    public void testWorkspaces() throws Exception {
+        ComputationGraphConfiguration computationGraphConf = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .updater(new Nesterovs(0.1, 0.9))
+                .graphBuilder()
+                .addInputs("input")
+                .appendLayer("L1", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{1, 1}, new int[]{1, 1}).nIn(1).nOut(1).hasBias(false).build())
+                .appendLayer("out", new CnnLossLayer.Builder()
+                        .activation(Activation.SIGMOID)
+                        .lossFunction(LossFunctions.LossFunction.XENT)
+                        .build())
+                .setOutputs("out")
+                .build();
 
-        try {
-            ComputationGraphConfiguration computationGraphConf = new NeuralNetConfiguration.Builder()
-                    .seed(123)
-                    .updater(new Nesterovs(0.1, 0.9))
-                    .graphBuilder()
-                    .addInputs("input")
-                    .appendLayer("L1", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{1, 1}, new int[]{1, 1}).nIn(1).nOut(1).hasBias(false).build())
-                    .appendLayer("out", new CnnLossLayer.Builder()
-                            .activation(Activation.SIGMOID)
-                            .lossFunction(LossFunctions.LossFunction.XENT)
-                            .build())
-                    .setOutputs("out")
-                    .build();
+        ComputationGraph graph = new ComputationGraph(computationGraphConf);
 
-            ComputationGraph graph = new ComputationGraph(computationGraphConf);
+        INDArray data1 = Nd4j.create(1, 1, 256, 256);
+        INDArray data2 = Nd4j.create(1, 1, 256, 256);
+        INDArray label1 = Nd4j.create(1, 1, 256, 256);
+        INDArray label2 = Nd4j.create(1, 1, 256, 256);
+        List<Pair<INDArray, INDArray>> trainData = Collections.singletonList(new Pair<>(data1, label1));
+        List<Pair<INDArray, INDArray>> testData = Collections.singletonList(new Pair<>(data2, label2));
+        DataSetIterator trainIter = new INDArrayDataSetIterator(trainData, 1);
+        DataSetIterator testIter = new INDArrayDataSetIterator(testData, 1);
 
-            INDArray data1 = Nd4j.create(1, 1, 256, 256);
-            INDArray data2 = Nd4j.create(1, 1, 256, 256);
-            INDArray label1 = Nd4j.create(1, 1, 256, 256);
-            INDArray label2 = Nd4j.create(1, 1, 256, 256);
-            List<Pair<INDArray, INDArray>> trainData = Collections.singletonList(new Pair<>(data1, label1));
-            List<Pair<INDArray, INDArray>> testData = Collections.singletonList(new Pair<>(data2, label2));
-            DataSetIterator trainIter = new INDArrayDataSetIterator(trainData, 1);
-            DataSetIterator testIter = new INDArrayDataSetIterator(testData, 1);
+        graph.fit(trainIter);
 
-            graph.fit(trainIter);
-
-            while (testIter.hasNext()) {
-                graph.score(testIter.next());
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        while (testIter.hasNext()) {
+            graph.score(testIter.next());
         }
     }
 

@@ -104,7 +104,7 @@ public class PipelineCoreTest {
 
     @Test
     public void testLoadConfigBuilderWithCacheDirectory() {
-        File customCacheDir = new File("/tmp/custom-cache");
+        File customCacheDir = tempDir.resolve("custom-cache").toFile();
         PipelineLoader.LoadConfig config = PipelineLoader.LoadConfig.builder()
                 .cacheDirectory(customCacheDir)
                 .build();
