@@ -300,16 +300,27 @@ std::vector<Variable*>* sd::graph::VariableSpace::handles() { return _handles; }
  * FIXME: this thing have nice chances to become backend-specific!
  */
 sd::graph::VariableSpace::~VariableSpace() {
-  // loop through variables and release them
-  for (auto p : *_handles) {
-    delete p;
+  // SAFETY: Wrap cleanup in try-catch to handle heap corruption gracefully
+  try {
+    // loop through variables and release them
+    if (_handles != nullptr) {
+      for (auto p : *_handles) {
+        if (p != nullptr) delete p;
+      }
+      delete _handles;
+    }
+  } catch (...) {
+    sd_debug("VariableSpace::~VariableSpace: Exception cleaning up _handles\n", "");
   }
 
-  delete _handles;
-
-  for (auto p : _lists) delete p;
-
-  _lists.clear();
+  try {
+    for (auto p : _lists) {
+      if (p != nullptr) delete p;
+    }
+    _lists.clear();
+  } catch (...) {
+    sd_debug("VariableSpace::~VariableSpace: Exception cleaning up _lists\n", "");
+  }
 }
 
 VariableSpace& VariableSpace::operator=(const VariableSpace& other) {
@@ -372,10 +383,6 @@ void VariableSpace::replaceVariable(Variable* variable) {
 void VariableSpace::dropVariable(std::pair<int, int>& pair) { dropVariable(pair.first, pair.second); }
 
 void VariableSpace::dropVariable(int id, int idx) {}
-
-void VariableSpace::setFlowPath(FlowPath* flow) { _flow = flow; }
-
-FlowPath* VariableSpace::flowPath() { return _flow; }
 
 VariableSpace::VariableSpace() { _handles = new std::vector<Variable*>; }
 }  // namespace graph

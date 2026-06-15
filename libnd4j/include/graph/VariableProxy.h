@@ -84,8 +84,6 @@ class SD_LIB_EXPORT VariableProxy : public VariableSpace {
   virtual VariableSpace *clone();
 
   virtual Stash *getStash();
-  virtual void setFlowPath(FlowPath *timers);
-  virtual FlowPath *flowPath();
 };
 }  // namespace graph
 }  // namespace sd

@@ -26,7 +26,7 @@
 #include <array/NDArrayList.h>
 #include <graph/VariableType.h>
 
-
+#include <cstdlib>
 #include <string>
 
 #ifndef __JAVACPP_HACK__
@@ -137,6 +137,24 @@ class SD_LIB_EXPORT Variable {
    * @return
    */
   flatbuffers::Offset<::graph::FlatVariable> asFlatVariable(flatbuffers::FlatBufferBuilder &builder);
+#endif
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  static void* operator new(size_t size) {
+    return std::malloc(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return std::malloc(size + 4096);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    std::free(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    std::free(ptr);
+  }
 #endif
 };
 }  // namespace graph

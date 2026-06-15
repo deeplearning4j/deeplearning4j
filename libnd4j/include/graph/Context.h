@@ -32,7 +32,7 @@
 #include <graph/VariableSpace.h>
 #include <memory/Workspace.h>
 
-
+#include <cstdlib>
 #include <vector>
 
 namespace sd {
@@ -161,7 +161,17 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
    * @return
    */
   NDArray *intermediateResult(int idx) {
-    return _intermediateResults.at(idx);
+    if (idx < 0 || idx >= static_cast<int>(_intermediateResults.size())) {
+      std::string msg = "intermediateResult: index " + std::to_string(idx) +
+                        " out of bounds, size=" + std::to_string(_intermediateResults.size());
+      THROW_EXCEPTION(msg.c_str());
+    }
+    auto result = _intermediateResults[idx];
+    if (result == nullptr) {
+      std::string msg = "intermediateResult: NDArray at index " + std::to_string(idx) + " is null";
+      THROW_EXCEPTION(msg.c_str());
+    }
+    return result;
   }
 
   /**
@@ -235,15 +245,52 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
   }
 
   void pushIntermediateResult(NDArray* array) {
+    // Tripwire: capture _context before vector operation
+    LaunchContext* contextBefore = _context;
+
     _intermediateResults.push_back(array);
+
+    // Tripwire: verify _context wasn't corrupted by vector reallocation
+    if (_context != contextBefore) {
+      THROW_EXCEPTION("Context::pushIntermediateResult: _context was corrupted during vector push_back!");
+    }
+  }
+
+  /**
+   * Clear all intermediate results, deleting the stored NDArray objects.
+   * Call this when the backward pass is not needed or when reusing the Context.
+   */
+  void clearIntermediateResults() {
+    // Delete in reverse order (views after their parents)
+    for (auto it = _intermediateResults.rbegin(); it != _intermediateResults.rend(); ++it) {
+      if (*it != nullptr) {
+        delete *it;
+      }
+    }
+    _intermediateResults.clear();
+  }
+
+  /**
+   * Get the number of intermediate results stored.
+   */
+  int numIntermediates() const {
+    return static_cast<int>(_intermediateResults.size());
   }
 
   void setIntermediateResult(int idx, NDArray* array) {
-    if(static_cast<int>(intermediateResults().size()) < idx) {
+    // Tripwire: capture _context before vector operation
+    LaunchContext* contextBefore = _context;
+
+    if(static_cast<int>(intermediateResults().size()) <= idx) {
         intermediateResults().resize(idx + 1);
     }
 
     _intermediateResults[idx] = array;
+
+    // Tripwire: verify _context wasn't corrupted by vector operation
+    if (_context != contextBefore) {
+      THROW_EXCEPTION("Context::setIntermediateResult: _context was corrupted during vector operation!");
+    }
   }
 
   void setInputArrays(int numArrays,NDArray** array, bool removable = false);
@@ -272,6 +319,7 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
    * PLEASE NOTE: I/T/B/D args will stay intact
    */
   void clearFastPath();
+  void clearFastPathNoSync();
 
   void setCudaContext(Pointer cudaStream, Pointer reductionPointer, Pointer allocationPointer);
 
@@ -288,6 +336,24 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
   bool isInference();
 
   NDArray* outputArray(int idx);
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  static void* operator new(size_t size) {
+    return std::malloc(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return std::malloc(size + 4096);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    std::free(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    std::free(ptr);
+  }
+#endif
 };
 }  // namespace graph
 }  // namespace sd

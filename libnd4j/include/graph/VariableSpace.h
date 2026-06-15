@@ -24,7 +24,6 @@
 #define LIBND4J_VARIABLESPACE_H
 #include <array/NDArray.h>
 #include <array/NDArrayList.h>
-#include <graph/FlowPath.h>
 #include <graph/Stash.h>
 #include <graph/Variable.h>
 #include <helpers/helper_random.h>
@@ -65,8 +64,6 @@ class SD_LIB_EXPORT VariableSpace {
   SD_MAP_IMPL<int, sd::graph::Variable*> _temporary;
 
   std::vector<sd::graph::Variable*>* _handles;
-
-  FlowPath* _flow = nullptr;
 
  public:
   VariableSpace();
@@ -133,8 +130,6 @@ class SD_LIB_EXPORT VariableSpace {
 
   virtual std::vector<sd::graph::Variable*>* getExternalVariables();
 
-  virtual void setFlowPath(FlowPath* timers);
-  virtual FlowPath* flowPath();
 };
 }  // namespace graph
 }  // namespace sd

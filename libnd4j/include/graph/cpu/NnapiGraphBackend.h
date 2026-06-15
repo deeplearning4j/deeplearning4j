@@ -1,0 +1,221 @@
+/* ******************************************************************************
+ *
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+#ifndef LIBND4J_NNAPI_GRAPH_BACKEND_H
+#define LIBND4J_NNAPI_GRAPH_BACKEND_H
+
+#include <graph/GraphBackend.h>
+#include <graph/GraphBackendCommon.h>
+#include <graph/NativeDynamicShapePlan.h>
+
+#if HAVE_NNAPI
+
+#include <android/NeuralNetworks.h>
+
+#include <memory>
+#include <mutex>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+namespace sd {
+namespace graph {
+
+/**
+ * Android NNAPI graph backend for the native plan executor.
+ *
+ * Routes DSP segments through Android's Neural Networks API (NNAPI) to
+ * leverage hardware accelerators available on the device:
+ *   - Qualcomm Hexagon DSP
+ *   - ARM Mali / Qualcomm Adreno GPU
+ *   - Dedicated NPU (Neural Processing Unit)
+ *   - CPU fallback (via NNAPI's built-in CPU reference implementation)
+ *
+ * NNAPI translates the high-level operation graph into vendor-specific
+ * accelerator code at model compilation time. The compiled model is then
+ * executed repeatedly with near-zero dispatch overhead.
+ *
+ * Op mapping: nd4j ops are mapped to NNAPI operation codes
+ * (ANEURALNETWORKS_*). Ops without NNAPI equivalents cause the segment
+ * to be rejected (canFuseSegment returns false), falling back to the
+ * next backend in getCpuGraphBackend() priority.
+ *
+ * API level requirements:
+ *   - API 27 (NNAPI 1.0): add, sub, mul, div, relu, sigmoid, tanh, softmax,
+ *     conv2d, pooling, fully_connected, reshape, concatenation, lrn
+ *   - API 29 (NNAPI 1.2): comparison, logical, reduce_*, argmax/argmin, cast,
+ *     pow, select, resize, abs, exp, log, neg, sqrt, sin, squeeze, expand_dims,
+ *     pad, tile, split, gather, transpose, space_to_batch, batch_to_space
+ *   - API 30 (NNAPI 1.3): batch_matmul, quantized signed ops
+ *
+ * Priority in getCpuGraphBackend():
+ *   ACL > NNAPI > ARM Hybrid (MLIR) > generic MLIR CPU
+ */
+class NnapiGraphBackend : public GraphBackend {
+ public:
+  NnapiGraphBackend();
+  ~NnapiGraphBackend() override;
+
+  const char* name() const override { return "Android NNAPI"; }
+  bool isAvailable() const override;
+  bool canFuseSegment(NativeSlot* slots, int start, int end) override;
+
+  bool compileSegment(GraphSegment& seg, NativeSlot* slots,
+                      NDArray** externalInputs, int numExternalInputs,
+                      NDArray** outputSlots, int totalOutputSlots,
+                      LongType shapeKey,
+                      int totalSlots = 0,
+                      int* requestedOutputSlotIndices = nullptr,
+                      int numRequestedOutputs = 0) override;
+
+  Status executeSegment(GraphSegment& seg, NativeSlot* slots,
+                        NDArray** externalInputs, int numExternalInputs,
+                        NDArray** outputSlots, int totalOutputSlots,
+                        void* stream) override;
+
+  void invalidateCache() override;
+
+  std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
+
+  static NnapiGraphBackend& getInstance();
+
+  /// Set preferred execution preference (default: PREFER_SUSTAINED_SPEED)
+  void setPreference(int preference) { preference_ = preference; }
+
+ private:
+  bool nnapiAvailable_ = false;
+  int apiLevel_ = 0;
+  int preference_ = ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;
+
+  // NNAPI operand type from nd4j DataType. Returns -1 if unsupported.
+  static int32_t toNnapiOperandType(DataType dt);
+
+  // Check if a DataType can be represented in NNAPI
+  static bool isNnapiSupportedType(DataType dt);
+
+  // Map an nd4j op name to an NNAPI operation code.
+  // Returns -1 if unmappable.
+  static int getNnapiOpCode(const std::string& opName);
+
+  // Minimum API level required for a given op. Returns 27 for basic ops.
+  static int getMinApiLevel(const std::string& opName);
+
+  // Compiled NNAPI model for a segment
+  struct CompiledModel {
+    ANeuralNetworksModel* model = nullptr;
+    ANeuralNetworksCompilation* compilation = nullptr;
+    LongType shapeKey = 0;
+    bool valid = false;
+
+    // Operand index mapping: maps external input/output source indices
+    // to NNAPI operand indices within the model
+    struct OperandMapping {
+      int sourceIndex;   // nd4j source index (<0 = external, >=0 = outputSlot)
+      uint32_t operand;  // NNAPI operand index
+      bool isOutput;
+    };
+    std::vector<OperandMapping> inputMappings;
+    std::vector<OperandMapping> outputMappings;
+
+    // Compilation audit
+    std::vector<CompilationAuditEntry> compilationAudit;
+
+    ~CompiledModel() {
+      if (compilation) ANeuralNetworksCompilation_free(compilation);
+      if (model) ANeuralNetworksModel_free(model);
+    }
+
+    // Non-copyable, moveable
+    CompiledModel() = default;
+    CompiledModel(const CompiledModel&) = delete;
+    CompiledModel& operator=(const CompiledModel&) = delete;
+    CompiledModel(CompiledModel&& o) noexcept
+        : model(o.model), compilation(o.compilation),
+          shapeKey(o.shapeKey), valid(o.valid),
+          inputMappings(std::move(o.inputMappings)),
+          outputMappings(std::move(o.outputMappings)),
+          compilationAudit(std::move(o.compilationAudit)) {
+      o.model = nullptr;
+      o.compilation = nullptr;
+      o.valid = false;
+    }
+    CompiledModel& operator=(CompiledModel&& o) noexcept {
+      if (this != &o) {
+        if (compilation) ANeuralNetworksCompilation_free(compilation);
+        if (model) ANeuralNetworksModel_free(model);
+        model = o.model;
+        compilation = o.compilation;
+        shapeKey = o.shapeKey;
+        valid = o.valid;
+        inputMappings = std::move(o.inputMappings);
+        outputMappings = std::move(o.outputMappings);
+        compilationAudit = std::move(o.compilationAudit);
+        o.model = nullptr;
+        o.compilation = nullptr;
+        o.valid = false;
+      }
+      return *this;
+    }
+  };
+
+  // Segment cache (SegmentCacheKey/Hash from GraphBackendCommon.h)
+  std::unordered_map<SegmentCacheKey, CompiledModel, SegmentCacheHash> cache_;
+  std::mutex cacheMtx_;
+  std::vector<CompilationAuditEntry> lastCompilationAudit_;
+
+  // Build the NNAPI model for a segment — adds operands and operations
+  bool buildModel(ANeuralNetworksModel* model, CompiledModel& compiled,
+                  NativeSlot* slots, int startSlot, int endSlot,
+                  NDArray** externalInputs, int numExternalInputs,
+                  NDArray** outputSlots, int totalOutputSlots,
+                  int totalSlots);
+
+  // Add an NDArray as an NNAPI operand and return its operand index.
+  // If the array is non-contiguous, it will be dup()'d to a contiguous copy.
+  // The contiguous copy is stored in contiguousCopies for lifetime management.
+  uint32_t addOperand(ANeuralNetworksModel* model, NDArray* arr, uint32_t& nextOperand,
+                      std::vector<std::unique_ptr<NDArray>>& contiguousCopies);
+
+  // Add a scalar constant operand (for fused activation codes, axis, etc.)
+  uint32_t addScalarOperand(ANeuralNetworksModel* model, int32_t value, uint32_t& nextOperand);
+  uint32_t addFloatOperand(ANeuralNetworksModel* model, float value, uint32_t& nextOperand);
+  uint32_t addBoolOperand(ANeuralNetworksModel* model, bool value, uint32_t& nextOperand);
+
+  // Add a 1D tensor constant operand from LongType* data (converted to int32)
+  uint32_t addIntVectorOperand(ANeuralNetworksModel* model, const LongType* data, int count,
+                               uint32_t& nextOperand,
+                               std::vector<std::vector<int32_t>>& vectorStorage);
+
+  // Add a shape tensor operand (1D INT32 tensor with the given shape values)
+  uint32_t addShapeOperand(ANeuralNetworksModel* model, NDArray* arr, uint32_t& nextOperand,
+                           std::vector<std::vector<int32_t>>& vectorStorage);
+
+  // Add op-specific implicit parameters (padding, stride, axis, etc.)
+  // Returns false if the op requires params we can't provide.
+  bool addImplicitParams(ANeuralNetworksModel* model, NativeSlot& slot, int nnapiOp,
+                         std::vector<uint32_t>& inputOperands, uint32_t& nextOperand,
+                         NDArray** outputSlots, int totalOutputSlots,
+                         std::vector<std::vector<int32_t>>& vectorStorage);
+};
+
+}  // namespace graph
+}  // namespace sd
+
+#endif  // HAVE_NNAPI
+#endif  // LIBND4J_NNAPI_GRAPH_BACKEND_H

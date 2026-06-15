@@ -36,7 +36,7 @@ std::pair<LongType, LongType> FlatUtils::fromLongPair(::graph::LongPair *pair) {
 
 NDArray *FlatUtils::fromFlatArray(const ::graph::FlatArray *flatArray) {
   auto rank = static_cast<int>(flatArray->shape()->Get(0));
-  auto newShape = new LongType[shape::shapeInfoLength(rank)];
+  auto newShape = new LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
   memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
 
   auto length = shape::length(newShape);
@@ -44,7 +44,7 @@ NDArray *FlatUtils::fromFlatArray(const ::graph::FlatArray *flatArray) {
 
   // empty arrays is special case, nothing to restore here
   if (shape::isEmptyConst(newShape)) {
-     delete[] newShape;
+    delete[] newShape;
     return NDArrayFactory::empty_(dtype, nullptr);
   }
   // TODO fix UTF16 and UTF32
@@ -57,7 +57,7 @@ NDArray *FlatUtils::fromFlatArray(const ::graph::FlatArray *flatArray) {
     auto rawPtr = (void *)flatArray->buffer()->data();
     auto longPtr = reinterpret_cast<LongType *>(rawPtr);
     auto charPtr = reinterpret_cast<char *>(longPtr + length + 1);
-    auto offsets = new LongType[length + 1];
+    auto offsets = new LongType[length + 1 + SD_SHAPE_ALLOC_PADDING]();
 
     for (LongType e = 0; e <= length; e++) {
       auto o = longPtr[e];
@@ -104,8 +104,9 @@ flatbuffers::Offset<::graph::FlatArray> FlatUtils::toFlatArray(flatbuffers::Flat
   auto byteVector = array.asByteVector();
 
   auto fBuffer = builder.CreateVector(byteVector);
-  auto fShape = builder.CreateVector(array.getShapeInfoAsFlatVector());
-
+  auto vec = array.getShapeInfoAsFlatVector();
+  auto fShape = builder.CreateVector(*vec);
+  delete vec;
   auto bo = static_cast<::graph::ByteOrder>(BitwiseUtils::asByteOrder());
 
   return CreateFlatArray(builder, fShape, fBuffer, static_cast<::graph::DType>(array.dataType()), bo);

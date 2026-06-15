@@ -136,6 +136,10 @@ ContextPrototype* ContextPrototype::clone() {
 
   for(auto v : _dArgs) clone->_dArgs.emplace_back(v);
 
+  for (auto v : _axis) clone->_axis.emplace_back(v);
+
+  for (const auto& v : _sArgs) clone->_sArgs.emplace_back(v);
+
   return clone;
 }
 

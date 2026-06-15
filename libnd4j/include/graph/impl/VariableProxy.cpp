@@ -156,10 +156,6 @@ void VariableProxy::trackList(NDArrayList *list) { _current->trackList(list); }
 
 Stash *VariableProxy::getStash() { return _current->getStash(); }
 
-void VariableProxy::setFlowPath(FlowPath *timers) { _current->setFlowPath(timers); }
-
-FlowPath *VariableProxy::flowPath() { return _current->flowPath(); }
-
 void VariableProxy::putOutputVariable(Variable *variable) { _current->putOutputVariable(variable); }
 
 LongType VariableProxy::externalMemory() { return _backed->externalMemory() + _current->externalMemory(); }

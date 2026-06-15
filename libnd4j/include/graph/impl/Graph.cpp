@@ -24,12 +24,11 @@
 #include <graph/FlatUtils.h>
 #include <graph/Graph.h>
 #include <graph/VariableProxy.h>
-#include <graph/exceptions/unresolved_input_exception.h>
-#include <graph/exceptions/unresolved_output_exception.h>
 #include <helpers/EnumUtils.h>
 #include <helpers/ShapeUtils.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <system/env_functions.h>
 
 #include <vector>
 
@@ -108,7 +107,7 @@ LongType Graph::estimateRequiredMemory() {
           auto x = _variableSpace->getVariable(in);
           auto z = _variableSpace->getVariable(node->id());
 
-          auto newShape = new LongType[shape::shapeInfoLength(x->getNDArray()->shapeInfo())];
+          auto newShape = new LongType[shape::shapeInfoLength(x->getNDArray()->shapeInfo()) + SD_SHAPE_ALLOC_PADDING];
           memcpy(newShape, x->getNDArray()->shapeInfo(), shape::shapeInfoByteLength(x->getNDArray()->shapeInfo()));
 
           std::pair<int, int> pairAddr(node->id(), 0);
@@ -122,7 +121,7 @@ LongType Graph::estimateRequiredMemory() {
         } else {
           auto prevShape = shapesMap.at(in);
 
-          auto newShape = new LongType[shape::shapeInfoLength(prevShape)];
+          auto newShape = new LongType[shape::shapeInfoLength(prevShape) + SD_SHAPE_ALLOC_PADDING];
           memcpy(newShape, prevShape, shape::shapeInfoByteLength(prevShape));
 
           std::pair<int, int> pairAddr(node->id(), 0);
@@ -199,7 +198,8 @@ std::vector<Variable *> *Graph::fetchOutputs() {
         res->push_back(_variableSpace->getVariable(nodeId, e1));
       } else {
         if (e == 0) {
-          THROW_EXCEPTION(unresolved_output_exception::build("Can't find output variable", nodeId, e).what());
+          std::string msg = "Can't find output variable; Node: [" + std::to_string(nodeId) + ":0]; Output: [" + std::to_string(e) + "]";
+          THROW_EXCEPTION(msg.c_str());
         } else
           break;
       }
@@ -236,19 +236,74 @@ void Graph::expandOnion(int newLayer) {
 VariableSpace *Graph::getVariableSpace() { return _variableSpace; }
 
 Graph::~Graph() {
-  for (auto &v : *_mapped) delete v.second;
+  // SAFETY: Wrap each cleanup section in try-catch to prevent partial destruction
+  // If heap corruption occurs, we want to clean up as much as possible
+  try {
+    if (_mapped != nullptr) {
+      for (auto &v : *_mapped) {
+        if (v.second != nullptr) delete v.second;
+      }
+    }
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception cleaning up _mapped\n", "");
+  }
 
-  for (auto &v : _unmapped) delete v.second;
+  try {
+    for (auto &v : _unmapped) {
+      if (v.second != nullptr) delete v.second;
+    }
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception cleaning up _unmapped\n", "");
+  }
 
-  for (auto &v : *_onion) delete v.second;
+  try {
+    if (_onion != nullptr) {
+      for (auto &v : *_onion) {
+        if (v.second != nullptr) delete v.second;
+      }
+    }
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception cleaning up _onion\n", "");
+  }
 
-  for (auto v : _scopes) delete v;
+  try {
+    for (auto v : _scopes) {
+      if (v != nullptr) delete v;
+    }
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception cleaning up _scopes\n", "");
+  }
 
-  delete _mapped;
-  delete _nodes;
-  delete _variableSpace;
-  delete _onion;
-  delete _configuration;
+  // Delete containers
+  try {
+    delete _mapped;
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception deleting _mapped\n", "");
+  }
+
+  try {
+    delete _nodes;
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception deleting _nodes\n", "");
+  }
+
+  try {
+    delete _variableSpace;
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception deleting _variableSpace\n", "");
+  }
+
+  try {
+    delete _onion;
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception deleting _onion\n", "");
+  }
+
+  try {
+    delete _configuration;
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception deleting _configuration\n", "");
+  }
 }
 
 void Graph::addNode(Node *node) {
@@ -698,7 +753,7 @@ void Graph::prepareOutputs() {
     // we're adding final nodes of the graph. those, not used as input anywhere
     sd_debug("Paring nodes... \n", "");
 
-    if (Environment::getInstance().isDebugAndVerbose()) {
+    if (sd::env_isDebugAndVerbose()) {
       // sd_printv("current _output", _output);
     }
     //_output.clear();
@@ -742,7 +797,7 @@ void Graph::prepareOutputs() {
         // FIXME: we don't really need search here.
 
         if (std::find(_output.begin(), _output.end(), node->id()) == _output.end()) _output.emplace_back(node->id());
-      } else if (Environment::getInstance().isDebugAndVerbose()) {
+      } else if (sd::env_isDebugAndVerbose()) {
         sd_debug("Node [%i:<%s>] has %i outputs announced:\n", v, node->name()->c_str(), node->output()->size());
         printf("{");
         for (auto s : *node->output()) {
@@ -888,7 +943,8 @@ void Graph::toposortNodes() {
             in.first)) {  // that's probably variable. if not - we'll throw exception later
           // do nothing, maxDepLayer is -1 here, because it's a variable input
         } else {
-          THROW_EXCEPTION(unresolved_input_exception::build("Unknown input specified", id, in).what());
+          std::string msg = "Unknown input specified; Node: [" + std::to_string(id) + ":0]; Variable: [" + std::to_string(in.first) + ":" + std::to_string(in.second) + "]";
+          THROW_EXCEPTION(msg.c_str());
         }
       }
 
