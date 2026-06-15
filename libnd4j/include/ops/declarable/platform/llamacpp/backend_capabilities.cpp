@@ -27,6 +27,7 @@
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
 #include <array/DataBuffer.h>
+#include <system/Environment.h>
 #include <mutex>
 #include <atomic>
 #include <unordered_map>
@@ -385,30 +386,32 @@ std::string getBackendCapabilitySummary(GgmlBackend backend) {
  * Print all backend capabilities
  */
 void printAllBackendCapabilities() {
-    initializeBackendCapabilities();
+    if (sd::Environment::getInstance().isVerbose()) {
+        initializeBackendCapabilities();
 
-    std::lock_guard<std::mutex> lock(g_capabilityMutex);
+        std::lock_guard<std::mutex> lock(g_capabilityMutex);
 
-    printf("=== GGML Backend Capabilities ===\n\n");
+        printf("=== GGML Backend Capabilities ===\n\n");
 
-    for (const auto& pair : g_backendCapabilities) {
-        const auto& cap = pair.second;
-        printf("%s Backend:\n", cap.name.c_str());
-        printf("  Status:          %s\n", cap.available ? "AVAILABLE" : "NOT AVAILABLE");
+        for (const auto& pair : g_backendCapabilities) {
+            const auto& cap = pair.second;
+            printf("%s Backend:\n", cap.name.c_str());
+            printf("  Status:          %s\n", cap.available ? "AVAILABLE" : "NOT AVAILABLE");
 
-        if (cap.available) {
-            printf("  Model Parallel:  %s\n", cap.supportsModelParallel ? "YES" : "NO");
-            printf("  Flash Attention: %s\n", cap.supportsFlashAttention ? "YES" : "NO");
-            printf("  Quantization:    %s\n", cap.supportsQuantization ? "YES" : "NO");
-            printf("  P2P Transfers:   %s\n", cap.supportsP2P ? "YES" : "NO");
-            printf("  Async Copy:      %s\n", cap.supportsAsyncCopy ? "YES" : "NO");
-            printf("  Unified Memory:  %s\n", cap.supportsUnifiedMemory ? "YES" : "NO");
-            printf("  Matmul Speed:    %.1fx (relative to CPU)\n", cap.relativeMatmulSpeed);
-            printf("  Preferred for:\n");
-            if (cap.preferredForLargeModels) printf("    - Large models\n");
-            if (cap.preferredForBatchInference) printf("    - Batch inference\n");
+            if (cap.available) {
+                printf("  Model Parallel:  %s\n", cap.supportsModelParallel ? "YES" : "NO");
+                printf("  Flash Attention: %s\n", cap.supportsFlashAttention ? "YES" : "NO");
+                printf("  Quantization:    %s\n", cap.supportsQuantization ? "YES" : "NO");
+                printf("  P2P Transfers:   %s\n", cap.supportsP2P ? "YES" : "NO");
+                printf("  Async Copy:      %s\n", cap.supportsAsyncCopy ? "YES" : "NO");
+                printf("  Unified Memory:  %s\n", cap.supportsUnifiedMemory ? "YES" : "NO");
+                printf("  Matmul Speed:    %.1fx (relative to CPU)\n", cap.relativeMatmulSpeed);
+                printf("  Preferred for:\n");
+                if (cap.preferredForLargeModels) printf("    - Large models\n");
+                if (cap.preferredForBatchInference) printf("    - Batch inference\n");
+            }
+            printf("\n");
         }
-        printf("\n");
     }
 }
 
