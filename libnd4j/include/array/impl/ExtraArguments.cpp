@@ -29,6 +29,16 @@
 #ifdef SD_CUDA
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <execution/AffinityManager.h>
+#include <memory/cuda/CudaMemoryPool.h>
+
+// Capture-safe helpers defined in ExtraArgumentsCuda.cu (compiled by NVCC).
+// GCC and NVCC have incompatible TLS models, so we access tl_graphExecutionActive
+// indirectly through these wrapper functions.
+namespace sd {
+bool extraArgsCaptureActive();
+void extraArgsCaptureH2D(void* dst, const void* src, size_t bytes);
+}  // namespace sd
 #endif
 
 namespace sd {
@@ -51,9 +61,10 @@ ExtraArguments::ExtraArguments() {
 ExtraArguments::~ExtraArguments() {
   for (auto p : _pointers) {
 #ifdef SD_CUDA
-    cudaFree(p);
+    int deviceId = sd::AffinityManager::currentDeviceId();
+    sd::memory::CudaMemoryPool::getInstance().free(p, deviceId);
 #else  // CPU branch
-    delete reinterpret_cast<int8_t *>(p);
+    delete[] reinterpret_cast<int8_t *>(p);
 #endif
   }
 }
@@ -77,18 +88,29 @@ void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
   }
 
 #ifdef SD_CUDA
-  cudaMemcpy(pointer, target, length * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), cudaMemcpyHostToDevice);
+  auto bytes = length * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>());
+  if (extraArgsCaptureActive()) {
+    // During CUDA graph capture, synchronous cudaMemcpy on the legacy stream
+    // poisons the capture stream with error 901. Use the async capture path.
+    extraArgsCaptureH2D(pointer, target, bytes);
+  } else {
+    // Outside capture: use cudaMemcpyAsync on cudaStreamPerThread instead of
+    // synchronous cudaMemcpy on the legacy stream (stream 0). Stream 0 causes
+    // error 906 when another thread on the same device is mid-capture.
+    cudaMemcpyAsync(pointer, target, bytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
+    cudaStreamSynchronize(cudaStreamPerThread);
+  }
   delete[] target;
 #endif
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void ExtraArguments::convertAndCopy,
+BUILD_SINGLE_TEMPLATE(void ExtraArguments::convertAndCopy,
                       (sd::Pointer pointer, sd::LongType offset), SD_COMMON_TYPES);
 
 void *ExtraArguments::allocate(size_t length, size_t elementSize) {
 #ifdef SD_CUDA
-  Pointer ptr;
-  auto res = cudaMalloc(reinterpret_cast<void **>(&ptr), length * elementSize);
-  if (res != 0) THROW_EXCEPTION("Can't allocate CUDA memory");
+  int deviceId = sd::AffinityManager::currentDeviceId();
+  auto ptr = sd::memory::CudaMemoryPool::getInstance().allocate(length * elementSize, deviceId);
+  if (!ptr) THROW_EXCEPTION("Can't allocate CUDA memory");
 #else  // CPU branch
   auto ptr = new int8_t[length * elementSize];
   if (!ptr) THROW_EXCEPTION("Can't allocate memory");
@@ -110,7 +132,7 @@ template <typename T>
 void *ExtraArguments::argumentsAsT(LongType offset) {
   return argumentsAsT(DataTypeUtils::fromT<T>(), offset);
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void *ExtraArguments::argumentsAsT, (sd::LongType offset),
+BUILD_SINGLE_TEMPLATE(void *ExtraArguments::argumentsAsT, (sd::LongType offset),
                       SD_COMMON_TYPES);
 
 void *ExtraArguments::argumentsAsT(DataType dataType, LongType offset) {

@@ -29,6 +29,7 @@
 #include <array/ResultSet.h>
 #include <array/ShapeDescriptor.h>
 #include <execution/AffinityManager.h>
+#include <execution/LaunchContext.h>
 #include <graph/Intervals.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ShapeBuilders.h>
@@ -406,6 +407,7 @@ class SD_LIB_EXPORT NDArray {
   void makeBothBuffersActual();
 
   void syncToHost();
+  void forceSyncToHost();  // Force sync even if counters say host is actual
   void syncToDevice();
   void syncShape();
 
@@ -563,6 +565,14 @@ class SD_LIB_EXPORT NDArray {
 
 
   SD_INLINE DataBuffer shapeInfoDataBuffer();
+
+  /**
+   * Non-throwing check: returns true if this NDArray has valid shape info
+   * (either _shapeInfoBuffer with valid primary() or direct _shapeInfo).
+   * Use this before calling shapeInfo() when the array may be stale/destructed.
+   */
+  SD_INLINE bool hasValidShapeInfo();
+
   /**
    * Returns True if it's legally empty NDArray, or false otherwise
    * @return
@@ -581,6 +591,7 @@ class SD_LIB_EXPORT NDArray {
   bool permutei(const std::initializer_list<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides);
   bool permutei(std::vector<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides);
   bool permutei(sd::LongType *dimensions, const int rank);
+  bool permutei(sd::LongType *dimensions, const int rank, const bool resetStrides);
 
 
   bool isFinite();
@@ -1154,8 +1165,8 @@ class SD_LIB_EXPORT NDArray {
    * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
    * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
    */
-  void getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclude, LongType *subArrShapeInfo,
-                                LongType *subArrOffsets, bool keepUnitiesInShape = false);
+  void getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclude, LongType *&subArrShapeInfo,
+                                LongType *&subArrOffsets, bool keepUnitiesInShape = false);
 
 
   /**
@@ -1614,6 +1625,7 @@ struct TemplatedGetter {
       return v;
     } else {
       THROW_EXCEPTION("Invalid type conversion in TemplatedGetter");
+      return R{};  // unreachable, but silences MSVC C4716
     }
   }
 };
@@ -1629,6 +1641,16 @@ struct TemplatedGetter<bfloat16, float16> {
     auto b = reinterpret_cast<bfloat16 const *>(buffer);
     float intermediate = static_cast<float>(b[index]);
     auto v = static_cast<float16>(intermediate);
+    return v;
+  }
+};
+
+template <>
+struct TemplatedGetter<float16, bfloat16> {
+  static bfloat16 get(void  *buffer, LongType index) {
+    auto b = reinterpret_cast<float16 const *>(buffer);
+    float intermediate = static_cast<float>(b[index]);
+    auto v = static_cast<bfloat16>(intermediate);
     return v;
   }
 };
@@ -1715,7 +1737,7 @@ LongType NDArray::ews()  {
 bool NDArray::nonNull()  {
   if (isEmpty()) return true;
 
-  if (!Environment::getInstance().isCPU())
+  if (!sd::env_isCPU())
     return getDataBuffer()->special() != nullptr && specialShapeInfo() != nullptr;
 
   return getDataBuffer()->primary() != nullptr && shapeInfo() != nullptr;
@@ -1792,6 +1814,16 @@ bool NDArray::isSameShape(NDArray *other)  {
   // Safety: check for null/invalid pointer
   if (other == nullptr) return false;
 
+  // Fast path: same object
+  if (this == other) return true;
+
+  // Use shapeInfo() accessor instead of raw _shapeInfo to allow fallback logic
+  const sd::LongType* thisShape = this->shapeInfo();
+  const sd::LongType* otherShape = other->shapeInfo();
+
+  // Fast path: same shape info pointer (common for views/shared shapes)
+  if (thisShape == otherShape && thisShape != nullptr) return true;
+
   // Check if both arrays are empty - empty arrays are always same shape
   bool thisEmpty = this->isEmpty();
   bool otherEmpty = other->isEmpty();
@@ -1799,14 +1831,11 @@ bool NDArray::isSameShape(NDArray *other)  {
   if (thisEmpty != otherEmpty) return false;
   if (thisEmpty && otherEmpty) return true;  // Both empty = same shape
 
-  // Use shapeInfo() accessor instead of raw _shapeInfo to allow fallback logic
-  // shapeInfo() returns valid fallback shape even when _shapeInfo is nullptr
-  const sd::LongType* thisShape = this->shapeInfo();
-  const sd::LongType* otherShape = other->shapeInfo();
-
   // If both have valid shapes (even fallback), compare them
+  // Use equalsSoft to compare only dimensions, not strides
+  // isSameShapeStrict is available for cases where stride comparison is needed
   if (thisShape != nullptr && otherShape != nullptr) {
-    return shape::equalsStrict(thisShape, otherShape);
+    return shape::equalsSoft(thisShape, otherShape);
   }
 
   // Both shapes are invalid (extremely rare)
@@ -1857,6 +1886,17 @@ bool NDArray::isEmpty()  {
     THROW_EXCEPTION(errorMessage.c_str());
   }
   bool baseEmpty =  ArrayOptions::hasPropertyBitSet(shInfo, ARRAY_EMPTY);
+  // Also treat arrays with zero length as empty (e.g., shape [0] without ARRAY_EMPTY flag)
+  // This handles rank-1 arrays that don't automatically get the ARRAY_EMPTY flag set
+  if (!baseEmpty && shape::length(shInfo) == 0) {
+    return true;
+  }
+  // NOTE: Do NOT check "_buffer == nullptr" as a proxy for emptiness.
+  // A rank-0 (scalar) NDArray has a valid primary buffer after construction.
+  // During construction, _buffer starts as nullptr before allocation — checking it
+  // here would mis-classify every scalar being constructed as empty and skip buffer
+  // allocation, causing null-deref crashes in reduceNumber/execScalar (e.g. IsFinite).
+  // The ARRAY_EMPTY flag and zero-length check above are the correct emptiness tests.
   return baseEmpty;
 }
 
@@ -1885,10 +1925,6 @@ bool NDArray::operator!=(NDArray &other)  {
 
 //////////////////////////////////////////////////////////////////////////
 DataType NDArray::dataType()  {
-  // CRITICAL: Use shapeInfo() accessor instead of direct _shapeInfo access
-  // shapeInfo() has refresh logic that updates _shapeInfo from _shapeInfoBuffer if needed
-  // and throws informative errors if the array is truly uninitialized.
-  // Direct _shapeInfo access can fail if the pointer needs refreshing.
   return ArrayOptions::dataType(this->shapeInfo());
 }
 
@@ -2031,26 +2067,45 @@ DataBuffer * NDArray::dataBuffer() { return _buffer; }
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
+  // Empty arrays have null DataBuffer - return nullptr instead of throwing
   if (buffer == nullptr) {
-    THROW_EXCEPTION("NDArray::_bufferWithOffset: DataBuffer is nullptr - array not properly initialized");
+    return nullptr;
   }
 
   // Get the buffer pointer from DataBuffer
   void* ptr = buffer->primaryAtOffset<T>(offset);
 
-  // This hides the real bug! Instead of silently propagating nullptr (which causes SIGSEGV in native kernels),
-  // throw a clear exception to expose the root cause: an NDArray is being used without a valid data buffer.
+  // If primary buffer is null but the DataBuffer exists, we need to allocate and sync
   if (ptr == nullptr) {
-    std::string msg = "NDArray::_bufferWithOffset: primaryAtOffset returned nullptr - "
-                      "array buffer is not allocated. This indicates the NDArray was created "
-                      "improperly or its buffer was freed while still in use. "
-                      "Offset: " + std::to_string(offset) + ", "
-                      "Buffer length: " + std::to_string(buffer->getLenInBytes()) + " bytes";
-    THROW_EXCEPTION(msg.c_str());
+#ifdef SD_CUDA
+    // During CUDA graph capture, do NOT allocate primary or sync D2H.
+    // syncToPrimary() issues a synchronous cudaMemcpy(D2H) that invalidates
+    // the capture stream. Callers (e.g. NativeOpExecutioner::execTransformBool)
+    // receive the host pointer as hX/hZ but only use device pointers dX/dZ for
+    // the actual kernel launch — the host pointer is vestigial on CUDA.
+    if (tl_graphExecutionActive) {
+      return nullptr;
+    }
+    // On CUDA, arrays may only have GPU memory allocated initially.
+    // If someone calls buffer() (which accesses host memory), we need to
+    // allocate the primary buffer and sync data from device to host.
+    buffer->allocatePrimary();
+    buffer->syncToPrimary(LaunchContext::defaultContext());
+    ptr = buffer->primaryAtOffset<T>(offset);
+    // If still null after allocation, it's likely an empty array
+    if (ptr == nullptr) {
+      return nullptr;
+    }
+#else
+    // On CPU builds, a null primary buffer may indicate an empty array
+    return nullptr;
+#endif
   }
 
   return ptr;
 }
+
+
 
 // Moved to NDArray.hXX - removed inline definition to avoid requiring selective_rendering.h in header
 
@@ -2063,28 +2118,20 @@ SD_INLINE LongType *NDArray::shapeInfo()  {
   // in cases where _shapeInfo was invalidated (e.g., constructor set it to nullptr).
   ConstantShapeBuffer* buffer = _shapeInfoBuffer;
   if (buffer != nullptr) {
-    // NOTE: We intentionally DO NOT call buffer->isValid() here anymore.
-    // The isValid() check was added in session #1055 to detect use-after-free,
-    // but it CANNOT safely detect garbage pointers - calling ANY method on a
-    // garbage pointer (including isValid()) causes SIGSEGV before we can detect it.
-    // The isValid() check only works for freed-but-zeroed memory, not random garbage.
-    // Session #1056: Removed isValid() check to prevent crash IN the validation itself.
     LongType* refreshed = buffer->primary();
     if (refreshed == nullptr) {
-      // CRITICAL: Just throw without setting error context to avoid
-      // static initialization/destruction order issues with LaunchContext
       const char* msg = "NDArray::shapeInfo() - _shapeInfoBuffer->primary() returned nullptr";
       THROW_EXCEPTION(msg);
     }
     _shapeInfo = refreshed;
-#ifdef SD_CUDA
-    _shapeInfoD = buffer->special();
-#endif
+    // NOTE: We intentionally DO NOT update _shapeInfoD here.
+    // shapeInfo() is for HOST memory only. The _shapeInfoBuffer was cached
+    // at construction time for the device at that time. If the device has
+    // changed, buffer->special() would return the wrong device's pointer.
+    // Device shape pointers should only be obtained via specialShapeInfo()
+    // which has proper device checking and re-queries the cache if needed.
   }
 
-  // Fail fast if NDArray is uninitialized
-  // CRITICAL: Just throw without setting error context to avoid
-  // static initialization/destruction order issues with LaunchContext
   if (_shapeInfo == nullptr) {
     const char* msg = "NDArray::shapeInfo() - _shapeInfo is nullptr (uninitialized NDArray)";
     THROW_EXCEPTION(msg);
@@ -2101,8 +2148,6 @@ SD_INLINE LongType *NDArray::shapeInfo()  {
     errorMessage += "). ";
     errorMessage += "This indicates memory corruption, use-after-free, or uninitialized shapeInfo buffer.";
 
-    // CRITICAL: Just throw without setting error context to avoid
-    // static initialization/destruction order issues with LaunchContext
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
@@ -2122,9 +2167,55 @@ DataBuffer NDArray::shapeInfoDataBuffer()   {
 
 }
 
+////////////////////////////////////////////////////////////////////////
+SD_INLINE bool NDArray::hasValidShapeInfo() {
+  // Check _shapeInfoBuffer first — it can refresh _shapeInfo
+  if (_shapeInfoBuffer != nullptr) {
+    LongType* p = _shapeInfoBuffer->primary();
+    if (p != nullptr) {
+      LongType rank = p[0];
+      return rank >= 0 && rank <= SD_MAX_RANK;
+    }
+    return false;
+  }
+  // No buffer — check raw _shapeInfo pointer
+  if (_shapeInfo != nullptr) {
+    LongType rank = _shapeInfo[0];
+    return rank >= 0 && rank <= SD_MAX_RANK;
+  }
+  return false;
+}
 
 ////////////////////////////////////////////////////////////////////////
 SD_INLINE LongType *NDArray::specialShapeInfo()  {
+#ifdef SD_CUDA
+  auto currentDeviceId = AffinityManager::currentDeviceId();
+  bool needNewBuffer = (_shapeInfoD == nullptr);
+
+  // If we have a cached buffer but the NDArray's device doesn't match current device,
+  // we need to get a new buffer from the device-aware cache
+  if (!needNewBuffer && _deviceId != currentDeviceId) {
+    needNewBuffer = true;
+  }
+
+  if (needNewBuffer && _shapeInfo != nullptr) {
+    // Get device-specific shape buffer from cache
+    auto constBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(_shapeInfo);
+    if (constBuffer != nullptr) {
+      LongType* devicePtr = constBuffer->special();
+      if (devicePtr != nullptr) {
+        _shapeInfoD = devicePtr;
+        _shapeInfoBuffer = constBuffer;
+        _deviceId = currentDeviceId;
+      } else {
+        THROW_EXCEPTION("NDArray::specialShapeInfo() - CUDA: ConstantShapeHelper returned buffer with nullptr special(). "
+                       "This indicates CUDA memory allocation failure or initialization issue.");
+      }
+    } else {
+      THROW_EXCEPTION("NDArray::specialShapeInfo() - CUDA: Failed to get device shape buffer from ConstantShapeHelper.");
+    }
+  }
+#else
   // Keep special buffer pointer synchronized with ConstantShapeBuffer when available.
   ConstantShapeBuffer* buffer = _shapeInfoBuffer;
   if (buffer != nullptr) {
@@ -2133,16 +2224,20 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
       _shapeInfoD = specialPtr;
     }
   }
+#endif
 
   // If special shape info is nullptr, try to use primary. If both are nullptr, throw exception.
   LongType* shapeInfoToReturn = nullptr;
   if (_shapeInfoD == nullptr) {
     if (_shapeInfo != nullptr) {
+#ifdef SD_CUDA
+      // Should not reach here - handled above
+      THROW_EXCEPTION("NDArray::specialShapeInfo() - CUDA: _shapeInfoD still null after cache lookup.");
+#else
+      // On CPU, using host pointer is fine
       shapeInfoToReturn = _shapeInfo;
+#endif
     } else {
-      // Both are nullptr - this is a fatal error
-      // CRITICAL: Just throw without setting error context to avoid
-      // static initialization/destruction order issues with LaunchContext
       const char* msg = "NDArray::specialShapeInfo() - NDArray is uninitialized (both _shapeInfo and _shapeInfoD are nullptr)";
       THROW_EXCEPTION(msg);
     }
@@ -2150,23 +2245,21 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
     shapeInfoToReturn = _shapeInfoD;
   }
 
-  // Prevents "Rank is too high: <pointer_value>" errors from corrupted/uninitialized memory.
-  sd::LongType rank = shapeInfoToReturn[0];
-  if (rank < 0 || rank > SD_MAX_RANK) {
-    std::string errorMessage;
-    errorMessage += "NDArray::specialShapeInfo() - shapeInfo contains invalid rank: ";
-    errorMessage += std::to_string(rank);
-    errorMessage += " (expected 0-";
-    errorMessage += std::to_string(SD_MAX_RANK);
-    errorMessage += "). ";
-    errorMessage += "This indicates memory corruption, use-after-free, or uninitialized shapeInfo buffer.";
+  if (_shapeInfo != nullptr) {
+    sd::LongType rank = _shapeInfo[0];
+    if (rank < 0 || rank > SD_MAX_RANK) {
+      std::string errorMessage;
+      errorMessage += "NDArray::specialShapeInfo() - shapeInfo contains invalid rank: ";
+      errorMessage += std::to_string(rank);
+      errorMessage += " (expected 0-";
+      errorMessage += std::to_string(SD_MAX_RANK);
+      errorMessage += "). ";
+      errorMessage += "This indicates memory corruption, use-after-free, or uninitialized shapeInfo buffer.";
 
-    // CRITICAL: Just throw without setting error context to avoid
-    // static initialization/destruction order issues with LaunchContext
-    THROW_EXCEPTION(errorMessage.c_str());
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   }
 
-  // FIXME: this should be fixed once CUDA backend added
   return shapeInfoToReturn;
 }
 

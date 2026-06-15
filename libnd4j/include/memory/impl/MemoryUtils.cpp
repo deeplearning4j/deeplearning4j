@@ -27,13 +27,14 @@
 #include <mach/mach.h>
 #include <sys/resource.h>
 #elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
-
+#include <windows.h>
 #else
 // linux
 #include <fcntl.h>
 #include <sys/resource.h>
 #include <unistd.h>
 
+#include <cstdio>
 #include <cstring>
 #endif
 
@@ -84,4 +85,38 @@ bool sd::memory::MemoryUtils::retrieveMemoryStatistics(MemoryReport &report) {
 #endif
 
   return false;
+}
+
+size_t sd::memory::MemoryUtils::getSystemFreeMemoryBytes() {
+#if defined(__APPLE__)
+  vm_statistics64_data_t vmstat;
+  mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+  kern_return_t kr = host_statistics64(mach_host_self(), HOST_VM_INFO64,
+                                       reinterpret_cast<host_info64_t>(&vmstat), &count);
+  if (kr != KERN_SUCCESS) return 0;
+  size_t pageSize = static_cast<size_t>(vm_page_size);
+  return static_cast<size_t>(vmstat.free_count + vmstat.inactive_count) * pageSize;
+
+#elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+  MEMORYSTATUSEX statex;
+  statex.dwLength = sizeof(statex);
+  if (!GlobalMemoryStatusEx(&statex)) return 0;
+  return static_cast<size_t>(statex.ullAvailPhys);
+
+#else
+  // Linux: parse MemAvailable from /proc/meminfo
+  FILE* f = fopen("/proc/meminfo", "r");
+  if (!f) return 0;
+  char line[256];
+  size_t result = 0;
+  while (fgets(line, sizeof(line), f)) {
+    unsigned long long kbVal;
+    if (sscanf(line, "MemAvailable: %llu kB", &kbVal) == 1) {
+      result = static_cast<size_t>(kbVal) * 1024ULL;
+      break;
+    }
+  }
+  fclose(f);
+  return result;
+#endif
 }

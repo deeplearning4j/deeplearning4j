@@ -202,6 +202,7 @@ SD_HOST  SD_INLINE bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
     ARRAY_DOUBLE, \
     ARRAY_HALF, \
     ARRAY_BHALF, \
+    ARRAY_FLOAT8, \
     ARRAY_BOOL, \
     ARRAY_CHAR, \
     ARRAY_SHORT, \
@@ -217,6 +218,7 @@ SD_HOST  SD_INLINE bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
     sd::DataType::DOUBLE, \
     sd::DataType::HALF, \
     sd::DataType::BFLOAT16, \
+    sd::DataType::FLOAT8, \
     sd::DataType::BOOL, \
     sd::DataType::INT8, \
     sd::DataType::INT16, \
@@ -232,6 +234,7 @@ SD_HOST  SD_INLINE bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
     ARRAY_SHORT, \
     ARRAY_INT, \
     ARRAY_LONG, \
+    ARRAY_FLOAT8, \
     ARRAY_UTF8, \
     ARRAY_UTF16, \
     ARRAY_UTF32 \
@@ -242,6 +245,7 @@ SD_HOST  SD_INLINE bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
     sd::DataType::UINT16, \
     sd::DataType::UINT32, \
     sd::DataType::UINT64, \
+    sd::DataType::FLOAT8_E5M2, \
     sd::DataType::UTF8, \
     sd::DataType::UTF16, \
     sd::DataType::UTF32 \
@@ -278,7 +282,7 @@ SD_HOST SD_INLINE sd::DataType ArrayOptions::dataTypeValue(sd::LongType property
 
 
 SD_HOST  SD_INLINE void validateFlags(sd::LongType property, const sd::LongType flags[], size_t numFlags) {
-  LongType *flagIndices = new LongType[numFlags];
+  LongType *flagIndices = new LongType[numFlags + SD_SHAPE_ALLOC_PADDING];
   int numFlagsSet = 0;
   for (size_t i = 0; i < numFlags; ++i) {
     if (hasPropertyBitSetForFlags(property, flags[i])) {
@@ -473,6 +477,10 @@ SD_HOST SD_INLINE LongType ArrayOptions::flagForDataType(const sd::DataType data
   switch (dataType) {
     case sd::DataType::BOOL:
       return ARRAY_BOOL;
+    case sd::DataType::FLOAT8:
+      return ARRAY_FLOAT8;
+    case sd::DataType::FLOAT8_E5M2:
+      return ARRAY_FLOAT8 | ARRAY_UNSIGNED;  // distinguish E5M2 from E4M3 via UNSIGNED flag
     case sd::DataType::HALF:
       return ARRAY_HALF;
     case sd::DataType::BFLOAT16:
@@ -523,6 +531,14 @@ SD_HOST SD_INLINE void ArrayOptions::setDataType(sd::LongType *shapeInfo, const 
     case sd::DataType::BOOL:
       ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_BOOL);
+      break;
+    case sd::DataType::FLOAT8:
+      ArrayOptions::resetDataType(shapeInfo);
+      setPropertyBit(shapeInfo, ARRAY_FLOAT8);
+      break;
+    case sd::DataType::FLOAT8_E5M2:
+      ArrayOptions::resetDataType(shapeInfo);
+      setPropertyBit(shapeInfo, ARRAY_FLOAT8 | ARRAY_UNSIGNED);
       break;
     case sd::DataType::HALF:
       ArrayOptions::resetDataType(shapeInfo);
@@ -616,19 +632,26 @@ SD_HOST SD_INLINE void ArrayOptions::setDataType(sd::LongType *shapeInfo, const 
 
 SD_HOST SD_INLINE sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extraStorage, const sd::DataType dataType) {
   sd::LongType  ret = extraStorage;
+  // For unsigned types, set the ARRAY_UNSIGNED flag first, then fall through to set the size flag
   if (dataType == sd::DataType::UINT8
       || dataType == sd::DataType::UINT16
       || dataType == sd::DataType::UINT32 ||
       dataType == sd::DataType::UINT64) {
     ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_UNSIGNED);
     extraStorage = ret;
-    return extraStorage;
+    // Don't return early - let it fall through to set the type size flag below
   }
 
 
   switch (dataType) {
     case sd::DataType::BOOL:
       ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_BOOL);
+      break;
+    case sd::DataType::FLOAT8:
+      ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_FLOAT8);
+      break;
+    case sd::DataType::FLOAT8_E5M2:
+      ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_FLOAT8);
       break;
     case sd::DataType::HALF:
       ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_HALF);
@@ -694,7 +717,7 @@ SD_HOST sd::LongType ArrayOptions::defaultFlag() {
 }
 
 SD_HOST void ArrayOptions::resetFlags(sd::LongType *to) {
-  to[ArrayOptions::extraIndex(to)] = 1;
+  to[ArrayOptions::extraIndex(to)] = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -789,6 +812,17 @@ SD_HOST SD_INLINE int ArrayOptions::getActiveCopyOffsets(const LongType *shapeIn
     }
   }
   return count;
+}
+
+// hasAnyCopyOffset - returns true if any ARRAY_COPY_OFFSET_INPUT_N flag is set
+SD_HOST SD_INLINE bool ArrayOptions::hasAnyCopyOffset(const LongType *shapeInfo) {
+  return (ArrayOptions::extra(shapeInfo) &
+          (ARRAY_COPY_OFFSET_INPUT_0 | ARRAY_COPY_OFFSET_INPUT_1 |
+           ARRAY_COPY_OFFSET_INPUT_2 | ARRAY_COPY_OFFSET_INPUT_3 |
+           ARRAY_COPY_OFFSET_INPUT_4 | ARRAY_COPY_OFFSET_INPUT_5 |
+           ARRAY_COPY_OFFSET_INPUT_6 | ARRAY_COPY_OFFSET_INPUT_7 |
+           ARRAY_COPY_OFFSET_INPUT_8 | ARRAY_COPY_OFFSET_INPUT_9 |
+           ARRAY_COPY_OFFSET_INPUT_10)) != 0;
 }
 
 // isView - const overload for consistency

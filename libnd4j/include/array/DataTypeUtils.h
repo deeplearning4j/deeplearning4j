@@ -28,10 +28,10 @@
 #include <array/ArrayOptions.h>
 #include <array/DataType.h>
 #include <graph/generated/array_generated.h>
-#include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/bfloat16.h>
 #include <types/float16.h>
+#include <types/float8.h>
 
 #include <helpers/logger.h>
 
@@ -84,11 +84,11 @@ class SD_LIB_EXPORT DataTypeUtils {
 
   SD_INLINE static SD_HOST_DEVICE bool isS(DataType dataType);
 
-  SD_INLINE static DataType pickPairwiseResultType(DataType typeX, DataType typeY);
+  static DataType pickPairwiseResultType(DataType typeX, DataType typeY);
 
-  SD_INLINE static DataType pickPairwiseResultType(const LongType *shapeInfo1, const LongType *shapeInfo2);
+  static DataType pickPairwiseResultType(const LongType *shapeInfo1, const LongType *shapeInfo2);
 
-  SD_INLINE static DataType pickFloatingType(DataType typeX);
+  static DataType pickFloatingType(DataType typeX);
 
   template <typename T1, typename T2>
   SD_INLINE static std::vector<T2> convertVector(const std::vector<T1> &vector);
@@ -148,6 +148,10 @@ class SD_LIB_EXPORT DataTypeUtils {
 #ifdef HAS_FLOAT16
         || std::is_same<float16, T>::value
 #endif
+#ifdef HAS_FLOAT8
+        || std::is_same<float8, T>::value
+        || std::is_same<float8_e5m2, T>::value
+#endif
         ;
   };
 
@@ -195,12 +199,6 @@ class SD_LIB_EXPORT DataTypeUtils {
 ///// IMLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
 
-SD_INLINE DataType DataTypeUtils::pickFloatingType(DataType typeX) {
-  // if proposed dataType is already floating point - return it
-  if (isR(typeX)) return typeX;
-  return Environment::getInstance().defaultFloatDataType();
-}
-
 SD_INLINE bool DataTypeUtils::isR(DataType dataType) {
   return false
 #ifdef HAS_FLOAT32
@@ -214,6 +212,10 @@ SD_INLINE bool DataTypeUtils::isR(DataType dataType) {
 #endif
 #ifdef HAS_DOUBLE
          || dataType == DOUBLE
+#endif
+#ifdef HAS_FLOAT8
+         || dataType == FLOAT8
+         || dataType == FLOAT8_E5M2
 #endif
          ;
 }
@@ -259,49 +261,6 @@ SD_INLINE bool DataTypeUtils::isU(DataType dataType) {
          || dataType == UINT64
 #endif
          ;
-}
-
-SD_INLINE DataType DataTypeUtils::pickPairwiseResultType(DataType typeX, DataType typeY) {
-  // if both dtypes are the same - just return it
-  if (typeX == typeY) return typeX;
-  auto sd_max = [](DataType typeX, DataType typeY) { return typeX > typeY ? typeX : typeY; };
-  auto rX = isR(typeX);
-  auto rY = isR(typeY);
-
-  // if X is float - use it
-  if (rX && !rY) return typeX;
-
-  // if Y is float - use it
-  if (!rX && rY) return typeY;
-
-  // if both data types are float - return biggest one
-  if (rX && rY) {
-    // if we allow precision boost, then we pick bigger data type
-    if (Environment::getInstance().precisionBoostAllowed()) {
-      return sd_max(typeX, typeY);
-    } else {
-      // and we return first operand otherwise
-      return typeX;
-    }
-  }
-
-  // if that's not real type, we apply same rules
-  if (!rX && !rY) {
-    if (Environment::getInstance().precisionBoostAllowed()) {
-      return sd_max(typeX, typeY);
-    } else {
-      // and we return first operand otherwise
-      return typeX;
-    }
-  }
-
-  return typeX;
-}
-
-///////////////////////////////////////////////////////////////////
-SD_INLINE DataType DataTypeUtils::pickPairwiseResultType(const LongType *shapeInfo1,
-                                                             const LongType *shapeInfo2) {
-  return pickPairwiseResultType(ArrayOptions::dataType(shapeInfo1), ArrayOptions::dataType(shapeInfo2));
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -359,6 +318,13 @@ SD_INLINE SD_HOST_DEVICE uint16_t DataTypeUtils::min_positive<uint16_t>() {
 }
 #endif
 
+#ifdef HAS_UINT32
+template <>
+SD_INLINE SD_HOST_DEVICE uint32_t DataTypeUtils::min_positive<uint32_t>() {
+  return (uint32_t)0;
+}
+#endif
+
 #ifdef HAS_BOOL
 template <>
 SD_INLINE SD_HOST_DEVICE bool DataTypeUtils::min<bool>() {
@@ -380,16 +346,6 @@ SD_INLINE SD_HOST_DEVICE LongType DataTypeUtils::min<LongType>() {
 template <>
 SD_INLINE SD_HOST_DEVICE LongType DataTypeUtils::min_positive<LongType>() {
   return (LongType)0;
-}
-
-template <>
-SD_INLINE SD_HOST_DEVICE long DataTypeUtils::min<long>() {
-  return std::numeric_limits<long>::min();
-}
-
-template <>
-SD_INLINE SD_HOST_DEVICE long DataTypeUtils::min_positive<long>() {
-  return 0L;
 }
 #endif
 
@@ -431,18 +387,8 @@ SD_INLINE SD_HOST_DEVICE int16_t DataTypeUtils::min<int16_t>() {
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE short int DataTypeUtils::min<short int>() {
-  return (short int)-32768;
-}
-
-template <>
 SD_INLINE SD_HOST_DEVICE int16_t DataTypeUtils::min_positive<int16_t>() {
   return (int16_t)0;
-}
-
-template <>
-SD_INLINE SD_HOST_DEVICE short int DataTypeUtils::min_positive<short int>() {
-  return (short int)0;
 }
 #endif
 
@@ -532,11 +478,6 @@ SD_INLINE SD_HOST_DEVICE uint8_t DataTypeUtils::max<uint8_t>() {
 #ifdef HAS_INT16
 template <>
 SD_INLINE SD_HOST_DEVICE int16_t DataTypeUtils::max<int16_t>() {
-  return 32767;
-}
-
-template <>
-SD_INLINE SD_HOST_DEVICE short int DataTypeUtils::max<short int>() {
   return 32767;
 }
 #endif
@@ -731,6 +672,12 @@ SD_INLINE std::string DataTypeUtils::asString(DataType dataType) {
     case BOOL:
       return std::string("BOOL");
 #endif
+#ifdef HAS_FLOAT8
+    case FLOAT8:
+      return std::string("FLOAT8");
+    case FLOAT8_E5M2:
+      return std::string("FLOAT8_E5M2");
+#endif
 #ifdef HAS_UINT8
     case UINT8:
       return std::string("UINT8");
@@ -828,6 +775,7 @@ SD_INLINE SD_HOST_DEVICE size_t DataTypeUtils::sizeOfElement(DataType type) {
 #endif
 #ifdef HAS_FLOAT8
     case FLOAT8:
+    case FLOAT8_E5M2:
 #endif
 #ifdef HAS_QINT8
     case QINT8:
@@ -944,6 +892,14 @@ SD_INLINE SD_HOST_DEVICE DataType DataTypeUtils::fromT() {
 #ifdef HAS_BFLOAT16
   if (std::is_same<T, bfloat16>::value) {
     return BFLOAT16;
+  } else
+#endif
+#ifdef HAS_FLOAT8
+  if (std::is_same<T, float8>::value) {
+    return FLOAT8;
+  } else
+  if (std::is_same<T, float8_e5m2>::value) {
+    return FLOAT8_E5M2;
   } else
 #endif
 #ifdef HAS_DOUBLE

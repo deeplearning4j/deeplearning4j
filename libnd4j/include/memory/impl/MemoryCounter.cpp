@@ -23,6 +23,8 @@
 
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
+#include <memory/MemoryUtils.h>
+#include <mutex>
 #include <system/Environment.h>
 
 namespace sd {
@@ -44,11 +46,21 @@ MemoryCounter::MemoryCounter() {
   // setting initial counter values
   _groupCounters[HOST] = 0;
   _groupCounters[DEVICE] = 0;
+
+  // init soft limit from Environment (reads SD_CPU_SOFT_LIMIT_PERCENT env var)
+  int softLimit = Environment::getInstance().cpuSoftLimitPercent();
+  if (softLimit > 0 && softLimit <= 100) {
+    _softLimitPercent.store(softLimit, std::memory_order_relaxed);
+  }
 }
 
 MemoryCounter& MemoryCounter::getInstance() {
-  static MemoryCounter instance;
-  return instance;
+  static MemoryCounter* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new MemoryCounter();
+  });
+  return *instance;
 }
 
 void MemoryCounter::countIn(int deviceId, LongType numBytes) {
@@ -125,5 +137,45 @@ LongType MemoryCounter::groupLimit(MemoryType group) {
   std::lock_guard<std::mutex> lock(_locker);
   return _groupLimits[group];
 }
+
+void MemoryCounter::setSoftLimitPercent(int percent) {
+  if (percent < 0) percent = 0;
+  if (percent > 100) percent = 100;
+  _softLimitPercent.store(percent, std::memory_order_relaxed);
+}
+
+int MemoryCounter::getSoftLimitPercent() {
+  return _softLimitPercent.load(std::memory_order_relaxed);
+}
+
+bool MemoryCounter::validateSoftLimit(LongType numBytes) {
+  int softLimit = _softLimitPercent.load(std::memory_order_relaxed);
+  if (softLimit <= 0) return true;  // disabled
+
+  size_t freeBytes = MemoryUtils::getSystemFreeMemoryBytes();
+  if (freeBytes == 0) return true;  // query failed, don't block
+
+  // Estimate total system RAM from free + our tracked allocations.
+  // This is approximate but avoids an extra syscall — MemoryUtils only
+  // provides free memory, not total. We use HOST group counter as a
+  // proxy for our consumption.
+  LongType ourUsage = _groupCounters[HOST];
+  size_t estimatedTotal = freeBytes + static_cast<size_t>(ourUsage > 0 ? ourUsage : 0);
+  if (estimatedTotal == 0) return true;
+
+  double usagePercent = 100.0 * (1.0 - static_cast<double>(freeBytes) / static_cast<double>(estimatedTotal));
+
+  if (usagePercent >= static_cast<double>(softLimit)) {
+    if (sd::Environment::getInstance().isVerbose()) {
+      sd_printf("MemoryCounter: CPU soft limit hit — system at %.1f%% usage "
+                "(soft limit %d%%), free: %zu MB, rejecting %lld bytes\n",
+                usagePercent, softLimit, freeBytes / (1024 * 1024), (long long)numBytes);
+    }
+    return false;
+  }
+
+  return true;
+}
+
 }  // namespace memory
 }  // namespace sd

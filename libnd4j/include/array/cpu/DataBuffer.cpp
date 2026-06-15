@@ -21,27 +21,85 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <array/DataBuffer.h>
+#include <array/DataBufferLifecycleTracker.h>
 #include <array/DataTypeUtils.h>
 #include <types/types.h>
 #include <system/type_boilerplate.h>
 
 
 namespace sd {
+
+// Definition of thread-local graph execution flag (declared in DataBuffer.h)
+// Set during graph segment execution (oneDNN Graph, ACL Dynamic Fusion).
+// SD_TLS_EXPORT needed on Windows/MinGW so __emutls symbols are exported from DLL.
+SD_TLS_EXPORT thread_local bool tl_graphExecutionActive = false;
+
+// Thread-local accumulator for pinned host buffers during graph capture (CUDA only).
+// On CPU builds, this is unused but must be defined to satisfy the linker.
+SD_TLS_EXPORT thread_local std::vector<void*> tl_capturedHostPtrs;
+SD_TLS_EXPORT thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
+
+// CPU stubs for CUDA graph capture workspace variables (declared in DataBuffer.h)
+SD_TLS_EXPORT thread_local void* tl_captureWorkspace = nullptr;
+SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize = 0;
+SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset = 0;
+
+// CPU stubs for cuBLAS workspace thread-locals (declared in DataBuffer.h)
+SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr = nullptr;
+SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize = 0;
+
+// CPU stubs for DSP slot-exec alloc/free accounting thread-locals (declared in DataBuffer.h).
+// NativeDynamicShapePlan_segments.cpp references them unconditionally; the CUDA definitions
+// live in array/cuda/DataBuffer.cu and are not compiled on CPU builds.
+SD_TLS_EXPORT thread_local long long tl_dspAllocBytes = 0;
+SD_TLS_EXPORT thread_local long long tl_dspFreeBytes = 0;
+SD_TLS_EXPORT thread_local int tl_dspAllocCount = 0;
+SD_TLS_EXPORT thread_local int tl_dspFreeCount = 0;
+SD_TLS_EXPORT thread_local int tl_dspFreeSkipCount = 0;
+
+void DataBuffer::replaceSpecialBuffer(void* newPtr, bool isOwner) {
+  // No-op on CPU: there is no device (special) buffer to replace.
+}
+
 void DataBuffer::expand(const uint64_t size) {
+  throwIfFrozen("expand");
   if (static_cast<LongType>(size) > _lenInBytes) {
     // allocate new buffer
     int8_t* newBuffer = nullptr;
-    ALLOCATE(newBuffer, _workspace, size, int8_t);
+    static constexpr size_t HOST_ALLOC_PADDING = 65536;
+    size_t allocSize = size + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
+    ALLOCATE(newBuffer, _workspace, allocSize, int8_t);
+#if defined(SD_GCC_FUNCTRACE)
+    // Track the new allocation before swapping pointers
+    sd::array::DataBufferLifecycleTracker::getInstance().recordAllocation(
+        newBuffer, size, _dataType, sd::array::BufferType::PRIMARY, this, _workspace != nullptr);
+#endif
 
     // copy data from existing buffer
-    std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
+    if (_primaryBuffer != nullptr && _lenInBytes > 0) {
+      std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
+    }
+
+    // Write canary values in the padding region (same as allocatePrimary)
+    if (_workspace == nullptr) {
+      uint64_t* canary = reinterpret_cast<uint64_t*>(newBuffer + size);
+      for (size_t i = 0; i < (HOST_ALLOC_PADDING / sizeof(uint64_t)); i++) {
+        canary[i] = 0xDEADBEEFCAFEBABEULL;
+      }
+    }
 
     if (_isOwnerPrimary) {
+#if defined(SD_GCC_FUNCTRACE)
+      // Record deallocation of the old primary buffer before releasing it
+      sd::array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
+          _primaryBuffer, sd::array::BufferType::PRIMARY);
+#endif
       RELEASE(reinterpret_cast<int8_t*>(_primaryBuffer), _workspace);
     }
 
     _primaryBuffer = newBuffer;
     _lenInBytes = size;
+    _primaryAllocBytes = allocSize;
     _isOwnerPrimary = true;
   }
 }
@@ -196,18 +254,30 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
 /////////////////////////
 
 template <typename T>
-void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset) {
-  if(src->getLenInBytes() != dst->getLenInBytes()) {
-    THROW_EXCEPTION("DataBuffer::memcpy: source and destination buffers have different length in bytes");
+void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n) {
+  auto sizeOfElement = DataTypeUtils::sizeOfElement(src->getDataType());
+  // Calculate copy size in bytes, accounting for offsets
+  sd::LongType srcAvailable = src->getLenInBytes() - startingOffset * sizeOfElement;
+  sd::LongType dstAvailable = dst->getLenInBytes() - dstOffset * sizeOfElement;
+  sd::LongType copyBytes;
+  if (n > 0) {
+    copyBytes = n * sizeOfElement;
+  } else {
+    // When n=0, copy as much as fits (min of available src and dst)
+    copyBytes = srcAvailable < dstAvailable ? srcAvailable : dstAvailable;
   }
+  // Clamp to available space to prevent overruns
+  if (copyBytes > srcAvailable) copyBytes = srcAvailable;
+  if (copyBytes > dstAvailable) copyBytes = dstAvailable;
+  if (copyBytes <= 0) return;
 
-  std::memcpy(dst->primaryAtOffset<T>(dstOffset), src->primaryAtOffset<T>(startingOffset), src->getLenInBytes());
+  std::memcpy(dst->primaryAtOffset<T>(dstOffset), src->primaryAtOffset<T>(startingOffset), copyBytes);
   dst->readPrimary();
 }
 
 void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
-                        sd::LongType startingOffset, sd::LongType dstOffset) {
-  BUILD_SINGLE_SELECTOR(dst->_dataType, memcpyWithT,(dst, src, startingOffset, dstOffset),
+                        sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n) {
+  BUILD_SINGLE_SELECTOR(dst->_dataType, memcpyWithT,(dst, src, startingOffset, dstOffset, n),
                         SD_COMMON_TYPES);
 
   dst->readPrimary();
@@ -219,7 +289,30 @@ void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
 ////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::deleteSpecial() {}
+void DataBuffer::deleteSpecial() {
+  // Always reset pointer and ownership flag for consistency with CUDA version
+  // Even though CPU doesn't have a special buffer, this ensures clean state
+  _specialBuffer = nullptr;
+  _isOwnerSpecial = false;
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::freeGpuOnly() {
+  throwIfFrozen("freeGpuOnly");
+  // CPU: no GPU buffer to free. On CPU this is called during JVM shutdown
+  // (via dbFreeBuffersOnly) to avoid free() crashing on corrupted heap metadata.
+  // deletePrimary() now skips free() when canaries are corrupted, so it's safe
+  // to call here. deleteSpecial() is a no-op on CPU.
+  deleteSpecial();
+  deletePrimary();
+  closed = true;
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::freeGpuOnStream(void* stream) {
+  // CPU: stream parameter is ignored, just delegates to freeGpuOnly
+  freeGpuOnly();
+}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {}
@@ -244,10 +337,12 @@ DataBuffer DataBuffer::dup() {
   DataBuffer result;
   result._dataType = _dataType;
   result._lenInBytes = _lenInBytes;
-  result._primaryBuffer = _primaryBuffer;
-  result._specialBuffer = _specialBuffer;
-  result._isOwnerPrimary = _isOwnerPrimary;
-  result._isOwnerSpecial = _isOwnerSpecial;
+  // Don't copy buffer pointers - allocateBuffers will create new ones
+  result._primaryBuffer = nullptr;
+  result._specialBuffer = nullptr;
+  // Don't copy ownership flags - we'll own the new buffers
+  result._isOwnerPrimary = false;
+  result._isOwnerSpecial = false;
   result.allocateBuffers(true);
   result.copyCounters(*this);
   result.copyBufferFrom(*this);

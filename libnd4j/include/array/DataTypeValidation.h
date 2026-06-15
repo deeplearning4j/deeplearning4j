@@ -28,7 +28,8 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
-#include <system/common.h>
+// Use minimal export header to avoid circular dependencies with common.h
+#include <system/sd_export.h>
 
 namespace sd {
     

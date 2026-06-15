@@ -176,6 +176,9 @@ void NDArray::setIdentity() {
   float v = 1.0f;
 
   for (int i = 0; i < minDim; ++i) templatedSet<float,float>(buffer(), i * offset, this->dataType(), &v);
+
+  tickWriteHost();
+  syncToDevice();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -269,6 +272,7 @@ void NDArray::synchronize(const char* msg)  {
 
 void NDArray::syncToDevice()  {}
 void NDArray::syncToHost()  {}
+void NDArray::forceSyncToHost()  {}
 void NDArray::tickWriteHost()  {}
 void NDArray::tickWriteDevice()  {}
 void NDArray::tickReadHost()  {}
@@ -311,13 +315,14 @@ template void NDArray::printCurrentBuffer<sd::LongType>(const bool host, const c
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
+  // On CPU, special buffer is always nullptr (no device memory).
+  // Return nullptr for both null _buffer and null special — callers
+  // already check for nullptr return (e.g. DSP code checks before use).
   if (_buffer == nullptr) {
-    THROW_EXCEPTION("NDArray::specialBuffer(): _buffer is nullptr - array not properly initialized");
+    return nullptr;
   }
 
   void* specialBuf = _buffer->special();
-
-  // On CPU, special buffer is nullptr (only used for GPU/CUDA) - this is expected and normal
   if (specialBuf == nullptr) {
     return nullptr;
   }
@@ -429,25 +434,12 @@ void NDArray::tile(NDArray& target)  {
 
   // fill newBuff, loop through all elements of newBuff
   // looping through _buffer goes automatically by means of getSubArrayIndex applying
-  const auto ews = target.ews();
   const auto targetLen = target.lengthOf();
-  if (target.ordering() == 'c' && ews >= 1) {
-    for (sd::LongType i = 0; i < targetLen; ++i) {
-      auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
-      auto targetDataType = target.dataType();
-      auto selfDType = dataType();
-      BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
-                            (target.buffer(), i * ews, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
-    }
-  } else {
-    for (sd::LongType i = 0; i < targetLen; ++i) {
-      auto xOffset = target.getOffset(i);
-      auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
-      auto targetDataType = target.dataType();
-      auto selfDType = dataType();
-      BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
-                            (target.buffer(), xOffset, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
-    }
+  for (sd::LongType i = 0; i < targetLen; ++i) {
+    auto xOffset = target.getOffset(i);
+    auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
+                          (target.buffer(), xOffset, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
   }
 }
 

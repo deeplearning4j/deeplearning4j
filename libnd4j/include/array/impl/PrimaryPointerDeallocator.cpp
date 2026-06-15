@@ -30,6 +30,10 @@
 namespace sd {
 
 void PrimaryPointerDeallocator::release(void *ptr) {
+  if (ptr == nullptr) {
+    return;  // Don't try to free nullptr
+  }
+
 #if defined(SD_GCC_FUNCTRACE)
   // Track shape cache deallocation before freeing
   sd::array::ShapeCacheLifecycleTracker::getInstance().recordDeallocation(

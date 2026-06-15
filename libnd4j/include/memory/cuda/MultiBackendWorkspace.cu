@@ -16,41 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// @author raver119@gmail.com
-//
+// CUDA build wrapper for MultiBackendWorkspace
+// The implementation is shared between CPU and CUDA backends.
+// The cpu/MultiBackendWorkspace.cpp already has proper CUDA guards.
 
-#ifndef ND4J_DATATYPE_H
-#define ND4J_DATATYPE_H
-
-namespace sd {
-enum DataType {
-  INHERIT = 0,
-  BOOL = 1,
-  FLOAT8 = 2,        // E4M3FN: 1-sign, 4-exp, 3-mantissa (inference)
-  FLOAT8_E5M2 = 19,  // E5M2: 1-sign, 5-exp, 2-mantissa (gradients)
-  HALF = 3,
-  HALF2 = 4,
-  FLOAT32 = 5,
-  DOUBLE = 6,
-  INT8 = 7,
-  INT16 = 8,
-  INT32 = 9,
-  INT64 = 10,
-  UINT8 = 11,
-  UINT16 = 12,
-  UINT32 = 13,
-  UINT64 = 14,
-  QINT8 = 15,
-  QINT16 = 16,
-  BFLOAT16 = 17,
-  UTF8 = 50,
-  UTF16 = 51,
-  UTF32 = 52,
-  ANY = 100,
-  AUTO = 200,
-  UNKNOWN = 255
-};
-}
-
-#endif
+#include <memory/cpu/MultiBackendWorkspace.cpp>

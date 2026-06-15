@@ -67,8 +67,12 @@ public:
      * Get singleton instance
      */
     static ShapeCacheLifecycleTracker& getInstance() {
-        static ShapeCacheLifecycleTracker instance;
-        return instance;
+        static ShapeCacheLifecycleTracker* instance = nullptr;
+        static std::once_flag initFlag;
+        std::call_once(initFlag, []() {
+            instance = new ShapeCacheLifecycleTracker();
+        });
+        return *instance;
     }
 
     /**

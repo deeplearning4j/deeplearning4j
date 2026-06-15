@@ -26,6 +26,7 @@
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
+#include <system/env_functions.h>
 #include <sstream>
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -38,7 +39,7 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 // default constructor
 DataBuffer::DataBuffer() {
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer() default constructor\n");
     fflush(stdout);
   }
@@ -70,11 +71,13 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
   if(other._dataType == DataType::UNKNOWN) {
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(const DataBuffer& other) copy constructor\n");
     fflush(stdout);
   }
   _lenInBytes = other._lenInBytes;
+  _primaryAllocBytes = other._primaryAllocBytes;
+  _specialAllocBytes = other._specialAllocBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
 #if defined(SD_GCC_FUNCTRACE)
@@ -112,7 +115,7 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
   if(dataType == DataType::UNKNOWN) {
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf(
         "DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
@@ -154,7 +157,7 @@ DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType da
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
 
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
   }
@@ -183,7 +186,7 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
 
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
   }
@@ -247,7 +250,7 @@ DataBuffer::DataBuffer(const sd::LongType lenInBytes, const DataType dataType, m
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
 
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) constructor\n");
     fflush(stdout);
   }
@@ -292,20 +295,33 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
     THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
   }
 
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(DataBuffer&& other) move constructor\n");
     fflush(stdout);
   }
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
   _lenInBytes = other._lenInBytes;
+  _primaryAllocBytes = other._primaryAllocBytes;
+  _specialAllocBytes = other._specialAllocBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
   _isOwnerPrimary = other._isOwnerPrimary;
   _isOwnerSpecial = other._isOwnerSpecial;
   _deviceId.store(other._deviceId);
+  _specialDeviceId.store(other._specialDeviceId.load());  // Also copy special device ID for multi-GPU
 
   copyCounters(other);
+#if defined(SD_CUDA)
+  _writeEvent = other._writeEvent;
+  _writeEventRecorded.store(other._writeEventRecorded.load(std::memory_order_acquire),
+                            std::memory_order_release);
+  _writeEventDeviceId.store(other._writeEventDeviceId.load(std::memory_order_acquire),
+                            std::memory_order_release);
+  other._writeEvent = nullptr;
+  other._writeEventRecorded.store(false, std::memory_order_release);
+  other._writeEventDeviceId.store(-1, std::memory_order_release);
+#endif
 #if defined(SD_GCC_FUNCTRACE)
   allocationStackTracePrimary = other.allocationStackTracePrimary;
   allocationStackTraceSpecial = other.allocationStackTraceSpecial;
@@ -318,6 +334,8 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   other._primaryBuffer = other._specialBuffer = nullptr;
   other.setAllocFlags(false, false);
   other._lenInBytes = 0;
+  other._primaryAllocBytes = 0;
+  other._specialAllocBytes = 0;
 
 #if defined(SD_GCC_FUNCTRACE)
   // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
@@ -338,7 +356,7 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
   if(other._dataType == DataType::UNKNOWN) {
     THROW_EXCEPTION("DataBuffer assignment operator: dataType is UNKNOWN !");
   }
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::operator=(const DataBuffer& other) assignment operator\n");
     fflush(stdout);
   }
@@ -347,6 +365,8 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
   deleteBuffers();
 
   _lenInBytes = other._lenInBytes;
+  _primaryAllocBytes = other._primaryAllocBytes;
+  _specialAllocBytes = other._specialAllocBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
 
@@ -373,7 +393,7 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
     THROW_EXCEPTION("DataBuffer move assignment operator: dataType is UNKNOWN !");
   }
 
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+  if(sd::env_isLogNativeNDArrayCreation()) {
     printf("DataBuffer::operator=(DataBuffer&& other) move assignment operator\n");
     fflush(stdout);
   }
@@ -384,12 +404,26 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
   _lenInBytes = other._lenInBytes;
+  _primaryAllocBytes = other._primaryAllocBytes;
+  _specialAllocBytes = other._specialAllocBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
   _isOwnerPrimary = other._isOwnerPrimary;
   _isOwnerSpecial = other._isOwnerSpecial;
+  _deviceId.store(other._deviceId);
+  _specialDeviceId.store(other._specialDeviceId.load());  // Also copy special device ID for multi-GPU
 
   copyCounters(other);
+#if defined(SD_CUDA)
+  _writeEvent = other._writeEvent;
+  _writeEventRecorded.store(other._writeEventRecorded.load(std::memory_order_acquire),
+                            std::memory_order_release);
+  _writeEventDeviceId.store(other._writeEventDeviceId.load(std::memory_order_acquire),
+                            std::memory_order_release);
+  other._writeEvent = nullptr;
+  other._writeEventRecorded.store(false, std::memory_order_release);
+  other._writeEventDeviceId.store(-1, std::memory_order_release);
+#endif
 
 #if defined(SD_GCC_FUNCTRACE)
   allocationStackTracePrimary = other.allocationStackTracePrimary;
@@ -404,6 +438,8 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   other._primaryBuffer = other._specialBuffer = nullptr;
   other.setAllocFlags(false, false);
   other._lenInBytes = 0;
+  other._primaryAllocBytes = 0;
+  other._specialAllocBytes = 0;
 #if defined(SD_GCC_FUNCTRACE)
   // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
   // - The JVM's memory mappings and signal handlers aren't fully set up yet
@@ -421,6 +457,33 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
 
 void DataBuffer::markConstant(bool reallyConstant) {
   isConstant = reallyConstant;
+}
+
+////////////////////////////////////////////////////////////////////////
+// Frozen-phase mutation guard.
+// Throws immediately if this buffer is registered in one or more frozen
+// NativeDynamicShapePlan contexts. Call from any mutator that would change
+// the identity of the backing storage (reallocate, free, setPrimary/Special,
+// replaceSpecial, expand, migrate, close, etc.). Content-only writes
+// (writePrimary/writeSpecial/syncTo*) must NOT call this — they don't change
+// the underlying pointer.
+void DataBuffer::throwIfFrozen(const char* op) const {
+  int refCount = _frozenRefCount.load(std::memory_order_relaxed);
+  if (refCount > 0) {
+    char msg[384];
+    snprintf(msg, sizeof(msg),
+             "DataBuffer LIFECYCLE VIOLATION: %s called on frozen DataBuffer %p "
+             "(frozenRefCount=%d, primary=%p, special=%p, lenInBytes=%lld) - "
+             "mutation of identity during frozen-phase execution would invalidate "
+             "baked-in GPU addresses held by frozen slot contexts / CUDA graph replay handles",
+             op ? op : "<unknown>",
+             static_cast<const void*>(this),
+             refCount,
+             _primaryBuffer,
+             _specialBuffer,
+             static_cast<long long>(_lenInBytes));
+    THROW_EXCEPTION(msg);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -470,6 +533,31 @@ void DataBuffer::validateIntegrity() const {
     ss << "  This indicates memory corruption\n";
     THROW_EXCEPTION(ss.str().c_str());
   }
+
+  // Validate canary values to detect buffer overruns.
+  // FIX: Skip canary check for zero-length buffers - the canary would be at offset 0
+  // (start of buffer), and any write to the buffer would corrupt it.
+  if (_workspace == nullptr && _lenInBytes > 0 && _primaryBuffer != nullptr && _primaryAllocBytes > _lenInBytes) {
+    const uint64_t* canary = reinterpret_cast<const uint64_t*>(
+        static_cast<const int8_t*>(_primaryBuffer) + _lenInBytes);
+    static constexpr size_t HOST_ALLOC_PADDING = 65536;
+    size_t numCanaries = (HOST_ALLOC_PADDING / sizeof(uint64_t));
+    for (size_t i = 0; i < numCanaries; i++) {
+      if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
+        std::stringstream ss;
+        ss << "DataBuffer integrity check FAILED - BUFFER OVERRUN DETECTED!\n";
+        ss << "  Canary value at offset " << (i * sizeof(uint64_t)) << " is corrupted\n";
+        ss << "  Expected: 0xDEADBEEFCAFEBABE\n";
+        ss << "  Actual: 0x" << std::hex << canary[i] << "\n";
+        ss << std::dec;
+        ss << "  Buffer size: " << _lenInBytes << " bytes (allocBytes=" << _primaryAllocBytes << ")\n";
+        ss << "  DataBuffer this=" << (void*)this << " primaryBuffer=" << _primaryBuffer << "\n";
+        ss << "  DataType=" << (int)_dataType << " isConstant=" << isConstant << " workspace=" << (void*)_workspace << "\n";
+        ss << "  This indicates an operation wrote past the end of the buffer!\n";
+        THROW_EXCEPTION(ss.str().c_str());
+      }
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -506,6 +594,13 @@ size_t DataBuffer::getNumElements()   {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocatePrimary() {
+  // Fast path: if primary buffer already exists, no mutation — skip frozen guard.
+  if (_primaryBuffer != nullptr) return;
+  // Allocating HOST (primary) memory does NOT change the device pointer (_specialBuffer)
+  // that frozen DSP plans bake into GPU kernel arguments / CUDA graph replay handles.
+  // Only block mutations that change _specialBuffer (the GPU address).
+  // This allows safe host-side readback of frozen GPU-only buffers (e.g. when a
+  // different plan shares a weight buffer that was frozen by another plan).
 #if defined(SD_GCC_FUNCTRACE)
   // DataBufferLifecycleTracker already captures allocations for leak detection
   if(allocationStackTracePrimary != nullptr) {
@@ -513,11 +608,19 @@ void DataBuffer::allocatePrimary() {
     allocationStackTracePrimary = nullptr;
   }
 #endif
-  if (_primaryBuffer == nullptr) {
+  {
     auto deviceId = AffinityManager::currentDeviceId();
     // check if this allocation won't bring us above limit
     if (_workspace == nullptr) {
-      if (Environment::getInstance().isCPU()) {
+      // Proactive soft limit check: reject early if system RAM usage exceeds threshold.
+      // This prevents cumulative exhaustion from many small allocations (e.g. DSP warmup)
+      // that individually succeed but collectively push the system into swap/OOM.
+      if (!memory::MemoryCounter::getInstance().validateSoftLimit(getLenInBytes()))
+        THROW_EXCEPTION(allocation_exception::build("Allocation would breach CPU soft memory limit",
+                                          memory::MemoryCounter::getInstance().allocatedGroup(memory::MemoryType::HOST),
+                                          getLenInBytes()).what());
+
+      if (sd::env_isCPU()) {
         // on cpu backend we validate against device 0 for now
         if (!memory::MemoryCounter::getInstance().validate(getLenInBytes()))
           THROW_EXCEPTION(allocation_exception::build("Requested amount exceeds HOST device limits",
@@ -534,12 +637,27 @@ void DataBuffer::allocatePrimary() {
 
 
 
-    ALLOCATE(_primaryBuffer, _workspace, getLenInBytes(), int8_t);
+    // Add padding for non-workspace heap allocations. C++ ops can overrun output
+    // buffers by a few bytes, corrupting adjacent glibc malloc chunk headers.
+    // Workspace allocations use bump allocation where overruns are harmless.
+    static constexpr size_t HOST_ALLOC_PADDING = 65536;
+    size_t allocSize = getLenInBytes() + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
+    ALLOCATE(_primaryBuffer, _workspace, allocSize, int8_t);
     _isOwnerPrimary = true;
+    _primaryAllocBytes = allocSize;
+
+    // Write canary values at end of padding to detect overruns
+    if (_workspace == nullptr && _primaryBuffer != nullptr) {
+      uint64_t* canary = reinterpret_cast<uint64_t*>(
+          static_cast<int8_t*>(_primaryBuffer) + getLenInBytes());
+      for (size_t i = 0; i < (HOST_ALLOC_PADDING / sizeof(uint64_t)); i++) {
+        canary[i] = 0xDEADBEEFCAFEBABEULL;
+      }
+    }
 
     // count in towards current deviceId if we're not in workspace mode
     if (_workspace == nullptr) {
-      if (Environment::getInstance().isCPU())  // we don't want this counter to be added to CUDA device
+      if (sd::env_isCPU())  // we don't want this counter to be added to CUDA device
         memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
 
       memory::MemoryCounter::getInstance().countIn(memory::MemoryType::HOST, getLenInBytes());
@@ -567,30 +685,69 @@ void DataBuffer::deletePrimary() {
 
 #endif
   if (_isOwnerPrimary && _primaryBuffer != nullptr) {
-    auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
+    // Check canary values before freeing to detect buffer overruns.
+    // allocatePrimary() writes 0xDEADBEEFCAFEBABE in the HOST_ALLOC_PADDING region
+    // after the data. If any canary is corrupted, a C++ op wrote past this buffer.
+    // FIX: Skip canary check for zero-length buffers - the canary would be at offset 0
+    // (start of buffer), and any write to the buffer would corrupt it.
+    bool canaryCorrupted = false;
+    if (_workspace == nullptr && _lenInBytes > 0 && _primaryAllocBytes > 0 && _primaryAllocBytes > _lenInBytes) {
+      auto canary = reinterpret_cast<uint64_t*>(
+          static_cast<int8_t*>(_primaryBuffer) + _lenInBytes);
+      size_t paddingBytes = _primaryAllocBytes - _lenInBytes;
+      size_t canaryCount = paddingBytes / sizeof(uint64_t);
+      size_t checkCount = (canaryCount > 16) ? 16 : canaryCount;  // check first 128 bytes
+      for (size_t i = 0; i < checkCount; i++) {
+        if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
+          canaryCorrupted = true;
+          fprintf(stderr, "\n!!! CANARY CORRUPTED in deletePrimary — LEAKING BUFFER TO PREVENT CRASH !!!\n");
+          fprintf(stderr, "  buffer=%p, lenInBytes=%zu, allocBytes=%zu, dtype=%d\n",
+                  _primaryBuffer, _lenInBytes, _primaryAllocBytes, static_cast<int>(_dataType));
+          fprintf(stderr, "  First corrupted canary at offset %zu (byte offset %zu from data end)\n",
+                  i, i * sizeof(uint64_t));
+          fprintf(stderr, "  Canary values: ");
+          for (size_t j = 0; j < checkCount && j < 8; j++) {
+            fprintf(stderr, "%016lx ", static_cast<unsigned long>(canary[j]));
+          }
+          fprintf(stderr, "\n");
+          fflush(stderr);
+          break;
+        }
+      }
+    }
 
-    if(Environment::getInstance().isDeletePrimary()) {
+    if (canaryCorrupted) {
+      // Buffer overrun detected: the op that used this buffer wrote past its end,
+      // corrupting the canary region and potentially the adjacent malloc chunk header.
+      // Calling free() on this buffer would crash with "double free or corruption (!prev)"
+      // because glibc validates chunk metadata during free(). Instead, we intentionally
+      // leak the buffer — a small memory leak is far better than a process crash.
+      // The stderr message above identifies which buffer was corrupted for debugging.
+      _primaryBuffer = nullptr;
+      _isOwnerPrimary = false;
+    } else if(sd::env_isDeletePrimary()) {
 #if defined(SD_GCC_FUNCTRACE)
       // Record deallocation before releasing memory
       array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
           _primaryBuffer, array::BufferType::PRIMARY);
 #endif
+      auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
       RELEASE(p, _workspace);
+      // Always nullify pointer and clear ownership flag, regardless of isDeletePrimary
       _primaryBuffer = nullptr;
+      _isOwnerPrimary = false;
+    } else {
+      _primaryBuffer = nullptr;
+      _isOwnerPrimary = false;
     }
-
-    _isOwnerPrimary = false;
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
-      if (Environment::getInstance().isCPU()) memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
+      if (sd::env_isCPU()) memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
 
       memory::MemoryCounter::getInstance().countOut(memory::MemoryType::HOST, getLenInBytes());
     }
   }
-
-
-
 }
 
 void DataBuffer::printPrimaryAllocationStackTraces() {
@@ -606,6 +763,14 @@ void DataBuffer::deleteBuffers() {
     return;
   }
 
+  // NOTE: intentionally no throwIfFrozen() here. The destructor calls
+  // deleteBuffers() directly, and throwing from a destructor would call
+  // std::terminate. The frozen guard is enforced at the public close()
+  // entry point and at every mutator that replaces pointers
+  // (setPrimaryBuffer, setSpecialBuffer, replaceSpecialBuffer, expand,
+  // migrate, freeGpuOnly, freeGpuOnStream). If a buffer reaches the
+  // destructor while still frozen, that's a separate lifetime bug that
+  // should be caught by the release-path checks in NativeDynamicShapePlan.
   std::lock_guard<std::mutex> lock(_deleteMutex);
   deletePrimary();
   deleteSpecial();
@@ -640,6 +805,7 @@ DataBuffer::~DataBuffer() {
 
 
 void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
+  throwIfFrozen("setPrimaryBuffer");
   std::lock_guard<std::mutex> lock(_deleteMutex);
 #if defined(SD_GCC_FUNCTRACE)
   // DataBufferLifecycleTracker already captures allocations for leak detection
@@ -649,11 +815,13 @@ void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
   }
 #endif
   _primaryBuffer = buffer;
-  _isOwnerPrimary = false;
+  _isOwnerPrimary = false;  // External buffer - caller manages lifetime (JavaCPP Pointer, workspace, etc.)
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
+  _primaryAllocBytes = _lenInBytes;
 }
 
 void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
+  throwIfFrozen("setSpecialBuffer");
   std::lock_guard<std::mutex> lock(_deleteMutex);
 #if defined(SD_GCC_FUNCTRACE)
   // DataBufferLifecycleTracker already captures allocations for leak detection
@@ -664,6 +832,7 @@ void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
 #endif
   this->setSpecial(buffer, false);
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
+  _specialAllocBytes = _lenInBytes;
 }
 
 void DataBuffer::setDataType(DataType dataType) {
@@ -733,7 +902,19 @@ std::string DataBuffer::getCreationTraceAsString() const {
 
 int DataBuffer::deviceId() const { return _deviceId.load(); }
 
-void DataBuffer::close() { this->deleteBuffers(); }
+void DataBuffer::close() {
+  throwIfFrozen("close");
+  this->deleteBuffers();
+}
 
 void DataBuffer::setDeviceId(int deviceId) { _deviceId = deviceId; }
+
+void DataBuffer::resetCounters() {
+#ifdef SD_CUDA
+  _writePrimary.store(0);
+  _writeSpecial.store(0);
+  _readPrimary.store(0);
+  _readSpecial.store(0);
+#endif
+}
 }  // namespace sd

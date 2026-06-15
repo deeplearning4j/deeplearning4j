@@ -27,6 +27,7 @@
 
 #include <array/PointerDeallocator.h>
 
+#include <cstdlib>
 #include <memory>
 
 namespace sd {
@@ -39,6 +40,27 @@ class SD_LIB_EXPORT PointerWrapper {
   PointerWrapper(void *ptr, const std::shared_ptr<PointerDeallocator> &deallocator = {});
   PointerWrapper() = default;
   ~PointerWrapper();
+
+  // Padded operator new/delete to protect adjacent glibc chunks from
+  // overruns. PointerWrapper objects are small (~32 bytes) and heavily
+  // allocated during shape trie population — any adjacent overrun
+  // corrupts the next chunk metadata → SIGABRT on free().
+  static void* operator new(size_t size) {
+    return std::malloc(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return std::malloc(size + 4096);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    std::free(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    std::free(ptr);
+  }
+#endif
 
   void *pointer() const;
 

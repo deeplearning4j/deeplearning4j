@@ -20,6 +20,7 @@
 // Created by raver119 on 07.10.2017.
 //
 #include <memory/MemoryRegistrator.h>
+#include <mutex>
 
 namespace sd {
 namespace memory {
@@ -27,8 +28,12 @@ namespace memory {
 MemoryRegistrator::MemoryRegistrator() { _workspace = nullptr; };
 
 MemoryRegistrator& MemoryRegistrator::getInstance() {
-  static MemoryRegistrator instance;
-  return instance;
+  static MemoryRegistrator* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new MemoryRegistrator();
+  });
+  return *instance;
 }
 
 bool MemoryRegistrator::hasWorkspaceAttached() { return _workspace != nullptr; }

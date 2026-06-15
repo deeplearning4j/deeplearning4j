@@ -24,7 +24,7 @@
 //
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
-#include <graph/GraphExecutioner.h>
+#include <sys/stat.h>
 #include <helpers/ConstantHelper.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/LoopsCoordsHelper.h>
@@ -322,12 +322,18 @@ ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_VALUEOF)
 template <typename T>
 NDArray* NDArrayFactory::linspace(const T from, const T to, const LongType numElements) {
   NDArray* result = NDArrayFactory::vector<T>(numElements);
-  // TO DO: linspace should be executed on DEVICE, but only CPU version implemnted!
-  for (LongType e = 0; e < numElements; e++) {
-    T step = (T)e / ((T)numElements - (T)1);
-    result->p<T>(e, (from * ((T)1 - step) + step * to));
+
+  // Delegate to NDArray::linspace which batches writes and syncs once.
+  // DO NOT use p<T>() per element — each call triggers syncToDevice()
+  // copying the ENTIRE buffer, causing O(n^2) data transfer.
+  if (numElements <= 1) {
+    double startVal = static_cast<double>(from);
+    result->linspace(startVal, 0.0);
+  } else {
+    double startVal = static_cast<double>(from);
+    double stepVal = static_cast<double>(to - from) / static_cast<double>(numElements - 1);
+    result->linspace(startVal, stepVal);
   }
-  result->syncToDevice();
 
   return result;
 }
@@ -449,7 +455,7 @@ NDArray* NDArrayFactory::empty_(LaunchContext* context) {
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   auto result = new NDArray(nullptr, shapeInfo, context, false, 0);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  delete[] shapeInfo;
 
   return result;
 }
@@ -463,7 +469,7 @@ NDArray* NDArrayFactory::empty_(DataType dataType, LaunchContext* context) {
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   auto result = new NDArray(nullptr, shapeInfo, context, false, 0);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  delete[] shapeInfo;
 
   return result;
 }
@@ -482,7 +488,7 @@ SD_LIB_EXPORT NDArray* NDArrayFactory::empty(DataType dataType, LaunchContext* c
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   NDArray *result= new NDArray(nullptr, shapeInfo, context, false, 0);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  delete[] shapeInfo;
 
   return result;
 }
@@ -719,6 +725,14 @@ NDArray * NDArrayFactory::string(std::vector<LongType>& shape, const std::vector
   return new NDArray(shape, string, dtype, context);
 }
 #endif
+
+namespace {
+long getFileSize(const char *filename) {
+  struct stat stat_buf;
+  int rc = stat(filename, &stat_buf);
+  return rc == 0 ? stat_buf.st_size : -1;
+}
+}
 
 NDArray NDArrayFactory::fromNpyFile(const char* fileName) {
   auto size = getFileSize(fileName);
