@@ -25,7 +25,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.nd4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>nd4j-backend-impls</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -42,14 +42,14 @@
     <dependencies>
         <!-- ND4J Core API -->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <!-- Native API for backend integration -->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
             <version>${project.version}</version>
         </dependency>
