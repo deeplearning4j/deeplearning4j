@@ -1,5 +1,6 @@
 .DS_Store
-pom.xml.releaseBackup 
+.kompile/
+pom.xml.releaseBackup
 target/
 dependency-reduced-pom.xml
 *.ser
