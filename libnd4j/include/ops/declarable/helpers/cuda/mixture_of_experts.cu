@@ -34,7 +34,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-__device__ static void deviceSoftmax(T* data, int size) {
+SD_DEVICE static void deviceSoftmax(T* data, int size) {
     T maxVal = data[0];
     for (int i = 1; i < size; i++) {
         if (data[i] > maxVal) maxVal = data[i];
@@ -50,7 +50,7 @@ __device__ static void deviceSoftmax(T* data, int size) {
 }
 
 template <typename T>
-__device__ static void deviceTopK(T* data, int size, int k, int* indices, T* values) {
+SD_DEVICE static void deviceTopK(T* data, int size, int k, int* indices, T* values) {
     // Simple selection sort for top-K (efficient for small K)
     for (int i = 0; i < k; i++) {
         int maxIdx = i;
@@ -72,7 +72,7 @@ __device__ static void deviceTopK(T* data, int size, int k, int* indices, T* val
 }
 
 template <typename T>
-__global__ __launch_bounds__(128, 4) static void mixtureOfExpertsKernel(
+SD_KERNEL __launch_bounds__(128, 4) static void mixtureOfExpertsKernel(
     const T* input,
     const T* gatingWeights,
     const T* expertWeights,

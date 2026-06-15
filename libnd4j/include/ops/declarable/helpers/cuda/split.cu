@@ -43,7 +43,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ static void splitCuda(const void* vx, const LongType* xShapeInfo, void* pVz,
+SD_KERNEL static void splitCuda(const void* vx, const LongType* xShapeInfo, void* pVz,
                                  const LongType* zTadShapeInfo, const LongType axis) {
   const T* x = reinterpret_cast<const T*>(vx);
 

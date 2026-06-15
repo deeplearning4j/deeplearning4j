@@ -32,7 +32,7 @@ static constexpr int CS_BP_WARP_SIZE = 32;
 
 // Phase 1: Compute softmax output (same as forward)
 template <typename T>
-__global__ void csBpSoftmaxKernel(const T* __restrict__ input,
+SD_KERNEL void csBpSoftmaxKernel(const T* __restrict__ input,
                                    const T* __restrict__ center,
                                    T* __restrict__ softmaxOut,
                                    const LongType batch,
@@ -104,7 +104,7 @@ __global__ void csBpSoftmaxKernel(const T* __restrict__ input,
 // dL/dinput = dL/dz / temperature
 // dL/dcenter = -sum_batch(dL/dinput)
 template <typename T>
-__global__ void csBpGradKernel(const T* __restrict__ softmaxOut,
+SD_KERNEL void csBpGradKernel(const T* __restrict__ softmaxOut,
                                 const T* __restrict__ gradOutput,
                                 T* __restrict__ dLdInput,
                                 float* __restrict__ dLdCenterAcc,
@@ -157,7 +157,7 @@ __global__ void csBpGradKernel(const T* __restrict__ softmaxOut,
 
 // Phase 3: Convert accumulated float center gradient to output type
 template <typename T>
-__global__ void convertCenterGradKernel(const float* __restrict__ dLdCenterAcc,
+SD_KERNEL void convertCenterGradKernel(const float* __restrict__ dLdCenterAcc,
                                          T* __restrict__ dLdCenter,
                                          const LongType dim) {
     for (LongType f = blockIdx.x * blockDim.x + threadIdx.x;

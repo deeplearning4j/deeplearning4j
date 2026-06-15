@@ -38,7 +38,7 @@ constexpr int MHA_WARP_SIZE = 32;
 // Warp-level reduction: sum
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ __forceinline__ T mhaWarpReduceSum(T val) {
+SD_DEVICE SD_INLINE T mhaWarpReduceSum(T val) {
     for (int offset = MHA_WARP_SIZE / 2; offset > 0; offset /= 2) {
         val += __shfl_down_sync(0xffffffff, val, offset);
     }
@@ -49,7 +49,7 @@ __device__ __forceinline__ T mhaWarpReduceSum(T val) {
 // Warp-level reduction: max
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ __forceinline__ T mhaWarpReduceMax(T val) {
+SD_DEVICE SD_INLINE T mhaWarpReduceMax(T val) {
     for (int offset = MHA_WARP_SIZE / 2; offset > 0; offset /= 2) {
         T other = __shfl_down_sync(0xffffffff, val, offset);
         val = val > other ? val : other;
@@ -60,7 +60,7 @@ __device__ __forceinline__ T mhaWarpReduceMax(T val) {
 //////////////////////////////////////////////////////////////////////////////
 // Block-level reduction: sum
 //////////////////////////////////////////////////////////////////////////////
-__device__ float mhaBlockReduceSum(float val, float* sharedMem) {
+SD_DEVICE float mhaBlockReduceSum(float val, float* sharedMem) {
     const int lane = threadIdx.x % MHA_WARP_SIZE;
     const int wid = threadIdx.x / MHA_WARP_SIZE;
     const int numWarps = (blockDim.x + MHA_WARP_SIZE - 1) / MHA_WARP_SIZE;
@@ -77,7 +77,7 @@ __device__ float mhaBlockReduceSum(float val, float* sharedMem) {
 //////////////////////////////////////////////////////////////////////////////
 // Block-level reduction: max
 //////////////////////////////////////////////////////////////////////////////
-__device__ float mhaBlockReduceMax(float val, float* sharedMem) {
+SD_DEVICE float mhaBlockReduceMax(float val, float* sharedMem) {
     const int lane = threadIdx.x % MHA_WARP_SIZE;
     const int wid = threadIdx.x / MHA_WARP_SIZE;
     const int numWarps = (blockDim.x + MHA_WARP_SIZE - 1) / MHA_WARP_SIZE;
@@ -101,7 +101,7 @@ __device__ float mhaBlockReduceMax(float val, float* sharedMem) {
 //   float reductionBuf[numWarps]  - for block reductions
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
+SD_KERNEL __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
     const T* __restrict__ hiddenStates,   // [B, 1, H]
     const T* __restrict__ qkvWeight,      // [H, 3*H]
     const T* __restrict__ oWeight,        // [H, H]
@@ -342,7 +342,7 @@ __global__ __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
 // Kernel to zero output buffer before accumulation
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ __launch_bounds__(256, 2) void zeroOutputKernel(T* output, LongType size) {
+SD_KERNEL __launch_bounds__(256, 2) void zeroOutputKernel(T* output, LongType size) {
     LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < size) {
         output[idx] = static_cast<T>(0);
@@ -353,7 +353,7 @@ __global__ __launch_bounds__(256, 2) void zeroOutputKernel(T* output, LongType s
 // Kernel to copy KV cache (existing entries, not the new one)
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ __launch_bounds__(256, 2) void copyKvCacheKernel(
+SD_KERNEL __launch_bounds__(256, 2) void copyKvCacheKernel(
     const T* __restrict__ src,
     T* __restrict__ dst,
     LongType size) {

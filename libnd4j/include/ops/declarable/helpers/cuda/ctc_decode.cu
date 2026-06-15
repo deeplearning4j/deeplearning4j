@@ -34,7 +34,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T, typename I>
-__global__ static void ctcGreedyDecodeKernel(
+SD_KERNEL static void ctcGreedyDecodeKernel(
     const T* logits,
     const I* sequenceLength,
     sd::LongType* decoded,

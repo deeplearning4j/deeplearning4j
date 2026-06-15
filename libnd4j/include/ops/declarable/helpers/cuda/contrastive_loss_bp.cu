@@ -32,7 +32,7 @@ static constexpr int CL_BP_WARP_SIZE = 32;
 
 // Kernel 1: Similarity matrix
 template <typename T>
-__global__ void contrastiveBpSimKernel(
+SD_KERNEL void contrastiveBpSimKernel(
     const T* __restrict__ imageEmb,
     const T* __restrict__ textEmb,
     float* __restrict__ sim,
@@ -71,7 +71,7 @@ __global__ void contrastiveBpSimKernel(
 }
 
 // Kernel 2: Row-wise softmax
-__global__ void softmaxRowKernel(
+SD_KERNEL void softmaxRowKernel(
     const float* __restrict__ sim,
     float* __restrict__ prob,
     const LongType batch) {
@@ -129,7 +129,7 @@ __global__ void softmaxRowKernel(
 }
 
 // Kernel 3: Column-wise softmax
-__global__ void softmaxColKernel(
+SD_KERNEL void softmaxColKernel(
     const float* __restrict__ sim,
     float* __restrict__ prob,
     const LongType batch) {
@@ -188,7 +188,7 @@ __global__ void softmaxColKernel(
 
 // Kernel 4: Compute embedding gradients
 template <typename T>
-__global__ void contrastiveGradKernel(
+SD_KERNEL void contrastiveGradKernel(
     const float* __restrict__ probRow,
     const float* __restrict__ probCol,
     const T* __restrict__ otherEmb,

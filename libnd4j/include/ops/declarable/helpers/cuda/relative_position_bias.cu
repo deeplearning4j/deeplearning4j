@@ -35,7 +35,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-__global__ static void relativePositionBiasLearnedKernel(
+SD_KERNEL static void relativePositionBiasLearnedKernel(
     const T* biasTable,
     const sd::LongType* relativePositionIndex,
     T* output,
@@ -80,7 +80,7 @@ __global__ static void relativePositionBiasLearnedKernel(
 }
 
 template <typename T>
-__global__ static void relativePositionBiasAlibiKernel(
+SD_KERNEL static void relativePositionBiasAlibiKernel(
     T* output,
     const T* slopes,
     const sd::LongType numHeads,

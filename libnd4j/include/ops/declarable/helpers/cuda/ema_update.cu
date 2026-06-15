@@ -26,7 +26,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-__global__ void emaUpdateKernel(const T* __restrict__ model,
+SD_KERNEL void emaUpdateKernel(const T* __restrict__ model,
                                  const T* __restrict__ shadow,
                                  T* __restrict__ output,
                                  const T decay,

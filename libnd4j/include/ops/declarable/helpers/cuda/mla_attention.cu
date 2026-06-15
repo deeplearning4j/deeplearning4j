@@ -41,7 +41,7 @@ constexpr int MLA_WARP_SIZE = 32;
 // Warp-level reduction for sum
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ __forceinline__ T mlaWarpReduceSum(T val) {
+SD_DEVICE SD_INLINE T mlaWarpReduceSum(T val) {
     for (int offset = MLA_WARP_SIZE / 2; offset > 0; offset /= 2) {
         val += __shfl_down_sync(0xffffffff, val, offset);
     }
@@ -52,7 +52,7 @@ __device__ __forceinline__ T mlaWarpReduceSum(T val) {
 // Warp-level reduction for max
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ __forceinline__ T mlaWarpReduceMax(T val) {
+SD_DEVICE SD_INLINE T mlaWarpReduceMax(T val) {
     for (int offset = MLA_WARP_SIZE / 2; offset > 0; offset /= 2) {
         T other = __shfl_down_sync(0xffffffff, val, offset);
         val = val > other ? val : other;
@@ -64,7 +64,7 @@ __device__ __forceinline__ T mlaWarpReduceMax(T val) {
 // Block-level reduction for sum
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ T mlaBlockReduceSum(T val, T* sharedMem) {
+SD_DEVICE T mlaBlockReduceSum(T val, T* sharedMem) {
     const int lane = threadIdx.x % MLA_WARP_SIZE;
     const int wid = threadIdx.x / MLA_WARP_SIZE;
     const int numWarps = (blockDim.x + MLA_WARP_SIZE - 1) / MLA_WARP_SIZE;
@@ -82,7 +82,7 @@ __device__ T mlaBlockReduceSum(T val, T* sharedMem) {
 // Block-level reduction for max
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ T mlaBlockReduceMax(T val, T* sharedMem) {
+SD_DEVICE T mlaBlockReduceMax(T val, T* sharedMem) {
     const int lane = threadIdx.x % MLA_WARP_SIZE;
     const int wid = threadIdx.x / MLA_WARP_SIZE;
     const int numWarps = (blockDim.x + MLA_WARP_SIZE - 1) / MLA_WARP_SIZE;
@@ -109,7 +109,7 @@ __device__ T mlaBlockReduceMax(T val, T* sharedMem) {
 // Uses online softmax for numerical stability.
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ __launch_bounds__(512, 1) void mlaAttentionKernel(
+SD_KERNEL __launch_bounds__(512, 1) void mlaAttentionKernel(
     const T* __restrict__ query,          // [B, numHeads, headDim] (squeezed seq=1)
     const T* __restrict__ latentKVCache,  // [B, maxSeqLen, latentDim]
     const T* __restrict__ kvDownProj,     // [latentDim, 2 * numKvHeads * headDim]

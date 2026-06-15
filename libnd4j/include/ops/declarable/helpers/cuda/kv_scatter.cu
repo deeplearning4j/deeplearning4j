@@ -35,7 +35,7 @@ namespace helpers {
  * Block: 256 threads, grid-stride over dim
  */
 template <typename T>
-__global__ void kvScatterKernel(const T* __restrict__ present,
+SD_KERNEL void kvScatterKernel(const T* __restrict__ present,
                                  T* __restrict__ output,
                                  const LongType batch,
                                  const LongType heads,
@@ -109,7 +109,7 @@ void kvScatter(NDArray* present, NDArray* output,
  * Block: 256 threads, grid-stride over dim
  */
 template <typename T>
-__global__ void kvScatterBatchedKernel(const KvScatterEntry* __restrict__ entries,
+SD_KERNEL void kvScatterBatchedKernel(const KvScatterEntry* __restrict__ entries,
                                         const int* __restrict__ entrySliceOffsets,
                                         int numEntries,
                                         int totalSlices) {
@@ -214,7 +214,7 @@ void kvScatterBatched(const KvScatterEntry* entries, int numEntries,
  * the same graph with the new position.
  */
 template <typename T>
-__global__ void kvScatterDynBatchedKernel(const KvScatterDynEntry* __restrict__ entries,
+SD_KERNEL void kvScatterDynBatchedKernel(const KvScatterDynEntry* __restrict__ entries,
                                            const int* __restrict__ entrySliceOffsets,
                                            int numEntries,
                                            int totalSlices) {

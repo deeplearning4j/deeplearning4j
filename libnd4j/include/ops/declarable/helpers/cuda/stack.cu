@@ -36,7 +36,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ static void stackScalarsCuda(void* pVx, void* vz, const LongType* zShapeInfo) {
+SD_KERNEL static void stackScalarsCuda(void* pVx, void* vz, const LongType* zShapeInfo) {
   T* z = reinterpret_cast<T*>(vz);
 
   // Shared memory for caching shape information of z
@@ -158,7 +158,7 @@ BUILD_SINGLE_TEMPLATE( void stack_,
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ static void unstackScalarsCuda(const void* vx, const LongType* xShapeInfo, void* pVz) {
+SD_KERNEL static void unstackScalarsCuda(const void* vx, const LongType* xShapeInfo, void* pVz) {
   const T* x = reinterpret_cast<const T*>(vx);
 
   // Shared memory for caching shape information

@@ -36,7 +36,7 @@ constexpr int KVQ_WARP_SIZE = 32;
 //////////////////////////////////////////////////////////////////////////////
 // Warp-level max reduction
 //////////////////////////////////////////////////////////////////////////////
-__device__ __forceinline__ float kvqWarpReduceMax(float val) {
+SD_DEVICE SD_INLINE float kvqWarpReduceMax(float val) {
     for (int offset = KVQ_WARP_SIZE / 2; offset > 0; offset /= 2) {
         val = fmaxf(val, __shfl_down_sync(0xffffffff, val, offset));
     }
@@ -46,7 +46,7 @@ __device__ __forceinline__ float kvqWarpReduceMax(float val) {
 //////////////////////////////////////////////////////////////////////////////
 // Block-level max reduction using shared memory
 //////////////////////////////////////////////////////////////////////////////
-__device__ float kvqBlockReduceMax(float val, float* sharedMem) {
+SD_DEVICE float kvqBlockReduceMax(float val, float* sharedMem) {
     const int lane = threadIdx.x % KVQ_WARP_SIZE;
     const int wid = threadIdx.x / KVQ_WARP_SIZE;
     const int numWarps = (blockDim.x + KVQ_WARP_SIZE - 1) / KVQ_WARP_SIZE;
@@ -70,7 +70,7 @@ __device__ float kvqBlockReduceMax(float val, float* sharedMem) {
 // INT8 Quantize Kernel: one block per row
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void kvCacheQuantizeInt8Kernel(
+SD_KERNEL void kvCacheQuantizeInt8Kernel(
     const T* __restrict__ input,
     int8_t* __restrict__ quantized,
     float* __restrict__ scales,
@@ -118,7 +118,7 @@ __global__ void kvCacheQuantizeInt8Kernel(
 // INT8 Dequantize Kernel: one block per row
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void kvCacheDequantizeInt8Kernel(
+SD_KERNEL void kvCacheDequantizeInt8Kernel(
     const int8_t* __restrict__ quantized,
     const float* __restrict__ scales,
     T* __restrict__ output,
@@ -141,7 +141,7 @@ __global__ void kvCacheDequantizeInt8Kernel(
 // INT4 Quantize Kernel: one block per row, pack 2 values per byte
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void kvCacheQuantizeInt4Kernel(
+SD_KERNEL void kvCacheQuantizeInt4Kernel(
     const T* __restrict__ input,
     uint8_t* __restrict__ quantized,
     float* __restrict__ scales,
@@ -199,7 +199,7 @@ __global__ void kvCacheQuantizeInt4Kernel(
 // INT4 Dequantize Kernel
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void kvCacheDequantizeInt4Kernel(
+SD_KERNEL void kvCacheDequantizeInt4Kernel(
     const uint8_t* __restrict__ quantized,
     const float* __restrict__ scales,
     T* __restrict__ output,

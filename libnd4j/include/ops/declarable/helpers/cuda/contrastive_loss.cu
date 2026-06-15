@@ -32,7 +32,7 @@ static constexpr int CL_WARP_SIZE = 32;
 
 // Kernel 1: Compute similarity matrix: sim[i][j] = dot(image[i], text[j]) * temperature
 template <typename T>
-__global__ void contrastiveSimKernel(
+SD_KERNEL void contrastiveSimKernel(
     const T* __restrict__ imageEmb,
     const T* __restrict__ textEmb,
     float* __restrict__ sim,
@@ -72,7 +72,7 @@ __global__ void contrastiveSimKernel(
 
 // Kernel 2: Row-wise softmax + cross-entropy loss for one row
 // Returns -log(softmax[target]) where target = row index (diagonal)
-__global__ void contrastiveRowCEKernel(
+SD_KERNEL void contrastiveRowCEKernel(
     const float* __restrict__ sim,
     float* __restrict__ rowLosses,
     const LongType batch) {
@@ -129,7 +129,7 @@ __global__ void contrastiveRowCEKernel(
 }
 
 // Kernel 3: Column-wise CE loss
-__global__ void contrastiveColCEKernel(
+SD_KERNEL void contrastiveColCEKernel(
     const float* __restrict__ sim,
     float* __restrict__ colLosses,
     const LongType batch) {
@@ -184,7 +184,7 @@ __global__ void contrastiveColCEKernel(
 
 // Kernel 4: Sum losses and average
 template <typename T>
-__global__ void contrastiveSumLossKernel(
+SD_KERNEL void contrastiveSumLossKernel(
     const float* __restrict__ rowLosses,
     const float* __restrict__ colLosses,
     T* __restrict__ output,

@@ -41,7 +41,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // Device FP16 conversion
 //////////////////////////////////////////////////////////////////////////
-__device__ __forceinline__ float devFp16ToFloat(uint16_t h) {
+SD_DEVICE SD_INLINE float devFp16ToFloat(uint16_t h) {
     __half hVal;
     memcpy(&hVal, &h, sizeof(uint16_t));
     return __half2float(hVal);
@@ -50,7 +50,7 @@ __device__ __forceinline__ float devFp16ToFloat(uint16_t h) {
 //////////////////////////////////////////////////////////////////////////
 // K-quant helper: get_scale_min_k4 (device)
 //////////////////////////////////////////////////////////////////////////
-__device__ __forceinline__ void devGetScaleMinK4(int j, const uint8_t* q, int& sc, int& m) {
+SD_DEVICE SD_INLINE void devGetScaleMinK4(int j, const uint8_t* q, int& sc, int& m) {
     if (j < 4) {
         sc = q[j] & 63;
         m = q[j + 4] & 63;
@@ -63,7 +63,7 @@ __device__ __forceinline__ void devGetScaleMinK4(int j, const uint8_t* q, int& s
 //////////////////////////////////////////////////////////////////////////
 // Q4_0 CUDA kernel: one thread per block of 32 elements
 //////////////////////////////////////////////////////////////////////////
-__global__ void dequantize_q4_0_kernel(const uint8_t* __restrict__ data, float* __restrict__ output,
+SD_KERNEL void dequantize_q4_0_kernel(const uint8_t* __restrict__ data, float* __restrict__ output,
                                         LongType numElements) {
     constexpr int BLOCK_SIZE = 18;
     constexpr int QK = 32;
@@ -91,7 +91,7 @@ __global__ void dequantize_q4_0_kernel(const uint8_t* __restrict__ data, float* 
 //////////////////////////////////////////////////////////////////////////
 // Q4_K CUDA kernel: one thread per super-block of 256 elements
 //////////////////////////////////////////////////////////////////////////
-__global__ void dequantize_q4_K_kernel(const uint8_t* __restrict__ data, float* __restrict__ output,
+SD_KERNEL void dequantize_q4_K_kernel(const uint8_t* __restrict__ data, float* __restrict__ output,
                                         LongType numElements) {
     constexpr int BLOCK_SIZE = 144;
     constexpr int QK = 256;
@@ -139,7 +139,7 @@ __global__ void dequantize_q4_K_kernel(const uint8_t* __restrict__ data, float* 
 //////////////////////////////////////////////////////////////////////////
 // Q5_K CUDA kernel
 //////////////////////////////////////////////////////////////////////////
-__global__ void dequantize_q5_K_kernel(const uint8_t* __restrict__ data, float* __restrict__ output,
+SD_KERNEL void dequantize_q5_K_kernel(const uint8_t* __restrict__ data, float* __restrict__ output,
                                         LongType numElements) {
     constexpr int BLOCK_SIZE = 176;
     constexpr int QK = 256;
@@ -193,7 +193,7 @@ __global__ void dequantize_q5_K_kernel(const uint8_t* __restrict__ data, float* 
 //////////////////////////////////////////////////////////////////////////
 // Q6_K CUDA kernel
 //////////////////////////////////////////////////////////////////////////
-__global__ void dequantize_q6_K_kernel(const uint8_t* __restrict__ data, float* __restrict__ output,
+SD_KERNEL void dequantize_q6_K_kernel(const uint8_t* __restrict__ data, float* __restrict__ output,
                                         LongType numElements) {
     constexpr int BLOCK_SIZE = 210;
     constexpr int QK = 256;
@@ -241,7 +241,7 @@ __global__ void dequantize_q6_K_kernel(const uint8_t* __restrict__ data, float* 
 //////////////////////////////////////////////////////////////////////////
 // Q8_0 CUDA kernel
 //////////////////////////////////////////////////////////////////////////
-__global__ void dequantize_q8_0_kernel(const uint8_t* __restrict__ data, float* __restrict__ output,
+SD_KERNEL void dequantize_q8_0_kernel(const uint8_t* __restrict__ data, float* __restrict__ output,
                                         LongType numElements) {
     constexpr int BLOCK_SIZE = 34;
     constexpr int QK = 32;
@@ -265,7 +265,7 @@ __global__ void dequantize_q8_0_kernel(const uint8_t* __restrict__ data, float* 
 //////////////////////////////////////////////////////////////////////////
 // F32 -> F16 conversion kernel
 //////////////////////////////////////////////////////////////////////////
-__global__ void convertF32ToF16Kernel(const float* __restrict__ input, half* __restrict__ output, LongType n) {
+SD_KERNEL void convertF32ToF16Kernel(const float* __restrict__ input, half* __restrict__ output, LongType n) {
     LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
     if (idx < n) {
         output[idx] = __float2half(input[idx]);
@@ -275,7 +275,7 @@ __global__ void convertF32ToF16Kernel(const float* __restrict__ input, half* __r
 //////////////////////////////////////////////////////////////////////////
 // F32 -> BF16 conversion kernel
 //////////////////////////////////////////////////////////////////////////
-__global__ void convertF32ToBF16Kernel(const float* __restrict__ input, __nv_bfloat16* __restrict__ output, LongType n) {
+SD_KERNEL void convertF32ToBF16Kernel(const float* __restrict__ input, __nv_bfloat16* __restrict__ output, LongType n) {
     LongType idx = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
     if (idx < n) {
         output[idx] = __float2bfloat16(input[idx]);

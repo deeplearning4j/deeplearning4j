@@ -32,7 +32,7 @@ static constexpr int TWA_WARP_SIZE = 32;
 
 // Kernel: Compute attention logits: logits[i][j] = sum_k(Q[i][k] * K[j][k]) * scale
 template <typename T>
-__global__ void crossAttnLogitsKernel(
+SD_KERNEL void crossAttnLogitsKernel(
     const T* __restrict__ Q,
     const T* __restrict__ K,
     float* __restrict__ logits,
@@ -71,7 +71,7 @@ __global__ void crossAttnLogitsKernel(
 }
 
 // Kernel: Row-wise softmax on logits matrix
-__global__ void crossAttnSoftmaxKernel(
+SD_KERNEL void crossAttnSoftmaxKernel(
     float* __restrict__ logits,
     const LongType rows,
     const LongType cols) {
@@ -131,7 +131,7 @@ __global__ void crossAttnSoftmaxKernel(
 // Kernel: Output = attnWeights @ V
 // output[i][d] = sum_j(attnWeights[i][j] * V[j][d])
 template <typename T>
-__global__ void crossAttnOutputKernel(
+SD_KERNEL void crossAttnOutputKernel(
     const float* __restrict__ attnWeights,
     const T* __restrict__ V,
     T* __restrict__ output,

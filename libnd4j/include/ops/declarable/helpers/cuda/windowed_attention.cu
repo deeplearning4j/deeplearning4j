@@ -34,7 +34,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-__global__ __launch_bounds__(64, 8) static void windowedAttentionKernel(
+SD_KERNEL __launch_bounds__(64, 8) static void windowedAttentionKernel(
     const T* query,
     const T* key,
     const T* value,
