@@ -49,7 +49,7 @@ class SD_LIB_EXPORT ConstantHelper {
 
  public:
   ~ConstantHelper();
-
+  void *getConstantSpace();
   static ConstantHelper& getInstance();
   static int getCurrentDevice();
   static int getNumberOfDevices();
