@@ -20,7 +20,12 @@
 
 package org.nd4j.evaluation.classification;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.val;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;

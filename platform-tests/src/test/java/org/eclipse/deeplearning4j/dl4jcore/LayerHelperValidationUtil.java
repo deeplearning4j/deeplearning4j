@@ -21,8 +21,14 @@
 package org.eclipse.deeplearning4j.dl4jcore;
 
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import lombok.*;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+
 import org.deeplearning4j.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
