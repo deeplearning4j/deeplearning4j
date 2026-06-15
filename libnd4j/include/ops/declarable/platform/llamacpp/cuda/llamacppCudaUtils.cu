@@ -23,6 +23,7 @@
 //
 
 #include "../llamacppUtils.h"
+#include <system/common.h>
 
 #if HAVE_LLAMACPP && defined(GGML_USE_CUDA)
 
@@ -165,7 +166,7 @@ GgmlCudaContextGuard::GgmlCudaContextGuard(size_t memSize, int deviceId)
     _backend = getCudaBackend(deviceId);
 
     if (_backend == nullptr) {
-        throw std::runtime_error("Failed to initialize CUDA backend");
+        THROW_EXCEPTION("Failed to initialize CUDA backend");
     }
 
     // Create GGML context
@@ -178,7 +179,7 @@ GgmlCudaContextGuard::GgmlCudaContextGuard(size_t memSize, int deviceId)
     _ctx = ggml_init(params);
 
     if (_ctx == nullptr) {
-        throw std::runtime_error("Failed to initialize GGML context for CUDA");
+        THROW_EXCEPTION("Failed to initialize GGML context for CUDA");
     }
 }
 

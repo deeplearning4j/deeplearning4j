@@ -21,7 +21,6 @@
 // Created by GS <sgazeos@gmail.com> on 3/21/2018.
 //
 #include <array/ResultSet.h>
-#include <exceptions/cuda_exception.h>
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>

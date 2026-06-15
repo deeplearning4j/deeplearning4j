@@ -28,7 +28,7 @@
 #include <execution/Threads.h>
 #include <helpers/LoopsCoordsHelper.h>
 #include <ops/declarable/helpers/addBias.h>
-#include <exceptions/datatype_exception.h>
+#include <system/env_functions.h>
 
 #include <cmath>
 #include <memory>

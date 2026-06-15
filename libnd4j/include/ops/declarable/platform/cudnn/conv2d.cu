@@ -90,7 +90,7 @@ static void conv2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
                             cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
   }
   if (count == 0)
-    throw cuda_exception::build("conv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed as the count is 0", 0);
+    THROW_EXCEPTION("conv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed as the count is 0");
   algo = algoPerf.algo;
 
   PointersManager manager(context, __func__);
@@ -191,8 +191,7 @@ static void conv2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
         cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
   }
   if (count == 0)
-    throw cuda_exception::build(
-        "conv2dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed as the count is 0", 0);
+    THROW_EXCEPTION("conv2dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed as the count is 0");
   algoGradW = algoGradWPerf.algo;
 
   // gradI algorithm description
@@ -208,8 +207,7 @@ static void conv2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
         cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
   }
   if (count == 0)
-    throw cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed as the count is 0",
-                                    0);
+    THROW_EXCEPTION("conv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed as the count is 0");
   algoGradI = algoGradIPerf.algo;
 
   // allocate auxiliary device memory for gradW calculation, abbreviation ws means workspace

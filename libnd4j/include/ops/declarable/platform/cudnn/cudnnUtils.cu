@@ -151,7 +151,7 @@ void pooling2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("pooling2dCUDNN: cudaStreamSynchronize failed !", cudaErr);
+    if (cudaErr != 0) { std::string msg = "pooling2dCUDNN: cudaStreamSynchronize failed !; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input});
@@ -212,7 +212,7 @@ void pooling2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("pooling2dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+    if (cudaErr != 0) { std::string msg = "pooling2dBpCUDNN: cudaStreamSynchronize failed !; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({gradI}, {input, gradO});
@@ -312,7 +312,7 @@ void pooling3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("pooling3dCUDNN: cudaStreamSynchronize failed !", cudaErr);
+    if (cudaErr != 0) { std::string msg = "pooling3dCUDNN: cudaStreamSynchronize failed !; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input});
@@ -404,7 +404,7 @@ void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("pooling3dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+    if (cudaErr != 0) { std::string msg = "pooling3dBpCUDNN: cudaStreamSynchronize failed !; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 }
 

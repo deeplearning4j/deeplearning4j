@@ -23,8 +23,8 @@
 #ifndef SD_CUDNNUTILS_H
 #define SD_CUDNNUTILS_H
 #include <cudnn.h>
-#include <exceptions/cuda_exception.h>
-#include <exceptions/datatype_exception.h>
+#include <array/DataTypeUtils.h>
+#include <system/common.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
@@ -241,7 +241,8 @@ inline void throwIfCudnnFailed(cudnnStatus_t result_status,
     std::string err_message;
     if (prefix) err_message = std::string(prefix) + ": ";
     err_message += std::string(message);
-    throw cuda_exception::build(err_message, result_status);
+    err_message += "; Error code: [" + std::to_string(static_cast<int>(result_status)) + "]";
+    THROW_EXCEPTION(err_message.c_str());
   }
 }
 
@@ -484,7 +485,8 @@ SD_INLINE cudnnDataType_t cudnnDataType(DataType dataType) {
     case INT8:
       return CUDNN_DATA_INT8;
     default:
-      throw datatype_exception::build("Unsupported data type", dataType);
+      std::string dt_msg = "Unsupported data type; Actual: [" + DataTypeUtils::asString(dataType) + "]";
+      THROW_EXCEPTION(dt_msg.c_str());
   }
 }
 

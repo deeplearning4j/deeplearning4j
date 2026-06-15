@@ -19,7 +19,6 @@
 //
 //  @author raver119@gmail.com
 //
-#include <exceptions/cuda_exception.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/helpers/dropout.h>
 #include <helpers/DebugHelper.h>
@@ -89,13 +88,15 @@ static void dropoutSimple(LaunchContext* context, NDArray * input, NDArray* outp
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
 
-  auto err = cudaMalloc(&dRandom, sizeof(RandomGenerator));
-  if (err) {
-    throw cuda_exception::build("helpers::dropoutSimple: Cannot allocate device memory for random generator.", err);
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  dRandom = reinterpret_cast<RandomGenerator*>(memory::CudaMemoryPool::getInstance().allocate(sizeof(RandomGenerator), deviceId, *stream));
+  if (dRandom == nullptr) {
+    THROW_EXCEPTION("helpers::dropoutSimple: Cannot allocate device memory for random generator.");
   }
   err = cudaMemcpy(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice);
   if (err) {
-    throw cuda_exception::build("helpers::dropoutSimple: Cannot set up device memory for random generator.", err);
+    { std::string msg = "helpers::dropoutSimple: Cannot set up device memory for random generator.; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   dim3 getDims = getLaunchDims("dropout");
@@ -287,13 +288,12 @@ static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray*
   auto stream = context->getCudaStream();
   auto err = cudaMalloc(&dRandom, sizeof(RandomGenerator));
   NDArray::prepareSpecialUse({output}, {input});
-  if (err) {
-    throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot allocate device memory for random generator.",
-                                err);
+  if (dRandom == nullptr) {
+    THROW_EXCEPTION("helpers::alphaDropoutSimple: Cannot allocate device memory for random generator.");
   }
   err = cudaMemcpy(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice);
   if (err) {
-    throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot set up device memory for random generator.", err);
+    { std::string msg = "helpers::alphaDropoutSimple: Cannot set up device memory for random generator.; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   dim3 launchDims = getLaunchDims("dropout");

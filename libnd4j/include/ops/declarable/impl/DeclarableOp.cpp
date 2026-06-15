@@ -20,9 +20,12 @@
 // @author raver119@gmail.com
 //
 #include <array/NDArrayFactory.h>
-#include <exceptions/datatype_exception.h>
-#include <exceptions/graph_exception.h>
-#include <graph/exceptions/unresolved_input_exception.h>
+#include <array/DataTypeUtils.h>
+#include <system/env_functions.h>
+#include <graph/profiling/GraphProfile.h>
+#include <graph/profiling/NodeProfile.h>
+#include <graph/profiling/OpTimingTracker.h>
+#include <helpers/KernelSelectionEnvironment.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/StringUtils.h>
 #include <ops/declarable/DeclarableOp.h>
@@ -471,7 +474,8 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
             std::string msg =
                 "Provided array [" + StringUtils::valueToString<int>(pair.second) + "] has unexpected data type";
             delete outSha;
-            THROW_EXCEPTION(sd::datatype_exception::build(msg, ArrayOptions::dataType(out), ArrayOptions::dataType(shape)).what());
+            std::string dtMsg = msg + "; Expected: [" + DataTypeUtils::asString(ArrayOptions::dataType(out)) + "]; Actual: [" + DataTypeUtils::asString(ArrayOptions::dataType(shape)) + "]";
+            THROW_EXCEPTION(dtMsg.c_str());
           }
         }
       } else {

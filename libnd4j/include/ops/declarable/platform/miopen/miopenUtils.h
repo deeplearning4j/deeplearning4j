@@ -115,7 +115,7 @@ inline void throwIfMIOpenFailed(miopenStatus_t status, const char* message = "",
         if (message && message[0] != '\0') {
             errorMsg += " - " + std::string(message);
         }
-        throw std::runtime_error(errorMsg);
+        THROW_EXCEPTION(errorMsg.c_str());
     }
 }
 
@@ -133,7 +133,7 @@ inline void throwIfHipFailed(hipError_t error, const char* message = "",
         if (message && message[0] != '\0') {
             errorMsg += " - " + std::string(message);
         }
-        throw std::runtime_error(errorMsg);
+        THROW_EXCEPTION(errorMsg.c_str());
     }
 }
 
@@ -153,9 +153,11 @@ inline miopenDataType_t miopenDataType(DataType dataType) {
         case BFLOAT16: return miopenBFloat16;
         case INT8: return miopenInt8;
         case INT32: return miopenInt32;
-        default:
-            throw std::runtime_error("Unsupported data type for MIOpen: " +
-                                      std::to_string(static_cast<int>(dataType)));
+        default: {
+            std::string msg = "Unsupported data type for MIOpen: " +
+                              std::to_string(static_cast<int>(dataType));
+            THROW_EXCEPTION(msg.c_str());
+        }
     }
 }
 

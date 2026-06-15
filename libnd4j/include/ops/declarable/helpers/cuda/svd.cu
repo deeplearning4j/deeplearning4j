@@ -22,7 +22,8 @@
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
-#include <exceptions/cuda_exception.h>
+#include <memory/cuda/CudaMemoryPool.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/svd.h>
@@ -110,11 +111,11 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
 
   // create cusolverDn handle
   cusolverDnHandle_t* handle = (cusolverDnHandle_t*)context->getCusolverHandle();  // nullptr;
-  if (handle == nullptr) throw cuda_exception::build("svdQR: cuda failed !", -1);
+  if (handle == nullptr) THROW_EXCEPTION("svdQR: cuda failed !; Error code: [-1]");
 
   // stream
   auto status = cusolverDnSetStream(*handle, *context->getCudaStream());
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdQR: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdQR: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   // query working space of SVD
   int lwork = 0;
@@ -125,7 +126,7 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
   else
     THROW_EXCEPTION("svdQR: given data type is unsupported !");
 
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdQR: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdQR: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   // allocate memory for dWork
   void* dWork = nullptr;
@@ -173,7 +174,7 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
   } else
     THROW_EXCEPTION("svdQR: given data type is unsupported !");
 
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdQR: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdQR: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   manager.synchronize();
 
@@ -274,20 +275,20 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
 
   // create cusolverDn handle
   cusolverDnHandle_t* handle = (cusolverDnHandle_t*)context->getCusolverHandle();
-  if (handle == nullptr) throw cuda_exception::build("svdJcb: cuda failed !", -1);
+  if (handle == nullptr) THROW_EXCEPTION("svdJcb: cuda failed !; Error code: [-1]");
 
   // stream
   auto status = cusolverDnSetStream(*handle, *context->getCudaStream());
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdJcb: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   // set parameters
   gesvdjInfo_t gesvdjParams = nullptr;
   status = cusolverDnCreateGesvdjInfo(&gesvdjParams);
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdJcb: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   status = cusolverDnXgesvdjSetTolerance(gesvdjParams, 1.e-7);  // tolerance
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdJcb: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   status = cusolverDnXgesvdjSetMaxSweeps(gesvdjParams, 15);  // max_sweeps
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdJcb: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   int* devInfo = nullptr;
   const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
@@ -327,7 +328,7 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
   else
     THROW_EXCEPTION("svdJcb: given data type is unsupported !");
 
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdJcb: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   // allocate memory dWork
   void* dWork = nullptr;
@@ -354,7 +355,7 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
   } else
     THROW_EXCEPTION("svdJcb: given data type is unsupported !");
 
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdJcb: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   manager.synchronize();
 
@@ -438,27 +439,31 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
   // create cusolverDn handle
   cusolverDnHandle_t handle = nullptr;
   cusolverStatus_t status = cusolverDnCreate(&handle);
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdBatched: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdBatched: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   // stream
   status = cusolverDnSetStream(handle, *context->getCudaStream());
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdBatched: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdBatched: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   // set parameters
   gesvdjInfo_t gesvdjParams = nullptr;
   status = cusolverDnCreateGesvdjInfo(&gesvdjParams);
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdBatched: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdBatched: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   status = cusolverDnXgesvdjSetTolerance(gesvdjParams, 1.e-7);  // tolerance
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdBatched: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdBatched: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   status = cusolverDnXgesvdjSetMaxSweeps(gesvdjParams, 15);  // max_sweeps
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdBatched: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdBatched: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   // devInfo
   int* devInfo = nullptr;
-  auto status2 = cudaMalloc((void**)&devInfo, sizeof(LongType) * bS);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
-  status2 = cudaDeviceSynchronize();
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);
+  int svdDevId3 = 0; cudaGetDevice(&svdDevId3);
+  devInfo = reinterpret_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType) * bS, svdDevId3, nullptr));
+  if (devInfo == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for devInfo");
+  // During CUDA graph capture, synchronous calls are illegal.
+  cudaError_t status2 = cudaSuccess;
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
+  if (status2 != cudaSuccess) { std::string msg = "svdJcb: cuda failed !; Error code: [" + std::to_string(status2) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
 
@@ -487,14 +492,15 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
   else
     THROW_EXCEPTION("svdBatched: given data type is unsupported !");
 
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdBatched: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdBatched: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   // allocate memory dWork
   void* dWork = nullptr;
-  status2 = cudaMalloc((void**)&dWork, A->sizeOfT() * lwork);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
-  status2 = cudaDeviceSynchronize();
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
+  dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId3, nullptr);
+  if (dWork == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for dWork");
+  // During CUDA graph capture, synchronous calls are illegal.
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
+  if (status2 != cudaSuccess) { std::string msg = "svdBatched: cuda failed !; Error code: [" + std::to_string(status2) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   PointersManager manager(context, "svdBatched");
 
@@ -516,7 +522,7 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
   } else
     THROW_EXCEPTION("svdBatched: given data type is unsupported !");
 
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdBatched: cuda failed !", status);
+  if (status != CUSOLVER_STATUS_SUCCESS) { std::string msg = "svdBatched: cuda failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   manager.synchronize();
 

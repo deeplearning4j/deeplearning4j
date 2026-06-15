@@ -109,7 +109,7 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("batchnormCUDNN: cudaStreamSynchronize failed !", cudaErr);
+    if (cudaErr != 0) { std::string msg = "batchnormCUDNN: cudaStreamSynchronize failed !; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
@@ -208,7 +208,7 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
 
   if (!tl_graphExecutionActive && !tl_dspReplayActive) {
     auto cudaErr = cudaStreamSynchronize(stream);
-    if (cudaErr != 0) throw cuda_exception::build("batchnormBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+    if (cudaErr != 0) { std::string msg = "batchnormBpCUDNN: cudaStreamSynchronize failed !; Error code: [" + std::to_string(cudaErr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   NDArray::registerSpecialUse({gradI, gradG, gradB}, {input, mean, variance, gamma, gradO});

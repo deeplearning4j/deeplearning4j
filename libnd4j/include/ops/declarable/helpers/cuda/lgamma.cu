@@ -22,8 +22,10 @@
 // @author George A. Shulinok <sgazeos@gmail.com>
 //
 #include <ops/declarable/helpers/lgamma.h>
-
-
+#include <math/templatemath.h>
+#include <execution/cuda/LaunchDims.h>
+#include <helpers/PointersManager.h>
+#include <system/common.h>
 
 namespace sd {
 namespace ops {
@@ -41,8 +43,20 @@ void lgamma_(NDArray* x, NDArray* z) {
   x->applyLambda(lgammaProc, z);
 }
 
-void lgamma(LaunchContext* context, NDArray* x, NDArray* z) {
-  BUILD_SINGLE_SELECTOR(x->dataType(), lgamma_, (x, z), SD_FLOAT_TYPES);
+template <typename T>
+static void lgamma_(LaunchContext *context, NDArray *x, NDArray *z) {
+  auto stream = context->getCudaStream();
+  auto length = x->lengthOf();
+
+  dim3 dims = getLaunchDims("lgamma");
+  lgammaKernel<T><<<dims.x, dims.y, dims.z, *stream>>>(
+      x->specialBuffer(), x->specialShapeInfo(),
+      z->specialBuffer(), z->specialShapeInfo(),
+      length);
+
+  auto err = cudaStreamSynchronize(*stream);
+  if (err != cudaSuccess)
+    THROW_EXCEPTION("lgamma CUDA kernel failed");
 }
 
 BUILD_SINGLE_TEMPLATE( void lgamma_, (NDArray * x, NDArray* z), SD_FLOAT_TYPES);

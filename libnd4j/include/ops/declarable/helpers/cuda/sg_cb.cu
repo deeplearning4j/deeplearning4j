@@ -20,7 +20,7 @@
 // @author raver119@gmail.com
 //
 #include <array/NDArrayFactory.h>
-#include <exceptions/cuda_exception.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/sg_cb.h>
 
 #include "helpers/DebugHelper.h"
@@ -232,7 +232,7 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
   }
   err = cudaStreamSynchronize(*stream);
   if (0 != err) {
-    throw cuda_exception::build("helpers::skipgram_: Cannot synchronize stream after addInfVectorKernel", err);
+    { std::string msg = "helpers::skipgram_: Cannot synchronize stream after addInfVectorKernel; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   err = cudaFree(neu1e);
@@ -333,8 +333,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
 
     err = cudaStreamSynchronize(*stream);
     if (0 != err) {
-      throw cuda_exception::build("helpers::skipgramBatchExec_: Cannot synchronize stream after addInfVectorKernel",
-                                  err);
+      { std::string msg = "helpers::skipgramBatchExec_: Cannot synchronize stream after addInfVectorKernel; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
     }
 
     // optionally release temp arrays
@@ -549,7 +548,7 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
   }
   err = cudaStreamSynchronize(*stream);
   if (0 != err) {
-    throw cuda_exception::build("helpers::cbow_: Cannot synchronize stream after kernel executing", err);
+    { std::string msg = "helpers::cbow_: Cannot synchronize stream after kernel executing; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
   err = cudaFree(neu1);
   if (0 != err) {
@@ -575,7 +574,7 @@ void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expT
                    int ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords, NDArray &indices, NDArray &codes,
                    double alpha, LongType randomValue, int numLabels, NDArray &inferenceVector, const bool trainWords,
                    int numWorkers,int iterations,double minLearningRate) {
-  throw cuda_exception::build("cbow:: cbow inference not currently supported please use normal cbow",0);
+  THROW_EXCEPTION("cbow:: cbow inference not currently supported please use normal cbow");
 }
 
 template <typename T>
@@ -754,7 +753,7 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
   }
   cerr = cudaStreamSynchronize(*stream);
   if (cerr) {
-    throw cuda_exception::build("Cannot syncronize stream before memory deallocation", cerr);
+    { std::string msg = "Cannot syncronize stream before memory deallocation; Error code: [" + std::to_string(cerr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   cerr = cudaFree(neu1);

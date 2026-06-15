@@ -21,7 +21,7 @@
 //
 #include <array/NDArrayFactory.h>
 #include <cusolverDn.h>
-#include <exceptions/cuda_exception.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/MmulHelper.h>
@@ -406,7 +406,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
   // set solver stream
   status = cusolverDnSetStream(*cusolverH, *stream);
   if (CUSOLVER_STATUS_SUCCESS != status) {
-    throw cuda_exception::build("Cannot set up stream for cuda solver", status);
+    { std::string msg = "Cannot set up stream for cuda solver; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
   int lwork = 0;
   int *d_info = nullptr;
@@ -425,7 +425,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
       double *matrix = reinterpret_cast<double *>(input->specialBuffer());
       status = cusolverDnDgetrf_bufferSize(*cusolverH, n, n, matrix, n, &lwork);
       if (CUSOLVER_STATUS_SUCCESS != status) {
-        throw cuda_exception::build("helpers::lup_: Cannot create cuSolver handle", status);
+        { std::string msg = "helpers::lup_: Cannot create cuSolver handle; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
       }
 
       err = cudaMalloc((void **)&d_work, sizeof(float) * lwork);
@@ -437,7 +437,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
         status = cusolverDnDgetrf(*cusolverH, n, n, matrix, n, d_work, nullptr, d_info);
 
         if (status != CUSOLVER_STATUS_SUCCESS) {
-          throw cuda_exception::build("helpers::lup_: LU factorization is failed due ", status);
+          { std::string msg = "helpers::lup_: LU factorization is failed due ; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
         }
       } else {
         std::vector<LongType> shape = {n};
@@ -445,7 +445,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
         int *permutationBuf = permutVector.dataBuffer()->specialAsT<int>();
         status = cusolverDnDgetrf(*cusolverH, n, n, matrix, n, d_work, permutationBuf, d_info);
         if (status != CUSOLVER_STATUS_SUCCESS) {
-          throw cuda_exception::build("helpers::lup_: LU factorization is failed due ", status);
+          { std::string msg = "helpers::lup_: LU factorization is failed due ; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
         }
 
         if (permutation->rankOf() == 2) {
@@ -471,7 +471,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
 
       status = cusolverDnSgetrf_bufferSize(*cusolverH, n, n, matrix, n, &lwork);
       if (CUSOLVER_STATUS_SUCCESS != status) {
-        throw cuda_exception::build("helpers::lup_: Cannot create cuSolver handle", status);
+        { std::string msg = "helpers::lup_: Cannot create cuSolver handle; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
       }
 
       err = cudaMalloc((void **)&d_work, sizeof(float) * lwork);
@@ -505,7 +505,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
     }
   }
   if (CUSOLVER_STATUS_SUCCESS != status) {
-    throw cuda_exception::build("helpers::lup_: Cannot make LU decomposition", status);
+    { std::string msg = "helpers::lup_: Cannot make LU decomposition; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
   err = cudaFree(d_info);
   if (err) {
@@ -946,7 +946,7 @@ Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool 
   NDArray::prepareSpecialUse({output}, {input});
   auto status = cusolverDnCreate(&handle);
   if (CUSOLVER_STATUS_SUCCESS != status) {
-    throw cuda_exception::build("helpers::cholesky_: Cannot create solver handle", status);
+    { std::string msg = "helpers::cholesky_: Cannot create solver handle; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
   F **dArrayBatch = nullptr;
   std::vector<LongType> dims = {tempOutput.rankOf() - 2, tempOutput.rankOf() - 1};
@@ -968,13 +968,88 @@ Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool 
 
   status = cusolverDnSetStream(handle, *stream);
   if (CUSOLVER_STATUS_SUCCESS != status) {
-    throw cuda_exception::build("helpers::cholesky_: Cannot set stream to solver handle", status);
+    { std::string msg = "helpers::cholesky_: Cannot set stream to solver handle; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
   const cublasFillMode_t uplo = CUBLAS_FILL_MODE_UPPER;
-  if (input->dataType() == DOUBLE)
-    status = cusolverDnDpotrfBatched(handle, uplo, n, (double **)dArrayBatch, n, dInfoArray, batchSize);
-  else
-    status = cusolverDnSpotrfBatched(handle, uplo, n, (float **)dArrayBatch, n, dInfoArray, batchSize);
+  const int lda = (n < 32) ? 32 : static_cast<int>(n);
+
+  if (n < 32) {
+    // cuSOLVER potrfBatched uses 32-element tiles internally — OOB when lda < 32.
+    // Create a padded NDArray [batchSize, lda, lda] so TAD gives correct offsets,
+    // then use fillBatchKernel + potrfBatched with lda=32 — same pattern as n>=32.
+    std::vector<LongType> paddedShape;
+    if (batchSize > 1)
+      paddedShape = {batchSize, static_cast<LongType>(lda), static_cast<LongType>(lda)};
+    else
+      paddedShape = {static_cast<LongType>(lda), static_cast<LongType>(lda)};
+
+    auto paddedArr = NDArrayFactory::create_('c', paddedShape, input->dataType(), context);
+    paddedArr->nullify();  // zero-fill
+
+    // Copy each n×n matrix into the top-left corner of each lda×lda padded matrix using kernel.
+    // Both arrays are C-order contiguous, so we know the exact layout without TAD:
+    //   tempOutput: batch stride = n*n, row stride = n
+    //   paddedArr:  batch stride = lda*lda, row stride = lda
+    auto tempBuf = reinterpret_cast<F*>(tempOutput->specialBuffer());
+    auto paddedBuf = reinterpret_cast<F*>(paddedArr->specialBuffer());
+    dim3 copyDims((n * n) / 256 + 1, 256, 256);
+    for (LongType i = 0; i < batchSize; i++) {
+      copyPaddedBatch<F><<<copyDims.x, copyDims.y, copyDims.z, *stream>>>(
+          tempBuf, static_cast<LongType>(n * n), static_cast<LongType>(n),
+          paddedBuf, static_cast<LongType>(lda * lda), static_cast<LongType>(lda),
+          i, n);
+    }
+    sd::DebugHelper::checkErrorCode(stream, "copyPaddedBatch (to padded) failed");
+
+
+    // Build batch pointer array on host and copy to device.
+    // Each pointer = paddedBuf + batch * lda * lda (contiguous C-order matrices).
+    std::vector<F*> hostPtrs(batchSize);
+    for (LongType i = 0; i < batchSize; i++) {
+      hostPtrs[i] = paddedBuf + i * lda * lda;
+    }
+    F **paddedBatch = reinterpret_cast<F**>(sd::memory::CudaMemoryPool::getInstance().allocate(
+        sizeof(F*) * batchSize, cholDevId, *stream));
+    if (paddedBatch == nullptr) {
+      delete paddedArr;
+      THROW_EXCEPTION("helpers::cholesky_: Cannot allocate padded batch pointers");
+    }
+    cudaMemcpyAsync(paddedBatch, hostPtrs.data(), sizeof(F*) * batchSize,
+                    cudaMemcpyHostToDevice, *stream);
+
+    if (input->dataType() == DOUBLE)
+      status = cusolverDnDpotrfBatched(handle, uplo, n, reinterpret_cast<double**>(paddedBatch), lda, dInfoArray, batchSize);
+    else
+      status = cusolverDnSpotrfBatched(handle, uplo, n, reinterpret_cast<float**>(paddedBatch), lda, dInfoArray, batchSize);
+
+    if (CUSOLVER_STATUS_SUCCESS != status) {
+      sd::memory::CudaMemoryPool::getInstance().free(paddedBatch, cholDevId, *stream);
+      delete paddedArr;
+      { std::string msg = "helpers::cholesky_: Cholesky factorization failed for batch; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
+    }
+
+
+    // Copy results back: padded lda×lda -> original n×n using kernel
+    for (LongType i = 0; i < batchSize; i++) {
+      copyPaddedBatch<F><<<copyDims.x, copyDims.y, copyDims.z, *stream>>>(
+          paddedBuf, static_cast<LongType>(lda * lda), static_cast<LongType>(lda),
+          tempBuf, static_cast<LongType>(n * n), static_cast<LongType>(n),
+          i, n);
+    }
+    sd::DebugHelper::checkErrorCode(stream, "copyPaddedBatch (from padded) failed");
+
+    sd::memory::CudaMemoryPool::getInstance().free(paddedBatch, cholDevId, *stream);
+    delete paddedArr;
+  } else {
+    // n >= 32: no padding needed, use original batch pointers directly
+    if (input->dataType() == DOUBLE)
+      status = cusolverDnDpotrfBatched(handle, uplo, n, (double **)dArrayBatch, n, dInfoArray, batchSize);
+    else
+      status = cusolverDnSpotrfBatched(handle, uplo, n, (float **)dArrayBatch, n, dInfoArray, batchSize);
+
+    if (CUSOLVER_STATUS_SUCCESS != status) {
+      { std::string msg = "helpers::cholesky_: Cholesky factorization failed for batch; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
+    }
 
   if (CUSOLVER_STATUS_SUCCESS != status) {
     throw cuda_exception::build("helpers::cholesky_: Cholesky factorization failed for batch", status);

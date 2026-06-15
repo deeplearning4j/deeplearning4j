@@ -36,7 +36,8 @@ limitations under the License.
 //  @author George A. Shulinok <sgazeos@gmail.com>
 //
 #include <array/NDArrayFactory.h>
-#include <exceptions/cuda_exception.h>
+#include <helpers/DebugHelper.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/image_resize.h>
 
 #include "execution/cuda/LaunchDims.h"
@@ -137,9 +138,12 @@ static void resizeImage_(LaunchContext* context, NDArray * images, LongType batc
                                                       output->specialShapeInfo(), batchSize, outWidth, outHeight,
                                                       channels, inRowSize, outRowSize, inBatchNumValues, xs_, ys_);
 
-  auto err = cudaStreamSynchronize(*stream);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resizeImage_: Cannot synchronize kernel execution", err);
+  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    auto err = cudaStreamSynchronize(*stream);
+    if (err != 0) {
+      { std::string msg = "helpers::resizeImage_: Cannot synchronize kernel execution; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
+    }
   }
 }
 
@@ -397,9 +401,11 @@ float* initCoeffsTable(const double a, cudaStream_t* stream) {
 
   dim3 launchDims = getLaunchDims("image_resize_init_coeffs");
   initCoefTableKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(static_cast<float>(a), coeffs_table, kTableSize);
-  err = cudaStreamSynchronize(*stream);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::initCoeffsTable: Cannot synchronize kernel", err);
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    cudaError_t err = cudaStreamSynchronize(*stream);
+    if (err != 0) {
+      { std::string msg = "helpers::initCoeffsTable: Cannot synchronize kernel; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
+    }
   }
 
   return coeffs_table;
@@ -451,31 +457,31 @@ static void computeXWeightsAndIndices(float const* coeffsTable, const ImageResiz
   }
   err = cudaMemcpyAsync(pCalcD, &calc, sizeof(CachedInterpolationCalculator), cudaMemcpyHostToDevice, *stream);
   if (err != 0) {
-    cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot set up device memory for interpolate calculator",
-                          err);
+    std::string msg = "helpers::computeXWeightsAndIndices: Cannot set up device memory for interpolate calculator; Error code: [" + std::to_string(err) + "]";
+    THROW_EXCEPTION(msg.c_str());
   }
   dim3 launchDims = getLaunchDims("image_resize_init_coeffs");
 
   advanceWeightsAndIndicesKernel<Scaler><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(coeffsTable, pCalcD, pXWais, resizerState.inWidth,
                                                                      resizerState.widthScale, outWidth,
                                                                      resizerState.channels, exclude_outside);
-  err = cudaFree(pCalcD);
-  if (err != 0) {
-    cuda_exception::build(
-        "helpers::computeXWeightsAndIndices: Cannot deallocated device memory for interpolate calculator", err);
-  }
-  err = cudaStreamSynchronize(*stream);
-  if (err != 0) {
-    cuda_exception::build(
-        "helpers::computeXWeightsAndIndices: Cannot synchronize stream after advance weights and indicers", err);
+  sd::memory::CudaMemoryPool::getInstance().free(pCalcD, irDevId3, nullptr);
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    err = cudaStreamSynchronize(*stream);
+    if (err != 0) {
+      std::string msg = "helpers::computeXWeightsAndIndices: Cannot synchronize stream after advance weights and indicers; Error code: [" + std::to_string(err) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
   }
   dim3 launchDims2 = getLaunchDims("image_resize_coeffs_accum");
   // Scale the values so they can be used as offsets into buffers.
   accumulateChannelsKernel<<<launchDims2.x,launchDims.y,launchDims.z, *stream>>>(pXWais, outWidth, resizerState.wStride);
-  err = cudaStreamSynchronize(*stream);
-  if (err != 0) {
-    cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot synchronize stream after accumulate channels",
-                          err);
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    err = cudaStreamSynchronize(*stream);
+    if (err != 0) {
+      std::string msg = "helpers::computeXWeightsAndIndices: Cannot synchronize stream after accumulate channels; Error code: [" + std::to_string(err) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
   }
 }
 
@@ -643,7 +649,7 @@ static void bicubicInterpolateWithCaching(NDArray * image, const ImageResizerSta
   }
   err = cudaMemcpyAsync(resizerStateD, &resizerState, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
   if (err != 0) {
-    throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot set up memory for resizerState", err);
+    { std::string msg = "helpers::bicubicInterpolateWithCaching: Cannot set up memory for resizerState; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
 
@@ -657,14 +663,12 @@ static void bicubicInterpolateWithCaching(NDArray * image, const ImageResizerSta
   auto coeffsTable = initCoeffsTable(
       coefficient, stream);
   if (err != 0) {
-    throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: computeXWeigtsAndInidces finished with error",
-                                err);
+    { std::string msg = "helpers::bicubicInterpolateWithCaching: computeXWeigtsAndInidces finished with error; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
   computeXWeightsAndIndices<Scaler>(coeffsTable, resizerState, xWais, exclude_outside);
   err = cudaStreamQuery(*stream);
   if (err != 0) {
-    throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: computeXWeigtsAndInidces finished with error",
-                                err);
+    { std::string msg = "helpers::bicubicInterpolateWithCaching: computeXWeigtsAndInidces finished with error; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   const T* pInput = image->getDataBuffer()->specialAsT<T>();
@@ -673,9 +677,11 @@ static void bicubicInterpolateWithCaching(NDArray * image, const ImageResizerSta
   //128,1,512
   bicubicInterpolateWithCachingKernel<T, Scaler>
       <<<bicubDims.x, bicubDims.y, bicubDims.z, *stream>>>(coeffsTable, pInput, resizerStateD, xWais, exclude_outside, pOutput);
-  err = cudaStreamSynchronize(*stream);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Kernels finished with error", err);
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    err = cudaStreamSynchronize(*stream);
+    if (err != 0) {
+      { std::string msg = "helpers::bicubicInterpolateWithCaching: Kernels finished with error; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
+    }
   }
 
   err = cudaFree(resizerStateD);
@@ -800,7 +806,7 @@ static void resizeArea(cudaStream_t* stream, ImageResizerState const& st, Cached
 
   err = cudaMemcpyAsync(pSt, &st, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
   if (err != 0) {
-    throw cuda_exception::build("helpers::resizeArea: Cannot copy to device memory", err);
+    { std::string msg = "helpers::resizeArea: Cannot copy to device memory; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
   ScaleCache<T>* cachePool;
   auto cachePoolSize = sizeof(ScaleCache<T>) * st.batchSize * st.outWidth * st.outHeight;
@@ -810,17 +816,11 @@ static void resizeArea(cudaStream_t* stream, ImageResizerState const& st, Cached
   }
   resizeAreaKernel<T><<<128, 128, 2048, *stream>>>(pSt, cache, scale, inputPtr, input->specialShapeInfo(), outputPtr,
                                                    output->specialShapeInfo(), cachePool);
-  err = cudaStreamSynchronize(*stream);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resizeArea: An error occured with kernel running", err);
-  }
-  err = cudaFree(cachePool);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resizeArea: Cannot deallocate memory for cache", err);
-  }
-  err = cudaFree(pSt);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resizeArea: Cannot deallocate memory for ImageResizeState", err);
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    err = cudaStreamSynchronize(*stream);
+    if (err != 0) {
+      { std::string msg = "helpers::resizeArea: An error occured with kernel running; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
+    }
   }
 }
 // ------------------------------------------------------------------------------------------------------------------ //
@@ -841,14 +841,11 @@ Status resizeAreaFunctor_(LaunchContext* context, NDArray * image, int const wid
     dim3 launchDims = getLaunchDims("image_resize_fill_interp");
     fillInterpolationCache<<<128, 128, 256, *stream>>>(xCached, st.outWidth, st.inWidth, st.widthScale);
     resizeArea<T>(stream, st, xCached, image, output);
-    err = cudaStreamSynchronize(*stream);
-    if (err != 0) {
-      throw cuda_exception::build("helpers::resizeAreaFunctor_: Error occured when kernel was running", err);
-    }
-    err = cudaFree(xCached);
-    if (err != 0) {
-      throw cuda_exception::build("helpers::resizeAreaFunctor_: Cannot deallocate memory for cached interpolations",
-                                  err);
+    if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+      cudaError_t err = cudaStreamSynchronize(*stream);
+      if (err != 0) {
+        { std::string msg = "helpers::resizeAreaFunctor_: Error occured when kernel was running; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
+      }
     }
     NDArray::registerSpecialUse({output}, {image});
   }

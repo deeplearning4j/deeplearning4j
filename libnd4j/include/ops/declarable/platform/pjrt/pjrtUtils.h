@@ -21,7 +21,6 @@
 
 #include <array/DataType.h>
 #include <array/NDArray.h>
-#include <exceptions/pjrt_exception.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
@@ -142,7 +141,8 @@ inline void throwIfPjrtFailed(PJRT_Error* error, const PJRT_Api* api,
     destroy_args.error = error;
     api->PJRT_Error_Destroy(&destroy_args);
 
-    throw pjrt_exception::build(err_message, static_cast<int>(code_args.code));
+    std::string pjrt_msg = "PJRT error " + std::to_string(static_cast<int>(code_args.code)) + ": " + err_message;
+    THROW_EXCEPTION(pjrt_msg.c_str());
   }
 }
 
