@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -32,7 +33,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 /**
  * Implementation of ONNX Gather operation mapping for SameDiff.
  * Maps the ONNX Gather operation to SameDiff's gather function.
- * 
+ *
  * ONNX Gather spec: https://github.com/onnx/onnx/blob/main/docs/Operators.md#gather
  * Given data tensor of rank r >= 1, and indices tensor of rank q, gather entries of the axis dimension of data
  * (axis specified as an attribute) indexed by indices, and concatenates them in an output tensor of rank q + (r - 1).
@@ -56,32 +57,43 @@ class Gather : PreImportHook {
         var indicesVariable = sd.getVariable(op.inputsToOp[1])
 
         // Get axis attribute (default to 0 if not specified)
-        val axis = attributes["axis"]?.let { (it as Long).toInt() } ?: 0
+        var axis = attributes["axis"]?.let { (it as Long).toInt() } ?: 0
 
-        // Handle indices shape for proper gather semantics.
-        // ONNX Gather output rank = indices.rank + input.rank - 1
+        // ONNX allows float indices but SameDiff requires integer indices
+        // Cast to INT64 if indices are not already an integer type
+        val indicesType = indicesVariable.dataType()
+        if (!indicesType.isIntType) {
+            indicesVariable = sd.castTo("${outputNames[0]}_indices_int", indicesVariable, DataType.INT64)
+        }
+
+        // Handle scalar-like CONSTANT indices. ONNX models exported from PyTorch often have
+        // scalar indices wrapped as [1] or [1,1]. Per ONNX Gather spec, output rank =
+        // indices_rank + data_rank - 1, so extra dimensions in indices propagate to output.
         //
-        // For BGE pooler pattern: input [1, 512, 768], indices [[0]] shape [1,1], axis=1
-        //   - With [1,1] indices: output [1, 1, 1, 768] (wrong - indices adds 2 dims)
-        //   - With [1] indices + squeeze: output [1, 1, 768] then squeeze -> [1, 768] (correct)
-        //
-        // libnd4j's gather doesn't support scalar (0D) indices, so we:
-        // 1. Flatten indices to 1D
-        // 2. Gather (adds 1 dim from indices at axis position)
-        // 3. Squeeze the dimension at axis (will only remove if size is 1)
+        // For CONSTANT indices with exactly one element, squeeze to scalar to match PyTorch behavior.
+        // Uses sd.getArrForVarName() for constants (same pattern as ReduceSum.kt) - this is
+        // different from accessing .arr property directly.
+        val indicesVarType = indicesVariable.variableType
+        if (indicesVarType == org.nd4j.autodiff.samediff.VariableType.CONSTANT) {
+            val indicesArr = sd.getArrForVarName(indicesVariable.name())
+            if (indicesArr != null && indicesArr.length() == 1L) {
+                // Single-element constant - squeeze to scalar for PyTorch compatibility
+                indicesVariable = sd.squeezeAll("${outputNames[0]}_indices_squeezed", indicesVariable)
+            }
+        }
 
-        // Flatten indices to 1D - gather requires at least 1D indices
-        val flatIndices = sd.reshape("${op.name}_indices_flat", indicesVariable, -1L)
+        // Handle negative axis per ONNX spec: axis can be negative,
+        // meaning it counts from the last dimension. We resolve it using
+        // the data variable's known rank when available.
+        if (axis < 0) {
+            val dataShape = dataVariable.shape
+            if (dataShape != null) {
+                axis = dataShape.size + axis
+            }
+        }
 
-        // Call SameDiff's gather method with 1D indices
-        // Output shape will be: [...dims before axis..., indices_length, ...dims after axis...]
-        val gatherResult = sd.gather("${op.name}_gather_result", dataVariable, flatIndices, axis)
+        val outputVar = sd.gather(outputNames[0], dataVariable, indicesVariable, axis)
 
-        // Always squeeze at the gather axis - squeeze will only remove if size is 1
-        // For single-element indices (common in pooler patterns), this correctly removes the extra dim
-        // For multi-element indices, the squeeze may fail - but those cases need different handling anyway
-        val outputVar = sd.squeeze(outputNames[0], gatherResult, axis)
-
-        return mapOf(outputVar.name() to listOf(outputVar))
+        return mapOf(outputNames[0] to listOf(outputVar))
     }
 }

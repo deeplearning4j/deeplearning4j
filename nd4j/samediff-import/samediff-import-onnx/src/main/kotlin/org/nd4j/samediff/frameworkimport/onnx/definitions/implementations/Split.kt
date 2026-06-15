@@ -60,18 +60,29 @@ class Split : PreImportHook  {
 
         if(op.inputsToOp.size > 1) {
             val split = sd.getVariable(op.inputsToOp[1])
-            val splitOutput = sd.split(outputNames.toTypedArray(),inputVariable,split,splitDim.toInt())
-            return retOutput(splitOutput)
+            // Try to get split sizes from constant array, or use outputNames.size
+            val splitArr = split.arr
+            if (splitArr != null) {
+                // Split sizes are known - use splitV with explicit num_split
+                val splitOutput = sd.splitV(outputNames.toTypedArray(), inputVariable, split, splitArr.length().toInt(), splitDim.toInt())
+                return retOutput(splitOutput)
+            } else {
+                // Split sizes are dynamic - use outputNames.size as num_split
+                val splitOutput = sd.splitV(outputNames.toTypedArray(), inputVariable, split, outputNames.size, splitDim.toInt())
+                return retOutput(splitOutput)
+            }
         } else if(attributes.containsKey("split")) {
             val numSplits = attributes["split"] as List<Long>
-            val splitConst = sd.constant(Nd4j.create(Nd4j.createBuffer(Ints.toArray(numSplits)))).castTo(DataType.INT64)
+            // Use createFromArray to ensure 1D shape, not [1, N] row vector
+            val splitConst = sd.constant(Nd4j.createFromArray(*numSplits.toLongArray()))
             val splitOutput = sd.splitV(outputNames.toTypedArray(),inputVariable,splitConst,numSplits.size,splitDim.toInt())
             return retOutput(splitOutput)
         } else {
-            val inputShape = sd.shape(inputVariable)
-            val numSplits = inputShape.get(SDIndex.point(splitDim)).div(outputNames.size.toDouble()).castTo(
-                DataType.INT64)
-            val splitOutput = sd.split(outputNames.toTypedArray(),inputVariable,numSplits,splitDim.toInt())
+            // No split sizes given - split evenly based on number of outputs
+            val numOutputs = outputNames.size
+            // Create equal split sizes array
+            val splitSizes = sd.constant(Nd4j.ones(DataType.INT64, numOutputs.toLong()))
+            val splitOutput = sd.splitV(outputNames.toTypedArray(), inputVariable, splitSizes, numOutputs, splitDim.toInt())
             val retMap = mutableMapOf<String,List<SDVariable>>()
             splitOutput.toList().forEach { retMap[it.name()] = listOf(it) }
             return retMap

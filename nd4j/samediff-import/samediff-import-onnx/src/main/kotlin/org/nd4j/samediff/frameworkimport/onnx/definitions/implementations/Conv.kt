@@ -61,43 +61,42 @@ class Conv : PreImportHook  {
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
         val inWeights = sd.getVariable(op.inputsToOp[1])
-
-        // Get weights shape from ONNX tensor proto in dynamicVariables
-        val weightsName = op.inputsToOp[1]
-        val weightsTensor = dynamicVariables[weightsName] as? Onnx.TensorProto
-        val weightsShape = if (weightsTensor != null && weightsTensor.dimsCount > 0) {
-            weightsTensor.dimsList.map { it }.toLongArray()
-        } else {
-            throw IllegalStateException("Cannot determine weights shape for Conv op: $weightsName not found in dynamicVariables")
-        }
-        val weightsRank = weightsShape.size
+        val weightsShape = sd.shape(inWeights)
 
         var inputVariable = sd.getVariable(op.inputsToOp[0])
-        val rank = weightsRank
+        val xShape = sd.shape(inputVariable)
 
-        // Get input shape from ONNX tensor proto if available
-        val inputName = op.inputsToOp[0]
-        val inputTensor = dynamicVariables[inputName] as? Onnx.TensorProto
-        val xShape = if (inputTensor != null && inputTensor.dimsCount > 0) {
-            inputTensor.dimsList.map { it }.toLongArray()
+        // Get kernel_shape from ONNX attributes - this determines the rank
+        // If kernel_shape is not provided, infer it from weights tensor shape
+        // Weights shape is [C_out, C_in/groups, kernel_shape...]
+        val kernelShape: IntArray
+        val kernelShapeAttr = attributes["kernel_shape"]
+        if (kernelShapeAttr != null && kernelShapeAttr is List<*> && kernelShapeAttr.isNotEmpty()) {
+            @Suppress("UNCHECKED_CAST")
+            val kernelShapeList = kernelShapeAttr as List<Int>
+            kernelShape = kernelShapeList.map { input -> input }.toIntArray()
         } else {
-            null // Input might be dynamic (from previous op output)
+            // Infer from weights - weights are [out_channels, in_channels/groups, *kernel_shape]
+            val weightsArr = inWeights.arr
+            if (weightsArr != null) {
+                val wShape = weightsArr.shape()
+                kernelShape = wShape.drop(2).map { it.toInt() }.toIntArray()
+            } else {
+                // Default to 2D conv with kernel size 1 if we can't determine
+                throw IllegalArgumentException("kernel_shape attribute is required when weights shape is not statically known")
+            }
         }
-        val spatialSize = rank - 2
+        val spatialSize = kernelShape.size
+        val rank = spatialSize + 2
+
         val storageComputeFormat = ImportUtils.getDataFormat(rank)
         val computeIndex = storageComputeFormat.second.indexOf('C')
         val spatialFormat = StringUtils.join(storageComputeFormat.second.filter { input -> input == 'C' || input == 'W' })
 
-        val perm = ((2 to weightsRank - 1).toList() + listOf(1,0)).map { input -> input.toLong() }.toLongArray()
-        val kernelShape = if(attributes.containsKey("kernel_shape")) {
-            val kernelShapeList = attributes["kernel_shape"] as List<Int>
-            kernelShapeList.map { input -> input }.toIntArray()
-        } else {
-            weightsShape.map { input -> input.toInt() }.toIntArray()
-        }
+        val perm = ((2 until rank).toList() + listOf(1,0)).map { input -> input.toLong() }.toLongArray()
 
         var weights = sd.permute(inWeights,*perm)
-        var inWeightsShape = ArrayUtil.permute(ArrayUtil.copy(weightsShape),perm)
+        val inWeightsShape = sd.gather(weightsShape, sd.constant(Nd4j.createFromArray(*perm.map { it.toInt() }.toIntArray())), 0)
         val dilations = if(attributes.containsKey("dilations")) {
             val dilationsList = attributes["dilations"] as List<Int>
             val dilationsArr = dilationsList
@@ -148,21 +147,19 @@ class Conv : PreImportHook  {
 
         var groups = attributes.getOrDefault("group",1) as Number
         groups = groups.toLong()
-        var depthWise = (rank == 4 && weightsRank == 4 && groups.toInt() != 1)
-        if(depthWise && xShape != null && xShape[1].toInt() != -1) {
-            depthWise = depthWise && groups == xShape[1]
-        }
-        /*  if depthwise and x.get_shape().as_list()[1] != None:
-      depthwise = bool(group == x.get_shape().as_list()[1])
-        * */
+        // depthWise only applies to 2D conv (rank 4) with groups > 1
+        var depthWise = (rank == 4 && groups.toInt() != 1)
+        // For depthwise, groups should equal input channels - we check this dynamically via graph ops
         var xs = mutableListOf<SDVariable>()
         var weightGroupsList = mutableListOf<SDVariable>()
         if(depthWise) {
-            val depthWiseFilterShape = mutableListOf<Int>()
-            for(i in 0 until 2) depthWiseFilterShape.add(inWeightsShape[i].toInt())
-            depthWiseFilterShape.add(-1)
-            depthWiseFilterShape.add(Math.floorDiv(inWeightsShape[3].toInt(),groups.toInt()))
-            weights = weights.reshape(*depthWiseFilterShape.toIntArray())
+            // Build depthwise filter shape dynamically: [inWeightsShape[0], inWeightsShape[1], -1, inWeightsShape[3]/groups]
+            val dim0 = sd.squeeze(sd.gather(inWeightsShape, sd.constant(0), 0), 0)
+            val dim1 = sd.squeeze(sd.gather(inWeightsShape, sd.constant(1), 0), 0)
+            val dim3 = sd.squeeze(sd.gather(inWeightsShape, sd.constant(3), 0), 0)
+            val lastDim = sd.math.floorDiv(dim3, sd.constant(Nd4j.createFromArray(groups.toLong())))
+            val depthWiseFilterShape = sd.stack(0, dim0, dim1, sd.constant(Nd4j.createFromArray(-1L)), lastDim)
+            weights = sd.reshape(weights, depthWiseFilterShape)
             inputVariable = sd.permute(inputVariable,*ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second))
             xs.add(inputVariable)
             weightGroupsList.add(weights)

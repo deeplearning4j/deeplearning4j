@@ -60,23 +60,19 @@ class Shape : PreImportHook {
         val end = attributes["end"] as? Long
 
         val shapeVariable = if (start > 0 || end != null) {
-            // Handle slicing case
-            val fullShape = inputVariable.shape()
+            // Handle slicing case - use sd.shape() which returns an SDVariable
+            val fullShape = sd.shape("${outputNames[0]}_fullshape", inputVariable)
 
             if (end != null) {
-                val sliceBegin = intArrayOf(start.toInt())
-                val sliceSize = intArrayOf((end - start).toInt())
-                sd.slice(fullShape, sliceBegin, *sliceSize)
+                // Slice from start to end using get() with SDIndex interval
+                fullShape.get(org.nd4j.autodiff.samediff.SDIndex.interval(start.toInt(), end.toInt()))
             } else {
-                val shapeRank = inputVariable.shape?.size ?: 1
-                val sliceBegin = intArrayOf(start.toInt())
-                val sliceSize = intArrayOf(shapeRank - start.toInt())
-                sd.slice(fullShape, sliceBegin, *sliceSize)
-
+                // Slice from start to end of shape
+                fullShape.get(org.nd4j.autodiff.samediff.SDIndex.interval(start.toInt(), Int.MAX_VALUE))
             }
         } else {
             // Default case: get the full shape of the input tensor
-            sd.shape(outputNames[0],inputVariable)
+            sd.shape(outputNames[0], inputVariable)
         }
 
         return mapOf(outputNames[0] to listOf(shapeVariable))

@@ -20,6 +20,8 @@
 package org.nd4j.samediff.frameworkimport.tensorflow.importer
 
 import org.nd4j.autodiff.samediff.SameDiff
+import org.nd4j.autodiff.samediff.internal.InferenceSession
+import org.nd4j.common.config.ND4JSystemProperties
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.FrameworkImporter
@@ -71,14 +73,28 @@ class TensorflowFrameworkImporter: FrameworkImporter {
         suggestDynamicVariables: Boolean,
         trackVariableChanges: Boolean
     ): SameDiff {
-        val loadGraph = GraphDef.parseFrom(Files.readAllBytes(File(fileName).toPath()))
-        val irGraph = TensorflowIRGraph(loadGraph,opDefList,registry)
-        return if(suggestDynamicVariables) {
-            val newDynamicVariables  = suggestDynamicVariables(irGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
-            importFromGraph(graphDef = loadGraph, dynamicVariables = newDynamicVariables)
-        } else {
-            importFromGraph(graphDef = loadGraph, dynamicVariables = dynamicVariables)
-
+        // Disable DSP and CUDA graphs during model import. Importing loads model constants
+        // to GPU — DSP compilation and CUDA graph capture add memory pressure that causes OOM.
+        val dspWasEnabled = InferenceSession.isDynamicShapePlanEnabled()
+        val prevCudaGraphs = System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED)
+        InferenceSession.setDynamicShapePlanEnabled(false)
+        System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false")
+        try {
+            val loadGraph = GraphDef.parseFrom(Files.readAllBytes(File(fileName).toPath()))
+            val irGraph = TensorflowIRGraph(loadGraph, opDefList, registry)
+            return if (suggestDynamicVariables) {
+                val newDynamicVariables = suggestDynamicVariables(irGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
+                importFromGraph(graphDef = loadGraph, dynamicVariables = newDynamicVariables)
+            } else {
+                importFromGraph(graphDef = loadGraph, dynamicVariables = dynamicVariables)
+            }
+        } finally {
+            InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled)
+            if (prevCudaGraphs != null) {
+                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs)
+            } else {
+                System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED)
+            }
         }
     }
 

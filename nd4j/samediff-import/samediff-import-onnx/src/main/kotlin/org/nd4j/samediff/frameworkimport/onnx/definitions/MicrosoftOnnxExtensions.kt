@@ -43,41 +43,54 @@ object MicrosoftOnnxExtensions {
     private val microsoftExtensionOps = mapOf(
         // Attention and Transformer Operations
         "EmbedLayerNormalization" to "com.microsoft",
-        "Attention" to "com.microsoft", 
+        "Attention" to "com.microsoft",
         "MultiHeadAttention" to "com.microsoft",
+        "GroupQueryAttention" to "com.microsoft",
         "SkipLayerNormalization" to "com.microsoft",
         "LayerNormalization" to "com.microsoft",
         "SimplifiedLayerNormalization" to "com.microsoft",
+        "SkipSimplifiedLayerNormalization" to "com.microsoft",
         "PackedAttention" to "com.microsoft",
         "PackedMultiHeadAttention" to "com.microsoft",
-        
+        "RotaryEmbedding" to "com.microsoft",
+
         // Activation Functions
         "FastGelu" to "com.microsoft",
         "Gelu" to "com.microsoft",
         "BiasGelu" to "com.microsoft",
         "QuickGelu" to "com.microsoft",
         "BiasSoftmax" to "com.microsoft",
-        
+
         // Utility Operations
         "BiasAdd" to "com.microsoft",
         "RelativePositionBias" to "com.microsoft",
         "RemovePadding" to "com.microsoft",
         "RestorePadding" to "com.microsoft",
+
+        // Convolution Operations
         "FusedConv" to "com.microsoft",
-        
+        "NhwcConv" to "com.microsoft",
+
+        // Matrix Operations
+        "FusedMatMul" to "com.microsoft",
+        "FusedGemm" to "com.microsoft",
+        "MatMulNBits" to "com.microsoft",
+
         // Quantization Operations
         "QLinearAdd" to "com.microsoft",
         "QLinearMul" to "com.microsoft",
         "DynamicQuantizeMatMul" to "com.microsoft",
         "MatMulInteger16" to "com.microsoft",
-        
+
         // Beam Search Operations
         "BeamSearch" to "com.microsoft",
         "GreedySearch" to "com.microsoft",
-        
-        // Miscellaneous
+
+        // Image Operations
         "Crop" to "com.microsoft",
         "ImageScaler" to "com.microsoft",
+
+        // Parametric Activations
         "ParametricSoftplus" to "com.microsoft",
         "ScaledTanh" to "com.microsoft",
         "ThresholdedRelu" to "com.microsoft"
@@ -124,105 +137,58 @@ object MicrosoftOnnxExtensions {
     }
     
     private fun registerExtensionMappings(registry: OpMappingRegistry<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto, Onnx.TensorProto.DataType, Onnx.AttributeProto, Onnx.AttributeProto>) {
-        
-        // FastGelu mapping
-        val fastGelu = OnnxMappingProcess(
-            inputFrameworkOpName = "FastGelu",
-            opName = "noop", // Handled by PreImportHook
-            opMappingRegistry = registry,
-            tensorMappingRules = listOf(),
-            attributeMappingRules = listOf()
+
+        // Register all Microsoft extension ops with noop - handled by PreImportHooks
+        val microsoftOps = listOf(
+            // Attention and Transformer Operations
+            "EmbedLayerNormalization",
+            "Attention",
+            "MultiHeadAttention",
+            "GroupQueryAttention",
+            "SkipLayerNormalization",
+            "LayerNormalization",
+            "SimplifiedLayerNormalization",
+            "SkipSimplifiedLayerNormalization",
+            "RotaryEmbedding",
+
+            // Activation Functions
+            "FastGelu",
+            "Gelu",
+            "BiasGelu",
+            "QuickGelu",
+            "BiasSoftmax",
+
+            // Utility Operations
+            "BiasAdd",
+
+            // Convolution Operations
+            "FusedConv",
+            "NhwcConv",
+
+            // Matrix Operations
+            "FusedMatMul",
+            "FusedGemm",
+            "MatMulNBits",
+
+            // Image Operations
+            "Crop",
+            "ImageScaler",
+
+            // Parametric Activations
+            "ParametricSoftplus",
+            "ScaledTanh"
         )
-        registry.registerMappingProcess("FastGelu", fastGelu)
-        
-        val gelu = OnnxMappingProcess(
-            inputFrameworkOpName = "Gelu",
-            opName = "noop",
-            opMappingRegistry = registry,
-            tensorMappingRules = listOf(),
-            attributeMappingRules = listOf()
-        )
-        registry.registerMappingProcess("Gelu", gelu)
-        
-        // BiasGelu mapping
-        val biasGelu = OnnxMappingProcess(
-            inputFrameworkOpName = "BiasGelu",
-            opName = "noop", // Handled by PreImportHook
-            opMappingRegistry = registry,
-            tensorMappingRules = listOf(),
-            attributeMappingRules = listOf()
-        )
-        registry.registerMappingProcess("BiasGelu", biasGelu)
-        
-        // QuickGelu mapping
-        val quickGelu = OnnxMappingProcess(
-            inputFrameworkOpName = "QuickGelu",
-            opName = "noop", // Handled by PreImportHook
-            opMappingRegistry = registry,
-            tensorMappingRules = listOf(),
-            attributeMappingRules = listOf()
-        )
-        registry.registerMappingProcess("QuickGelu", quickGelu)
-        
-        // SkipLayerNormalization mapping
-        val skipLayerNorm = OnnxMappingProcess(
-            inputFrameworkOpName = "SkipLayerNormalization",
-            opName = "noop", // Handled by PreImportHook
-            opMappingRegistry = registry,
-            tensorMappingRules = listOf(),
-            attributeMappingRules = listOf()
-        )
-        registry.registerMappingProcess("SkipLayerNormalization", skipLayerNorm)
-        
-        // Attention mapping
-        val attention = OnnxMappingProcess(
-            inputFrameworkOpName = "Attention",
-            opName = "noop", // Handled by PreImportHook
-            opMappingRegistry = registry,
-            tensorMappingRules = listOf(),
-            attributeMappingRules = listOf()
-        )
-        registry.registerMappingProcess("Attention", attention)
-        
-        // MultiHeadAttention mapping
-        val multiHeadAttention = OnnxMappingProcess(
-            inputFrameworkOpName = "MultiHeadAttention",
-            opName = "noop", // Handled by PreImportHook
-            opMappingRegistry = registry,
-            tensorMappingRules = listOf(),
-            attributeMappingRules = listOf()
-        )
-        registry.registerMappingProcess("MultiHeadAttention", multiHeadAttention)
-        
-        // BiasAdd mapping
-        val biasAdd = OnnxMappingProcess(
-            inputFrameworkOpName = "BiasAdd",
-            opName = "noop", // Handled by PreImportHook
-            opMappingRegistry = registry,
-            tensorMappingRules = listOf(),
-            attributeMappingRules = listOf()
-        )
-        registry.registerMappingProcess("BiasAdd", biasAdd)
-        
-        // LayerNormalization mapping (Microsoft version)
-        val layerNormalization = OnnxMappingProcess(
-            inputFrameworkOpName = "LayerNormalization",
-            opName = "noop", // Handled by PreImportHook  
-            opMappingRegistry = registry,
-            tensorMappingRules = listOf(),
-            attributeMappingRules = listOf()
-        )
-        registry.registerMappingProcess("LayerNormalization", layerNormalization)
-        
-        // BiasSoftmax mapping
-        val biasSoftmax = OnnxMappingProcess(
-            inputFrameworkOpName = "BiasSoftmax",
-            opName = "noop", // Handled by PreImportHook
-            opMappingRegistry = registry,
-            tensorMappingRules = listOf(),
-            attributeMappingRules = listOf()
-        )
-        registry.registerMappingProcess("BiasSoftmax", biasSoftmax)
+
+        for (opName in microsoftOps) {
+            val mapping = OnnxMappingProcess(
+                inputFrameworkOpName = opName,
+                opName = "noop", // Handled by PreImportHook
+                opMappingRegistry = registry,
+                tensorMappingRules = listOf(),
+                attributeMappingRules = listOf()
+            )
+            registry.registerMappingProcess(opName, mapping)
+        }
     }
     
     private fun registerExtensionOpDescriptors(registry: OpMappingRegistry<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto, Onnx.TensorProto.DataType, Onnx.AttributeProto, Onnx.AttributeProto>) {

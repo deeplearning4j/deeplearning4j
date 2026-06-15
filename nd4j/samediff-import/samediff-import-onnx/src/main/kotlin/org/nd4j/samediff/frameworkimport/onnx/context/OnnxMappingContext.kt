@@ -52,20 +52,36 @@ IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
     }
 
     override fun irAttributeValueForNode(valueName: String): IRAttribute<Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto, Onnx.TensorProto.DataType> {
-        val attrDef = attrDef(valueName)
+        // Look up the attribute definition from the op schema — may be null if the attribute is not
+        // formally declared in the schema (e.g. optional/extended attributes from newer ONNX opsets).
+        val attrDef = opDef().attributeList.firstOrNull { it.name == valueName }
         var attrValue = node.attributeList.firstOrNull { it.name == valueName }
-        if(attrValue == null && attrDef.name == "value" && opDef.opType == "Constant")
+
+        if(attrValue == null && attrDef != null && attrDef.name == "value" && opDef.opType == "Constant")
         //allow dummy values
             attrValue = Onnx.AttributeProto.newBuilder()
                 .setName("value").addTensors(Onnx.TensorProto.getDefaultInstance())
                 .build()
         else if(attrValue == null) {
-            attrValue = Onnx.AttributeProto.newBuilder()
-                .setName(valueName)
-                .build()
-            println("Unable to resolve attribute for name $valueName for node ${nodeName()} for op type ${opName()}")
+            if(attrDef != null && attrDef.type != Onnx.AttributeProto.AttributeType.UNDEFINED) {
+                // Use the op schema default value if available (e.g., Elu alpha=1.0, LeakyRelu alpha=0.01)
+                attrValue = attrDef
+            } else {
+                attrValue = Onnx.AttributeProto.newBuilder()
+                    .setName(valueName)
+                    .build()
+                println("Unable to resolve attribute for name $valueName for node ${nodeName()} for op type ${opName()}")
+            }
         }
-        return OnnxIRAttr(inputAttributeDef = attrDef, inputAttributeValue = attrValue!!)
+
+        // When the attribute is not in the op schema definition, synthesize a schema entry from the
+        // node's actual attribute value so that OnnxIRAttr has a valid (non-null) inputAttributeDef.
+        val resolvedAttrDef = attrDef ?: Onnx.AttributeProto.newBuilder()
+            .setName(valueName)
+            .setType(attrValue!!.type)
+            .build()
+
+        return OnnxIRAttr(inputAttributeDef = resolvedAttrDef, inputAttributeValue = attrValue!!)
 
     }
 

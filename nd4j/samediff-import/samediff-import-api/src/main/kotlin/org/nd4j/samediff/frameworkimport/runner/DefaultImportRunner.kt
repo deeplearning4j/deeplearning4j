@@ -192,46 +192,50 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                                 ReflectionUtils.setField(field, df, createdNDArray)
                             }
                             else -> {
-                                val scalarField = ReflectionUtils.findField(df.javaClass, "scalarValue")
-                                scalarField.isAccessible = true
-                                //access the first input (should have been set) and make sure the scalar type is the
-                                //the same
-                                val firstValue = df.arg(0)
-                                val dtype = firstValue.dataType()
-                                when (argDescriptor.argType) {
-                                    OpNamespace.ArgDescriptor.ArgType.DOUBLE -> {
-                                        val nd4jScalarValue = Nd4j.scalar(argDescriptor.doubleValue).castTo(dtype)
-                                        ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
-
+                                // For BOOL fields (like inPlace), set the field directly
+                                // instead of overwriting scalarValue with a boolean cast to numeric.
+                                if (argDescriptor.argType == OpNamespace.ArgDescriptor.ArgType.BOOL) {
+                                    if (Boolean::class.javaPrimitiveType!!.isAssignableFrom(field.type) ||
+                                        Boolean::class.java.isAssignableFrom(field.type)) {
+                                        ReflectionUtils.setField(field, df, argDescriptor.boolValue)
                                     }
-                                    OpNamespace.ArgDescriptor.ArgType.FLOAT -> {
-                                        val nd4jScalarValue = Nd4j.scalar(argDescriptor.floatValue).castTo(dtype)
-                                        ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
+                                } else {
+                                    val scalarField = ReflectionUtils.findField(df.javaClass, "scalarValue")
+                                    scalarField.isAccessible = true
+                                    //access the first input (should have been set) and make sure the scalar type is the
+                                    //the same
+                                    val firstValue = df.arg(0)
+                                    val dtype = firstValue.dataType()
+                                    when (argDescriptor.argType) {
+                                        OpNamespace.ArgDescriptor.ArgType.DOUBLE -> {
+                                            val nd4jScalarValue = Nd4j.scalar(argDescriptor.doubleValue).castTo(dtype)
+                                            ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
 
-                                    }
-                                    OpNamespace.ArgDescriptor.ArgType.INT32 -> {
-                                        val nd4jScalarValue = Nd4j.scalar(argDescriptor.int32Value).castTo(dtype)
-                                        ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
+                                        }
+                                        OpNamespace.ArgDescriptor.ArgType.FLOAT -> {
+                                            val nd4jScalarValue = Nd4j.scalar(argDescriptor.floatValue).castTo(dtype)
+                                            ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
 
-                                    }
-                                    OpNamespace.ArgDescriptor.ArgType.INT64 -> {
-                                        val nd4jScalarValue = Nd4j.scalar(argDescriptor.int64Value).castTo(dtype)
-                                        ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
+                                        }
+                                        OpNamespace.ArgDescriptor.ArgType.INT32 -> {
+                                            val nd4jScalarValue = Nd4j.scalar(argDescriptor.int32Value).castTo(dtype)
+                                            ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
 
-                                    }
-                                    OpNamespace.ArgDescriptor.ArgType.BOOL -> {
-                                        val nd4jScalarValue = Nd4j.scalar(argDescriptor.boolValue).castTo(dtype)
-                                        ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
+                                        }
+                                        OpNamespace.ArgDescriptor.ArgType.INT64 -> {
+                                            val nd4jScalarValue = Nd4j.scalar(argDescriptor.int64Value).castTo(dtype)
+                                            ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
 
-                                    }
+                                        }
 
-                                    OpNamespace.ArgDescriptor.ArgType.STRING -> {
-                                        val nd4jScalarValue = Nd4j.scalar(argDescriptor.stringValue).castTo(dtype)
-                                        ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
+                                        OpNamespace.ArgDescriptor.ArgType.STRING -> {
+                                            val nd4jScalarValue = Nd4j.scalar(argDescriptor.stringValue).castTo(dtype)
+                                            ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
 
-                                    }
-                                    else -> {
-                                        throw IllegalArgumentException("Trying to convert invalid argument type " + argDescriptor.argType)
+                                        }
+                                        else -> {
+                                            throw IllegalArgumentException("Trying to convert invalid argument type " + argDescriptor.argType)
+                                        }
                                     }
                                 }
                             }

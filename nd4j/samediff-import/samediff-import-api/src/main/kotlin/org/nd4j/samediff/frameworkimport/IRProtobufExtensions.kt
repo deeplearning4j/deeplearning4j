@@ -30,6 +30,7 @@ import org.nd4j.common.util.ArrayUtil
 import org.nd4j.imports.graphmapper.tf.tensors.TFTensorMappers
 import org.nd4j.ir.OpNamespace
 import org.nd4j.ir.TensorNamespace
+import org.nd4j.linalg.api.buffer.DataBuffer
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
@@ -429,12 +430,23 @@ fun ndarrayFromNameSpaceTensor(inputTensor: TensorNamespace.TensorProto): INDArr
 fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArray {
     val shape = inputTensor.dimsList.toLongArray()
     val dtype = convertNd4jDataTypeFromNameSpaceTensorDataType(TensorNamespace.DataType.values()[inputTensor.dataType])
-    val byteArray = inputTensor.rawData.toByteArray()
+    val rawData = inputTensor.rawData
     //note: scalar can be zero
     var totalLen = ArrayUtil.prod(*shape)
 
+    // Handle empty data case - return zeros array with proper shape
+    // This can happen with external data references or placeholder tensors
+    if(rawData.isEmpty) {
+        if(totalLen < 1) totalLen = 1
+        return if(shape.isNotEmpty()) {
+            Nd4j.zeros(dtype, *shape)
+        } else {
+            Nd4j.scalar(dtype, 0)
+        }
+    }
 
     if(dtype == DataType.UTF8) {
+        val byteArray = rawData.toByteArray()
         val rawDataBuffer =  Nd4j.getDataBufferFactory().createUtf8Buffer(byteArray,byteArray.size.toLong())
         if(shape.isNotEmpty() && totalLen > 0) {
             if(rawDataBuffer.length() > 0) {
@@ -449,19 +461,57 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
         if(totalLen < 1)
             totalLen = 1
 
-        val byteBuffer = ByteBuffer.allocateDirect(totalLen * dtype.width())
-        if(byteArray.size > 0)
-            byteBuffer.put(byteArray)
-        //See: https://github.com/apache/felix/pull/114
-        val castBuffer = byteBuffer as Buffer
-        castBuffer.rewind()
-        val rawDataBuffer = Nd4j.createBuffer(byteBuffer, dtype, totalLen)
-        if(shape.isNotEmpty() && totalLen > 0) {
-            if(rawDataBuffer.length() > 0)
-                return Nd4j.create(rawDataBuffer).reshape('c',*shape)
+        // Decode raw bytes into typed Java arrays, then use Nd4j.createBuffer(typedArray).
+        // Raw data from protobuf (ONNX, TensorFlow) is always LITTLE_ENDIAN.
+        // Nd4j.createBuffer(ByteBuffer, DataType, int) corrupts INT64 data on CUDA
+        // (device buffer gets pointer addresses instead of actual values), so we
+        // decode into typed Java arrays which go through a reliable H2D sync path.
+        val protoBuffer = rawData.asReadOnlyByteBuffer()
+        protoBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        val len = totalLen.toInt()
+
+        val rawDataBuffer: DataBuffer = when (dtype) {
+            DataType.FLOAT -> {
+                val arr = FloatArray(len)
+                protoBuffer.asFloatBuffer().get(arr)
+                Nd4j.createBuffer(arr)
+            }
+            DataType.DOUBLE -> {
+                val arr = DoubleArray(len)
+                protoBuffer.asDoubleBuffer().get(arr)
+                Nd4j.createBuffer(arr)
+            }
+            DataType.INT64 -> {
+                val arr = LongArray(len)
+                protoBuffer.asLongBuffer().get(arr)
+                Nd4j.createBuffer(arr)
+            }
+            DataType.INT32 -> {
+                val arr = IntArray(len)
+                protoBuffer.asIntBuffer().get(arr)
+                Nd4j.createBuffer(arr)
+            }
+            DataType.INT16, DataType.BFLOAT16, DataType.FLOAT16 -> {
+                val arr = ShortArray(len)
+                protoBuffer.asShortBuffer().get(arr)
+                Nd4j.createTypedBuffer(arr, dtype)
+            }
+            else -> {
+                // For other types (INT8, UINT8, BOOL, etc.), copy raw bytes
+                val byteBuffer = ByteBuffer.allocateDirect(len * dtype.width())
+                byteBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                byteBuffer.put(protoBuffer)
+                (byteBuffer as Buffer).rewind()
+                Nd4j.createBuffer(byteBuffer, dtype, len)
+            }
+        }
+
+        val resultShape = if(shape.isNotEmpty() && totalLen > 0) shape else longArrayOf(rawDataBuffer.length())
+        if(rawDataBuffer.length() <= 0 && shape.isNotEmpty()) {
             return Nd4j.empty(dtype)
         }
-        return Nd4j.create(rawDataBuffer)
+        val strides = Nd4j.getStrides(resultShape, 'c')
+        return Nd4j.create(rawDataBuffer, resultShape, strides, 0L, 'c')
     }
 
 

@@ -63,47 +63,41 @@ class OnnxIRDataType(inputDataType: Onnx.TensorProto.DataType): IRDataType<Onnx.
     override fun nd4jDataType(): DataType {
         when(this.dataType) {
             Onnx.TensorProto.DataType.INT8 -> return DataType.INT8
-            Onnx.TensorProto.DataType.UINT8 ->    return DataType.UINT8
-            Onnx.TensorProto.DataType.UINT64 ->    return DataType.UINT64
-            Onnx.TensorProto.DataType.UINT32 ->   return DataType.INT32
-            Onnx.TensorProto.DataType.UINT16 ->  return DataType.INT16
-            Onnx.TensorProto.DataType.FLOAT16 -> return   return DataType.FLOAT16
-            Onnx.TensorProto.DataType.STRING -> return  return DataType.UTF8
-            Onnx.TensorProto.DataType.FLOAT ->  return  return DataType.FLOAT
-            Onnx.TensorProto.DataType.DOUBLE -> return  return DataType.DOUBLE
-            Onnx.TensorProto.DataType.BOOL -> return  return DataType.BOOL
-            Onnx.TensorProto.DataType.INT64 -> return  return DataType.INT64
-            Onnx.TensorProto.DataType.INT32 ->  return  return DataType.INT32
-            Onnx.TensorProto.DataType.INT16 -> return  return DataType.INT16
+            Onnx.TensorProto.DataType.UINT8 -> return DataType.UINT8
+            Onnx.TensorProto.DataType.UINT64 -> return DataType.UINT64
+            Onnx.TensorProto.DataType.UINT32 -> return DataType.UINT32
+            Onnx.TensorProto.DataType.UINT16 -> return DataType.UINT16
+            Onnx.TensorProto.DataType.FLOAT16 -> return DataType.FLOAT16
+            Onnx.TensorProto.DataType.STRING -> return DataType.UTF8
+            Onnx.TensorProto.DataType.FLOAT -> return DataType.FLOAT
+            Onnx.TensorProto.DataType.DOUBLE -> return DataType.DOUBLE
+            Onnx.TensorProto.DataType.BOOL -> return DataType.BOOL
+            Onnx.TensorProto.DataType.INT64 -> return DataType.INT64
+            Onnx.TensorProto.DataType.INT32 -> return DataType.INT32
+            Onnx.TensorProto.DataType.INT16 -> return DataType.INT16
             Onnx.TensorProto.DataType.BFLOAT16 -> return DataType.BFLOAT16
             else -> return DataType.UNKNOWN
         }
-
-        return  return DataType.UNKNOWN
-
     }
 
     override fun nameSpaceDataType(): TensorNamespace.DataType {
         when(this.dataType) {
-            Onnx.TensorProto.DataType.UINT64 ->  return  return TensorNamespace.DataType.INT64
-            Onnx.TensorProto.DataType.UINT32 ->  return TensorNamespace.DataType.INT32
-            Onnx.TensorProto.DataType.UINT16 ->  return TensorNamespace.DataType.INT16
-            Onnx.TensorProto.DataType.FLOAT16 -> return   return TensorNamespace.DataType.FLOAT16
-            Onnx.TensorProto.DataType.STRING -> return  return TensorNamespace.DataType.STRING
-            Onnx.TensorProto.DataType.FLOAT ->  return TensorNamespace.DataType.FLOAT
+            Onnx.TensorProto.DataType.UINT64 -> return TensorNamespace.DataType.UINT64
+            Onnx.TensorProto.DataType.UINT32 -> return TensorNamespace.DataType.UINT32
+            Onnx.TensorProto.DataType.UINT16 -> return TensorNamespace.DataType.UINT16
+            Onnx.TensorProto.DataType.FLOAT16 -> return TensorNamespace.DataType.FLOAT16
+            Onnx.TensorProto.DataType.STRING -> return TensorNamespace.DataType.STRING
+            Onnx.TensorProto.DataType.FLOAT -> return TensorNamespace.DataType.FLOAT
             Onnx.TensorProto.DataType.DOUBLE -> return TensorNamespace.DataType.DOUBLE
-            Onnx.TensorProto.DataType.BOOL -> return  return TensorNamespace.DataType.BOOL
-            Onnx.TensorProto.DataType.INT64 -> return  return TensorNamespace.DataType.INT64
-            Onnx.TensorProto.DataType.INT32 ->  return  return TensorNamespace.DataType.INT32
-            Onnx.TensorProto.DataType.INT16 -> return  return TensorNamespace.DataType.INT16
-            Onnx.TensorProto.DataType.UNDEFINED -> TODO()
+            Onnx.TensorProto.DataType.BOOL -> return TensorNamespace.DataType.BOOL
+            Onnx.TensorProto.DataType.INT64 -> return TensorNamespace.DataType.INT64
+            Onnx.TensorProto.DataType.INT32 -> return TensorNamespace.DataType.INT32
+            Onnx.TensorProto.DataType.INT16 -> return TensorNamespace.DataType.INT16
             Onnx.TensorProto.DataType.UINT8 -> return TensorNamespace.DataType.UINT8
             Onnx.TensorProto.DataType.INT8 -> return TensorNamespace.DataType.INT8
             Onnx.TensorProto.DataType.BFLOAT16 -> return TensorNamespace.DataType.BFLOAT16
             else -> return TensorNamespace.DataType.UNDEFINED
         }
-
-        return TensorNamespace.DataType.UNDEFINED
     }
 
 }

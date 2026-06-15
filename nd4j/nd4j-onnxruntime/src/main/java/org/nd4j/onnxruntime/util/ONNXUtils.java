@@ -270,30 +270,77 @@ public class ONNXUtils {
      * @return
      */
     public static Value getTensor(INDArray ndArray, MemoryInfo memoryInfo) {
-        if(ndArray == null || ndArray.isEmpty()) {
-            /**
-             *   static Value CreateTensor(const OrtMemoryInfo* info, void* p_data, size_t p_data_byte_count, const int64_t* shape, size_t shape_len,
-             *                             ONNXTensorElementDataType type)
-             */
-            LongPointer dims = new LongPointer(0);
-            Value ret =  Value.CreateTensor(
+        if(ndArray == null) {
+            throw new IllegalArgumentException("Cannot create tensor from null array");
+        }
+        
+        if(ndArray.isEmpty()) {
+            // Handle empty arrays properly - they still have shape information
+            long[] shape = ndArray.shape();
+            LongPointer dims = new LongPointer(shape);
+            
+            // For empty arrays, we need at least a minimal buffer to avoid "not enough space" error
+            // Create a dummy buffer with 1 element
+            Pointer dummyData;
+            int elementSize;
+            int onnxType = onnxTypeForDataType(ndArray.dataType());
+            
+            switch (ndArray.dataType()) {
+                case FLOAT:
+                    dummyData = new FloatPointer(1);
+                    elementSize = 4;
+                    break;
+                case DOUBLE:
+                    dummyData = new DoublePointer(1);
+                    elementSize = 8;
+                    break;
+                case INT:
+                    dummyData = new IntPointer(1);
+                    elementSize = 4;
+                    break;
+                case LONG:
+                    dummyData = new LongPointer(1);
+                    elementSize = 8;
+                    break;
+                case BYTE:
+                    dummyData = new BytePointer(1);
+                    elementSize = 1;
+                    break;
+                case SHORT:
+                    dummyData = new ShortPointer(1);
+                    elementSize = 2;
+                    break;
+                case BOOL:
+                    dummyData = new BoolPointer(1);
+                    elementSize = 1;
+                    break;
+                default:
+                    // Default to float for other types
+                    dummyData = new FloatPointer(1);
+                    elementSize = 4;
+                    onnxType = onnxTypeForDataType(FLOAT);
+            }
+            
+            Value ret = Value.CreateTensor(
                     memoryInfo.asOrtMemoryInfo(),
-                    new FloatPointer(),
-                    0,
+                    dummyData,
+                    elementSize,
                     dims,
-                    0,
-                    onnxTypeForDataType(FLOAT));
+                    ndArray.rank(),
+                    onnxType);
             return ret;
         }
 
-        Pointer inputTensorValuesPtr = ndArray.data().pointer();
+        // Ensure contiguous memory layout for ORT by duplicating if needed
+        INDArray contiguous = ndArray.isView() ? ndArray.dup() : ndArray;
+        // Sync device→host so the host pointer has current data (required for CUDA backend)
+        Nd4j.getExecutioner().commit();
+        Nd4j.getAffinityManager().ensureLocation(contiguous,
+                org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+        Pointer inputTensorValuesPtr = contiguous.data().pointer();
         Pointer inputTensorValues = inputTensorValuesPtr;
-        long sizeInBytes = ndArray.length() * ndArray.data().getElementSize();
+        long sizeInBytes = contiguous.length() * contiguous.data().getElementSize();
 
-        /**
-         *   static Value CreateTensor(const OrtMemoryInfo* info, void* p_data, size_t p_data_byte_count, const int64_t* shape, size_t shape_len,
-         *                             ONNXTensorElementDataType type)
-         */
         LongPointer dims = new LongPointer(ndArray.shape());
         Value ret =  Value.CreateTensor(
                 memoryInfo.asOrtMemoryInfo(),
@@ -391,7 +438,9 @@ public class ONNXUtils {
                 default:
                     throw new RuntimeException("Unsupported data type encountered");
             }
-            return buffer;
+            // Copy data into ND4J-managed memory before PointerScope closes
+            // and frees the ORT-owned native pointers
+            return buffer.dup();
         }
     }
 

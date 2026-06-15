@@ -42,11 +42,9 @@ class GlobalAveragePooling: PreImportHook {
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
         val inputVariable = sd.getVariable(op.inputsToOp[0])
-        val rankOf = sd.rank(inputVariable)
-        val range = sd.range(sd.constant(0),rankOf,sd.constant(1),DataType.INT64)
-        val sizes = sd.concat(0,sd.constant(2).castTo(DataType.INT64),sd.prod(range.shape()).sub(2.0).castTo(DataType.INT64))
-        val split = sd.splitV(range,sizes,2,0)
-        val output = sd.math.mean(outputNames[0],inputVariable,split[1],true)
+        // ONNX GlobalAveragePool operates on NCHW input, reducing spatial dims (2,3,...,rank-1)
+        // For 4D NCHW (the standard case), axes = [2, 3]
+        val output = sd.mean(outputNames[0], inputVariable, true, 2, 3)
         return mapOf(output.name() to listOf(output))
     }
 
