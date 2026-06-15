@@ -47,13 +47,26 @@ public class CpuLapack extends BaseLapack {
         }
         return A.ordering() == 'f' ? (int) A.rows() : (int) A.columns();
     }
+
+    private FloatPointer floatPtr(INDArray arr) {
+        return ((FloatPointer) arr.data().addressPointer()).getPointer(arr.offset());
+    }
+
+    private DoublePointer doublePtr(INDArray arr) {
+        return ((DoublePointer) arr.data().addressPointer()).getPointer(arr.offset());
+    }
+
+    private IntPointer intPtr(INDArray arr) {
+        return ((IntPointer) arr.data().addressPointer()).getPointer(arr.offset());
+    }
+
     //=========================
 // L U DECOMP
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
         int status = Nd4j.getBlasLapackDelegator().LAPACKE_sgetrf(getColumnOrder(A), M, N,
-                (FloatPointer)A.data().addressPointer(),
-                getLda(A), (IntPointer)IPIV.data().addressPointer()
+                floatPtr(A),
+                getLda(A), intPtr(IPIV)
         );
         if( status < 0 ) {
             throw new BlasException( "Failed to execute sgetrf", status ) ;
@@ -62,8 +75,8 @@ public class CpuLapack extends BaseLapack {
 
     @Override
     public void dgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
-        int status = Nd4j.getBlasLapackDelegator().LAPACKE_dgetrf(getColumnOrder(A), M, N, (DoublePointer)A.data().addressPointer(),
-                getLda(A), (IntPointer)IPIV.data().addressPointer()
+        int status = Nd4j.getBlasLapackDelegator().LAPACKE_dgetrf(getColumnOrder(A), M, N, doublePtr(A),
+                getLda(A), intPtr(IPIV)
         );
         if( status < 0 ) {
             throw new BlasException( "Failed to execute dgetrf", status ) ;
@@ -77,28 +90,29 @@ public class CpuLapack extends BaseLapack {
         INDArray tau = Nd4j.create(DataType.FLOAT, N ) ;
 
         int status = Nd4j.getBlasLapackDelegator().LAPACKE_sgeqrf(getColumnOrder(A), M, N,
-                (FloatPointer)A.data().addressPointer(), getLda(A),
-                (FloatPointer)tau.data().addressPointer()
+                floatPtr(A), getLda(A),
+                floatPtr(tau)
         );
         if( status != 0 ) {
             throw new BlasException( "Failed to execute sgeqrf", status ) ;
         }
 
-        // Copy R ( upper part of Q ) into result
+        // Copy R (upper triangular part of A) into result using element-wise access
         if( R != null ) {
-            R.assign( A.get( NDArrayIndex.interval( 0, A.columns() ), NDArrayIndex.all() ) ) ;
-            INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
-
-            for( int i = 1 ; i < Math.min( A.rows(), A.columns() ) ; i++ ) {
-                ix[0] = NDArrayIndex.point(i) ;
-                ix[1] = NDArrayIndex.interval( 0, i ) ;
-                R.put(ix, 0) ;
+            for( int i = 0 ; i < N ; i++ ) {
+                for( int j = 0 ; j < N ; j++ ) {
+                    if( j >= i ) {
+                        R.putScalar(i, j, A.getDouble(i, j));
+                    } else {
+                        R.putScalar(i, j, 0.0);
+                    }
+                }
             }
         }
 
         status = Nd4j.getBlasLapackDelegator().LAPACKE_sorgqr( getColumnOrder(A), M, N, N,
-                (FloatPointer)A.data().addressPointer(), getLda(A),
-                (FloatPointer)tau.data().addressPointer()
+                floatPtr(A), getLda(A),
+                floatPtr(tau)
         );
         if( status != 0 ) {
             throw new BlasException( "Failed to execute sorgqr", status ) ;
@@ -110,28 +124,29 @@ public class CpuLapack extends BaseLapack {
         INDArray tau = Nd4j.create(DataType.DOUBLE, N ) ;
 
         int status = Nd4j.getBlasLapackDelegator().LAPACKE_dgeqrf(getColumnOrder(A), M, N,
-                (DoublePointer)A.data().addressPointer(), getLda(A),
-                (DoublePointer)tau.data().addressPointer()
+                doublePtr(A), getLda(A),
+                doublePtr(tau)
         );
         if( status != 0 ) {
             throw new BlasException( "Failed to execute dgeqrf", status ) ;
         }
 
-        // Copy R ( upper part of Q ) into result
+        // Copy R (upper triangular part of A) into result using element-wise access
         if( R != null ) {
-            R.assign( A.get(NDArrayIndex.interval( 0, A.columns() ), NDArrayIndex.all() ) ) ;
-            INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
-
-            for( int i = 1 ; i < Math.min( A.rows(), A.columns() ) ; i++ ) {
-                ix[0] = NDArrayIndex.point(i) ;
-                ix[1] = NDArrayIndex.interval( 0, i ) ;
-                R.put(ix, 0) ;
+            for( int i = 0 ; i < N ; i++ ) {
+                for( int j = 0 ; j < N ; j++ ) {
+                    if( j >= i ) {
+                        R.putScalar(i, j, A.getDouble(i, j));
+                    } else {
+                        R.putScalar(i, j, 0.0);
+                    }
+                }
             }
         }
 
         status = Nd4j.getBlasLapackDelegator().LAPACKE_dorgqr( getColumnOrder(A), M, N, N,
-                (DoublePointer)A.data().addressPointer(), getLda(A),
-                (DoublePointer)tau.data().addressPointer()
+                doublePtr(A), getLda(A),
+                doublePtr(tau)
         );
         if( status != 0 ) {
             throw new BlasException( "Failed to execute dorgqr", status ) ;
@@ -144,23 +159,22 @@ public class CpuLapack extends BaseLapack {
     @Override
     public void spotrf(byte uplo, int N, INDArray A, INDArray INFO) {
         int status = Nd4j.getBlasLapackDelegator().LAPACKE_spotrf(getColumnOrder(A), uplo, N,
-                (FloatPointer)A.data().addressPointer(), getLda(A) );
+                floatPtr(A), getLda(A) );
         if( status != 0 ) {
             throw new BlasException( "Failed to execute spotrf", status ) ;
         }
+        // Zero the non-factor triangle using direct element access
         if( uplo == 'U' ) {
-            INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
-            for( int i = 1 ; i < Math.min( A.rows(), A.columns() ) ; i++ ) {
-                ix[0] = NDArrayIndex.point(i);
-                ix[1] = NDArrayIndex.interval(0, i ) ;
-                A.put(ix, 0);
+            for( int i = 1 ; i < N ; i++ ) {
+                for( int j = 0 ; j < i ; j++ ) {
+                    A.putScalar(i, j, 0.0);
+                }
             }
         } else {
-            INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
-            for( int i = 0 ; i < Math.min(A.rows(), A.columns()-1 ) ; i++ ) {
-                ix[0] = NDArrayIndex.point(i) ;
-                ix[1] = NDArrayIndex.interval(i + 1, A.columns() ) ;
-                A.put(ix, 0) ;
+            for( int i = 0 ; i < N ; i++ ) {
+                for( int j = i + 1 ; j < N ; j++ ) {
+                    A.putScalar(i, j, 0.0);
+                }
             }
         }
     }
@@ -168,23 +182,25 @@ public class CpuLapack extends BaseLapack {
     @Override
     public void dpotrf(byte uplo, int N, INDArray A, INDArray INFO) {
         int status = Nd4j.getBlasLapackDelegator().LAPACKE_dpotrf(getColumnOrder(A), uplo, N,
-                (DoublePointer)A.data().addressPointer(), getLda(A) );
+                doublePtr(A), getLda(A) );
         if( status != 0 ) {
             throw new BlasException( "Failed to execute dpotrf", status ) ;
         }
+        // Zero the non-factor triangle using direct element access
+        // LAPACKE modifies the raw buffer; NDArrayIndex zeroing can conflict with array strides
         if( uplo == 'U' ) {
-            INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
-            for( int i = 1 ; i < Math.min( A.rows(), A.columns() ) ; i++ ) {
-                ix[0] = NDArrayIndex.point(i) ;
-                ix[1] = NDArrayIndex.interval( 0, i ) ;
-                A.put(ix, 0) ;
+            // Factor is in upper triangle; zero strictly lower triangle
+            for( int i = 1 ; i < N ; i++ ) {
+                for( int j = 0 ; j < i ; j++ ) {
+                    A.putScalar(i, j, 0.0);
+                }
             }
         } else {
-            INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
-            for( int i = 0; i < Math.min( A.rows(), A.columns()-1 ) ; i++ ) {
-                ix[0] = NDArrayIndex.point( i ) ;
-                ix[1] = NDArrayIndex.interval( i+1, A.columns() ) ;
-                A.put(ix, 0) ;
+            // Factor is in lower triangle; zero strictly upper triangle
+            for( int i = 0 ; i < N ; i++ ) {
+                for( int j = i + 1 ; j < N ; j++ ) {
+                    A.putScalar(i, j, 0.0);
+                }
             }
         }
     }
@@ -198,11 +214,11 @@ public class CpuLapack extends BaseLapack {
                        INDArray INFO) {
         INDArray superb = Nd4j.create(DataType.FLOAT, M < N ? M : N ) ;
         int status = Nd4j.getBlasLapackDelegator().LAPACKE_sgesvd(getColumnOrder(A), jobu, jobvt, M, N,
-                (FloatPointer)A.data().addressPointer(), getLda(A),
-                (FloatPointer)S.data().addressPointer(),
-                U == null ? null : (FloatPointer)U.data().addressPointer(), U == null ? 1 : getLda(U),
-                VT == null ? null : (FloatPointer)VT.data().addressPointer(), VT == null ? 1 : getLda(VT),
-                (FloatPointer)superb.data().addressPointer()
+                floatPtr(A), getLda(A),
+                floatPtr(S),
+                U == null ? null : floatPtr(U), U == null ? 1 : getLda(U),
+                VT == null ? null : floatPtr(VT), VT == null ? 1 : getLda(VT),
+                floatPtr(superb)
         );
         if( status != 0 ) {
             throw new BlasException( "Failed to execute sgesvd", status ) ;
@@ -214,11 +230,11 @@ public class CpuLapack extends BaseLapack {
                        INDArray INFO) {
         INDArray superb = Nd4j.create(DataType.DOUBLE, M < N ? M : N ) ;
         int status = Nd4j.getBlasLapackDelegator().LAPACKE_dgesvd(getColumnOrder(A), jobu, jobvt, M, N,
-                (DoublePointer)A.data().addressPointer(), getLda(A),
-                (DoublePointer)S.data().addressPointer(),
-                U == null ? null : (DoublePointer)U.data().addressPointer(), U == null ? 1 : getLda(U),
-                VT == null ? null : (DoublePointer)VT.data().addressPointer(), VT == null ? 1 : getLda(VT),
-                (DoublePointer)superb.data().addressPointer()
+                doublePtr(A), getLda(A),
+                doublePtr(S),
+                U == null ? null : doublePtr(U), U == null ? 1 : getLda(U),
+                VT == null ? null : doublePtr(VT), VT == null ? 1 : getLda(VT),
+                doublePtr(superb)
         ) ;
         if( status != 0 ) {
             throw new BlasException( "Failed to execute dgesvd", status ) ;
@@ -233,16 +249,16 @@ public class CpuLapack extends BaseLapack {
     public int ssyev( char jobz, char uplo, int N, INDArray A, INDArray R ) {
         FloatPointer fp = new FloatPointer(1) ;
         int status = Nd4j.getBlasLapackDelegator().LAPACKE_ssyev_work( getColumnOrder(A), (byte)jobz, (byte)uplo,
-                N, (FloatPointer)A.data().addressPointer(), getLda(A),
-                (FloatPointer)R.data().addressPointer(), fp, -1 ) ;
+                N, floatPtr(A), getLda(A),
+                floatPtr(R), fp, -1 ) ;
         if( status == 0 ) {
             int lwork = (int)fp.get() ;
             INDArray work = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(lwork),
                     Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {lwork}, A.dataType()).getFirst());
 
             status = Nd4j.getBlasLapackDelegator().LAPACKE_ssyev( getColumnOrder(A), (byte)jobz, (byte)uplo, N,
-                    (FloatPointer)A.data().addressPointer(), getLda(A),
-                    (FloatPointer)work.data().addressPointer() ) ;
+                    floatPtr(A), getLda(A),
+                    floatPtr(work) ) ;
             if( status == 0 ) {
                 R.assign(work.get(NDArrayIndex.interval(0,N))) ;
             }
@@ -255,16 +271,16 @@ public class CpuLapack extends BaseLapack {
 
         DoublePointer dp = new DoublePointer(1) ;
         int status = Nd4j.getBlasLapackDelegator().LAPACKE_dsyev_work( getColumnOrder(A), (byte)jobz, (byte)uplo,
-                N, (DoublePointer)A.data().addressPointer(), getLda(A),
-                (DoublePointer)R.data().addressPointer(), dp, -1 ) ;
+                N, doublePtr(A), getLda(A),
+                doublePtr(R), dp, -1 ) ;
         if( status == 0 ) {
             int lwork = (int)dp.get() ;
             INDArray work = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createDouble(lwork),
                     Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {lwork}, A.dataType()).getFirst());
 
             status = Nd4j.getBlasLapackDelegator().LAPACKE_dsyev( getColumnOrder(A), (byte)jobz, (byte)uplo, N,
-                    (DoublePointer)A.data().addressPointer(), getLda(A),
-                    (DoublePointer)work.data().addressPointer() ) ;
+                    doublePtr(A), getLda(A),
+                    doublePtr(work) ) ;
 
             if( status == 0 ) {
                 R.assign( work.get( NDArrayIndex.interval(0,N) ) ) ;

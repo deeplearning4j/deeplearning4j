@@ -84,7 +84,7 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareActionAllWrite(INDArray... operands) {
-        val context = allocator.getDeviceContext();
+        CudaContext context = allocator.getDeviceContext();
         val cId = allocator.getDeviceId();
 
         for (INDArray operand : operands) {
@@ -100,14 +100,23 @@ public class SynchronousFlowController implements FlowController {
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
                 DataBuffer buffer = operand.data();
                 allocator.getMemoryHandler().relocateObject(buffer);
+                context = allocator.getDeviceContext();
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
                 ((JCublasNDArray) operand).setShapeInfoDataBuffer(
                                 Nd4j.getConstantHandler().relocateConstantSpace(operand.shapeInfoDataBuffer()));
+                context = allocator.getDeviceContext();
             }
 
             prepareDelayedMemory(operand);
+            allocator.getAllocationPoint(operand).setCurrentContext(context);
+        }
+
+        for (INDArray operand : operands) {
+            if (operand == null || operand.isEmpty())
+                continue;
+
             allocator.getAllocationPoint(operand).setCurrentContext(context);
         }
         return context;
@@ -115,7 +124,7 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
-        val context = allocator.getDeviceContext();
+        CudaContext context = allocator.getDeviceContext();
         val cId = allocator.getDeviceId();
 
 
@@ -128,10 +137,12 @@ public class SynchronousFlowController implements FlowController {
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0 && (!CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed() || !NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable())) {
                 DataBuffer buffer = result.data();
                 allocator.getMemoryHandler().relocateObject(buffer);
+                context = allocator.getDeviceContext();
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
                 ((JCublasNDArray) result).setShapeInfoDataBuffer(Nd4j.getExecutioner().createShapeInfo(result.shape(), result.stride(), result.elementWiseStride(), result.ordering(), result.dataType(), result.isEmpty()));
+                context = allocator.getDeviceContext();
             }
 
             allocator.getAllocationPoint(result).setCurrentContext(context);
@@ -154,13 +165,26 @@ public class SynchronousFlowController implements FlowController {
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0 && (!CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed() || !NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable())) {
                 DataBuffer buffer = operand.data();
                 allocator.getMemoryHandler().relocateObject(buffer);
+                context = allocator.getDeviceContext();
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
                 ((JCublasNDArray) operand).setShapeInfoDataBuffer(Nd4j.getExecutioner().createShapeInfo(operand.shape(), operand.stride(), operand.elementWiseStride(), operand.ordering(), operand.dataType(), operand.isEmpty()));
+                context = allocator.getDeviceContext();
             }
 
             prepareDelayedMemory(operand);
+            allocator.getAllocationPoint(operand).setCurrentContext(context);
+        }
+
+        if (result != null && !result.isEmpty()) {
+            allocator.getAllocationPoint(result).setCurrentContext(context);
+        }
+
+        for (INDArray operand : operands) {
+            if (operand == null || operand.isEmpty() || operand.isS())
+                continue;
+
             allocator.getAllocationPoint(operand).setCurrentContext(context);
         }
         return context;

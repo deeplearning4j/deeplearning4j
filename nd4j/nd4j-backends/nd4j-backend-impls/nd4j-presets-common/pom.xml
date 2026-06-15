@@ -14,6 +14,7 @@
     <name>nd4j-presets-common</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <module.name>nd4j.presets.common</module.name>
     </properties>
 

@@ -50,6 +50,10 @@ public class CpuOpContextDeallocator implements Deallocator {
 
     @Override
     public void deallocate() {
+        if (context == null || context.isNull()) {
+            return;
+        }
+
         //update the log event with the actual time of de allocation and then
         //perform logging
         if(logEvent != null) {

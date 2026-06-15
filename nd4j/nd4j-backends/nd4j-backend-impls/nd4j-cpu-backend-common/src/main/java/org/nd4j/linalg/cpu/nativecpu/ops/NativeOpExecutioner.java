@@ -59,8 +59,10 @@ import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
 import org.nd4j.linalg.cpu.nativecpu.buffer.LongBuffer;
 import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JOpExceptionUtils;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.OpaqueConstantShapeBuffer;
 import org.nd4j.nativeblas.OpaqueNDArray;
 import org.nd4j.nativeblas.OpaqueTadPack;
@@ -79,18 +81,62 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     protected AtomicBoolean experimentalMode = new AtomicBoolean(false);
 
+    // For multi-backend support: allow using a specific NativeOps instance
+    protected NativeOps nativeOps;
+    protected boolean isSecondaryBackend = false;
 
+    /**
+     * Default constructor - uses getNativeOps() singleton.
+     * This is the normal path when CPU is the primary backend.
+     */
     public NativeOpExecutioner() {
-        tadManager.init(Nd4j.getNativeOps(), constantHandler);
+        this(Nd4j.getNativeOps(), false);
+    }
 
-        experimentalMode.set(Nd4j.getNativeOps().isExperimentalEnabled());
+    /**
+     * Constructor for secondary backend instantiation.
+     * Use this when CPU is being loaded as a fallback alongside CUDA.
+     *
+     * @param nativeOps the NativeOps instance for CPU backend
+     * @param isSecondary true if this is a secondary (non-primary) backend
+     */
+    public NativeOpExecutioner(NativeOps nativeOps, boolean isSecondary) {
+        this.nativeOps = nativeOps;
+        this.isSecondaryBackend = isSecondary;
+
+        // For secondary backend, we can't use Nd4j.getConstantHandler() as it returns CUDA's
+        // Instead we need to manage our own constant handling or pass it in
+        if (!isSecondary) {
+            this.constantHandler = Nd4j.getConstantHandler();
+        }
+
+        tadManager.init(nativeOps, constantHandler);
+        experimentalMode.set(nativeOps.isExperimentalEnabled());
 
         // filling vars for possible overrides
         val env = System.getenv(ND4JEnvironmentVars.ND4J_MKL_FALLBACK);
         if (env != null) {
             // in this case we just disable mkl-dnn globally
-
         }
+
+        if (isSecondary) {
+            log.info("NativeOpExecutioner initialized as secondary backend for CPU fallback");
+        }
+    }
+
+    /**
+     * Get the NativeOps instance for this executioner.
+     * Returns the instance-specific NativeOps rather than the global singleton.
+     */
+    protected NativeOps getNativeOps() {
+        return nativeOps != null ? nativeOps : Nd4j.getNativeOps();
+    }
+
+    /**
+     * Check if this executioner is running as a secondary backend.
+     */
+    public boolean isSecondaryBackend() {
+        return isSecondaryBackend;
     }
 
     @Override
@@ -124,7 +170,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         profilingConfigurableHookOut(op,opContext,start);
         // Periodic TAD cache cleanup to prevent memory leaks
-        Nd4j.getNativeOps().checkAndCleanupCaches();
+        getNativeOps().checkAndCleanupCaches();
         return op.z();
     }
 
@@ -136,13 +182,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public INDArray exec(IndexAccumulation op, OpContext oc) {
         checkForCompression(op);
-
+        getNativeOps().clearLastError();
         INDArray x = getX(op, oc);
         INDArray z = getZ(op, oc);
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        val dimension = Shape.normalizeAxis(x.rank(), op.dimensions().toLongVector());
+        INDArray dimArray = op.dimensions();
+        long[] dimLong = null;
+        if (dimArray != null && dimArray.data() != null) {
+            dimLong = dimArray.toLongVector();
+        }
+        // Normalize negative axes first, then check for "reduce all"
+        dimLong = Shape.normalizeAxis(x.rank(), dimLong);
+        if (Shape.wholeArrayDimension(dimLong)) {
+            dimLong = new long[0];
+        }
+        val dimension = dimLong;
 
         if (x.isEmpty()) {
             for (val d:dimension) {
@@ -181,17 +237,27 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val zb = OpaqueNDArray.fromINDArray(z);
 
         if (z.isScalar()) {
-            Nd4j.getNativeOps().execIndexReduceScalar(dummy,
+            getNativeOps().execIndexReduceScalar(dummy,
                     op.opNum(),
                     xb,
                     getPointerForExtraArgs(op,x.dataType()),
                     zb);
         } else {
-            OpaqueNDArray fromDims = OpaqueNDArray.fromINDArray(op.dimensions());
-            Nd4j.getNativeOps().execIndexReduce(dummy,op.opNum(),xb,zb,fromDims, null);
+            // Use dimArray which was validated earlier (null check on data buffer)
+            // If dimArray had null data, we use the normalized dimension array instead.
+            // Guard: if dimension is also null/empty, pass null for reduce-all semantics.
+            OpaqueNDArray fromDims;
+            if (dimArray != null && dimArray.data() != null) {
+                fromDims = OpaqueNDArray.fromINDArray(dimArray);
+            } else if (dimension != null && dimension.length > 0) {
+                fromDims = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimension));
+            } else {
+                fromDims = null;
+            }
+            getNativeOps().execIndexReduce(dummy,op.opNum(),xb,getPointerForExtraArgs(op,x.dataType()),zb,fromDims);
         }
 
-        if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+        if (getNativeOps().lastErrorCode() != 0) {
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
             StringBuilder errorMessage = new StringBuilder();
             errorMessage.append("Op [").append(op.getClass().getSimpleName()).append("] execution failed\n");
@@ -202,7 +268,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             errorMessage.append("Z:\n");
             errorMessage.append(z);
             errorMessage.append("\n");
-            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            errorMessage.append(getNativeOps().lastErrorMessage());
             errorMessage.append(differentialFunction.debugInfo());
             throw new RuntimeException(errorMessage.toString());
         }
@@ -210,7 +276,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
         // IndexAccumulation operations use TAD heavily and must clean up cached TAD packs
-        Nd4j.getNativeOps().checkAndCleanupCaches();
+        getNativeOps().checkAndCleanupCaches();
 
         return getZ(op, oc);
     }
@@ -230,8 +296,54 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
         Preconditions.checkNotNull(x, "Op.x() cannot be null: Was null for op %s", op);
+        getNativeOps().clearLastError();
         long st = profilingConfigurableHookIn(op, oc);
         op.validateDataTypes(oc);
+
+        // Handle empty input arrays: native code crashes on nullptr buffers
+        if (x.isEmpty()) {
+            if (z == null) {
+                // Compute the correct output shape for the reduction
+                long[] dims = op.dimensions() != null ? op.dimensions().toLongVector() : new long[0];
+                boolean keepDims = op.isKeepDims();
+                if (dims.length == 0) {
+                    // Full reduction: result is scalar
+                    z = Nd4j.scalar(x.dataType(), 0.0);
+                } else {
+                    // Partial reduction: compute output shape
+                    long[] xShape = x.shape();
+                    if (keepDims) {
+                        long[] outShape = xShape.clone();
+                        for (long d : dims) {
+                            int di = d < 0 ? (int)(d + xShape.length) : (int)d;
+                            outShape[di] = 1;
+                        }
+                        z = Nd4j.zeros(x.dataType(), outShape);
+                    } else {
+                        java.util.Set<Integer> dimSet = new java.util.HashSet<>();
+                        for (long d : dims) {
+                            dimSet.add(d < 0 ? (int)(d + xShape.length) : (int)d);
+                        }
+                        java.util.List<Long> outDims = new java.util.ArrayList<>();
+                        for (int i = 0; i < xShape.length; i++) {
+                            if (!dimSet.contains(i)) {
+                                outDims.add(xShape[i]);
+                            }
+                        }
+                        long[] outShape = outDims.stream().mapToLong(Long::longValue).toArray();
+                        z = Nd4j.zeros(x.dataType(), outShape);
+                    }
+                }
+                setZ(z, op, oc);
+            } else {
+                if (z.length() > 0) {
+                    z.assign(0.0);
+                }
+            }
+            profilingConfigurableHookOut(op, oc, st);
+            return z;
+        }
+
         if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
             //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
@@ -252,7 +364,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        val dimension = Shape.normalizeAxis(x.rank(), op.dimensions() != null ?  op.dimensions().toLongVector() : null);
+        INDArray dimArray = op.dimensions();
+        long[] dimLong = null;
+        if (dimArray != null && dimArray.data() != null) {
+            dimLong = dimArray.toLongVector();
+        }
+        // Normalize negative axes first (e.g., -1 → rank-1) per NumPy/ONNX convention,
+        // THEN check for "reduce all" sentinel (null/empty).
+        dimLong = Shape.normalizeAxis(x.rank(), dimLong);
+        if (Shape.wholeArrayDimension(dimLong)) {
+            dimLong = new long[0];
+        }
+        val dimension = dimLong;
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
@@ -260,12 +383,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long[] retShape = Shape.reductionShape(x, dimension, true, keepDims);
 
 
-        if (x.isVector() && x.length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && y == null) {
-            profilingConfigurableHookOut(op, oc, st);
-            // Periodic TAD cache cleanup to prevent memory leaks
-            Nd4j.getNativeOps().checkAndCleanupCaches();
-            return op.noOp();
-        }
+        // REMOVED: The noOp optimization was too fragile and caused bugs when:
+        // 1. Sentinel values (MAX_VALUE, -1) weren't consistently recognized
+        // 2. Whole-array reductions were incorrectly short-circuited
+        // The actual reduction kernels handle all cases correctly, so let them do the work.
 
         /**
          * This is the result array.
@@ -322,7 +443,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val zb = OpaqueNDArray.fromINDArray(z);
         if (op instanceof Variance) {
             if (ret.isScalar()) {
-                Nd4j.getNativeOps().execSummaryStatsScalar(extraz.get(),
+                getNativeOps().execSummaryStatsScalar(extraz.get(),
                         op.opNum(),
                         xb,
                         getPointerForExtraArgs(op,x.dataType()),
@@ -332,7 +453,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             } else {
                 try {
 
-                    Nd4j.getNativeOps().execSummaryStatsTad(
+                    getNativeOps().execSummaryStatsTad(
                             extraz.get(),
                             op.opNum(),
                             xb,
@@ -344,7 +465,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     StringBuilder errorMessage = new StringBuilder();
-                    errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+                    errorMessage.append(getNativeOps().lastErrorMessage());
 
                     DifferentialFunction differentialFunction = (DifferentialFunction) op;
                     errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
@@ -360,28 +481,28 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (op.isComplexAccumulation()) {
                 try {
                     //use opaque ndarrays instead here
-                    Nd4j.getNativeOps().execReduce3All(null,
+                    getNativeOps().execReduce3All(null,
                             op.opNum(),
                             xb,yb,zb,OpaqueNDArray.fromINDArray(op.dimensions()),getPointerForExtraArgs(op,x.dataType()));
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     StringBuilder errorMessage = new StringBuilder();
-                    errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+                    errorMessage.append(getNativeOps().lastErrorMessage());
                     DifferentialFunction differentialFunction = (DifferentialFunction) op;
                     errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
                     errorMessage.append(differentialFunction.debugInfo());
                     throw new RuntimeException(errorMessage.toString());
                 }
             } else if (ret.isScalar()) {
-                Nd4j.getNativeOps().execReduce3Scalar(extraz.get(),op.opNum(),xb,getPointerForExtraArgs(op,x.dataType()),yb,zb);
+                getNativeOps().execReduce3Scalar(extraz.get(),op.opNum(),xb,getPointerForExtraArgs(op,x.dataType()),yb,zb);
             } else {
                 try {
-                    Nd4j.getNativeOps().execReduce3Tad(extraz.get(),op.opNum(),xb,getPointerForExtraArgs(op,x.dataType()), yb, zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                    getNativeOps().execReduce3Tad(extraz.get(),op.opNum(),xb,getPointerForExtraArgs(op,x.dataType()), yb, zb, OpaqueNDArray.fromINDArray(op.dimensions()));
 
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     StringBuilder errorMessage = new StringBuilder();
-                    errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+                    errorMessage.append(getNativeOps().lastErrorMessage());
 
                     DifferentialFunction differentialFunction = (DifferentialFunction) op;
                     errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
@@ -393,23 +514,46 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else {
             if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
-            OpaqueNDArray dims = OpaqueNDArray.fromINDArray(op.dimensions());
+            // Compute the OpaqueNDArray wrapper for the dimension array.
+            // For reduce-all (null or empty dimension), use null for ops that don't require dims
+            // (REDUCE_FLOAT, REDUCE_SAME) but use an empty INDArray for ops whose native binding
+            // requires a non-null @ByVal OpaqueNDArray dimension parameter (REDUCE_LONG, REDUCE_BOOL).
+            // Passing Java null for a @ByVal JavaCPP parameter throws NullPointerException.
+            OpaqueNDArray dims = (dimension == null || dimension.length == 0)
+                    ? null
+                    : OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimension));
+            // For REDUCE_LONG and REDUCE_BOOL the native binding always requires a dimension OpaqueNDArray.
+            // When performing a full reduce-all (dims == null), supply an empty LONG array so
+            // JavaCPP does not throw "Pointer address of argument N is NULL" for the @ByVal param.
+            OpaqueNDArray emptyDimsForReduceLongBool = null; // lazily created below if needed
 
             if (ret.isScalar()) {
                 if (extraz.get() == null)
                     extraz.set(new PointerPointer(32));
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        Nd4j.getNativeOps().execReduceFloat(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
+                        getNativeOps().execReduceFloat(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case REDUCE_BOOL:
-                        Nd4j.getNativeOps().execReduceBool(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb,dims);
+                        if (dims == null) {
+                            if (emptyDimsForReduceLongBool == null)
+                                emptyDimsForReduceLongBool = OpaqueNDArray.fromINDArray(Nd4j.empty(DataType.LONG));
+                            getNativeOps().execReduceBool(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, emptyDimsForReduceLongBool);
+                        } else {
+                            getNativeOps().execReduceBool(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, dims);
+                        }
                         break;
                     case REDUCE_SAME:
-                        Nd4j.getNativeOps().execReduceSame(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
+                        getNativeOps().execReduceSame(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case REDUCE_LONG:
-                        Nd4j.getNativeOps().execReduceLong(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb,dims);
+                        if (dims == null) {
+                            if (emptyDimsForReduceLongBool == null)
+                                emptyDimsForReduceLongBool = OpaqueNDArray.fromINDArray(Nd4j.empty(DataType.LONG));
+                            getNativeOps().execReduceLong(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, emptyDimsForReduceLongBool);
+                        } else {
+                            getNativeOps().execReduceLong(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, dims);
+                        }
                         break;
                     default:
                         throw new UnsupportedOperationException("Unsupported op used in reduce: " + op.getOpType());
@@ -417,18 +561,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             } else {
                 if (extraz.get() == null)
                     extraz.set(new PointerPointer(32));
+                // Use the normalized dims array for non-scalar reductions too
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        Nd4j.getNativeOps().execReduceFloat2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb,OpaqueNDArray.fromINDArray(op.dimensions()));
+                        getNativeOps().execReduceFloat2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb, dims);
                         break;
                     case REDUCE_LONG:
-                        Nd4j.getNativeOps().execReduceLong2(extraz.get(), op.opNum(), xb,getPointerForExtraArgs(op, x.dataType()), zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                        getNativeOps().execReduceLong2(extraz.get(), op.opNum(), xb,getPointerForExtraArgs(op, x.dataType()), zb, dims);
                         break;
                     case REDUCE_SAME:
-                        Nd4j.getNativeOps().execReduceSame2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                        getNativeOps().execReduceSame2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, dims);
                         break;
                     case REDUCE_BOOL:
-                        Nd4j.getNativeOps().execReduceBool2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                        getNativeOps().execReduceBool2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, dims);
                         break;
 
                     default:
@@ -437,22 +582,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+        if (getNativeOps().lastErrorCode() != 0) {
             String str = opInfoString(op, Optional.of(dimension));
             StringBuilder errorMessage = new StringBuilder();
-            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            errorMessage.append(getNativeOps().lastErrorMessage());
 
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
             errorMessage.append("Native AccumulationOp execution (double) failed: " + str);
             errorMessage.append(differentialFunction.debugInfo());
-            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            errorMessage.append(getNativeOps().lastErrorMessage());
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op, oc, st);
 
         // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
         // TAD packs accumulate during reduce operations and must be cleaned up
-        Nd4j.getNativeOps().checkAndCleanupCaches();
+        getNativeOps().checkAndCleanupCaches();
 
         return getZ(op, oc);
     }
@@ -469,8 +614,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
-        val dimension = op.dimensions().toLongVector();
 
+        INDArray dimArray = op.dimensions();
+        long[] dimension;
+        if (dimArray != null && dimArray.data() != null) {
+            dimension = dimArray.toLongVector();
+        } else {
+            dimension = new long[0]; // Empty means reduce all
+        }
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -478,36 +629,48 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
+
+        // Use validated dimension array for native calls.
+        // Guard: if dimension is null/empty and dimArray has no data, pass null for reduce-all.
+        OpaqueNDArray fromDims;
+        if (dimArray != null && dimArray.data() != null) {
+            fromDims = OpaqueNDArray.fromINDArray(dimArray);
+        } else if (dimension != null && dimension.length > 0) {
+            fromDims = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimension));
+        } else {
+            fromDims = null;
+        }
+
         switch (op.getOpType()) {
             case SCALAR:
-                Nd4j.getNativeOps().execScalarTad(null, op.opNum(),
+                getNativeOps().execScalarTad(null, op.opNum(),
                         xb,
                         zb,
                         yb,
                         getPointerForExtraArgs(op, x.dataType()),
-                        OpaqueNDArray.fromINDArray(op.dimensions())
+                        fromDims
                 );
                 break;
             case SCALAR_BOOL:
-                Nd4j.getNativeOps().execScalarTad(null, op.opNum(),
+                getNativeOps().execScalarTad(null, op.opNum(),
                         xb,
                         zb,
                         yb,
                         getPointerForExtraArgs(op, x.dataType()),
-                        OpaqueNDArray.fromINDArray(op.dimensions())
+                        fromDims
                 );
                 break;
             default:
                 throw new UnsupportedOperationException();
         }
 
-        if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+        if (getNativeOps().lastErrorCode() != 0) {
             String str = opInfoString(op, Optional.of(dimension));
             StringBuilder errorMessage = new StringBuilder();
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
             errorMessage.append("Native  execution exec failed: " + str);
             errorMessage.append(differentialFunction.debugInfo());
-            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            errorMessage.append(getNativeOps().lastErrorMessage());
             throw new RuntimeException(errorMessage.toString());
         }
     }
@@ -518,6 +681,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public INDArray exec(ScalarOp op, OpContext oc) {
         long st = profilingConfigurableHookIn(op);
+
+        // Handle empty input arrays: native code crashes on nullptr buffers
+        INDArray scalarX = getX(op, oc);
+        if (scalarX != null && scalarX.isEmpty()) {
+            if (getZ(op, oc) == null) {
+                setZ(Nd4j.create(scalarX.dataType(), scalarX.shape()), op, oc);
+            }
+            profilingConfigurableHookOut(op, oc, st);
+            return getZ(op, oc);
+        }
+
         if((oc != null && oc.getOutputArray(0) == null) || getZ(op, oc) == null) {
             switch (op.getOpType()) {
                 case SCALAR:
@@ -537,44 +711,61 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             return getZ(op, oc);
         }
 
-        val x = OpaqueNDArray.fromINDArray(getX(op, oc));
+        INDArray xArr = getX(op, oc);
+        INDArray zArr = getZ(op, oc);
+        val x = OpaqueNDArray.fromINDArray(xArr);
         val scalar = OpaqueNDArray.fromINDArray(op.scalar());
-        val z =  OpaqueNDArray.fromINDArray(getZ(op, oc));
+        // When x == z (in-place op like muli), reuse x to avoid a second
+        // fromINDArray call on the same buffer which may trigger stale H→D sync.
+        val z = (xArr == zArr) ? x : OpaqueNDArray.fromINDArray(zArr);
 
 
         switch (op.getOpType()) {
             case SCALAR:
-                Nd4j.getNativeOps().execScalar(null,op.opNum(),x,z,scalar,getPointerForExtraArgs(op, x.dataType()));
+                getNativeOps().execScalar(null,op.opNum(),x,z,scalar,getPointerForExtraArgs(op, x.dataType()));
                 break;
             case SCALAR_BOOL:
-                Nd4j.getNativeOps().execScalarBool(null,op.opNum(),x,z,scalar,getPointerForExtraArgs(op, x.dataType()));
+                getNativeOps().execScalarBool(null,op.opNum(),x,z,scalar,getPointerForExtraArgs(op, x.dataType()));
                 break;
             default:
                 throw new ND4JIllegalStateException("Unknown op type: [" + op.getOpType() +"]");
         }
 
-        if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+        if (getNativeOps().lastErrorCode() != 0) {
             // the variable is mainly for ease of use with the debugger
             StringBuilder errorMessage = new StringBuilder();
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
             errorMessage.append("Native  execution exec failed: ");
             errorMessage.append(differentialFunction.debugInfo());
-            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            errorMessage.append(getNativeOps().lastErrorMessage());
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op, oc, st);
         // Periodic TAD cache cleanup to prevent memory leaks
-        Nd4j.getNativeOps().checkAndCleanupCaches();
+        getNativeOps().checkAndCleanupCaches();
         return getZ(op, oc);
     }
 
     private Pointer getPointerForExtraArgs(Op op, DataType type) {
         if (op.extraArgs() != null) {
             val eadb = op.extraArgsDataBuff(type);
-            if (eadb != null)
-                return eadb.addressPointer();
-            else
+            if (eadb != null) {
+                if (eadb instanceof BaseCpuDataBuffer) {
+                    ((BaseCpuDataBuffer) eadb).actualizePointerAndIndexer();
+                }
+                // Use the realized data-buffer pointer here instead of addressPointer():
+                // JavaCPP marshals raw Pointer arguments using the pointer metadata, and
+                // the transient addressPointer() view for CPU constant buffers can have
+                // zero length metadata even when the raw address is non-zero.
+                Pointer extraArgsPointer = eadb.pointer();
+                if (extraArgsPointer == null || extraArgsPointer.address() == 0L) {
+                    throw new ND4JIllegalStateException("Extra arguments pointer was not initialized for op "
+                            + op.opName() + " with buffer type " + eadb.dataType() + " and execution type " + type);
+                }
+                return extraArgsPointer;
+            } else {
                 return null;
+            }
         }
 
         return null;
@@ -585,7 +776,38 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
+        getNativeOps().clearLastError();
         long st = profilingConfigurableHookIn(op,oc);
+
+        // Handle empty input arrays: native code crashes on nullptr buffers
+        if (x != null && x.isEmpty()) {
+            if (z == null) {
+                setZ(Nd4j.create(op.resultType(oc), x.shape()), op, oc);
+            }
+            profilingConfigurableHookOut(op, oc, st);
+            return;
+        }
+
+        // In-place transform on a view: dup to a contiguous array, execute, write back.
+        // Views share a DataBuffer with a parent array. OpaqueNDArray.fromINDArray() calls
+        // syncToSpecial() on the shared buffer which can interfere with per-element tracking
+        // when the same OpaqueNDArray serves as both x and z. This matches the CUDA fix.
+        boolean viewInPlace = false;
+        INDArray originalView = null;
+        if (x == z && x != null && x.isView()) {
+            viewInPlace = true;
+            originalView = x;
+            x = x.dup(x.ordering());
+            z = x;
+            if (oc != null) {
+                oc.setInputArray(0, x);
+                oc.setOutputArray(0, z);
+            } else {
+                op.setX(x);
+                op.setZ(z);
+            }
+        }
+
         //redirect assign so we support more ops cases lke strings
         if(op instanceof Assign) {
             DefaultOpExecutioner.execAssign(op, oc,this);
@@ -661,13 +883,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     case TRANSFORM_FLOAT:
                     case TRANSFORM_STRICT:
                     case TRANSFORM_SAME:
-                        Nd4j.getNativeOps().execPairwiseTransform(dummy,op.opNum(),xb,yb,zb, getPointerForExtraArgs(op, x.dataType()));
+                        getNativeOps().execPairwiseTransform(dummy,op.opNum(),xb,yb,zb, getPointerForExtraArgs(op, x.dataType()));
                         break;
                     case TRANSFORM_BOOL:
-                        Nd4j.getNativeOps().execTransformBool(dummy, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
+                        getNativeOps().execTransformBool(dummy, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case PAIRWISE_BOOL:
-                        Nd4j.getNativeOps().execPairwiseTransformBool(dummy, op.opNum(), xb, yb, getPointerForExtraArgs(op, x.dataType()),zb);
+                        getNativeOps().execPairwiseTransformBool(dummy, op.opNum(), xb, yb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                 }
             } else {
@@ -688,22 +910,25 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 switch (op.getOpType()) {
                     case TRANSFORM_FLOAT: {
                         val xtraz = getPointerForExtraArgs(op, z.dataType());
-                        Nd4j.getNativeOps().execTransformFloat(dummy, op.opNum(), xb,xtraz, zb);
+                        getNativeOps().execTransformFloat(dummy, op.opNum(), xb,xtraz, zb);
                         break;
                     }
                     case TRANSFORM_STRICT: {
                         val xtraz = getPointerForExtraArgs(op, z.dataType());
-                        Nd4j.getNativeOps().execTransformStrict(dummy, op.opNum(), xb, xtraz,zb);
+                        getNativeOps().execTransformStrict(dummy, op.opNum(), xb, xtraz,zb);
                         break;
                     }
                     case TRANSFORM_SAME: {
                         val xtraz = getPointerForExtraArgs(op, z.dataType());
-                        Nd4j.getNativeOps().execTransformSame(dummy, op.opNum(), xb,xtraz, zb);
+                        getNativeOps().execTransformSame(dummy, op.opNum(), xb,xtraz, zb);
                         break;
                     }
 
                     case TRANSFORM_BOOL: {
-                        Nd4j.getNativeOps().execTransformBool(dummy, op.opNum(), xb, getPointerForExtraArgs(op, z.dataType()), zb);
+                        // Must use x.dataType() for extraArgs, not z.dataType()
+                        // C++ MatchConditionBool reads extraParams as X* (input type)
+                        // z is always BOOL for transform_bool ops
+                        getNativeOps().execTransformBool(dummy, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb);
                         break;
                     }
                     default:
@@ -712,22 +937,27 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             }
 
-            if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+            if (getNativeOps().lastErrorCode() != 0) {
                 StringBuilder errorMessage = new StringBuilder();
                 DifferentialFunction differentialFunction = (DifferentialFunction) op;
                 errorMessage.append("Native  execution exec failed: ");
                 errorMessage.append(differentialFunction.debugInfo());
-                errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+                errorMessage.append(getNativeOps().lastErrorMessage());
                 throw new RuntimeException(errorMessage.toString());
             }
         }
 
 
+        // Copy results from the temporary contiguous array back to the original view.
+        if (viewInPlace && originalView != null) {
+            originalView.assign(z);
+        }
+
         profilingConfigurableHookOut(op, oc, st);
 
         // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
         // Scalar operations can create temporary buffers that accumulate in caches
-        Nd4j.getNativeOps().checkAndCleanupCaches();
+        getNativeOps().checkAndCleanupCaches();
     }
 
     public INDArray exec(BroadcastOp op) {
@@ -738,6 +968,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
+        getNativeOps().clearLastError();
         long st = profilingConfigurableHookIn(op,oc);
         op.validateDataTypes(experimentalMode.get());
         val xb = OpaqueNDArray.fromINDArray(x);
@@ -766,10 +997,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             case SPECIAL:
                 break;
             case BROADCAST:
-                Nd4j.getNativeOps().execBroadcast(extraz.get(),op.opNum(),xb, yb, zb,getPointerForExtraArgs(op,x.dataType()),dimArray);
+                getNativeOps().execBroadcast(extraz.get(),op.opNum(),xb, yb, zb,getPointerForExtraArgs(op,x.dataType()),dimArray);
                 break;
             case BROADCAST_BOOL:
-                Nd4j.getNativeOps().execBroadcastBool(extraz.get(),op.opNum(),xb, yb,zb,getPointerForExtraArgs(op,x.dataType()),dimArray);
+                getNativeOps().execBroadcastBool(extraz.get(),op.opNum(),xb, yb,zb,getPointerForExtraArgs(op,x.dataType()),dimArray);
                 break;
             case REDUCE_LONG:
                 break;
@@ -813,19 +1044,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
         }
 
-        if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+        if (getNativeOps().lastErrorCode() != 0) {
             StringBuilder errorMessage = new StringBuilder();
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
             errorMessage.append("Native  execution exec failed: ");
             errorMessage.append(differentialFunction.debugInfo());
-            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            errorMessage.append(getNativeOps().lastErrorMessage());
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op,oc,st);
 
         // Clear TAD and Shape caches to prevent memory leaks (matches CUDA backend pattern)
         // Broadcast operations use TAD for dimension-wise operations
-        Nd4j.getNativeOps().checkAndCleanupCaches();
+        getNativeOps().checkAndCleanupCaches();
 
         return z;
     }
@@ -845,7 +1076,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public Properties getEnvironmentInformation() {
         Properties properties = super.getEnvironmentInformation();
         properties.put(Nd4jEnvironment.BACKEND_KEY, "CPU");
-        properties.put(Nd4jEnvironment.OMP_THREADS_KEY, Nd4j.getNativeOps().ompGetMaxThreads());
+        properties.put(Nd4jEnvironment.OMP_THREADS_KEY, getNativeOps().ompGetMaxThreads());
         properties.put(Nd4jEnvironment.BLAS_THREADS_KEY, Nd4j.factory().blas().getMaxThreads());
         properties.put(Nd4jEnvironment.BLAS_VENDOR_KEY, (Nd4j.factory().blas()).getBlasVendor().toString());
         properties.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
@@ -891,7 +1122,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
-
+        getNativeOps().clearLastError();
         if(op instanceof BaseRandomOp && ((BaseRandomOp)op).isTripleArgRngOp() && z != null && x == null && y == null) {
             //Ugly hack to ensure the triple arg call occurs
             //See GaussianDistribution.setZ etc
@@ -914,21 +1145,33 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (x != null && y != null && z != null) {
             DataBuffer dataBuffer = op.extraArgsDataBuff(z.dataType());
-            Nd4j.getNativeOps().execRandom3(null,op.opNum(),rng.getStatePointer(),xb,yb,zb,dataBuffer.addressPointer());
+            if (dataBuffer instanceof BaseCpuDataBuffer) {
+                ((BaseCpuDataBuffer) dataBuffer).actualizePointerAndIndexer();
+            }
+            Pointer extraArgsPtr3 = dataBuffer != null ? dataBuffer.pointer() : null;
+            getNativeOps().execRandom3(null,op.opNum(),rng.getStatePointer(),xb,yb,zb,extraArgsPtr3);
         } else if (x != null && z != null) {
             DataBuffer dataBuffer = op.extraArgsDataBuff(z.dataType());
-            Nd4j.getNativeOps().execRandom2(null,op.opNum(),rng.getStatePointer(),xb,zb,dataBuffer.addressPointer());
+            if (dataBuffer instanceof BaseCpuDataBuffer) {
+                ((BaseCpuDataBuffer) dataBuffer).actualizePointerAndIndexer();
+            }
+            Pointer extraArgsPtr2 = dataBuffer != null ? dataBuffer.pointer() : null;
+            getNativeOps().execRandom2(null,op.opNum(),rng.getStatePointer(),xb,zb,extraArgsPtr2);
         } else {
             DataBuffer dataBuffer = op.extraArgsDataBuff(z.dataType());
-            Nd4j.getNativeOps().execRandom(null,op.opNum(),rng.getStatePointer(),zb,dataBuffer.addressPointer());
+            if (dataBuffer instanceof BaseCpuDataBuffer) {
+                ((BaseCpuDataBuffer) dataBuffer).actualizePointerAndIndexer();
+            }
+            Pointer extraArgsPtr = dataBuffer != null ? dataBuffer.pointer() : null;
+            getNativeOps().execRandom(null,op.opNum(),rng.getStatePointer(),zb,extraArgsPtr);
         }
 
-        if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+        if (getNativeOps().lastErrorCode() != 0) {
             StringBuilder errorMessage = new StringBuilder();
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
             errorMessage.append("Native  execution exec failed: ");
             errorMessage.append(differentialFunction.debugInfo());
-            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            errorMessage.append(getNativeOps().lastErrorMessage());
             throw new RuntimeException(errorMessage.toString());
         }
 
@@ -944,7 +1187,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public  Map<String, CustomOpDescriptor> getCustomOperations() {
         if (customOps == null) {
-            String list = Nd4j.getNativeOps().getAllCustomOps();
+            String list = getNativeOps().getAllCustomOps();
 
             if (list == null || list.isEmpty()) {
                 log.warn("No customs ops available!");
@@ -983,8 +1226,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray createFromDescriptor(DataBuffer shapeInformation) {
         NDArray ndArray = new NDArray();
         ndArray.setShapeInfoDataBuffer(shapeInformation);
-        DataType dt = Shape.dataType(ndArray.shapeInfoJava());
-        DataBuffer buff = Nd4j.createBuffer(dt,ndArray.length(),false);
+        long[] shapeInfo = ndArray.shapeInfoJava();
+        DataType dt = Shape.dataType(shapeInfo);
+        // Compute length directly from shape info, not from array.length()
+        // because isEmpty() returns true when data buffer is null
+        long length = Shape.isEmpty(shapeInfo) ? 0 : Shape.length(shapeInfo);
+        DataBuffer buff = Nd4j.createBuffer(dt, length, false);
         ndArray.setData(buff);
         return ndArray;
     }
@@ -1002,11 +1249,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val name = op.opName();
         // Set allocation context BEFORE any native calls so allocations are tagged with op name
         if (name != null) {
-            Nd4j.getNativeOps().setAllocationContext(name);
+            getNativeOps().setAllocationContext(name);
         }
-        try (val context = buildContext()) {
+        // Check if a context was injected by the caller via injectNewContext().
+        // If so, the caller owns the context lifecycle and we must NOT close it here,
+        // because the caller may need to read intermediate results after exec() returns.
+        boolean injectedContext = this.nextOpContext.get() != null;
+        val context = buildContext();
+        try {
             op.setupOpContextFromCustomOp(context);
             boolean shapeOverride = op.initializeOutputs(context);
+            if (shapeOverride) {
+                // Shape calculation reuses this native context and leaves fastpath array bindings behind.
+                // Reset them before repopulating the execution context with the finalized outputs.
+                context.purgeForReuse();
+            }
             long start = profilingConfigurableHookIn(op,context);
             initOpContext(op, shapeOverride, context);
 
@@ -1018,19 +1275,29 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
             profilingConfigurableHookOut(op,context,start);
             // Periodic TAD cache cleanup to prevent memory leaks
-            Nd4j.getNativeOps().checkAndCleanupCaches();
+            getNativeOps().checkAndCleanupCaches();
 
             return result;
         } catch (ND4JOpProfilerException e) {
-
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Op [" + name + "] execution failed", e);
+            throw ND4JOpExceptionUtils.opExecutionException(op, null, e);
         } finally {
             // Clear allocation context after op execution
-            Nd4j.getNativeOps().clearAllocationContext();
-            // Clear ThreadLocal to prevent stale context references
-            clearOpContext();
+            getNativeOps().clearAllocationContext();
+            if (injectedContext) {
+                // Just remove from ThreadLocal - caller owns the context lifecycle
+                // and may still need to call getIntermediateResult() on it.
+                nextOpContext.remove();
+            } else {
+                // We created the context, so close it
+                try {
+                    context.close();
+                } catch (Exception e) {
+                    log.warn("Error closing OpContext: {}", e.getMessage());
+                }
+                nextOpContext.remove();
+            }
         }
 
 
@@ -1072,9 +1339,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 return context.getOutputArrays().toArray(new INDArray[0]);
             }
 
+            getNativeOps().clearLastError();
 
-
-            val status = Nd4j.getNativeOps().execCustomOp2(null, op.opHash(), context.contextPointer());
+            val status = getNativeOps().execCustomOp2(null, op.opHash(), context.contextPointer());
 
 
             if (status != 0) {
@@ -1082,7 +1349,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 DifferentialFunction differentialFunction = (DifferentialFunction) op;
                 errorMessage.append("Native  execution exec failed: ");
                 errorMessage.append(differentialFunction.debugInfo());
-                errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+                errorMessage.append(getNativeOps().lastErrorMessage());
                 throw new RuntimeException(errorMessage.toString());
             }
             if (context.getOutputArrays().isEmpty())
@@ -1149,7 +1416,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } finally {
             profilingConfigurableHookOut(op, context, st);
             // Periodic TAD cache cleanup to prevent memory leaks
-            Nd4j.getNativeOps().checkAndCleanupCaches();
+            getNativeOps().checkAndCleanupCaches();
         }
     }
 
@@ -1162,13 +1429,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty, boolean isView) {
         LongPointer shapePointer = new LongPointer(shape);
         LongPointer stridePointer = new LongPointer(stride);
-        long extras = ArrayOptionsHelper.composeTypicalChecks(false,DataType.INT64,false,false,isView ,false,false );
-        OpaqueConstantShapeBuffer dbf = Nd4j.getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+        long extras = ArrayOptionsHelper.composeTypicalChecks(empty, dtype, false, false, isView, false, false);
+        getNativeOps().clearLastError();
+        OpaqueConstantShapeBuffer dbf = getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
+        if (getNativeOps().lastErrorCode() != 0)
+            throw shapeInfoCreationException(shape, stride, elementWiseStride, order, dtype);
 
-        val result = Nd4j.createBuffer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf),
+        val result = Nd4j.createBuffer(getNativeOps().getConstantShapeBufferPrimary(dbf),
                 Shape.shapeInfoLength(shape.length),DataType.INT64);
+
+        result.setConstant(true);
 
         return result;
     }
@@ -1182,13 +1452,27 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
         LongPointer shapePointer = new LongPointer(shape);
         LongPointer stridePointer = new LongPointer(stride);
-        OpaqueConstantShapeBuffer dbf = Nd4j.getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+        getNativeOps().clearLastError();
+        OpaqueConstantShapeBuffer dbf = getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
+        if (getNativeOps().lastErrorCode() != 0)
+            throw shapeInfoCreationException(shape, stride, elementWiseStride, order, dtype);
 
-        val result = new LongBuffer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
+        val result = new LongBuffer(getNativeOps().getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
+
+        result.setConstant(true);
 
         return result;
+    }
+
+    private ND4JIllegalStateException shapeInfoCreationException(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype) {
+        String message = getNativeOps().lastErrorMessage();
+        if (message == null || message.isEmpty()) {
+            message = String.format(
+                    "Native shape buffer creation failed for shape=%s, stride=%s, dtype=%s, order=%s, ews=%d",
+                    Arrays.toString(shape), Arrays.toString(stride), dtype, order, elementWiseStride);
+        }
+
+        return new ND4JIllegalStateException(message);
     }
 
     @Override
@@ -1198,13 +1482,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             inputDimensions[i] = dimension[i];
         }
         try {
-            OpaqueTadPack pack = Nd4j.getNativeOps().tadOnlyShapeInfo(array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(inputDimensions), dimension.length);
+            getNativeOps().clearLastError();
+            OpaqueTadPack pack = getNativeOps().tadOnlyShapeInfo(array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(inputDimensions), dimension.length);
 
-            if (Nd4j.getNativeOps().lastErrorCode() != 0)
-                throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+            if (getNativeOps().lastErrorCode() != 0)
+                throw new RuntimeException(getNativeOps().lastErrorMessage());
 
-            val tadShape = new LongBuffer(Nd4j.getNativeOps().getPrimaryShapeInfo(pack), Nd4j.getNativeOps().getShapeInfoLength(pack));
-            val tadOffsets = new LongBuffer(Nd4j.getNativeOps().getPrimaryOffsets(pack), Nd4j.getNativeOps().getNumberOfTads(pack));
+            val tadShape = new LongBuffer(getNativeOps().getPrimaryShapeInfo(pack), getNativeOps().getShapeInfoLength(pack));
+            val tadOffsets = new LongBuffer(getNativeOps().getPrimaryOffsets(pack), getNativeOps().getNumberOfTads(pack));
+
+            tadShape.setConstant(true);
+            tadOffsets.setConstant(true);
+
             return new TadPack(tadShape, tadOffsets);
         }catch(Exception e) {
             throw new RuntimeException(e);
@@ -1224,7 +1513,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public int useCount(DataBuffer buffer) {
-        return Nd4j.getNativeOps().dbUseCount(((BaseCpuDataBuffer) buffer).getOpaqueDataBuffer());
+        return getNativeOps().dbUseCount(((BaseCpuDataBuffer) buffer).getOpaqueDataBuffer());
     }
 
 

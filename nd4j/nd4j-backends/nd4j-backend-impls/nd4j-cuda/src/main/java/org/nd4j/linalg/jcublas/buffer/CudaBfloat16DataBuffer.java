@@ -83,6 +83,10 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
         super(underlyingBuffer, dataType, length);
     }
 
+    public CudaBfloat16DataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length, boolean cpuOnly) {
+        super(underlyingBuffer, dataType, length, cpuOnly);
+    }
+
     public CudaBfloat16DataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
         super(length, 2, initialize, workspace);
     }

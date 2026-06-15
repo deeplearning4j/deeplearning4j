@@ -47,8 +47,8 @@ public class BasicTADManager implements TADManager {
         if (dimension != null && dimension.length > 1)
             Arrays.sort(dimension);
 
-        if (dimension == null)
-            dimension = new long[] {Integer.MAX_VALUE};
+        if (dimension == null || dimension.length == 0)
+            dimension = new long[] {-1};  // -1 sentinel means "full array" TAD
 
         val pack = Nd4j.getExecutioner().tadShapeInfoAndOffsets(array, dimension);
 

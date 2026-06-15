@@ -28,6 +28,8 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -35,6 +37,7 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.BackendRegistry;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -73,6 +76,22 @@ public class CudaWorkspace extends Nd4jWorkspace {
         Nd4j.getDeallocatorService().pickObject(this);
     }
 
+    private DeviceDescriptor resolveCudaDevice() {
+        int resolvedId = deviceId;
+        if (resolvedId < 0) {
+            resolvedId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
+        DeviceDescriptor device = BackendRegistry.getInstance()
+                .getDevice(DeviceDescriptor.cuda(resolvedId).getDeviceId());
+        return device != null ? device : DeviceDescriptor.cuda(resolvedId);
+    }
+
+    @Override
+    protected DeviceDescriptor resolveCpuDevice() {
+        DeviceDescriptor cpu = BackendRegistry.getInstance().getDefaultCpuDevice();
+        return cpu != null ? cpu : DeviceDescriptor.cpu();
+    }
+
     @Override
     protected void init() {
         if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
@@ -98,10 +117,12 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 throw new ND4JIllegalStateException("Can't allocate memory for workspace");
 
             workspace.setHostPointer(new PagedPointer(ptr));
+            DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), bytes + SAFETY_OFFSET);
 
             if (workspaceConfiguration.getPolicyMirroring() != MirroringPolicy.HOST_ONLY) {
                 workspace.setDevicePointer(new PagedPointer(memoryManager.allocate((bytes + SAFETY_OFFSET), MemoryKind.DEVICE, false)));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes + SAFETY_OFFSET);
+                DeviceMemoryManager.getInstance().recordAllocation(resolveCudaDevice(), bytes + SAFETY_OFFSET);
 
                 MemoryTracker.getInstance().incrementWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes + SAFETY_OFFSET);
 
@@ -123,8 +144,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     public long requiredMemoryPerArray(INDArray arr) {
-        long ret = getAligned(arr.length() * arr.dataType().width());
-        return (int) ret;
+        return getAligned(arr.length() * arr.dataType().width());
     }
 
 
@@ -138,10 +158,13 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         clearPinnedAllocations(extended);
 
-        if (workspace.getHostPointer() != null)
+        if (workspace.getHostPointer() != null) {
+            DeviceMemoryManager.getInstance().recordDeallocation(resolveCpuDevice(), size + SAFETY_OFFSET);
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+        }
 
         if (workspace.getDevicePointer() != null) {
+            DeviceMemoryManager.getInstance().recordDeallocation(resolveCudaDevice(), size + SAFETY_OFFSET);
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(workspace.getDevicePointer(), 0);
             AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), size + SAFETY_OFFSET);
             AllocationsTracker.getInstance().getTracker(id).deallocatePinned(MemoryKind.DEVICE,size + SAFETY_OFFSET);
@@ -169,12 +192,14 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
             if (kind == MemoryKind.DEVICE) {
                 val pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
-                externalAllocations.add(new PointersPair(null, pointer));
+                DeviceMemoryManager.getInstance().recordAllocation(resolveCudaDevice(), requiredMemory);
+                externalAllocations.add(new PointersPair(null, requiredMemory, null, pointer));
                 MemoryTracker.getInstance().incrementWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory);
                 return pointer;
             } else {
                 val pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
-                externalAllocations.add(new PointersPair(pointer, null));
+                DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
+                externalAllocations.add(new PointersPair(null, requiredMemory, pointer, null));
                 return pointer;
             }
 
@@ -247,9 +272,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
                             val pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
                             pointer.isLeaked();
 
-                            val pp = new PointersPair(null, pointer);
-                            pp.setRequiredMemory(requiredMemory);
-                            externalAllocations.add(pp);
+                            DeviceMemoryManager.getInstance().recordAllocation(resolveCudaDevice(), requiredMemory);
+                            externalAllocations.add(new PointersPair(null, requiredMemory, null, pointer));
                             AllocationsTracker.getInstance()
                                     .getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
                             MemoryTracker.getInstance().incrementWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory);
@@ -260,6 +284,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                             val pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
                             pointer.isLeaked();
 
+                            DeviceMemoryManager.getInstance().recordAllocation(resolveCudaDevice(), requiredMemory);
                             pinnedAllocations.add(new PointersPair(stepsCount.get(), requiredMemory, null, pointer));
                             MemoryTracker.getInstance().incrementWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory);
                             return pointer;
@@ -298,13 +323,18 @@ public class CudaWorkspace extends Nd4jWorkspace {
                             AllocationsTracker.getInstance()
                                     .getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
 
-                            externalAllocations.add(new PointersPair(pointer, null));
+                            DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
+                            externalAllocations.add(new PointersPair(null, requiredMemory, pointer, null));
                             return pointer;
                         } else {
                             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
                             pointer.isLeaked();
 
-                            pinnedAllocations.add(new PointersPair(stepsCount.get(), 0L, pointer, null));
+                            pinnedCount.incrementAndGet();
+                            pinnedAllocationsSize.addAndGet(requiredMemory);
+                            AllocationsTracker.getInstance().getTracker(id).allocatePinned(type,kind,numElements,requiredMemory);
+                            DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
+                            pinnedAllocations.add(new PointersPair(stepsCount.get(), requiredMemory, pointer, null));
                             return pointer;
                         }
                     case FAIL:
@@ -335,11 +365,14 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
             if (stepNumber + 2 < stepCurrent || extended) {
                 pinnedAllocations.remove();
+                pinnedCount.decrementAndGet();
 
                 if (pair.getDevicePointer() != null) {
+                    if (pair.getRequiredMemory() != null) {
+                        DeviceMemoryManager.getInstance().recordDeallocation(resolveCudaDevice(), pair.getRequiredMemory());
+                    }
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), 0);
                     MemoryTracker.getInstance().decrementWorkspaceAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), pair.getRequiredMemory());
-                    pinnedCount.decrementAndGet();
                     AllocationsTracker.getInstance().getTracker(id).deallocatePinned(MemoryKind.DEVICE,pair.getRequiredMemory());
 
                     if (isDebug.get())
@@ -347,15 +380,19 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 }
 
                 if (pair.getHostPointer() != null) {
+                    if (pair.getRequiredMemory() != null) {
+                        DeviceMemoryManager.getInstance().recordDeallocation(resolveCpuDevice(), pair.getRequiredMemory());
+                    }
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
+                    AllocationsTracker.getInstance().getTracker(id).deallocatePinned(MemoryKind.HOST,pair.getRequiredMemory());
 
                     if (isDebug.get())
                         log.info("deleting external host allocation ");
                 }
 
-                val sizez = pair.getRequiredMemory() * -1;
-                pinnedAllocationsSize.addAndGet(sizez);
-                AllocationsTracker.getInstance().getTracker(id).deallocatePinned(MemoryKind.DEVICE,sizez);
+                if (pair.getRequiredMemory() != null) {
+                    pinnedAllocationsSize.addAndGet(-pair.getRequiredMemory());
+                }
 
             } else {
                 break;
@@ -373,6 +410,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
         try {
             for (PointersPair pair : externalAllocations) {
                 if (pair.getHostPointer() != null) {
+                    if (pair.getRequiredMemory() != null) {
+                        DeviceMemoryManager.getInstance().recordDeallocation(resolveCpuDevice(), pair.getRequiredMemory());
+                    }
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
 
                     if (isDebug.get())
@@ -380,6 +420,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 }
 
                 if (pair.getDevicePointer() != null) {
+                    if (pair.getRequiredMemory() != null) {
+                        DeviceMemoryManager.getInstance().recordDeallocation(resolveCudaDevice(), pair.getRequiredMemory());
+                    }
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), 0);
 
                     if (isDebug.get())

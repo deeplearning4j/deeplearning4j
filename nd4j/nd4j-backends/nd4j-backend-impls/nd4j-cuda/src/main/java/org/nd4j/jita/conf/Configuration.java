@@ -20,6 +20,7 @@
 
 package org.nd4j.jita.conf;
 
+import org.bytedeco.javacpp.IntPointer;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -27,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -78,6 +78,9 @@ public class Configuration implements Serializable {
     private boolean fillDashboard = false;
 
     private boolean forceSingleGPU = false;
+
+    @Getter
+    private boolean autoMultiGpuEnabled = true;
 
     @Getter
     private long noGcWindowMs = 100;
@@ -165,6 +168,8 @@ public class Configuration implements Serializable {
     @Getter
     private List<Integer> bannedDevices = new ArrayList<>();
 
+    private boolean devicesExplicitlyConfigured = false;
+
     @Getter
     private int maximumGridSize = 4096;
 
@@ -205,6 +210,21 @@ public class Configuration implements Serializable {
     private int poolSize = 32;
 
     private final AtomicBoolean initialized = new AtomicBoolean(false);
+
+    // Minimum free memory threshold to consider a device healthy (bytes)
+    private static final long MIN_FREE_BYTES = 64L * 1024L * 1024L;
+
+    private static final class DeviceMemoryInfo {
+        private final int deviceId;
+        private final long freeBytes;
+        private final long totalBytes;
+
+        private DeviceMemoryInfo(int deviceId, long freeBytes, long totalBytes) {
+            this.deviceId = deviceId;
+            this.freeBytes = freeBytes;
+            this.totalBytes = totalBytes;
+        }
+    }
 
     public boolean isInitialized() {
         return initialized.get();
@@ -260,6 +280,15 @@ public class Configuration implements Serializable {
                 allowMultiGPU(!var);
             } catch (Exception e) {
                 log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_FORCE_SINGLE_GPU, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_FORCE_SINGLE_GPU));
+            }
+        }
+
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_ALLOW_MULTI_GPU) != null) {
+            try {
+                boolean var = Boolean.parseBoolean(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_ALLOW_MULTI_GPU));
+                allowMultiGPU(var);
+            } catch (Exception e) {
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_ALLOW_MULTI_GPU, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_ALLOW_MULTI_GPU));
             }
         }
 
@@ -379,18 +408,144 @@ public class Configuration implements Serializable {
         parseEnvironmentVariables();
     }
 
+    private long minimumFreeBytes(long totalBytes) {
+        if (totalBytes <= 0) {
+            return 0;
+        }
+        double minFreeRatio = 1.0 - maximumDeviceMemoryUsed;
+        if (minFreeRatio <= 0.0) {
+            return 0;
+        }
+        long minFree = (long) Math.ceil(totalBytes * minFreeRatio);
+        return Math.max(minFree, MIN_FREE_BYTES);
+    }
 
-    void updateDevice() {
-        int cnt = Nd4j.getAffinityManager().getNumberOfDevices();
+    private List<DeviceMemoryInfo> probeDevices(int deviceCount) {
+        List<DeviceMemoryInfo> devices = new ArrayList<>();
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+        for (int i = 0; i < deviceCount; i++) {
+            if (bannedDevices.contains(i)) {
+                log.info("Skipping banned CUDA device [{}]", i);
+                continue;
+            }
+
+            long total = nativeOps.getDeviceTotalMemory(i);
+            long free = nativeOps.getDeviceFreeMemory(i);
+            if (total <= 0 && free <= 0) {
+                log.warn("Skipping CUDA device [{}]: unable to query memory or initialize device", i);
+                continue;
+            }
+
+            devices.add(new DeviceMemoryInfo(i, free, total));
+        }
+
+        return devices;
+    }
+
+    private List<DeviceMemoryInfo> filterByFreeMemory(List<DeviceMemoryInfo> devices, boolean includeLowMemory) {
+        List<DeviceMemoryInfo> usable = new ArrayList<>();
+        List<DeviceMemoryInfo> lowMemory = new ArrayList<>();
+
+        for (DeviceMemoryInfo info : devices) {
+            if (info.totalBytes > 0) {
+                long minFree = minimumFreeBytes(info.totalBytes);
+                if (info.freeBytes < minFree) {
+                    lowMemory.add(info);
+                    log.warn("CUDA device [{}] below free memory threshold: free={}MB, total={}MB (minFree={}MB)",
+                            info.deviceId,
+                            info.freeBytes / (1024 * 1024),
+                            info.totalBytes / (1024 * 1024),
+                            minFree / (1024 * 1024));
+                    continue;
+                }
+            }
+            usable.add(info);
+        }
+
+        if (usable.isEmpty() && !lowMemory.isEmpty()) {
+            log.warn("All CUDA devices are below free-memory threshold; falling back to low-memory devices");
+            return lowMemory;
+        }
+
+        if (includeLowMemory && !lowMemory.isEmpty()) {
+            usable.addAll(lowMemory);
+        }
+
+        return usable;
+    }
+
+    private List<Integer> detectAvailableDevices(boolean includeLowMemory) {
+        int cnt = NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices();
 
         if (cnt == 0)
             throw new RuntimeException("No CUDA devices were found in system");
 
-        for (int i = 0; i < cnt; i++) {
-            availableDevices.add(i);
+        List<DeviceMemoryInfo> devices = probeDevices(cnt);
+        if (devices.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<DeviceMemoryInfo> filtered = filterByFreeMemory(devices, includeLowMemory);
+        filtered.sort((a, b) -> {
+            long memA = a.totalBytes > 0 ? a.totalBytes : a.freeBytes;
+            long memB = b.totalBytes > 0 ? b.totalBytes : b.freeBytes;
+            return Long.compare(memB, memA);
+        });
+
+        List<Integer> deviceIds = new ArrayList<>(filtered.size());
+        for (DeviceMemoryInfo info : filtered) {
+            deviceIds.add(info.deviceId);
+        }
+
+        return deviceIds;
+    }
+
+
+    private void publishAvailableDevicesToNative() {
+        if (availableDevices.isEmpty())
+            return;
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        IntPointer ptr = new IntPointer(availableDevices.size());
+        try {
+            for (int i = 0; i < availableDevices.size(); i++) {
+                ptr.put(i, availableDevices.get(i));
+            }
+            nativeOps.setAvailableDevices(ptr, availableDevices.size());
+        } finally {
+            ptr.close();
         }
     }
 
+    void updateDevice() {
+        if (!availableDevices.isEmpty()) {
+            publishAvailableDevicesToNative();
+            return;
+        }
+
+        // Include ALL devices — never permanently ban a GPU just because it had low
+        // free memory at JVM startup. Memory pressure is transient; the runtime device
+        // selection (selectBestGpu / DeviceMemoryManager) handles routing dynamically.
+        List<Integer> detectedDevices = detectAvailableDevices(true);
+        if (detectedDevices.isEmpty())
+            throw new RuntimeException("No usable CUDA devices were found in system");
+
+        // Use a single device if forced
+        if (forceSingleGPU || !autoMultiGpuEnabled) {
+            int selected = detectedDevices.get(0);
+            availableDevices.add(selected);
+            log.info("Selected CUDA device [{}] as default (forceSingleGPU={}, detectedDevices={})",
+                    selected, forceSingleGPU, detectedDevices.size());
+            publishAvailableDevicesToNative();
+            return;
+        }
+
+        // Add all available devices, starting with the best one (most memory)
+        availableDevices.addAll(detectedDevices);
+        log.info("Using all {} available CUDA devices, primary device: {}", detectedDevices.size(), detectedDevices.get(0));
+        publishAvailableDevicesToNative();
+    }
 
 
     /**
@@ -413,6 +568,8 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration banDevice(@NonNull Integer deviceId) {
+        ensureDeviceListForConfiguration();
+        devicesExplicitlyConfigured = true;
         if (!availableDevices.contains(deviceId))
             return this;
 
@@ -432,6 +589,8 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration useDevice(@NonNull Integer deviceId) {
+        ensureDeviceListForConfiguration();
+        devicesExplicitlyConfigured = true;
         return useDevices(deviceId);
     }
 
@@ -442,6 +601,8 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration useDevices(@NonNull int... devices) {
+        ensureDeviceListForConfiguration();
+        devicesExplicitlyConfigured = true;
         List<Integer> usableDevices = new ArrayList<>();
         for (int device : devices) {
             if (!availableDevices.contains(device)) {
@@ -459,6 +620,17 @@ public class Configuration implements Serializable {
         }
 
         return this;
+    }
+
+    private void ensureDeviceListForConfiguration() {
+        if (!availableDevices.isEmpty())
+            return;
+
+        List<Integer> detectedDevices = detectAvailableDevices(true);
+        if (detectedDevices.isEmpty())
+            throw new RuntimeException("No usable CUDA devices were found in system");
+
+        availableDevices.addAll(detectedDevices);
     }
 
     /**
@@ -803,6 +975,7 @@ public class Configuration implements Serializable {
      */
     public Configuration allowMultiGPU(boolean reallyAllow) {
         forceSingleGPU = !reallyAllow;
+        autoMultiGpuEnabled = reallyAllow;
         return this;
     }
 

@@ -145,6 +145,10 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
         super(underlyingBuffer, dataType, length);
     }
 
+    public CudaBoolDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length, boolean cpuOnly) {
+        super(underlyingBuffer, dataType, length, cpuOnly);
+    }
+
     /**
      * Initialize the data type and element size for BOOL
      */

@@ -115,7 +115,8 @@ public class LongBuffer extends BaseCpuDataBuffer {
 
         ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(numberOfElements, DataType.INT64, this.pointer, null);
 
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
     }
 
     public LongBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {

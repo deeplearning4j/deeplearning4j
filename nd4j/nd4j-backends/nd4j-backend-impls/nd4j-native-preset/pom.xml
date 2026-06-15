@@ -36,6 +36,7 @@
     <name>nd4j-native-preset</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <module.name>nd4j.cpu.preset</module.name>
     </properties>
 
@@ -73,6 +74,9 @@
             <version>${openblas.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
+        <!-- MKL dependencies are handled by platform-specific profiles below
+             (mkl-default-linux-x86_64, mkl-default-windows-x86_64, mkl-default-macosx-x86_64)
+             to avoid pulling non-existent MKL artifacts for unsupported platforms like Android -->
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-api</artifactId>
@@ -167,6 +171,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <encoding>ISO-8859-1</encoding>
                     <source>11</source>
                     <target>11</target>
                 </configuration>
@@ -316,6 +321,105 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <!-- Default MKL for Linux x86_64 (activates unless libnd4j.blas=openblas) -->
+        <profile>
+            <id>mkl-default-linux-x86_64</id>
+            <activation>
+                <os>
+                    <name>Linux</name>
+                    <arch>amd64</arch>
+                </os>
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>linux-x86_64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>linux-x86_64-redist</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Default MKL for Windows x86_64 -->
+        <profile>
+            <id>mkl-default-windows-x86_64</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                    <arch>amd64</arch>
+                </os>
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>windows-x86_64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>windows-x86_64-redist</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Default MKL for macOS x86_64 -->
+        <profile>
+            <id>mkl-default-macosx-x86_64</id>
+            <activation>
+                <os>
+                    <name>Mac OS X</name>
+                    <arch>x86_64</arch>
+                </os>
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>macosx-x86_64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>macosx-x86_64-redist</classifier>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>
