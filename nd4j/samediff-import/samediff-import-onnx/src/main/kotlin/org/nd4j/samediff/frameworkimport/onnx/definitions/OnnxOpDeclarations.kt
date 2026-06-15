@@ -171,6 +171,25 @@ val avgPool = OnnxMappingProcess(
                 listAttributeValueLookup(outputAttributeValue = "kH",inputAttributeValue = "kernel_shape",indexValue = 0,argumentIndex = 0)))
 
 
+// ──────────────────────────────────────────────────────────────────────────────
+// noop MAPPING PATTERN
+//
+// opName = "noop" suppresses direct op dispatch so a PreImportHook can fully
+// handle the node instead.  There are two categories:
+//
+//   1. HOOKED — a PreImportHook class annotated @PreHookRule(opNames = ["X"])
+//      exists in the implementations/ directory. The hook rewrites the node into
+//      one or more supported SameDiff ops.  All of these are correct and intentional.
+//
+//   2. FRAMEWORK-HANDLED — the importer resolves the node before op dispatch
+//      (e.g. Constant, Placeholder). No hook is needed.
+//
+//   3. UNSUPPORTED — no hook exists and the importer does not handle the op.
+//      These produce silent no-ops in the imported graph, which is incorrect.
+//      Each unsupported entry is marked with "UNSUPPORTED" below.
+// ──────────────────────────────────────────────────────────────────────────────
+
+// HOOKED: PreImportHook exists in implementations/AliasWithName.kt
 val aliasWithName = OnnxMappingProcess(
         opName = "noop",
         opMappingRegistry = onnxOpRegistry,
@@ -389,6 +408,9 @@ val sequenceinsert = OnnxMappingProcess(
         attributeMappingRules = listOf()
 )
 
+// SequenceRemove: UNSUPPORTED — removes an element from an ONNX sequence type at a given index.
+// No PreImportHook exists. noop causes silent pass-through.
+// TODO: implement PreImportHook (sequence types require special list-handling in SameDiff).
 val sequenceRemove = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "SequenceRemove",
@@ -1290,6 +1312,8 @@ val ceil = defOnnxSingleTransform(inputFrameworkOpName = "Ceil",opName = "ceil",
 )
 
 
+// Constant: framework-level op — the importer resolves this before op dispatch.
+// No PreImportHook needed; noop suppresses dispatch so the importer handles it directly.
 val const = OnnxMappingProcess(
         inputFrameworkOpName = "Constant",
         opName = "noop",
@@ -1297,8 +1321,9 @@ val const = OnnxMappingProcess(
         tensorMappingRules = listOf(),
         attributeMappingRules = listOf())
 
-//note: this is not a real onnx op and meant to be a dummy node to indicate placeholders
-//samediff/tensorflow parlance
+// Placeholder: not a real ONNX op — used as a dummy node to indicate inputs in
+// SameDiff/TensorFlow parlance. No PreImportHook needed; the importer handles it
+// as a graph input, not an executable op.
 val placeHolder = OnnxMappingProcess(
         inputFrameworkOpName = "Placeholder",
         opName = "noop",
@@ -1589,6 +1614,9 @@ val dft = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
+// MelWeightMatrix: UNSUPPORTED — no PreImportHook exists. Generates a triangular
+// filter-bank matrix for mel-spectrogram computation. noop causes silent pass-through.
+// TODO: implement PreImportHook using sd.math() operations or a native mel-filter op.
 val melWeightMatrix = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "MelWeightMatrix",
@@ -1632,13 +1660,17 @@ val optional = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
-// Quantization ops
+// Quantization ops (Microsoft ONNX extensions — no PreImportHook exists for these)
+// QAttention: UNSUPPORTED — quantized multi-head attention (INT8 weights).
+// noop causes silent pass-through. TODO: implement via QLinearMatMul decomposition.
 val qAttention = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "QAttention",
         opMappingRegistry = onnxOpRegistry
 )
 
+// QOrderedMatMul: UNSUPPORTED — ordered quantized matrix multiply (INT8).
+// noop causes silent pass-through. TODO: implement via QLinearMatMul hook.
 val qOrderedMatMul = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "QOrderedMatMul",
@@ -1646,6 +1678,9 @@ val qOrderedMatMul = OnnxMappingProcess(
 )
 
 // Grid sampling variants
+// GridSample3d: UNSUPPORTED — 3D volumetric grid sampling. No PreImportHook exists.
+// The 2D variant (GridSample) has a full hook. noop causes silent pass-through.
+// TODO: implement PreImportHook reusing the GridSample hook's interpolation logic for 3D.
 val gridSample3d = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "GridSample3d",
