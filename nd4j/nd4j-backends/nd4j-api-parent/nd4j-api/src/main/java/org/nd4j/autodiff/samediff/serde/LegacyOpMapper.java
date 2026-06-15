@@ -631,31 +631,6 @@ public class LegacyOpMapper {
                 return PowDerivative.class;
         default:
             throw new UnsupportedOperationException("No known pairwise op for op number: " + opNum);
-
-//        case 19:
-//            return TruncateDiv.class;
-//            case 21:
-//                return FloorMod.class;
-//            case 22:
-//                return SquaredSubtract.class;
-//            case 23:
-//                return ReverseMod.class;
-//            case 24:
-//                return SafeDivide.class;
-//            case 25:
-//                return Mod.class;
-//            case 29:
-//                return LogicalOr.class;
-//            case 30:
-//                return LogicalXor.class;
-//            case 31:
-//                return LogicalNot.class;
-//            case 32:
-//                return LogicalAnd.class;
-//            case 93:
-//                return LogPoisonLoss.class;
-//            case 94:
-//                return LogPoisonLossFull.class;
         }
     }
 
