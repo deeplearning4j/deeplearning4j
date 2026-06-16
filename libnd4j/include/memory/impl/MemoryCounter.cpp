@@ -159,7 +159,11 @@ bool MemoryCounter::validateSoftLimit(LongType numBytes) {
   // This is approximate but avoids an extra syscall — MemoryUtils only
   // provides free memory, not total. We use HOST group counter as a
   // proxy for our consumption.
-  LongType ourUsage = _groupCounters[HOST];
+  LongType ourUsage = 0;
+  {
+    std::lock_guard<std::mutex> lock(_locker);
+    ourUsage = _groupCounters[HOST];
+  }
   size_t estimatedTotal = freeBytes + static_cast<size_t>(ourUsage > 0 ? ourUsage : 0);
   if (estimatedTotal == 0) return true;
 
