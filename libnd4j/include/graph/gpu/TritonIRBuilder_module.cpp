@@ -1249,7 +1249,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       int outIdx = slots[slotIdx].wiring.outputSlotIndices[o];
       if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
         auto nativeDtype = outputSlots[outIdx]->dataType();
-        if (nativeDtype == DataType::HALF || nativeDtype == DataType::BFLOAT16) {
+        if (nativeDtype == HALF || nativeDtype == BFLOAT16) {
           // Round-trip: FP32 → FP16/BF16 (truncation) → FP32 (re-promote)
           auto narrowType = getMLIRType(builder, nativeDtype);
           val = castTo(builder, loc, val, narrowType);   // truncate
