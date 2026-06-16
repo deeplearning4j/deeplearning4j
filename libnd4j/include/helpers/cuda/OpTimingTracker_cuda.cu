@@ -9,8 +9,18 @@ namespace graph {
 // CUDA Event Timer implementation
 CudaEventTimer::CudaEventTimer() {
   cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
+
+  cudaError_t err = cudaEventCreate(&start);
+  if (err != cudaSuccess) {
+    THROW_EXCEPTION(cudaGetErrorString(err));
+  }
+
+  err = cudaEventCreate(&stop);
+  if (err != cudaSuccess) {
+    cudaEventDestroy(start);
+    THROW_EXCEPTION(cudaGetErrorString(err));
+  }
+
   _startEvent = start;
   _stopEvent = stop;
 }
