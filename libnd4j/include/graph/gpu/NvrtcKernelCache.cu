@@ -178,8 +178,6 @@ Status launchKernel(NvrtcKernelHandle* handle,
   // We need to keep the values alive until cuLaunchKernel returns
   std::vector<void*> ptrValues(numParams, nullptr);
   int64_t lengthValue = elementCount;
-  float clipMinValue = 0.0f, clipMaxValue = 0.0f;
-
   // Array of pointers to argument values (what cuLaunchKernel expects)
   std::vector<void*> args(numParams);
 
