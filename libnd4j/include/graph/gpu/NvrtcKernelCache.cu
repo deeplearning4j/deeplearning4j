@@ -24,8 +24,8 @@
 #include <helpers/logger.h>
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 #include <nvrtc.h>
-
 #include <cstring>
 #include <string>
 #include <vector>
