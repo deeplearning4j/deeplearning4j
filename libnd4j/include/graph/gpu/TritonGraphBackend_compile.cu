@@ -276,15 +276,15 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   auto isIntegralOrBoolType = [](DataType dt) -> bool {
     switch (dt) {
-      case DataType::BOOL:
-      case DataType::INT8:
-      case DataType::UINT8:
-      case DataType::INT16:
-      case DataType::UINT16:
-      case DataType::INT32:
-      case DataType::UINT32:
-      case DataType::INT64:
-      case DataType::UINT64:
+      case BOOL:
+      case INT8:
+      case UINT8:
+      case INT16:
+      case UINT16:
+      case INT32:
+      case UINT32:
+      case INT64:
+      case UINT64:
         return true;
       default:
         return false;
