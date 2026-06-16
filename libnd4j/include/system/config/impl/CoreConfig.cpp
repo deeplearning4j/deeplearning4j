@@ -29,11 +29,10 @@
 #include <omp.h>
 #endif
 
-// Portable setenv: MinGW/MSVC lack POSIX setenv(); use _putenv instead.
+// Portable setenv: MinGW/MSVC lack POSIX setenv(); use _putenv_s instead.
 #ifdef _WIN32
 static inline void sd_setenv(const char* name, const char* value, int /*overwrite*/) {
-  std::string s = std::string(name) + "=" + value;
-  _putenv(s.c_str());
+  _putenv_s(name, value);
 }
 #else
 static inline void sd_setenv(const char* name, const char* value, int overwrite) {
