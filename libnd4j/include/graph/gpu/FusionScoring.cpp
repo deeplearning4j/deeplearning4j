@@ -72,11 +72,11 @@ static bool isAttentionAdjacentType(KernelSectionType type) {
 // Estimate bytes of a DataType
 static size_t dtypeBytes(DataType dt) {
   switch (dt) {
-    case DataType::HALF: case DataType::BFLOAT16: return 2;
-    case DataType::FLOAT32: case DataType::INT32: return 4;
-    case DataType::DOUBLE: case DataType::INT64: return 8;
-    case DataType::INT8: case DataType::UINT8: case DataType::BOOL: return 1;
-    case DataType::INT16: case DataType::UINT16: return 2;
+    case HALF: case BFLOAT16: return 2;
+    case FLOAT32: case INT32: return 4;
+    case DOUBLE: case INT64: return 8;
+    case INT8: case UINT8: case BOOL: return 1;
+    case INT16: case UINT16: return 2;
     default: return 4;
   }
 }
