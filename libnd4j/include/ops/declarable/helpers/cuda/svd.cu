@@ -34,9 +34,6 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-// FIXME -> we should optimize these helpers for the case when input matrices have c order (perform transpositions
-// appropriately)
-
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
@@ -483,10 +480,9 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
   int svdDevId3 = 0; cudaGetDevice(&svdDevId3);
   devInfo = reinterpret_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType) * bS, svdDevId3, nullptr));
   if (devInfo == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for devInfo");
-  // During CUDA graph capture, synchronous calls are illegal.
+  // Sync the stream before proceeding (skip during CUDA graph capture)
   cudaError_t status2 = cudaSuccess;
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaStreamSynchronize(*context->getCudaStream()); }
   if (status2 != cudaSuccess) { std::string msg = "svdJcb: cuda failed !; Error code: [" + std::to_string(status2) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
@@ -522,8 +518,8 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
   void* dWork = nullptr;
   dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId3, nullptr);
   if (dWork == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for dWork");
-  // During CUDA graph capture, synchronous calls are illegal.
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaDeviceSynchronize(); }
+  // Sync the stream before proceeding (skip during CUDA graph capture)
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) { status2 = cudaStreamSynchronize(*context->getCudaStream()); }
   if (status2 != cudaSuccess) { std::string msg = "svdBatched: cuda failed !; Error code: [" + std::to_string(status2) + "]"; THROW_EXCEPTION(msg.c_str()); }
 
   PointersManager manager(context, "svdBatched");

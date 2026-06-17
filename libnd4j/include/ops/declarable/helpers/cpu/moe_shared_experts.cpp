@@ -46,7 +46,7 @@ static void softmaxInPlace(T* data, int size) {
     }
     T sum = static_cast<T>(0);
     for (int i = 0; i < size; i++) {
-        data[i] = sd::math::sd_exp<T>(data[i] - maxVal);
+        data[i] = sd::math::sd_exp<T, T>(data[i] - maxVal);
         sum += data[i];
     }
     for (int i = 0; i < size; i++) {
@@ -75,7 +75,7 @@ static void topKSelect(const T* data, int size, int k,
 
 template <typename T>
 static T siluActivation(T x) {
-    return x / (static_cast<T>(1) + sd::math::sd_exp<T>(-x));
+    return x / (static_cast<T>(1) + sd::math::sd_exp<T, T>(-x));
 }
 
 template <typename T>

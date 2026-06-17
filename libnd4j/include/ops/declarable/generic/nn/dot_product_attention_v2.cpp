@@ -25,6 +25,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_dot_product_attention_v2)
 
+#include <math/templatemath.h>
 #include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/reverse.h>
 #include <ops/declarable/helpers/kv_scatter.h>
@@ -267,7 +268,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   // Auto scale when scale <= 0: 1/sqrt(headDim or dim)
   if (scale <= 0.0) {
     auto dim = isRank4 ? queries->sizeAt(3) : queries->sizeAt(2);
-    scale = 1.0 / std::sqrt(static_cast<double>(dim));
+    scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(dim));
   }
 
   // B_ARG order: useCausalMask, training, useFlashAttention

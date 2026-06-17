@@ -43,7 +43,6 @@ class SD_LIB_EXPORT MemoryCounter {
   // per-device counters
   std::map<int, LongType> _deviceCounters;
 
-  // TODO: change this wrt heterogenous stuff on next iteration
   // per-group counters
   std::map<MemoryType, LongType> _groupCounters;
 

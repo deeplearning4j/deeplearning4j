@@ -164,10 +164,10 @@ static void melSpectrogram_(LaunchContext* context, NDArray* input,
                     T sumReal = 0, sumImag = 0;
                     for (int n = 0; n < fftSize; n++) {
                         T angle = static_cast<T>(-2.0 * M_PI * k * n / fftSize);
-                        sumReal += frame[n] * sd::math::sd_cos<T>(angle);
-                        sumImag += frame[n] * sd::math::sd_sin<T>(angle);
+                        sumReal += frame[n] * sd::math::sd_cos<T, T>(angle);
+                        sumImag += frame[n] * sd::math::sd_sin<T, T>(angle);
                     }
-                    T mag = sd::math::sd_sqrt<T>(sumReal * sumReal + sumImag * sumImag);
+                    T mag = sd::math::sd_sqrt<T, T>(sumReal * sumReal + sumImag * sumImag);
                     powerSpec[k] = (power == 2.0) ? mag * mag : static_cast<T>(sd::math::sd_pow<T,T,T>(mag, static_cast<T>(power)));
                 }
 
@@ -261,8 +261,8 @@ static void mfcc_(LaunchContext* context, NDArray* input,
                     T sumReal = 0, sumImag = 0;
                     for (int n = 0; n < fftSize; n++) {
                         T angle = static_cast<T>(-2.0 * M_PI * k * n / fftSize);
-                        sumReal += frame[n] * sd::math::sd_cos<T>(angle);
-                        sumImag += frame[n] * sd::math::sd_sin<T>(angle);
+                        sumReal += frame[n] * sd::math::sd_cos<T, T>(angle);
+                        sumImag += frame[n] * sd::math::sd_sin<T, T>(angle);
                     }
                     powerSpec[k] = sumReal * sumReal + sumImag * sumImag;
                 }
@@ -273,7 +273,7 @@ static void mfcc_(LaunchContext* context, NDArray* input,
                     for (int k = 0; k < numFreqBins; k++) {
                         sum += melFb[m * numFreqBins + k] * powerSpec[k];
                     }
-                    melEnergies[m] = sd::math::sd_log<T>(sd::math::sd_max<T>(sum, static_cast<T>(1e-10)));
+                    melEnergies[m] = sd::math::sd_log<T, T>(sd::math::sd_max<T>(sum, static_cast<T>(1e-10)));
                 }
 
                 // DCT-II to get MFCCs
@@ -630,7 +630,7 @@ static void audioNormalize_(LaunchContext* context, NDArray* input,
                     T val = inputPtr[b * numSamples + i];
                     sumSq += val * val;
                 }
-                currentLevel = std::sqrt(sumSq / static_cast<T>(numSamples));
+                currentLevel = sd::math::sd_sqrt<T, T>(sumSq / static_cast<T>(numSamples));
             } else {
                 currentLevel = 0;
                 for (sd::LongType i = 0; i < numSamples; i++) {
@@ -673,7 +673,7 @@ static void aWeighting_(LaunchContext* context, NDArray* frequencies,
             // A-weighting formula (IEC 61672)
             double num = 12194.0 * 12194.0 * f2 * f2;
             double den = (f2 + 20.6 * 20.6) *
-                         std::sqrt((f2 + 107.7 * 107.7) * (f2 + 737.9 * 737.9)) *
+                         sd::math::sd_sqrt<double, double>((f2 + 107.7 * 107.7) * (f2 + 737.9 * 737.9)) *
                          (f2 + 12194.0 * 12194.0);
 
             double ra = (den > 1e-30) ? num / den : 0.0;
@@ -731,7 +731,7 @@ static void pitchDetection_(LaunchContext* context, NDArray* input,
                         normB += b_val * b_val;
                     }
 
-                    T norm = std::sqrt(normA * normB);
+                    T norm = sd::math::sd_sqrt<T, T>(normA * normB);
                     T normalizedCorr = (norm > static_cast<T>(1e-10)) ? corr / norm : static_cast<T>(0);
 
                     if (normalizedCorr > maxCorr) {

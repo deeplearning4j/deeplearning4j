@@ -17,6 +17,7 @@
 
 #include <helpers/KernelAutoTuner.h>
 #include <ops/declarable/DeclarableOp.h>
+#include <math/templatemath.h>
 
 #include <algorithm>
 #include <chrono>
@@ -148,7 +149,7 @@ BenchmarkResult KernelAutoTuner::benchmark(graph::Context& context, KernelExecut
         double diff = t - result.meanTimeNanos;
         variance += diff * diff;
       }
-      result.stdDevNanos = std::sqrt(variance / (times.size() - 1));
+      result.stdDevNanos = sd::math::sd_sqrt<double, double>(variance / (times.size() - 1));
     }
 
     result.success = true;
@@ -257,8 +258,7 @@ void KernelAutoTuner::forceBenchmark(LongType opHash) {
 }
 
 std::unique_ptr<graph::Context> KernelAutoTuner::cloneContext(graph::Context& original) {
-  // For now, return nullptr to use original context
-  // TODO: Implement proper context cloning for safe benchmarking
+  // Context cloning is not implemented; callers fall back to using the original context
   return nullptr;
 }
 

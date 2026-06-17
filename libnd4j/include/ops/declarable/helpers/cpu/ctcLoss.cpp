@@ -123,7 +123,7 @@ void backwardAndGrad(Type forwardLogLoss, Type *alphaPtr, Type *bettaPtr, int in
       currentGrad = alphaBettaS;
     } else {
       Type cMax = std::max(currentGrad, alphaBettaS);
-      currentGrad = sd::math::sd_log<Type>(sd::math::sd_exp<Type>(currentGrad - cMax) + sd::math::sd_exp<Type>(alphaBettaS - cMax)) + cMax;
+      currentGrad = sd::math::sd_log<Type, Type>(sd::math::sd_exp<Type, Type>(currentGrad - cMax) + sd::math::sd_exp<Type, Type>(alphaBettaS - cMax)) + cMax;
     }
   }
   for (int k = 0; k < lenK; k++) {
@@ -137,8 +137,8 @@ void backwardAndGrad(Type forwardLogLoss, Type *alphaPtr, Type *bettaPtr, int in
     // gradPtr[k] = std::exp(logP[k]) - p2;
     auto currentProb = element<IsLogPStrided>(logP, k, elwiseP);
     auto &currentGrad = element<isGradStrided>(gradPtr, k, elwiseG);
-    auto p2 = sd::math::sd_exp<Type>(currentGrad + forwardLogLoss - currentProb);
-    currentGrad = sd::math::sd_exp<Type>(currentProb) - p2;
+    auto p2 = sd::math::sd_exp<Type, Type>(currentGrad + forwardLogLoss - currentProb);
+    currentGrad = sd::math::sd_exp<Type, Type>(currentProb) - p2;
   }
   gradPtr -= incG;
   alphaPtr -= incA;
@@ -181,7 +181,7 @@ void backwardAndGrad(Type forwardLogLoss, Type *alphaPtr, Type *bettaPtr, int in
         currentGrad = alphaBettaS;
       } else {
         Type cMax = std::max(currentGrad, alphaBettaS);
-        currentGrad = sd::math::sd_log<Type>(sd::math::sd_exp<Type>(currentGrad - cMax) + sd::math::sd_exp<Type>(alphaBettaS - cMax)) + cMax;
+        currentGrad = sd::math::sd_log<Type, Type>(sd::math::sd_exp<Type, Type>(currentGrad - cMax) + sd::math::sd_exp<Type, Type>(alphaBettaS - cMax)) + cMax;
       }
 
 #endif
@@ -199,8 +199,8 @@ void backwardAndGrad(Type forwardLogLoss, Type *alphaPtr, Type *bettaPtr, int in
       // gradPtr[k] = std::exp(logP[k]) - p2;
       auto currentProb = element<IsLogPStrided>(logP, k, elwiseP);
       auto &currentGrad = element<isGradStrided>(gradPtr, k, elwiseG);
-      auto p2 = sd::math::sd_exp<Type>(currentGrad + forwardLogLoss - currentProb);
-      currentGrad = sd::math::sd_exp<Type>(currentProb) - p2;
+      auto p2 = sd::math::sd_exp<Type, Type>(currentGrad + forwardLogLoss - currentProb);
+      currentGrad = sd::math::sd_exp<Type, Type>(currentProb) - p2;
     }
     alphaPtr -= incA;
     gradPtr -= incG;
@@ -247,8 +247,8 @@ void backwardAndGrad(Type forwardLogLoss, Type *alphaPtr, Type *bettaPtr, int in
       // gradPtr[k] = std::exp(logP[k]) - p2;
       auto currentProb = element<IsLogPStrided>(logP, k, elwiseP);
       auto &currentGrad = element<isGradStrided>(gradPtr, k, elwiseG);
-      auto p2 = sd::math::sd_exp<Type>(currentGrad + forwardLogLoss - currentProb);
-      currentGrad = sd::math::sd_exp<Type>(currentProb) - p2;
+      auto p2 = sd::math::sd_exp<Type, Type>(currentGrad + forwardLogLoss - currentProb);
+      currentGrad = sd::math::sd_exp<Type, Type>(currentProb) - p2;
     }
 
     gradPtr += incG;

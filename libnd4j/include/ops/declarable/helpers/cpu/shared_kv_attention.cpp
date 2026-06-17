@@ -165,7 +165,7 @@ static void sharedKvAttention_(LaunchContext* context,
                 // Softmax: exp and sum
                 T sumExp = static_cast<T>(0);
                 for (sd::LongType k = 0; k < kvSeqLen; k++) {
-                    scores[k] = sd::math::sd_exp<T>(scores[k] - maxScore);
+                    scores[k] = sd::math::sd_exp<T, T>(scores[k] - maxScore);
                     sumExp += scores[k];
                 }
                 // Normalize

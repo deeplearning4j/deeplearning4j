@@ -26,6 +26,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_onnx_multi_head_attention)
 
+#include <math/templatemath.h>
 #include <helpers/FlashAttentionHelper.h>
 #include <helpers/AttentionWorkspace.h>
 #include <ops/declarable/helpers/kv_scatter.h>
@@ -166,7 +167,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
 
   // Compute scale if not provided
   if (scale <= 0.0) {
-    scale = 1.0 / std::sqrt(static_cast<double>(headDim));
+    scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(headDim));
   }
 
   // Reshape [batch, seq, hidden] -> [batch, seq, heads, headDim] (BSHD format for FlashAttentionHelper)

@@ -231,7 +231,7 @@ CUSTOM_OP_IMPL(loftq_init, 1, 2, false, 0, 5) {
         float* aPtr  = loraA->bufferAsT<float>(); // C-order: A(row, col) = aPtr[row*inDim + col]
 
         for (int r = 0; r < rank; r++) {
-            float sqrtS_val = (sPtr[r] > 0.0f) ? std::sqrt(sPtr[r]) : 0.0f;
+            float sqrtS_val = (sPtr[r] > 0.0f) ? sd::math::sd_sqrt<float, float>(sPtr[r]) : 0.0f;
 
             // B[:, r] = U[:, r] * sqrtS_val
             for (LongType row = 0; row < outDim; row++) {

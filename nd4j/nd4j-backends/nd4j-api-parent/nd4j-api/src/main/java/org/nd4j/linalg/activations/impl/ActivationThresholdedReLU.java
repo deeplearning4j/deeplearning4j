@@ -24,7 +24,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.ThresholdRelu;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.ThresholdReluBp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
@@ -52,9 +53,7 @@ public class ActivationThresholdedReLU extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        DynamicCustomOp threshRelu = DynamicCustomOp.builder("thresholdedrelu")
-                .addOutputs(in).addInputs(in)
-                .addFloatingPointArguments(theta).build();
+        ThresholdRelu threshRelu = new ThresholdRelu(in, in, theta);
         Nd4j.getExecutioner().execAndReturn(threshRelu);
         return in;
     }
@@ -70,8 +69,7 @@ public class ActivationThresholdedReLU extends BaseActivationFunction {
             epsilon = epsilon.dup(in.ordering());
         }
 
-        DynamicCustomOp threshReluBp = DynamicCustomOp.builder("thresholdedrelu_bp")
-                .addInputs(in, epsilon).addOutputs(in).addFloatingPointArguments(theta).build();
+        ThresholdReluBp threshReluBp = new ThresholdReluBp(in, epsilon, in, theta);
         Nd4j.getExecutioner().execAndReturn(threshReluBp);
         return new Pair<>(in, null);
     }

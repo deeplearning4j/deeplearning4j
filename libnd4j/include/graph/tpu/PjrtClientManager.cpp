@@ -139,16 +139,6 @@ bool PjrtClientManager::initClient() {
   DSP_DIAG(BACKEND, "PjrtClientManager: initializing PJRT client from API table %p",
            pjrtApi_);
 
-  // TODO: Implement actual PJRT_Client_Create call via function table.
-  // The PJRT C API uses a struct-of-function-pointers pattern:
-  //   api->PJRT_Client_Create(&create_args);
-  //   api->PJRT_Client_Devices(&devices_args);
-  //
-  // This requires knowing the exact struct layout, which we get from
-  // the PJRT C API headers (pjrt_c_api.h). When building with actual
-  // TPU support, those headers would be included and the void* casts
-  // would be replaced with proper types.
-
   lastError_ = "PJRT client creation not yet implemented - requires pjrt_c_api.h struct layout";
   DSP_DIAG(BACKEND, "PjrtClientManager: %s", lastError_.c_str());
 
@@ -200,8 +190,6 @@ void* PjrtClientManager::createBuffer(const void* hostData, size_t sizeBytes,
     return nullptr;
   }
 
-  // TODO: Implement via PJRT_Client_BufferFromHostBuffer
-  // api->PJRT_Client_BufferFromHostBuffer(&args);
   DSP_DIAG(MEMORY, "PjrtClientManager::createBuffer: %zu bytes on device %d "
            "(not yet implemented)", sizeBytes, deviceIdx);
   return nullptr;
@@ -212,8 +200,6 @@ void PjrtClientManager::destroyBuffer(void* buffer) {
 
   std::lock_guard<std::mutex> lock(mutex_);
 
-  // TODO: Implement via PJRT_Buffer_Destroy
-  // api->PJRT_Buffer_Destroy(&args);
   DSP_DIAG(MEMORY, "PjrtClientManager::destroyBuffer: %p (not yet implemented)",
            buffer);
 }
@@ -226,8 +212,6 @@ bool PjrtClientManager::bufferToHost(void* buffer, void* hostDst,
 
   if (!initialized_ || client_ == nullptr) return false;
 
-  // TODO: Implement via PJRT_Buffer_ToHostBuffer
-  // api->PJRT_Buffer_ToHostBuffer(&args);
   DSP_DIAG(MEMORY, "PjrtClientManager::bufferToHost: %zu bytes from %p "
            "(not yet implemented)", sizeBytes, buffer);
   return false;
@@ -258,11 +242,6 @@ void* PjrtClientManager::compile(const void* hloBytes, size_t hloSize) {
   DSP_DIAG(COMPILE, "PjrtClientManager::compile: %zu bytes HLO module",
            hloSize);
 
-  // TODO: Implement via PJRT_Client_Compile
-  // 1. Create PJRT_Program from hloBytes
-  // 2. Call api->PJRT_Client_Compile(&compile_args)
-  // 3. Return the PJRT_LoadedExecutable*
-
   lastError_ = "HLO compilation not yet implemented";
   DSP_DIAG(COMPILE, "PjrtClientManager::compile: %s", lastError_.c_str());
   return nullptr;
@@ -280,9 +259,6 @@ bool PjrtClientManager::execute(void* executable, void** inputBuffers,
   DSP_DIAG(EXECUTE, "PjrtClientManager::execute: executable=%p, %d inputs",
            executable, numInputs);
 
-  // TODO: Implement via PJRT_LoadedExecutable_Execute
-  // api->PJRT_LoadedExecutable_Execute(&execute_args);
-
   lastError_ = "Executable execution not yet implemented";
   DSP_DIAG(EXECUTE, "PjrtClientManager::execute: %s", lastError_.c_str());
   return false;
@@ -293,8 +269,6 @@ void PjrtClientManager::destroyExecutable(void* executable) {
 
   std::lock_guard<std::mutex> lock(mutex_);
 
-  // TODO: Implement via PJRT_LoadedExecutable_Destroy
-  // api->PJRT_LoadedExecutable_Destroy(&args);
   DSP_DIAG(COMPILE, "PjrtClientManager::destroyExecutable: %p "
            "(not yet implemented)", executable);
 }

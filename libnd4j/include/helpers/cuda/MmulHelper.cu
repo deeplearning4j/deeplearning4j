@@ -45,32 +45,12 @@
 #include <helpers/CutlassHelper.h>
 #endif
 
-// Declared in DataBuffer.h / DataBuffer.cu — true during CUDA graph capture
-extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
-// Declared in DataBuffer.h / DataBuffer.cu — true during DSP composite replay gap execution
-extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
 // Declared in NativeDynamicShapePlan_batchgemm.cu — true when cuBLAS stream+workspace
 // already configured for DSP gap loop. When true, skip cublasSetStream +
 // reapplyCublasWorkspace + prepareSpecialUse/registerSpecialUse (arrays device-resident).
 extern SD_TLS_EXPORT thread_local bool tl_cublasGapStreamReady;
 
-// cuBLAS workspace buffer+size set by NativeDynamicShapePlan.
-// cublasSetStream() resets the user-provided workspace (cuBLAS docs), so we must
-// re-apply it after every cublasSetStream call whenever DSP configured an explicit
-// workspace for warmup or graph capture. Without this, warmup may silently use a
-// different workspace/algorithm than capture, and capture may fall back to internal
-// cudaMallocAsync → MemAlloc/MemFree graph nodes that SIGSEGV the driver on replay.
-extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
-extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
-
 namespace sd {
-
-// Set by NativeDynamicShapePlan when graphExecutionMode is CUDA_GRAPHS.
-// Forces MmulHelper to: (1) skip cublasLt (split-K algorithms are non-deterministic
-// under graph replay), and (2) use CUBLAS_GEMM_DEFAULT instead of
-// CUBLAS_GEMM_DEFAULT_TENSOR_OP (tensor core reductions have non-deterministic warp
-// scheduling during graph replay, causing FP drift through GDN recurrent state).
-extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled;
 
 // Thread-local cublasLt epilogue state — set by DSP executor before matmul dispatch
 struct LtEpilogueState {

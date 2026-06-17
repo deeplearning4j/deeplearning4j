@@ -25,6 +25,7 @@
 #include <graph/gpu/OpCategoryTable.h>
 #include <helpers/shape.h>
 #include <helpers/logger.h>
+#include <math/templatemath.h>
 #include <system/Environment.h>
 
 #include <algorithm>
@@ -1437,7 +1438,6 @@ std::shared_ptr<void> MlxIRBuilder::emitConvolutionOp(const std::string& opName,
   }
 
   // Pooling ops: fall back to native for now
-  // TODO: implement via custom Metal kernel or sliding window
   if (op == "maxpool2d" || op == "avgpool2d" || op == "maxpool3d" || op == "avgpool3d") {
     DSP_DIAG(FALLBACK, "MlxIRBuilder: %s using native fallback", op.c_str());
     return nullptr;
@@ -1479,7 +1479,7 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
     } else {
       // Auto-compute: 1/sqrt(dk)
       int dk = K.shape(-1);
-      scale = 1.0f / std::sqrt(static_cast<float>(dk));
+      scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(dk));
     }
 
     // Use MLX native fast SDPA — optimized Metal kernel
@@ -1510,7 +1510,7 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
       scale = static_cast<float>(tArgs[0]);
     } else {
       int dk = K.shape(-1);
-      scale = 1.0f / std::sqrt(static_cast<float>(dk));
+      scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(dk));
     }
 
     if (inputs.size() >= 4 && inputs[3]) {
@@ -1544,7 +1544,7 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
       scale = static_cast<float>(tArgs[0]);
     } else {
       int dk = Q.shape(-1);
-      scale = 1.0f / std::sqrt(static_cast<float>(dk));
+      scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(dk));
     }
 
     // Reshape Q/K/V to [B, numHeads, seqLen, headDim] for SDPA
@@ -1589,7 +1589,7 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
     int numKVHeads = (numIArgs > 2 && iArgs) ? static_cast<int>(iArgs[2]) : numHeads;
 
     float scale = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0])
-                : 1.0f / std::sqrt(static_cast<float>(Q.shape(-1)));
+                : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(Q.shape(-1)));
 
     auto Qr = mx::transpose(Q, {0, 2, 1, 3});
     auto Kr = mx::transpose(K, {0, 2, 1, 3});

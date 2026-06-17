@@ -66,8 +66,8 @@ static void mergeAttentionStatesCpu_(NDArray* attnA, NDArray* lseA,
 
             // Numerically stable merge
             float m = sd::math::sd_max<float>(lA, lB);
-            float wA = sd::math::sd_exp<float>(lA - m);
-            float wB = sd::math::sd_exp<float>(lB - m);
+            float wA = sd::math::sd_exp<float, float>(lA - m);
+            float wB = sd::math::sd_exp<float, float>(lB - m);
             float wSum = wA + wB;
             float invWSum = 1.0f / wSum;
 
@@ -83,7 +83,7 @@ static void mergeAttentionStatesCpu_(NDArray* attnA, NDArray* lseA,
             }
 
             if (lseOutPtr != nullptr) {
-                lseOutPtr[pos] = m + sd::math::sd_log<float>(wSum);
+                lseOutPtr[pos] = m + sd::math::sd_log<float, float>(wSum);
             }
         }
     };

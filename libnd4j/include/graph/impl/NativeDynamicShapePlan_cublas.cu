@@ -30,15 +30,6 @@
 
 namespace sd {
 
-// Thread-local cuBLAS workspace for MmulHelper to re-apply after cublasSetStream.
-// cublasSetStream resets the user-provided workspace (per cuBLAS docs), so
-// MmulHelper::reapplyCublasWorkspace() reads these to restore it.
-// All defined in DataBuffer.cu inside namespace sd.
-extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
-extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
-extern SD_TLS_EXPORT thread_local bool   tl_cublasLtDisabled;
-extern SD_TLS_EXPORT thread_local bool   tl_graphExecutionActive;
-
 namespace graph {
 
 void NativeDynamicShapePlan::ensureCublasWorkspace(size_t minBytes) {

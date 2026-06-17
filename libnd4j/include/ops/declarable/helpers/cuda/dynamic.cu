@@ -26,9 +26,6 @@
 #include "execution/cuda/LaunchDims.h"
 #include "helpers/DebugHelper.h"
 
-extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
-extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
-
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -529,8 +526,6 @@ void dynamicPartitionFunctor(LaunchContext *context, NDArray *input, NDArray *in
 
   NDArray::registerSpecialUse({}, {indices, input});
 
-  // TODO: it would be nice to have NDArray::registerSpecialUse signature that accepts something else beyond
-  // initializer_list
   for (auto v : outputList) {
     v->tickWriteDevice();
   }

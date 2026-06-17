@@ -334,8 +334,6 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
                             (INT64, LongType), SD_COMMON_TYPES);
     }
 
-    // we don't have deallocator here.
-    // TODO: we probably want to make use deallocator here, if we're not using constant memory
     auto dbuff = std::make_shared<PointerWrapper>(
         replicatePointer(cbuff->pointer(), descriptor.length() * DataTypeUtils::sizeOf(dataType)));
 
@@ -356,12 +354,12 @@ LongType ConstantHelper::getCachedAmount(int deviceId) {
     return _counters[deviceId];
 }
 
-BUILD_DOUBLE_TEMPLATE(template void SpecialTypeConverter::convertGeneric,
+BUILD_DOUBLE_TEMPLATE(void SpecialTypeConverter::convertGeneric,
                       (sd::Pointer*, void*, sd::LongType, void*),
-                      (DOUBLE, double), SD_COMMON_TYPES);
+                      SD_FLOAT_TYPES, SD_COMMON_TYPES);
 
-BUILD_DOUBLE_TEMPLATE(template void SpecialTypeConverter::convertGeneric,
+BUILD_DOUBLE_TEMPLATE(void SpecialTypeConverter::convertGeneric,
                       (sd::Pointer*, void*, sd::LongType, void*),
-                      (INT64, LongType), SD_COMMON_TYPES);
+                      SD_LONG_TYPES, SD_COMMON_TYPES);
 
 }  // namespace sd

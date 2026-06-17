@@ -165,11 +165,6 @@ static void tokenSampleCpu_(NDArray* logits, NDArray* output,
   }
 }
 
-BUILD_SINGLE_TEMPLATE(static void tokenSampleCpu_, (NDArray* logits, NDArray* output,
-                      double temperature, int topK, double topP,
-                      LongType seed, LaunchContext* context),
-                      SD_FLOAT_TYPES);
-
 void tokenSampleCpu(NDArray* logits, NDArray* output,
                     double temperature, int topK, double topP,
                     LongType seed, LaunchContext* context) {

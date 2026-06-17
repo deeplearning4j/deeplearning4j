@@ -23,6 +23,7 @@
 //
 
 #include <cuda_runtime.h>
+#include <math/templatemath.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/windowed_attention.h>
 #include <system/selective_rendering.h>
@@ -194,7 +195,7 @@ static void windowedAttentionCuda_(sd::LaunchContext* context,
     const auto seqLen = query->sizeAt(1);
     const auto headDim = query->sizeAt(3);
 
-    T scaleFactor = scale > 0.0 ? static_cast<T>(scale) : static_cast<T>(1.0 / std::sqrt(static_cast<double>(headDim)));
+    T scaleFactor = scale > 0.0 ? static_cast<T>(scale) : static_cast<T>(1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(headDim)));
 
     // Strides
     const auto batchStride = query->strideAt(0);

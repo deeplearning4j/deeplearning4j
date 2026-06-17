@@ -37,7 +37,8 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
@@ -122,12 +123,10 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
             outputs = new INDArray[]{outEpsilon, weightGradView};
         }
 
-        CustomOp op = DynamicCustomOp.builder("depthwise_conv2d_bp")
-                .addInputs(inputs)
-                .addIntegerArguments(args)
-                .addOutputs(outputs)
-                .callInplace(false)
-                .build();
+        DepthwiseConv2DBp op = new DepthwiseConv2DBp();
+        op.addInputArgument(inputs);
+        op.addOutputArgument(outputs);
+        op.addIArgument(args);
         Nd4j.getExecutioner().exec(op);
 
         Gradient retGradient = new DefaultGradient();
@@ -234,12 +233,10 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
             inputs = new INDArray[]{input, depthWiseWeights};
 
         }
-        CustomOp op = DynamicCustomOp.builder("depthwise_conv2d")
-                .addInputs(inputs)
-                .addIntegerArguments(args)
-                .addOutputs(output)
-                .callInplace(false)
-                .build();
+        DepthwiseConv2D op = new DepthwiseConv2D();
+        op.addInputArgument(inputs);
+        op.addOutputArgument(output);
+        op.addIArgument(args);
         Nd4j.getExecutioner().exec(op);
 
         return new Pair<>(output, null);

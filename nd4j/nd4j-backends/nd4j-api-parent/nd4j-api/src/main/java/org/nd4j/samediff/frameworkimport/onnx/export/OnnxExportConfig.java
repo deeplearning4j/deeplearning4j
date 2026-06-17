@@ -19,15 +19,10 @@
 
 package org.nd4j.samediff.frameworkimport.onnx.export;
 
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-
 /**
  * Configuration for ONNX export.
  * Stub implementation - TODO: implement full functionality.
  */
-@Builder
-@NoArgsConstructor
 public class OnnxExportConfig {
 
     /**
@@ -35,13 +30,9 @@ public class OnnxExportConfig {
      */
     public static final OnnxExportConfig WITH_TRAINING = new OnnxExportConfig().setIncludeTrainingState(true);
 
-    @Builder.Default
     private int opsetVersion = 13;
-    @Builder.Default
     private String producerName = "nd4j";
-    @Builder.Default
     private String producerVersion = "1.0.0";
-    @Builder.Default
     private boolean includeTrainingState = false;
 
     public int getOpsetVersion() {

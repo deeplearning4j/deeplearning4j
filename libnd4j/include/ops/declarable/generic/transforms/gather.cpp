@@ -113,7 +113,7 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
           sd_debug("%s%lld", r > 0 ? "x" : "", indices->sizeAt(r));
         }
         sd_debug(" dtype=%d\n", (int)indices->dataType());
-        sd_debug("GATHER OOB STRIDES: indicesStrides=[");
+        sd_debug("GATHER OOB STRIDES: indicesStrides=[%s", "");
         const sd::LongType* _istrides = indices->stridesOf();
         for (int r = 0; r < indices->rankOf(); r++) {
           sd_debug("%s%lld", r > 0 ? "," : "", (long long)_istrides[r]);
@@ -127,11 +127,11 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
           sd_debug("  indices[%lld] = %lld %s\n", idx, val,
                     (val < 0 || val >= dimSize) ? "<-- OOB" : "");
         }
-        sd_debug("GATHER OOB INPUT: inputShape=[");
+        sd_debug("GATHER OOB INPUT: inputShape=[%s", "");
         for (int r = 0; r < input->rankOf(); r++) {
           sd_debug("%s%lld", r > 0 ? "x" : "", (long long)input->sizeAt(r));
         }
-        sd_debug("] inputStrides=[");
+        sd_debug("] inputStrides=[%s", "");
         const sd::LongType* _in_strides = input->stridesOf();
         for (int r = 0; r < input->rankOf(); r++) {
           sd_debug("%s%lld", r > 0 ? "," : "", (long long)_in_strides[r]);

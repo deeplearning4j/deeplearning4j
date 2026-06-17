@@ -2079,7 +2079,7 @@ NDArray &NDArray::operator=(NDArray &other) {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isC()  {
-  // TODO: this method must be implemented once we add support for complex numbers
+  // Complex numbers are not yet supported; always returns false.
   return false;
 }
 
@@ -4027,8 +4027,10 @@ NDArray *NDArray::cast(DataType dtype)  {
 ////////////////////////////////////////////////////////////////////////
 void NDArray::cast(NDArray &target, DataType dtype) {
   if (isS()) THROW_EXCEPTION("NDArray::cast: you can't use this method on String array!");
-  // TODO: to be implemented properly
-  target.assign(this);
+  // Cast this array to dtype and write the result into target.
+  NDArray *converted = this->asT(dtype);
+  target.assign(converted);
+  delete converted;
 }
 
 

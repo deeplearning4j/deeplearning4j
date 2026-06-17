@@ -720,7 +720,7 @@ void SD_KERNEL __launch_bounds__(256, 2) logSoftMaxForVectorCuda(const void *vx,
   }
   __syncthreads();
 
-  T temp = -DataTypeUtils::max<T>();  // set start value to compare with at first iteration, FIXME: what if T is unsigned ??
+  T temp = -DataTypeUtils::max<T>();
 
   // ************ evaluate max element in input array x ************ //
   for (int i = 0; i < numOfIters; ++i) {
@@ -732,7 +732,7 @@ void SD_KERNEL __launch_bounds__(256, 2) logSoftMaxForVectorCuda(const void *vx,
       COORDS2INDEX(xzRank, xzStride, coords, offset);
       shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : math::sd_max<T>(x[offset], temp);  // take into account max element evaluated on previous iteration and stored in temp
     } else {
-      shmem[threadIdx.x] = -DataTypeUtils::max<T>();  // FIXME: what if T is unsigned ??
+      shmem[threadIdx.x] = -DataTypeUtils::max<T>();
     }
 
     __syncthreads();
@@ -859,7 +859,7 @@ void SD_KERNEL __launch_bounds__(256, 2) softMaxDerivForVectorCuda(const void *v
   }
   __syncthreads();
 
-  T temp = -DataTypeUtils::max<T>();  // set start value to compare with at first iteration, FIXME: what if T is unsigned ??
+  T temp = -DataTypeUtils::max<T>();
 
   // ************ evaluate max element in input array x ************ //
   for (int i = 0; i < numOfIters; ++i) {
@@ -871,7 +871,7 @@ void SD_KERNEL __launch_bounds__(256, 2) softMaxDerivForVectorCuda(const void *v
       COORDS2INDEX(xzRank, xzStride, coords, offset);
       shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : math::sd_max<T>(x[offset], temp);  // take into account max element evaluated on previous iteration and stored in temp
     } else {
-      shmem[threadIdx.x] = -DataTypeUtils::max<T>();  // FIXME: what if T is unsigned ??
+      shmem[threadIdx.x] = -DataTypeUtils::max<T>();
     }
 
     __syncthreads();

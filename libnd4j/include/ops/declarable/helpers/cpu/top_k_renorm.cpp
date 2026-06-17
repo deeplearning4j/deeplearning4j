@@ -126,9 +126,6 @@ static void topKRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
     }
 }
 
-BUILD_SINGLE_TEMPLATE(static void topKRenorm_, (LaunchContext* context, NDArray* logits, NDArray* output, int k),
-                      SD_FLOAT_TYPES);
-
 void topKRenorm(LaunchContext* context, NDArray* logits, NDArray* output, int k) {
     BUILD_SINGLE_SELECTOR(logits->dataType(), topKRenorm_, (context, logits, output, k), SD_FLOAT_TYPES);
 }
@@ -212,9 +209,6 @@ static void topPRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
         }
     }
 }
-
-BUILD_SINGLE_TEMPLATE(static void topPRenorm_, (LaunchContext* context, NDArray* logits, NDArray* output, double p),
-                      SD_FLOAT_TYPES);
 
 void topPRenorm(LaunchContext* context, NDArray* logits, NDArray* output, double p) {
     BUILD_SINGLE_SELECTOR(logits->dataType(), topPRenorm_, (context, logits, output, p), SD_FLOAT_TYPES);

@@ -25,6 +25,7 @@
 #define __IMAGE_RESIZE_HELPERS__
 #include <array/NDArray.h>
 #include <system/op_boilerplate.h>
+#include <math/templatemath.h>
 
 namespace sd {
 namespace ops {
@@ -179,7 +180,7 @@ struct GaussianKernelFunc
   SD_HOST_DEVICE float operator()(float x) const {
     x = math::sd_abs<float,float>(x);
     if (x >= _radius) return 0.0f;
-    return std::exp(-x * x / (2.0 * _sigma * _sigma));
+    return sd::math::sd_exp<float, float>(-x * x / (2.0 * _sigma * _sigma));
   }
   SD_HOST_DEVICE float radius() const { return _radius; }
   const float _radius;

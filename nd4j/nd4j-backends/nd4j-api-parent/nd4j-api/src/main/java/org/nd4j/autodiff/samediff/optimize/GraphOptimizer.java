@@ -33,6 +33,7 @@ import org.nd4j.autodiff.samediff.optimize.optimizations.*;
 import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Graph optimizer for SameDiff graphs.

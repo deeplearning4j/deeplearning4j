@@ -65,10 +65,6 @@ void segmentGemmCpu(LaunchContext* context,
                           SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void segmentGemmCpu_,
-                      (LaunchContext*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*),
-                      SD_FLOAT_TYPES);
-
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

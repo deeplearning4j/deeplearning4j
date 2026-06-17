@@ -25,6 +25,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <math/templatemath.h>
 
 #include "../llamacppUtils.h"
 
@@ -437,7 +438,7 @@ PLATFORM_IMPL(gated_linear_attn, ENGINE_CUDA) {
     }
 
     float scale = block.getTArguments()->size() > 0 ?
-        T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+        T_ARG(0) : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
 
     gatedLinearAttnCuda(query, key, value, gate, output, scale);
     return sd::Status::OK;

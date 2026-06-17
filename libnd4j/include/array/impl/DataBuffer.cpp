@@ -27,6 +27,7 @@
 #include <memory/MemoryCounter.h>
 #include <system/CanaryConstants.h>
 #include <system/Environment.h>
+#include <system/PointerValidation.h>
 #include <system/env_functions.h>
 #include <sstream>
 
@@ -806,7 +807,7 @@ void DataBuffer::deleteBuffers() {
 DataBuffer::~DataBuffer() {
   // Clear magic number to detect use-after-free
   // If anyone tries to use this buffer after destruction, validateIntegrity() will catch it
-  _magicNumber = 0xDEADBEEF;
+  _magicNumber = MAGIC_DESTROYED;
   deleteBuffers();
 }
 

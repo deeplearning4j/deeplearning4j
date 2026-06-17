@@ -25,6 +25,7 @@
 #ifndef LIBND4J_CONTEXT_H
 #define LIBND4J_CONTEXT_H
 #include <system/common.h>
+#include <system/PointerValidation.h>
 #include <array/NDArray.h>
 #include <execution/Engine.h>
 #include <graph/ContextPrototype.h>
@@ -337,23 +338,7 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
 
   NDArray* outputArray(int idx);
 
-  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
-  static void* operator new(size_t size) {
-    return std::malloc(size + 4096);
-  }
-#ifndef __JAVACPP_HACK__
-  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
-    return std::malloc(size + 4096);
-  }
-#endif
-  static void operator delete(void* ptr) noexcept {
-    std::free(ptr);
-  }
-#ifndef __JAVACPP_HACK__
-  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
-    std::free(ptr);
-  }
-#endif
+  SD_PADDED_NEW_DELETE
 };
 }  // namespace graph
 }  // namespace sd

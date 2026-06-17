@@ -62,8 +62,6 @@ static void _percentile(NDArray& input, NDArray& output, std::vector<LongType>& 
   }
   position = len - position - 1;
 
-  // FIXME: our sort impl should be used instead, so this operation might be implemented as generic
-  // FIXME: parallelism !
   for (int i = 0; i < listOfSubArrs.size(); ++i) {
     auto buff = reinterpret_cast<T*>(flattenedArr->buffer());
     flattenedArr->assign(listOfSubArrs.at(i));

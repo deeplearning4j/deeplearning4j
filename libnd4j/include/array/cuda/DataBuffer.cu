@@ -45,58 +45,7 @@
 
 namespace sd {
 
-// Definition of thread-local graph execution flag (declared in DataBuffer.h and DebugHelper.h)
-// SD_TLS_EXPORT needed on Windows/MinGW so __emutls symbols are exported from DLL.
-SD_TLS_EXPORT thread_local bool tl_graphExecutionActive = false;
-SD_TLS_EXPORT thread_local bool tl_dspReplayActive = false;
-SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled = false;
-SD_TLS_EXPORT thread_local cudaStream_t tl_graphCaptureStream = nullptr;
-
-// Thread-local accumulator for pinned host buffers during CUDA graph capture.
-// Transferred to CudaGraphHandle after successful capture; freed on capture abort.
-SD_TLS_EXPORT thread_local std::vector<void*> tl_capturedHostPtrs;
-
-// Cache for PointersManager H2D copies during capture — deduplicates dimension arrays
-SD_TLS_EXPORT thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
-
-// Capture workspace: pre-allocated GPU buffer for eliminating cudaMallocAsync nodes
-SD_TLS_EXPORT thread_local void* tl_captureWorkspace = nullptr;
-SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize = 0;
-SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset = 0;
-
-// cuBLAS workspace buffer+size set by NativeDynamicShapePlan::setCublasWorkspaceForCapture().
-// MmulHelper::reapplyCublasWorkspace() reads these after cublasSetStream resets workspace.
-SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr = nullptr;
-SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize = 0;
-
-
-// Per-step GPU allocation/free tracking for leak diagnosis
-SD_TLS_EXPORT thread_local long long tl_dspAllocBytes = 0;
-SD_TLS_EXPORT thread_local long long tl_dspFreeBytes = 0;
-SD_TLS_EXPORT thread_local int tl_dspAllocCount = 0;
-SD_TLS_EXPORT thread_local int tl_dspFreeCount = 0;
-SD_TLS_EXPORT thread_local int tl_dspFreeSkipCount = 0;
-
-// DSP execution stream: when set, syncToSpecial uses this stream instead of
-// stream 0 and skips per-call cudaStreamSynchronize (caller guarantees ordering
-// via same-stream graph launch or explicit sync). Set/unset by DSP replay path.
-SD_TLS_EXPORT thread_local cudaStream_t tl_dspExecutionStream = nullptr;
-
-// Per-island slot range filter for composite CUDA graph capture.
-// When tl_islandSlotMin <= tl_islandSlotMax, TritonGraphBackend::executeSegment
-// skips sub-kernels outside [tl_islandSlotMin, tl_islandSlotMax].
-// INT_MAX/INT_MIN (min > max = no restriction) when not in island capture mode.
-SD_TLS_EXPORT thread_local int tl_islandSlotMin = INT_MAX;
-SD_TLS_EXPORT thread_local int tl_islandSlotMax = INT_MIN;
-
-// Capture host workspace: pre-allocated PINNED HOST buffer for eliminating
-// cudaMallocHost calls during CUDA graph capture. H2D memcpy nodes bake the
-// source address — this workspace provides persistent pinned copies so graph
-// replay reads valid data. Bump-allocated like tl_captureWorkspace (device side).
-// Allocated before capture, freed when replay handle is destroyed.
-SD_TLS_EXPORT thread_local void* tl_captureHostWorkspace = nullptr;
-SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceSize = 0;
-SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceOffset = 0;
+SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
 
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {

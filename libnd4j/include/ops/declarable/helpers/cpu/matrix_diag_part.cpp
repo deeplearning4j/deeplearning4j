@@ -41,7 +41,6 @@ static sd::Status _matrixDiagPart(NDArray* input, NDArray* output) {
     return sd::Status::VALIDATION;
   }
   sd::LongType lastDimension = sd::math::sd_min(input->sizeAt(-2), input->sizeAt(-1));
-  // TODO: tune this properly
   sd::LongType lO = listOut.size();
 
   auto func = PRAGMA_THREADS_FOR {

@@ -52,7 +52,6 @@ CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
 
   LongType arrLen = a->lengthOf();
 
-  // FIXME: this stuff should be single op call. No sense rolling over couple of arrays twice
   for (LongType i = 0; i < arrLen; ++i) {
     REQUIRE_TRUE(a->e<float>(i) > 0.f, 0, "BETAINC op: arrays a array must contain only elements > 0 !");
     REQUIRE_TRUE(b->e<float>(i) > 0.f, 0, "BETAINC op: arrays b array must contain only elements > 0 !");

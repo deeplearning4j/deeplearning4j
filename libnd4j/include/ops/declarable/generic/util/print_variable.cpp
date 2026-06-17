@@ -29,7 +29,6 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(print_variable, 1, 1, true, 0, 0) {
-  // TODO: make this op compatible with ArrayList etc
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   std::string str;

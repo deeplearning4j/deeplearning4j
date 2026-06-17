@@ -162,10 +162,8 @@ void prelu(LaunchContext* context, NDArray* input, NDArray* alpha, NDArray* outp
 
   auto func = PRAGMA_THREADS_FOR {
     for (sd::LongType i = start; i < stop; i++) {
-      // FIXME: double!
       double x = input->e<double>(i);
       if (x < 0.0) {
-        // FIXME: double
         output->p(i, (x * alpha->e<double>(shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo))));
       } else
         output->p(i, x);
@@ -185,7 +183,6 @@ void preluBP(LaunchContext* context, NDArray* input, NDArray* alpha, NDArray* dL
   dLdA->assign(zero);
 
   for (sd::LongType i = 0; i < inputLen; ++i) {
-    // FIXME: double
     double x = input->e<double>(i);
     double grO =  dLdO->isScalar() ?  dLdO->e<double>(0) : dLdO->e<double>(i);
     if (x < 0.0) {

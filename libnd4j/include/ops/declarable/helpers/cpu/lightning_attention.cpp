@@ -123,7 +123,7 @@ static void lightningAttentionCpuImpl_(LaunchContext* context,
                     const float* qRow = qc + s * D;
                     const LongType t = cs + s;
                     const LongType oBase = b * oS0 + t * oS1 + h * oS2;
-                    const float interDecay = sd::math::sd_exp<float>(-decay * (s + 1));
+                    const float interDecay = sd::math::sd_exp<float, float>(-decay * (s + 1));
 
                     // Intra-chunk scores: A[s2] = (Q[s,:] . K[s2,:]) * decay^(s-s2)
                     const LongType upper = isCausal ? (s + 1) : C;
@@ -133,7 +133,7 @@ static void lightningAttentionCpuImpl_(LaunchContext* context,
                         PRAGMA_OMP_SIMD
                         for (LongType d = 0; d < D; ++d)
                             dot += qRow[d] * kRow[d];
-                        A[s2] = dot * sd::math::sd_exp<float>(-decay * static_cast<float>(s - s2));
+                        A[s2] = dot * sd::math::sd_exp<float, float>(-decay * static_cast<float>(s - s2));
                     }
 
                     // Output[s, dv] = inter + intra
@@ -155,14 +155,14 @@ static void lightningAttentionCpuImpl_(LaunchContext* context,
                 }
 
                 // === State update: S = decay^C * S + sum_s decay^(C-1-s) * k_s (x) v_s ===
-                const float chunkDecay = sd::math::sd_exp<float>(-decay * C);
+                const float chunkDecay = sd::math::sd_exp<float, float>(-decay * C);
 
                 PRAGMA_OMP_SIMD
                 for (LongType i = 0; i < D * D; ++i)
                     S[i] *= chunkDecay;
 
                 for (LongType s = 0; s < C; ++s) {
-                    const float posDecay = sd::math::sd_exp<float>(-decay * (C - 1 - s));
+                    const float posDecay = sd::math::sd_exp<float, float>(-decay * (C - 1 - s));
                     const float* kRow = kc + s * D;
                     const float* vRow = vc + s * D;
                     for (LongType dk = 0; dk < D; ++dk) {

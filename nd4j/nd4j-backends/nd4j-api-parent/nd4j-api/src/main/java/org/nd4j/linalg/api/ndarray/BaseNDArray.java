@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
+import org.nd4j.linalg.api.ops.impl.shape.Repeat;
 import org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy;
 import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.linalg.api.shape.PaddingUtils;
@@ -56,7 +57,6 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.reduce.HashCode;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
@@ -4237,10 +4237,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray repeat(int dimension, long... repeats) {
         Nd4j.getCompressor().autoDecompress(this);
-        CustomOp op = DynamicCustomOp.builder("repeat")
-                .addInputs(this)
-                .addIntegerArguments(ArrayUtil.toInts(repeats))     //TODO int cast
-                .build();
+        Repeat op = new Repeat(new INDArray[]{this}, null, dimension);
+        op.addIArgument(ArrayUtil.toInts(repeats));     //TODO int cast
         op.addIArgument(dimension); //Native op: last iarg is dimension
 
         List<DataBuffer> shapeList = op.calculateOutputShape();

@@ -161,7 +161,6 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
   int pnorm = INT_ARG(9);
   int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // 1-NHWC, 0-NCHW
 
-  // FIXME: double?
   double eps = T_ARG(0);
 
   REQUIRE_TRUE(input->rankOf() == 4, 0, "PNORMPOOL2D_BP op: input should have rank of 4, but got %i instead",

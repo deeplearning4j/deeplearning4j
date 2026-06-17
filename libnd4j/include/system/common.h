@@ -239,6 +239,13 @@ struct ErrorResult {
 #define SD_MAX_NUM_THREADS 1024
 #define SD_MAX_RANK 32
 #define SD_MAX_SHAPEINFOLENGTH 2 * SD_MAX_RANK + 4
+// Shape info buffer layout: [rank, shape*rank, strides*rank, extra, ews, order]
+// Total length = rank*2 + 4 (1 rank element + rank shapes + rank strides + 3 metadata)
+// SD_SHAPE_INFO_LENGTH(rank) gives the number of LongType elements for a given rank.
+#define SD_SHAPE_INFO_LENGTH(rank) ((rank) * 2 + 4)
+// Index of the extra/flags/type field within a shape info buffer for a given rank.
+// Layout: [0]=rank, [1..rank]=shape, [rank+1..2*rank]=strides, [2*rank+1]=extra, [2*rank+2]=ews, [2*rank+3]=order
+#define SD_SHAPE_INFO_EXTRA_IDX(rank) ((rank) * 2 + 1)
 // Extra padding (in LongType elements) for shape buffer heap allocations.
 // C++ ops can write a few elements past shape info buffers, corrupting
 // adjacent glibc malloc metadata. 32 extra elements (256 bytes) absorbs

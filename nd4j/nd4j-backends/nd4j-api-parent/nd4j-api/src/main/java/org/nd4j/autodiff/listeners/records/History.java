@@ -162,7 +162,7 @@ public class History {
      */
     public List<IEvaluation> trainingEval(String param) {
         return trainingHistory.stream()
-                .map(er -> er.evaluation(param))
+                .map(er -> (IEvaluation) er.evaluation(param))
                 .collect(Collectors.toList());
     }
 
@@ -257,7 +257,7 @@ public class History {
      */
     public List<IEvaluation> validationEval(String param) {
         return validationHistory.stream()
-                .map(er -> er.evaluation(param))
+                .map(er -> (IEvaluation) er.evaluation(param))
                 .collect(Collectors.toList());
     }
 

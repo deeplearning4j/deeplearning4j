@@ -28,6 +28,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_shared_kv_attention)
 
+#include <math/templatemath.h>
 #include <ops/declarable/headers/llm.h>
 #include <ops/declarable/helpers/shared_kv_attention.h>
 
@@ -75,7 +76,7 @@ CUSTOM_OP_IMPL(shared_kv_attention, 3, 1, false, 0, 0) {
     double scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.0;
     if (scale == 0.0) {
         auto headDim = query->sizeAt(3);
-        scale = 1.0 / std::sqrt(static_cast<double>(headDim));
+        scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(headDim));
     }
 
     // Validate ranks

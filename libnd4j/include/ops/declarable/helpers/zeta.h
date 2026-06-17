@@ -39,7 +39,6 @@ template <typename T>
 SD_LIB_HIDDEN SD_HOST_DEVICE T zetaScalar(const T x, const T q) {
   const T machep = T(1.11022302462515654042e-16);
 
-  // FIXME: @raver119
   // expansion coefficients for Euler-Maclaurin summation formula (2k)! / B2k, where B2k are Bernoulli numbers
   const T coeffZeta[] = {T(12.0),
                          T(-720.0),

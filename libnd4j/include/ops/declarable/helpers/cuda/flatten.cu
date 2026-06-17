@@ -106,7 +106,6 @@ static void flatten_(LaunchContext *context, std::vector<NDArray *> &inputs, NDA
 }
 
 void flatten(LaunchContext *context, std::vector<NDArray *> &inputs, NDArray *output, char order) {
-  // FIXME: we want NDArrayFactory::prepareSpecialUse here eventually
   const std::vector<NDArray *> v(inputs.begin(), inputs.end());
   //prepareSpecialUse requires const
   NDArray::prepareSpecialUse({output}, v, {});

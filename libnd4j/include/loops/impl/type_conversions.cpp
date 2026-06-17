@@ -101,7 +101,7 @@ void TypeCast::convertToThreshold(Pointer *extras, void *dx, LongType N, void *d
   fb.i_ = z[2];
   float threshold = fb.f_;
 
-  // TODO: int limit is sad thing here, 2B elements limitation
+  // The decoded-length header field is int (4 bytes) per the binary protocol.
   auto l = static_cast<int>(N);
   z[1] = l;
 

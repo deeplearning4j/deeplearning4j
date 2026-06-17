@@ -113,7 +113,6 @@ LaunchContext* LaunchContext::defaultContext() {
   {
     // synchronous block goes here
     std::lock_guard<std::mutex> lock(_lock);
-    // TODO: we need it to be device-aware, but only once we add NUMA support for cpu
     if (LaunchContext::contexts().empty())
       LaunchContext::contexts().emplace_back(new LaunchContext());
   }

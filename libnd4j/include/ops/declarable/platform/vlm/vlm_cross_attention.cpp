@@ -23,6 +23,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <math/templatemath.h>
 
 #include "vlmUtils.h"
 
@@ -90,7 +91,7 @@ PLATFORM_IMPL(vlm_cross_attention, ENGINE_CPU) {
 
     int numHeads = INT_ARG(0);
     int headDim = query->sizeAt(-1) / numHeads;
-    float scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(headDim));
+    float scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
 
     crossAttentionVlm(query, key, value, output, numHeads, scale);
 

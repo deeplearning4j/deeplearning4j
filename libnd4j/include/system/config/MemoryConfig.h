@@ -50,11 +50,11 @@ class SD_LIB_EXPORT MemoryConfig {
   MemoryConfig();
 
   // --- Pool release threshold ---
-  int poolReleaseThresholdPercent() { return _poolReleaseThresholdPercent.load(); }
+  int poolReleaseThresholdPercent();
   void setPoolReleaseThresholdPercent(int percent);
 
   // --- Non-peer failover headroom ---
-  int nonPeerHeadroomPercent() { return _nonPeerHeadroomPercent.load(); }
+  int nonPeerHeadroomPercent();
   void setNonPeerHeadroomPercent(int percent);
 
   /**

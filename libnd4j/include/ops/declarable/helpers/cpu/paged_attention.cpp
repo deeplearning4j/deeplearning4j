@@ -52,7 +52,7 @@ static void pagedAttentionForward_(
 
     T scale = static_cast<T>(config.scale);
     if (config.scale <= 0.0f) {
-        scale = static_cast<T>(1.0f / std::sqrt(static_cast<float>(headDim)));
+        scale = static_cast<T>(1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim)));
     }
 
     // Simple CPU implementation: iterate over batch, heads, compute attention
@@ -135,11 +135,6 @@ void pagedAttentionForward(
                           SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void pagedAttentionForward_,
-                      (NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*,
-                       const PagedAttentionConfig&, LaunchContext*),
-                      SD_FLOAT_TYPES);
-
 template <typename T>
 static void pagedKvCacheAppend_(
     NDArray* keyBlockPool,
@@ -198,10 +193,6 @@ void pagedKvCacheAppend(
                           (keyBlockPool, valueBlockPool, newKeys, newValues, pageTables, contextLens, blockSize, context),
                           SD_FLOAT_TYPES);
 }
-
-BUILD_SINGLE_TEMPLATE(template void pagedKvCacheAppend_,
-                      (NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, int, LaunchContext*),
-                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

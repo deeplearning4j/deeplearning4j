@@ -31,6 +31,7 @@
 
 #include "../cublasHelper.h"
 #include "config.h"
+#include <array/DataBuffer.h>
 
 #if HAVE_CUDNN
 #include <cudnn.h>
@@ -151,9 +152,10 @@ void CublasHelper::applyTf32Mode(bool enable) {
 
 void* CublasHelper::cudnn() {
   auto deviceId = AffinityManager::currentDeviceId();
-  if (deviceId < 0 || deviceId >= _cudnn.size())
+  if (deviceId < 0 || deviceId >= _cudnn.size()) {
     std::string msg = "requested deviceId doesn't look valid for cuDNN; Error code: [" + std::to_string(deviceId) + "]";
     THROW_EXCEPTION(msg.c_str());
+  }
 
   auto handle = _cudnn[deviceId];
   if (handle == nullptr) {
@@ -169,7 +171,7 @@ void* CublasHelper::handle() {
 
 void* CublasHelper::solver() {
   auto deviceId = AffinityManager::currentDeviceId();
-  if (deviceId < 0 || deviceId >= _solvers.size())
+  if (deviceId < 0 || deviceId >= _solvers.size()) {
     std::string msg = "requested deviceId doesn't look valid for cuSolver; Error code: [" + std::to_string(deviceId) + "]";
     THROW_EXCEPTION(msg.c_str());
   }
@@ -183,9 +185,10 @@ void* CublasHelper::solver() {
 }
 
 void* CublasHelper::handle(int deviceId) {
-  if (deviceId < 0 || deviceId >= _cache.size())
+  if (deviceId < 0 || deviceId >= _cache.size()) {
     std::string msg = "requested deviceId doesn't look valid for cuBLAS; Error code: [" + std::to_string(deviceId) + "]";
     THROW_EXCEPTION(msg.c_str());
+  }
 
   // Thread-local cuBLAS handle per (thread, device) pair.
   // cuBLAS handles carry mutable state (stream, math mode, workspace) and are
@@ -218,7 +221,6 @@ void* CublasHelper::handle(int deviceId) {
   // Lazily apply/remove TF32 mode when the flag changes.
   // CRITICAL: When DSP has set deterministic cuBLAS (PEDANTIC_MATH via
   // tl_cublasLtDisabled=true), skip the lazy TF32 application entirely.
-  extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled;
   static thread_local bool tl_tf32Applied = false;
   static thread_local int tl_smMajor = -1;
   bool wantTf32 = sd::Environment::getInstance().cublasTf32Enabled();

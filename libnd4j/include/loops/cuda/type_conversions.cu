@@ -37,8 +37,7 @@ SD_DEVICE void convertKernelGeneric(S *x, LongType N, T *z) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < N; i += blockDim.x * gridDim.x) {
-    // despite it's stupid, it simplifies conversion to bottom dtypes
-    // FIXME: get rid of through-float though
+    // through-float conversion simplifies handling of narrow dtypes (fp16, bf16, etc.)
     z[i] = static_cast<T>(static_cast<float>(x[i]));
   }
 };
@@ -199,14 +198,6 @@ SD_KERNEL void uniformAdd(int *g_data, int *uniforms, int n, int blockOffset, in
   g_data[address + blockDim.x] += (threadIdx.x + blockDim.x < n) * uni;
 }
 
-/*
- * This kernel does prefix sum in parallel, to calculate offsets for each block
- */
-template <typename T>
-SD_DEVICE inline void encoderKernelP2Generic(void *dx, LongType n, void *dz) {
-  // TODO: to be remove
-}
-
 //////////////////////////////////////////////////////////////////////////
 /*
  * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
@@ -348,7 +339,6 @@ SD_KERNEL void execDecoderKernel(const void *dx, LongType N, void *dz) {
     int el = x[e + 4];
     int ael = sd::math::sd_abs<int,int>(el) - 1;
 
-    // TODO: investigate, if += would work better here, as in "decoded accumulation"
     z[ael] += el > 0 ? threshold : -threshold;
   }
 }

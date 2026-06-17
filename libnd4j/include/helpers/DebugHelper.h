@@ -33,13 +33,8 @@
 #include <driver_types.h>
 #endif
 #include <helpers/DebugInfo.h>
+#include <array/DataBuffer.h>
 namespace sd {
-
-#ifdef __CUDACC__
-// Used to skip cudaStreamSynchronize during CUDA graph capture.
-// Defined in DataBuffer.cu within namespace sd.
-extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
-#endif
 class NDArray;
 class SD_LIB_EXPORT DebugHelper {
  public:

@@ -178,8 +178,9 @@
                          UTF-8. ISO-8859-1 accepts all byte values, and the non-ASCII is
                          only in comments so it doesn't affect compiled output. -->
                     <encoding>ISO-8859-1</encoding>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
+                    <source>11</source>
+                    <target>11</target>
+                    <release combine.self="override"/>
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>java.base/java.nio=ALL-UNNAMED</arg>

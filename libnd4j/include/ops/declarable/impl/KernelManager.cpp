@@ -406,8 +406,86 @@ std::string KernelManager::exportConfiguration() const {
 }
 
 bool KernelManager::importConfiguration(const std::string& json) {
-  // TODO: Implement JSON parsing
-  return false;
+  // Parse the simple JSON format produced by exportConfiguration.
+  // Supported keys: "globalPreferredEngine", "globallyDisabledEngines", "preferredEngines".
+  // Returns false if any required key is missing or unparseable.
+
+  auto parseEngine = [](const std::string& name) -> samediff::Engine {
+    if (name == "CPU")    return samediff::ENGINE_CPU;
+    if (name == "CUDA")   return samediff::ENGINE_CUDA;
+    if (name == "oneDNN") return samediff::ENGINE_ONEDNN;
+    return samediff::ENGINE_CPU;
+  };
+
+  // Extract a quoted string value following a key, e.g. "key": "value"
+  auto extractStringValue = [&](const std::string& key) -> std::string {
+    auto pos = json.find("\"" + key + "\"");
+    if (pos == std::string::npos) return "";
+    auto colon = json.find(':', pos);
+    if (colon == std::string::npos) return "";
+    auto q1 = json.find('"', colon + 1);
+    if (q1 == std::string::npos) return "";
+    auto q2 = json.find('"', q1 + 1);
+    if (q2 == std::string::npos) return "";
+    return json.substr(q1 + 1, q2 - q1 - 1);
+  };
+
+  std::string globalEngine = extractStringValue("globalPreferredEngine");
+  if (globalEngine.empty()) return false;
+  setGlobalPreferredEngine(parseEngine(globalEngine));
+
+  // Parse "globallyDisabledEngines": ["ENGINE1", "ENGINE2"]
+  {
+    auto pos = json.find("\"globallyDisabledEngines\"");
+    if (pos != std::string::npos) {
+      auto open = json.find('[', pos);
+      auto close = json.find(']', pos);
+      if (open != std::string::npos && close != std::string::npos) {
+        std::string block = json.substr(open + 1, close - open - 1);
+        size_t p = 0;
+        while (p < block.size()) {
+          auto q1 = block.find('"', p);
+          if (q1 == std::string::npos) break;
+          auto q2 = block.find('"', q1 + 1);
+          if (q2 == std::string::npos) break;
+          std::string ename = block.substr(q1 + 1, q2 - q1 - 1);
+          disableEngineGlobally(parseEngine(ename));
+          p = q2 + 1;
+        }
+      }
+    }
+  }
+
+  // Parse "preferredEngines": {"opName": "ENGINE", ...}
+  {
+    auto pos = json.find("\"preferredEngines\"");
+    if (pos != std::string::npos) {
+      auto open = json.find('{', pos);
+      auto close = json.find('}', open + 1);
+      if (open != std::string::npos && close != std::string::npos) {
+        std::string block = json.substr(open + 1, close - open - 1);
+        size_t p = 0;
+        while (p < block.size()) {
+          auto q1 = block.find('"', p);
+          if (q1 == std::string::npos) break;
+          auto q2 = block.find('"', q1 + 1);
+          if (q2 == std::string::npos) break;
+          std::string opName = block.substr(q1 + 1, q2 - q1 - 1);
+          auto colon = block.find(':', q2);
+          if (colon == std::string::npos) break;
+          auto q3 = block.find('"', colon + 1);
+          if (q3 == std::string::npos) break;
+          auto q4 = block.find('"', q3 + 1);
+          if (q4 == std::string::npos) break;
+          std::string ename = block.substr(q3 + 1, q4 - q3 - 1);
+          setPreferredEngine(opName, parseEngine(ename));
+          p = q4 + 1;
+        }
+      }
+    }
+  }
+
+  return true;
 }
 
 KernelInfo KernelManager::getKernelPerformance(const std::string& opName,
@@ -420,8 +498,14 @@ KernelInfo KernelManager::getKernelPerformance(const std::string& opName,
   info.isEnabled = isKernelEnabled(opName, engine);
   info.isUsable = true;
 
-  // Get performance data from registry
-  // TODO: Integrate with KernelPerformanceRegistry
+  // Query registry for performance data using a generic (shape-less) signature
+  KernelSignature sig = KernelPerformanceRegistry::createSignature(
+      info.opHash, {}, {}, sd::DataType::FLOAT32);
+  const KernelPerformanceEntry* entry = KernelPerformanceRegistry::getInstance().getPerformance(sig, engine);
+  if (entry != nullptr) {
+    info.avgTimeNanos = entry->meanTimeNanos;
+    info.executionCount = entry->sampleCount;
+  }
 
   return info;
 }
@@ -435,7 +519,12 @@ samediff::Engine KernelManager::getBestPerformingEngine(const std::string& opNam
 }
 
 samediff::Engine KernelManager::getBestPerformingEngine(LongType opHash) const {
-  // TODO: Query KernelPerformanceRegistry for best engine
+  // Query registry for best engine using a generic (shape-less) signature
+  KernelSignature sig = KernelPerformanceRegistry::createSignature(
+      opHash, {}, {}, sd::DataType::FLOAT32);
+  if (KernelPerformanceRegistry::getInstance().hasReliableData(sig)) {
+    return KernelPerformanceRegistry::getInstance().getBestEngine(sig);
+  }
   return getPreferredEngine(opHash);
 }
 

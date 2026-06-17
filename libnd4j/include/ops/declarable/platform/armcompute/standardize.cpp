@@ -21,6 +21,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <math/templatemath.h>
 
 #include "armcomputeUtils.h"
 #include <cmath>
@@ -73,7 +74,7 @@ PLATFORM_IMPL(standardize, ENGINE_CPU) {
       float diff = inPtr[i] - mean;
       varSum += diff * diff;
     }
-    float std = std::sqrt(varSum / totalLen + 1e-7f);
+    float std = sd::math::sd_sqrt<float, float>(varSum / totalLen + 1e-7f);
 
     for (sd::LongType i = 0; i < totalLen; i++) {
       outPtr[i] = (inPtr[i] - mean) / std;
@@ -100,7 +101,7 @@ PLATFORM_IMPL(standardize, ENGINE_CPU) {
         float diff = inPtr[offset + i] - mean;
         varSum += diff * diff;
       }
-      float std = std::sqrt(varSum / sampleSize + 1e-7f);
+      float std = sd::math::sd_sqrt<float, float>(varSum / sampleSize + 1e-7f);
 
       // Standardize
       for (sd::LongType i = 0; i < sampleSize; i++) {

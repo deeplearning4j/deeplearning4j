@@ -26,8 +26,13 @@
 #include <graph/generated/node_generated.h>
 #include <helpers/helper_hash.h>
 #include <ops/InputType.h>
+#ifndef __JAVACPP_HACK__
+#include <system/PointerValidation.h>
+#endif
 
+#ifndef __JAVACPP_HACK__
 #include <cstdlib>
+#endif
 #include <initializer_list>
 #include <string>
 #include <vector>
@@ -35,6 +40,7 @@
 namespace sd {
 namespace ops {
 
+#ifndef __JAVACPP_HACK__
 /**
  * Op trait flags — intrinsic properties of ops that replace scattered hardcoded lists.
  *
@@ -77,6 +83,7 @@ enum OpTraits : uint32_t {
   OP_TRAIT_EXTERNAL_WORKSPACE    = 1 << 30,  // op uses external library workspace (cuBLAS, etc.) — capture-unsafe by default
   OP_TRAIT_DYNAMIC_OUTPUT_SIZE   = 1u << 31, // output size depends on runtime data (Where, NonZero) — non-capturable in CUDA graphs
 };
+#endif
 
 class SD_LIB_EXPORT OpExecTrace {
  public:
@@ -145,23 +152,7 @@ class SD_LIB_EXPORT OpExecTrace {
     }
   }
 
-  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
-  static void* operator new(size_t size) {
-    return std::malloc(size + 4096);
-  }
-#ifndef __JAVACPP_HACK__
-  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
-    return std::malloc(size + 4096);
-  }
-#endif
-  static void operator delete(void* ptr) noexcept {
-    std::free(ptr);
-  }
-#ifndef __JAVACPP_HACK__
-  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
-    std::free(ptr);
-  }
-#endif
+
 
   std::vector<const LongType*>* getInputShapeBuffers() const { return inputShapeBuffers; }
   void setInputShapeBuffers(std::vector<const LongType*>* inputShapeBuffersIn) {
@@ -346,23 +337,7 @@ class SD_LIB_EXPORT OpDescriptor {
   bool hasAnyTrait(uint32_t traits) const;
   uint32_t getTraits() const;
 
-  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
-  static void* operator new(size_t size) {
-    return std::malloc(size + 4096);
-  }
-#ifndef __JAVACPP_HACK__
-  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
-    return std::malloc(size + 4096);
-  }
-#endif
-  static void operator delete(void* ptr) noexcept {
-    std::free(ptr);
-  }
-#ifndef __JAVACPP_HACK__
-  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
-    std::free(ptr);
-  }
-#endif
+
 };
 }  // namespace ops
 }  // namespace sd

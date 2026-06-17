@@ -226,6 +226,20 @@ void DspConfig::initFromEnvironment() {
     if (v > 0) setPlanCacheMaxPlansCpu(v);
   }
 
+  // Isolation flags
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_DISABLE_VIEW_FASTPATH");
+    if (v >= 0) setDspDisableViewFastpath(v == 1);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_DISABLE_CAST_HWM");
+    if (v >= 0) setDspDisableCastHwm(v == 1);
+  }
+  {
+    int v = readBoolEnvTriState("ND4J_DSP_DISABLE_WS_SKIP");
+    if (v >= 0) setDspDisableWorkspaceSkip(v == 1);
+  }
+
   // Disk plan cache
   {
     std::string v = readStringEnv("ND4J_DSP_PLAN_CACHE_DIR");

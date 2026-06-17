@@ -50,7 +50,6 @@ CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
   double zeroPadVal = 0.0;
   if (block.getTArguments()->size() > 0) zeroPadVal = T_ARG(0);
 
-  // FIXME: zeropad value is void
   LaunchContext* ctx = block.launchContext();
   NDArray *zero =  NDArrayFactory::create(zeroPadVal, block.launchContext());
   sd::ops::helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX,
@@ -129,7 +128,6 @@ CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
   int imgW = input->sizeAt(3);
 
   LaunchContext* ctx = block.launchContext();
-  // FIXME:: all helpers should accept NDArray
   ops::helpers::col2im(*ctx, gradAtOutput, z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
 
   return sd::Status::OK;

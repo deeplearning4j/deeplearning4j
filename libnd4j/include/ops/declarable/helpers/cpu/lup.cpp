@@ -495,7 +495,6 @@ static sd::Status inverse_(LaunchContext* context, NDArray* input, NDArray* outp
     matrix->syncToDevice();
     T det = lup_<T, sd::LongType>(context, matrix, compound, permutation).template t<T>(0);
 
-    // FIXME: and how this is going to work on float16?
     if (sd::math::sd_abs<T,T>(det) < T(0.000001)) {
       sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", (int)e, (double)det);
       delete matrix;
@@ -560,7 +559,6 @@ static sd::Status lowerInverse_(LaunchContext* context, NDArray* input, NDArray*
       det *= matrix->template t<T>(i, i);
     }
 
-    // FIXME: how this is going to work on float16?
     if (sd::math::sd_abs<T,T>(det) < T(0.000001)) {
       sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quitting...\n", (int)e, (double)det);
       delete matrix;

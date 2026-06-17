@@ -605,7 +605,7 @@ class DropOut {
 #ifdef __CUDACC__
     X length = params[1];
    X tid = blockIdx.x * blockDim.x + threadIdx.x;
-   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X>( static_cast<X>(tid) +
+   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X, X>( static_cast<X>(tid) +
                                                       static_cast<X>(length) * static_cast<X>(tid)));
 #else
     X rnd = static_cast<X>(rand() / RAND_MAX);
@@ -626,7 +626,7 @@ class DropOutInverted {
 #ifdef __CUDACC__
     X length = params[1];
    X tid = blockIdx.x * blockDim.x + threadIdx.x;
-   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X>( static_cast<X>(tid) +
+   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X, X>( static_cast<X>(tid) +
                                                       static_cast<X>(length) * static_cast<X>(tid)));
 #else
     X rnd = static_cast<X>(rand() / RAND_MAX);

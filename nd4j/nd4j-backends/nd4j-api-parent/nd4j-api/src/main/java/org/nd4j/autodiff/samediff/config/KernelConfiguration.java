@@ -102,31 +102,6 @@ public class KernelConfiguration {
         AUTO_TUNE
     }
 
-    /**
-     * Categories of operations for bulk configuration
-     */
-    public enum OperationCategory {
-        CONVOLUTIONS("conv*", "depthwise*", "separable*"),
-        POOLING("*pool*", "max_pool*", "avg_pool*"),
-        NORMALIZATION("*norm*", "batch_norm*", "layer_norm*"),
-        ACTIVATIONS("relu*", "sigmoid", "tanh", "softmax*", "gelu*"),
-        LINEAR_ALGEBRA("matmul", "gemm", "dot", "tensordot"),
-        ELEMENT_WISE("add", "subtract", "multiply", "divide", "pow"),
-        REDUCTION("reduce_*", "sum", "mean", "max", "min"),
-        ATTENTION("attention*", "dot_product_attention*", "multi_head_attention*"),
-        RECURRENT("lstm*", "gru*", "rnn*");
-
-        private final String[] patterns;
-
-        OperationCategory(String... patterns) {
-            this.patterns = patterns;
-        }
-
-        public String[] getPatterns() {
-            return patterns;
-        }
-    }
-
     public KernelConfiguration(@NonNull SameDiff sameDiff) {
         this.sameDiff = sameDiff;
         this.kernelManager = KernelManager.getInstance();

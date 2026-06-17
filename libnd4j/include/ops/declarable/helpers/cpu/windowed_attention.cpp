@@ -57,7 +57,7 @@ static void windowedAttention_(sd::LaunchContext* context,
     const auto headDim = query->sizeAt(3);
 
     // Auto-compute scale if not provided
-    T scaleFactor = scale > 0.0 ? static_cast<T>(scale) : static_cast<T>(1.0 / sd::math::sd_sqrt<double>(static_cast<double>(headDim)));
+    T scaleFactor = scale > 0.0 ? static_cast<T>(scale) : static_cast<T>(1.0) / sd::math::sd_sqrt<T, T>(static_cast<T>(headDim));
 
     // Half window for local attention
     const int halfWindow = windowSize / 2;
@@ -152,7 +152,7 @@ static void windowedAttention_(sd::LaunchContext* context,
                 // Softmax
                 T sumExp = static_cast<T>(0);
                 for (int w = 0; w < actualWindowSize; w++) {
-                    softmaxScores[w] = sd::math::sd_exp<T>(scores[w] - maxScore);
+                    softmaxScores[w] = sd::math::sd_exp<T, T>(scores[w] - maxScore);
                     sumExp += softmaxScores[w];
                 }
                 for (int w = 0; w < actualWindowSize; w++) {

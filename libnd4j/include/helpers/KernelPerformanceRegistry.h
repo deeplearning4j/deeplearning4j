@@ -21,6 +21,7 @@
 #include <execution/Engine.h>
 #include <system/common.h>
 #include <array/DataType.h>
+#include <math/templatemath.h>
 
 #include <chrono>
 #include <cmath>
@@ -82,7 +83,7 @@ struct SD_LIB_EXPORT KernelPerformanceEntry {
 
   double getStdDev() const {
     if (sampleCount < 2) return 0.0;
-    return std::sqrt(varianceNanos / (sampleCount - 1));
+    return sd::math::sd_sqrt<double, double>(varianceNanos / (sampleCount - 1));
   }
 
   bool isReliable(int minSamples = 3, double maxCoefficientOfVariation = 0.5) const {

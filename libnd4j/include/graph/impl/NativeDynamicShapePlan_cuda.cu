@@ -73,28 +73,10 @@ namespace sd { namespace cuda { void clearCudaGraphSchedulerCache(); } }
 #include <numeric>
 #include <unordered_set>
 
-// Thread-local cuBLAS workspace — reset in platformFreePlanResources() to
-// prevent stale pointer after cublasWorkspaceBuffer_ is freed.
-extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
-extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
-
-// Global TLS that must be reset on plan teardown to prevent cross-plan contamination.
-// These are defined in DataBuffer.cu and LaunchContext.cu.
-extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
-extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
-extern SD_TLS_EXPORT thread_local cudaStream_t tl_dspExecutionStream;
 extern thread_local cudaStream_t tl_dspGapStream;
-extern SD_TLS_EXPORT thread_local cudaStream_t tl_graphCaptureStream;
-extern SD_TLS_EXPORT thread_local void* tl_captureWorkspace;
-extern SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize;
-extern SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset;
-extern SD_TLS_EXPORT thread_local int tl_islandSlotMin;
-extern SD_TLS_EXPORT thread_local int tl_islandSlotMax;
 
 namespace sd {
 
-// Disable cublasLt for CUDA_GRAPHS — defined in DataBuffer.cu
-extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled;
 void dspPublishThreadCompletionEvent(void* streamPtr);
 
 namespace graph {

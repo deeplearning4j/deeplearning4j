@@ -263,7 +263,6 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     ft->applyTransform(transform::Sigmoid, ft);
     rt->applyTransform(transform::Sigmoid, rt);
 
-    // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
     ct->applyTransform(transform::Tanh, gct);
     // ftMinus = 1-ft,  rtMinus = 1-rt
     ft->applyTransform(transform::OneMinus, ftMinus);
@@ -277,7 +276,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     inGradHt->applyPairwiseTransform(pairwise::Multiply, temp1,
                                     gradBRt);  // = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;
 
-    // bF, TODO - tanh
+    // bF gradient, tanh activation:
     // gradTanh = (1.0f - g_ct * g_ct);
     gct->applyPairwiseTransform(pairwise::Multiply, gct, gradTanh);  // gradTanh = g_ct * g_ct
     gradTanh->applyTransform(transform::OneMinus, gradTanh);          // gradTanh = (1.0f - g_ct * g_ct)

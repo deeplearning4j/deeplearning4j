@@ -818,7 +818,7 @@ void shuffle(sd::Pointer *extras,
 bool isExperimentalEnabled() { return sd::Environment::getInstance().isExperimentalBuild(); }
 
 void setOmpMinThreads(int threads) {
-  // TODO: to be implemented
+  sd::Environment::getInstance().setMaxThreads(threads);
 }
 
 int getDevice() { return 0; }
@@ -839,8 +839,14 @@ const char *getDeviceName(int deviceId) {
       std::memset(name, 0, 256 * sizeof(char));
       nameSet = true;
 
-      // TODO: provide proper CPU model name here
+#ifdef CPU_FEATURES
+      cpu_features::FillX86BrandString(name);
+      if (name[0] == '\0') {
+        sprintf(name, "x86-compatible CPU");
+      }
+#else
       sprintf(name, "x86-compatible CPU");
+#endif
     }
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -855,8 +861,14 @@ const char *getDeviceName(int deviceId) {
       std::memset(name, 0, 256 * sizeof(char));
       nameSet = true;
 
-      // TODO: provide proper CPU model name here
+#ifdef CPU_FEATURES
+      cpu_features::FillX86BrandString(name);
+      if (name[0] == '\0') {
+        sprintf(name, "x86-compatible CPU");
+      }
+#else
       sprintf(name, "x86-compatible CPU");
+#endif
     }
   #endif
 

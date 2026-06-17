@@ -41,7 +41,6 @@ CUSTOM_OP_IMPL(crelu, 1, 1, false, 0, 0) {
 
   helpers::concat(block.launchContext(), {x, tmp}, *z, x->rankOf() - 1);
 
-  // TODO: make this configurable?
   double threshold = 0.0;
   z->applyScalar(scalar::RELU, threshold, z);
 

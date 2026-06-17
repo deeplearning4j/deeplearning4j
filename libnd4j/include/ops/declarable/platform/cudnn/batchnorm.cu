@@ -197,7 +197,6 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
   NDArray::prepareSpecialUse({gradI, gradG, gradB}, {input, mean, variance, gamma, gradO});
 
   // calculations
-  // TODO: we can use cache here
   CHECK_CUDNN_FAILURE_MSG(
       STRINGIZE(cudnnBatchNormalizationBackward),
       cudnnBatchNormalizationBackward(*handle, isSpatialMode ? CUDNN_BATCHNORM_SPATIAL : CUDNN_BATCHNORM_PER_ACTIVATION,

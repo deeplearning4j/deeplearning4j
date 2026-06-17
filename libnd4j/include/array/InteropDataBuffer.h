@@ -22,6 +22,7 @@
 
 #include <array/DataBuffer.h>
 #include <array/DataType.h>
+#include <system/PointerValidation.h>
 #include <memory/Workspace.h>
 #include <memory/MultiBackendWorkspace.h>
 #include <system/common.h>
@@ -362,27 +363,7 @@ class SD_LIB_EXPORT InteropDataBuffer {
                                 const std::vector<const InteropDataBuffer *> &readList,
                                 bool synchronizeWritables = false);
 
-  // Padded operator new/delete to protect adjacent glibc chunks from
-  // overruns. InteropDataBuffer objects are ~120 bytes on the heap with
-  // zero padding — any adjacent overrun corrupts the next chunk metadata
-  // → SIGABRT on free(). Adding 4KB padding keeps the next chunk's header
-  // safely out of reach.
-  static void* operator new(size_t size) {
-    return std::malloc(size + 4096);
-  }
-#ifndef __JAVACPP_HACK__
-  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
-    return std::malloc(size + 4096);
-  }
-#endif
-  static void operator delete(void* ptr) noexcept {
-    std::free(ptr);
-  }
-#ifndef __JAVACPP_HACK__
-  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
-    std::free(ptr);
-  }
-#endif
+  SD_PADDED_NEW_DELETE
 };
 }  // namespace sd
 

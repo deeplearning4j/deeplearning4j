@@ -27,10 +27,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.nd4j.enums.DataFormat;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
@@ -80,11 +79,8 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         if(!Shape.hasDefaultStridesForShape(epsilon))
             epsilon = epsilon.dup('c');
 
-        CustomOp op = DynamicCustomOp.builder("depth_to_space")
-                .addInputs(epsilon)
-                .addIntegerArguments(blockSize, nchw ? 0 : 1)       //nchw = 0, nhwc = 1
-                .addOutputs(outEpsilon)
-                .build();
+        org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace op =
+                new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace(epsilon, outEpsilon, blockSize, nchw ? DataFormat.NCHW : DataFormat.NHWC);
         Nd4j.getExecutioner().exec(op);
 
         return new Pair<>(gradient, outEpsilon);
@@ -126,11 +122,8 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         if(!Shape.hasDefaultStridesForShape(input))
             input = input.dup('c');
 
-        CustomOp op = DynamicCustomOp.builder("space_to_depth")
-                .addInputs(input)
-                .addIntegerArguments(blockSize, nchw ? 0 : 1)       //nchw = 0, nhwc = 1
-                .addOutputs(out)
-                .build();
+        org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth op =
+                new org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth(input, out, blockSize, nchw ? DataFormat.NCHW : DataFormat.NHWC);
         Nd4j.getExecutioner().exec(op);
 
         return out;

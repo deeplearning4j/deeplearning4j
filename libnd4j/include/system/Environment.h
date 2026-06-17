@@ -35,6 +35,7 @@
 #include <system/config/TritonConfig.h>
 #include <system/config/DspConfig.h>
 #include <system/config/LifecycleConfig.h>
+#include <system/config/MemoryConfig.h>
 #include <system/config/PrintConfig.h>
 
 #include <config.h>
@@ -49,6 +50,7 @@ namespace sd {
  *   - cuda()      : CUDA device settings, limits, tensor cores
  *   - triton()    : Triton compiler settings, CUDA graph integration
  *   - dsp()       : DSP batch-zero, GEMM, cast elimination, capture pool
+ *   - memory()    : memory pool thresholds, failover headroom
  *   - lifecycle() : NDArray/DataBuffer lifecycle tracking
  *   - print()     : NDArray print options (NumPy-style)
  *
@@ -62,6 +64,7 @@ class SD_LIB_EXPORT Environment {
   config::CudaDeviceConfig _cuda;
   config::TritonConfig _triton;
   config::DspConfig _dsp;
+  config::MemoryConfig _memory;
   config::LifecycleConfig _lifecycle;
   config::PrintConfig _print;
 
@@ -86,6 +89,7 @@ class SD_LIB_EXPORT Environment {
   config::CudaDeviceConfig& cuda() { return _cuda; }
   config::TritonConfig& triton() { return _triton; }
   config::DspConfig& dsp() { return _dsp; }
+  config::MemoryConfig& memory() { return _memory; }
   config::LifecycleConfig& lifecycle() { return _lifecycle; }
   config::PrintConfig& print() { return _print; }
 

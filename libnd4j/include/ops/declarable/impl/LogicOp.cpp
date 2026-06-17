@@ -34,7 +34,6 @@ Status LogicOp::validateAndExecute(Context &block) {
 }
 
 ShapeList *LogicOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
-  // FIXME: we probably want these ops to evaluate scopes
   return SHAPELIST();
 }
 }  // namespace ops

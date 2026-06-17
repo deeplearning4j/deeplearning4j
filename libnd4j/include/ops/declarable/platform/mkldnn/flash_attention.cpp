@@ -26,6 +26,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <math/templatemath.h>
 
 #include <oneapi/dnnl/dnnl_graph.hpp>
 
@@ -423,9 +424,9 @@ PLATFORM_IMPL(flash_attention, ENGINE_CPU) {
   auto scale = block.numT() > 0 ? T_ARG(0) : 0.0;
   if (scale <= 0) {
     if (rank == 3) {
-      scale = 1.0 / std::sqrt(static_cast<double>(query->sizeAt(2)));
+      scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(query->sizeAt(2)));
     } else {
-      scale = 1.0 / std::sqrt(static_cast<double>(query->sizeAt(3)));
+      scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(query->sizeAt(3)));
     }
   }
 

@@ -162,7 +162,6 @@ Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* out
 
     *dropOutMultiplier += *chunk;
 
-    // FIXME: we could do this in one step, aren't we?
     NDArray* ret = (*input) * (*dropOutMultiplier);
     output->assign(ret);
     delete ret;
@@ -373,7 +372,6 @@ Status alphaDropOutFunctorBP_(sd::graph::Context& context, NDArray* input, NDArr
                               int seed, double probValue, double alpha, double alpha1, double beta, NDArray* mask) {
   auto res = alphaDropOutFunctor(context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta, mask);
   if (res == Status::OK) {
-    // FIXME: can we make it single-loop?
     (*output) *= alpha;
     (*output) *= (*gradOut);
   }

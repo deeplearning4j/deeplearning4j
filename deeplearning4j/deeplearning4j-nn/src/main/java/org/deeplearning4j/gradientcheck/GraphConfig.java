@@ -33,18 +33,18 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 public class GraphConfig {
-    private ComputationGraph net;
-    private INDArray[] inputs;
-    private INDArray[] labels;
-    private INDArray[] inputMask;
-    private INDArray[] labelMask;
-    private double epsilon = 1e-6;
-    private double maxRelError = 1e-3;
-    private double minAbsoluteError = 1e-8;
-    private PrintMode print = PrintMode.ZEROS;
-    private boolean exitOnFirstError = false;
-    private boolean subset;
-    private int maxPerParam;
-    private Set<String> excludeParams;
-    private Consumer<ComputationGraph> callEachIter;
+    ComputationGraph net;
+    INDArray[] inputs;
+    INDArray[] labels;
+    INDArray[] inputMask;
+    INDArray[] labelMask;
+    double epsilon = 1e-6;
+    double maxRelError = 1e-3;
+    double minAbsoluteError = 1e-8;
+    PrintMode print = PrintMode.ZEROS;
+    boolean exitOnFirstError = false;
+    boolean subset;
+    int maxPerParam;
+    Set<String> excludeParams;
+    Consumer<ComputationGraph> callEachIter;
 }

@@ -782,7 +782,6 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
   bool is_simple_slice;
   bool is_dim0;
 
-  // FIXME: remove this method once we get 1D vectors supported
   vectorize(input_shape);
   REQUIRE_TRUE(
       _preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask,

@@ -21,10 +21,9 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_two_way_cross_attention)
 
+#include <math/templatemath.h>
 #include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/two_way_cross_attention.h>
-
-#include <cmath>
 
 namespace sd {
 namespace ops {
@@ -44,7 +43,7 @@ CUSTOM_OP_IMPL(two_way_cross_attention, 6, 2, false, 0, 0) {
   double scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.0;
   if (scale == 0.0) {
     auto embedDim = tokenQuery->sizeAt(-1);
-    scale = 1.0 / std::sqrt(static_cast<double>(embedDim));
+    scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(embedDim));
   }
 
   helpers::twoWayCrossAttention(tokenQuery, tokenKey, tokenValue,
@@ -89,7 +88,7 @@ CUSTOM_OP_IMPL(two_way_cross_attention_bp, 8, 6, false, 0, 0) {
   double scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.0;
   if (scale == 0.0) {
     auto embedDim = tokenQuery->sizeAt(-1);
-    scale = 1.0 / std::sqrt(static_cast<double>(embedDim));
+    scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(embedDim));
   }
 
   helpers::twoWayCrossAttentionBp(tokenQuery, tokenKey, tokenValue,

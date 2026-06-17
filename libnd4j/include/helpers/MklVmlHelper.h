@@ -34,6 +34,7 @@
 #define LIBND4J_MKL_VML_HELPER_H
 
 #include <system/common.h>
+#include <math/templatemath.h>
 #include <cmath>
 
 #ifdef HAVE_MKL_VML
@@ -113,7 +114,7 @@ SD_INLINE void exp(sd::LongType n, const float* input, float* output) {
 #endif
     PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < n; ++i) {
-        output[i] = std::exp(input[i]);
+        output[i] = sd::math::sd_exp<float, float>(input[i]);
     }
 }
 
@@ -126,7 +127,7 @@ SD_INLINE void exp(sd::LongType n, const double* input, double* output) {
 #endif
     PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < n; ++i) {
-        output[i] = std::exp(input[i]);
+        output[i] = sd::math::sd_exp<double, double>(input[i]);
     }
 }
 
@@ -184,7 +185,7 @@ SD_INLINE void sigmoid(sd::LongType n, const float* input, float* output) {
 #endif
     PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < n; ++i) {
-        output[i] = 1.0f / (1.0f + std::exp(-input[i]));
+        output[i] = 1.0f / (1.0f + sd::math::sd_exp<float, float>(-input[i]));
     }
 }
 
@@ -205,7 +206,7 @@ SD_INLINE void sigmoid(sd::LongType n, const double* input, double* output) {
 #endif
     PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < n; ++i) {
-        output[i] = 1.0 / (1.0 + std::exp(-input[i]));
+        output[i] = 1.0 / (1.0 + sd::math::sd_exp<double, double>(-input[i]));
     }
 }
 
@@ -222,7 +223,7 @@ SD_INLINE void sqrt(sd::LongType n, const float* input, float* output) {
 #endif
     PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < n; ++i) {
-        output[i] = std::sqrt(input[i]);
+        output[i] = sd::math::sd_sqrt<float, float>(input[i]);
     }
 }
 
@@ -235,7 +236,7 @@ SD_INLINE void sqrt(sd::LongType n, const double* input, double* output) {
 #endif
     PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < n; ++i) {
-        output[i] = std::sqrt(input[i]);
+        output[i] = sd::math::sd_sqrt<double, double>(input[i]);
     }
 }
 
@@ -252,7 +253,7 @@ SD_INLINE void log(sd::LongType n, const float* input, float* output) {
 #endif
     PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < n; ++i) {
-        output[i] = std::log(input[i]);
+        output[i] = sd::math::sd_log<float, float>(input[i]);
     }
 }
 
@@ -265,7 +266,7 @@ SD_INLINE void log(sd::LongType n, const double* input, double* output) {
 #endif
     PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < n; ++i) {
-        output[i] = std::log(input[i]);
+        output[i] = sd::math::sd_log<double, double>(input[i]);
     }
 }
 
@@ -455,7 +456,7 @@ SD_INLINE void invsqrt(sd::LongType n, const float* input, float* output) {
 #endif
     PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < n; ++i) {
-        output[i] = 1.0f / std::sqrt(input[i]);
+        output[i] = 1.0f / sd::math::sd_sqrt<float, float>(input[i]);
     }
 }
 
@@ -468,7 +469,7 @@ SD_INLINE void invsqrt(sd::LongType n, const double* input, double* output) {
 #endif
     PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < n; ++i) {
-        output[i] = 1.0 / std::sqrt(input[i]);
+        output[i] = 1.0 / sd::math::sd_sqrt<double, double>(input[i]);
     }
 }
 

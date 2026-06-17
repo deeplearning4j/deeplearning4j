@@ -501,7 +501,6 @@ void unsortedSegmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDAr
       double sumValue = input->e<double>(fi->second.at(0));
       size_t loop_size = fi->second.size();
 
-      // FIXME: parallelism here?
       for (size_t idx = 1; idx < loop_size; ++idx) {
         sumValue += input->e<double>(fi->second.at(idx));
       }
@@ -514,7 +513,6 @@ void unsortedSegmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDAr
     auto listOfTensors = input->allTensorsAlongDimension(*restDims);
     auto listOfOutTensors = output->allTensorsAlongDimension(*restDims);
     delete restDims;
-    // FIXME: parallelism here?
     for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
       auto outputT = listOfOutTensors.at(fi->first);
       outputT->assign(listOfTensors.at(fi->second.at(0)));
@@ -541,7 +539,6 @@ void unsortedSegmentSumFunctor(sd::LaunchContext* context, NDArray* input, NDArr
       double sumValue = input->e<double>(fi->second.at(0));
       sd::LongType loop_size = fi->second.size();
 
-      // FIXME: parallelism here?
       for (sd::LongType idx = 1; idx < loop_size; ++idx) {
         sumValue += input->e<double>(fi->second.at(idx));
       }
@@ -558,7 +555,6 @@ void unsortedSegmentSumFunctor(sd::LaunchContext* context, NDArray* input, NDArr
       outputT->assign(listOfTensors.at(fi->second.at(0)));
       sd::LongType loop_size = fi->second.size();
 
-      // FIXME: parallelism here?
       for (sd::LongType idx = 1; idx < loop_size; ++idx) {
         auto current = listOfTensors.at(fi->second.at(idx));
         *(outputT) += *current;

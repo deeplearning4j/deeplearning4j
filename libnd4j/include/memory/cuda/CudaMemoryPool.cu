@@ -250,17 +250,16 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
   // The pool holds reserved memory for reuse. Setting this to a fraction of total
   // GPU memory ensures the pool returns excess memory to the driver, leaving headroom
   // for CUDA contexts, streams, cuDNN workspaces, and other non-pool allocations.
-  // Ratio-based: 75% of total GPU memory. The remaining 25% stays available for
-  // non-pool uses (stream creation, cuDNN, display, etc.).
   size_t devFree = 0, devTotal = 0;
   cudaMemGetInfo(&devFree, &devTotal);
-  uint64_t threshold = static_cast<uint64_t>(devTotal * 0.75);
+  int releasePercent = Environment::getInstance().memory().poolReleaseThresholdPercent();
+  uint64_t threshold = static_cast<uint64_t>(devTotal * (releasePercent / 100.0));
   err = cudaMemPoolSetAttribute(pools_[deviceId], cudaMemPoolAttrReleaseThreshold, &threshold);
   if (err != cudaSuccess) {
     sd_debug("Warning: Could not set pool release threshold: %s\n", cudaGetErrorString(err), "");
   } else {
-    sd_debug("CudaMemoryPool: Device %d pool release threshold set to %zu MB (75%% of %zu MB total)\n",
-              deviceId, threshold / (1024*1024), devTotal / (1024*1024));
+    sd_debug("CudaMemoryPool: Device %d pool release threshold set to %zu MB (%d%% of %zu MB total)\n",
+              deviceId, threshold / (1024*1024), releasePercent, devTotal / (1024*1024));
   }
 
   poolInitialized_[deviceId] = true;

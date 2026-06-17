@@ -186,19 +186,19 @@ int executeDynamicShapePlan(
           for (sd::LongType b = 0; b < len * 8; b++) {
             sd_debug("%02x ", (unsigned char)rawBytes[b]);
           }
-          sd_debug("\n");
+          sd_debug("%s", "\n");
           int64_t* asInt64 = reinterpret_cast<int64_t*>(primary);
-          sd_debug("  asInt64[]: ");
+          sd_debug("%s", "  asInt64[]: ");
           for (sd::LongType e = 0; e < len; e++) {
             sd_debug("%lld ", (long long)asInt64[e + offset]);
           }
-          sd_debug("\n");
+          sd_debug("%s", "\n");
           int32_t* asInt32 = reinterpret_cast<int32_t*>(primary);
-          sd_debug("  asInt32[]: ");
+          sd_debug("%s", "  asInt32[]: ");
           for (sd::LongType e = 0; e < len * 2; e++) {
             sd_debug("%d ", asInt32[e]);
           }
-          sd_debug("\n");
+          sd_debug("%s", "\n");
         }
       }
     }

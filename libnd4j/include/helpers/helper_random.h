@@ -169,7 +169,7 @@ class RandomHelper {
 
   SD_INLINE SD_DEVICE T relativeT(LongType index) {
     if (sizeof(T) < 4) {
-      // FIXME: this is fast hack for short types, like fp16. This should be improved.
+      // For narrow types (fp16, bf16), compute in float then cast to preserve [0,1] range.
       return (T)((float)relativeUInt(index) / (float)DataTypeUtils::max<uint32_t>());
     } else
       return (T)relativeUInt(index) / (T)DataTypeUtils::max<uint32_t>();

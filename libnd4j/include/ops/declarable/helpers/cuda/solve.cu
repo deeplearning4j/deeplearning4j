@@ -45,9 +45,6 @@ namespace helpers {
 template <typename T>
 static Status solveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool adjoint,
                             NDArray* output) {
-  // TODO: note: this is the cpu implementation.
-  // it's not preferred but cuda has enough edge cases
-  // that I would prefer to have a working solution for now.
   NDArray::preparePrimaryUse({output}, {leftInput, rightInput});
 
   // stage 1: LU decomposition batched

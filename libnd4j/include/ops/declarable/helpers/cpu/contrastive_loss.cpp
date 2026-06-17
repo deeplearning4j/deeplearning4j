@@ -35,7 +35,7 @@ static void rowSoftmax(double* data, sd::LongType len) {
     }
     double sum = 0.0;
     for (sd::LongType i = 0; i < len; i++) {
-        data[i] = sd::math::sd_exp<double>(data[i] - maxVal);
+        data[i] = sd::math::sd_exp<double, double>(data[i] - maxVal);
         sum += data[i];
     }
     for (sd::LongType i = 0; i < len; i++) {
@@ -74,7 +74,7 @@ void contrastiveLoss(NDArray* imageEmbeddings, NDArray* textEmbeddings,
         }
         rowSoftmax(rowData.data(), batch);
         double prob = std::max(rowData[i], 1e-12);
-        totalLoss += -sd::math::sd_log<double>(prob);
+        totalLoss += -sd::math::sd_log<double, double>(prob);
     }
 
     // CE along columns (text-to-image): for each col, target = diagonal index
@@ -85,7 +85,7 @@ void contrastiveLoss(NDArray* imageEmbeddings, NDArray* textEmbeddings,
         }
         rowSoftmax(colData.data(), batch);
         double prob = std::max(colData[j], 1e-12);
-        totalLoss += -sd::math::sd_log<double>(prob);
+        totalLoss += -sd::math::sd_log<double, double>(prob);
     }
 
     totalLoss /= (2.0 * batch);

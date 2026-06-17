@@ -104,6 +104,11 @@ class SD_LIB_EXPORT DspConfig {
   std::atomic<int> _planCacheMaxPlans{64};             // hard cap on cached plan count (GPU default)
   std::atomic<int> _planCacheMaxPlansCpu{4};           // hard cap for CPU builds (need prefill + decode plans)
 
+  // Isolation flags for debugging composite replay accuracy
+  std::atomic<bool> _disableViewFastpath{false};
+  std::atomic<bool> _disableCastHwm{false};
+  std::atomic<bool> _disableWorkspaceSkip{false};
+
   // Disk plan cache (persists serialized plan bytes across JVM restarts)
   std::string _planCacheDiskDir;
   std::atomic<bool> _planCacheDiskEnabled{true};
@@ -229,6 +234,14 @@ class SD_LIB_EXPORT DspConfig {
   void setPlanCacheMaxPlans(int v) { _planCacheMaxPlans.store(v); }
   int planCacheMaxPlansCpu() { return _planCacheMaxPlansCpu.load(); }
   void setPlanCacheMaxPlansCpu(int v) { _planCacheMaxPlansCpu.store(v); }
+
+  // --- Isolation flags ---
+  bool dspDisableViewFastpath() { return _disableViewFastpath.load(); }
+  void setDspDisableViewFastpath(bool v) { _disableViewFastpath.store(v); }
+  bool dspDisableCastHwm() { return _disableCastHwm.load(); }
+  void setDspDisableCastHwm(bool v) { _disableCastHwm.store(v); }
+  bool dspDisableWorkspaceSkip() { return _disableWorkspaceSkip.load(); }
+  void setDspDisableWorkspaceSkip(bool v) { _disableWorkspaceSkip.store(v); }
 
   // --- Disk plan cache ---
   const std::string& planCacheDiskDir() const { return _planCacheDiskDir; }

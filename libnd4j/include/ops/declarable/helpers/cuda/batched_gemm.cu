@@ -31,12 +31,6 @@
 #include <indexing/NDIndexUtils.h>
 #include <ops/declarable/CustomOperations.h>
 
-extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
-extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
-extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
-extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
-
-
 namespace sd {
 namespace ops {
 namespace helpers {

@@ -77,8 +77,6 @@ static void executionLoopWithInterface_(int thread_id, CallableInterface *c) {
 }
 
 ThreadPool::ThreadPool() {
-  // TODO: number of threads must reflect number of cores for UMA system. In case of NUMA it should be per-device pool
-  // FIXME: on mobile phones this feature must NOT be used
   _available = sd::Environment::getInstance().maxThreads();
 
   _queues.resize(_available.load());
@@ -94,8 +92,7 @@ ThreadPool::ThreadPool() {
     _tickets.push(new Ticket());
     // _threads[e] = new std::thread(executionLoop_, e, _queues[e]);
 
-    // TODO: add other platforms here as well
-    // now we must set affinity, and it's going to be platform-specific thing
+    // Thread affinity is currently implemented for Linux only.
 #ifdef LINUX_BUILD
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);

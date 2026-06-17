@@ -87,7 +87,7 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
 
                 // SiLU activation: x * sigmoid(x) — computed in float to avoid exp overflow
                 if (activation == 1) {
-                    float sig = 1.0f / (1.0f + sd::math::sd_exp<float>(-sum));
+                    float sig = 1.0f / (1.0f + sd::math::sd_exp<float, float>(-sum));
                     sum = sum * sig;
                 }
 

@@ -36,7 +36,6 @@ CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
   auto resMeans = OUTPUT_VARIABLE(0);
   auto resVariances = OUTPUT_VARIABLE(1);
 
-  // FIXME: double?
   NDArray *shift = NDArrayFactory::create<double>(0., block.launchContext());
 
   if (block.getTArguments()->size() > 0) {

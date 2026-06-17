@@ -34,9 +34,6 @@
 
 #include <numeric>
 
-extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
-extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
-
 namespace sd {
 namespace ops {
 namespace helpers {

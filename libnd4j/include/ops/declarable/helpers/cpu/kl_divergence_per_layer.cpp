@@ -50,9 +50,9 @@ static void logSoftmaxRow(const double* src, double* dst, LongType dim, double t
     double logSum = 0.0;
     for (LongType c = 0; c < dim; c++) {
         dst[c] = src[c] / temperature - maxVal;
-        logSum += sd::math::sd_exp<double>(dst[c]);
+        logSum += sd::math::sd_exp<double, double>(dst[c]);
     }
-    logSum = sd::math::sd_log<double>(logSum);
+    logSum = sd::math::sd_log<double, double>(logSum);
     for (LongType c = 0; c < dim; c++) {
         dst[c] -= logSum;
     }
@@ -93,7 +93,7 @@ void klDivergencePerLayer(NDArray* referenceLogits,
         // KL(P||Q) = sum_c P_c * (log P_c - log Q_c)
         double kl = 0.0;
         for (LongType c = 0; c < dim; c++) {
-            double p = sd::math::sd_exp<double>(logP[c]);
+            double p = sd::math::sd_exp<double, double>(logP[c]);
             if (p > 1e-12) {
                 kl += p * (logP[c] - logQ[c]);
             }

@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 
 import java.util.ArrayList;
@@ -37,6 +38,10 @@ import java.util.List;
 public class Conv3DDerivative extends Conv3D {
 
     public Conv3DDerivative() {}
+
+    public Conv3DDerivative(INDArray[] inputs, INDArray[] outputs, Conv3DConfig config) {
+        super(inputs, outputs, config);
+    }
 
     @Builder(builderMethodName = "derivativeBuilder")
     public Conv3DDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, Conv3DConfig conv3DConfig) {

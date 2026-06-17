@@ -25,6 +25,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <math/templatemath.h>
 
 #include "../llamacppUtils.h"
 
@@ -284,7 +285,7 @@ PLATFORM_IMPL(kv_cache_attention, ENGINE_CUDA) {
 
     if (query->isEmpty() || keyCache->isEmpty()) return sd::Status::OK;
 
-    float scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+    float scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
 
     llamacppUtils::GgmlCudaContextGuard ctx(128 * 1024 * 1024);
 
@@ -349,7 +350,7 @@ PLATFORM_IMPL(paged_attention, ENGINE_CUDA) {
 
     struct ggml_tensor* ggml_k_t = ggml_transpose(ctx, ggml_k_gathered);
     struct ggml_tensor* ggml_scores = ggml_mul_mat(ctx, ggml_k_t, ggml_q);
-    float scale = 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+    float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
     ggml_scores = ggml_scale(ctx, ggml_scores, scale);
     struct ggml_tensor* ggml_attn = ggml_soft_max(ctx, ggml_scores);
     struct ggml_tensor* ggml_output = ggml_mul_mat(ctx, ggml_v_gathered, ggml_attn);
@@ -402,7 +403,7 @@ PLATFORM_IMPL(sliding_window_attention, ENGINE_CUDA) {
     struct ggml_tensor* ggml_k_t = ggml_transpose(ctx, ggml_k);
     struct ggml_tensor* ggml_scores = ggml_mul_mat(ctx, ggml_k_t, ggml_q);
     struct ggml_tensor* ggml_masked = ggml_diag_mask_inf(ctx, ggml_scores, windowSize);
-    float scale = 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+    float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
     ggml_masked = ggml_scale(ctx, ggml_masked, scale);
     struct ggml_tensor* ggml_attn = ggml_soft_max(ctx, ggml_masked);
     struct ggml_tensor* ggml_output = ggml_mul_mat(ctx, ggml_v, ggml_attn);
@@ -466,7 +467,7 @@ PLATFORM_IMPL(gqa_attention, ENGINE_CUDA) {
 
     struct ggml_tensor* ggml_k_t = ggml_transpose(ctx, ggml_k_repeated);
     struct ggml_tensor* ggml_scores = ggml_mul_mat(ctx, ggml_k_t, ggml_q);
-    float scale = 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+    float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
     ggml_scores = ggml_scale(ctx, ggml_scores, scale);
     struct ggml_tensor* ggml_attn = ggml_soft_max(ctx, ggml_scores);
     struct ggml_tensor* ggml_output = ggml_mul_mat(ctx, ggml_v_repeated, ggml_attn);

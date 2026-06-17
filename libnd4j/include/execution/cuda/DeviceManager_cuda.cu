@@ -24,6 +24,7 @@
 #ifdef SD_CUDA
 
 #include <execution/DeviceManager.h>
+#include <execution/LaunchContext.h>
 #include <cuda_runtime.h>
 
 namespace sd {
@@ -180,19 +181,19 @@ void DeviceManager::setCurrentDeviceCuda(const DeviceInfo& device) {
 }
 
 void DeviceManager::synchronizeAll() {
-    for (const auto& device : _devices) {
-        if (device.type == DeviceType::CUDA_GPU) {
-            cudaSetDevice(device.deviceIndex);
-            cudaDeviceSynchronize();
-        }
+    auto* stream = LaunchContext::defaultContext()->getCudaStream();
+    if (stream != nullptr) {
+        cudaStreamSynchronize(*stream);
     }
 }
 
 void DeviceManager::synchronize(int globalIndex) {
     if (const auto* device = findDevice(globalIndex)) {
         if (device->type == DeviceType::CUDA_GPU) {
-            cudaSetDevice(device->deviceIndex);
-            cudaDeviceSynchronize();
+            auto* stream = LaunchContext::defaultContext()->getCudaStream();
+            if (stream != nullptr) {
+                cudaStreamSynchronize(*stream);
+            }
         }
     }
 }

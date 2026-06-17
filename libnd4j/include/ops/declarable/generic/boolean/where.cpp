@@ -179,7 +179,6 @@ DECLARE_SHAPE_FN(Where) {
      return SHAPELIST(CONSTANT(inShape));
    }
  } else {
-   // FIXME: we can't estimate result here in this case
    // output shape is the 2D tensor num_true x rankOf (inShape)
    auto condition = INPUT_VARIABLE(0);
    auto inShape = inputShape->at(0);

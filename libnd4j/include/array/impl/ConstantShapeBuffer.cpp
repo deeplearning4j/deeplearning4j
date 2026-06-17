@@ -23,6 +23,7 @@
 //
 #include <array/ConstantShapeBuffer.h>
 #include <system/common.h>
+#include <system/PointerValidation.h>
 #include <sstream>
 
 namespace sd {
@@ -132,48 +133,11 @@ ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary,
 }
 
 LongType *ConstantShapeBuffer::primary()  {
-  // Guard against corrupted this pointer — the caller (NDArray) may hold a stale
-  // _shapeInfoBuffer that points to freed/garbage memory. Accessing _magic on a
-  // bad this would SIGSEGV; catch it before any field access.
-  uintptr_t thisAddr = reinterpret_cast<uintptr_t>(this);
-  // On x86_64 Linux, user-space addresses are 0 to 0x00007fffffffffff.
-  // Anything below 0x10000 or above 0x7fffffffffff is invalid.
-  if (thisAddr < 0x10000 || thisAddr > 0x00007fffffffffffULL) {
-    char msg[256];
-    snprintf(msg, sizeof(msg),
-             "ConstantShapeBuffer::primary() called with corrupted this=%p "
-             "— NDArray._shapeInfoBuffer is stale (use-after-free or heap corruption)",
-             (void*)this);
-    THROW_EXCEPTION(msg);
-  }
-  if (thisAddr % alignof(ConstantShapeBuffer) != 0) {
-    char msg[256];
-    snprintf(msg, sizeof(msg),
-             "ConstantShapeBuffer::primary() this=%p is misaligned "
-             "(expected %zu-byte alignment, got offset %zu) "
-             "— NDArray._shapeInfoBuffer was corrupted by a heap overrun",
-             (void*)this, alignof(ConstantShapeBuffer),
-             static_cast<size_t>(thisAddr % alignof(ConstantShapeBuffer)));
-    THROW_EXCEPTION(msg);
-  }
-  if (!isValid()) {
-    char msg[256];
-    snprintf(msg, sizeof(msg),
-             "ConstantShapeBuffer::primary() called on invalid buffer "
-             "(this=%p magic=0x%08x, expected 0x%08x) — use-after-free or corruption",
-             (void*)this, _magic, MAGIC_VALID);
-    THROW_EXCEPTION(msg);
-  }
+  SD_VALIDATE_THIS("ConstantShapeBuffer::primary()");
+  SD_VALIDATE_ALIGNED(this, alignof(ConstantShapeBuffer), "ConstantShapeBuffer::primary()");
+  SD_VALIDATE_MAGIC(_magic, MAGIC_VALID, "ConstantShapeBuffer::primary()");
   if(_primaryShapeInfo != nullptr) {
-    uintptr_t addr = reinterpret_cast<uintptr_t>(_primaryShapeInfo);
-    if (addr < 0x10000 || addr > 0x00007fffffffffffULL) {
-      char msg[256];
-      snprintf(msg, sizeof(msg),
-               "ConstantShapeBuffer::primary() _primaryShapeInfo=%p is a stale/freed "
-               "pointer (this=%p) — PointerWrapper use-after-free",
-               (void*)_primaryShapeInfo, (void*)this);
-      THROW_EXCEPTION(msg);
-    }
+    SD_VALIDATE_PTR(_primaryShapeInfo, "ConstantShapeBuffer::primary() _primaryShapeInfo");
     return reinterpret_cast<LongType *>(_primaryShapeInfo->pointer());
   }
 
@@ -181,35 +145,10 @@ LongType *ConstantShapeBuffer::primary()  {
 }
 
 LongType *ConstantShapeBuffer::special()  {
-  uintptr_t thisAddr = reinterpret_cast<uintptr_t>(this);
-  // On x86_64 Linux, user-space addresses are 0 to 0x00007fffffffffff.
-  // Anything below 0x10000 or above 0x7fffffffffff is invalid.
-  if (thisAddr < 0x10000 || thisAddr > 0x00007fffffffffffULL) {
-    char msg[256];
-    snprintf(msg, sizeof(msg),
-             "ConstantShapeBuffer::special() called with corrupted this=%p "
-             "— NDArray._shapeInfoBuffer is stale (use-after-free or heap corruption)",
-             (void*)this);
-    THROW_EXCEPTION(msg);
-  }
-  if (!isValid()) {
-    char msg[256];
-    snprintf(msg, sizeof(msg),
-             "ConstantShapeBuffer::special() called on invalid buffer "
-             "(this=%p magic=0x%08x, expected 0x%08x) — use-after-free or corruption",
-             (void*)this, _magic, MAGIC_VALID);
-    THROW_EXCEPTION(msg);
-  }
+  SD_VALIDATE_THIS("ConstantShapeBuffer::special()");
+  SD_VALIDATE_MAGIC(_magic, MAGIC_VALID, "ConstantShapeBuffer::special()");
   if(_specialShapeInfo != nullptr) {
-    uintptr_t addr = reinterpret_cast<uintptr_t>(_specialShapeInfo);
-    if (addr < 0x10000 || addr > 0x00007fffffffffffULL) {
-      char msg[256];
-      snprintf(msg, sizeof(msg),
-               "ConstantShapeBuffer::special() _specialShapeInfo=%p is a stale/freed "
-               "pointer (this=%p) — PointerWrapper use-after-free",
-               (void*)_specialShapeInfo, (void*)this);
-      THROW_EXCEPTION(msg);
-    }
+    SD_VALIDATE_PTR(_specialShapeInfo, "ConstantShapeBuffer::special() _specialShapeInfo");
     return reinterpret_cast<LongType *>(_specialShapeInfo->pointer());
   }
 

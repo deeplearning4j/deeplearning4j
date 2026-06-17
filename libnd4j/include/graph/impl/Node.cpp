@@ -531,8 +531,7 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
       if (node->extraInteger() != nullptr)
         for (uint32_t e = 0; e < node->extraInteger()->size(); e++) {
           auto v = node->extraInteger()->Get(e);
-          // FIXME: remove this static_cast, iArgs should be sd::LongType
-          block->getIArguments()->emplace_back(static_cast<int>(v));
+          block->getIArguments()->emplace_back(v);
         }
 
       if (node->extraParams() != nullptr)

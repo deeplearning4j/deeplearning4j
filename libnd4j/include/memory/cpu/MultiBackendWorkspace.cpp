@@ -22,29 +22,8 @@
 #include <stdexcept>
 #include <cstring>
 
-#if defined(__CUDACC__) || defined(SD_CUDA)
-#include <cuda_runtime.h>
-#endif
-
 namespace sd {
 namespace memory {
-
-#if defined(__CUDACC__) || defined(SD_CUDA)
-namespace {
-inline void checkCuda(cudaError_t err, const char* msg) {
-    if (err != cudaSuccess) {
-        std::string errorMsg = std::string(msg) + ": " + cudaGetErrorString(err);
-        THROW_EXCEPTION(errorMsg.c_str());
-    }
-}
-
-inline void syncDeviceIfNeeded(int deviceId, bool doSync) {
-    if (!doSync) return;
-    cudaSetDevice(deviceId);
-    checkCuda(cudaDeviceSynchronize(), "cudaDeviceSynchronize failed");
-}
-}  // namespace
-#endif
 
 // ========================
 // Constructors / Destructor
@@ -136,40 +115,19 @@ void MultiBackendWorkspace::initDeviceWorkspace(const DeviceDescriptor& device, 
     auto it = _deviceAllocations.find(device);
     if (it != _deviceAllocations.end() && it->second.workspace != nullptr) {
         // Already exists, expand if needed
-        sd::LongType currentSize =
-#if defined(__CUDACC__) || defined(SD_CUDA)
-            (device.deviceType == DeviceType::CPU)
-                ? it->second.workspace->getCurrentSecondarySize()
-                : it->second.workspace->getCurrentSize();
-#else
-            it->second.workspace->getCurrentSize();
-#endif
+        sd::LongType currentSize = it->second.workspace->getCurrentSize();
         if (currentSize < size) {
-#if defined(__CUDACC__) || defined(SD_CUDA)
-            sd::LongType primaryExpand = (device.deviceType == DeviceType::CPU) ? 0 : size;
-            sd::LongType secondaryExpand = size;
-#else
             sd::LongType primaryExpand = size;
             sd::LongType secondaryExpand = 0;
-#endif
             it->second.workspace->expandTo(primaryExpand, secondaryExpand);
         }
         return;
     }
 
     // Create new workspace
-    // For CUDA devices, allocate both device (primary) and host (secondary) memory.
-    // The Workspace constructor takes (primarySize, secondarySize) where on CUDA:
-    //   primary = device memory, secondary = host (pinned) memory.
-    // Host memory is needed for CPU↔GPU transfers and for ops that read results on host.
     DeviceAllocation allocation;
-#if defined(__CUDACC__) || defined(SD_CUDA)
-    sd::LongType primarySize = (device.deviceType == DeviceType::CPU) ? 0 : size;
-    sd::LongType secondarySize = size;
-#else
     sd::LongType primarySize = size;
     sd::LongType secondarySize = 0;
-#endif
     allocation.workspace = new Workspace(primarySize, secondarySize);
     allocation.coherenceState = CoherenceState::EXCLUSIVE;
     allocation.version = _globalVersion.load();
@@ -393,9 +351,6 @@ void MultiBackendWorkspace::transferTo(const DeviceDescriptor& source,
 
     // Ensure target workspace exists
     sd::LongType ensureSize = srcIt->second.workspace->getCurrentSize();
-    if (source.deviceType == DeviceType::CUDA_GPU) {
-        ensureSize = std::max(ensureSize, srcIt->second.workspace->getCurrentSecondarySize());
-    }
     initDeviceWorkspace(target, ensureSize);
 
     auto tgtIt = _deviceAllocations.find(target);
@@ -409,112 +364,17 @@ void MultiBackendWorkspace::transferTo(const DeviceDescriptor& source,
         THROW_EXCEPTION("MultiBackendWorkspace::transferTo does not support spilled allocations");
     }
 
-    // Transfer actual data between workspaces using raw pointers.
-    // getCurrentOffset() tells us how many bytes have been allocated (used) in the workspace.
-    // On CUDA: device data is at getDevicePointer(), host data at getHostPointer().
-    // On CPU: host data is at getHostPointer(), getDevicePointer() is nullptr.
-    bool srcIsCuda = (source.deviceType == DeviceType::CUDA_GPU);
-    bool tgtIsCuda = (target.deviceType == DeviceType::CUDA_GPU);
-
-    sd::LongType primaryBytes = srcIsCuda ? srcWs->getCurrentOffset() : srcWs->getUsedSize();
-    sd::LongType secondaryBytes = srcIsCuda ? srcWs->getCurrentSecondaryOffset() : 0;
+    sd::LongType primaryBytes = srcWs->getUsedSize();
 
     if (primaryBytes > 0) {
-#if defined(__CUDACC__) || defined(SD_CUDA)
-        if (srcIsCuda && !tgtIsCuda) {
-            // GPU → CPU: device pointer → host pointer
-            void* srcPtr = srcWs->getDevicePointer();
-            void* tgtPtr = tgtWs->getHostPointer();
-            if (srcPtr != nullptr && tgtPtr != nullptr) {
-                // Force synchronization to avoid cross-stream hazards
-                syncDeviceIfNeeded(source.deviceIndex, true);
-                checkCuda(cudaMemcpy(tgtPtr, srcPtr, primaryBytes, cudaMemcpyDeviceToHost),
-                          "cudaMemcpy DeviceToHost failed");
-                syncDeviceIfNeeded(source.deviceIndex, true);
-            } else {
-                THROW_EXCEPTION("Null pointer in GPU->CPU transfer");
-            }
-        } else if (!srcIsCuda && tgtIsCuda) {
-            // CPU → GPU: host pointer → device pointer
-            void* srcPtr = srcWs->getHostPointer();
-            void* tgtPtr = tgtWs->getDevicePointer();
-            if (srcPtr != nullptr && tgtPtr != nullptr) {
-                // Force synchronization to avoid cross-stream hazards
-                syncDeviceIfNeeded(target.deviceIndex, true);
-                checkCuda(cudaMemcpy(tgtPtr, srcPtr, primaryBytes, cudaMemcpyHostToDevice),
-                          "cudaMemcpy HostToDevice failed");
-                syncDeviceIfNeeded(target.deviceIndex, true);
-            } else {
-                THROW_EXCEPTION("Null pointer in CPU->GPU transfer");
-            }
-        } else if (srcIsCuda && tgtIsCuda) {
-            // GPU → GPU: device-to-device copy (peer if needed)
-            void* srcPtr = srcWs->getDevicePointer();
-            void* tgtPtr = tgtWs->getDevicePointer();
-            if (srcPtr != nullptr && tgtPtr != nullptr) {
-                int srcDev = source.deviceIndex;
-                int dstDev = target.deviceIndex;
-                // Force synchronization to avoid cross-stream hazards
-                syncDeviceIfNeeded(srcDev, true);
-                syncDeviceIfNeeded(dstDev, true);
-
-                if (srcDev == dstDev) {
-                    checkCuda(cudaSetDevice(srcDev), "cudaSetDevice failed");
-                    checkCuda(cudaMemcpy(tgtPtr, srcPtr, primaryBytes, cudaMemcpyDeviceToDevice),
-                              "cudaMemcpy DeviceToDevice failed");
-                } else {
-                    int canAccess = 0;
-                    checkCuda(cudaDeviceCanAccessPeer(&canAccess, dstDev, srcDev),
-                              "cudaDeviceCanAccessPeer failed");
-                    if (canAccess) {
-                        checkCuda(cudaSetDevice(dstDev), "cudaSetDevice failed");
-                        cudaError_t enableErr = cudaDeviceEnablePeerAccess(srcDev, 0);
-                        if (enableErr != cudaSuccess && enableErr != cudaErrorPeerAccessAlreadyEnabled) {
-                            checkCuda(enableErr, "cudaDeviceEnablePeerAccess failed");
-                        }
-                        checkCuda(cudaMemcpyPeer(tgtPtr, dstDev, srcPtr, srcDev, primaryBytes),
-                                  "cudaMemcpyPeer failed");
-                    } else {
-                        // Fallback: stage through host memory
-                        void* hostPtr = tgtWs->getHostPointer();
-                        if (hostPtr == nullptr) {
-                            THROW_EXCEPTION("Host staging buffer is null for GPU->GPU transfer");
-                        }
-                        checkCuda(cudaSetDevice(srcDev), "cudaSetDevice failed");
-                        checkCuda(cudaMemcpy(hostPtr, srcPtr, primaryBytes, cudaMemcpyDeviceToHost),
-                                  "cudaMemcpy DeviceToHost failed (staging)");
-                        checkCuda(cudaSetDevice(dstDev), "cudaSetDevice failed");
-                        checkCuda(cudaMemcpy(tgtPtr, hostPtr, primaryBytes, cudaMemcpyHostToDevice),
-                                  "cudaMemcpy HostToDevice failed (staging)");
-                    }
-                }
-                syncDeviceIfNeeded(srcDev, true);
-                syncDeviceIfNeeded(dstDev, true);
-            } else {
-                THROW_EXCEPTION("Null pointer in GPU->GPU transfer");
-            }
-        } else
-#endif
-        {
-            // CPU → CPU: plain memcpy via host pointers
-            void* srcPtr = srcWs->getHostPointer();
-            void* tgtPtr = tgtWs->getHostPointer();
-            if (srcPtr != nullptr && tgtPtr != nullptr) {
-                std::memcpy(tgtPtr, srcPtr, primaryBytes);
-            } else {
-                THROW_EXCEPTION("Null pointer in CPU->CPU transfer");
-            }
+        // CPU → CPU: plain memcpy via host pointers
+        void* srcPtr = srcWs->getHostPointer();
+        void* tgtPtr = tgtWs->getHostPointer();
+        if (srcPtr != nullptr && tgtPtr != nullptr) {
+            std::memcpy(tgtPtr, srcPtr, primaryBytes);
+        } else {
+            THROW_EXCEPTION("Null pointer in CPU->CPU transfer");
         }
-    }
-
-    // Copy secondary (host) segment for CUDA workspaces if present
-    if (secondaryBytes > 0) {
-        void* srcHost = srcWs->getHostPointer();
-        void* tgtHost = tgtWs->getHostPointer();
-        if (srcHost == nullptr || tgtHost == nullptr) {
-            THROW_EXCEPTION("Null host pointer in secondary transfer");
-        }
-        std::memcpy(tgtHost, srcHost, secondaryBytes);
     }
 
     // Update coherence state
@@ -549,13 +409,7 @@ void MultiBackendWorkspace::ensureValidOn(const DeviceDescriptor& device) {
 }
 
 void MultiBackendWorkspace::syncDevice(const DeviceDescriptor& device) {
-#if defined(__CUDACC__) || defined(SD_CUDA)
-    if (device.deviceType == DeviceType::CUDA_GPU) {
-        checkCuda(cudaSetDevice(device.deviceIndex), "cudaSetDevice failed");
-        checkCuda(cudaDeviceSynchronize(), "cudaDeviceSynchronize failed");
-    }
-#endif
-    // For CPU, this is a no-op
+    // CPU: no-op
 }
 
 void MultiBackendWorkspace::syncAllDevices() {
@@ -599,11 +453,6 @@ sd::LongType MultiBackendWorkspace::getCurrentOffsetOnDevice(const DeviceDescrip
     std::lock_guard<std::mutex> lock(_mutex);
     auto it = _deviceAllocations.find(device);
     if (it != _deviceAllocations.end() && it->second.workspace != nullptr) {
-#if defined(__CUDACC__) || defined(SD_CUDA)
-        if (device.deviceType == DeviceType::CPU) {
-            return it->second.workspace->getCurrentSecondaryOffset();
-        }
-#endif
         return it->second.workspace->getCurrentOffset();
     }
     return 0;

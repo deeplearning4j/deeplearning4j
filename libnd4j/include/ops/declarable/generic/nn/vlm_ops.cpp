@@ -29,7 +29,7 @@
     NOT_EXCLUDED(OP_vlm_multimodal_fusion) || NOT_EXCLUDED(OP_vlm_vision_projection) || \
     NOT_EXCLUDED(OP_vlm_image_preprocess) || NOT_EXCLUDED(OP_vlm_2d_position_encode)
 
-#include <ops/declarable/headers/vlm.h>
+#include <math/templatemath.h>
 #include <ops/declarable/headers/vlm.h>
 #include <ops/declarable/helpers/transforms.h>
 #include <helpers/MmulHelper.h>
@@ -283,7 +283,7 @@ CUSTOM_OP_IMPL(vlm_cross_attention, 3, 1, false, 0, 0) {
     int numHeads = block.getIArguments()->size() > 0 ? INT_ARG(0) : 8;
     bool isCausal = block.getIArguments()->size() > 1 ? INT_ARG(1) != 0 : false;
     float scale = block.getTArguments()->size() > 0 ?
-        T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1) / numHeads));
+        T_ARG(0) : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1) / numHeads));
 
     // Compute Q * K^T
     NDArray* kT = key->transpose();

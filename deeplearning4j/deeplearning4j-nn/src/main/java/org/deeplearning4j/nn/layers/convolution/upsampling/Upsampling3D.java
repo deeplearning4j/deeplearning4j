@@ -32,8 +32,8 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3dBp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
@@ -96,12 +96,10 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         Gradient gradient = new DefaultGradient();
 
-        CustomOp op = DynamicCustomOp.builder("upsampling3d_bp")
-                .addIntegerArguments(intArgs)
-                .addInputs(input, epsilon)
-                .addOutputs(epsOut)
-                .callInplace(false)
-                .build();
+        Upsampling3dBp op = new Upsampling3dBp();
+        op.addInputArgument(input, epsilon);
+        op.addOutputArgument(epsOut);
+        op.addIArgument(intArgs);
         Nd4j.getExecutioner().exec(op);
 
         epsOut = backpropDropOutIfPresent(epsOut);
@@ -163,12 +161,10 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
 
 
-        CustomOp upsampling = DynamicCustomOp.builder("upsampling3d")
-                .addIntegerArguments(intArgs)
-                .addInputs(input)
-                .addOutputs(output)
-                .callInplace(false)
-                .build();
+        Upsampling3d upsampling = new Upsampling3d();
+        upsampling.addInputArgument(input);
+        upsampling.addOutputArgument(output);
+        upsampling.addIArgument(intArgs);
         Nd4j.getExecutioner().exec(upsampling);
 
         return output;

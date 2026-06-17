@@ -25,6 +25,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_layer_norm)
 
+#include <math/templatemath.h>
 #include <ops/declarable/headers/nn.h>
 #include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/addBias.h>
@@ -163,7 +164,7 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
             float diff = xRow[i] - mean;
             varSum += diff * diff;
           }
-          const float invStd = 1.0f / std::sqrt(varSum / static_cast<float>(rowLen) + eps);
+          const float invStd = 1.0f / sd::math::sd_sqrt<float, float>(varSum / static_cast<float>(rowLen) + eps);
 
           // Pass 2: normalize, scale, shift
           if (b != nullptr) {
@@ -202,7 +203,7 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
             double diff = xRow[i] - mean;
             varSum += diff * diff;
           }
-          const double invStd = 1.0 / std::sqrt(varSum / static_cast<double>(rowLen) + epsilon);
+          const double invStd = 1.0 / sd::math::sd_sqrt<double, double>(varSum / static_cast<double>(rowLen) + epsilon);
 
           // Pass 2: normalize, scale, shift
           if (b != nullptr) {

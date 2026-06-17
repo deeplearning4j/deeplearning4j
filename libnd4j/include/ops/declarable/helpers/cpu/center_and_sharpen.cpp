@@ -47,7 +47,7 @@ void centerAndSharpen(NDArray* input, NDArray* center, NDArray* output,
         // Compute exp(x - max) and sum
         double expSum = 0.0;
         for (sd::LongType d = 0; d < dim; d++) {
-            double val = sd::math::sd_exp<double>(output->e<double>(b, d) - rowMax);
+            double val = sd::math::sd_exp<double, double>(output->e<double>(b, d) - rowMax);
             output->p(b, d, val);
             expSum += val;
         }

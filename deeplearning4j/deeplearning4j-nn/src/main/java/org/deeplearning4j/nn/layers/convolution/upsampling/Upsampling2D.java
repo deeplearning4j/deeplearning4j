@@ -33,8 +33,8 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2dDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
@@ -72,12 +72,10 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         Gradient gradient = new DefaultGradient();
 
-        CustomOp op = DynamicCustomOp.builder("upsampling_bp")
-                .addIntegerArguments(nchw ? 1 : 0)      //1=NCHW, 0=NHWC
-                .addInputs(input, epsilon)
-                .addOutputs(epsOut)
-                .callInplace(false)
-                .build();
+        Upsampling2dDerivative op = new Upsampling2dDerivative();
+        op.addInputArgument(input, epsilon);
+        op.addOutputArgument(epsOut);
+        op.addIArgument(nchw ? 1 : 0);      //1=NCHW, 0=NHWC
         Nd4j.getExecutioner().exec(op);
 
         epsOut = backpropDropOutIfPresent(epsOut);
@@ -124,14 +122,8 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         long[] outShape = nchw ? new long[]{miniBatch, inDepth, outH, outW} : new long[]{miniBatch, outH, outW, inDepth};
         INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
 
-        long[] intArgs = {(int) size[0], (int) size[1], nchw ? 1 : 0}; // 1 = NCHW, 0 = NHWC
-
-        CustomOp upsampling = DynamicCustomOp.builder("upsampling2d")
-                .addIntegerArguments(intArgs)
-                .addInputs(input)
-                .addOutputs(reshapedOutput)
-                .callInplace(false)
-                .build();
+        Upsampling2d upsampling = new Upsampling2d(input, (int) size[0], (int) size[1], nchw);
+        upsampling.addOutputArgument(reshapedOutput);
         Nd4j.getExecutioner().exec(upsampling);
 
         return reshapedOutput;
