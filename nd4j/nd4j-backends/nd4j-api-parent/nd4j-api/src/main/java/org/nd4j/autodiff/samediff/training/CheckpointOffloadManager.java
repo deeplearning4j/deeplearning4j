@@ -25,6 +25,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.config.GradientCheckpointConfig;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CheckpointOffloadD2H;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CheckpointPrefetchH2D;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -101,6 +103,7 @@ public class CheckpointOffloadManager {
     private final List<String> forwardOrder;
 
     /** Cumulative bytes currently held in host memory. */
+    @Getter
     private long hostMemoryBytes;
 
     /**
@@ -244,13 +247,6 @@ public class CheckpointOffloadManager {
     }
 
     /**
-     * Return the total bytes currently occupying host memory.
-     */
-    public long getHostMemoryBytes() {
-        return hostMemoryBytes;
-    }
-
-    /**
      * Return the number of prefetched device tensors not yet consumed.
      */
     public int getPrefetchedCount() {
@@ -270,12 +266,8 @@ public class CheckpointOffloadManager {
      */
     private INDArray execD2H(String variableName, INDArray src) {
         try {
-            int usePinned = config.isPinHostMemory() ? 1 : 0;
-            INDArray[] out = Nd4j.exec(
-                    org.nd4j.linalg.api.ops.DynamicCustomOp.builder("checkpoint_offload_d2h")
-                            .addInputs(src)
-                            .addIntegerArguments(usePinned, 0)
-                            .build());
+            boolean usePinned = config.isPinHostMemory();
+            INDArray[] out = Nd4j.exec(new CheckpointOffloadD2H(src, null, usePinned, 0));
             return out[0];
         } catch (Exception e) {
             // Op not registered on this backend (e.g., pure CPU without CUDA) — fall back
@@ -293,11 +285,7 @@ public class CheckpointOffloadManager {
      */
     private INDArray execH2D(String variableName, INDArray src) {
         try {
-            INDArray[] out = Nd4j.exec(
-                    org.nd4j.linalg.api.ops.DynamicCustomOp.builder("checkpoint_prefetch_h2d")
-                            .addInputs(src)
-                            .addIntegerArguments(0)
-                            .build());
+            INDArray[] out = Nd4j.exec(new CheckpointPrefetchH2D(src, null, 0));
             return out[0];
         } catch (Exception e) {
             // Op not registered on this backend — fall back

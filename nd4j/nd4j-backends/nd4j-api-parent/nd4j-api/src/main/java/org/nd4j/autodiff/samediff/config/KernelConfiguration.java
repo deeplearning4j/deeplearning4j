@@ -26,10 +26,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.executioner.KernelManager;
 import org.nd4j.linalg.api.ops.executioner.KernelManager.Engine;
 import org.nd4j.linalg.api.ops.executioner.KernelManager.OpKernelInfo;
-import org.nd4j.linalg.api.ops.executioner.KernelManager.KernelInfo;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * KernelConfiguration provides a fluent API for configuring kernel/backend
@@ -69,9 +67,6 @@ public class KernelConfiguration {
     // Pending configuration changes
     private final List<Runnable> pendingChanges = new ArrayList<>();
 
-    // Category-specific configurations
-    private OperationCategory currentCategory;
-
     /**
      * Preset configurations for common use cases
      */
@@ -107,34 +102,18 @@ public class KernelConfiguration {
         AUTO_TUNE
     }
 
-    /**
-     * Categories of operations for bulk configuration
-     */
-    public enum OperationCategory {
-        CONVOLUTIONS("conv*", "depthwise*", "separable*"),
-        POOLING("*pool*", "max_pool*", "avg_pool*"),
-        NORMALIZATION("*norm*", "batch_norm*", "layer_norm*"),
-        ACTIVATIONS("relu*", "sigmoid", "tanh", "softmax*", "gelu*"),
-        LINEAR_ALGEBRA("matmul", "gemm", "dot", "tensordot"),
-        ELEMENT_WISE("add", "subtract", "multiply", "divide", "pow"),
-        REDUCTION("reduce_*", "sum", "mean", "max", "min"),
-        ATTENTION("attention*", "dot_product_attention*", "multi_head_attention*"),
-        RECURRENT("lstm*", "gru*", "rnn*");
-
-        private final String[] patterns;
-
-        OperationCategory(String... patterns) {
-            this.patterns = patterns;
-        }
-
-        public String[] getPatterns() {
-            return patterns;
-        }
-    }
-
     public KernelConfiguration(@NonNull SameDiff sameDiff) {
         this.sameDiff = sameDiff;
         this.kernelManager = KernelManager.getInstance();
+    }
+
+    /**
+     * Package-private hook used by {@link CategoryConfiguration},
+     * {@link OperationConfiguration}, and {@link PatternConfiguration} to
+     * enqueue deferred configuration changes.
+     */
+    void addPendingChange(Runnable change) {
+        pendingChanges.add(change);
     }
 
     // ========================
@@ -346,9 +325,7 @@ public class KernelConfiguration {
 
     private void applyAppleSiliconPreset() {
         preferMps();
-        pendingChanges.add(() -> {
-            kernelManager.setGlobalPreferredEngine(Engine.MPS);
-        });
+        pendingChanges.add(() -> kernelManager.setGlobalPreferredEngine(Engine.MPS));
         forLinearAlgebra().useAccelerate();
     }
 
@@ -406,158 +383,5 @@ public class KernelConfiguration {
         kernelManager.resetToDefaults();
         pendingChanges.clear();
         return this;
-    }
-
-    // ========================
-    // Inner Classes for Fluent API
-    // ========================
-
-    /**
-     * Configuration for a category of operations
-     */
-    public class CategoryConfiguration {
-        private final KernelConfiguration parent;
-        private final OperationCategory category;
-
-        CategoryConfiguration(KernelConfiguration parent, OperationCategory category) {
-            this.parent = parent;
-            this.category = category;
-        }
-
-        public CategoryConfiguration useCpu() {
-            return useEngine(Engine.CPU);
-        }
-
-        public CategoryConfiguration useCuda() {
-            return useEngine(Engine.CUDA);
-        }
-
-        public CategoryConfiguration useCudnn() {
-            return useEngine(Engine.CUDNN);
-        }
-
-        public CategoryConfiguration useOneDnn() {
-            return useEngine(Engine.ONEDNN);
-        }
-
-        public CategoryConfiguration useMps() {
-            return useEngine(Engine.MPS);
-        }
-
-        public CategoryConfiguration useAccelerate() {
-            return useEngine(Engine.ACCELERATE);
-        }
-
-        public CategoryConfiguration useEngine(@NonNull Engine engine) {
-            parent.pendingChanges.add(() -> {
-                for (String pattern : category.getPatterns()) {
-                    kernelManager.disableEngineForPattern(engine, pattern);
-                    for (OpKernelInfo op : kernelManager.searchOperations(pattern)) {
-                        kernelManager.setPreferredEngine(op.getOpName(), engine);
-                    }
-                }
-            });
-            return this;
-        }
-
-        public CategoryConfiguration disable(@NonNull Engine engine) {
-            parent.pendingChanges.add(() -> {
-                for (String pattern : category.getPatterns()) {
-                    for (OpKernelInfo op : kernelManager.searchOperations(pattern)) {
-                        kernelManager.disableKernel(op.getOpName(), engine);
-                    }
-                }
-            });
-            return this;
-        }
-
-        public KernelConfiguration and() {
-            return parent;
-        }
-    }
-
-    /**
-     * Configuration for a specific operation
-     */
-    public class OperationConfiguration {
-        private final KernelConfiguration parent;
-        private final String opName;
-
-        OperationConfiguration(KernelConfiguration parent, String opName) {
-            this.parent = parent;
-            this.opName = opName;
-        }
-
-        public OperationConfiguration useEngine(@NonNull Engine engine) {
-            parent.pendingChanges.add(() -> {
-                kernelManager.setPreferredEngine(opName, engine);
-            });
-            return this;
-        }
-
-        public OperationConfiguration disableEngine(@NonNull Engine engine) {
-            parent.pendingChanges.add(() -> {
-                kernelManager.disableKernel(opName, engine);
-            });
-            return this;
-        }
-
-        public OperationConfiguration enableEngine(@NonNull Engine engine) {
-            parent.pendingChanges.add(() -> {
-                kernelManager.enableKernel(opName, engine);
-            });
-            return this;
-        }
-
-        public OperationConfiguration disableAll() {
-            parent.pendingChanges.add(() -> {
-                kernelManager.disableAllKernels(opName);
-            });
-            return this;
-        }
-
-        public OperationConfiguration enableAll() {
-            parent.pendingChanges.add(() -> {
-                kernelManager.enableAllKernels(opName);
-            });
-            return this;
-        }
-
-        public KernelConfiguration and() {
-            return parent;
-        }
-    }
-
-    /**
-     * Configuration for operations matching a pattern
-     */
-    public class PatternConfiguration {
-        private final KernelConfiguration parent;
-        private final String pattern;
-
-        PatternConfiguration(KernelConfiguration parent, String pattern) {
-            this.parent = parent;
-            this.pattern = pattern;
-        }
-
-        public PatternConfiguration useEngine(@NonNull Engine engine) {
-            parent.pendingChanges.add(() -> {
-                for (OpKernelInfo op : kernelManager.searchOperations(pattern)) {
-                    kernelManager.setPreferredEngine(op.getOpName(), engine);
-                }
-            });
-            return this;
-        }
-
-        public PatternConfiguration disableEngine(@NonNull Engine engine) {
-            parent.pendingChanges.add(() -> {
-                kernelManager.disableEngineForPattern(engine, pattern);
-            });
-            return this;
-        }
-
-        public KernelConfiguration and() {
-            return parent;
-        }
     }
 }
