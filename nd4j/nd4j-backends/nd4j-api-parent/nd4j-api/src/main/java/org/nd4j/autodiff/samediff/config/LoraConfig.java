@@ -189,8 +189,7 @@ public class LoraConfig extends PeftConfig {
         Preconditions.checkState(loraAlpha > 0, "LoRA alpha must be positive. Got: %s", loraAlpha);
         Preconditions.checkState(loraDropout >= 0 && loraDropout < 1,
             "LoRA dropout must be in [0, 1). Got: %s", loraDropout);
-        Preconditions.checkState(targetModules != null && !targetModules.isEmpty(),
-            "Target modules must be specified for LoRA");
+        validateTargetModules();
         Preconditions.checkState(bias.equals("none") || bias.equals("all") || bias.equals("lora_only"),
             "Bias must be 'none', 'all', or 'lora_only'. Got: %s", bias);
     }

@@ -133,8 +133,7 @@ public class LohaConfig extends PeftConfig {
         Preconditions.checkState(alpha > 0, "Alpha must be positive. Got: %s", alpha);
         Preconditions.checkState(dropout >= 0 && dropout < 1,
             "Dropout must be in [0, 1). Got: %s", dropout);
-        Preconditions.checkState(getTargetModules() != null && !getTargetModules().isEmpty(),
-            "Target modules must be specified");
+        validateTargetModules();
     }
 
     @Override

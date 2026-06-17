@@ -136,8 +136,7 @@ public class AdaLoraConfig extends LoraConfig {
         Preconditions.checkState(initRank >= targetRank,
             "Initial rank must be >= target rank. Got init=%s, target=%s", initRank, targetRank);
         Preconditions.checkState(getLoraAlpha() > 0, "LoRA alpha must be positive. Got: %s", getLoraAlpha());
-        Preconditions.checkState(getTargetModules() != null && !getTargetModules().isEmpty(),
-            "Target modules must be specified");
+        validateTargetModules();
         Preconditions.checkState(warmupSteps >= 0, "Warmup steps must be >= 0. Got: %s", warmupSteps);
         Preconditions.checkState(totalPruningSteps > 0, "Total pruning steps must be positive. Got: %s", totalPruningSteps);
     }

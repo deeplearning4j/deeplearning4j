@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -133,6 +134,17 @@ public abstract class PeftConfig implements Serializable {
      * @throws IllegalStateException if the configuration is invalid
      */
     public abstract void validate();
+
+    /**
+     * Convenience check used by subclasses: asserts that {@link #targetModules} is
+     * non-null and non-empty.
+     *
+     * @throws IllegalStateException if targetModules is null or empty
+     */
+    protected void validateTargetModules() {
+        Preconditions.checkState(targetModules != null && !targetModules.isEmpty(),
+                "Target modules must be specified");
+    }
 
     /**
      * Get a human-readable summary of this configuration.
