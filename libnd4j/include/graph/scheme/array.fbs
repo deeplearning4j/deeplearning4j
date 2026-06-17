@@ -79,6 +79,10 @@ table FlatArray {
     // Fields for external file storage
     externalDataFilename:[string];     // Filename for externally stored data
     isExternal:bool = false;           // Flag indicating if data is stored externally
+
+    // For C++ native reader - offset/length of appended data in SDNB file
+    appendedDataOffset:long;           // Byte offset from start of SDNB file
+    appendedDataLength:long;           // Byte length of appended data
 }
 
 root_type FlatArray;
