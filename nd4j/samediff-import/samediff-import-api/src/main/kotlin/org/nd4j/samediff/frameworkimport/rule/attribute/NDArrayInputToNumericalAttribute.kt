@@ -61,6 +61,12 @@ abstract class NDArrayInputToNumericalAttribute<
         val realDescriptor =  OpDescriptorLoaderHolder.nd4jOpDescriptor.findOp(mappingCtx.nd4jOpName())
         for ((k, v) in mappingNamesToPerform()) {
             val inputTensor = mappingCtx.tensorInputFor(v).toNd4jNDArray()
+
+            // Skip if ndarray is empty or has null data buffer
+            if (inputTensor.isEmpty || inputTensor.length() == 0L || inputTensor.data() == null) {
+                continue
+            }
+
             realDescriptor.argDescriptorList.filter { argDescriptor -> argDescriptor.name == k &&
                     argDescriptor.argType == OpNamespace.ArgDescriptor.ArgType.INT64 && argDescriptor.name == k ||
                     argDescriptor.argType == OpNamespace.ArgDescriptor.ArgType.DOUBLE && argDescriptor.name == k}

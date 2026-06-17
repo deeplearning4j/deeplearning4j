@@ -54,6 +54,12 @@ abstract class NDArrayToIntAttributeValue<
         val ret = ArrayList<OpNamespace.ArgDescriptor>()
         for ((k, v) in mappingNamesToPerform()) {
             val ndarray = mappingCtx.tensorInputFor(v).toNd4jNDArray()
+
+            // Skip if ndarray is empty or has null data buffer
+            if (ndarray.isEmpty || ndarray.length() == 0L || ndarray.data() == null) {
+                continue
+            }
+
             val arrInts = ndarray.ravel().toIntVector()
             val baseIndex = lookupIndexForArgDescriptor(
                 argDescriptorName = k,

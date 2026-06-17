@@ -55,7 +55,7 @@ val names = mapOf(
         "Sinh" to "sinh",
         "Softsign" to "softsign",
         "Tan" to "tan",
-        "Tanh" to "tanh"
+        "Tanh" to "tanh",
 
 )
 
@@ -92,6 +92,13 @@ val add = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
         attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
         opMappingRegistry = onnxOpRegistry)
+val reciprocal = OnnxMappingProcess(
+        inputFrameworkOpName = "Reciprocal",
+        opName = "reciprocal",
+        tensorMappingRules = listOf(NDArrayMappingRule(mappingNamesToPerform = mutableMapOf("input" to "X"))),
+        attributeMappingRules = booleanConstant(inputName = "inPlace", constantValue = false, argumentIndex = 0),
+        opMappingRegistry = onnxOpRegistry)
+
 //Adagrad
 //Adam
 
@@ -164,6 +171,25 @@ val avgPool = OnnxMappingProcess(
                 listAttributeValueLookup(outputAttributeValue = "kH",inputAttributeValue = "kernel_shape",indexValue = 0,argumentIndex = 0)))
 
 
+// ──────────────────────────────────────────────────────────────────────────────
+// noop MAPPING PATTERN
+//
+// opName = "noop" suppresses direct op dispatch so a PreImportHook can fully
+// handle the node instead.  There are two categories:
+//
+//   1. HOOKED — a PreImportHook class annotated @PreHookRule(opNames = ["X"])
+//      exists in the implementations/ directory. The hook rewrites the node into
+//      one or more supported SameDiff ops.  All of these are correct and intentional.
+//
+//   2. FRAMEWORK-HANDLED — the importer resolves the node before op dispatch
+//      (e.g. Constant, Placeholder). No hook is needed.
+//
+//   3. UNSUPPORTED — no hook exists and the importer does not handle the op.
+//      These produce silent no-ops in the imported graph, which is incorrect.
+//      Each unsupported entry is marked with "UNSUPPORTED" below.
+// ──────────────────────────────────────────────────────────────────────────────
+
+// HOOKED: PreImportHook exists in implementations/AliasWithName.kt
 val aliasWithName = OnnxMappingProcess(
         opName = "noop",
         opMappingRegistry = onnxOpRegistry,
@@ -184,27 +210,76 @@ val embedLayerNormalization = OnnxMappingProcess(
         inputFrameworkOpName = "EmbedLayerNormalization"
 )
 
-//TODO: Binarizer
-//TODO: Bitshift
-//TODO: CastMap
-//TODO: CategoryMapper
-//TODO: Celu
-//TODO: Compress
+val binarizer = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Binarizer",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val bitshift = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "BitShift",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val arrayFeatureExtractor = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ArrayFeatureExtractor",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val castMap = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "CastMap",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val categoryMapper = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "CategoryMapper",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val celu = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Celu",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val compress = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Compress",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Concat is handled by PreImportHook (Concat.kt) to support rank broadcasting
+// ONNX allows concat of tensors with different ranks, but nd4j requires same rank
+// The hook automatically reshapes lower-rank inputs by prepending dimensions of size 1
 val concat = OnnxMappingProcess(
-        opName = "concat",
+        opName = "noop",
         inputFrameworkOpName = "Concat",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "inputs"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("concatDimension" to "axis")),
-                booleanConstant(inputName = "isDynamicAxis",constantValue = false,argumentIndex = 0)[0]),
-        variableResolutionType = MapperNamespace.VariableResolutionType.DIRECT
-
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
 )
-//TODO: ConcatFromSequence
+val concatFromSequence = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ConcatFromSequence",
+        opMappingRegistry = onnxOpRegistry
+)
 
+val convInteger = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ConvInteger",
+        opMappingRegistry = onnxOpRegistry
+)
 
-//TODO: ConvInteger
-//TODO: ConvTranspose
+val convTranspose = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ConvTranspose",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val cumSum = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "CumSum",
@@ -223,7 +298,12 @@ val depthToSpace = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
-//TODO: DequantizeLinear
+val dequantizeLinear = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "DequantizeLinear",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val determinant = OnnxMappingProcess(
         opName = "matrix_determinant",
         inputFrameworkOpName = "Det",
@@ -269,19 +349,20 @@ val sigmoid = OnnxMappingProcess(
 )
 
 
+// LogSoftmax handled by PreImportHook (LogSoftmax.kt) to ensure axis defaults to -1 per ONNX opset 13+
 val logSoftmax = OnnxMappingProcess(
-        opName = "log_softmax",
+        opName = "noop",
         inputFrameworkOpName = "LogSoftmax",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input"))),
-        attributeMappingRules = listOf(valueMappings(mutableMapOf("dimension" to "axis"))),
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf(),
         opMappingRegistry = onnxOpRegistry
 )
+// Softmax handled by PreImportHook (Softmax.kt) to ensure axis defaults to -1 per ONNX opset 13+
 val softmax = OnnxMappingProcess(
-        opName = "softmax",
+        opName = "noop",
         inputFrameworkOpName = "Softmax",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input"))),
-        attributeMappingRules = listOf(valueMappings(mutableMapOf("dimension" to "axis")),
-                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0]),
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf(),
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -327,6 +408,9 @@ val sequenceinsert = OnnxMappingProcess(
         attributeMappingRules = listOf()
 )
 
+// SequenceRemove: UNSUPPORTED — removes an element from an ONNX sequence type at a given index.
+// No PreImportHook exists. noop causes silent pass-through.
+// TODO: implement PreImportHook (sequence types require special list-handling in SameDiff).
 val sequenceRemove = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "SequenceRemove",
@@ -344,23 +428,58 @@ val sequenceLength = OnnxMappingProcess(
         attributeMappingRules = listOf()
 )
 
-//TODO: DynamicQuantizeLinear
-//TODO: Einsum
-//TODO: EyeLike
-//TODO: FeatureVectorizer
+val dynamicQuantizeLinear = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "DynamicQuantizeLinear",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val einsum = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Einsum",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val eyeLike = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "EyeLike",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val featureVectorizer = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "FeatureVectorizer",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val gelu = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Gelu",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val gridSample = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "GridSample",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val gru = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "GRU",
         opMappingRegistry = onnxOpRegistry
 )
 
-//TODO: GatherElements
+val gatherElements = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "GatherElements",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val gatherNd = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "GatherND",
-        opName = "gather_nd",
-        attributeMappingRules = booleanConstant(inputName = "checkIndices",constantValue = true,argumentIndex = 0),
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("indices" to "indices","input" to "data")))
+        opName = "noop"  // Actual implementation in GatherND.kt PreImportHook
 )
 
 
@@ -414,10 +533,21 @@ val globalAveragePooling = OnnxMappingProcess(
         inputFrameworkOpName = "GlobalAveragePool",
         opMappingRegistry = onnxOpRegistry
 )
-//TODO: GlobalLpPool
+val globalLpPool = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "GlobalLpPool",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val globalMaxPooling = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "GlobalMaxPool",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val groupNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "GroupNormalization",
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -428,7 +558,12 @@ val cast = OnnxMappingProcess(
 )
 
 
-//TODO: DictVectorizer
+val dictVectorizer = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "DictVectorizer",
+        opMappingRegistry = onnxOpRegistry
+)
+
 //Dropout: Note https://github.com/eclipse/deeplearning4j/issues/5650
 val dropout = OnnxMappingProcess(
         opName = "noop",
@@ -496,7 +631,11 @@ val hardSigmoid = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "X")))
 )
 
-
+val hardSwish = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "HardSwish",
+        opMappingRegistry = onnxOpRegistry
+)
 
 //TODO: map is-negative,is-positive
 val isInf = OnnxMappingProcess(
@@ -519,7 +658,7 @@ val or = OnnxMappingProcess(
 )
 
 val xor = OnnxMappingProcess(
-        opName = "bitwise_xor",
+        opName = "boolean_xor",
         inputFrameworkOpName = "Xor",
         opMappingRegistry = onnxOpRegistry,
         attributeMappingRules = listOf(booleanConstant(inputName = "inPlace", constantValue = false,argumentIndex = 0)[0]),
@@ -528,9 +667,24 @@ val xor = OnnxMappingProcess(
 
 
 
-//TODO: Hardmax
-//TODO: Imputer
-//TODO: InstanceNormalization
+val hardmax = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Hardmax",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val imputer = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Imputer",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val instanceNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "InstanceNormalization",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val lrn = OnnxMappingProcess(
         opName = "lrn",
         inputFrameworkOpName = "LRN",
@@ -593,7 +747,12 @@ val lstm = OnnxMappingProcess(
                 mapStringToInt(outputAttributeValue = "cellAct",inputAttributeValue = "activations",argumentIndex = 3,mapOfValuesToInts =lstmActivationMap,lookupIndex = 1),
                 mapStringToInt(outputAttributeValue = "outAct",inputAttributeValue = "activations",argumentIndex = 4,mapOfValuesToInts = lstmActivationMap,lookupIndex = 2))
 )
-//TODO: LabelEncoder
+val labelEncoder = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "LabelEncoder",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val leakyRelu = OnnxMappingProcess(
         inputFrameworkOpName = "LeakyRelu",
         opName = "leakyrelu",
@@ -602,16 +761,42 @@ val leakyRelu = OnnxMappingProcess(
                 booleanConstant("inPlace",false,argumentIndex = 0)[0]),
         opMappingRegistry = onnxOpRegistry
 )
-//TODO: LinearClassifier
-//TODO: LinearRegressor
-//TODO: Loop
-//TODO: LpNormalization
-//TODO: LpPool
+val linearClassifier = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "LinearClassifier",
+        opMappingRegistry = onnxOpRegistry
+)
 
+val linearRegressor = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "LinearRegressor",
+        opMappingRegistry = onnxOpRegistry
+)
 
+val lpNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "LpNormalization",
+        opMappingRegistry = onnxOpRegistry
+)
 
-//TODO: MatMulInteger
-//TODO: Max
+val lpPool = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "LpPool",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val matMulInteger = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MatMulInteger",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val mish = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Mish",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val maxPool = OnnxMappingProcess(
         inputFrameworkOpName = "MaxPool",
         opName = "maxpool2d",
@@ -672,12 +857,36 @@ val maxPool = OnnxMappingProcess(
                 listAttributeValueLookup(outputAttributeValue = "kW",inputAttributeValue = "kernel_shape",indexValue = 1,argumentIndex = 1)))
 
 
-//TODO: MaxRoiPool
-//TODO: MaxUnpool
-//TODO: name: "MeanVarianceNormalization"
-//todo: Momentum
-//TODO: Multinomial
-//TODO: NegativeLogLikelihoodLoss
+val maxRoiPool = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MaxRoiPool",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val maxUnpool = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MaxUnpool",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val meanVarianceNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MeanVarianceNormalization",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val multinomial = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Multinomial",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val negativeLogLikelihoodLoss = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "NegativeLogLikelihoodLoss",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val nonMaxSuppression = OnnxMappingProcess(
         inputFrameworkOpName = "NonMaxSuppression",
         opName = "non_max_suppression_v3",
@@ -690,10 +899,24 @@ val nonMaxSuppression = OnnxMappingProcess(
                 "iouThreshold" to "iou_threshold",
                 "scoreThreshold" to "score_threshold")))
 )
-//TODO: NonZero PRIORITIZE
-//TODO: Normalizer
-//TODO: OneHot
-//TODO: OneHotEncoder
+val normalizer = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Normalizer",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val oneHot = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "OneHot",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val oneHotEncoder = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "OneHotEncoder",
+        opMappingRegistry = onnxOpRegistry
+)
+
 //note: this is handled by the PRelu class now
 val pRelu = OnnxMappingProcess(
         inputFrameworkOpName = "PRelu",
@@ -711,10 +934,30 @@ val pad = OnnxMappingProcess(
                 doubleConstant(inputName = "padValue",constantValue = 0.0,argumentIndex = 0)[0])
 )
 
-//TODO: QLinearConv
-//TODO: QLinearMatMul
-//TODO: QuantizeLinear
-//TODO: RNN PRIORITIZE
+val qLinearConv = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "QLinearConv",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val qLinearMatMul = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "QLinearMatMul",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val quantizeLinear = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "QuantizeLinear",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val rnn = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RNN",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val randomNormal = OnnxMappingProcess(
         inputFrameworkOpName = "RandomNormal",
         opName = "random_normal",
@@ -723,7 +966,12 @@ val randomNormal = OnnxMappingProcess(
 )
 
 
-//TODO: RandomNormalLike
+val randomNormalLike = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RandomNormalLike",
+        opMappingRegistry = onnxOpRegistry
+)
+
 //TODO: Note that the attributes for random unifrom are wrong and needed to be discovered through other means.
 //The combination of a lack of a java class + the c++ calling out to other functions which had the actual parameters
 //names prevented resolution of the real parameter names. May have to look in to values that are passed inline in to functions and look up
@@ -740,16 +988,19 @@ val randomUniform = OnnxMappingProcess(
                         inputAttributeValue = "shape"))
 )
 
-//TODO: RandomUniformLike
+val randomUniformLike = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RandomUniformLike",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val range = OnnxMappingProcess(
         inputFrameworkOpName = "Range",
         opName = "range",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("from" to "start","to" to "limit","step" to "delta"))),
-        attributeMappingRules = listOf(
-                convertNDArrayInputToScalarAttr(outputAttributeValue = "from",inputAttributeValue = "start"),
-                convertNDArrayInputToScalarAttr(outputAttributeValue = "to",inputAttributeValue = "limit"),
-                convertNDArrayInputToScalarAttr(outputAttributeValue = "step",inputAttributeValue = "delta"))
+        // Keep inputs as dynamic tensors - do NOT convert to scalar attributes
+        // This allows Range to work with dynamic sequence lengths (e.g., from Shape ops)
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("from" to "start","to" to "limit","step" to "delta")))
 )
 
 val neg = OnnxMappingProcess(
@@ -781,59 +1032,41 @@ val norm2 = OnnxMappingProcess(
                 listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes"))
 )
 
-//TODO: ReduceLogSum
+val reduceLogSum = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ReduceLogSum",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val reduceLogSumExp = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceLogSumExp",
-        opName = "reduce_logsumexp",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(
-                invertBooleanNumber(mutableMapOf("keepDims" to "keepdims")),
-                valueMappings(mutableMapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+        opName = "noop",  // Actual implementation in ReduceLogSumExp.kt PreImportHook (handles axes as input tensor in opset 18+)
         opMappingRegistry = onnxOpRegistry
 )
 val reduceMax = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceMax",
-        opName = "reduce_max",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(
-                invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+        opName = "noop",  // Actual implementation in ReduceMax.kt PreImportHook (handles axes as input tensor in opset 18+)
         opMappingRegistry = onnxOpRegistry
 )
 val reduceMean = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceMean",
-        opName = "reduce_mean",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(
-                invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+        opName = "noop",  // Actual implementation in ReduceMean.kt PreImportHook (handles axes as input tensor in opset 18+)
         opMappingRegistry = onnxOpRegistry
 )
 val reduceMin = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceMin",
-        opName = "reduce_min",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(
-                invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+        opName = "noop",  // Actual implementation in ReduceMin.kt PreImportHook (handles axes as input tensor in opset 18+)
         opMappingRegistry = onnxOpRegistry
 )
 val reduceProd = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceProd",
-        opName = "reduce_prod",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+        opName = "noop",  // Actual implementation in ReduceProd.kt PreImportHook (handles axes as input tensor in opset 18+)
         opMappingRegistry = onnxOpRegistry
 )
 
 val reduceSum = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceSum",
-        opName = "reduce_sum",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                ndarrayToIntList(mutableMapOf( "dimensions" to "axes"))),
+        opName = "noop",  // Actual implementation in ReduceSum.kt PreImportHook (handles axes as input tensor in opset 13+)
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -853,15 +1086,44 @@ val reshape = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
-//TODO: ReduceSumSquare
+val reduceSumSquare = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ReduceSumSquare",
+        opMappingRegistry = onnxOpRegistry
+)
+
 //for mapping indices see: https://github.com/eclipse/deeplearning4j/blob/228f6cda30e27999f0fea74badc8d98ee8fb0647/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/enums/ImageResizeMethod.java#L29
 
-//TODO: ReverseSequence
-//TODO: RoiAlign
-//TODO: SVMClassifier
-//TODO: SVMRegressor
-//TODO: Scaler
-//TODO: Scan
+val reverseSequence = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ReverseSequence",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val svmClassifier = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SVMClassifier",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val svmRegressor = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SVMRegressor",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val scaler = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Scaler",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val scan = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Scan",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val scatter = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "ScatterElements",
@@ -872,13 +1134,11 @@ val scatter = OnnxMappingProcess(
 
 
 
-val scatterNd = OnnxMappingProcess(inputFrameworkOpName ="ScatterND",
-        opName = "scatter_nd",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf(
-                "indices" to "indices",
-                "updates" to "updates","shape" to "data"))),
-        attributeMappingRules = listOf()
-        ,opMappingRegistry = onnxOpRegistry)
+val scatterNd = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ScatterND",
+        opMappingRegistry = onnxOpRegistry
+)
 
 //TODO: SequenceAt
 //TODO: SequenceConstruct
@@ -892,7 +1152,11 @@ val shape = OnnxMappingProcess(
         attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
         tensorMappingRules = listOf(mappingNDArrayInputs((mutableMapOf("input" to "data"))))
 )
-//TODO: Shrink
+val shrink = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Shrink",
+        opMappingRegistry = onnxOpRegistry
+)
 
 val not = OnnxMappingProcess(
         opName = "not",
@@ -903,14 +1167,7 @@ val not = OnnxMappingProcess(
 )
 
 
-val pow = OnnxMappingProcess(
-        opName = "pow_pairwise",
-        inputFrameworkOpName = "Pow",
-        opMappingRegistry = onnxOpRegistry,
-        attributeMappingRules = listOf(
-                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0]),
-        tensorMappingRules = listOf(mappingNDArrayInputs((mutableMapOf("input" to "X","y" to "Y"))))
-)
+// Pow is handled by PreImportHook in implementations/Pow.kt for proper broadcasting support
 
 val size = OnnxMappingProcess(
         opName = "size",
@@ -922,7 +1179,12 @@ val size = OnnxMappingProcess(
 
 
 
-//TODO: SoftmaxCrossEntropyLoss
+val softmaxCrossEntropyLoss = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SoftmaxCrossEntropyLoss",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val spaceToDepth = OnnxMappingProcess(
         opName = "space_to_depth",
         inputFrameworkOpName = "SpaceToDepth",
@@ -968,7 +1230,12 @@ val softplus = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "X")))
 )
 
-//TODO: SplitToSequence
+val splitToSequence = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SplitToSequence",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val squeeze = OnnxMappingProcess(
         opName = "squeeze",
         inputFrameworkOpName = "Squeeze",
@@ -977,9 +1244,36 @@ val squeeze = OnnxMappingProcess(
         attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf( "_a" to  "axes")))
 )
 
-//TODO: StringNormalizer
-//TODO: TfIdfVectorizer
-//TODO: ThresholdedRelu
+val stringNormalizer = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "StringNormalizer",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val tfIdfVectorizer = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "TfIdfVectorizer",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val treeEnsembleClassifier = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "TreeEnsembleClassifier",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val treeEnsembleRegressor = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "TreeEnsembleRegressor",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val thresholdedRelu = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ThresholdedRelu",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val tile = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "Tile",
@@ -1018,6 +1312,8 @@ val ceil = defOnnxSingleTransform(inputFrameworkOpName = "Ceil",opName = "ceil",
 )
 
 
+// Constant: framework-level op — the importer resolves this before op dispatch.
+// No PreImportHook needed; noop suppresses dispatch so the importer handles it directly.
 val const = OnnxMappingProcess(
         inputFrameworkOpName = "Constant",
         opName = "noop",
@@ -1025,8 +1321,9 @@ val const = OnnxMappingProcess(
         tensorMappingRules = listOf(),
         attributeMappingRules = listOf())
 
-//note: this is not a real onnx op and meant to be a dummy node to indicate placeholders
-//samediff/tensorflow parlance
+// Placeholder: not a real ONNX op — used as a dummy node to indicate inputs in
+// SameDiff/TensorFlow parlance. No PreImportHook needed; the importer handles it
+// as a graph input, not an executable op.
 val placeHolder = OnnxMappingProcess(
         inputFrameworkOpName = "Placeholder",
         opName = "noop",
@@ -1108,39 +1405,378 @@ val selu = defOnnxSingleTransform(inputFrameworkOpName = "Selu",opName = "selu",
 booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)
 )
 
+val zipMap = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ZipMap",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// OCR-related operators for PaddleOCR and DeepSeek-OCR support
+
+val ctcGreedyDecoder = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "CTCGreedyDecoder",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val ctcGreedyDecoderAlt = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "CTC_greedy_decoder",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveAvgPool1d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveAvgPool1d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveAvgPool2d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveAvgPool2d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveAvgPool2dAlt = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "adaptive_avg_pool2d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveAvgPool3d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveAvgPool3d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveMaxPool1d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveMaxPool1d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveMaxPool2d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveMaxPool2d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveMaxPool2dAlt = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "adaptive_max_pool2d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val adaptiveMaxPool3d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AdaptiveMaxPool3d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val mixtureOfExperts = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MixtureOfExperts",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val moe = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MoE",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val sparseMoe = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SparseMoE",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val deformConv = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "DeformConv",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val deformableConv2d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "DeformableConv2d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val modulatedDeformConv = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ModulatedDeformConv",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val windowedAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "WindowedAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val windowAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "WindowAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val localAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "LocalAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val swinAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SwinAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val relativePositionBias = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RelativePositionBias",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val relativePosEmb = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RelativePosEmb",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val relativePositionEmbedding = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RelativePositionEmbedding",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Additional ops for Docling model support (transformers, vision models)
+
+val trilu = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Trilu",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val col2Im = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Col2Im",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val im2Col = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Im2Col",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val unfold = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Unfold",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val centerCropPad = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "CenterCropPad",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val affineGrid = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "AffineGrid",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val unique = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Unique",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val scatterElements = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ScatterElements",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Signal processing ops for audio models
+val stft = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "STFT",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val dft = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "DFT",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// MelWeightMatrix: UNSUPPORTED — no PreImportHook exists. Generates a triangular
+// filter-bank matrix for mel-spectrogram computation. noop causes silent pass-through.
+// TODO: implement PreImportHook using sd.math() operations or a native mel-filter op.
+val melWeightMatrix = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MelWeightMatrix",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val hannWindow = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "HannWindow",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val hammingWindow = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "HammingWindow",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val blackmanWindow = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "BlackmanWindow",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Optional handling ops
+val optionalGetElement = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "OptionalGetElement",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val optionalHasElement = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "OptionalHasElement",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val optional = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Optional",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Quantization ops (Microsoft ONNX extensions — no PreImportHook exists for these)
+// QAttention: UNSUPPORTED — quantized multi-head attention (INT8 weights).
+// noop causes silent pass-through. TODO: implement via QLinearMatMul decomposition.
+val qAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "QAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// QOrderedMatMul: UNSUPPORTED — ordered quantized matrix multiply (INT8).
+// noop causes silent pass-through. TODO: implement via QLinearMatMul hook.
+val qOrderedMatMul = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "QOrderedMatMul",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Grid sampling variants
+// GridSample3d: UNSUPPORTED — 3D volumetric grid sampling. No PreImportHook exists.
+// The 2D variant (GridSample) has a full hook. noop causes silent pass-through.
+// TODO: implement PreImportHook reusing the GridSample hook's interpolation logic for 3D.
+val gridSample3d = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "GridSample3d",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// LayerNormalization variants
+val layerNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "LayerNormalization",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Upsample (deprecated but still used in some models)
+val upsample = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Upsample",
+        opMappingRegistry = onnxOpRegistry
+)
+
+// Microsoft ONNX Runtime transformer ops
+val attention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Attention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val multiHeadAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MultiHeadAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val groupQueryAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "GroupQueryAttention",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val rotaryEmbedding = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RotaryEmbedding",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val simplifiedLayerNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SimplifiedLayerNormalization",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val skipLayerNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SkipLayerNormalization",
+        opMappingRegistry = onnxOpRegistry
+)
 
 object OnnxOpDeclarations {
+        @Volatile
+        private var initialized = false
 
         fun init() {
-                val onnxops = OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
-                val groupedOps = onnxops.values.groupBy { input -> input.name }
-                val singleGroupedOps = HashMap<String,Onnx.NodeProto>()
-                groupedOps.forEach { name,node ->
-                        singleGroupedOps[name] = node[0]
+                if (initialized) return
+                synchronized(this) {
+                        if (initialized) return
+                        val onnxops = OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
+                        val groupedOps = onnxops.values.groupBy { input -> input.name }
+                        val singleGroupedOps = HashMap<String,Onnx.NodeProto>()
+                        groupedOps.forEach { name,node ->
+                                singleGroupedOps[name] = node[0]
+                        }
+
+                        OpRegistryHolder.registerOpList("onnx", singleGroupedOps)
+
+                        names.forEach {
+                                defineOnnxSingleTransform(inputFrameworkOpName = it.key,inputOpName = it.value)
+                        } ?: "Error initializing single defined transforms in onnx."
+
+                        pairWiseNames.forEach {
+                                defineOnnxPairwiseTransforms(opName = it.value,inputFrameworkOpName = it.key)
+                        } ?: "Error initializing pair wise transforms"
+
+                        onnxops.values.forEach {
+                                onnxOpRegistry.registerInputFrameworkOpDef(it.name,it)
+                        }
+
+                        OpDescriptorLoaderHolder.nd4jOpDescriptor.opListList.forEach {
+                                onnxOpRegistry.registerNd4jOpDef(it.name,it)
+                        }
+
+                        MicrosoftOnnxExtensions.registerMicrosoftExtensions(onnxOpRegistry)
+
+
+                        OpRegistryHolder.registerOpMappingRegistry("onnx", onnxOpRegistry)
+                        initialized = true
                 }
-
-                OpRegistryHolder.registerOpList("onnx", singleGroupedOps)
-
-                names.forEach {
-                        defineOnnxSingleTransform(inputFrameworkOpName = it.key,inputOpName = it.value)
-                } ?: "Error initializing single defined transforms in onnx."
-
-                pairWiseNames.forEach {
-                        defineOnnxPairwiseTransforms(opName = it.value,inputFrameworkOpName = it.key)
-                } ?: "Error initializing pair wise transforms"
-
-                onnxops.values.forEach {
-                        onnxOpRegistry.registerInputFrameworkOpDef(it.name,it)
-                }
-
-                OpDescriptorLoaderHolder.nd4jOpDescriptor.opListList.forEach {
-                        onnxOpRegistry.registerNd4jOpDef(it.name,it)
-                }
-
-                MicrosoftOnnxExtensions.registerMicrosoftExtensions(onnxOpRegistry)
-
-
-                OpRegistryHolder.registerOpMappingRegistry("onnx", onnxOpRegistry)
         }
 
         init {

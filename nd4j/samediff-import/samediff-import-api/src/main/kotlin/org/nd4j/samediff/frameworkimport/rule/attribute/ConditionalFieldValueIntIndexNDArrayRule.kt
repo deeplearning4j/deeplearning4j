@@ -50,7 +50,14 @@ abstract class ConditionalFieldValueIntIndexNDArrayRule<
         val ret = ArrayList<OpNamespace.ArgDescriptor>()
         for((k, v) in mappingNamesToPerform()) {
             val listOfArgs  = transformerArgs[k]
-            val inputArr = mappingCtx.tensorInputFor(listOfArgs!![3].stringValue).toNd4jNDArray().ravel()
+            val ndarray = mappingCtx.tensorInputFor(listOfArgs!![3].stringValue).toNd4jNDArray()
+
+            // Skip if ndarray is empty or has null data buffer
+            if (ndarray.isEmpty || ndarray.length() == 0L || ndarray.data() == null) {
+                continue
+            }
+
+            val inputArr = ndarray.ravel()
             val trueIndex = listOfArgs!![1].int32Value
             val falseIndex = listOfArgs!![2].int32Value
             val targetValueToTest = listOfArgs!![0].stringValue

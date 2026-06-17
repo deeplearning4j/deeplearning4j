@@ -1004,7 +1004,7 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "bitwise_xor"
+  opName: "boolean_xor"
   inputFrameworkOpName: "Xor"
   rule {
     ruleName: "ndarraymapping"
@@ -1521,6 +1521,37 @@ mappings {
       }
     }
     inputFrameworkOpName: "Abs"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "Reciprocal"
+  inputFrameworkOpName: "Reciprocal"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Reciprocal"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Reciprocal"
   }
 }
 mappings {

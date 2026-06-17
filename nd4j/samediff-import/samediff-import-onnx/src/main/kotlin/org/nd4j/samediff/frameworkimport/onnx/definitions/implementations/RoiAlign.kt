@@ -67,7 +67,10 @@ class RoiAlign : PreImportHook  {
             adaptiveRatio = true
         }
 
-        val dataFormat = if(features.arr != null)  { ImportUtils.getDataFormat(features.arr.rank()) } else { Pair("NCHW","NCHW") }
+        // RoiAlign operates on 4D tensors (NCHW format in ONNX)
+        // We don't need to access .arr - the data format is known from ONNX spec
+        val featuresRank = 4
+        val dataFormat = ImportUtils.getDataFormat(featuresRank)
         val needsTrans = dataFormat.first.startsWith("NC")
         if(needsTrans) {
             val computeFormat = "N${dataFormat.first.substring(2)}C"
@@ -111,7 +114,8 @@ class RoiAlign : PreImportHook  {
 
         val imageShape = sd.shape(image2).get(SDIndex.interval(1,3))
         val boxes3 = transformFpCoorTf(sd,boxes2,imageShape,cropSize,samplingRatio, adaptiveRatio)
-        val sdCrop = sd.constant(Nd4j.create(Nd4j.createBuffer(longArrayOf(cropSize[0] * samplingRatio,cropSize[1] * samplingRatio))))
+        // Use createFromArray to ensure 1D shape, not [1, N] row vector
+        val sdCrop = sd.constant(Nd4j.createFromArray(cropSize[0] * samplingRatio, cropSize[1] * samplingRatio))
         val ret = sd.image().cropAndResize(image2,boxes3,boxesInd,sdCrop)
         return ret
 

@@ -72,7 +72,10 @@ class Equal : PreImportHook {
             input2
         }
 
-        // Perform equal comparison
+        // Perform standard equal comparison
+        // The padding approach for different-length 1D tensors was too complex and broke
+        // scalar comparisons. Use standard broadcast rules - if shapes are incompatible,
+        // the operation will fail at runtime which indicates a model/import issue.
         val result = castedInput1.eq(castedInput2).castTo(DataType.BOOL).rename(outputNames[0])
 
 

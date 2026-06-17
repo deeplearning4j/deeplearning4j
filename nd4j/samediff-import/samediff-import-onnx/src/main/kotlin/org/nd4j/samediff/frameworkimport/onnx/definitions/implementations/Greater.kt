@@ -47,15 +47,28 @@ class Greater : PreImportHook  {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        val inputA = sd.getVariable(op.inputsToOp[0])
-        val inputB = sd.getVariable(op.inputsToOp[1])
-        
+        var inputA = sd.getVariable(op.inputsToOp[0])
+        var inputB = sd.getVariable(op.inputsToOp[1])
+
+        // Cast to common type if needed (ONNX allows mixed types for comparison)
+        val dtypeA = inputA.dataType()
+        val dtypeB = inputB.dataType()
+        if (dtypeA != null && dtypeB != null && dtypeA != dtypeB) {
+            // Cast both to DOUBLE for comparison
+            if (dtypeA != DataType.DOUBLE) {
+                inputA = sd.castTo("${outputNames[0]}_castA", inputA, DataType.DOUBLE)
+            }
+            if (dtypeB != DataType.DOUBLE) {
+                inputB = sd.castTo("${outputNames[0]}_castB", inputB, DataType.DOUBLE)
+            }
+        }
+
         // Perform the greater than comparison
         val greaterResult = sd.gt(inputA, inputB)
-        
+
         // Cast the result to boolean
         val outputVar = sd.castTo(outputNames[0], greaterResult, DataType.BOOL)
-        
+
         return mapOf(outputVar.name() to listOf(outputVar))
     }
 }

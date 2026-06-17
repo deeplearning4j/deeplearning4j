@@ -15908,3 +15908,674 @@ mappings {
     inputFrameworkOpName: "AdjustContrastv2"
   }
 }
+mappings {
+  frameworkName: "tensorflow"
+  opName: "xdivy"
+  inputFrameworkOpName: "Xdivy"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "x"
+    inputTensorName: "y"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "x"
+    }
+    inputToOutput {
+      key: "y"
+      value: "y"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Xdivy"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Xdivy"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "xlogy"
+  inputFrameworkOpName: "Xlogy"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "x"
+    inputTensorName: "y"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "x"
+    }
+    inputToOutput {
+      key: "y"
+      value: "y"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Xlogy"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Xlogy"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "xlog1py"
+  inputFrameworkOpName: "Xlog1py"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "x"
+    inputTensorName: "y"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "x"
+    }
+    inputToOutput {
+      key: "y"
+      value: "y"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Xlog1py"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Xlog1py"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "sigmoid_bp"
+  inputFrameworkOpName: "SigmoidGrad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "y"
+    inputTensorName: "dy"
+    outputTensorName: "input"
+    outputTensorName: "epsilon"
+    inputToOutput {
+      key: "input"
+      value: "y"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "dy"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "SigmoidGrad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "tanh_bp"
+  inputFrameworkOpName: "TanhGrad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "y"
+    inputTensorName: "dy"
+    outputTensorName: "input"
+    outputTensorName: "epsilon"
+    inputToOutput {
+      key: "input"
+      value: "y"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "dy"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "TanhGrad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "softmax_bp"
+  inputFrameworkOpName: "SoftmaxGrad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "softmax"
+    inputTensorName: "grad_softmax"
+    outputTensorName: "input"
+    outputTensorName: "gradO"
+    inputToOutput {
+      key: "input"
+      value: "softmax"
+    }
+    inputToOutput {
+      key: "gradO"
+      value: "grad_softmax"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "SoftmaxGrad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "reverse_v2"
+  inputFrameworkOpName: "ReverseV2"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "tensor"
+    inputTensorName: "axis"
+    outputTensorName: "input"
+    outputTensorName: "dimensions"
+    inputToOutput {
+      key: "input"
+      value: "tensor"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReverseV2"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "isLegacy"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isLegacy"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "ReverseV2"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "matrix_band_part"
+  inputFrameworkOpName: "MatrixBandPart"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    inputTensorName: "num_lower"
+    inputTensorName: "num_upper"
+    outputTensorName: "input"
+    outputTensorName: "minLowerT"
+    outputTensorName: "maxUpperT"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    inputToOutput {
+      key: "minLowerT"
+      value: "num_lower"
+    }
+    inputToOutput {
+      key: "maxUpperT"
+      value: "num_upper"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "MatrixBandPart"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "softplus_bp"
+  inputFrameworkOpName: "SoftplusGrad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "features"
+    inputTensorName: "gradients"
+    outputTensorName: "input"
+    outputTensorName: "epsilon"
+    inputToOutput {
+      key: "input"
+      value: "features"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "gradients"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "SoftplusGrad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "softsign_bp"
+  inputFrameworkOpName: "SoftsignGrad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "features"
+    inputTensorName: "gradients"
+    outputTensorName: "input"
+    outputTensorName: "epsilon"
+    inputToOutput {
+      key: "input"
+      value: "features"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "gradients"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "SoftsignGrad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "lrelu_bp"
+  inputFrameworkOpName: "LeakyReluGrad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "features"
+    inputTensorName: "gradients"
+    outputTensorName: "input"
+    outputTensorName: "epsilon"
+    inputToOutput {
+      key: "input"
+      value: "features"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "gradients"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "LeakyReluGrad"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "alpha"
+    outputDoubleName: "alpha"
+    inputToOutput {
+      key: "alpha"
+      value: "alpha"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LeakyReluGrad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "lrn_bp"
+  inputFrameworkOpName: "LRNGrad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input_image"
+    inputTensorName: "input_grads"
+    outputTensorName: "input"
+    outputTensorName: "gradO"
+    inputToOutput {
+      key: "input"
+      value: "input_image"
+    }
+    inputToOutput {
+      key: "gradO"
+      value: "input_grads"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "LRNGrad"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "depth_radius"
+    outputIntName: "depth"
+    inputToOutput {
+      key: "depth"
+      value: "depth_radius"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LRNGrad"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "bias"
+    outputDoubleName: "bias"
+    inputToOutput {
+      key: "bias"
+      value: "bias"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LRNGrad"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "alpha"
+    outputDoubleName: "alpha"
+    inputToOutput {
+      key: "alpha"
+      value: "alpha"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LRNGrad"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "beta"
+    outputDoubleName: "beta"
+    inputToOutput {
+      key: "beta"
+      value: "beta"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LRNGrad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "einsum"
+  inputFrameworkOpName: "Einsum"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "inputs"
+    outputTensorName: "inputs"
+    inputToOutput {
+      key: "inputs"
+      value: "inputs"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Einsum"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputStringAttrName: "equation"
+    outputStringAttrName: "equation"
+    inputToOutput {
+      key: "equation"
+      value: "equation"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Einsum"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "relu_bp"
+  inputFrameworkOpName: "ReluGrad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "features"
+    inputTensorName: "gradients"
+    outputTensorName: "input"
+    outputTensorName: "epsilon"
+    inputToOutput {
+      key: "input"
+      value: "features"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "gradients"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReluGrad"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputDoubleName: "scalar"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "scalar"
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "ReluGrad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "elu_bp"
+  inputFrameworkOpName: "EluGrad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "outputs"
+    inputTensorName: "gradients"
+    outputTensorName: "input"
+    outputTensorName: "epsilon"
+    inputToOutput {
+      key: "input"
+      value: "outputs"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "gradients"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "EluGrad"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputDoubleName: "alpha"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "alpha"
+        doubleValue: 1.0
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "EluGrad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "relu6_bp"
+  inputFrameworkOpName: "Relu6Grad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "features"
+    inputTensorName: "gradients"
+    outputTensorName: "input"
+    outputTensorName: "gradO"
+    inputToOutput {
+      key: "input"
+      value: "features"
+    }
+    inputToOutput {
+      key: "gradO"
+      value: "gradients"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Relu6Grad"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputDoubleName: "cutoff"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "cutoff"
+        doubleValue: 6.0
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "Relu6Grad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "selu_bp"
+  inputFrameworkOpName: "SeluGrad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "outputs"
+    inputTensorName: "gradients"
+    outputTensorName: "input"
+    outputTensorName: "epsilon"
+    inputToOutput {
+      key: "input"
+      value: "outputs"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "gradients"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "SeluGrad"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "qr"
+  inputFrameworkOpName: "Qr"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Qr"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputBooleanName: "full_matrices"
+    outputBooleanName: "fullMatrices"
+    inputToOutput {
+      key: "fullMatrices"
+      value: "full_matrices"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Qr"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "eig"
+  inputFrameworkOpName: "Eig"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Eig"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "identity"
+  inputFrameworkOpName: "Snapshot"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Snapshot"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Snapshot"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "stop_gradient"
+  inputFrameworkOpName: "PreventGradient"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "PreventGradient"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "PreventGradient"
+  }
+}

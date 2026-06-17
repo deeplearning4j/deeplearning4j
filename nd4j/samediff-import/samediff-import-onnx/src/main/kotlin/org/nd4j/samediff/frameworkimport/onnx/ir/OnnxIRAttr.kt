@@ -75,7 +75,15 @@ class OnnxIRAttr(inputAttributeDef: Onnx.AttributeProto, inputAttributeValue: On
     }
 
     override fun attributeValueType(): AttributeValueType {
-        when(attributeDef.type) {
+        // Use attributeDef.type as the primary source, but fall back to attributeValue.type
+        // when the schema definition has UNDEFINED type (e.g. synthetic defs for optional
+        // attributes not present in the op schema).
+        val typeToUse = if (attributeDef.type != Onnx.AttributeProto.AttributeType.UNDEFINED)
+            attributeDef.type
+        else
+            attributeValue.type
+
+        when(typeToUse) {
             Onnx.AttributeProto.AttributeType.STRING -> return AttributeValueType.STRING
             Onnx.AttributeProto.AttributeType.STRINGS -> return AttributeValueType.LIST_STRING
             Onnx.AttributeProto.AttributeType.INT -> return AttributeValueType.INT
@@ -87,8 +95,6 @@ class OnnxIRAttr(inputAttributeDef: Onnx.AttributeProto, inputAttributeValue: On
             Onnx.AttributeProto.AttributeType.GRAPH -> return AttributeValueType.GRAPH
             else -> return AttributeValueType.INVALID
         }
-
-        return AttributeValueType.INVALID
     }
 
 

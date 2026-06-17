@@ -56,8 +56,8 @@ class Resize : PreImportHook  {
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#resize
         var inputVariable = sd.getVariable(op.inputsToOp[0])
         val inputShape = sd.shape(inputVariable)
-        val roi = sd.getVariable(op.inputsToOp[1])
-        val scales = sd.getVariable(op.inputsToOp[2])
+        val roi = if (op.inputsToOp.size > 1 && op.inputsToOp[1].isNotEmpty()) sd.getVariable(op.inputsToOp[1]) else null
+        val scales = if (op.inputsToOp.size > 2 && op.inputsToOp[2].isNotEmpty()) sd.getVariable(op.inputsToOp[2]) else null
         val sizes = sizes(sd,op)
         /**
          *
@@ -87,23 +87,30 @@ class Resize : PreImportHook  {
         val mode = attributes.getOrDefault("mode","nearest") as String
 
         val outputVarName = outputNames[0]
-        val outputSize = outputSize(sd, op, inputVariable, scales, sizes,inputShape)
-        outputSize!!.setShape(2)
+        val outputSize = outputSize(sd, op, inputVariable, scales, sizes,inputShape)!!
 
-        //switch to NWHC (tensorflow format) and then back to NCHW (onnx format)
+        //switch to NHWC (tensorflow format) and then back to NCHW (onnx format)
         inputVariable = sd.permute(inputVariable,0,2,3,1)
+
+        // Resize operates on images which are 4D (NCHW or NHWC)
+        // We use constant rank since ONNX Resize is defined for 4D tensors
+        val defaultRank = 4
+
         var result: SDVariable? = null
         when (coordTransformationMode) {
             "tf_crop_and_resize" -> {
                 val indices = mutableListOf<Int>()
-                val rank = inputVariable.arr.rank()
-                for(i in 2 until rank) {
+                // Resize operates on 4D tensors
+                for(i in 2 until defaultRank) {
                     indices.add(i - 2,i)
-                    indices.add(i,i + rank)
+                    indices.add(i,i + defaultRank)
                 }
 
                 val boxes = sd.expandDims(sd.gather(roi,indices.toIntArray(),0),0)
-                val boxIndices = sd.range(0.0,inputVariable.shape[0] as Double,1.0, DataType.INT64)
+                // Get batch size from input shape using SameDiff
+                val inputShapeVar = sd.shape(inputVariable)
+                val batchSizeVar = inputShapeVar.get(SDIndex.point(0)).castTo(DataType.DOUBLE)
+                val boxIndices = sd.range(sd.constant(0.0), batchSizeVar, sd.constant(1.0), DataType.INT64)
                 result =  sd.image().cropAndResize(inputVariable,boxes,boxIndices,outputSize,extrapolationValue)
             }
             "align_corners" -> {
@@ -146,15 +153,14 @@ class Resize : PreImportHook  {
     ): SDVariable? {
         return when (type) {
             "linear" -> {
-                val height = size.arr.getInt(0)
-                val width = size.arr.getInt(1)
-                sd.image().resizeBiLinear(input,height,width, alignCorners, halfPixelCenters)
+                // Use imageResize which handles dynamic sizes via SDVariable
+                sd.image().imageResize(input, size, alignCorners, halfPixelCenters, ImageResizeMethod.ResizeBilinear)
             }
             "cubic" -> {
-                sd.image().resizeBiCubic(input,size,alignCorners,halfPixelCenters)
+                sd.image().resizeBiCubic(input, size, alignCorners, halfPixelCenters)
             }
             else -> {
-                sd.image().imageResize(input,size,true,true,ImageResizeMethod.ResizeNearest)
+                sd.image().imageResize(input, size, true, true, ImageResizeMethod.ResizeNearest)
             }
         }
     }
@@ -163,27 +169,37 @@ class Resize : PreImportHook  {
         sd: SameDiff,
         op: SameDiffOp,
         input: SDVariable,
-        scales: SDVariable,
+        scales: SDVariable?,
         sizes: SDVariable,
         inputVariableShape: SDVariable
     ): SDVariable?  {
-        var ret: SDVariable? = null
-        ret = if(op.inputsToOp.size == 3) {
-            val heightWidthScale = scales.get(SDIndex.interval(2,-1))
-            val subGet = inputVariableShape.get(SDIndex.interval(2,-1))
-            val heightWidthShape = sd.castTo(subGet,heightWidthScale.dataType())
-            val scaled = sd.castTo(sd.math.mul(heightWidthScale,heightWidthShape),DataType.INT32)
-            scaled
+        // Check if we have 4 inputs (sizes provided) and sizes is not empty
+        val hasSizes = op.inputsToOp.size >= 4 && sizes.getArr() != null && sizes.getArr()!!.length() > 0
+        return if (!hasSizes) {
+            // Scales-based resize: output_size = input_size * scales
+            // For 4D input [N, C, H, W], scales is [sN, sC, sH, sW]
+            // We need output [outH, outW]
+            val inputShapeArr = input.shape ?: throw IllegalStateException("Resize requires static input shape")
+            val h = inputShapeArr[2].toInt()
+            val w = inputShapeArr[3].toInt()
+
+            // Get scale values from INDArray
+            val scalesArr = scales?.getArr()
+            val hScale = if (scalesArr != null) scalesArr.getFloat(2).toDouble() else 1.0
+            val wScale = if (scalesArr != null) scalesArr.getFloat(3).toDouble() else 1.0
+
+            val outH = (h * hScale).toInt()
+            val outW = (w * wScale).toInt()
+
+            sd.constant(Nd4j.createFromArray(outH.toLong(), outW.toLong()))
         } else {
-            sizes.get(SDIndex.interval(2, 1,input.rank().arr.getInt(0)))
+            // Sizes-based resize: use sizes directly
+            // sizes is [N, C, H, W], we need [H, W]
+            val sizesArr = sizes.getArr() ?: throw IllegalStateException("Sizes array is null")
+            val h = sizesArr.getInt(2)
+            val w = sizesArr.getInt(3)
+            sd.constant(Nd4j.createFromArray(h.toLong(), w.toLong()))
         }
-
-        if(ret.shape.size < 2) {
-            var newRet = sd.zero(null,DataType.INT32,2)
-            ret = newRet.add(ret.arr.getInt(0).toDouble())
-        }
-
-        return ret.castTo(DataType.INT32)
     }
 
     fun alignCornersFor(coordTransformationMode: String): Boolean {

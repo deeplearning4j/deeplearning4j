@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.ir
 import onnx.Onnx
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.ir.IRDataType
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
@@ -53,14 +54,18 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
     val nodeNames: Set<String>
     val inputsOutputs = HashSet<String>()
 
+    // O(1) lookup indexes to replace O(n) linear scans
+    private val initializerByName = HashMap<String, Onnx.TensorProto>()
+    private val nodeByNameMap = HashMap<String, IRNode<Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType>>()
+    private val constantOutputMap = HashMap<String, IRNode<Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType>>()
+
 
     override fun nodeByName(input: String): Onnx.NodeProto {
         //sometimes models exported from onnx will have tensorflow's var suffix
         val input2 = stripVarSuffix(input)
-        if(!cachedNodeList.map { input -> input.nodeName() }.contains(input2)) {
-            throw IllegalStateException("No input found for node name $input")
-        }
-        return cachedNodeList.first { inputNode -> inputNode.nodeName() == input2 }.internalValue()
+        val cached = nodeByNameMap[input2]
+            ?: throw IllegalStateException("No input found for node name $input")
+        return cached.internalValue()
     }
 
     init {
@@ -72,15 +77,18 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         preProcessZeroSuffixes()
         preProcessUnnamedNodes()
 
+        // Build initializer index for O(1) lookups (before nodeList() which may reference it)
+        for (initializer in this.graphDef.initializerList) {
+            val name = initializer.name.replace(":0","")
+            initializerByName[name] = initializer
+        }
+
         cachedNodeList = nodeList()
 
 
         cachedNodeList.forEachIndexed { index,node ->
             if(node.nodeName().isEmpty()) {
                 val newNodeBuilder = node.internalValue().toBuilder()
-                if(node.numOutputs() > 1) {
-                    println("Found node with no name and > 1 input.  Node was $node. Using first output as name.")
-                }
                 val newName = node.outputAt(0)
                 newNodeBuilder.name = newName.replace(":0","")
                 val newNode = newNodeBuilder.build()
@@ -89,22 +97,43 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
             node.inputs().forEach { inputsOutputs.add(it.replace(":0","")) }
             node.outputs().forEach { inputsOutputs.add(it.replace(":0","")) }
-            nodeNames.add(node.nodeName().replace(":0",""))
+            val cleanNodeName = node.nodeName().replace(":0","")
+            nodeNames.add(cleanNodeName)
             opTypes[node.nodeName()] = node.opName()
 
+            // Build node-by-name index
+            if(cleanNodeName.isNotEmpty()) {
+                nodeByNameMap[cleanNodeName] = node
+            }
 
+            // Build constant output index for O(1) constant lookups
+            if(node.opName() == "Constant") {
+                node.outputs().forEach { output ->
+                    val cleanOutput = output.replace(":0","")
+                    constantOutputMap[cleanOutput] = node
+                    constantOutputMap[output] = node
+                }
+            }
         }
 
 
-        val initializers = this.graphDef.initializerList.map { input -> input.name.replace(":0","") }
-        println(initializers)
-        val inputList = this.graphDef.inputList.filter { input -> !opTypes.containsKey(input.name.replace(":0","")) && !initializers.contains(input.name.replace(":0",""))}.map { input -> input.name.replace(":0","") }
-        val varList = this.graphDef.inputList.filter { input -> initializers.contains(input.name.replace(":0","")) }.map { input -> input.name.replace(":0","") }
-        println("Inputs $inputList")
-        println("Variables $varList")
+        val initializerNames = initializerByName.keys
+        // Collect all node output names to distinguish true graph inputs from node-produced values
+        val nodeOutputNames = HashSet<String>()
+        cachedNodeList.forEach { node ->
+            node.outputs().forEach { output ->
+                nodeOutputNames.add(output.replace(":0",""))
+            }
+        }
+        val inputList = this.graphDef.inputList.filter { input ->
+            val cleanName = input.name.replace(":0","")
+            !opTypes.containsKey(cleanName) &&
+            !initializerNames.contains(cleanName) &&
+            !nodeOutputNames.contains(cleanName)
+        }.map { input -> input.name.replace(":0","") }
         this.inputList.addAll(inputList)
         this.variableList.addAll(inputList)
-        initializerSet.addAll(initializers)
+        initializerSet.addAll(initializerNames)
         outputList.addAll(this.graphDef.outputList.filter { valueInfo -> !valueInfo.name.contains(valueInfo.name) }
             .map { input -> input.name.replace(":0","") })
     }
@@ -112,8 +141,17 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
     /**
      * Preprocessing step to assign unique names to unnamed nodes based on their operation type.
      * Uses per-operation-type counters to ensure unique identification.
+     *
+     * Optimized: first checks if any unnamed nodes exist before rebuilding the graph.
      */
     private fun preProcessUnnamedNodes() {
+        // Quick scan: check if any nodes are unnamed
+        var hasUnnamed = false
+        for(node in graphDef.nodeList) {
+            if(node.name.isEmpty()) { hasUnnamed = true; break }
+        }
+        if(!hasUnnamed) return  // All nodes already named, skip expensive rebuild
+
         val graphDefBuilder = graphDef.toBuilder()
         val opTypeCounters = mutableMapOf<String, Int>()
         val nodeList = ArrayList<Onnx.NodeProto>()
@@ -160,8 +198,31 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
      * This is for when you import a tensorflow model or import a model
      * from tf onnx and need to handle the :0 edge case which is pretty common
      * when interacting with anything that came from tensorflow.
+     *
+     * Optimized: first checks if any :0 suffixes exist before rebuilding the graph.
+     * For pure ONNX models (no TF origin), this avoids copying all weight data.
      */
     fun preProcessZeroSuffixes() {
+        // Quick scan: check if any :0 suffixes exist anywhere
+        var hasZeroSuffix = false
+        for(init in graphDef.initializerList) {
+            if(init.name.contains(":0")) { hasZeroSuffix = true; break }
+        }
+        if(!hasZeroSuffix) {
+            for(node in graphDef.nodeList) {
+                if(node.name.contains(":0")) { hasZeroSuffix = true; break }
+                if(!hasZeroSuffix) {
+                    for(inp in node.inputList) { if(inp.contains(":0")) { hasZeroSuffix = true; break } }
+                }
+                if(!hasZeroSuffix) {
+                    for(out in node.outputList) { if(out.contains(":0")) { hasZeroSuffix = true; break } }
+                }
+                if(hasZeroSuffix) break
+            }
+        }
+
+        if(!hasZeroSuffix) return  // No :0 suffixes found, skip expensive rebuild
+
         val graphDefBuilder = graphDef.toBuilder()
         val initializerList = ArrayList<Onnx.TensorProto>()
         //ensure we prune all :0 suffixes which may come from tf onnx
@@ -207,8 +268,8 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         val identityOp =  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")["Constant"]!!
 
         //for model import purposes, add identity ops as dummies similar to how tensorflow does placeholders/constants
-        val initializerListNames = graphDef.initializerList.map { input -> input.name.replace(":0","") }
-        graphDef.inputList.filter { input -> !initializerListNames.contains(input.name.replace(":0","")) }.forEach { input ->
+        // Use the pre-built initializerByName index for O(1) lookups instead of O(n) list scan
+        graphDef.inputList.filter { input -> !initializerByName.containsKey(input.name.replace(":0","")) }.forEach { input ->
             //note: this is not a real op name in onnx, this is purely for flagging for import to grab the node from the initializer
             //add dummy values for placeholders
             val tensorBuilder = Onnx.TensorProto.newBuilder()
@@ -231,7 +292,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         }
 
         //add inputs and outputs for use cases like placeholder detection
-        inputList.addAll(graphDef.inputList.filter { input -> !initializerListNames.contains(input.name) }.map { input -> input.name })
+        inputList.addAll(graphDef.inputList.filter { input -> !initializerByName.containsKey(input.name.replace(":0","")) }.map { input -> input.name })
         outputList.addAll(graphDef.outputList.filter { valueInfo -> !outputList.contains(valueInfo.name) }.map { input -> input.name })
         val frameworkList =  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
         graphDef.nodeList.forEach {
@@ -309,7 +370,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
     }
 
     override fun shapeOfInput(varName: String): LongArray? {
-        val firstOrNull = graphDef.initializerList.firstOrNull { inputNode -> inputNode.name == varName }
+        val firstOrNull = initializerByName[varName]
         if(firstOrNull != null)
             return firstOrNull.dimsList.toLongArray()
         else if(nodeIsPlaceHolder(stripVarSuffix(varName))) {
@@ -330,13 +391,12 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
     override fun dataTypeForVariable(varName: String): IRDataType<Onnx.TensorProto.DataType> {
         val varNameStripped = stripVarSuffix(varName)
-        val firstOrNull = graphDef.initializerList.firstOrNull {
-                inputNode -> inputNode.name == varNameStripped }
+        val firstOrNull = initializerByName[varNameStripped]
         val input = graphDef.inputList.firstOrNull { input2 ->
             input2.name == varNameStripped
         }
         if(firstOrNull != null)
-            return OnnxIRDataType(Onnx.TensorProto.DataType.values()[firstOrNull!!.dataType])
+            return OnnxIRDataType(Onnx.TensorProto.DataType.values()[firstOrNull.dataType])
         else if(nodeIsPlaceHolder(varNameStripped)) {
             if(input != null && input.type.hasTensorType()) {
                 return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.tensorType.elemType))
@@ -377,6 +437,9 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         val graphBuilder = graphDef.toBuilder()
         val converted = convertToOnnxTensor(value,name)
         graphBuilder.addInitializer(converted)
+        // Update initializer index
+        initializerByName[name] = converted
+        initializerSet.add(name)
 
         val tensorShapeInfo = TensorTypeProto {
             shape = OnnxShapeProto {
@@ -446,38 +509,107 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
     }
 
     override fun getConstantArrayForName(name: String): INDArray {
-        val check = graphDef.initializerList.map { input ->input.name }
-        if(!check.contains(name)) {
-            //initializer not found, see if there is a constant node
-            if (this.nodeNames.contains(name)) {
-                val constNode = nodeByName(name)
-                if (constNode.opType == "Constant") {
-                    //every constant should have a tensor value
-                    val getValue = constNode.getAttribute(0).t
-                    return OnnxIRTensor(getValue).toNd4jNDArray()
-                } else {
-                    throw IllegalArgumentException("Constant of name $name not found!")
+        // O(1) lookup via initializer index
+        val initializer = initializerByName[name]
+        if(initializer != null) {
+            return OnnxIRTensor(initializer).toNd4jNDArray()
+        }
 
-                }
-
+        // Not in initializers - check constant nodes
+        if (this.nodeNames.contains(name)) {
+            val constNode = nodeByName(name)
+            if (constNode.opType == "Constant") {
+                return extractConstantValue(constNode, name)
+            } else {
+                throw IllegalArgumentException("Constant of name $name not found!")
             }
         }
 
-        return OnnxIRTensor(graphDef.initializerList.first { input -> input.name == name }).toNd4jNDArray()
+        // O(1) lookup via constant output index
+        val constNodeByOutput = constantOutputMap[name]
+        if (constNodeByOutput != null) {
+            return extractConstantValue(constNodeByOutput.internalValue(), name)
+        }
+
+        throw IllegalArgumentException("Constant of name $name not found!")
+    }
+
+    private fun extractConstantValue(constNode: Onnx.NodeProto, name: String): INDArray {
+        // ONNX Constant can have different attribute types
+        // Check for each possible attribute type
+        for (attr in constNode.attributeList) {
+            when (attr.name) {
+                "value" -> {
+                    // Main tensor value attribute
+                    var arr = OnnxIRTensor(attr.t).toNd4jNDArray()
+                    // If tensor has only 1 element, squeeze to scalar for proper broadcasting
+                    // Use reshape() with empty shape to preserve original datatype
+                    if (arr.length() == 1L && arr.rank() > 0) {
+                        arr = arr.reshape()
+                    }
+                    return arr
+                }
+                "value_float" -> {
+                    return Nd4j.scalar(attr.f)
+                }
+                "value_floats" -> {
+                    val floats = attr.floatsList.toFloatArray()
+                    return Nd4j.createFromArray(*floats)
+                }
+                "value_int" -> {
+                    return Nd4j.scalar(attr.i)
+                }
+                "value_ints" -> {
+                    val ints = attr.intsList.toLongArray()
+                    return Nd4j.createFromArray(*ints)
+                }
+                "value_string" -> {
+                    // String as byte array - create INT8 tensor
+                    val bytes = attr.s.toByteArray()
+                    return Nd4j.createFromArray(*bytes)
+                }
+                "value_strings" -> {
+                    // Multiple strings not well supported, return first as bytes
+                    if (attr.stringsList.isNotEmpty()) {
+                        val bytes = attr.stringsList[0].toByteArray()
+                        return Nd4j.createFromArray(*bytes)
+                    }
+                }
+            }
+        }
+        // Fallback: try first attribute's tensor if no named attribute found
+        if (constNode.attributeCount > 0 && constNode.getAttribute(0).hasT()) {
+            var arr = OnnxIRTensor(constNode.getAttribute(0).t).toNd4jNDArray()
+            // If tensor has only 1 element, squeeze to scalar for proper broadcasting
+            // Use reshape() with empty shape to preserve original datatype
+            if (arr.length() == 1L && arr.rank() > 0) {
+                arr = arr.reshape()
+            }
+            return arr
+        }
+        throw IllegalArgumentException("Constant node '$name' has no value attribute")
     }
 
     override fun hasConstantInitializer(name: String): Boolean {
-        return initializerSet.contains(name)
+        if (initializerSet.contains(name)) {
+            return true
+        }
+        // O(1) lookup via constant output index
+        return constantOutputMap.containsKey(name)
     }
 
     override fun indexOfNode(input: String): Int {
-        return cachedNodeList.map { inputNode -> inputNode.nodeName() }.indexOf(input)
+        // Still O(n) but only used rarely; could add index map if needed
+        return cachedNodeList.indexOfFirst { it.nodeName() == input }
     }
     override fun nodesWithInput(name: String): List<IRNode<Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType>> {
         return cachedNodeList.filter { input -> input.inputs().contains(name) }
     }
 
     override fun irNodeByName(input: String): IRNode<Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType> {
+        val input2 = stripVarSuffix(input)
+        val cached = nodeByNameMap[input2]
+        if(cached != null) return cached
         val node = nodeByName(input)
         return OnnxIRNode(node,opMappingRegistry.lookupInputFrameworkOpDef(node.opType),opMappingRegistry)
     }
@@ -530,6 +662,22 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
     override fun updateNodeCacheWith(nodeList: List<IRNode<Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType>>) {
         this.cachedNodeList = nodeList
+        // Rebuild indexes
+        nodeByNameMap.clear()
+        constantOutputMap.clear()
+        nodeList.forEach { node ->
+            val cleanName = node.nodeName().replace(":0","")
+            if(cleanName.isNotEmpty()) {
+                nodeByNameMap[cleanName] = node
+            }
+            if(node.opName() == "Constant") {
+                node.outputs().forEach { output ->
+                    val cleanOutput = output.replace(":0","")
+                    constantOutputMap[cleanOutput] = node
+                    constantOutputMap[output] = node
+                }
+            }
+        }
         val graphDefBuilder = graphDef.toBuilder()
         for(i in 0 until graphDefBuilder.nodeCount) {
             graphDefBuilder.removeNode(0)

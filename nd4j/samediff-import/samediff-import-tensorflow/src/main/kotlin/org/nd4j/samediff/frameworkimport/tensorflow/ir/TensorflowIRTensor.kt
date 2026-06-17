@@ -20,6 +20,8 @@
 package org.nd4j.samediff.frameworkimport.tensorflow.ir
 
 import org.nd4j.ir.TensorNamespace
+import org.nd4j.linalg.api.buffer.DataBuffer
+import org.nd4j.linalg.api.buffer.DataType as Nd4jDataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ir.IRDataType
@@ -28,6 +30,8 @@ import org.nd4j.samediff.frameworkimport.ndarrayFromNameSpaceTensor
 import org.tensorflow.framework.DataType
 import org.tensorflow.framework.TensorProto
 import java.lang.IllegalArgumentException
+import java.nio.Buffer
+import java.nio.ByteBuffer
 
 class TensorflowIRTensor(input: TensorProto): IRTensor<TensorProto, DataType> {
 
@@ -152,6 +156,70 @@ class TensorflowIRTensor(input: TensorProto): IRTensor<TensorProto, DataType> {
     override fun toNd4jNDArray(): INDArray {
         if(tensor.dtype == DataType.UNRECOGNIZED || tensor.dtype == DataType.DT_INVALID)
             return Nd4j.empty()
-         return ndarrayFromNameSpaceTensor(toArgTensor())
+
+        // OPTIMIZATION: For tensorContent (raw data), convert directly without building intermediate protobuf
+        // Check that there's no "normal" data fields populated
+        if (tensor.tensorContent != null && !tensor.tensorContent.isEmpty &&
+            tensor.floatValCount == 0 && tensor.doubleValCount == 0 &&
+            tensor.intValCount == 0 && tensor.int64ValCount == 0 &&
+            tensor.uint64ValCount == 0 && tensor.halfValCount == 0 &&
+            tensor.boolValCount == 0 && tensor.stringValCount == 0) {
+            return loadTensorContentDirect(tensor)
+        }
+
+        // Fall back to standard path for non-raw data (float_val, int_val, etc.)
+        return ndarrayFromNameSpaceTensor(toArgTensor())
+    }
+
+    /**
+     * Optimized direct loading of TensorFlow tensor content to INDArray.
+     * Avoids building intermediate TensorNamespace.TensorProto protobuf.
+     */
+    private fun loadTensorContentDirect(tensor: TensorProto): INDArray {
+        val shape = tensor.tensorShape.dimList.map { it.size }.toLongArray()
+        val dtype = convertTfDataType(tensor.dtype)
+
+        var totalLen = if (shape.isNotEmpty()) {
+            var prod = 1L
+            for (dim in shape) prod *= dim
+            prod
+        } else {
+            1L
+        }
+        if (totalLen < 1) totalLen = 1
+
+        // Get ByteBuffer view directly from protobuf (no copy)
+        val protoBuffer = tensor.tensorContent.asReadOnlyByteBuffer()
+
+        // Allocate direct buffer and copy once
+        val byteBuffer = ByteBuffer.allocateDirect((totalLen * dtype.width()).toInt())
+        byteBuffer.put(protoBuffer)
+        (byteBuffer as Buffer).rewind()
+
+        val rawDataBuffer = Nd4j.createBuffer(byteBuffer, dtype, totalLen.toInt())
+        return if (shape.isNotEmpty() && rawDataBuffer.length() > 0) {
+            Nd4j.create(rawDataBuffer as DataBuffer).reshape('c', *shape)
+        } else {
+            Nd4j.create(rawDataBuffer as DataBuffer)
+        }
+    }
+
+    private fun convertTfDataType(tfType: DataType): Nd4jDataType {
+        return when (tfType) {
+            DataType.DT_FLOAT, DataType.DT_FLOAT_REF -> Nd4jDataType.FLOAT
+            DataType.DT_DOUBLE, DataType.DT_DOUBLE_REF -> Nd4jDataType.DOUBLE
+            DataType.DT_INT32, DataType.DT_INT32_REF -> Nd4jDataType.INT32
+            DataType.DT_INT64, DataType.DT_INT64_REF -> Nd4jDataType.INT64
+            DataType.DT_INT16, DataType.DT_INT16_REF -> Nd4jDataType.INT16
+            DataType.DT_INT8, DataType.DT_INT8_REF -> Nd4jDataType.INT8
+            DataType.DT_UINT8, DataType.DT_UINT8_REF -> Nd4jDataType.UINT8
+            DataType.DT_UINT16, DataType.DT_UINT16_REF -> Nd4jDataType.UINT16
+            DataType.DT_UINT32, DataType.DT_UINT32_REF -> Nd4jDataType.UINT32
+            DataType.DT_UINT64, DataType.DT_UINT64_REF -> Nd4jDataType.UINT64
+            DataType.DT_HALF, DataType.DT_HALF_REF -> Nd4jDataType.FLOAT16
+            DataType.DT_BFLOAT16, DataType.DT_BFLOAT16_REF -> Nd4jDataType.BFLOAT16
+            DataType.DT_BOOL, DataType.DT_BOOL_REF -> Nd4jDataType.BOOL
+            else -> Nd4jDataType.FLOAT
+        }
     }
 }

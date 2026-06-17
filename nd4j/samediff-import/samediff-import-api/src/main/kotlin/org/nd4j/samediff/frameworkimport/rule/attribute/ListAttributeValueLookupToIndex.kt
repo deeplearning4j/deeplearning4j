@@ -173,7 +173,16 @@ abstract class ListAttributeValueLookupToIndex<
                 }
 
               else -> {
-                  throw IllegalArgumentException("Illegal type ${listOfValues.attributeValueType()}")
+                  // The attribute is completely absent (INVALID/UNDEFINED type) — use the
+                  // defaultValueIfNotFound fallback if one was provided (stored as transformerArgs[k][1]).
+                  // This occurs when an optional attribute (e.g. 'pads' on Conv) is missing from
+                  // both the node's attribute list and the op schema definition.
+                  if(transformerArgs[k]!!.size > 1) {
+                      val args = transformerArgs[k]!![1]!!
+                      ret.add(args)
+                  } else {
+                      throw IllegalArgumentException("Illegal type ${listOfValues.attributeValueType()} for attribute $v and no defaultValueIfNotFound was provided")
+                  }
               }
             }
 

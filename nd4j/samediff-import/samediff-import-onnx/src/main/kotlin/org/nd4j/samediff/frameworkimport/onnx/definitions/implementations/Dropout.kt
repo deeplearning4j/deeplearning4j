@@ -1,5 +1,6 @@
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
+import onnx.Onnx
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
@@ -28,12 +29,15 @@ class Dropout : PreImportHook  {
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
         var inputVariable = sd.getVariable(op.inputsToOp[0])
+
+        // Get dropout ratio - prefer attribute, then input variable, then default
         val p = if(attributes.containsKey("ratio")) {
             val fVal = attributes["ratio"] as Float
             fVal.toDouble()
         } else if(op.inputsToOp.size > 1) {
-            val dropoutVar = sd.getVariable(op.inputsToOp[1]).arr.getDouble(0)
-            dropoutVar
+            // Try to get value from dynamicVariables (ONNX TensorProto)
+            val ratioVarName = op.inputsToOp[1]
+            getDoubleFromTensorProto(dynamicVariables, ratioVarName) ?: 0.5
         } else {
             0.5
         }
@@ -44,5 +48,27 @@ class Dropout : PreImportHook  {
 
     }
 
-
+    /**
+     * Extract double value from ONNX TensorProto in dynamicVariables.
+     */
+    private fun getDoubleFromTensorProto(
+        dynamicVariables: Map<String, GeneratedMessageV3>,
+        varName: String
+    ): Double? {
+        val tensorProto = dynamicVariables[varName] as? Onnx.TensorProto ?: return null
+        return when {
+            tensorProto.floatDataCount > 0 -> tensorProto.floatDataList[0].toDouble()
+            tensorProto.doubleDataCount > 0 -> tensorProto.doubleDataList[0]
+            tensorProto.rawData.size() > 0 -> {
+                val buffer = tensorProto.rawData.asReadOnlyByteBuffer()
+                buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                when (tensorProto.dataType) {
+                    Onnx.TensorProto.DataType.FLOAT_VALUE -> buffer.asFloatBuffer().get().toDouble()
+                    Onnx.TensorProto.DataType.DOUBLE_VALUE -> buffer.asDoubleBuffer().get()
+                    else -> null
+                }
+            }
+            else -> null
+        }
+    }
 }

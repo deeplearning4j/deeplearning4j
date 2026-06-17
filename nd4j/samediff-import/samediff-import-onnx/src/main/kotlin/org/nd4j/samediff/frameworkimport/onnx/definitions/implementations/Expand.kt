@@ -22,7 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -31,14 +31,17 @@ import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
- * A port of expand.py from onnx tensorflow for samediff:
- * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/expand.py
+ * ONNX Expand: broadcasts the input tensor to a target shape using numpy-style broadcasting rules.
+ *
+ * Uses the native broadcast_to op which applies numpy broadcast rules in C++:
+ * for each dimension, result = max(input_dim, target_dim). This handles ONNX models
+ * that use Where(shape == -1, 1, shape) patterns where target dims may be 1 for
+ * dimensions that should keep the input's larger size.
  *
  * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [],opNames = ["Expand"],frameworkName = "onnx")
 class Expand : PreImportHook  {
-
 
     override fun doImport(
         sd: SameDiff,
@@ -49,23 +52,14 @@ class Expand : PreImportHook  {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        var inputVariable = sd.getVariable(op.inputsToOp[0])
+        val inputVariable = sd.getVariable(op.inputsToOp[0])
         val newShape = sd.getVariable(op.inputsToOp[1])
         val outputVarName = outputNames[0]
 
-        var outputVar: SDVariable = if(inputVariable.dataType() == DataType.BOOL) {
-            val ones = sd.create(newShape,DataType.INT8)
-            val assignedOnes = ones.assign(1.0)
-            val r = sd.castTo(inputVariable,DataType.INT8).mul(assignedOnes)
-            sd.castTo(outputVarName,r,DataType.BOOL)
-        } else {
-            val ones = sd.create(newShape,inputVariable.dataType())
-            val assignedOnes = ones.assign(1.0)
-            assignedOnes.mul(outputVarName,inputVariable)
-        }
+        // Use broadcast_to directly — single op, no intermediates
+        val broadcastOp = BroadcastTo(sd, inputVariable, newShape)
+        val outputVar = sd.updateVariableNameAndReference(broadcastOp.outputVariables()[0], outputVarName)
 
         return mapOf(outputVar.name() to listOf(outputVar))
     }
-
-
 }
