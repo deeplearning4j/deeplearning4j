@@ -89,9 +89,9 @@ static void reportMLIRVerificationFailure(mlir::ModuleOp mod, int startSlot, int
   // Use configurable dump dir to avoid /tmp pollution
   std::string dumpDir = sd::Environment::getInstance().tritonDumpDir();
   if (dumpDir.empty()) {
-    const char* envDir = std::getenv("ND4J_TRITON_CACHE_DIR");
-    if (envDir && envDir[0] != '\0') {
-      dumpDir = envDir;
+    std::string cfgCacheDir = sd::Environment::getInstance().triton().cacheDir();
+    if (!cfgCacheDir.empty()) {
+      dumpDir = cfgCacheDir;
     } else {
       std::string home = sd::Environment::getInstance().homeDirectory();
       dumpDir = home.empty() ? getTempDir() : home + "/.kompile/cache/triton";

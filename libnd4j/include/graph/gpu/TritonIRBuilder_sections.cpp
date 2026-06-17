@@ -38,6 +38,7 @@
 #include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
+#include <math/templatemath.h>
 #include <ops/OpTraitTable.h>
 #include <system/Environment.h>
 
@@ -788,7 +789,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
             currentSection.headDim = hidden / nh;
             currentSection.attnQIsBSHD = true;
           }
-          currentSection.attentionScale = 1.0f / std::sqrt(static_cast<float>(currentSection.headDim));
+          currentSection.attentionScale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(currentSection.headDim));
         }
 
         // Determine effective K source by scanning optional inputs for a real KV-cache tensor.
@@ -2709,7 +2710,7 @@ mlir::Value TritonIRBuilder::emitRoPEPositionSSA(mlir::OpBuilder& builder, mlir:
   auto halfRangeF32 = builder.create<mlir::arith::SIToFPOp>(loc, halfDimF32Type, halfRange);
 
   // exponent = -2 * i / headDim * log(freqBase)
-  float logFreqBase = std::log(freqBase);
+  float logFreqBase = sd::math::sd_log<float, float>(freqBase);
   float negTwoOverDim = -2.0f / static_cast<float>(headDim);
   auto negTwoOverDimConst = builder.create<mlir::arith::ConstantOp>(loc,
       builder.getFloatAttr(f32Type, negTwoOverDim));
@@ -2848,7 +2849,7 @@ void TritonIRBuilder::emitRoPEPositionSection(mlir::OpBuilder& builder, mlir::Lo
   // theta = pos * freqScale * exp(-2*pairIdx/headDim * log(freqBase))
   auto pairIdxF32 = builder.create<mlir::arith::SIToFPOp>(loc, dataF32Type, pairIdx);
   float negTwoOverDim = -2.0f / static_cast<float>(headDim);
-  float logFreqBase = std::log(freqBase);
+  float logFreqBase = sd::math::sd_log<float, float>(freqBase);
   auto negTwoDimConst = builder.create<mlir::arith::ConstantOp>(loc,
       builder.getFloatAttr(f32Type, negTwoOverDim));
   auto negTwoDimSplat = builder.create<mlir::triton::SplatOp>(loc, dataF32Type, negTwoDimConst);

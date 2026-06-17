@@ -32,6 +32,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/DspHashUtils.h>
 #include <helpers/logger.h>
+#include <system/Environment.h>
 
 #ifdef SD_CUDA
 #include <cuda.h>
@@ -87,13 +88,12 @@ inline std::string configuredOrDefaultTritonDir(const std::string& configured,
   if (!configured.empty()) {
     return configured;
   }
-  // Priority 2: env var ND4J_TRITON_CACHE_DIR checked directly so callers
-  // that pass an empty `configured` still honour the env var.
-  const char* envDir = std::getenv("ND4J_TRITON_CACHE_DIR");
-  if (envDir && envDir[0] != '\0') {
-    std::string d(envDir);
-    if (d.back() != '/' && d.back() != '\\') d += '/';
-    return d + defaultLeaf;
+  // Priority 2: fall back to the cache dir from the subsystem config
+  // (TritonConfig::initFromEnvironment reads ND4J_TRITON_CACHE_DIR).
+  std::string cfgCacheDir = sd::Environment::getInstance().triton().cacheDir();
+  if (!cfgCacheDir.empty()) {
+    if (cfgCacheDir.back() != '/' && cfgCacheDir.back() != '\\') cfgCacheDir += '/';
+    return cfgCacheDir + defaultLeaf;
   }
   // Priority 3: default to ~/.kompile/cache/triton/<leaf>.
   if (!home.empty()) {
