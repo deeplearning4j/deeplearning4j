@@ -43,7 +43,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * A neural network layer.

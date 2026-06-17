@@ -36,9 +36,11 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ArraySavingListener extends BaseListener {
 
@@ -128,12 +130,9 @@ public class ArraySavingListener extends BaseListener {
     }
 
     private static Map<String,File> toMap(File[] files){
-        Map<String,File> ret = new HashMap<>();
-        for(File f : files) {
-            String  name = f.getName();
-            String varName = name.substring(name.indexOf('_') + 1, name.length() - 4); //Strip "x_" and ".bin"
-            ret.put(varName, f);
-        }
-        return ret;
+        return Arrays.stream(files)
+                .collect(Collectors.toMap(
+                        f -> { String name = f.getName(); return name.substring(name.indexOf('_') + 1, name.length() - 4); }, //Strip "x_" and ".bin"
+                        f -> f));
     }
 }
