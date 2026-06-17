@@ -1,0 +1,57 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
+package org.nd4j.autodiff.samediff.rl;
+
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+/**
+ * Interface for generating completions from a policy model.
+ * Used by online RL methods (GRPO, PPO) that need to sample from the policy.
+ *
+ * Adam Gibson
+ */
+public interface SamplingStrategy {
+
+    /**
+     * Generate completions for the given prompts using the policy model.
+     *
+     * @param model           The policy model
+     * @param prompts         Prompt token IDs, shape [batchSize, promptLength]
+     * @param maxNewTokens    Maximum number of tokens to generate
+     * @param logitVariable   Name of the logit output variable in the model
+     * @return Generated completions, shape [batchSize, completionLength]
+     */
+    INDArray generate(SameDiff model, INDArray prompts, int maxNewTokens, String logitVariable);
+
+    /**
+     * Generate multiple completions per prompt (for group-based methods like GRPO).
+     *
+     * @param model           The policy model
+     * @param prompts         Prompt token IDs, shape [batchSize, promptLength]
+     * @param numCompletions  Number of completions per prompt
+     * @param maxNewTokens    Maximum number of tokens to generate
+     * @param logitVariable   Name of the logit output variable
+     * @return Generated completions, shape [batchSize * numCompletions, completionLength]
+     */
+    INDArray generateMultiple(SameDiff model, INDArray prompts, int numCompletions,
+                              int maxNewTokens, String logitVariable);
+}

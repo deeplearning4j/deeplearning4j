@@ -139,9 +139,9 @@ public class ControlFlow {
     public static SDVariable ifCond(SameDiff sameDiff,String outputName, String ifName, @NonNull SameDiffNoArgSingleLambda cond,
                                     @NonNull SameDiffNoArgSingleLambda trueBody, @NonNull SameDiffNoArgSingleLambda falseBody){
 
-        ifName = sameDiff.newBlockName(ifName == null ? "if" : ifName);
+        final String finalIfName = sameDiff.newBlockName(ifName == null ? "if" : ifName);
 
-        NameScope ifScope = sameDiff.withNameScope(ifName);
+        NameScope ifScope = sameDiff.withNameScope(finalIfName);
 
         NameScope condScope = sameDiff.withNameScope("cond");
         final SDVariable pred = cond.define(sameDiff);
@@ -169,56 +169,88 @@ public class ControlFlow {
 
         final Set<String> declared = Sets.newHashSet(sameDiff.variableMap().keySet());
 
-        sameDiff.addArgumentInterceptor(argument -> {
+        // Create a dedicated scope for switches - this ensures switches are created
+        // outside branch scopes so both branches can reference them
+        NameScope switchScope = sameDiff.withNameScope("switches");
 
+        // Helper to create or get a switch for a variable
+        // This is called from within the switchScope so switches get proper names
+        java.util.function.Function<SDVariable, SDVariable[]> getOrCreateSwitch = argument -> {
+            if (switches.containsKey(argument.name())) {
+                return switches.get(argument.name());
+            }
+            SDVariable[] s = sameDiff.switchOp(argument, pred);
+            switches.put(argument.name(), s);
+            return s;
+        };
+
+        // Close switch scope - switches will be created lazily but still in this scope
+        // because we'll temporarily re-enter it when creating new switches
+        switchScope.close();
+
+        // For the true branch, use switch output index 1 (true branch)
+        sameDiff.addArgumentInterceptor(argument -> {
             if(argument == null)
                 return null;
             // if its declared in the if, we don't care about it
             if(declared == null || !declared.contains(argument.name()))
                 return argument;
 
-            // if we've already added a switch, move on
-            if(switches.containsKey(argument.name()))
-                return switches.get(argument.name())[1];
-
-            SDVariable[] s = sameDiff.switchOp(argument, pred);
-            switches.put(argument.name(), s);
-            return s[1];
+            // Create switch in the switches scope, not the branch scope
+            NameScope tempScope = sameDiff.withNameScope(finalIfName + "/switches");
+            SDVariable[] s;
+            if (switches.containsKey(argument.name())) {
+                s = switches.get(argument.name());
+            } else {
+                s = sameDiff.switchOp(argument, pred);
+                switches.put(argument.name(), s);
+            }
+            tempScope.close();
+            return s[1]; // true branch output
         });
         NameScope trueScope = sameDiff.withNameScope("trueBody");
         SDVariable trueOut = trueBody.define(sameDiff);
         sameDiff.removeArgumentInterceptor();
 
         if(declared.contains(trueOut.name())) {
+            NameScope tempScope = sameDiff.withNameScope(finalIfName + "/switches");
             SDVariable[] s = sameDiff.switchOp(trueOut, pred);
             switches.put(trueOut.name(), s);
+            tempScope.close();
             trueOut = s[1];
         }
 
         trueScope.close();
 
         final Set<String> declared2 = Sets.newHashSet(sameDiff.variableMap().keySet());
-        sameDiff.addArgumentInterceptor(argument -> {
 
+        // For the false branch, use switch output index 0 (false branch)
+        sameDiff.addArgumentInterceptor(argument -> {
             // if its declared in the if, we don't care about it
             if(!declared2.contains(argument.name()))
                 return argument;
 
-            // if we've already added a switch, move on
-            if(switches.containsKey(argument.name()))
-                return switches.get(argument.name())[0];
-
-            SDVariable[] s = sameDiff.switchOp(argument, pred);
-            switches.put(argument.name(), s);
-            return s[0];
+            // Use already-created switches (from true branch processing) or create new ones
+            NameScope tempScope = sameDiff.withNameScope(finalIfName + "/switches");
+            SDVariable[] s;
+            if (switches.containsKey(argument.name())) {
+                s = switches.get(argument.name());
+            } else {
+                s = sameDiff.switchOp(argument, pred);
+                switches.put(argument.name(), s);
+            }
+            tempScope.close();
+            return s[0]; // false branch output
         });
         NameScope falseScope = sameDiff.withNameScope("falseBody");
         SDVariable falseOut = falseBody.define(sameDiff);
         sameDiff.removeArgumentInterceptor();
 
         if(declared2.contains(falseOut.name())) {
+            NameScope tempScope = sameDiff.withNameScope(finalIfName + "/switches");
             SDVariable[] s = sameDiff.switchOp(falseOut, pred);
             switches.put(falseOut.name(), s);
+            tempScope.close();
             falseOut = s[0];
         }
         falseScope.close();

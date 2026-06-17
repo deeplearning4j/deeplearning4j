@@ -27,6 +27,7 @@ import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
 import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 
 public class SDLinalg extends SDOps {
@@ -151,7 +152,7 @@ public class SDLinalg extends SDOps {
    * @param a input tensor (NUMERIC type)
    * @param b input tensor (NUMERIC type)
    * @param alpha Defaults to 1.0: the scalar multiplier for the product of a* b 
-   * @param beta Defaults to 1.0: the scalar multiplier for c 
+   * @param beta Defaults to 0.0: the scalar multiplier for c 
    * @param transA Whether to transpose a when running multiply 
    * @param transB Whether to transpose b when running multiply 
    * @return output  (FLOATING_POINT type)
@@ -170,7 +171,7 @@ public class SDLinalg extends SDOps {
    * @param a input tensor (NUMERIC type)
    * @param b input tensor (NUMERIC type)
    * @param alpha Defaults to 1.0: the scalar multiplier for the product of a* b 
-   * @param beta Defaults to 1.0: the scalar multiplier for c 
+   * @param beta Defaults to 0.0: the scalar multiplier for c 
    * @param transA Whether to transpose a when running multiply 
    * @param transB Whether to transpose b when running multiply 
    * @return output  (FLOATING_POINT type)
@@ -193,7 +194,7 @@ public class SDLinalg extends SDOps {
   public SDVariable matmul(SDVariable a, SDVariable b) {
     SDValidation.validateNumerical("Matmul", "a", a);
     SDValidation.validateNumerical("Matmul", "b", b);
-    return new org.nd4j.linalg.api.ops.impl.reduce.Mmul(sd,a, b, 1.0, 1.0, false, false).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.Mmul(sd,a, b, 1.0, 0.0, false, false).outputVariable();
   }
 
   /**
@@ -207,7 +208,7 @@ public class SDLinalg extends SDOps {
   public SDVariable matmul(String name, SDVariable a, SDVariable b) {
     SDValidation.validateNumerical("Matmul", "a", a);
     SDValidation.validateNumerical("Matmul", "b", b);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.Mmul(sd,a, b, 1.0, 1.0, false, false).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.Mmul(sd,a, b, 1.0, 0.0, false, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -471,6 +472,58 @@ public class SDLinalg extends SDOps {
     SDValidation.validateNumerical("eig", "input", input);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.custom.Eig(sd,input).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Einsum (Einstein summation) operation.<br>
+   * <br>
+   * Provides a powerful way to express tensor operations using Einstein summation notation.<br>
+   * The equation string specifies the subscripts for each input tensor and the output tensor.<br>
+   * <br>
+   * Examples:<br>
+   * - Matrix multiplication: "ij,jk->ik"<br>
+   * - Transpose: "ij->ji"<br>
+   * - Diagonal: "ii->i"<br>
+   * - Trace: "ii->"<br>
+   * - Batch matmul: "bij,bjk->bik"<br>
+   * - Dot product: "i,i->"<br>
+   * - Outer product: "i,j->ij"<br>
+   *
+   * @param inputs Input tensors (NUMERIC type)
+   * @param equation Einstein summation equation string
+   * @return output Output tensor (NUMERIC type)
+   */
+  public SDVariable einsum(SDVariable[] inputs, String equation) {
+    SDValidation.validateNumerical("einsum", "inputs", inputs);
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum(sd,inputs, equation).outputVariable();
+  }
+
+  /**
+   * Einsum (Einstein summation) operation.<br>
+   * <br>
+   * Provides a powerful way to express tensor operations using Einstein summation notation.<br>
+   * The equation string specifies the subscripts for each input tensor and the output tensor.<br>
+   * <br>
+   * Examples:<br>
+   * - Matrix multiplication: "ij,jk->ik"<br>
+   * - Transpose: "ij->ji"<br>
+   * - Diagonal: "ii->i"<br>
+   * - Trace: "ii->"<br>
+   * - Batch matmul: "bij,bjk->bik"<br>
+   * - Dot product: "i,i->"<br>
+   * - Outer product: "i,j->ij"<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param inputs Input tensors (NUMERIC type)
+   * @param equation Einstein summation equation string
+   * @return output Output tensor (NUMERIC type)
+   */
+  public SDVariable einsum(String name, SDVariable[] inputs, String equation) {
+    SDValidation.validateNumerical("einsum", "inputs", inputs);
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum(sd,inputs, equation).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
   }
 
   /**

@@ -155,6 +155,8 @@ public class FlatBuffersMapper {
                 return DType.UINT64;
             case BFLOAT16:
                 return DType.BFLOAT16;
+            case FLOAT8:
+                return DType.FLOAT8;
             default:
                 throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
         }
@@ -192,6 +194,8 @@ public class FlatBuffersMapper {
             return DataType.UINT64;
         } else if (val == DType.BFLOAT16){
             return DataType.BFLOAT16;
+        } else if (val == DType.FLOAT8){
+            return DataType.FLOAT8;
         } else {
             throw new RuntimeException("Unknown datatype: " + val);
         }
@@ -460,31 +464,56 @@ public class FlatBuffersMapper {
 
                 DataType dataType = FlatBuffersMapper.getDataTypeFromByte(dtype);
 
-                // Create scalar array manually with proper extras containing data type
-                scalar = Nd4j.scalar(dataType, 0.0);
-
-                // Read actual value from buffer if available
                 ByteBuffer bb = fa.bufferAsByteBuffer();
                 if (bb != null && bb.remaining() > 0) {
-                    bb.position(0); // Reset position
+                    // DO NOT reset position - bufferAsByteBuffer() already positions at data start
                     switch (dataType) {
                         case FLOAT:
-                            scalar.putScalar(0, bb.getFloat());
+                            scalar = Nd4j.constantScalar(bb.getFloat());
                             break;
                         case DOUBLE:
-                            scalar.putScalar(0, bb.getDouble());
+                            double dv = bb.getDouble();
+                            // Always preserve the DOUBLE dtype as stored in the FlatBuffer.
+                            // Downcasting to FLOAT breaks DOUBLE graphs: scalar ops use the
+                            // scalar dtype to determine output shape, so a FLOAT scalar in a
+                            // DOUBLE graph causes type mismatches and garbage native output.
+                            scalar = Nd4j.constantScalar(dv);
                             break;
                         case INT:
-                            scalar.putScalar(0, bb.getInt());
+                            scalar = Nd4j.constantScalar(bb.getInt());
                             break;
-                        // Add cases for other data types as needed
+                        case LONG:
+                            scalar = Nd4j.constantScalar(bb.getLong());
+                            break;
+                        case SHORT:
+                            scalar = Nd4j.constantScalar((int) bb.getShort());
+                            break;
+                        case BYTE:
+                            scalar = Nd4j.constantScalar((int) bb.get());
+                            break;
+                        case BOOL:
+                            scalar = Nd4j.constantScalar(bb.get() != 0);
+                            break;
                         default:
-                            log.warn("Unhandled scalar data type: {}. Using zero value.", dataType);
+                            log.warn("Unhandled scalar data type: {}. Using zero value with constantScalar.", dataType);
+                            scalar = Nd4j.constantScalar(dataType, 0.0);
                     }
+                } else {
+                    // No buffer available, create constant scalar with zero value
+                    scalar = Nd4j.constantScalar(dataType, 0.0);
                 }
             } else {
-                // Non-scalar case, use standard method
-                scalar = Nd4j.createFromFlatArray(fa);
+                // Non-scalar case, use standard method and mark as constant
+                scalar = Nd4j.getDeallocatorService().registerPendingConstant(
+                    Nd4j.createFromFlatArray(fa));
+                if (scalar.data() != null) {
+                    scalar.data().setConstant(true);
+                }
+                if (scalar.shapeInfoDataBuffer() != null) {
+                    scalar.shapeInfoDataBuffer().setConstant(true);
+                }
+                scalar.setCloseable(false);
+                Nd4j.getDeallocatorService().releasePendingConstant(scalar);
             }
         }
 
@@ -581,8 +610,10 @@ public class FlatBuffersMapper {
         TRANSFORM_SAME - Abs, Ceil, etc
          */
 
-            ((DifferentialFunction) op).setPropertiesForFunction(props);
-            return (DifferentialFunction) op;
+            DifferentialFunction df = (DifferentialFunction) op;
+            df.setOwnName(name);
+            df.setPropertiesForFunction(props);
+            return df;
         }
     }
 
@@ -670,7 +701,17 @@ public class FlatBuffersMapper {
                     INDArray[] iArr = new INDArray[p.aLength()];
                     for (int i = 0; i < iArr.length; i++) {
                         FlatArray fa = p.a(0);
-                        iArr[i] = Nd4j.createFromFlatArray(fa);
+                        INDArray arr = Nd4j.getDeallocatorService().registerPendingConstant(
+                            Nd4j.createFromFlatArray(fa));
+                        if (arr.data() != null) {
+                            arr.data().setConstant(true);
+                        }
+                        if (arr.shapeInfoDataBuffer() != null) {
+                            arr.shapeInfoDataBuffer().setConstant(true);
+                        }
+                        arr.setCloseable(false);
+                        Nd4j.getDeallocatorService().releasePendingConstant(arr);
+                        iArr[i] = arr;
                     }
                     if (shape.length == 0 || shape.length == 1) {
                         out.put(name, iArr);
@@ -705,7 +746,17 @@ public class FlatBuffersMapper {
                     out.put(name, p.s(0));
                 } else if (p.aLength() > 0) {
                     FlatArray fa = p.a(0);
-                    out.put(name, Nd4j.createFromFlatArray(fa));
+                    INDArray arr = Nd4j.getDeallocatorService().registerPendingConstant(
+                        Nd4j.createFromFlatArray(fa));
+                    if (arr.data() != null) {
+                        arr.data().setConstant(true);
+                    }
+                    if (arr.shapeInfoDataBuffer() != null) {
+                        arr.shapeInfoDataBuffer().setConstant(true);
+                    }
+                    arr.setCloseable(false);
+                    Nd4j.getDeallocatorService().releasePendingConstant(arr);
+                    out.put(name, arr);
                 } else {
                     //null property case
                     out.put(name, null);
