@@ -30,8 +30,10 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.debug.OptimizationDebugger;
 import org.nd4j.autodiff.samediff.optimize.optimizations.*;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Graph optimizer for SameDiff graphs.
@@ -45,12 +47,12 @@ public class GraphOptimizer {
     /**
      * Maximum number of optimization iterations. Can be overridden via system property.
      */
-    private static final int MAX_ITERATIONS = Integer.getInteger("nd4j.optimizer.maxIterations", 3);
+    private static final int MAX_ITERATIONS = Integer.getInteger(ND4JSystemProperties.OPTIMIZER_MAX_ITERATIONS, 3);
 
     /**
      * Whether to log each applied optimization. Can be disabled for performance.
      */
-    private static final boolean LOG_APPLIED_OPTS = Boolean.getBoolean("nd4j.optimizer.logApplied");
+    private static final boolean LOG_APPLIED_OPTS = Boolean.getBoolean(ND4JSystemProperties.OPTIMIZER_LOG_APPLIED);
 
     /**
      * Comma-separated list of optimizer class simple names to skip.
@@ -58,14 +60,9 @@ public class GraphOptimizer {
      */
     private static final Set<String> SKIP_OPTIMIZERS;
     static {
-        String skipProp = System.getProperty("nd4j.optimizer.skip", "");
-        Set<String> s = new HashSet<>();
-        if (!skipProp.isEmpty()) {
-            for (String name : skipProp.split(",")) {
-                s.add(name.trim());
-            }
-        }
-        SKIP_OPTIMIZERS = s;
+        String skipProp = System.getProperty(ND4JSystemProperties.OPTIMIZER_SKIP, "");
+        SKIP_OPTIMIZERS = skipProp.isEmpty() ? new HashSet<>() :
+                Arrays.stream(skipProp.split(",")).map(String::trim).collect(Collectors.toCollection(HashSet::new));
     }
 
     public static List<OptimizerSet> defaultOptimizations() {
@@ -89,6 +86,7 @@ public class GraphOptimizer {
                 new MatMulChainOptimizations(),      // Fold constant matmul chains, absorb transposes into matmul flags
                 new ActivationFusionOptimizations(), // sigmoid(x)*x -> swish, SwiGLU detection (must run before rematerialization)
                 new NormalizationFusionOptimizations(), // RMSNorm detection (must run before rematerialization)
+
                 new RematerializationOptimizations(), // Duplicate cheap ops to shorten live ranges (runs after fusion to avoid breaking patterns)
                 new LinearFusionOptimizations(),
                 new QuantizationOptimizations(),     // Remove redundant casts, FP16 quantization
@@ -98,15 +96,14 @@ public class GraphOptimizer {
         if (SKIP_OPTIMIZERS.isEmpty()) {
             return all;
         }
-        List<OptimizerSet> filtered = new ArrayList<>();
-        for (OptimizerSet opt : all) {
-            if (SKIP_OPTIMIZERS.contains(opt.getClass().getSimpleName())) {
-                log.info("Skipping optimizer: {}", opt.getClass().getSimpleName());
-            } else {
-                filtered.add(opt);
-            }
-        }
-        return filtered;
+        return all.stream()
+                .peek(opt -> {
+                    if (SKIP_OPTIMIZERS.contains(opt.getClass().getSimpleName())) {
+                        log.info("Skipping optimizer: {}", opt.getClass().getSimpleName());
+                    }
+                })
+                .filter(opt -> !SKIP_OPTIMIZERS.contains(opt.getClass().getSimpleName()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -146,12 +143,9 @@ public class GraphOptimizer {
         // dup() via SDNB round-trip may not preserve graph-level outputs.
         // Restore them so fusion optimizers can detect which variables are outputs.
         if ((sd.outputs() == null || sd.outputs().isEmpty()) && graph.outputs() != null && !graph.outputs().isEmpty()) {
-            List<String> validOutputs = new ArrayList<>();
-            for (String out : graph.outputs()) {
-                if (sd.hasVariable(out)) {
-                    validOutputs.add(out);
-                }
-            }
+            List<String> validOutputs = graph.outputs().stream()
+                    .filter(sd::hasVariable)
+                    .collect(Collectors.toList());
             if (!validOutputs.isEmpty()) {
                 sd.setOutputs(validOutputs);
             }
@@ -165,19 +159,18 @@ public class GraphOptimizer {
         h.initializeCaches(sd);
 
         // Pre-collect all optimizers once to avoid repeated reflection calls
-        List<Optimizer> allOptimizers = new ArrayList<>();
-        for (OptimizerSet s : optimizations) {
-            allOptimizers.addAll(s.getOptimizers());
-        }
+        List<Optimizer> allOptimizers = optimizations.stream()
+                .flatMap(s -> s.getOptimizers().stream())
+                .collect(Collectors.toList());
 
         // Pre-compute op type filters for each optimizer
         Map<Optimizer, Set<Class<? extends DifferentialFunction>>> optimizerFilters = new HashMap<>();
-        for (Optimizer o : allOptimizers) {
+        allOptimizers.forEach(o -> {
             Set<Class<? extends DifferentialFunction>> applicableTypes = o.getApplicableOpTypes();
             if (applicableTypes != null && !applicableTypes.isEmpty()) {
                 optimizerFilters.put(o, applicableTypes);
             }
-        }
+        });
 
         log.debug("Running {} optimizers over {} ops ({} with type filters)",
                 allOptimizers.size(), sd.getOps().size(), optimizerFilters.size());
@@ -227,12 +220,9 @@ public class GraphOptimizer {
             }
 
             // Collect unreachable ops
-            List<String> opsToRemove = new ArrayList<>();
-            for (String opName : sd.getOps().keySet()) {
-                if (!reachableOps.contains(opName)) {
-                    opsToRemove.add(opName);
-                }
-            }
+            List<String> opsToRemove = sd.getOps().keySet().stream()
+                    .filter(opName -> !reachableOps.contains(opName))
+                    .collect(Collectors.toList());
 
             // Remove unreachable ops and their ARRAY output variables
             for (String opName : opsToRemove) {
@@ -372,38 +362,17 @@ public class GraphOptimizer {
         List<String> currentOutputs = sd.outputs();
         if (currentOutputs != null && !currentOutputs.isEmpty()) {
             // sd.outputs() was set during optimization — trust redirections from fusion ops
-            List<String> surviving = new ArrayList<>();
-            for (String name : currentOutputs) {
-                if (sd.hasVariable(name)) {
-                    surviving.add(name);
-                } else {
-                    log.debug("Output variable '{}' removed by optimization — dropping from output list", name);
-                }
-            }
+            List<String> surviving = filterSurvivingOutputs(sd, currentOutputs);
             if (!surviving.isEmpty()) {
                 sd.setOutputs(surviving);
             }
         } else if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
-            List<String> surviving = new ArrayList<>();
-            for (String name : requiredOutputs) {
-                if (sd.hasVariable(name)) {
-                    surviving.add(name);
-                } else {
-                    log.debug("Output variable '{}' removed by optimization — dropping from output list", name);
-                }
-            }
+            List<String> surviving = filterSurvivingOutputs(sd, requiredOutputs);
             if (!surviving.isEmpty()) {
                 sd.setOutputs(surviving);
             }
         } else if (graph.outputs() != null && !graph.outputs().isEmpty()) {
-            List<String> surviving = new ArrayList<>();
-            for (String name : graph.outputs()) {
-                if (sd.hasVariable(name)) {
-                    surviving.add(name);
-                } else {
-                    log.debug("Output variable '{}' removed by optimization — dropping from output list", name);
-                }
-            }
+            List<String> surviving = filterSurvivingOutputs(sd, graph.outputs());
             if (!surviving.isEmpty()) {
                 sd.setOutputs(surviving);
             }
@@ -434,6 +403,21 @@ public class GraphOptimizer {
             }
         }
         return errors;
+    }
+
+    /**
+     * Filter a list of output variable names to only those that still exist in the graph.
+     * Logs a debug message for each dropped output.
+     */
+    private static List<String> filterSurvivingOutputs(SameDiff sd, List<String> outputs) {
+        return outputs.stream()
+                .peek(name -> {
+                    if (!sd.hasVariable(name)) {
+                        log.debug("Output variable '{}' removed by optimization — dropping from output list", name);
+                    }
+                })
+                .filter(sd::hasVariable)
+                .collect(Collectors.toList());
     }
 
     /**
