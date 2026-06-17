@@ -18,9 +18,7 @@
 
 #pragma once
 
-// TODO convert this into an enum class
-// might break JNI though...
-
+// OpType is kept as a plain int typedef for JNI compatibility.
 typedef int OpType;
 
 #if defined(_MSC_VER) && (_MSC_VER < 1900)
