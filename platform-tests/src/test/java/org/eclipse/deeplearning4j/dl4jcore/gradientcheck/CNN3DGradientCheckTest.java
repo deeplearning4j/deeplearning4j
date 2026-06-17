@@ -23,6 +23,7 @@ import lombok.extern.java.Log;
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -128,7 +129,7 @@ class CNN3DGradientCheckTest extends BaseDL4JTest {
                                             if (PRINT_RESULTS) {
                                                 log.info(msg);
                                             }
-                                            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(128));
+                                            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(128));
                                             assertTrue(gradOK,msg);
                                             TestUtils.testModelSerialization(net);
                                         }
@@ -208,7 +209,7 @@ class CNN3DGradientCheckTest extends BaseDL4JTest {
                     if (PRINT_RESULTS) {
                         log.info(msg);
                     }
-                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(512));
+                    boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(512));
                     assertTrue(gradOK,msg);
                     TestUtils.testModelSerialization(net);
                 }
@@ -440,7 +441,7 @@ class CNN3DGradientCheckTest extends BaseDL4JTest {
             if (PRINT_RESULTS) {
                 log.info(msg);
             }
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(64));
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(64));
             assertTrue(gradOK,msg);
             TestUtils.testModelSerialization(net);
         }

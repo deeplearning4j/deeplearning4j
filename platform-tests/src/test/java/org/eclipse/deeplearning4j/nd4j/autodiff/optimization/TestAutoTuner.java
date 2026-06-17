@@ -30,6 +30,7 @@ import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAG;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
+import org.nd4j.autodiff.samediff.execution.GraphAnalysis;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -101,7 +102,7 @@ public class TestAutoTuner {
         sd.setOutputs("output");
 
         DynamicShapePlan plan = compilePlan(sd, "output");
-        AutoTuner.GraphAnalysis analysis = AutoTuner.analyze(plan);
+        GraphAnalysis analysis = AutoTuner.analyze(plan);
 
         // Matmuls should dominate
         assertTrue(analysis.getComputeOpFraction() >= AutoTuner.COMPUTE_HEAVY_THRESHOLD,
@@ -135,7 +136,7 @@ public class TestAutoTuner {
         sd.setOutputs("output");
 
         DynamicShapePlan plan = compilePlan(sd, "output");
-        AutoTuner.GraphAnalysis analysis = AutoTuner.analyze(plan);
+        GraphAnalysis analysis = AutoTuner.analyze(plan);
 
         assertTrue(analysis.getElementwiseOpFraction() >= AutoTuner.ELEMENTWISE_HEAVY_THRESHOLD,
                 "Element-wise ops should exceed threshold. Got: " + analysis.getElementwiseOpFraction());
@@ -253,7 +254,7 @@ public class TestAutoTuner {
         sd.setOutputs("output");
 
         DynamicShapePlan plan = compilePlan(sd, "output");
-        AutoTuner.GraphAnalysis analysis = AutoTuner.analyze(plan);
+        GraphAnalysis analysis = AutoTuner.analyze(plan);
 
         assertTrue(analysis.getComputeOps() >= 2,
                 "Should have at least 2 compute ops (matmuls). Got: " + analysis.getComputeOps());

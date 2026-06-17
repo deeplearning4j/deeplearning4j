@@ -29,6 +29,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -168,7 +169,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
             net.fit(input, labels);
 
 
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input)
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(input)
                     .minAbsoluteError(1e-6)
                     .labels(labels).subset(true).maxPerParam(100));
 
@@ -281,7 +282,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         INDArray l = ds.getLabels();
 
         System.out.println("Checking gradients");
-        boolean ok = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f)
+        boolean ok = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(f)
                 .labels(l).inputMask(null).subset(true).maxPerParam(64));
 
         assertTrue(ok);

@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.gpu;
 
+import org.eclipse.deeplearning4j.tests.extensions.Backend;
 import org.eclipse.deeplearning4j.tests.extensions.BackendTest;
 import org.eclipse.deeplearning4j.tests.extensions.MultiBackendTestConfiguration;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author Adam Gibson
  */
-@BackendTest(backends = {MultiBackendTestConfiguration.Backend.CUDA},
+@BackendTest(backends = {Backend.CUDA},
              helpers = {"cudnn"},
              description = "GPU broadcast operation validation")
 public class GpuBroadcastOpValidationTests {

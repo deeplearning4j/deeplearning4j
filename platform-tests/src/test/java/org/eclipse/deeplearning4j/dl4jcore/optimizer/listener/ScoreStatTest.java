@@ -21,6 +21,7 @@ package org.eclipse.deeplearning4j.dl4jcore.optimizer.listener;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.listeners.CollectScoresIterationListener;
+import org.deeplearning4j.optimize.listeners.ScoreStat;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,8 +39,8 @@ class ScoreStatTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Score Stat Small")
     void testScoreStatSmall() {
-        CollectScoresIterationListener.ScoreStat statTest = new CollectScoresIterationListener.ScoreStat();
-        for (int i = 0; i < CollectScoresIterationListener.ScoreStat.BUCKET_LENGTH; ++i) {
+        ScoreStat statTest = new ScoreStat();
+        for (int i = 0; i < ScoreStat.BUCKET_LENGTH; ++i) {
             double score = (double) i;
             statTest.addScore(i, score);
         }
@@ -47,10 +48,10 @@ class ScoreStatTest extends BaseDL4JTest {
         List<double[]> scores = statTest.getScores();
         assertTrue(indexes.size() == 1);
         assertTrue(scores.size() == 1);
-        assertTrue(indexes.get(0).length == CollectScoresIterationListener.ScoreStat.BUCKET_LENGTH);
-        assertTrue(scores.get(0).length == CollectScoresIterationListener.ScoreStat.BUCKET_LENGTH);
-        assertEquals(indexes.get(0)[indexes.get(0).length - 1], CollectScoresIterationListener.ScoreStat.BUCKET_LENGTH - 1);
-        assertEquals(scores.get(0)[scores.get(0).length - 1], CollectScoresIterationListener.ScoreStat.BUCKET_LENGTH - 1, 1e-4);
+        assertTrue(indexes.get(0).length == ScoreStat.BUCKET_LENGTH);
+        assertTrue(scores.get(0).length == ScoreStat.BUCKET_LENGTH);
+        assertEquals(indexes.get(0)[indexes.get(0).length - 1], ScoreStat.BUCKET_LENGTH - 1);
+        assertEquals(scores.get(0)[scores.get(0).length - 1], ScoreStat.BUCKET_LENGTH - 1, 1e-4);
     }
 
     @Test
@@ -63,7 +64,7 @@ class ScoreStatTest extends BaseDL4JTest {
             indexes[i] = i;
             scores[i] = i;
         }
-        CollectScoresIterationListener.ScoreStat statTest = new CollectScoresIterationListener.ScoreStat();
+        ScoreStat statTest = new ScoreStat();
         for (int i = 0; i < dataSize; ++i) {
             statTest.addScore(indexes[i], scores[i]);
         }
@@ -84,7 +85,7 @@ class ScoreStatTest extends BaseDL4JTest {
             indexes[i] = i;
             scores[i] = i;
         }
-        CollectScoresIterationListener.ScoreStat statTest = new CollectScoresIterationListener.ScoreStat();
+        ScoreStat statTest = new ScoreStat();
         for (int i = 0; i < dataSize; ++i) {
             statTest.addScore(indexes[i], scores[i]);
         }
@@ -98,7 +99,7 @@ class ScoreStatTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Score Stat Big")
     void testScoreStatBig() {
-        CollectScoresIterationListener.ScoreStat statTest = new CollectScoresIterationListener.ScoreStat();
+        ScoreStat statTest = new ScoreStat();
         long bigLength = (long) Integer.MAX_VALUE + 5;
         for (long i = 0; i < bigLength; ++i) {
             double score = (double) i;

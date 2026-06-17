@@ -114,8 +114,8 @@ public class BackendCheckerExtension implements ExecutionCondition {
 
             // Check if any of the required helpers are available
             for (String helperTag : matchingHelperTags) {
-                MultiBackendTestConfiguration.Helper helper =
-                        MultiBackendTestConfiguration.Helper.fromString(helperTag);
+                Helper helper =
+                        Helper.fromString(helperTag);
 
                 if (helper != null && config.isHelperEnabled(helper)) {
                     log.debug("Test '{}' enabled - helper '{}' is available", testName, helperTag);
@@ -171,8 +171,8 @@ public class BackendCheckerExtension implements ExecutionCondition {
     public static boolean isHelperAvailable(String helperName) {
         try {
             MultiBackendTestConfiguration config = MultiBackendTestConfiguration.getInstance();
-            MultiBackendTestConfiguration.Helper helper =
-                    MultiBackendTestConfiguration.Helper.fromString(helperName);
+            Helper helper =
+                    Helper.fromString(helperName);
             return helper != null && config.isHelperEnabled(helper);
         } catch (Exception e) {
             return false;
@@ -186,7 +186,7 @@ public class BackendCheckerExtension implements ExecutionCondition {
         try {
             MultiBackendTestConfiguration config = MultiBackendTestConfiguration.getInstance();
             Set<String> helpers = new HashSet<>();
-            for (MultiBackendTestConfiguration.Helper h : config.getEnabledHelpers()) {
+            for (Helper h : config.getEnabledHelpers()) {
                 helpers.add(h.getId());
             }
             return helpers;

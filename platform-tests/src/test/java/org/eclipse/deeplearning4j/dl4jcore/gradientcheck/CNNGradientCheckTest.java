@@ -24,6 +24,8 @@ import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.GraphConfig;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -270,7 +272,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                     assertTrue(gradOK,msg);
                     // Also check compgraph:
                     ComputationGraph cg = net.toComputationGraph();
-                    gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(cg).inputs(new INDArray[] { input }).labels(new INDArray[] { labels }));
+                    gradOK = GradientCheckUtil.checkGradients(new GraphConfig().net(cg).inputs(new INDArray[] { input }).labels(new INDArray[] { labels }));
                     assertTrue(gradOK,msg + " - compgraph");
                     TestUtils.testModelSerialization(net);
                 }
@@ -550,7 +552,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                             }
                             String msg = "Minibatch=" + minibatchSize + ", inDepth=" + inputDepth + ", height=" + height + ", kernelSize=" + k + ", stride = " + stride + ", convLayer first = " + convFirst;
                             System.out.println(msg);
-                            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(128));
+                            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(128));
                             assertTrue(gradOK,msg);
                             TestUtils.testModelSerialization(net);
                         }
@@ -654,7 +656,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             }
             String msg = " - mb=" + minibatchSize + ", k=" + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
             System.out.println(msg);
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(100));
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(100));
             assertTrue(gradOK,msg);
             TestUtils.testModelSerialization(net);
         }
@@ -699,7 +701,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             }
             String msg = " - mb=" + minibatchSize + ", k=" + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
             System.out.println(msg);
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(// Most params are in output layer
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(// Most params are in output layer
                     50));
             assertTrue(gradOK,msg);
             TestUtils.testModelSerialization(net);
@@ -809,7 +811,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             if (PRINT_RESULTS) {
                 System.out.println(msg);
             }
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(160));
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(160));
             assertTrue(gradOK,msg);
             TestUtils.testModelSerialization(net);
         }
@@ -850,7 +852,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             }
             String msg = " - mb=" + minibatchSize + ", k=" + k + ", nIn=" + nIn + ", depthMul=" + depthMultiplier + ", s=" + s + ", cm=" + cm;
             System.out.println(msg);
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(256));
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(256));
             assertTrue(gradOK,msg);
             TestUtils.testModelSerialization(net);
         }

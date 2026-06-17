@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -816,7 +817,7 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
             }
         }
         Nd4j.setDataType(DataType.DOUBLE);
-        boolean passed = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(netToTest).input(input).labels(labels).subset(true).maxPerParam(9));
+        boolean passed = GradientCheckUtil.checkGradients(new MLNConfig().net(netToTest).input(input).labels(labels).subset(true).maxPerParam(9));
         assertTrue(passed, "Gradient check failed");
     }
 

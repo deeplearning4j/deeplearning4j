@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.gpu;
 
+import org.eclipse.deeplearning4j.tests.extensions.Backend;
 import org.eclipse.deeplearning4j.tests.extensions.BackendTest;
 import org.eclipse.deeplearning4j.tests.extensions.MultiBackendTestConfiguration;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author Adam Gibson
  */
-@BackendTest(backends = {MultiBackendTestConfiguration.Backend.CUDA}, description = "GPU reduction operation validation")
+@BackendTest(backends = {Backend.CUDA}, description = "GPU reduction operation validation")
 public class GpuReductionOpValidationTests {
 
     // ========== MAX REDUCTION TESTS ==========

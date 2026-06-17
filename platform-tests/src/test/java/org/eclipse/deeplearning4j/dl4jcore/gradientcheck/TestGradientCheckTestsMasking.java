@@ -25,6 +25,8 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.GraphConfig;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -143,7 +145,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
-                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(mln).input(input)
                         .labels(labels).labelMask(maskArr));
 
                 String msg = "gradientCheckMaskingOutputSimple() - timeSeriesLength=" + timeSeriesLength
@@ -195,7 +197,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
                 System.out.println("testBidirectionalLSTMMasking() - testNum = " + testNum++);
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(mln).input(input)
                     .labels(labels).inputMask(mask).labelMask(mask).subset(true).maxPerParam(12));
 
             assertTrue(gradOK);
@@ -276,7 +278,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
 
                 System.out.println(msg);
 
-                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(features)
+                boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(features)
                         .labels(labels).labelMask(labelMask));
 
                 assertTrue(gradOK,msg);
@@ -373,7 +375,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
 
                 System.out.println(msg);
 
-                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(features)
+                boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(features)
                         .labels(labels).labelMask(labelMask));
 
                 assertTrue(gradOK,msg);
@@ -397,7 +399,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
                 ComputationGraph graph = new ComputationGraph(cg);
                 graph.init();
 
-                gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{features})
+                gradOK = GradientCheckUtil.checkGradients(new GraphConfig().net(graph).inputs(new INDArray[]{features})
                         .labels(new INDArray[]{labels}).labelMask(new INDArray[]{labelMask}));
 
                 assertTrue(gradOK,msg + " (compgraph)");
@@ -439,7 +441,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
         }
         assertTrue( lm.sumNumber().intValue() > 0,"Could not generate non-zero mask after " + attempts + " attempts");
 
-        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f)
+        boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(f)
                 .labels(l).labelMask(lm));
         assertTrue(gradOK);
 
@@ -496,7 +498,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
         }
         assertTrue(lm.sumNumber().intValue() > 0,"Could not generate non-zero mask after " + attempts + " attempts");
 
-        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(new INDArray[]{f})
+        boolean gradOK = GradientCheckUtil.checkGradients(new GraphConfig().net(net).inputs(new INDArray[]{f})
                 .labels(new INDArray[]{l}).labelMask(new INDArray[]{lm}));
         assertTrue(gradOK);
 

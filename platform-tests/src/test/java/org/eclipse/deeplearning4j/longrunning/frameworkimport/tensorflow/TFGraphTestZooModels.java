@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.deeplearning4j.frameworkimport.tensorflow.ModelLoadResult;
 import org.eclipse.deeplearning4j.frameworkimport.tensorflow.TFGraphTestAllHelper;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
@@ -127,7 +128,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
     }
 
 
-    public static class RemoteCachingLoader implements BiFunction<File,String, TFGraphTestAllHelper.ModelLoadResult> {
+    public static class RemoteCachingLoader implements BiFunction<File,String, ModelLoadResult> {
         private boolean suggestDynamicVariables = false;
         private Map<String,INDArray> dynamicVariables = Collections.emptyMap();
 
@@ -143,7 +144,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 
 
         @Override
-        public TFGraphTestAllHelper.ModelLoadResult apply(File file, String name) {
+        public ModelLoadResult apply(File file, String name) {
             try {
                 String s = FileUtils.readFileToString(file, StandardCharsets.UTF_8).replaceAll("\r\n","\n");
                 String[] split = s.split("\n");
@@ -215,7 +216,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
                     throw new IllegalStateException("Unknown format: " + filename);
                 }
 
-                TFGraphTestAllHelper.ModelLoadResult apply = new TFGraphTestAllHelper.DefaultGraphLoader(dynamicVariables).apply(modelFile, name);
+                ModelLoadResult apply = new TFGraphTestAllHelper.DefaultGraphLoader(dynamicVariables).apply(modelFile, name);
                 //"suggest" a GC before running the model to mitigate OOM
                 System.gc();
                 return apply;

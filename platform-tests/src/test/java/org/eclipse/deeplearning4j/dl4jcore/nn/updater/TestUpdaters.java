@@ -19,8 +19,7 @@
  */
 
 package org.eclipse.deeplearning4j.dl4jcore.nn.updater;
-
-
+import org.deeplearning4j.nn.updater.ParamState;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
@@ -972,7 +971,7 @@ public class TestUpdaters extends BaseDL4JTest {
         UpdaterBlock ub0 = blocks.get(0);
         List<String> expParams = Arrays.asList("e0W", "e0b", "e1W", "e1b", "pZXMeanW", "pZXMeanb");
         List<String> actParams = new ArrayList<>();
-        for (UpdaterBlock.ParamState vs : ub0.getLayersAndVariablesInBlock()) {
+        for (ParamState vs : ub0.getLayersAndVariablesInBlock()) {
             actParams.add(vs.getParamName());
         }
         assertEquals(expParams, actParams);
@@ -981,7 +980,7 @@ public class TestUpdaters extends BaseDL4JTest {
         UpdaterBlock ub1 = blocks.get(1);
         expParams = Arrays.asList("pZXLogStd2W", "pZXLogStd2b", "d0W", "d0b", "d1W", "d1b", "pXZW", "pXZb");
         actParams = new ArrayList<>();
-        for (UpdaterBlock.ParamState vs : ub1.getLayersAndVariablesInBlock()) {
+        for (ParamState vs : ub1.getLayersAndVariablesInBlock()) {
             actParams.add(vs.getParamName());
         }
         assertEquals(expParams, actParams);

@@ -25,6 +25,8 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.GraphConfig;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -464,7 +466,7 @@ public class GradientCheckTests extends BaseDL4JTest {
 //        expectation in case linear regression(with only element wise multiplication layer): large weight for the fourth weight
             log.info("params after learning: " + netGraph.getLayer(1).paramTable());
 
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(netGraph).inputs(new INDArray[]{features})
+            boolean gradOK = GradientCheckUtil.checkGradients(new GraphConfig().net(netGraph).inputs(new INDArray[]{features})
                     .labels(new INDArray[]{labels}));
 
             msg = "elementWiseMultiplicationLayerTest() - activationFn=" + "ID" + ", lossFn=" + "Cos-sim"
@@ -522,7 +524,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                     }
 
                     String msg = "mask=" + maskArray + ", inputRank=" + inputRank;
-                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                    boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(in)
                             .labels(label).inputMask(fMask));
                     assertTrue(gradOK, msg);
                     TestUtils.testModelSerialization(net);

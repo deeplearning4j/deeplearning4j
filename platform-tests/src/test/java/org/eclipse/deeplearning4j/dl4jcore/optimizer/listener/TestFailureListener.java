@@ -26,7 +26,14 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.listeners.And;
+import org.deeplearning4j.optimize.listeners.CallType;
+import org.deeplearning4j.optimize.listeners.FailureMode;
 import org.deeplearning4j.optimize.listeners.FailureTestingListener;
+import org.deeplearning4j.optimize.listeners.HostNameTrigger;
+import org.deeplearning4j.optimize.listeners.IterationEpochTrigger;
+import org.deeplearning4j.optimize.listeners.Or;
+import org.deeplearning4j.optimize.listeners.RandomProb;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -65,9 +72,9 @@ public class TestFailureListener extends BaseDL4JTest {
         net.init();
 
         net.setListeners(new FailureTestingListener(
-//                FailureTestingListener.FailureMode.OOM,
-                FailureTestingListener.FailureMode.SYSTEM_EXIT_1,
-                new FailureTestingListener.IterationEpochTrigger(false, 10)));
+//                FailureMode.OOM,
+                FailureMode.SYSTEM_EXIT_1,
+                new IterationEpochTrigger(false, 10)));
 
         DataSetIterator iter = new IrisDataSetIterator(5,150);
 
@@ -91,10 +98,10 @@ public class TestFailureListener extends BaseDL4JTest {
         assertFalse(username.isEmpty());
 
         net.setListeners(new FailureTestingListener(
-                FailureTestingListener.FailureMode.SYSTEM_EXIT_1,
-                new FailureTestingListener.Or(
-                        new FailureTestingListener.IterationEpochTrigger(false, 10000),
-                        new FailureTestingListener.RandomProb(FailureTestingListener.CallType.ANY, 0.02))
+                FailureMode.SYSTEM_EXIT_1,
+                new Or(
+                        new IterationEpochTrigger(false, 10000),
+                        new RandomProb(CallType.ANY, 0.02))
                 ));
 
         DataSetIterator iter = new IrisDataSetIterator(5,150);
@@ -119,10 +126,10 @@ public class TestFailureListener extends BaseDL4JTest {
         assertFalse(hostname.isEmpty());
 
         net.setListeners(new FailureTestingListener(
-                FailureTestingListener.FailureMode.ILLEGAL_STATE,
-                new FailureTestingListener.And(
-                        new FailureTestingListener.HostNameTrigger(hostname),
-                        new FailureTestingListener.RandomProb(FailureTestingListener.CallType.ANY, 0.05))
+                FailureMode.ILLEGAL_STATE,
+                new And(
+                        new HostNameTrigger(hostname),
+                        new RandomProb(CallType.ANY, 0.05))
         ));
 
         DataSetIterator iter = new IrisDataSetIterator(5,150);

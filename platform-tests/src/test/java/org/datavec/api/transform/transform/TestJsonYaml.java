@@ -190,7 +190,7 @@ public class TestJsonYaml extends BaseND4JTest {
 
         DoubleAnalysis d1 = new DoubleAnalysis.Builder().max(-1).max(1).countPositive(10).mean(3.0).build();
         DoubleAnalysis d2 = new DoubleAnalysis.Builder().max(-5).max(5).countPositive(4).mean(2.0).build();
-        StringAnalysis sa = new StringAnalysis.Builder().minLength(0).maxLength(10).build();
+        StringAnalysis sa = StringAnalysis.builder().minLength(0).maxLength(10).build();
         Map<String, Long> countMap = new HashMap<>();
         countMap.put("cat0", 100L);
         countMap.put("cat1", 200L);

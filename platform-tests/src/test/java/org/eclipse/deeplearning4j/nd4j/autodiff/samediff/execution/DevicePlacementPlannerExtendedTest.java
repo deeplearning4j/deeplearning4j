@@ -26,7 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DevicePlacementPlanner;
 import org.nd4j.autodiff.samediff.execution.DevicePlacementPlanner.PlacementPlan;
 import org.nd4j.autodiff.samediff.execution.DevicePlacementPlanner.PlacementStrategy;
-import org.nd4j.autodiff.samediff.execution.BackendPlanManager.DeviceKey;
+import org.nd4j.autodiff.samediff.execution.DeviceKey;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.execution.ModelMemoryEstimator;

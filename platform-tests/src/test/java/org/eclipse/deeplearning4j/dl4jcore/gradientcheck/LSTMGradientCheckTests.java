@@ -24,6 +24,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ListBuilder;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -227,7 +228,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                     System.out.println(testName);
                 }
 
-                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(mln).input(input)
                         .labels(labels).subset(true).maxPerParam(128));
 
                 assertTrue(gradOK, testName);
@@ -339,7 +340,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             System.out.println("layer " + i + "\t" + mln.getLayer(i).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+        boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(mln).input(input)
                 .labels(labels).subset(true).maxPerParam(32));
         assertTrue(gradOK);
         TestUtils.testModelSerialization(mln);

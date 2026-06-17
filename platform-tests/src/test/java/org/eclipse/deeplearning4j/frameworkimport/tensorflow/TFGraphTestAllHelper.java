@@ -20,8 +20,6 @@
 
 package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
@@ -99,13 +97,6 @@ public class TFGraphTestAllHelper {
     }
     public static boolean isFailFast() {
         return failFast;
-    }
-
-    @Data
-    @AllArgsConstructor
-    public static class ModelLoadResult {
-        private SameDiff sameDiff;
-        private GraphDef graphDef;
     }
 
     public static class DefaultGraphLoader implements BiFunction<File,String,ModelLoadResult> {

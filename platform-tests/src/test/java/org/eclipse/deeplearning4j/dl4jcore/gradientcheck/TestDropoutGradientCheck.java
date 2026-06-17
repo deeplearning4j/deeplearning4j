@@ -25,6 +25,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.GraphConfig;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -184,7 +185,7 @@ public class TestDropoutGradientCheck extends BaseDL4JTest {
         INDArray[] l = new INDArray[]{TestUtils.randomOneHot(mb, 5)};
 
         Nd4j.getEnvironment().setLogNDArrayEvents(true);
-        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(cg).inputs(in)
+        boolean gradOK = GradientCheckUtil.checkGradients(new GraphConfig().net(cg).inputs(in)
                 .labels(l).callEachIter(new Consumer<ComputationGraph>() {
                     @Override
                     public void accept(ComputationGraph net) {

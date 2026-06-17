@@ -69,7 +69,7 @@ public @interface BackendTest {
      * Backends to run this test on.
      * If empty, runs on the current backend.
      */
-    MultiBackendTestConfiguration.Backend[] backends() default {};
+    Backend[] backends() default {};
 
     /**
      * Helpers to exclude from testing.

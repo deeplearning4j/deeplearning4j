@@ -342,14 +342,14 @@ public class LibNd4jCategoryTests {
 
         // Log results
         if (Files.exists(xmlPath)) {
-            GTestResultParser.GTestResults gtestResults = GTestResultParser.parseXmlFile(xmlPath);
+            GTestResults gtestResults = GTestResultParser.parseXmlFile(xmlPath);
             int total = gtestResults.getTotalTestCount();
             int failures = gtestResults.getTotalFailureCount();
             log.info("{}: {} tests, {} passed, {} failed in {}ms",
                 suiteName, total, total - failures, failures, duration);
 
             if (gtestResults.hasFailures()) {
-                for (GTestResultParser.GTestCase failure : gtestResults.getAllFailedTests()) {
+                for (GTestCase failure : gtestResults.getAllFailedTests()) {
                     log.error("  FAILED: {} - {}",
                         failure.getFullName(),
                         failure.getFailureMessage());
@@ -373,11 +373,11 @@ public class LibNd4jCategoryTests {
         msg.append("Exit code: ").append(result.getExitCode()).append("\n");
 
         if (Files.exists(xmlPath)) {
-            GTestResultParser.GTestResults gtestResults = GTestResultParser.parseXmlFile(xmlPath);
-            List<GTestResultParser.GTestCase> failures = gtestResults.getAllFailedTests();
+            GTestResults gtestResults = GTestResultParser.parseXmlFile(xmlPath);
+            List<GTestCase> failures = gtestResults.getAllFailedTests();
             if (!failures.isEmpty()) {
                 msg.append("\nFailed tests:\n");
-                for (GTestResultParser.GTestCase failure : failures) {
+                for (GTestCase failure : failures) {
                     msg.append("  - ").append(failure.getFullName()).append("\n");
                     if (failure.getFailureMessage() != null) {
                         msg.append("    ").append(failure.getFailureMessage()).append("\n");

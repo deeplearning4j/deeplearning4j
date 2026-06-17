@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -319,7 +320,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
                         INDArray l = TestUtils.randomOneHot(minibatch, nOut);
 
                         log.info("Starting: " + msg);
-                        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f)
+                        boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(f)
                                 .labels(l).subset(true).maxPerParam(50));
 
                         assertTrue(gradOK, msg);

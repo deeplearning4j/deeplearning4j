@@ -24,6 +24,8 @@ import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.GraphConfig;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -90,7 +92,7 @@ class BNGradientCheckTest extends BaseDL4JTest {
             // i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             // However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input).labels(labels).excludeParams(excludeParams));
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(mln).input(input).labels(labels).excludeParams(excludeParams));
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);
         }
@@ -131,7 +133,7 @@ class BNGradientCheckTest extends BaseDL4JTest {
             // i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             // However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input).labels(labels).excludeParams(excludeParams));
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(mln).input(input).labels(labels).excludeParams(excludeParams));
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);
         }
@@ -159,7 +161,7 @@ class BNGradientCheckTest extends BaseDL4JTest {
             // i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             // However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input).labels(labels).excludeParams(excludeParams));
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(mln).input(input).labels(labels).excludeParams(excludeParams));
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);
         }
@@ -187,7 +189,7 @@ class BNGradientCheckTest extends BaseDL4JTest {
             // i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             // However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input).labels(labels).excludeParams(excludeParams));
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(mln).input(input).labels(labels).excludeParams(excludeParams));
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);
         }
@@ -217,7 +219,7 @@ class BNGradientCheckTest extends BaseDL4JTest {
             // i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             // However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
             Set<String> excludeParams = new HashSet<>(Arrays.asList("bn_mean", "bn_var"));
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(new INDArray[] { input }).labels(new INDArray[] { labels }).excludeParams(excludeParams));
+            boolean gradOK = GradientCheckUtil.checkGradients(new GraphConfig().net(net).inputs(new INDArray[] { input }).labels(new INDArray[] { labels }).excludeParams(excludeParams));
             assertTrue(gradOK);
             TestUtils.testModelSerialization(net);
         }

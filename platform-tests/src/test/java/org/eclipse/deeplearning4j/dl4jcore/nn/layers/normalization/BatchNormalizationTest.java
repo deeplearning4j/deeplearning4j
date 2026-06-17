@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.normalization;
-
+import org.deeplearning4j.nn.updater.ParamState;
 import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
@@ -379,8 +379,8 @@ class BatchNormalizationTest extends BaseDL4JTest {
         // Conv+bn (RMSProp), No-op (bn), RMSProp (dense, bn), no-op (bn), RMSProp (out)
         assertEquals(5, l.size());
         for (UpdaterBlock ub : l) {
-            List<UpdaterBlock.ParamState> list = ub.getLayersAndVariablesInBlock();
-            for (UpdaterBlock.ParamState v : list) {
+            List<ParamState> list = ub.getLayersAndVariablesInBlock();
+            for (ParamState v : list) {
                 if (BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(v.getParamName()) || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(v.getParamName()) || BatchNormalizationParamInitializer.GLOBAL_LOG_STD.equals(v.getParamName())) {
                     assertTrue(ub.getGradientUpdater() instanceof NoOpUpdater);
                 } else {

@@ -23,8 +23,10 @@ package org.eclipse.deeplearning4j.nd4j.linalg.api;
 import org.eclipse.deeplearning4j.tests.extensions.BackendCheckerExtension;
 import org.eclipse.deeplearning4j.tests.extensions.BackendTest;
 import org.eclipse.deeplearning4j.tests.extensions.MultiBackendTestConfiguration;
-import org.eclipse.deeplearning4j.tests.extensions.MultiBackendTestConfiguration.Helper;
-import org.eclipse.deeplearning4j.tests.extensions.MultiBackendTestConfiguration.HelperCapabilities;
+import org.eclipse.deeplearning4j.tests.extensions.Backend;
+import org.eclipse.deeplearning4j.tests.extensions.Helper;
+import org.eclipse.deeplearning4j.tests.extensions.HelperCapabilities;
+import org.eclipse.deeplearning4j.tests.extensions.HelperTestConfig;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -88,7 +90,7 @@ public class MultiBackendOperationsTest {
     /**
      * Provides test configurations for each enabled helper
      */
-    static Stream<MultiBackendTestConfiguration.HelperTestConfig> helperConfigurations() {
+    static Stream<HelperTestConfig> helperConfigurations() {
         return MultiBackendTestConfiguration.getInstance()
                 .getTestConfigurations()
                 .stream();
@@ -165,7 +167,7 @@ public class MultiBackendOperationsTest {
     @Test
     @Tag("cudnn")
     @DisplayName("cuDNN-optimized operations")
-    @BackendTest(helpers = {"cudnn"}, backends = {MultiBackendTestConfiguration.Backend.CUDA})
+    @BackendTest(helpers = {"cudnn"}, backends = {Backend.CUDA})
     void testCuDNNOperations() {
         Assumptions.assumeTrue(
                 BackendCheckerExtension.isHelperAvailable("cudnn"),
@@ -206,7 +208,7 @@ public class MultiBackendOperationsTest {
     @ParameterizedTest(name = "Helper: {0}")
     @MethodSource("helperConfigurations")
     @DisplayName("Softmax should produce valid probability distributions on all helpers")
-    void testSoftmaxAcrossHelpers(MultiBackendTestConfiguration.HelperTestConfig helperConfig) {
+    void testSoftmaxAcrossHelpers(HelperTestConfig helperConfig) {
         log.info("Testing softmax with helper: {}", helperConfig.getHelper());
 
         INDArray input = Nd4j.rand(DataType.FLOAT, 32, 10);
@@ -228,7 +230,7 @@ public class MultiBackendOperationsTest {
     @ParameterizedTest(name = "Helper: {0}")
     @MethodSource("helperConfigurations")
     @DisplayName("Element-wise operations should be consistent across helpers")
-    void testElementWiseConsistency(MultiBackendTestConfiguration.HelperTestConfig helperConfig) {
+    void testElementWiseConsistency(HelperTestConfig helperConfig) {
         log.info("Testing element-wise consistency with helper: {}", helperConfig.getHelper());
 
         INDArray a = Nd4j.rand(DataType.FLOAT, 100, 100);

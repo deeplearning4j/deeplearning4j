@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.dl4jcore.gradientcheck;
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -140,7 +141,7 @@ public class TestRnnGradientChecks extends BaseDL4JTest {
                             net.init();
 
 
-                            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(in)
                                     .labels(labels).inputMask(inMask));
                             assertTrue(gradOK);
 
@@ -219,7 +220,7 @@ public class TestRnnGradientChecks extends BaseDL4JTest {
                                     net.init();
 
 
-                                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                                    boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(in)
                                             .labels(labels).inputMask(inMask));
                                     assertTrue(gradOK);
                                     TestUtils.testModelSerialization(net);
@@ -293,7 +294,7 @@ public class TestRnnGradientChecks extends BaseDL4JTest {
                         MultiLayerNetwork net = new MultiLayerNetwork(conf);
                         net.init();
 
-                        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                        boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(in)
                                 .labels(labels).inputMask(inMask).subset(true).maxPerParam(16));
                         assertTrue(gradOK, name);
                         TestUtils.testModelSerialization(net);
@@ -357,7 +358,7 @@ public class TestRnnGradientChecks extends BaseDL4JTest {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(in)
                         .labels(labels).inputMask(inMask).subset(true).maxPerParam(16));
                 assertTrue(gradOK, name);
                 TestUtils.testModelSerialization(net);

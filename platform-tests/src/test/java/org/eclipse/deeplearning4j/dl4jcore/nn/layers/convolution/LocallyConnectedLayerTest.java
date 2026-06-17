@@ -21,6 +21,7 @@ package org.eclipse.deeplearning4j.dl4jcore.nn.layers.convolution;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.GraphConfig;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
@@ -208,7 +209,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
                         net.setInputs(in);
                         net.setLabels(label);
 
-                        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig()
+                        boolean gradOK = GradientCheckUtil.checkGradients(new GraphConfig()
                                 .excludeParams(new HashSet<>(Arrays.asList("1_W", "1_b")))
                                 .net(net).inputs(in).labels(new INDArray[]{label}));
                         assertTrue(gradOK);

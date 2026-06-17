@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.convolution;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import lombok.*;
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
@@ -1010,7 +1010,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
 
         @Override
         public InputType getOutputType(InputType inputType) {
-            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+            InputTypeConvolutional c = (InputTypeConvolutional) inputType;
             return InputType.convolutional(c.getHeight(), c.getWidth(), c.getChannels(), CNN2DFormat.NCHW);
         }
 

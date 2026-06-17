@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.dl4jcore.gradientcheck;
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -224,7 +225,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                 System.out.println("testLSTMGlobalPoolingBasicMultiLayer() - " + pt + ", minibatch = " + miniBatchSize);
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(mln).input(input)
                     .labels(labels).inputMask(featuresMask));
 
             assertTrue(gradOK);
@@ -305,7 +306,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                                 + miniBatchSize);
                     }
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                    boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(mln).input(input)
                             .labels(labels).inputMask(inputMask));
 
                     assertTrue(gradOK);

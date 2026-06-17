@@ -21,6 +21,7 @@ package org.eclipse.deeplearning4j.dl4jcore.nn.conf.graph;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.GraphConfig;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -262,7 +263,7 @@ class ElementWiseVertexTest extends BaseDL4JTest {
     }
 
     private void assertGradientCheckPasses(ComputationGraph cg, INDArray[] inputs, INDArray target) {
-        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(cg).inputs(inputs)
+        boolean gradOK = GradientCheckUtil.checkGradients(new GraphConfig().net(cg).inputs(inputs)
                         .labels(new INDArray[] { target }).subset(true).maxPerParam(100));
         Assertions.assertTrue(gradOK);
     }

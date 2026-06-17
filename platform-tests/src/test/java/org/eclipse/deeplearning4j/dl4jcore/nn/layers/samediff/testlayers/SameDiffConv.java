@@ -19,7 +19,7 @@
  */
 
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.samediff.testlayers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import lombok.*;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -83,7 +83,7 @@ public class SameDiffConv extends SameDiffLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional c = (InputTypeConvolutional) inputType;
         return InputTypeUtil.getOutputTypeCnnLayersLong(inputType, kernel, stride, padding, new long[]{1, 1},
                 cm, nOut, (long) layerIndex, getLayerName(), CNN2DFormat.NCHW, SameDiffConv.class);
     }
@@ -91,7 +91,7 @@ public class SameDiffConv extends SameDiffLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (nIn <= 0 || override) {
-            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+            InputTypeConvolutional c = (InputTypeConvolutional) inputType;
             this.nIn = c.getChannels();
         }
     }

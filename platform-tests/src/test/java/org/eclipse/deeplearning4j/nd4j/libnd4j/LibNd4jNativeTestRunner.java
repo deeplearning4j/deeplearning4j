@@ -132,15 +132,15 @@ public class LibNd4jNativeTestRunner {
 
         // Parse and log results
         if (Files.exists(xmlPath)) {
-            GTestResultParser.GTestResults gtestResults = GTestResultParser.parseXmlFile(xmlPath);
+            GTestResults gtestResults = GTestResultParser.parseXmlFile(xmlPath);
             log.info("Test results: {} total, {} passed, {} failed",
                 gtestResults.getTotalTestCount(),
                 gtestResults.getTotalTestCount() - gtestResults.getTotalFailureCount(),
                 gtestResults.getTotalFailureCount());
 
             if (gtestResults.hasFailures()) {
-                List<GTestResultParser.GTestCase> failures = gtestResults.getAllFailedTests();
-                for (GTestResultParser.GTestCase failure : failures) {
+                List<GTestCase> failures = gtestResults.getAllFailedTests();
+                for (GTestCase failure : failures) {
                     log.error("FAILED: {} - {}", failure.getFullName(), failure.getFailureMessage());
                 }
             }
@@ -218,7 +218,7 @@ public class LibNd4jNativeTestRunner {
 
         // Parse results for detailed reporting
         if (Files.exists(xmlPath)) {
-            GTestResultParser.GTestResults gtestResults = GTestResultParser.parseXmlFile(xmlPath);
+            GTestResults gtestResults = GTestResultParser.parseXmlFile(xmlPath);
             log.info("{}: {} tests, {} passed, {} failed in {:.3f}s",
                 suiteName,
                 gtestResults.getTotalTestCount(),
@@ -258,11 +258,11 @@ public class LibNd4jNativeTestRunner {
 
         // Try to get details from XML
         if (Files.exists(xmlPath)) {
-            GTestResultParser.GTestResults gtestResults = GTestResultParser.parseXmlFile(xmlPath);
-            List<GTestResultParser.GTestCase> failures = gtestResults.getAllFailedTests();
+            GTestResults gtestResults = GTestResultParser.parseXmlFile(xmlPath);
+            List<GTestCase> failures = gtestResults.getAllFailedTests();
             if (!failures.isEmpty()) {
                 msg.append("\nFailure details:\n");
-                for (GTestResultParser.GTestCase failure : failures) {
+                for (GTestCase failure : failures) {
                     msg.append("  - ").append(failure.getFullName()).append("\n");
                     if (failure.getFile() != null && !failure.getFile().isEmpty()) {
                         msg.append("    at ").append(failure.getFile())

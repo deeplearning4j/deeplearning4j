@@ -35,6 +35,7 @@ import org.deeplearning4j.datasets.iterator.utilty.SingletonMultiDataSetIterator
 import org.nd4j.evaluation.classification.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.GraphConfig;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -2169,7 +2170,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         INDArray features = Nd4j.rand(DataType.DOUBLE,new int[] {dataSize, inputSize});
         INDArray labels = Nd4j.rand(DataType.DOUBLE,new int[] {dataSize, outputSize});
 
-        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(new INDArray[]{features})
+        boolean gradOK = GradientCheckUtil.checkGradients(new GraphConfig().net(net).inputs(new INDArray[]{features})
                 .labels(new INDArray[]{labels}));
         assertTrue(gradOK);
     }

@@ -18,7 +18,6 @@
  *  *****************************************************************************
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.core;
-
 import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasPermute;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.BaseDL4JTest;
@@ -81,7 +80,7 @@ class KerasPermuteTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_NAME(), "permute");
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-        InputType inputType = InputType.InputTypeFeedForward.recurrent(20, 10);
+        InputType inputType = InputType.recurrent(20, 10);
         return (PermutePreprocessor) new KerasPermute(layerConfig).getInputPreprocessor(inputType);
     }
 }

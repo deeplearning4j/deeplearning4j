@@ -24,6 +24,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.gradientcheck.MLNConfig;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -372,7 +373,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                     fm.get(NDArrayIndex.point(0), NDArrayIndex.all()).assign(1);
                     fm.get(NDArrayIndex.point(1), NDArrayIndex.interval(0, 6)).assign(1);
                     INDArray label = TestUtils.randomOneHot(2, finalNOut);
-                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f).labels(label).inputMask(fm));
+                    boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(f).labels(label).inputMask(fm));
                     assertTrue(gradOK,s);
                     //TestUtils.testModelSerialization(net);
                     // TODO also check that masked step values don't impact forward pass, score or gradients
@@ -437,7 +438,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
             long outSize1 = Convolution1DUtils.getOutputSize(length, k, st, 0, ConvolutionMode.Causal, d);
             long outSize2 = Convolution1DUtils.getOutputSize(outSize1, k, st, 0, ConvolutionMode.Causal, d);
             INDArray label = TestUtils.randomOneHotTimeSeries(2, finalNOut, (int) outSize2);
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f).labels(label).inputMask(fm));
+            boolean gradOK = GradientCheckUtil.checkGradients(new MLNConfig().net(net).input(f).labels(label).inputMask(fm));
             assertTrue(gradOK,s);
             TestUtils.testModelSerialization(net);
             net.close();

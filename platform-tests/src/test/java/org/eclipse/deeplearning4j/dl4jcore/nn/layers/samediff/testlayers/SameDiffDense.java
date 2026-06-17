@@ -19,7 +19,7 @@
  */
 
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.samediff.testlayers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -73,7 +73,7 @@ public class SameDiffDense extends SameDiffLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if(override){
-            this.nIn = ((InputType.InputTypeFeedForward)inputType).getSize();
+            this.nIn = ((InputTypeFeedForward)inputType).getSize();
         }
     }
 

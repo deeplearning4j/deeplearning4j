@@ -18,7 +18,6 @@
  *  *****************************************************************************
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.core;
-
 import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasReshape;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.BaseDL4JTest;
@@ -91,7 +90,7 @@ class KerasReshapeTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_NAME(), layerName);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-        InputType inputType = InputType.InputTypeFeedForward.feedForward(20);
+        InputType inputType = InputType.feedForward(20);
         return (ReshapePreprocessor) new KerasReshape(layerConfig).getInputPreprocessor(inputType);
     }
 

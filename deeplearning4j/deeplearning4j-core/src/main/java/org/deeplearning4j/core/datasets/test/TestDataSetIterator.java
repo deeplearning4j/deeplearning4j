@@ -33,6 +33,7 @@ public class TestDataSetIterator implements DataSetIterator {
      */
     private static final long serialVersionUID = -3042802726018263331L;
     private DataSetIterator wrapped;
+    @Getter
     private int numDataSets = 0;
     @Getter
     private DataSetPreProcessor preProcessor;
@@ -102,10 +103,6 @@ public class TestDataSetIterator implements DataSetIterator {
         return null;
     }
 
-
-    public synchronized int getNumDataSets() {
-        return numDataSets;
-    }
 
     @Override
     public DataSet next(int num) {

@@ -80,10 +80,10 @@ public class MultiBackendTestExtension implements
 
         // Check helper requirements
         if (backendTest.helpers().length > 0) {
-            Set<MultiBackendTestConfiguration.Helper> requiredHelpers = new HashSet<>();
+            Set<Helper> requiredHelpers = new HashSet<>();
             for (String h : backendTest.helpers()) {
-                MultiBackendTestConfiguration.Helper helper =
-                        MultiBackendTestConfiguration.Helper.fromString(h);
+                Helper helper =
+                        Helper.fromString(h);
                 if (helper != null) {
                     requiredHelpers.add(helper);
                 }
@@ -102,8 +102,8 @@ public class MultiBackendTestExtension implements
         // Check excluded helpers
         if (backendTest.excludeHelpers().length > 0) {
             for (String h : backendTest.excludeHelpers()) {
-                MultiBackendTestConfiguration.Helper helper =
-                        MultiBackendTestConfiguration.Helper.fromString(h);
+                Helper helper =
+                        Helper.fromString(h);
                 if (helper != null && config.isHelperEnabled(helper)) {
                     // Check if this is the only enabled helper
                     if (config.getEnabledHelpers().size() == 1) {
@@ -117,7 +117,7 @@ public class MultiBackendTestExtension implements
         // Check capability requirement
         String requiredCapability = backendTest.requiresCapability();
         if (!requiredCapability.isEmpty()) {
-            Set<MultiBackendTestConfiguration.Helper> capableHelpers =
+            Set<Helper> capableHelpers =
                     config.getHelpersWithCapability(requiredCapability);
             if (capableHelpers.isEmpty()) {
                 return ConditionEvaluationResult.disabled(
@@ -190,13 +190,13 @@ public class MultiBackendTestExtension implements
         MultiBackendTestConfiguration config = MultiBackendTestConfiguration.getInstance();
 
         // Determine which helpers to test
-        Set<MultiBackendTestConfiguration.Helper> helpersToTest = new HashSet<>();
+        Set<Helper> helpersToTest = new HashSet<>();
 
         if (backendTest.helpers().length > 0) {
             // Specific helpers requested
             for (String h : backendTest.helpers()) {
-                MultiBackendTestConfiguration.Helper helper =
-                        MultiBackendTestConfiguration.Helper.fromString(h);
+                Helper helper =
+                        Helper.fromString(h);
                 if (helper != null && config.isHelperEnabled(helper)) {
                     helpersToTest.add(helper);
                 }
@@ -208,8 +208,8 @@ public class MultiBackendTestExtension implements
 
         // Remove excluded helpers
         for (String h : backendTest.excludeHelpers()) {
-            MultiBackendTestConfiguration.Helper helper =
-                    MultiBackendTestConfiguration.Helper.fromString(h);
+            Helper helper =
+                    Helper.fromString(h);
             if (helper != null) {
                 helpersToTest.remove(helper);
             }
@@ -218,7 +218,7 @@ public class MultiBackendTestExtension implements
         // Filter by capability
         String requiredCapability = backendTest.requiresCapability();
         if (!requiredCapability.isEmpty()) {
-            Set<MultiBackendTestConfiguration.Helper> capableHelpers =
+            Set<Helper> capableHelpers =
                     config.getHelpersWithCapability(requiredCapability);
             helpersToTest.retainAll(capableHelpers);
         }
@@ -288,11 +288,11 @@ public class MultiBackendTestExtension implements
      */
     private static class HelperInvocationContext implements TestTemplateInvocationContext {
 
-        private final MultiBackendTestConfiguration.Helper helper;
-        private final MultiBackendTestConfiguration.HelperCapabilities capabilities;
+        private final Helper helper;
+        private final HelperCapabilities capabilities;
 
-        public HelperInvocationContext(MultiBackendTestConfiguration.Helper helper,
-                                       MultiBackendTestConfiguration.HelperCapabilities capabilities) {
+        public HelperInvocationContext(Helper helper,
+                                       HelperCapabilities capabilities) {
             this.helper = helper;
             this.capabilities = capabilities;
         }
@@ -316,11 +316,11 @@ public class MultiBackendTestExtension implements
      */
     private static class HelperParameterResolver implements ParameterResolver {
 
-        private final MultiBackendTestConfiguration.Helper helper;
-        private final MultiBackendTestConfiguration.HelperCapabilities capabilities;
+        private final Helper helper;
+        private final HelperCapabilities capabilities;
 
-        public HelperParameterResolver(MultiBackendTestConfiguration.Helper helper,
-                                       MultiBackendTestConfiguration.HelperCapabilities capabilities) {
+        public HelperParameterResolver(Helper helper,
+                                       HelperCapabilities capabilities) {
             this.helper = helper;
             this.capabilities = capabilities;
         }
@@ -329,21 +329,21 @@ public class MultiBackendTestExtension implements
         public boolean supportsParameter(ParameterContext parameterContext,
                                          ExtensionContext extensionContext) {
             Class<?> type = parameterContext.getParameter().getType();
-            return type == MultiBackendTestConfiguration.Helper.class ||
-                    type == MultiBackendTestConfiguration.HelperCapabilities.class ||
-                    type == MultiBackendTestConfiguration.HelperTestConfig.class;
+            return type == Helper.class ||
+                    type == HelperCapabilities.class ||
+                    type == HelperTestConfig.class;
         }
 
         @Override
         public Object resolveParameter(ParameterContext parameterContext,
                                         ExtensionContext extensionContext) {
             Class<?> type = parameterContext.getParameter().getType();
-            if (type == MultiBackendTestConfiguration.Helper.class) {
+            if (type == Helper.class) {
                 return helper;
-            } else if (type == MultiBackendTestConfiguration.HelperCapabilities.class) {
+            } else if (type == HelperCapabilities.class) {
                 return capabilities;
-            } else if (type == MultiBackendTestConfiguration.HelperTestConfig.class) {
-                return new MultiBackendTestConfiguration.HelperTestConfig(helper, capabilities);
+            } else if (type == HelperTestConfig.class) {
+                return new HelperTestConfig(helper, capabilities);
             }
             return null;
         }
@@ -354,9 +354,9 @@ public class MultiBackendTestExtension implements
      */
     private static class HelperSetupCallback implements BeforeEachCallback {
 
-        private final MultiBackendTestConfiguration.Helper helper;
+        private final Helper helper;
 
-        public HelperSetupCallback(MultiBackendTestConfiguration.Helper helper) {
+        public HelperSetupCallback(Helper helper) {
             this.helper = helper;
         }
 
