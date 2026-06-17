@@ -68,12 +68,7 @@ public class BatchOutputConfig {
      * Add required outputs
      */
     public BatchOutputConfig output(@NonNull SDVariable... outputs){
-        String[] outNames = new String[outputs.length];
-        for(int i = 0 ; i < outputs.length ; i++){
-            outNames[i] = outputs[i].name();
-        }
-
-        return output(outNames);
+        return output(Arrays.stream(outputs).map(SDVariable::name).toArray(String[]::new));
     }
 
     /**
@@ -129,9 +124,7 @@ public class BatchOutputConfig {
             return this;
         }
 
-        for(Map.Entry<String, SDValue> e : placeholders.entrySet()) {
-            valueInput(e.getKey(), e.getValue());
-        }
+        placeholders.forEach(this::valueInput);
 
         return this;
     }
@@ -146,9 +139,7 @@ public class BatchOutputConfig {
             return this;
         }
 
-        for(Map.Entry<String, INDArray> e : placeholders.entrySet()) {
-            input(e.getKey(), e.getValue());
-        }
+        placeholders.forEach(this::input);
 
         return this;
     }

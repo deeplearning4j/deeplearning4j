@@ -32,6 +32,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 public class CompositeReconstructionDistribution implements ReconstructionDistribution {
@@ -110,11 +111,7 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
 
     @Override
     public boolean hasLossFunction() {
-        for (ReconstructionDistribution rd : reconstructionDistributions) {
-            if (!rd.hasLossFunction())
-                return false;
-        }
-        return true;
+        return Arrays.stream(reconstructionDistributions).allMatch(ReconstructionDistribution::hasLossFunction);
     }
 
     @Override

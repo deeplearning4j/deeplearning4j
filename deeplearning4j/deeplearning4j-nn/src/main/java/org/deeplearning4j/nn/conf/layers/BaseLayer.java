@@ -40,6 +40,7 @@ import org.nd4j.linalg.learning.regularization.WeightDecay;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A neural network layer.
@@ -105,16 +106,10 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         }
         if(regularization != null){
             //Regularization fields are _usually_ thread safe and immutable, but let's clone to be sure
-            clone.regularization = new ArrayList<>(regularization.size());
-            for(Regularization r : regularization){
-                clone.regularization.add(r.clone());
-            }
+            clone.regularization = regularization.stream().map(Regularization::clone).collect(Collectors.toList());
         }
         if(regularizationBias != null){
-            clone.regularizationBias = new ArrayList<>(regularizationBias.size());
-            for(Regularization r : regularizationBias){
-                clone.regularizationBias.add(r.clone());
-            }
+            clone.regularizationBias = regularizationBias.stream().map(Regularization::clone).collect(Collectors.toList());
         }
         return clone;
     }

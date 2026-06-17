@@ -11,6 +11,8 @@ import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Builder
 @Data
@@ -23,17 +25,14 @@ public class ExecutionResult {
 
     public void setCloseable(boolean closeable) {
         if(valueOutputs != null) {
-            for(Map.Entry<String,SDValue> outputValue : valueOutputs.entrySet()) {
-                outputValue.getValue().setCloseable(closeable);
-            }
+            valueOutputs.values().forEach(v -> v.setCloseable(closeable));
         }
 
         if(outputs != null) {
-            for(Map.Entry<String,Optional<INDArray>> entry : outputs.entrySet()) {
-                if(entry.getValue().isPresent()) {
-                    entry.getValue().get().setCloseable(closeable);
-                }
-            }
+            outputs.values().stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(arr -> arr.setCloseable(closeable));
         }
 
     }
@@ -41,10 +40,10 @@ public class ExecutionResult {
 
     public static  ExecutionResult createFrom(List<String> names,List<INDArray> input) {
         Preconditions.checkState(names.size() == input.size(),"Inputs and names must be equal size!");
-        Map<String,Optional<INDArray>> outputs = new LinkedHashMap<>();
-        for(int i = 0; i < input.size(); i++) {
-            outputs.put(names.get(i),input.get(i) == null ? Optional.empty() : Optional.of(input.get(i)));
-        }
+        Map<String,Optional<INDArray>> outputs = IntStream.range(0, names.size())
+                .collect(LinkedHashMap::new,
+                        (m, i) -> m.put(names.get(i), input.get(i) == null ? Optional.empty() : Optional.of(input.get(i))),
+                        LinkedHashMap::putAll);
         return ExecutionResult.builder()
                 .outputs(outputs)
                 .build();
@@ -75,10 +74,10 @@ public class ExecutionResult {
 
     public static  ExecutionResult createFrom(List<String> names,INDArray[] input) {
         Preconditions.checkState(names.size() == input.length,"Inputs and names must be equal size!");
-        Map<String,Optional<INDArray>> outputs = new LinkedHashMap<>();
-        for(int i = 0; i < input.length; i++) {
-            outputs.put(names.get(i),Optional.ofNullable(input[i]));
-        }
+        Map<String,Optional<INDArray>> outputs = IntStream.range(0, names.size())
+                .collect(LinkedHashMap::new,
+                        (m, i) -> m.put(names.get(i), Optional.ofNullable(input[i])),
+                        LinkedHashMap::putAll);
         return ExecutionResult.builder()
                 .outputs(outputs)
                 .build();
@@ -213,22 +212,22 @@ public class ExecutionResult {
 
 
     public static Map<String,INDArray> unpack(Map<String,Optional<INDArray>> result) {
-        Map<String,INDArray> ret = new LinkedHashMap<>();
-        for(Map.Entry<String,Optional<INDArray>> entry : result.entrySet()) {
-            ret.put(entry.getKey(),entry.getValue().get());
-        }
-
-        return ret;
+        return result.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().get(),
+                        (a, b) -> a,
+                        LinkedHashMap::new));
     }
 
 
     public static Map<String,Optional<INDArray>> pack(Map<String,INDArray> result) {
-        Map<String,Optional<INDArray>> ret = new LinkedHashMap<>();
-        for(Map.Entry<String,INDArray> entry : result.entrySet()) {
-            ret.put(entry.getKey(),Optional.ofNullable(entry.getValue().get()));
-        }
-
-        return ret;
+        return result.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> Optional.ofNullable(e.getValue()),
+                        (a, b) -> a,
+                        LinkedHashMap::new));
     }
 
 

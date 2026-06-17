@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -63,11 +64,9 @@ public class LSTM extends AbstractLSTM {
             if (constraints == null) {
                 constraints = new ArrayList<>();
             }
-            for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {
-                LayerConstraint c2 = c.clone();
-                c2.setParams(Collections.singleton(LSTMParamInitializer.RECURRENT_WEIGHT_KEY));
-                constraints.add(c2);
-            }
+            ((Builder) builder).recurrentConstraints.stream()
+                    .map(c -> { LayerConstraint c2 = c.clone(); c2.setParams(Collections.singleton(LSTMParamInitializer.RECURRENT_WEIGHT_KEY)); return c2; })
+                    .forEach(constraints::add);
         }
     }
 
