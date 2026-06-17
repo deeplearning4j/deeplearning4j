@@ -35,6 +35,8 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class TransferLearningHelper {
 
@@ -250,8 +252,7 @@ public class TransferLearningHelper {
         }
         frozenInputVerticesSorted.addAll(frozenInputVertices);
         //Sort all inputs to the computation graph - in order to have a predictable order
-        graphInputs = new ArrayList(frozenInputVerticesSorted);
-        Collections.sort(graphInputs);
+        graphInputs = frozenInputVerticesSorted.stream().sorted().collect(Collectors.toList());
         for (String asInput : frozenInputVerticesSorted) {
             //add back in the right order
             builder.addInputs(asInput);
@@ -280,10 +281,9 @@ public class TransferLearningHelper {
                 frozenInputLayer = i;
             }
         }
-        List<NeuralNetConfiguration> allConfs = new ArrayList<>();
-        for (int i = frozenInputLayer + 1; i < origMLN.getnLayers(); i++) {
-            allConfs.add(origMLN.getLayer(i).conf());
-        }
+        List<NeuralNetConfiguration> allConfs = IntStream.range(frozenInputLayer + 1, origMLN.getnLayers())
+                .mapToObj(i -> origMLN.getLayer(i).conf())
+                .collect(Collectors.toList());
 
         MultiLayerConfiguration c = origMLN.getLayerWiseConfigurations();
 
@@ -411,19 +411,15 @@ public class TransferLearningHelper {
     }
 
     private void copyParamsFromSubsetGraphToOrig() {
-        for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
-            if (!aVertex.hasLayer())
-                continue;
-            origGraph.getVertex(aVertex.getVertexName()).getLayer().setParams(aVertex.getLayer().params());
-        }
+        Arrays.stream(unFrozenSubsetGraph.getVertices())
+                .filter(GraphVertex::hasLayer)
+                .forEach(v -> origGraph.getVertex(v.getVertexName()).getLayer().setParams(v.getLayer().params()));
     }
 
     private void copyOrigParamsToSubsetGraph() {
-        for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
-            if (!aVertex.hasLayer())
-                continue;
-            aVertex.getLayer().setParams(origGraph.getLayer(aVertex.getVertexName()).params());
-        }
+        Arrays.stream(unFrozenSubsetGraph.getVertices())
+                .filter(GraphVertex::hasLayer)
+                .forEach(v -> v.getLayer().setParams(origGraph.getLayer(v.getVertexName()).params()));
     }
 
     private void copyParamsFromSubsetMLNToOrig() {

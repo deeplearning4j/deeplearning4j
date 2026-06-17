@@ -41,6 +41,106 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Array buffer recycling manager for SameDiff execution sessions.
+ *
+ * <p>ArrayCacheMemoryMgr implements a two-level cache that avoids repeated native allocation by
+ * recycling previously allocated {@link org.nd4j.linalg.api.ndarray.INDArray} buffers across
+ * SameDiff graph executions:
+ *
+ * <ol>
+ *   <li><b>LRU identity cache</b>: A per-thread {@link LinkedHashMap} keyed on array ID
+ *       ({@code lruCacheValues}). Insertion-ordered iteration gives cheap O(1) oldest-first
+ *       eviction when the cache budget is exceeded.</li>
+ *   <li><b>Capacity TreeMap</b>: A per-thread {@code Map&lt;DataType, TreeMap&lt;Long,
+ *       ArrayDeque&lt;INDArray&gt;&gt;&gt;} stored in {@code capacityArrays}. Arrays are bucketed
+ *       by buffer element count (not shape). On allocation, {@code TreeMap.ceilingEntry(required)}
+ *       finds the smallest cached buffer &ge; the requested element count in O(log n), enabling
+ *       reuse of slightly-over-allocated buffers for the next step's growing shapes (e.g. KV
+ *       cache growing by 1 token per decode step).</li>
+ * </ol>
+ *
+ * <h3>DSP interaction</h3>
+ * <p>During Dynamic Shape Plan (DSP) execution the same memory manager instance is reused across
+ * successive plan executions. At the end of each step, intermediate arrays are handed back via
+ * {@link #release(org.nd4j.linalg.api.ndarray.INDArray)}, re-entering the capacity pool. The next
+ * step's {@link #allocate(boolean, org.nd4j.linalg.api.buffer.DataType, long...)} calls can then
+ * satisfy most requests from the pool, significantly reducing allocation overhead across long
+ * autoregressive decode sequences. Use {@link #withGrowthFactor(double)} to scope the growth
+ * factor to DSP execution paths only, preventing leakage into standard op-by-op execution.
+ *
+ * <h3>View handling</h3>
+ * <p>View arrays share a {@link org.nd4j.linalg.api.buffer.DataBuffer} with their source array.
+ * Closing a view's buffer would corrupt all other arrays that reference the same underlying
+ * storage, producing NaN values or crashes. This class handles views as follows:
+ * <ul>
+ *   <li>Views encountered during {@link #release(org.nd4j.linalg.api.ndarray.INDArray)} are not
+ *       cached. If the backing buffer is not marked constant, it is added to
+ *       {@code deferredCloseBuffers} for safe cleanup at end-of-execution.</li>
+ *   <li>Views found already sitting in the capacity cache (possible when a cached array is later
+ *       aliased by a reshape/permute) are skipped during allocation and marked non-closeable.</li>
+ *   <li>Live buffer ref-counting in {@code InferenceSession} ensures that buffers shared with
+ *       multiple consumers are not released prematurely.</li>
+ * </ul>
+ *
+ * <p>Call {@link #closeDeferredBuffers(java.util.IdentityHashMap)} at the end of each execution
+ * batch (after all ops complete) to safely close DataBuffers that were deferred during
+ * {@code release}.
+ *
+ * <h3>Growth factor and buffer over-allocation</h3>
+ * <p>On a cache miss, buffers are over-allocated by {@link #DEFAULT_GROWTH_FACTOR} (default
+ * {@code 1.05}) so that the next iteration's slightly larger request (e.g. KV cache growing one
+ * token per step) can match the cached buffer via capacity matching instead of hitting the native
+ * allocator again. The growth factor is configurable via the system property
+ * {@link org.nd4j.common.config.ND4JSystemProperties#CACHE_GROWTH_FACTOR}. A value of exactly
+ * {@code 1.0} disables over-allocation. Use {@link #withGrowthFactor(double)} for a scoped
+ * per-thread override that restores automatically via try-with-resources.
+ *
+ * <h3>Thread safety</h3>
+ * <p>All mutable cache state ({@code capacityArrays}, {@code lruCacheValues},
+ * {@code deferredCloseBuffers}, {@code released}) is stored in {@link ThreadLocal} fields so that
+ * threads running independent SameDiff sessions never contend on the same structures. The only
+ * shared mutable state is the global {@code currentCacheSize} counter and the configuration
+ * atomics ({@code maxCacheBytes}, {@code maxMemFrac}, etc.), which use
+ * {@link java.util.concurrent.atomic.AtomicLong} /
+ * {@link org.nd4j.common.primitives.AtomicDouble} for safe concurrent mutation.
+ *
+ * <h3>Key methods</h3>
+ * <ul>
+ *   <li>{@link #allocate(boolean, org.nd4j.linalg.api.buffer.DataType, long...)} — returns a
+ *       capacity-matched cached array if one is available, otherwise allocates a new over-sized
+ *       buffer with growth headroom.</li>
+ *   <li>{@link #release(org.nd4j.linalg.api.ndarray.INDArray)} — returns a finished array to
+ *       the pool, evicting the oldest entries in LRU order to stay within the memory budget.</li>
+ *   <li>{@link #closeDeferredBuffers(java.util.IdentityHashMap)} — closes DataBuffers that were
+ *       deferred during {@code release} because a live view may have shared them; safe to call
+ *       after all ops in the current execution batch are complete.</li>
+ *   <li>{@link #withGrowthFactor(double)} — scoped thread-local growth factor override; restores
+ *       the previous value when the returned {@link AutoCloseable} is closed.</li>
+ *   <li>{@link #close()} / {@link #close(java.util.IdentityHashMap)} — drains the entire pool,
+ *       closes all held buffers (skipping any in the protected set), and resets counters.</li>
+ * </ul>
+ *
+ * <h3>Configuration defaults</h3>
+ * <ul>
+ *   <li>{@link #DEFAULT_MAX_MEM_FRACTION} = {@code 0.25} — fraction of device memory used as
+ *       cache budget (system property:
+ *       {@link org.nd4j.common.config.ND4JSystemProperties#CACHE_MEM_FRACTION}).</li>
+ *   <li>{@link #DEFAULT_SMALL_ARRAY_THRESHOLD} = {@code 1024} — arrays with fewer elements are
+ *       not over-allocated with growth headroom (system property:
+ *       {@link org.nd4j.common.config.ND4JSystemProperties#SMALL_ARRAY_THRESHOLD}).</li>
+ *   <li>{@link #DEFAULT_LARGE_ARRAY_MAX_MULTIPLE} = {@code 2.0} — maximum element-count multiple
+ *       accepted for capacity matching; prevents returning a 10M-element buffer for a 1K request
+ *       (system property:
+ *       {@link org.nd4j.common.config.ND4JSystemProperties#LARGE_ARRAY_MAX_MULTIPLE}).</li>
+ *   <li>{@link #DEFAULT_GROWTH_FACTOR} = {@code 1.05} — over-allocation multiplier for cache
+ *       misses (system property:
+ *       {@link org.nd4j.common.config.ND4JSystemProperties#CACHE_GROWTH_FACTOR}).</li>
+ * </ul>
+ *
+ * <p>The cache is <b>disabled by default</b> and must be explicitly enabled via the system
+ * property {@link org.nd4j.common.config.ND4JSystemProperties#SAMEDIFF_MEMORY_CACHE_ENABLE}.
+ */
 @Getter
 @Setter
 @Slf4j

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Helper class for efficient transfer learning with SameDiff.
@@ -115,14 +116,11 @@ public class TransferLearningHelper {
      * frozen variables, use the constructor with feature outputs or track freezing explicitly.
      */
     private Set<String> collectFrozenVariables(SameDiff sd) {
-        Set<String> frozen = new HashSet<>();
-        for (SDVariable var : sd.variables()) {
-            // Check for CONSTANT type - frozen variables are converted from VARIABLE to CONSTANT
-            if (var.getVariableType() == VariableType.CONSTANT) {
-                frozen.add(var.name());
-            }
-        }
-        return frozen;
+        // Check for CONSTANT type - frozen variables are converted from VARIABLE to CONSTANT
+        return sd.variables().stream()
+                .filter(var -> var.getVariableType() == VariableType.CONSTANT)
+                .map(SDVariable::name)
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     /**
@@ -148,13 +146,9 @@ public class TransferLearningHelper {
      * @return Count of trainable variables
      */
     public int getTrainableVariableCount() {
-        int count = 0;
-        for (SDVariable var : sameDiff.variables()) {
-            if (var.getVariableType() == VariableType.VARIABLE) {
-                count++;
-            }
-        }
-        return count;
+        return (int) sameDiff.variables().stream()
+                .filter(var -> var.getVariableType() == VariableType.VARIABLE)
+                .count();
     }
 
     /**
@@ -172,13 +166,10 @@ public class TransferLearningHelper {
      * @return Set of trainable variable names
      */
     public Set<String> getTrainableVariables() {
-        Set<String> trainable = new HashSet<>();
-        for (SDVariable var : sameDiff.variables()) {
-            if (var.getVariableType() == VariableType.VARIABLE) {
-                trainable.add(var.name());
-            }
-        }
-        return trainable;
+        return sameDiff.variables().stream()
+                .filter(var -> var.getVariableType() == VariableType.VARIABLE)
+                .map(SDVariable::name)
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     /**
@@ -197,19 +188,15 @@ public class TransferLearningHelper {
      * Print a summary of frozen vs trainable parameters.
      */
     public void printSummary() {
-        int frozenParams = 0;
-        int trainableParams = 0;
+        long trainableParams = sameDiff.variables().stream()
+                .filter(var -> var.getArr() != null && var.getVariableType() == VariableType.VARIABLE)
+                .mapToLong(var -> var.getArr().length())
+                .sum();
 
-        for (SDVariable var : sameDiff.variables()) {
-            if (var.getArr() != null) {
-                long params = var.getArr().length();
-                if (var.getVariableType() == VariableType.VARIABLE) {
-                    trainableParams += params;
-                } else if (frozenVariables.contains(var.name())) {
-                    frozenParams += params;
-                }
-            }
-        }
+        long frozenParams = sameDiff.variables().stream()
+                .filter(var -> var.getArr() != null && frozenVariables.contains(var.name()))
+                .mapToLong(var -> var.getArr().length())
+                .sum();
 
         log.info("Transfer Learning Summary:");
         log.info("  Frozen variables: {} ({} parameters)", frozenVariables.size(), frozenParams);

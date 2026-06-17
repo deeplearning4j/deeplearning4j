@@ -127,4 +127,73 @@ public class DL4JSystemProperties {
      * for each cache value.
      */
     public static final String NLP_QUEUE_SIZE = "org.eclipse.deeplearning4j.nlp.queuesize";
+
+    // ---- HuggingFace / model download properties ----
+
+    /**
+     * Applicability: ModelManagerModule (DL4J UI), HuggingFace model downloader<br>
+     * Description: HuggingFace API token used for authenticated access to private model repositories.
+     * Also checks the environment variable HF_TOKEN as a fallback.
+     * <p>
+     * Example: {@code -Ddl4j.hf.token=hf_xxxxxxxxxxxxxxxxxxxx}
+     */
+    public static final String HF_TOKEN = "dl4j.hf.token";
+
+    // ---- WordVector serialization security properties ----
+
+    /**
+     * Applicability: WordVectorSerializer<br>
+     * Description: Maximum total decompressed size in bytes allowed when extracting word vector model
+     * ZIP archives. Protects against zip bomb attacks that could exhaust disk space.
+     * <p>
+     * Default: 2147483648 (2 GB)
+     */
+    public static final String WORDVEC_MAX_ZIP_SIZE = "dl4j.wordvec.maxZipSize";
+
+    /**
+     * Applicability: WordVectorSerializer<br>
+     * Description: Maximum allowed compression ratio (uncompressed / compressed size) for word vector
+     * model ZIP entries. Protects against zip bomb attacks with highly compressed data.
+     * <p>
+     * Default: 100.0
+     */
+    public static final String WORDVEC_MAX_ZIP_SIZE_RATIO = "dl4j.wordvec.maxCompressionRatio";
+
+    /**
+     * Applicability: WordVectorSerializer<br>
+     * Description: Maximum number of entries allowed in a word vector model ZIP archive.
+     * Protects against zip-based denial-of-service attacks.
+     * <p>
+     * Default: 50
+     */
+    public static final String WORDVEC_MAX_ZIP_ENTRIES = "dl4j.wordvec.maxZipEntries";
+
+    // ---- DL4J model serialization security properties ----
+
+    /**
+     * Applicability: ModelSerializer<br>
+     * Description: Maximum total decompressed size in bytes allowed when loading DL4J model ZIP archives.
+     * Protects against zip bomb attacks that could exhaust disk space.
+     * <p>
+     * Default: 1073741824 (1 GB)
+     */
+    public static final String MODEL_MAX_ZIP_SIZE = "dl4j.model.maxZipSize";
+
+    /**
+     * Applicability: ModelSerializer<br>
+     * Description: Maximum allowed compression ratio (uncompressed / compressed size) for DL4J model
+     * ZIP entries. Protects against zip bomb attacks with highly compressed data.
+     * <p>
+     * Default: 100.0
+     */
+    public static final String MODEL_MAX_ZIP_SIZE_RATIO = "dl4j.model.maxCompressionRatio";
+
+    /**
+     * Applicability: ModelSerializer<br>
+     * Description: Maximum number of entries allowed in a DL4J model ZIP archive.
+     * Protects against zip-based denial-of-service attacks.
+     * <p>
+     * Default: 100
+     */
+    public static final String MODEL_MAX_ZIP_ENTRIES = "dl4j.model.maxZipEntries";
 }
