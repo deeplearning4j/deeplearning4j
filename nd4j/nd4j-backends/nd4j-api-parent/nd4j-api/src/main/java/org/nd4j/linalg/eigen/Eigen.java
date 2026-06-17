@@ -22,9 +22,9 @@ package org.nd4j.linalg.eigen;
 
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.Eig;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.inverse.InvertMatrix;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 public class Eigen {
 
     public static INDArray dummy = Nd4j.scalar(1);
@@ -106,7 +106,7 @@ public class Eigen {
      */
     public static INDArray[] eig(INDArray A) {
         Preconditions.checkArgument(A.isMatrix() && A.isSquare(), "Argument A must be a square matrix: has shape %s", A.shape());
-        DynamicCustomOp op_eig = DynamicCustomOp.builder("eig").addInputs(A).build();
+        Eig op_eig = new Eig(A);
         return Nd4j.getExecutioner().exec(op_eig);
     }
 
