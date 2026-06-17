@@ -44,7 +44,7 @@
                     <include>com.h2database:h2</include>
                   <include>org.ow2.asm:asm</include>
                   <include>org.ow2.asm:asm-commons</include>
-                  <include>>org.ow2.asm:asm-analysis</include>
+                  <include>org.ow2.asm:asm-analysis</include>
                 </includes>
               </artifactSet>
               <transformers>
@@ -132,14 +132,6 @@
       <artifactId>byte-buddy-dep</artifactId>
       <version>${bytebuddy.version}</version>
     </dependency>
-
-
-    <dependency>
-      <groupId>com.tdunning</groupId>
-      <artifactId>json</artifactId>
-      <version>1.8</version>
-    </dependency>
-
 
 
     <dependency>

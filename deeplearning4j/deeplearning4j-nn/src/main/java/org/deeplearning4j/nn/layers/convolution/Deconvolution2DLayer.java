@@ -35,7 +35,9 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2DDerivative;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -94,14 +96,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         long[] epsShape = nchw ? new long[]{miniBatch, inDepth, inH, inW} : new long[]{miniBatch, inH, inW, inDepth};
         INDArray outEps = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, weights.dataType(), epsShape, 'c');
 
-        Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
-
-        long[] args = {
-                kH, kW, strides[0], strides[1],
-                pad[0], pad[1], dilation[0], dilation[1], sameMode,
-                nchw ? 0 : 1 //0 = NCHW; 1 = NHWC
-        };
-
         INDArray delta;
         IActivation afn = layerConf().getActivationFn();
         Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
@@ -122,12 +116,15 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             opInputs = new INDArray[]{input, weights, delta};
             opOutputs = new INDArray[]{outEps, weightGradViewOp};
         }
-        CustomOp op = DynamicCustomOp.builder("deconv2d_bp")
-                .addInputs(opInputs)
-                .addIntegerArguments(args)
-                .addOutputs(opOutputs)
-                .callInplace(false)
+        DeConv2DConfig bpConfig = DeConv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .sH(strides[0]).sW(strides[1])
+                .pH(pad[0]).pW(pad[1])
+                .dH(dilation[0]).dW(dilation[1])
+                .isSameMode(convolutionMode == ConvolutionMode.Same)
+                .dataFormat(nchw ? DeConv2DConfig.NCHW : DeConv2DConfig.NHWC)
                 .build();
+        CustomOp op = new DeConv2DDerivative(opInputs, opOutputs, bpConfig);
         Nd4j.getExecutioner().exec(op);
 
 
@@ -217,14 +214,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         long[] outShape = nchw ? new long[]{miniBatch, outDepth, outH, outW} : new long[]{miniBatch, outH, outW, outDepth};
         INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
 
-        int sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
-
-        long[] args = {
-                kH, kW, strides[0], strides[1],
-                pad[0], pad[1], dilation[0], dilation[1], sameMode,
-                nchw ? 0 : 1 //0 = NCHW; 1 = NHWC
-        };
-
         //DL4J Deconv weights: [inputDepth, outputDepth, kH, kW]
         //libnd4j weights: [kH, kW, oC, iC]
         weights = weights.permute(2, 3, 1, 0);
@@ -235,12 +224,15 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         } else {
             opInputs = new INDArray[]{input, weights};
         }
-        CustomOp op = DynamicCustomOp.builder("deconv2d")
-                .addInputs(opInputs)
-                .addIntegerArguments(args)
-                .addOutputs(output)
-                .callInplace(false)
+        DeConv2DConfig fwdConfig = DeConv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .sH(strides[0]).sW(strides[1])
+                .pH(pad[0]).pW(pad[1])
+                .dH(dilation[0]).dW(dilation[1])
+                .isSameMode(convolutionMode == ConvolutionMode.Same)
+                .dataFormat(nchw ? DeConv2DConfig.NCHW : DeConv2DConfig.NHWC)
                 .build();
+        CustomOp op = new DeConv2D(opInputs, new INDArray[]{output}, fwdConfig);
         Nd4j.getExecutioner().exec(op);
 
         return new Pair<>(output, null);

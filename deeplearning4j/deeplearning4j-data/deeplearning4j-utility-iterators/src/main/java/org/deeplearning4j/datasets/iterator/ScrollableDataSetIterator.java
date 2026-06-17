@@ -138,8 +138,16 @@ public class ScrollableDataSetIterator implements DataSetIterator {
     public boolean hasNext() {
         if (resetPending.get()) {
             if (resetSupported()) {
-                backedIterator.reset();
-                counter.set(0);
+                // Optimization: if the underlying iterator is already positioned at 'bottom'
+                // (i.e., the previous partition just finished reading up to our start),
+                // we don't need to reset the underlying iterator — just reset our local state.
+                // This avoids the expensive skip-loop in next() which materializes DataSets
+                // just to advance the iterator position.
+                boolean alreadyPositioned = (bottom > 0 && counter.get() == bottom);
+                if (!alreadyPositioned) {
+                    backedIterator.reset();
+                    counter.set(0);
+                }
                 current = 0;
                 resetPending.set(false);
             } else
@@ -162,16 +170,20 @@ public class ScrollableDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next() {
         counter.incrementAndGet();
-        if ((current == 0) && (bottom != 0)) {
+        if ((current == 0) && (bottom != 0) && (counter.get() <= bottom)) {
+            // Only do the full reset+skip if not already positioned at 'bottom'.
+            // hasNext() may have optimized away the backedIterator.reset() if the previous
+            // partition left the iterator positioned exactly at our start.
             backedIterator.reset();
-            long cnt = current;
+            long cnt = 0;
             for (; cnt < bottom; ++cnt) {
                 if (backedIterator.hasNext())
                     backedIterator.next();
             }
-            current = cnt+1;
+            current = cnt + 1;  // current = bottom+1 (same as original: position after first returned item)
+        } else {
+            current++;
         }
-        else current++;
         val p = backedIterator.next();
         return p;
     }

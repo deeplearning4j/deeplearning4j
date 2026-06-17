@@ -29,21 +29,21 @@ import org.nd4j.shade.jackson.databind.node.ArrayNode;
 
 import java.io.IOException;
 
-public class LegacyIntArrayDeserializer extends JsonDeserializer<int[]> {
+public class LegacyIntArrayDeserializer extends JsonDeserializer<long[]> {
     @Override
-    public int[] deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+    public long[] deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
         JsonNode n = jp.getCodec().readTree(jp);
         if(n.isArray()){
             ArrayNode an = (ArrayNode)n;
             int size = an.size();
-            int[] out = new int[size];
+            long[] out = new long[size];
             for( int i=0; i<size; i++ ){
-                out[i] = an.get(i).asInt();
+                out[i] = an.get(i).asLong();
             }
             return out;
         } else if(n.isNumber()){
-            int v = n.asInt();
-            return new int[]{v,v};
+            long v = n.asLong();
+            return new long[]{v,v};
         } else {
             throw new IllegalStateException("Could not deserialize value: " + n);
         }

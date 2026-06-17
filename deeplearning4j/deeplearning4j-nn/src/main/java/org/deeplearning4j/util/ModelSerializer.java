@@ -236,20 +236,22 @@ public class ModelSerializer {
             ZipEntry config = new ZipEntry(CONFIGURATION_JSON);
             zipfile.putNextEntry(config);
             dos.write(json.getBytes());
+            dos.flush();
+            zipfile.closeEntry();
 
             // Save parameters as binary
             ZipEntry coefficients = new ZipEntry(COEFFICIENTS_BIN);
             zipfile.putNextEntry(coefficients);
             INDArray params = model.params();
             if (params != null) {
-                try {
-                    Nd4j.write(model.params(), dos);
-                } finally {
-                    dos.flush();
-                }
+                Nd4j.write(model.params(), dos);
+                dos.flush();
+                zipfile.closeEntry();
             } else {
+                zipfile.closeEntry();
                 ZipEntry noParamsMarker = new ZipEntry(NO_PARAMS_MARKER);
                 zipfile.putNextEntry(noParamsMarker);
+                zipfile.closeEntry();
             }
 
             if (saveUpdater) {
@@ -263,12 +265,9 @@ public class ModelSerializer {
                 if (updaterState != null && updaterState.length() > 0) {
                     ZipEntry updater = new ZipEntry(UPDATER_BIN);
                     zipfile.putNextEntry(updater);
-
-                    try {
-                        Nd4j.write(updaterState, dos);
-                    } finally {
-                        dos.flush();
-                    }
+                    Nd4j.write(updaterState, dos);
+                    dos.flush();
+                    zipfile.closeEntry();
                 }
             }
 
@@ -278,6 +277,8 @@ public class ModelSerializer {
                 ZipEntry nEntry = new ZipEntry(NORMALIZER_BIN);
                 zipfile.putNextEntry(nEntry);
                 NormalizerSerializer.getDefault().write(dataNormalization, dos);
+                dos.flush();
+                zipfile.closeEntry();
             }
         }
     }

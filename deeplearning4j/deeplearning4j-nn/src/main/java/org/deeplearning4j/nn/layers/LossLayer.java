@@ -21,7 +21,8 @@
 package org.deeplearning4j.nn.layers;
 
 
-import org.deeplearning4j.eval.Evaluation;
+import lombok.Getter;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -45,7 +46,10 @@ import java.util.List;
 public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossLayer>
                 implements Serializable, IOutputLayer {
 
+    private static final long serialVersionUID = 1L;
+
     //current input and label matrices
+    @Getter
     protected INDArray labels;
 
     private double fullNetworkRegularizationScore;
@@ -306,11 +310,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             labels = null;
         }
         solver = null;
-    }
-
-    @Override
-    public INDArray getLabels() {
-        return labels;
     }
 
     @Override

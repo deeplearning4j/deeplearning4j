@@ -39,6 +39,8 @@ import java.util.Map;
 @Data
 @Builder(toBuilder = true)
 public class OpDeclarationDescriptor implements Serializable  {
+    private static final long serialVersionUID = 1L;
+
     private String name;
     private int nIn,nOut,tArgs,iArgs;
     private boolean inplaceAble;

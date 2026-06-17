@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.Getter;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -47,7 +48,10 @@ import java.util.List;
 public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseOutputLayer>
         extends BaseLayer<LayerConfT> implements Serializable, IOutputLayer {
 
+    private static final long serialVersionUID = 1L;
+
     //current input and label matrices
+    @Getter
     protected INDArray labels;
 
 
@@ -76,6 +80,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         ILossFunction lossFunction = layerConf().getLossFn();
 
         INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM);
+
         double score = lossFunction.computeScore(labels2d, preOut,
                 layerConf().getActivationFn(), maskArray,false);
 
@@ -143,9 +148,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray delta = pair.getSecond();
 
         INDArray w = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.dataType(), new long[]{w.size(0), delta.size(0)}, 'f');
-
-        epsilonNext = w.mmuli(delta.transpose(), epsilonNext).transpose();
+        INDArray epsilonNext = backpropEpsilon(w, delta, workspaceMgr);
         epsilonNext = backpropDropOutIfPresent(epsilonNext);
 
 
@@ -173,7 +176,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Gradient gradient = new DefaultGradient();
 
         INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
-        Nd4j.gemm(input.castTo(weightGradView.dataType()), delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));         //TODO can we avoid cast?
+
+        Nd4j.gemm(input.castTo(weightGradView.dataType()), delta, weightGradView, true, false, 1.0, 0.0);
+
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradView);
 
         if(hasBias()) {
@@ -309,11 +314,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public INDArray getLabels() {
-        return labels;
     }
 
     public void setLabels(INDArray labels) {

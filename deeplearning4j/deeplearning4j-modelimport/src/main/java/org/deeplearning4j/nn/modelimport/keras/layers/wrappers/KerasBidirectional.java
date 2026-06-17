@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.wrappers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -39,6 +40,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class KerasBidirectional extends KerasLayer {
 
     private KerasLayer kerasRnnlayer;
@@ -123,8 +125,13 @@ public class KerasBidirectional extends KerasLayer {
                 mode = Bidirectional.Mode.AVERAGE;
                 break;
             default:
-                // Note that this is only for "None" mode, which we currently can't do.
-                throw new UnsupportedKerasConfigurationException("Merge mode " + mergeModeString + " not supported.");
+                // Keras merge_mode=None returns separate forward/backward outputs. DL4J's Bidirectional
+                // doesn't support this, so we approximate with CONCAT which preserves all information
+                // from both directions. Users can split the output downstream if needed.
+                log.warn("Bidirectional merge_mode='{}' is not directly supported in DL4J. " +
+                        "Using CONCAT as an approximation.", mergeModeString);
+                mode = Bidirectional.Mode.CONCAT;
+                break;
         }
 
         innerRnnConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasMajorVersion);

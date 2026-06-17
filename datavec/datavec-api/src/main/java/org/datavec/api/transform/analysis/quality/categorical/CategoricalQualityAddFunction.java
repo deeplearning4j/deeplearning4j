@@ -32,6 +32,7 @@ import java.io.Serializable;
 
 @AllArgsConstructor
 public class CategoricalQualityAddFunction implements BiFunction<CategoricalQuality, Writable, CategoricalQuality>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final CategoricalMetaData meta;
 

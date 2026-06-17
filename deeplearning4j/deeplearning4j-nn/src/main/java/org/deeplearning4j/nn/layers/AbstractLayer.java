@@ -292,6 +292,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         input = null;
         maskArray = null;
         maskState = null;
+        dropoutApplied = false;
         if(layerConf().getIDropout() != null) {
             layerConf().getIDropout().clear();
         }

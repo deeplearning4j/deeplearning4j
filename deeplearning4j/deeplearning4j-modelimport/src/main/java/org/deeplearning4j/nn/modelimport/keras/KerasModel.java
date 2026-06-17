@@ -280,7 +280,7 @@ public class KerasModel {
                     updatedOrders.put(indexOfNewLayer,kerasLambda);
                     names.add(indexOfNewLayer,newName);
                     removed.add(input);
-                    System.out.println("Found input " + input + " at keras node " + names.get(i) + " with potential cycle.");
+                    log.debug("Found input {} at keras node {} with potential cycle.", input, names.get(i));
 
                 }
             }

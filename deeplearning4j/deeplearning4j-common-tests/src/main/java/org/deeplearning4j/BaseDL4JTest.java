@@ -19,19 +19,25 @@
  */
 package org.deeplearning4j;
 
-import org.deeplearning4j.nn.conf.ConfClassLoading;
-import org.junit.jupiter.api.DisplayName;
-import org.nd4j.common.tools.ClassInitializerUtil;
+import org.junit.jupiter.api.*;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.management.ManagementFactory;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @DisplayName("Base DL 4 J Test")
 public abstract class BaseDL4JTest {
 
+    private static Logger log = LoggerFactory.getLogger(BaseDL4JTest.class.getName());
 
     protected long startTime;
 
@@ -71,6 +77,35 @@ public abstract class BaseDL4JTest {
 
     public DataType getDefaultFPDataType() {
         return getDataType();
+    }
+
+    @BeforeEach
+    void beforeTest(TestInfo testInfo) {
+        log.info("{}.{}", getClass().getSimpleName(), testInfo.getTestMethod().get().getName());
+        System.setProperty(ND4JSystemProperties.LOG_INITIALIZATION, "false");
+        System.setProperty(ND4JSystemProperties.ND4J_IGNORE_AVX, "true");
+        Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
+        Nd4j.setDefaultDataTypes(getDataType(), getDefaultFPDataType());
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
+        int numThreads = numThreads();
+        Preconditions.checkState(numThreads > 0, "Number of threads must be > 0");
+        if (numThreads != Nd4j.getEnvironment().maxMasterThreads()) {
+            Nd4j.getEnvironment().setMaxMasterThreads(numThreads);
+        }
+        startTime = System.currentTimeMillis();
+        threadCountBefore = ManagementFactory.getThreadMXBean().getThreadCount();
+    }
+
+    @AfterEach
+    void afterTest(TestInfo testInfo) {
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        MemoryWorkspace currWS = Nd4j.getMemoryManager().getCurrentWorkspace();
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+        if (currWS != null) {
+            log.error("Open workspace leaked from test! - {}, isOpen = {} - {}", currWS.getId(), currWS.isScopeActive(), currWS);
+        }
     }
 
     protected static Boolean integrationTest;

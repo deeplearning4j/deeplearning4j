@@ -27,6 +27,7 @@ import java.io.*;
 import java.net.URI;
 
 public class FileStreamCreatorFunction implements Function<URI,InputStream>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Override
     public InputStream apply(URI uri) {

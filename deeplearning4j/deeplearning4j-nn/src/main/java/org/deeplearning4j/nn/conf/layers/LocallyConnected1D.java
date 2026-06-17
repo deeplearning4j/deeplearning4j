@@ -8,13 +8,13 @@
  *  *
  *  *  See the NOTICE file distributed with this work for additional
  *  *  information regarding copyright ownership.
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  * License for the specific language governing permissions and limitations
- *  * under the License.
+ *  *  Unless required by applicable law or agreed to in writing, software
+ *  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  *  License for the specific language governing permissions and limitations
+ *  *  under the License.
  *  *
- *  * SPDX-License-Identifier: Apache-2.0
+ *  *  SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
 
@@ -104,12 +104,12 @@ public class LocallyConnected1D extends SameDiffLayer {
 
         if (cm == ConvolutionMode.Same) {
             this.outputSize = Convolution1DUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, 0, cm,
-                            dilation);
+                        dilation);
             this.padding = Convolution1DUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride, dilation);
             this.paddingR = Convolution1DUtils.getSameModeBottomRightPadding(outputSize, inputSize, kernel, stride, dilation);
         } else {
             this.outputSize = Convolution1DUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, padding, cm,
-                            dilation);
+                        dilation);
         }
     }
 
@@ -175,48 +175,49 @@ public class LocallyConnected1D extends SameDiffLayer {
 
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
-        SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY); // (outH, featureDim, nOut)
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY); // (outH, featureDim, nOut)
 
-        int outH = outputSize;
-        int sH = stride;
-        int kH = kernel;
+            int outH = outputSize;
+            int sH = stride;
+            int kH = kernel;
 
-        if(padding > 0 || (cm == ConvolutionMode.Same && paddingR > 0)) {
-            //Note: for same mode, bottom/right padding can be 1 more than top/left padding
-            //NCW format.
-            if(cm == ConvolutionMode.Same) {
-                layerInput = sameDiff.nn().pad(layerInput,
-                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0}, {padding, paddingR}})),
-                        PadMode.CONSTANT, 0);
+            if(padding > 0 || (cm == ConvolutionMode.Same && paddingR > 0)) {
+                //Note: for same mode, bottom/right padding can be 1 more than top/left padding
+                //NCW format.
+                if(cm == ConvolutionMode.Same) {
+                    layerInput = sameDiff.nn().pad(layerInput,
+                            sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0}, {padding, paddingR}})),
+                            PadMode.CONSTANT, 0);
+                } else {
+                    layerInput = sameDiff.nn().pad(layerInput,
+                            sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0}, {padding, padding}})),
+                            PadMode.CONSTANT, 0);
+                }
+            }
+
+            SDVariable[] inputArray = new SDVariable[outH];
+            for (int i = 0; i < outH; i++) {
+                SDVariable slice = layerInput.get(SDIndex.all(), // miniBatch
+                        SDIndex.all(), // nIn
+                        SDIndex.interval(i * sH, i * sH + kH) // kernel
+                );
+                inputArray[i] = sameDiff.reshape(slice, 1, -1, featureDim);
+            }
+            SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH, miniBatch, featureDim)
+
+            SDVariable mmulResult = sameDiff.mmul(concatOutput, w); // (outH, miniBatch, nOut)
+
+            SDVariable result = sameDiff.permute(mmulResult, 1, 2, 0); // (miniBatch, nOut, outH)
+
+            if (hasBias) {
+                SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
+                SDVariable biasAddedResult = sameDiff.nn().biasAdd(result, b, true);
+                return activation.asSameDiff("out", sameDiff, biasAddedResult);
             } else {
-                layerInput = sameDiff.nn().pad(layerInput,
-                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0}, {padding, padding}})),
-                        PadMode.CONSTANT, 0);
+                return activation.asSameDiff("out", sameDiff, result);
             }
         }
-
-        SDVariable[] inputArray = new SDVariable[outH];
-        for (int i = 0; i < outH; i++) {
-            SDVariable slice = layerInput.get(SDIndex.all(), // miniBatch
-                            SDIndex.all(), // nIn
-                            SDIndex.interval(i * sH, i * sH + kH) // kernel
-            );
-            inputArray[i] = sameDiff.reshape(slice, 1, -1, featureDim);
-        }
-        SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH, miniBatch, featureDim)
-
-        SDVariable mmulResult = sameDiff.mmul(concatOutput, w); // (outH, miniBatch, nOut)
-
-        SDVariable result = sameDiff.permute(mmulResult, 1, 2, 0); // (miniBatch, nOut, outH)
-
-        if (hasBias) {
-            SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
-            SDVariable biasAddedResult = sameDiff.nn().biasAdd(result, b, true);
-            return activation.asSameDiff("out", sameDiff, biasAddedResult);
-        } else {
-            return activation.asSameDiff("out", sameDiff, result);
-        }
-
     }
 
     @Override

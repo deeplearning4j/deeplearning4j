@@ -31,6 +31,9 @@ import java.util.Collection;
 
 @Deprecated
 public class ComposableIterationListener extends BaseTrainingListener implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private Collection<TrainingListener> listeners = new ArrayList<>();
 
     public ComposableIterationListener(TrainingListener... TrainingListener) {

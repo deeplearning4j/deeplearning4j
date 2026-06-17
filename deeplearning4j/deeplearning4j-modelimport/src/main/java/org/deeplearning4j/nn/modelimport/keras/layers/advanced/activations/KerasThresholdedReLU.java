@@ -66,7 +66,7 @@ public class KerasThresholdedReLU extends KerasLayer {
         double theta = 1.0;
         String layerFieldThresholdTheta = "theta";
         if (innerConfig.containsKey(layerFieldThresholdTheta)) {
-            theta = (double) innerConfig.get(layerFieldThresholdTheta);
+            theta = ((Number) innerConfig.get(layerFieldThresholdTheta)).doubleValue();
         }
         IActivation thresholdedReLU = new ActivationThresholdedReLU(theta);
         this.layer = new ActivationLayer.Builder().name(this.layerName).activation(thresholdedReLU).build();

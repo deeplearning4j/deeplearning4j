@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -58,11 +59,11 @@ public class InterleavedDataSetCallback implements DataSetCallback {
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         int cDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         for (int i = 0; i < numDevices; i++) {
-            Nd4j.getAffinityManager().unsafeSetDevice(i);
+            DeviceMemoryManager.getInstance().switchDevice(i, "InterleavedDataSetCallback", "workspace-init");
             workspaces.add(Nd4j.getWorkspaceManager().createNewWorkspace(configuration, "IDSC-" + i, i));
         }
 
-        Nd4j.getAffinityManager().unsafeSetDevice(cDevice);
+        DeviceMemoryManager.getInstance().switchDevice(cDevice, "InterleavedDataSetCallback", "restore-device");
         numWorkspaces = numDevices;
         isInitialized = true;
     }

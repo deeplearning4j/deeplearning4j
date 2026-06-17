@@ -44,6 +44,8 @@ import java.util.Map;
 @Data
 public class JavaStatsReport implements StatsReport {
 
+    private static final long serialVersionUID = 1L;
+
     private String sessionID;
     private String typeID;
     private String workerID;

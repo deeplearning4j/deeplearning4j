@@ -75,9 +75,24 @@ public class PythonExecutioner {
         }
 
         init.set(true);
-        initPythonPath();
-        if(PythonConstants.initializePython())
+        if(PythonConstants.initializePython()) {
+            // CPython 3.14+ requires PYTHONHOME to be set before Py_InitializeEx
+            // so it can find the encodings module and stdlib. Extract the javacpp
+            // cpython cache and point Py_SetPythonHome at it using a wide string.
+            try {
+                File cacheDir = python.cachePackage();
+                org.bytedeco.javacpp.Pointer wideHome = Py_DecodeLocale(cacheDir.getAbsolutePath(), null);
+                if (wideHome != null && !wideHome.isNull()) {
+                    Py_SetPythonHome(wideHome);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to set Python home from javacpp cache", e);
+            }
             Py_InitializeEx(0);
+        }
+        // sys.path setup must happen AFTER initialization — CPython 3.14+ crashes
+        // if PySys_SetObject/PyUnicode_FromString are called before initialization
+        initPythonPath();
         //initialize separately to ensure that numpy import array is not imported twice
         for (PythonType type: PythonTypes.get()) {
             type.init();
@@ -101,7 +116,7 @@ public class PythonExecutioner {
         PyObject main = PyImport_ImportModule("__main__");
         PyObject globals = PyModule_GetDict(main);
         PyDict_SetItemString(globals, name, value.getNativePythonObject());
-        Py_DecRef(main);
+        PythonRefCount.decRef(main);
 
     }
 
@@ -161,9 +176,9 @@ public class PythonExecutioner {
                 return new PythonObject(PyObject_GetItem(globals, pyName), false);
             }
         } finally {
-            Py_DecRef(main);
-            //Py_DecRef(globals);
-            Py_DecRef(pyName);
+            PythonRefCount.decRef(main);
+            //PythonRefCount.decRef(globals);
+            PythonRefCount.decRef(pyName);
         }
         return new PythonObject(null);
     }
@@ -277,13 +292,13 @@ public class PythonExecutioner {
                         }
                     }
                 } finally {
-                    Py_DecRef(pyKey);
+                    PythonRefCount.decRef(pyKey);
                 }
             }
         } finally {
-            Py_DecRef(keysIter);
-            Py_DecRef(keys);
-            Py_DecRef(main);
+            PythonRefCount.decRef(keysIter);
+            PythonRefCount.decRef(keys);
+            PythonRefCount.decRef(main);
             return ret;
         }
 
@@ -329,10 +344,13 @@ public class PythonExecutioner {
             File[] packages = packagesList.toArray(new File[0]);
 
             if (path == null) {
+                // Append each package directory to sys.path (do NOT replace it,
+                // as Py_InitializeEx already populated sys.path with the stdlib)
+                PyObject sysPath = PySys_GetObject("path");
                 for (File packageDir : packages) {
-                    PyObject pythonPath = PyUnicode_FromString(packageDir.getAbsolutePath());
-                    PySys_SetObject("path", pythonPath);
-                    Py_DecRef(pythonPath);
+                    PyObject pyStr = PyUnicode_FromString(packageDir.getAbsolutePath());
+                    PyList_Append(sysPath, pyStr);
+                    PythonRefCount.decRef(pyStr);
                 }
             } else {
                 StringBuffer sb = new StringBuffer();
@@ -362,7 +380,7 @@ public class PythonExecutioner {
 
                 PyObject pythonPath = PyUnicode_FromString(sb.toString());
                 PySys_SetObject("path", pythonPath);
-                Py_DecRef(pythonPath);
+                PythonRefCount.decRef(pythonPath);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

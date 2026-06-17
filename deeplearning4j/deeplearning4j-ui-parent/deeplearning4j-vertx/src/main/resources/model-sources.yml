@@ -1,0 +1,88 @@
+sources:
+  huggingface:
+    base_url: https://huggingface.co
+    enabled: true
+
+model_catalog:
+  encoders:
+    - id: bge-base-en-v1.5
+      source: huggingface
+      repo: BAAI/bge-base-en-v1.5
+      format: onnx
+      file_path: onnx/model.onnx
+      description: "BGE Base English v1.5 - 768-dim sentence embeddings"
+      model_type: ENCODER
+      tokenizer_files:
+        - tokenizer.json
+        - tokenizer_config.json
+        - vocab.txt
+
+    - id: bge-small-en-v1.5
+      source: huggingface
+      repo: BAAI/bge-small-en-v1.5
+      format: onnx
+      file_path: onnx/model.onnx
+      description: "BGE Small English v1.5 - 384-dim sentence embeddings"
+      model_type: ENCODER
+      tokenizer_files:
+        - tokenizer.json
+        - tokenizer_config.json
+        - vocab.txt
+
+  cross_encoders:
+    - id: ms-marco-MiniLM-L-6-v2
+      source: huggingface
+      repo: cross-encoder/ms-marco-MiniLM-L-6-v2
+      format: onnx
+      file_path: onnx/model.onnx
+      description: "MS MARCO MiniLM L-6 v2 - Cross-encoder for reranking"
+      model_type: CROSS_ENCODER
+      tokenizer_files:
+        - tokenizer.json
+        - tokenizer_config.json
+        - vocab.txt
+
+    - id: ms-marco-MiniLM-L-12-v2
+      source: huggingface
+      repo: cross-encoder/ms-marco-MiniLM-L-12-v2
+      format: onnx
+      file_path: onnx/model.onnx
+      description: "MS MARCO MiniLM L-12 v2 - Cross-encoder for reranking"
+      model_type: CROSS_ENCODER
+      tokenizer_files:
+        - tokenizer.json
+        - tokenizer_config.json
+        - vocab.txt
+
+  llm:
+    - id: qwen2.5-0.5b-instruct
+      source: huggingface
+      repo: Qwen/Qwen2.5-0.5B-Instruct-GGUF
+      format: gguf
+      file_path: qwen2.5-0.5b-instruct-q4_k_m.gguf
+      description: "Qwen 2.5 0.5B Instruct - Small Q4_K_M quantized LLM"
+      architecture: qwen2
+      quantization: Q4_K_M
+      context_length: 32768
+      parameter_count: 494000000
+      chat_template_format: chatml
+      model_type: LLM_GGUF
+      tokenizer_files:
+        - tokenizer.json
+        - tokenizer_config.json
+
+    - id: smollm2-360m-instruct
+      source: huggingface
+      repo: HuggingFaceTB/SmolLM2-360M-Instruct-GGUF
+      format: gguf
+      file_path: smollm2-360m-instruct-q4_k_m.gguf
+      description: "SmolLM2 360M Instruct - Tiny Q4_K_M quantized LLM"
+      architecture: llama
+      quantization: Q4_K_M
+      context_length: 8192
+      parameter_count: 362000000
+      chat_template_format: chatml
+      model_type: LLM_GGUF
+      tokenizer_files:
+        - tokenizer.json
+        - tokenizer_config.json

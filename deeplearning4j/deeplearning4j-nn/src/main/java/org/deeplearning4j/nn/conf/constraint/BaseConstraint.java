@@ -68,9 +68,6 @@ public abstract class BaseConstraint implements LayerConstraint {
             if(params.contains(e.getKey())){
                 apply(e.getValue());
             }
-            if (params != null && params.contains(e.getKey())) {
-                apply(e.getValue());
-            }
         }
     }
 
@@ -79,13 +76,18 @@ public abstract class BaseConstraint implements LayerConstraint {
     public abstract BaseConstraint clone();
 
     public static long[] getBroadcastDims(long[] reduceDimensions, int rank) {
-        long[] out = new long[rank - reduceDimensions.length];
-        if(rank < 1 || reduceDimensions.length < 1 || out.length < 1) {
+        // Normalize negative dimensions to positive before comparison
+        long[] normalizedReduceDims = new long[reduceDimensions.length];
+        for (int i = 0; i < reduceDimensions.length; i++) {
+            normalizedReduceDims[i] = reduceDimensions[i] < 0 ? reduceDimensions[i] + rank : reduceDimensions[i];
+        }
+        long[] out = new long[rank - normalizedReduceDims.length];
+        if(rank < 1 || normalizedReduceDims.length < 1 || out.length < 1) {
             return new long[]{0};
         }
         int outPos = 0;
         for( int i = 0; i < rank; i++) {
-            if(!ArrayUtils.contains(reduceDimensions, i)) {
+            if(!ArrayUtils.contains(normalizedReduceDims, i)) {
                 out[outPos++] = i;
             }
         }

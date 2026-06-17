@@ -20,11 +20,7 @@
 
 package org.deeplearning4j.core.listener;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-
+import lombok.*;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,6 +42,7 @@ import java.util.*;
 @Data
 @AllArgsConstructor
 public class HardwareMetric implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 

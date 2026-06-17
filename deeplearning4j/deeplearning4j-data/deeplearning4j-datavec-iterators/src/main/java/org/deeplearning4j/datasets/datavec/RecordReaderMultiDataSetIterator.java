@@ -53,6 +53,7 @@ import java.util.*;
 
 @Getter
 public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * When dealing with time series data of different lengths, how should we align the input/labels time series?
@@ -640,7 +641,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
             } else {
                 //Align end
                 //Only practical differences here are: (a) offset, and (b) masking
-                startOffset = longestSequence[i] - sequence.size();
+                startOffset = maxTSLength - sequence.size();
             }
 
             if (timeSeriesRandomOffset) {
@@ -732,11 +733,6 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
     @Override
     public void setPreProcessor(MultiDataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
-    }
-
-    @Override
-    public MultiDataSetPreProcessor getPreProcessor() {
-        return preProcessor;
     }
 
     @Override

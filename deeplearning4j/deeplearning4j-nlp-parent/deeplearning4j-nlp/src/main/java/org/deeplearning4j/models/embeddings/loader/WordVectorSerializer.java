@@ -20,14 +20,8 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.SneakyThrows;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.FileUtils;
@@ -37,6 +31,7 @@ import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.common.util.ND4JFileUtils;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -141,36 +136,36 @@ public class WordVectorSerializer {
     private static int maxZipEntries = getConfiguredMaxEntries();
 
     private static long getConfiguredMaxSize() {
-        String prop = System.getProperty("dl4j.wordvec.maxZipSize");
+        String prop = System.getProperty(DL4JSystemProperties.WORDVEC_MAX_ZIP_SIZE);
         if (prop != null) {
             try {
                 return Long.parseLong(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for dl4j.wordvec.maxZipSize: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", DL4JSystemProperties.WORDVEC_MAX_ZIP_SIZE, prop);
             }
         }
         return DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE;
     }
 
     private static double getConfiguredMaxRatio() {
-        String prop = System.getProperty("dl4j.wordvec.maxCompressionRatio");
+        String prop = System.getProperty(DL4JSystemProperties.WORDVEC_MAX_ZIP_SIZE_RATIO);
         if (prop != null) {
             try {
                 return Double.parseDouble(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for dl4j.wordvec.maxCompressionRatio: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", DL4JSystemProperties.WORDVEC_MAX_ZIP_SIZE_RATIO, prop);
             }
         }
         return DEFAULT_MAX_COMPRESSION_RATIO;
     }
 
     private static int getConfiguredMaxEntries() {
-        String prop = System.getProperty("dl4j.wordvec.maxZipEntries");
+        String prop = System.getProperty(DL4JSystemProperties.WORDVEC_MAX_ZIP_ENTRIES);
         if (prop != null) {
             try {
                 return Integer.parseInt(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for dl4j.wordvec.maxZipEntries: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", DL4JSystemProperties.WORDVEC_MAX_ZIP_ENTRIES, prop);
             }
         }
         return DEFAULT_MAX_ZIP_ENTRIES;
@@ -221,7 +216,7 @@ public class WordVectorSerializer {
                 throw new IOException("Potential zip bomb detected while reading entry '" + entryName + "'. " +
                         "Entry exceeded remaining size allowance of " + remainingAllowed + " bytes. " +
                         "If this is a legitimate file, increase the limit using " +
-                        "WordVectorSerializer.setMaxTotalUncompressedSize() or system property 'dl4j.wordvec.maxZipSize'");
+                        "WordVectorSerializer.setMaxTotalUncompressedSize() or system property '" + DL4JSystemProperties.WORDVEC_MAX_ZIP_SIZE + "'");
             }
 
             if (totalRead > Integer.MAX_VALUE - 8) {
@@ -788,7 +783,7 @@ public class WordVectorSerializer {
             InMemoryLookupTable<VocabWord> weightLookupTable = (InMemoryLookupTable<VocabWord>) vectors.lookupTable();
             writeLookupTableBinary(weightLookupTable, bufferedOutputStream);
         } catch(Exception e) {
-            e.printStackTrace();
+            log.error("Error writing paragraph vectors binary", e);
         }
 
     }
@@ -3560,7 +3555,7 @@ public class WordVectorSerializer {
                     outputStream.close();
                 }
             } catch (IOException ex) {
-                ex.printStackTrace();
+                log.error("Error closing output stream", ex);
             }
         }
     }
@@ -3578,12 +3573,12 @@ public class WordVectorSerializer {
             try {
                 result = (FastText) in.readObject();
             } catch (ClassNotFoundException ex) {
-
+                log.error("FastText class not found during deserialization", ex);
             }
         } catch (FileNotFoundException ex) {
-            ex.printStackTrace();
+            log.error("FastText model file not found: {}", path, ex);
         } catch (IOException ex) {
-            ex.printStackTrace();
+            log.error("Error reading FastText model: {}", path, ex);
         }
         return result;
     }

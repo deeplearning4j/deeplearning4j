@@ -41,6 +41,7 @@ import java.util.List;
 @AllArgsConstructor
 public class QualityAnalysisAddFunction
                 implements BiFunction<List<QualityAnalysisState>, List<Writable>, List<QualityAnalysisState>>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private Schema schema;
 

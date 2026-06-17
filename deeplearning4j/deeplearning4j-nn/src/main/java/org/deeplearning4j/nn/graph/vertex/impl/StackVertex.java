@@ -89,7 +89,7 @@ public class StackVertex extends BaseGraphVertex {
             variableLengthTS = (minLength != maxLength);
 
             if (!variableLengthTS) {
-                return Nd4j.concat(0, inputs);
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, Nd4j.concat(0, inputs));
             }
 
             outShape[2] = maxLength;

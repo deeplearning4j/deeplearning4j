@@ -20,12 +20,7 @@
 
 package org.deeplearning4j.nn.layers.objdetect;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.val;
-
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -64,6 +59,7 @@ import java.util.List;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer> implements Serializable, IOutputLayer {
+    private static final long serialVersionUID = 1L;
     private static final Gradient EMPTY_GRADIENT = new DefaultGradient();
 
     //current input and label matrices
@@ -414,6 +410,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
      * @return IOU and gradients
      */
     private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXYinGridBox, INDArray objectPresentMask, INDArray objectPresentMaskBool){
+        //Ensure objectPresentMask has the same dtype as predictedWH to avoid type mismatch in broadcast ops
+        objectPresentMask = objectPresentMask.castTo(predictedWH.dataType());
 
         long mb = labelTL.size(0);
         long h = labelTL.size(2);

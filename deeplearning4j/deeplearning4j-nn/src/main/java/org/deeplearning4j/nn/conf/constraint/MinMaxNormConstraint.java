@@ -23,8 +23,7 @@ package org.deeplearning4j.nn.conf.constraint;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -95,11 +94,8 @@ public class MinMaxNormConstraint extends BaseConstraint {
     public void apply(INDArray param) {
         INDArray norm = param.norm2(dimensions);
         INDArray clipped = norm.unsafeDuplication();
-        CustomOp op = DynamicCustomOp.builder("clipbyvalue")
-                .addInputs(clipped)
-                .callInplace(true)
-                .addFloatingPointArguments(min, max)
-                .build();
+        ClipByValue op = new ClipByValue(clipped, min, max);
+        op.addOutputArgument(clipped);
         Nd4j.getExecutioner().exec(op);
 
         norm.addi(epsilon);
@@ -110,6 +106,19 @@ public class MinMaxNormConstraint extends BaseConstraint {
         }
 
         Broadcast.mul(param, clipped, param, getBroadcastDims(dimensions, param.rank()) );
+
+        // Second pass to correct float precision drift
+        INDArray norm2 = param.norm2(dimensions);
+        INDArray clipped2 = norm2.unsafeDuplication();
+        ClipByValue op2 = new ClipByValue(clipped2, min, max);
+        op2.addOutputArgument(clipped2);
+        Nd4j.getExecutioner().exec(op2);
+        norm2.addi(epsilon);
+        clipped2.divi(norm2);
+        if(rate != 1.0){
+            clipped2.muli(rate).addi(norm2.muli(1.0-rate));
+        }
+        Broadcast.mul(param, clipped2, param, getBroadcastDims(dimensions, param.rank()) );
     }
 
     @Override

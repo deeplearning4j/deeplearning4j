@@ -98,7 +98,7 @@ public class PythonTypes {
             }
             throw new PythonException("Unable to find converter for python object of type " + pyTypeStr);
         } finally {
-            Py_DecRef(pyType);
+            PythonRefCount.decRef(pyType);
         }
 
 
@@ -125,8 +125,8 @@ public class PythonTypes {
             PyObject repr = PyObject_Str(pythonObject.getNativePythonObject());
             PyObject str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
             String jstr = PyBytes_AsString(str).getString();
-            Py_DecRef(repr);
-            Py_DecRef(str);
+            PythonRefCount.decRef(repr);
+            PythonRefCount.decRef(str);
             return jstr;
         }
 
@@ -217,8 +217,8 @@ public class PythonTypes {
             PythonObject bool = new PythonObject(boolF, false).call(pythonObject);
             boolean ret = PyLong_AsLong(bool.getNativePythonObject()) > 0;
             bool.del();
-            Py_DecRef(boolF);
-            Py_DecRef(builtins);
+            PythonRefCount.decRef(boolF);
+            PythonRefCount.decRef(builtins);
             return ret;
         }
 
@@ -295,10 +295,10 @@ public class PythonTypes {
                 PyObject pyIndex = PyLong_FromLong(i);
                 PyObject pyItem = PyObject_GetItem(pythonObject.getNativePythonObject(),
                         pyIndex);
-                Py_DecRef(pyIndex);
+                PythonRefCount.decRef(pyIndex);
                 PythonType pyItemType = getPythonTypeForPythonObject(new PythonObject(pyItem, false));
                 ret.add(pyItemType.toJava(new PythonObject(pyItem, false)));
-                Py_DecRef(pyItem);
+                PythonRefCount.decRef(pyItem);
             }
             return ret;
         }
@@ -321,7 +321,7 @@ public class PythonTypes {
                     pyItem = PythonTypes.convert(item);
                     owned = true;
                 }
-                Py_IncRef(pyItem.getNativePythonObject()); // reference will be stolen by PyList_SetItem()
+                PythonRefCount.incRef(pyItem.getNativePythonObject()); // reference will be stolen by PyList_SetItem()
                 PyList_SetItem(pyList, i, pyItem.getNativePythonObject());
                 if (owned) pyItem.del();
             }
@@ -360,14 +360,14 @@ public class PythonTypes {
                     PythonType pyKeyType = getPythonTypeForPythonObject(pyKey);
                     PythonType pyValType = getPythonTypeForPythonObject(pyVal);
                     ret.put(pyKeyType.toJava(pyKey), pyValType.toJava(pyVal));
-                    Py_DecRef(pyKey.getNativePythonObject());
-                    Py_DecRef(pyVal.getNativePythonObject());
+                    PythonRefCount.decRef(pyKey.getNativePythonObject());
+                    PythonRefCount.decRef(pyVal.getNativePythonObject());
                 }
             } finally {
-                Py_DecRef(keysIter);
-                Py_DecRef(valsIter);
-                Py_DecRef(keys);
-                Py_DecRef(vals);
+                PythonRefCount.decRef(keysIter);
+                PythonRefCount.decRef(valsIter);
+                PythonRefCount.decRef(keys);
+                PythonRefCount.decRef(vals);
             }
             return ret;
         }

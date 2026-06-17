@@ -360,11 +360,11 @@ public class LSTMHelpers {
                     outputActivations.tensorAlongDimension(time, 1, 0).assign(currHiddenUnitActivations);
                 }
 
-                prevOutputActivations = currHiddenUnitActivations;
+                prevOutputActivations = workspaceMgr.leverageTo(ArrayType.FF_WORKING_MEM, currHiddenUnitActivations);
                 prevMemCellState = currentMemoryCellState;
 
                 // no need to dup here, if that's cache - it's already within Cache workspace
-                toReturn.lastAct = currHiddenUnitActivations;
+                toReturn.lastAct = prevOutputActivations;
 
                 // the same as above, already in cache
                 toReturn.lastMemCell = currentMemoryCellState;

@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -43,6 +44,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
+
+import java.util.Arrays;
 
 
 @Slf4j
@@ -90,79 +93,64 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
 
-        delta = afn.backprop(workspaceMgr.dup(ArrayType.BP_WORKING_MEM,lastZ), epsilon).getFirst(); //TODO handle activation function params
+        INDArray lastZDup = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, lastZ);
+        if(lastZDup.dataType() != dataType)
+            lastZDup = lastZDup.castTo(dataType);
+        delta = afn.backprop(lastZDup, epsilon).getFirst(); //TODO handle activation function params
+        if(delta.dataType() != dataType)
+            delta = delta.castTo(dataType);
 
 
 
-        //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,channels,kH,kW,outH,outW] given the current im2col implementation
-        //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
-        //to get old order from required order: permute(0,3,4,5,1,2)
-        INDArray im2col2d = this.im2col2d; //Re-use im2col2d array from forward pass if available; recalculate if not
+        INDArray epsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), input.shape());
+        CNN2DFormat format = ConvolutionUtils.getFormatForLayer(layerConf());
 
-        OpContext ctx = Nd4j.getExecutioner().buildContext();
-        try {
-            ctx.addIntermediateResult(im2col2d);
+        Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
+                .config(Conv2DConfig.builder()
+                        .dH(layerConf().getDilation()[0])
+                        .dW(layerConf().getDilation()[1])
+                        .kH((int) kernel[0])
+                        .kW((int) kernel[1])
+                        .sH((int) strides[0])
+                        .sW((int) strides[1])
+                        .pH(layerConf().getPadding()[0])
+                        .pW(layerConf().getPadding()[1])
+                        .weightsFormat(ConvolutionUtils.getWeightFormat(format))
+                        .paddingMode(ConvolutionUtils.paddingModeForConvolutionMode(layerConf().getConvolutionMode()))
+                        .dataFormat(ConvolutionUtils.getFormatForLayer(layerConf()).name())
+                        .build())
+                .build();
 
-            INDArray epsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), input.shape());
-            CNN2DFormat format = ConvolutionUtils.getFormatForLayer(layerConf());
-
-            Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
-                    .config(Conv2DConfig.builder()
-                            .dH((int) strides[0])
-                            .dW((int) strides[1])
-                            .kH((int) kernel[0])
-                            .kW((int) kernel[1])
-                            .sH((int) strides[0])
-                            .sW((int) strides[1])
-                            .weightsFormat(ConvolutionUtils.getWeightFormat(format))
-                            .paddingMode(ConvolutionUtils.paddingModeForConvolutionMode(layerConf().getConvolutionMode()))
-                            .dataFormat(ConvolutionUtils.getFormatForLayer(layerConf()).name())
-                            .build())
-                    .build();
-
-            if(bias != null) {
-                conv2DDerivative.addInputArgument(input, weights, bias, delta);
-                conv2DDerivative.addOutputArgument(epsOut, weightGradView, biasGradView);
-            } else {
-                conv2DDerivative.addInputArgument(input, weights, delta);
-                conv2DDerivative.addOutputArgument(epsOut, weightGradView);
-            }
-
-            ctx.setArgsFrom(conv2DDerivative);
-            Nd4j.getExecutioner().exec(conv2DDerivative, ctx);
-
-
-            Gradient retGradient = new DefaultGradient();
-            if(layerConf().hasBias()) {
-                retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
-            }
-            retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
-
-            weightNoiseParams.clear();
-
-            if(layerConf().hasBias()) {
-                retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, gradientViews.get(ConvolutionParamInitializer.BIAS_KEY));
-            }
-            retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY), 'c');
-
-            return new Pair<>(retGradient, workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsOut));
-        } finally {
-            // CRITICAL: Close OpContext to prevent native memory leak even on exceptions
-            try {
-                ctx.close();
-            } catch (Exception e) {
-                // Log but don't throw - cleanup should not fail the operation
-            }
-            // Clean up intermediate arrays
-            try {
-                if (im2col2d != null) im2col2d.close();
-                if (lastZ != null) lastZ.close();
-            } catch (Exception e) {
-                // Ignore close errors
-            }
-            lastZ = null;
-            this.im2col2d = null;
+        if(bias != null) {
+            conv2DDerivative.addInputArgument(input, weights, bias, delta);
+            conv2DDerivative.addOutputArgument(epsOut, weightGradView, biasGradView);
+        } else {
+            conv2DDerivative.addInputArgument(input, weights, delta);
+            conv2DDerivative.addOutputArgument(epsOut, weightGradView);
         }
+
+        Nd4j.getExecutioner().exec(conv2DDerivative);
+
+        Gradient retGradient = new DefaultGradient();
+        if(layerConf().hasBias()) {
+            retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, gradientViews.get(ConvolutionParamInitializer.BIAS_KEY));
+        }
+        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY), 'c');
+
+        weightNoiseParams.clear();
+
+        // Clean up forward pass cache
+        if (lastZ != null) {
+            lastZ.close();
+            lastZ = null;
+        }
+
+        // Apply dropout backward if dropout was used during the forward pass.
+        // The epsilon passed to the previous layer must be multiplied by the dropout mask
+        // so that gradients flowing back through zeroed-out activations are also zeroed.
+        epsOut = backpropDropOutIfPresent(epsOut);
+
+        return new Pair<>(retGradient, workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsOut));
     }
 
     /**
@@ -189,6 +177,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
 
+        if (input.rank() != 4) {
+            String layerName = conf.getLayer().getLayerName();
+            if (layerName == null) layerName = "(not named)";
+            throw new DL4JInvalidInputException("Cannot do forward pass in ConvolutionLayer (layer name = "
+                    + layerName + ", layer index = " + index + "): input is not rank 4 (expected rank 4 "
+                    + "[minibatch, channels, height, width] or [minibatch, height, width, channels], "
+                    + "got rank " + input.rank() + " with shape " + Arrays.toString(input.shape()) + "). "
+                    + "Possible cause: missing preprocessor or wrong InputType? " + layerId());
+        }
 
         INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
@@ -201,6 +198,36 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         long kW = layerConf().getKernelSize()[1];
 
         CNN2DFormat format = ConvolutionUtils.getFormatForLayer(layerConf());
+
+        // Validate input channel count before calling native op so we can give a helpful error message
+        boolean nchw = format == CNN2DFormat.NCHW;
+        int channelDim = nchw ? 1 : 3;
+        if (input.size(channelDim) != inDepth) {
+            String layerName = conf.getLayer().getLayerName();
+            if (layerName == null)
+                layerName = "(not named)";
+            String s = "Cannot do forward pass in ConvolutionLayer (layer name = " + layerName
+                    + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
+                    + " (data format = " + format + ", data input channels = " + input.size(channelDim) + ", "
+                    + (nchw ? "[minibatch,inputDepth,height,width]" : "[minibatch,height,width,inputDepth]") + "="
+                    + Arrays.toString(input.shape()) + "; expected input channels = " + inDepth + ") "
+                    + layerId();
+            int dimIfWrongFormat = nchw ? 3 : 1;
+            if (input.size(dimIfWrongFormat) == inDepth) {
+                // User might have passed NCHW data to a NHWC net, or vice versa?
+                s += "\n" + ConvolutionUtils.NCHW_NHWC_ERROR_MSG;
+            }
+            throw new DL4JInvalidInputException(s);
+        }
+
+        // Validate output size (catches kernel > input, bad strides in Strict mode, etc.)
+        ConvolutionUtils.getOutputSize(input,
+                new long[]{kH, kW},
+                new long[]{layerConf().getStride()[0], layerConf().getStride()[1]},
+                new long[]{layerConf().getPadding()[0], layerConf().getPadding()[1]},
+                layerConf().getConvolutionMode(),
+                new long[]{layerConf().getDilation()[0], layerConf().getDilation()[1]},
+                format);
 
         Conv2DConfig config = Conv2DConfig.builder()
                 .dH(layerConf().getDilation()[0])
@@ -216,34 +243,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 .dataFormat(format.name())
                 .build();
 
-        Nd4j.getEnvironment().setEnableBlas(false);
-        //initialize a context and inject it for pulling out the im2col forward pass.
-        OpContext ctx = Nd4j.getExecutioner().injectNewContext();
-        INDArray z;
-        INDArray im2col;
-        try {
-            z = Nd4j.cnn().conv2d(input, weights, bias, config);
-            im2col = ctx.getIntermediateResult(0);
-        } finally {
-            // CRITICAL: Close OpContext to prevent native memory leak
-            Nd4j.getExecutioner().clearOpContext();
-            try {
-                ctx.close();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-        long outH = im2col.size(-1);
-        long outW = im2col.size(-2);
-        INDArray im2col2d = im2col.reshape(miniBatch * outH * outW, inDepth * kH * kW);
+        INDArray z = Nd4j.cnn().conv2d(input, weights, bias, config);
+
+        // Store z for backward pass activation function derivative
         try(MemoryWorkspace ws1 = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             this.lastZ = z.dup();
-            this.im2col2d = im2col2d.dup();
         }
 
-
         INDArray leveragedRet = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, z);
-        return new Pair<>(leveragedRet, forBackprop ? im2col2d : null);
+        return new Pair<>(leveragedRet, null);
     }
 
     @Override

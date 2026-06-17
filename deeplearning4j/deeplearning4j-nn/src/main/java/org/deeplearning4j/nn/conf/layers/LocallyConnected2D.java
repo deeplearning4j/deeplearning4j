@@ -189,69 +189,64 @@ public class LocallyConnected2D extends SameDiffLayer {
         boolean nchw = format == CNN2DFormat.NCHW;
 
         long[] inputShape = layerInput.getShape();
-        long batchSize = inputShape[0];
-        long inHeight = nchw ? inputShape[2] : inputShape[1];
-        long inWidth = nchw ? inputShape[3] : inputShape[2];
-        long inChannels = this.nIn;
-
-        long[] kernelShape = w.getShape();
+        long miniBatch = inputShape[0];
         long outHeight = this.outputSize[0];
         long outWidth = this.outputSize[1];
         long kernelHeight = this.kernel[0];
         long kernelWidth = this.kernel[1];
         long outChannels = this.nOut;
-        long ndims = kernel.length;
 
-
-        SDVariable[] xs = new SDVariable[(int)(outHeight * outWidth)];
-        int index = 0;
-
-        long[][] outputAxesTicks = new long[(int) ndims][];
-        for (int d = 0; d < ndims; d++) {
-            outputAxesTicks[d] = LongStream.range(0, outputSize[d]).toArray();
+        // Normalize to NCHW for slicing so that padding logic is uniform.
+        // For NHWC input [batch, H, W, C], permute to NCHW [batch, C, H, W].
+        if (!nchw) {
+            layerInput = layerInput.permute(0, 3, 1, 2);
         }
 
-        long[][] positions = product(outputAxesTicks);
-
-        for (long[] position : positions) {
-            List<SDIndex> slices = new ArrayList<>();
-            slices.add(SDIndex.all());
-
-            if (nchw) {
-                slices.add(SDIndex.all());
+        // Apply padding (needed for ConvolutionMode.Same where border pixels require padding).
+        if (padding[0] > 0 || padding[1] > 0
+                || (cm == ConvolutionMode.Same && paddingBr != null && (paddingBr[0] > 0 || paddingBr[1] > 0))) {
+            if (cm == ConvolutionMode.Same) {
+                layerInput = sameDiff.nn().pad(layerInput,
+                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0},
+                                {(int)padding[0], (int)paddingBr[0]}, {(int)padding[1], (int)paddingBr[1]}})),
+                        PadMode.CONSTANT, 0.0);
+            } else {
+                layerInput = sameDiff.nn().pad(layerInput,
+                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0},
+                                {(int)padding[0], (int)padding[0]}, {(int)padding[1], (int)padding[1]}})),
+                        PadMode.CONSTANT, 0.0);
             }
-
-            for (int d = 0; d < ndims; d++) {
-                long start = position[d] * stride[d];
-                long end = start + kernel[d];
-                slices.add(SDIndex.interval(start, end));
-            }
-
-            if (!nchw) {
-                slices.add(SDIndex.all());
-            }
-
-             SDVariable slice = layerInput.get(slices.toArray(new SDIndex[0]));
-            SDVariable reshapedSlice = sameDiff.reshape(slice, 1, -1, inChannels * kernelHeight * kernelWidth);
-            xs[index++] = reshapedSlice;
         }
 
-        SDVariable xAggregate = sameDiff.concat(0, xs);
-        SDVariable output = sameDiff.mmul(xAggregate, w);
+        // Collect slices for each output position (ordered column-major: x * outH + y,
+        // matching the weight tensor layout [outH*outW, featureDim, nOut]).
+        SDVariable[] inputArray = new SDVariable[(int) (outHeight * outWidth)];
+        for (int y = 0; y < outHeight; y++) {
+            for (int x = 0; x < outWidth; x++) {
+                SDVariable slice = layerInput.get(
+                        SDIndex.all(),                                           // miniBatch
+                        SDIndex.all(),                                           // nIn (channels)
+                        SDIndex.interval(y * stride[0], y * stride[0] + kernelHeight), // height
+                        SDIndex.interval(x * stride[1], x * stride[1] + kernelWidth)   // width
+                );
+                inputArray[(int) (x * outHeight + y)] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
+            }
+        }
 
-        long[] newShape = new long[(int) (ndims + 2)];
-        System.arraycopy(outputSize, 0, newShape, 0, (int) ndims);
-        newShape[(int) ndims] = -1;
-        newShape[(int) (ndims + 1)] = outChannels;
-        output = sameDiff.reshape(output, newShape);
+        SDVariable xAggregate = sameDiff.concat(0, inputArray); // [outH*outW, miniBatch, featureDim]
+        SDVariable output = sameDiff.mmul(xAggregate, w);        // [outH*outW, miniBatch, nOut]
 
+        // Reshape to [outH, outW, miniBatch, nOut] then permute to target format.
+        output = sameDiff.reshape(output, outHeight, outWidth, -1, outChannels);
+
+        // For NCHW output: permute [outH, outW, batch, nOut] -> [batch, nOut, outH, outW]
+        // For NHWC output: permute [outH, outW, batch, nOut] -> [batch, outH, outW, nOut]
         long[] permutation;
         if (nchw) {
-            permutation = LongStream.concat(LongStream.of(ndims, ndims + 1), LongStream.range(0, ndims)).toArray();
+            permutation = new long[]{2, 3, 0, 1};
         } else {
-            permutation = LongStream.concat(LongStream.of(ndims), LongStream.concat(LongStream.range(0, ndims), LongStream.of(ndims + 1))).toArray();
+            permutation = new long[]{2, 0, 1, 3};
         }
-
         output = sameDiff.permute(output, permutation);
 
         if (hasBias) {

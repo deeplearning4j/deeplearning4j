@@ -27,6 +27,7 @@ import java.util.Comparator;
 
 @AllArgsConstructor
 public class ReverseComparator<T> implements Comparator<T>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final Comparator<T> comparator;
 

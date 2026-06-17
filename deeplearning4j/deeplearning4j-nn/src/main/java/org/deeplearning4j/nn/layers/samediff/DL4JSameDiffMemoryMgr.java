@@ -60,9 +60,15 @@ public class DL4JSameDiffMemoryMgr extends AbstractMemoryMgr {
             return ret;
         } else {
             MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, wsName);
-            ws.notifyScopeBorrowed();
-            return Nd4j.createUninitialized(dataType, shape);
-
+            MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
+            if(current != null && current.getId().equals(ws.getId())) {
+                //Workspace is already open (entered by outer network scope) - allocate directly
+                return Nd4j.createUninitialized(dataType, shape);
+            } else {
+                try (MemoryWorkspace borrowed = ws.notifyScopeBorrowed()) {
+                    return Nd4j.createUninitialized(dataType, shape);
+                }
+            }
         }
     }
 
@@ -105,9 +111,15 @@ public class DL4JSameDiffMemoryMgr extends AbstractMemoryMgr {
             return ret;
         } else {
             MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, wsName);
-            ws.notifyScopeBorrowed();
-            return Nd4j.createUninitialized(dataType, shape);
-
+            MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
+            if(current != null && current.getId().equals(ws.getId())) {
+                //Workspace is already open (entered by outer network scope) - allocate directly
+                return Nd4j.createUninitialized(dataType, shape);
+            } else {
+                try (MemoryWorkspace borrowed = ws.notifyScopeBorrowed()) {
+                    return Nd4j.createUninitialized(dataType, shape);
+                }
+            }
         }
 
     }

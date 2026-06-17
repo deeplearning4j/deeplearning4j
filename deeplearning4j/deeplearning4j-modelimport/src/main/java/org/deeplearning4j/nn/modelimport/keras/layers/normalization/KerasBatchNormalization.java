@@ -141,7 +141,6 @@ public class KerasBatchNormalization extends KerasLayer {
         this.scale = getScaleParameter(layerConfig);
         this.center = getCenterParameter(layerConfig);
 
-        // TODO: these helper functions should return regularizers that we use in constructor
         getGammaRegularizerFromConfig(layerConfig, enforceTrainingConfig);
         getBetaRegularizerFromConfig(layerConfig, enforceTrainingConfig);
         int batchNormMode = getBatchNormMode(layerConfig, enforceTrainingConfig);
@@ -272,7 +271,7 @@ public class KerasBatchNormalization extends KerasLayer {
         if (!innerConfig.containsKey(LAYER_FIELD_EPSILON))
             throw new InvalidKerasConfigurationException(
                     "Keras BatchNorm layer config missing " + LAYER_FIELD_EPSILON + " field");
-        return (double) innerConfig.get(LAYER_FIELD_EPSILON);
+        return ((Number) innerConfig.get(LAYER_FIELD_EPSILON)).doubleValue();
     }
 
     /**
@@ -287,7 +286,7 @@ public class KerasBatchNormalization extends KerasLayer {
         if (!innerConfig.containsKey(LAYER_FIELD_MOMENTUM))
             throw new InvalidKerasConfigurationException(
                     "Keras BatchNorm layer config missing " + LAYER_FIELD_MOMENTUM + " field");
-        return (double) innerConfig.get(LAYER_FIELD_MOMENTUM);
+        return ((Number) innerConfig.get(LAYER_FIELD_MOMENTUM)).doubleValue();
     }
 
     /**
@@ -301,11 +300,9 @@ public class KerasBatchNormalization extends KerasLayer {
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.get(LAYER_FIELD_GAMMA_REGULARIZER) != null) {
-            if (enforceTrainingConfig)
-                throw new UnsupportedKerasConfigurationException(
-                        "Regularization for BatchNormalization gamma parameter not supported");
-            else
-                log.warn("Regularization for BatchNormalization gamma parameter not supported...ignoring.");
+            // DL4J's BatchNormalization intentionally does not regularize gamma/beta parameters
+            // (they have very few elements, like biases). Log a warning and continue import.
+            log.warn("Regularization for BatchNormalization gamma parameter not supported in DL4J...ignoring.");
         }
     }
 
@@ -340,11 +337,9 @@ public class KerasBatchNormalization extends KerasLayer {
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.get(LAYER_FIELD_BETA_REGULARIZER) != null) {
-            if (enforceTrainingConfig)
-                throw new UnsupportedKerasConfigurationException(
-                        "Regularization for BatchNormalization beta parameter not supported");
-            else
-                log.warn("Regularization for BatchNormalization beta parameter not supported...ignoring.");
+            // DL4J's BatchNormalization intentionally does not regularize gamma/beta parameters
+            // (they have very few elements, like biases). Log a warning and continue import.
+            log.warn("Regularization for BatchNormalization beta parameter not supported in DL4J...ignoring.");
         }
     }
 
@@ -363,7 +358,7 @@ public class KerasBatchNormalization extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                     "Keras BatchNorm layer config missing " + LAYER_FIELD_MODE + " field");
         if (this.kerasMajorVersion == 1)
-            batchNormMode = (int) innerConfig.get(LAYER_FIELD_MODE);
+            batchNormMode = ((Number) innerConfig.get(LAYER_FIELD_MODE)).intValue();
         switch (batchNormMode) {
             case LAYER_BATCHNORM_MODE_1:
                 throw new UnsupportedKerasConfigurationException("Keras BatchNormalization mode "

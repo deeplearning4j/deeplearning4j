@@ -329,7 +329,9 @@ public class RecordConverter {
         List<List<Writable>> writableMatrix = new ArrayList<>();
 
         for (int i = 0; i < dataSet.numExamples(); i++) {
-            List<Writable> writables = toRecord(dataSet.getFeatures().getRow(i, true));
+            // Use dup() to ensure we have a copy of the row data, not a view
+            // Views can have issues with offset calculations in some cases
+            List<Writable> writables = toRecord(dataSet.getFeatures().getRow(i, true).dup());
             writables.add(new IntWritable(Nd4j.argMax(dataSet.getLabels().getRow(i)).getInt(0)));
 
             writableMatrix.add(writables);
@@ -342,8 +344,10 @@ public class RecordConverter {
         List<List<Writable>> writableMatrix = new ArrayList<>();
 
         for (int i = 0; i < dataSet.numExamples(); i++) {
-            List<Writable> writables = toRecord(dataSet.getFeatures().rank() > 1 ?
-                    dataSet.getFeatures().getRow(i) : dataSet.getFeatures());
+            // Use dup() to ensure we have a copy of the row data, not a view
+            INDArray featureRow = dataSet.getFeatures().rank() > 1 ?
+                    dataSet.getFeatures().getRow(i).dup() : dataSet.getFeatures().dup();
+            List<Writable> writables = toRecord(featureRow);
             INDArray labelRow = dataSet.getLabels().rank() > 1 ? dataSet.getLabels().getRow(i)
                     : dataSet.getLabels();
 

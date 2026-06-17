@@ -37,6 +37,7 @@ import org.deeplearning4j.parallelism.inference.observers.BatchedInferenceObserv
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
@@ -547,7 +548,7 @@ public class ParallelInference {
 
         @Override
         public void run() {
-            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
+            DeviceMemoryManager.getInstance().switchDevice(deviceId, "ParallelInference", "inference-thread");
             try {
                 // model should be replicated & initialized here
                 initializeReplicaModel();

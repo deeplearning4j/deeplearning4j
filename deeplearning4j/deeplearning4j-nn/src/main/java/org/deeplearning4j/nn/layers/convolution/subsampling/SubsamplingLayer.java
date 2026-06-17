@@ -35,7 +35,10 @@ import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -106,14 +109,14 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         INDArray epsAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape(), 'c');
-        DynamicCustomOp.DynamicCustomOpsBuilder b;
         long extra = 0;
+        Pooling2D.Pooling2DType poolType;
         switch (layerConf().getPoolingType()) {
             case MAX:
-                b = DynamicCustomOp.builder("maxpool2d_bp");
+                poolType = Pooling2D.Pooling2DType.MAX;
                 break;
             case AVG:
-                b = DynamicCustomOp.builder("avgpool2d_bp");
+                poolType = Pooling2D.Pooling2DType.AVG;
                 if(layerConf().isAvgPoolIncludePadInDivisor()){
                     //Mostly this is a legacy case - beta4 and earlier models.
                     extra = 1;    //Divide by "number present" excluding padding
@@ -121,24 +124,29 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                     //Default behaviour
                     extra = 0;    //Divide by kH*kW not "number present"
                 }
-
                 break;
             case PNORM:
-                b = DynamicCustomOp.builder("pnormpool2d_bp");
+                poolType = Pooling2D.Pooling2DType.PNORM;
                 extra = layerConf().getPnorm();
-                b.addFloatingPointArguments(layerConf().getEps());
                 break;
             default:
                 throw new UnsupportedOperationException("Pooling mode not supported in SubsamplingLayer: " + layerConf().getPoolingType());
         }
-
-        b.addInputs(input, epsilon)
-                .addOutputs(epsAtInput)
-                .addIntegerArguments(kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                        (same ? 1 : 0), extra,
-                        dataFormat == CNN2DFormat.NCHW ? 0 : 1);  //0 = NCHW, 1=NHWC
-
-        Nd4j.exec(b.build());
+        Pooling2DConfig bpConfig = Pooling2DConfig.builder()
+                .kH(kernel[0]).kW(kernel[1])
+                .sH(strides[0]).sW(strides[1])
+                .pH(pad[0]).pW(pad[1])
+                .dH(dilation[0]).dW(dilation[1])
+                .paddingMode(same ? PaddingMode.SAME : PaddingMode.VALID)
+                .extra(extra)
+                .isNHWC(dataFormat != CNN2DFormat.NCHW)
+                .type(poolType)
+                .build();
+        Pooling2DDerivative bpOp = new Pooling2DDerivative(input, epsilon, epsAtInput, bpConfig);
+        if (poolType == Pooling2D.Pooling2DType.PNORM) {
+            bpOp.addTArgument(layerConf().getEps());
+        }
+        Nd4j.exec(bpOp);
 
         return new Pair<>(retGradient, epsAtInput);
     }
@@ -165,14 +173,14 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         long[] dilation = layerConf().getDilation();
         long[] pad = layerConf().getPadding();
 
-        DynamicCustomOp.DynamicCustomOpsBuilder b;
         long extra = 0;
+        Pooling2D.Pooling2DType poolType;
         switch (layerConf().getPoolingType()) {
             case MAX:
-                b = DynamicCustomOp.builder("maxpool2d");
+                poolType = Pooling2D.Pooling2DType.MAX;
                 break;
             case AVG:
-                b = DynamicCustomOp.builder("avgpool2d");
+                poolType = Pooling2D.Pooling2DType.AVG;
                 if(layerConf().isAvgPoolIncludePadInDivisor()) {
                     //Mostly this is a legacy case - beta4 and earlier models.
                     extra = 1;    //Divide by "number present" excluding padding
@@ -182,19 +190,25 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 }
                 break;
             case PNORM:
-                b = DynamicCustomOp.builder("pnormpool2d");
+                poolType = Pooling2D.Pooling2DType.PNORM;
                 extra = layerConf().getPnorm();
                 break;
             default:
                 throw new UnsupportedOperationException("Not supported: " + layerConf().getPoolingType());
         }
 
-        b.addInputs(input)
-                .addIntegerArguments(kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                        (same ? 1 : 0), extra,
-                        layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW ? 0 : 1);  //0: NCHW, 1=NHWC
+        Pooling2DConfig fwdConfig = Pooling2DConfig.builder()
+                .kH(kernel[0]).kW(kernel[1])
+                .sH(strides[0]).sW(strides[1])
+                .pH(pad[0]).pW(pad[1])
+                .dH(dilation[0]).dW(dilation[1])
+                .paddingMode(same ? PaddingMode.SAME : PaddingMode.VALID)
+                .extra(extra)
+                .isNHWC(layerConf().getCnn2dDataFormat() != CNN2DFormat.NCHW)
+                .type(poolType)
+                .build();
 
-        DynamicCustomOp build = b.build();
+        Pooling2D build = new Pooling2D(input, null, fwdConfig);
         long[] shape = Shape.shape(build.calculateOutputShape().get(0).asLong());
 
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), shape, 'c');

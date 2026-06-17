@@ -28,7 +28,10 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.ComputationGraphSameDiffConverter;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetworkSameDiffConverter;
+import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.io.*;
 
@@ -363,6 +366,112 @@ public class KerasModelImport {
         KerasSequentialModel kerasModel = new KerasSequentialModel().modelBuilder().modelJsonFilename(modelJsonFilename)
                 .enforceTrainingConfig(false).buildSequential();
         return kerasModel.getMultiLayerConfiguration();
+    }
+
+    // =====================================================================
+    // Keras → SameDiff convenience methods (via DL4J intermediate model)
+    // =====================================================================
+
+    /**
+     * Load Keras (Functional API) Model and convert to SameDiff.
+     *
+     * @param modelHdf5Filename path to HDF5 archive storing Keras Model
+     * @return SameDiff graph equivalent to the Keras model
+     */
+    public static SameDiff importKerasModelToSameDiff(String modelHdf5Filename)
+            throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+        ComputationGraph cg = importKerasModelAndWeights(modelHdf5Filename, false);
+        return ComputationGraphSameDiffConverter.toSameDiff(cg);
+    }
+
+    /**
+     * Load Keras (Functional API) Model and convert to SameDiff.
+     *
+     * @param modelHdf5Filename     path to HDF5 archive storing Keras Model
+     * @param enforceTrainingConfig whether to enforce training configuration options
+     * @return SameDiff graph equivalent to the Keras model
+     */
+    public static SameDiff importKerasModelToSameDiff(String modelHdf5Filename, boolean enforceTrainingConfig)
+            throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+        ComputationGraph cg = importKerasModelAndWeights(modelHdf5Filename, enforceTrainingConfig);
+        return ComputationGraphSameDiffConverter.toSameDiff(cg);
+    }
+
+    /**
+     * Load Keras (Functional API) Model from separate JSON config and HDF5 weights,
+     * and convert to SameDiff.
+     *
+     * @param modelJsonFilename   path to JSON file storing Keras Model configuration
+     * @param weightsHdf5Filename path to HDF5 archive storing Keras model weights
+     * @return SameDiff graph equivalent to the Keras model
+     */
+    public static SameDiff importKerasModelToSameDiff(String modelJsonFilename, String weightsHdf5Filename)
+            throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+        ComputationGraph cg = importKerasModelAndWeights(modelJsonFilename, weightsHdf5Filename, false);
+        return ComputationGraphSameDiffConverter.toSameDiff(cg);
+    }
+
+    /**
+     * Load Keras (Functional API) Model from an InputStream and convert to SameDiff.
+     *
+     * @param modelHdf5Stream InputStream containing HDF5 archive storing Keras Model
+     * @return SameDiff graph equivalent to the Keras model
+     */
+    public static SameDiff importKerasModelToSameDiff(InputStream modelHdf5Stream)
+            throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+        ComputationGraph cg = importKerasModelAndWeights(modelHdf5Stream, false);
+        return ComputationGraphSameDiffConverter.toSameDiff(cg);
+    }
+
+    /**
+     * Load Keras Sequential model and convert to SameDiff.
+     *
+     * @param modelHdf5Filename path to HDF5 archive storing Keras Sequential model
+     * @return SameDiff graph equivalent to the Keras model
+     */
+    public static SameDiff importKerasSequentialModelToSameDiff(String modelHdf5Filename)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        MultiLayerNetwork mln = importKerasSequentialModelAndWeights(modelHdf5Filename, false);
+        return MultiLayerNetworkSameDiffConverter.toSameDiff(mln);
+    }
+
+    /**
+     * Load Keras Sequential model and convert to SameDiff.
+     *
+     * @param modelHdf5Filename     path to HDF5 archive storing Keras Sequential model
+     * @param enforceTrainingConfig whether to enforce training configuration options
+     * @return SameDiff graph equivalent to the Keras model
+     */
+    public static SameDiff importKerasSequentialModelToSameDiff(String modelHdf5Filename, boolean enforceTrainingConfig)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        MultiLayerNetwork mln = importKerasSequentialModelAndWeights(modelHdf5Filename, enforceTrainingConfig);
+        return MultiLayerNetworkSameDiffConverter.toSameDiff(mln);
+    }
+
+    /**
+     * Load Keras Sequential model from separate JSON config and HDF5 weights,
+     * and convert to SameDiff.
+     *
+     * @param modelJsonFilename   path to JSON file storing Keras Sequential model configuration
+     * @param weightsHdf5Filename path to HDF5 archive storing Keras model weights
+     * @return SameDiff graph equivalent to the Keras model
+     */
+    public static SameDiff importKerasSequentialModelToSameDiff(String modelJsonFilename, String weightsHdf5Filename)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        MultiLayerNetwork mln = importKerasSequentialModelAndWeights(modelJsonFilename, weightsHdf5Filename, false);
+        return MultiLayerNetworkSameDiffConverter.toSameDiff(mln);
+    }
+
+    /**
+     * Load Keras Sequential model from an InputStream and convert to SameDiff.
+     *
+     * @param modelHdf5Stream InputStream containing HDF5 archive storing Keras Sequential model
+     * @return SameDiff graph equivalent to the Keras model
+     */
+    public static SameDiff importKerasSequentialModelToSameDiff(InputStream modelHdf5Stream)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        MultiLayerNetwork mln = importKerasSequentialModelAndWeights(modelHdf5Stream, false);
+        return MultiLayerNetworkSameDiffConverter.toSameDiff(mln);
     }
 
     private static File toTempFile(InputStream is) throws IOException {

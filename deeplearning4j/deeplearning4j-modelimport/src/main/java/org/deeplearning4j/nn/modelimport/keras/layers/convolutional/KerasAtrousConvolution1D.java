@@ -89,6 +89,7 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
                 .weightInit(init)
                 .dilation(getDilationRate(layerConfig, 1, conf, true)[0])
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization).l2Bias(this.biasL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1, conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)

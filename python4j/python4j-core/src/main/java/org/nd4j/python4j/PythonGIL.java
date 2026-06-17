@@ -48,7 +48,7 @@ public class PythonGIL implements AutoCloseable {
      * It is already invoked automatically in {@link PythonExecutioner}
      */
     public static synchronized void setMainThreadState() {
-        if(mainThreadId < 0 && mainThreadState != null) {
+        if(mainThreadId < 0 && mainThreadState == null) {
             mainThreadState = PyThreadState_Get();
             mainThreadId = Thread.currentThread().getId();
         }
@@ -139,7 +139,7 @@ public class PythonGIL implements AutoCloseable {
             // See https://docs.python.org/3/c-api/init.html#c.PyEval_RestoreThread
 
             if(Py_IsFinalizing() != 1 && PythonConstants.releaseGilAutomatically())
-                PyEval_RestoreThread(mainThreadState);
+                PyEval_SaveThread();
         }
     }
 

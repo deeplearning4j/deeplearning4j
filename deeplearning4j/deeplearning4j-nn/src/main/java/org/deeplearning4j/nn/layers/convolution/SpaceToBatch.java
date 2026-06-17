@@ -29,8 +29,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpaceND;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatchND;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -86,11 +86,9 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         INDArray epsilonNHWC = nchw ? epsilon.permute(0, 2, 3, 1) : epsilon;
         INDArray outEpsilonNHWC = nchw ? outEpsilon.permute(0, 2, 3, 1) : outEpsilon;
 
-        CustomOp op = DynamicCustomOp.builder("batch_to_space_nd")
-                .addInputs(epsilonNHWC, getBlocksArray(), getPaddingArray())
-                .addOutputs(outEpsilonNHWC)
-                .callInplace(false)
-                .build();
+        BatchToSpaceND op = new BatchToSpaceND();
+        op.addInputArgument(epsilonNHWC, getBlocksArray(), getPaddingArray());
+        op.addOutputArgument(outEpsilonNHWC);
         Nd4j.exec(op);
 
         outEpsilon = backpropDropOutIfPresent(outEpsilon);
@@ -136,10 +134,9 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         INDArray inNHWC = nchw ? input.permute(0, 2, 3, 1) : input;
         INDArray outNHWC = nchw ? out.permute(0, 2, 3, 1) : out;
 
-        CustomOp op = DynamicCustomOp.builder("space_to_batch_nd")
-                .addInputs(inNHWC, getBlocksArray(), getPaddingArray())
-                .addOutputs(outNHWC)
-                .build();
+        SpaceToBatchND op = new SpaceToBatchND();
+        op.addInputArgument(inNHWC, getBlocksArray(), getPaddingArray());
+        op.addOutputArgument(outNHWC);
         Nd4j.exec(op);
 
         return out;

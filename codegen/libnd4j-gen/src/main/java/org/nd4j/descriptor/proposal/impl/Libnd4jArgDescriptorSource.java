@@ -29,6 +29,8 @@ import org.nd4j.descriptor.OpDeclarationDescriptor;
 import org.nd4j.descriptor.proposal.ArgDescriptorProposal;
 import org.nd4j.descriptor.proposal.ArgDescriptorSource;
 import org.nd4j.ir.OpNamespace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +44,8 @@ import static org.nd4j.descriptor.proposal.impl.ArgDescriptorParserUtils.*;
 
 
 public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
+
+    private static final Logger log = LoggerFactory.getLogger(Libnd4jArgDescriptorSource.class);
 
     private String libnd4jPath;
     private File libnd4jRootDir;
@@ -2267,7 +2271,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
 
 
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Failed to parse op descriptor from libnd4j source file", e);
             }
         });
 

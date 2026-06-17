@@ -50,21 +50,21 @@ public class KerasConstraintUtils {
         LayerConstraint constraint;
         if (kerasConstraint.equals(conf.getLAYER_FIELD_MINMAX_NORM_CONSTRAINT())
                 || kerasConstraint.equals(conf.getLAYER_FIELD_MINMAX_NORM_CONSTRAINT_ALIAS())) {
-            double min = (double) constraintConfig.get(conf.getLAYER_FIELD_MINMAX_MIN_CONSTRAINT());
-            double max = (double) constraintConfig.get(conf.getLAYER_FIELD_MINMAX_MAX_CONSTRAINT());
-            double rate = (double) constraintConfig.get(conf.getLAYER_FIELD_CONSTRAINT_RATE());
-            int dim = (int) constraintConfig.get(conf.getLAYER_FIELD_CONSTRAINT_DIM());
+            double min = ((Number) constraintConfig.get(conf.getLAYER_FIELD_MINMAX_MIN_CONSTRAINT())).doubleValue();
+            double max = ((Number) constraintConfig.get(conf.getLAYER_FIELD_MINMAX_MAX_CONSTRAINT())).doubleValue();
+            double rate = ((Number) constraintConfig.get(conf.getLAYER_FIELD_CONSTRAINT_RATE())).doubleValue();
+            int dim = ((Number) constraintConfig.get(conf.getLAYER_FIELD_CONSTRAINT_DIM())).intValue();
             constraint = new MinMaxNormConstraint(min, max, rate, dim + 1);
         } else if (kerasConstraint.equals(conf.getLAYER_FIELD_MAX_NORM_CONSTRAINT())
                 || kerasConstraint.equals(conf.getLAYER_FIELD_MAX_NORM_CONSTRAINT_ALIAS())
                 || kerasConstraint.equals(conf.getLAYER_FIELD_MAX_NORM_CONSTRAINT_ALIAS_2())) {
-            double max = (double) constraintConfig.get(conf.getLAYER_FIELD_MAX_CONSTRAINT());
-            int dim = (int) constraintConfig.get(conf.getLAYER_FIELD_CONSTRAINT_DIM());
+            double max = ((Number) constraintConfig.get(conf.getLAYER_FIELD_MAX_CONSTRAINT())).doubleValue();
+            int dim = ((Number) constraintConfig.get(conf.getLAYER_FIELD_CONSTRAINT_DIM())).intValue();
             constraint = new MaxNormConstraint(max, dim + 1);
         } else if (kerasConstraint.equals(conf.getLAYER_FIELD_UNIT_NORM_CONSTRAINT())
                 || kerasConstraint.equals(conf.getLAYER_FIELD_UNIT_NORM_CONSTRAINT_ALIAS())
                 || kerasConstraint.equals(conf.getLAYER_FIELD_UNIT_NORM_CONSTRAINT_ALIAS_2())) {
-            int dim = (int) constraintConfig.get(conf.getLAYER_FIELD_CONSTRAINT_DIM());
+            int dim = ((Number) constraintConfig.get(conf.getLAYER_FIELD_CONSTRAINT_DIM())).intValue();
             constraint = new UnitNormConstraint(dim + 1);
         } else if (kerasConstraint.equals(conf.getLAYER_FIELD_NON_NEG_CONSTRAINT())
                 || kerasConstraint.equals(conf.getLAYER_FIELD_NON_NEG_CONSTRAINT_ALIAS())

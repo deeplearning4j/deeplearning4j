@@ -250,8 +250,9 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray first = Nd4j.createUninitialized(input.dataType(), input.size(0), v.size(1));
         input.mmuli(v, first);
         INDArray act2d = layerConf().getActivationFn().getActivation(first, training);
-        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), input.size(0));
-        act2d.mmuli(w.reshape(w.length()), output);
+        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), input.size(0), 1);
+        act2d.mmuli(w.reshape(w.length(), 1), output);
+        output = output.reshape(input.size(0));
         this.labels = output;
         return output;
     }

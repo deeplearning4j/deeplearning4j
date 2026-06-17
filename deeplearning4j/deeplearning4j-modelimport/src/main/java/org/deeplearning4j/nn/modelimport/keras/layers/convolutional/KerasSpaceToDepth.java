@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.SpaceToDepthLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.Map;
 
@@ -54,10 +55,17 @@ public class KerasSpaceToDepth extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-        // TODO: we hard-code block size here to import YOLO9000. This size is not available as property
-        // in the hdf5 file outside of the serialized lambda function (that we can't really well deserialize).
+        // Read block_size from inner config if available (native SpaceToDepth layers store it there).
+        // For Lambda-wrapped layers, block_size is inside the serialized lambda and cannot be read,
+        // so we fall back to 2 (used by YOLO9000).
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        int blockSize = 2;
+        if (innerConfig.containsKey("block_size")) {
+            blockSize = ((Number) innerConfig.get("block_size")).intValue();
+        }
+
         SpaceToDepthLayer.Builder builder = new SpaceToDepthLayer.Builder()
-                .blocks(2)
+                .blocks(blockSize)
                 //the default data format is tensorflow/NWHC for keras import
                 .dataFormat(SpaceToDepthLayer.DataFormat.NHWC)
                 .name(layerName);

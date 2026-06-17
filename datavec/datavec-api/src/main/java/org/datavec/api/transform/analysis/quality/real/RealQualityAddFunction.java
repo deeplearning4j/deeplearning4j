@@ -32,6 +32,7 @@ import java.io.Serializable;
 
 @AllArgsConstructor
 public class RealQualityAddFunction implements BiFunction<DoubleQuality, Writable, DoubleQuality>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final DoubleMetaData meta;
 

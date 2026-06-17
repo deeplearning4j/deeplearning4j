@@ -32,6 +32,8 @@ import java.util.List;
 @ToString(exclude = "referencedContent")
 public class LabelledDocument implements Serializable  {
 
+    private static final long serialVersionUID = 1L;
+
     // optional field
     private String id;
 

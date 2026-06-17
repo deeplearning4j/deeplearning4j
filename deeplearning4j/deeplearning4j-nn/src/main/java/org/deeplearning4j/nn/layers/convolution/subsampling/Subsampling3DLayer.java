@@ -35,7 +35,11 @@ import org.deeplearning4j.util.Convolution3DUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3DDerivative;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
@@ -95,23 +99,23 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 isNCDHW ? new long[]{miniBatch, inChannels, inD, inH, inW} : new long[]{miniBatch, inD, inH, inW, inChannels}, 'c');
 
 
-        int[] intArgs = new int[]{
-                kernel[0], kernel[1], kernel[2],
-                strides[0], strides[1], strides[2],
-                pad[0], pad[1], pad[2],
-                dilation[0], dilation[1], dilation[2],
-                convolutionMode == ConvolutionMode.Same ? 1 : 0,
-                0,  //Extra param - 0 = exclude padding for average divisor
-                isNCDHW ? 0 : 1
-        };
-
-        String opName = layerConf().getPoolingType() == PoolingType.MAX ? "maxpool3dnew_bp" : "avgpool3dnew_bp";
-
-        CustomOp op = DynamicCustomOp.builder(opName)
-                .addInputs(input, epsilon)
-                .addIntegerArguments(intArgs)
-                .addOutputs(outEpsilon)
-                .callInplace(false)
+        Pooling3D.Pooling3DType bpType = layerConf().getPoolingType() == PoolingType.MAX
+                ? Pooling3D.Pooling3DType.MAX : Pooling3D.Pooling3DType.AVG;
+        // Note: kD=kernel[0], kW=kernel[1], kH=kernel[2] maps to the iArgs ordering used by Pooling3D.addArgs()
+        Pooling3DConfig bpConfig = Pooling3DConfig.builder()
+                .kD(kernel[0]).kW(kernel[1]).kH(kernel[2])
+                .sD(strides[0]).sW(strides[1]).sH(strides[2])
+                .pD(pad[0]).pW(pad[1]).pH(pad[2])
+                .dD(dilation[0]).dW(dilation[1]).dH(dilation[2])
+                .isSameMode(convolutionMode == ConvolutionMode.Same)
+                .isNCDHW(isNCDHW)
+                .type(bpType)
+                .build();
+        Pooling3DDerivative op = Pooling3DDerivative.derivativeBuilder()
+                .inputArrays(new INDArray[]{input, epsilon})
+                .outputs(new INDArray[]{outEpsilon})
+                .pooling3DConfig(bpConfig)
+                .type(bpType)
                 .build();
 
         Nd4j.getExecutioner().exec(op);
@@ -171,8 +175,6 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         long outH = outSize[1];
         long outW = outSize[2];
 
-        String opName = layerConf().getPoolingType() == PoolingType.MAX ? "maxpool3dnew" : "avgpool3dnew";
-
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(),
                 isNCDHW ? new long[]{miniBatch, inChannels, outD, outH, outW} : new long[]{miniBatch, outD, outH, outW, inChannels}, 'c');
 
@@ -186,12 +188,15 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 isNCDHW ? 0 : 1
         };
 
-        CustomOp op = DynamicCustomOp.builder(opName)
-                .addInputs(input)
-                .addIntegerArguments(intArgs)
-                .addOutputs(output)
-                .callInplace(false)
-                .build();
+        CustomOp op;
+        if (layerConf().getPoolingType() == PoolingType.MAX) {
+            op = new MaxPooling3D();
+        } else {
+            op = new AvgPooling3D();
+        }
+        op.addInputArgument(input);
+        op.addOutputArgument(output);
+        op.addIArgument(intArgs);
 
         Nd4j.getExecutioner().exec(op);
 

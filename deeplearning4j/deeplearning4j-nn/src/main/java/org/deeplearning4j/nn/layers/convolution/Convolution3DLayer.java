@@ -34,7 +34,10 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3DDerivative;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
@@ -98,15 +101,6 @@ public class Convolution3DLayer extends ConvolutionLayer {
             outEpsilon = outEpsilon.reshape('c', miniBatch, inD, inH, inW, outEpsChannels);
 
 
-        long[] intArgs = new long[]{
-                kernel[0], kernel[1], kernel[2],
-                strides[0], strides[1], strides[2],
-                pad[0], pad[1], pad[2],
-                dilation[0], dilation[1], dilation[2],
-                convolutionMode == ConvolutionMode.Same ? 1 : 0,
-                isNCDHW ? 0 : 1
-        };
-
         INDArray delta;
         IActivation activation = layerConfig.getActivationFn();
         Pair<INDArray, INDArray> p = preOutput(true, true, workspaceMgr);
@@ -133,12 +127,15 @@ public class Convolution3DLayer extends ConvolutionLayer {
             outputs = new INDArray[]{outEpsilon, opWeightGradView};
         }
 
-        CustomOp op = DynamicCustomOp.builder("conv3dnew_bp")
-                .addInputs(inputs)
-                .addIntegerArguments(intArgs)
-                .addOutputs(outputs)
-                .callInplace(false)
+        Conv3DConfig bpConfig = Conv3DConfig.builder()
+                .kD(kernel[0]).kH(kernel[1]).kW(kernel[2])
+                .sD(strides[0]).sH(strides[1]).sW(strides[2])
+                .pD(pad[0]).pH(pad[1]).pW(pad[2])
+                .dD(dilation[0]).dH(dilation[1]).dW(dilation[2])
+                .paddingMode(convolutionMode == ConvolutionMode.Same ? PaddingMode.SAME : PaddingMode.VALID)
+                .dataFormat(isNCDHW ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                 .build();
+        CustomOp op = new Conv3DDerivative(inputs, outputs, bpConfig);
 
         Nd4j.getExecutioner().exec(op);
 
@@ -240,15 +237,6 @@ public class Convolution3DLayer extends ConvolutionLayer {
         else
             output = output.reshape('c', miniBatch, outD, outH, outW, outWeightChannels);
 
-        long[] intArgs = new long[]{
-                kernel[0], kernel[1], kernel[2],
-                strides[0], strides[1], strides[2],
-                pad[0], pad[1], pad[2],
-                dilation[0], dilation[1], dilation[2],
-                mode == ConvolutionMode.Same ? 1 : 0,
-                isNCDHW ? 0 : 1
-        };
-
         //DL4J conv3d weights: val weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
         //libnd4j conv3d weights: [kD, kH, kW, iC, oC]
         weights = weights.permute(2, 3, 4, 1, 0);
@@ -261,12 +249,15 @@ public class Convolution3DLayer extends ConvolutionLayer {
             inputs = new INDArray[]{input, weights};
         }
 
-        CustomOp op = DynamicCustomOp.builder("conv3dnew")
-                .addInputs(inputs)
-                .addIntegerArguments(intArgs)
-                .addOutputs(output)
-                .callInplace(false)
+        Conv3DConfig fwdConfig = Conv3DConfig.builder()
+                .kD(kernel[0]).kH(kernel[1]).kW(kernel[2])
+                .sD(strides[0]).sH(strides[1]).sW(strides[2])
+                .pD(pad[0]).pH(pad[1]).pW(pad[2])
+                .dD(dilation[0]).dH(dilation[1]).dW(dilation[2])
+                .paddingMode(mode == ConvolutionMode.Same ? PaddingMode.SAME : PaddingMode.VALID)
+                .dataFormat(isNCDHW ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                 .build();
+        CustomOp op = new Conv3D(inputs, new INDArray[]{output}, fwdConfig);
 
         Nd4j.getExecutioner().exec(op);
 

@@ -66,6 +66,8 @@ public class KerasLayer {
     protected Map<String, INDArray> weights; // Weights
     protected double weightL1Regularization = 0.0; // L1 regularization
     protected double weightL2Regularization = 0.0; // L2 regularization
+    protected double biasL1Regularization = 0.0; // L1 bias regularization
+    protected double biasL2Regularization = 0.0; // L2 bias regularization
     protected double dropout = 1.0; // Dropout
     protected Integer kerasMajorVersion = 2; // Set 2 as default for now
     @Getter
@@ -154,6 +156,10 @@ public class KerasLayer {
                 layerConfig, conf, conf.getLAYER_FIELD_W_REGULARIZER(), conf.getREGULARIZATION_TYPE_L1());
         this.weightL2Regularization = KerasRegularizerUtils.getWeightRegularizerFromConfig(
                 layerConfig, conf, conf.getLAYER_FIELD_W_REGULARIZER(), conf.getREGULARIZATION_TYPE_L2());
+        this.biasL1Regularization = KerasLayerUtils.getBiasL1RegularizationFromConfig(
+                layerConfig, enforceTrainingConfig, conf);
+        this.biasL2Regularization = KerasLayerUtils.getBiasL2RegularizationFromConfig(
+                layerConfig, enforceTrainingConfig, conf);
         this.dropout = KerasLayerUtils.getDropoutFromConfig(layerConfig, conf);
         KerasLayerUtils.checkForUnsupportedConfigurations(layerConfig, enforceTrainingConfig, conf);
     }
@@ -344,7 +350,6 @@ public class KerasLayer {
                     }
                     else {
                         layer.setParam(paramName, variable);
-
                     }
 
                 } catch (Exception e) {

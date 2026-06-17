@@ -344,7 +344,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 ((NativeImageLoader) imageLoader).asMatrixView(currBatch.get(i),
                         features.tensorAlongDimension(i, 1, 2, 3));
             } catch (Exception e) {
-                System.out.println("Image file failed during load: " + currBatch.get(i).getAbsolutePath());
+                log.error("Image file failed during load: {}", currBatch.get(i).getAbsolutePath());
                 throw new RuntimeException(e);
             }
         }

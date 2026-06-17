@@ -164,7 +164,7 @@ public class KerasModelUtils {
     public static String determineKerasBackend(Map<String, Object> modelConfig, KerasModelConfiguration config) {
         String kerasBackend = null;
         if (!modelConfig.containsKey(config.getFieldBackend())) {
-            // TODO: H5 files unfortunately do not seem to have this property in keras 1.
+            // Keras 1.x HDF5 files do not contain backend metadata — this field only exists in Keras 2.x+
             log.warn("Could not read keras backend used (no "
                     + config.getFieldBackend() + " field found) \n"
             );

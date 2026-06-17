@@ -36,6 +36,8 @@ import java.util.Objects;
 
 public class VectorsConfiguration implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     // word2vec params
     private Integer minWordFrequency = 5;
     private Double learningRate = 0.025;

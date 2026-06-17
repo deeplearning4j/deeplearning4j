@@ -89,7 +89,6 @@ public class KerasLocallyConnected2D extends KerasConvolution {
 
         IWeightInit init = KerasInitilizationUtils.getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
-        // TODO: take care of bias init
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
@@ -101,6 +100,7 @@ public class KerasLocallyConnected2D extends KerasConvolution {
                 .activation(KerasActivationUtils.getActivationFromConfig(layerConfig, conf))
                 .weightInit(conf.getKERAS_PARAM_NAME_W(), init)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization).l2Bias(this.biasL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)

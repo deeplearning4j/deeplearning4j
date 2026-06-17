@@ -90,6 +90,10 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
             in2d = input.tensorAlongDimension(0, 1, 0);
         } else {
             INDArray permuted = input.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            //Dup to 'f' to ensure contiguous strides before reshape - reshape('f') on a
+            //non-contiguous permuted view may not correctly respect the 'f' ordering
+            if (permuted.ordering() != 'f' || !Shape.hasDefaultStridesForShape(permuted))
+                permuted = permuted.dup('f');
             in2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
         }
 

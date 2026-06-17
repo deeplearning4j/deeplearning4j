@@ -128,7 +128,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
         InferenceSession is = sameDiff.getSessions().get(Thread.currentThread().getId());
         if(is == null) {
-            is = SameDiff.getInferenceFactory().create(sameDiff);
+            is = sameDiff.getInferenceFactory().create(sameDiff);
             sameDiff.getSessions().put(Thread.currentThread().getId(), is);
         }
 
@@ -138,7 +138,8 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
         //Edge case: "vertex" is just an identity activation, for example
         //TODO there may be a cleaner way to do this...
-        if(!actScopedOut && !result.data().getParentWorkspace().getId().equals(wsNameOutput)){
+        MemoryWorkspace parentWs = result.data().getParentWorkspace();
+        if(!actScopedOut && (parentWs == null || !parentWs.getId().equals(wsNameOutput))){
             result = workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
         } else if(actScopedOut && result.isAttached()) {
             result = result.detach();
@@ -171,7 +172,8 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         //Configure memory management for SameDiff instance - use DL4J workspaces
         Map<Long,InferenceSession> sessionMap = sameDiff.getFunction("grad").getSessions();
         if(!sessionMap.containsKey(Thread.currentThread().getId())){
-            sessionMap.put(Thread.currentThread().getId(), SameDiff.getInferenceFactory().create(sameDiff.getFunction("grad")));
+            SameDiff gradSd = sameDiff.getFunction("grad");
+            sessionMap.put(Thread.currentThread().getId(), gradSd.getInferenceFactory().create(gradSd));
         }
         String wsNameWorking = workspaceMgr.getWorkspaceName(ArrayType.BP_WORKING_MEM);
         String wsNameActGrad = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATION_GRAD);
@@ -229,7 +231,8 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
             //Edge case: "vertex" is just an identity activation, for example
             //TODO there may be a cleaner way to do this...
-            if(!actGradScopedOut && !dLdIns[j].data().getParentWorkspace().getId().equals(wsNameActGrad)){
+            MemoryWorkspace gradWs = dLdIns[j].data().getParentWorkspace();
+            if(!actGradScopedOut && (gradWs == null || !gradWs.getId().equals(wsNameActGrad))){
                 dLdIns[j] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIns[j]);
             } else if(actGradScopedOut && dLdIns[j].isAttached()){
                 dLdIns[j] = dLdIns[j].detach();

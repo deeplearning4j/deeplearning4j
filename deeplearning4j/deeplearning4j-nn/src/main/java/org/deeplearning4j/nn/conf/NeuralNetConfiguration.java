@@ -69,6 +69,8 @@ import java.util.*;
 @EqualsAndHashCode(exclude = {"iterationCount", "epochCount"})
 public class NeuralNetConfiguration implements Serializable, Cloneable {
 
+    private static final long serialVersionUID = 1L;
+
     protected Layer layer;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;

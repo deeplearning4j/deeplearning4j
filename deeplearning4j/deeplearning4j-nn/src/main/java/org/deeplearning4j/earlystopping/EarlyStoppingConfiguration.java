@@ -39,6 +39,8 @@ import java.util.List;
 @NoArgsConstructor
 public class EarlyStoppingConfiguration<T extends Model> implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private EarlyStoppingModelSaver<T> modelSaver;
     private List<EpochTerminationCondition> epochTerminationConditions;
     private List<IterationTerminationCondition> iterationTerminationConditions;
