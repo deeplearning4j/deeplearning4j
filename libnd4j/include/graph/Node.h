@@ -39,7 +39,6 @@ class Graph;
 
 class SD_LIB_EXPORT Node {
  protected:
-  // TODO: this field must be removed
   DataType _dataType;
 
   ::graph::OpType _opType;
@@ -87,7 +86,6 @@ class SD_LIB_EXPORT Node {
   int _scope_id = 0;
   std::string _scope_name;
 
-  // TODO: these 3 fields should be removed
   int _rewindNode = -1;
   std::pair<int, int> _rewindLayer = {-1, -1};
   LongType _frameId = -1;
