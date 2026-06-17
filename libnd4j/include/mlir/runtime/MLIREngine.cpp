@@ -16,6 +16,7 @@
  ******************************************************************************/
 
 #include "MLIREngine.h"
+#include <math/templatemath.h>
 #include <mutex>
 
 #ifdef HAVE_MLIR
@@ -2515,7 +2516,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             int64_t attnLen = seqQ * seqK;
 
             // Scale factor
-            double scale = params.tArgs.size() > 0 ? params.tArgs[0] : (1.0 / std::sqrt(static_cast<double>(d)));
+            double scale = params.tArgs.size() > 0 ? params.tArgs[0] : (1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(d)));
 
             auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
             auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);

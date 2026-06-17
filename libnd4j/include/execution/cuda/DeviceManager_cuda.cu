@@ -24,6 +24,7 @@
 #ifdef SD_CUDA
 
 #include <execution/DeviceManager.h>
+#include <execution/LaunchContext.h>
 #include <cuda_runtime.h>
 
 namespace sd {
@@ -36,6 +37,10 @@ void DeviceManager::discoverCudaDevices() {
     if (err != cudaSuccess || deviceCount == 0) {
         return;
     }
+
+    // Save current device to restore after enumeration
+    int savedDevice = -1;
+    cudaGetDevice(&savedDevice);
 
     for (int i = 0; i < deviceCount; ++i) {
         cudaDeviceProp props;
@@ -74,10 +79,8 @@ void DeviceManager::discoverCudaDevices() {
         _devicesByType[DeviceType::CUDA_GPU].push_back(gpuInfo.globalIndex);
     }
 
-    // Reset to device 0
-    if (deviceCount > 0) {
-        cudaSetDevice(0);
-    }
+    // Restore the device that was active before enumeration
+    cudaSetDevice(savedDevice);
 }
 
 void DeviceManager::initializeP2PConnections() {
@@ -178,19 +181,19 @@ void DeviceManager::setCurrentDeviceCuda(const DeviceInfo& device) {
 }
 
 void DeviceManager::synchronizeAll() {
-    for (const auto& device : _devices) {
-        if (device.type == DeviceType::CUDA_GPU) {
-            cudaSetDevice(device.deviceIndex);
-            cudaDeviceSynchronize();
-        }
+    auto* stream = LaunchContext::defaultContext()->getCudaStream();
+    if (stream != nullptr) {
+        cudaStreamSynchronize(*stream);
     }
 }
 
 void DeviceManager::synchronize(int globalIndex) {
     if (const auto* device = findDevice(globalIndex)) {
         if (device->type == DeviceType::CUDA_GPU) {
-            cudaSetDevice(device->deviceIndex);
-            cudaDeviceSynchronize();
+            auto* stream = LaunchContext::defaultContext()->getCudaStream();
+            if (stream != nullptr) {
+                cudaStreamSynchronize(*stream);
+            }
         }
     }
 }

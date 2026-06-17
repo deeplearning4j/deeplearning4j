@@ -341,7 +341,7 @@ int ThreadsHelper::pickLoop3d(int numThreads, uint64_t itersX, uint64_t itersY, 
     return 1;
   else if (remY == 0)
     return 2;
-  else if (remZ == 0) // TODO: we don't want too smal splits over last dimension? or we do?
+  else if (remZ == 0)
     return 3;
 
   if (itersX > typeCastedNumThreads)

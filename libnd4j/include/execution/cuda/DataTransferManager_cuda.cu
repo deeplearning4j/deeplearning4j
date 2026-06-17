@@ -24,6 +24,7 @@
 
 #include <execution/DataTransferManager.h>
 #include <execution/DeviceManager.h>
+#include <execution/LaunchContext.h>
 #include <cuda_runtime.h>
 #include <chrono>
 #include <cstring>
@@ -45,11 +46,9 @@ RingBuffer::~RingBuffer() {
 }
 
 void RingBuffer::synchronize() {
-    for (int i = 0; i < _numParticipants; ++i) {
-        if (_deviceIds[i] >= 0) {
-            cudaSetDevice(_deviceIds[i]);
-            cudaDeviceSynchronize();
-        }
+    auto* stream = LaunchContext::defaultContext()->getCudaStream();
+    if (stream != nullptr) {
+        cudaStreamSynchronize(*stream);
     }
 }
 
@@ -194,7 +193,10 @@ TransferResult DataTransferManager::doSyncTransfer(TransferRequest& request) {
     }
 
     if (!request.async) {
-        cudaDeviceSynchronize();
+        auto* stream = LaunchContext::defaultContext()->getCudaStream();
+        if (stream != nullptr) {
+            cudaStreamSynchronize(*stream);
+        }
     }
 
     auto endTime = std::chrono::high_resolution_clock::now();
@@ -263,7 +265,10 @@ TransferResult DataTransferManager::p2pTransfer(
     }
 
     if (!async) {
-        cudaDeviceSynchronize();
+        auto* stream = LaunchContext::defaultContext()->getCudaStream();
+        if (stream != nullptr) {
+            cudaStreamSynchronize(*stream);
+        }
     }
 
     auto endTime = std::chrono::high_resolution_clock::now();
@@ -275,23 +280,23 @@ TransferResult DataTransferManager::p2pTransfer(
 }
 
 void DataTransferManager::waitAll() {
-    auto& dm = DeviceManager::getInstance();
-    int gpuCount = dm.getCudaGpuCount();
-    for (int i = 0; i < gpuCount; ++i) {
-        cudaSetDevice(i);
-        cudaDeviceSynchronize();
+    auto* stream = LaunchContext::defaultContext()->getCudaStream();
+    if (stream != nullptr) {
+        cudaStreamSynchronize(*stream);
     }
 }
 
 void DataTransferManager::synchronizeDevice(int deviceId) {
-    cudaSetDevice(deviceId);
-    cudaDeviceSynchronize();
+    auto* stream = LaunchContext::defaultContext()->getCudaStream();
+    if (stream != nullptr) {
+        cudaStreamSynchronize(*stream);
+    }
 }
 
 void DataTransferManager::barrier(const std::vector<int>& devices) {
-    for (int device : devices) {
-        cudaSetDevice(device);
-        cudaDeviceSynchronize();
+    auto* stream = LaunchContext::defaultContext()->getCudaStream();
+    if (stream != nullptr) {
+        cudaStreamSynchronize(*stream);
     }
 }
 

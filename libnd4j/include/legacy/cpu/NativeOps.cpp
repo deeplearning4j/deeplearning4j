@@ -461,46 +461,6 @@ void setSerializeBlasCalls(bool serialize) {
   sd::Environment::getInstance().setSerializeBlasCalls(serialize);
 }
 
-/**
- * Sets the number of threads used by OpenBLAS for BLAS operations.
- * This is separate from OMP threads and specifically controls OpenBLAS's internal threading.
- * Default should be 1 to prevent TLS corruption crashes in multi-threaded Java applications.
- */
-void setOpenBlasThreads(int threads) {
-#if defined(__OPENBLAS)
-  openblas_set_num_threads(threads);
-#elif defined(__MKL)
-  // MKL uses a different function
-  MKL_Set_Num_Threads(threads);
-#else
-  // No OpenBLAS or MKL - this is a no-op
-  // The OMP thread setting may still affect BLAS behavior in some configurations
-#endif
-  // Also update the Environment setting
-  sd::Environment::getInstance().setOpenBlasThreads(threads);
-}
-
-/**
- * Gets the number of threads OpenBLAS is configured to use.
- */
-int getOpenBlasThreads() {
-  return sd::Environment::getInstance().getOpenBlasThreads();
-}
-
-/**
- * Check if BLAS call serialization is enabled.
- */
-bool isSerializeBlasCalls() {
-  return sd::Environment::getInstance().isSerializeBlasCalls();
-}
-
-/**
- * Enable or disable BLAS call serialization.
- */
-void setSerializeBlasCalls(bool serialize) {
-  sd::Environment::getInstance().setSerializeBlasCalls(serialize);
-}
-
 sd::Pointer createContext() { return 0L; }
 
 sd::Pointer createStream() { return 0L; }
@@ -858,7 +818,7 @@ void shuffle(sd::Pointer *extras,
 bool isExperimentalEnabled() { return sd::Environment::getInstance().isExperimentalBuild(); }
 
 void setOmpMinThreads(int threads) {
-  // TODO: to be implemented
+  sd::Environment::getInstance().setMaxThreads(threads);
 }
 
 int getDevice() { return 0; }
@@ -879,8 +839,14 @@ const char *getDeviceName(int deviceId) {
       std::memset(name, 0, 256 * sizeof(char));
       nameSet = true;
 
-      // TODO: provide proper CPU model name here
+#ifdef CPU_FEATURES
+      cpu_features::FillX86BrandString(name);
+      if (name[0] == '\0') {
+        sprintf(name, "x86-compatible CPU");
+      }
+#else
       sprintf(name, "x86-compatible CPU");
+#endif
     }
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -895,8 +861,14 @@ const char *getDeviceName(int deviceId) {
       std::memset(name, 0, 256 * sizeof(char));
       nameSet = true;
 
-      // TODO: provide proper CPU model name here
+#ifdef CPU_FEATURES
+      cpu_features::FillX86BrandString(name);
+      if (name[0] == '\0') {
+        sprintf(name, "x86-compatible CPU");
+      }
+#else
       sprintf(name, "x86-compatible CPU");
+#endif
     }
   #endif
 

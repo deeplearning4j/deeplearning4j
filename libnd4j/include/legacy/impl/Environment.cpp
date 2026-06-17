@@ -55,6 +55,7 @@ Environment::Environment() {
   _blasMinorVersion = _cuda.blasMinorVersion();
   _blasPatchVersion = _cuda.blasPatchVersion();
 
+  _memory.initFromEnvironment();
   _lifecycle.initFromEnvironment();
   _print.initFromEnvironment();
 

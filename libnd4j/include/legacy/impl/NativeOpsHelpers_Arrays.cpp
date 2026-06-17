@@ -39,6 +39,7 @@
 #include <fcntl.h>
 
 #include <helpers/BlasHelper.h>
+#include <system/PointerValidation.h>
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
 #include <legacy/NativeOpExecutioner.h>
@@ -727,14 +728,8 @@ void deleteGraphContext(Context *ptr) {
     return;  // Nothing to delete
   }
 
-  uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
-  if (addr < 0x10000 || (addr & 0x7) != 0) {
-    std::string error = "deleteGraphContext: Context pointer appears invalid: 0x";
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%lx", static_cast<unsigned long>(addr));
-    error += buf;
-    THROW_EXCEPTION(error.c_str());
-  }
+  SD_VALIDATE_PTR(ptr, "deleteGraphContext");
+  SD_VALIDATE_ALIGNED(ptr, 8, "deleteGraphContext");
 
   delete ptr;
 }
