@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.jcublas.buffer.*;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
@@ -54,7 +55,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer.AllocationMode allocationMode() {
         if (allocationMode == null) {
-            String otherAlloc = System.getProperty("alloc");
+            String otherAlloc = System.getProperty(ND4JSystemProperties.ALLOC_POLICY);
             if (otherAlloc.equals("heap"))
                 setAllocationMode(DataBuffer.AllocationMode.HEAP);
             else if (otherAlloc.equals("direct"))

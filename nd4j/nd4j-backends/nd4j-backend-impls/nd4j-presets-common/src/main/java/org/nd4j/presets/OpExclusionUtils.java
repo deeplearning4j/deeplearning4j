@@ -21,12 +21,16 @@ package org.nd4j.presets;/*
 import org.bytedeco.javacpp.tools.Info;
 import org.bytedeco.javacpp.tools.InfoMap;
 import org.bytedeco.javacpp.tools.Logger;
+import org.nd4j.common.config.ND4JSystemProperties;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
 public class OpExclusionUtils {
+
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(OpExclusionUtils.class);
 
 
     private static final String[] COMMON_MACROS = {
@@ -231,8 +235,8 @@ public class OpExclusionUtils {
 
 
     public static void processOps(Logger logger, java.util.Properties properties, InfoMap infoMap) {
-        boolean funcTrace = System.getProperty("libnd4j.calltrace", "OFF").equalsIgnoreCase("ON");
-        System.out.println("Func trace: " + funcTrace);
+        boolean funcTrace = System.getProperty(ND4JSystemProperties.LIBND4J_CALLTRACE, "OFF").equalsIgnoreCase("ON");
+        log.debug("Func trace: {}", funcTrace);
         processCustomOps(logger, properties, infoMap);
     }
 
@@ -336,13 +340,13 @@ public class OpExclusionUtils {
 
                 if(line.contains("SD_ALL_OPS")) {
                     allOps = true;
-                    System.out.println("All ops found.");
+                    log.debug("All ops found.");
                     break;
                 }
 
                 String[] lineSplit = line.split(" ");
                 if(lineSplit.length < 2) {
-                    System.err.println("Unable to add op to exclude. Invalid op found: " + line);
+                    log.warn("Unable to add op to exclude. Invalid op found: {}", line);
                 } else {
                     String opName = lineSplit[1].replace("OP_","");
                     opsToExclude.add(opName);
@@ -355,7 +359,7 @@ public class OpExclusionUtils {
         }
 
         if(opsToExclude.isEmpty()) {
-            System.out.println("No ops found for exclusion setting all ops to true");
+            log.debug("No ops found for exclusion setting all ops to true");
             allOps = true;
         }
 

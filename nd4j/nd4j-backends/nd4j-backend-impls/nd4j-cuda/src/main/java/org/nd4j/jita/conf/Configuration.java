@@ -43,6 +43,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class Configuration implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     public enum ExecutionModel {
         SEQUENTIAL, ASYNCHRONOUS, OPTIMIZED,
     }
