@@ -115,6 +115,16 @@ public class Conv2D extends DynamicCustomOp {
                     config.getWeightsFormat().ordinal());
     }
 
+    /**
+     * Re-populate iArguments from the current config.
+     * Must be called after modifying config (e.g., changing data format or weights format)
+     * to ensure the native op sees the updated parameters.
+     */
+    public void refreshArgs() {
+        iArguments.clear();
+        addArgs();
+    }
+
 
 
     @Override
@@ -162,6 +172,15 @@ public class Conv2D extends DynamicCustomOp {
                 builder.dataFormat(properties.get("dataFormat").toString());
             }
 
+            if(properties.containsKey("weightsFormat")) {
+                Object wf = properties.get("weightsFormat");
+                if(wf instanceof WeightsFormat) {
+                    builder.weightsFormat((WeightsFormat) wf);
+                } else if(wf != null) {
+                    builder.weightsFormat(WeightsFormat.valueOf(wf.toString()));
+                }
+            }
+
 
             this.config = builder.build();
 
@@ -181,6 +200,8 @@ public class Conv2D extends DynamicCustomOp {
                     .dH(iArguments.get(6))
                     .dW(iArguments.get(7))
                     .paddingMode(PaddingMode.fromNumber(iArguments.get(8).intValue()))
+                    .dataFormat(iArguments.size() < 10 ? "NCHW" : iArguments.get(9) > 0 ? "NHWC" : "NCHW")
+                    .weightsFormat(iArguments.size() < 11 ? YXIO : WeightsFormat.values()[iArguments.get(10).intValue()])
                     .build();
         }
     }
@@ -234,32 +255,8 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
-        Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
-        Map<String, AttributeAdapter> tfMappings = new LinkedHashMap<>();
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        throw new RuntimeException();
 
-        //TF uses [kH, kW, inC, outC] always for weights
-        tfMappings.put("kH", new NDArrayShapeAdapter(0));
-        tfMappings.put("kW", new NDArrayShapeAdapter(1));
-        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
-        tfMappings.put("dH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("dW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
-        tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-
-
-        Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("kH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
-        onnxMappings.put("kW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
-        onnxMappings.put("dH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
-        onnxMappings.put("dW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
-        onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
-        onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
-        onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-
-        ret.put(tensorflowName(), tfMappings);
-        ret.put(onnxName(), onnxMappings);
-        return ret;
     }
 
     @Override

@@ -79,13 +79,19 @@ public class ATan2 extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //Let z=atan2(r), with r=y/x
-        //dz/dr = 1/(r^2+1), dr/dy = 1/x, dr/dx = -y/x^2
+        // Forward: z = atan2(y, x)
+        // d(atan2(y,x))/dy = x / (x² + y²)
+        // d(atan2(y,x))/dx = -y / (x² + y²)
         SDVariable y = larg();
         SDVariable x = rarg();
 
-        val xGrad = sameDiff.math.neg(y.div(x.pow(2).add(y.pow(2)))).mul(i_v.get(0));
-        val yGrad = x.div(x.pow(2).add(y.pow(2))).mul(i_v.get(0));
+        // Use mul(x) instead of pow(2) to avoid scalar-op caching issues in SameDiff
+        SDVariable x2 = x.mul(x);
+        SDVariable y2 = y.mul(y);
+        SDVariable denom = x2.add(y2);
+
+        val yGrad = x.div(denom).mul(i_v.get(0));
+        val xGrad = sameDiff.math.neg(y.div(denom)).mul(i_v.get(0));
 
         return Arrays.asList(yGrad, xGrad);
     }

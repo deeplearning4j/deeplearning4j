@@ -21,13 +21,24 @@
 package org.nd4j.linalg.api.ops.impl.updaters;
 
 import lombok.NonNull;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class RmsPropUpdater extends DynamicCustomOp {
 
     public RmsPropUpdater() {
         //
+    }
+
+    public RmsPropUpdater(@NonNull SameDiff sameDiff, @NonNull SDVariable gradients, @NonNull SDVariable state, double lr, double decay, double epsilon) {
+        super(sameDiff, new SDVariable[]{gradients, state});
+        addTArgument(lr, decay, epsilon);
     }
 
     public RmsPropUpdater(@NonNull INDArray gradients, @NonNull INDArray state, double lr, double decay, double epsilon) {
@@ -43,5 +54,11 @@ public class RmsPropUpdater extends DynamicCustomOp {
     @Override
     public String opName() {
         return "rms_prop_updater";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        DataType dt = inputDataTypes.get(0);
+        return Arrays.asList(dt, dt);
     }
 }

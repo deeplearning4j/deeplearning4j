@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -42,6 +43,16 @@ public class Squeeze extends DynamicCustomOp {
     public Squeeze() {
     }
 
+    /**
+     * Squeeze all dimensions of size 1 from the input tensor.
+     * This is the NumPy-style squeeze with no axis specified.
+     */
+    public Squeeze(SameDiff sameDiff, SDVariable arg) {
+        super(null, sameDiff, new SDVariable[]{arg});
+        // No iArguments means squeeze all dims of size 1 (per C++ implementation)
+        this.squeezeDims = null;
+    }
+
     public Squeeze(SameDiff sameDiff, SDVariable arg, int squeezeDims) {
         this(sameDiff, arg, new int[] {squeezeDims});
     }
@@ -55,6 +66,15 @@ public class Squeeze extends DynamicCustomOp {
     public Squeeze(INDArray x, int axis) {
         addInputArgument(x);
         addIArgument(axis);
+    }
+
+    /**
+     * Squeeze all dimensions of size 1 from the input array.
+     * This is the NumPy-style squeeze with no axis specified.
+     */
+    public Squeeze(INDArray x) {
+        addInputArgument(x);
+        // No iArguments means squeeze all dims of size 1 (per C++ implementation)
     }
 
     @Override
@@ -110,4 +130,13 @@ public class Squeeze extends DynamicCustomOp {
         //Output type is same as input type
         return Arrays.asList(dataTypes.get(0));
     }
+
+    // Note: initializeOutputs is handled by the default CustomOp implementation which
+    // automatically creates views when the C++ shape function sets ARRAY_COPY_OFFSET_INPUT_X flags
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
+
 }

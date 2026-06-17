@@ -21,13 +21,24 @@
 package org.nd4j.linalg.api.ops.impl.updaters;
 
 import lombok.NonNull;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Collections;
+import java.util.List;
 
 public class SgdUpdater extends DynamicCustomOp {
 
     public SgdUpdater() {
         //
+    }
+
+    public SgdUpdater(@NonNull SameDiff sameDiff, @NonNull SDVariable gradients, double lr) {
+        super(sameDiff, new SDVariable[]{gradients});
+        addTArgument(lr);
     }
 
     public SgdUpdater(@NonNull INDArray input, double lr) {
@@ -43,5 +54,10 @@ public class SgdUpdater extends DynamicCustomOp {
     @Override
     public String opName() {
         return "sgd_updater";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

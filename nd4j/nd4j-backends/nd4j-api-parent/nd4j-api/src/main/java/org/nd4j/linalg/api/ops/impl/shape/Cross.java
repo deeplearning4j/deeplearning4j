@@ -66,21 +66,20 @@ public class Cross extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients) {
         /**
-         * dL / dx = dL / dCross * dCross / dx
-         * dCross(a,b) / da = Cross(1, b)
-         * dCross(a,b) / db = Cross(a, 1)
-         *
-         * return (grad * Cross(1, b), grad * Cross(a, 1)
+         * For cross product c = a × b:
+         * dL/da = b × grad  (cross product of b and upstream gradient)
+         * dL/db = grad × a  (cross product of upstream gradient and a)
          */
         SDVariable grad = gradients.get(0);
         SDVariable a = larg();
         SDVariable b = rarg();
-        SDVariable ones = sameDiff.onesLike(a);
 
-        SDVariable gradLeft = grad.mul(sameDiff.math().cross(b, ones));
-        SDVariable gradRight = grad.mul(sameDiff.math().cross(ones, a));
+        // dL/da = b × grad
+        SDVariable gradA = sameDiff.math().cross(b, grad);
+        // dL/db = grad × a
+        SDVariable gradB = sameDiff.math().cross(grad, a);
 
-        return Arrays.asList(gradLeft, gradRight);
+        return Arrays.asList(gradA, gradB);
     }
 
     @Override

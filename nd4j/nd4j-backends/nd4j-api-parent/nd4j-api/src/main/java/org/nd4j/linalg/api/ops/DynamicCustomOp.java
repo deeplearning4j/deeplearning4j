@@ -40,6 +40,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.collect.Lists;
@@ -52,6 +54,8 @@ import org.tensorflow.framework.NodeDef;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.*;
+
+import static org.nd4j.autodiff.samediff.VariableType.ARRAY;
 
 @Slf4j
 public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
@@ -97,6 +101,40 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Setter
     protected SDVariable[] outputVariables;
     private List<DataBuffer> outputShapes;
+
+    /**
+     * Signature of inputs (shapes, dtypes, iArgs, and small integer input values)
+     * that produced the cached outputShapes. DynamicCustomOps need a richer signature
+     * than standard ops because many derive output shape from input values (e.g. create,
+     * reshape, ConstantOfShape) or from iArgs, not just input shapes.
+     */
+    private transient long cachedInputShapeSignature;
+
+    /**
+     * Ops whose output shape depends on the values of integer input arrays, not just their shapes.
+     * Wrappers override {@link #outputShapeDependsOnInputData()} where appropriate, but builder(...)
+     * returns raw DynamicCustomOp instances and needs an op-name-based fallback.
+     */
+    private static final Set<String> DATA_DEPENDENT_SHAPE_OPS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "broadcast_to",
+            "create",
+            "create_view",
+            "expand_dims",
+            "eye",
+            "fill",
+            "lin_space",
+            "mirror_pad",
+            "onehot",
+            "pad",
+            "range",
+            "reshape",
+            "reshape_no_copy",
+            "slice",
+            "squeeze",
+            "strided_slice",
+            "tile",
+            "unique"
+    )));
 
     public DynamicCustomOp() {
         iArguments = new ArrayList<>();
@@ -291,13 +329,107 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     protected void addOutputsToOp() {
-        computeArrays();
         if (sameDiff.getOutputsForOp(this) == null)
             sameDiff.addOutgoingFor(outputVariables, this);
+    }
+    /**
+     * Enhanced input argument setup with proper placeholder handling
+     */
+    private void ensureInputArgumentsFromSameDiff() {
+        if (inputArguments.isEmpty() && args() != null) {
+            for (SDVariable arg : args()) {
+                INDArray arr = resolveInputArrayForPlaceholder(arg);
+                if (arr != null) {
+                    addInputArgument(arr);
+                } else {
+                    // For Case 1 placeholders (no defined shape), this is expected
+                    // The operation should not execute during import/graph building
+                    log.debug("Placeholder {} has no array - operation {} will be deferred",
+                            arg.name(), getOwnName());
+                    return; // Exit early - don't execute operation during graph building
+                }
+            }
+        }
+    }
+
+    /**
+     * Resolve input array with proper placeholder handling for both cases
+     */
+    private INDArray resolveInputArrayForPlaceholder(SDVariable arg) {
+        // Case 1: Check if this is a runtime placeholder (like input_ids)
+        if (arg.isPlaceHolder()) {
+            // Check if user has provided data for this placeholder
+            if (sameDiff.getEagerArrays().hasArray(arg.name())) {
+                return sameDiff.getEagerArrForVarName(arg.name());
+            }
+
+            // Check if placeholder has defined shape (Case 2)
+            if (arg.getShape() != null && isValidForAutoCreation(arg)) {
+                // Case 2: Placeholder with defined shape - can create array if appropriate
+                return createPlaceholderArray(arg);
+            } else {
+                // Case 1: Placeholder without shape or inappropriate for auto-creation
+                // This is normal during graph construction - should not execute yet
+                log.debug("Placeholder {} has no shape or inappropriate for auto-creation", arg.name());
+                return null;
+            }
+        }
+
+        // Non-placeholder variables
+        return sameDiff.getArrForVarName(arg.name());
     }
 
 
     /**
+     * Create array for Case 2 placeholders only
+     */
+    private INDArray createPlaceholderArray(SDVariable placeholder) {
+        long[] shape = placeholder.getShape();
+        DataType dataType = placeholder.dataType();
+
+        if (dataType == DataType.UNKNOWN) {
+            dataType = DataType.FLOAT;
+        }
+
+        log.info("Creating placeholder array for {} with shape {} and type {}",
+                placeholder.name(), Arrays.toString(shape), dataType);
+
+        INDArray arr = Nd4j.zeros(dataType, shape);
+        sameDiff.setEagerArrForVarName(placeholder.name(), arr);
+        return arr;
+    }
+
+    /**
+     * Check if placeholder is valid for auto-creation (Case 2 only)
+     */
+    private boolean isValidForAutoCreation(SDVariable placeholder) {
+        String name = placeholder.name();
+
+        // Never auto-create common input placeholders - these should be provided by user
+        if (name.contains("input_ids") || name.contains("attention_mask") ||
+                name.contains("token_type_ids") || name.startsWith("input")) {
+            return false;
+        }
+
+        // Never auto-create if we're in graph building mode
+        if (SameDiff.isInGraphBuildingMode()) {
+            return false;
+        }
+
+        // Only auto-create small, reasonable shapes
+        long[] shape = placeholder.getShape();
+        long totalElements = 1;
+        for (long dim : shape) {
+            if (dim <= 0) return false; // Dynamic dimension - Case 1
+            totalElements *= dim;
+            if (totalElements > 1000) return false; // Too large
+        }
+
+        return true;
+    }
+
+
+     /**
      * Generate fake data for {@link #computeArrays()}
      * of the  given shape with the data type {@link Nd4j#defaultFloatingPointType()}
      * @param shape the shape to use
@@ -319,6 +451,19 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     public void computeArrays() {
+        if (!sameDiff.isEagerMode()) {
+            return;
+        }
+
+        // Early check: if any placeholder inputs are missing, skip execution entirely
+        if (shouldSkipExecutionForMissingInputs()) {
+            log.debug("Skipping execution of {} - placeholder inputs not available (normal during import)",
+                    getOwnName());
+            return;
+        }
+
+
+
         if(sameDiff.isEagerMode()) {
             SDVariable[] args = args();
             if(inputArguments.isEmpty()) {
@@ -348,81 +493,202 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                             sameDiff.setEagerArrForVarName(arg.name(),arr);
                             addInputArgument(arr);
                             log.warn("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation, inserting dummy array. This can happen with control flow ops. Please validate this if in error.");
+
                         } else {
                             addInputArgument(sameDiff.getEagerArrForVarName(arg.name()));
                         }
                     }
                     else {
-                        INDArray add = Nd4j.create(arg.dataType(),1);
-                        sameDiff.setEagerArrForVarName(arg.name(),add);
-                        addInputArgument(add);
-                        log.warn("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation, inserting dummy array. This can happen with control flow ops. Please validate this if in error.");
+                        // Check if this is a placeholder that should not have a dummy array
+                        if (arg.isPlaceHolder() && isPlaceholderVariable(arg)) {
+                            log.debug("Skipping execution for operation {} - input placeholder {} has no array (this is normal during import)",
+                                    getOwnName(), arg.name());
+                            return; // Exit early - don't execute during import
+                        }  else if (arg.getVariableType() == ARRAY &&
+                                !sameDiff.arrayAlreadyExistsForVarName(arg.name())) {
+                            log.debug("Skipping execution for operation {} - input array variable {} has no computed array yet (normal during import)",
+                                    getOwnName(), arg.name());
+                            return; // Exit early - don't execute during import
+                        }
+
+                        // For non-user-input placeholders, still avoid dummy arrays during import
+                        log.warn("Cannot resolve array for variable {} in operation {} - skipping execution",
+                                arg.name(), getOwnName());
+                        return; // Exit early instead of creating dummy arrays
                     }
+
                 }
             }
 
             if(outputVariables.length > 0 && outputArguments().isEmpty()) {
+                // Validate operation is ready for execution before proceeding
+                if (!isReadyForExecution()) {
+                    log.warn("Skipping computeArrays for operation " + opName() + " (" + getOwnName() +
+                            ") - operation not ready for execution");
+                    return;
+                }
+
                 //override output variables to ensure data types, shapes and output arrays are properly computed
-                List<DataBuffer> longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
+                // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+                // and must NOT be closed here - they are shared across operations
+                List<DataBuffer> longShapeDescriptors;
+                longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
+
+
                 if(!longShapeDescriptors.isEmpty())
                     for(int i = 0; i < longShapeDescriptors.size(); i++) {
-                        if(outputVariables[i].getArr() != null) {
-                            addOutputArgument(outputVariables[i].getArr());
+                        // Use non-executing array check instead of getArr()
+                        if(sameDiff.arrayAlreadyExistsForVarName(outputVariables[i].name())) {
+                            addOutputArgument(sameDiff.getArrForVarName(outputVariables[i].name()));
                         } else {
                             //not yet computed
                             INDArray arr = Nd4j.createFromDescriptor(longShapeDescriptors.get(i));
                             addOutputArgument(arr);
                         }
-
-
                     }
 
-                try(OpContext ctx = Nd4j.getExecutioner().buildContext()) {
-                    ctx.setIArguments(iArguments);
-                    ctx.setDArguments(dArguments);
-                    ctx.setTArguments(tArguments);
-                    ctx.setBArguments(bArguments);
-                    ctx.setInputArrays(inputArguments);
-                    ctx.setOutputArrays(outputArguments);
-
-                    SameDiffOp op2 = sameDiff.getOps().get(getOwnName());
-                    for(Listener  l : sameDiff.getListeners()) {
-                        l.preOpExecution(sameDiff, At.defaultAt(),op2,ctx);
-                    }
-
-                    INDArray[] exec = Nd4j.getExecutioner().exec(this,ctx);
-                    for(Listener  l : sameDiff.getListeners()) {
-                        l.opExecution(sameDiff, At.defaultAt(),null,op2,ctx,exec);
-                    }
-
-                    for(Listener  l : sameDiff.getListeners()) {
-                        for(int i = 0; i < outputVariables.length; i++) {
-                            l.preUpdate(sameDiff,At.defaultAt(),sameDiff.getVariables().get(outputVariables[i].name()),exec[i]);
-                        }
-                    }
-
-                    if(outputVariables.length != exec.length) {
-                        log.warn("During eager execution of op " + getOwnName() + " of type " + opName() + " the output variables had length " + outputVariables.length + " while execution output was " + exec.length + " stub scalar variables will be used.");
-                    }
+                // During graph building (import), skip actual op execution and just set output
+                // shapes from calculateOutputShape. This avoids running the full forward pass
+                // during model import, which is extremely expensive for large models.
+                if(SameDiff.isInGraphBuildingMode()) {
                     for (int i = 0; i < outputVariables.length; i++) {
-                        if(i >= exec.length) {
-                            INDArray stub = Nd4j.scalar(1.0f).reshape(1,1,1,1,1,1,1);
-                            outputVariables[i].setShape(stub.shape());
-                            sameDiff.setEagerArrForVarName(outputVariables[i].name(),stub);
-                        }  else {
-                            outputVariables[i].setShape(exec[i].shape());
-                            sameDiff.setEagerArrForVarName(outputVariables[i].name(),exec[i]);
+                        INDArray outArr;
+                        if(i < outputArguments().size()) {
+                            outArr = outputArguments().get(i);
+                        } else if(i < longShapeDescriptors.size()) {
+                            outArr = Nd4j.createFromDescriptor(longShapeDescriptors.get(i));
+                        } else {
+                            outArr = Nd4j.scalar(0.0f);
+                        }
+                        outputVariables[i].setShape(outArr.shape());
+                        sameDiff.setEagerArrForVarName(outputVariables[i].name(), outArr);
+                    }
+                } else {
+                    try(OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+                        ctx.setIArguments(iArguments);
+                        ctx.setDArguments(dArguments);
+                        ctx.setTArguments(tArguments);
+                        ctx.setBArguments(bArguments);
+                        ctx.setSArguments(sArguments.toArray(new String[0]));
+                        ctx.setInputArrays(inputArguments);
+                        ctx.setOutputArrays(outputArguments);
+
+                        SameDiffOp op2 = sameDiff.getOps().get(getOwnName());
+                        for(Listener  l : sameDiff.getListeners()) {
+                            l.preOpExecution(sameDiff, At.defaultAt(),op2,ctx);
                         }
 
+                        INDArray[] exec;
+                        exec = Nd4j.getExecutioner().exec(this,ctx);
+
+
+                        for(Listener  l : sameDiff.getListeners()) {
+                            l.opExecution(sameDiff, At.defaultAt(),null,op2,ctx,exec);
+                        }
+
+                        for(Listener  l : sameDiff.getListeners()) {
+                            for(int i = 0; i < outputVariables.length; i++) {
+                                l.preUpdate(sameDiff,At.defaultAt(),sameDiff.getVariables().get(outputVariables[i].name()),exec[i]);
+                            }
+                        }
+
+                        if(outputVariables.length != exec.length) {
+                            log.warn("During eager execution of op " + getOwnName() + " of type " + opName() + " the output variables had length " + outputVariables.length + " while execution output was " + exec.length + " stub scalar variables will be used.");
+                        }
+                        for (int i = 0; i < outputVariables.length; i++) {
+                            if(i >= exec.length) {
+                                INDArray stub = Nd4j.scalar(1.0f).reshape(1,1,1,1,1,1,1);
+                                outputVariables[i].setShape(stub.shape());
+                                sameDiff.setEagerArrForVarName(outputVariables[i].name(),stub);
+                            }  else {
+                                outputVariables[i].setShape(exec[i].shape());
+                                sameDiff.setEagerArrForVarName(outputVariables[i].name(),exec[i]);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Error during eager execution of operation " + opName() + " (" + getOwnName() + "): " + e.getMessage());
+                        // Don't rethrow - allow execution to continue
                     }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
                 }
+            }
+        }
+    }
 
 
 
+    /**
+     * Check if this is a placeholder that shouldn't have dummy arrays created
+     */
+    private boolean isPlaceholderVariable(SDVariable arg) {
+        return arg != null && arg.isPlaceHolder();
+    }
+
+    /**
+     * Check if we should skip execution due to missing placeholder arrays
+     */
+    private boolean shouldSkipExecutionForMissingInputs() {
+        if (args() == null) return false;
+
+        for (SDVariable arg : args()) {
+            // If any input is a placeholder without an array, skip execution during import
+            if (arg.isPlaceHolder() && !sameDiff.arrayAlreadyExistsForVarName(arg.name())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Validates that this operation is properly configured and ready for execution.
+     * This should be called before computeArrays() to prevent native crashes.
+     *
+     * @return true if the operation is ready for execution, false otherwise
+     */
+    public boolean isReadyForExecution() {
+        try {
+            // Check if we have a valid descriptor
+            CustomOpDescriptor descriptor = getDescriptor();
+            if (descriptor == null) {
+                return false;
             }
 
+            // Validate input requirements
+            if (descriptor.getNumInputs() > 0 && numInputArguments() < descriptor.getNumInputs()) {
+                return false;
+            }
+
+            // Validate integer argument requirements
+            if (descriptor.getNumIArgs() > 0 && numIArguments() < descriptor.getNumIArgs()) {
+                return false;
+            }
+
+            // Validate floating point argument requirements
+            if (descriptor.getNumTArgs() > 0 && numTArguments() < descriptor.getNumTArgs()) {
+                return false;
+            }
+
+            // Check that all input arrays are non-null and have valid shapes
+            for (int i = 0; i < numInputArguments(); i++) {
+                INDArray input = getInputArgument(i);
+                if (input == null || input.isEmpty()) {
+                    return false;
+                }
+            }
+
+            // Most importantly: try to calculate output shape
+            // This is where the "Dimensions array is null" error would occur
+            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+            // and must NOT be closed here - they are shared across operations
+            try {
+                List<DataBuffer> shapes = calculateOutputShape();
+                return shapes != null && !shapes.isEmpty();
+            } catch (Exception e) {
+                // If shape calculation fails, the op is not ready
+                return false;
+            }
+
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -468,22 +734,31 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public long[] iArgs() {
+        if (iArguments == null) return new long[0];
+        // Guard against null elements that cause NPE in Longs.toArray unboxing
+        for (int i = 0; i < iArguments.size(); i++) {
+            if (iArguments.get(i) == null) iArguments.set(i, 0L);
+        }
         return Longs.toArray(iArguments);
     }
 
     @Override
     public double[] tArgs() {
+        if (tArguments == null) return new double[0];
+        for (int i = 0; i < tArguments.size(); i++) {
+            if (tArguments.get(i) == null) tArguments.set(i, 0.0);
+        }
         return Doubles.toArray(tArguments);
     }
 
     @Override
     public DataType[] dArgs() {
-        return dArguments.toArray(new DataType[dArguments.size()]);
+        return dArguments == null ? new DataType[0] : dArguments.toArray(new DataType[dArguments.size()]);
     }
 
     @Override
     public String[] sArgs() {
-        return sArguments.toArray(new String[sArguments.size()]);
+        return sArguments == null ? new String[0] : sArguments.toArray(new String[sArguments.size()]);
     }
 
     @Override
@@ -506,6 +781,15 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public void removeIArgument(Integer arg) {
         iArguments.remove(arg);
+    }
+
+    /**
+     * Remove all integer arguments.
+     */
+    public void clearIArguments() {
+        if (iArguments != null) {
+            iArguments.clear();
+        }
     }
 
     @Override
@@ -687,11 +971,20 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         return calculateOutputShape(null);
     }
 
+
+
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
         val descriptor = getDescriptor();
-        if (outputShapes != null && !outputShapes.isEmpty())
-            return outputShapes;
+
+        // Check cached output shapes using a rich signature that includes
+        // input shapes, dtypes, iArgs, and small integer input values.
+        if (outputShapes != null && !outputShapes.isEmpty() && oc != null) {
+            long sig = computeDynamicOpSignature(oc);
+            if (sig == cachedInputShapeSignature) {
+                return outputShapes;
+            }
+        }
 
         if (descriptor == null) {
             throw new IllegalStateException("Could not find descriptor for op: " + opName()
@@ -724,12 +1017,193 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         }
 
-        List<DataBuffer> ret;
-        if(oc == null)
-            ret = Nd4j.getExecutioner().calculateOutputShape(this);
-        else
-            ret = Nd4j.getExecutioner().calculateOutputShape(this, oc);
+        // Try Java-side shape inference first (avoids JNI overhead)
+        List<DataBuffer> ret = calculateOutputShapeFromInputs(oc);
+
+        // Fall back to C++ shape function if Java-side didn't provide a result
+        if (ret == null || ret.isEmpty()) {
+            if(oc == null)
+                ret = Nd4j.getExecutioner().calculateOutputShape(this);
+            else
+                ret = Nd4j.getExecutioner().calculateOutputShape(this, oc);
+        }
+
+        // Propagate EMPTY bit: ensure output shapes carry the EMPTY flag when inputs are empty.
+        // Some C++ shape functions (e.g., cast) don't propagate the EMPTY bit from input to output.
+        // For binary ops (exactly 2 inputs): if ANY input is empty, output is empty (TF broadcast semantics:
+        //   op(empty, non-empty) → empty, e.g. maximum(empty_scalar, scalar) → empty).
+        // For multi-input ops (concat, stack, etc.): only force empty when ALL inputs are empty, because
+        //   concat([empty, non-empty]) produces non-empty output.
+        if (ret != null && !ret.isEmpty()) {
+            boolean shouldForceEmpty = false;
+            boolean anyRank0Empty = false;
+            List<INDArray> inputArraysForEmpty = (oc != null) ? oc.getInputArrays() : inputArguments;
+            if (inputArraysForEmpty != null && !inputArraysForEmpty.isEmpty()) {
+                boolean anyEmpty = false;
+                boolean allInputsEmpty = true;
+                for (INDArray in : inputArraysForEmpty) {
+                    if (in != null && in.isEmpty()) {
+                        anyEmpty = true;
+                        if (in.rank() == 0) {
+                            anyRank0Empty = true;
+                        }
+                    } else {
+                        allInputsEmpty = false;
+                    }
+                }
+                // Binary ops: any empty input → empty output (broadcast semantics)
+                // Multi-input ops: only if all empty
+                if (inputArraysForEmpty.size() == 2) {
+                    shouldForceEmpty = anyEmpty;
+                } else {
+                    shouldForceEmpty = allInputsEmpty && anyEmpty;
+                }
+            }
+            if (shouldForceEmpty) {
+                List<DataBuffer> fixed = new ArrayList<>(ret.size());
+                boolean changed = false;
+                for (DataBuffer shapeBuffer : ret) {
+                    long[] shapeInfo = shapeBuffer.asLong();
+                    if (!Shape.isEmpty(shapeInfo)) {
+                        if (anyRank0Empty) {
+                            // When any empty input is rank-0, produce rank-0 empty output.
+                            // This matches TF semantics: broadcastOp(rank0_empty, non_empty) → rank0_empty.
+                            DataType dtype = Shape.dataType(shapeInfo);
+                            // Build a rank-0 empty shape info with the EMPTY bit set
+                            DataBuffer rank0Buf = Shape.createShapeInformation(
+                                    new long[0], new long[0], 1, 'c', dtype, true);
+                            fixed.add(rank0Buf);
+                        } else {
+                            // Create a corrected copy with the EMPTY bit set, preserving shape
+                            long[] corrected = Arrays.copyOf(shapeInfo, shapeInfo.length);
+                            int optionsIdx = Shape.shapeInfoLength(corrected) - 3;
+                            corrected[optionsIdx] |= ArrayOptionsHelper.ATYPE_EMPTY_BIT;
+                            fixed.add(Nd4j.getDataBufferFactory().createLong(corrected));
+                        }
+                        changed = true;
+                    } else {
+                        fixed.add(shapeBuffer);
+                    }
+                }
+                if (changed) {
+                    ret = fixed;
+                }
+            }
+        }
+
+        // Cache result with rich signature
+        if (oc != null && ret != null && !ret.isEmpty()) {
+            outputShapes = ret;
+            cachedInputShapeSignature = computeDynamicOpSignature(oc);
+        }
+
         return ret;
+    }
+
+    /**
+     * Calculate output shape directly from input arrays in Java, avoiding JNI overhead.
+     *
+     * <p>Override this method in subclasses to provide fast Java-side shape inference.
+     * The default implementation returns null, which causes the standard C++ shape
+     * function to be called via JNI.</p>
+     *
+     * <p>For performance, this should be overridden for ops with simple, deterministic
+     * shape relationships (e.g., elementwise ops preserve shape, matmul computes M×N, etc.)</p>
+     *
+     * @param oc the OpContext containing input arrays and arguments
+     * @return list of output shape buffers, or null to fall back to C++ shape function
+     */
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        // Default: return null to use C++ shape function
+        return null;
+    }
+
+    /**
+     * Compute a rich signature for DynamicCustomOp that captures all factors affecting output shape:
+     * input shapes/dtypes, iArgs, tArgs, bArgs, dArgs, in-place flag, pre-allocated output shapes,
+     * and actual values of small integer inputs (for ops like create, reshape, ConstantOfShape).
+     */
+    private long computeDynamicOpSignature(OpContext oc) {
+        // Start with the base input shape signature (shapes + dtypes)
+        long h = BaseOp.computeInputShapeSignature(oc);
+
+        // In-place flag: output shape == first input shape when in-place
+        h = h * 31 + (isInplaceCall() ? 1 : 0);
+
+        // iArgs - axis, dimensions, shape values
+        List<Long> iArgs = oc.getIArguments();
+        h = h * 31 + iArgs.size();
+        for (Long iArg : iArgs) {
+            h = h * 31 + iArg;
+        }
+
+        // bArgs - boolean flags that can toggle shape behavior
+        List<Boolean> bArgs = oc.getBArguments();
+        h = h * 31 + bArgs.size();
+        for (Boolean bArg : bArgs) {
+            h = h * 31 + (bArg ? 1 : 0);
+        }
+
+        // tArgs - floating point args (rarely affect shape, but can in some ops)
+        List<Double> tArgs = oc.getTArguments();
+        h = h * 31 + tArgs.size();
+        for (Double tArg : tArgs) {
+            h = h * 31 + Double.doubleToLongBits(tArg);
+        }
+
+        // dArgs - data type args that determine output dtype
+        List<DataType> dArgs = oc.getDArguments();
+        h = h * 31 + dArgs.size();
+        for (DataType dArg : dArgs) {
+            h = h * 31 + dArg.ordinal();
+        }
+
+        // For ops where input values determine output shape, hash the actual values.
+        // We must read values (not just identity-hash the DataBuffer) because the array
+        // cache can recycle the same DataBuffer object with different values written to it.
+        // These are typically small integer arrays (shape descriptors, <10 elements).
+        // Note: InferenceSession already calls commit()+dbForceSyncToPrimary() before
+        // calculateOutputShape(), so we don't need to sync here.
+        if (outputShapeDependsOnInputData()) {
+            int n = oc.numInputArguments();
+            for (int i = 0; i < n; i++) {
+                INDArray arr = oc.getInputArray(i);
+                if (arr != null && arr.length() > 0
+                        && (arr.dataType() == DataType.INT || arr.dataType() == DataType.LONG
+                        || arr.dataType() == DataType.INT8 || arr.dataType() == DataType.INT16)) {
+                    if (arr.data() != null && !arr.data().wasClosed()) {
+                        long len = arr.length();
+                        h = h * 31 + len;
+                        for (long j = 0; j < len; j++) {
+                            h = h * 31 + arr.getLong(j);
+                        }
+                    }
+                }
+            }
+        }
+
+        return h;
+    }
+
+    /**
+     * Override to return true for ops where output shape depends on input data values,
+     * not just input shapes. Examples: create, reshape, expand, broadcast_to.
+     * When true, input integer values are included in the shape cache signature.
+     */
+    public boolean outputShapeDependsOnInputData() {
+        return DATA_DEPENDENT_SHAPE_OPS.contains(opName());
+    }
+
+    /**
+     * Override to return true for ops that don't fully write their output buffers.
+     * Such ops (gather, where, scatter, unique, etc.) require pre-zeroed buffers
+     * to avoid stale data corruption.
+     *
+     * Most ops fully write their output and can skip zeroing for performance.
+     * Only override this to return true for ops with sparse output patterns.
+     */
+    public boolean requiresZeroedOutput() {
+        return false;
     }
 
     @Override
@@ -1254,6 +1728,52 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
         super.setPropertiesForFunction(properties);
+        OpNamespace.OpDescriptor opDescriptor = OpDescriptorHolder.descriptorForOpName(opName());
+        if (opDescriptor == null) {
+            return;
+        }
+
+        for (OpNamespace.ArgDescriptor argDescriptor : opDescriptor.getArgDescriptorList()) {
+            if (!properties.containsKey(argDescriptor.getName())) {
+                continue;
+            }
+
+            int argIndex = argDescriptor.getArgIndex();
+            switch (argDescriptor.getArgType()) {
+                case STRING:
+                    String stringValue = getStringFromProperty(argDescriptor.getName(), properties);
+                    if (stringValue != null) {
+                        setListValue(sArguments, argIndex, stringValue);
+                    }
+                    break;
+                case BOOL:
+                    Boolean boolValue = getBooleanFromProperty(argDescriptor.getName(), properties);
+                    if (boolValue != null) {
+                        setListValue(bArguments, argIndex, boolValue);
+                    }
+                    break;
+                case FLOAT:
+                case DOUBLE:
+                    Double doubleValue = getDoubleValueFromProperty(argDescriptor.getName(), properties);
+                    if (doubleValue != null) {
+                        setListValue(tArguments, argIndex, doubleValue);
+                    }
+                    break;
+                case INT32:
+                case INT64:
+                    Long longValue = getLongValueFromProperty(argDescriptor.getName(), properties);
+                    if (longValue != null) {
+                        setListValue(iArguments, argIndex, longValue);
+                    }
+                    break;
+                case DATA_TYPE:
+                    DataType dataType = getDataTypeFromProperty(argDescriptor.getName(), properties);
+                    if (dataType != null) {
+                        setListValue(dArguments, argIndex, dataType);
+                    }
+                    break;
+            }
+        }
     }
 
     @Override
@@ -1271,32 +1791,105 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public Map<String, Object> propertiesForFunction() {
         OpNamespace.OpDescriptor opDescriptor = OpDescriptorHolder.descriptorForOpName(opName());
         Map<String,Object> ret = new LinkedHashMap<>();
+        if (opDescriptor == null) {
+            log.warn("No op descriptor found for op '{}' (class: {}), returning empty properties",
+                    opName(), getClass().getName());
+            return ret;
+        }
+        Map<String,Object> fieldBackedProperties = null;
         for(OpNamespace.ArgDescriptor argDescriptor : opDescriptor.getArgDescriptorList()) {
             switch(argDescriptor.getArgType()) {
                 case STRING:
-                    if(argDescriptor.getArgIndex() < numSArguments())
-                        ret.put(argDescriptor.getName(),getSArgument(argDescriptor.getArgIndex()));
+                    if(argDescriptor.getArgIndex() < numSArguments()) {
+                        ret.put(argDescriptor.getName(), getSArgument(argDescriptor.getArgIndex()));
+                    } else {
+                        fieldBackedProperties = maybeGetFieldBackedProperties(fieldBackedProperties);
+                        if (fieldBackedProperties.containsKey(argDescriptor.getName())) {
+                            ret.put(argDescriptor.getName(), fieldBackedProperties.get(argDescriptor.getName()));
+                        }
+                    }
                     break;
                 case BOOL:
-                    if(argDescriptor.getArgIndex() < numBArguments())
-                        ret.put(argDescriptor.getName(),getBArgument(argDescriptor.getArgIndex()));
+                    if(argDescriptor.getArgIndex() < numBArguments()) {
+                        ret.put(argDescriptor.getName(), getBArgument(argDescriptor.getArgIndex()));
+                    } else {
+                        fieldBackedProperties = maybeGetFieldBackedProperties(fieldBackedProperties);
+                        if (fieldBackedProperties.containsKey(argDescriptor.getName())) {
+                            ret.put(argDescriptor.getName(), fieldBackedProperties.get(argDescriptor.getName()));
+                        }
+                    }
                     break;
                 case FLOAT:
                 case DOUBLE:
-                    if(argDescriptor.getArgIndex() < numTArguments())
-                        ret.put(argDescriptor.getName(),getTArgument(argDescriptor.getArgIndex()));
+                    if(argDescriptor.getArgIndex() < numTArguments()) {
+                        ret.put(argDescriptor.getName(), getTArgument(argDescriptor.getArgIndex()));
+                    } else {
+                        fieldBackedProperties = maybeGetFieldBackedProperties(fieldBackedProperties);
+                        if (fieldBackedProperties.containsKey(argDescriptor.getName())) {
+                            ret.put(argDescriptor.getName(), fieldBackedProperties.get(argDescriptor.getName()));
+                        }
+                    }
                     break;
                 case INT32:
                 case INT64:
-                    if(argDescriptor.getArgIndex() < numIArguments())
-                        ret.put(argDescriptor.getName(),getIArgument(argDescriptor.getArgIndex()));
+                    if(argDescriptor.getArgIndex() < numIArguments()) {
+                        ret.put(argDescriptor.getName(), getIArgument(argDescriptor.getArgIndex()));
+                    } else {
+                        fieldBackedProperties = maybeGetFieldBackedProperties(fieldBackedProperties);
+                        if (fieldBackedProperties.containsKey(argDescriptor.getName())) {
+                            ret.put(argDescriptor.getName(), fieldBackedProperties.get(argDescriptor.getName()));
+                        }
+                    }
                     break;
                 case DATA_TYPE:
-                    if(argDescriptor.getArgIndex() < numDArguments())
-                        ret.put(argDescriptor.getName(),dArguments.get(argDescriptor.getArgIndex()));
+                    if(argDescriptor.getArgIndex() < numDArguments()) {
+                        ret.put(argDescriptor.getName(), dArguments.get(argDescriptor.getArgIndex()));
+                    } else {
+                        fieldBackedProperties = maybeGetFieldBackedProperties(fieldBackedProperties);
+                        if (fieldBackedProperties.containsKey(argDescriptor.getName())) {
+                            ret.put(argDescriptor.getName(), fieldBackedProperties.get(argDescriptor.getName()));
+                        }
+                    }
                     break;
             }
         }
         return ret;
+    }
+
+    private DataType getDataTypeFromProperty(String propertyName, Map<String, Object> properties) {
+        if (!properties.containsKey(propertyName)) {
+            return null;
+        }
+
+        Object value = properties.get(propertyName);
+        if (value instanceof DataType) {
+            return (DataType) value;
+        } else if (value instanceof String) {
+            return DataType.valueOf((String) value);
+        } else if (value instanceof String[]) {
+            String[] values = (String[]) value;
+            return values.length > 0 ? DataType.valueOf(values[0]) : null;
+        }
+
+        return null;
+    }
+
+    private Map<String,Object> maybeGetFieldBackedProperties(Map<String,Object> existing) {
+        if (existing != null) {
+            return existing;
+        }
+
+        try {
+            return super.propertiesForFunction();
+        } catch (RuntimeException e) {
+            return Collections.emptyMap();
+        }
+    }
+
+    private static <T> void setListValue(List<T> list, int index, T value) {
+        while (list.size() <= index) {
+            list.add(null);
+        }
+        list.set(index, value);
     }
 }

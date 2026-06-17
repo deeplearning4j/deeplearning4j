@@ -23,7 +23,9 @@ package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
@@ -47,5 +49,15 @@ public abstract class BaseArithmeticBackpropOp extends BaseDynamicTransformOp {
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatypes for %s, got input %s", getClass(), dataTypes);
         //Gradient types: same as input
         return Arrays.asList(arg(0).dataType(), arg(1).dataType());
+    }
+
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        // Backprop ops produce 2 outputs (gradient for each input of the forward op).
+        // The parent BaseDynamicTransformOp.calculateOutputShapeFromInputs() returns
+        // only 1 shape (correct for forward binary ops, wrong for backprop).
+        // Return null to fall through to the C++ shape function which correctly
+        // returns 2 shapes via SHAPELIST(CONSTANT(x), CONSTANT(y)).
+        return null;
     }
 }

@@ -32,7 +32,6 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -66,10 +65,11 @@ public class DistributionUniform extends DynamicCustomOp {
     }
 
     public DistributionUniform(INDArray shape, INDArray out, double min, double max, DataType dataType){
-        super(null, new INDArray[]{shape}, new INDArray[]{out}, Arrays.asList(min, max), (List<Long>)null);
+        super(null, new INDArray[]{shape}, new INDArray[]{out}, null, (List<Long>)null);
         this.min = min;
         this.max = max;
-        this.dataType = dataType;
+        this.dataType = dataType == null ? out.dataType() : dataType;
+        addArgs();
     }
 
 

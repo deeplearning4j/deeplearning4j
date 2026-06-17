@@ -151,4 +151,8 @@ public class Eye extends DynamicCustomOp {
         return Collections.singletonList(dataType == null ? DEFAULT_DTYPE : dataType);
     }
 
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

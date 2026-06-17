@@ -58,7 +58,7 @@ public class LSTMLayer extends DynamicCustomOp {
     }
 
     public LSTMLayer(@NonNull SameDiff sameDiff, SDVariable x, SDVariable cLast, SDVariable yLast, SDVariable maxTSLength, LSTMLayerWeights weights, LSTMLayerConfig configuration) {
-        super(null, sameDiff, weights.argsWithInputs(x, maxTSLength, cLast, yLast));
+        super(null, sameDiff, weights.argsWithInputs(x, maxTSLength, yLast, cLast));
         this.configuration = configuration;
         this.weights = weights;
         this.cLast = cLast;
@@ -75,7 +75,7 @@ public class LSTMLayer extends DynamicCustomOp {
     }
 
     public LSTMLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMLayerWeights lstmWeights, LSTMLayerConfig LSTMLayerConfig) {
-        super( lstmWeights.argsWithInputs(x,maxTSLength, cLast, yLast),null);
+        super( lstmWeights.argsWithInputs(x,maxTSLength, yLast, cLast),null);
         this.configuration = LSTMLayerConfig;
         this.weights = lstmWeights;
         addIArgument(iArgs());
@@ -96,10 +96,10 @@ public class LSTMLayer extends DynamicCustomOp {
             list.add(dt);
         }
 
-        if (configuration.isRetLastC()) {
+        if (configuration.isRetLastH()) {
             list.add(dt);
         }
-        if (configuration.isRetLastH()) {
+        if (configuration.isRetLastC()) {
             list.add(dt);
         }
 
@@ -133,12 +133,12 @@ public class LSTMLayer extends DynamicCustomOp {
             ret.add(maxTSLength);
         }
 
-        if(cLast != null) {
-            ret.add(cLast);
-        }
-
         if(yLast != null) {
             ret.add(yLast);
+        }
+
+        if(cLast != null) {
+            ret.add(cLast);
         }
 
         if(weights.hasPH()) {
@@ -172,8 +172,8 @@ public class LSTMLayer extends DynamicCustomOp {
                 configuration.getLstmdataformat().ordinal(),// INT_ARG(0)
                 configuration.getDirectionMode().ordinal(), // INT_ARG(1)
                 configuration.getGateAct().ordinal(),  // INT_ARG(2)
-                configuration.getOutAct().ordinal(), // INT_ARG(3)
-                configuration.getCellAct().ordinal()  // INT_ARG(4)
+                configuration.getCellAct().ordinal(), // INT_ARG(3)
+                configuration.getOutAct().ordinal()   // INT_ARG(4)
 
         };
     }

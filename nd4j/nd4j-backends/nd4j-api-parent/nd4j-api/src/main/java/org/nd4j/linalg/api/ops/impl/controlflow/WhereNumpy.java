@@ -23,8 +23,11 @@ package org.nd4j.linalg.api.ops.impl.controlflow;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
@@ -57,6 +60,16 @@ public class WhereNumpy extends DynamicCustomOp {
         this(new INDArray[]{x,y,condition},null);
     }
 
+
+    @Override
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        // where_np output shape depends on actual condition VALUES (count of true elements).
+        // This changes every inference step, so never cache — always recompute from native.
+        if (oc == null)
+            return Nd4j.getExecutioner().calculateOutputShape(this);
+        else
+            return Nd4j.getExecutioner().calculateOutputShape(this, oc);
+    }
 
     @Override
     public String opName() {

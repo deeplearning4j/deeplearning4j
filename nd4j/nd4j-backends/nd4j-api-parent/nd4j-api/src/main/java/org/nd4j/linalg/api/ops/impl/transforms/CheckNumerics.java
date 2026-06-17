@@ -31,6 +31,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,12 @@ public class CheckNumerics extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f1.get(0));
+        // Gradient flows only through input 0 (the numeric tensor).
+        // Input 1 is a UTF-8 string constant (the error message); it is a CONSTANT type
+        // and will be skipped by the gradient framework. Return a numeric zero placeholder
+        // of the same shape as the numeric input so the gradient list has the correct length.
+        SDVariable zeroForMessage = sameDiff.zerosLike(arg(0));
+        return new ArrayList<>(Arrays.asList(f1.get(0), zeroForMessage));
     }
 
     @Override
@@ -65,15 +71,10 @@ public class CheckNumerics extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        String str = attributesForNode.get("message").getS().toStringUtf8();
-        //No "string args" support in libnd4j custom ops -> make it a constant instead
-        String name = nodeDef.getName();
-        SDVariable msg = initWith.constant(name + "/message", Nd4j.scalar(str));
-        List<String> newInputs = new ArrayList<>(2);
-        newInputs.addAll(initWith.getOps().get(name).getInputsToOp());
-        newInputs.add(msg.name());
-        initWith.getOps().get(name).setInputsToOp(newInputs);
-        initWith.getVariables().get(msg.name()).setInputsForOp(Collections.singletonList(getOwnName()));    }
+        // TF CheckNumerics has a message attribute, but we don't need it for execution
+        // Just use the main input - message is just for error reporting which we handle differently
+        // No need to create a constant or add extra inputs
+    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){

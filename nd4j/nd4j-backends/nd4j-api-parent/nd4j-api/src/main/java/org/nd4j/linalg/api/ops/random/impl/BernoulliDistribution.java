@@ -80,9 +80,9 @@ public class BernoulliDistribution extends BaseRandomOp {
     
      */
     public BernoulliDistribution(@NonNull INDArray z, @NonNull INDArray prob) {
+        // The C++ random kernel uses stride-based indexing and handles non-contiguous
+        // arrays correctly. The old EWS==1 guard was spurious and is removed here.
         super(prob, null, z);
-        if (prob.elementWiseStride() != 1)
-            throw new ND4JIllegalStateException("Probabilities should have ElementWiseStride of 1");
 
         if (prob.length() != z.length())
             throw new ND4JIllegalStateException("Length of probabilities array [" + prob.length()

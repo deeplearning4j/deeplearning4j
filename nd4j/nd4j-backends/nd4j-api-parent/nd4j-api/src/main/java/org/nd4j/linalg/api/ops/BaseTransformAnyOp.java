@@ -26,9 +26,11 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -112,9 +114,38 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        if(oc == null) {
+            return calculateOutputShape();
+        }
+
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
+        INDArray input = oc.getInputArray(0);
+        if(input == null) {
+            return Collections.emptyList();
+        }
+        List<DataBuffer> ret;
+        // For pairwise ops with two inputs, compute broadcast shape
+        if(oc.numInputArguments() > 1) {
+            INDArray input2 = oc.getInputArray(1);
+            if(input2 != null) {
+                long[] broadcastShape = org.nd4j.linalg.api.shape.Shape.broadcastOutputShape(input.shape(), input2.shape());
+                ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(broadcastShape, input.dataType()).toShapeInfo()));
+                setCachedOutputShapes(oc, ret);
+                return ret;
+            }
+        }
+        ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(input.shape(), input.dataType()).toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
+        return ret;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         //Transform any: for the purposes of samediff datatype calculation, treat as same in/out
         Preconditions.checkState(dataTypes != null && dataTypes.size() >= 1, "Expected at least 1 input datatype for %s, got input %s", getClass(), dataTypes);
-        return dataTypes;
+        return Arrays.asList(dataTypes.get(0));
     }
 }

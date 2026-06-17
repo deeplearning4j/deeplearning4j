@@ -136,9 +136,15 @@ public class DepthwiseConv2DBp extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
-        List<DataType> list = new ArrayList<DataType>();
-        for(int i=0;i<n-1;i++){list.add(inputDataTypes.get(0));}
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        // Inputs: [input(0), weights(1), bias(2 if present), gradO(n-1)]
+        // Outputs: [gradI, gradW, (gradB)]
+        // Each gradient output should match the type of its corresponding input variable,
+        // not uniformly use the activation input type.
+        List<DataType> list = new ArrayList<DataType>();
+        for(int i = 0; i < n - 1; i++) {
+            list.add(inputDataTypes.get(i));
+        }
         return list;
     }
 

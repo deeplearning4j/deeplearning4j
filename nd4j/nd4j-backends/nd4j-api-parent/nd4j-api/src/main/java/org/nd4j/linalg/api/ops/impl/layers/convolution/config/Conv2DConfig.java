@@ -110,6 +110,7 @@ public class Conv2DConfig extends BaseConvolutionConfig {
         ret.put("dW", dW);
         ret.put("paddingMode", paddingMode);
         ret.put("dataFormat", dataFormat);
+        ret.put("weightsFormat", weightsFormat);
         return ret;
     }
 

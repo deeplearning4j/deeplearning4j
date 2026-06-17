@@ -205,6 +205,26 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             if (op != 1 && (y().isR() || x().isR()))
                 Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point: x.dataType=%s, y.dataType=%s, z.dataType=%s, op=%s",
                         x.dataType(), y.dataType(), z.dataType(), getClass().getName());
+
+            // Validate that y has the correct number of elements for the broadcast dimensions.
+            // For a broadcast over dims [d0, d1, ...], y.length() must equal x.shape()[d0] * x.shape()[d1] * ...
+            if (dimension != null && dimension.length > 0 && x() != null) {
+                long expectedYLength = 1;
+                for (long dim : dimension) {
+                    // Resolve negative dimensions (e.g., -1 means last dimension)
+                    long resolvedDim = dim < 0 ? dim + x().rank() : dim;
+                    Preconditions.checkState(resolvedDim >= 0 && resolvedDim < x().rank(),
+                            "Invalid broadcast dimension %s: must be in range [0, x.rank()=%s), x.shape=%s, op=%s",
+                            dim, x().rank(), java.util.Arrays.toString(x().shape()), getClass().getName());
+                    expectedYLength *= x().shape()[(int) resolvedDim];
+                }
+                Preconditions.checkState(y().length() == expectedYLength,
+                        "Invalid broadcast op: y.length() must equal product of x sizes along broadcast dimensions. " +
+                        "y.length=%s, expected=%s, x.shape=%s, y.shape=%s, broadcastDimensions=%s, op=%s",
+                        y().length(), expectedYLength, java.util.Arrays.toString(x().shape()),
+                        java.util.Arrays.toString(y().shape()), java.util.Arrays.toString(dimension),
+                        getClass().getName());
+            }
         } else if (x().isR())
             Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point: x.dataType=%s, z.dataType=%s, op=%s",
                     x.dataType(), z.dataType(), getClass().getName());

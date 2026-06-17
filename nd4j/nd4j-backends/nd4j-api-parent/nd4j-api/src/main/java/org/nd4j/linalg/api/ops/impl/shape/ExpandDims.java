@@ -37,6 +37,12 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
+
 public class ExpandDims extends DynamicCustomOp {
     private int jaxis;
 
@@ -101,7 +107,7 @@ public class ExpandDims extends DynamicCustomOp {
     @Override
     public Map<String, Object> propertiesForFunction() {
         Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("axis", axis);
+        ret.put("axis", (long) jaxis);
         return ret;
     }
 
@@ -167,6 +173,75 @@ public class ExpandDims extends DynamicCustomOp {
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2), "Expected list with 1 or 2 datatype for %s, got %s", getClass(), dataTypes);
         //Output type is same as input type
         return Collections.singletonList(dataTypes.get(0));
+    }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
+
+    /**
+     * ExpandDims output shape: inserts a new dimension of size 1 at the specified axis.
+     * For input [D0, D1, ..., Dn] with axis k, output is [D0, ..., D(k-1), 1, Dk, ..., Dn]
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 1) {
+            return null;
+        }
+
+        // If axis comes from second input (dynamic), fall back to C++
+        if (oc.numInputArguments() > 1) {
+            return null;
+        }
+
+        // Get axis from iArgs or field
+        List<Long> iArgs = oc.getIArguments();
+        int axis;
+        if (iArgs != null && !iArgs.isEmpty()) {
+            axis = iArgs.get(0).intValue();
+        } else {
+            axis = this.jaxis;
+        }
+
+        INDArray input = oc.getInputArray(0);
+        if (input == null) {
+            return null;
+        }
+
+        long[] inputShape = input.shape();
+        int inputRank = inputShape.length;
+        int outputRank = inputRank + 1;
+
+        // Normalize negative axis
+        if (axis < 0) {
+            axis += outputRank;
+        }
+
+        if (axis < 0 || axis > inputRank) {
+            return null; // Invalid axis - fall back to C++
+        }
+
+        // Build output shape: insert 1 at axis position
+        long[] outputShape = new long[outputRank];
+        int inIdx = 0;
+        for (int i = 0; i < outputRank; i++) {
+            if (i == axis) {
+                outputShape[i] = 1;
+            } else {
+                outputShape[i] = inputShape[inIdx++];
+            }
+        }
+
+        DataType dtype = input.dataType();
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 
 }

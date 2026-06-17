@@ -138,11 +138,59 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
     @Override
     public INDArray dimensions() {
         if(dimensionz == null && dimensions != null) {
-            this.dimensionz = Nd4j.create(Nd4j.createBuffer(dimensions));
+            if (dimensions.length == 0) {
+                // Empty dimensions = "reduce all". Return null.
+                // Both CudaExecutioner and NativeOpExecutioner handle null dimensions()
+                // correctly by treating it as "reduce all dimensions".
+                // NOTE: Do NOT use Nd4j.createFromArray(-1L) here. The -1 sentinel
+                // conflicts with NumPy convention where -1 means "last axis".
+                // normalizeAxis() would convert -1 to rank-1, causing reduce ops
+                // to only reduce along the last axis instead of all dimensions.
+                return null;
+            } else {
+                this.dimensionz = Nd4j.create(Nd4j.createBuffer(dimensions));
+            }
+            // Validate the created array has valid data
+            if (this.dimensionz == null || this.dimensionz.data() == null) {
+                // Creation failed — treat as "reduce all"
+                this.dimensionz = null;
+                return null;
+            }
+            // Mark as constant to prevent GC from collecting the buffer
+            markDimensionzConstant();
         } else if(dimensionz == null && y != null) {
-            this.dimensionz = y;
+            // When using y as dimensions, validate it has data
+            if (y.data() == null || y.isEmpty()) {
+                // No valid dimension data — treat as "reduce all"
+                return null;
+            } else {
+                this.dimensionz = y;
+            }
+            // Mark as constant when used as dimensions
+            markDimensionzConstant();
+        }
+        // Safety check: if dimensionz has null data, treat as "reduce all"
+        if (dimensionz != null && dimensionz.data() == null) {
+            this.dimensionz = null;
+            return null;
         }
         return dimensionz;
+    }
+
+    /**
+     * Mark the dimension array as constant to prevent GC from collecting its buffer.
+     * Dimension arrays are internal configuration data that must persist for the op's lifetime.
+     */
+    private void markDimensionzConstant() {
+        if (this.dimensionz != null) {
+            if (this.dimensionz.data() != null) {
+                this.dimensionz.data().setConstant(true);
+            }
+            if (this.dimensionz.shapeInfoDataBuffer() != null) {
+                this.dimensionz.shapeInfoDataBuffer().setConstant(true);
+            }
+            this.dimensionz.setCloseable(false);
+        }
     }
 
     @Override
@@ -152,6 +200,9 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
 
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
         INDArray x = oc != null ? oc.getInputArray(0) : x();
 
         if(x == null)
@@ -160,7 +211,9 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
         long[] reducedShape =  Shape.getReducedShape(x.shape(),dimensions, isKeepDims());
         DataType rt = oc != null ? resultType(oc) : resultType();
-        return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(reducedShape, rt).toShapeInfo()));
+        List<DataBuffer> ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(reducedShape, rt).toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
+        return ret;
     }
 
     @Override

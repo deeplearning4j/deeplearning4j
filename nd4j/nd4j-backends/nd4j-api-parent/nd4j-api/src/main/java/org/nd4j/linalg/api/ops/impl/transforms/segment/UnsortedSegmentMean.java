@@ -30,7 +30,9 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentMeanBp;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor
 public class UnsortedSegmentMean extends DynamicCustomOp {
@@ -67,6 +69,25 @@ public class UnsortedSegmentMean extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
         return new UnsortedSegmentMeanBp(sameDiff, arg(0), arg(1), gradients.get(0), numSegments).outputs();
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if (numIArguments() > 0 && getIArgument(0) != null) {
+            numSegments = getIArgument(0).intValue();
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if (properties != null && properties.containsKey("numOfClasses") && !properties.containsKey("numSegments")) {
+            properties = new LinkedHashMap<>(properties);
+            properties.put("numSegments", properties.get("numOfClasses"));
+        }
+
+        super.setPropertiesForFunction(properties);
+        configureFromArguments();
     }
 
     @Override

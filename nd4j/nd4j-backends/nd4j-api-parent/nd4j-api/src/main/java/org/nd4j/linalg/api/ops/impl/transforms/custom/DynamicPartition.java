@@ -49,8 +49,8 @@ public class DynamicPartition extends DynamicCustomOp {
     }
 
     public DynamicPartition(SameDiff sameDiff, SDVariable input,  SDVariable partitions, int numPartitions) {
-        super(null, sameDiff,  new SDVariable[] {input, partitions}, false);
-
+        super(null, sameDiff, new SDVariable[] {input, partitions}, false);
+        // Set numPartitions BEFORE any method that might call getNumOutputs()
         this.partitions = partitions;
         this.numPartitions = numPartitions;
         addArgs();
@@ -63,20 +63,47 @@ public class DynamicPartition extends DynamicCustomOp {
     }
 
     public DynamicPartition(INDArray x, INDArray [] partitions, int numPartitions){
-        //TODO; This needs fixing.
         super(new INDArray[]{x}, null);
-        // this.partitions = partitions;
         this.numPartitions = numPartitions;
         addArgs();
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return new DynamicPartitionBp(sameDiff, arg(0), arg(1), i_v.toArray(new SDVariable[i_v.size()]), numPartitions).outputs();
+        SDVariable inputGrad = new DynamicPartitionBp(sameDiff, arg(0), arg(1), i_v.toArray(new SDVariable[0]), numPartitions)
+                .outputVariables()[0];
+        SDVariable partitionsGrad = sameDiff.zerosLike(arg(1));
+        return Arrays.asList(inputGrad, partitionsGrad);
     }
 
     protected void addArgs() {
         addIArgument(numPartitions);
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if (!iArguments.isEmpty()) {
+            this.numPartitions = iArguments.get(0).intValue();
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+        if (properties.containsKey("numPartitions")) {
+            Object val = properties.get("numPartitions");
+            if (val instanceof Number) {
+                this.numPartitions = ((Number) val).intValue();
+            }
+        }
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("numPartitions", numPartitions);
+        return ret;
     }
 
     @Override
@@ -120,14 +147,19 @@ public class DynamicPartition extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs(){
-        return numPartitions;
+        // Ensure numPartitions is loaded from iArguments if not set
+        if (numPartitions <= 0 && !iArguments.isEmpty()) {
+            numPartitions = iArguments.get(0).intValue();
+        }
+        return numPartitions > 0 ? numPartitions : 1;  // Default to 1 if still not set
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //Output type: same as (data) input type
-        List<DataType> out = new ArrayList<>(numPartitions);
-        for( int i=0; i<numPartitions; i++ ){
+        int numOutputs = getNumOutputs();  // Use getNumOutputs() to ensure numPartitions is properly loaded
+        List<DataType> out = new ArrayList<>(numOutputs);
+        for( int i=0; i<numOutputs; i++ ){
             out.add(dataTypes.get(0));
         }
         return out;

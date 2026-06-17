@@ -36,6 +36,12 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
+
 public class Stack extends DynamicCustomOp {
     protected int jaxis;
 
@@ -155,5 +161,66 @@ public class Stack extends DynamicCustomOp {
         }
         //Output type is same as input types
         return Collections.singletonList(first);
+    }
+
+    /**
+     * Stack output shape: inserts a new dimension of size N (number of inputs) at the specified axis.
+     * For N inputs of shape [D0, D1, ..., Dn] stacked along axis k,
+     * output is [D0, ..., D(k-1), N, Dk, ..., Dn]
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 1) {
+            return null;
+        }
+
+        // Get axis from iArgs or field
+        List<Long> iArgs = oc.getIArguments();
+        int axis;
+        if (iArgs != null && !iArgs.isEmpty()) {
+            axis = iArgs.get(0).intValue();
+        } else {
+            axis = this.jaxis;
+        }
+
+        INDArray first = oc.getInputArray(0);
+        if (first == null) {
+            return null;
+        }
+
+        long[] inputShape = first.shape();
+        int inputRank = inputShape.length;
+        int numInputs = oc.numInputArguments();
+
+        // Normalize negative axis (for output rank which is inputRank + 1)
+        int outputRank = inputRank + 1;
+        if (axis < 0) {
+            axis += outputRank;
+        }
+
+        if (axis < 0 || axis > inputRank) {
+            return null; // Invalid axis - fall back to C++
+        }
+
+        // Build output shape: insert numInputs at axis position
+        long[] outputShape = new long[outputRank];
+        int outIdx = 0;
+        for (int i = 0; i < outputRank; i++) {
+            if (i == axis) {
+                outputShape[i] = numInputs;
+            } else {
+                outputShape[i] = inputShape[outIdx++];
+            }
+        }
+
+        DataType dtype = first.dataType();
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 }

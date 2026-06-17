@@ -99,19 +99,30 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
 
     @Override
+    public void setDimensions(long... dimensions) {
+        this.dimensions = dimensions;
+        defineDimensions(dimensions);
+    }
+
+    @Override
     public List<DataBuffer> calculateOutputShape() {
         return calculateOutputShape(null);
     }
 
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
 
 
         long[] reducedShape = Shape.getReducedShape(x.shape(), dimensions, keepDims);
-        return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(reducedShape, DataType.INT64).toShapeInfo()));
+        List<DataBuffer> ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(reducedShape, DataType.INT64).toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
+        return ret;
     }
 
     @Override

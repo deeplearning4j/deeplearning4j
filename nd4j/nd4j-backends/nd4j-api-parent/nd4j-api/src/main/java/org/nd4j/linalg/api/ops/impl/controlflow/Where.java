@@ -24,9 +24,12 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -87,6 +90,17 @@ public class Where extends DynamicCustomOp {
     }
 
     @Override
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        // Where's output shape depends on the actual VALUES of the condition tensor
+        // (how many elements are true). This changes every inference step, so we must
+        // never cache the shape — always recompute from native.
+        if (oc == null)
+            return Nd4j.getExecutioner().calculateOutputShape(this);
+        else
+            return Nd4j.getExecutioner().calculateOutputShape(this, oc);
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputTypes) {
         Preconditions.checkState(inputTypes != null && (inputTypes.size() == 1 || inputTypes.size() == 3),
                 "Expected 1 or 3 input types, got %s for op %s",inputTypes, getClass());
@@ -99,5 +113,11 @@ public class Where extends DynamicCustomOp {
             //TODO allow this to be configured
             return Collections.singletonList(DataType.LONG);
         }
+    }
+
+    @Override
+    public boolean requiresZeroedOutput() {
+        // Where outputs only the indices of true elements, leaving rest of buffer unwritten
+        return true;
     }
 }

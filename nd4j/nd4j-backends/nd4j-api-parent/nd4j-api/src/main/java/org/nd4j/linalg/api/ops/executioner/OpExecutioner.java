@@ -43,7 +43,10 @@ public interface OpExecutioner {
     // in case of adding new executioner - list it here
     enum ExecutionerType {
         NATIVE_CPU,
-        CUDA
+        CUDA,
+        MULTI_BACKEND,
+        TPU,
+        HEXAGON
     }
 
     enum ProfilingMode {
@@ -411,5 +414,47 @@ public interface OpExecutioner {
      */
     int useCount(DataBuffer buffer);
 
+    /**
+     * Set per-thread flag to skip device coherency checks in exec() calls.
+     * Used by DSP parallel workers that handle device placement themselves.
+     * No-op on CPU backend.
+     */
+    default void setSkipDeviceCoherency(boolean skip) {
+        // No-op by default (CPU backend)
+    }
+
+    /**
+     * Reset cross-device replication counter.
+     * Returns [count, bytes] from the previous period.
+     * Used for diagnosing per-step cross-device data copies.
+     */
+    default long[] resetReplicationCounter() {
+        return new long[]{0, 0};
+    }
+
+    /**
+     * Clear the constant replica cache used for multi-device execution.
+     * Called between forward passes to free cached cross-device replicas of constant arrays.
+     * No-op on CPU; overridden by CudaExecutioner for multi-GPU support.
+     */
+    default void clearConstantReplicaCache() {
+        // No-op by default
+    }
+
+    /**
+     * Get the total number of operations executed.
+     * @return operation count
+     */
+    default long getOperationsExecuted() {
+        return 0L;
+    }
+
+    /**
+     * Get the total execution time in milliseconds.
+     * @return execution time in ms
+     */
+    default long getTotalExecutionTime() {
+        return 0L;
+    }
 
 }

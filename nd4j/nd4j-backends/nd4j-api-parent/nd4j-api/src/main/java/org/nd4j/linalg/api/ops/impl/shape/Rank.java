@@ -81,7 +81,7 @@ public class Rank extends DynamicCustomOp {
         Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
         if(!dArguments.isEmpty())
             return Collections.singletonList(dArguments.get(0));
-        //Output type is always int
-        return Collections.singletonList(DataType.INT);
+        //Output type is always int64 (matches C++ DECLARE_SHAPE_FN which returns INT64 scalar)
+        return Collections.singletonList(DataType.LONG);
     }
 }

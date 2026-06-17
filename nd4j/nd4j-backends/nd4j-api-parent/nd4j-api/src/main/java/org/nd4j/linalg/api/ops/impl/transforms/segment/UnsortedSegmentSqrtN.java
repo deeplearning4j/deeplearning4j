@@ -29,9 +29,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentSqrtNBp;
 
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor
 public class UnsortedSegmentSqrtN extends DynamicCustomOp {
@@ -70,6 +71,25 @@ public class UnsortedSegmentSqrtN extends DynamicCustomOp {
     }
 
     @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if (numIArguments() > 0 && getIArgument(0) != null) {
+            numSegments = getIArgument(0).intValue();
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if (properties != null && properties.containsKey("numOfClasses") && !properties.containsKey("numSegments")) {
+            properties = new LinkedHashMap<>(properties);
+            properties.put("numSegments", properties.get("numOfClasses"));
+        }
+
+        super.setPropertiesForFunction(properties);
+        configureFromArguments();
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         if(!dArguments.isEmpty()) {
             return Collections.singletonList(dArguments.get(0));
@@ -77,10 +97,6 @@ public class UnsortedSegmentSqrtN extends DynamicCustomOp {
 
         Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 2 || inputDataTypes.size() == 3),
                 "Expected exactly 2 input data types for %s, got %s", getClass(), inputDataTypes);
-        List<DataType> out = new ArrayList<>();
-        for( int i = 0; i < numSegments; i++) {
-            out.add(inputDataTypes.get(0));
-        }
-        return out;
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

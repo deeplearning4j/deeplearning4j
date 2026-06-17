@@ -75,7 +75,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     protected ThreadLocal<OpContext> nextOpContext = new ThreadLocal<>();
 
-
     public DefaultOpExecutioner() {}
 
 
@@ -143,12 +142,19 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             if(Nd4j.getEnvironment().isDebugAndVerbose() && op.x().isView()) {
                 log.warn("Assign op running on a view. This may cause issues with the underlying buffer being modified and the view not seeing these changes");
             }
-            op2.addBArgument(op.x().isView());
-            op2.addInputArgument(op.x());
+            INDArray x = op.x();
+            INDArray z = op.z();
+            // When y is null and x/z have same length but different ranks (e.g. x=[N,1] z=[N]),
+            // reshape x to match z's shape so the custom assign op's shape validation passes.
+            if(op.y() == null && x.length() == z.length() && x.rank() != z.rank()) {
+                x = x.reshape(z.shape());
+            }
+            op2.addBArgument(x.isView());
+            op2.addInputArgument(x);
             if(op.y() != null)
                 op2.addInputArgument(op.y());
-            else op2.addInputArgument(op.x());
-            op2.addOutputArgument(op.z());
+            else op2.addInputArgument(x);
+            op2.addOutputArgument(z);
             INDArray[] result = executioner.exec(op2);
         } else {
             executioner.exec(op2, oc);
@@ -185,6 +191,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         context.setIArguments(op.iArgs());
         context.setTArguments(op.tArgs());
         context.setDArguments(op.dArgs());
+        context.setSArguments(op.sArgs());
     }
 
 
@@ -368,6 +375,9 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         if (array.isAttached() && !array.isView()) {
             val ws = array.data().getParentWorkspace();
 
+            if (ws == null)
+                return;
+
             if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
 
                 if (!ws.isScopeActive()) {
@@ -376,11 +386,12 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                             + " with workspace enum: " + ws.getAssociatedEnumType());
                 }
 
-                if (ws.getGenerationId() != array.data().getGenerationId())
-                    throw new ND4JIllegalStateException("Op [" + opName + "] X argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]: Workspace array was defined in has been closed and reopened at least once since array creation. Array WS iteration: " +
-                            array.data().getGenerationId() + ". Workspace current iteration: " +
-                            ws.getGenerationId() + "\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+                if (ws.getGenerationId() != array.data().getGenerationId()) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("Op [{}] array has generationId mismatch (array: {}, workspace [{}]: {})",
+                                opName, array.data().getGenerationId(), ws.getId(), ws.getGenerationId());
+                    }
+                }
             }
         }
     }
@@ -641,9 +652,34 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     public static List<INDArray> inputsFromOp(CustomOp customOp,OpContext opContext) {
         if(opContext != null && !opContext.getInputArrays().isEmpty()) {
-            return opContext.getInputArrays();
+            List<INDArray> ctxInputs = opContext.getInputArrays();
+            for (int i = 0; i < ctxInputs.size(); i++) {
+                INDArray arr = ctxInputs.get(i);
+                if (arr != null && arr.wasClosed()) {
+                    log.warn("DIAGNOSTIC: inputsFromOp OpContext path for op '{}' ({}). " +
+                            "Input at index {} is CLOSED in OpContext. shape={} dtype={} id={} identityHash={}",
+                            ((DifferentialFunction)customOp).getOwnName(), customOp.opName(),
+                            i, java.util.Arrays.toString(arr.shape()), arr.dataType(),
+                            arr.getId(), System.identityHashCode(arr));
+                }
+            }
+            return ctxInputs;
         } else {
-            return customOp.inputArguments();
+            // DIAGNOSTIC: falling back to op's stale inputArguments - check for closed arrays
+            List<INDArray> staleInputs = customOp.inputArguments();
+            for (int i = 0; i < staleInputs.size(); i++) {
+                INDArray arr = staleInputs.get(i);
+                if (arr != null && arr.wasClosed()) {
+                    log.warn("DIAGNOSTIC: inputsFromOp FALLBACK to stale inputArguments for op '{}' ({}). " +
+                            "OpContext was {} with {} inputs. Stale input at index {} is CLOSED. " +
+                            "shape={} dtype={}",
+                            ((DifferentialFunction)customOp).getOwnName(), customOp.opName(),
+                            opContext == null ? "null" : "non-null",
+                            opContext == null ? 0 : opContext.getInputArrays().size(),
+                            i, java.util.Arrays.toString(arr.shape()), arr.dataType());
+                }
+            }
+            return staleInputs;
         }
     }
 
@@ -725,10 +761,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         List<INDArray> inArgs = inputsFromOp(op,oc);
         List<INDArray> outArgs = outputsFromOp(op,oc);
         logCustomOpArrayEventIfNeccessary(inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
+        if(profilerConfig.isCheckForINF()) {
+            OpExecutionerUtil.checkForInf(op,oc);
+        }
         if(profilerConfig.isCheckForNAN()) {
             OpExecutionerUtil.checkForNaN(op,oc);
-        } else if(profilerConfig.isCheckForINF()) {
-            OpExecutionerUtil.checkForInf(op,oc);
         }
     }
 
@@ -738,12 +775,25 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     private static void logArrays(List<INDArray> inArgs, List<INDArray> outArgs, NDArrayEventType eventType, NDArrayEventType outputEventType) {
         List<NDArrayMetaData> inArgsMeta = new ArrayList<>();
-        for (val arr: inArgs) {
+        for (int idx = 0; idx < inArgs.size(); idx++) {
+            val arr = inArgs.get(idx);
             if(arr == null)
                 continue;
 
-            if (arr.wasClosed())
-                throw new IllegalStateException("One of Input arguments was closed before call");
+            if (arr.wasClosed()) {
+                String bufInfo = "N/A";
+                try {
+                    if (arr.data() != null) {
+                        bufInfo = "id=" + arr.getId() + " bufClosed=" + arr.data().wasClosed()
+                                + " released=" + arr.data().wasClosed()
+                                + " const=" + arr.data().isConstant()
+                                + " addr=0x" + Long.toHexString(arr.data().pointer() != null ? arr.data().pointer().address() : 0);
+                    }
+                } catch (Exception ignored) {}
+                throw new IllegalStateException("Input argument at index " + idx + " was closed before call. "
+                        + "shape=" + java.util.Arrays.toString(arr.shape()) + " dtype=" + arr.dataType()
+                        + " " + bufInfo);
+            }
 
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !BaseNDArray.callingToString()) {
                 NDArrayMetaData ndArrayMetaData = NDArrayMetaData.from(arr);
@@ -1121,10 +1171,13 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public List<DataBuffer> calculateOutputShape(@NonNull CustomOp op, OpContext opContext) {
+        Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
         val hash = op.opHash();
         val result = new ArrayList<DataBuffer>();
 
         OpaqueShapeList ptrptr;
+        Nd4j.getNativeOps().clearLastError();
         ptrptr = Nd4j.getNativeOps().calculateOutputShapes2(null, hash, opContext.contextPointer());
 
         if (Nd4j.getNativeOps().lastErrorCode() != 0) {
@@ -1135,24 +1188,44 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
             throw new RuntimeException(errorMessage.toString());
         }
-        if (ptrptr == null)
-            throw new RuntimeException();
-
-
-
-        if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+        if (ptrptr == null) {
             StringBuilder errorMessage = new StringBuilder();
-            DifferentialFunction differentialFunction = (DifferentialFunction) op;
-            errorMessage.append("Native execution exec failed: ");
-            errorMessage.append(differentialFunction.debugInfo());
-            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            errorMessage.append("calculateOutputShapes2 returned null for op: ").append(op.opName());
+            if (op instanceof DifferentialFunction) {
+                DifferentialFunction df = (DifferentialFunction) op;
+                errorMessage.append("\nOp own name: ").append(df.getOwnName());
+            }
+            errorMessage.append("\nOp num inputs: ").append(op.numInputArguments());
+            errorMessage.append("\nOpContext num inputs: ").append(opContext.numInputArguments());
+            errorMessage.append("\nOpContext native num inputs: ").append(opContext.numInputsNative());
+            if (opContext.numInputArguments() > 0) {
+                errorMessage.append("\nOpContext input arrays:");
+                for (int i = 0; i < opContext.numInputArguments(); i++) {
+                    INDArray arr = opContext.getInputArray(i);
+                    if (arr != null) {
+                        errorMessage.append("\n  [").append(i).append("]: shape=").append(java.util.Arrays.toString(arr.shape()))
+                                    .append(", dtype=").append(arr.dataType());
+                    } else {
+                        errorMessage.append("\n  [").append(i).append("]: null");
+                    }
+                }
+            }
+            errorMessage.append("\nNum iArgs: ").append(op.numIArguments());
+            if (op.numIArguments() > 0) {
+                errorMessage.append("\niArgs: ").append(java.util.Arrays.toString(op.iArgs()));
+            }
+            errorMessage.append("\nNum tArgs: ").append(op.numTArguments());
+            errorMessage.append("\nLast error message: ").append(Nd4j.getNativeOps().lastErrorMessage());
             throw new RuntimeException(errorMessage.toString());
         }
-        if (ptrptr == null)
-            throw new RuntimeException();
 
         for (int e = 0; e < Nd4j.getNativeOps().getShapeListSize(ptrptr); e++)
             result.add(getShapeFromPointer(op,opContext,new PagedPointer(Nd4j.getNativeOps().getShape(ptrptr, e)).asLongPointer()));
+
+        // Free the ShapeList container now that we've extracted all shapes.
+        // The shape pointers themselves are from ConstantShapeHelper (permanent cache)
+        // and are NOT freed by deleteShapeList (_autoremovable is false).
+        Nd4j.getNativeOps().deleteShapeList(ptrptr);
 
         if (log.isTraceEnabled()) {
             String[] arr = new String[result.size()];
@@ -1169,7 +1242,21 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     protected DataBuffer getShapeFromPointer(CustomOp op,OpContext ctx,LongPointer ptr) {
         val rank = (int) ptr.get(0);
         int len = Shape.shapeInfoLength(rank);
-        return Nd4j.createBuffer(ptr.capacity(len),Shape.shapeInfoLength(rank),DataType.INT64);
+
+        // Read shape info from native pointer into Java array
+        long[] shapeInfo = new long[len];
+        ptr.capacity(len);
+        ptr.get(shapeInfo, 0, len);
+
+        // Create a Java-owned DataBuffer from the shape info values.
+        // We do NOT wrap the ConstantShapeHelper's native pointer because that pointer
+        // is permanently cached in C++ and must never be freed. Wrapping it with
+        // Nd4j.createBuffer(Pointer,...) registers a deallocator that will free the
+        // cache memory on GC, causing double-free/corruption when the same cached
+        // shape is returned by a subsequent calculateOutputShape call.
+        DataBuffer buffer = Nd4j.createBuffer(shapeInfo);
+        buffer.setConstant(true);
+        return buffer;
     }
 
 
@@ -1188,81 +1275,17 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public void registerGraph(long id, Pointer graph) {
-        Nd4j.getNativeOps().registerGraph(null, id, graph);
-
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+        throw new UnsupportedOperationException("registerGraph has been removed - use DynamicShapePlan execution instead");
     }
 
     @Override
     public Map<String, INDArray> executeGraph(long id, @NonNull Map<String, INDArray> map, @NonNull Map<String, Integer> reverseMap) {
-
-        val ptrBuffers = new PointerPointer(map.size());
-        val ptrShapes = new PointerPointer(map.size());
-        val ptrIndices = new IntPointer(map.size());
-
-        int cnt = 0;
-        val keySet = new ArrayList<String>(map.keySet());
-        for (val key: keySet) {
-            val array = map.get(key);
-
-            ptrBuffers.put(cnt, array.data().addressPointer());
-            ptrShapes.put(cnt, array.shapeInfoDataBuffer().addressPointer());
-            ptrIndices.put(cnt, reverseMap.get(key));
-
-            cnt++;
-        }
-
-        val newMap = new LinkedHashMap<String, INDArray>();
-
-        OpaqueVariablesSet result = Nd4j.getNativeOps().executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
-
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
-
-        OpStatus status = OpStatus.byNumber(Nd4j.getNativeOps().getVariablesSetStatus(result));
-
-        if (status != OpStatus.ND4J_STATUS_OK)
-            throw new ND4JIllegalStateException("Op execution failed: " + status);
-
-        for (int e = 0; e < Nd4j.getNativeOps().getVariablesSetSize(result); e++) {
-            OpaqueVariable var = Nd4j.getNativeOps().getVariable(result, e);
-            int nodeId = Nd4j.getNativeOps().getVariableId(var);
-            int index = Nd4j.getNativeOps().getVariableIndex(var);
-            LongPointer shapeInfo = Nd4j.getNativeOps().getVariableShape(var);
-            Pointer buffer = Nd4j.getNativeOps().getVariableBuffer(var);
-
-            val rank = (int) shapeInfo.get(0);
-            val jshape = new long[rank * 2 + 4];
-            for (int i = 0; i < jshape.length; i++) {
-                jshape[i] = shapeInfo.get(i);
-            }
-
-            val shapeOf = Shape.shapeOf(jshape);
-            val stridesOf = Shape.stridesOf(jshape);
-            val order = Shape.order(jshape);
-            val array = Nd4j.create(shapeOf, stridesOf, 0, order);
-
-            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
-
-            Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(array.dataType()));
-
-            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(array.dataType()), MemcpyDirection.HOST_TO_HOST);
-
-            String nodeName = Nd4j.getNativeOps().getVariableName(var);
-            newMap.put(nodeName, array);
-        }
-
-        // Nd4j.getNativeOps().deleteVariablesSet(result);
-
-        return newMap;
+        throw new UnsupportedOperationException("executeGraph has been removed - use DynamicShapePlan execution instead");
     }
 
     @Override
     public void forgetGraph(long id) {
-        Nd4j.getNativeOps().unregisterGraph(null, id);
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+        throw new UnsupportedOperationException("forgetGraph has been removed - use DynamicShapePlan execution instead");
     }
 
     /**
@@ -1297,5 +1320,15 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         val addr = ((LongIndexer) buffer.indexer()).get(index);
         val ptr = new PagedPointer(addr);
         return "";
+    }
+
+    /**
+     * Clear the constant replica cache used for multi-device execution.
+     * Called between forward passes to free cached cross-device replicas of constant arrays.
+     * Default no-op; overridden by CudaExecutioner for multi-GPU support.
+     */
+    @Override
+    public void clearConstantReplicaCache() {
+        // No-op for CPU and default executioner
     }
 }

@@ -24,8 +24,10 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
@@ -51,6 +53,14 @@ public class PowBp extends BaseDynamicTransformOp {
     @Override
     public boolean isInplaceCall() {
         return false;
+    }
+
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        // PowBp produces 2 outputs (gradient for x and y).
+        // Parent BaseDynamicTransformOp returns only 1 shape.
+        // Return null to fall through to C++ shape function.
+        return null;
     }
 
     @Override

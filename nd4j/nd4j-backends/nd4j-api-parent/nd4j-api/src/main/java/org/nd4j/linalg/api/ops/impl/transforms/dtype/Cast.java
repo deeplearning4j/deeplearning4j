@@ -40,6 +40,12 @@ import org.tensorflow.framework.NodeDef;
 import java.lang.reflect.Field;
 import java.util.*;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
+
 public class Cast extends BaseDynamicTransformOp {
 
     private DataType typeDst;
@@ -73,15 +79,7 @@ public class Cast extends BaseDynamicTransformOp {
 
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
-        Map<String,Map<String,AttributeAdapter>> ret = new LinkedHashMap<>();
-        Map<String,AttributeAdapter> tfAdapters = new LinkedHashMap<>();
-
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
-
-        tfAdapters.put("typeDst", new DataTypeAdapter());
-
-        ret.put(tensorflowName(),tfAdapters);
-        return ret;
+       throw new RuntimeException();
     }
 
     @Override
@@ -137,5 +135,57 @@ public class Cast extends BaseDynamicTransformOp {
         //All scalar ops: output type is same as input type
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
         return Collections.singletonList(typeDst);
+    }
+
+    /**
+     * Cast output shape is same as input shape, just with different dtype.
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        INDArray input = null;
+        if (oc != null && oc.numInputArguments() >= 1) {
+            input = oc.getInputArray(0);
+        } else if (numInputArguments() >= 1) {
+            input = getInputArgument(0);
+        }
+        if (input == null) {
+            return null;
+        }
+
+        long[] outputShape = input.shape();
+
+        // Get target dtype from iArgs or field
+        DataType dtype = this.typeDst;
+        if (dtype == null) {
+            List<Long> iArgs = oc != null ? oc.getIArguments() : null;
+            if (iArgs != null && !iArgs.isEmpty()) {
+                dtype = FlatBuffersMapper.getDataTypeFromByte(iArgs.get(0).byteValue());
+            } else if (!this.iArguments.isEmpty()) {
+                dtype = FlatBuffersMapper.getDataTypeFromByte(this.iArguments.get(0).byteValue());
+            }
+        }
+        if (dtype == null) {
+            return null; // Fall back to C++
+        }
+
+        // For empty inputs: preserve the actual shape with the new dtype.
+        // rank-0 empty arrays have shape long[0] which may lose the empty bit in native
+        // round-trip, so use the canonical rank-1 empty descriptor only for that case.
+        // For higher-rank empty arrays (e.g. [1, 0, 2]), preserve the original shape.
+        if (input.isEmpty()) {
+            LongShapeDescriptor descriptor;
+            if (input.rank() == 0) {
+                descriptor = LongShapeDescriptor.empty(dtype);
+            } else {
+                descriptor = LongShapeDescriptor.emptyWithShape(outputShape, dtype);
+            }
+            DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+            return Collections.singletonList(shapeInfo);
+        }
+
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, false);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 }

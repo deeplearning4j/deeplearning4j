@@ -41,6 +41,17 @@ public class ReverseV2 extends DynamicCustomOp {
         iArguments.add(isLegacy ? 1L : 0L);
     }
 
+    /**
+     * Constructor for TF ReverseV2 with axis as second input
+     * @param sameDiff SameDiff instance
+     * @param input Input tensor to reverse
+     * @param axis Axis tensor specifying which dimensions to reverse
+     */
+    public ReverseV2(SameDiff sameDiff, SDVariable input, SDVariable axis) {
+        super(sameDiff, new SDVariable[]{input, axis});
+        iArguments.add(isLegacy ? 1L : 0L);
+    }
+
     @Override
     public String opName() {
         return "reverse_v2";
@@ -59,6 +70,24 @@ public class ReverseV2 extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
 
+    }
+
+    @Override
+    public void configureFromArguments() {
+        // Extract axis from second input variable
+        SDVariable[] args = args();
+        if (args != null && args.length >= 2) {
+            // Get axis values from the axis input variable
+            var axisArr = args[1].getArr();
+            if (axisArr != null) {
+                long[] axis = axisArr.toLongVector();
+                iArguments.clear();
+                for (long dim : axis) {
+                    iArguments.add(dim);
+                }
+                iArguments.add(isLegacy ? 1L : 0L);
+            }
+        }
     }
 
     @Override

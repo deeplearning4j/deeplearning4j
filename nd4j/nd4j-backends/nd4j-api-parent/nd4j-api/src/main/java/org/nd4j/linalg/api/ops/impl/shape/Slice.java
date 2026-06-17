@@ -120,4 +120,9 @@ public class Slice extends DynamicCustomOp {
         //Output type is same as input type. 3 inputs for import case
         return Collections.singletonList(dataTypes.get(0));
     }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

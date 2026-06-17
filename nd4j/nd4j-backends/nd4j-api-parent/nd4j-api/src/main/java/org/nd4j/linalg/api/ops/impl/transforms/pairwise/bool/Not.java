@@ -49,7 +49,7 @@ public class Not extends BaseTransformBoolOp {
 
     @Override
     public int opNum() {
-        return 10;
+        return 7;  // Index in TRANSFORM_BOOL_OPS (not SCALAR_BOOL_OPS which has Not at 10)
     }
 
     @Override

@@ -28,10 +28,15 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -341,5 +346,89 @@ public class Mmul extends DynamicCustomOp {
         Preconditions.checkState(dataTypes.get(0).isFPType() && dataTypes.get(1).isFPType(), "Inputs to mmul op must both be a floating" +
                 "point type: got %s", dataTypes);
         return Collections.singletonList(dataTypes.get(0));
+    }
+
+    /**
+     * Calculate matmul output shape directly from input arrays in Java, avoiding JNI overhead.
+     * For A[..., M, K] x B[..., K, N] -> output[..., M, N] with batch dimension broadcasting.
+     */
+    @Override
+    public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {
+        if (oc == null || oc.numInputArguments() < 2) {
+            return null;
+        }
+
+        INDArray a = oc.getInputArray(0);
+        INDArray b = oc.getInputArray(1);
+        if (a == null || b == null) {
+            return null;
+        }
+
+        long[] aShape = a.shape();
+        long[] bShape = b.shape();
+
+        if (aShape.length < 2 || bShape.length < 2) {
+            return null; // Fall back to C++ for edge cases
+        }
+
+        // Get transpose flags from iArgs
+        List<Long> iArgs = oc.getIArguments();
+        boolean transposeA = iArgs != null && iArgs.size() > 0 && iArgs.get(0) != 0;
+        boolean transposeB = iArgs != null && iArgs.size() > 1 && iArgs.get(1) != 0;
+        boolean transposeResult = iArgs != null && iArgs.size() > 2 && iArgs.get(2) != 0;
+
+        int aRank = aShape.length;
+        int bRank = bShape.length;
+
+        // Get M, K from A (after transpose if needed)
+        long aM = transposeA ? aShape[aRank - 1] : aShape[aRank - 2];
+        long aK = transposeA ? aShape[aRank - 2] : aShape[aRank - 1];
+
+        // Get K, N from B (after transpose if needed)
+        long bK = transposeB ? bShape[bRank - 1] : bShape[bRank - 2];
+        long bN = transposeB ? bShape[bRank - 2] : bShape[bRank - 1];
+
+        // K dimensions must match
+        if (aK != bK) {
+            return null; // Dimensions don't match - fall back to C++ for error handling
+        }
+
+        // Compute batch dimensions with broadcasting
+        int maxBatchRank = Math.max(aRank, bRank) - 2;
+        long[] outputShape = new long[maxBatchRank + 2];
+
+        // Broadcast batch dimensions (from the end, excluding last 2)
+        for (int i = 0; i < maxBatchRank; i++) {
+            int aIdx = aRank - 3 - i;
+            int bIdx = bRank - 3 - i;
+            long aDim = aIdx >= 0 ? aShape[aIdx] : 1;
+            long bDim = bIdx >= 0 ? bShape[bIdx] : 1;
+
+            if (aDim != bDim && aDim != 1 && bDim != 1) {
+                return null; // Not broadcastable - fall back to C++
+            }
+            outputShape[maxBatchRank - 1 - i] = Math.max(aDim, bDim);
+        }
+
+        // Set M and N dimensions
+        outputShape[maxBatchRank] = aM;
+        outputShape[maxBatchRank + 1] = bN;
+
+        // Apply result transpose if needed
+        if (transposeResult) {
+            long temp = outputShape[maxBatchRank];
+            outputShape[maxBatchRank] = outputShape[maxBatchRank + 1];
+            outputShape[maxBatchRank + 1] = temp;
+        }
+
+        DataType dtype = a.dataType();
+        long[] strides = Nd4j.getStrides(outputShape, 'c');
+        boolean isEmpty = false;
+        for (long dim : outputShape) {
+            if (dim == 0) { isEmpty = true; break; }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
+        return Collections.singletonList(shapeInfo);
     }
 }

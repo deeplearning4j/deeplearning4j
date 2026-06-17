@@ -118,9 +118,14 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
 
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
         if(oc.getInputArray(0) == null)
             return Collections.emptyList();
-        return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(oc.getInputArray(0).shape(), oc.getInputArray(0).dataType()).toShapeInfo()));
+        List<DataBuffer> ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(oc.getInputArray(0).shape(), oc.getInputArray(0).dataType()).toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
+        return ret;
     }
 
     @Override

@@ -45,8 +45,6 @@ public class Choice extends BaseRandomOp {
         Preconditions.checkArgument(source.dataType() == probabilities.dataType() && z.dataType() == source.dataType(), "Data types of all arguments should match");
         Preconditions.checkState(source.length() == probabilities.length(), "From & probabilities length mismatch: %s vs. %s",
                 source.length(), probabilities.length());
-        if (probabilities.elementWiseStride() < 1 || source.elementWiseStride() < 1)
-            throw new IllegalStateException("Source and probabilities should have element-wise stride >= 1");
         this.extraArgs = new Object[] {0.0};
     }
 

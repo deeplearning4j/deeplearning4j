@@ -82,9 +82,6 @@ public class GaussianDistribution extends BaseRandomOp {
         if (z.length() != means.length())
             throw new IllegalStateException("Result length should be equal to provided Means length");
 
-        if (means.elementWiseStride() < 1)
-            throw new IllegalStateException("Means array can't have negative EWS");
-
         this.mean = 0.0;
         this.stddev = stddev;
         this.z = z;

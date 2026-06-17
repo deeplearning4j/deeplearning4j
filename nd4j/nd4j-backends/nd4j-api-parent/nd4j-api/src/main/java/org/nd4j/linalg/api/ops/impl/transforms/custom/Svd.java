@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Svd extends DynamicCustomOp {
-    public static final int DEFAULT_SWITCHNUM = 16;
+    public static final int DEFAULT_SWITCHNUM = 128;
 
     private boolean fullUV;
     private boolean computeUv;
@@ -76,7 +76,6 @@ public class Svd extends DynamicCustomOp {
         this.fullUV = fullUV;
         this.switchNum = switchNum;
         addIArgument(ArrayUtil.fromBoolean(fullUV), ArrayUtil.fromBoolean(computeUV), switchNum);
-
     }
 
     @Override
