@@ -170,12 +170,7 @@ public class SDLayerParams implements Serializable {
         if (!first.keySet().equals(second.keySet())) {
             return false;
         }
-        for (Map.Entry<String, long[]> e : first.entrySet()) {
-            if (!Arrays.equals(e.getValue(), second.get(e.getKey()))) {
-                return false;
-            }
-        }
-        return true;
+        return first.entrySet().stream().allMatch(e -> Arrays.equals(e.getValue(), second.get(e.getKey())));
     }
 
     @Override

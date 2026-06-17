@@ -72,12 +72,9 @@ public class SeparableConvolution1D extends ConvolutionLayer {
             if (constraints == null) {
                 constraints = new ArrayList<>();
             }
-            for (LayerConstraint constraint : ((Builder) builder).pointWiseConstraints) {
-                LayerConstraint clonedConstraint = constraint.clone();
-                clonedConstraint.setParams(
-                        Collections.singleton(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY));
-                constraints.add(clonedConstraint);
-            }
+            ((Builder) builder).pointWiseConstraints.stream()
+                    .map(c -> { LayerConstraint c2 = c.clone(); c2.setParams(Collections.singleton(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY)); return c2; })
+                    .forEach(constraints::add);
         }
     }
 

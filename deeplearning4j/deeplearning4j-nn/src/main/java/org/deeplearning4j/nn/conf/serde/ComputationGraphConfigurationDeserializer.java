@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 public class ComputationGraphConfigurationDeserializer
@@ -65,16 +66,13 @@ public class ComputationGraphConfigurationDeserializer
         //Previously: enumerations and fields. Now: classes
         //Here, we manually create the appropriate Updater instances, if the IUpdater field is empty
 
-        List<Layer> layerList = new ArrayList<>();
         Map<String, GraphVertex> vertices = conf.getVertices();
-        for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
-            if (entry.getValue() instanceof LayerVertex) {
-                LayerVertex lv = (LayerVertex) entry.getValue();
-                layerList.add(lv.getLayerConf().getLayer());
-            }
-        }
+        List<Layer> layerList = vertices.values().stream()
+                .filter(v -> v instanceof LayerVertex)
+                .map(v -> ((LayerVertex) v).getLayerConf().getLayer())
+                .collect(Collectors.toList());
 
-        Layer[] layers = layerList.toArray(new Layer[layerList.size()]);
+        Layer[] layers = layerList.toArray(new Layer[0]);
         //Now, check if we need to manually handle IUpdater deserialization from legacy format
         boolean attemptIUpdaterFromLegacy = requiresIUpdaterFromLegacy(layers);
         boolean requireLegacyRegularizationHandling = requiresRegularizationFromLegacy(layers);

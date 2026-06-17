@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class CheckpointListener extends BaseListener implements Serializable {
@@ -308,14 +309,11 @@ public class CheckpointListener extends BaseListener implements Serializable {
             throw new RuntimeException("Error loading checkpoint data from file: " + checkpointRecordFile.getAbsolutePath(), e);
         }
 
-        List<Checkpoint> out = new ArrayList<>(lines.size()-1); //Assume first line is header
-        for( int i=1; i<lines.size(); i++ ){
-            Checkpoint c = Checkpoint.fromFileString(lines.get(i));
-            if(new File(directory, c.getFilename()).exists()){
-                out.add(c);
-            }
-        }
-        return out;
+        // Assume first line is header — skip index 0
+        return lines.subList(1, lines.size()).stream()
+                .map(Checkpoint::fromFileString)
+                .filter(c -> new File(directory, c.getFilename()).exists())
+                .collect(Collectors.toList());
     }
 
     /**
@@ -374,11 +372,10 @@ public class CheckpointListener extends BaseListener implements Serializable {
 
         File[] allFiles = rootDir.listFiles();
         if(allFiles != null){
-            for(File f : allFiles){
-                if(f.getAbsolutePath().contains(contains)){
-                    return f;
-                }
-            }
+            return Arrays.stream(allFiles)
+                    .filter(f -> f.getAbsolutePath().contains(contains))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Model file for checkpoint " + checkpointNum + " does not exist"));
         }
 
         throw new IllegalStateException("Model file for checkpoint " + checkpointNum + " does not exist");
