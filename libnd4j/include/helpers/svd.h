@@ -60,7 +60,6 @@ class SVD {
 
   void deflation(int col1, int col2, int ind, int row1W, int col1W, int shift);
 
-  // FIXME: proper T support required here
   T secularEq(const T diff, NDArray& col0, NDArray& diag, NDArray permut, NDArray& diagShifted,
               const T shift);
 
