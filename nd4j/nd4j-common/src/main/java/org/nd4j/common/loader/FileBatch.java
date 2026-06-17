@@ -279,7 +279,9 @@ public class FileBatch implements Serializable {
      * @throws IOException If an error occurs during writing
      */
     public void writeAsZip(File f) throws IOException {
-        writeAsZip(new FileOutputStream(f));
+        try (FileOutputStream fos = new FileOutputStream(f)) {
+            writeAsZip(fos);
+        }
     }
 
     /**
