@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,22 +44,17 @@ public class TrainingUtils {
      */
     public static Map<String, INDArray> stackOutputs(List<Map<String, INDArray>> outputs){
         Map<String, List<INDArray>> outs = new HashMap<>();
-        for(Map<String, INDArray> batch : outputs){
-            for(String k : batch.keySet()){
-                if(!outs.containsKey(k))
-                    outs.put(k, new ArrayList<INDArray>());
-                outs.get(k).add(batch.get(k));
-            }
-        }
+        outputs.forEach(batch -> batch.forEach(
+                (k, v) -> outs.computeIfAbsent(k, key -> new ArrayList<>()).add(v)));
 
         Map<String, INDArray> ret = new HashMap<>();
-        for(String k : outs.keySet()){
+        outs.forEach((k, v) -> {
             try {
-                ret.put(k, Nd4j.concat(0, outs.get(k).toArray(new INDArray[0])));
+                ret.put(k, Nd4j.concat(0, v.toArray(new INDArray[0])));
             } catch(Exception e){
                 throw new ND4JException("Error concatenating batch outputs", e);
             }
-        }
+        });
         return ret;
     }
 
@@ -66,10 +62,8 @@ public class TrainingUtils {
      * Get a list of batch outputs for a single variable from a list of batch outputs for all variables
      */
     public static List<INDArray> getSingleOutput(List<Map<String, INDArray>> outputs, String output){
-        List<INDArray> batches = new ArrayList<>();
-        for(Map<String, INDArray> batch : outputs)
-            batches.add(batch.get(output));
-
-        return batches;
+        return outputs.stream()
+                .map(batch -> batch.get(output))
+                .collect(Collectors.toList());
     }
 }
