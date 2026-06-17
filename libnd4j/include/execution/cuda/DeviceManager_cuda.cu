@@ -37,6 +37,10 @@ void DeviceManager::discoverCudaDevices() {
         return;
     }
 
+    // Save current device to restore after enumeration
+    int savedDevice = -1;
+    cudaGetDevice(&savedDevice);
+
     for (int i = 0; i < deviceCount; ++i) {
         cudaDeviceProp props;
         err = cudaGetDeviceProperties(&props, i);
@@ -74,10 +78,8 @@ void DeviceManager::discoverCudaDevices() {
         _devicesByType[DeviceType::CUDA_GPU].push_back(gpuInfo.globalIndex);
     }
 
-    // Reset to device 0
-    if (deviceCount > 0) {
-        cudaSetDevice(0);
-    }
+    // Restore the device that was active before enumeration
+    cudaSetDevice(savedDevice);
 }
 
 void DeviceManager::initializeP2PConnections() {

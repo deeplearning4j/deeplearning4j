@@ -112,8 +112,10 @@ CudaMemoryPool::CudaMemoryPool() {
     int64_t limitMB = Environment::getInstance().cudaPinnedHostLimit();
     size_t limit = static_cast<size_t>(limitMB) * 1024ULL * 1024ULL;
     pinnedHostBytesLimit_.store(limit);
-    sd_printf("CudaMemoryPool: Pinned host memory limit: %zu bytes (%.1f GB)\n",
-              limit, limit / (1024.0 * 1024.0 * 1024.0));
+    if (sd::Environment::getInstance().isVerbose()) {
+      sd_printf("CudaMemoryPool: Pinned host memory limit: %zu bytes (%.1f GB)\n",
+                limit, limit / (1024.0 * 1024.0 * 1024.0));
+    }
 
     // Initialize proactive soft-limit from Environment.
     // Configurable via SD_CUDA_SOFT_LIMIT_PERCENT env var or
@@ -166,7 +168,7 @@ void CudaMemoryPool::initializePeerAccess() {
         cudaError_t err = cudaDeviceEnablePeerAccess(j, 0);
         if (err == cudaSuccess || err == cudaErrorPeerAccessAlreadyEnabled) {
           peerAccessEnabled_[i][j] = true;
-          sd_printf("CudaMemoryPool: Enabled peer access from device %d to device %d\n", i, j);
+          sd_debug("CudaMemoryPool: Enabled peer access from device %d to device %d\n", i, j);
         } else {
           cudaGetLastError();  // clear error
           sd_debug("CudaMemoryPool: Failed to enable peer access from device %d to device %d\n", i, j);
@@ -257,7 +259,7 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
   if (err != cudaSuccess) {
     sd_debug("Warning: Could not set pool release threshold: %s\n", cudaGetErrorString(err), "");
   } else {
-    sd_printf("CudaMemoryPool: Device %d pool release threshold set to %zu MB (75%% of %zu MB total)\n",
+    sd_debug("CudaMemoryPool: Device %d pool release threshold set to %zu MB (75%% of %zu MB total)\n",
               deviceId, threshold / (1024*1024), devTotal / (1024*1024));
   }
 
@@ -632,7 +634,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     void* ptr = nullptr;
     cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
     if (err == cudaSuccess && ptr != nullptr) {
-      sd_printf("CudaMemoryPool::allocateFailover: Succeeded via pool after trim on device %d\n", currentDeviceId);
+      sd_debug("CudaMemoryPool::allocateFailover: Succeeded via pool after trim on device %d\n", currentDeviceId);
       if (actualDeviceId) *actualDeviceId = currentDeviceId;
       if (retryNeedRestore) cudaSetDevice(retryPrevDev);
       return ptr;
@@ -642,7 +644,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     // Also try cudaMalloc (uses driver-level free memory released by trim)
     err = cudaMalloc(&ptr, size);
     if (err == cudaSuccess && ptr != nullptr) {
-      sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc after trim on device %d\n", currentDeviceId);
+      sd_debug("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc after trim on device %d\n", currentDeviceId);
       // Track as direct allocation so free() uses cudaFree instead of cudaFreeAsync.
       // Without this, cudaFreeAsync feeds non-pool memory into the pool, corrupting
       // pool state and causing the pool to stagnate (stuck at fixed used/reserved).
@@ -726,7 +728,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     if (memoryPressureCallback_) {
       allowAllocation = memoryPressureCallback_(event);
       if (!allowAllocation) {
-        sd_printf("CudaMemoryPool::allocateFailover: Callback rejected allocation on device %d\n", currentDeviceId);
+        sd_debug("CudaMemoryPool::allocateFailover: Callback rejected allocation on device %d\n", currentDeviceId);
         cudaSetDevice(prevDev);
         return nullptr;
       }
@@ -736,7 +738,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   for (const auto& candidate : candidates) {
     int d = candidate.id;
     bool isPeer = candidate.isPeer;
-    sd_printf("CudaMemoryPool::allocateFailover: Trying device %d (%s, free: %zu MB) for %zu bytes\n",
+    sd_debug("CudaMemoryPool::allocateFailover: Trying device %d (%s, free: %zu MB) for %zu bytes\n",
               d, isPeer ? "peer" : "non-peer/managed", candidate.freeMem / (1024*1024), size);
     cudaError_t setDeviceErr = cudaSetDevice(d);
     if (setDeviceErr != cudaSuccess) {
@@ -750,7 +752,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
       if (supported_ && poolInitialized_[d]) {
         cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
         if (err == cudaSuccess && ptr != nullptr) {
-          sd_printf("CudaMemoryPool::allocateFailover: Succeeded via pool on peer device %d for %zu bytes\n", d, size);
+          sd_debug("CudaMemoryPool::allocateFailover: Succeeded via pool on peer device %d for %zu bytes\n", d, size);
           if (actualDeviceId) *actualDeviceId = d;
           cudaSetDevice(prevDev);
           return ptr;
@@ -761,7 +763,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
 
       cudaError_t err = cudaMalloc(&ptr, size);
       if (err == cudaSuccess && ptr != nullptr) {
-        sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc on peer device %d for %zu bytes\n", d, size);
+        sd_debug("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc on peer device %d for %zu bytes\n", d, size);
         registerDirectAllocation(ptr, size);
         if (actualDeviceId) *actualDeviceId = d;
         cudaSetDevice(prevDev);
@@ -792,7 +794,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
         // Prefetch to currentDeviceId so pages are resident before kernel launch.
         // Use nullptr stream (default) to avoid LaunchContext recursion.
         cudaMemPrefetchAsync(ptr, size, currentDeviceId, nullptr);
-        sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMallocManaged "
+        sd_debug("CudaMemoryPool::allocateFailover: Succeeded via cudaMallocManaged "
                   "(backed by device %d, prefetched to device %d) for %zu bytes\n",
                   d, currentDeviceId, size);
         registerDirectAllocation(ptr, size);
@@ -854,7 +856,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
       hostAllocations_[ptr] = size;
     }
     pinnedHostBytesUsed_.fetch_add(size);
-    sd_printf("CudaMemoryPool::allocateFailover: Pinned host fallback succeeded for %zu bytes (ptr=%p, total pinned: %zu)\n", size, ptr, pinnedHostBytesUsed_.load());
+    sd_debug("CudaMemoryPool::allocateFailover: Pinned host fallback succeeded for %zu bytes (ptr=%p, total pinned: %zu)\n", size, ptr, pinnedHostBytesUsed_.load());
     return ptr;
   }
 
@@ -1422,19 +1424,19 @@ void CudaMemoryPool::releaseAll() {
 void CudaMemoryPool::addExcludedFailoverDevice(int deviceId) {
   std::lock_guard<std::mutex> lock(exclusionMutex_);
   excludedFailoverDevices_.insert(deviceId);
-  sd_printf("CudaMemoryPool: Device %d added to failover exclusion list\n", deviceId);
+  sd_debug("CudaMemoryPool: Device %d added to failover exclusion list\n", deviceId);
 }
 
 void CudaMemoryPool::removeExcludedFailoverDevice(int deviceId) {
   std::lock_guard<std::mutex> lock(exclusionMutex_);
   excludedFailoverDevices_.erase(deviceId);
-  sd_printf("CudaMemoryPool: Device %d removed from failover exclusion list\n", deviceId);
+  sd_debug("CudaMemoryPool: Device %d removed from failover exclusion list\n", deviceId);
 }
 
 void CudaMemoryPool::clearExcludedFailoverDevices() {
   std::lock_guard<std::mutex> lock(exclusionMutex_);
   excludedFailoverDevices_.clear();
-  sd_printf("CudaMemoryPool: Failover exclusion list cleared\n", "");
+  sd_debug("CudaMemoryPool: Failover exclusion list cleared\n", "");
 }
 
 bool CudaMemoryPool::isDeviceExcludedFromFailover(int deviceId) const {
