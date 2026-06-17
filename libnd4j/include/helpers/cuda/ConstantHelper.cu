@@ -356,30 +356,12 @@ LongType ConstantHelper::getCachedAmount(int deviceId) {
     return _counters[deviceId];
 }
 
-// Explicit template instantiations for SpecialTypeConverter::convertGeneric
-// BUILD_DOUBLE_SELECTOR expands to call these with (DOUBLE, SD_COMMON_TYPES) and (INT64, SD_COMMON_TYPES)
-#define INSTANTIATE_CONVERT(FIXED_TYPE, SECOND_TYPE) \
-  template void SpecialTypeConverter::convertGeneric<FIXED_TYPE, SECOND_TYPE>(sd::Pointer*, void*, sd::LongType, void*);
+BUILD_DOUBLE_TEMPLATE(template void SpecialTypeConverter::convertGeneric,
+                      (sd::Pointer*, void*, sd::LongType, void*),
+                      (DOUBLE, double), SD_COMMON_TYPES);
 
-#define INSTANTIATE_CONVERT_ALL(FIXED_TYPE) \
-  INSTANTIATE_CONVERT(FIXED_TYPE, bool)     \
-  INSTANTIATE_CONVERT(FIXED_TYPE, float16)  \
-  INSTANTIATE_CONVERT(FIXED_TYPE, bfloat16) \
-  INSTANTIATE_CONVERT(FIXED_TYPE, float)    \
-  INSTANTIATE_CONVERT(FIXED_TYPE, double)   \
-  INSTANTIATE_CONVERT(FIXED_TYPE, int8_t)   \
-  INSTANTIATE_CONVERT(FIXED_TYPE, uint8_t)  \
-  INSTANTIATE_CONVERT(FIXED_TYPE, int16_t)  \
-  INSTANTIATE_CONVERT(FIXED_TYPE, int32_t)  \
-  INSTANTIATE_CONVERT(FIXED_TYPE, sd::LongType) \
-  INSTANTIATE_CONVERT(FIXED_TYPE, uint16_t) \
-  INSTANTIATE_CONVERT(FIXED_TYPE, uint32_t) \
-  INSTANTIATE_CONVERT(FIXED_TYPE, uint64_t)
-
-INSTANTIATE_CONVERT_ALL(double)
-INSTANTIATE_CONVERT_ALL(LongType)
-
-#undef INSTANTIATE_CONVERT
-#undef INSTANTIATE_CONVERT_ALL
+BUILD_DOUBLE_TEMPLATE(template void SpecialTypeConverter::convertGeneric,
+                      (sd::Pointer*, void*, sd::LongType, void*),
+                      (INT64, LongType), SD_COMMON_TYPES);
 
 }  // namespace sd

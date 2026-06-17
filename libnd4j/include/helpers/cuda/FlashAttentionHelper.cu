@@ -719,16 +719,33 @@ void launchFusedAttention3DWithScores(
  DebugHelper::checkGlobalErrorCode("fusedAttention3DWithScores failed");
 }
 
-// Explicit instantiations for with-scores variant
-#define INSTANTIATE_FUSED_ATTN_SCORES(T) \
-  template void launchFusedAttention3DWithScores<T>( \
-     const T*, const T*, const T*, T*, T*, T*, \
-     LongType, LongType, LongType, LongType, float, bool, cudaStream_t);
+//////////////////////////////////////////////////////////////////////////////
+// Void*-based launcher wrapper for 3D fused attention with scores output
+// (follows applyCausalMaskInPlaceLauncher / fusedGQADecodeLauncher pattern)
+//////////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void fusedAttention3DWithScoresLauncher(
+   const void* vQuery, const void* vKey, const void* vValue,
+   void* vOutput, void* vLogits, void* vScores,
+   LongType batch, LongType seqQ, LongType seqKV, LongType dim,
+   float scale, bool isCausal, cudaStream_t stream) {
 
-INSTANTIATE_FUSED_ATTN_SCORES(float)
-INSTANTIATE_FUSED_ATTN_SCORES(double)
-INSTANTIATE_FUSED_ATTN_SCORES(float16)
-#undef INSTANTIATE_FUSED_ATTN_SCORES
+ launchFusedAttention3DWithScores<T>(
+     reinterpret_cast<const T*>(vQuery),
+     reinterpret_cast<const T*>(vKey),
+     reinterpret_cast<const T*>(vValue),
+     reinterpret_cast<T*>(vOutput),
+     reinterpret_cast<T*>(vLogits),
+     reinterpret_cast<T*>(vScores),
+     batch, seqQ, seqKV, dim, scale, isCausal, stream);
+}
+
+BUILD_SINGLE_TEMPLATE(void fusedAttention3DWithScoresLauncher,
+                      (const void*, const void*, const void*,
+                       void*, void*, void*,
+                       LongType, LongType, LongType, LongType,
+                       float, bool, cudaStream_t),
+                      SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////////
 // Launcher for 3D fused attention with optional attention bias
@@ -774,17 +791,36 @@ void launchFusedAttention3D(
  DebugHelper::checkGlobalErrorCode("fusedAttention3D failed");
 }
 
-// Explicit instantiations
-#define INSTANTIATE_FUSED_ATTN_3D(T) \
-  template void launchFusedAttention3D<T>( \
-     const T*, const T*, const T*, const T*, T*, \
-     LongType, LongType, LongType, LongType, float, bool, \
-     int, LongType, LongType, LongType, cudaStream_t);
+//////////////////////////////////////////////////////////////////////////////
+// Void*-based launcher wrapper for 3D fused attention with bias
+//////////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void fusedAttention3DLauncher(
+   const void* vQuery, const void* vKey, const void* vValue,
+   const void* vAttnBias, void* vOutput,
+   LongType batch, LongType seqQ, LongType seqKV, LongType dim,
+   float scale, bool isCausal,
+   int biasRank, LongType biasStride0, LongType biasStride1, LongType biasStride2,
+   cudaStream_t stream) {
 
-INSTANTIATE_FUSED_ATTN_3D(float)
-INSTANTIATE_FUSED_ATTN_3D(double)
-INSTANTIATE_FUSED_ATTN_3D(float16)
-#undef INSTANTIATE_FUSED_ATTN_3D
+ launchFusedAttention3D<T>(
+     reinterpret_cast<const T*>(vQuery),
+     reinterpret_cast<const T*>(vKey),
+     reinterpret_cast<const T*>(vValue),
+     reinterpret_cast<const T*>(vAttnBias),
+     reinterpret_cast<T*>(vOutput),
+     batch, seqQ, seqKV, dim, scale, isCausal,
+     biasRank, biasStride0, biasStride1, biasStride2, stream);
+}
+
+BUILD_SINGLE_TEMPLATE(void fusedAttention3DLauncher,
+                      (const void*, const void*, const void*,
+                       const void*, void*,
+                       LongType, LongType, LongType, LongType,
+                       float, bool,
+                       int, LongType, LongType, LongType,
+                       cudaStream_t),
+                      SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////////
 // Public interface - called from FlashAttentionHelper
@@ -836,29 +872,13 @@ void fusedAttentionCuda(
    NDArray::prepareSpecialUse({output}, {query, key, value});
  }
 
- auto dtype = query->dataType();
-
- auto dispatchAttention = [&](auto dummy) {
-   using T = decltype(dummy);
-   launchFusedAttention3D<T>(
-       reinterpret_cast<const T*>(query->specialBuffer()),
-       reinterpret_cast<const T*>(key->specialBuffer()),
-       reinterpret_cast<const T*>(value->specialBuffer()),
-       reinterpret_cast<const T*>(biasPtr),
-       reinterpret_cast<T*>(output->specialBuffer()),
-       batch, seqQ, seqKV, dim, scale, isCausal,
-       biasRank, biasStride0, biasStride1, biasStride2, *stream);
- };
-
- if (dtype == DataType::FLOAT32) {
-   dispatchAttention(float{});
- } else if (dtype == DataType::DOUBLE) {
-   dispatchAttention(double{});
- } else if (dtype == DataType::HALF) {
-   dispatchAttention(float16{});
- } else {
-   THROW_EXCEPTION("fusedAttentionCuda: Unsupported data type");
- }
+ BUILD_SINGLE_SELECTOR(query->dataType(), fusedAttention3DLauncher,
+                       (query->specialBuffer(), key->specialBuffer(),
+                        value->specialBuffer(), biasPtr,
+                        output->specialBuffer(),
+                        batch, seqQ, seqKV, dim, scale, isCausal,
+                        biasRank, biasStride0, biasStride1, biasStride2, *stream),
+                       SD_FLOAT_TYPES);
 
  if (attentionBias != nullptr && !attentionBias->isEmpty()) {
    NDArray::registerSpecialUse({output}, {query, key, value, attentionBias});
@@ -1221,33 +1241,16 @@ void fusedAttentionCudaWithScores(
  if (attentionScores != nullptr) outputs.push_back(attentionScores);
  NDArray::prepareSpecialUse(outputs, {query, key, value});
 
- auto dtype = query->dataType();
-
  // Get raw pointers (nullptr if array is null)
  void* logitsPtr = attentionLogits != nullptr ? attentionLogits->specialBuffer() : nullptr;
  void* scoresPtr = attentionScores != nullptr ? attentionScores->specialBuffer() : nullptr;
 
- auto dispatchScores = [&](auto dummy) {
-   using T = decltype(dummy);
-   launchFusedAttention3DWithScores<T>(
-       reinterpret_cast<const T*>(query->specialBuffer()),
-       reinterpret_cast<const T*>(key->specialBuffer()),
-       reinterpret_cast<const T*>(value->specialBuffer()),
-       reinterpret_cast<T*>(output->specialBuffer()),
-       reinterpret_cast<T*>(logitsPtr),
-       reinterpret_cast<T*>(scoresPtr),
-       batch, seqQ, seqKV, dim, scale, isCausal, *stream);
- };
-
- if (dtype == DataType::FLOAT32) {
-   dispatchScores(float{});
- } else if (dtype == DataType::DOUBLE) {
-   dispatchScores(double{});
- } else if (dtype == DataType::HALF) {
-   dispatchScores(float16{});
- } else {
-   THROW_EXCEPTION("fusedAttentionCudaWithScores: Unsupported data type");
- }
+ BUILD_SINGLE_SELECTOR(query->dataType(), fusedAttention3DWithScoresLauncher,
+                       (query->specialBuffer(), key->specialBuffer(),
+                        value->specialBuffer(),
+                        output->specialBuffer(), logitsPtr, scoresPtr,
+                        batch, seqQ, seqKV, dim, scale, isCausal, *stream),
+                       SD_FLOAT_TYPES);
 
  NDArray::registerSpecialUse(outputs, {query, key, value});
 }
