@@ -276,150 +276,189 @@ public class TrainingSession extends InferenceSession {
         // Until OpTraitTable is fixed, use Java-side updaters (applyUpdatersPostDsp path).
         List<String> effectiveOutputVars = outputVars;
 
-        // Build allRequired set (same as output() does)
-        Set<String> allRequired = new LinkedHashSet<>(effectiveOutputVars);
-        allRequired.addAll(requiredActivations);
+        ForwardExecutionDAG dag = buildDspDag(effectiveOutputVars, requiredActivations);
+        Set<String> dspAllRequired = buildDspAllRequired(dag, effectiveOutputVars, requiredActivations);
 
-        // Get or build DAG
-        final List<String> finalEffectiveOutputVars = effectiveOutputVars;
-        ForwardExecutionDAG dag = dagCache.getOrCompute(allRequired, () -> {
-            ForwardExecutionDAGBuilder builder = new ForwardExecutionDAGBuilder(sameDiff);
-            return builder.buildForwardDAG(allRequired);
-        });
-
-        // When listeners are active, augment allRequired with all op output variables so that
-        // the DSP plan returns intermediate arrays needed for per-op listener callbacks.
-        // This mirrors the augmentation done in InferenceSession.output() for the inference path.
-        Set<String> dspAllRequired = allRequired;
-        if (this.listeners != null && !this.listeners.isEmpty()) {
-            dspAllRequired = new LinkedHashSet<>(allRequired);
-            for (ExecutionNode node : dag.getExecutionOrder()) {
-                if (node.getNodeType() == ExecutionNode.ExecutionNodeType.STANDARD_OP
-                        || node.getNodeType() == ExecutionNode.ExecutionNodeType.MULTI_OUTPUT_OP) {
-                    List<String> nodeOutputs = node.getOutputVariables();
-                    if (nodeOutputs != null) {
-                        dspAllRequired.addAll(nodeOutputs);
-                    }
-                }
-            }
-        }
-        final Set<String> finalDspAllRequired = dspAllRequired;
-
-        // Enter memory manager scope
         getMmgr().scopeIn();
         try {
-            // Lightweight placeholder type casting
             Map<String, INDArray> dspPlaceholders = castPlaceholderTypes(placeholders);
             preparePlanForTrainingShapes(dspPlaceholders);
 
             // Execute via DSP — returns null if DSP is unavailable (not compiled, control flow, etc.)
             Map<String, SDValue> results = executeDynamicShapePlanBased(
-                    dag, dspPlaceholders, finalDspAllRequired, finalEffectiveOutputVars);
+                    dag, dspPlaceholders, dspAllRequired, effectiveOutputVars);
             if (results == null) {
                 return false;
             }
 
-            // Extract loss values from results
-            log.debug("DSP results keys: {}", results.keySet());
-            log.debug("Loss vars to extract: {}", lossVarsToLossIdx.keySet());
-            for (Map.Entry<String, Integer> entry : lossVarsToLossIdx.entrySet()) {
-                SDValue val = results.get(entry.getKey());
-                if (val != null && val.getTensorValue() != null) {
-                    INDArray arr = val.getTensorValue();
-                    double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
-                    currIterLoss[entry.getValue()] += l;
-                    log.debug("DSP loss '{}' = {}", entry.getKey(), l);
-                } else {
-                    log.warn("DSP loss variable '{}' not found in results (val={})", entry.getKey(), val);
-                }
-            }
-
-            // Fire per-op listener callbacks (preOpExecution, opExecution, activationAvailable)
-            // for each op in the DAG execution order. DSP executes the entire plan natively as
-            // a single unit — listeners must be fired post-execution to match the standard path.
-            // This is the same pattern as InferenceSession.output()'s DSP callback loop.
-            if (this.listeners != null && !this.listeners.isEmpty() && at != null && at.operation() != null) {
-                List<ExecutionNode> execOrder = dag.getExecutionOrder();
-                for (ExecutionNode node : execOrder) {
-                    if (node.getNodeType() != ExecutionNode.ExecutionNodeType.STANDARD_OP
-                            && node.getNodeType() != ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP
-                            && node.getNodeType() != ExecutionNode.ExecutionNodeType.MULTI_OUTPUT_OP) {
-                        continue;
-                    }
-                    SameDiffOp sdOp = sameDiff.getOps().get(node.getOperationName());
-                    if (sdOp == null) {
-                        continue;
-                    }
-                    List<String> outVars = node.getOutputVariables();
-                    INDArray[] outputArrays = new INDArray[outVars != null ? outVars.size() : 0];
-                    if (outVars != null) {
-                        for (int oi = 0; oi < outVars.size(); oi++) {
-                            SDValue val = results.get(outVars.get(oi));
-                            if (val != null && val.getSdValueType() == SDValueType.TENSOR) {
-                                outputArrays[oi] = val.getTensorValue();
-                            }
-                        }
-                    }
-                    for (Listener l : this.listeners) {
-                        if (l.isActive(at.operation())) {
-                            l.preOpExecution(sameDiff, at, sdOp, null);
-                            l.opExecution(sameDiff, at, batch, sdOp, null, outputArrays);
-                            if (outVars != null) {
-                                for (int oi = 0; oi < outVars.size(); oi++) {
-                                    if (outputArrays[oi] != null) {
-                                        l.activationAvailable(sameDiff, at, batch, sdOp, outVars.get(oi), outputArrays[oi]);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Fire activationAvailable for train evaluation variables so that listeners
-            // (e.g. HistoryListener via BaseEvaluationListener) can call Evaluation.eval().
-            // The standard slot-by-slot path fires these callbacks per-op, but DSP executes
-            // the entire plan natively and never enters the per-op callback loop.
-            if (this.listeners != null && config.getTrainEvaluations() != null && !config.getTrainEvaluations().isEmpty()) {
-                for (String varName : config.getTrainEvaluations().keySet()) {
-                    SDValue val = results.get(varName);
-                    if (val != null && val.getTensorValue() != null) {
-                        INDArray activation = val.getTensorValue();
-                        for (Listener l : this.listeners) {
-                            if (l.isActive(at.operation())) {
-                                l.activationAvailable(sameDiff, at, batch, null, varName, activation);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Apply updaters post-execution using Java-side GradientUpdater.
-            // Updater fusion (running updater ops inside the C++ plan) is disabled — see above.
+            extractDspLossValues(results);
+            fireDspListenerCallbacks(dag, results, batch, at);
+            fireDspEvalListenerCallbacks(results, batch, at);
             applyUpdatersPostDsp(results, at);
-
-            // DSP post-exec: commit + trim
-            dspStepCount++;
-            DynamicShapePlanExecutor dspExec = dynamicShapePlanExecutorTl.get();
-            boolean frozen = dspExec != null && dspExec.isShapesFrozen();
-
-            if (!frozen || dspStepCount <= 2) {
-                Nd4j.getExecutioner().commit();
-                NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
-                        DeviceMemoryManager.getInstance().getCurrentDeviceId(), null);
-            } else if (dspStepCount % TRIM_INTERVAL == 0) {
-                Nd4j.getExecutioner().commit();
-                NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
-                        DeviceMemoryManager.getInstance().getCurrentDeviceId(), null);
-            }
-
-            // Manage shape freezing for subsequent iterations
+            commitAndTrimAfterDspStep();
             manageShapeFreezing(placeholders);
 
             log.debug("DSP training iteration completed successfully");
             return true;
         } finally {
             getMmgr().scopeOut();
+        }
+    }
+
+    /**
+     * Build (or retrieve from cache) the ForwardExecutionDAG for the given required variables.
+     */
+    private ForwardExecutionDAG buildDspDag(List<String> effectiveOutputVars,
+                                            Set<String> requiredActivations) {
+        Set<String> allRequired = new LinkedHashSet<>(effectiveOutputVars);
+        allRequired.addAll(requiredActivations);
+        return dagCache.getOrCompute(allRequired, () -> {
+            ForwardExecutionDAGBuilder builder = new ForwardExecutionDAGBuilder(sameDiff);
+            return builder.buildForwardDAG(allRequired);
+        });
+    }
+
+    /**
+     * Build the full set of required variable names for DSP execution.
+     * When listeners are active, augments the base set with all op output variables so the
+     * DSP plan returns intermediate arrays needed for per-op listener callbacks.
+     * This mirrors the augmentation done in InferenceSession.output() for the inference path.
+     */
+    private Set<String> buildDspAllRequired(ForwardExecutionDAG dag,
+                                            List<String> effectiveOutputVars,
+                                            Set<String> requiredActivations) {
+        Set<String> allRequired = new LinkedHashSet<>(effectiveOutputVars);
+        allRequired.addAll(requiredActivations);
+        if (this.listeners == null || this.listeners.isEmpty()) {
+            return allRequired;
+        }
+        Set<String> dspAllRequired = new LinkedHashSet<>(allRequired);
+        for (ExecutionNode node : dag.getExecutionOrder()) {
+            if (node.getNodeType() == ExecutionNode.ExecutionNodeType.STANDARD_OP
+                    || node.getNodeType() == ExecutionNode.ExecutionNodeType.MULTI_OUTPUT_OP) {
+                List<String> nodeOutputs = node.getOutputVariables();
+                if (nodeOutputs != null) {
+                    dspAllRequired.addAll(nodeOutputs);
+                }
+            }
+        }
+        return dspAllRequired;
+    }
+
+    /**
+     * Extract loss values from DSP execution results into {@code currIterLoss}.
+     */
+    private void extractDspLossValues(Map<String, SDValue> results) {
+        log.debug("DSP results keys: {}", results.keySet());
+        log.debug("Loss vars to extract: {}", lossVarsToLossIdx.keySet());
+        for (Map.Entry<String, Integer> entry : lossVarsToLossIdx.entrySet()) {
+            SDValue val = results.get(entry.getKey());
+            if (val != null && val.getTensorValue() != null) {
+                INDArray arr = val.getTensorValue();
+                double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
+                currIterLoss[entry.getValue()] += l;
+                log.debug("DSP loss '{}' = {}", entry.getKey(), l);
+            } else {
+                log.warn("DSP loss variable '{}' not found in results (val={})", entry.getKey(), val);
+            }
+        }
+    }
+
+    /**
+     * Fire per-op listener callbacks (preOpExecution, opExecution, activationAvailable)
+     * for each op in the DAG execution order.
+     *
+     * <p>DSP executes the entire plan natively as a single unit — listeners must be fired
+     * post-execution to match the standard path. This mirrors InferenceSession.output()'s
+     * DSP callback loop.</p>
+     */
+    private void fireDspListenerCallbacks(ForwardExecutionDAG dag,
+                                          Map<String, SDValue> results,
+                                          MultiDataSet batch,
+                                          At at) {
+        if (this.listeners == null || this.listeners.isEmpty()
+                || at == null || at.operation() == null) {
+            return;
+        }
+        for (ExecutionNode node : dag.getExecutionOrder()) {
+            if (node.getNodeType() != ExecutionNode.ExecutionNodeType.STANDARD_OP
+                    && node.getNodeType() != ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP
+                    && node.getNodeType() != ExecutionNode.ExecutionNodeType.MULTI_OUTPUT_OP) {
+                continue;
+            }
+            SameDiffOp sdOp = sameDiff.getOps().get(node.getOperationName());
+            if (sdOp == null) {
+                continue;
+            }
+            List<String> outVars = node.getOutputVariables();
+            INDArray[] outputArrays = new INDArray[outVars != null ? outVars.size() : 0];
+            if (outVars != null) {
+                for (int oi = 0; oi < outVars.size(); oi++) {
+                    SDValue val = results.get(outVars.get(oi));
+                    if (val != null && val.getSdValueType() == SDValueType.TENSOR) {
+                        outputArrays[oi] = val.getTensorValue();
+                    }
+                }
+            }
+            for (Listener l : this.listeners) {
+                if (l.isActive(at.operation())) {
+                    l.preOpExecution(sameDiff, at, sdOp, null);
+                    l.opExecution(sameDiff, at, batch, sdOp, null, outputArrays);
+                    if (outVars != null) {
+                        for (int oi = 0; oi < outVars.size(); oi++) {
+                            if (outputArrays[oi] != null) {
+                                l.activationAvailable(sameDiff, at, batch, sdOp, outVars.get(oi), outputArrays[oi]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Fire activationAvailable callbacks for train evaluation variables.
+     *
+     * <p>The standard slot-by-slot path fires these callbacks per-op, but DSP executes
+     * the entire plan natively and never enters the per-op callback loop. This ensures
+     * listeners (e.g. HistoryListener via BaseEvaluationListener) can call Evaluation.eval().</p>
+     */
+    private void fireDspEvalListenerCallbacks(Map<String, SDValue> results,
+                                              MultiDataSet batch,
+                                              At at) {
+        if (this.listeners == null
+                || config.getTrainEvaluations() == null
+                || config.getTrainEvaluations().isEmpty()) {
+            return;
+        }
+        for (String varName : config.getTrainEvaluations().keySet()) {
+            SDValue val = results.get(varName);
+            if (val != null && val.getTensorValue() != null) {
+                INDArray activation = val.getTensorValue();
+                for (Listener l : this.listeners) {
+                    if (l.isActive(at.operation())) {
+                        l.activationAvailable(sameDiff, at, batch, null, varName, activation);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Commit queued operations and conditionally trim the memory pool after a DSP step.
+     * Trimming is performed on every step while shapes are not yet frozen (warm-up), and
+     * periodically thereafter (every {@link #TRIM_INTERVAL} steps).
+     */
+    private void commitAndTrimAfterDspStep() {
+        dspStepCount++;
+        DynamicShapePlanExecutor dspExec = dynamicShapePlanExecutorTl.get();
+        boolean frozen = dspExec != null && dspExec.isShapesFrozen();
+
+        boolean shouldTrim = !frozen || dspStepCount <= 2 || (dspStepCount % TRIM_INTERVAL == 0);
+        if (shouldTrim) {
+            Nd4j.getExecutioner().commit();
+            NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
+                    DeviceMemoryManager.getInstance().getCurrentDeviceId(), null);
         }
     }
 
