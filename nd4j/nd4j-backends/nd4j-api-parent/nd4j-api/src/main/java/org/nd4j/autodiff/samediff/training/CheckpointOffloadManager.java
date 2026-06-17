@@ -101,6 +101,7 @@ public class CheckpointOffloadManager {
     private final List<String> forwardOrder;
 
     /** Cumulative bytes currently held in host memory. */
+    @Getter
     private long hostMemoryBytes;
 
     /**
@@ -241,13 +242,6 @@ public class CheckpointOffloadManager {
      */
     public int getHostCheckpointCount() {
         return hostCheckpoints.size();
-    }
-
-    /**
-     * Return the total bytes currently occupying host memory.
-     */
-    public long getHostMemoryBytes() {
-        return hostMemoryBytes;
     }
 
     /**

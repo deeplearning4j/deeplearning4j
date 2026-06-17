@@ -23,6 +23,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.core.storage.StatsStorageEvent;
@@ -49,6 +50,7 @@ import java.util.function.BiConsumer;
 @Slf4j
 public class EntityResolutionModule implements UIModule {
 
+    @Getter
     private final EntityStore entityStore;
 
     public EntityResolutionModule() {
@@ -57,10 +59,6 @@ public class EntityResolutionModule implements UIModule {
 
     public EntityResolutionModule(EntityStore entityStore) {
         this.entityStore = entityStore;
-    }
-
-    public EntityStore getEntityStore() {
-        return entityStore;
     }
 
     @Override

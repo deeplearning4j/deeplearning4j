@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.model.benchmark;
 
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Configures tolerance thresholds and comparison behavior for DSP accuracy validation.
@@ -30,6 +31,7 @@ import java.util.Map;
  * tensor cores introduces ~1e-3 relative error per multiply-add; elementwise ops are
  * exact for the same datatype. This class lets callers specify per-op-type tolerances.</p>
  */
+@Getter
 public class ValidationConfig {
 
     private double defaultAbsTol = 1e-4;
@@ -105,13 +107,4 @@ public class ValidationConfig {
     public ValidationConfig logitAbsTol(double v) { this.logitAbsTol = v; return this; }
     public ValidationConfig topKOverlap(int v) { this.topKOverlap = v; return this; }
 
-    // Getters
-    public double getDefaultAbsTol() { return defaultAbsTol; }
-    public double getDefaultRelTol() { return defaultRelTol; }
-    public Map<String, Double> getOpAbsTol() { return opAbsTol; }
-    public boolean isStopAtFirst() { return stopAtFirst; }
-    public int getMaxDivergences() { return maxDivergences; }
-    public boolean isCaptureInputsForDivergent() { return captureInputsForDivergent; }
-    public double getLogitAbsTol() { return logitAbsTol; }
-    public int getTopKOverlap() { return topKOverlap; }
 }

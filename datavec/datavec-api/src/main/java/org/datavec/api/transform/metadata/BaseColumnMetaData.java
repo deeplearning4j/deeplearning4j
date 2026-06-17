@@ -21,19 +21,16 @@
 package org.datavec.api.transform.metadata;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 @EqualsAndHashCode
 public abstract class BaseColumnMetaData implements ColumnMetaData {
 
+    @Getter
     protected String name;
 
     protected BaseColumnMetaData(String name) {
         this.name = name;
-    }
-
-    @Override
-    public String getName() {
-        return name;
     }
 
     @Override

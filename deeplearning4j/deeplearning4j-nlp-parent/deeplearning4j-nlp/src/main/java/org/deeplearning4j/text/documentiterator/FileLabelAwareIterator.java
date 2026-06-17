@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.text.documentiterator;
 
+import lombok.Getter;
 import lombok.NonNull;
 
 import java.io.BufferedReader;
@@ -32,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FileLabelAwareIterator implements LabelAwareIterator {
     protected List<File> files;
     protected AtomicInteger position = new AtomicInteger(0);
+    @Getter
     protected LabelsSource labelsSource;
 
     /*
@@ -104,11 +106,6 @@ public class FileLabelAwareIterator implements LabelAwareIterator {
     @Override
     public void reset() {
         position.set(0);
-    }
-
-    @Override
-    public LabelsSource getLabelsSource() {
-        return labelsSource;
     }
 
     public static class Builder {

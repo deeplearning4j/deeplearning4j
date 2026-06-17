@@ -21,6 +21,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 
+import lombok.Getter;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -35,6 +36,7 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
     private final Iterator<MultiDataSet> iterator;
     private final int batchSize;
     private final LinkedList<MultiDataSet> queued; //Used when splitting larger examples than we want to return in a batch
+    @Getter
     private MultiDataSetPreProcessor preProcessor;
 
     public IteratorMultiDataSetIterator(Iterator<MultiDataSet> iterator, int batchSize) {
@@ -172,11 +174,6 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
     @Override
     public void setPreProcessor(MultiDataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
-    }
-
-    @Override
-    public MultiDataSetPreProcessor getPreProcessor() {
-        return preProcessor;
     }
 
     @Override

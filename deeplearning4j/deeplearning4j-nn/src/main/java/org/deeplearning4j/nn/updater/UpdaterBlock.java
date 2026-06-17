@@ -20,7 +20,6 @@
 
 package org.deeplearning4j.nn.updater;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
@@ -52,17 +51,6 @@ public class UpdaterBlock {
 
     private GradientUpdater gradientUpdater;
 
-
-    @AllArgsConstructor
-    @Data
-    public static class ParamState {
-        private final Trainable layer;
-        private final String paramName;
-        private final int paramOffsetStart;
-        private final int paramOffsetEnd;
-        private final INDArray paramView;
-        private final INDArray gradView;
-    }
 
     /**
      * @param paramOffsetStart          Start offset of the parameters in this block (relative to overall net params

@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.text.sentenceiterator;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +32,7 @@ public class BasicLineIterator implements SentenceIterator, Iterable<String> {
 
     private BufferedReader reader;
     private InputStream backendStream;
+    @Getter
     private SentencePreProcessor preProcessor;
     private boolean internal = false;
 
@@ -90,11 +92,6 @@ public class BasicLineIterator implements SentenceIterator, Iterable<String> {
         } catch (Exception e) {
             // do nothing here
         }
-    }
-
-    @Override
-    public SentencePreProcessor getPreProcessor() {
-        return preProcessor;
     }
 
     @Override

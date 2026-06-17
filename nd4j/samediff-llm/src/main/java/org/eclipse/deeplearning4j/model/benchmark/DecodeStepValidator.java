@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.model.benchmark;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -66,6 +67,7 @@ public class DecodeStepValidator {
     /**
      * Per-step comparison result.
      */
+    @Getter
     public static class StepComparison {
         private final int stepIdx;
         private final int referenceTokenId;
@@ -91,20 +93,12 @@ public class DecodeStepValidator {
             this.topK = topK;
         }
 
-        public int getStepIdx() { return stepIdx; }
-        public int getReferenceTokenId() { return referenceTokenId; }
-        public int getTestTokenId() { return testTokenId; }
-        public boolean isTokenMatch() { return tokenMatch; }
-        public double getLogitMaxAbsDiff() { return logitMaxAbsDiff; }
-        public double getLogitMeanAbsDiff() { return logitMeanAbsDiff; }
-        public boolean isArgmaxMatch() { return argmaxMatch; }
-        public int getTopKOverlap() { return topKOverlap; }
-        public int getTopK() { return topK; }
     }
 
     /**
      * Full decode comparison report.
      */
+    @Getter
     public static class DecodeComparisonReport {
         private final String referenceMode;
         private final String testMode;
@@ -137,14 +131,6 @@ public class DecodeStepValidator {
             this.firstArgmaxDivergenceStep = firstArgmax;
         }
 
-        public String getReferenceMode() { return referenceMode; }
-        public String getTestMode() { return testMode; }
-        public int getTotalSteps() { return totalSteps; }
-        public int getTokenMatchCount() { return tokenMatchCount; }
-        public int getArgmaxMatchCount() { return argmaxMatchCount; }
-        public int getFirstTokenDivergenceStep() { return firstTokenDivergenceStep; }
-        public int getFirstArgmaxDivergenceStep() { return firstArgmaxDivergenceStep; }
-        public List<StepComparison> getSteps() { return steps; }
 
         public double getTokenMatchRate() {
             return totalSteps > 0 ? (double) tokenMatchCount / totalSteps : 0;

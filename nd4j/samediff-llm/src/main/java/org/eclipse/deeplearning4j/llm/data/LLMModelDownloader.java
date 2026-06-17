@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.llm.data;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.model.download.ModelDownloader;
 
@@ -44,6 +45,7 @@ public class LLMModelDownloader {
 
     // ==================== Quantization Types ====================
 
+    @Getter
     public enum QuantType {
         Q2_K("Q2_K"),
         Q3_K_M("Q3_K_M"),
@@ -65,12 +67,11 @@ public class LLMModelDownloader {
         QuantType(String suffix) {
             this.suffix = suffix;
         }
-
-        public String getSuffix() { return suffix; }
     }
 
     // ==================== Model Family ====================
 
+    @Getter
     public enum ModelFamily {
         QWEN35("qwen3.5"),
         GEMMA3("gemma3"),
@@ -88,12 +89,11 @@ public class LLMModelDownloader {
         ModelFamily(String familyId) {
             this.familyId = familyId;
         }
-
-        public String getFamilyId() { return familyId; }
     }
 
     // ==================== Model Definitions ====================
 
+    @Getter
     public enum LLMModel {
         // Qwen3.5 Dense models
         QWEN35_0_8B("Qwen3.5-0.8B", "0.8B", false, ModelFamily.QWEN35,
@@ -185,12 +185,6 @@ public class LLMModelDownloader {
             this.description = description;
             this.urlBase = urlBase;
         }
-
-        public String getName() { return name; }
-        public String getSizeLabel() { return sizeLabel; }
-        public boolean isMoe() { return moe; }
-        public ModelFamily getFamily() { return family; }
-        public String getDescription() { return description; }
 
         public String getUrl(QuantType quant) {
             String base = urlBase != null ? urlBase : UNSLOTH_BASE;

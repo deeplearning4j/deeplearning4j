@@ -88,19 +88,4 @@ public class Variable {
         return false;
     }
 
-    public List<String> getInputsForOp() {
-        return inputsForOp;
-    }
-
-    public void setInputsForOp(List<String> inputsForOp) {
-        this.inputsForOp = inputsForOp;
-    }
-
-    public String getOutputOfOp() {
-        return outputOfOp;
-    }
-
-    public void setOutputOfOp(String outputOfOp) {
-        this.outputOfOp = outputOfOp;
-    }
 }

@@ -23,6 +23,7 @@ package org.nd4j.jita.memory;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -64,7 +65,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
      * Can be disabled via system property: nd4j.cuda.memory.fallback.enabled=false
      */
     private static final boolean CPU_FALLBACK_ENABLED = Boolean.parseBoolean(
-            System.getProperty("nd4j.cuda.memory.fallback.enabled", "true"));
+            System.getProperty(ND4JSystemProperties.CUDA_MEMORY_FALLBACK_ENABLED, "true"));
 
     /**
      * This method returns Pointer to allocated memory chunk

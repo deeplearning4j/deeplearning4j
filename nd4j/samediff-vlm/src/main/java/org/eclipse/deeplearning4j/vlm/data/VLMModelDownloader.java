@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.vlm.data;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.model.download.ModelDownloader;
 
@@ -51,6 +52,7 @@ public class VLMModelDownloader {
     /**
      * Available pre-defined models for VLM testing.
      */
+    @Getter
     public enum VLMModel {
         // VLM ONNX Models - SigLIP (smaller, 355MB)
         SIGLIP_VISION(
@@ -265,18 +267,12 @@ public class VLMModelDownloader {
             this.description = description;
         }
 
-        public String getName() { return name; }
-        public String getUrl() { return url; }
-        public ModelFormat getFormat() { return format; }
-        public int getInputWidth() { return inputWidth; }
-        public int getInputHeight() { return inputHeight; }
-        public String getDescription() { return description; }
-
         public String getFileName() {
             return name + "." + format.getExtension();
         }
     }
 
+    @Getter
     public enum ModelFormat {
         ONNX("onnx"),
         GGUF("gguf"),
@@ -288,8 +284,6 @@ public class VLMModelDownloader {
         ModelFormat(String extension) {
             this.extension = extension;
         }
-
-        public String getExtension() { return extension; }
     }
 
     @Data

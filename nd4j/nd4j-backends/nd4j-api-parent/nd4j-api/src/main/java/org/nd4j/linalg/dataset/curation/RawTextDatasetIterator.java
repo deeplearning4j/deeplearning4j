@@ -62,6 +62,7 @@ public class RawTextDatasetIterator implements MultiDataSetIterator {
     private final Function<String, long[]> tokenizer;
     private final List<File> textFiles;
 
+    @Getter
     private MultiDataSetPreProcessor preProcessor;
 
     // Internal state
@@ -166,11 +167,6 @@ public class RawTextDatasetIterator implements MultiDataSetIterator {
     @Override
     public void setPreProcessor(MultiDataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
-    }
-
-    @Override
-    public MultiDataSetPreProcessor getPreProcessor() {
-        return preProcessor;
     }
 
     private long[] nextChunk() {

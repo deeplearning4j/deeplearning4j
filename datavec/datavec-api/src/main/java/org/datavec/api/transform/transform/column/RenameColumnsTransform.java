@@ -111,11 +111,6 @@ public class RenameColumnsTransform implements Transform, ColumnOp {
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public List<Writable> map(List<Writable> writables) {
         //No op
         return writables;

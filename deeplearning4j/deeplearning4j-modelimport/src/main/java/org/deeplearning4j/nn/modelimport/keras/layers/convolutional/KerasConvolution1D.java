@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -168,7 +168,7 @@ public class KerasConvolution1D extends KerasConvolution {
         if(inputType[0] != null && inputType[0].getType() != InputType.Type.RNN || inputType[0] == null)
             return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], RNNFormat.NCW,layerName);
         else {
-            InputType.InputTypeRecurrent inputTypeRecurrent = (InputType.InputTypeRecurrent) inputType[0];
+            InputTypeRecurrent inputTypeRecurrent = (InputTypeRecurrent) inputType[0];
             return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0],inputTypeRecurrent.getFormat(),layerName);
 
         }

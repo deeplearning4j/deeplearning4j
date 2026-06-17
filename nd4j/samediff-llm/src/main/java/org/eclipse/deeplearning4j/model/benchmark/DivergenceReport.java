@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Complete report of all divergences found in a DSP validation run.
@@ -32,6 +33,7 @@ import java.util.Map;
  * <p>Contains ordered divergences (by step index), summary statistics,
  * and a human-readable report formatter. Created by {@link DspAccuracyValidator}.</p>
  */
+@Getter
 public class DivergenceReport {
 
     private final String referenceMode;
@@ -51,13 +53,6 @@ public class DivergenceReport {
         this.divergences = Collections.unmodifiableList(new ArrayList<>(divergences));
         this.passed = divergences.isEmpty();
     }
-
-    public String getReferenceMode() { return referenceMode; }
-    public String getTestMode() { return testMode; }
-    public int getTotalOpsCompared() { return totalOpsCompared; }
-    public int getOpsMatched() { return opsMatched; }
-    public List<OpDivergence> getDivergences() { return divergences; }
-    public boolean isPassed() { return passed; }
 
     /**
      * Returns the first divergence, or null if all matched.

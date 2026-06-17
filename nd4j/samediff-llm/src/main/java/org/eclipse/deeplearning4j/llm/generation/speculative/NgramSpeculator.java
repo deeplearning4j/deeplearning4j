@@ -22,6 +22,8 @@ package org.eclipse.deeplearning4j.llm.generation.speculative;
 
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * N-gram based speculative token predictor for autoregressive decoding.
@@ -46,6 +48,7 @@ import java.util.List;
  *
  * @author Eclipse Deeplearning4j Contributors
  */
+@Getter
 public class NgramSpeculator {
 
     private final int ngramSize;
@@ -246,28 +249,15 @@ public class NgramSpeculator {
         return maxIdx;
     }
 
-    public int getNgramSize() {
-        return ngramSize;
-    }
-
-    public int getMaxSpeculativeTokens() {
-        return maxSpeculativeTokens;
-    }
-
     /**
      * Result of batch speculation: per-sequence speculative tokens and common length.
      */
+    @Getter
+    @AllArgsConstructor
     public static class SpeculationResult {
         private final int[][] perSequenceTokens;
         private final int commonLength;
 
-        public SpeculationResult(int[][] perSequenceTokens, int commonLength) {
-            this.perSequenceTokens = perSequenceTokens;
-            this.commonLength = commonLength;
-        }
-
-        public int[][] getPerSequenceTokens() { return perSequenceTokens; }
-        public int getCommonLength() { return commonLength; }
         public boolean hasSpeculation() { return commonLength > 0; }
     }
 }

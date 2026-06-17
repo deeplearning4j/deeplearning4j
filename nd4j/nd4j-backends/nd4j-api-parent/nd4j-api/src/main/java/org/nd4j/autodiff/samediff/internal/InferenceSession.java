@@ -232,6 +232,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * accessor overhead in hot paths.
      */
     private static class TimingState {
+        private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TimingState.class);
         // Per-call accumulators (reset each output() call)
         long dagLookupNs, initValuesNs, execLoopNs, outputDupNs, cleanupNs;
         // Per-op phase accumulators within executeOperations

@@ -75,11 +75,6 @@ public class ReduceSequenceByWindowTransform implements Transform {
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public List<Writable> map(List<Writable> writables) {
         throw new UnsupportedOperationException("ReduceSequenceByWindownTransform can only be applied on sequences");
     }

@@ -621,14 +621,6 @@ public class OperationInfo {
     }
     
     /**
-     * @deprecated Access frameInfo directly
-     */
-    @Deprecated
-    public FrameInfo getFrameInfo() {
-        return frameInfo;
-    }
-    
-    /**
      * @deprecated Use inputs field directly
      */
     @Deprecated

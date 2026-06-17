@@ -22,6 +22,7 @@ package org.deeplearning4j.ui.module;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.core.storage.StatsStorageEvent;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -112,7 +113,7 @@ public class ModelManagerModule implements UIModule {
     public ModelManagerModule() {
         this.registry = new ModelRegistry();
         this.catalog = new ModelCatalogService(registry);
-        String token = System.getProperty("dl4j.hf.token", System.getenv("HF_TOKEN"));
+        String token = System.getProperty(DL4JSystemProperties.HF_TOKEN, System.getenv("HF_TOKEN"));
         this.downloader = new HuggingFaceDownloader(token);
         this.omniHubRegistry = ModelRepositoryRegistry.getDefault();
         this.sdzCacheDir = Paths.get(System.getProperty("user.home"), ".cache", "samediff", "models");

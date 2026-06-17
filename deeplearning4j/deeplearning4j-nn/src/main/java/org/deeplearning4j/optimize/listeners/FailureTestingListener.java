@@ -20,8 +20,6 @@
 
 package org.deeplearning4j.optimize.listeners;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
@@ -32,14 +30,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
-import java.net.InetAddress;
 import java.util.*;
 
 @Slf4j
 public class FailureTestingListener implements TrainingListener, Serializable {
-
-    public enum FailureMode {OOM, SYSTEM_EXIT_1, ILLEGAL_STATE, INFINITE_SLEEP}
-    public enum CallType {ANY, EPOCH_START, EPOCH_END, FORWARD_PASS, GRADIENT_CALC, BACKWARD_PASS, ITER_DONE}
 
     private final FailureTrigger trigger;
     private final FailureMode failureMode;
@@ -130,185 +124,6 @@ public class FailureTestingListener implements TrainingListener, Serializable {
                 default:
                     throw new RuntimeException("Unknown enum value: " + failureMode);
             }
-        }
-    }
-
-
-    @Data
-    public static abstract class FailureTrigger implements Serializable {
-
-        private boolean initialized = false;
-
-        /**
-         * If true: trigger the failure. If false: don't trigger failure
-         * @param callType  Type of call
-         * @param iteration Iteration number
-         * @param epoch     Epoch number
-         * @param model     Model
-         * @return
-         */
-        public abstract boolean triggerFailure(CallType callType, int iteration, int epoch, Model model);
-
-        public boolean initialized(){
-            return initialized;
-        }
-
-        public void initialize(){
-            this.initialized = true;
-        }
-    }
-
-    @AllArgsConstructor
-    public static class And extends FailureTrigger{
-
-        protected List<FailureTrigger> triggers;
-
-        public And(FailureTrigger... triggers){
-            this.triggers = Arrays.asList(triggers);
-        }
-
-        @Override
-        public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
-            boolean b = true;
-            for(FailureTrigger ft : triggers)
-                b &= ft.triggerFailure(callType, iteration, epoch, model);
-            return b;
-        }
-
-        @Override
-        public void initialize(){
-            super.initialize();
-            for(FailureTrigger ft : triggers)
-                ft.initialize();
-        }
-    }
-
-    public static class Or extends And {
-        public Or(FailureTrigger... triggers) {
-            super(triggers);
-        }
-
-        @Override
-        public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
-            boolean b = false;
-            for(FailureTrigger ft : triggers)
-                b |= ft.triggerFailure(callType, iteration, epoch, model);
-            return b;
-        }
-    }
-
-    @Data
-    public static class RandomProb extends FailureTrigger {
-
-        private final CallType callType;
-        private final double probability;
-        private Random rng;
-
-        public RandomProb(CallType callType, double probability){
-            this.callType = callType;
-            this.probability = probability;
-        }
-
-        @Override
-        public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
-            return (this.callType == CallType.ANY || callType == this.callType) && rng.nextDouble() < probability;
-        }
-
-        @Override
-        public void initialize(){
-            super.initialize();
-            this.rng = new Random();
-        }
-    }
-
-
-    @Data
-    public static class TimeSinceInitializedTrigger extends FailureTrigger {
-
-        private final long msSinceInit;
-        private long initTime;
-
-        public TimeSinceInitializedTrigger(long msSinceInit){
-            this.msSinceInit = msSinceInit;
-        }
-
-        @Override
-        public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
-            return (System.currentTimeMillis() - initTime) > msSinceInit;
-        }
-
-        @Override
-        public void initialize(){
-            super.initialize();
-            this.initTime = System.currentTimeMillis();
-        }
-    }
-
-    @Data
-    public static class UserNameTrigger extends FailureTrigger {
-        private final String userName;
-        private boolean shouldFail = false;
-
-        public UserNameTrigger(@NonNull String userName) {
-            this.userName = userName;
-        }
-
-
-        @Override
-        public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
-            return shouldFail;
-        }
-
-        @Override
-        public void initialize(){
-            super.initialize();
-            shouldFail = this.userName.equalsIgnoreCase(System.getProperty("user.name"));
-        }
-    }
-    //System.out.println("Hostname: " + InetAddress.getLocalHost().getHostName());
-
-    @Data
-    public static class HostNameTrigger extends FailureTrigger{
-        private final String hostName;
-        private boolean shouldFail = false;
-
-        public HostNameTrigger(@NonNull String hostName) {
-            this.hostName = hostName;
-        }
-
-
-        @Override
-        public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
-            return shouldFail;
-        }
-
-        @Override
-        public void initialize(){
-            super.initialize();
-            try {
-                String hostname = InetAddress.getLocalHost().getHostName();
-                log.info("FailureTestingListere hostname: {}", hostname);
-                shouldFail = this.hostName.equalsIgnoreCase(hostname);
-            } catch (Exception e){
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    @Data
-    public static class IterationEpochTrigger extends FailureTrigger {
-
-        private final boolean isEpoch;
-        private final int count;
-
-        public IterationEpochTrigger(boolean isEpoch, int count){
-            this.isEpoch = isEpoch;
-            this.count = count;
-        }
-
-        @Override
-        public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
-            return (isEpoch && epoch == count) || (!isEpoch && iteration == count);
         }
     }
 

@@ -21,6 +21,8 @@
 package org.eclipse.deeplearning4j.model.benchmark;
 
 import java.util.Arrays;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * Records a single op-level divergence between reference and test execution paths.
@@ -30,6 +32,8 @@ import java.util.Arrays;
  * the divergence back to its source: the op name, step index, the exact element
  * with maximum difference, and the reference/test values at that element.</p>
  */
+@Getter
+@AllArgsConstructor
 public class OpDivergence {
 
     private final int stepIdx;
@@ -45,40 +49,6 @@ public class OpDivergence {
     private final double testValueAtMax;
     private final String[] inputVarNames;
     private final double absTolUsed;
-
-    public OpDivergence(int stepIdx, String opName, String varName,
-                        long[] shape, String dataType,
-                        double maxAbsDiff, double meanAbsDiff, double maxRelDiff,
-                        long maxDiffIndex, double referenceValueAtMax, double testValueAtMax,
-                        String[] inputVarNames, double absTolUsed) {
-        this.stepIdx = stepIdx;
-        this.opName = opName;
-        this.varName = varName;
-        this.shape = shape;
-        this.dataType = dataType;
-        this.maxAbsDiff = maxAbsDiff;
-        this.meanAbsDiff = meanAbsDiff;
-        this.maxRelDiff = maxRelDiff;
-        this.maxDiffIndex = maxDiffIndex;
-        this.referenceValueAtMax = referenceValueAtMax;
-        this.testValueAtMax = testValueAtMax;
-        this.inputVarNames = inputVarNames;
-        this.absTolUsed = absTolUsed;
-    }
-
-    public int getStepIdx() { return stepIdx; }
-    public String getOpName() { return opName; }
-    public String getVarName() { return varName; }
-    public long[] getShape() { return shape; }
-    public String getDataType() { return dataType; }
-    public double getMaxAbsDiff() { return maxAbsDiff; }
-    public double getMeanAbsDiff() { return meanAbsDiff; }
-    public double getMaxRelDiff() { return maxRelDiff; }
-    public long getMaxDiffIndex() { return maxDiffIndex; }
-    public double getReferenceValueAtMax() { return referenceValueAtMax; }
-    public double getTestValueAtMax() { return testValueAtMax; }
-    public String[] getInputVarNames() { return inputVarNames; }
-    public double getAbsTolUsed() { return absTolUsed; }
 
     @Override
     public String toString() {

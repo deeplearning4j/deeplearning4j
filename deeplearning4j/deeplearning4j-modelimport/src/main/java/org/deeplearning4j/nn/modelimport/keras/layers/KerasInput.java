@@ -19,7 +19,8 @@
  */
 
 package org.deeplearning4j.nn.modelimport.keras.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 
 import java.util.ArrayList;
@@ -128,27 +131,27 @@ public class KerasInput extends KerasLayer {
         InputType myInputType;
         switch (this.inputShape.length) {
             case 1:
-                myInputType = new InputType.InputTypeFeedForward(this.inputShape[0], null);
+                myInputType = new InputTypeFeedForward(this.inputShape[0], null);
                 break;
             case 2:
                 if(this.dimOrder != null) {
                     switch (this.dimOrder) {
                         case TENSORFLOW:    //NWC == channels_last
-                            myInputType = new InputType.InputTypeRecurrent(this.inputShape[1], this.inputShape[0], RNNFormat.NWC);
+                            myInputType = new InputTypeRecurrent(this.inputShape[1], this.inputShape[0], RNNFormat.NWC);
                             break;
                         case THEANO:        //NCW == channels_first
-                            myInputType = new InputType.InputTypeRecurrent(this.inputShape[0], this.inputShape[1], RNNFormat.NCW);
+                            myInputType = new InputTypeRecurrent(this.inputShape[0], this.inputShape[1], RNNFormat.NCW);
                             break;
                         case NONE:
                             //Assume RNN in [mb, seqLen, size] format
-                            myInputType = new InputType.InputTypeRecurrent(this.inputShape[1], this.inputShape[0], RNNFormat.NWC);
+                            myInputType = new InputTypeRecurrent(this.inputShape[1], this.inputShape[0], RNNFormat.NWC);
                             break;
                         default:
                             throw new IllegalStateException("Unknown/not supported dimension ordering: " + this.dimOrder);
                     }
                 } else {
                     //Assume RNN in [mb, seqLen, size] format
-                    myInputType = new InputType.InputTypeRecurrent(this.inputShape[1], this.inputShape[0], RNNFormat.NWC);
+                    myInputType = new InputTypeRecurrent(this.inputShape[1], this.inputShape[0], RNNFormat.NWC);
                 }
 
                 break;
@@ -156,17 +159,17 @@ public class KerasInput extends KerasLayer {
                 switch (this.dimOrder) {
                     case TENSORFLOW:
                         /* TensorFlow convolutional input: # rows, # cols, # channels */
-                        myInputType = new InputType.InputTypeConvolutional(this.inputShape[0], this.inputShape[1],
+                        myInputType = new InputTypeConvolutional(this.inputShape[0], this.inputShape[1],
                                 this.inputShape[2], CNN2DFormat.NHWC);
                         break;
                     case THEANO:
                         /* Theano convolutional input:     # channels, # rows, # cols */
-                        myInputType = new InputType.InputTypeConvolutional(this.inputShape[1], this.inputShape[2],
+                        myInputType = new InputTypeConvolutional(this.inputShape[1], this.inputShape[2],
                                 this.inputShape[0], CNN2DFormat.NCHW);
                         break;
                     default:
                         this.dimOrder = DimOrder.THEANO;
-                        myInputType = new InputType.InputTypeConvolutional(this.inputShape[1], this.inputShape[2],
+                        myInputType = new InputTypeConvolutional(this.inputShape[1], this.inputShape[2],
                                 this.inputShape[0], CNN2DFormat.NCHW);
                         log.warn("Couldn't determine dim ordering / data format from model file. Older Keras " +
                                 "versions may come without specified backend, in which case we assume the model was " +
@@ -176,18 +179,18 @@ public class KerasInput extends KerasLayer {
             case 4:
                 switch (this.dimOrder) {
                     case TENSORFLOW:
-                        myInputType = new InputType.InputTypeConvolutional3D(Convolution3D.DataFormat.NDHWC,
+                        myInputType = new InputTypeConvolutional3D(Convolution3D.DataFormat.NDHWC,
                                 this.inputShape[0], this.inputShape[1],
                                 this.inputShape[2],this.inputShape[3]);
                         break;
                     case THEANO:
-                        myInputType = new InputType.InputTypeConvolutional3D(Convolution3D.DataFormat.NCDHW,
+                        myInputType = new InputTypeConvolutional3D(Convolution3D.DataFormat.NCDHW,
                                 this.inputShape[3], this.inputShape[0],
                                 this.inputShape[1],this.inputShape[2]);
                         break;
                     default:
                         this.dimOrder = DimOrder.THEANO;
-                        myInputType = new InputType.InputTypeConvolutional3D(Convolution3D.DataFormat.NCDHW,
+                        myInputType = new InputTypeConvolutional3D(Convolution3D.DataFormat.NCDHW,
                                 this.inputShape[3], this.inputShape[0],
                                 this.inputShape[1],this.inputShape[2]);
                         log.warn("Couldn't determine dim ordering / data format from model file. Older Keras " +

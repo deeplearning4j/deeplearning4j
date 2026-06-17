@@ -19,7 +19,6 @@
 
 package org.deeplearning4j.ui.model.stats.dsp;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.compress.utils.IOUtils;
@@ -144,43 +143,4 @@ public class DspDiagnosticsReport implements Persistable {
         decode(IOUtils.toByteArray(inputStream));
     }
 
-    // ─── Snapshot POJOs ───────────────────────────────────────────────────
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SegmentSnapshot implements Serializable {
-        private int startSlot;
-        private int endSlot;
-        private boolean capturable;
-        private int deviceId;
-        private int slotCount;
-        private List<String> opNames;
-        private String replayState;
-        private int replayCount;
-        private int executionCount;
-        private String executionPhase;
-        private String backendName;
-        private boolean compilationFailed;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SlotSnapshot implements Serializable {
-        private int index;
-        private String opName;
-        private int flags;
-        private String state;
-        private String flagDescription;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class MemoryEventSnapshot implements Serializable {
-        private int step;
-        private int slotIndex;
-        private String eventType;
-    }
 }

@@ -100,13 +100,13 @@ public class QuantizedPagedKVCache implements AutoCloseable {
     @Getter private final QuantFormat quantFormat;
 
     // Quantized block pools: [numBlocks, blockSize, numKvHeads, headDim] in INT8
-    private final INDArray keyBlockPool;
-    private final INDArray valueBlockPool;
+    @Getter private final INDArray keyBlockPool;
+    @Getter private final INDArray valueBlockPool;
 
     // Per-block scale pools: [numBlocks, blockSize, numKvHeads] in FLOAT32
     // One scale per row (a row = one token position across all head dims)
-    private final INDArray keyScalePool;
-    private final INDArray valueScalePool;
+    @Getter private final INDArray keyScalePool;
+    @Getter private final INDArray valueScalePool;
 
     // Free block IDs (LIFO for cache locality)
     private final Deque<Integer> freeBlocks;
@@ -361,34 +361,6 @@ public class QuantizedPagedKVCache implements AutoCloseable {
      */
     public void reassignSlot(int slotIdx) {
         freeSequence(slotIdx);
-    }
-
-    /**
-     * Get the quantized key block pool (for direct access).
-     */
-    public INDArray getKeyBlockPool() {
-        return keyBlockPool;
-    }
-
-    /**
-     * Get the quantized value block pool (for direct access).
-     */
-    public INDArray getValueBlockPool() {
-        return valueBlockPool;
-    }
-
-    /**
-     * Get the key scale pool (for direct access).
-     */
-    public INDArray getKeyScalePool() {
-        return keyScalePool;
-    }
-
-    /**
-     * Get the value scale pool (for direct access).
-     */
-    public INDArray getValueScalePool() {
-        return valueScalePool;
     }
 
     private int allocateBlock() {

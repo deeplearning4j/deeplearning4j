@@ -46,8 +46,10 @@ import java.util.*;
 public class FileRecordReader extends BaseRecordReader {
 
     protected Iterator<URI> locationsIterator;
+    @Getter
     protected Configuration conf;
     protected URI currentUri;
+    @Getter
     protected List<String> labels;
     protected boolean appendLabel = false;
     @Getter @Setter
@@ -129,10 +131,6 @@ public class FileRecordReader extends BaseRecordReader {
         return labels.indexOf(name);
     }
 
-    public List<String> getLabels() {
-        return labels;
-    }
-
     public void setLabels(List<String> labels) {
         this.labels = labels;
     }
@@ -150,11 +148,6 @@ public class FileRecordReader extends BaseRecordReader {
     @Override
     public void setConf(Configuration conf) {
         this.conf = conf;
-    }
-
-    @Override
-    public Configuration getConf() {
-        return conf;
     }
 
     @Override

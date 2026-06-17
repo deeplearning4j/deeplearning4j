@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.model.benchmark;
 
+import lombok.Getter;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 
 /**
@@ -33,6 +34,7 @@ import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
  *       .maxTokens(50)
  * </pre>
  */
+@Getter
 public class BenchmarkConfig {
 
     // Identity
@@ -275,70 +277,6 @@ public class BenchmarkConfig {
     public BenchmarkConfig draftModelK(int n) { this.draftModelK = n; return this; }
     public BenchmarkConfig validationMode(boolean b) { this.validationMode = b; return this; }
     public BenchmarkConfig validationConfig(ValidationConfig c) { this.validationConfig = c; return this; }
-
-    // Getters
-    public String getName() { return name; }
-    public GraphExecutionMode getExecutionMode() { return executionMode; }
-    public String getTritonIncludeTypes() { return tritonIncludeTypes; }
-    public boolean isTritonSectionFusion() { return tritonSectionFusion; }
-    public boolean isTritonGraphCapture() { return tritonGraphCapture; }
-    public boolean isTritonConsolidatedArgTable() { return tritonConsolidatedArgTable; }
-    public boolean isTritonArgDirtyTracking() { return tritonArgDirtyTracking; }
-    public boolean isTritonCooperativeLaunch() { return tritonCooperativeLaunch; }
-    public int getTritonCoopTargetBlocks() { return tritonCoopTargetBlocks; }
-    public boolean isTritonCompileAll() { return tritonCompileAll; }
-    public String getTritonExcludeOps() { return tritonExcludeOps; }
-    public boolean isTritonSkipKernels() { return tritonSkipKernels; }
-    public boolean isTritonVerifyKernels() { return tritonVerifyKernels; }
-    public boolean isTritonVerifyFullSnapshot() { return tritonVerifyFullSnapshot; }
-    public boolean isTritonForceRecapture() { return tritonForceRecapture; }
-    public boolean isTritonVerbose() { return tritonVerbose; }
-    public boolean isTritonDumpSections() { return tritonDumpSections; }
-    public int getTritonNumWarps() { return tritonNumWarps; }
-    public int getTritonNumStages() { return tritonNumStages; }
-    public int getTritonNumCTAs() { return tritonNumCTAs; }
-    public int getTritonMaxNreg() { return tritonMaxNreg; }
-    public int getTritonAttentionBlockN() { return tritonAttentionBlockN; }
-    public boolean isTritonEnableFpFusion() { return tritonEnableFpFusion; }
-    public int getTritonMaxSubsegmentOps() { return tritonMaxSubsegmentOps; }
-    public int getTritonMaxSubsegmentSections() { return tritonMaxSubsegmentSections; }
-    public boolean isTritonAllowFallbackCapture() { return tritonAllowFallbackCapture; }
-    public boolean isTritonMergedCaptureThroughViews() { return tritonMergedCaptureThroughViews; }
-    public int getTritonBuildThreads() { return tritonBuildThreads; }
-    public String getTritonProfile() { return tritonProfile; }
-    
-    // Triton segment fusion getters
-    public boolean isTritonFuseIdentityShapes() { return tritonFuseIdentityShapes; }
-    public boolean isTritonFuseCastChains() { return tritonFuseCastChains; }
-    public boolean isTritonFuseTrivialGather() { return tritonFuseTrivialGather; }
-    public boolean isTritonSpecializePermuteSeq1() { return tritonSpecializePermuteSeq1; }
-    public boolean isTritonEliminateConcatSplitPairs() { return tritonEliminateConcatSplitPairs; }
-    public boolean isTritonFuseAttentionNeighborhoods() { return tritonFuseAttentionNeighborhoods; }
-    public boolean isTritonFusedMatmul() { return tritonFusedMatmul; }
-    public boolean isTritonFusionScoring() { return tritonFusionScoring; }
-    public float getTritonFusionMinScore() { return tritonFusionMinScore; }
-    
-    public int getCaptureMinExec() { return captureMinExec; }
-    public int getMaxTokens() { return maxTokens; }
-    public double getMinDiversityPct() { return minDiversityPct; }
-    public String[] getExpectedSubstrings() { return expectedSubstrings; }
-    public boolean isExpectStructuralTags() { return expectStructuralTags; }
-    public boolean isCublasTf32() { return cublasTf32; }
-    public boolean isTritonTf32() { return tritonTf32; }
-    public boolean isCublasCaptureWorkspace() { return cublasCaptureWorkspace; }
-    public boolean isDspCastElimination() { return dspCastElimination; }
-    public boolean isDspCastSinkMatmul() { return dspCastSinkMatmul; }
-    public boolean isDspFp16Compute() { return dspFp16Compute; }
-    public boolean isDspBatchZero() { return dspBatchZero; }
-    public boolean isDspBatchZeroKernel() { return dspBatchZeroKernel; }
-    public boolean isDspBatchedGemm() { return dspBatchedGemm; }
-    public boolean isDspFreezeMergeSegments() { return dspFreezeMergeSegments; }
-    public boolean isDspFreezeRecompile() { return dspFreezeRecompile; }
-    public boolean isDspExecutionTiming() { return dspExecutionTiming; }
-    public boolean isUseDraftModel() { return useDraftModel; }
-    public int getDraftModelK() { return draftModelK; }
-    public boolean isValidationMode() { return validationMode; }
-    public ValidationConfig getValidationConfig() { return validationConfig; }
 
     public boolean isTriton() {
         return !tritonIncludeTypes.isEmpty();

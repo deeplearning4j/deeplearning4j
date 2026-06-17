@@ -138,15 +138,6 @@ public class TransformProcess implements Serializable {
     }
 
     /**
-     * Get the action list that this transform process
-     * will execute
-     * @return
-     */
-    public List<DataAction> getActionList() {
-        return actionList;
-    }
-
-    /**
      * Get the Schema of the output data, after executing the process
      *
      * @return Schema of the output data

@@ -89,13 +89,6 @@ public class PotentialLeak {
     private double confidence;
 
     /**
-     * Get size in bytes
-     */
-    public long getSizeBytes() {
-        return sizeBytes;
-    }
-
-    /**
      * Get stack trace as formatted string
      */
     public String getStackTraceAsString() {

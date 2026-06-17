@@ -149,11 +149,6 @@ public class TimeWindowFunction implements WindowFunction {
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public Schema transform(Schema inputSchema) {
         if (!addWindowStartTimeColumn && !addWindowEndTimeColumn)
             return inputSchema;

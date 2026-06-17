@@ -20,8 +20,6 @@
 
 package org.nd4j.autodiff.samediff.execution;
 
-import lombok.Builder;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -323,29 +321,4 @@ public final class AutoTuner {
         return GraphExecutionMode.AUTO;
     }
 
-    // ─── Analysis data class ────────────────────────────────────────────────
-
-    /**
-     * Structural analysis of a compiled DSP plan. Produced by {@link #analyze(DynamicShapePlan)}
-     * and consumed by the cost model.
-     */
-    @Data
-    @Builder
-    public static class GraphAnalysis {
-        private final int totalSlots;
-        private final int computeOps;
-        private final int elementwiseOps;
-        private final int reductionOps;
-        private final int valueDependentOps;
-        private final int capturableSlots;
-        private final int totalSegments;
-        private final int capturableSegments;
-        private final int maxSegmentSize;
-        private final long estimatedPeakMemoryBytes;
-        private final double computeOpFraction;
-        private final double elementwiseOpFraction;
-        private final double reductionOpFraction;
-        private final double valueDependentFraction;
-        private final Map<String, Integer> opHistogram;
-    }
 }

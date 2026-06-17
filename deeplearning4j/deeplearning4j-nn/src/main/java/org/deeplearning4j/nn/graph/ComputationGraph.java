@@ -104,6 +104,7 @@ import static org.deeplearning4j.nn.workspace.ArrayType.FF_CACHE;
 @Slf4j
 public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
+    @Getter
     protected ComputationGraphConfiguration configuration;
     protected boolean initCalled = false;
     protected transient Solver solver; //Used to call optimizers during backprop
@@ -169,6 +170,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     /**
      * All GraphVertex objects in the network.
      */
+    @Getter
     protected GraphVertex[] vertices;
     /**
      * Map of vertices by name
@@ -188,23 +190,29 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * A list of layers. Each of these layers is present in a GraphVertex, but are here for easy reference.
      * This array also defines the order in which the getLayer(int) method returns layers.
      */
+    @Getter
     protected Layer[] layers;
 
     /**
      * The number of input arrays to the network. Many networks only have 1 input; however, a ComputationGraph may
      * have an arbitrary number (>=1) separate input arrays
      */
+    @Getter
     private int numInputArrays;
     /**
      * The number of output arrays to the network. Many networks only have 1 output; however, a ComputationGraph may
      * have an arbitrary number (>=1) separate output arrays
      */
+    @Getter
     private int numOutputArrays;
 
     //Current inputs, labels, input mask arrays and label mask arrays
+    @Getter
     private transient INDArray[] inputs;
     private transient INDArray[] labels;
+    @Getter
     private transient INDArray[] inputMaskArrays;
+    @Getter
     private transient INDArray[] labelMaskArrays;
 
     private transient int[] outputLayerIdxs;
@@ -299,15 +307,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * This method returns configuration of this ComputationGraph
-     *
-     * @return
-     */
-    public ComputationGraphConfiguration getConfiguration() {
-        return configuration;
-    }
-
-    /**
      * Returns the number of layers in the ComputationGraph
      */
     public int getNumLayers() {
@@ -323,13 +322,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Get all layers in the ComputationGraph
-     */
-    public Layer[] getLayers() {
-        return layers;
-    }
-
-    /**
      * Get a given layer by name.
      */
     public Layer getLayer(String name) {
@@ -338,31 +330,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Returns an array of all GraphVertex objects.
-     */
-    public GraphVertex[] getVertices() {
-        return vertices;
-    }
-
-    /**
      * Return a given GraphVertex by name, or null if no vertex with that name exists
      */
     public GraphVertex getVertex(String name) {
         return verticesMap.get(name);
-    }
-
-    /**
-     * The number of inputs to this network
-     */
-    public int getNumInputArrays() {
-        return numInputArrays;
-    }
-
-    /**
-     * The number of output (arrays) for this network
-     */
-    public int getNumOutputArrays() {
-        return numOutputArrays;
     }
 
     /**
@@ -395,27 +366,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (inputs == null)
             return null;
         return inputs[inputNum];
-    }
-
-    /**
-     * Get the previously set inputs for the ComputationGraph
-     */
-    public INDArray[] getInputs() {
-        return inputs;
-    }
-
-    /**
-     * Get the previously set feature/input mask arrays for the ComputationGraph
-     */
-    public INDArray[] getInputMaskArrays() {
-        return inputMaskArrays;
-    }
-
-    /**
-     * Get the previously set label/output mask arrays for the ComputationGraph
-     */
-    public INDArray[] getLabelMaskArrays() {
-        return labelMaskArrays;
     }
 
     /**

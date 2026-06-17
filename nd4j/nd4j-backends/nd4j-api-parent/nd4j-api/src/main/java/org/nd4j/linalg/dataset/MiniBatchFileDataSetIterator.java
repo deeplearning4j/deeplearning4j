@@ -20,6 +20,8 @@
 
 package org.nd4j.linalg.dataset;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -38,6 +40,7 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
     private int batchSize;
     private List<String[]> paths;
     private int currIdx;
+    @Getter @Setter
     private File rootDir;
     private int totalExamples;
     private int totalLabels;
@@ -214,13 +217,5 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
         ret[1] = new File(rootDir, dataSetId + ".labels.bin").getAbsolutePath();
         return ret;
 
-    }
-
-    public File getRootDir() {
-        return rootDir;
-    }
-
-    public void setRootDir(File rootDir) {
-        this.rootDir = rootDir;
     }
 }

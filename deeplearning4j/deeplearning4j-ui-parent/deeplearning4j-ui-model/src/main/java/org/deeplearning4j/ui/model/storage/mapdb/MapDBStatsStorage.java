@@ -25,6 +25,8 @@ import lombok.NonNull;
 import org.deeplearning4j.config.DL4JClassLoading;
 import org.deeplearning4j.core.storage.*;
 import org.deeplearning4j.ui.model.storage.BaseCollectionStatsStorage;
+import org.deeplearning4j.ui.model.storage.SessionTypeId;
+import org.deeplearning4j.ui.model.storage.SessionTypeWorkerId;
 import org.mapdb.*;
 
 import java.io.File;

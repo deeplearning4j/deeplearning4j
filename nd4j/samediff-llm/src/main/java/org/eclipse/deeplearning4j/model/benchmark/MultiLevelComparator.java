@@ -20,6 +20,8 @@
 
 package org.eclipse.deeplearning4j.model.benchmark;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -233,27 +235,14 @@ public class MultiLevelComparator {
     /**
      * Result of a logits comparison.
      */
+    @Getter
+    @AllArgsConstructor
     public static class LogitsComparison {
         private final double maxAbsDiff;
         private final double meanAbsDiff;
         private final int referenceArgmax;
         private final int testArgmax;
         private final boolean argmaxMatch;
-
-        public LogitsComparison(double maxAbsDiff, double meanAbsDiff,
-                                 int referenceArgmax, int testArgmax, boolean argmaxMatch) {
-            this.maxAbsDiff = maxAbsDiff;
-            this.meanAbsDiff = meanAbsDiff;
-            this.referenceArgmax = referenceArgmax;
-            this.testArgmax = testArgmax;
-            this.argmaxMatch = argmaxMatch;
-        }
-
-        public double getMaxAbsDiff() { return maxAbsDiff; }
-        public double getMeanAbsDiff() { return meanAbsDiff; }
-        public int getReferenceArgmax() { return referenceArgmax; }
-        public int getTestArgmax() { return testArgmax; }
-        public boolean isArgmaxMatch() { return argmaxMatch; }
 
         @Override
         public String toString() {

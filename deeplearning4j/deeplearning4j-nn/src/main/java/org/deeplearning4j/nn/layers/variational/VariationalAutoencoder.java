@@ -66,10 +66,13 @@ public class VariationalAutoencoder implements Layer {
     protected transient Map<String, INDArray> gradientViews;
     protected NeuralNetConfiguration conf;
     protected double score = 0.0;
+    @Getter
     protected ConvexOptimizer optimizer;
     protected Gradient gradient;
     protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
+    @Getter
     protected int index = 0;
+    @Getter
     protected INDArray maskArray;
     protected Solver solver;
 
@@ -563,11 +566,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public ConvexOptimizer getOptimizer() {
-        return optimizer;
-    }
-
-    @Override
     public INDArray getParam(String param) {
         return params.get(param);
     }
@@ -840,11 +838,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public int getIndex() {
-        return index;
-    }
-
-    @Override
     public void setInput(INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
         this.input = input;
     }
@@ -864,11 +857,6 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public void setMaskArray(INDArray maskArray) {
         this.maskArray = maskArray;
-    }
-
-    @Override
-    public INDArray getMaskArray() {
-        return maskArray;
     }
 
     @Override

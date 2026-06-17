@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.llm.tokenizer;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
+import lombok.Getter;
 
 /**
  * SentencePiece tokenizer implementation.
@@ -56,10 +57,10 @@ public class SentencePieceTokenizer implements Tokenizer {
     private final Map<String, Float> scores;
     private final List<String> pieces;
 
-    private int padTokenId = 0;
-    private int bosTokenId = 1;
-    private int eosTokenId = 2;
-    private int unkTokenId = 0;
+    @Getter private int padTokenId = 0;
+    @Getter private int bosTokenId = 1;
+    @Getter private int eosTokenId = 2;
+    @Getter private int unkTokenId = 0;
 
     private boolean addBos = true;
     private boolean addEos = false;
@@ -348,26 +349,6 @@ public class SentencePieceTokenizer implements Tokenizer {
     @Override
     public Map<String, Integer> getVocab() {
         return Collections.unmodifiableMap(vocab);
-    }
-
-    @Override
-    public int getPadTokenId() {
-        return padTokenId;
-    }
-
-    @Override
-    public int getBosTokenId() {
-        return bosTokenId;
-    }
-
-    @Override
-    public int getEosTokenId() {
-        return eosTokenId;
-    }
-
-    @Override
-    public int getUnkTokenId() {
-        return unkTokenId;
     }
 
     @Override

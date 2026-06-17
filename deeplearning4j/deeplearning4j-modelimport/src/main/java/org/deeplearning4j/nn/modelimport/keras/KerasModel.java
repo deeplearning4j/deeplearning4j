@@ -225,9 +225,9 @@ public class KerasModel {
             layersOrdered.add(layer);
             layers.put(layer.getLayerName(), layer);
             if (layer instanceof KerasLSTM)
-                this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasLSTM) layer).getUnroll();
+                this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasLSTM) layer).isUnroll();
             if (layer instanceof KerasSimpleRnn)
-                this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasSimpleRnn) layer).getUnroll();
+                this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasSimpleRnn) layer).isUnroll();
         }
 
         List<String> names = new ArrayList<>();

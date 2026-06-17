@@ -57,6 +57,7 @@ public class LineRecordReader extends BaseRecordReader {
     protected URI[] locations;
     protected int splitIndex = 0;
     protected int lineIndex = 0; //Line index within the current split
+    @Getter
     protected Configuration conf;
     protected boolean initialized;
     @Getter @Setter
@@ -160,11 +161,6 @@ public class LineRecordReader extends BaseRecordReader {
     @Override
     public void setConf(Configuration conf) {
         this.conf = conf;
-    }
-
-    @Override
-    public Configuration getConf() {
-        return conf;
     }
 
     @Override

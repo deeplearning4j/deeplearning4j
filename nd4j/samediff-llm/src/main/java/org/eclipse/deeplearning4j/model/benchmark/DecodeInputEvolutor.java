@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.model.benchmark;
 
+import lombok.Getter;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -84,17 +85,17 @@ import java.util.Map;
 public class DecodeInputEvolutor implements AutoCloseable {
 
     private final List<String> decoderInputNames;
-    private final String logitsName;
+    @Getter private final String logitsName;
     private final List<String> kvOutputNames;
     private final long prefillSeqLen;
-    private final int maxDecodeSteps;
+    @Getter private final int maxDecodeSteps;
     private final EvolutionMode evolutionMode;
     private final boolean paddedMode;
     private final long maxKvLen;
 
     // State that evolves across steps
-    private long cachePosition;
-    private long currentSeqLen;
+    @Getter private long cachePosition;
+    @Getter private long currentSeqLen;
     private final Map<String, INDArray> kvBuffers = new HashMap<>();
     private INDArray positionIds;
     private INDArray attentionMask;
@@ -257,34 +258,6 @@ public class DecodeInputEvolutor implements AutoCloseable {
         if (paddedMode) {
             cachePosition++;
         }
-    }
-
-    /**
-     * Get current cache position (for padded mode).
-     */
-    public long getCachePosition() {
-        return cachePosition;
-    }
-
-    /**
-     * Get current sequence length.
-     */
-    public long getCurrentSeqLen() {
-        return currentSeqLen;
-    }
-
-    /**
-     * Get the logits output name.
-     */
-    public String getLogitsName() {
-        return logitsName;
-    }
-
-    /**
-     * Get maximum decode steps configured.
-     */
-    public int getMaxDecodeSteps() {
-        return maxDecodeSteps;
     }
 
     @Override

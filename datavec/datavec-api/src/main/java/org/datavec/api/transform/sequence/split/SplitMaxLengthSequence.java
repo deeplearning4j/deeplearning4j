@@ -87,11 +87,6 @@ public class SplitMaxLengthSequence implements SequenceSplit {
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public String toString() {
         return "SplitMaxLengthSequence(maxSequenceLength=" + maxSequenceLength + ",equalSplits=" + equalSplits + ")";
     }

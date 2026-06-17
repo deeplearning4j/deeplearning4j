@@ -19,7 +19,8 @@
  */
 
 package org.deeplearning4j.nn.modelimport.keras.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLossUtils;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
@@ -95,13 +97,13 @@ public class KerasLoss extends KerasLayer {
      * @return LossLayer
      */
     public FeedForwardLayer getLossLayer(InputType type) throws UnsupportedKerasConfigurationException {
-        if (type instanceof InputType.InputTypeFeedForward) {
+        if (type instanceof InputTypeFeedForward) {
             this.layer = new LossLayer.Builder(loss).name(this.layerName).activation(Activation.IDENTITY).build();
         }
-        else if (type instanceof  InputType.InputTypeRecurrent) {
+        else if (type instanceof  InputTypeRecurrent) {
             this.layer = new RnnLossLayer.Builder(loss).name(this.layerName).activation(Activation.IDENTITY).build();
         }
-        else if (type instanceof InputType.InputTypeConvolutional) {
+        else if (type instanceof InputTypeConvolutional) {
             this.layer = new CnnLossLayer.Builder(loss).name(this.layerName).activation(Activation.IDENTITY).build();
         } else {
             throw new UnsupportedKerasConfigurationException("Unsupported output layer type"

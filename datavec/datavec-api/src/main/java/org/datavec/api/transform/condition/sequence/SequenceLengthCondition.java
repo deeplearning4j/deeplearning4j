@@ -114,8 +114,4 @@ public class SequenceLengthCondition implements Condition {
         this.inputSchema = schema;
     }
 
-    @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
 }

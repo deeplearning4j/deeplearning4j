@@ -165,26 +165,6 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
     }
 
     @Override
-    public String getSessionID() {
-        return sessionID;
-    }
-
-    @Override
-    public String getTypeID() {
-        return typeID;
-    }
-
-    @Override
-    public String getWorkerID() {
-        return workerID;
-    }
-
-    @Override
-    public long getTimeStamp() {
-        return timeStamp;
-    }
-
-    @Override
     public int encodingLengthBytes() {
         //TODO reuse the byte[]s here, to avoid converting them twice...
 

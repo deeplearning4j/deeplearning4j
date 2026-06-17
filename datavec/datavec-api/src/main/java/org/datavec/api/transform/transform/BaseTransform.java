@@ -41,11 +41,6 @@ public abstract class BaseTransform implements Transform {
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
 
         List<List<Writable>> out = new ArrayList<>(sequence.size());

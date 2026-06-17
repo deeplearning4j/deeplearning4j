@@ -43,16 +43,13 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected int minWordFrequency;
     @Getter
     protected VocabCache<VocabWord> vocabCache;
+    @Getter
     protected LabelsSource labelsSource;
     protected Collection<String> stopWords = new ArrayList<>();
     @Getter
     protected transient InvertedIndex<VocabWord> index;
     @Getter
     protected boolean isParallel = true;
-
-    public LabelsSource getLabelsSource() {
-        return labelsSource;
-    }
 
     public void buildVocab() {
         if (vocabCache == null)

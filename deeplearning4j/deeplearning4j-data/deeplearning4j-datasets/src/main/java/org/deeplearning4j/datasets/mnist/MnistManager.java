@@ -21,6 +21,7 @@
 package org.deeplearning4j.datasets.mnist;
 
 
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.nd4j.common.base.Preconditions;
@@ -31,7 +32,9 @@ import java.io.IOException;
 
 
 public class MnistManager {
+    @Getter
     MnistImageFile images;
+    @Getter
     private MnistLabelFile labels;
 
     private byte[][] imagesArr;
@@ -146,24 +149,6 @@ public class MnistManager {
 
     public int readLabel(int i) {
         return labelsArr[i];
-    }
-
-    /**
-     * Get the underlying images file as {@link MnistImageFile}.
-     *
-     * @return {@link MnistImageFile}.
-     */
-    public MnistImageFile getImages() {
-        return images;
-    }
-
-    /**
-     * Get the underlying labels file as {@link MnistLabelFile}.
-     *
-     * @return {@link MnistLabelFile}.
-     */
-    public MnistLabelFile getLabels() {
-        return labels;
     }
 
     /**

@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.api.memory.deallocation;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
@@ -48,7 +49,9 @@ import org.nd4j.nativeblas.OpaqueNDArrayArr;
  */
 @Slf4j
 public class OpaqueNDArrayArrDeallocator implements Deallocatable, Deallocator {
+    @Getter
     private INDArray[] parentArrays;
+    @Getter
     private OpaqueNDArrayArr arrayArr;
     private final long uniqueId;
     private final int targetDevice;
@@ -165,21 +168,4 @@ public class OpaqueNDArrayArrDeallocator implements Deallocatable, Deallocator {
         return deallocated;
     }
 
-    /**
-     * Returns the OpaqueNDArrayArr being managed (may be null if deallocated).
-     *
-     * @return The managed array or null
-     */
-    public OpaqueNDArrayArr getArrayArr() {
-        return arrayArr;
-    }
-
-    /**
-     * Returns the parent INDArrays being kept alive (may be null if deallocated).
-     *
-     * @return The parent arrays or null
-     */
-    public INDArray[] getParentArrays() {
-        return parentArrays;
-    }
 }

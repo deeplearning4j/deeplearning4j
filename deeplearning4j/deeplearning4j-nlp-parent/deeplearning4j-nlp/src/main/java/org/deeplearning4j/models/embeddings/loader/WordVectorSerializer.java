@@ -31,6 +31,7 @@ import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.common.util.ND4JFileUtils;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -135,36 +136,36 @@ public class WordVectorSerializer {
     private static int maxZipEntries = getConfiguredMaxEntries();
 
     private static long getConfiguredMaxSize() {
-        String prop = System.getProperty("dl4j.wordvec.maxZipSize");
+        String prop = System.getProperty(DL4JSystemProperties.WORDVEC_MAX_ZIP_SIZE);
         if (prop != null) {
             try {
                 return Long.parseLong(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for dl4j.wordvec.maxZipSize: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", DL4JSystemProperties.WORDVEC_MAX_ZIP_SIZE, prop);
             }
         }
         return DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE;
     }
 
     private static double getConfiguredMaxRatio() {
-        String prop = System.getProperty("dl4j.wordvec.maxCompressionRatio");
+        String prop = System.getProperty(DL4JSystemProperties.WORDVEC_MAX_ZIP_SIZE_RATIO);
         if (prop != null) {
             try {
                 return Double.parseDouble(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for dl4j.wordvec.maxCompressionRatio: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", DL4JSystemProperties.WORDVEC_MAX_ZIP_SIZE_RATIO, prop);
             }
         }
         return DEFAULT_MAX_COMPRESSION_RATIO;
     }
 
     private static int getConfiguredMaxEntries() {
-        String prop = System.getProperty("dl4j.wordvec.maxZipEntries");
+        String prop = System.getProperty(DL4JSystemProperties.WORDVEC_MAX_ZIP_ENTRIES);
         if (prop != null) {
             try {
                 return Integer.parseInt(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for dl4j.wordvec.maxZipEntries: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", DL4JSystemProperties.WORDVEC_MAX_ZIP_ENTRIES, prop);
             }
         }
         return DEFAULT_MAX_ZIP_ENTRIES;
@@ -215,7 +216,7 @@ public class WordVectorSerializer {
                 throw new IOException("Potential zip bomb detected while reading entry '" + entryName + "'. " +
                         "Entry exceeded remaining size allowance of " + remainingAllowed + " bytes. " +
                         "If this is a legitimate file, increase the limit using " +
-                        "WordVectorSerializer.setMaxTotalUncompressedSize() or system property 'dl4j.wordvec.maxZipSize'");
+                        "WordVectorSerializer.setMaxTotalUncompressedSize() or system property '" + DL4JSystemProperties.WORDVEC_MAX_ZIP_SIZE + "'");
             }
 
             if (totalRead > Integer.MAX_VALUE - 8) {

@@ -88,6 +88,7 @@ public class TensorParallelRunner implements Closeable {
      * Collective communicator for AllReduce/AllGather operations.
      * Lazily initialized via {@link CollectiveCommunicatorFactory}.
      */
+    @Getter
     private CollectiveCommunicator communicator;
 
     /**
@@ -434,13 +435,6 @@ public class TensorParallelRunner implements Closeable {
             }
         }
         return arr.get(indices);
-    }
-
-    /**
-     * Get the collective communicator (may be null if not yet initialized).
-     */
-    public CollectiveCommunicator getCommunicator() {
-        return communicator;
     }
 
     @Override

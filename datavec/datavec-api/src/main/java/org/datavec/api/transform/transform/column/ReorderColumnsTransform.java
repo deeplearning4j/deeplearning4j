@@ -116,11 +116,6 @@ public class ReorderColumnsTransform implements Transform, ColumnOp {
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public List<Writable> map(List<Writable> writables) {
         List<Writable> out = new ArrayList<>();
         for (int i : outputOrder) {

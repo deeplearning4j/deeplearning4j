@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.llm.tokenizer;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.TokenizerConfig;
 import org.nd4j.ggml.GGMLModelImport;
@@ -105,7 +106,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
 
     // Delegate to native implementation
     private final NativeTokenizerImpl impl;
-    private TokenizerConfig config;
+    @Getter private TokenizerConfig config;
     private volatile boolean closed = false;
 
     /**
@@ -399,15 +400,6 @@ public class HuggingFaceTokenizer implements Tokenizer {
         return true;
     }
 
-    /**
-     * Get the tokenizer configuration.
-     *
-     * @return the tokenizer config, or null if not loaded
-     */
-    public TokenizerConfig getConfig() {
-        return config;
-    }
-
     @Override
     public String getChatTemplate() {
         return config != null ? config.getChatTemplate() : null;
@@ -467,10 +459,10 @@ public class HuggingFaceTokenizer implements Tokenizer {
         private static Class<?> opaqueTokenizerClass;
         private static Class<?> opaqueEncodingClass;
 
-        private int padTokenId = -1;
-        private int bosTokenId = -1;
-        private int eosTokenId = -1;
-        private int unkTokenId = -1;
+        private @Getter int padTokenId = -1;
+        private @Getter int bosTokenId = -1;
+        private @Getter int eosTokenId = -1;
+        private @Getter int unkTokenId = -1;
 
         private static synchronized void initializeMethodHandles() throws Exception {
             if (initialized) return;
@@ -715,11 +707,6 @@ public class HuggingFaceTokenizer implements Tokenizer {
         public Map<String, Integer> getVocab() {
             return Collections.emptyMap();
         }
-
-        public int getPadTokenId() { return padTokenId; }
-        public int getBosTokenId() { return bosTokenId; }
-        public int getEosTokenId() { return eosTokenId; }
-        public int getUnkTokenId() { return unkTokenId; }
 
         public boolean isValid() {
             try {

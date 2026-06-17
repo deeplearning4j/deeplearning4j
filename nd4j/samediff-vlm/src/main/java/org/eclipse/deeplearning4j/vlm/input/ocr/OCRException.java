@@ -20,6 +20,8 @@
 
 package org.eclipse.deeplearning4j.vlm.input.ocr;
 
+import lombok.Getter;
+
 /**
  * Exception thrown when OCR processing fails.
  *
@@ -27,6 +29,7 @@ package org.eclipse.deeplearning4j.vlm.input.ocr;
  */
 public class OCRException extends Exception {
 
+    @Getter
     private final ErrorCode errorCode;
 
     public OCRException(String message) {
@@ -47,10 +50,6 @@ public class OCRException extends Exception {
     public OCRException(ErrorCode errorCode, String message, Throwable cause) {
         super(message, cause);
         this.errorCode = errorCode;
-    }
-
-    public ErrorCode getErrorCode() {
-        return errorCode;
     }
 
     /**

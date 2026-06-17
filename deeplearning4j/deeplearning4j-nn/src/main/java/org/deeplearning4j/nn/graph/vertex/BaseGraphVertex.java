@@ -82,16 +82,6 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public String getVertexName() {
-        return vertexName;
-    }
-
-    @Override
-    public int getVertexIndex() {
-        return vertexIndex;
-    }
-
-    @Override
     public int getNumInputArrays() {
         return (inputVertices == null ? 0 : inputVertices.length);
     }
@@ -101,28 +91,10 @@ public abstract class BaseGraphVertex implements GraphVertex {
         return (outputVertices == null ? 0 : outputVertices.length);
     }
 
-    /**A representation of the vertices that are inputs to this vertex (inputs duing forward pass)<br>
-     * Specifically, if inputVertices[X].getVertexIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
-     * then the Zth output of vertex Y is the Xth input to this vertex
-     */
-    @Override
-    public VertexIndices[] getInputVertices() {
-        return inputVertices;
-    }
-
     @Override
     public void setInputVertices(VertexIndices[] inputVertices) {
         this.inputVertices = inputVertices;
         this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
-    }
-
-    /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
-     * Specifically, if outputVertices[X].getVertexIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
-     * then the Xth output of this vertex is connected to the Zth input of vertex Y
-     */
-    @Override
-    public VertexIndices[] getOutputVertices() {
-        return outputVertices;
     }
 
     @Override
@@ -178,11 +150,6 @@ public abstract class BaseGraphVertex implements GraphVertex {
             }
         }
         return epsilon != null;
-    }
-
-    @Override
-    public INDArray getEpsilon() {
-        return epsilon;
     }
 
     @Override

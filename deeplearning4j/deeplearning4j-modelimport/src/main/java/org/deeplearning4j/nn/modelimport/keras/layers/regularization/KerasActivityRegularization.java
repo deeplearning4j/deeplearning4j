@@ -140,22 +140,4 @@ public class KerasActivityRegularization extends KerasLayer {
     public int getNumParams() {
         return 0;
     }
-
-    /**
-     * Get L1 regularization strength.
-     *
-     * @return L1 regularization value
-     */
-    public double getL1() {
-        return l1;
-    }
-
-    /**
-     * Get L2 regularization strength.
-     *
-     * @return L2 regularization value
-     */
-    public double getL2() {
-        return l2;
-    }
 }

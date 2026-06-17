@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.layers.recurrent;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
@@ -693,7 +693,7 @@ public class LSTMHelpers {
                                                     org.deeplearning4j.nn.conf.layers.FeedForwardLayer lstmLayer, InputType inputType) {
 
 
-        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent itr = (InputTypeRecurrent) inputType;
         val tsLength = itr.getTimeSeriesLength();
 
         InputType outputType = lstmLayer.getOutputType(-1, inputType);

@@ -19,11 +19,14 @@
  */
 
 package org.deeplearning4j.preprocessors;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -85,13 +88,13 @@ public class PermutePreprocessor extends BaseInputPreProcessor {
 
     @Override
     public InputType getOutputType(InputType inputType) throws InvalidInputTypeException {
-        if (inputType instanceof InputType.InputTypeConvolutional) {
-            InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional) inputType;
+        if (inputType instanceof InputTypeConvolutional) {
+            InputTypeConvolutional it = (InputTypeConvolutional) inputType;
             return InputType.convolutional(it.getWidth(), it.getHeight(), it.getChannels());
-        } else if (inputType instanceof InputType.InputTypeRecurrent) {
-            InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType;
+        } else if (inputType instanceof InputTypeRecurrent) {
+            InputTypeRecurrent it = (InputTypeRecurrent) inputType;
             return InputType.recurrent(it.getTimeSeriesLength(), it.getSize());
-        } else if (inputType instanceof InputType.InputTypeFeedForward || inputType instanceof InputType.InputTypeConvolutional3D) {
+        } else if (inputType instanceof InputTypeFeedForward || inputType instanceof InputTypeConvolutional3D) {
             return inputType;
         } else {
             throw new InvalidInputTypeException("Unsupported Input type " + inputType);

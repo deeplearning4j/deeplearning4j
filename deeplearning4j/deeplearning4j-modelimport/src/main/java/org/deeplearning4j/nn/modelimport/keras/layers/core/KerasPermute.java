@@ -19,13 +19,14 @@
  */
 
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
-
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.preprocessors.PermutePreprocessor;
 import org.nd4j.common.util.ArrayUtil;
@@ -100,7 +101,7 @@ public class KerasPermute extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                     "Keras Permute layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preprocessor = null;
-        if (inputType[0] instanceof InputType.InputTypeConvolutional) {
+        if (inputType[0] instanceof InputTypeConvolutional) {
             switch (this.getDimOrder()) {
                 case THEANO:
                     preprocessor = new PermutePreprocessor(permutationIndices);
@@ -111,13 +112,13 @@ public class KerasPermute extends KerasLayer {
                     permutationIndices = new int[] {permutationIndices[2], permutationIndices[0], permutationIndices[1]};
                     preprocessor = new PermutePreprocessor(new int[]{1, 3, 2});
             }
-        } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
+        } else if (inputType[0] instanceof InputTypeRecurrent) {
             if (Arrays.equals(permutationIndices, new int[] {2, 1}))
                 preprocessor = new PermutePreprocessor(permutationIndices);
             else
                 throw new InvalidKerasConfigurationException("For RNN type input data, permutation dims have to be" +
                         "(2, 1) in Permute layer, got " + Arrays.toString(permutationIndices));
-        } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
+        } else if (inputType[0] instanceof InputTypeFeedForward) {
             preprocessor = null;
         } else {
             throw new InvalidKerasConfigurationException("Input type not supported: " + inputType[0]);

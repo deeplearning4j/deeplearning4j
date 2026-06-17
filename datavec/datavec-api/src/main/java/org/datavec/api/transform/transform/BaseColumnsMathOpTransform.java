@@ -122,11 +122,6 @@ public abstract class BaseColumnsMathOpTransform implements Transform, ColumnOp 
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public List<Writable> map(List<Writable> writables) {
         if (inputSchema == null)
             throw new IllegalStateException("Input schema has not been set");

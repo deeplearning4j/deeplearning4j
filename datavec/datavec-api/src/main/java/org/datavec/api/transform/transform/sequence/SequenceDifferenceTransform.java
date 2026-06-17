@@ -208,11 +208,6 @@ public class SequenceDifferenceTransform implements Transform {
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public List<Writable> map(List<Writable> writables) {
         throw new UnsupportedOperationException(
                         "Only sequence operations are supported for SequenceDifferenceTransform."

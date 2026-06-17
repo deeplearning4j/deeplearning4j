@@ -39,6 +39,7 @@ public class ExistingDataSetIterator implements DataSetIterator {
     private int totalExamples = 0;
     private int numFeatures = 0;
     private int numLabels = 0;
+    @Getter
     private List<String> labels;
 
     /**
@@ -135,11 +136,6 @@ public class ExistingDataSetIterator implements DataSetIterator {
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
-    }
-
-    @Override
-    public List<String> getLabels() {
-        return labels;
     }
 
     @Override

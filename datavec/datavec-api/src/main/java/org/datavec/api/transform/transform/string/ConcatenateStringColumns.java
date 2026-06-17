@@ -88,11 +88,6 @@ public class ConcatenateStringColumns extends BaseTransform implements ColumnOp 
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public List<Writable> map(List<Writable> writables) {
         StringBuilder newColumnText = new StringBuilder();
         List<Writable> out = new ArrayList<>(writables);

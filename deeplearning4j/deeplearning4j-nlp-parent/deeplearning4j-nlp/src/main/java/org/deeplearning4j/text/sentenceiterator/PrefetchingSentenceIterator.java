@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.text.sentenceiterator;
 
+import lombok.Getter;
 import lombok.NonNull;
 
 import org.nd4j.common.util.ThreadUtils;
@@ -37,6 +38,7 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
     private SentenceIterator sourceIterator;
     private int fetchSize;
     private AsyncIteratorReader reader;
+    @Getter
     private SentencePreProcessor preProcessor;
 
     protected static final Logger log = LoggerFactory.getLogger(PrefetchingSentenceIterator.class);
@@ -73,11 +75,6 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
     public void finish() {
         if (reader != null)
             reader.terminate();
-    }
-
-    @Override
-    public SentencePreProcessor getPreProcessor() {
-        return preProcessor;
     }
 
     @Override

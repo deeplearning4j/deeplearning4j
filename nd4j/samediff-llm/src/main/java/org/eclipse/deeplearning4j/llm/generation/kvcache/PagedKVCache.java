@@ -72,8 +72,8 @@ public class PagedKVCache implements AutoCloseable {
 
     // Block pool: pre-allocated GPU tensors holding all blocks
     // Shape: [numBlocks, blockSize, numKvHeads, headDim]
-    private final INDArray keyBlockPool;
-    private final INDArray valueBlockPool;
+    @Getter private final INDArray keyBlockPool;
+    @Getter private final INDArray valueBlockPool;
 
     // Free block IDs (LIFO for cache locality)
     protected final Deque<Integer> freeBlocks;
@@ -268,20 +268,6 @@ public class PagedKVCache implements AutoCloseable {
         int[] lens = new int[batchSize];
         System.arraycopy(seqLengths, 0, lens, 0, batchSize);
         return Nd4j.createFromArray(lens);
-    }
-
-    /**
-     * Get the key block pool tensor (for passing to native attention kernel).
-     */
-    public INDArray getKeyBlockPool() {
-        return keyBlockPool;
-    }
-
-    /**
-     * Get the value block pool tensor.
-     */
-    public INDArray getValueBlockPool() {
-        return valueBlockPool;
     }
 
     /**

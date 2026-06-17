@@ -52,6 +52,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class BaseOptimizer implements ConvexOptimizer {
 
+    @Getter
     protected NeuralNetConfiguration conf;
     protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
     @Getter
@@ -118,11 +119,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             this.trainingListeners = Collections.emptyList();
         else
             this.trainingListeners = listeners;
-    }
-
-    @Override
-    public NeuralNetConfiguration getConf() {
-        return conf;
     }
 
     @Override

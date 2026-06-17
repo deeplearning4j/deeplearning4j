@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.llm.generation.batch;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -63,9 +64,9 @@ import java.util.Map;
 @Slf4j
 public class BatchCompactor {
 
-    private final int originalBatchSize;
+    @Getter private final int originalBatchSize;
     private int[] activeToOriginal;  // maps compact index -> original batch index
-    private int currentBatchSize;
+    @Getter private int currentBatchSize;
     private final double compactionThreshold;
 
     /**
@@ -198,20 +199,6 @@ public class BatchCompactor {
      */
     public int getOriginalIndex(int compactIndex) {
         return activeToOriginal[compactIndex];
-    }
-
-    /**
-     * Get the current (possibly compacted) batch size.
-     */
-    public int getCurrentBatchSize() {
-        return currentBatchSize;
-    }
-
-    /**
-     * Get the original batch size.
-     */
-    public int getOriginalBatchSize() {
-        return originalBatchSize;
     }
 
     /**

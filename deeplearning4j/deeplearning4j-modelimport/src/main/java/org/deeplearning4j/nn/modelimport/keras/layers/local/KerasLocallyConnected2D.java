@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.layers.LocallyConnected2D;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils;
@@ -138,7 +139,7 @@ public class KerasLocallyConnected2D extends KerasConvolution {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
-        InputType.InputTypeConvolutional convType = (InputType.InputTypeConvolutional) inputType[0];
+        InputTypeConvolutional convType = (InputTypeConvolutional) inputType[0];
 
         // Override input/output shape and input channels dynamically. This works since getOutputType will always
         // be called when initializing the model.

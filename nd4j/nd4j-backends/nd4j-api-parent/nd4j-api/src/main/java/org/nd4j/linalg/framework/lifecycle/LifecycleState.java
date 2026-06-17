@@ -67,13 +67,6 @@ public class LifecycleState {
     private long leakDetectionAgeThresholdMs;
     
     /**
-     * Get live array count
-     */
-    public long getLiveArrays() {
-        return liveArrays;
-    }
-    
-    /**
      * Get destruction efficiency (destroyed/created)
      */
     public double getDestructionEfficiency() {

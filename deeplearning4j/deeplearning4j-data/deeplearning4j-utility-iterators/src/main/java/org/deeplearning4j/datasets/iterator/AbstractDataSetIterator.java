@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.datasets.iterator;
 
+import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -35,6 +36,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
+    @Getter
     private DataSetPreProcessor preProcessor;
     private transient Iterable<Pair<T, T>> iterable;
     private transient Iterator<Pair<T, T>> iterator;
@@ -43,6 +45,7 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
 
     // FIXME: capacity 4 is triage here, proper investigation requires
     private final LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(4);
+    @Getter
     private List<String> labels;
     private int numFeatures = -1;
     private int numLabels = -1;
@@ -129,14 +132,6 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
-    }
-
-    /**
-     * Get dataset iterator record reader labels
-     */
-    @Override
-    public List<String> getLabels() {
-        return labels;
     }
 
     /**
@@ -271,8 +266,4 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
         // no-op
     }
 
-    @Override
-    public DataSetPreProcessor getPreProcessor() {
-        return preProcessor;
-    }
 }

@@ -48,8 +48,4 @@ public class RecordMetaDataInterval implements RecordMetaData {
         return uri;
     }
 
-    @Override
-    public Class<?> getReaderClass() {
-        return readerClass;
-    }
 }

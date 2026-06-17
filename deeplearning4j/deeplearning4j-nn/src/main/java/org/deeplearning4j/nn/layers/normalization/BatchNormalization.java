@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.nn.layers.normalization;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -52,6 +53,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     protected static final double ONE_ON_2LOGE_10 = 1.0 / (2 * Math.log(10.0));
 
     protected int helperCountFail = 0;
+    @Getter
     protected int index = 0;
     protected List<TrainingListener> listeners = new ArrayList<>();
     protected INDArray std;
@@ -454,11 +456,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public void setIndex(int index) {
         this.index = index;
-    }
-
-    @Override
-    public int getIndex() {
-        return index;
     }
 
     @Override

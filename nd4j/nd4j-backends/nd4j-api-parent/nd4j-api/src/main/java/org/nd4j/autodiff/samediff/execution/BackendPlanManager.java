@@ -1,7 +1,6 @@
 package org.nd4j.autodiff.samediff.execution;
 
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 
@@ -65,75 +64,6 @@ public class BackendPlanManager {
     }
 
     // ── Per-device replay cache management ──
-
-    /**
-     * Device descriptor for cache management.
-     */
-    public static class DeviceKey {
-        public enum Type {
-            CPU(0), CUDA_GPU(1), METAL_GPU(2), VULKAN_GPU(3),
-            OPENCL_GPU(4), TPU(5), ACCELERATOR(6);
-
-            private final int value;
-            Type(int value) { this.value = value; }
-            public int getValue() { return value; }
-
-            public static Type fromOrdinal(int ordinal) {
-                for (Type t : values()) {
-                    if (t.value == ordinal) return t;
-                }
-                return CPU;
-            }
-        }
-
-        public Type type;
-        public int index;
-        public String archId;
-
-        public DeviceKey(Type type, int index) {
-            this.type = type;
-            this.index = index;
-            this.archId = "";
-        }
-
-        public DeviceKey(Type type, int index, String archId) {
-            this.type = type;
-            this.index = index;
-            this.archId = archId;
-        }
-
-        public int typeOrdinal() { return type.getValue(); }
-
-        public boolean isCompatibleWith(DeviceKey other) {
-            return type == other.type && archId.equals(other.archId);
-        }
-
-        public static DeviceKey currentDevice() {
-            // Use primary device (device 0) for the current backend type
-            try {
-                DeviceType dt = Nd4j.getBackendDeviceType();
-                if (dt != null) {
-                    switch (dt) {
-                        case CUDA_GPU: return new DeviceKey(Type.CUDA_GPU, 0);
-                        case METAL_GPU: return new DeviceKey(Type.METAL_GPU, 0);
-                        case ROCM_GPU: return new DeviceKey(Type.CUDA_GPU, 0); // ROCm uses same cache strategy
-                        case TPU: return new DeviceKey(Type.TPU, 0);
-                        case FPGA: return new DeviceKey(Type.ACCELERATOR, 0);
-                        case REMOTE: return new DeviceKey(Type.ACCELERATOR, 0);
-                        default: return new DeviceKey(Type.CPU, 0);
-                    }
-                }
-            } catch (Exception e) {
-                // Nd4j not initialized yet
-            }
-            return new DeviceKey(Type.CPU, 0);
-        }
-
-        @Override
-        public String toString() {
-            return type.name().toLowerCase() + "_" + index + "_" + archId;
-        }
-    }
 
     /**
      * Load cached replay metadata for a specific device (bulk warm-start).

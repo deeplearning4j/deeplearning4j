@@ -147,11 +147,6 @@ public class SequenceMovingWindowReduceTransform implements Transform {
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public List<Writable> map(List<Writable> writables) {
         throw new UnsupportedOperationException("SequenceMovingWindowReduceTransform can only be applied on sequences");
     }

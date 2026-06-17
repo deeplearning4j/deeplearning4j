@@ -244,16 +244,6 @@ public class KerasSimpleRnn extends KerasLayer {
     }
 
     /**
-     * Get whether SimpleRnn layer should be unrolled (for truncated BPTT).
-     *
-     * @return whether RNN should be unrolled (boolean)
-     */
-    public boolean getUnroll() {
-        return this.unroll;
-    }
-
-
-    /**
      * Set weights for layer.
      *
      * @param weights Simple RNN weights

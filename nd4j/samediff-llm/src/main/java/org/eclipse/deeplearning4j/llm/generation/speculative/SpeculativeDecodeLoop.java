@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.llm.generation.speculative;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -59,15 +60,15 @@ import java.util.Set;
 public class SpeculativeDecodeLoop {
 
     private final NgramSpeculator speculator;
-    private long totalSpeculations;
-    private long totalAccepted;
-    private long totalAttempted;
-    private long speculativeSteps;
-    private long normalSteps;
+    @Getter private long totalSpeculations;
+    @Getter private long totalAccepted;
+    @Getter private long totalAttempted;
+    @Getter private long speculativeSteps;
+    @Getter private long normalSteps;
     private long speculativeWallTimeMs;
     private long speculativeDecoderTimeMs;
     private long speculativeEmbedTimeMs;
-    private boolean disabled;
+    @Getter private boolean disabled;
 
     // Retry/cooldown state: replaces permanent disable on first failure
     private int consecutiveFailures;
@@ -474,12 +475,6 @@ public class SpeculativeDecodeLoop {
                 hostOverheadMs, avgHostOverheadMs);
     }
 
-    public long getTotalAccepted() { return totalAccepted; }
-    public long getTotalAttempted() { return totalAttempted; }
-    public long getSpeculativeSteps() { return speculativeSteps; }
-    public long getNormalSteps() { return normalSteps; }
-    public boolean isDisabled() { return disabled; }
-
     private void recordSpecTiming(long stepStartMs, long embedMs, long decoderMs) {
         long wallMs = Math.max(0L, System.currentTimeMillis() - stepStartMs);
         speculativeWallTimeMs += wallMs;
@@ -491,9 +486,9 @@ public class SpeculativeDecodeLoop {
      * Result of a speculative decode step.
      */
     public static class SpeculativeStepResult {
-        private final int[] acceptedTokens;
-        private final Map<String, INDArray> updatedKvCache;
-        private final int newPositions;
+        @Getter private final int[] acceptedTokens;
+        @Getter private final Map<String, INDArray> updatedKvCache;
+        @Getter private final int newPositions;
         private final boolean hitEos;
 
         public SpeculativeStepResult(int[] acceptedTokens, Map<String, INDArray> updatedKvCache,
@@ -504,9 +499,6 @@ public class SpeculativeDecodeLoop {
             this.hitEos = hitEos;
         }
 
-        public int[] getAcceptedTokens() { return acceptedTokens; }
-        public Map<String, INDArray> getUpdatedKvCache() { return updatedKvCache; }
-        public int getNewPositions() { return newPositions; }
         public boolean hitEos() { return hitEos; }
     }
 }

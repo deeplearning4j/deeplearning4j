@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Unified validation result for benchmark-faithful correctness validation.
@@ -66,6 +67,7 @@ import java.util.Map;
  *   <li>Phase-violation reporting (any unexpected phase transitions)</li>
  * </ul>
  */
+@Getter
 public class ValidationResult {
 
     private final String configName;
@@ -102,22 +104,6 @@ public class ValidationResult {
                                    ValidationLevel level) {
         return new Builder(configName, referenceMode, testMode, level);
     }
-
-    // ─── Getters ─────────────────────────────────────────────────────────────
-
-    public String getConfigName() { return configName; }
-    public String getReferenceMode() { return referenceMode; }
-    public String getTestMode() { return testMode; }
-    public ValidationLevel getLevel() { return level; }
-    public boolean isPassed() { return passed; }
-    public List<String> getFailures() { return failures; }
-    public ReplayMetadataTracker.ReplayMetadata getReplayMetadata() { return replayMetadata; }
-    public Map<String, Double> getMetrics() { return metrics; }
-    public DivergenceReport getDivergenceReport() { return divergenceReport; }
-    public DecodeStepValidator.DecodeComparisonReport getDecodeReport() { return decodeReport; }
-    public int getFirstDivergentStep() { return firstDivergentStep; }
-    public int getTotalStepsCompared() { return totalStepsCompared; }
-    public double getMaxDiffObserved() { return maxDiffObserved; }
 
     /**
      * Returns the first failure message, or null if validation passed.

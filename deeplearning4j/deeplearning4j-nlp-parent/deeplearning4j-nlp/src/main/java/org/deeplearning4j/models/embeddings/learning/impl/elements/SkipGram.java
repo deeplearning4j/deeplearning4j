@@ -71,17 +71,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             .expireAfterWrite(Duration.ofMinutes(5))
             .build();
 
+    @Getter
+    @Setter
     protected int workers = Runtime.getRuntime().availableProcessors();
-
-
-
-    public int getWorkers() {
-        return workers;
-    }
-
-    public void setWorkers(int workers) {
-        this.workers = workers;
-    }
 
     @Getter
     @Setter

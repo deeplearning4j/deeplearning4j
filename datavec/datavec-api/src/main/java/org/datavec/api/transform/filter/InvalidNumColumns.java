@@ -86,11 +86,6 @@ public class InvalidNumColumns implements Filter {
         this.inputSchema = schema;
     }
 
-    @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
     /**
      * The output column name
      * after the operation has been applied

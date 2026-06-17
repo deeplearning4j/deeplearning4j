@@ -462,16 +462,6 @@ public class KerasLSTM extends KerasLayer {
     }
 
     /**
-     * Get whether LSTM layer should be unrolled (for truncated BPTT).
-     *
-     * @return whether to unroll the LSTM
-     */
-    public boolean getUnroll() {
-        return this.unroll;
-    }
-
-
-    /**
      * Get LSTM gate activation function from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration

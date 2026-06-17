@@ -65,11 +65,6 @@ public class AddConstantColumnTransform implements Transform {
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public String outputColumnName() {
         return newColumnName;
     }

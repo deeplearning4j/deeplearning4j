@@ -72,11 +72,6 @@ public class StringReducer implements IStringReducer {
         return schema;
     }
 
-    @Override
-    public List<String> getInputColumns() {
-        return inputColumns;
-    }
-
     /**
      * Get the output schema, given the input schema
      */

@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.model.benchmark;
 
+import lombok.Data;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 
 /**
@@ -27,6 +28,7 @@ import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
  *
  * Records timing, throughput, and Triton counters for a configuration run.
  */
+@Data
 public class BenchmarkResult {
 
     private final String configName;
@@ -62,52 +64,6 @@ public class BenchmarkResult {
 
     // Full result
     private String generatedText;
-
-    public BenchmarkResult(String configName) {
-        this.configName = configName;
-    }
-
-    public String getConfigName() { return configName; }
-    public boolean isPassed() { return passed; }
-    public void setPassed(boolean passed) { this.passed = passed; }
-    public String getFailureMessage() { return failureMessage; }
-    public void setFailureMessage(String failureMessage) { this.failureMessage = failureMessage; }
-    public long getResetMs() { return resetMs; }
-    public void setResetMs(long resetMs) { this.resetMs = resetMs; }
-    public long getCompileMs() { return compileMs; }
-    public void setCompileMs(long compileMs) { this.compileMs = compileMs; }
-    public long getDecodeMs() { return decodeMs; }
-    public void setDecodeMs(long decodeMs) { this.decodeMs = decodeMs; }
-    public long getValidateMs() { return validateMs; }
-    public void setValidateMs(long validateMs) { this.validateMs = validateMs; }
-    public int getTokenCount() { return tokenCount; }
-    public void setTokenCount(int tokenCount) { this.tokenCount = tokenCount; }
-    public double getTokPerSec() { return tokPerSec; }
-    public void setTokPerSec(double tokPerSec) { this.tokPerSec = tokPerSec; }
-    public double getDecodeTokPerSec() { return decodeTokPerSec; }
-    public void setDecodeTokPerSec(double decodeTokPerSec) { this.decodeTokPerSec = decodeTokPerSec; }
-    public double getSteadyTokPerSec() { return steadyTokPerSec; }
-    public void setSteadyTokPerSec(double steadyTokPerSec) { this.steadyTokPerSec = steadyTokPerSec; }
-    public double getLateSteadyTokPerSec() { return lateSteadyTokPerSec; }
-    public void setLateSteadyTokPerSec(double lateSteadyTokPerSec) { this.lateSteadyTokPerSec = lateSteadyTokPerSec; }
-    public long getFirstTokenMs() { return firstTokenMs; }
-    public void setFirstTokenMs(long firstTokenMs) { this.firstTokenMs = firstTokenMs; }
-    public GenerationResult.FinishReason getFinishReason() { return finishReason; }
-    public void setFinishReason(GenerationResult.FinishReason finishReason) { this.finishReason = finishReason; }
-    public long getTritonLaunches() { return tritonLaunches; }
-    public void setTritonLaunches(long tritonLaunches) { this.tritonLaunches = tritonLaunches; }
-    public long getTritonCacheHits() { return tritonCacheHits; }
-    public void setTritonCacheHits(long tritonCacheHits) { this.tritonCacheHits = tritonCacheHits; }
-    public int getWarmupStepCount() { return warmupStepCount; }
-    public void setWarmupStepCount(int warmupStepCount) { this.warmupStepCount = warmupStepCount; }
-    public long getMaxWarmupStepMs() { return maxWarmupStepMs; }
-    public void setMaxWarmupStepMs(long maxWarmupStepMs) { this.maxWarmupStepMs = maxWarmupStepMs; }
-    public long getTotalWarmupMs() { return totalWarmupMs; }
-    public void setTotalWarmupMs(long totalWarmupMs) { this.totalWarmupMs = totalWarmupMs; }
-    public String getPlanMetricsSummary() { return planMetricsSummary; }
-    public void setPlanMetricsSummary(String planMetricsSummary) { this.planMetricsSummary = planMetricsSummary; }
-    public String getGeneratedText() { return generatedText; }
-    public void setGeneratedText(String generatedText) { this.generatedText = generatedText; }
 
     public String summary() {
         if (!passed) return String.format("[FAIL] %s: %s", configName, failureMessage);

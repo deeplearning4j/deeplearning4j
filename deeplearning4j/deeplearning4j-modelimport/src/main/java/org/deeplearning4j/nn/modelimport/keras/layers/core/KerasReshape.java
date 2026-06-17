@@ -19,8 +19,8 @@
  */
 
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
-
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.val;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -28,6 +28,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.preprocessors.ReshapePreprocessor;
 
@@ -106,8 +108,8 @@ public class KerasReshape extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                     "Keras Reshape layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preprocessor = null;
-        if (inputType[0] instanceof InputType.InputTypeConvolutional) {
-            InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional) inputType[0];
+        if (inputType[0] instanceof InputTypeConvolutional) {
+            InputTypeConvolutional it = (InputTypeConvolutional) inputType[0];
             val inputShape = new long[]{it.getChannels(), it.getHeight(), it.getWidth()};
             val dimOrder = getDimOrder();
             if (dimOrder == DimOrder.THEANO || dimOrder == DimOrder.NONE && kerasMajorVersion == 1) {
@@ -121,8 +123,8 @@ public class KerasReshape extends KerasLayer {
                 preprocessor = new ReshapePreprocessor(inputShape, targetShape, false, CNN2DFormat.NHWC);
             }
 
-        } else if (inputType[0] instanceof InputType.InputTypeConvolutional3D) {
-            InputType.InputTypeConvolutional3D it = (InputType.InputTypeConvolutional3D) inputType[0];
+        } else if (inputType[0] instanceof InputTypeConvolutional3D) {
+            InputTypeConvolutional3D it = (InputTypeConvolutional3D) inputType[0];
             val inputShape = new long[] { it.getDepth(), it.getHeight(), it.getWidth(), it.getChannels() };
             val dimOrder = getDimOrder();
             if (dimOrder == DimOrder.THEANO || dimOrder == DimOrder.NONE && kerasMajorVersion == 1) {
@@ -137,12 +139,12 @@ public class KerasReshape extends KerasLayer {
                     targetShape = new long[] { targetShape[3], targetShape[0], targetShape[1], targetShape[2] };
                 preprocessor = new ReshapePreprocessor(inputShape, targetShape, false, null);
             }
-        }  else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
-            InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType[0];
+        }  else if (inputType[0] instanceof InputTypeRecurrent) {
+            InputTypeRecurrent it = (InputTypeRecurrent) inputType[0];
             val inputShape = new long[]{it.getSize(), it.getTimeSeriesLength()};
             preprocessor = new ReshapePreprocessor(inputShape, this.targetShape, false, null);
-        } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
-            InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
+        } else if (inputType[0] instanceof InputTypeFeedForward) {
+            InputTypeFeedForward it = (InputTypeFeedForward) inputType[0];
             val inputShape = new long[]{it.getSize()};
             if (targetShape.length == 3) {
                 targetShape = targetShapeForDimOrder(inputShape, targetShape);

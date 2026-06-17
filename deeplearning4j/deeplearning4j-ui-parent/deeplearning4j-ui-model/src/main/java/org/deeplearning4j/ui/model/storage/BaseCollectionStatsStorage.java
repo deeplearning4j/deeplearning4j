@@ -20,11 +20,8 @@
 
 package org.deeplearning4j.ui.model.storage;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import org.deeplearning4j.core.storage.*;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -417,52 +414,4 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
         return new ArrayList<>(listeners);
     }
 
-    @Data
-    public static class SessionTypeWorkerId implements Serializable, Comparable<SessionTypeWorkerId> {
-        private final String sessionID;
-        private final String typeID;
-        private final String workerID;
-
-        public SessionTypeWorkerId(String sessionID, String typeID, String workerID) {
-            this.sessionID = sessionID;
-            this.typeID = typeID;
-            this.workerID = workerID;
-        }
-
-        @Override
-        public int compareTo(SessionTypeWorkerId o) {
-            int c = sessionID.compareTo(o.sessionID);
-            if (c != 0)
-                return c;
-            c = typeID.compareTo(o.typeID);
-            if (c != 0)
-                return c;
-            return workerID.compareTo(workerID);
-        }
-
-        @Override
-        public String toString() {
-            return "(" + sessionID + "," + typeID + "," + workerID + ")";
-        }
-    }
-
-    @AllArgsConstructor
-    @Data
-    public static class SessionTypeId implements Serializable, Comparable<SessionTypeId> {
-        private final String sessionID;
-        private final String typeID;
-
-        @Override
-        public int compareTo(SessionTypeId o) {
-            int c = sessionID.compareTo(o.sessionID);
-            if (c != 0)
-                return c;
-            return typeID.compareTo(o.typeID);
-        }
-
-        @Override
-        public String toString() {
-            return "(" + sessionID + "," + typeID + ")";
-        }
-    }
 }

@@ -27,89 +27,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class CollectScoresIterationListener extends BaseTrainingListener {
 
     private int frequency;
     private int iterationCount = 0;
     //private List<Pair<Integer, Double>> scoreVsIter = new ArrayList<>();
-
-    public static class ScoreStat {
-        public static final int BUCKET_LENGTH = 10000;
-
-        private int position = 0;
-        private int bucketNumber = 1;
-        private List<long[]> indexes;
-        private List<double[]> scores;
-
-        public ScoreStat() {
-            indexes = new ArrayList<>(1);
-            indexes.add(new long[BUCKET_LENGTH]);
-            scores = new ArrayList<>(1);
-            scores.add(new double[BUCKET_LENGTH]);
-        }
-
-        public List<long[]> getIndexes() {
-            return indexes;
-        }
-
-        public List<double[]> getScores() {
-            return scores;
-        }
-
-        public long[] getEffectiveIndexes() {
-            return Arrays.copyOfRange(indexes.get(0), 0, position);
-        }
-
-        public double[] getEffectiveScores() {
-            return Arrays.copyOfRange(scores.get(0), 0, position);
-        }
-
-
-        /*
-            Originally scores array is initialized with BUCKET_LENGTH size.
-            When data doesn't fit there - arrays size is increased for BUCKET_LENGTH,
-            old data is copied and bucketNumber (counter of reallocations) being incremented.
-
-            If we got more score points than MAX_VALUE - they are put to another item of scores list.
-         */
-        private void reallocateGuard() {
-            if (position >= BUCKET_LENGTH * bucketNumber) {
-
-                long fullLength = (long)BUCKET_LENGTH * bucketNumber;
-
-                if (position == Integer.MAX_VALUE || fullLength >= Integer.MAX_VALUE) {
-                    position = 0;
-                    long[] newIndexes = new long[BUCKET_LENGTH];
-                    double[] newScores = new double[BUCKET_LENGTH];
-                    indexes.add(newIndexes);
-                    scores.add(newScores);
-                }
-                else {
-                    long[] newIndexes = new long[(int)fullLength + BUCKET_LENGTH];
-                    double[] newScores = new double[(int)fullLength + BUCKET_LENGTH];
-                    System.arraycopy(indexes.get(indexes.size()-1), 0, newIndexes, 0, (int)fullLength);
-                    System.arraycopy(scores.get(scores.size()-1), 0, newScores, 0, (int)fullLength);
-                    scores.remove(scores.size()-1);
-                    indexes.remove(indexes.size()-1);
-                    int lastIndex = scores.size() == 0 ? 0 : scores.size()-1;
-                    scores.add(lastIndex, newScores);
-                    indexes.add(lastIndex, newIndexes);
-                }
-                bucketNumber += 1;
-            }
-        }
-
-        public void addScore(long index, double score) {
-            reallocateGuard();
-            scores.get(scores.size() - 1)[position] = score;
-            indexes.get(scores.size() - 1)[position] = index;
-            position += 1;
-        }
-    }
 
     ScoreStat scoreVsIter = new ScoreStat();
 
@@ -159,12 +82,12 @@ public class CollectScoresIterationListener extends BaseTrainingListener {
     public void exportScores(OutputStream outputStream, String delimiter) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append("Iteration").append(delimiter).append("Score");
-        int largeBuckets = scoreVsIter.indexes.size();
+        int largeBuckets = scoreVsIter.getIndexes().size();
         for (int j = 0; j < largeBuckets; ++j) {
-            long[] indexes = scoreVsIter.indexes.get(j);
-            double[] scores = scoreVsIter.scores.get(j);
+            long[] indexes = scoreVsIter.getIndexes().get(j);
+            double[] scores = scoreVsIter.getScores().get(j);
 
-            int effectiveLength = (j < largeBuckets -1) ? indexes.length : scoreVsIter.position;
+            int effectiveLength = (j < largeBuckets -1) ? indexes.length : scoreVsIter.getPosition();
 
             for (int i = 0; i < effectiveLength; ++i) {
                 sb.append("\n").append(indexes[i]).append(delimiter).append(scores[i]);

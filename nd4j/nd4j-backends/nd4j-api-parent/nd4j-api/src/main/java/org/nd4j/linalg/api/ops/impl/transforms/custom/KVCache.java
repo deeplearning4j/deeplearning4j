@@ -69,8 +69,11 @@ public class KVCache implements AutoCloseable {
     @Getter
     private final DataType dataType;
 
+    @Getter
     private INDArray keyCache;
+    @Getter
     private INDArray valueCache;
+    @Getter
     private long currentLength;
 
     /**
@@ -177,33 +180,12 @@ public class KVCache implements AutoCloseable {
     }
 
     /**
-     * Get the current valid sequence length in the cache.
-     */
-    public long getCurrentLength() {
-        return currentLength;
-    }
-
-    /**
      * Reset the cache (clear all stored values).
      */
     public void reset() {
         keyCache.assign(0);
         valueCache.assign(0);
         currentLength = 0;
-    }
-
-    /**
-     * Get the underlying key cache tensor.
-     */
-    public INDArray getKeyCache() {
-        return keyCache;
-    }
-
-    /**
-     * Get the underlying value cache tensor.
-     */
-    public INDArray getValueCache() {
-        return valueCache;
     }
 
     @Override

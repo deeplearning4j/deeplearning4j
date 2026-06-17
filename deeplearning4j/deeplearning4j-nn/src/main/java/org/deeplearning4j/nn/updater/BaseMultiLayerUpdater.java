@@ -118,8 +118,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                         if (paramsViewSoFar + paramSizeThisVariable > Integer.MAX_VALUE || paramsViewSoFar + paramSizeThisVariable > Integer.MAX_VALUE)
                             throw new ND4JArraySizeException();
                         //Create a new block
-                        List<UpdaterBlock.ParamState> list = new ArrayList<>();
-                        list.add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
+                        List<ParamState> list = new ArrayList<>();
+                        list.add(new ParamState(layers[i], var, paramsViewSoFar,
                                 (int) (paramsViewSoFar + paramSizeThisVariable), paramsViewSubset, gradientViewSubset));
                         currentBlock = new UpdaterBlock(paramsViewSoFar, (int) (paramsViewSoFar + paramSizeThisVariable),
                                 currentUpdaterOffset, currentUpdaterOffset + updaterStateSizeThisVariable,
@@ -135,7 +135,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                         currentBlock.setUpdaterViewOffsetEnd(
                                 currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
                         currentBlock.getLayersAndVariablesInBlock()
-                                .add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
+                                .add(new ParamState(layers[i], var, paramsViewSoFar,
                                         (int) (paramsViewSoFar + paramSizeThisVariable), paramsViewSubset,
                                         gradientViewSubset));
                     }

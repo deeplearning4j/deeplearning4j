@@ -54,10 +54,6 @@ public class ListBuilder extends BaseBuilder {
         return layer(++layerCounter, layer);
     }
 
-    public Map<Integer, NeuralNetConfiguration.Builder> getLayerwise() {
-        return layerwise;
-    }
-
     @Override
     public ListBuilder overrideNinUponBuild(boolean overrideNinUponBuild) {
         super.overrideNinUponBuild(overrideNinUponBuild);

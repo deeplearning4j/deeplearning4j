@@ -20,6 +20,7 @@
 
 package org.nd4j.autodiff.samediff.internal.memory;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
@@ -50,6 +51,7 @@ public class MultiBackendWorkspaceSessionMemMgr implements SessionMemMgr {
 
     private final long initialGpuBytes;
     private final int gpuDeviceIndex;
+    @Getter
     private NativeMultiBackendWorkspace multiBackendWorkspace;
     private Pointer nativeWorkspacePtr;
     private boolean scopeActive = false;
@@ -202,14 +204,6 @@ public class MultiBackendWorkspaceSessionMemMgr implements SessionMemMgr {
         DataType dataType = Shape.dataType(asJava);
         long[] shape = Shape.shape(asJava);
         return allocate(detached, dataType, shape);
-    }
-
-    /**
-     * Get the underlying multi-backend workspace for direct access to coherence state,
-     * allocated sizes, and device-specific operations.
-     */
-    public NativeMultiBackendWorkspace getMultiBackendWorkspace() {
-        return multiBackendWorkspace;
     }
 
     @Override

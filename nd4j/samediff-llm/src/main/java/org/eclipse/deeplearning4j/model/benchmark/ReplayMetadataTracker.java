@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Tracks replay metadata across validation iterations: phase progression, replay
@@ -360,6 +361,7 @@ public class ReplayMetadataTracker implements AutoCloseable {
     /**
      * Immutable snapshot of replay metadata at a point in time.
      */
+    @Getter
     public static class ReplayMetadata {
         private final String configName;
         private final Phase currentPhase;
@@ -388,16 +390,6 @@ public class ReplayMetadataTracker implements AutoCloseable {
             this.totalIterations = totalIterations;
             this.nativeHandleAvailable = nativeHandleAvailable;
         }
-
-        public String getConfigName() { return configName; }
-        public Phase getCurrentPhase() { return currentPhase; }
-        public List<PhaseTransition> getPhaseTransitions() { return phaseTransitions; }
-        public List<String> getPhaseViolations() { return phaseViolations; }
-        public Map<Integer, Long> getSegmentSignatures() { return segmentSignatures; }
-        public Map<Integer, Integer> getSegmentUnitCounts() { return segmentUnitCounts; }
-        public Map<Integer, Integer> getSegmentExecCounts() { return segmentExecCounts; }
-        public int getTotalIterations() { return totalIterations; }
-        public boolean isNativeHandleAvailable() { return nativeHandleAvailable; }
 
         /**
          * Human-readable replay metadata report.

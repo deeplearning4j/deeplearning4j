@@ -99,11 +99,6 @@ public class LayerVertex extends BaseGraphVertex {
         return outputVertex || layer instanceof BaseOutputLayer;
     }
 
-    @Override
-    public Layer getLayer() {
-        return layer;
-    }
-
     @SneakyThrows
     @Override
     public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {

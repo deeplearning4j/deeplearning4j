@@ -61,14 +61,18 @@ public class KerasLayer {
     protected List<String> inboundLayerNames; // List of inbound layers
     @Getter
     protected List<String> outboundLayerNames; //List of outbound layers
+    @Getter
     protected Layer layer; // Resulting DL4J layer
+    @Getter
     protected GraphVertex vertex; // Resulting DL4J vertex
+    @Getter
     protected Map<String, INDArray> weights; // Weights
     protected double weightL1Regularization = 0.0; // L1 regularization
     protected double weightL2Regularization = 0.0; // L2 regularization
     protected double biasL1Regularization = 0.0; // L1 bias regularization
     protected double biasL2Regularization = 0.0; // L2 bias regularization
     protected double dropout = 1.0; // Dropout
+    @Getter
     protected Integer kerasMajorVersion = 2; // Set 2 as default for now
     @Getter
     protected KerasLayerConfiguration conf;
@@ -201,33 +205,6 @@ public class KerasLayer {
     }
 
     /**
-     * Get Keras major version of this layer.
-     *
-     * @return Keras version as integer
-     */
-    public Integer getKerasMajorVersion() {
-        return this.kerasMajorVersion;
-    }
-
-    /**
-     * Get Keras layer class name.
-     *
-     * @return Keras layer class name
-     */
-    public String getClassName() {
-        return this.className;
-    }
-
-    /**
-     * Get Keras layer name.
-     *
-     * @return layer name
-     */
-    public String getLayerName() {
-        return this.layerName;
-    }
-
-    /**
      * Get layer input shape.
      *
      * @return input shape
@@ -236,15 +213,6 @@ public class KerasLayer {
         if (this.inputShape == null)
             return null;
         return this.inputShape.clone();
-    }
-
-    /**
-     * Get Keras layer backend dimension order.
-     *
-     * @return Keras layer (backend) dimension order
-     */
-    public DimOrder getDimOrder() {
-        return this.dimOrder;
     }
 
     /**
@@ -299,10 +267,6 @@ public class KerasLayer {
      */
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         //no op
-    }
-
-    public Map<String, INDArray> getWeights() {
-        return this.weights;
     }
 
     /**
@@ -374,16 +338,6 @@ public class KerasLayer {
         return this.layer != null;
     }
 
-    /**
-     * Gets corresponding DL4J Layer, if any.
-     *
-     * @return DL4J Layer
-     * @see org.deeplearning4j.nn.api.Layer
-     */
-    public Layer getLayer() {
-        return this.layer;
-    }
-
     public void setLayer(Layer layer){
         this.layer = layer;
     }
@@ -395,16 +349,6 @@ public class KerasLayer {
      */
     public boolean isVertex() {
         return this.vertex != null;
-    }
-
-    /**
-     * Gets corresponding DL4J Vertex, if any.
-     *
-     * @return DL4J Vertex
-     * @see org.deeplearning4j.nn.conf.graph.GraphVertex
-     */
-    public GraphVertex getVertex() {
-        return this.vertex;
     }
 
     /**

@@ -418,26 +418,6 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         }
     }
 
-    @Override
-    public String getSessionID() {
-        return sessionID;
-    }
-
-    @Override
-    public String getTypeID() {
-        return typeID;
-    }
-
-    @Override
-    public String getWorkerID() {
-        return workerID;
-    }
-
-    @Override
-    public long getTimeStamp() {
-        return timeStamp;
-    }
-
 
     //================ Ser/de methods =================
 

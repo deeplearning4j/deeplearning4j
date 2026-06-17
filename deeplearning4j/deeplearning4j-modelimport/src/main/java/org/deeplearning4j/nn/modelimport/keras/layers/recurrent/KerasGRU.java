@@ -257,15 +257,6 @@ public class KerasGRU extends KerasLayer {
     }
 
     /**
-     * Get whether GRU layer should be unrolled (for truncated BPTT).
-     *
-     * @return whether RNN should be unrolled (boolean)
-     */
-    public boolean getUnroll() {
-        return this.unroll;
-    }
-
-    /**
      * Set weights for layer.
      *
      * @param weights GRU weights

@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.datasets.iterator;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.callbacks.FileCallback;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class FileSplitDataSetIterator implements DataSetIterator {
+    @Getter
     private DataSetPreProcessor preProcessor;
 
     private List<File> files;
@@ -89,11 +91,6 @@ public class FileSplitDataSetIterator implements DataSetIterator {
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
-    }
-
-    @Override
-    public DataSetPreProcessor getPreProcessor() {
-        return preProcessor;
     }
 
     @Override

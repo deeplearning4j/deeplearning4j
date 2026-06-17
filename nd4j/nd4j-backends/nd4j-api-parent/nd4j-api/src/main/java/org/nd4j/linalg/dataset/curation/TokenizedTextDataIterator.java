@@ -152,6 +152,7 @@ public class TokenizedTextDataIterator implements MultiDataSetIterator {
      */
     private final List<int[]> tokenMasks;
 
+    @Getter
     private MultiDataSetPreProcessor preProcessor;
 
     /** Cursor into the token sequences list (post-pack in packing mode). */
@@ -352,11 +353,6 @@ public class TokenizedTextDataIterator implements MultiDataSetIterator {
     @Override
     public void setPreProcessor(MultiDataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
-    }
-
-    @Override
-    public MultiDataSetPreProcessor getPreProcessor() {
-        return preProcessor;
     }
 
     // -------------------------------------------------------------------------

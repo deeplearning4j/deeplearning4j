@@ -19,6 +19,7 @@
 
 package org.deeplearning4j.ui.module.modelmanager;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -40,6 +41,7 @@ public class ModelRegistry {
 
     private static final ObjectMapper MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
+    @Getter
     private final Path registryDir;
     private final Path registryFile;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -59,10 +61,6 @@ public class ModelRegistry {
             log.warn("Could not create registry directory: {}", registryDir, e);
         }
         loadRegistry();
-    }
-
-    public Path getRegistryDir() {
-        return registryDir;
     }
 
     public List<ModelRegistryEntry> listEntries() {

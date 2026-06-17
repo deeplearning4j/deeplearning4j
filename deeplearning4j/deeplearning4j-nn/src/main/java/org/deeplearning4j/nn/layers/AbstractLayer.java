@@ -97,16 +97,10 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
                 getClass().getSimpleName() + ")";
     }
 
-    public INDArray getInput() {
-        return input;
-    }
-
-    public int getEpochCount() {
-        return epochCount;
-    }
-
-    public void setEpochCount(int epochCount) {
-        this.epochCount = epochCount;
+    @Override
+    public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        this.input = workspaceMgr.leverageTo(ArrayType.INPUT,input);
+        dropoutApplied = false;
     }
 
     /**
@@ -115,22 +109,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public void init() {
 
-    }
-
-    @Override
-    public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
-        this.input = workspaceMgr.leverageTo(ArrayType.INPUT,input);
-        dropoutApplied = false;
-    }
-
-    @Override
-    public int getIndex() {
-        return index;
-    }
-
-    @Override
-    public void setIndex(int index) {
-        this.index = index;
     }
 
 
@@ -367,16 +345,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public int getInputMiniBatchSize() {
         return (int) input.size(0);
-    }
-
-    @Override
-    public void setMaskArray(INDArray maskArray) {
-        this.maskArray = maskArray;
-    }
-
-    @Override
-    public INDArray getMaskArray() {
-        return maskArray;
     }
 
     @Override

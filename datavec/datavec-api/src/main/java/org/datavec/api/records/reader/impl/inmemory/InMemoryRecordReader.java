@@ -103,16 +103,6 @@ public class InMemoryRecordReader implements RecordReader {
     }
 
     /**
-     * List of label strings
-     *
-     * @return
-     */
-    @Override
-    public List<String> getLabels() {
-        return labels;
-    }
-
-    /**
      * Reset record reader iterator
      *
      * @return

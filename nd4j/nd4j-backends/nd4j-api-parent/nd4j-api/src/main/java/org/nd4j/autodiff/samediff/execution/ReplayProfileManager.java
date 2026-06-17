@@ -75,7 +75,7 @@ public class ReplayProfileManager {
         NativeOps ops = Nd4j.getNativeOps();
         if (ops.isReplayCacheEnabled()) {
             // Loading the profile triggers cache lookup in C++ side
-            BackendPlanManager.DeviceKey device = BackendPlanManager.DeviceKey.currentDevice();
+            DeviceKey device = DeviceKey.currentDevice();
             int loaded = ops.loadReplayCacheForDevice(nativePlanHandle,
                 device.typeOrdinal(), device.index);
             if (loaded > 0) {

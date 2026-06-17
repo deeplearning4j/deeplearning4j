@@ -44,18 +44,8 @@ public class ConvolutionListenerPersistable implements Persistable {
     public ConvolutionListenerPersistable() {}
 
     @Override
-    public String getSessionID() {
-        return sessionID;
-    }
-
-    @Override
     public String getTypeID() {
         return TYPE_ID;
-    }
-
-    @Override
-    public String getWorkerID() {
-        return workerID;
     }
 
     @Override

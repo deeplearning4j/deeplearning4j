@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.api.memory.abstracts;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.factory.Nd4j;
@@ -61,6 +62,7 @@ public class NativeMultiBackendWorkspace implements AutoCloseable {
     public static final int COHERENCE_EXCLUSIVE = 2;
     public static final int COHERENCE_MODIFIED = 3;
 
+    @Getter
     private Pointer nativeHandle;
     private final NativeOps nativeOps;
     private volatile boolean closed = false;
@@ -175,13 +177,6 @@ public class NativeMultiBackendWorkspace implements AutoCloseable {
     public long getCurrentOffset() {
         checkNotClosed();
         return nativeOps.nativeMbwGetCurrentOffset(nativeHandle);
-    }
-
-    /**
-     * Get the native handle for passing to other native functions.
-     */
-    public Pointer getNativeHandle() {
-        return nativeHandle;
     }
 
     private void checkNotClosed() {

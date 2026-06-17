@@ -44,6 +44,7 @@ public class VocabWord extends SequenceElement implements Serializable {
     private static final long serialVersionUID = 2223750736522624256L;
 
     //for my sanity
+    @Getter
     private String word;
 
     /*
@@ -86,10 +87,6 @@ public class VocabWord extends SequenceElement implements Serializable {
         return this.word;
     }
 
-
-    public String getWord() {
-        return word;
-    }
 
     public void setWord(String word) {
         this.word = word;

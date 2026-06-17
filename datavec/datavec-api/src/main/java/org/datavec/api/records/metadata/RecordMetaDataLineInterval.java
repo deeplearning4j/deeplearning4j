@@ -53,8 +53,4 @@ public class RecordMetaDataLineInterval implements RecordMetaData {
         return uri;
     }
 
-    @Override
-    public Class<?> getReaderClass() {
-        return readerClass;
-    }
 }

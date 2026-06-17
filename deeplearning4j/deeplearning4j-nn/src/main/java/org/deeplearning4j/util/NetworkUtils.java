@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.util;
-
+import org.deeplearning4j.nn.updater.ParamState;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Trainable;
@@ -445,7 +445,7 @@ public class NetworkUtils {
 
         Map<String,List<INDArray>> stateViewsPerParam = new HashMap<>();
         for(UpdaterBlock ub : orig){
-            List<UpdaterBlock.ParamState> params = ub.getLayersAndVariablesInBlock();
+            List<ParamState> params = ub.getLayersAndVariablesInBlock();
             int blockPStart = ub.getParamOffsetStart();
             int blockPEnd = ub.getParamOffsetEnd();
 
@@ -463,7 +463,7 @@ public class NetworkUtils {
                 INDArray subsetUpdaterView = updaterView.get(NDArrayIndex.interval(soFar, soFar + nParamsInBlock));
 
                 long offsetWithinSub = 0;
-                for (UpdaterBlock.ParamState ps : params) {
+                for (ParamState ps : params) {
                     int idx = getId(ps.getLayer());
                     String paramName = idx + "_" + ps.getParamName();
                     INDArray pv = ps.getParamView();
@@ -483,13 +483,13 @@ public class NetworkUtils {
         //Now that we've got updater state per param, we need to reconstruct it in an order suitable for the new updater blocks...
         List<INDArray> toConcat = new ArrayList<>();
         for(UpdaterBlock ub : newUpdater){
-            List<UpdaterBlock.ParamState> ps = ub.getLayersAndVariablesInBlock();
+            List<ParamState> ps = ub.getLayersAndVariablesInBlock();
             int idx = getId(ps.get(0).getLayer());
             String firstParam = idx + "_" + ps.get(0).getParamName();
             int size = stateViewsPerParam.get(firstParam).size();
             //For multiple params in the one block, we want to order like [a0, b0, c0][a1,b1,c1]
             for( int i=0; i<size; i++ ){
-                for(UpdaterBlock.ParamState p : ps) {
+                for(ParamState p : ps) {
                     idx = getId(p.getLayer());
                     String paramName = idx + "_" + p.getParamName();
                     INDArray arr = stateViewsPerParam.get(paramName).get(i);

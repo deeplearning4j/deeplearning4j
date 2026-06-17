@@ -18,13 +18,15 @@
  *  *****************************************************************************
  */
 package org.deeplearning4j.nn.modelimport.keras.layers.attention;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.graph.DotProductAttentionVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -110,17 +112,17 @@ public class KerasAttentionLayer extends KerasLayer {
         InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
         switch (inputType[0].getType()) {
             case FF:
-                InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward) inputType[0];
+                InputTypeFeedForward ff = (InputTypeFeedForward) inputType[0];
                 this.getAttentionVertex().setNIn(ff.getSize());
                 this.getAttentionVertex().setNOut(ff.getSize());
                 break;
             case CNN:
-                InputType.InputTypeConvolutional cnn = (InputType.InputTypeConvolutional) inputType[0];
+                InputTypeConvolutional cnn = (InputTypeConvolutional) inputType[0];
                 this.getAttentionVertex().setNIn(cnn.getChannels());
                 this.getAttentionVertex().setNOut(cnn.getChannels());
                 break;
             case RNN:
-                InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType[0];
+                InputTypeRecurrent rnn = (InputTypeRecurrent) inputType[0];
                 this.getAttentionVertex().setNIn(rnn.getSize());
                 this.getAttentionVertex().setNOut(rnn.getSize());
                 break;

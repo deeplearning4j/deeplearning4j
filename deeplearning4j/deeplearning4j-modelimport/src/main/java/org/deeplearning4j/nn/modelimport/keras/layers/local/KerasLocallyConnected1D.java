@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.modelimport.keras.layers.local;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -139,7 +139,7 @@ public class KerasLocallyConnected1D extends KerasConvolution {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
-        InputType.InputTypeRecurrent rnnType = (InputType.InputTypeRecurrent) inputType[0];
+        InputTypeRecurrent rnnType = (InputTypeRecurrent) inputType[0];
 
         // Override input/output shape and input channels dynamically. This works since getOutputType will always
         // be called when initializing the model.

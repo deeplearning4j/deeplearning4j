@@ -68,11 +68,6 @@ public class ReduceSequenceTransform implements Transform {
     }
 
     @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
-    @Override
     public List<Writable> map(List<Writable> writables) {
         throw new UnsupportedOperationException("ReduceSequenceTransform can only be applied on sequences");
     }

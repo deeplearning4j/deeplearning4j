@@ -52,8 +52,4 @@ public class RecordMetaDataLine implements RecordMetaData {
         return uri;
     }
 
-    @Override
-    public Class<?> getReaderClass() {
-        return readerClass;
-    }
 }

@@ -735,11 +735,6 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
     }
 
     @Override
-    public MultiDataSetPreProcessor getPreProcessor() {
-        return preProcessor;
-    }
-
-    @Override
     public boolean resetSupported() {
         return resetSupported;
     }

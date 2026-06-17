@@ -62,11 +62,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @Slf4j
 public class LossScaler {
 
+    @Getter
     private final LossScaleConfig config;
 
     @Getter
     private double currentScale;
 
+    @Getter
     private int consecutiveFiniteCount;
 
     /**
@@ -200,23 +202,5 @@ public class LossScaler {
     public void reset() {
         this.currentScale = config.getInitialScale();
         this.consecutiveFiniteCount = 0;
-    }
-
-    /**
-     * Get the configuration for this loss scaler.
-     *
-     * @return The loss scale configuration
-     */
-    public LossScaleConfig getConfig() {
-        return config;
-    }
-
-    /**
-     * Get the number of consecutive iterations with finite gradients.
-     *
-     * @return The consecutive finite count
-     */
-    public int getConsecutiveFiniteCount() {
-        return consecutiveFiniteCount;
     }
 }

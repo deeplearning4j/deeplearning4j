@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.vlm.pipeline;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -59,9 +60,9 @@ import java.util.concurrent.*;
 public class VLMPipelineExecutor implements AutoCloseable {
 
     private final SameDiff visionEncoder;
-    private final int encoderDeviceId;
+    @Getter private final int encoderDeviceId;
     private final SameDiff decoder;
-    private final int decoderDeviceId;
+    @Getter private final int decoderDeviceId;
     private final SameDiff embedTokens;
 
     /** Single-thread executor for encoder — ensures all encoder work stays on encoderDeviceId. */
@@ -281,20 +282,6 @@ public class VLMPipelineExecutor implements AutoCloseable {
         } catch (Exception e) {
             log.warn("Timeout/error freeing vision encoder: {}", e.getMessage());
         }
-    }
-
-    /**
-     * @return the decoder device ID for callers to set up decoder execution
-     */
-    public int getDecoderDeviceId() {
-        return decoderDeviceId;
-    }
-
-    /**
-     * @return the encoder device ID
-     */
-    public int getEncoderDeviceId() {
-        return encoderDeviceId;
     }
 
     /**

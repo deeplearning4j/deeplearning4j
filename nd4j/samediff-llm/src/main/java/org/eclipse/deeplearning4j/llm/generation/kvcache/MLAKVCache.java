@@ -20,6 +20,8 @@
 
 package org.eclipse.deeplearning4j.llm.generation.kvcache;
 
+import lombok.AccessLevel;
+import lombok.Getter;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -61,6 +63,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Eclipse Deeplearning4j Contributors
  */
+@Getter
 public class MLAKVCache implements AutoCloseable {
 
     private final int batchSize;
@@ -88,6 +91,7 @@ public class MLAKVCache implements AutoCloseable {
      * [latentDim, 2 * numKvHeads * headDim].
      * These are model constants, not cached activations.
      */
+    @Getter(AccessLevel.NONE)
     private final INDArray[] kvDownProj;
 
     /**
@@ -188,24 +192,6 @@ public class MLAKVCache implements AutoCloseable {
     }
 
     /**
-     * Returns the shared latent KV cache tensor.
-     *
-     * @return latent cache [batchSize, maxSeqLen, latentDim]
-     */
-    public INDArray getLatentCache() {
-        return latentCache;
-    }
-
-    /**
-     * Returns the optional RoPE cache tensor.
-     *
-     * @return RoPE cache [batchSize, maxSeqLen, ropeHeadDim], or null if ropeHeadDim == 0
-     */
-    public INDArray getRopeCache() {
-        return ropeCache;
-    }
-
-    /**
      * Returns the KV decompression weight for a specific layer.
      *
      * @param layerIdx layer index (0-based)
@@ -270,48 +256,6 @@ public class MLAKVCache implements AutoCloseable {
         if (ropeCache != null) {
             ropeCache.assign(0);
         }
-    }
-
-    /**
-     * Returns the batch size.
-     */
-    public int getBatchSize() {
-        return batchSize;
-    }
-
-    /**
-     * Returns the maximum sequence length.
-     */
-    public int getMaxSeqLen() {
-        return maxSeqLen;
-    }
-
-    /**
-     * Returns the latent dimension.
-     */
-    public int getLatentDim() {
-        return latentDim;
-    }
-
-    /**
-     * Returns the RoPE head dimension.
-     */
-    public int getRopeHeadDim() {
-        return ropeHeadDim;
-    }
-
-    /**
-     * Returns the number of transformer layers.
-     */
-    public int getNumLayers() {
-        return numLayers;
-    }
-
-    /**
-     * Returns the data type used by the cache.
-     */
-    public DataType getDataType() {
-        return dataType;
     }
 
     @Override

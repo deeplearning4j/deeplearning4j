@@ -96,16 +96,22 @@ import java.util.*;
 public class MultiLayerNetwork implements Serializable, Classifier, Layer, NeuralNetwork {
 
     //the hidden neural network layers (including output layer)
+    @Getter
     protected Layer[] layers;
     protected LinkedHashMap<String, Layer> layerMap = new LinkedHashMap<>();
 
     //Current training data: input features and labels
-    protected INDArray input, labels;
+    @Getter
+    protected INDArray input;
+    @Getter
+    protected INDArray labels;
 
     protected boolean initCalled = false;
     protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
+    @Getter
     protected NeuralNetConfiguration defaultConfiguration;
+    @Getter
     protected MultiLayerConfiguration layerWiseConfigurations;
     @Getter
     @Setter
@@ -120,6 +126,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Setter
     protected boolean clearTbpttState = true;  //Mainly for unit testing (should be enabled otherwise)
     protected transient ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
+    @Getter
     protected INDArray mask;
 
     protected int layerIndex; //For Layer.get/setIndex()
@@ -591,14 +598,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         String newKey = key.substring(idx + 1);
 
         layers[layerIdx].setParam(newKey, val);
-    }
-
-    /**
-     * Get the configuration for the network
-     * @return Network configuration
-     */
-    public MultiLayerConfiguration getLayerWiseConfigurations() {
-        return layerWiseConfigurations;
     }
 
     /**
@@ -2940,22 +2939,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Intended for internal/developer use
-     */
-    public NeuralNetConfiguration getDefaultConfiguration() {
-        return defaultConfiguration;
-    }
-
-    public INDArray getLabels() {
-        return labels;
-    }
-
-    public INDArray getInput() {
-        return input;
-    }
-
-
-    /**
      * @param labels Labels to set
      */
     public void setLabels(INDArray labels) {
@@ -2969,13 +2952,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public int getnLayers() {
         return layerWiseConfigurations.getConfs().size();
-    }
-
-    /**
-     * @return The layers in the network
-     */
-    public  Layer[] getLayers() {
-        return layers;
     }
 
     public Layer getLayer(int i) {
@@ -2994,10 +2970,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     public void setLayers(Layer[] layers) {
         this.layers = layers;
-    }
-
-    public INDArray getMask() {
-        return mask;
     }
 
     public void setMask(INDArray mask) {

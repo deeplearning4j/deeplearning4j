@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.ui.model.stats;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.Pointer;
@@ -63,7 +64,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     private StatsStorageRouter router;
+    @Getter
     private final StatsInitializationConfiguration initConfig;
+    @Getter
     private StatsUpdateConfiguration updateConfig;
     private String sessionID;
     private String workerID;
@@ -175,14 +178,6 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     //                                                          Class<? extends StatsReport> statsReportClass);
     //new SbeStorageMetaData(initTime, getSessionID(model), TYPE_ID, workerID, SbeStatsInitializationReport.class, SbeStatsReport.class);
 
-
-    public StatsInitializationConfiguration getInitConfig() {
-        return initConfig;
-    }
-
-    public StatsUpdateConfiguration getUpdateConfig() {
-        return updateConfig;
-    }
 
     public void setUpdateConfig(StatsUpdateConfiguration newConfig) {
         this.updateConfig = newConfig;

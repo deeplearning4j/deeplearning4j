@@ -96,11 +96,6 @@ public class CalculateSortedRank implements Serializable, ColumnOp {
         this.inputSchema = schema;
     }
 
-    @Override
-    public Schema getInputSchema() {
-        return inputSchema;
-    }
-
     /**
      * The output column name
      * after the operation has been applied

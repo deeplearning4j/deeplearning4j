@@ -75,7 +75,7 @@ public class DataVecAnalysisUtils {
             switch (ct) {
                 case String:
                     StringAnalysisCounter sac = (StringAnalysisCounter) counters.get(i);
-                    list.add(new StringAnalysis.Builder().countTotal(sac.getCountTotal())
+                    list.add(StringAnalysis.builder().countTotal(sac.getCountTotal())
                             .minLength(sac.getMinLengthSeen()).maxLength(sac.getMaxLengthSeen())
                             .meanLength(sac.getMean()).sampleStdevLength(sac.getSampleStdev())
                             .sampleVarianceLength(sac.getSampleVariance()).build());
@@ -151,7 +151,7 @@ public class DataVecAnalysisUtils {
                     break;
                 case Bytes:
                     BytesAnalysisCounter bac = (BytesAnalysisCounter) counters.get(i);
-                    list.add(new BytesAnalysis.Builder().countTotal(bac.getCountTotal()).build());
+                    list.add(BytesAnalysis.builder().countTotal(bac.getCountTotal()).build());
                     break;
                 case NDArray:
                     NDArrayAnalysisCounter nac = (NDArrayAnalysisCounter) counters.get(i);

@@ -21,6 +21,7 @@
 package org.deeplearning4j.util;
 
 import org.apache.commons.io.input.CloseShieldInputStream;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.nd4j.common.util.ND4JFileUtils;
 import org.nd4j.shade.guava.io.Files;
 import lombok.NonNull;
@@ -91,36 +92,36 @@ public class ModelSerializer {
     private static int maxZipEntries = getConfiguredMaxEntries();
 
     private static long getConfiguredMaxSize() {
-        String prop = System.getProperty("dl4j.model.maxZipSize");
+        String prop = System.getProperty(DL4JSystemProperties.MODEL_MAX_ZIP_SIZE);
         if (prop != null) {
             try {
                 return Long.parseLong(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for dl4j.model.maxZipSize: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", DL4JSystemProperties.MODEL_MAX_ZIP_SIZE, prop);
             }
         }
         return DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE;
     }
 
     private static double getConfiguredMaxRatio() {
-        String prop = System.getProperty("dl4j.model.maxCompressionRatio");
+        String prop = System.getProperty(DL4JSystemProperties.MODEL_MAX_ZIP_SIZE_RATIO);
         if (prop != null) {
             try {
                 return Double.parseDouble(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for dl4j.model.maxCompressionRatio: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", DL4JSystemProperties.MODEL_MAX_ZIP_SIZE_RATIO, prop);
             }
         }
         return DEFAULT_MAX_COMPRESSION_RATIO;
     }
 
     private static int getConfiguredMaxEntries() {
-        String prop = System.getProperty("dl4j.model.maxZipEntries");
+        String prop = System.getProperty(DL4JSystemProperties.MODEL_MAX_ZIP_ENTRIES);
         if (prop != null) {
             try {
                 return Integer.parseInt(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for dl4j.model.maxZipEntries: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", DL4JSystemProperties.MODEL_MAX_ZIP_ENTRIES, prop);
             }
         }
         return DEFAULT_MAX_ZIP_ENTRIES;
@@ -1058,7 +1059,7 @@ public class ModelSerializer {
                             "which would bring total to " + (totalBytesRead + uncompressedSize) + " bytes. " +
                             "Maximum allowed is " + maxTotalSize + " bytes (" + (maxTotalSize / (1024 * 1024)) + " MB). " +
                             "If this is a legitimate model file, increase the limit using " +
-                            "ModelSerializer.setMaxTotalUncompressedSize() or system property 'dl4j.model.maxZipSize'");
+                            "ModelSerializer.setMaxTotalUncompressedSize() or system property '" + DL4JSystemProperties.MODEL_MAX_ZIP_SIZE + "'");
                 }
 
                 // Read entry data with actual byte counting (don't trust ZIP headers)
@@ -1070,7 +1071,7 @@ public class ModelSerializer {
                     throw new IOException("Potential zip bomb detected: total uncompressed size exceeded limit. " +
                             "Read " + totalBytesRead + " bytes so far, maximum allowed is " + maxTotalSize + " bytes. " +
                             "If this is a legitimate model file, increase the limit using " +
-                            "ModelSerializer.setMaxTotalUncompressedSize() or system property 'dl4j.model.maxZipSize'");
+                            "ModelSerializer.setMaxTotalUncompressedSize() or system property '" + DL4JSystemProperties.MODEL_MAX_ZIP_SIZE + "'");
                 }
 
                 result.put(entryName, data);

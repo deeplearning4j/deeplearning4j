@@ -21,6 +21,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -38,6 +39,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JointMultiDataSetIterator implements MultiDataSetIterator {
+    @Getter
     protected MultiDataSetPreProcessor preProcessor;
     protected Collection<DataSetIterator> iterators;
     protected int outcome = -1;
@@ -88,11 +90,6 @@ public class JointMultiDataSetIterator implements MultiDataSetIterator {
      *
      * @return Preprocessor
      */
-    @Override
-    public MultiDataSetPreProcessor getPreProcessor() {
-        return preProcessor;
-    }
-
     /**
      * Is resetting supported by this DataSetIterator? Many DataSetIterators do support resetting,
      * but some don't

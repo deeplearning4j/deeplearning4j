@@ -21,7 +21,7 @@
 
 
 package org.deeplearning4j.nn.conf;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -148,10 +148,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         ret.registerModule(customDeserializerModule);
         return ret;
-    }
-
-    public int getEpochCount() {
-        return epochCount;
     }
 
     public void setEpochCount(int epochCount) {
@@ -785,10 +781,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                         //convolution 1d is an edge case where it has rnn input type but the filters
                         //should be the output
                         if(layer instanceof Convolution1DLayer) {
-                            if(l instanceof DenseLayer && inputType instanceof InputType.InputTypeRecurrent) {
+                            if(l instanceof DenseLayer && inputType instanceof InputTypeRecurrent) {
                                 FeedForwardLayer feedForwardLayer = (FeedForwardLayer) l;
-                                if(inputType instanceof InputType.InputTypeRecurrent) {
-                                    InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                                if(inputType instanceof InputTypeRecurrent) {
+                                    InputTypeRecurrent recurrent = (InputTypeRecurrent) inputType;
                                     feedForwardLayer.setNIn(recurrent.getTimeSeriesLength());
                                 }
                             }

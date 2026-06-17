@@ -59,8 +59,4 @@ public class RecordMetaDataComposable implements RecordMetaData {
         return meta[0].getURI();
     }
 
-    @Override
-    public Class<?> getReaderClass() {
-        return readerClass;
-    }
 }
