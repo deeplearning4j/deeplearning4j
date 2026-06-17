@@ -720,17 +720,15 @@ void launchFusedAttention3DWithScores(
 }
 
 // Explicit instantiations for with-scores variant
-template void launchFusedAttention3DWithScores<float>(
-   const float*, const float*, const float*, float*, float*, float*,
-   LongType, LongType, LongType, LongType, float, bool, cudaStream_t);
+#define INSTANTIATE_FUSED_ATTN_SCORES(T) \
+  template void launchFusedAttention3DWithScores<T>( \
+     const T*, const T*, const T*, T*, T*, T*, \
+     LongType, LongType, LongType, LongType, float, bool, cudaStream_t);
 
-template void launchFusedAttention3DWithScores<double>(
-   const double*, const double*, const double*, double*, double*, double*,
-   LongType, LongType, LongType, LongType, float, bool, cudaStream_t);
-
-template void launchFusedAttention3DWithScores<float16>(
-   const float16*, const float16*, const float16*, float16*, float16*, float16*,
-   LongType, LongType, LongType, LongType, float, bool, cudaStream_t);
+INSTANTIATE_FUSED_ATTN_SCORES(float)
+INSTANTIATE_FUSED_ATTN_SCORES(double)
+INSTANTIATE_FUSED_ATTN_SCORES(float16)
+#undef INSTANTIATE_FUSED_ATTN_SCORES
 
 //////////////////////////////////////////////////////////////////////////////
 // Launcher for 3D fused attention with optional attention bias
@@ -777,20 +775,16 @@ void launchFusedAttention3D(
 }
 
 // Explicit instantiations
-template void launchFusedAttention3D<float>(
-   const float*, const float*, const float*, const float*, float*,
-   LongType, LongType, LongType, LongType, float, bool,
-   int, LongType, LongType, LongType, cudaStream_t);
+#define INSTANTIATE_FUSED_ATTN_3D(T) \
+  template void launchFusedAttention3D<T>( \
+     const T*, const T*, const T*, const T*, T*, \
+     LongType, LongType, LongType, LongType, float, bool, \
+     int, LongType, LongType, LongType, cudaStream_t);
 
-template void launchFusedAttention3D<double>(
-   const double*, const double*, const double*, const double*, double*,
-   LongType, LongType, LongType, LongType, float, bool,
-   int, LongType, LongType, LongType, cudaStream_t);
-
-template void launchFusedAttention3D<float16>(
-   const float16*, const float16*, const float16*, const float16*, float16*,
-   LongType, LongType, LongType, LongType, float, bool,
-   int, LongType, LongType, LongType, cudaStream_t);
+INSTANTIATE_FUSED_ATTN_3D(float)
+INSTANTIATE_FUSED_ATTN_3D(double)
+INSTANTIATE_FUSED_ATTN_3D(float16)
+#undef INSTANTIATE_FUSED_ATTN_3D
 
 //////////////////////////////////////////////////////////////////////////////
 // Public interface - called from FlashAttentionHelper
@@ -843,33 +837,25 @@ void fusedAttentionCuda(
  }
 
  auto dtype = query->dataType();
+
+ auto dispatchAttention = [&](auto dummy) {
+   using T = decltype(dummy);
+   launchFusedAttention3D<T>(
+       reinterpret_cast<const T*>(query->specialBuffer()),
+       reinterpret_cast<const T*>(key->specialBuffer()),
+       reinterpret_cast<const T*>(value->specialBuffer()),
+       reinterpret_cast<const T*>(biasPtr),
+       reinterpret_cast<T*>(output->specialBuffer()),
+       batch, seqQ, seqKV, dim, scale, isCausal,
+       biasRank, biasStride0, biasStride1, biasStride2, *stream);
+ };
+
  if (dtype == DataType::FLOAT32) {
-   launchFusedAttention3D<float>(
-       reinterpret_cast<const float*>(query->specialBuffer()),
-       reinterpret_cast<const float*>(key->specialBuffer()),
-       reinterpret_cast<const float*>(value->specialBuffer()),
-       reinterpret_cast<const float*>(biasPtr),
-       reinterpret_cast<float*>(output->specialBuffer()),
-       batch, seqQ, seqKV, dim, scale, isCausal,
-       biasRank, biasStride0, biasStride1, biasStride2, *stream);
+   dispatchAttention(float{});
  } else if (dtype == DataType::DOUBLE) {
-   launchFusedAttention3D<double>(
-       reinterpret_cast<const double*>(query->specialBuffer()),
-       reinterpret_cast<const double*>(key->specialBuffer()),
-       reinterpret_cast<const double*>(value->specialBuffer()),
-       reinterpret_cast<const double*>(biasPtr),
-       reinterpret_cast<double*>(output->specialBuffer()),
-       batch, seqQ, seqKV, dim, scale, isCausal,
-       biasRank, biasStride0, biasStride1, biasStride2, *stream);
+   dispatchAttention(double{});
  } else if (dtype == DataType::HALF) {
-   launchFusedAttention3D<float16>(
-       reinterpret_cast<const float16*>(query->specialBuffer()),
-       reinterpret_cast<const float16*>(key->specialBuffer()),
-       reinterpret_cast<const float16*>(value->specialBuffer()),
-       reinterpret_cast<const float16*>(biasPtr),
-       reinterpret_cast<float16*>(output->specialBuffer()),
-       batch, seqQ, seqKV, dim, scale, isCausal,
-       biasRank, biasStride0, biasStride1, biasStride2, *stream);
+   dispatchAttention(float16{});
  } else {
    THROW_EXCEPTION("fusedAttentionCuda: Unsupported data type");
  }
@@ -1241,33 +1227,24 @@ void fusedAttentionCudaWithScores(
  void* logitsPtr = attentionLogits != nullptr ? attentionLogits->specialBuffer() : nullptr;
  void* scoresPtr = attentionScores != nullptr ? attentionScores->specialBuffer() : nullptr;
 
+ auto dispatchScores = [&](auto dummy) {
+   using T = decltype(dummy);
+   launchFusedAttention3DWithScores<T>(
+       reinterpret_cast<const T*>(query->specialBuffer()),
+       reinterpret_cast<const T*>(key->specialBuffer()),
+       reinterpret_cast<const T*>(value->specialBuffer()),
+       reinterpret_cast<T*>(output->specialBuffer()),
+       reinterpret_cast<T*>(logitsPtr),
+       reinterpret_cast<T*>(scoresPtr),
+       batch, seqQ, seqKV, dim, scale, isCausal, *stream);
+ };
+
  if (dtype == DataType::FLOAT32) {
-   launchFusedAttention3DWithScores<float>(
-       reinterpret_cast<const float*>(query->specialBuffer()),
-       reinterpret_cast<const float*>(key->specialBuffer()),
-       reinterpret_cast<const float*>(value->specialBuffer()),
-       reinterpret_cast<float*>(output->specialBuffer()),
-       reinterpret_cast<float*>(logitsPtr),
-       reinterpret_cast<float*>(scoresPtr),
-       batch, seqQ, seqKV, dim, scale, isCausal, *stream);
+   dispatchScores(float{});
  } else if (dtype == DataType::DOUBLE) {
-   launchFusedAttention3DWithScores<double>(
-       reinterpret_cast<const double*>(query->specialBuffer()),
-       reinterpret_cast<const double*>(key->specialBuffer()),
-       reinterpret_cast<const double*>(value->specialBuffer()),
-       reinterpret_cast<double*>(output->specialBuffer()),
-       reinterpret_cast<double*>(logitsPtr),
-       reinterpret_cast<double*>(scoresPtr),
-       batch, seqQ, seqKV, dim, scale, isCausal, *stream);
+   dispatchScores(double{});
  } else if (dtype == DataType::HALF) {
-   launchFusedAttention3DWithScores<float16>(
-       reinterpret_cast<const float16*>(query->specialBuffer()),
-       reinterpret_cast<const float16*>(key->specialBuffer()),
-       reinterpret_cast<const float16*>(value->specialBuffer()),
-       reinterpret_cast<float16*>(output->specialBuffer()),
-       reinterpret_cast<float16*>(logitsPtr),
-       reinterpret_cast<float16*>(scoresPtr),
-       batch, seqQ, seqKV, dim, scale, isCausal, *stream);
+   dispatchScores(float16{});
  } else {
    THROW_EXCEPTION("fusedAttentionCudaWithScores: Unsupported data type");
  }
