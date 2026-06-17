@@ -30,16 +30,63 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
+/**
+ * The RMSProp (Root Mean Square Propagation) parameter updater.
+ * <p>
+ * RMSProp maintains a per-parameter exponential moving average of squared gradients and
+ * divides the gradient by the root of that average. This normalizes the gradient magnitude
+ * and helps alleviate the diminishing learning rate problem of {@link AdaGrad}.
+ * <p>
+ * The update rule is:
+ * <pre>
+ *   E[g^2]_t = rmsDecay * E[g^2]_{t-1} + (1 - rmsDecay) * g_t^2
+ *   theta_t  = theta_{t-1} - (alpha / sqrt(E[g^2]_t + epsilon)) * g_t
+ * </pre>
+ * RMSProp was proposed by Geoffrey Hinton and works well for recurrent networks and
+ * non-stationary objectives. It is a practical choice when Adam's bias correction
+ * is not needed.
+ * <p>
+ * Default hyper-parameters:
+ * <ul>
+ *   <li>Learning rate: {@value #DEFAULT_RMSPROP_LEARNING_RATE}</li>
+ *   <li>RMS decay: {@value #DEFAULT_RMSPROP_RMSDECAY}</li>
+ *   <li>Epsilon (numerical stability): {@value #DEFAULT_RMSPROP_EPSILON}</li>
+ * </ul>
+ */
 @Data
 @Builder(builderClassName = "Builder")
 public class RmsProp implements IUpdater {
+    /** Default learning rate: {@value}. */
     public static final double DEFAULT_RMSPROP_LEARNING_RATE = 1e-1;
+    /** Default epsilon (numerical stability term): {@value}. */
     public static final double DEFAULT_RMSPROP_EPSILON = 1e-8;
+    /** Default RMS decay coefficient for the moving average of squared gradients: {@value}. */
     public static final double DEFAULT_RMSPROP_RMSDECAY = 0.95;
 
+    /**
+     * Fixed learning rate. Ignored when {@link #learningRateSchedule} is non-null.
+     * Default: {@value #DEFAULT_RMSPROP_LEARNING_RATE}.
+     */
     @lombok.Builder.Default private double learningRate = DEFAULT_RMSPROP_LEARNING_RATE;
+
+    /**
+     * Optional learning rate schedule. When set, the schedule determines the learning rate
+     * at each iteration/epoch and the fixed {@link #learningRate} value is not used.
+     * Default: {@code null} (use fixed learning rate).
+     */
     private ISchedule learningRateSchedule;
+
+    /**
+     * Exponential decay rate for the moving average of squared gradients.
+     * Controls how quickly old gradient information is forgotten.
+     * Must be in (0, 1). Default: {@value #DEFAULT_RMSPROP_RMSDECAY}.
+     */
     @lombok.Builder.Default private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
+
+    /**
+     * Small constant added to the denominator for numerical stability.
+     * Default: {@value #DEFAULT_RMSPROP_EPSILON}.
+     */
     @lombok.Builder.Default private double epsilon = DEFAULT_RMSPROP_EPSILON;
 
     public RmsProp(){

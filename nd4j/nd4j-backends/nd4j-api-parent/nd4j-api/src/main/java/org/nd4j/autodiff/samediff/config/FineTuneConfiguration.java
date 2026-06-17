@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
@@ -64,17 +65,67 @@ import java.util.regex.Pattern;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public class FineTuneConfiguration implements Serializable {
 
+    /**
+     * The default updater applied to all trainable variables that do not have a per-variable
+     * or per-group override. If {@code null}, no update step is performed on those variables.
+     */
     private IUpdater defaultUpdater;
+
+    /**
+     * The default regularization applied to all trainable variables. If {@code null} or empty,
+     * no regularization is applied by default. Specific regularizers such as
+     * {@link org.nd4j.linalg.learning.regularization.L1Regularization},
+     * {@link org.nd4j.linalg.learning.regularization.L2Regularization}, or
+     * {@link org.nd4j.linalg.learning.regularization.WeightDecay} can be added via the Builder.
+     */
     private List<Regularization> defaultRegularization;
+
+    /**
+     * Whether to minimize ({@code true}) or maximize ({@code false}) the loss function.
+     * Default: {@code true} (minimize).
+     */
     private Boolean minimize;
 
+    /**
+     * Per-variable updater overrides, keyed by exact variable name.
+     * When a variable name is present in this map its updater takes precedence over
+     * any group or default updater. May be {@code null} if no per-variable overrides are set.
+     */
     private Map<String, IUpdater> variableUpdaters;
+
+    /**
+     * Per-variable regularization overrides, keyed by exact variable name.
+     * When a variable name is present in this map its regularization list takes precedence over
+     * any group or default regularization. May be {@code null} if no per-variable overrides are set.
+     */
     private Map<String, List<Regularization>> variableRegularization;
+
+    /**
+     * Named variable groups that can carry their own updater, learning-rate multiplier, or
+     * regularization, applied to all variables whose names match the group's regex patterns.
+     * Groups are evaluated in insertion order; the first matching group wins.
+     * May be {@code null} if no groups are defined.
+     */
     private Map<String, VariableGroup> variableGroups;
 
+    /**
+     * The set of exact variable names that are frozen (not updated during training).
+     * Takes precedence over pattern-based freezing for exact matches.
+     * May be {@code null} if no variables are frozen by exact name.
+     */
     private Set<String> frozenVariables;
+
+    /**
+     * Regex pattern strings used to match variable names that should be frozen.
+     * Patterns are compiled lazily into {@link #frozenPatterns} on first use.
+     * May be {@code null} if no pattern-based freezing is configured.
+     */
     private List<String> frozenPatternStrings;
 
+    /**
+     * Compiled versions of {@link #frozenPatternStrings}. This field is transient and
+     * is not serialized; patterns are re-compiled from {@code frozenPatternStrings} on demand.
+     */
     @JsonIgnore
     private transient List<Pattern> frozenPatterns;
 
@@ -411,10 +462,7 @@ public class FineTuneConfiguration implements Serializable {
         }
 
         private static void removeInstances(List<?> list, Class<?> remove) {
-            if (list == null || list.isEmpty()) {
-                return;
-            }
-            list.removeIf(o -> remove.isAssignableFrom(o.getClass()));
+            TrainingConfig.removeInstances(list, remove);
         }
     }
 }

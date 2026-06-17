@@ -36,33 +36,160 @@ import org.nd4j.serde.json.JsonMappers;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Configuration for training a {@link SameDiff} model.
+ * <p>
+ * A {@code TrainingConfig} binds together:
+ * <ul>
+ *   <li>An {@link IUpdater} (optimizer) that controls how gradients are applied to weights.</li>
+ *   <li>Optional regularization (L1, L2, weight decay).</li>
+ *   <li>Mappings from {@code DataSet}/{@code MultiDataSet} array positions to the named
+ *       placeholders/variables in the graph.</li>
+ *   <li>Optional evaluations collected during training or validation.</li>
+ *   <li>Mixed-precision settings (compute dtype, master-weight dtype, loss scaling).</li>
+ *   <li>Gradient accumulation for effective larger batch sizes.</li>
+ * </ul>
+ *
+ * <p>Use the {@link Builder} (obtained via {@link #builder()}) to construct instances:
+ * <pre>{@code
+ * TrainingConfig config = TrainingConfig.builder()
+ *     .updater(new Adam(1e-3))
+ *     .dataSetFeatureMapping("input")
+ *     .dataSetLabelMapping("label")
+ *     .build();
+ * }</pre>
+ *
+ * @see SameDiff#fit(org.nd4j.linalg.dataset.api.iterator.DataSetIterator, int)
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Slf4j
 public class TrainingConfig {
 
+    /**
+     * The optimizer (updater) used to apply gradients to trainable parameters.
+     * Must be non-null when building via {@link Builder}.
+     */
     private IUpdater updater;
-    private List<Regularization> regularization = new ArrayList<>();    //Regularization for all trainable parameters
+
+    /**
+     * Regularization applied to all trainable parameters.
+     * Default: empty list (no regularization).
+     * Supported types include {@link org.nd4j.linalg.learning.regularization.L1Regularization},
+     * {@link org.nd4j.linalg.learning.regularization.L2Regularization}, and
+     * {@link org.nd4j.linalg.learning.regularization.WeightDecay}.
+     */
+    private List<Regularization> regularization = new ArrayList<>();
+
+    /**
+     * Whether to minimize ({@code true}) or maximize ({@code false}) the loss.
+     * Default: {@code true}.
+     */
     private boolean minimize = true;
+
+    /**
+     * Ordered list of placeholder/variable names that receive feature arrays from the
+     * {@code DataSet} or {@code MultiDataSet} during training.
+     * The i-th element maps to {@code MultiDataSet.getFeatures(i)}.
+     * Must be set before calling {@link Builder#build()}.
+     */
     private List<String> dataSetFeatureMapping;
+
+    /**
+     * Ordered list of placeholder/variable names that receive label arrays from the
+     * {@code DataSet} or {@code MultiDataSet} during training.
+     * The i-th element maps to {@code MultiDataSet.getLabels(i)}.
+     * Must be set (or labels marked unused via {@link Builder#markLabelsUnused()}) before build.
+     */
     private List<String> dataSetLabelMapping;
+
+    /**
+     * Optional ordered list of placeholder/variable names that receive feature mask arrays.
+     * The i-th element maps to {@code MultiDataSet.getFeatureMaskArray(i)}.
+     * May be {@code null} if no feature masks are used.
+     */
     private List<String> dataSetFeatureMaskMapping;
+
+    /**
+     * Optional ordered list of placeholder/variable names that receive label mask arrays.
+     * The i-th element maps to {@code MultiDataSet.getLabelMaskArray(i)}.
+     * May be {@code null} if no label masks are used.
+     */
     private List<String> dataSetLabelMaskMapping;
+
+    /**
+     * Running count of the number of parameter update iterations completed.
+     * Incremented automatically during training. Default: {@code 0}.
+     */
     private int iterationCount;
+
+    /**
+     * Running count of the number of epochs completed.
+     * Incremented automatically at the end of each epoch. Default: {@code 0}.
+     */
     private int epochCount;
+
+    /**
+     * Data type of the scalar zero used as the initial gradient seed when computing
+     * per-variable gradients. Controls the dtype of the initial loss tensor.
+     * Default: {@link DataType#FLOAT}.
+     */
     private DataType initialLossDataType;
 
-    // Mixed precision training configuration
-    private DataType computeDataType = DataType.FLOAT;      // Forward/backward compute dtype
-    private DataType masterWeightDataType = DataType.FLOAT; // Master weight dtype (for FP32 master weights)
-    private LossScaleConfig lossScaleConfig;                // Loss scaling configuration
-    private int gradientAccumulationSteps = 1;              // Number of steps to accumulate gradients
+    /**
+     * Data type used for forward and backward computation passes.
+     * Set to {@link DataType#FLOAT16} or {@link DataType#BFLOAT16} for mixed-precision training.
+     * Default: {@link DataType#FLOAT}.
+     */
+    private DataType computeDataType = DataType.FLOAT;
 
+    /**
+     * Data type used for storing master weights.
+     * In mixed-precision training, master weights are typically kept at full precision
+     * ({@link DataType#FLOAT}) while compute uses a lower precision dtype.
+     * Default: {@link DataType#FLOAT}.
+     */
+    private DataType masterWeightDataType = DataType.FLOAT;
+
+    /**
+     * Loss scaling configuration for mixed-precision training.
+     * Loss scaling prevents gradient underflow when training with FP16.
+     * {@code null} means no loss scaling is applied. Default: {@code null}.
+     *
+     * @see LossScaleConfig
+     */
+    private LossScaleConfig lossScaleConfig;
+
+    /**
+     * Number of mini-batch gradient accumulation steps before applying an optimizer update.
+     * Useful for simulating a larger effective batch size when GPU memory is limited.
+     * Default: {@code 1} (no accumulation; update every mini-batch).
+     */
+    private int gradientAccumulationSteps = 1;
+
+    /**
+     * Evaluations collected on training data, keyed by the variable name being evaluated.
+     * Default: empty map.
+     */
     private Map<String, List<IEvaluation>> trainEvaluations = new HashMap<>();
+
+    /**
+     * Label indices associated with each training evaluation variable.
+     * Keys must match {@link #trainEvaluations}. Default: empty map.
+     */
     private Map<String, Integer> trainEvaluationLabels = new HashMap<>();
 
+    /**
+     * Evaluations collected on validation data, keyed by the variable name being evaluated.
+     * Default: empty map.
+     */
     private Map<String, List<IEvaluation>> validationEvaluations = new HashMap<>();
+
+    /**
+     * Label indices associated with each validation evaluation variable.
+     * Keys must match {@link #validationEvaluations}. Default: empty map.
+     */
     private Map<String, Integer> validationEvaluationLabels = new HashMap<>();
 
     /**
