@@ -117,7 +117,7 @@ void Stash::clear() {
     if (shapeInfo != nullptr) {
       LongType rank = shapeInfo[0];
       if (rank < 0 || rank > SD_MAX_RANK) {
-        sd_printf("Stash::clear: Skipping corrupted NDArray at %p with invalid rank %lld\n",
+        sd_debug("Stash::clear: Skipping corrupted NDArray at %p with invalid rank %lld\n",
                   v, (long long)rank);
         continue;
       }
