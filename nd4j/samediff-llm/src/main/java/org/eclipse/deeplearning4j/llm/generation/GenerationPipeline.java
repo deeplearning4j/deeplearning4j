@@ -1000,7 +1000,7 @@ public class GenerationPipeline implements AutoCloseable {
                 executor.setShapesFrozen(true);
                 log.info("[Perf] GGUF shapes frozen after warmup decode (planPhase={} pointersStable={})",
                         executor.getPlanPhase(), executor.arePointersStable());
-                if ("true".equalsIgnoreCase(System.getProperty("vlm.benchmark.opTiming", "false"))) {
+                if ("true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.VLM_BENCHMARK_OP_TIMING, "false"))) {
                     executor.setExecutionTimingEnabled(true);
                     log.info("[Perf] GGUF decoder execution timing enabled");
                 }
@@ -2144,7 +2144,7 @@ public class GenerationPipeline implements AutoCloseable {
             executor.setShapesFrozen(true);
             log.info("[Perf] Shapes frozen after warmup decode (planPhase={} pointersStable={})",
                     executor.getPlanPhase(), executor.arePointersStable());
-            if ("true".equalsIgnoreCase(System.getProperty("vlm.benchmark.opTiming", "false"))) {
+            if ("true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.VLM_BENCHMARK_OP_TIMING, "false"))) {
                 executor.setExecutionTimingEnabled(true);
                 log.info("[Perf] Decoder execution timing enabled");
             }

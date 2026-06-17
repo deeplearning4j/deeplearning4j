@@ -40,6 +40,7 @@ import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanPhase;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample;
@@ -87,11 +88,11 @@ public class StaticKvCacheDecodeLoop {
     private static final int DEFAULT_DIAGNOSTIC_STEPS = 3;
 
     private static boolean decodePhaseLoggingEnabled() {
-        return Boolean.parseBoolean(System.getProperty("vlm.benchmark.decodePhaseLogging", "true"));
+        return Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.VLM_BENCHMARK_DECODE_PHASE_LOGGING, "true"));
     }
 
     private static boolean detailedDecodeDiagnosticsEnabled() {
-        return Boolean.parseBoolean(System.getProperty("vlm.benchmark.decodeDiagnostics", "false"))
+        return Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.VLM_BENCHMARK_DECODE_DIAGNOSTICS, "false"))
                 || Boolean.parseBoolean(System.getProperty("vlm.benchmark.logitFingerprints", "false"))
                 || Boolean.parseBoolean(System.getProperty("vlm.benchmark.tensorFingerprints", "false"));
     }
@@ -391,7 +392,7 @@ public class StaticKvCacheDecodeLoop {
         // The DSP plan is a pure graph executor with no KV-specific lifecycle.
         KvCacheManager kvCacheManager = createKvCacheManager(resolvedIOConfig);
         boolean usingStaticKv = false;
-        boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
+        boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.DSP_NO_FREEZE));
         DynamicShapePlanExecutor decoderDspExec = null;  // Tracked DSP executor for shape freezing
 
 
@@ -427,7 +428,7 @@ public class StaticKvCacheDecodeLoop {
             }
         }
 
-        boolean memoryDiag = "true".equalsIgnoreCase(System.getProperty("nd4j.decode.memoryDiag"));
+        boolean memoryDiag = "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.ND4J_DECODE_MEMORY_DIAG));
         long prevStepFree = 0;
         for (int step = 0; step < maxNewTokens; step++) {
             long stepStart = System.nanoTime();
@@ -458,7 +459,7 @@ public class StaticKvCacheDecodeLoop {
             // Build input map (with reusable input cache for decode steps)
             // dspActive = padded mode with frozen shapes (enables native C++ input updates)
             boolean dspActive = usingStaticKv
-                    && !"true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noPadded"));
+                    && !"true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.DSP_NO_PADDED));
             long maxKvLen = kvCacheManager.getMaxKvLen();
             long cachePos = kvCacheManager.getCachePosition();
 
@@ -510,7 +511,7 @@ public class StaticKvCacheDecodeLoop {
             // slot arrays may be invalidated by subsequent executions, so use output()
             // which dups all results into independent arrays.
             boolean useDirect = usingStaticKv && step >= 2 && !skipFreeze
-                    && !"true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noDirect"));
+                    && !"true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.DSP_NO_DIRECT));
             // Decode always requests full outputs (logits + present KV). The KV scatter
             // runs as an ordinary op that writes into the Java-owned static KV buffers.
             String[] requestedOutputNames = fullOutputNames;

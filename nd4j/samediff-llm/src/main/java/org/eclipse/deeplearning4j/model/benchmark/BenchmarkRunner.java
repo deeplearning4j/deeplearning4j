@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.model.benchmark;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanIntrospection;
@@ -417,8 +418,8 @@ public class BenchmarkRunner {
     private static boolean expectsGraphCapture(BenchmarkConfig config) {
         // When shape freezing is disabled via system property, graph capture cannot happen
         // regardless of config flags (shapes must be frozen for CUDA graph capture)
-        boolean freezeDisabled = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
-        boolean directDisabled = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noDirect"));
+        boolean freezeDisabled = "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.DSP_NO_FREEZE));
+        boolean directDisabled = "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.DSP_NO_DIRECT));
         if (freezeDisabled || directDisabled) {
             return false;
         }

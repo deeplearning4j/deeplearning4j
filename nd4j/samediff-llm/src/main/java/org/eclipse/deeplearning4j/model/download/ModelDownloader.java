@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.model.download;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -141,7 +142,7 @@ public class ModelDownloader {
         // Authenticate with HuggingFace for gated models (e.g. google/gemma)
         String hfToken = System.getenv("HF_TOKEN");
         if (hfToken == null || hfToken.isEmpty()) {
-            hfToken = System.getProperty("hf.token");
+            hfToken = System.getProperty(ND4JSystemProperties.HF_TOKEN);
         }
         if (hfToken != null && !hfToken.isEmpty()) {
             connection.setRequestProperty("Authorization", "Bearer " + hfToken);
@@ -193,7 +194,7 @@ public class ModelDownloader {
             }
 
             printProgressBar(totalRead, contentLength, outputFile.getName());
-            System.out.println();
+            log.debug("");
         }
 
         Files.move(tempFile, outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -211,7 +212,6 @@ public class ModelDownloader {
             int empty = barWidth - filled;
 
             StringBuilder bar = new StringBuilder();
-            bar.append("\r");
             bar.append(String.format("%-30s ", truncateFileName(fileName, 30)));
             bar.append("[");
             for (int i = 0; i < filled; i++) bar.append("=");
@@ -221,35 +221,24 @@ public class ModelDownloader {
             bar.append(String.format("%3d%% ", percent));
             bar.append(String.format("%s / %s", downloadedStr, formatBytes(total)));
 
-            System.out.print(bar);
-            System.out.flush();
+            log.debug("{}", bar);
         } else {
             char[] spinner = {'|', '/', '-', '\\'};
             int spinIdx = (int) ((current / 10000) % 4);
 
             StringBuilder bar = new StringBuilder();
-            bar.append("\r");
             bar.append(String.format("%-30s ", truncateFileName(fileName, 30)));
             bar.append("[");
             bar.append(spinner[spinIdx]);
             bar.append("] ");
             bar.append(downloadedStr);
 
-            System.out.print(bar);
-            System.out.flush();
+            log.debug("{}", bar);
         }
     }
 
     static String formatBytes(long bytes) {
-        if (bytes < 1024) {
-            return bytes + " B";
-        } else if (bytes < 1024 * 1024) {
-            return String.format("%.1f KB", bytes / 1024.0);
-        } else if (bytes < 1024 * 1024 * 1024) {
-            return String.format("%.1f MB", bytes / (1024.0 * 1024));
-        } else {
-            return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
-        }
+        return org.nd4j.common.util.ND4JFileUtils.formatBytes(bytes);
     }
 
     static String truncateFileName(String fileName, int maxLen) {

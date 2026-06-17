@@ -21,6 +21,7 @@
 package org.eclipse.deeplearning4j.vlm.preprocessing;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -425,7 +426,7 @@ public class ImageTiler {
         g2d.dispose();
 
         // Apply mild sharpening to preserve character edge clarity for OCR
-        String sharpen = System.getProperty("nd4j.vlm.image.sharpen", "false");
+        String sharpen = System.getProperty(ND4JSystemProperties.VLM_IMAGE_SHARPEN, "false");
         if ("true".equalsIgnoreCase(sharpen)) {
             float[] sharpenKernel = {
                 0, -0.5f, 0,

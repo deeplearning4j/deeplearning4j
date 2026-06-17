@@ -1815,7 +1815,7 @@ public class VisionLanguageModel implements AutoCloseable {
      */
     private static final double GPU_MEMORY_PRESERVE_THRESHOLD;
     static {
-        String prop = System.getProperty("kompile.vlm.gpu.memory.threshold");
+        String prop = System.getProperty(ND4JSystemProperties.KOMPILE_VLM_GPU_MEMORY_THRESHOLD);
         if (prop == null) {
             prop = System.getenv("KOMPILE_VLM_GPU_MEMORY_THRESHOLD");
         }

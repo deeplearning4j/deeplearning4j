@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.llm.generation;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheManager;
 import org.eclipse.deeplearning4j.llm.generation.kvcache.UnifiedKvCacheManager;
@@ -27,6 +28,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -71,8 +73,8 @@ import java.util.Map;
 public class FrozenDecodeStep implements AutoCloseable {
 
     private final SameDiff decoder;
-    private final int seqLen;           // K+1 (fixed)
-    private final long maxKvLen;
+    @Getter private final int seqLen;           // K+1 (fixed)
+    @Getter private final long maxKvLen;
     private final long hiddenSize;
     private final String logitsOutputName;
     private final ModelIOConfig.KVCacheNames kvNames;
@@ -90,7 +92,7 @@ public class FrozenDecodeStep implements AutoCloseable {
     private KvCacheManager kvCacheManager;
 
     // DSP state
-    private DynamicShapePlanExecutor dspExec;
+    @Getter private DynamicShapePlanExecutor dspExec;
     private boolean compiled;
 
     // Output names
@@ -288,7 +290,7 @@ public class FrozenDecodeStep implements AutoCloseable {
         session = decoder.getOrCreateSession();
         dspExec = session.getDynamicShapePlanExecutor();
 
-        boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
+        boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.DSP_NO_FREEZE));
         if (dspExec != null && !skipFreeze) {
             dspExec.setShapesFrozen(true);
             dspExec.setTraceEnabled(true);
@@ -299,7 +301,7 @@ public class FrozenDecodeStep implements AutoCloseable {
         compiled = true;
 
         // Dump model summary to inspect graph structure for seqLen>1 edge cases
-        if ("true".equalsIgnoreCase(System.getProperty("nd4j.frozen.summary"))) {
+        if ("true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.ND4J_FROZEN_SUMMARY))) {
             log.info("=== FrozenDecodeStep Graph Summary (seqLen={}) ===\n{}", seqLen, decoder.summary());
         }
 
@@ -336,7 +338,7 @@ public class FrozenDecodeStep implements AutoCloseable {
         //
         // Enable debug+verbose for first execution (warmup) to trace all op shapes
         boolean enableWarmupDebug = stepCount == 1 &&
-                "true".equalsIgnoreCase(System.getProperty("nd4j.frozen.debug"));
+                "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.ND4J_FROZEN_DEBUG));
         if (enableWarmupDebug) {
             log.info("  [FrozenStep] Enabling debug+verbose for warmup execution (step 1)");
             Nd4j.getEnvironment().setDebug(true);
@@ -394,14 +396,6 @@ public class FrozenDecodeStep implements AutoCloseable {
      */
     public Map<String, INDArray> getLastOutputs() {
         return lastOutputs;
-    }
-
-    /**
-     * Get the DSP executor for this frozen step.
-     * Used by callers to sync KV cache position for plan recompilation safety.
-     */
-    public DynamicShapePlanExecutor getDspExec() {
-        return dspExec;
     }
 
     /**
@@ -556,20 +550,6 @@ public class FrozenDecodeStep implements AutoCloseable {
         }
 
         return inputMap;
-    }
-
-    /**
-     * Get the fixed sequence length (K+1).
-     */
-    public int getSeqLen() {
-        return seqLen;
-    }
-
-    /**
-     * Get the maximum KV cache length.
-     */
-    public long getMaxKvLen() {
-        return maxKvLen;
     }
 
     /**

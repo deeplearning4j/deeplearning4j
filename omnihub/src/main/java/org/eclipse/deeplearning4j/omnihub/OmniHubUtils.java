@@ -20,10 +20,13 @@
 package org.eclipse.deeplearning4j.omnihub;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.omnihub.OmnihubConfig;
+import org.eclipse.deeplearning4j.pipeline.AutoModel;
+import org.eclipse.deeplearning4j.pipeline.PipelineLoader;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.io.BufferedInputStream;
@@ -38,6 +41,7 @@ import java.net.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class OmniHubUtils {
 
 
@@ -141,15 +145,66 @@ public class OmniHubUtils {
                 FileUtils.copyInputStreamToFile(is,destFile);
 
             } catch (MalformedURLException e) {
-                e.printStackTrace();
+                log.error("Malformed URL when downloading from zoo: {}", url, e);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("IO error when downloading from zoo: {}", url, e);
             }
         }
 
         return destFile;
     }
 
+
+    /**
+     * Downloads a HuggingFace model repository and loads it via the pipeline system
+     * (SafeTensors or GGUF format auto-detected).
+     *
+     * @param huggingFaceId the HuggingFace model repo ID (e.g. "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF")
+     * @return the loaded SameDiff model
+     * @throws IOException if download or loading fails
+     */
+    public static SameDiff loadFromHuggingFace(String huggingFaceId) throws IOException {
+        return loadFromHuggingFace(huggingFaceId, null, false);
+    }
+
+    /**
+     * Downloads a HuggingFace model repository with selective file filtering
+     * and loads it via the pipeline system.
+     *
+     * @param huggingFaceId the HuggingFace model repo ID
+     * @param filePattern   glob pattern to filter files (e.g. "*.gguf", "*.safetensors"), or null for all
+     * @param forceDownload if true, re-downloads existing files
+     * @return the loaded SameDiff model
+     * @throws IOException if download or loading fails
+     */
+    public static SameDiff loadFromHuggingFace(String huggingFaceId, String filePattern, boolean forceDownload) throws IOException {
+        File modelDir = HuggingFaceHubDownloader.downloadRepo(huggingFaceId, filePattern, forceDownload, "main");
+        return loadFromPipeline(modelDir);
+    }
+
+    /**
+     * Loads a model from a local directory using the pipeline system (AutoModel).
+     * The directory should contain model files in SafeTensors, GGUF, or other supported formats.
+     *
+     * @param modelDirectory the directory containing model files
+     * @return the loaded SameDiff model
+     * @throws IOException if loading fails
+     */
+    public static SameDiff loadFromPipeline(File modelDirectory) throws IOException {
+        return AutoModel.fromPretrained(modelDirectory);
+    }
+
+    /**
+     * Loads a model from a local directory using the pipeline system with custom configuration.
+     *
+     * @param modelDirectory the directory containing model files
+     * @param config         the load configuration (data type, device, etc.)
+     * @return the loaded SameDiff model
+     * @throws IOException if loading fails
+     */
+    public static SameDiff loadFromPipeline(File modelDirectory, PipelineLoader.LoadConfig config) throws IOException {
+        return AutoModel.fromPretrained(modelDirectory, config);
+    }
 
     private static int getFileSize(URL url) {
         URLConnection conn = null;
