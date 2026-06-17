@@ -53,6 +53,37 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Configuration holder for fine-tuning or transfer-learning a pre-trained DL4J network.
+ *
+ * <p>An instance of this class captures the subset of training hyper-parameters that should be
+ * <em>overridden</em> when adapting an existing {@link org.deeplearning4j.nn.conf.NeuralNetConfiguration}
+ * (or full {@link org.deeplearning4j.nn.conf.MultiLayerConfiguration} /
+ * {@link org.deeplearning4j.nn.conf.ComputationGraphConfiguration}) to a new task. Fields left
+ * {@code null} are treated as "not set" — the original model's value is kept unchanged. This
+ * three-state semantics (null = untouched, {@link org.nd4j.common.primitives.Optional#empty()} =
+ * set to null, {@link org.nd4j.common.primitives.Optional} with value = set to that value) is
+ * used for fields that have meaningful null values such as {@code dropout} and {@code weightNoise}.
+ *
+ * <h3>Typical usage</h3>
+ * <pre>{@code
+ * FineTuneConfiguration ftc = FineTuneConfiguration.builder()
+ *         .updater(new Adam(1e-4))
+ *         .l2(1e-5)
+ *         .build();
+ *
+ * TransferLearning.GraphBuilder builder = new TransferLearning.GraphBuilder(pretrained)
+ *         .fineTuneConfiguration(ftc);
+ * }</pre>
+ *
+ * <h3>Serialization</h3>
+ * <p>The class is Jackson-serializable with type information embedded ({@code @JsonTypeInfo})
+ * and null fields omitted ({@code @JsonInclude(NON_NULL)}). Use {@link #toJson()},
+ * {@link #toYaml()}, {@link #fromJson(String)}, and {@link #fromYaml(String)} for round-trip
+ * persistence.
+ *
+ * @see org.deeplearning4j.nn.transferlearning.TransferLearning
+ */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @NoArgsConstructor
@@ -60,40 +91,150 @@ import java.util.List;
 @Data
 public class FineTuneConfiguration {
 
+    /** Activation function applied to all {@link org.deeplearning4j.nn.conf.layers.BaseLayer} layers.
+     *  Default: {@code null} (keep original). */
     protected IActivation activationFn;
+
+    /** Weight initialisation scheme applied to all {@link org.deeplearning4j.nn.conf.layers.BaseLayer} layers.
+     *  Default: {@code null} (keep original). */
     protected IWeightInit weightInitFn;
+
+    /** Constant bias initialisation value.
+     *  Default: {@code null} (keep original). */
     protected Double biasInit;
+
+    /** Weight regularisation list (L1, L2, WeightDecay) applied to non-bias parameters.
+     *  Default: {@code null} (keep original). */
     protected List<Regularization> regularization;
+
+    /** Bias regularisation list applied to bias parameters.
+     *  Default: {@code null} (keep original). */
     protected List<Regularization> regularizationBias;
-    protected boolean removeL2 = false;     //For: .l2(0.0) -> user means "no l2" so we should remove it if it is present in the original model...
+
+    /** When {@code true}, any L2 regularisation on non-bias parameters is removed from the
+     *  original model. Set automatically when {@code .l2(0.0)} is called on the builder.
+     *  Default: {@code false}. */
+    protected boolean removeL2 = false;
+
+    /** When {@code true}, any L2 regularisation on bias parameters is removed.
+     *  Default: {@code false}. */
     protected boolean removeL2Bias = false;
+
+    /** When {@code true}, any L1 regularisation on non-bias parameters is removed.
+     *  Default: {@code false}. */
     protected boolean removeL1 = false;
+
+    /** When {@code true}, any L1 regularisation on bias parameters is removed.
+     *  Default: {@code false}. */
     protected boolean removeL1Bias = false;
+
+    /** When {@code true}, any WeightDecay regularisation on non-bias parameters is removed.
+     *  Default: {@code false}. */
     protected boolean removeWD = false;
+
+    /** When {@code true}, any WeightDecay regularisation on bias parameters is removed.
+     *  Default: {@code false}. */
     protected boolean removeWDBias = false;
+
+    /** Dropout applied to all {@link org.deeplearning4j.nn.conf.layers.BaseLayer} layers.
+     *  {@code null} = not set (keep original); {@link org.nd4j.common.primitives.Optional#empty()}
+     *  = explicitly set to no dropout.
+     *  Default: {@code null} (keep original). */
     protected Optional<IDropout> dropout;
+
+    /** Weight noise (e.g. DropConnect) applied to all BaseLayer layers.
+     *  {@code null} = not set; {@link org.nd4j.common.primitives.Optional#empty()} = explicitly
+     *  remove weight noise.
+     *  Default: {@code null} (keep original). */
     protected Optional<IWeightNoise> weightNoise;
+
+    /** Gradient updater (e.g. Adam, SGD) applied to all layers.
+     *  Default: {@code null} (keep original). */
     protected IUpdater updater;
+
+    /** Gradient updater used for bias parameters only. If not set, the layer's primary
+     *  {@code updater} is used for biases as well.
+     *  Default: {@code null} (keep original). */
     protected IUpdater biasUpdater;
+
+    /** Whether gradients and scores are divided by the mini-batch size.
+     *  Default: {@code null} (keep original; existing models default to {@code true}). */
     protected Boolean miniBatch;
+
+    /** Maximum number of line-search iterations for line-search based optimisers.
+     *  Default: {@code null} (keep original). */
     protected Integer maxNumLineSearchIterations;
+
+    /** Random number generator seed for reproducibility.
+     *  Default: {@code null} (keep original). */
     protected Long seed;
+
+    /** Optimisation algorithm (e.g. STOCHASTIC_GRADIENT_DESCENT, CONJUGATE_GRADIENT).
+     *  Default: {@code null} (keep original). */
     protected OptimizationAlgorithm optimizationAlgo;
+
+    /** Step function used by the optimiser.
+     *  Default: {@code null} (keep original). */
     protected StepFunction stepFunction;
+
+    /** Whether to minimise ({@code true}) or maximise ({@code false}) the loss.
+     *  Default: {@code null} (keep original; existing models default to {@code true}). */
     protected Boolean minimize;
+
+    /** Gradient normalisation strategy.
+     *  {@code null} = not set; {@link org.nd4j.common.primitives.Optional#empty()} = set to
+     *  {@link GradientNormalization#None}.
+     *  Default: {@code null} (keep original). */
     protected Optional<GradientNormalization> gradientNormalization;
+
+    /** Threshold used by {@link GradientNormalization#ClipL2PerLayer},
+     *  {@link GradientNormalization#ClipL2PerParamType}, and
+     *  {@link GradientNormalization#ClipElementWiseAbsoluteValue}.
+     *  Default: {@code null} (keep original). */
     protected Double gradientNormalizationThreshold;
+
+    /** Convolution mode (SAME, STRICT, TRUNCATE) applied to convolution and subsampling layers.
+     *  Default: {@code null} (keep original; layer default is {@link ConvolutionMode#TRUNCATE}). */
     protected ConvolutionMode convolutionMode;
+
+    /** cuDNN algorithm selection mode for convolutional layers.
+     *  Default: {@code null} (keep original; layer default is
+     *  {@link org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode#PREFER_FASTEST}). */
     protected ConvolutionLayer.AlgoMode cudnnAlgoMode;
+
+    /** Parameter constraints applied after each update (e.g. max-norm, non-negativity).
+     *  {@code null} = not set; {@link org.nd4j.common.primitives.Optional#empty()} = remove all
+     *  constraints.
+     *  Default: {@code null} (keep original). */
     protected Optional<List<LayerConstraint>> constraints;
 
+    /** Whether to run pre-training (unsupervised, e.g. RBM). Rarely used in modern networks.
+     *  Default: {@code null} (keep original). */
     protected Boolean pretrain;
+
+    /** Whether to run back-propagation.
+     *  Default: {@code null} (keep original; existing models default to {@code true}). */
     protected Boolean backprop;
+
+    /** Back-propagation variant: standard or truncated BPTT.
+     *  Default: {@code null} (keep original; existing models default to
+     *  {@link BackpropType#Standard}). */
     protected BackpropType backpropType;
+
+    /** Forward pass length for truncated BPTT ({@link BackpropType#TruncatedBPTT} only).
+     *  Default: {@code null} (keep original). */
     protected Integer tbpttFwdLength;
+
+    /** Back-propagation length for truncated BPTT ({@link BackpropType#TruncatedBPTT} only).
+     *  Default: {@code null} (keep original). */
     protected Integer tbpttBackLength;
 
+    /** Workspace mode used during training (NONE or ENABLED).
+     *  Default: {@code null} (keep original). */
     protected WorkspaceMode trainingWorkspaceMode;
+
+    /** Workspace mode used during inference (NONE or ENABLED).
+     *  Default: {@code null} (keep original). */
     protected WorkspaceMode inferenceWorkspaceMode;
 
     public static Builder builder() {

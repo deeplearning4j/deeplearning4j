@@ -21,10 +21,12 @@
 package org.datavec.api.transform.analysis.columns;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 
+@Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor //For Jackson deserialization
@@ -38,17 +40,6 @@ public class StringAnalysis implements ColumnAnalysis {
     private double[] histogramBuckets;
     private long[] histogramBucketCounts;
 
-    private StringAnalysis(Builder builder) {
-        this.minLength = builder.minLength;
-        this.maxLength = builder.maxLength;
-        this.meanLength = builder.meanLength;
-        this.sampleStdevLength = builder.sampleStdevLength;
-        this.sampleVarianceLength = builder.sampleVarianceLength;
-        this.countTotal = builder.countTotal;
-        this.histogramBuckets = builder.histogramBuckets;
-        this.histogramBucketCounts = builder.histogramBucketCounts;
-    }
-
     @Override
     public String toString() {
         return "StringAnalysis(minLen=" + minLength + ",maxLen=" + maxLength + ",meanLen=" + meanLength
@@ -59,61 +50,6 @@ public class StringAnalysis implements ColumnAnalysis {
     @Override
     public ColumnType getColumnType() {
         return ColumnType.String;
-    }
-
-    public static class Builder {
-        private int minLength;
-        private int maxLength;
-        private double meanLength;
-        private double sampleStdevLength;
-        private double sampleVarianceLength;
-        private long countTotal;
-        private double[] histogramBuckets;
-        private long[] histogramBucketCounts;
-
-        public Builder minLength(int minLength) {
-            this.minLength = minLength;
-            return this;
-        }
-
-        public Builder maxLength(int maxLength) {
-            this.maxLength = maxLength;
-            return this;
-        }
-
-        public Builder meanLength(double meanLength) {
-            this.meanLength = meanLength;
-            return this;
-        }
-
-        public Builder sampleStdevLength(double sampleStdevLength) {
-            this.sampleStdevLength = sampleStdevLength;
-            return this;
-        }
-
-        public Builder sampleVarianceLength(double sampleVarianceLength) {
-            this.sampleVarianceLength = sampleVarianceLength;
-            return this;
-        }
-
-        public Builder countTotal(long countTotal) {
-            this.countTotal = countTotal;
-            return this;
-        }
-
-        public Builder histogramBuckets(double[] histogramBuckets) {
-            this.histogramBuckets = histogramBuckets;
-            return this;
-        }
-
-        public Builder histogramBucketCounts(long[] histogramBucketCounts) {
-            this.histogramBucketCounts = histogramBucketCounts;
-            return this;
-        }
-
-        public StringAnalysis build() {
-            return new StringAnalysis(this);
-        }
     }
 
 }
