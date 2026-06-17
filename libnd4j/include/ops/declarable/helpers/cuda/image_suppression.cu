@@ -285,7 +285,7 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
   for (I i = 0; i < boxes->sizeAt(0); ++i) {
     bool shouldSelect = numSelected < output->lengthOf();
     if (shouldSelect) {
-      err = cudaMemcpy(shouldSelectD, &shouldSelect, sizeof(bool), cudaMemcpyHostToDevice);
+      err = cudaMemcpyAsync(shouldSelectD, &shouldSelect, sizeof(bool), cudaMemcpyHostToDevice, *stream);
       if (err) {
         { std::string msg = "helpers::nonMaxSuppressionV2: Cannot set up bool flag to device; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
       }
@@ -293,16 +293,18 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
       dim3 selectDims = getLaunchDims("image_suppress_select");
       shouldSelectKernel<T, I><<<selectDims.y,selectDims.x,selectDims.z, *stream>>>(
           boxesBuf, boxes->specialShapeInfo(), indexBuf, selectedIndicesData, threshold, numSelected, i, shouldSelectD);
-      err = cudaMemcpy(&shouldSelect, shouldSelectD, sizeof(bool), cudaMemcpyDeviceToHost);
+      err = cudaMemcpyAsync(&shouldSelect, shouldSelectD, sizeof(bool), cudaMemcpyDeviceToHost, *stream);
       if (err) {
         { std::string msg = "helpers::nonMaxSuppressionV2: Cannot set up bool flag to host; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
       }
+      // Synchronize so the CPU can read back shouldSelect before branching
+      cudaStreamSynchronize(*stream);
     }
 
     if (shouldSelect) {
-      cudaMemcpy(reinterpret_cast<I*>(output->specialBuffer()) + numSelected, indexBuf + i, sizeof(I),
-                 cudaMemcpyDeviceToDevice);
-      cudaMemcpy(selectedIndicesData + numSelected, &i, sizeof(I), cudaMemcpyHostToDevice);
+      cudaMemcpyAsync(reinterpret_cast<I*>(output->specialBuffer()) + numSelected, indexBuf + i, sizeof(I),
+                 cudaMemcpyDeviceToDevice, *stream);
+      cudaMemcpyAsync(selectedIndicesData + numSelected, &i, sizeof(I), cudaMemcpyHostToDevice, *stream);
       numSelected++;
     }
   }

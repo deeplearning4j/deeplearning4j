@@ -420,8 +420,10 @@ void moeAlignBlockSize(LaunchContext* context,
     cudaStreamSynchronize(*stream);
 
     std::vector<int32_t> counts(numExperts);
-    cudaMemcpy(counts.data(), numTokensPerExpert->specialBuffer(),
-               numExperts * sizeof(int32_t), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(counts.data(), numTokensPerExpert->specialBuffer(),
+               numExperts * sizeof(int32_t), cudaMemcpyDeviceToHost, *stream);
+    // Sync so CPU can read back counts before computing prefix sums
+    cudaStreamSynchronize(*stream);
 
     std::vector<int32_t> offsets(numExperts);
     int32_t offset = 0;
@@ -434,8 +436,8 @@ void moeAlignBlockSize(LaunchContext* context,
     // Upload offsets
     std::vector<sd::LongType> expertOffsetsShape = {numExperts};
     auto expertOffsets = NDArrayFactory::create_<int32_t>('c', expertOffsetsShape, context);
-    cudaMemcpy(expertOffsets->specialBuffer(), offsets.data(),
-               numExperts * sizeof(int32_t), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(expertOffsets->specialBuffer(), offsets.data(),
+               numExperts * sizeof(int32_t), cudaMemcpyHostToDevice, *stream);
 
     // Phase 3: Sort tokens into expert-major order
     std::vector<sd::LongType> writePosShape = {numExperts};

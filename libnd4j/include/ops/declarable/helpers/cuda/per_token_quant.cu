@@ -273,7 +273,7 @@ void perTokenQuantFp8(LaunchContext* context,
 
     // Auto-dispatch: warp-local for small batches, block-per-token for large
     int smCount = 0;
-    cudaDeviceGetAttribute(&smCount, cudaDevAttrMultiProcessorCount, 0);
+    cudaDeviceGetAttribute(&smCount, cudaDevAttrMultiProcessorCount, context->getDeviceID());
     bool useWarpLocal = (numTokens < smCount * 4) && (hiddenDim <= 1024);
 
     if (useWarpLocal) {

@@ -160,7 +160,7 @@ static SD_HOST void cmpBitpackCudaLauncher(graph::Context& block, NDArray& input
   PointersManager manager(block.launchContext(), "compare_and_bitpack");
   NDArray::prepareSpecialUse({&output}, {&input});
   if (input.ordering() == 'c' && output.ordering() == 'c') {
-    cmpBitpackEws<T><<<compareAndBitpackDims.y, compareAndBitpackDims.x,compareAndBitpackDims.z>>>(input.specialBuffer(), output.specialBuffer(),
+    cmpBitpackEws<T><<<compareAndBitpackDims.y, compareAndBitpackDims.x,compareAndBitpackDims.z, *stream>>>(input.specialBuffer(), output.specialBuffer(),
                                                          output.lengthOf(), inStrides[rank - 1],
                                                          output.stridesOf()[rank - 1], threshold);
     sd::DebugHelper::checkGlobalErrorCode("cmpBitpackEws  failed");
@@ -180,7 +180,7 @@ static SD_HOST void cmpBitpackCudaLauncher(graph::Context& block, NDArray& input
     auto strideSize = (rank + 1) * sizeof(LongType);
     LongType* extendedStridesDevPtr =
         reinterpret_cast<LongType*>(manager.replicatePointer(extendedStrides, strideSize));
-    cmpBitpack<T><<<compareAndBitpackDims.y, compareAndBitpackDims.x,compareAndBitpackDims.z>>>(input.specialBuffer(), output.specialBuffer(), rank,
+    cmpBitpack<T><<<compareAndBitpackDims.y, compareAndBitpackDims.x,compareAndBitpackDims.z, *stream>>>(input.specialBuffer(), output.specialBuffer(), rank,
                                                       output.lengthOf(), extendedStridesDevPtr,
                                                       output.specialShapeInfo(), threshold);
     sd::DebugHelper::checkGlobalErrorCode("compareAndBitpackDims  failed");

@@ -85,12 +85,13 @@ void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDAr
   Pointer params[2];
   params[0] = context;
   params[1] = context->getCudaStream();
+  auto stream = context->getCudaStream();
   // Nth element in sorted sequence : basic algorithm sort and retrieve nth element in sorted
   if (input->isVector()) {
     sort(params, &sortedVals, reverse);
 
-    cudaMemcpy(reinterpret_cast<T*>(output->specialBuffer()), reinterpret_cast<T*>(sortedVals.specialBuffer()) + n,
-               sizeof(T), cudaMemcpyDeviceToDevice);
+    cudaMemcpyAsync(reinterpret_cast<T*>(output->specialBuffer()), reinterpret_cast<T*>(sortedVals.specialBuffer()) + n,
+               sizeof(T), cudaMemcpyDeviceToDevice, *stream);
   } else {  // rank greater than 1
     std::vector<LongType> lastDims(
         {input->rankOf() - 1});
@@ -108,7 +109,6 @@ void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDAr
             reverse);
     sortedVals.tickWriteDevice();
     sortedVals.syncToHost();
-    auto stream = context->getCudaStream();
     dim3 launchDims = getLaunchDims("nth_element_fill");
     fillUpElementKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
                                                       sortedVals.specialBuffer(), sortedVals.specialShapeInfo(),
