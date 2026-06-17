@@ -92,7 +92,7 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
   // Strategy: find leading size-1 dimensions that account for the rank difference,
   // keep them in place (identity), and shift the original permutation indices.
   if (permutationVector.size() != static_cast<size_t>(x->rankOf())) {
-    sd_printf("PERMUTE OP: permutation vector size (%lld) != input rank (%d), adapting permutation\n",
+    sd_debug("PERMUTE OP: permutation vector size (%lld) != input rank (%d), adapting permutation\n",
               (long long)permutationVector.size(), x->rankOf());
 
     int permSize = static_cast<int>(permutationVector.size());
@@ -121,7 +121,7 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
         for (int i = 0; i < permSize; ++i) {
           adapted.push_back(permutationVector[i] + extraDims);  // shift original indices
         }
-        sd_printf("PERMUTE OP: adapted permutation by prepending %d identity dims\n", extraDims);
+        sd_debug("PERMUTE OP: adapted permutation by prepending %d identity dims\n", extraDims);
         permutationVector = adapted;
       } else {
         // Can't find enough leading size-1 dims; fall back to identity
@@ -234,7 +234,7 @@ DECLARE_SHAPE_FN(permute) {
   // Common case: expand_dims adds size-1 leading dimensions (e.g., rank-4 becomes rank-5)
   // but the permutation vector is still for the original smaller rank.
   if (permutationVector.size() != static_cast<size_t>(x->rankOf())) {
-    sd_printf("PERMUTE shape function: permutation vector size (%lld) != input rank (%d), adapting permutation\n",
+    sd_debug("PERMUTE shape function: permutation vector size (%lld) != input rank (%d), adapting permutation\n",
               (long long)permutationVector.size(), x->rankOf());
 
     int permSize = static_cast<int>(permutationVector.size());
@@ -261,7 +261,7 @@ DECLARE_SHAPE_FN(permute) {
         for (int i = 0; i < permSize; ++i) {
           adapted.push_back(permutationVector[i] + extraDims);  // shift original indices
         }
-        sd_printf("PERMUTE shape function: adapted permutation by prepending %d identity dims\n", extraDims);
+        sd_debug("PERMUTE shape function: adapted permutation by prepending %d identity dims\n", extraDims);
         permutationVector = adapted;
       } else {
         permutationVector.clear();

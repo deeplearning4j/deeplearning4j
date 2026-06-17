@@ -129,7 +129,7 @@ DECLARE_SHAPE_FN(compat_string_split) {
   // values tensor is going to be vector always
   // indices tensor is going to be vector with length equal to values.length * output rank
 
-  sd_printf("compat_string_split: Assigning number of values: %d\n",cnt);
+  sd_debug("compat_string_split: Assigning number of values: %d\n",cnt);
 
   auto valuesShape = ConstantShapeHelper::getInstance().vectorShapeInfo(cnt, UTF8);
   auto indicesShape =
