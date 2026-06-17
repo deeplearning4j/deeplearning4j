@@ -57,7 +57,7 @@ static void windowedAttention_(sd::LaunchContext* context,
     const auto headDim = query->sizeAt(3);
 
     // Auto-compute scale if not provided
-    T scaleFactor = scale > 0.0 ? static_cast<T>(scale) : static_cast<T>(1.0 / std::sqrt(static_cast<double>(headDim)));
+    T scaleFactor = scale > 0.0 ? static_cast<T>(scale) : static_cast<T>(1.0 / sd::math::sd_sqrt<double>(static_cast<double>(headDim)));
 
     // Half window for local attention
     const int halfWindow = windowSize / 2;

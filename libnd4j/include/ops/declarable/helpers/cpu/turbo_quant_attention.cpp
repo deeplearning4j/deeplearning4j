@@ -52,11 +52,11 @@ static void turboQuantAttentionForward_(
 
   T scale = static_cast<T>(config.scale);
   if (config.scale <= 0.0f) {
-    scale = static_cast<T>(1.0f / std::sqrt(static_cast<float>(headDim)));
+    scale = static_cast<T>(1.0f / sd::math::sd_sqrt<float>(static_cast<float>(headDim)));
   }
 
   // QJL correction factor: sqrt(π/2) / m
-  T qjlCorrectionScale = static_cast<T>(std::sqrt(M_PI / 2.0) / static_cast<float>(headDim));
+  T qjlCorrectionScale = static_cast<T>(sd::math::sd_sqrt<double>(M_PI / 2.0) / static_cast<float>(headDim));
 
   // Process each batch and head independently
   for (sd::LongType b = 0; b < batch; b++) {

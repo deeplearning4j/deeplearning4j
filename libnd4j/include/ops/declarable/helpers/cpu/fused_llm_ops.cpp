@@ -104,7 +104,7 @@ static void fusedGELUBackward_(NDArray* input, NDArray* gradOut, NDArray* gradIn
         const float x    = static_cast<float>(xBuf[i]);
         const float dout = static_cast<float>(doBuf[i]);
         // d/dx[x * sigmoid(1.702*x)] = sigmoid(1.702*x) + x * 1.702 * sigmoid(1.702*x) * (1 - sigmoid(1.702*x))
-        const float sig  = 1.0f / (1.0f + std::exp(-1.702f * x));
+        const float sig  = 1.0f / (1.0f + sd::math::sd_exp<float>(-1.702f * x));
         diBuf[i] = static_cast<T>(dout * (sig + x * 1.702f * sig * (1.0f - sig)));
       }
     };
@@ -114,7 +114,7 @@ static void fusedGELUBackward_(NDArray* input, NDArray* gradOut, NDArray* gradIn
       for (auto i = start; i < stop; i++) {
         const float x    = static_cast<float>(xBuf[i * xStride]);
         const float dout = static_cast<float>(doBuf[i * doStride]);
-        const float sig  = 1.0f / (1.0f + std::exp(-1.702f * x));
+        const float sig  = 1.0f / (1.0f + sd::math::sd_exp<float>(-1.702f * x));
         diBuf[i * diStride] = static_cast<T>(dout * (sig + x * 1.702f * sig * (1.0f - sig)));
       }
     };
