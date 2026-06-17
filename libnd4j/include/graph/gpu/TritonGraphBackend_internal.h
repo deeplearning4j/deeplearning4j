@@ -51,7 +51,7 @@ namespace sd {
 namespace graph {
 namespace triton_internal {
 
-// ─── FNV-1a hashing for disk cache keys ─────────────────────────────────────
+// ─── FNV-1a hashing for disk cache keys ─���────────────────────────────────────
 // Canonical definitions in <graph/DspHashUtils.h>; aliased here for convenience.
 
 constexpr uint64_t FNV1A64_OFFSET_BASIS = dsp::FNV1A64_OFFSET_BASIS;
