@@ -27,6 +27,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <math/templatemath.h>
 
 #include "../llamacppUtils.h"
 
@@ -440,7 +441,7 @@ PLATFORM_IMPL(grouped_query_attention, ENGINE_CUDA) {
     int numKvHeads = block.getIArguments()->size() > 1 ? INT_ARG(1) : numHeads;
     bool isCausal = block.getIArguments()->size() > 2 ? INT_ARG(2) != 0 : true;
     float scale = block.getTArguments()->size() > 0 ?
-        T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+        T_ARG(0) : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
 
     gqaCuda(query, key, value, output, numHeads, numKvHeads, scale, isCausal);
     return sd::Status::OK;
@@ -497,7 +498,7 @@ PLATFORM_IMPL(flash_attention, ENGINE_CUDA) {
     if (query->isEmpty() || key->isEmpty() || value->isEmpty()) return sd::Status::OK;
 
     float scale = block.getTArguments()->size() > 0 ?
-        T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+        T_ARG(0) : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
     bool isCausal = block.getIArguments()->size() > 0 ? INT_ARG(0) != 0 : true;
 
     flashAttentionCuda(query, key, value, output, scale, isCausal);

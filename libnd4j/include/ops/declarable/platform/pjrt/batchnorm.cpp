@@ -354,9 +354,22 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_TPU) {
 
   // For gradient of gamma and beta, use reduce operations
   if (gradG != nullptr) {
-    // Gradient w.r.t. gamma: sum of gradOut * normalized_input
-    // Simplified: compute on host for now
-    // TODO: Add HLO for gamma/beta gradients
+    // Gradient w.r.t. gamma: sum of gradOut * normalized_input over all dims except feature dim
+    // normalized_input = (input - mean) / sqrt(variance + epsilon)
+    std::vector<sd::LongType> featureDimVec = {featureDim};
+    NDArray xMinusMean(input);
+    input->applyBroadcast(sd::broadcast::Subtract, &featureDimVec, mean, &xMinusMean);
+    NDArray* stdVal = (*variance) + epsilon;
+    stdVal->applyTransform(transform::Sqrt, stdVal);
+    NDArray normInput(input);
+    xMinusMean.applyBroadcast(sd::broadcast::Divide, &featureDimVec, stdVal, &normInput);
+    delete stdVal;
+    auto gradGFull = normInput * *gradOut;
+    std::vector<sd::LongType> allDimsExceptFeature;
+    for (sd::LongType d = 0; d < (sd::LongType)inputShape.size(); ++d) {
+      if (d != featureDim) allDimsExceptFeature.push_back(d);
+    }
+    gradGFull.reduceAlongDimension(reduce::Sum, *gradG, allDimsExceptFeature);
   }
 
   if (gradB != nullptr) {

@@ -26,6 +26,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <math/templatemath.h>
 
 #include "llamacppUtils.h"
 
@@ -139,7 +140,7 @@ PLATFORM_IMPL(kv_cache_attention, ENGINE_CPU) {
     if (query->isEmpty() || keyCache->isEmpty()) return sd::Status::OK;
 
     int seqLen = block.getIArguments()->size() > 0 ? INT_ARG(0) : keyCache->sizeAt(-2);
-    float scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+    float scale = block.getTArguments()->size() > 0 ? T_ARG(0) : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
 
     kvCacheAttentionLlamaCpp(query, keyCache, valueCache, output, seqLen, scale);
     return sd::Status::OK;
@@ -183,7 +184,7 @@ static void pagedAttentionLlamaCpp(NDArray* query, NDArray* keyCache, NDArray* v
     // Compute attention with gathered KV
     struct ggml_tensor* ggml_k_t = ggml_transpose(ctx, ggml_k_gathered);
     struct ggml_tensor* ggml_scores = ggml_mul_mat(ctx, ggml_k_t, ggml_q);
-    float scale = 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+    float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
     ggml_scores = ggml_scale(ctx, ggml_scores, scale);
     struct ggml_tensor* ggml_attn = ggml_soft_max(ctx, ggml_scores);
     struct ggml_tensor* ggml_output = ggml_mul_mat(ctx, ggml_v_gathered, ggml_attn);
@@ -248,7 +249,7 @@ static void slidingWindowAttentionLlamaCpp(NDArray* query, NDArray* key, NDArray
     struct ggml_tensor* ggml_masked = ggml_diag_mask_inf(ctx, ggml_scores, windowSize);
 
     // Scale and softmax
-    float scale = 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+    float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
     ggml_masked = ggml_scale(ctx, ggml_masked, scale);
     struct ggml_tensor* ggml_attn = ggml_soft_max(ctx, ggml_masked);
 
@@ -321,7 +322,7 @@ static void gqaAttentionLlamaCpp(NDArray* query, NDArray* keyCache, NDArray* val
     // Standard attention computation
     struct ggml_tensor* ggml_k_t = ggml_transpose(ctx, ggml_k_repeated);
     struct ggml_tensor* ggml_scores = ggml_mul_mat(ctx, ggml_k_t, ggml_q);
-    float scale = 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+    float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
     ggml_scores = ggml_scale(ctx, ggml_scores, scale);
     struct ggml_tensor* ggml_attn = ggml_soft_max(ctx, ggml_scores);
     struct ggml_tensor* ggml_output = ggml_mul_mat(ctx, ggml_v_repeated, ggml_attn);

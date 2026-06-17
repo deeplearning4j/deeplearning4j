@@ -23,6 +23,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <math/templatemath.h>
 
 #include "llamacppUtils.h"
 
@@ -91,7 +92,7 @@ PLATFORM_IMPL(flash_attention, ENGINE_CPU) {
     // Scale factor (default: 1/sqrt(head_dim))
     float scale = block.getTArguments()->size() > 0 ?
         T_ARG(0) :
-        1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+        1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
 
     flashAttentionLlamaCpp(query, key, value, mask, output, scale);
 

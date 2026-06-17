@@ -28,6 +28,7 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
 #include <ConstMessages.h>
+#include <math/templatemath.h>
 
 #include "../vlmUtils.h"
 
@@ -230,7 +231,7 @@ PLATFORM_IMPL(vlm_cross_attention, ENGINE_CUDA) {
     int numHeads = block.getIArguments()->size() > 0 ? INT_ARG(0) : 8;
     bool isCausal = block.getIArguments()->size() > 1 ? INT_ARG(1) != 0 : false;
     float scale = block.getTArguments()->size() > 0 ?
-        T_ARG(0) : 1.0f / std::sqrt(static_cast<float>(query->sizeAt(-1)));
+        T_ARG(0) : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(query->sizeAt(-1)));
 
     crossAttentionCuda(query, key, value, output, numHeads, scale, isCausal);
     return sd::Status::OK;

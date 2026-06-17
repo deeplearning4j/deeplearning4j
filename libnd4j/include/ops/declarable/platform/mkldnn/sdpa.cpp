@@ -30,6 +30,7 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
 #include <system/openmp_pragmas.h>
+#include <math/templatemath.h>
 
 #include <oneapi/dnnl/dnnl_graph.hpp>
 #include <dnnl.hpp>
@@ -1094,7 +1095,7 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
 
   auto scale = block.numT() > 0 ? T_ARG(0) : 0.0;
   if (scale <= 0) {
-    scale = 1.0 / std::sqrt(static_cast<double>(queries->sizeAt(-1)));
+    scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(queries->sizeAt(-1)));
   }
 
   // KV cache scatter: write current K/V into cache, then use full cache as K/V
