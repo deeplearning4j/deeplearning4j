@@ -19,9 +19,9 @@
  */
 
 #include <ops/declarable/helpers/top_k_renorm.h>
+#include <math/templatemath.h>
 #include <system/op_boilerplate.h>
 #include <algorithm>
-#include <cmath>
 #include <numeric>
 #include <vector>
 
@@ -44,6 +44,7 @@ static void topKRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
 
     if (k <= 0 || k >= vocabSize) {
         // No filtering needed — just softmax
+        PRAGMA_OMP_PARALLEL_FOR
         for (LongType b = 0; b < batch; b++) {
             float maxLogit = -std::numeric_limits<float>::infinity();
             for (LongType v = 0; v < vocabSize; v++) {
@@ -53,12 +54,12 @@ static void topKRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
             float sumExp = 0.0f;
             for (LongType v = 0; v < vocabSize; v++) {
                 float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
-                float prob = std::exp(val - maxLogit);
+                float prob = sd::math::sd_exp<float, float>(val - maxLogit);
                 sumExp += prob;
             }
             for (LongType v = 0; v < vocabSize; v++) {
                 float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
-                float prob = std::exp(val - maxLogit) / sumExp;
+                float prob = sd::math::sd_exp<float, float>(val - maxLogit) / sumExp;
                 if (rank == 1) {
                     output->p(v, prob);
                 } else {
@@ -69,6 +70,7 @@ static void topKRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
         return;
     }
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < batch; b++) {
         // Step 1: Compute softmax probabilities
         std::vector<float> probs(vocabSize);
@@ -80,9 +82,10 @@ static void topKRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
         float sumExp = 0.0f;
         for (LongType v = 0; v < vocabSize; v++) {
             float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
-            probs[v] = std::exp(val - maxLogit);
+            probs[v] = sd::math::sd_exp<float, float>(val - maxLogit);
             sumExp += probs[v];
         }
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (LongType v = 0; v < vocabSize; v++) {
             probs[v] /= sumExp;
         }
@@ -105,12 +108,14 @@ static void topKRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
         }
 
         if (renormSum > 0.0f) {
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (LongType v = 0; v < vocabSize; v++) {
                 probs[v] /= renormSum;
             }
         }
 
         // Step 4: Write output
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (LongType v = 0; v < vocabSize; v++) {
             if (rank == 1) {
                 output->p(v, probs[v]);
@@ -141,6 +146,7 @@ static void topPRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
         vocabSize = logits->sizeAt(1);
     }
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < batch; b++) {
         // Step 1: Compute softmax probabilities
         std::vector<float> probs(vocabSize);
@@ -152,9 +158,10 @@ static void topPRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
         float sumExp = 0.0f;
         for (LongType v = 0; v < vocabSize; v++) {
             float val = static_cast<float>((rank == 1) ? logits->e<T>(v) : logits->e<T>(b, v));
-            probs[v] = std::exp(val - maxLogit);
+            probs[v] = sd::math::sd_exp<float, float>(val - maxLogit);
             sumExp += probs[v];
         }
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (LongType v = 0; v < vocabSize; v++) {
             probs[v] /= sumExp;
         }
@@ -177,6 +184,7 @@ static void topPRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
         }
 
         // Step 4: Zero probabilities beyond cutoff
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int k = cutoff; k < vocabSize; k++) {
             probs[indices[k]] = 0.0f;
         }
@@ -187,12 +195,14 @@ static void topPRenorm_(LaunchContext* context, NDArray* logits, NDArray* output
             renormSum += probs[v];
         }
         if (renormSum > 0.0f) {
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (LongType v = 0; v < vocabSize; v++) {
                 probs[v] /= renormSum;
             }
         }
 
         // Step 6: Write output
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (LongType v = 0; v < vocabSize; v++) {
             if (rank == 1) {
                 output->p(v, probs[v]);

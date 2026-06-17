@@ -44,7 +44,7 @@ static void siluAndMulImpl(NDArray* gate, NDArray* up, NDArray* output) {
             float g = static_cast<float>(gatePtr[i]);
             float u = static_cast<float>(upPtr[i]);
             // silu(g) = g * sigmoid(g) = g / (1 + exp(-g))
-            float sigmoid_g = 1.0f / (1.0f + std::exp(-g));
+            float sigmoid_g = 1.0f / (1.0f + sd::math::sd_exp<float>(-g));
             outPtr[i] = static_cast<T>(g * sigmoid_g * u);
         }
     };
@@ -52,8 +52,6 @@ static void siluAndMulImpl(NDArray* gate, NDArray* up, NDArray* output) {
 }
 
 void siluAndMul(LaunchContext* context, NDArray* gate, NDArray* up, NDArray* output) {
-    gate->syncToHost();
-    up->syncToHost();
     BUILD_SINGLE_SELECTOR(gate->dataType(), siluAndMulImpl, (gate, up, output), SD_FLOAT_TYPES);
     output->tickWriteHost();
 }
@@ -80,8 +78,6 @@ static void geluAndMulImpl(NDArray* gate, NDArray* up, NDArray* output) {
 }
 
 void geluAndMul(LaunchContext* context, NDArray* gate, NDArray* up, NDArray* output) {
-    gate->syncToHost();
-    up->syncToHost();
     BUILD_SINGLE_SELECTOR(gate->dataType(), geluAndMulImpl, (gate, up, output), SD_FLOAT_TYPES);
     output->tickWriteHost();
 }
@@ -109,8 +105,6 @@ static void geluTanhAndMulImpl(NDArray* gate, NDArray* up, NDArray* output) {
 }
 
 void geluTanhAndMul(LaunchContext* context, NDArray* gate, NDArray* up, NDArray* output) {
-    gate->syncToHost();
-    up->syncToHost();
     BUILD_SINGLE_SELECTOR(gate->dataType(), geluTanhAndMulImpl, (gate, up, output), SD_FLOAT_TYPES);
     output->tickWriteHost();
 }

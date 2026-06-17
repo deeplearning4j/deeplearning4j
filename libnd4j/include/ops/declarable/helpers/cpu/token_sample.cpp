@@ -20,9 +20,9 @@
 
 #include <ops/declarable/helpers/token_sample.h>
 #include <ops/declarable/helpers/sampling_penalties.h>
+#include <math/templatemath.h>
 #include <system/op_boilerplate.h>
 #include <algorithm>
-#include <cmath>
 #include <numeric>
 #include <random>
 #include <vector>
@@ -54,6 +54,7 @@ static void tokenSampleCpu_(NDArray* logits, NDArray* output,
 
   bool greedy = (temperature <= 0.0 && topK <= 0 && topP <= 0.0);
 
+  PRAGMA_OMP_PARALLEL_FOR
   for (LongType b = 0; b < batch; b++) {
     // Find the start of the logits row for this batch
     // For rank 3, use the last sequence position
@@ -85,6 +86,7 @@ static void tokenSampleCpu_(NDArray* logits, NDArray* output,
     } else {
       // Full sampling pipeline: temperature -> topK -> softmax -> topP -> sample
       std::vector<float> logitsVec(vocabSize);
+      PRAGMA_OMP_PARALLEL_FOR_SIMD
       for (LongType v = 0; v < vocabSize; v++) {
         if (rank == 1) {
           logitsVec[v] = static_cast<float>(logits->e<T>(v));
@@ -97,7 +99,8 @@ static void tokenSampleCpu_(NDArray* logits, NDArray* output,
 
       // Temperature scaling
       if (temperature > 0.0) {
-        for (auto& l : logitsVec) l /= static_cast<float>(temperature);
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (LongType v = 0; v < vocabSize; v++) logitsVec[v] /= static_cast<float>(temperature);
       }
 
       // TopK filtering
@@ -108,6 +111,7 @@ static void tokenSampleCpu_(NDArray* logits, NDArray* output,
         std::partial_sort(indices.begin(), indices.begin() + topK, indices.end(),
                          [&](int a, int b2) { return logitsVec[a] > logitsVec[b2]; });
         float threshold = logitsVec[indices[topK - 1]];
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (LongType v = 0; v < vocabSize; v++) {
           if (logitsVec[v] < threshold) logitsVec[v] = -std::numeric_limits<float>::infinity();
         }
@@ -116,11 +120,12 @@ static void tokenSampleCpu_(NDArray* logits, NDArray* output,
       // Softmax
       float maxLogit = *std::max_element(logitsVec.begin(), logitsVec.end());
       float sumExp = 0.0f;
-      for (auto& l : logitsVec) {
-        l = std::exp(l - maxLogit);
-        sumExp += l;
+      for (LongType v = 0; v < vocabSize; v++) {
+        logitsVec[v] = sd::math::sd_exp<float, float>(logitsVec[v] - maxLogit);
+        sumExp += logitsVec[v];
       }
-      for (auto& l : logitsVec) l /= sumExp;
+      PRAGMA_OMP_PARALLEL_FOR_SIMD
+      for (LongType v = 0; v < vocabSize; v++) logitsVec[v] /= sumExp;
 
       // TopP (nucleus) filtering
       if (topP > 0.0 && topP < 1.0) {
@@ -135,13 +140,15 @@ static void tokenSampleCpu_(NDArray* logits, NDArray* output,
             break;
           }
         }
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int k = cutoff; k < vocabSize; k++) {
           logitsVec[indices[k]] = 0.0f;
         }
         // Re-normalize
         sumExp = 0.0f;
-        for (auto& l : logitsVec) sumExp += l;
-        for (auto& l : logitsVec) l /= sumExp;
+        for (LongType v = 0; v < vocabSize; v++) sumExp += logitsVec[v];
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (LongType v = 0; v < vocabSize; v++) logitsVec[v] /= sumExp;
       }
 
       // Sample from distribution

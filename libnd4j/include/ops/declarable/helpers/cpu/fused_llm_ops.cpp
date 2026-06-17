@@ -60,7 +60,7 @@ static void fusedGELU_(NDArray* input, NDArray* output) {
       PRAGMA_OMP_SIMD
       for (auto i = start; i < stop; i++) {
         const float x   = static_cast<float>(xBuf[i]);
-        const float sig = 1.0f / (1.0f + std::exp(-1.702f * x));
+        const float sig = 1.0f / (1.0f + sd::math::sd_exp<float>(-1.702f * x));
         zBuf[i] = static_cast<T>(x * sig);
       }
     };
@@ -69,7 +69,7 @@ static void fusedGELU_(NDArray* input, NDArray* output) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         const float x   = static_cast<float>(xBuf[i * xStride]);
-        const float sig = 1.0f / (1.0f + std::exp(-1.702f * x));
+        const float sig = 1.0f / (1.0f + sd::math::sd_exp<float>(-1.702f * x));
         zBuf[i * zStride] = static_cast<T>(x * sig);
       }
     };
@@ -180,7 +180,7 @@ static void fusedLayerNorm_(NDArray* input, NDArray* gain, NDArray* bias, NDArra
         M2    += delta * delta2;
       }
       const float variance = M2 / count;
-      const float invStd   = 1.0f / std::sqrt(variance + epsilon);
+      const float invStd   = 1.0f / sd::math::sd_sqrt<float>(variance + epsilon);
 
       // Normalize, scale and shift
       PRAGMA_OMP_SIMD
@@ -767,7 +767,7 @@ static void fusedRmsNormSwiGLU_(NDArray* input, NDArray* gamma, NDArray* wGate, 
         const float v = static_cast<float>(xRow[i]);
         sumSq += v * v;
       }
-      const float invRms = 1.0f / std::sqrt(sumSq / static_cast<float>(hiddenDim) + epsilon);
+      const float invRms = 1.0f / sd::math::sd_sqrt<float>(sumSq / static_cast<float>(hiddenDim) + epsilon);
 
       // Normalize and apply gamma
       PRAGMA_OMP_SIMD
@@ -804,7 +804,7 @@ static void fusedRmsNormSwiGLU_(NDArray* input, NDArray* gamma, NDArray* wGate, 
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) {
       const float g      = static_cast<float>(gBufG[i]);
-      const float silu_g = g / (1.0f + std::exp(-g));  // g * sigmoid(g)
+      const float silu_g = g / (1.0f + sd::math::sd_exp<float>(-g));  // g * sigmoid(g)
       oBuf[i] = static_cast<T>(silu_g * static_cast<float>(uBuf[i]));
     }
   };
@@ -922,7 +922,7 @@ static void fusedLayerNormBackward_(NDArray* input, NDArray* gain, NDArray* grad
         M2    += delta * (val - mean);
       }
       const float variance = M2 / count;
-      const float invStd   = 1.0f / std::sqrt(variance + epsilon);
+      const float invStd   = 1.0f / sd::math::sd_sqrt<float>(variance + epsilon);
 
       // Accumulate dvar and dmean, and fill per-row gain/bias grad accumulators
       float dvar  = 0.0f;

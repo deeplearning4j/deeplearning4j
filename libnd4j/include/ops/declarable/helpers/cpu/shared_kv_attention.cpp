@@ -23,6 +23,7 @@
 //
 
 #include <execution/Threads.h>
+#include <math/templatemath.h>
 #include <ops/declarable/helpers/shared_kv_attention.h>
 
 #include <cmath>
@@ -164,7 +165,7 @@ static void sharedKvAttention_(LaunchContext* context,
                 // Softmax: exp and sum
                 T sumExp = static_cast<T>(0);
                 for (sd::LongType k = 0; k < kvSeqLen; k++) {
-                    scores[k] = std::exp(scores[k] - maxScore);
+                    scores[k] = sd::math::sd_exp<T>(scores[k] - maxScore);
                     sumExp += scores[k];
                 }
                 // Normalize

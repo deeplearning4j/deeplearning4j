@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/turbo_quant_attention.h>
 #include <array/NDArrayFactory.h>
+#include <math/templatemath.h>
 #include <system/op_boilerplate.h>
 #include <cmath>
 
@@ -127,7 +128,7 @@ static void turboQuantAttentionForward_(
         T sumExp = static_cast<T>(0);
         std::vector<T> weights(seqK);
         for (sd::LongType sk = 0; sk < seqK; sk++) {
-          weights[sk] = static_cast<T>(std::exp(static_cast<float>(scores[sk] - maxScore)));
+          weights[sk] = static_cast<T>(sd::math::sd_exp<float>(static_cast<float>(scores[sk] - maxScore)));
           sumExp += weights[sk];
         }
         if (sumExp > static_cast<T>(0)) {

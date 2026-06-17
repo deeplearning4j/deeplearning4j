@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/sampling_penalties.h>
 #include <execution/Threads.h>
+#include <math/templatemath.h>
 #include <system/openmp_pragmas.h>
 #include <algorithm>
 #include <cmath>
@@ -203,7 +204,7 @@ static void applyMinPFilter_(NDArray* logits, float minPF) {
             float sumExp = 0.0f;
             for (LongType v = 0; v < vocabSize; v++) {
                 float val = static_cast<float>(buf[base + v * elemStride]);
-                sumExp += std::exp(val - maxLogit);
+                sumExp += sd::math::sd_exp<float>(val - maxLogit);
             }
 
             // maxProb = exp(maxLogit - maxLogit) / sumExp = 1.0 / sumExp
@@ -214,7 +215,7 @@ static void applyMinPFilter_(NDArray* logits, float minPF) {
             for (LongType v = 0; v < vocabSize; v++) {
                 LongType offset = base + v * elemStride;
                 float val = static_cast<float>(buf[offset]);
-                float expVal = std::exp(val - maxLogit);
+                float expVal = sd::math::sd_exp<float>(val - maxLogit);
                 if (expVal < threshold) {
                     buf[offset] = static_cast<T>(-FLT_MAX);
                 }

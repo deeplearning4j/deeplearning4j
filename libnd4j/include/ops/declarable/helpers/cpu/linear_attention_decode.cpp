@@ -81,7 +81,7 @@ static void linearAttentionDecodeCpuImpl_(LaunchContext* context,
         for (auto idx = start; idx < stop; idx++) {
             const auto b = idx / numHeads;
             const auto h = idx % numHeads;
-            const float decayScale = std::exp(-dBuf[h]);
+            const float decayScale = sd::math::sd_exp<float>(-dBuf[h]);
 
             // Pre-load k and v into contiguous float buffers
             float kLocal[512];

@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/two_way_cross_attention.h>
 #include <helpers/MmulHelper.h>
+#include <math/templatemath.h>
 #include <cmath>
 
 namespace sd {
@@ -39,7 +40,7 @@ static void applySoftmax2D(NDArray& matrix) {
         }
         double sum = 0.0;
         for (sd::LongType c = 0; c < cols; c++) {
-            double v = std::exp(matrix.e<double>(r, c) - maxVal);
+            double v = sd::math::sd_exp<double>(matrix.e<double>(r, c) - maxVal);
             matrix.p(r, c, v);
             sum += v;
         }

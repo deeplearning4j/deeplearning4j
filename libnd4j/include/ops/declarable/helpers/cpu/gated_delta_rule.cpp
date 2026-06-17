@@ -87,7 +87,7 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
             for (auto bh = start; bh < stop; ++bh) {
                 const LongType b = bh / H;
                 const LongType h = bh % H;
-                const float exp_g_f = std::exp(static_cast<float>(gateBuf[b * gS0 + t * gS1 + h * gS2]));
+                const float exp_g_f = sd::math::sd_exp<float>(static_cast<float>(gateBuf[b * gS0 + t * gS1 + h * gS2]));
                 const float beta_f = static_cast<float>(betaBuf[b * bS0 + t * bS1 + h * bS2]);
                 float* sBase = stateBuf + (b * H + h) * D_v * D_k;
 

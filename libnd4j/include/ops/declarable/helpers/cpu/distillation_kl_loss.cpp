@@ -19,6 +19,7 @@
  */
 
 #include <ops/declarable/helpers/distillation_kl_loss.h>
+#include <math/templatemath.h>
 #include <cmath>
 #include <algorithm>
 #include <vector>
@@ -37,9 +38,9 @@ static void logSoftmaxWithTemp(const double* logits, double* output, sd::LongTyp
     double logSum = 0.0;
     for (sd::LongType i = 0; i < len; i++) {
         output[i] = logits[i] / temperature - maxVal;
-        logSum += std::exp(output[i]);
+        logSum += sd::math::sd_exp<double>(output[i]);
     }
-    logSum = std::log(logSum);
+    logSum = sd::math::sd_log<double>(logSum);
     for (sd::LongType i = 0; i < len; i++) {
         output[i] -= logSum;
     }
@@ -49,7 +50,7 @@ static void logSoftmaxWithTemp(const double* logits, double* output, sd::LongTyp
 static void softmaxWithTemp(const double* logits, double* output, sd::LongType len, double temperature) {
     logSoftmaxWithTemp(logits, output, len, temperature);
     for (sd::LongType i = 0; i < len; i++) {
-        output[i] = std::exp(output[i]);
+        output[i] = sd::math::sd_exp<double>(output[i]);
     }
 }
 

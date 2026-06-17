@@ -89,7 +89,7 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     auto sigmoidFunc = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; ++i) {
             float val = static_cast<float>(betaBuf[i]);
-            betaBuf[i] = static_cast<T>(1.0f / (1.0f + std::exp(-val)));
+            betaBuf[i] = static_cast<T>(1.0f / (1.0f + sd::math::sd_exp<float>(-val)));
         }
     };
     samediff::Threads::parallel_for(sigmoidFunc, 0, betaLen);

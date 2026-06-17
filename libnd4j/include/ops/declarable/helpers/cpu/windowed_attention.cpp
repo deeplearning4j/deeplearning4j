@@ -24,6 +24,7 @@
 
 #include <execution/Threads.h>
 #include <helpers/LoopsCoordsHelper.h>
+#include <math/templatemath.h>
 #include <ops/declarable/helpers/windowed_attention.h>
 
 #include <cmath>
@@ -151,7 +152,7 @@ static void windowedAttention_(sd::LaunchContext* context,
                 // Softmax
                 T sumExp = static_cast<T>(0);
                 for (int w = 0; w < actualWindowSize; w++) {
-                    softmaxScores[w] = std::exp(scores[w] - maxScore);
+                    softmaxScores[w] = sd::math::sd_exp<T>(scores[w] - maxScore);
                     sumExp += softmaxScores[w];
                 }
                 for (int w = 0; w < actualWindowSize; w++) {
