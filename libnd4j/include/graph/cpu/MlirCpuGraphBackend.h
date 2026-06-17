@@ -85,7 +85,7 @@ class MlirCpuGraphBackend : public GraphBackend {
 
   // Compiled segment: holds the JIT kernel and argument mapping
   struct CompiledSegment {
-    std::shared_ptr<sd::mlir_runtime::CompiledKernel> kernel;
+    sd::mlir_runtime::CompiledKernel* kernel;
     LongType shapeKey;
     bool valid;
 
@@ -95,7 +95,8 @@ class MlirCpuGraphBackend : public GraphBackend {
     // Per-slot compilation audit
     std::vector<CompilationAuditEntry> compilationAudit;
 
-    CompiledSegment() : shapeKey(0), valid(false) {}
+    CompiledSegment() : kernel(nullptr), shapeKey(0), valid(false) {}
+    ~CompiledSegment() { delete kernel; }
   };
 
   // Segment cache (SegmentCacheKey/Hash from GraphBackendCommon.h)
