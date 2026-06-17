@@ -290,7 +290,7 @@ sd::NDArray *sd::ops::DeclarableOp::getZ(Context &ctx, int inputId) {
       if (var->getNDArray() != nullptr && var->getNDArray()->nonNull()) {
         z = var->getNDArray();
       } else {
-        sd_printf("Can't get Z variable for node_%i!\n", ctx.nodeId());
+        sd_debug("Can't get Z variable for node_%i!\n", ctx.nodeId());
       }
     } else {
       THROW_EXCEPTION("getZ: Unable to return z variable!");
@@ -429,23 +429,23 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
       auto* desc = this->getOpDescriptor();
       auto* namePtr = desc ? desc->getOpName() : nullptr;
       const char* opNameStr = (namePtr && !namePtr->empty()) ? namePtr->c_str() : "<unknown>";
-      sd_printf("Node_%i: %s\n", ctx.nodeId(), opNameStr);
-      sd_printf("Input shapes:\n",0);
+      sd_debug("Node_%i: %s\n", ctx.nodeId(), opNameStr);
+      sd_debug("Input shapes:\n",0);
       for (int e = 0; e < inSha.size(); e++) {
         if (inSha.at(e) != nullptr) {
-          sd_printf("Shape_%i: ", e);
+          sd_debug("Shape_%i: ", e);
           shape::printShapeInfoLinear(inSha.at(e));
         } else {
-          sd_printf("Shape_%i: nullptr\n", e);
+          sd_debug("Shape_%i: nullptr\n", e);
         }
       }
-      sd_printf("Output shapes:\n",0);
+      sd_debug("Output shapes:\n",0);
       for (int e = 0; e < outSha->size(); e++) {
         if (outSha->at(e) != nullptr) {
-          sd_printf("Shape_%i: ", e);
+          sd_debug("Shape_%i: ", e);
           shape::printShapeInfoLinear(outSha->at(e));
         } else {
-          sd_printf("Shape_%i: nullptr\n", e);
+          sd_debug("Shape_%i: nullptr\n", e);
         }
       }
     }
@@ -1186,13 +1186,13 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     if(block == nullptr) {
       THROW_EXCEPTION("Block is null!");
     }
-    sd_printf("Op with name %s and num inputs %i \n", _dbgSafeName, block->width());
+    sd_debug("Op with name %s and num inputs %i \n", _dbgSafeName, block->width());
     auto vs = block->getVariableSpace();
     int numInputs = block->width();
     for (int e = 0; e < numInputs; e++) {
       auto array = block->isFastPath() ?  block->fastpath_in()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
-      sd_printf("Checking input %d  block fast path %d op name %s\n", e, block->isFastPath(), _dbgSafeName);
+      sd_debug("Checking input %d  block fast path %d op name %s\n", e, block->isFastPath(), _dbgSafeName);
       if (array == nullptr) {
         std::string msg = "DeclarableOp::execute: input array at index " + std::to_string(e) +
                           " is nullptr for op " + std::string(_dbgSafeName);
@@ -1202,19 +1202,19 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       // Validate buffer before reading values — corrupt/freed buffers crash in strlen
       auto shapeInfo = array->shapeInfo();
       if (shapeInfo == nullptr) {
-        sd_printf("node_%i:%i input  shape: CORRUPT (null shapeInfo); skipping\n", block->nodeId(), e);
+        sd_debug("node_%i:%i input  shape: CORRUPT (null shapeInfo); skipping\n", block->nodeId(), e);
         continue;
       }
       auto dataBuffer = array->dataBuffer();
       if (dataBuffer == nullptr || (dataBuffer->primary() == nullptr && dataBuffer->special() == nullptr)) {
         auto shape = ShapeUtils::shapeAsString(array);
-        sd_printf("node_%i:%i input  shape: %s; dtype: ?; values: UNALLOCATED BUFFER\n", block->nodeId(), e, shape.c_str());
+        sd_debug("node_%i:%i input  shape: %s; dtype: ?; values: UNALLOCATED BUFFER\n", block->nodeId(), e, shape.c_str());
         continue;
       }
       // Guard against closed buffers — asString() calls syncToHost() which crashes on closed DataBuffers
       if (dataBuffer->isClosed()) {
         auto shape = ShapeUtils::shapeAsString(array);
-        sd_printf("node_%i:%i input  shape: %s; dtype: %s; values: CLOSED BUFFER\n",
+        sd_debug("node_%i:%i input  shape: %s; dtype: %s; values: CLOSED BUFFER\n",
                   block->nodeId(), e, shape.c_str(), DataTypeUtils::asString(array->dataType()).c_str());
         continue;
       }
@@ -1230,13 +1230,13 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       // C++ try-catch cannot intercept it. Shape and dtype are always safe to
       // read (stored in CPU-side metadata). Value preview requires explicit
       // opt-in via printIndexedBuffer() at call sites that guarantee buffer validity.
-      sd_printf("node_%i:%i input  shape: %s; dtype: %s; length: %lld%s\n",
+      sd_debug("node_%i:%i input  shape: %s; dtype: %s; length: %lld%s\n",
                 block->nodeId(), e, shape.c_str(), type.c_str(),
                 (long long)array->lengthOf(), array->isEmpty() ? " (empty)" : "");
     }
 
     for (size_t e = 0; e < static_cast<size_t>(numOutputs); e++) {
-      sd_printf("Declarable op execute: processing output %d\n", e);
+      sd_debug("Declarable op execute: processing output %d\n", e);
 
       if (!block->isFastPath()) {
         if (!vs->hasVariable(block->nodeId(), e)) break;
@@ -1253,18 +1253,18 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
       auto shapeInfo = array->shapeInfo();
       if (shapeInfo == nullptr) {
-        sd_printf("node_%i:%i result shape: CORRUPT (null shapeInfo); skipping\n", block->nodeId(), (int)e);
+        sd_debug("node_%i:%i result shape: CORRUPT (null shapeInfo); skipping\n", block->nodeId(), (int)e);
         continue;
       }
       auto dataBuffer = array->dataBuffer();
       if (dataBuffer == nullptr || (dataBuffer->primary() == nullptr && dataBuffer->special() == nullptr)) {
         auto shape = ShapeUtils::shapeAsString(array);
-        sd_printf("node_%i:%i result shape: %s; dtype: ?; values: UNALLOCATED BUFFER\n", block->nodeId(), (int)e, shape.c_str());
+        sd_debug("node_%i:%i result shape: %s; dtype: ?; values: UNALLOCATED BUFFER\n", block->nodeId(), (int)e, shape.c_str());
         continue;
       }
       if (dataBuffer->isClosed()) {
         auto shape = ShapeUtils::shapeAsString(array);
-        sd_printf("node_%i:%i result shape: %s; dtype: %s; values: CLOSED BUFFER\n",
+        sd_debug("node_%i:%i result shape: %s; dtype: %s; values: CLOSED BUFFER\n",
                   block->nodeId(), (int)e, shape.c_str(), DataTypeUtils::asString(array->dataType()).c_str());
         continue;
       }
@@ -1273,7 +1273,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       auto type = DataTypeUtils::asString(array->dataType());
 
       // SAFETY: Same as input logging — no value reads. See comment above.
-      sd_printf("node_%i:%i result shape: %s; dtype: %s; length: %lld%s\n",
+      sd_debug("node_%i:%i result shape: %s; dtype: %s; length: %lld%s\n",
                 block->nodeId(), (int)e, shape.c_str(), type.c_str(),
                 (long long)array->lengthOf(), array->isEmpty() ? " (empty)" : "");
     }
@@ -1367,7 +1367,7 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
       if (!warnedOnce) {
         auto existingShape = ShapeUtils::shapeAsString(existing);
         auto newShape = ShapeUtils::shapeAsString(array);
-        sd_printf("WARNING: OVERWRITE_RESULT in DSP mode with shape mismatch: existing=%s new=%s (op output idx %d). "
+        sd_debug("WARNING: OVERWRITE_RESULT in DSP mode with shape mismatch: existing=%s new=%s (op output idx %d). "
                   "This leaks the C++ temporary array. Fix DSP shape computation for this op.\n",
                   existingShape.c_str(), newShape.c_str(), outputIdx);
         warnedOnce = true;

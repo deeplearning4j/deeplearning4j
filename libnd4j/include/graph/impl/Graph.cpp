@@ -999,7 +999,7 @@ Status Graph::validate() {
 };
 
 void Graph::printOutNode(Node *node) {
-  sd_printf("%i. ", node->id());
+  sd_debug("%i. ", node->id());
   switch (node->opType()) {
     case ::graph::OpType_CUSTOM: {
       printf("%s; ", node->getCustomOp()->getOpName()->c_str());
@@ -1012,12 +1012,12 @@ void Graph::printOutNode(Node *node) {
     }
   }
 
-  sd_printf("Inputs: [", "");
+  sd_debug("Inputs: [", "");
   // auto block = node->getBlock();
   for (size_t e = 0; e < node->input()->size(); e++) {
     auto in = node->input()->at(e);
     printf("{%i:%i}", in.first, in.second);
-    if (e < node->input()->size() - 1) sd_printf(", ", "");
+    if (e < node->input()->size() - 1) sd_debug(", ", "");
   }
 
   if (node->opType() == ::graph::OpType_CUSTOM) {
@@ -1027,12 +1027,12 @@ void Graph::printOutNode(Node *node) {
 
       for (size_t e = 0; e < ctx->getIArguments()->size(); e++) {
         printf("%lli", ctx->getIArguments()->at(e));
-        if (e < ctx->getIArguments()->size() - 1) sd_printf(", ", "");
+        if (e < ctx->getIArguments()->size() - 1) sd_debug(", ", "");
       }
     }
   }
 
-  sd_printf("]; \n", "");
+  sd_debug("]; \n", "");
   fflush(stdout);
 }
 
@@ -1041,7 +1041,7 @@ void Graph::printOut() {
 
   // print variables first
   if (_variableSpace->totalEntries() > 0) {
-    sd_printf("\nPrinting out Variables...\n", "");
+    sd_debug("\nPrinting out Variables...\n", "");
     auto vars = _variableSpace->getVariables();
 
     for (Variable *v : vars) {
@@ -1051,20 +1051,20 @@ void Graph::printOut() {
         auto dtype = DataTypeUtils::asString(v->getNDArray()->dataType());
 
         if (v->getName() != nullptr && !v->getName()->empty()) {
-          sd_printf("<%s> <%i:%i> dtype: %s; shape: %s; values: %s;\n", v->getName()->c_str(), v->id(), v->index(),
+          sd_debug("<%s> <%i:%i> dtype: %s; shape: %s; values: %s;\n", v->getName()->c_str(), v->id(), v->index(),
                     dtype.c_str(), shape.c_str(), values->c_str());
         } else {
-          sd_printf("<%i:%i> dtype: %s; shape: %s; values: %s;\n", v->id(), v->index(), dtype.c_str(), shape.c_str(),
+          sd_debug("<%i:%i> dtype: %s; shape: %s; values: %s;\n", v->id(), v->index(), dtype.c_str(), shape.c_str(),
                     values->c_str());
         }
       } else if (v->hasNDArrayList()) {
         // TODO: add better NDArrayList printout
-        sd_printf("<%i:%i> holds ArrayList", v->id(), v->index());
+        sd_debug("<%i:%i> holds ArrayList", v->id(), v->index());
       }
     }
   }
 
-  if (_onion->size() > 0) sd_printf("\nPrinting out Graph...\n", "");
+  if (_onion->size() > 0) sd_debug("\nPrinting out Graph...\n", "");
 
   int opCnt = 0;
   for (size_t l = 0; l < _onion->size(); l++) {
@@ -1080,11 +1080,11 @@ void Graph::printOut() {
     }
   }
 
-  if (_scopes.size() > 0) sd_printf("\nPrinting out Scopes...\n", "");
+  if (_scopes.size() > 0) sd_debug("\nPrinting out Scopes...\n", "");
 
   for (size_t s = 0; s < _scopes.size(); s++) {
     Scope *scope = _scopes.at(s);
-    sd_printf("OpScope %i:<%s>:\n", scope->id(), scope->name()->c_str());
+    sd_debug("OpScope %i:<%s>:\n", scope->id(), scope->name()->c_str());
 
     for (size_t n = 0; n < scope->nodes()->size(); n++) {
       Node *node = scope->nodes()->at(n);

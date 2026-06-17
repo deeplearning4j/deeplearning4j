@@ -182,7 +182,7 @@ VariableSpace *VariableProxy::clone() {
 VariableSpace &VariableProxy::operator=(const VariableSpace &other) {
   if (this == &other) return *this;
 
-  sd_printf("VariableProxy = not implemented\n", "");
+  sd_debug("VariableProxy = not implemented\n", "");
 
   return *this;
 }

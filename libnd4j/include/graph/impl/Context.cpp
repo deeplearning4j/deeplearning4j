@@ -347,21 +347,21 @@ Variable *Context::getVariable(int idx) {
     if (!array->isEmpty()) {
       LongType maxLen = sd::math::sd_min(16, array->lengthOf() - 1);
 
-      sd_printf("Debug info for node_%i input[%i]; shape: %s;  contiguous: [%i]; order: [%c]; dtype: [%s];\n",
+      sd_debug("Debug info for node_%i input[%i]; shape: %s;  contiguous: [%i]; order: [%c]; dtype: [%s];\n",
                 this->_nodeId, idx, shape_.c_str(),(shape::strideDescendingCAscendingF(array->shapeInfo()) ? 1 : 0), array->ordering(), type.c_str());
       std::vector<sd::LongType> shapeLen = {array->lengthOf()};
       NDArray *raveled = array->reshape(array->ordering(), shapeLen);
-      sd_printf("Values: [ ",0);
+      sd_debug("Values: [ ",0);
       for (LongType i = 0; i < maxLen; i++) {
         auto v2 = raveled->e<float>(i);
-        sd_printf("%f, ", v2);
+        sd_debug("%f, ", v2);
       }
 
       delete raveled;
-      sd_printf("]\n",0);
+      sd_debug("]\n",0);
 
     } else {
-      sd_printf("Debug info for node_%i input[%i]; shape: %s;  contiguous: [%i]; order: [%c]; dtype: [%s]; mean value: [%f]\n",
+      sd_debug("Debug info for node_%i input[%i]; shape: %s;  contiguous: [%i]; order: [%c]; dtype: [%s]; mean value: [%f]\n",
                 this->_nodeId, idx, shape_.c_str(), (shape::strideDescendingCAscendingF(array->shapeInfo()) ? 1 : 0), array->ordering(), type.c_str(), m);
     }
   }

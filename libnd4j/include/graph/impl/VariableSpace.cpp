@@ -353,9 +353,9 @@ void VariableSpace::replaceVariable(Variable* variable) {
   bool replaced = false;
   // trying name first
   if (variable->getName() != nullptr && !variable->getName()->empty()) {
-    sd_printf("Trying to replace variable by name: [%s]\n", variable->getName()->c_str());
+    sd_debug("Trying to replace variable by name: [%s]\n", variable->getName()->c_str());
     if (hasVariable(variable->getName())) {
-      sd_printf("Replacing by name: [%s]\n", variable->getName()->c_str());
+      sd_debug("Replacing by name: [%s]\n", variable->getName()->c_str());
       auto vs = getVariable(variable->getName());
       dropVariable(vs->id(), vs->index());
       putVariable(vs->id(), vs->index(), variable);
@@ -363,9 +363,9 @@ void VariableSpace::replaceVariable(Variable* variable) {
       replaced = true;
     }
   } else {
-    sd_printf("Trying to replace variable by id: [%i:%i]\n", variable->id(), variable->index());
+    sd_debug("Trying to replace variable by id: [%i:%i]\n", variable->id(), variable->index());
     if (hasVariable(variable->id(), variable->index())) {
-      sd_printf("Replacing by id: [%i:%i]\n", variable->id(), variable->index());
+      sd_debug("Replacing by id: [%i:%i]\n", variable->id(), variable->index());
       auto vs = getVariable(variable->id(), variable->index());
       dropVariable(variable->id(), variable->index());
       putVariable(vs->id(), vs->index(), variable);
@@ -375,7 +375,7 @@ void VariableSpace::replaceVariable(Variable* variable) {
   }
 
   if (!replaced) {
-    sd_printf("wasn't able to replace variable, putting\n", "");
+    sd_debug("wasn't able to replace variable, putting\n", "");
     putVariable(variable->id(), variable->index(), variable);
   }
 }

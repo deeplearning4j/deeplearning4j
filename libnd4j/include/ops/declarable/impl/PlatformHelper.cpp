@@ -92,7 +92,7 @@ NDArray* PlatformHelper::getZ(graph::Context& ctx, int inputId) {
       if (var->getNDArray() != nullptr && var->getNDArray()->nonNull()) {
         z = var->getNDArray();
       } else {
-        sd_printf("Can't get Z variable for node_%i!\n", ctx.nodeId());
+        sd_debug("Can't get Z variable for node_%i!\n", ctx.nodeId());
       }
     } else {
       THROW_EXCEPTION("Failed execution after attempting to get result outside of fast_path. This should not happen.\n");
