@@ -179,29 +179,26 @@ int executeDynamicShapePlan(
         if (primary != nullptr && len > 0 && len <= 32) {
           int8_t* rawBytes = reinterpret_cast<int8_t*>(primary);
           sd::LongType offset = inputPtrs[i]->offset();
-          sd_printf("DSP_INT64_INPUT: idx=%d len=%lld offset=%lld dtype=%d addr=%p\n",
+          sd_debug("DSP_INT64_INPUT: idx=%d len=%lld offset=%lld dtype=%d addr=%p\n",
                     i, (long long)len, (long long)offset,
                     (int)inputPtrs[i]->dataType(), primary);
-          // Print raw bytes
-          sd_printf("  rawBytes[0..%lld]: ", (long long)(len * 8 - 1));
+          sd_debug("  rawBytes[0..%lld]: ", (long long)(len * 8 - 1));
           for (sd::LongType b = 0; b < len * 8; b++) {
-            sd_printf("%02x ", (unsigned char)rawBytes[b]);
+            sd_debug("%02x ", (unsigned char)rawBytes[b]);
           }
-          sd_printf("\n");
-          // Print as INT64 values
+          sd_debug("\n");
           int64_t* asInt64 = reinterpret_cast<int64_t*>(primary);
-          sd_printf("  asInt64[]: ");
+          sd_debug("  asInt64[]: ");
           for (sd::LongType e = 0; e < len; e++) {
-            sd_printf("%lld ", (long long)asInt64[e + offset]);
+            sd_debug("%lld ", (long long)asInt64[e + offset]);
           }
-          sd_printf("\n");
-          // Print as INT32 values (first 4 per element)
+          sd_debug("\n");
           int32_t* asInt32 = reinterpret_cast<int32_t*>(primary);
-          sd_printf("  asInt32[]: ");
+          sd_debug("  asInt32[]: ");
           for (sd::LongType e = 0; e < len * 2; e++) {
-            sd_printf("%d ", asInt32[e]);
+            sd_debug("%d ", asInt32[e]);
           }
-          sd_printf("\n");
+          sd_debug("\n");
         }
       }
     }

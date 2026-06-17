@@ -169,9 +169,8 @@ void setIntermediateResult(OpaqueContext *contextPointer,
     THROW_EXCEPTION("Set Intermediate Result: shapeInfo is null");
   }
   auto casted = reinterpret_cast<sd::LongType *>(shapeInfo->primary());
-  auto desc = new sd::ShapeDescriptor(casted, false);
   auto arr = new sd::NDArray(buffer->dataBuffer(),
-                             desc,
+                             casted,
                              sd::LaunchContext::defaultContext(),
                              dataOffset);
   contextPointer->setIntermediateResult(index, arr);
@@ -207,8 +206,7 @@ void pushIntermediateResult(OpaqueContext *contextPointer,
                             OpaqueDataBuffer *shapeInfo,
                             sd::LongType offset) {
   auto shapeInfoCast = reinterpret_cast<sd::LongType *>(shapeInfo->primary());
-  auto desc = new sd::ShapeDescriptor(shapeInfoCast, false);
-  auto arr = new sd::NDArray(buffer->dataBuffer(), desc, sd::LaunchContext::defaultContext(), offset);
+  auto arr = new sd::NDArray(buffer->dataBuffer(), shapeInfoCast, sd::LaunchContext::defaultContext(), offset);
   contextPointer->pushIntermediateResult(arr);
 }
 

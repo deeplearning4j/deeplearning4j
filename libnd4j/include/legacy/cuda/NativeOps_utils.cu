@@ -118,7 +118,7 @@ void pullRows(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray z, sd::
 }
 
 ////////////////////////////////////////////////////////////////////////
-__global__ void tryPointerKernel(void *p, int len) {
+SD_KERNEL void tryPointerKernel(void *p, int len) {
   auto buf = reinterpret_cast<int8_t *>(p);
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   __shared__ int b;
