@@ -91,8 +91,7 @@ DECLARE_SHAPE_FN(crop_and_resize) {
   outputShape[1] = width;
   outputShape[2] = height;
   outputShape[3] = in[4];
-  auto desc = new  ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), shape::order(in), 4, outputShape));
 }
 
 DECLARE_TYPES(crop_and_resize) {
