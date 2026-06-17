@@ -171,7 +171,7 @@ bool MemoryCounter::validateSoftLimit(LongType numBytes) {
 
   if (usagePercent >= static_cast<double>(softLimit)) {
     if (sd::Environment::getInstance().isVerbose()) {
-      sd_printf("MemoryCounter: CPU soft limit hit — system at %.1f%% usage "
+      sd_debug("MemoryCounter: CPU soft limit hit — system at %.1f%% usage "
                 "(soft limit %d%%), free: %zu MB, rejecting %lld bytes\n",
                 usagePercent, softLimit, freeBytes / (1024 * 1024), (long long)numBytes);
     }

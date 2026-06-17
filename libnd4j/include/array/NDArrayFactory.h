@@ -65,7 +65,7 @@ class SD_LIB_EXPORT NDArrayFactory {
   template <typename T>
   static NDArray *linspace(T from, T to, LongType numElements);
 
-  static NDArray *create(ShapeDescriptor *shapeDescriptor, LaunchContext *context = LaunchContext ::defaultContext());
+  static NDArray *create(DataType dataType, char order, const std::vector<LongType> &shape, LaunchContext *context = LaunchContext ::defaultContext());
 
   static NDArray *create(DataType dtype, LaunchContext *context = LaunchContext ::defaultContext());
 
