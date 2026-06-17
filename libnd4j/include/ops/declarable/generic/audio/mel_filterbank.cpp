@@ -53,8 +53,7 @@ DECLARE_SHAPE_FN(mel_filterbank) {
     int fftSize = INT_ARG(1);
 
     std::vector<sd::LongType> outputShapeVec = {numMelBins, fftSize / 2 + 1};
-    auto desc = new ShapeDescriptor(sd::DataType::FLOAT32, 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(sd::DataType::FLOAT32, 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(mel_filterbank) {

@@ -76,9 +76,7 @@ DECLARE_SHAPE_FN(cast_and_scale) {
   DataType targetType = DataTypeUtils::fromInt(targetTypeInt);
 
   // Create output shape with target data type
-  auto desc = new ShapeDescriptor(inShape, targetType, true);
-  auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-  delete desc;
+  auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(targetType, inShape);
 
   return SHAPELIST(newShapeInfo);
 }

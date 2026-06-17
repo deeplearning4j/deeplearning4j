@@ -170,8 +170,9 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
 
   // Create a ShapeDescriptor with the computed strides (not standard C-order strides)
   // so the view correctly maps back into the original array's memory layout.
-  auto descriptor = new ShapeDescriptor(inputBase->dataType(), 'c', outputShape, outputStrides);
-  auto viewArray = NDArray(inputBase->dataBuffer(), descriptor, inputBase->getContext(), baseOffset);
+  ShapeDescriptor descriptor(inputBase->dataType(), 'c', outputShape, outputStrides);
+  auto cachedShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(&descriptor);
+  auto viewArray = NDArray(inputBase->dataBuffer(), cachedShapeInfo, inputBase->getContext(), baseOffset);
 
   // When a pre-allocated output exists, copy the viewed data into it.
   // Creating a view and trying to overwrite the output doesn't work reliably
@@ -180,10 +181,9 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
     auto output = OUTPUT_VARIABLE(0);
     output->assign(&viewArray);
   } else {
-    auto newResult = new NDArray(inputBase->dataBuffer(), new ShapeDescriptor(inputBase->dataType(), 'c', outputShape, outputStrides), inputBase->getContext(), baseOffset);
+    auto newResult = new NDArray(inputBase->dataBuffer(), cachedShapeInfo, inputBase->getContext(), baseOffset);
     STORE_RESULT(newResult);
   }
-  delete descriptor;
   return Status::OK;
 }
 

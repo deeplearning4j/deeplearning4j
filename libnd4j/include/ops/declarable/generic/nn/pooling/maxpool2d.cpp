@@ -215,8 +215,7 @@ DECLARE_SHAPE_FN(maxpool2d_bp) {
                "MAXPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!",
                inputShape->at(1)[0]);
 
-  auto desc = new ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)), false);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShape->at(1)), inputShape->at(0)));
 }
 
 }  // namespace ops

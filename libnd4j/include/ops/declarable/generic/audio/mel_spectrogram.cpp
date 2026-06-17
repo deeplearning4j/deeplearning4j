@@ -80,8 +80,7 @@ DECLARE_SHAPE_FN(mel_spectrogram) {
         outputShapeVec = {numMelBins, numFrames};
     }
 
-    auto desc = new ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(mel_spectrogram) {

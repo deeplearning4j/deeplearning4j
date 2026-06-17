@@ -199,10 +199,7 @@ DECLARE_SHAPE_FN(deconv3d) {
     outputShape = {bS,oD,oH,oW,oC};
   }
 
-  ShapeDescriptor *shapeDescriptor = new ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo),
-                                                         outputShape);
-  auto outputShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(shapeDescriptor);
-  delete shapeDescriptor;
+  auto outputShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), outputShape);
   return SHAPELIST(outputShapeInfo);
 }
 

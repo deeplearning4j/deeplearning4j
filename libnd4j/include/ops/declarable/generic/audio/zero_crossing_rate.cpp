@@ -72,8 +72,7 @@ DECLARE_SHAPE_FN(zero_crossing_rate) {
         outputShapeVec = {numFrames};
     }
 
-    auto desc = new ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(zero_crossing_rate) {

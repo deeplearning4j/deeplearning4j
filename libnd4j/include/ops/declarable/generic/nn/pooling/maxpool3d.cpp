@@ -231,8 +231,7 @@ CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 14) {
 }
 
 DECLARE_SHAPE_FN(maxpool3dnew_bp) {
-  auto desc = new ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)), false);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShape->at(1)), inputShape->at(0)));
 }
 
 }  // namespace ops

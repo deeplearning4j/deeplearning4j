@@ -90,8 +90,7 @@ DECLARE_SHAPE_FN(stft) {
     // Output: [batch, num_frames, num_bins, 2]
     std::vector<sd::LongType> outputShapeVec = {batchSize, numFrames, numBins, 2};
 
-    auto desc = new ShapeDescriptor(sd::DataType::FLOAT32, 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(sd::DataType::FLOAT32, 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(stft) {

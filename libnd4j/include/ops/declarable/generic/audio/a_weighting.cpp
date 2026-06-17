@@ -50,8 +50,7 @@ DECLARE_SHAPE_FN(a_weighting) {
         outputShapeVec.push_back(shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(i)));
     }
 
-    auto desc = new ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(a_weighting) {

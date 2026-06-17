@@ -59,8 +59,7 @@ DECLARE_SHAPE_FN(griffin_lim) {
     sd::LongType numSamples = (numFrames - 1) * hopLength + fftSize;
 
     std::vector<sd::LongType> outputShapeVec = {batch, numSamples};
-    auto desc = new ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(griffin_lim) {

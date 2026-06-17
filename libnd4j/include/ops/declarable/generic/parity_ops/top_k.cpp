@@ -78,8 +78,8 @@ DECLARE_SHAPE_FN(top_k) {
     aShape[shapeRank] = k;
 
     shape::updateStrides(aShape, shape::order(in), false);
-    auto desc = new ShapeDescriptor(aShape, (e == 0 ? ArrayOptions::dataType(in) : INT64), false);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(
+        (e == 0 ? ArrayOptions::dataType(in) : INT64), aShape));
 
     RELEASE(aShape, block.getWorkspace());
   }

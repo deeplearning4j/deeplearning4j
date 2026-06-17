@@ -57,8 +57,7 @@ DECLARE_SHAPE_FN(chroma_features) {
     sd::LongType numFrames = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(2));
 
     std::vector<sd::LongType> outputShapeVec = {batch, numChroma, numFrames};
-    auto desc = new ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(chroma_features) {

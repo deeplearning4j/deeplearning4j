@@ -492,8 +492,7 @@ DECLARE_SHAPE_FN(sru_bi) {
 
   char order = shape::order(xShapeInfo);
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize});
-  auto result = ConstantShapeHelper::getInstance().createShapeInfo(descriptor);
+  auto result = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize});
   return SHAPELIST(result, result);
 }
 
@@ -647,15 +646,10 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
   const char order = shape::order(xShapeInfo);
 
-  ShapeDescriptor *descriptor1 = new ShapeDescriptor(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize});
-  ShapeDescriptor *descriptor2 = new ShapeDescriptor(ArrayOptions::dataType(xShapeInfo), order, {time, 2 * inSize, 6 * inSize});
-  ShapeDescriptor *descriptor3 = new ShapeDescriptor(ArrayOptions::dataType(xShapeInfo), order, {4 * inSize});
-  ShapeDescriptor *descriptor4 = new ShapeDescriptor(ArrayOptions::dataType(xShapeInfo), order, {bS, 2 * inSize});
-
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor1),
-                   ConstantShapeHelper::getInstance().createShapeInfo(descriptor2),
-                   ConstantShapeHelper::getInstance().createShapeInfo(descriptor3),
-                   ConstantShapeHelper::getInstance().createShapeInfo(descriptor4));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize}),
+                   ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShapeInfo), order, {time, 2 * inSize, 6 * inSize}),
+                   ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShapeInfo), order, {4 * inSize}),
+                   ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShapeInfo), order, {bS, 2 * inSize}));
 }
 
 }  // namespace ops

@@ -57,11 +57,11 @@ SD_LIB_EXPORT NDArray* NDArrayFactory::create<bool>(const char order, const std:
   if ((int)shape.size() > SD_MAX_RANK)
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(BOOL, order, shape);
+  ShapeDescriptor descriptor(BOOL, order, shape);
 
-  if (static_cast<size_t>(descriptor->arrLength()) != data.size()) {
+  if (static_cast<size_t>(descriptor.arrLength()) != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
-              descriptor->arrLength());
+              descriptor.arrLength());
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
   }
 
@@ -71,8 +71,7 @@ SD_LIB_EXPORT NDArray* NDArrayFactory::create<bool>(const char order, const std:
 
   DataBuffer * buffer = new DataBuffer(hostBuffer, data.size() * sizeof(bool), BOOL, true, context->getWorkspace());
 
-  NDArray *result = new NDArray(buffer, descriptor, context);
-  delete descriptor;
+  NDArray *result = new NDArray(buffer, &descriptor, context);
   return result;
 }
 
@@ -84,13 +83,12 @@ NDArray* NDArrayFactory::create(const char order,
                                LaunchContext* context) {
   if (shape.size() > SD_MAX_RANK)
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
-  ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape);
+  ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shape);
 
   //scalars can be created with zero length
-  if (descriptor->arrLength() != 0 && data.size() != 1 && static_cast<size_t>(descriptor->arrLength()) != data.size()) {
-    delete descriptor;
+  if (descriptor.arrLength() != 0 && data.size() != 1 && static_cast<size_t>(descriptor.arrLength()) != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
-              descriptor->arrLength());
+              descriptor.arrLength());
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
   }
 
@@ -100,12 +98,11 @@ NDArray* NDArrayFactory::create(const char order,
 
   //note here we use data.size() to work around the scalar case. If the shape is zero but the data is actually length 1 we need this reflected
   //to create a correct length data buffer
-  auto dtypeString = DataTypeUtils::asString(descriptor->dataType());
+  auto dtypeString = DataTypeUtils::asString(descriptor.dataType());
   DataBuffer *  buffer = new DataBuffer(
       hostData, DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
 
-  NDArray *result = new NDArray(buffer, descriptor, context);
-  delete descriptor;
+  NDArray *result = new NDArray(buffer, &descriptor, context);
   return result;
 }
 
@@ -243,7 +240,8 @@ NDArray* NDArrayFactory::create(const T scalar, LaunchContext* context) {
       new DataBuffer(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
   auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
-  NDArray *res = new NDArray(buffer,desc , context);
+  NDArray *res = new NDArray(buffer, desc, context);
+  delete desc;
   res->bufferAsT<T>()[0] = scalar;
 
   res->tickWriteHost();
@@ -396,13 +394,12 @@ NDArray *NDArrayFactory::create(const char order, const std::vector<LongType>& s
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32");
 
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(dtype, order, shape);
+  ShapeDescriptor descriptor(dtype, order, shape);
 
   DataBuffer *  buffer = new DataBuffer(
-      descriptor->arrLength() * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
+      descriptor.arrLength() * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
 
-  NDArray *result = new NDArray(buffer, descriptor, context);
-  delete descriptor;
+  NDArray *result = new NDArray(buffer, &descriptor, context);
   result->nullify();
 
   return result;
@@ -431,6 +428,7 @@ NDArray *NDArrayFactory::create(const std::vector<T>& values, LaunchContext* con
 
   auto desc = ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>());
   NDArray *res = new NDArray(buffer, desc, context);
+  delete desc;
   memcpyFromVector<T>(res->buffer(), values);
 
   res->tickWriteHost();
@@ -515,13 +513,12 @@ NDArray *NDArrayFactory::create(T* buffer, const char order, const std::initiali
     THROW_EXCEPTION("NDArrayFactory::create: Rank of NDArray can't exceed 32");
 
   std::vector<LongType> shp(shape);
-  ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shp);
+  ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shp);
 
   DataBuffer *  pBuffer = new DataBuffer(
-      buffer, descriptor->arrLength() * sizeof(T), descriptor->dataType(), false, context->getWorkspace());
+      buffer, descriptor.arrLength() * sizeof(T), descriptor.dataType(), false, context->getWorkspace());
 
-  NDArray *result = new NDArray(pBuffer, descriptor, context);
-  delete descriptor;
+  NDArray *result = new NDArray(pBuffer, &descriptor, context);
   return result;
 }
 

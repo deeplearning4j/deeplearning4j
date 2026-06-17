@@ -78,11 +78,7 @@ DECLARE_SHAPE_FN(cast) {
       return ret;
     }
 
-    auto desc = new ShapeDescriptor(inShape, newType, true);
-    auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-
-    // FIX: Clean up the ShapeDescriptor after use
-    delete desc;
+    auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(newType, inShape);
 
     auto compDataType = ArrayOptions::dataType(newShapeInfo);
     if(compDataType != newType) {

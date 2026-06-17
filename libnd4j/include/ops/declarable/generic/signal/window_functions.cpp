@@ -48,8 +48,7 @@ DECLARE_SHAPE_FN(hann_window) {
     sd::LongType size = sizeInput->e<sd::LongType>(0);
 
     std::vector<sd::LongType> outputShapeVec = {size};
-    auto desc = new ShapeDescriptor(sd::DataType::FLOAT32, 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(sd::DataType::FLOAT32, 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(hann_window) {
@@ -87,8 +86,7 @@ DECLARE_SHAPE_FN(hamming_window) {
     sd::LongType size = sizeInput->e<sd::LongType>(0);
 
     std::vector<sd::LongType> outputShapeVec = {size};
-    auto desc = new ShapeDescriptor(sd::DataType::FLOAT32, 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(sd::DataType::FLOAT32, 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(hamming_window) {
@@ -126,8 +124,7 @@ DECLARE_SHAPE_FN(blackman_window) {
     sd::LongType size = sizeInput->e<sd::LongType>(0);
 
     std::vector<sd::LongType> outputShapeVec = {size};
-    auto desc = new ShapeDescriptor(sd::DataType::FLOAT32, 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(sd::DataType::FLOAT32, 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(blackman_window) {

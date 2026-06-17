@@ -82,8 +82,7 @@ DECLARE_SHAPE_FN(affine_grid) {
         outputShape = {batchSize, D, H, W, 3};
     }
 
-    auto desc = new ShapeDescriptor(sd::DataType::FLOAT32, 'c', outputShape);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(sd::DataType::FLOAT32, 'c', outputShape));
 }
 
 DECLARE_TYPES(affine_grid) {

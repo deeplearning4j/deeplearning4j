@@ -74,8 +74,7 @@ DECLARE_SHAPE_FN(whisper_mel_spectrogram) {
         outputShapeVec = {static_cast<sd::LongType>(numMelBins), static_cast<sd::LongType>(targetFrames)};
     }
 
-    auto desc = new ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(whisper_mel_spectrogram) {

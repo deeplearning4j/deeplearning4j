@@ -469,8 +469,7 @@ NDArray::NDArray(char order, std::vector<LongType> &shape,  std::vector<double> 
       setShapeInfo(desc);
     }
   } else {
-    auto desc = new ShapeDescriptor(dtype, order, shape);
-    setShapeInfo(desc);
+    setShapeInfo(ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, shape));
   }
 
   if (static_cast<size_t>(lengthOf()) != data.size()) {
@@ -3979,8 +3978,7 @@ NDArray * NDArray::asS()  {
   } else {
     shape = shape2;
   }
-  auto desc = new ShapeDescriptor(dtype, ordering(), *shape);
-  NDArray *res = new NDArray(pBuffer, desc, getContext());
+  NDArray *res = new NDArray(pBuffer, ConstantShapeHelper::getInstance().createShapeInfo(dtype, ordering(), *shape), getContext());
   res->setAttached(getContext()->getWorkspace() != nullptr);
 
   preparePrimaryUse({res}, {this});
@@ -4118,8 +4116,9 @@ NDArray NDArray::quantize(NDArray &array) {
   DataBuffer *  buffer = new DataBuffer(TypeCast::estimateQuantizedSize(len),
                                         ArrayOptions::dataType(shapeInfo), ws);
 
-  auto desc = new ShapeDescriptor(shapeInfo, false);
-  NDArray result(buffer, desc, array.getContext());
+  auto cachedShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(shapeInfo), shapeInfo);
+  RELEASE(shapeInfo, ws);
+  NDArray result(buffer, cachedShapeInfo, array.getContext());
 
   return result;
 }

@@ -73,8 +73,7 @@ DECLARE_SHAPE_FN(grid_sample) {
         outputShapeVec = {batchSize, channels, D_out, H_out, W_out};
     }
 
-    auto desc = new ShapeDescriptor(ArrayOptions::dataType(inShape), 'c', outputShapeVec);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', outputShapeVec));
 }
 
 DECLARE_TYPES(grid_sample) {
