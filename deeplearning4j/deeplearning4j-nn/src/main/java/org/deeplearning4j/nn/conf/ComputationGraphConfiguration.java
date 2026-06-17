@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @EqualsAndHashCode(exclude = {"trainingWorkspaceMode", "inferenceWorkspaceMode", "cacheMode", "topologicalOrder", "topologicalOrderStr"})
@@ -612,9 +613,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             } else {
                 List<String> inputs = vertexInputs.get(s);
                 if (inputs != null) {
-                    for (String inputVertexName : inputs) {
-                        inputTypeList.add(vertexOutputs.get(inputVertexName));
-                    }
+                    inputs.stream().map(vertexOutputs::get).forEach(inputTypeList::add);
                 }
             }
 
@@ -643,20 +642,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         Map<String, List<String>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
         for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
             String vertexName = entry.getKey();
-            List<String> vertexInputNames;
-            vertexInputNames = vertexInputs.get(vertexName);
+            List<String> vertexInputNames = vertexInputs.get(vertexName);
 
             if (vertexInputNames == null)
                 continue;
 
             //Build reverse network structure:
             for (String s : vertexInputNames) {
-                List<String> list = verticesOutputTo.get(s);
-                if (list == null) {
-                    list = new ArrayList<>();
-                    verticesOutputTo.put(s, list);
-                }
-                list.add(vertexName); //Edge: s -> vertexName
+                verticesOutputTo.computeIfAbsent(s, k -> new ArrayList<>()).add(vertexName); //Edge: s -> vertexName
             }
         }
 
@@ -669,10 +662,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         LinkedList<String> noIncomingEdges = new LinkedList<>(networkInputs); //Set of all nodes with no incoming edges
         List<String> topologicalOrdering = new ArrayList<>();
 
-        Map<String, Set<String>> inputEdges = new HashMap<>();
-        for (Map.Entry<String, List<String>> entry : vertexInputs.entrySet()) {
-            inputEdges.put(entry.getKey(), new HashSet<>(entry.getValue()));
-        }
+        Map<String, Set<String>> inputEdges = vertexInputs.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> new HashSet<>(e.getValue()),
+                        (a, b) -> a, HashMap::new));
 
         while (!noIncomingEdges.isEmpty()) {
             String next = noIncomingEdges.removeFirst();
@@ -741,9 +733,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             } else {
                 List<String> inputs = vertexInputs.get(s);
                 if (inputs != null) {
-                    for (String inputVertexName : inputs) {
-                        inputTypeList.add(vertexOutputs.get(inputVertexName));
-                    }
+                    inputs.stream().map(vertexOutputs::get).forEach(inputTypeList::add);
                 }
             }
 
@@ -1024,13 +1014,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     List<String> inputs = entry.getValue();
                     if (inputs.contains(vertexName)) {
                         //Some lists are not modifiable. So we'll make a new copy, minus the one to be removed
-                        List<String> newList = new ArrayList<>(inputs.size()-1);
-                        for(String s : inputs){
-                            if(!vertexName.equals(s)){
-                                newList.add(s);
-                            }
-                        }
-                        newVertexInputs.put(entry.getKey(), newList);
+                        newVertexInputs.put(entry.getKey(),
+                                inputs.stream().filter(s -> !vertexName.equals(s)).collect(Collectors.toList()));
                     } else {
                         newVertexInputs.put(entry.getKey(), entry.getValue());
                     }

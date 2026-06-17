@@ -60,6 +60,7 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -618,19 +619,13 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             MultiLayerConfiguration clone = (MultiLayerConfiguration) super.clone();
 
             if (clone.confs != null) {
-                List<NeuralNetConfiguration> list = new ArrayList<>();
-                for (NeuralNetConfiguration conf : clone.confs) {
-                    list.add(conf.clone());
-                }
-                clone.confs = list;
+                clone.confs = clone.confs.stream().map(NeuralNetConfiguration::clone).collect(Collectors.toList());
             }
 
             if (clone.inputPreProcessors != null) {
-                Map<Integer, InputPreProcessor> map = new HashMap<>();
-                for (Map.Entry<Integer, InputPreProcessor> entry : clone.inputPreProcessors.entrySet()) {
-                    map.put(entry.getKey(), entry.getValue().clone());
-                }
-                clone.inputPreProcessors = map;
+                clone.inputPreProcessors = clone.inputPreProcessors.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().clone(),
+                                (a, b) -> a, HashMap::new));
             }
 
             clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;

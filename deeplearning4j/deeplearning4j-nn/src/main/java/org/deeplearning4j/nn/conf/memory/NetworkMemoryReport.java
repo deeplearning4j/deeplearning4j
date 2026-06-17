@@ -33,6 +33,7 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Getter
 @EqualsAndHashCode(callSuper = true)
@@ -133,17 +134,11 @@ public class NetworkMemoryReport extends MemoryReport {
         long perExTrain = getTotalMemoryBytes(1, MemoryUseMode.TRAINING, CacheMode.NONE, DataType.FLOAT)
                         - fixedMemBytesTrain;
 
-        Map<Class<?>, Integer> layerCounts = new LinkedHashMap<>();
-        for (MemoryReport mr : layerAndVertexReports.values()) {
-            if (layerCounts.containsKey(mr.getReportClass())) {
-                layerCounts.put(mr.getReportClass(), layerCounts.get(mr.getReportClass()) + 1);
-            } else {
-                layerCounts.put(mr.getReportClass(), 1);
-            }
-        }
+        Map<Class<?>, Long> layerCounts = layerAndVertexReports.values().stream()
+                .collect(Collectors.groupingBy(MemoryReport::getReportClass, LinkedHashMap::new, Collectors.counting()));
 
         StringBuilder sbLayerCounts = new StringBuilder();
-        for (Map.Entry<Class<?>, Integer> e : layerCounts.entrySet()) {
+        for (Map.Entry<Class<?>, Long> e : layerCounts.entrySet()) {
             sbLayerCounts.append(e.getValue()).append(" x ").append(e.getKey().getSimpleName()).append(", ");
         }
 

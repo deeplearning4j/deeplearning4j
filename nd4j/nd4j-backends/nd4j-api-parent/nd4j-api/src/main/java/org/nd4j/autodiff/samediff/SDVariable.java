@@ -198,12 +198,7 @@ public class SDVariable implements Serializable {
         SameDiffOp op = sameDiff.getOps().get(varMeta.getOutputOfOp());
         if(op == null || op.getInputsToOp() == null) return false;
 
-        for(String inputName : op.getInputsToOp()) {
-            if(!sameDiff.arrayAlreadyExistsForVarName(inputName)) {
-                return false;
-            }
-        }
-        return true;
+        return op.getInputsToOp().stream().allMatch(sameDiff::arrayAlreadyExistsForVarName);
     }
 
 

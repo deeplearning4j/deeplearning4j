@@ -59,6 +59,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Utility class for converting between ComputationGraph and SameDiff representations.
@@ -132,13 +133,11 @@ public class ComputationGraphSameDiffConverter {
 
         // Mark outputs - collect all output names and set them at once
         List<String> networkOutputs = config.getNetworkOutputs();
-        List<String> outputVarNames = new ArrayList<>();
-        for (String outputName : networkOutputs) {
-            SDVariable outputVar = vertexOutputs.get(outputName);
-            if (outputVar != null) {
-                outputVarNames.add(outputVar.name());
-            }
-        }
+        List<String> outputVarNames = networkOutputs.stream()
+                .map(vertexOutputs::get)
+                .filter(v -> v != null)
+                .map(SDVariable::name)
+                .collect(Collectors.toList());
         if (!outputVarNames.isEmpty()) {
             sd.setOutputs(outputVarNames.toArray(new String[0]));
         }

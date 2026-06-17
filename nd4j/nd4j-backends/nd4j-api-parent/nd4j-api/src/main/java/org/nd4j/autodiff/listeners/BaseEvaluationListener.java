@@ -20,10 +20,10 @@
 
 package org.nd4j.autodiff.listeners;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.nd4j.autodiff.listeners.records.EvaluationRecord;
 import org.nd4j.autodiff.listeners.records.LossCurve;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -58,23 +58,15 @@ public abstract class BaseEvaluationListener extends BaseListener {
     @Override
     public final void epochStart(SameDiff sd, At at) {
         trainingEvaluations = new HashMap<>();
-        for(Map.Entry<String, List<IEvaluation>> entry : evaluations().trainEvaluations().entrySet()){
-
-            List<IEvaluation> evals = new ArrayList<>();
-            for(IEvaluation ie : entry.getValue())
-                evals.add(ie.newInstance());
-
-            trainingEvaluations.put(entry.getKey(), evals);
-        }
+        evaluations().trainEvaluations().forEach((key, value) ->
+                trainingEvaluations.put(key, value.stream()
+                        .map(IEvaluation::newInstance)
+                        .collect(Collectors.toList())));
         validationEvaluations = new HashMap<>();
-        for(Map.Entry<String, List<IEvaluation>> entry : evaluations().validationEvaluations().entrySet()){
-
-            List<IEvaluation> evals = new ArrayList<>();
-            for(IEvaluation ie : entry.getValue())
-                evals.add(ie.newInstance());
-
-            validationEvaluations.put(entry.getKey(), evals);
-        }
+        evaluations().validationEvaluations().forEach((key, value) ->
+                validationEvaluations.put(key, value.stream()
+                        .map(IEvaluation::newInstance)
+                        .collect(Collectors.toList())));
 
         epochStartEvaluations(sd, at);
     }

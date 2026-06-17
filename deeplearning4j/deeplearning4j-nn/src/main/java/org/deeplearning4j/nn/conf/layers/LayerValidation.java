@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class LayerValidation {
@@ -95,27 +96,21 @@ public class LayerValidation {
             if (layer.getConstraints() == null || layer.constraints.isEmpty()) {
                 List<LayerConstraint> allConstraints = new ArrayList<>();
                 if (allParamConstraints != null && !layer.initializer().paramKeys(layer).isEmpty()) {
-                    for (LayerConstraint c : allParamConstraints) {
-                        LayerConstraint c2 = c.clone();
-                        c2.setParams(new HashSet<>(layer.initializer().paramKeys(layer)));
-                        allConstraints.add(c2);
-                    }
+                    Set<String> paramKeys = new HashSet<>(layer.initializer().paramKeys(layer));
+                    allParamConstraints.stream().map(c -> { LayerConstraint c2 = c.clone(); c2.setParams(paramKeys); return c2; })
+                            .forEach(allConstraints::add);
                 }
 
                 if (weightConstraints != null && !layer.initializer().weightKeys(layer).isEmpty()) {
-                    for (LayerConstraint c : weightConstraints) {
-                        LayerConstraint c2 = c.clone();
-                        c2.setParams(new HashSet<>(layer.initializer().weightKeys(layer)));
-                        allConstraints.add(c2);
-                    }
+                    Set<String> weightKeys = new HashSet<>(layer.initializer().weightKeys(layer));
+                    weightConstraints.stream().map(c -> { LayerConstraint c2 = c.clone(); c2.setParams(weightKeys); return c2; })
+                            .forEach(allConstraints::add);
                 }
 
                 if (biasConstraints != null && !layer.initializer().biasKeys(layer).isEmpty()) {
-                    for (LayerConstraint c : biasConstraints) {
-                        LayerConstraint c2 = c.clone();
-                        c2.setParams(new HashSet<>(layer.initializer().biasKeys(layer)));
-                        allConstraints.add(c2);
-                    }
+                    Set<String> biasKeys = new HashSet<>(layer.initializer().biasKeys(layer));
+                    biasConstraints.stream().map(c -> { LayerConstraint c2 = c.clone(); c2.setParams(biasKeys); return c2; })
+                            .forEach(allConstraints::add);
                 }
 
                 if (!allConstraints.isEmpty()) {
@@ -134,16 +129,12 @@ public class LayerValidation {
             if (bLayerRegs == null || bLayerRegs.isEmpty()) {
                 bLayer.setRegularization(regularization);
             } else {
-                // Build a set of regularization classes already present on the layer to avoid duplicates.
-                // This handles L1, L2, WeightDecay, and any future regularization types uniformly.
-                Set<Class<? extends Regularization>> existingClasses = new HashSet<>();
-                for (Regularization reg : bLayerRegs) {
-                    existingClasses.add(reg.getClass());
-                }
+                // Collect classes already present on the layer to avoid duplicates.
+                Set<Class<? extends Regularization>> existingClasses = bLayerRegs.stream()
+                        .map(Regularization::getClass).collect(Collectors.toCollection(HashSet::new));
                 for (Regularization reg : regularization) {
-                    if (!existingClasses.contains(reg.getClass())) {
+                    if (existingClasses.add(reg.getClass())) {
                         bLayerRegs.add(reg);
-                        existingClasses.add(reg.getClass());
                     }
                 }
             }
@@ -157,15 +148,12 @@ public class LayerValidation {
             if (bLayerRegs == null || bLayerRegs.isEmpty()) {
                 bLayer.setRegularizationBias(regularizationBias);
             } else {
-                // Build a set of regularization classes already present on the layer to avoid duplicates.
-                Set<Class<? extends Regularization>> existingClasses = new HashSet<>();
-                for (Regularization reg : bLayerRegs) {
-                    existingClasses.add(reg.getClass());
-                }
+                // Collect classes already present on the layer to avoid duplicates.
+                Set<Class<? extends Regularization>> existingClasses = bLayerRegs.stream()
+                        .map(Regularization::getClass).collect(Collectors.toCollection(HashSet::new));
                 for (Regularization reg : regularizationBias) {
-                    if (!existingClasses.contains(reg.getClass())) {
+                    if (existingClasses.add(reg.getClass())) {
                         bLayerRegs.add(reg);
-                        existingClasses.add(reg.getClass());
                     }
                 }
             }

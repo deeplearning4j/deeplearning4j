@@ -72,11 +72,8 @@ public class ConstantFunctionOptimizations extends BaseOptimizerSet {
             List<String> in = op.getInputsToOp();
             if (in == null || in.isEmpty())
                 return false;
-            for (String s : in) {
-                var v = sd.getVariable(s);
-                if (v == null || !v.isConstant())
-                    return false;
-            }
+            if (in.stream().anyMatch(s -> { var v = sd.getVariable(s); return v == null || !v.isConstant(); }))
+                return false;
 
             long maxSizeToApply = Long.parseLong(helper.getProperties().getProperty(CONSTANT_FN_FOLDING_MAX_SIZE, String.valueOf(CONSTANT_FN_FOLDING_MAX_SIZE_DEFAULT)));
 

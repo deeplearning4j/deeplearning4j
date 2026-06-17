@@ -76,13 +76,10 @@ public class Variable {
         if (outputOfOp != null) {
             SameDiffOp op = sameDiff.getOps().get(outputOfOp);
             if (op != null && op.getInputsToOp() != null) {
-                for (String input : op.getInputsToOp()) {
+                return op.getInputsToOp().stream().allMatch(input -> {
                     Variable inputVar = sameDiff.getVariables().get(input);
-                    if (inputVar == null || !inputVar.isArrayReady()) {
-                        return false;
-                    }
-                }
-                return true;
+                    return inputVar != null && inputVar.isArrayReady();
+                });
             }
         }
         return false;

@@ -110,6 +110,7 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class OpValidation {
@@ -266,17 +267,14 @@ public class OpValidation {
         }
 
         //Check placeholders:
-        Set<String> phBefore = new HashSet<>();
-        Set<String> phAfter = new HashSet<>();
-
-        for(Variable v : original.getVariables().values()){
-            if(v.getVariable().isPlaceHolder())
-                phBefore.add(v.getName());
-        }
-        for(Variable v : deserialized.getVariables().values()){
-            if(v.getVariable().isPlaceHolder())
-                phAfter.add(v.getName());
-        }
+        Set<String> phBefore = original.getVariables().values().stream()
+                .filter(v -> v.getVariable().isPlaceHolder())
+                .map(Variable::getName)
+                .collect(Collectors.toCollection(HashSet::new));
+        Set<String> phAfter = deserialized.getVariables().values().stream()
+                .filter(v -> v.getVariable().isPlaceHolder())
+                .map(Variable::getName)
+                .collect(Collectors.toCollection(HashSet::new));
 
         if(phBefore == null){
             Preconditions.checkState(phAfter == null || phAfter.size() == 0, "%s", phAfter);

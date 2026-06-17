@@ -43,6 +43,7 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A neural network layer.
@@ -71,27 +72,21 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
         // fields may not yet be set yet
         List<LayerConstraint> allConstraints = new ArrayList<>();
         if (builder.allParamConstraints != null && !initializer().paramKeys(this).isEmpty()) {
-            for (LayerConstraint c : builder.allParamConstraints) {
-                LayerConstraint c2 = c.clone();
-                c2.setParams(new HashSet<>(initializer().paramKeys(this)));
-                allConstraints.add(c2);
-            }
+            Set<String> paramKeys = new HashSet<>(initializer().paramKeys(this));
+            builder.allParamConstraints.stream().map(c -> { LayerConstraint c2 = c.clone(); c2.setParams(paramKeys); return c2; })
+                    .forEach(allConstraints::add);
         }
 
         if (builder.weightConstraints != null && !initializer().weightKeys(this).isEmpty()) {
-            for (LayerConstraint c : builder.weightConstraints) {
-                LayerConstraint c2 = c.clone();
-                c2.setParams(new HashSet<>(initializer().weightKeys(this)));
-                allConstraints.add(c2);
-            }
+            Set<String> weightKeys = new HashSet<>(initializer().weightKeys(this));
+            builder.weightConstraints.stream().map(c -> { LayerConstraint c2 = c.clone(); c2.setParams(weightKeys); return c2; })
+                    .forEach(allConstraints::add);
         }
 
         if (builder.biasConstraints != null && !initializer().biasKeys(this).isEmpty()) {
-            for (LayerConstraint c : builder.biasConstraints) {
-                LayerConstraint c2 = c.clone();
-                c2.setParams(new HashSet<>(initializer().biasKeys(this)));
-                allConstraints.add(c2);
-            }
+            Set<String> biasKeys = new HashSet<>(initializer().biasKeys(this));
+            builder.biasConstraints.stream().map(c -> { LayerConstraint c2 = c.clone(); c2.setParams(biasKeys); return c2; })
+                    .forEach(allConstraints::add);
         }
         if (!allConstraints.isEmpty()) {
             this.constraints = allConstraints;
