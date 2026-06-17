@@ -29,9 +29,9 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo;
+import org.nd4j.linalg.api.ops.impl.shape.MergeMax;
+import org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
@@ -151,12 +151,9 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 }
                 if(!isBroadcast) {
                     INDArray max = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].dataType(), inputs[0].shape(), inputs[0].ordering());
-                    CustomOp op = DynamicCustomOp.builder("mergemax")
-                            .addInputs(inputs)
-                            .addOutputs(max)
-                            .callInplace(false)
-                            .build();
-                    Nd4j.getExecutioner().exec(op);
+                    MergeMax mergeMaxOp = new MergeMax(inputs);
+                    mergeMaxOp.addOutputArgument(max);
+                    Nd4j.getExecutioner().exec(mergeMaxOp);
                     return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,max);
                 } else {
                     //AB 20190729 mergemax doesn't support broadcast at this point
@@ -286,12 +283,9 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     }
                 }
 
-                CustomOp op = DynamicCustomOp.builder("mergemaxindex")
-                        .addInputs(bcIn)
-                        .addOutputs(maxIndices)
-                        .callInplace(false)
-                        .build();
-                Nd4j.getExecutioner().exec(op);
+                MergeMaxIndex mergeMaxIndexOp = new MergeMaxIndex(bcIn);
+                mergeMaxIndexOp.addOutputArgument(maxIndices);
+                Nd4j.getExecutioner().exec(mergeMaxIndexOp);
                 for (int i = 0; i < nInForwardPass; i++) {
                     //gradient is epsilon where the max index is the same as i and zero elsewhere
                     outMax[i] = workspaceMgr.create(ArrayType.BP_WORKING_MEM, DataType.BOOL, maxIndices.shape());

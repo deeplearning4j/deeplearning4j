@@ -70,7 +70,7 @@ public class ScoreStat {
 
         If we got more score points than MAX_VALUE - they are put to another item of scores list.
      */
-    private void reallocateGuard() {
+    void reallocateGuard() {
         if (position >= BUCKET_LENGTH * bucketNumber) {
 
             long fullLength = (long)BUCKET_LENGTH * bucketNumber;

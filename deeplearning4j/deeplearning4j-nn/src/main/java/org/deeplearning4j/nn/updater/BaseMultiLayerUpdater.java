@@ -30,10 +30,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2;
+import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -118,8 +116,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                         if (paramsViewSoFar + paramSizeThisVariable > Integer.MAX_VALUE || paramsViewSoFar + paramSizeThisVariable > Integer.MAX_VALUE)
                             throw new ND4JArraySizeException();
                         //Create a new block
-                        List<UpdaterBlock.ParamState> list = new ArrayList<>();
-                        list.add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
+                        List<ParamState> list = new ArrayList<>();
+                        list.add(new ParamState(layers[i], var, paramsViewSoFar,
                                 (int) (paramsViewSoFar + paramSizeThisVariable), paramsViewSubset, gradientViewSubset));
                         currentBlock = new UpdaterBlock(paramsViewSoFar, (int) (paramsViewSoFar + paramSizeThisVariable),
                                 currentUpdaterOffset, currentUpdaterOffset + updaterStateSizeThisVariable,
@@ -135,7 +133,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                         currentBlock.setUpdaterViewOffsetEnd(
                                 currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
                         currentBlock.getLayersAndVariablesInBlock()
-                                .add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
+                                .add(new ParamState(layers[i], var, paramsViewSoFar,
                                         (int) (paramsViewSoFar + paramSizeThisVariable), paramsViewSubset,
                                         gradientViewSubset));
                     }
@@ -433,11 +431,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 break;
             case ClipElementWiseAbsoluteValue:
                 if (layerGradientView != null) {
-                    CustomOp op = DynamicCustomOp.builder("clipbyvalue")
-                            .addInputs(layerGradientView)
-                            .callInplace(true)
-                            .addFloatingPointArguments(-threshold, threshold)
-                            .build();
+                    ClipByValue op = new ClipByValue(layerGradientView, -threshold, threshold);
+                    op.addOutputArgument(layerGradientView);
                     Nd4j.getExecutioner().exec(op);
                 }
                 break;
