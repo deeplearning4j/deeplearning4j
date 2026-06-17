@@ -2850,7 +2850,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * Represents a while-loop region in the graph. Contains all ops organized
      * by their role in the loop execution cycle.
      */
-    private static class WhileLoopRegion {
+    static class WhileLoopRegion {
         String frameName;
         List<String> mergeOps;       // Merge ops that start the loop
         List<String> condOps;        // Ops between Merge outputs and LoopCond (ordered)
