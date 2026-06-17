@@ -58,7 +58,6 @@ CUSTOM_OP_IMPL(space_to_batch_nd, 3, 1, false, 0, 0) {
                  expectedpaddingShape.c_str(), ShapeUtils::shapeAsString(padding).c_str());
   }
 
-  // FIXME - should we use this time-consuming validation ?
   for (LongType i = 0; i < numOfSpatialDims; ++i) {
     const LongType padLeft = padding->e<LongType>(i, 0);
     const LongType padRight = padding->e<LongType>(i, 1);

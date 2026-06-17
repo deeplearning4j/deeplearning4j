@@ -41,7 +41,6 @@ void histogramFixedWidth_(NDArray& input, NDArray& range, NDArray& output) {
 
   sd::LongType inputLength = input.lengthOf();
 
-  // FIXME: make this one parallel without CRITICAL section
   for (sd::LongType i = 0; i < inputLength; ++i) {
     const T value = input.e<T>(i);
 

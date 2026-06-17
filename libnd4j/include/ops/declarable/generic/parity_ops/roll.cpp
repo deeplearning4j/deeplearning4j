@@ -119,7 +119,7 @@ CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, 0) {
 DECLARE_TYPES(roll) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
-      ->setAllowedInputTypes(1, INT32)  // TODO: all ints in future
+      ->setAllowedInputTypes(1, INT32)
       ->setAllowedInputTypes(2, INT32)
       ->setAllowedOutputTypes(ANY)
       ->setSameMode(true);

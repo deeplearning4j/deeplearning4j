@@ -32,7 +32,6 @@ namespace ops {
  * arg_0 is our "signal"
  * arg_1 is condition that will determine transition
  */
-// TODO: make this op a placeholder too
 DIVERGENT_OP_IMPL(Switch, 2, 2, true) {
   auto input = INPUT_VARIABLE(0);
   auto condition = INPUT_VARIABLE(1);

@@ -67,8 +67,6 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
 
       RandomLauncher::fillUniform(block.launchContext(), block.randomGenerator(), z, from, to);
 
-      // FIXME:
-      // OVERWRITE_RESULT(z);
     } break;
     case random::DropOut: {
       auto z = OUTPUT_VARIABLE(0);
@@ -206,8 +204,6 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
 
       RandomLauncher::fillLogNormal(block.launchContext(), block.randomGenerator(), z, mean, stdev);
 
-      // FIXME: !!
-      // OVERWRITE_RESULT(z);
     } break;
     case random::TruncatedNormalDistribution: {
       // truncated norm distribution
