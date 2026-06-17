@@ -1,5 +1,7 @@
 package org.nd4j.linalg.dataset.curation.format;
 
+import lombok.Builder;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
@@ -9,16 +11,13 @@ import java.util.Map;
  * Formats raw instruction/response data into training-ready sequences
  * with loss mask generation for selective training.
  */
+@Builder
 public class InstructionDataFormatter implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final ChatTemplate template;
+    @Builder.Default
+    private final ChatTemplate template = ChatTemplate.CHATML;
     private final Map<String, String[]> customPrefixSuffix; // role -> [prefix, suffix]
-
-    private InstructionDataFormatter(Builder builder) {
-        this.template = builder.template;
-        this.customPrefixSuffix = builder.customPrefixSuffix;
-    }
 
     /**
      * Format a conversation into a training example with loss mask.
@@ -88,26 +87,4 @@ public class InstructionDataFormatter implements Serializable {
         return template.getSuffix(role);
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-        private ChatTemplate template = ChatTemplate.CHATML;
-        private Map<String, String[]> customPrefixSuffix;
-
-        public Builder template(ChatTemplate template) {
-            this.template = template;
-            return this;
-        }
-
-        public Builder customPrefixSuffix(Map<String, String[]> custom) {
-            this.customPrefixSuffix = custom;
-            return this;
-        }
-
-        public InstructionDataFormatter build() {
-            return new InstructionDataFormatter(this);
-        }
-    }
 }
