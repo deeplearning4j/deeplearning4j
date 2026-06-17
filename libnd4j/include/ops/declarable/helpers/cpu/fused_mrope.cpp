@@ -69,13 +69,14 @@ static void applyMRoPEContiguous(
   const int halfH   = sectionH / 2;
   // halfW = sectionW / 2  (implicit: halfT + halfH + halfW == halfDim)
 
+  PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(3)
   for (int b = 0; b < batch; b++) {
     for (int s = 0; s < seq; s++) {
-      const float posTval = static_cast<float>(posT[b * seq + s]);
-      const float posHval = static_cast<float>(posH[b * seq + s]);
-      const float posWval = static_cast<float>(posW[b * seq + s]);
-
       for (int h = 0; h < heads; h++) {
+        const float posTval = static_cast<float>(posT[b * seq + s]);
+        const float posHval = static_cast<float>(posH[b * seq + s]);
+        const float posWval = static_cast<float>(posW[b * seq + s]);
+
         const int base = ((b * seq + s) * heads + h) * headDim;
 
         for (int d = 0; d < halfDim; d++) {
@@ -139,13 +140,14 @@ static void applyMRoPEInterleaved(
   const int halfDim    = headDim / 2;
   const int sectionSize = (headDim + 2) / 3;
 
+  PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(3)
   for (int b = 0; b < batch; b++) {
     for (int s = 0; s < seq; s++) {
-      const float posTval = static_cast<float>(posT[b * seq + s]);
-      const float posHval = static_cast<float>(posH[b * seq + s]);
-      const float posWval = static_cast<float>(posW[b * seq + s]);
-
       for (int h = 0; h < heads; h++) {
+        const float posTval = static_cast<float>(posT[b * seq + s]);
+        const float posHval = static_cast<float>(posH[b * seq + s]);
+        const float posWval = static_cast<float>(posW[b * seq + s]);
+
         const int base = ((b * seq + s) * heads + h) * headDim;
 
         for (int d = 0; d < halfDim; d++) {

@@ -118,7 +118,7 @@ static void decoderMaskedMhaCpu_(
                 PRAGMA_OMP_PARALLEL_FOR
                 for (int h = 0; h < numHeads; ++h) {
                     T* qHead = qPtr + h * headDim;
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD
+                    PRAGMA_OMP_SIMD
                     for (int i = 0; i < halfDim; ++i) {
                         T c = static_cast<T>(cosRow[i]);
                         T s = static_cast<T>(sinRow[i]);
@@ -142,7 +142,7 @@ static void decoderMaskedMhaCpu_(
                 PRAGMA_OMP_PARALLEL_FOR
                 for (int h = 0; h < numKvHeads; ++h) {
                     T* kHead = kPtr + h * headDim;
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD
+                    PRAGMA_OMP_SIMD
                     for (int i = 0; i < halfDim; ++i) {
                         T c = static_cast<T>(cosRow[i]);
                         T s = static_cast<T>(sinRow[i]);
@@ -168,7 +168,7 @@ static void decoderMaskedMhaCpu_(
                 LongType cacheOffset = ((b * numKvHeads + h) * kvCacheMaxSeq + cachePosition) * headDim;
                 const T* kHead = kPtr + h * headDim;
                 const T* vHead = vPtr + h * headDim;
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
+                PRAGMA_OMP_SIMD
                 for (int d = 0; d < headDim; ++d) {
                     updatedKBuf[cacheOffset + d] = kHead[d];
                     updatedVBuf[cacheOffset + d] = vHead[d];
@@ -193,7 +193,7 @@ static void decoderMaskedMhaCpu_(
                 for (LongType pos = 0; pos < seqLen; ++pos) {
                     LongType kOffset = ((b * numKvHeads + kvh) * kvCacheMaxSeq + pos) * headDim;
                     T dot = static_cast<T>(0);
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD
+                    PRAGMA_OMP_SIMD
                     for (int d = 0; d < headDim; ++d) {
                         dot += static_cast<T>(qHead[d]) * static_cast<T>(updatedKBuf[kOffset + d]);
                     }
@@ -216,7 +216,7 @@ static void decoderMaskedMhaCpu_(
                     sumExp += scores[pos];
                 }
                 T invSumExp = static_cast<T>(1) / sumExp;
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
+                PRAGMA_OMP_SIMD
                 for (LongType pos = 0; pos < seqLen; ++pos) {
                     scores[pos] *= invSumExp;
                 }
@@ -226,7 +226,7 @@ static void decoderMaskedMhaCpu_(
                 for (LongType pos = 0; pos < seqLen; ++pos) {
                     LongType vOffset = ((b * numKvHeads + kvh) * kvCacheMaxSeq + pos) * headDim;
                     T weight = static_cast<T>(scores[pos]);
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD
+                    PRAGMA_OMP_SIMD
                     for (int d = 0; d < headDim; ++d) {
                         attnHead[d] += weight * updatedVBuf[vOffset + d];
                     }

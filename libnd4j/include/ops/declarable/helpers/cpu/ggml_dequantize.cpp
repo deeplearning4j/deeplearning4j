@@ -73,20 +73,23 @@ static constexpr int QK8_1 = 32;   // Q8_1 block size
 static void dequantize_q4_0(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 18;
     LongType numBlocks = (numElements + QK4_0 - 1) / QK4_0;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
         memcpy(&dRaw, block, 2);
         float d = fp16ToFloat(dRaw);
         const uint8_t* qs = block + 2;
+        LongType outBase = b * QK4_0;
 
-        for (int j = 0; j < QK4_0 / 2 && outIdx < numElements; j++) {
+        for (int j = 0; j < QK4_0 / 2; j++) {
+            LongType idx0 = outBase + j * 2;
+            LongType idx1 = outBase + j * 2 + 1;
             int v0 = (qs[j] & 0x0F) - 8;
             int v1 = ((qs[j] >> 4) & 0x0F) - 8;
-            if (outIdx < numElements) output[outIdx++] = d * v0;
-            if (outIdx < numElements) output[outIdx++] = d * v1;
+            if (idx0 < numElements) output[idx0] = d * v0;
+            if (idx1 < numElements) output[idx1] = d * v1;
         }
     }
 }
@@ -98,8 +101,8 @@ static void dequantize_q4_0(const uint8_t* data, float* output, LongType numElem
 static void dequantize_q4_1(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 20;
     LongType numBlocks = (numElements + QK4_1 - 1) / QK4_1;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw, mRaw;
@@ -108,12 +111,15 @@ static void dequantize_q4_1(const uint8_t* data, float* output, LongType numElem
         float d = fp16ToFloat(dRaw);
         float m = fp16ToFloat(mRaw);
         const uint8_t* qs = block + 4;
+        LongType outBase = b * QK4_1;
 
-        for (int j = 0; j < QK4_1 / 2 && outIdx < numElements; j++) {
+        for (int j = 0; j < QK4_1 / 2; j++) {
+            LongType idx0 = outBase + j * 2;
+            LongType idx1 = outBase + j * 2 + 1;
             int v0 = qs[j] & 0x0F;
             int v1 = (qs[j] >> 4) & 0x0F;
-            if (outIdx < numElements) output[outIdx++] = d * v0 + m;
-            if (outIdx < numElements) output[outIdx++] = d * v1 + m;
+            if (idx0 < numElements) output[idx0] = d * v0 + m;
+            if (idx1 < numElements) output[idx1] = d * v1 + m;
         }
     }
 }
@@ -125,8 +131,8 @@ static void dequantize_q4_1(const uint8_t* data, float* output, LongType numElem
 static void dequantize_q5_0(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 22;
     LongType numBlocks = (numElements + QK5_0 - 1) / QK5_0;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
@@ -136,14 +142,17 @@ static void dequantize_q5_0(const uint8_t* data, float* output, LongType numElem
         uint32_t qh;
         memcpy(&qh, block + 2, 4);
         const uint8_t* qs = block + 6;
+        LongType outBase = b * QK5_0;
 
-        for (int j = 0; j < QK5_0 / 2 && outIdx < numElements; j++) {
+        for (int j = 0; j < QK5_0 / 2; j++) {
+            LongType idx0 = outBase + j * 2;
+            LongType idx1 = outBase + j * 2 + 1;
             int xh0 = ((qh >> (j)) & 1) << 4;
             int xh1 = ((qh >> (j + 16)) & 1) << 4;
             int v0 = (qs[j] & 0x0F) | xh0;
             int v1 = ((qs[j] >> 4) & 0x0F) | xh1;
-            if (outIdx < numElements) output[outIdx++] = d * (v0 - 16);
-            if (outIdx < numElements) output[outIdx++] = d * (v1 - 16);
+            if (idx0 < numElements) output[idx0] = d * (v0 - 16);
+            if (idx1 < numElements) output[idx1] = d * (v1 - 16);
         }
     }
 }
@@ -155,8 +164,8 @@ static void dequantize_q5_0(const uint8_t* data, float* output, LongType numElem
 static void dequantize_q5_1(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 24;
     LongType numBlocks = (numElements + QK5_1 - 1) / QK5_1;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw, mRaw;
@@ -168,14 +177,17 @@ static void dequantize_q5_1(const uint8_t* data, float* output, LongType numElem
         uint32_t qh;
         memcpy(&qh, block + 4, 4);
         const uint8_t* qs = block + 8;
+        LongType outBase = b * QK5_1;
 
-        for (int j = 0; j < QK5_1 / 2 && outIdx < numElements; j++) {
+        for (int j = 0; j < QK5_1 / 2; j++) {
+            LongType idx0 = outBase + j * 2;
+            LongType idx1 = outBase + j * 2 + 1;
             int xh0 = ((qh >> (j)) & 1) << 4;
             int xh1 = ((qh >> (j + 16)) & 1) << 4;
             int v0 = (qs[j] & 0x0F) | xh0;
             int v1 = ((qs[j] >> 4) & 0x0F) | xh1;
-            if (outIdx < numElements) output[outIdx++] = d * v0 + m;
-            if (outIdx < numElements) output[outIdx++] = d * v1 + m;
+            if (idx0 < numElements) output[idx0] = d * v0 + m;
+            if (idx1 < numElements) output[idx1] = d * v1 + m;
         }
     }
 }
@@ -187,17 +199,19 @@ static void dequantize_q5_1(const uint8_t* data, float* output, LongType numElem
 static void dequantize_q8_0(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 34;
     LongType numBlocks = (numElements + QK8_0 - 1) / QK8_0;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
         memcpy(&dRaw, block, 2);
         float d = fp16ToFloat(dRaw);
         const int8_t* qs = reinterpret_cast<const int8_t*>(block + 2);
+        LongType outBase = b * QK8_0;
 
-        for (int j = 0; j < QK8_0 && outIdx < numElements; j++) {
-            output[outIdx++] = d * qs[j];
+        for (int j = 0; j < QK8_0; j++) {
+            LongType idx = outBase + j;
+            if (idx < numElements) output[idx] = d * qs[j];
         }
     }
 }
@@ -209,17 +223,19 @@ static void dequantize_q8_0(const uint8_t* data, float* output, LongType numElem
 static void dequantize_q8_1(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 40;
     LongType numBlocks = (numElements + QK8_1 - 1) / QK8_1;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         float d, s;
         memcpy(&d, block, 4);
         memcpy(&s, block + 4, 4);
         const int8_t* qs = reinterpret_cast<const int8_t*>(block + 8);
+        LongType outBase = b * QK8_1;
 
-        for (int j = 0; j < QK8_1 && outIdx < numElements; j++) {
-            output[outIdx++] = d * qs[j] + s;
+        for (int j = 0; j < QK8_1; j++) {
+            LongType idx = outBase + j;
+            if (idx < numElements) output[idx] = d * qs[j] + s;
         }
     }
 }
@@ -244,8 +260,8 @@ static SD_INLINE void get_scale_min_k4(int j, const uint8_t* q, int& sc, int& m)
 static void dequantize_q2_K(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 84;  // 16 + 64 + 2 + 2
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         const uint8_t* scales = block;
@@ -255,36 +271,42 @@ static void dequantize_q2_K(const uint8_t* data, float* output, LongType numElem
         memcpy(&dminRaw, block + 82, 2);
         float d = fp16ToFloat(dRaw);
         float dmin = fp16ToFloat(dminRaw);
+        LongType outBase = b * QK_K;
 
         int qIdx = 0;
+        int localOff = 0;
         for (int i = 0; i < QK_K; i += 128) {
             for (int l = 0; l < 32; l++) {
                 int is = i / 16 + l / 16;
                 int sc = scales[is];
                 float dl = d * (sc & 0xF);
                 float ml = dmin * (sc >> 4);
-                if (outIdx < numElements) output[outIdx++] = dl * (qs[qIdx + l] & 3) - ml;
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = dl * (qs[qIdx + l] & 3) - ml;
             }
             for (int l = 0; l < 32; l++) {
                 int is = i / 16 + l / 16 + 2;
                 int sc = scales[is];
                 float dl = d * (sc & 0xF);
                 float ml = dmin * (sc >> 4);
-                if (outIdx < numElements) output[outIdx++] = dl * ((qs[qIdx + l] >> 2) & 3) - ml;
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = dl * ((qs[qIdx + l] >> 2) & 3) - ml;
             }
             for (int l = 0; l < 32; l++) {
                 int is = i / 16 + l / 16 + 4;
                 int sc = scales[is];
                 float dl = d * (sc & 0xF);
                 float ml = dmin * (sc >> 4);
-                if (outIdx < numElements) output[outIdx++] = dl * ((qs[qIdx + l] >> 4) & 3) - ml;
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = dl * ((qs[qIdx + l] >> 4) & 3) - ml;
             }
             for (int l = 0; l < 32; l++) {
                 int is = i / 16 + l / 16 + 6;
                 int sc = scales[is];
                 float dl = d * (sc & 0xF);
                 float ml = dmin * (sc >> 4);
-                if (outIdx < numElements) output[outIdx++] = dl * ((qs[qIdx + l] >> 6) & 3) - ml;
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = dl * ((qs[qIdx + l] >> 6) & 3) - ml;
             }
             qIdx += 32;
         }
@@ -298,8 +320,8 @@ static void dequantize_q2_K(const uint8_t* data, float* output, LongType numElem
 static void dequantize_q3_K(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 110;  // 32 + 64 + 12 + 2
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         const uint8_t* hmask = block;
@@ -308,6 +330,7 @@ static void dequantize_q3_K(const uint8_t* data, float* output, LongType numElem
         uint16_t dRaw;
         memcpy(&dRaw, block + 108, 2);
         float d = fp16ToFloat(dRaw);
+        LongType outBase = b * QK_K;
 
         // Unpack 12 bytes of scales into 16 values
         int scales[16];
@@ -324,8 +347,8 @@ static void dequantize_q3_K(const uint8_t* data, float* output, LongType numElem
         // Using the simpler interpretation for now, matching dequantize_row_q3_K
         uint8_t m = 1;
         int is = 0;
-        int n = 0;
         int qIdx = 0;
+        int localOff = 0;
 
         for (int i = 0; i < QK_K; i += 128) {
             for (int l = 0; l < 32; l++) {
@@ -333,7 +356,8 @@ static void dequantize_q3_K(const uint8_t* data, float* output, LongType numElem
                 float dl = d * scales[sIdx];
                 int q = qs[qIdx + l] & 3;
                 int h = (hmask[l] & m) ? 0 : 4;
-                if (outIdx < numElements) output[outIdx++] = dl * (q - h);
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = dl * (q - h);
             }
             is += 2;
             for (int l = 0; l < 32; l++) {
@@ -341,7 +365,8 @@ static void dequantize_q3_K(const uint8_t* data, float* output, LongType numElem
                 float dl = d * scales[sIdx];
                 int q = (qs[qIdx + l] >> 2) & 3;
                 int h = (hmask[l] & (m << 1)) ? 0 : 4;
-                if (outIdx < numElements) output[outIdx++] = dl * (q - h);
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = dl * (q - h);
             }
             is += 2;
             m <<= 2;
@@ -350,7 +375,8 @@ static void dequantize_q3_K(const uint8_t* data, float* output, LongType numElem
                 float dl = d * scales[sIdx];
                 int q = (qs[qIdx + l] >> 4) & 3;
                 int h = (hmask[l] & m) ? 0 : 4;
-                if (outIdx < numElements) output[outIdx++] = dl * (q - h);
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = dl * (q - h);
             }
             is += 2;
             for (int l = 0; l < 32; l++) {
@@ -358,7 +384,8 @@ static void dequantize_q3_K(const uint8_t* data, float* output, LongType numElem
                 float dl = d * scales[sIdx];
                 int q = (qs[qIdx + l] >> 6) & 3;
                 int h = (hmask[l] & (m << 1)) ? 0 : 4;
-                if (outIdx < numElements) output[outIdx++] = dl * (q - h);
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = dl * (q - h);
             }
             is += 2;
             m <<= 2;
@@ -374,8 +401,8 @@ static void dequantize_q3_K(const uint8_t* data, float* output, LongType numElem
 static void dequantize_q4_K(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 144;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw, dminRaw;
@@ -385,9 +412,11 @@ static void dequantize_q4_K(const uint8_t* data, float* output, LongType numElem
         float dmin = fp16ToFloat(dminRaw);
         const uint8_t* scaleBytes = block + 4;
         const uint8_t* qs = block + 16;
+        LongType outBase = b * QK_K;
 
         int is = 0;
         int qIdx = 0;
+        int localOff = 0;
         for (int j = 0; j < QK_K; j += 64) {
             int sc1, m1, sc2, m2;
             get_scale_min_k4(is, scaleBytes, sc1, m1);
@@ -399,11 +428,13 @@ static void dequantize_q4_K(const uint8_t* data, float* output, LongType numElem
 
             for (int l = 0; l < 32; l++) {
                 int val = qs[qIdx + l] & 0x0F;
-                if (outIdx < numElements) output[outIdx++] = d1 * val - m1f;
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = d1 * val - m1f;
             }
             for (int l = 0; l < 32; l++) {
                 int val = (qs[qIdx + l] >> 4) & 0x0F;
-                if (outIdx < numElements) output[outIdx++] = d2 * val - m2f;
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = d2 * val - m2f;
             }
             qIdx += 32;
             is += 2;
@@ -418,8 +449,8 @@ static void dequantize_q4_K(const uint8_t* data, float* output, LongType numElem
 static void dequantize_q5_K(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 176;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw, dminRaw;
@@ -430,10 +461,12 @@ static void dequantize_q5_K(const uint8_t* data, float* output, LongType numElem
         const uint8_t* scaleBytes = block + 4;
         const uint8_t* qh = block + 16;
         const uint8_t* qs = block + 48;
+        LongType outBase = b * QK_K;
 
         int is = 0;
         int qlOff = 0;
         uint8_t u1 = 1, u2 = 2;
+        int localOff = 0;
 
         for (int j = 0; j < QK_K; j += 64) {
             int sc1, m1, sc2, m2;
@@ -447,12 +480,14 @@ static void dequantize_q5_K(const uint8_t* data, float* output, LongType numElem
             for (int l = 0; l < 32; l++) {
                 int lowVal = qs[qlOff + l] & 0x0F;
                 int highBit = (qh[l] & u1) ? 16 : 0;
-                if (outIdx < numElements) output[outIdx++] = d1 * (lowVal + highBit) - m1f;
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = d1 * (lowVal + highBit) - m1f;
             }
             for (int l = 0; l < 32; l++) {
                 int highNibble = (qs[qlOff + l] >> 4) & 0x0F;
                 int highBit = (qh[l] & u2) ? 16 : 0;
-                if (outIdx < numElements) output[outIdx++] = d2 * (highNibble + highBit) - m2f;
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = d2 * (highNibble + highBit) - m2f;
             }
             qlOff += 32;
             is += 2;
@@ -469,8 +504,8 @@ static void dequantize_q5_K(const uint8_t* data, float* output, LongType numElem
 static void dequantize_q6_K(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 210;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         const uint8_t* ql = block;
@@ -479,6 +514,7 @@ static void dequantize_q6_K(const uint8_t* data, float* output, LongType numElem
         uint16_t dRaw;
         memcpy(&dRaw, block + 208, 2);
         float d = fp16ToFloat(dRaw);
+        LongType outBase = b * QK_K;
 
         int qlOff = 0;
         int qhOff = 0;
@@ -493,21 +529,19 @@ static void dequantize_q6_K(const uint8_t* data, float* output, LongType numElem
                 int q3 = (((ql[qlOff + l] >> 4) & 0xF) | (((qh[qhOff + l] >> 4) & 3) << 4)) - 32;
                 int q4 = (((ql[qlOff + l + 32] >> 4) & 0xF) | (((qh[qhOff + l] >> 6) & 3) << 4)) - 32;
 
-                LongType idx = outIdx + n + l;
+                LongType idx = outBase + n + l;
                 if (idx < numElements) output[idx] = d * scales[scOff + is] * q1;
-                idx = outIdx + n + l + 32;
+                idx = outBase + n + l + 32;
                 if (idx < numElements) output[idx] = d * scales[scOff + is + 2] * q2;
-                idx = outIdx + n + l + 64;
+                idx = outBase + n + l + 64;
                 if (idx < numElements) output[idx] = d * scales[scOff + is + 4] * q3;
-                idx = outIdx + n + l + 96;
+                idx = outBase + n + l + 96;
                 if (idx < numElements) output[idx] = d * scales[scOff + is + 6] * q4;
             }
             qlOff += 64;
             qhOff += 32;
             scOff += 8;
         }
-
-        outIdx += QK_K;
     }
 }
 
@@ -518,16 +552,18 @@ static void dequantize_q6_K(const uint8_t* data, float* output, LongType numElem
 static void dequantize_q8_K(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 292;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         float d;
         memcpy(&d, block, 4);
         const int8_t* qs = reinterpret_cast<const int8_t*>(block + 4);
+        LongType outBase = b * QK_K;
 
-        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
-            output[outIdx++] = d * qs[j];
+        for (int j = 0; j < QK_K; j++) {
+            LongType idx = outBase + j;
+            if (idx < numElements) output[idx] = d * qs[j];
         }
     }
 }
@@ -546,20 +582,23 @@ static void dequantize_iq4_nl(const uint8_t* data, float* output, LongType numEl
     constexpr int QK4_NL = 32;
     constexpr int BLOCK_SIZE = 18;
     LongType numBlocks = (numElements + QK4_NL - 1) / QK4_NL;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
         memcpy(&dRaw, block, 2);
         float d = fp16ToFloat(dRaw);
         const uint8_t* qs = block + 2;
+        LongType outBase = b * QK4_NL;
 
-        for (int j = 0; j < QK4_NL / 2 && outIdx < numElements; j++) {
+        for (int j = 0; j < QK4_NL / 2; j++) {
+            LongType idx0 = outBase + j * 2;
+            LongType idx1 = outBase + j * 2 + 1;
             int lo = qs[j] & 0x0F;
             int hi = (qs[j] >> 4) & 0x0F;
-            if (outIdx < numElements) output[outIdx++] = d * kvalues_iq4nl[lo];
-            if (outIdx < numElements) output[outIdx++] = d * kvalues_iq4nl[hi];
+            if (idx0 < numElements) output[idx0] = d * kvalues_iq4nl[lo];
+            if (idx1 < numElements) output[idx1] = d * kvalues_iq4nl[hi];
         }
     }
 }
@@ -572,8 +611,8 @@ static void dequantize_iq4_nl(const uint8_t* data, float* output, LongType numEl
 static void dequantize_iq4_xs(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 136;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
@@ -584,6 +623,7 @@ static void dequantize_iq4_xs(const uint8_t* data, float* output, LongType numEl
         memcpy(&scales_h, block + 2, 2);
         const uint8_t* scales_l = block + 4;
         const uint8_t* qs = block + 8;
+        LongType outBase = b * QK_K;
 
         // Decode 8 sub-block scales (6 bits each)
         int scales[8];
@@ -598,14 +638,12 @@ static void dequantize_iq4_xs(const uint8_t* data, float* output, LongType numEl
             for (int j = 0; j < 16; j++) {
                 int lo = qBlock[j] & 0x0F;
                 int hi = (qBlock[j] >> 4) & 0x0F;
-                LongType idx1 = outIdx + ib * 32 + j;
-                LongType idx2 = outIdx + ib * 32 + j + 16;
+                LongType idx1 = outBase + ib * 32 + j;
+                LongType idx2 = outBase + ib * 32 + j + 16;
                 if (idx1 < numElements) output[idx1] = dl * kvalues_iq4nl[lo];
                 if (idx2 < numElements) output[idx2] = dl * kvalues_iq4nl[hi];
             }
         }
-
-        outIdx += QK_K;
     }
 }
 
@@ -617,20 +655,21 @@ static void dequantize_iq4_xs(const uint8_t* data, float* output, LongType numEl
 static void dequantize_iq3_xxs(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 98;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
         memcpy(&dRaw, block, 2);
         float d = fp16ToFloat(dRaw);
         const uint8_t* qBytes = block + 2;
+        LongType outBase = b * QK_K;
 
         int qOff = 0;
         int bitAccum = 0;
         int bitsInAccum = 0;
 
-        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+        for (int j = 0; j < QK_K; j++) {
             while (bitsInAccum < 3 && qOff < (BLOCK_SIZE - 2)) {
                 bitAccum |= (static_cast<int>(qBytes[qOff++]) << bitsInAccum);
                 bitsInAccum += 8;
@@ -638,7 +677,8 @@ static void dequantize_iq3_xxs(const uint8_t* data, float* output, LongType numE
             int val = bitAccum & 0x7;
             bitAccum >>= 3;
             bitsInAccum -= 3;
-            output[outIdx++] = d * (val - 4);
+            LongType idx = outBase + j;
+            if (idx < numElements) output[idx] = d * (val - 4);
         }
     }
 }
@@ -651,8 +691,8 @@ static void dequantize_iq3_xxs(const uint8_t* data, float* output, LongType numE
 static void dequantize_iq3_s(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 110;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
@@ -662,14 +702,16 @@ static void dequantize_iq3_s(const uint8_t* data, float* output, LongType numEle
         const uint8_t* qs = block + 2;       // 96 bytes
         const uint8_t* signs = block + 98;   // 32 bytes (after qs+qh)
         const uint8_t* scales = block + 102; // 8 bytes
+        LongType outBase = b * QK_K;
 
         int qOff = 0;
         int bitAccum = 0;
         int bitsInAccum = 0;
+        int localOff = 0;
 
         for (int ib = 0; ib < 8; ib++) {
             float dl = d * (1 + 2 * (scales[ib] & 0x0F));
-            for (int j = 0; j < 32 && outIdx < numElements; j++) {
+            for (int j = 0; j < 32; j++) {
                 while (bitsInAccum < 3 && qOff < 96) {
                     bitAccum |= (static_cast<int>(qs[qOff++]) << bitsInAccum);
                     bitsInAccum += 8;
@@ -681,7 +723,8 @@ static void dequantize_iq3_s(const uint8_t* data, float* output, LongType numEle
                 int signIdx = ib * 4 + j / 8;
                 int signBit = (signIdx < 32) ? ((signs[signIdx] >> (j % 8)) & 1) : 0;
                 float fval = dl * (val - 4);
-                output[outIdx++] = signBit ? -fval : fval;
+                LongType idx = outBase + localOff++;
+                if (idx < numElements) output[idx] = signBit ? -fval : fval;
             }
         }
     }
@@ -695,23 +738,25 @@ static void dequantize_iq3_s(const uint8_t* data, float* output, LongType numEle
 static void dequantize_iq2_xxs(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 66;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
         memcpy(&dRaw, block, 2);
         float d = fp16ToFloat(dRaw);
         const uint8_t* qBytes = block + 2;
+        LongType outBase = b * QK_K;
 
-        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+        for (int j = 0; j < QK_K; j++) {
             int byteIdx = j / 4;
             int bitOff = (j % 4) * 2;
+            LongType idx = outBase + j;
             if (byteIdx < 64) {
                 int val = (qBytes[byteIdx] >> bitOff) & 0x3;
-                output[outIdx++] = d * (val - 1.5f);
+                if (idx < numElements) output[idx] = d * (val - 1.5f);
             } else {
-                output[outIdx++] = 0.0f;
+                if (idx < numElements) output[idx] = 0.0f;
             }
         }
     }
@@ -725,8 +770,8 @@ static void dequantize_iq2_xxs(const uint8_t* data, float* output, LongType numE
 static void dequantize_iq2_xs(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 74;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
@@ -734,17 +779,20 @@ static void dequantize_iq2_xs(const uint8_t* data, float* output, LongType numEl
         float d = fp16ToFloat(dRaw);
         const uint8_t* qs = block + 2;      // 64 bytes
         const uint8_t* scales = block + 66; // 8 bytes
+        LongType outBase = b * QK_K;
 
+        int localOff = 0;
         for (int ib = 0; ib < 8; ib++) {
             float dl = d * (1 + 2 * (scales[ib] & 0x0F));
-            for (int j = 0; j < 32 && outIdx < numElements; j++) {
+            for (int j = 0; j < 32; j++) {
                 int byteIdx = ib * 8 + j / 4;
                 int bitOff = (j % 4) * 2;
+                LongType idx = outBase + localOff++;
                 if (byteIdx < 64) {
                     int val = (qs[byteIdx] >> bitOff) & 0x3;
-                    output[outIdx++] = dl * (val - 1.5f);
+                    if (idx < numElements) output[idx] = dl * (val - 1.5f);
                 } else {
-                    output[outIdx++] = 0.0f;
+                    if (idx < numElements) output[idx] = 0.0f;
                 }
             }
         }
@@ -759,8 +807,8 @@ static void dequantize_iq2_xs(const uint8_t* data, float* output, LongType numEl
 static void dequantize_iq2_s(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 82;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
@@ -768,19 +816,21 @@ static void dequantize_iq2_s(const uint8_t* data, float* output, LongType numEle
         float d = fp16ToFloat(dRaw);
         const uint8_t* qs = block + 2;   // 64 bytes
         const uint8_t* qh = block + 66;  // 16 bytes
+        LongType outBase = b * QK_K;
 
-        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+        for (int j = 0; j < QK_K; j++) {
             int byteIdx = j / 4;
             int bitOff = (j % 4) * 2;
+            LongType idx = outBase + j;
             if (byteIdx < 64) {
                 int val = (qs[byteIdx] >> bitOff) & 0x3;
                 int qhIdx = j / 16;
                 int qhBit = j % 8;
                 int signBit = (qhIdx < 16) ? ((qh[qhIdx] >> qhBit) & 1) : 0;
                 float fval = d * (val - 1.5f);
-                output[outIdx++] = signBit ? -fval : fval;
+                if (idx < numElements) output[idx] = signBit ? -fval : fval;
             } else {
-                output[outIdx++] = 0.0f;
+                if (idx < numElements) output[idx] = 0.0f;
             }
         }
     }
@@ -794,8 +844,8 @@ static void dequantize_iq2_s(const uint8_t* data, float* output, LongType numEle
 static void dequantize_iq1_s(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 50;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
@@ -803,17 +853,19 @@ static void dequantize_iq1_s(const uint8_t* data, float* output, LongType numEle
         float d = fp16ToFloat(dRaw);
         const uint8_t* qs = block + 2;     // 32 bytes
         const uint8_t* qh = block + 34;    // 16 bytes (sign bits)
+        LongType outBase = b * QK_K;
 
-        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+        for (int j = 0; j < QK_K; j++) {
             int byteIdx = j / 8;
             int bitOff = j % 8;
+            LongType idx = outBase + j;
             if (byteIdx < 32) {
                 int bit = (qs[byteIdx] >> bitOff) & 1;
                 int signBit = (byteIdx < 16) ? ((qh[byteIdx] >> bitOff) & 1) : 0;
                 float val = bit ? d : 0.0f;
-                output[outIdx++] = signBit ? -val : val;
+                if (idx < numElements) output[idx] = signBit ? -val : val;
             } else {
-                output[outIdx++] = 0.0f;
+                if (idx < numElements) output[idx] = 0.0f;
             }
         }
     }
@@ -827,32 +879,35 @@ static void dequantize_iq1_s(const uint8_t* data, float* output, LongType numEle
 static void dequantize_iq1_m(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 56;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         const uint8_t* qs = block;          // 32 bytes
         const uint8_t* qh = block + 32;     // 16 bytes
         const uint8_t* scalesRaw = block + 48; // 8 bytes
+        LongType outBase = b * QK_K;
 
         // d is encoded in the last 2 bytes of scales
         uint16_t dRaw;
         memcpy(&dRaw, scalesRaw + 6, 2);
         float d = fp16ToFloat(dRaw);
 
+        int localOff = 0;
         for (int ib = 0; ib < 8; ib++) {
             float dl = d * (1 + 2 * (scalesRaw[ib < 6 ? ib : 0] & 0x0F));
-            for (int j = 0; j < 32 && outIdx < numElements; j++) {
-                int idx = ib * 4 + j / 8;
+            for (int j = 0; j < 32; j++) {
+                int idx2 = ib * 4 + j / 8;
                 int bitOff = j % 8;
-                if (idx < 32) {
-                    int bit = (qs[idx] >> bitOff) & 1;
+                LongType idx = outBase + localOff++;
+                if (idx2 < 32) {
+                    int bit = (qs[idx2] >> bitOff) & 1;
                     int signIdx = ib * 2 + j / 8;
                     int sign = (signIdx < 16) ? ((qh[signIdx] >> (j % 8)) & 1) : 0;
                     float val = bit ? dl : 0.0f;
-                    output[outIdx++] = sign ? -val : val;
+                    if (idx < numElements) output[idx] = sign ? -val : val;
                 } else {
-                    output[outIdx++] = 0.0f;
+                    if (idx < numElements) output[idx] = 0.0f;
                 }
             }
         }
@@ -867,27 +922,29 @@ static void dequantize_iq1_m(const uint8_t* data, float* output, LongType numEle
 static void dequantize_tq1_0(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 54;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
         memcpy(&dRaw, block, 2);
         float d = fp16ToFloat(dRaw);
         const uint8_t* qs = block + 2;
+        LongType outBase = b * QK_K;
 
         // Each byte encodes ~5 ternary values via base-3
-        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+        for (int j = 0; j < QK_K; j++) {
             int byteIdx = j / 5;
             int posInByte = j % 5;
+            LongType idx = outBase + j;
             if (byteIdx < 52) {
                 int packed = qs[byteIdx] & 0xFF;
                 // Extract base-3 digit
                 for (int p = 0; p < posInByte; p++) packed /= 3;
                 int trit = packed % 3; // 0, 1, 2 -> -1, 0, +1
-                output[outIdx++] = d * (trit - 1);
+                if (idx < numElements) output[idx] = d * (trit - 1);
             } else {
-                output[outIdx++] = 0.0f;
+                if (idx < numElements) output[idx] = 0.0f;
             }
         }
     }
@@ -901,18 +958,20 @@ static void dequantize_tq1_0(const uint8_t* data, float* output, LongType numEle
 static void dequantize_tq2_0(const uint8_t* data, float* output, LongType numElements) {
     constexpr int BLOCK_SIZE = 66;
     LongType numBlocks = (numElements + QK_K - 1) / QK_K;
-    LongType outIdx = 0;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType b = 0; b < numBlocks; b++) {
         const uint8_t* block = data + b * BLOCK_SIZE;
         uint16_t dRaw;
         memcpy(&dRaw, block, 2);
         float d = fp16ToFloat(dRaw);
         const uint8_t* qs = block + 2;
+        LongType outBase = b * QK_K;
 
-        for (int j = 0; j < QK_K && outIdx < numElements; j++) {
+        for (int j = 0; j < QK_K; j++) {
             int byteIdx = j / 4;
             int bitOff = (j % 4) * 2;
+            LongType idx = outBase + j;
             if (byteIdx < 64) {
                 int val = (qs[byteIdx] >> bitOff) & 0x3;
                 // 2-bit ternary: 0->-1, 1->0, 2->+1, 3->0
@@ -922,9 +981,9 @@ static void dequantize_tq2_0(const uint8_t* data, float* output, LongType numEle
                     case 2: tval = 1.0f; break;
                     default: tval = 0.0f; break;
                 }
-                output[outIdx++] = d * tval;
+                if (idx < numElements) output[idx] = d * tval;
             } else {
-                output[outIdx++] = 0.0f;
+                if (idx < numElements) output[idx] = 0.0f;
             }
         }
     }
@@ -988,11 +1047,13 @@ void ggmlDequantize(
 
         if (outputDtype == DataType::HALF) {
             auto* dst = reinterpret_cast<float16*>(output->buffer());
+            PRAGMA_OMP_PARALLEL_FOR
             for (LongType i = 0; i < numElements; i++) {
                 dst[i] = static_cast<float16>(tmpBuf[i]);
             }
         } else if (outputDtype == DataType::BFLOAT16) {
             auto* dst = reinterpret_cast<bfloat16*>(output->buffer());
+            PRAGMA_OMP_PARALLEL_FOR
             for (LongType i = 0; i < numElements; i++) {
                 dst[i] = static_cast<bfloat16>(tmpBuf[i]);
             }

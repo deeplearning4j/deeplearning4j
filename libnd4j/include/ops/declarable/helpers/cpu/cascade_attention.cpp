@@ -41,6 +41,7 @@ static void cascadeAttentionCpu_(LaunchContext* context,
 
     T scaleF = static_cast<T>(scale);
 
+    PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
     for (LongType b = 0; b < batch; b++) {
         for (LongType h = 0; h < heads; h++) {
             for (LongType q = 0; q < queryLen; q++) {
