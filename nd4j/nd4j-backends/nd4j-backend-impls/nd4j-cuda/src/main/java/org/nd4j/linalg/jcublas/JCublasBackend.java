@@ -63,7 +63,7 @@ public class JCublasBackend extends Nd4jBackend {
             while (e.getCause() != null) {
                 e = e.getCause();
             }
-            e.printStackTrace();
+            log.error("CUDA backend availability check failed", e);
             throw new RuntimeException(e);
         }
         return true;

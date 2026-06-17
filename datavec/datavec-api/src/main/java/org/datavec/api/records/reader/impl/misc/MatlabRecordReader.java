@@ -109,8 +109,7 @@ public class MatlabRecordReader extends FileRecordReader {
             currIter = records.iterator();
 
         } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new IllegalStateException("Unable to determine structure as Matlab ASCII file: " + ex);
+            throw new IllegalStateException("Unable to determine structure as Matlab ASCII file: " + ex, ex);
         }
         throw new IllegalStateException("Strange state detected");
     }

@@ -25,6 +25,9 @@ import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.shade.protobuf.TextFormat;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -37,6 +40,8 @@ import java.util.*;
  */
 public class OpDescriptorHolder {
 
+    private static final Logger log = LoggerFactory.getLogger(OpDescriptorHolder.class);
+
     public static String  nd4jFileNameTextDefault = "/nd4j-op-def.pbtxt";
     public static String nd4jFileSpecifierProperty = "samediff.import.nd4jdescriptors";
     public static OpNamespace.OpDescriptorList INSTANCE;
@@ -46,7 +51,7 @@ public class OpDescriptorHolder {
         try {
             INSTANCE = nd4jOpList();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to load nd4j op descriptors", e);
         }
 
         opDescriptorByName = new LinkedHashMap<>();
