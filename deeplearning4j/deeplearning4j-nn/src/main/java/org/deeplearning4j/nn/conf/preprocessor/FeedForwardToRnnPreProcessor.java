@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.preprocessor;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.val;
@@ -27,6 +27,8 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutionalFlat;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -110,10 +112,10 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
         }
 
         if (inputType.getType() == InputType.Type.FF) {
-            InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward) inputType;
+            InputTypeFeedForward ff = (InputTypeFeedForward) inputType;
             return InputType.recurrent(ff.getSize(), rnnDataFormat);
         } else {
-            InputType.InputTypeConvolutionalFlat cf = (InputType.InputTypeConvolutionalFlat) inputType;
+            InputTypeConvolutionalFlat cf = (InputTypeConvolutionalFlat) inputType;
             return InputType.recurrent(cf.getFlattenedSize(), rnnDataFormat);
         }
     }

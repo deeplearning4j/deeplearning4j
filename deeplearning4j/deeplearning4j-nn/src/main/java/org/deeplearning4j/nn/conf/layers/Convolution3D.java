@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.layers.convolution.Convolution3DLayer;
 import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -145,7 +146,7 @@ public class Convolution3D extends ConvolutionLayer {
         }
 
         if (nIn <= 0 || override) {
-            InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
+            InputTypeConvolutional3D c = (InputTypeConvolutional3D) inputType;
             this.nIn = c.getChannels();
         }
     }

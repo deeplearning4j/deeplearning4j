@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.*;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -114,7 +114,7 @@ public class LocallyConnected1D extends SameDiffLayer {
                             + "of CNN1D/RNN type, got: " + inputType);
         }
         // dynamically compute input size from input type
-        InputType.InputTypeRecurrent rnnType = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent rnnType = (InputTypeRecurrent) inputType;
         this.inputSize = (int) rnnType.getTimeSeriesLength();
         computeOutputSize();
 
@@ -125,11 +125,11 @@ public class LocallyConnected1D extends SameDiffLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (nIn <= 0 || override) {
-            InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
+            InputTypeRecurrent c = (InputTypeRecurrent) inputType;
             this.nIn = c.getSize();
         }
         if(featureDim <= 0 || override) {
-            InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
+            InputTypeRecurrent c = (InputTypeRecurrent) inputType;
             this.featureDim = kernel * (int) c.getSize();
         }
     }

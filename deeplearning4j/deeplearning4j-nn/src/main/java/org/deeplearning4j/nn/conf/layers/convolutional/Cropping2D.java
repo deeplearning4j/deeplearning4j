@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
@@ -107,7 +108,7 @@ public class Cropping2D extends NoParamLayer {
         long outH = hwd[0] - cropping[0] - cropping[1];
         long outW = hwd[1] - cropping[2] - cropping[3];
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        InputTypeConvolutional c = (InputTypeConvolutional)inputType;
 
         return InputType.convolutional(outH, outW, hwd[2], c.getFormat());
     }
@@ -126,7 +127,7 @@ public class Cropping2D extends NoParamLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        this.dataFormat = ((InputType.InputTypeConvolutional)inputType).getFormat();
+        this.dataFormat = ((InputTypeConvolutional)inputType).getFormat();
     }
 
     @Getter

@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
@@ -136,7 +137,7 @@ public class Subsampling3DLayer extends NoParamLayer {
                             + "\"): Expected CNN input, got " + inputType);
         }
 
-        long inChannels = ((InputType.InputTypeConvolutional3D) inputType).getChannels();
+        long inChannels = ((InputTypeConvolutional3D) inputType).getChannels();
         if (inChannels > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
         return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, dataFormat, kernelSize, stride, padding, new int[] {1, 1, 1}, // no dilation
@@ -172,9 +173,9 @@ public class Subsampling3DLayer extends NoParamLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
-        InputType.InputTypeConvolutional3D outputType =
-                        (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
+        InputTypeConvolutional3D c = (InputTypeConvolutional3D) inputType;
+        InputTypeConvolutional3D outputType =
+                        (InputTypeConvolutional3D) getOutputType(-1, inputType);
         val actElementsPerEx = outputType.arrayElementsPerExample();
 
         //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem

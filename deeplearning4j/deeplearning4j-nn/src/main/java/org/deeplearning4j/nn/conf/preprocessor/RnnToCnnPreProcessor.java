@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.preprocessor;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.*;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -123,7 +123,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
             throw new IllegalStateException("Invalid input type: Expected input of type RNN, got " + inputType);
         }
 
-        InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent c = (InputTypeRecurrent) inputType;
         int expSize = inputHeight * inputWidth * numChannels;
         if (c.getSize() != expSize) {
             throw new IllegalStateException("Invalid input: expected RNN input of size " + expSize + " = (d="

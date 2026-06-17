@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
@@ -75,7 +76,7 @@ public class ZeroPadding3DLayer extends NoParamLayer {
                             + ", layer name = \"" + getLayerName() + "\"): expect CNN3D input type with size > 0. Got: "
                             + inputType);
         }
-        InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
+        InputTypeConvolutional3D c = (InputTypeConvolutional3D) inputType;
         return InputType.convolutional3D(c.getDepth() + padding[0] + padding[1],
                         c.getHeight() + padding[2] + padding[3], c.getWidth() + padding[4] + padding[5],
                         c.getChannels());

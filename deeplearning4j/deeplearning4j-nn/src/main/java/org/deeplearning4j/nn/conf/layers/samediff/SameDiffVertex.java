@@ -215,16 +215,6 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
     }
 
     @Override
-    public GradientNormalization getGradientNormalization() {
-        return gradientNormalization;
-    }
-
-    @Override
-    public double getGradientNormalizationThreshold() {
-        return gradientNormalizationThreshold;
-    }
-
-    @Override
     public void setDataType(DataType dataType) {
         this.dataType = dataType;
     }

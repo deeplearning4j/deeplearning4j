@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
@@ -161,7 +162,7 @@ public class SubsamplingLayer extends NoParamLayer {
         }
 
         return InputTypeUtil.getOutputTypeCnnLayersLong(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                ((InputType.InputTypeConvolutional) inputType).getChannels(), layerIndex, getLayerName(),
+                ((InputTypeConvolutional) inputType).getChannels(), layerIndex, getLayerName(),
                 cnn2dDataFormat, SubsamplingLayer.class);
     }
 
@@ -169,7 +170,7 @@ public class SubsamplingLayer extends NoParamLayer {
     public void setNIn(InputType inputType, boolean override) {
         //No op: subsampling layer doesn't have nIn value
         if(!defaultValueOverridden || override) {
-            this.cnn2dDataFormat = ((InputType.InputTypeConvolutional) inputType).getFormat();
+            this.cnn2dDataFormat = ((InputTypeConvolutional) inputType).getFormat();
             defaultValueOverridden = true;
         }
     }
@@ -191,8 +192,8 @@ public class SubsamplingLayer extends NoParamLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
+        InputTypeConvolutional c = (InputTypeConvolutional) inputType;
+        InputTypeConvolutional outputType = (InputTypeConvolutional) getOutputType(-1, inputType);
         val actElementsPerEx = outputType.arrayElementsPerExample();
 
         //TODO Subsampling helper memory use... (CuDNN etc)
@@ -213,14 +214,6 @@ public class SubsamplingLayer extends NoParamLayer {
                 .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
                 .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
                 .build();
-    }
-
-    public long getPnorm() {
-        return pnorm;
-    }
-
-    public double getEps() {
-        return eps;
     }
 
     @NoArgsConstructor

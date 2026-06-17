@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import java.util.Arrays;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -80,7 +80,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
                             + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                             + inputType);
         }
-        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent recurrent = (InputTypeRecurrent) inputType;
         long outLength = recurrent.getTimeSeriesLength();
         if (outLength > 0) {
             outLength *= size[0];
@@ -99,8 +99,8 @@ public class Upsampling1D extends BaseUpsamplingLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
-        InputType.InputTypeRecurrent outputType = (InputType.InputTypeRecurrent) getOutputType(-1, inputType);
+        InputTypeRecurrent recurrent = (InputTypeRecurrent) inputType;
+        InputTypeRecurrent outputType = (InputTypeRecurrent) getOutputType(-1, inputType);
 
         long im2colSizePerEx = recurrent.getSize() * outputType.getTimeSeriesLength() * size[0];
         long trainingWorkingSizePerEx = im2colSizePerEx;

@@ -19,7 +19,8 @@
  */
 
 package org.deeplearning4j.nn.conf.layers.recurrent;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -165,14 +166,14 @@ public class Bidirectional extends Layer {
         InputType outOrig = fwd.getOutputType(layerIndex, inputType);
 
         if (fwd instanceof LastTimeStep) {
-            InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward) outOrig;
+            InputTypeFeedForward ff = (InputTypeFeedForward) outOrig;
             if (mode == Mode.CONCAT) {
                 return InputType.feedForward(2 * ff.getSize());
             } else {
                 return ff;
             }
         } else {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) outOrig;
+            InputTypeRecurrent r = (InputTypeRecurrent) outOrig;
             if (mode == Mode.CONCAT) {
                 return InputType.recurrent(2 * r.getSize(), getRNNDataFormat());
             } else {

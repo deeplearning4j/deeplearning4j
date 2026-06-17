@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers.misc;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -81,7 +81,7 @@ public class RepeatVector extends FeedForwardLayer {
             throw new IllegalStateException("Invalid input for RepeatVector layer (layer name=\"" + getLayerName()
                             + "\"): Expected FF input, got " + inputType);
         }
-        InputType.InputTypeFeedForward ffInput = (InputType.InputTypeFeedForward) inputType;
+        InputTypeFeedForward ffInput = (InputTypeFeedForward) inputType;
         return InputType.recurrent(ffInput.getSize(), n, this.dataFormat);
     }
 

@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -88,7 +88,7 @@ public class ZeroPadding1DLayer extends NoParamLayer {
                             + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                             + inputType);
         }
-        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent recurrent = (InputTypeRecurrent) inputType;
         return InputType.recurrent(recurrent.getSize(), recurrent.getTimeSeriesLength() + padding[0] + padding[1]);
     }
 

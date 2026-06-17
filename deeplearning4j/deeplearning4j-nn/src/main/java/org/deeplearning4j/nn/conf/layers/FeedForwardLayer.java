@@ -19,12 +19,16 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.*;
 import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutionalFlat;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
@@ -68,10 +72,10 @@ public abstract class FeedForwardLayer extends BaseLayer {
 
         if (nIn <= 0 || override) {
             if (inputType.getType() == InputType.Type.FF) {
-                InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
+                InputTypeFeedForward f = (InputTypeFeedForward) inputType;
                 this.nIn = f.getSize();
             } else if(inputType.getType() == InputType.Type.RNN) {
-                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                InputTypeRecurrent recurrent = (InputTypeRecurrent) inputType;
                 //default value when initializing input type recurrent
                 if(recurrent.getTimeSeriesLength() < 0) {
                     this.nIn = recurrent.getSize();
@@ -80,13 +84,13 @@ public abstract class FeedForwardLayer extends BaseLayer {
 
                 }
             } else {
-                InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputTypeConvolutionalFlat f = (InputTypeConvolutionalFlat) inputType;
                 this.nIn = f.getFlattenedSize();
             }
         }
 
-        if(inputType instanceof InputType.InputTypeFeedForward){
-            InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
+        if(inputType instanceof InputTypeFeedForward){
+            InputTypeFeedForward f = (InputTypeFeedForward) inputType;
             this.timeDistributedFormat = f.getTimeDistributedFormat();
         }
     }
@@ -105,14 +109,14 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 return null;
             case RNN:
                 //RNN -> FF
-                return new RnnToFeedForwardPreProcessor(((InputType.InputTypeRecurrent)inputType).getFormat());
+                return new RnnToFeedForwardPreProcessor(((InputTypeRecurrent)inputType).getFormat());
             case CNN:
                 //CNN -> FF
-                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+                InputTypeConvolutional c = (InputTypeConvolutional) inputType;
                 return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getChannels(), c.getFormat());
             case CNN3D:
                 //CNN3D -> FF
-                InputType.InputTypeConvolutional3D c3d = (InputType.InputTypeConvolutional3D) inputType;
+                InputTypeConvolutional3D c3d = (InputTypeConvolutional3D) inputType;
                 return new Cnn3DToFeedForwardPreProcessor(c3d.getDepth(), c3d.getHeight(), c3d.getWidth(),
                         c3d.getChannels(), c3d.getDataFormat() == Convolution3D.DataFormat.NCDHW);
             default:

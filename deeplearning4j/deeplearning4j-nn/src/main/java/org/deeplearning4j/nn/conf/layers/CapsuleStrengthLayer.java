@@ -24,7 +24,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import org.deeplearning4j.nn.conf.inputs.InputType.Type;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.nd4j.autodiff.samediff.SDVariable;

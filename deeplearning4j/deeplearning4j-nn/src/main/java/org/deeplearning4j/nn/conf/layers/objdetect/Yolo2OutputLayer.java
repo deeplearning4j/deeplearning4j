@@ -30,6 +30,8 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutionalFlat;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
@@ -100,7 +102,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional c = (InputTypeConvolutional) inputType;
         this.format = c.getFormat();
     }
 
@@ -113,7 +115,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
             case CNN:
                 return null;
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat cf = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputTypeConvolutionalFlat cf = (InputTypeConvolutionalFlat) inputType;
                 return new FeedForwardToCnnPreProcessor(cf.getHeight(), cf.getWidth(), cf.getDepth());
             default:
                 return null;

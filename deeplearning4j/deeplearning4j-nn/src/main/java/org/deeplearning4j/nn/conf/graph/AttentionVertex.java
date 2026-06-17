@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 package org.deeplearning4j.nn.conf.graph;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import org.nd4j.shade.guava.base.Preconditions;
 import lombok.*;
 import org.deeplearning4j.nn.api.MaskState;
@@ -83,7 +83,7 @@ public class AttentionVertex extends SameDiffVertex {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        InputType.InputTypeRecurrent queries = (InputType.InputTypeRecurrent) vertexInputs[0];
+        InputTypeRecurrent queries = (InputTypeRecurrent) vertexInputs[0];
 
         if(projectInput){
             return InputType.recurrent(nOut, queries.getTimeSeriesLength());

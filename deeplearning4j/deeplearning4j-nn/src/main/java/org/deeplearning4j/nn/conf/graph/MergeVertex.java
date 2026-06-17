@@ -19,14 +19,16 @@
  */
 
 package org.deeplearning4j.nn.conf.graph;
-
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.Setter;
 import lombok.val;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
@@ -102,7 +104,7 @@ public class MergeVertex extends GraphVertex {
                             + vertexInputs);
         } else if (first.getType() == InputType.Type.CNN3D) {
             // CNN3D inputs: check that the channels, width and height match:
-            InputType.InputTypeConvolutional3D firstConv = (InputType.InputTypeConvolutional3D) first;
+            InputTypeConvolutional3D firstConv = (InputTypeConvolutional3D) first;
 
             val fd = firstConv.getDepth();
             val fw = firstConv.getWidth();
@@ -110,14 +112,14 @@ public class MergeVertex extends GraphVertex {
             val fc = firstConv.getChannels();
 
             long depthSum = fc;
-            InputType.InputTypeConvolutional3D otherConv = null;
+            InputTypeConvolutional3D otherConv = null;
             for (int i = 1; i < vertexInputs.length; i++) {
                 if (vertexInputs[i].getType() != InputType.Type.CNN3D) {
                     throw new InvalidInputTypeException(
                             "Invalid input: MergeVertex cannot process activations of different types:" + " first type = " + InputType.Type.CNN3D + ", input type " + (i + 1) + " = " + vertexInputs[i].getType());
                 }
 
-                otherConv = (InputType.InputTypeConvolutional3D) vertexInputs[i];
+                otherConv = (InputTypeConvolutional3D) vertexInputs[i];
                 val od = otherConv.getDepth();
                 val ow = otherConv.getWidth();
                 val oh = otherConv.getHeight();
@@ -136,12 +138,12 @@ public class MergeVertex extends GraphVertex {
             for (int i = 0; i < vertexInputs.length; i++) {
                 if(vertexInputs[i].getType() == InputType.Type.RNN) {
                     if(format == null) {
-                        InputType.InputTypeRecurrent input = (InputType.InputTypeRecurrent) vertexInputs[i];
+                        InputTypeRecurrent input = (InputTypeRecurrent) vertexInputs[i];
                         format = input.getFormat();
-                        timeSeriesLength = ((InputType.InputTypeRecurrent) vertexInputs[i]).getTimeSeriesLength();
+                        timeSeriesLength = ((InputTypeRecurrent) vertexInputs[i]).getTimeSeriesLength();
                     }
                     else if(format != null) {
-                        InputType.InputTypeRecurrent input = (InputType.InputTypeRecurrent) vertexInputs[i];
+                        InputTypeRecurrent input = (InputTypeRecurrent) vertexInputs[i];
                         if(input.getFormat() != null && format != input.getFormat()) {
                             throw new IllegalArgumentException("Unable to merge inputs with 2 different layouts of input type: " + input.getType() + " and type " + vertexInputs[i].getType());
                         }
@@ -155,17 +157,17 @@ public class MergeVertex extends GraphVertex {
                     case FF:
                         //ignore feedforward, rnn trumps feedforward and can be merged
                         if(format != null) {
-                            thisSize = ((InputType.InputTypeFeedForward) vertexInputs[i]).getSize();
+                            thisSize = ((InputTypeFeedForward) vertexInputs[i]).getSize();
                             type = InputType.Type.FF;
                         }
                         //feedforward case
                         else {
-                            thisSize = ((InputType.InputTypeFeedForward) vertexInputs[i]).getSize();
+                            thisSize = ((InputTypeFeedForward) vertexInputs[i]).getSize();
                             type = InputType.Type.FF;
                         }
                         break;
                     case RNN:
-                        thisSize = ((InputType.InputTypeRecurrent) vertexInputs[i]).getSize();
+                        thisSize = ((InputTypeRecurrent) vertexInputs[i]).getSize();
                         //don't change dimension if it was already modified
                         if(!modified)
                             this.mergeAxis = format == RNNFormat.NCW ? 1 : 2;
@@ -186,7 +188,7 @@ public class MergeVertex extends GraphVertex {
                 if (type == InputType.Type.FF) {
                     return InputType.feedForward(size);
                 } else {
-                    val tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
+                    val tsLength = ((InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
                     return InputType.recurrent(size, tsLength, format);
                 }
             } else {
@@ -195,7 +197,7 @@ public class MergeVertex extends GraphVertex {
                     return InputType.feedForward(-1);
                 } else {
                     if(first.getType() == InputType.Type.FF) {
-                        InputType.InputTypeFeedForward inputTypeFeedForward = (InputType.InputTypeFeedForward) first;
+                        InputTypeFeedForward inputTypeFeedForward = (InputTypeFeedForward) first;
                         return InputType.recurrent(inputTypeFeedForward.getSize(), timeSeriesLength, format);
                     }
                     else
@@ -205,7 +207,7 @@ public class MergeVertex extends GraphVertex {
 
         } else {
             //CNN inputs... also check that the channels, width and heights match:
-            InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
+            InputTypeConvolutional firstConv = (InputTypeConvolutional) first;
             CNN2DFormat format = firstConv.getFormat();
 
             val fd = firstConv.getChannels();
@@ -222,7 +224,7 @@ public class MergeVertex extends GraphVertex {
                                     + " = " + vertexInputs[i].getType());
                 }
 
-                InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
+                InputTypeConvolutional otherConv = (InputTypeConvolutional) vertexInputs[i];
 
                 val od = otherConv.getChannels();
                 val ow = otherConv.getWidth();

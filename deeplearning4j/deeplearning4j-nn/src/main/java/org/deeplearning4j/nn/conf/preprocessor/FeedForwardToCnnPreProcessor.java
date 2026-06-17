@@ -19,11 +19,13 @@
  */
 
 package org.deeplearning4j.nn.conf.preprocessor;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.*;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutionalFlat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.common.primitives.Pair;
@@ -119,7 +121,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
         switch (inputType.getType()) {
             case FF:
-                InputType.InputTypeFeedForward c = (InputType.InputTypeFeedForward) inputType;
+                InputTypeFeedForward c = (InputTypeFeedForward) inputType;
                 val expSize = inputHeight * inputWidth * numChannels;
                 if (c.getSize() != expSize) {
                     throw new IllegalStateException("Invalid input: expected FeedForward input of size " + expSize
@@ -128,7 +130,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
                 }
                 return InputType.convolutional(inputHeight, inputWidth, numChannels);
             case CNN:
-                InputType.InputTypeConvolutional c2 = (InputType.InputTypeConvolutional) inputType;
+                InputTypeConvolutional c2 = (InputTypeConvolutional) inputType;
 
                 if (c2.getChannels() != numChannels || c2.getHeight() != inputHeight || c2.getWidth() != inputWidth) {
                     throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c2.getChannels()
@@ -137,7 +139,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
                 }
                 return c2;
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat c3 = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputTypeConvolutionalFlat c3 = (InputTypeConvolutionalFlat) inputType;
                 if (c3.getDepth() != numChannels || c3.getHeight() != inputHeight || c3.getWidth() != inputWidth) {
                     throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c3.getDepth()
                                     + "," + c3.getWidth() + "," + c3.getHeight() + ") but expected (" + numChannels

@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -86,7 +87,7 @@ public class ZeroPaddingLayer extends NoParamLayer {
         long outH = hwd[0] + padding[0] + padding[1];
         long outW = hwd[1] + padding[2] + padding[3];
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        InputTypeConvolutional c = (InputTypeConvolutional)inputType;
 
         return InputType.convolutional(outH, outW, hwd[2], c.getFormat());
     }
@@ -112,7 +113,7 @@ public class ZeroPaddingLayer extends NoParamLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        InputTypeConvolutional c = (InputTypeConvolutional)inputType;
         this.dataFormat = c.getFormat();
     }
 

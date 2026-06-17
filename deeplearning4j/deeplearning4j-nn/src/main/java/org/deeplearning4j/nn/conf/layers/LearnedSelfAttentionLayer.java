@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.*;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -83,7 +83,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
         }
 
         if (nIn <= 0 || override) {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+            InputTypeRecurrent r = (InputTypeRecurrent) inputType;
             this.nIn = r.getSize();
         }
     }

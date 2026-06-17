@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -114,7 +114,7 @@ public class SeparableConvolution1D extends ConvolutionLayer {
             throw new IllegalStateException("Invalid input for SeparableConvolution1D layer (layer name=\"" + getLayerName()
                     + "\"): Expected RNN input, got " + inputType);
         }
-        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent r = (InputTypeRecurrent) inputType;
         long inputTsLength = r.getTimeSeriesLength();
         long outLength;
         if (inputTsLength < 0) {
@@ -124,10 +124,6 @@ public class SeparableConvolution1D extends ConvolutionLayer {
                     convolutionMode, dilation[0]);
         }
         return InputType.recurrent(nOut, outLength, rnnDataFormat);
-    }
-
-    public RNNFormat getRnnDataFormat() {
-        return rnnDataFormat;
     }
 
     @Getter

@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.*;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -58,7 +58,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
                     + inputType);
         }
 
-        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent itr = (InputTypeRecurrent) inputType;
 
         return InputType.recurrent(nOut, itr.getTimeSeriesLength(), itr.getFormat());
     }
@@ -70,7 +70,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
                     + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
-        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent r = (InputTypeRecurrent) inputType;
         if (nIn <= 0 || override) {
             this.nIn = r.getSize();
         }

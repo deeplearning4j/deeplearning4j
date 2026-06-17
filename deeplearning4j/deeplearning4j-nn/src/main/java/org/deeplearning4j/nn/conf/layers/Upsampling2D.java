@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.serde.legacy.LegacyIntArrayDeserializer;
@@ -80,7 +81,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
             throw new IllegalStateException("Invalid input for Upsampling 2D layer (layer name=\"" + getLayerName()
                             + "\"): Expected CNN input, got " + inputType);
         }
-        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional i = (InputTypeConvolutional) inputType;
         val inHeight = i.getHeight();
         val inWidth = i.getWidth();
         val inDepth = i.getChannels();
@@ -99,8 +100,8 @@ public class Upsampling2D extends BaseUpsamplingLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
+        InputTypeConvolutional c = (InputTypeConvolutional) inputType;
+        InputTypeConvolutional outputType = (InputTypeConvolutional) getOutputType(-1, inputType);
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
         val im2colSizePerEx =
@@ -125,7 +126,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
             throw new IllegalStateException("Invalid input for Upsampling 2D layer (layer name=\"" + getLayerName()
                     + "\"): Expected CNN input, got " + inputType);
         }
-        this.format = ((InputType.InputTypeConvolutional)inputType).getFormat();
+        this.format = ((InputTypeConvolutional)inputType).getFormat();
     }
 
     @NoArgsConstructor

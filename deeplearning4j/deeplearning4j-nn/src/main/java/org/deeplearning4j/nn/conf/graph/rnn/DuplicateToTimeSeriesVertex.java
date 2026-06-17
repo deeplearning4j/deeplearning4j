@@ -19,11 +19,12 @@
  */
 
 package org.deeplearning4j.nn.conf.graph.rnn;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutionalFlat;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -95,9 +96,9 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
         int tsLength = 1; //TODO work this out properly
 
         if (vertexInputs[0].getType() == InputType.Type.FF) {
-            return InputType.recurrent(((InputType.InputTypeFeedForward) vertexInputs[0]).getSize(), tsLength);
+            return InputType.recurrent(((InputTypeFeedForward) vertexInputs[0]).getSize(), tsLength);
         } else if (vertexInputs[0].getType() == InputType.Type.CNNFlat) {
-            return InputType.recurrent(((InputType.InputTypeConvolutionalFlat) vertexInputs[0]).getFlattenedSize(),
+            return InputType.recurrent(((InputTypeConvolutionalFlat) vertexInputs[0]).getFlattenedSize(),
                             tsLength);
         } else {
             throw new InvalidInputTypeException(

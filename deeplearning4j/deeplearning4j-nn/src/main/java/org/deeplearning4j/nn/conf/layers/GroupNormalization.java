@@ -18,10 +18,13 @@
  *  *****************************************************************************
  */
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -84,16 +87,16 @@ public class GroupNormalization extends SameDiffLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (nChannels <= 0 || override) {
             if (inputType.getType() == InputType.Type.CNN) {
-                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+                InputTypeConvolutional c = (InputTypeConvolutional) inputType;
                 this.nChannels = c.getChannels();
             } else if (inputType.getType() == InputType.Type.CNN3D) {
-                InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
+                InputTypeConvolutional3D c = (InputTypeConvolutional3D) inputType;
                 this.nChannels = c.getChannels();
             } else if (inputType.getType() == InputType.Type.RNN) {
-                InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+                InputTypeRecurrent r = (InputTypeRecurrent) inputType;
                 this.nChannels = r.getSize();
             } else if (inputType.getType() == InputType.Type.FF) {
-                InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
+                InputTypeFeedForward f = (InputTypeFeedForward) inputType;
                 this.nChannels = f.getSize();
             }
         }

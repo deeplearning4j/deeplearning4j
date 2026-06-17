@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.*;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -96,7 +96,7 @@ public class Deconvolution1D extends SameDiffLayer {
                     + getLayerName() + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
         if (nIn <= 0 || override) {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+            InputTypeRecurrent r = (InputTypeRecurrent) inputType;
             this.nIn = r.getSize();
         }
     }
@@ -108,7 +108,7 @@ public class Deconvolution1D extends SameDiffLayer {
                     + layerIndex + ", layer name = \"" + getLayerName() + "\"): expect RNN input type. Got: "
                     + inputType);
         }
-        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent itr = (InputTypeRecurrent) inputType;
 
         long outputLength;
         if (convolutionMode == ConvolutionMode.Same) {

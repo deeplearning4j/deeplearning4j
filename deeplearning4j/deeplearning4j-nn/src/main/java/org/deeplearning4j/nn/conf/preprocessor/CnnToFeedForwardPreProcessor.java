@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.common.primitives.Pair;
@@ -159,7 +160,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
             throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
         }
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional c = (InputTypeConvolutional) inputType;
         val outSize = c.getChannels() * c.getHeight() * c.getWidth();
         //h=2,w=1,c=5 pre processor: 0,0,NCHW (broken)
         //h=2,w=2,c=3, cnn=2,2,3, NCHW

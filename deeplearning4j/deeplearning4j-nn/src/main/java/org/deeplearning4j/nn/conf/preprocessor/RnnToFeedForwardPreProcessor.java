@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.preprocessor;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -114,7 +114,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
             throw new IllegalStateException("Invalid input: expected input of type RNN, got " + inputType);
         }
 
-        InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent rnn = (InputTypeRecurrent) inputType;
         return InputType.feedForward(rnn.getSize(), rnn.getFormat());
     }
 

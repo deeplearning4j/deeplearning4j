@@ -25,6 +25,8 @@ import lombok.val;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -146,7 +148,7 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
             throw new IllegalStateException("Invalid input type: Expected input of type CNN3D, got " + inputType);
         }
 
-        InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
+        InputTypeConvolutional3D c = (InputTypeConvolutional3D) inputType;
         val outSize = c.getChannels() * c.getDepth() * c.getHeight() * c.getWidth();
         return InputType.feedForward(outSize);
     }

@@ -18,7 +18,8 @@
  *  *****************************************************************************
  */
 package org.deeplearning4j.nn.conf.graph;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -119,13 +120,13 @@ public class DotProductAttentionVertex extends SameDiffVertex {
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if(vertexInputs[0].getType() == InputType.Type.FF) {
-            InputType.InputTypeFeedForward queries = (InputType.InputTypeFeedForward) vertexInputs[0];
+            InputTypeFeedForward queries = (InputTypeFeedForward) vertexInputs[0];
             return InputType.recurrent(nIn, queries.getSize());
         } else if(vertexInputs[0].getType() == InputType.Type.RNN) {
-            InputType.InputTypeRecurrent queries = (InputType.InputTypeRecurrent) vertexInputs[0];
+            InputTypeRecurrent queries = (InputTypeRecurrent) vertexInputs[0];
             return InputType.recurrent(nIn, queries.getTimeSeriesLength());
         } else if(vertexInputs[0].getType() == InputType.Type.CNN) {
-            InputType.InputTypeFeedForward queries = (InputType.InputTypeFeedForward) vertexInputs[0];
+            InputTypeFeedForward queries = (InputTypeFeedForward) vertexInputs[0];
             return InputType.recurrent(nIn, queries.getSize());
         } else {
             throw new InvalidInputTypeException("Invalid input type: " + vertexInputs[0].getType());

@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.graph.rnn;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.Data;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -99,7 +99,7 @@ public class LastTimeStepVertex extends GraphVertex {
                             "Invalid input type: cannot get subset of non RNN input (got: " + vertexInputs[0] + ")");
         }
 
-        return InputType.feedForward(((InputType.InputTypeRecurrent) vertexInputs[0]).getSize());
+        return InputType.feedForward(((InputTypeRecurrent) vertexInputs[0]).getSize());
     }
 
     @Override

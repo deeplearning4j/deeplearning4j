@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer;
 import org.deeplearning4j.nn.params.SeparableConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -142,7 +143,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
                             + "\"): Expected CNN input, got " + inputType);
         }
 
-        CNN2DFormat format = ((InputType.InputTypeConvolutional)inputType).getFormat();
+        CNN2DFormat format = ((InputTypeConvolutional)inputType).getFormat();
 
         return InputTypeUtil.getOutputTypeCnnLayersLong(inputType, kernelSize, stride, padding, dilation, convolutionMode,
                         nOut, layerIndex, getLayerName(), format, SeparableConvolution2DLayer.class);

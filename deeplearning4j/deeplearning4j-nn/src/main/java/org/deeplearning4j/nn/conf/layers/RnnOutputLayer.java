@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -82,7 +82,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
             throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex
                     + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
         }
-        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent itr = (InputTypeRecurrent) inputType;
 
         return InputType.recurrent(nOut, itr.getTimeSeriesLength(), itr.getFormat());
     }
@@ -94,7 +94,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
                     + "\"): Expected RNN input, got " + inputType);
         }
 
-        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent r = (InputTypeRecurrent) inputType;
         if(rnnDataFormat == null || override) {
             this.rnnDataFormat = r.getFormat();
         }

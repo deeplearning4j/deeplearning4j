@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -141,7 +142,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
             throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
         }
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional c = (InputTypeConvolutional) inputType;
         val outSize = c.getChannels() * c.getHeight() * c.getWidth();
         return InputType.recurrent(outSize, rnnDataFormat);
     }

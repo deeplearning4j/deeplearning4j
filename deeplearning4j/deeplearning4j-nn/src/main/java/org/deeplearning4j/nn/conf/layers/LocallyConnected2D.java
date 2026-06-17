@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
@@ -124,7 +125,7 @@ public class LocallyConnected2D extends SameDiffLayer {
                     + "of CNN type, got: " + inputType);
         }
         // dynamically compute input size from input type
-        InputType.InputTypeConvolutional cnnType = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional cnnType = (InputTypeConvolutional) inputType;
         this.inputSize = new long[] {(int) cnnType.getHeight(), (int) cnnType.getWidth()};
         computeOutputSize();
 
@@ -135,11 +136,11 @@ public class LocallyConnected2D extends SameDiffLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (nIn <= 0 || override) {
-            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+            InputTypeConvolutional c = (InputTypeConvolutional) inputType;
             this.nIn = c.getChannels();
             this.featureDim = kernel[0] * kernel[1] * (int) nIn;
         }
-        this.format = ((InputType.InputTypeConvolutional)inputType).getFormat();
+        this.format = ((InputTypeConvolutional)inputType).getFormat();
     }
 
     @Override

@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers.recurrent;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -61,7 +61,7 @@ public class LastTimeStep extends BaseWrapperLayer {
             throw new IllegalArgumentException("Require RNN input type - got " + inputType);
         }
         InputType outType = underlying.getOutputType(layerIndex, inputType);
-        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) outType;
+        InputTypeRecurrent r = (InputTypeRecurrent) outType;
         return InputType.feedForward(r.getSize());
     }
 }

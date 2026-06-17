@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
@@ -80,8 +81,8 @@ public class SpaceToBatchLayer extends NoParamLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
+        InputTypeConvolutional c = (InputTypeConvolutional) inputType;
+        InputTypeConvolutional outputType = (InputTypeConvolutional) getOutputType(-1, inputType);
 
         return new LayerMemoryReport.Builder(layerName, SpaceToBatchLayer.class, inputType, outputType)
                         .standardMemory(0, 0) //No params
@@ -95,7 +96,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
                             + "\"): Expected CNN input, got " + inputType);
         }
-        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional i = (InputTypeConvolutional) inputType;
         return InputType.convolutional((i.getHeight() + padding[0][0] + padding[0][1]) / blocks[0],
                         (i.getWidth() + padding[1][0] + padding[1][1]) / blocks[1], i.getChannels(), i.getFormat());
     }
@@ -109,7 +110,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         Preconditions.checkState(inputType.getType() == InputType.Type.CNN, "Only CNN input types can be used with SpaceToBatchLayer, got %s", inputType);
-        this.format = ((InputType.InputTypeConvolutional)inputType).getFormat();
+        this.format = ((InputTypeConvolutional)inputType).getFormat();
     }
 
     @Override

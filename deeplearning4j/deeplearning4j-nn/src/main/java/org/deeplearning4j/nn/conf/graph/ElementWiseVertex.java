@@ -19,10 +19,13 @@
  */
 
 package org.deeplearning4j.nn.conf.graph;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutionalFlat;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -136,7 +139,7 @@ public class ElementWiseVertex extends GraphVertex {
             }
         } else {
             //CNN inputs... also check that the channels, width and heights match:
-            InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
+            InputTypeConvolutional firstConv = (InputTypeConvolutional) first;
 
             val fd = firstConv.getChannels();
             val fw = firstConv.getWidth();
@@ -150,7 +153,7 @@ public class ElementWiseVertex extends GraphVertex {
                                     + " = " + vertexInputs[i].getType());
                 }
 
-                InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
+                InputTypeConvolutional otherConv = (InputTypeConvolutional) vertexInputs[i];
 
                 val od = otherConv.getChannels();
                 val ow = otherConv.getWidth();
@@ -170,9 +173,9 @@ public class ElementWiseVertex extends GraphVertex {
 
         if(first.getType() == InputType.Type.FF) {
             //could be 1s and a higher value. broadcast to the higher value where possible
-            InputType.InputTypeFeedForward maxInputType = null;
+            InputTypeFeedForward maxInputType = null;
             for(int i = 0 ; i < vertexInputs.length; i++) {
-                InputType.InputTypeFeedForward feedForward = (InputType.InputTypeFeedForward) vertexInputs[i];
+                InputTypeFeedForward feedForward = (InputTypeFeedForward) vertexInputs[i];
                 if(maxInputType == null)
                     maxInputType = feedForward;
                 else {
@@ -185,9 +188,9 @@ public class ElementWiseVertex extends GraphVertex {
             return maxInputType;
         } else if(first.getType() == InputType.Type.CNNFlat) {
             //could be 1s and a higher value. broadcast to the higher value where possible
-            InputType.InputTypeConvolutionalFlat maxInputType = null;
+            InputTypeConvolutionalFlat maxInputType = null;
             for(int i = 0 ; i < vertexInputs.length; i++) {
-                InputType.InputTypeConvolutionalFlat feedForward = (InputType.InputTypeConvolutionalFlat) vertexInputs[i];
+                InputTypeConvolutionalFlat feedForward = (InputTypeConvolutionalFlat) vertexInputs[i];
                 if(maxInputType == null)
                     maxInputType = feedForward;
                 else {
@@ -200,9 +203,9 @@ public class ElementWiseVertex extends GraphVertex {
             return maxInputType;
         } else if(first.getType() == InputType.Type.RNN) {
             //could be 1s and a higher value. broadcast to the higher value where possible
-            InputType.InputTypeRecurrent maxInputType = null;
+            InputTypeRecurrent maxInputType = null;
             for(int i = 0 ; i < vertexInputs.length; i++) {
-                InputType.InputTypeRecurrent feedForward = (InputType.InputTypeRecurrent) vertexInputs[i];
+                InputTypeRecurrent feedForward = (InputTypeRecurrent) vertexInputs[i];
                 if(maxInputType == null)
                     maxInputType = feedForward;
                 else {

@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.layers.convolution.DepthwiseConvolution2DLayer;
 import org.deeplearning4j.nn.params.DepthwiseConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -102,7 +103,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
         if(nOut == 0 || override){
             nOut = this.nIn * this.depthMultiplier;
         }
-        this.cnn2dDataFormat = ((InputType.InputTypeConvolutional)inputType).getFormat();
+        this.cnn2dDataFormat = ((InputTypeConvolutional)inputType).getFormat();
     }
 
     @Getter

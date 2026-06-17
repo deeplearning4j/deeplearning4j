@@ -24,6 +24,7 @@ import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
@@ -100,7 +101,7 @@ public class Cropping3D extends NoParamLayer {
                             + ", layer name = \"" + getLayerName() + "\"): expect CNN3D input type with size > 0. Got: "
                             + inputType);
         }
-        InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
+        InputTypeConvolutional3D c = (InputTypeConvolutional3D) inputType;
         return InputType.convolutional3D(c.getDepth() - cropping[0] - cropping[1],
                         c.getHeight() - cropping[2] - cropping[3], c.getWidth() - cropping[4] - cropping[5],
                         c.getChannels());

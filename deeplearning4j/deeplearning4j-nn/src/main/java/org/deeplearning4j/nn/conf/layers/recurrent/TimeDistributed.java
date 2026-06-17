@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers.recurrent;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -70,7 +70,7 @@ public class TimeDistributed extends BaseWrapperLayer {
             throw new IllegalStateException("Only RNN input type is supported as input to TimeDistributed layer (layer #" + layerIndex + ")");
         }
 
-        InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent rnn = (InputTypeRecurrent) inputType;
         InputType ff = InputType.feedForward(rnn.getSize());
         InputType ffOut = underlying.getOutputType(layerIndex, ff);
         return InputType.recurrent(ffOut.arrayElementsPerExample(), rnn.getTimeSeriesLength(), rnnDataFormat);
@@ -82,7 +82,7 @@ public class TimeDistributed extends BaseWrapperLayer {
             throw new IllegalStateException("Only RNN input type is supported as input to TimeDistributed layer");
         }
 
-        InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent rnn = (InputTypeRecurrent) inputType;
         InputType ff = InputType.feedForward(rnn.getSize());
         this.rnnDataFormat = rnn.getFormat();
         underlying.setNIn(ff, override);

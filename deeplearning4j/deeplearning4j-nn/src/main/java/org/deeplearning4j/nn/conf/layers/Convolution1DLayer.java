@@ -19,7 +19,8 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -81,7 +82,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
                     + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                     + inputType);
         }
-        InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent it = (InputTypeRecurrent) inputType;
         long inputTsLength = it.getTimeSeriesLength();
         long outLength;
         if (inputTsLength < 0) {
@@ -103,7 +104,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         if(inputType.getType() == InputType.Type.RNN) {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+            InputTypeRecurrent r = (InputTypeRecurrent) inputType;
             if (nIn <= 0 || override) {
                 this.nIn = r.getSize();
             }
@@ -113,7 +114,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
             if(this.cnn2dDataFormat == null || override)
                 this.cnn2dDataFormat = rnnDataFormat == RNNFormat.NCW ? CNN2DFormat.NCHW : CNN2DFormat.NHWC;
         } else if(inputType.getType() == InputType.Type.FF) {
-            InputType.InputTypeFeedForward r = (InputType.InputTypeFeedForward) inputType;
+            InputTypeFeedForward r = (InputTypeFeedForward) inputType;
             if (nIn <= 0 || override) {
                 this.nIn = r.getSize();
             }

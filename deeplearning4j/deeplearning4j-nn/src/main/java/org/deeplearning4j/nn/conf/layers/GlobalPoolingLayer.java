@@ -19,7 +19,8 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -27,6 +28,9 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutionalFlat;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
@@ -97,28 +101,28 @@ public class GlobalPoolingLayer extends NoParamLayer {
                         "Global max pooling cannot be applied to feed-forward input type. Got input type = "
                                 + inputType);
             case RNN:
-                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                InputTypeRecurrent recurrent = (InputTypeRecurrent) inputType;
                 //Return 3d activations, with shape [minibatch, timeStepSize, 1]
                 if(collapseDimensions) {
                     return InputType.feedForward(recurrent.getSize(), recurrent.getFormat());
                 }
                 return recurrent;
             case CNN:
-                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
+                InputTypeConvolutional conv = (InputTypeConvolutional) inputType;
                 if (collapseDimensions) {
                     return InputType.feedForward(conv.getChannels());
                 } else {
                     return InputType.convolutional(1, 1, conv.getChannels(), conv.getFormat());
                 }
             case CNN3D:
-                InputType.InputTypeConvolutional3D conv3d = (InputType.InputTypeConvolutional3D) inputType;
+                InputTypeConvolutional3D conv3d = (InputTypeConvolutional3D) inputType;
                 if (collapseDimensions) {
                     return InputType.feedForward(conv3d.getChannels());
                 } else {
                     return InputType.convolutional3D(1, 1, 1, conv3d.getChannels());
                 }
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat convFlat = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputTypeConvolutionalFlat convFlat = (InputTypeConvolutionalFlat) inputType;
                 if (collapseDimensions) {
                     return InputType.feedForward(convFlat.getDepth());
                 } else {
@@ -132,7 +136,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if(inputType.getType() == InputType.Type.CNN) {
-            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+            InputTypeConvolutional c = (InputTypeConvolutional) inputType;
             if(c.getFormat() == CNN2DFormat.NCHW){
                 poolingDimensions = new long[]{2,3};
             } else {
@@ -149,7 +153,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
              * typically feeds forward a feed forward type. This converts that back to rnn.
              */
             case FF:
-                InputType.InputTypeFeedForward feedForward = (InputType.InputTypeFeedForward)  inputType;
+                InputTypeFeedForward feedForward = (InputTypeFeedForward)  inputType;
                 if(feedForward.getTimeDistributedFormat() != null && feedForward.getTimeDistributedFormat() instanceof RNNFormat) {
                     RNNFormat rnnFormat = (RNNFormat) feedForward.getTimeDistributedFormat();
                     return new FeedForwardToRnnPreProcessor(rnnFormat);
@@ -172,7 +176,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
                 //No preprocessor required
                 return null;
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat cFlat = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputTypeConvolutionalFlat cFlat = (InputTypeConvolutionalFlat) inputType;
                 return new FeedForwardToCnnPreProcessor(cFlat.getHeight(), cFlat.getWidth(), cFlat.getDepth());
         }
 

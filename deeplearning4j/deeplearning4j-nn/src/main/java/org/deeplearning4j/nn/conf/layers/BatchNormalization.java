@@ -19,7 +19,8 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -28,6 +29,9 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutionalFlat;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
@@ -137,20 +141,20 @@ public class BatchNormalization extends FeedForwardLayer {
         if (nIn <= 0 || override) {
             switch (inputType.getType()) {
                 case FF:
-                    nIn = ((InputType.InputTypeFeedForward) inputType).getSize();
+                    nIn = ((InputTypeFeedForward) inputType).getSize();
                     break;
                 case CNN:
-                    nIn = ((InputType.InputTypeConvolutional) inputType).getChannels();
-                    cnn2DFormat = ((InputType.InputTypeConvolutional) inputType).getFormat();
+                    nIn = ((InputTypeConvolutional) inputType).getChannels();
+                    cnn2DFormat = ((InputTypeConvolutional) inputType).getFormat();
                     break;
                 case CNN3D:
-                    nIn = ((InputType.InputTypeConvolutional3D) inputType).getChannels();
+                    nIn = ((InputTypeConvolutional3D) inputType).getChannels();
                     break;
                 case CNNFlat:
-                    nIn = ((InputType.InputTypeConvolutionalFlat) inputType).getDepth();
+                    nIn = ((InputTypeConvolutionalFlat) inputType).getDepth();
                     break;
                 case RNN:
-                    InputType.InputTypeRecurrent inputTypeRecurrent = (InputType.InputTypeRecurrent)  inputType;
+                    InputTypeRecurrent inputTypeRecurrent = (InputTypeRecurrent)  inputType;
                     nIn = inputTypeRecurrent.getSize();
                     break;
                 default:
@@ -165,7 +169,7 @@ public class BatchNormalization extends FeedForwardLayer {
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType.getType() == InputType.Type.CNNFlat) {
-            InputType.InputTypeConvolutionalFlat i = (InputType.InputTypeConvolutionalFlat) inputType;
+            InputTypeConvolutionalFlat i = (InputTypeConvolutionalFlat) inputType;
             return new FeedForwardToCnnPreProcessor(i.getHeight(), i.getWidth(), i.getDepth());
         }
 

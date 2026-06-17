@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
@@ -104,8 +105,8 @@ public class CnnLossLayer extends FeedForwardLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        if(inputType instanceof InputType.InputTypeConvolutional){
-            this.format = ((InputType.InputTypeConvolutional) inputType).getFormat();
+        if(inputType instanceof InputTypeConvolutional){
+            this.format = ((InputTypeConvolutional) inputType).getFormat();
         }
     }
 

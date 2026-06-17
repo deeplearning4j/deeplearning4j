@@ -29,6 +29,8 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutionalFlat;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -1258,8 +1260,8 @@ public class ConvolutionUtils {
         int inW;
         int inDepth;
 
-        if (inputType instanceof InputType.InputTypeConvolutional) {
-            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
+        if (inputType instanceof InputTypeConvolutional) {
+            InputTypeConvolutional conv = (InputTypeConvolutional) inputType;
             if (conv.getHeight() > Integer.MAX_VALUE || conv.getWidth() > Integer.MAX_VALUE ||
                     conv.getChannels() > Integer.MAX_VALUE){
                 throw new ND4JArraySizeException();
@@ -1267,8 +1269,8 @@ public class ConvolutionUtils {
             inH = (int) conv.getHeight();
             inW = (int) conv.getWidth();
             inDepth = (int) conv.getChannels();
-        } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
-            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
+        } else if (inputType instanceof InputTypeConvolutionalFlat) {
+            InputTypeConvolutionalFlat conv = (InputTypeConvolutionalFlat) inputType;
             if (conv.getHeight() > Integer.MAX_VALUE || conv.getWidth() > Integer.MAX_VALUE ||
                     conv.getDepth() > Integer.MAX_VALUE) {
                 throw new ND4JArraySizeException();

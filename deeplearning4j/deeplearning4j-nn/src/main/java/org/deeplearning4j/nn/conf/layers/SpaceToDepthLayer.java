@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
@@ -86,7 +87,7 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
+        InputTypeConvolutional outputType = (InputTypeConvolutional) getOutputType(-1, inputType);
 
         return new LayerMemoryReport.Builder(layerName, SpaceToDepthLayer.class, inputType, outputType)
                         .standardMemory(0, 0) //No params
@@ -100,7 +101,7 @@ public class SpaceToDepthLayer extends NoParamLayer {
             throw new IllegalStateException("Invalid input for space to channels layer (layer name=\"" + getLayerName()
                             + "\"): Expected CNN input, got " + inputType);
         }
-        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional i = (InputTypeConvolutional) inputType;
         return InputType.convolutional(i.getHeight() / blockSize, i.getWidth() / blockSize,
                         i.getChannels() * blockSize * blockSize, i.getFormat());
     }
@@ -113,7 +114,7 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        this.dataFormat = ((InputType.InputTypeConvolutional)inputType).getFormat();
+        this.dataFormat = ((InputTypeConvolutional)inputType).getFormat();
     }
 
     @Override

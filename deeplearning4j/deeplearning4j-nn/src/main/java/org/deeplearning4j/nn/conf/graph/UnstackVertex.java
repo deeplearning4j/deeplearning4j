@@ -19,11 +19,12 @@
  */
 
 package org.deeplearning4j.nn.conf.graph;
-
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.Getter;
 import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -111,11 +112,11 @@ public class UnstackVertex extends GraphVertex {
                 long thisSize;
                 switch (vertexInputs[i].getType()) {
                     case FF:
-                        thisSize = ((InputType.InputTypeFeedForward) vertexInputs[i]).getSize();
+                        thisSize = ((InputTypeFeedForward) vertexInputs[i]).getSize();
                         type = InputType.Type.FF;
                         break;
                     case RNN:
-                        thisSize = ((InputType.InputTypeRecurrent) vertexInputs[i]).getSize();
+                        thisSize = ((InputTypeRecurrent) vertexInputs[i]).getSize();
                         type = InputType.Type.RNN;
                         break;
                     default:
@@ -143,7 +144,7 @@ public class UnstackVertex extends GraphVertex {
             }
         } else {
             //CNN inputs... also check that the channels, width and heights match:
-            InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
+            InputTypeConvolutional firstConv = (InputTypeConvolutional) first;
 
             val fd = firstConv.getChannels();
             val fw = firstConv.getWidth();
@@ -159,7 +160,7 @@ public class UnstackVertex extends GraphVertex {
                                                     + " = " + vertexInputs[i].getType());
                 }
 
-                InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
+                InputTypeConvolutional otherConv = (InputTypeConvolutional) vertexInputs[i];
 
                 val od = otherConv.getChannels();
                 val ow = otherConv.getWidth();

@@ -18,10 +18,12 @@
  *  *****************************************************************************
  */
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -79,13 +81,13 @@ public class LayerNormalization extends SameDiffLayer {
         if (normalizedShape == null || normalizedShape.length == 0 || override) {
             // Default: normalize over the last dimension
             if (inputType.getType() == InputType.Type.FF) {
-                InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
+                InputTypeFeedForward f = (InputTypeFeedForward) inputType;
                 this.normalizedShape = new long[]{f.getSize()};
             } else if (inputType.getType() == InputType.Type.RNN) {
-                InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+                InputTypeRecurrent r = (InputTypeRecurrent) inputType;
                 this.normalizedShape = new long[]{r.getSize()};
             } else if (inputType.getType() == InputType.Type.CNN) {
-                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+                InputTypeConvolutional c = (InputTypeConvolutional) inputType;
                 this.normalizedShape = new long[]{c.getChannels(), c.getHeight(), c.getWidth()};
             }
         }

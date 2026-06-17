@@ -19,7 +19,8 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
@@ -28,6 +29,9 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutionalFlat;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -47,7 +51,7 @@ public class InputTypeUtil {
     public static InputType getOutputTypeDeconvLayerLong(InputType inputType, long[] kernelSize, long[] stride, long[] padding,
                                                      long[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
                                                      Class<?> layerClass) {
-        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional i = (InputTypeConvolutional) inputType;
 
         val hIn = i.getHeight();
         val wIn = i.getWidth();
@@ -96,7 +100,7 @@ public class InputTypeUtil {
     public static InputType getOutputTypeDeconv3dLayerLong(InputType inputType, long[] kernelSize, long[] stride, long[] padding,
                                                            long[] dilation, ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat,
                                                        long outputDepth, long layerIdx, String layerName, Class<?> layerClass) {
-        InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
+        InputTypeConvolutional3D i = (InputTypeConvolutional3D) inputType;
 
         long hIn = i.getHeight();
         long wIn = i.getWidth();
@@ -182,7 +186,7 @@ public class InputTypeUtil {
                     + layerIdx + ", name=" + name + ", type=" + layerClass.getName() + ")");
         }
 
-        InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
+        InputTypeConvolutional3D i = (InputTypeConvolutional3D) inputType;
 
         long inDepth = i.getDepth();
         long inHeight = i.getHeight();
@@ -317,7 +321,7 @@ public class InputTypeUtil {
                     + layerIdx + ", name=" + name + ", type=" + layerClass.getName() + ")");
         }
 
-        InputType.InputTypeRecurrent i = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent i = (InputTypeRecurrent) inputType;
 
         val inHeight = (int) i.getTimeSeriesLength();
         if (dilation != 1) {
@@ -397,7 +401,7 @@ public class InputTypeUtil {
                     + layerIdx + ", name=" + name + ", type=" + layerClass.getName() + ")");
         }
 
-        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional i = (InputTypeConvolutional) inputType;
 
         long inHeight = i.getHeight();
         long inWidth = i.getWidth();
@@ -512,7 +516,7 @@ public class InputTypeUtil {
         }
 
 
-        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
+        InputTypeConvolutional i = (InputTypeConvolutional) inputType;
 
         long inHeight = i.getHeight();
         long inWidth = i.getWidth();
@@ -702,7 +706,7 @@ public class InputTypeUtil {
                 return null;
             case CNNFlat:
                 //CNN (flat) -> CNN
-                InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputTypeConvolutionalFlat f = (InputTypeConvolutionalFlat) inputType;
                 return new FeedForwardToCnnPreProcessor(f.getHeight(), f.getWidth(), f.getDepth());
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
@@ -722,7 +726,7 @@ public class InputTypeUtil {
                 return new FeedForwardToRnnPreProcessor(rnnDataFormat);
             case FF:
                 //If time distributed format is defined, use that. Otherwise use the layer-defined rnnDataFormat, which may be default
-                InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward)inputType;
+                InputTypeFeedForward ff = (InputTypeFeedForward)inputType;
                 if(ff.getTimeDistributedFormat() != null && ff.getTimeDistributedFormat() instanceof RNNFormat){
                     return new FeedForwardToRnnPreProcessor((RNNFormat) ff.getTimeDistributedFormat());
                 }
@@ -732,7 +736,7 @@ public class InputTypeUtil {
                 return null;
             case CNN:
                 //CNN -> RNN
-                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+                InputTypeConvolutional c = (InputTypeConvolutional) inputType;
                 return new CnnToRnnPreProcessor(c.getHeight(), c.getWidth(), c.getChannels(), rnnDataFormat);
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
@@ -762,7 +766,7 @@ public class InputTypeUtil {
                         if(vertexInputs[i].getType() != maxType) {
                             switch(vertexInputs[i].getType()) {
                                 case RNN:
-                                    InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) vertexInputs[i];
+                                    InputTypeRecurrent recurrent = (InputTypeRecurrent) vertexInputs[i];
                                     if(recurrent.getTimeSeriesLength() == 1) {
                                         vertexInputs[i] = InputType.feedForward(recurrent.getSize());
                                     }
@@ -777,7 +781,7 @@ public class InputTypeUtil {
                     RNNFormat rnnFormat = null;
                     for(int i = 0; i < vertexInputs.length; i++) {
                         if(vertexInputs[i].getType() == InputType.Type.RNN) {
-                            InputType.InputTypeRecurrent firstRecurrent = (InputType.InputTypeRecurrent)  vertexInputs[i];
+                            InputTypeRecurrent firstRecurrent = (InputTypeRecurrent)  vertexInputs[i];
                             rnnFormat = firstRecurrent.getFormat();
                             break;
 
@@ -787,7 +791,7 @@ public class InputTypeUtil {
                         if(vertexInputs[i].getType() != maxType) {
                             switch(vertexInputs[i].getType()) {
                                 case FF:
-                                    InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward) vertexInputs[i];
+                                    InputTypeFeedForward ff = (InputTypeFeedForward) vertexInputs[i];
                                     vertexInputs[i] =  InputType.recurrent(ff.getSize(),rnnFormat);
                                     break;
                                 default:

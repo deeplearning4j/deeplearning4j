@@ -19,7 +19,7 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -80,7 +81,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
                             + "\"): Expected RNN input, got " + inputType);
         }
-        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+        InputTypeRecurrent r = (InputTypeRecurrent) inputType;
         long inputTsLength = r.getTimeSeriesLength();
         long outLength;
         if (inputTsLength < 0) {
@@ -98,11 +99,11 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         //No op: subsampling layer doesn't have nIn value
         if(cnn2dDataFormat == null || override) {
             if(inputType.getType() == InputType.Type.RNN) {
-                InputType.InputTypeRecurrent inputTypeConvolutional = (InputType.InputTypeRecurrent) inputType;
+                InputTypeRecurrent inputTypeConvolutional = (InputTypeRecurrent) inputType;
                 this.cnn2dDataFormat = inputTypeConvolutional.getFormat() == RNNFormat.NCW ? CNN2DFormat.NCHW : CNN2DFormat.NHWC;
 
             } else if(inputType.getType() == InputType.Type.CNN) {
-                InputType.InputTypeConvolutional inputTypeConvolutional = (InputType.InputTypeConvolutional) inputType;
+                InputTypeConvolutional inputTypeConvolutional = (InputTypeConvolutional) inputType;
                 this.cnn2dDataFormat = inputTypeConvolutional.getFormat();
             }
 

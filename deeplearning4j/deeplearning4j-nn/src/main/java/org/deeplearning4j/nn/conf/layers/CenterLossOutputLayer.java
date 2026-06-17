@@ -89,18 +89,6 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         }
     }
 
-    public double getAlpha() {
-        return alpha;
-    }
-
-    public double getLambda() {
-        return lambda;
-    }
-
-    public boolean getGradientCheck() {
-        return gradientCheck;
-    }
-
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //Basically a dense layer, with some extra params...

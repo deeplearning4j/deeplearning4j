@@ -19,7 +19,8 @@
  */
 
 package org.deeplearning4j.nn.conf.layers;
-
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputTypeFeedForward;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -125,12 +126,12 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
     public void setNIn(InputType inputType, boolean override) {
         if(inputType.getType() == InputType.Type.RNN){
             if (nIn <= 0 || override) {
-                InputType.InputTypeRecurrent f = (InputType.InputTypeRecurrent) inputType;
+                InputTypeRecurrent f = (InputTypeRecurrent) inputType;
                 this.nIn = f.getSize();
             }
         } else if(inputType.getType() == InputType.Type.FF) {
             if(nIn <= 0 || override) {
-                InputType.InputTypeFeedForward feedForward = (InputType.InputTypeFeedForward) inputType;
+                InputTypeFeedForward feedForward = (InputTypeFeedForward) inputType;
                 this.nIn = feedForward.getSize();
                 this.inferInputLength = true;
             }

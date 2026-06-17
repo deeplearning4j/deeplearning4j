@@ -24,6 +24,7 @@ import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional3D;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -78,7 +79,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
             throw new IllegalStateException("Invalid input for Upsampling 3D layer (layer name=\"" + getLayerName()
                             + "\"): Expected CNN3D input, got " + inputType);
         }
-        InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
+        InputTypeConvolutional3D i = (InputTypeConvolutional3D) inputType;
 
         long inHeight = (int) i.getHeight();
         long inWidth = (int) i.getWidth();
@@ -99,9 +100,9 @@ public class Upsampling3D extends BaseUpsamplingLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
-        InputType.InputTypeConvolutional3D outputType =
-                        (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
+        InputTypeConvolutional3D c = (InputTypeConvolutional3D) inputType;
+        InputTypeConvolutional3D outputType =
+                        (InputTypeConvolutional3D) getOutputType(-1, inputType);
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
         val im2colSizePerEx = c.getChannels() & outputType.getDepth() * outputType.getHeight() * outputType.getWidth()

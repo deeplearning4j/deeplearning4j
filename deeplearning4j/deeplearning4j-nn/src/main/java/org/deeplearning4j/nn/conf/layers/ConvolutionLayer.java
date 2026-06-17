@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -206,13 +207,13 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         if (!defaultValueOverriden || nIn <= 0 || override) {
-            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+            InputTypeConvolutional c = (InputTypeConvolutional) inputType;
             this.nIn = c.getChannels();
-            this.cnn2dDataFormat = ((InputType.InputTypeConvolutional) inputType).getFormat();
+            this.cnn2dDataFormat = ((InputTypeConvolutional) inputType).getFormat();
         }
 
         if(cnn2dDataFormat == null || override)
-            this.cnn2dDataFormat = ((InputType.InputTypeConvolutional) inputType).getFormat();
+            this.cnn2dDataFormat = ((InputTypeConvolutional) inputType).getFormat();
     }
 
     @Override
@@ -230,8 +231,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
         val paramSize = initializer().numParams(this);
         val updaterStateSize = (int) getIUpdater().stateSize(paramSize);
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
+        InputTypeConvolutional c = (InputTypeConvolutional) inputType;
+        InputTypeConvolutional outputType = (InputTypeConvolutional) getOutputType(-1, inputType);
 
         //TODO convolution helper memory use... (CuDNN etc)
 
