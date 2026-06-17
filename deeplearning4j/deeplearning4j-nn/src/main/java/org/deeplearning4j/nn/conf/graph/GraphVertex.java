@@ -33,6 +33,8 @@ import java.io.Serializable;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public abstract class GraphVertex implements Cloneable, Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     @Override
     public abstract GraphVertex clone();
 

@@ -104,6 +104,8 @@ import static org.deeplearning4j.nn.workspace.ArrayType.FF_CACHE;
 @Slf4j
 public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
+    private static final long serialVersionUID = 1L;
+
     @Getter
     protected ComputationGraphConfiguration configuration;
     protected boolean initCalled = false;

@@ -18,23 +18,40 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.optimize.api;
+package org.deeplearning4j.optimize.listeners;
 
-
+import lombok.Data;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 
-import java.io.Serializable;
+import java.net.InetAddress;
 
-@Deprecated
-public abstract class IterationListener extends BaseTrainingListener implements Serializable {
+@Data
+@Slf4j
+public class HostNameTrigger extends FailureTrigger{
+    private final String hostName;
+    private boolean shouldFail = false;
 
-    private static final long serialVersionUID = 1L;
+    public HostNameTrigger(@NonNull String hostName) {
+        this.hostName = hostName;
+    }
 
-    /**
-     * Event listener for each iteration
-     * @param iteration the iteration
-     * @param model the model iterating
-     */
-    public abstract void iterationDone(Model model, int iteration, int epoch);
 
+    @Override
+    public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
+        return shouldFail;
+    }
+
+    @Override
+    public void initialize(){
+        super.initialize();
+        try {
+            String hostname = InetAddress.getLocalHost().getHostName();
+            log.info("FailureTestingListere hostname: {}", hostname);
+            shouldFail = this.hostName.equalsIgnoreCase(hostname);
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
+    }
 }

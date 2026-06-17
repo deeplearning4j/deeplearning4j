@@ -63,6 +63,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 public class ComputationGraphConfiguration implements Serializable, Cloneable {
+    private static final long serialVersionUID = 1L;
     private static Logger log = LoggerFactory.getLogger(ComputationGraphConfiguration.class);
 
     protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();

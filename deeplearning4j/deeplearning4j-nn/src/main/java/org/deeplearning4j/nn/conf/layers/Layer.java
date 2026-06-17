@@ -53,6 +53,8 @@ import java.util.*;
 @NoArgsConstructor
 public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
 
+    private static final long serialVersionUID = 1L;
+
     protected String layerName;
     protected IDropout iDropout;
     protected List<LayerConstraint> constraints;

@@ -35,6 +35,8 @@ import java.util.*;
 @Slf4j
 public class FailureTestingListener implements TrainingListener, Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private final FailureTrigger trigger;
     private final FailureMode failureMode;
 

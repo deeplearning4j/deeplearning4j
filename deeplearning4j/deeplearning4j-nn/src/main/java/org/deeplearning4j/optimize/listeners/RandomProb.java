@@ -18,23 +18,33 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.optimize.api;
+package org.deeplearning4j.optimize.listeners;
 
-
+import lombok.Data;
 import org.deeplearning4j.nn.api.Model;
 
-import java.io.Serializable;
+import java.util.Random;
 
-@Deprecated
-public abstract class IterationListener extends BaseTrainingListener implements Serializable {
+@Data
+public class RandomProb extends FailureTrigger {
 
-    private static final long serialVersionUID = 1L;
+    private final CallType callType;
+    private final double probability;
+    private Random rng;
 
-    /**
-     * Event listener for each iteration
-     * @param iteration the iteration
-     * @param model the model iterating
-     */
-    public abstract void iterationDone(Model model, int iteration, int epoch);
+    public RandomProb(CallType callType, double probability){
+        this.callType = callType;
+        this.probability = probability;
+    }
 
+    @Override
+    public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
+        return (this.callType == CallType.ANY || callType == this.callType) && rng.nextDouble() < probability;
+    }
+
+    @Override
+    public void initialize(){
+        super.initialize();
+        this.rng = new Random();
+    }
 }

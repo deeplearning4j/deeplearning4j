@@ -30,6 +30,9 @@ import java.io.Serializable;
 
 @Slf4j
 public class ScoreIterationListener extends BaseTrainingListener implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private int printIterations = 10;
 
     /**

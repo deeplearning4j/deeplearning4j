@@ -95,6 +95,8 @@ import java.util.*;
 @Slf4j
 public class MultiLayerNetwork implements Serializable, Classifier, Layer, NeuralNetwork {
 
+    private static final long serialVersionUID = 1L;
+
     //the hidden neural network layers (including output layer)
     @Getter
     protected Layer[] layers;

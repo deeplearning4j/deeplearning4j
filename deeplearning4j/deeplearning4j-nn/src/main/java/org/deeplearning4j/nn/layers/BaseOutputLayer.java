@@ -48,6 +48,8 @@ import java.util.List;
 public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseOutputLayer>
         extends BaseLayer<LayerConfT> implements Serializable, IOutputLayer {
 
+    private static final long serialVersionUID = 1L;
+
     //current input and label matrices
     @Getter
     protected INDArray labels;

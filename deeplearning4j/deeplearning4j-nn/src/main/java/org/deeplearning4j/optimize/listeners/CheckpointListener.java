@@ -39,6 +39,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class CheckpointListener extends BaseTrainingListener implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private enum KeepMode {ALL, LAST, LAST_AND_EVERY};
     private static final String[] MODEL_TYPES = new String[]{"MultiLayerNetwork", "ComputationGraph", "Model"};
 

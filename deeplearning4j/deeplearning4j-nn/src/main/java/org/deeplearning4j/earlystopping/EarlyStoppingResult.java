@@ -28,6 +28,9 @@ import java.util.Map;
 
 @Data
 public class EarlyStoppingResult<T extends Model> implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     public enum TerminationReason {
         Error, IterationTerminationCondition, EpochTerminationCondition
     }

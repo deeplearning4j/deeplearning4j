@@ -18,23 +18,20 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.optimize.api;
+package org.deeplearning4j.nn.updater;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import org.deeplearning4j.nn.api.Trainable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
-import org.deeplearning4j.nn.api.Model;
-
-import java.io.Serializable;
-
-@Deprecated
-public abstract class IterationListener extends BaseTrainingListener implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * Event listener for each iteration
-     * @param iteration the iteration
-     * @param model the model iterating
-     */
-    public abstract void iterationDone(Model model, int iteration, int epoch);
-
+@AllArgsConstructor
+@Data
+public class ParamState {
+    private final Trainable layer;
+    private final String paramName;
+    private final int paramOffsetStart;
+    private final int paramOffsetEnd;
+    private final INDArray paramView;
+    private final INDArray gradView;
 }

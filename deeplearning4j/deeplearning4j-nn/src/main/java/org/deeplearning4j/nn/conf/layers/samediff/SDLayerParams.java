@@ -37,6 +37,8 @@ import java.util.*;
 @Data
 public class SDLayerParams implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private Map<String, long[]> weightParams = new LinkedHashMap<>();
     private Map<String, long[]> biasParams = new LinkedHashMap<>();
 

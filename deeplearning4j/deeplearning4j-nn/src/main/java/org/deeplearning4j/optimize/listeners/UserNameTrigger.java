@@ -18,23 +18,30 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.optimize.api;
+package org.deeplearning4j.optimize.listeners;
 
-
+import lombok.Data;
+import lombok.NonNull;
 import org.deeplearning4j.nn.api.Model;
 
-import java.io.Serializable;
+@Data
+public class UserNameTrigger extends FailureTrigger {
+    private final String userName;
+    private boolean shouldFail = false;
 
-@Deprecated
-public abstract class IterationListener extends BaseTrainingListener implements Serializable {
+    public UserNameTrigger(@NonNull String userName) {
+        this.userName = userName;
+    }
 
-    private static final long serialVersionUID = 1L;
 
-    /**
-     * Event listener for each iteration
-     * @param iteration the iteration
-     * @param model the model iterating
-     */
-    public abstract void iterationDone(Model model, int iteration, int epoch);
+    @Override
+    public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
+        return shouldFail;
+    }
 
+    @Override
+    public void initialize(){
+        super.initialize();
+        shouldFail = this.userName.equalsIgnoreCase(System.getProperty("user.name"));
+    }
 }

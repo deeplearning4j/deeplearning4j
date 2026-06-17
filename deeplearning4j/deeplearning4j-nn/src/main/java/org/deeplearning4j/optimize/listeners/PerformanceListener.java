@@ -42,6 +42,9 @@ import java.util.Map;
 
 @Slf4j
 public class PerformanceListener extends BaseTrainingListener implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private final int frequency;
     private transient ThreadLocal<Double> samplesPerSec = new ThreadLocal<>();
     private transient ThreadLocal<Double> batchesPerSec = new ThreadLocal<>();

@@ -18,23 +18,35 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.optimize.api;
+package org.deeplearning4j.optimize.listeners;
 
-
+import lombok.Data;
 import org.deeplearning4j.nn.api.Model;
 
 import java.io.Serializable;
 
-@Deprecated
-public abstract class IterationListener extends BaseTrainingListener implements Serializable {
+@Data
+public abstract class FailureTrigger implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * Event listener for each iteration
-     * @param iteration the iteration
-     * @param model the model iterating
-     */
-    public abstract void iterationDone(Model model, int iteration, int epoch);
+    private boolean initialized = false;
 
+    /**
+     * If true: trigger the failure. If false: don't trigger failure
+     * @param callType  Type of call
+     * @param iteration Iteration number
+     * @param epoch     Epoch number
+     * @param model     Model
+     * @return
+     */
+    public abstract boolean triggerFailure(CallType callType, int iteration, int epoch, Model model);
+
+    public boolean initialized(){
+        return initialized;
+    }
+
+    public void initialize(){
+        this.initialized = true;
+    }
 }

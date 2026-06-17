@@ -18,23 +18,29 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.optimize.api;
+package org.deeplearning4j.optimize.listeners;
 
-
+import lombok.Data;
 import org.deeplearning4j.nn.api.Model;
 
-import java.io.Serializable;
+@Data
+public class TimeSinceInitializedTrigger extends FailureTrigger {
 
-@Deprecated
-public abstract class IterationListener extends BaseTrainingListener implements Serializable {
+    private final long msSinceInit;
+    private long initTime;
 
-    private static final long serialVersionUID = 1L;
+    public TimeSinceInitializedTrigger(long msSinceInit){
+        this.msSinceInit = msSinceInit;
+    }
 
-    /**
-     * Event listener for each iteration
-     * @param iteration the iteration
-     * @param model the model iterating
-     */
-    public abstract void iterationDone(Model model, int iteration, int epoch);
+    @Override
+    public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
+        return (System.currentTimeMillis() - initTime) > msSinceInit;
+    }
 
+    @Override
+    public void initialize(){
+        super.initialize();
+        this.initTime = System.currentTimeMillis();
+    }
 }

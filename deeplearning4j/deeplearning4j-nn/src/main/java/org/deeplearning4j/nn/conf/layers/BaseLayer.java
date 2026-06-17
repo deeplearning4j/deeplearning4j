@@ -50,6 +50,8 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 public abstract class BaseLayer extends Layer implements Serializable, Cloneable {
 
+    private static final long serialVersionUID = 1L;
+
     protected IActivation activationFn;
     protected IWeightInit weightInitFn;
     protected double biasInit;

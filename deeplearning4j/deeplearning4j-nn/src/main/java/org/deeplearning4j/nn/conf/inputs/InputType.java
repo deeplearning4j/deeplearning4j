@@ -38,6 +38,8 @@ import java.util.Arrays;
 @Slf4j
 public abstract class InputType implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * The type of activations in/out of a given GraphVertex<br>
      * FF: Standard feed-foward (2d minibatch, 1d per example) data<br>

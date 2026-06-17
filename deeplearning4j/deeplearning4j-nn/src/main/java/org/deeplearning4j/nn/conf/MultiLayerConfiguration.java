@@ -68,6 +68,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MultiLayerConfiguration implements Serializable, Cloneable {
 
+    private static final long serialVersionUID = 1L;
+
     protected List<NeuralNetConfiguration> confs;
     protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected BackpropType backpropType = BackpropType.Standard;

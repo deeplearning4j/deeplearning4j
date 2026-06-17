@@ -18,23 +18,6 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.optimize.api;
+package org.deeplearning4j.optimize.listeners;
 
-
-import org.deeplearning4j.nn.api.Model;
-
-import java.io.Serializable;
-
-@Deprecated
-public abstract class IterationListener extends BaseTrainingListener implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * Event listener for each iteration
-     * @param iteration the iteration
-     * @param model the model iterating
-     */
-    public abstract void iterationDone(Model model, int iteration, int epoch);
-
-}
+public enum FailureMode {OOM, SYSTEM_EXIT_1, ILLEGAL_STATE, INFINITE_SLEEP}

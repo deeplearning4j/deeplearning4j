@@ -29,6 +29,8 @@ import java.util.List;
 
 public class Tree implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private INDArray vector;
     private INDArray prediction;
     private List<Tree> children;

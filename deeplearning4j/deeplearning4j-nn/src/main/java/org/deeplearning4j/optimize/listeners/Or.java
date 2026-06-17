@@ -18,23 +18,20 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.optimize.api;
-
+package org.deeplearning4j.optimize.listeners;
 
 import org.deeplearning4j.nn.api.Model;
 
-import java.io.Serializable;
+public class Or extends And {
+    public Or(FailureTrigger... triggers) {
+        super(triggers);
+    }
 
-@Deprecated
-public abstract class IterationListener extends BaseTrainingListener implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * Event listener for each iteration
-     * @param iteration the iteration
-     * @param model the model iterating
-     */
-    public abstract void iterationDone(Model model, int iteration, int epoch);
-
+    @Override
+    public boolean triggerFailure(CallType callType, int iteration, int epoch, Model model) {
+        boolean b = false;
+        for(FailureTrigger ft : triggers)
+            b |= ft.triggerFailure(callType, iteration, epoch, model);
+        return b;
+    }
 }
