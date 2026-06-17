@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -66,7 +67,7 @@ public class FileBatch implements Serializable {
     private static int maxZipEntries = getConfiguredMaxEntries();
 
     private static long getConfiguredMaxSize() {
-        String prop = System.getProperty("nd4j.filebatch.maxZipSize");
+        String prop = System.getProperty(ND4JSystemProperties.ND4J_FILEBATCH_MAX_ZIP_SIZE);
         if (prop != null) {
             try {
                 return Long.parseLong(prop);
@@ -78,7 +79,7 @@ public class FileBatch implements Serializable {
     }
 
     private static double getConfiguredMaxRatio() {
-        String prop = System.getProperty("nd4j.filebatch.maxCompressionRatio");
+        String prop = System.getProperty(ND4JSystemProperties.ND4J_FILEBATCH_MAX_COMPRESSION_RATIO);
         if (prop != null) {
             try {
                 return Double.parseDouble(prop);
@@ -90,7 +91,7 @@ public class FileBatch implements Serializable {
     }
 
     private static int getConfiguredMaxEntries() {
-        String prop = System.getProperty("nd4j.filebatch.maxZipEntries");
+        String prop = System.getProperty(ND4JSystemProperties.ND4J_FILEBATCH_MAX_ZIP_ENTRIES);
         if (prop != null) {
             try {
                 return Integer.parseInt(prop);

@@ -49,7 +49,7 @@ ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::
     bool xIsRank0Empty = (shape::isEmptyConst(x) && shape::rank(x) == 0) || (xEmptyFromArray && shape::rank(x) == 0);
     bool yIsRank0Empty = (shape::isEmptyConst(y) && shape::rank(y) == 0) || (yEmptyFromArray && shape::rank(y) == 0);
     if (xIsRank0Empty || yIsRank0Empty) {
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor::emptyDescriptor(dtype)));
+      shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfo(dtype));
       return shapeList;
     }
 

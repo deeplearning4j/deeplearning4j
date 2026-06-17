@@ -419,7 +419,7 @@ public class BenchmarkRunner {
         // When shape freezing is disabled via system property, graph capture cannot happen
         // regardless of config flags (shapes must be frozen for CUDA graph capture)
         boolean freezeDisabled = "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.DSP_NO_FREEZE));
-        boolean directDisabled = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noDirect"));
+        boolean directDisabled = "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.DSP_NO_DIRECT));
         if (freezeDisabled || directDisabled) {
             return false;
         }

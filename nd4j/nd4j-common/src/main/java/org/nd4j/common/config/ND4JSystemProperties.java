@@ -1910,6 +1910,117 @@ public class ND4JSystemProperties {
      */
     public static final String NATIVE_PLUGIN_PATH = "nd4j.native.plugin.path";
 
+    // ---- FileBatch ZIP security properties ----
+
+    /**
+     * Applicability: FileBatch ZIP reader<br>
+     * Description: Maximum total decompressed size in bytes allowed when reading FileBatch ZIP files.
+     * Protects against zip bomb attacks that could exhaust memory or disk space.
+     * <p>
+     * Default: 1073741824 (1 GB)
+     */
+    public static final String ND4J_FILEBATCH_MAX_ZIP_SIZE = "nd4j.filebatch.maxZipSize";
+
+    /**
+     * Applicability: FileBatch ZIP reader<br>
+     * Description: Maximum allowed compression ratio (uncompressed / compressed size) for FileBatch ZIP entries.
+     * Protects against zip bomb attacks with highly compressed data.
+     * <p>
+     * Default: 100.0
+     */
+    public static final String ND4J_FILEBATCH_MAX_COMPRESSION_RATIO = "nd4j.filebatch.maxCompressionRatio";
+
+    /**
+     * Applicability: FileBatch ZIP reader<br>
+     * Description: Maximum number of entries allowed in a FileBatch ZIP archive.
+     * Protects against zip-based denial-of-service attacks that create many entries.
+     * <p>
+     * Default: 10000
+     */
+    public static final String ND4J_FILEBATCH_MAX_ZIP_ENTRIES = "nd4j.filebatch.maxZipEntries";
+
+    // ---- ArchiveUtils ZIP/TAR security properties ----
+
+    /**
+     * Applicability: ArchiveUtils (ZIP/TAR extraction)<br>
+     * Description: Maximum total decompressed size in bytes allowed when extracting archives.
+     * Protects against zip bomb attacks that could exhaust disk space.
+     * <p>
+     * Default: 10737418240 (10 GB)
+     */
+    public static final String ND4J_ARCHIVE_MAX_UNCOMPRESSED_SIZE = "nd4j.archive.maxUncompressedSize";
+
+    /**
+     * Applicability: ArchiveUtils (ZIP/TAR extraction)<br>
+     * Description: Maximum allowed compression ratio (uncompressed / compressed size) for archive entries.
+     * Protects against zip bomb attacks with highly compressed data.
+     * <p>
+     * Default: 100.0
+     */
+    public static final String ND4J_ARCHIVE_MAX_COMPRESSION_RATIO = "nd4j.archive.maxCompressionRatio";
+
+    /**
+     * Applicability: ArchiveUtils (ZIP/TAR extraction)<br>
+     * Description: Maximum number of entries allowed in an archive.
+     * Protects against zip-based denial-of-service attacks that create many entries.
+     * <p>
+     * Default: 100000
+     */
+    public static final String ND4J_ARCHIVE_MAX_ENTRIES = "nd4j.archive.maxEntries";
+
+    // ---- Frozen decode step diagnostics ----
+
+    /**
+     * Applicability: FrozenDecodeStep (speculative decoding)<br>
+     * Description: When set to "true", dumps the graph summary to the log after
+     * FrozenDecodeStep compilation. Useful for inspecting graph structure for
+     * seqLen&gt;1 edge cases.
+     * <p>
+     * Default: false
+     */
+    public static final String ND4J_FROZEN_SUMMARY = "nd4j.frozen.summary";
+
+    /**
+     * Applicability: FrozenDecodeStep (speculative decoding)<br>
+     * Description: When set to "true", enables debug+verbose ND4J environment logging
+     * during the first (warmup) execution of a FrozenDecodeStep. Useful for tracing
+     * all op shapes during warmup.
+     * <p>
+     * Default: false
+     */
+    public static final String ND4J_FROZEN_DEBUG = "nd4j.frozen.debug";
+
+    // ---- Decode loop diagnostics ----
+
+    /**
+     * Applicability: StaticKvCacheDecodeLoop<br>
+     * Description: When set to "true", enables per-step GPU free-memory diagnostics
+     * during autoregressive decoding. Logs free memory and delta for the first 10 steps.
+     * <p>
+     * Default: false
+     */
+    public static final String ND4J_DECODE_MEMORY_DIAG = "nd4j.decode.memoryDiag";
+
+    /**
+     * Applicability: StaticKvCacheDecodeLoop / DSP padded-shape decode path<br>
+     * Description: When set to "true", disables the DSP padded-shape (static KV) decode
+     * path. Forces the fallback dynamic-shape path for each decode step.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_NO_PADDED = "nd4j.dsp.noPadded";
+
+    // ---- VLM image preprocessing ----
+
+    /**
+     * Applicability: ImageTiler (VLM image preprocessing)<br>
+     * Description: When set to "true", applies a mild sharpening kernel to resized
+     * images before tiling. Helps preserve character edge clarity for OCR-heavy VLM tasks.
+     * <p>
+     * Default: false
+     */
+    public static final String VLM_IMAGE_SHARPEN = "nd4j.vlm.image.sharpen";
+
     private ND4JSystemProperties() {
     }
 }

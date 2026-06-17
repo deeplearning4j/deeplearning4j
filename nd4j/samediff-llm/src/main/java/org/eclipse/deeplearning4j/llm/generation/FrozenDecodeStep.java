@@ -301,7 +301,7 @@ public class FrozenDecodeStep implements AutoCloseable {
         compiled = true;
 
         // Dump model summary to inspect graph structure for seqLen>1 edge cases
-        if ("true".equalsIgnoreCase(System.getProperty("nd4j.frozen.summary"))) {
+        if ("true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.ND4J_FROZEN_SUMMARY))) {
             log.info("=== FrozenDecodeStep Graph Summary (seqLen={}) ===\n{}", seqLen, decoder.summary());
         }
 
@@ -338,7 +338,7 @@ public class FrozenDecodeStep implements AutoCloseable {
         //
         // Enable debug+verbose for first execution (warmup) to trace all op shapes
         boolean enableWarmupDebug = stepCount == 1 &&
-                "true".equalsIgnoreCase(System.getProperty("nd4j.frozen.debug"));
+                "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.ND4J_FROZEN_DEBUG));
         if (enableWarmupDebug) {
             log.info("  [FrozenStep] Enabling debug+verbose for warmup execution (step 1)");
             Nd4j.getEnvironment().setDebug(true);

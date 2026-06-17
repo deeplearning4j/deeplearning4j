@@ -28,6 +28,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -68,7 +69,7 @@ public class ArchiveUtils {
     private static int maxEntries = getConfiguredMaxEntries();
 
     private static long getConfiguredMaxSize() {
-        String prop = System.getProperty("nd4j.archive.maxUncompressedSize");
+        String prop = System.getProperty(ND4JSystemProperties.ND4J_ARCHIVE_MAX_UNCOMPRESSED_SIZE);
         if (prop != null) {
             try {
                 return Long.parseLong(prop);
@@ -80,7 +81,7 @@ public class ArchiveUtils {
     }
 
     private static double getConfiguredMaxRatio() {
-        String prop = System.getProperty("nd4j.archive.maxCompressionRatio");
+        String prop = System.getProperty(ND4JSystemProperties.ND4J_ARCHIVE_MAX_COMPRESSION_RATIO);
         if (prop != null) {
             try {
                 return Double.parseDouble(prop);
@@ -92,7 +93,7 @@ public class ArchiveUtils {
     }
 
     private static int getConfiguredMaxEntries() {
-        String prop = System.getProperty("nd4j.archive.maxEntries");
+        String prop = System.getProperty(ND4JSystemProperties.ND4J_ARCHIVE_MAX_ENTRIES);
         if (prop != null) {
             try {
                 return Integer.parseInt(prop);
