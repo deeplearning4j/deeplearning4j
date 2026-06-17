@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.model.benchmark;
 
 import lombok.Getter;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 /**
  * Unified benchmark configuration for model performance testing.
@@ -186,7 +187,7 @@ public class BenchmarkConfig {
     }
 
     private static int cpuMaxTokens() {
-        return Integer.parseInt(System.getProperty("bench.max.tokens", "20"));
+        return Integer.parseInt(System.getProperty(ND4JSystemProperties.BENCH_MAX_TOKENS, "20"));
     }
 
     // ─── GPU benchmark factory methods ──────────────────────────────────────

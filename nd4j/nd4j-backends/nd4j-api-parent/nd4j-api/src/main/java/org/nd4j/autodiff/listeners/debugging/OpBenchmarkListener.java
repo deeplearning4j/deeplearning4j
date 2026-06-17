@@ -21,6 +21,7 @@
 package org.nd4j.autodiff.listeners.debugging;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
 import org.nd4j.autodiff.listeners.Operation;
@@ -37,6 +38,7 @@ import org.nd4j.common.util.ArrayUtil;
 import java.text.DecimalFormat;
 import java.util.*;
 
+@Slf4j
 @Getter
 public class OpBenchmarkListener extends BaseListener {
 
@@ -101,7 +103,7 @@ public class OpBenchmarkListener extends BaseListener {
         long now = System.currentTimeMillis();
 
         if (mode == Mode.SINGLE_ITER_PRINT && printActive && (now-start) > this.minRuntime) {
-            System.out.println(getOpString(op, now));
+            log.info("{}", getOpString(op, now));
         } else if (mode == Mode.AGGREGATE) {
             if(aggregateModeMap == null)
                 aggregateModeMap = new LinkedHashMap<>();

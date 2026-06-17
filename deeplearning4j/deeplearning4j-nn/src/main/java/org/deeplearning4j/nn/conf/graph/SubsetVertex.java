@@ -64,7 +64,7 @@ public class SubsetVertex extends GraphVertex {
 
     @Override
     public int hashCode() {
-        return new Integer(from).hashCode() ^ new Integer(to).hashCode();
+        return Integer.valueOf(from).hashCode() ^ Integer.valueOf(to).hashCode();
     }
 
     @Override

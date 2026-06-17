@@ -34,6 +34,8 @@ import java.util.Map;
  */
 
 public class CompactModelAndGradient implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private long lastUpdateTime = -1L;
     private Map<String, Map> parameters;
     private Map<String, Map> gradients;

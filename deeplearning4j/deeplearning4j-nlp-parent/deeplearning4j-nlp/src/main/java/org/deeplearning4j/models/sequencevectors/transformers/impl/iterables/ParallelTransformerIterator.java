@@ -71,7 +71,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                 try {
                     buffer.put(futureSequence);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    log.error("Interrupted while buffering sequence future", e);
                 }
             }
         }*/

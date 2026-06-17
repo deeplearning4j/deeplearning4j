@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.llm.eval;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -172,7 +173,7 @@ public class PerplexityEvaluator {
      * Load WikiText-2 test set, downloading if needed.
      */
     public static String loadWikiText2() throws IOException {
-        String cacheDir = System.getProperty("llm.model.cache.dir",
+        String cacheDir = System.getProperty(ND4JSystemProperties.LLM_MODEL_CACHE_DIR,
                 System.getProperty("user.home") + "/.cache/dl4j-llm-models");
         File cacheFile = new File(cacheDir, "wikitext2-test.txt");
 

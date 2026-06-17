@@ -44,6 +44,8 @@ import java.util.*;
 @ToString
 @Data
 public class SbeStatsReport implements StatsReport, AgronaPersistable {
+    private static final long serialVersionUID = 1L;
+
     private String sessionID;
     private String typeID;
     private String workerID;

@@ -21,6 +21,8 @@
 package org.nd4j.python4j;
 
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.bytedeco.cpython.PyObject;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.primitives.Pair;
@@ -39,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class UncheckedPythonInterpreter implements PythonInterpreter {
 
+    private static final Logger log = LoggerFactory.getLogger(UncheckedPythonInterpreter.class);
 
     private static final String ANS = "__ans__";
     private static final String ANS_EQUALS = ANS + " = ";
@@ -132,7 +135,7 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
                 //PythonRefCount.decRef(globalsAns);
 
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Failed to initialize Python interpreter", e);
             } finally {
                 gilLock.unlock();
 

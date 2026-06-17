@@ -76,7 +76,7 @@ public class MatlabRecordReader extends FileRecordReader {
                 if ((chr == '\n') || (chr == '\r')) {
                     isComment = false;
                     if (fileContent.length() > 0)
-                        currRecord.add(new DoubleWritable(new Double(fileContent.toString())));
+                        currRecord.add(new DoubleWritable(Double.parseDouble(fileContent.toString())));
 
                     if (currRecord.size() > 0) {
                         currRecord = new ArrayList<>();
@@ -93,7 +93,7 @@ public class MatlabRecordReader extends FileRecordReader {
                 // separator found?
                 if ((chr == '\t') || (chr == ' ')) {
                     if (fileContent.length() > 0) {
-                        currRecord.add(new DoubleWritable(new Double(fileContent.toString())));
+                        currRecord.add(new DoubleWritable(Double.parseDouble(fileContent.toString())));
                         fileContent = new StringBuilder();
                     }
                 } else {
@@ -103,7 +103,7 @@ public class MatlabRecordReader extends FileRecordReader {
 
             // last number?
             if (fileContent.length() > 0)
-                currRecord.add(new DoubleWritable(new Double(fileContent.toString())));
+                currRecord.add(new DoubleWritable(Double.parseDouble(fileContent.toString())));
 
 
             currIter = records.iterator();

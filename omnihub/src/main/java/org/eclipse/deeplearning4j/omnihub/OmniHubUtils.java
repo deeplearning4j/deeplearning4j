@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.omnihub;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -40,6 +41,7 @@ import java.net.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class OmniHubUtils {
 
 
@@ -143,9 +145,9 @@ public class OmniHubUtils {
                 FileUtils.copyInputStreamToFile(is,destFile);
 
             } catch (MalformedURLException e) {
-                e.printStackTrace();
+                log.error("Malformed URL when downloading from zoo: {}", url, e);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("IO error when downloading from zoo: {}", url, e);
             }
         }
 

@@ -63,6 +63,9 @@ public abstract class AbstractSession<T, O> {
     protected   SameDiffExecutionVisualizer visualizer;
     protected boolean visualizationEnabled = false;                                             // iteration). Value: the calculated
 
+    /** Diagnostic helper — all failure-analysis methods are delegated here. */
+    protected SessionExecutionDiagnostics diagnostics;
+
     /*
      * The dependency tracker is responsible for determining what ops (at what
      * frame/iteration) can be executed next, given
@@ -111,6 +114,8 @@ public abstract class AbstractSession<T, O> {
 
     public AbstractSession(@NonNull SameDiff sameDiff) {
         this.sameDiff = sameDiff;
+        this.diagnostics = new SessionExecutionDiagnostics(sameDiff, nodeValueOutputs, dt,
+                () -> currentFrame);
     }
 
     public boolean contains(String variable, String frame, int iteration, FrameIter parentFrameIter) {
@@ -1071,107 +1076,28 @@ public abstract class AbstractSession<T, O> {
 
 
     /**
-     * Analyze Switch operation execution and return detailed results
+     * Analyze Switch operation execution and return detailed results.
+     * Delegates to {@link SessionExecutionDiagnostics}.
      */
     private SwitchResult analyzeSwitchOperation(SameDiffOp op, ExecutionResult opOutputValues, List<String> inputNames) {
-        SwitchResult result = new SwitchResult();
-        result.operationName = op.getName();
-
-        if (inputNames != null && inputNames.size() >= 2) {
-            // Get predicate input (usually the second input)
-            String predicateVar = inputNames.get(1);
-            result.affectedVariables.addAll(inputNames);
-
-            // Analyze which branch was taken based on outputs
-            if (opOutputValues.hasValues()) {
-                Map<String, SDValue> outputs = opOutputValues.getValueOutputs();
-                int nonNullOutputs = 0;
-                for (Map.Entry<String, SDValue> entry : outputs.entrySet()) {
-                    if (entry.getValue() != null) {
-                        nonNullOutputs++;
-                        if (entry.getKey().endsWith(":0")) {
-                            result.branchTaken = "LEFT";
-                            result.outputIndex = 0;
-                        } else if (entry.getKey().endsWith(":1")) {
-                            result.branchTaken = "RIGHT";
-                            result.outputIndex = 1;
-                        }
-                    }
-                }
-            } else if (opOutputValues.hasSingle()) {
-                // For single output mode, determine branch from which output is non-null
-                for (int i = 0; i < opOutputValues.numResults(); i++) {
-                    if (opOutputValues.resultAt(i) != null) {
-                        result.branchTaken = (i == 0) ? "LEFT" : "RIGHT";
-                        result.outputIndex = i;
-                        break;
-                    }
-                }
-            }
-        }
-
-        return result;
+        return diagnostics.analyzeSwitchOperation(op, opOutputValues, inputNames);
     }
 
     /**
-     * Analyze Merge operation execution and return detailed results
+     * Analyze Merge operation execution and return detailed results.
+     * Delegates to {@link SessionExecutionDiagnostics}.
      */
     private MergeResult analyzeMergeOperation(SameDiffOp op, ExecutionResult opOutputValues, Set<VarId> inputs) {
-        MergeResult result = new MergeResult();
-        result.operationName = op.getName();
-        result.totalInputs = inputs != null ? inputs.size() : 0;
-
-        // Determine which input was selected by the merge operation
-        if (opOutputValues.hasValues()) {
-            Map<String, SDValue> outputs = opOutputValues.getValueOutputs();
-            if (!outputs.isEmpty()) {
-                SDValue mergedOutput = outputs.values().iterator().next();
-                result.mergedValue = mergedOutput;
-
-                // Try to determine which input was selected (this is implementation-specific)
-                if (inputs != null) {
-                    int inputIndex = 0;
-                    for (VarId inputVar : inputs) {
-                        // Compare with actual input values to determine selection
-                        // This would require access to the actual input values
-                        inputIndex++;
-                    }
-                    result.selectedInputIndex = 0; // Default to first input if undetermined
-                }
-            }
-        }
-
-        return result;
+        return diagnostics.analyzeMergeOperation(op, opOutputValues, inputs);
     }
 
     /**
-     * Generate failure context information for debugging
+     * Generate failure context information for debugging.
+     * Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String generateFailureContext(Set<String> allRequired, Set<String> allExecuted,
                                           Map<String, ControlFlowState> controlFlowStates) {
-        StringBuilder context = new StringBuilder();
-        context.append("EXECUTION_FAILED | ");
-
-        Set<String> remaining = new HashSet<>(allRequired);
-        remaining.removeAll(allExecuted);
-
-        context.append("Remaining operations: ").append(remaining.size());
-        if (remaining.size() <= 5) {
-            context.append(" (").append(String.join(", ", remaining)).append(")");
-        }
-
-        // Add control flow state summary
-        long totalSwitches = controlFlowStates.values().stream()
-                .mapToLong(state -> state.switchDecisions.size()).sum();
-        long totalMerges = controlFlowStates.values().stream()
-                .mapToLong(state -> state.mergeDecisions.size()).sum();
-
-        if (totalSwitches > 0 || totalMerges > 0) {
-            context.append(" | Control flow: ").append(totalSwitches).append(" switches, ")
-                    .append(totalMerges).append(" merges");
-        }
-
-        return context.toString();
+        return diagnostics.generateFailureContext(allRequired, allExecuted, controlFlowStates);
     }
 
     /**
@@ -1180,212 +1106,49 @@ public abstract class AbstractSession<T, O> {
     private String generateExecutionSummary(Map<String, ControlFlowState> controlFlowStates,
                                             Set<String> allExecuted,
                                             Map<String, SDValue> outValues) {
-        StringBuilder summary = new StringBuilder();
-        summary.append("SUCCESS: ").append(outValues.size()).append(" outputs generated");
-
-        // Add execution statistics
-        summary.append(" | Total operations: ").append(allExecuted.size());
-
-        // Add control flow statistics
-        long totalExecutions = controlFlowStates.values().stream()
-                .mapToLong(state -> state.executionCount).sum();
-        long totalSwitches = controlFlowStates.values().stream()
-                .mapToLong(state -> state.switchDecisions.size()).sum();
-        long totalMerges = controlFlowStates.values().stream()
-                .mapToLong(state -> state.mergeDecisions.size()).sum();
-
-        if (totalSwitches > 0 || totalMerges > 0) {
-            summary.append(" | Control flow: ").append(totalSwitches).append(" switches, ")
-                    .append(totalMerges).append(" merges");
-        }
-
-        // Add frame information
-        Set<String> uniqueFrames = controlFlowStates.values().stream()
-                .map(state -> state.currentFrame)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        if (uniqueFrames.size() > 1) {
-            summary.append(" | Frames used: ").append(uniqueFrames.size());
-        }
-
-        // Add performance metrics
-        summary.append(" | Avg ops per control flow op: ");
-        if (totalSwitches + totalMerges > 0) {
-            summary.append(String.format("%.1f", (double) allExecuted.size() / (totalSwitches + totalMerges)));
-        } else {
-            summary.append("N/A");
-        }
-
-        return summary.toString();
+        return diagnostics.generateExecutionSummary(controlFlowStates, allExecuted, outValues);
     }
 
     /**
-     * Print detailed control flow analysis
+     * Print detailed control flow analysis. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private void printControlFlowAnalysis(Map<String, ControlFlowState> controlFlowStates) {
-        if (log.isDebugEnabled()) {
-            log.debug("=== CONTROL FLOW ANALYSIS ===");
-
-            for (Map.Entry<String, ControlFlowState> entry : controlFlowStates.entrySet()) {
-                String opName = entry.getKey();
-                ControlFlowState state = entry.getValue();
-
-                if (!state.switchDecisions.isEmpty() || !state.mergeDecisions.isEmpty() ||
-                        !state.frameTransitions.isEmpty()) {
-
-                    log.debug("Operation: {}", opName);
-                    log.debug("  Execution count: {}", state.executionCount);
-                    log.debug("  Current frame: {}:{}", state.currentFrame, state.currentIteration);
-
-                    if (!state.frameTransitions.isEmpty()) {
-                        log.debug("  Frame transitions: {}", String.join(" → ", state.frameTransitions));
-                    }
-
-                    if (!state.switchDecisions.isEmpty()) {
-                        log.debug("  Switch decisions:");
-                        for (SwitchResult switch_result : state.switchDecisions) {
-                            log.debug("    {}", switch_result);
-                        }
-                    }
-
-                    if (!state.mergeDecisions.isEmpty()) {
-                        log.debug("  Merge decisions:");
-                        for (MergeResult merge : state.mergeDecisions) {
-                            log.debug("    {}", merge);
-                        }
-                    }
-
-                    log.debug("");
-                }
-            }
-
-            // Print summary statistics
-            long totalControlFlowOps = controlFlowStates.values().stream()
-                    .mapToLong(state -> state.switchDecisions.size() + state.mergeDecisions.size())
-                    .sum();
-
-            if (totalControlFlowOps > 0) {
-                log.debug("=== CONTROL FLOW SUMMARY ===");
-                log.debug("Total control flow operations: {}", totalControlFlowOps);
-
-                Map<String, Long> branchCounts = controlFlowStates.values().stream()
-                        .flatMap(state -> state.switchDecisions.stream())
-                        .collect(Collectors.groupingBy(
-                                result -> result.branchTaken != null ? result.branchTaken : "UNKNOWN",
-                                Collectors.counting()
-                        ));
-
-                if (!branchCounts.isEmpty()) {
-                    log.debug("Branch distribution: {}", branchCounts);
-                }
-
-                Set<String> framesUsed = controlFlowStates.values().stream()
-                        .map(state -> state.currentFrame)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet());
-
-                log.debug("Frames involved in control flow: {}", framesUsed);
-                log.debug("===============================");
-            }
-        }
+        diagnostics.printControlFlowAnalysis(controlFlowStates);
     }
+
     /**
-     * Helper method to convert original ExecType to visualizer ExecType
+     * Convert ExecType. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private ExecType convertExecType(ExecType originalType) {
-        switch (originalType) {
-            case OP: return ExecType.OP;
-            case VARIABLE: return ExecType.VARIABLE;
-            case CONSTANT: return ExecType.CONSTANT;
-            case PLACEHOLDER: return ExecType.PLACEHOLDER;
-            case SWITCH_L: return ExecType.SWITCH_L;
-            case SWITCH_R: return ExecType.SWITCH_R;
-            case EXEC_START: return ExecType.EXEC_START;
-            case CONTROL_DEP: return ExecType.CONTROL_DEP;
-            default: return ExecType.OP;
-        }
+        return diagnostics.convertExecType(originalType);
     }
 
     /**
-     * Helper method to convert original FrameIter to visualizer FrameIter
+     * Convert FrameIter. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private FrameIter convertFrameIter(FrameIter originalFrameIter) {
-        if (originalFrameIter == null) {
-            return null;
-        }
-
-        FrameIter parentFrame = null;
-        if (originalFrameIter.getParentFrame() != null) {
-            parentFrame = convertFrameIter(originalFrameIter.getParentFrame());
-        }
-
-        return new FrameIter(
-                originalFrameIter.getFrame(),
-                originalFrameIter.getIteration(),
-                parentFrame
-        );
+        return diagnostics.convertFrameIter(originalFrameIter);
     }
 
     /**
-     * Helper method to get input names for an execution step
+     * Helper method to get input names for an execution step. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private List<String> getStepInputs(ExecStep es) {
-        List<String> inputs = new ArrayList<>();
-
-        if (es.getType() == ExecType.OP) {
-            String opName = es.getName();
-            SameDiffOp op = sameDiff.getOps().get(opName);
-            if (op != null) {
-                List<String> inputNames = op.getInputsToOp();
-                if (inputNames != null) {
-                    inputs.addAll(inputNames);
-                }
-            }
-        }
-
-        return inputs;
+        return diagnostics.getStepInputs(es);
     }
 
     /**
-     * Helper method to get output names for an execution step
+     * Helper method to get output names for an execution step. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private List<String> getStepOutputs(ExecStep es) {
-        List<String> outputs = new ArrayList<>();
-
-        if (es.getType() == ExecType.OP) {
-            String opName = es.getName();
-            SameDiffOp op = sameDiff.getOps().get(opName);
-            if (op != null) {
-                List<String> outputNames = op.getOutputsOfOp();
-                if (outputNames != null) {
-                    outputs.addAll(outputNames);
-                }
-            }
-        } else if (es.getType() == ExecType.VARIABLE || es.getType() == ExecType.CONSTANT || es.getType() == ExecType.PLACEHOLDER) {
-            outputs.add(es.getName());
-        }
-
-        return outputs;
+        return diagnostics.getStepOutputs(es);
     }
 
     /**
-     * Helper method to get input names for visualization from VarIds and constants
+     * Helper method to get input names for visualization. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private List<String> getInputNamesForVisualization(Set<VarId> inputs, Set<String> constAndPhInputs) {
-        List<String> result = new ArrayList<>();
-
-        if (inputs != null) {
-            for (VarId vid : inputs) {
-                result.add(vid.getVariable());
-            }
-        }
-
-        if (constAndPhInputs != null) {
-            result.addAll(constAndPhInputs);
-        }
-
-        return result;
+        return diagnostics.getInputNamesForVisualization(inputs, constAndPhInputs);
     }
 
     private FrameIter getExitIter(ExecStep es) {
@@ -1434,1592 +1197,229 @@ public abstract class AbstractSession<T, O> {
     }
 
     /**
-     * Generate a comprehensive failure report
-     */
-    /**
-     * Generate a comprehensive failure report
+     * Generate a comprehensive failure report. Delegates to {@link SessionExecutionDiagnostics}.
      */
     public String generateFailureReport(Set<String> allRequired, Set<String> allExecuted,
                                         Map<String, ControlFlowState> controlFlowStates, int step) {
-        StringBuilder report = new StringBuilder();
-
-        report.append("=== EXECUTION FAILURE DETAILED REPORT ===\n");
-        report.append("Timestamp: ").append(new java.util.Date()).append("\n");
-        report.append("Failed at step: ").append(step).append("\n");
-        report.append("Progress: ").append(allExecuted.size()).append("/").append(allRequired.size())
-                .append(" (").append(String.format("%.1f%%", (double) allExecuted.size() / allRequired.size() * 100))
-                .append(")\n\n");
-
-        // Remaining operations summary
-        Set<String> remaining = new HashSet<>(allRequired);
-        remaining.removeAll(allExecuted);
-
-        report.append("=== REMAINING OPERATIONS (").append(remaining.size()).append(") ===\n");
-        for (String remainingOp : remaining) {
-            report.append(analyzeRemainingOperation(remainingOp)).append("\n\n");
-        }
-
-        // Control flow analysis
-        if (!controlFlowStates.isEmpty()) {
-            report.append("=== CONTROL FLOW ANALYSIS ===\n");
-            for (Map.Entry<String, ControlFlowState> entry : controlFlowStates.entrySet()) {
-                ControlFlowState state = entry.getValue();
-                if (!state.switchDecisions.isEmpty() || !state.mergeDecisions.isEmpty()) {
-                    report.append("Operation: ").append(entry.getKey()).append("\n");
-                    report.append("  Executions: ").append(state.executionCount).append("\n");
-                    report.append("  Frame: ").append(state.currentFrame).append(":").append(state.currentIteration).append("\n");
-
-                    if (!state.switchDecisions.isEmpty()) {
-                        report.append("  Switch decisions: ").append(state.switchDecisions.size()).append("\n");
-                        for (SwitchResult result : state.switchDecisions) {
-                            report.append("    ").append(result).append("\n");
-                        }
-                    }
-
-                    if (!state.mergeDecisions.isEmpty()) {
-                        report.append("  Merge decisions: ").append(state.mergeDecisions.size()).append("\n");
-                        for (MergeResult result : state.mergeDecisions) {
-                            report.append("    ").append(result).append("\n");
-                        }
-                    }
-                    report.append("\n");
-                }
-            }
-        }
-
-        // Dependency tracker state
-        report.append("=== DEPENDENCY TRACKER STATE ===\n");
-        report.append("Total satisfied dependencies: ").append(dt.getSatisfiedDependencies().size()).append("\n");
-        report.append("Has new satisfied: ").append(dt.hasNewAllSatisfied()).append("\n");
-        report.append("All satisfied count: ").append(dt.getAllSatisfied().size()).append("\n");
-        report.append("Queue size: ").append(dt.getAllSatisfiedQueue().size()).append("\n");
-
-        // Break down satisfied items by type
-        int opCount = 0, varCount = 0, constCount = 0, placeholderCount = 0, otherCount = 0;
-        for (Object satisfied : dt.getAllSatisfied()) {
-            if (satisfied instanceof ExecStep) {
-                ExecStep step2 = (ExecStep) satisfied;
-                switch (step2.getType()) {
-                    case OP:
-                    case SWITCH_L:
-                    case SWITCH_R:
-                        opCount++;
-                        break;
-                    case VARIABLE:
-                        varCount++;
-                        break;
-                    case CONSTANT:
-                        constCount++;
-                        break;
-                    case PLACEHOLDER:
-                        placeholderCount++;
-                        break;
-                    default:
-                        otherCount++;
-                        break;
-                }
-            }
-        }
-        report.append("Satisfied breakdown: ").append(opCount).append(" ops, ")
-                .append(varCount).append(" vars, ").append(constCount).append(" constants, ")
-                .append(placeholderCount).append(" placeholders, ").append(otherCount).append(" other\n");
-
-        // Variable availability summary
-        report.append("\n=== VARIABLE AVAILABILITY ===\n");
-        Set<String> allVariables = sameDiff.variableMap().keySet();
-        int availableCount = 0;
-        for (String var : allVariables) {
-            if (isVariableAvailable(var)) {
-                availableCount++;
-            }
-        }
-        report.append("Available variables: ").append(availableCount).append("/").append(allVariables.size()).append("\n");
-
-        // Show some unavailable variables if there are any
-        List<String> unavailableVars = new ArrayList<>();
-        for (String var : allVariables) {
-            if (!isVariableAvailable(var)) {
-                unavailableVars.add(var);
-                if (unavailableVars.size() >= 10) break; // Limit to first 10
-            }
-        }
-        if (!unavailableVars.isEmpty()) {
-            report.append("Some unavailable variables: ").append(unavailableVars).append("\n");
-        }
-
-        // Frame information if available
-        if (getCurrentFrame() != null) {
-            report.append("\n=== FRAME INFORMATION ===\n");
-            report.append("Current frame: ").append(getCurrentFrame()).append("\n");
-
-            Set<String> frameVars = getVariablesInCurrentFrame();
-            if (frameVars != null) {
-                report.append("Variables in current frame: ").append(frameVars.size()).append("\n");
-            }
-        }
-
-        report.append("\n=== END FAILURE REPORT ===\n");
-
-        return report.toString();
+        return diagnostics.generateFailureReport(allRequired, allExecuted, controlFlowStates, step);
     }
 
 
     /**
-     * Get comprehensive dependency information for debugging
-     */
-    /**
-     * Get comprehensive dependency information for debugging
+     * Get comprehensive dependency information for debugging. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private Map<String, Object> getDebugDependencyInfo(String opName) {
-        Map<String, Object> info = new HashMap<>();
-
-        // Basic operation info
-        SameDiffOp op = sameDiff.getOps().get(opName);
-        if (op != null) {
-            info.put("operationType", op.getOp().getClass().getSimpleName());
-            info.put("inputs", op.getInputsToOp());
-            info.put("outputs", op.getOutputsOfOp());
-            info.put("controlDeps", op.getControlDeps());
-        }
-
-        // Execution step info - find steps related to this operation
-        List<Map<String, Object>> stepInfo = new ArrayList<>();
-
-        // Check in satisfied set
-        for (Object satisfied : dt.getAllSatisfied()) {
-            if (satisfied instanceof ExecStep) {
-                ExecStep step = (ExecStep) satisfied;
-                if (step.getName().equals(opName)) {
-                    Map<String, Object> stepData = new HashMap<>();
-                    stepData.put("type", step.getType());
-                    stepData.put("satisfied", true); // It's in satisfied set
-                    stepData.put("location", "satisfied_set");
-                    if (step.getFrameIter() != null) {
-                        stepData.put("frame", step.getFrameIter().getFrame());
-                        stepData.put("iteration", step.getFrameIter().getIteration());
-                    }
-                    stepInfo.add(stepData);
-                }
-            }
-        }
-
-        // Check in queue
-        for (Object queued : dt.getAllSatisfiedQueue()) {
-            if (queued instanceof ExecStep) {
-                ExecStep step = (ExecStep) queued;
-                if (step.getName().equals(opName)) {
-                    Map<String, Object> stepData = new HashMap<>();
-                    stepData.put("type", step.getType());
-                    stepData.put("satisfied", false);
-                    stepData.put("location", "queue");
-                    if (step.getFrameIter() != null) {
-                        stepData.put("frame", step.getFrameIter().getFrame());
-                        stepData.put("iteration", step.getFrameIter().getIteration());
-                    }
-                    stepInfo.add(stepData);
-                }
-            }
-        }
-
-        info.put("executionSteps", stepInfo);
-
-        // Input availability
-        if (op != null && op.getInputsToOp() != null) {
-            Map<String, Object> inputInfo = new HashMap<>();
-            for (String input : op.getInputsToOp()) {
-                Map<String, Object> inputData = new HashMap<>();
-                inputData.put("available", isVariableAvailable(input));
-                inputData.put("producer", findVariableProducer(input));
-                if (findVariableProducer(input) != null) {
-                    inputData.put("producerExecuted", isOperationExecuted(findVariableProducer(input)));
-                }
-                inputInfo.put(input, inputData);
-            }
-            info.put("inputDetails", inputInfo);
-        }
-
-        // Dependency tracker specific info
-        Map<String, Object> trackerInfo = new HashMap<>();
-        trackerInfo.put("totalSatisfiedDeps", dt.getSatisfiedDependencies().size());
-        trackerInfo.put("hasNewSatisfied", dt.hasNewAllSatisfied());
-        trackerInfo.put("allSatisfiedCount", dt.getAllSatisfied().size());
-        trackerInfo.put("queueSize", dt.getAllSatisfiedQueue().size());
-        info.put("dependencyTracker", trackerInfo);
-
-        return info;
+        return diagnostics.getDebugDependencyInfo(opName);
     }
 
     /**
-     * Analyze if this item is part of a control flow structure
+     * Analyze if this item is part of a control flow structure. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String analyzeControlFlowContext(String itemName) {
-        StringBuilder context = new StringBuilder();
-
-        // Check if this is a variable that feeds into control flow operations
-        List<String> controlFlowConsumers = findControlFlowConsumers(itemName);
-        if (!controlFlowConsumers.isEmpty()) {
-            context.append("CONTROL FLOW CONTEXT: Variable feeds into control flow operations: ");
-            context.append(controlFlowConsumers);
-
-            // Analyze each control flow consumer
-            for (String consumer : controlFlowConsumers) {
-                SameDiffOp consumerOp = sameDiff.getOps().get(consumer);
-                if (consumerOp != null) {
-                    DifferentialFunction func = consumerOp.getOp();
-                    context.append("\n  Consumer: ").append(consumer).append(" (").append(func.getClass().getSimpleName()).append(")");
-
-                    if (func instanceof Switch) {
-                        context.append(" - SWITCH OPERATION");
-                        // Check if this is the predicate for the switch
-                        Switch switchOp = (Switch) func;
-                        if (switchOp.getPredicate() != null && switchOp.getPredicate().name().equals(itemName)) {
-                            context.append(" - THIS IS THE PREDICATE!");
-                        }
-                    } else if (func instanceof Merge) {
-                        context.append(" - MERGE OPERATION");
-                    } else if (func instanceof NextIteration) {
-                        context.append(" - NEXT ITERATION OPERATION");
-                    } else if (func instanceof LoopCond) {
-                        context.append(" - LOOP CONDITION OPERATION");
-                    }
-
-                    // Check if consumer has executed
-                    boolean consumerExecuted = isOperationExecuted(consumer);
-                    context.append(" - Executed: ").append(consumerExecuted ? "✓" : "✗");
-                }
-            }
-        }
-
-        return context.length() > 0 ? context.toString() : null;
+        return diagnostics.analyzeControlFlowContext(itemName);
     }
 
     /**
-     * Analyze potential loop condition issues
+     * Analyze potential loop condition issues. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String analyzeLoopConditionIssues(String itemName) {
-        StringBuilder analysis = new StringBuilder();
-
-        // Look for loop condition patterns
-        String producer = findVariableProducer(itemName);
-        if (producer != null) {
-            SameDiffOp producerOp = sameDiff.getOps().get(producer);
-            if (producerOp != null) {
-                DifferentialFunction func = producerOp.getOp();
-
-                // Check if producer is in a loop structure
-                String producerFrame = getOperationFrame(producer);
-                if (!OUTER_FRAME.equals(producerFrame)) {
-                    analysis.append("LOOP CONDITION ANALYSIS:");
-                    analysis.append("\n  Producer is in frame: ").append(producerFrame);
-
-                    // Check if there are any loop condition operations in this frame
-                    List<String> loopCondOps = findLoopConditionOperations(producerFrame);
-                    if (!loopCondOps.isEmpty()) {
-                        analysis.append("\n  Loop condition operations in frame: ").append(loopCondOps);
-
-                        // Check if loop conditions have been satisfied
-                        for (String loopCondOp : loopCondOps) {
-                            boolean executed = isOperationExecuted(loopCondOp);
-                            analysis.append("\n    ").append(loopCondOp).append(" executed: ").append(executed ? "✓" : "✗");
-
-                            if (!executed) {
-                                // This might be the problem!
-                                analysis.append(" <- POTENTIAL ISSUE: Loop condition not evaluated");
-
-                                // Check what the loop condition depends on
-                                SameDiffOp loopOp = sameDiff.getOps().get(loopCondOp);
-                                if (loopOp != null) {
-                                    List<String> loopInputs = loopOp.getInputsToOp();
-                                    if (loopInputs != null) {
-                                        analysis.append("\n      Loop condition inputs: ");
-                                        for (String input : loopInputs) {
-                                            boolean inputAvailable = isVariableAvailable(input);
-                                            analysis.append(input).append(inputAvailable ? "✓" : "✗").append(" ");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Check for infinite loop indicators
-                    String infiniteLoopCheck = checkForInfiniteLoop(producerFrame);
-                    if (infiniteLoopCheck != null) {
-                        analysis.append("\n  ").append(infiniteLoopCheck);
-                    }
-                }
-            }
-        }
-
-        return analysis.length() > 0 ? analysis.toString() : null;
+        return diagnostics.analyzeLoopConditionIssues(itemName);
     }
 
 
 
     /**
-     * Analyze a single remaining item (could be operation or variable) for the failure report
+     * Analyze a single remaining item for the failure report. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String analyzeRemainingOperation(String itemName) {
-        StringBuilder analysis = new StringBuilder();
-
-        // First check if it's a variable
-        if (sameDiff.variableMap().containsKey(itemName)) {
-            analysis.append("Variable: ").append(itemName);
-
-            Variable var = sameDiff.getVariables().get(itemName);
-            if (var != null) {
-                SDVariable sdVar = var.getVariable();
-                analysis.append(" (").append(sdVar.getVariableType()).append(")");
-
-                // Check if variable is available
-                boolean available = isVariableAvailable(itemName);
-                analysis.append("\n  Available: ").append(available ? "✓" : "✗");
-
-                if (!available) {
-                    // Find what operation should produce this variable
-                    String producer = findVariableProducer(itemName);
-                    if (producer != null) {
-                        analysis.append("\n  Producer operation: '").append(producer).append("'");
-
-                        // Check if producer has been executed
-                        boolean producerExecuted = isOperationExecuted(producer);
-                        analysis.append("\n  Producer executed: ").append(producerExecuted ? "✓" : "✗");
-
-                        if (!producerExecuted) {
-                            // Analyze why the producer hasn't executed
-                            SameDiffOp producerOp = sameDiff.getOps().get(producer);
-                            if (producerOp != null) {
-                                analysis.append("\n  Producer analysis:");
-                                analysis.append("\n    Type: ").append(producerOp.getOp().getClass().getSimpleName());
-
-                                // Check producer's inputs
-                                List<String> producerInputs = producerOp.getInputsToOp();
-                                if (producerInputs != null && !producerInputs.isEmpty()) {
-                                    analysis.append("\n    Producer inputs: ");
-                                    for (String input : producerInputs) {
-                                        boolean inputAvailable = isVariableAvailable(input);
-                                        analysis.append(input).append(inputAvailable ? "✓" : "✗").append(" ");
-                                    }
-                                }
-
-                                // Check if producer is in execution queue
-                                boolean inQueue = false;
-                                for (Object queued : dt.getAllSatisfiedQueue()) {
-                                    if (queued instanceof ExecStep) {
-                                        ExecStep step = (ExecStep) queued;
-                                        if (step.getName().equals(producer)) {
-                                            inQueue = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                analysis.append("\n    Producer in execution queue: ").append(inQueue ? "✓" : "✗");
-
-                            } else {
-                                analysis.append("\n    ERROR: Producer operation not found in graph");
-                            }
-                        }
-                    } else {
-                        analysis.append("\n  ERROR: No producer operation found for this variable");
-                    }
-                } else {
-                    // Variable is available, so why is it in remaining?
-                    analysis.append("\n  WARNING: Variable is available but still in remaining set");
-                }
-            }
-
-            // Add enhanced control flow analysis
-            analysis.append("\n\n=== CONTROL FLOW ANALYSIS ===");
-
-            // Check if this item is part of a control flow structure
-            String controlFlowContext = analyzeControlFlowContext(itemName);
-            if (controlFlowContext != null) {
-                analysis.append("\n").append(controlFlowContext);
-            }
-
-            // Check for loop condition issues
-            String loopAnalysis = analyzeLoopConditionIssues(itemName);
-            if (loopAnalysis != null) {
-                analysis.append("\n").append(loopAnalysis);
-            }
-
-            return analysis.toString();
-        }
-
-        // Check if it's an operation
-        SameDiffOp op = sameDiff.getOps().get(itemName);
-        if (op != null) {
-            analysis.append("Operation: ").append(itemName);
-
-            DifferentialFunction opFunc = op.getOp();
-            analysis.append(" (").append(opFunc.getClass().getSimpleName()).append(")");
-
-            // Check inputs
-            List<String> inputs = op.getInputsToOp();
-            if (inputs != null && !inputs.isEmpty()) {
-                analysis.append("\n  Inputs: ");
-                for (int i = 0; i < inputs.size(); i++) {
-                    String input = inputs.get(i);
-                    boolean available = isVariableAvailable(input);
-                    analysis.append(input).append(available ? "✓" : "✗");
-                    if (i < inputs.size() - 1) analysis.append(", ");
-                }
-
-                // Check for missing inputs
-                List<String> missingInputs = new ArrayList<>();
-                for (String input : inputs) {
-                    if (!isVariableAvailable(input)) {
-                        missingInputs.add(input);
-                    }
-                }
-
-                if (!missingInputs.isEmpty()) {
-                    analysis.append("\n  Missing inputs: ").append(missingInputs);
-                }
-            } else {
-                analysis.append("\n  No inputs required");
-            }
-
-            // Check if operation has been executed
-            boolean executed = isOperationExecuted(itemName);
-            analysis.append("\n  Executed: ").append(executed ? "✓" : "✗");
-
-            if (!executed) {
-                // Check execution step status
-                boolean foundInQueue = false;
-                for (Object queued : dt.getAllSatisfiedQueue()) {
-                    if (queued instanceof ExecStep) {
-                        ExecStep step = (ExecStep) queued;
-                        if (step.getName().equals(itemName)) {
-                            foundInQueue = true;
-                            break;
-                        }
-                    }
-                }
-                analysis.append("\n  In execution queue: ").append(foundInQueue ? "✓" : "✗");
-            }
-
-            return analysis.toString();
-        }
-
-        // Neither variable nor operation found
-        analysis.append("Unknown item: ").append(itemName);
-        analysis.append("\n  ERROR: Item not found in variables or operations");
-
-        return analysis.toString();
+        return diagnostics.analyzeRemainingOperation(itemName);
     }
 
     /**
-     * Find the operation that produces a given variable
+     * Find the operation that produces a given variable. Delegates to {@link SessionExecutionDiagnostics}.
      */
     public String findVariableProducer(String varName) {
-        // Check constants and variables first
-        if (sameDiff.getVariables().containsKey(varName)) {
-            Variable var = sameDiff.getVariables().get(varName);
-            if (var.getVariable().isConstant() || var.getVariable().getVariableType() == VariableType.VARIABLE) {
-                return varName; // Self-produced
-            }
-        }
-
-        // Check operations that produce this variable
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            SameDiffOp op = entry.getValue();
-            List<String> outputs = op.getOutputsOfOp();
-            if (outputs != null && outputs.contains(varName)) {
-                return entry.getKey();
-            }
-        }
-
-        return null;
+        return diagnostics.findVariableProducer(varName);
     }
 
     /**
-     * Check if a variable is available in the current execution context
+     * Check if a variable is available. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private boolean isVariableAvailable(String varName) {
-        // Check if variable exists in nodeVarOutputs (your variable storage)
-        for (VarId vid : nodeValueOutputs.keySet()) {
-            if (vid.getVariable().equals(varName)) {
-                SDValue value = nodeValueOutputs.get(vid);
-                return value != null;
-            }
-        }
-        return false;
+        return diagnostics.isVariableAvailable(varName);
     }
 
-
     /**
-     * Check if an operation has been executed
+     * Check if an operation has been executed. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private boolean isOperationExecuted(String opName) {
-        // Check if the operation exists in allSatisfied set of dependency tracker
-        // We need to check for ExecStep objects with this operation name
-        for (Object satisfied : dt.getAllSatisfied()) {
-            if (satisfied instanceof ExecStep) {
-                ExecStep step = (ExecStep) satisfied;
-                if (step.getName().equals(opName) &&
-                        (step.getType() == ExecType.OP || step.getType() == ExecType.SWITCH_L || step.getType() == ExecType.SWITCH_R)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return diagnostics.isOperationExecuted(opName);
     }
 
-
-
     /**
-     * Check if there's a dependency path between two operations
-     * Simplified version that checks direct dependencies only
+     * Check if there is a direct dependency path. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private boolean hasDependencyPath(String from, String to) {
-        if (from.equals(to)) {
-            return true;
-        }
-
-        // Get direct dependencies for the 'from' operation
-        SameDiffOp fromOp = sameDiff.getOps().get(from);
-        if (fromOp != null) {
-            List<String> inputs = fromOp.getInputsToOp();
-            if (inputs != null) {
-                // Check if 'to' operation produces any of the inputs for 'from'
-                for (String input : inputs) {
-                    String producer = findVariableProducer(input);
-                    if (to.equals(producer)) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
+        return diagnostics.hasDependencyPath(from, to);
     }
 
-
-
     /**
-     * Analyze execution step status in dependency tracker
+     * Log execution step status. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private void analyzeExecutionStepStatus(String opName) {
-        log.error("    Execution step analysis for '{}':", opName);
-
-        // Find all execution steps for this operation by checking satisfied dependencies
-        boolean foundStep = false;
-        for (Object satisfied : dt.getAllSatisfied()) {
-            if (satisfied instanceof ExecStep) {
-                ExecStep step = (ExecStep) satisfied;
-                if (step.getName().equals(opName)) {
-                    foundStep = true;
-                    boolean isSatisfied = dt.isSatisfied(step);
-
-                    log.error("      Step {}: satisfied={}, frame={}:{}",
-                            step.getType(), isSatisfied,
-                            step.getFrameIter() != null ? step.getFrameIter().getFrame() : "null",
-                            step.getFrameIter() != null ? step.getFrameIter().getIteration() : "null");
-
-                    // Check dependencies of this step
-                    DependencyList<ExecStep, ExecStep> deps = dt.getDependencies(step);
-                    if (deps != null && deps.getDependencies() != null) {
-                        for (ExecStep dep : deps.getDependencies()) {
-                            boolean depSatisfied = dt.isSatisfied(dep);
-                            log.error("        Depends on {}: satisfied={}", dep.getName(), depSatisfied);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!foundStep) {
-            log.error("      No execution steps found in satisfied set");
-        }
-    }
-
-    private Object getVariableValue(String varName) {
-        for (Map.Entry<VarId, SDValue> entry : nodeValueOutputs.entrySet()) {
-            if (entry.getKey().getVariable().equals(varName)) {
-                SDValue value = entry.getValue();
-                if (value != null) {
-                    switch (value.getSdValueType()) {
-                        case TENSOR:
-                            return value.getTensorValue();
-                        case LIST:
-                            return value.getListValue();
-                        default:
-                            return value.toString();
-                    }
-                }
-            }
-        }
-
-        if(sameDiff.getConstantArrays().hasArray(varName)) {
-            return sameDiff.getConstantArrays().getArray(varName);
-        }
-
-        return null;
+        diagnostics.analyzeExecutionStepStatus(opName);
     }
 
     /**
-     * Check if a control dependency is satisfied
+     * Get variable value. Delegates to {@link SessionExecutionDiagnostics}.
+     */
+    private Object getVariableValue(String varName) {
+        return diagnostics.getVariableValue(varName);
+    }
+
+    /**
+     * Check if a control dependency is satisfied. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private boolean isControlDependencySatisfied(String controlDep) {
-        // Control dependencies are usually operations that need to complete first
-        return isOperationExecuted(controlDep);
+        return diagnostics.isControlDependencySatisfied(controlDep);
     }
 
-
     /**
-     * Get current execution frame
+     * Get current execution frame. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String getCurrentFrame() {
-        // Return the current frame being executed
-        // This should be tracked in your execution loop
-        return currentFrame != null ? currentFrame : OUTER_FRAME;
+        return diagnostics.getCurrentFrame();
     }
 
     /**
-     * Get the frame for an operation
-     */
-    /**
-     * Get the frame for an operation
+     * Get the frame for an operation. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String getOperationFrame(String opName) {
-        // First check if this is a special frame operation
-        SameDiffOp op = sameDiff.getOps().get(opName);
-        if (op != null && op.getOp() instanceof Enter) {
-            return ((Enter) op.getOp()).getFrameName();
-        }
-
-        // Check in the satisfied execution steps for frame information
-        for (Object satisfied : dt.getAllSatisfied()) {
-            if (satisfied instanceof ExecStep) {
-                ExecStep step = (ExecStep) satisfied;
-                if (step.getName().equals(opName) && step.getFrameIter() != null) {
-                    return step.getFrameIter().getFrame();
-                }
-            }
-        }
-
-        // Check in the queue for frame information
-        for (Object queued : dt.getAllSatisfiedQueue()) {
-            if (queued instanceof ExecStep) {
-                ExecStep step = (ExecStep) queued;
-                if (step.getName().equals(opName) && step.getFrameIter() != null) {
-                    return step.getFrameIter().getFrame();
-                }
-            }
-        }
-
-        // Default to outer frame if no specific frame found
-        return OUTER_FRAME;
+        return diagnostics.getOperationFrame(opName);
     }
 
     /**
-     * Check if a dependency is satisfied
+     * Check if a dependency is satisfied. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private boolean isDependencySatisfied(String dep) {
-        // For variable dependencies, check if the variable is available
-        if (sameDiff.getVariables().containsKey(dep)) {
-            return isVariableAvailable(dep);
-        }
-
-        // For operation dependencies, check if the operation has been executed
-        if (sameDiff.getOps().containsKey(dep)) {
-            return isOperationExecuted(dep);
-        }
-
-        return false;
+        return diagnostics.isDependencySatisfied(dep);
     }
-
-
-    private Set<String> getDependenciesFor(String opName) {
-        Set<String> dependencies = new HashSet<>();
-
-        SameDiffOp op = sameDiff.getOps().get(opName);
-        if (op != null) {
-            List<String> inputs = op.getInputsToOp();
-            if (inputs != null) {
-                dependencies.addAll(inputs);
-            }
-
-            List<String> controlDeps = op.getControlDeps();
-            if (controlDeps != null) {
-                dependencies.addAll(controlDeps);
-            }
-        }
-
-        return dependencies;
-    }
-
 
     /**
-     * Get all variables in the current frame
+     * Get the set of direct dependencies for an op. Delegates to {@link SessionExecutionDiagnostics}.
+     */
+    private Set<String> getDependenciesFor(String opName) {
+        return diagnostics.getDependenciesFor(opName);
+    }
+
+    /**
+     * Get all variables in the current frame. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private Set<String> getVariablesInCurrentFrame() {
-        Set<String> frameVariables = new HashSet<>();
-        String currentFrame = getCurrentFrame();
-
-        for (VarId vid : nodeValueOutputs.keySet()) {
-            if (currentFrame.equals(vid.getFrame())) {
-                frameVariables.add(vid.getVariable());
-            }
-        }
-
-        return frameVariables;
+        return diagnostics.getVariablesInCurrentFrame();
     }
 
     /**
-     * Find all execution steps related to an operation
+     * Find all execution steps for an operation. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private List<ExecStep> findExecutionSteps(String opName) {
-        List<ExecStep> steps = new ArrayList<>();
-
-        // Check in satisfied dependencies
-        for (Object satisfied : dt.getAllSatisfied()) {
-            if (satisfied instanceof ExecStep) {
-                ExecStep step = (ExecStep) satisfied;
-                if (step.getName().equals(opName)) {
-                    steps.add(step);
-                }
-            }
-        }
-
-        // Check in the allSatisfiedQueue (new satisfied items)
-        for (Object queued : dt.getAllSatisfiedQueue()) {
-            if (queued instanceof ExecStep) {
-                ExecStep step = (ExecStep) queued;
-                if (step.getName().equals(opName)) {
-                    steps.add(step);
-                }
-            }
-        }
-
-        return steps;
+        return diagnostics.findExecutionSteps(opName);
     }
 
     /**
-     * Analyze the overall dependency graph state
+     * Log dependency graph state. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private void analyzeDependencyGraphState(Set<String> remainingOps) {
-        log.error("Dependency tracker state:");
-        log.error("  Total satisfied dependencies: {}", dt.getSatisfiedDependencies().size());
-        log.error("  Steps with new satisfied dependencies: {}", dt.hasNewAllSatisfied());
-        log.error("  All satisfied count: {}", dt.getAllSatisfied().size());
-        log.error("  Queue size: {}", dt.getAllSatisfiedQueue().size());
-
-        // Show some details about what's in the satisfied set
-        int opCount = 0, varCount = 0, constCount = 0, placeholderCount = 0;
-        for (Object satisfied : dt.getAllSatisfied()) {
-            if (satisfied instanceof ExecStep) {
-                ExecStep step = (ExecStep) satisfied;
-                switch (step.getType()) {
-                    case OP:
-                    case SWITCH_L:
-                    case SWITCH_R:
-                        opCount++;
-                        break;
-                    case VARIABLE:
-                        varCount++;
-                        break;
-                    case CONSTANT:
-                        constCount++;
-                        break;
-                    case PLACEHOLDER:
-                        placeholderCount++;
-                        break;
-                }
-            }
-        }
-
-        log.error("  Satisfied breakdown: {} ops, {} vars, {} constants, {} placeholders",
-                opCount, varCount, constCount, placeholderCount);
-
-        // Note: Circular dependency detection would require traversing the dependency graph
-        // which is complex without access to the internal structure
-        if (remainingOps.size() > 1) {
-            log.error("Multiple operations remaining - potential circular dependency or missing prerequisites");
-        }
+        diagnostics.analyzeDependencyGraphState(remainingOps);
     }
 
     /**
-     * Enhanced execution failed method with detailed logging
-     */
-    /**
-     * Enhanced execution failed method with comprehensive control flow analysis
+     * Build failure message and throw. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private void execFailed(Set<String> userRequestedUnique, Map<String, SDValue> outValues,
                             Set<String> allRequired, Set<String> allExecuted, int step) {
-
-        Set<String> remaining = new HashSet<>(allRequired);
-        remaining.removeAll(allExecuted);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Execution failed at step ").append(step).append("\n");
-        sb.append("Total operations required: ").append(allRequired.size()).append("\n");
-        sb.append("Operations completed: ").append(allExecuted.size()).append("\n");
-        sb.append("Operations remaining: ").append(remaining.size()).append("\n");
-
-        if (remaining.size() <= 10) {
-            sb.append("Remaining operations: ").append(remaining).append("\n");
-        }
-
-        // Add dependency tracker state
-        sb.append("Dependency tracker state:\n");
-        sb.append("  Total satisfied dependencies: ").append(dt.getSatisfiedDependencies().size()).append("\n");
-        sb.append("  Has new satisfied: ").append(dt.hasNewAllSatisfied()).append("\n");
-        sb.append("  All satisfied count: ").append(dt.getAllSatisfied().size()).append("\n");
-
-        // Quick failure pattern detection
-        sb.append("\n=== FAILURE PATTERN DETECTION ===\n");
-        if (remaining.size() == 1) {
-            sb.append("PATTERN: Single stuck item - likely control flow issue\n");
-        } else if (remaining.size() > 1) {
-            sb.append("PATTERN: Multiple stuck items - possible dependency cycle\n");
-        }
-
-        // Check for control flow operations that haven't executed
-        List<String> unexecutedControlFlow = findUnexecutedControlFlowOperations();
-        if (!unexecutedControlFlow.isEmpty()) {
-            sb.append("CRITICAL: Unexecuted control flow operations: ").append(unexecutedControlFlow).append("\n");
-        }
-
-        // Add detailed analysis for each remaining item
-        sb.append("\n=== DETAILED ANALYSIS ===\n");
-        for (String remainingItem : remaining) {
-            sb.append(analyzeRemainingOperation(remainingItem)).append("\n\n");
-        }
-
-
-        visualizer.printCompleteAnalysisReport();
-
-
-        throw new IllegalStateException(sb.toString());
+        diagnostics.execFailed(userRequestedUnique, outValues, allRequired, allExecuted, step, visualizer);
     }
 
     /**
-     * Find control flow operations that haven't been executed
+     * Find unexecuted control flow operations. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private List<String> findUnexecutedControlFlowOperations() {
-        List<String> unexecuted = new ArrayList<>();
-
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            String opName = entry.getKey();
-            SameDiffOp op = entry.getValue();
-            DifferentialFunction func = op.getOp();
-
-            // Check if this is a control flow operation
-            if (func instanceof Switch || func instanceof Merge ||
-                    func instanceof Enter || func instanceof Exit ||
-                    func instanceof NextIteration || func instanceof LoopCond) {
-
-                if (!isOperationExecuted(opName)) {
-                    unexecuted.add(opName + "(" + func.getClass().getSimpleName() + ")");
-                }
-            }
-        }
-
-        return unexecuted;
+        return diagnostics.findUnexecutedControlFlowOperations();
     }
 
     /**
-     * Find operations that consume a variable and are control flow operations
+     * Find control flow consumers for a variable. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private List<String> findControlFlowConsumers(String variableName) {
-        List<String> consumers = new ArrayList<>();
-
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            SameDiffOp op = entry.getValue();
-            List<String> inputs = op.getInputsToOp();
-
-            if (inputs != null && inputs.contains(variableName)) {
-                DifferentialFunction func = op.getOp();
-                if (func instanceof Switch || func instanceof Merge ||
-                        func instanceof NextIteration || func instanceof LoopCond) {
-                    consumers.add(entry.getKey());
-                }
-            }
-        }
-
-        return consumers;
+        return diagnostics.findControlFlowConsumers(variableName);
     }
 
     /**
-     * Find loop condition operations in a specific frame
+     * Find loop condition operations in a frame. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private List<String> findLoopConditionOperations(String frameName) {
-        List<String> loopCondOps = new ArrayList<>();
-
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            SameDiffOp op = entry.getValue();
-            if (op.getOp() instanceof LoopCond) {
-                // Check if this loop condition is in the specified frame
-                String opFrame = getOperationFrame(entry.getKey());
-                if (frameName.equals(opFrame)) {
-                    loopCondOps.add(entry.getKey());
-                }
-            }
-        }
-
-        return loopCondOps;
+        return diagnostics.findLoopConditionOperations(frameName);
     }
 
     /**
-     * Check for infinite loop indicators in a frame
+     * Check for infinite loop indicators. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String checkForInfiniteLoop(String frameName) {
-        // Check if there are NextIteration operations that keep executing
-        int nextIterCount = 0;
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            SameDiffOp op = entry.getValue();
-            if (op.getOp() instanceof NextIteration) {
-                String opFrame = getOperationFrame(entry.getKey());
-                if (frameName.equals(opFrame)) {
-                    nextIterCount++;
-                }
-            }
-        }
-
-        if (nextIterCount > 0) {
-            return "POTENTIAL INFINITE LOOP: Frame has " + nextIterCount + " NextIteration operations";
-        }
-
-        return null;
-    }
-
-
-    private String analyzeControlFlowContextDetailed(String itemName) {
-        StringBuilder context = new StringBuilder();
-
-        // Check if this is a variable that feeds into control flow operations
-        List<String> controlFlowConsumers = findControlFlowConsumers(itemName);
-        if (!controlFlowConsumers.isEmpty()) {
-            context.append("CONTROL FLOW CONTEXT: Variable feeds into control flow operations");
-
-            // Show the current value of this variable across all frames/iterations
-            List<VarId> instances = getVariableInstances(itemName);
-            if (!instances.isEmpty()) {
-                context.append("\n  Variable values across frames/iterations:");
-                for (VarId vid : instances) {
-                    SDValue value = nodeValueOutputs.get(vid);
-                    context.append("\n    Frame: ").append(vid.getFrame())
-                            .append(", Iter: ").append(vid.getIteration())
-                            .append(", Value: ").append(formatValue(value));
-                }
-            }
-
-            // Analyze each control flow consumer in detail
-            for (String consumer : controlFlowConsumers) {
-                SameDiffOp consumerOp = sameDiff.getOps().get(consumer);
-                if (consumerOp != null) {
-                    DifferentialFunction func = consumerOp.getOp();
-                    context.append("\n  Consumer: ").append(consumer).append(" (").append(func.getClass().getSimpleName()).append(")");
-
-                    // Check execution status with frame information
-                    boolean consumerExecuted = isOperationExecuted(consumer);
-                    context.append("\n    Executed: ").append(consumerExecuted ? "✓" : "✗");
-
-                    // Show execution steps for this consumer
-                    context.append("\n    Execution steps:");
-                    boolean foundConsumerSteps = false;
-
-                    for (Object satisfied : dt.getAllSatisfied()) {
-                        if (satisfied instanceof ExecStep) {
-                            ExecStep step = (ExecStep) satisfied;
-                            if (step.getName().equals(consumer)) {
-                                foundConsumerSteps = true;
-                                FrameIter frameIter = step.getFrameIter();
-                                context.append("\n      SATISFIED: ").append(step.getType());
-                                if (frameIter != null) {
-                                    context.append(" Frame: ").append(frameIter.getFrame())
-                                            .append(", Iter: ").append(frameIter.getIteration());
-                                }
-                            }
-                        }
-                    }
-
-                    for (Object queued : dt.getAllSatisfiedQueue()) {
-                        if (queued instanceof ExecStep) {
-                            ExecStep step = (ExecStep) queued;
-                            if (step.getName().equals(consumer)) {
-                                foundConsumerSteps = true;
-                                FrameIter frameIter = step.getFrameIter();
-                                context.append("\n      QUEUED: ").append(step.getType());
-                                if (frameIter != null) {
-                                    context.append(" Frame: ").append(frameIter.getFrame())
-                                            .append(", Iter: ").append(frameIter.getIteration());
-                                }
-                            }
-                        }
-                    }
-
-                    if (!foundConsumerSteps) {
-                        context.append("\n      No execution steps found");
-                    }
-
-                    // Detailed analysis based on operation type
-                    if (func instanceof Switch) {
-                        Switch switchOp = (Switch) func;
-                        context.append("\n    SWITCH DETAILS:");
-
-                        if (switchOp.getPredicate() != null && switchOp.getPredicate().name().equals(itemName)) {
-                            context.append("\n      THIS VARIABLE IS THE SWITCH PREDICATE!");
-
-                            // Show all predicate values across frames
-                            for (VarId vid : instances) {
-                                SDValue value = nodeValueOutputs.get(vid);
-                                context.append("\n        Frame: ").append(vid.getFrame())
-                                        .append(", Iter: ").append(vid.getIteration())
-                                        .append(", Predicate value: ").append(formatValue(value));
-                            }
-                        }
-
-                        // Show switch outputs if they exist
-                        List<String> switchOutputs = consumerOp.getOutputsOfOp();
-                        if (switchOutputs != null) {
-                            context.append("\n      Switch outputs:");
-                            for (String output : switchOutputs) {
-                                boolean outputAvailable = isVariableAvailable(output);
-                                context.append("\n        ").append(output).append(": ").append(outputAvailable ? "✓" : "✗");
-
-                                if (outputAvailable) {
-                                    List<VarId> outputInstances = getVariableInstances(output);
-                                    for (VarId vid : outputInstances) {
-                                        SDValue value = nodeValueOutputs.get(vid);
-                                        context.append("\n          Frame: ").append(vid.getFrame())
-                                                .append(", Iter: ").append(vid.getIteration())
-                                                .append(", Value: ").append(formatValue(value));
-                                    }
-                                }
-                            }
-                        }
-
-                    } else if (func instanceof Merge) {
-                        context.append("\n    MERGE DETAILS:");
-
-                        // Show all inputs to the merge
-                        List<String> mergeInputs = consumerOp.getInputsToOp();
-                        if (mergeInputs != null) {
-                            context.append("\n      Merge inputs:");
-                            for (String input : mergeInputs) {
-                                boolean inputAvailable = isVariableAvailable(input);
-                                context.append("\n        ").append(input).append(": ").append(inputAvailable ? "✓" : "✗");
-
-                                if (inputAvailable) {
-                                    List<VarId> inputInstances = getVariableInstances(input);
-                                    for (VarId vid : inputInstances) {
-                                        SDValue value = nodeValueOutputs.get(vid);
-                                        context.append("\n          Frame: ").append(vid.getFrame())
-                                                .append(", Iter: ").append(vid.getIteration())
-                                                .append(", Value: ").append(formatValue(value));
-                                    }
-                                }
-                            }
-                        }
-
-                    } else if (func instanceof LoopCond) {
-                        context.append("\n    LOOP CONDITION DETAILS:");
-                        context.append("\n      This operation determines if the loop should continue");
-
-                        // Show loop condition inputs and outputs
-                        List<String> loopInputs = consumerOp.getInputsToOp();
-                        if (loopInputs != null) {
-                            context.append("\n      Loop condition inputs:");
-                            for (String input : loopInputs) {
-                                boolean inputAvailable = isVariableAvailable(input);
-                                context.append("\n        ").append(input).append(": ").append(inputAvailable ? "✓" : "✗");
-
-                                if (inputAvailable) {
-                                    Object value = getVariableValue(input);
-                                    context.append(" Value: ").append(formatValue(value));
-                                }
-                            }
-                        }
-
-                        List<String> loopOutputs = consumerOp.getOutputsOfOp();
-                        if (loopOutputs != null) {
-                            context.append("\n      Loop condition outputs:");
-                            for (String output : loopOutputs) {
-                                boolean outputAvailable = isVariableAvailable(output);
-                                context.append("\n        ").append(output).append(": ").append(outputAvailable ? "✓" : "✗");
-
-                                if (outputAvailable) {
-                                    Object value = getVariableValue(output);
-                                    context.append(" Value: ").append(formatValue(value));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return context.length() > 0 ? context.toString() : null;
+        return diagnostics.checkForInfiniteLoop(frameName);
     }
 
 
     /**
-     * Analyze loop condition issues with detailed values and frame information
+     * Detailed control flow context analysis. Delegates to {@link SessionExecutionDiagnostics}.
+     */
+    private String analyzeControlFlowContextDetailed(String itemName) {
+        return diagnostics.analyzeControlFlowContextDetailed(itemName);
+    }
+
+
+    /**
+     * Detailed loop condition issue analysis. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String analyzeLoopConditionIssuesDetailed(String itemName) {
-        StringBuilder analysis = new StringBuilder();
-
-        // Look for loop condition patterns
-        String producer = findVariableProducer(itemName);
-        if (producer != null) {
-            SameDiffOp producerOp = sameDiff.getOps().get(producer);
-            if (producerOp != null) {
-                DifferentialFunction func = producerOp.getOp();
-
-                // Check if producer is in a loop structure
-                String producerFrame = getOperationFrame(producer);
-                if (!OUTER_FRAME.equals(producerFrame)) {
-                    analysis.append("LOOP CONDITION ANALYSIS:");
-                    analysis.append("\n  Producer '").append(producer).append("' is in frame: ").append(producerFrame);
-
-                    // Show producer execution details
-                    boolean producerExecuted = isOperationExecuted(producer);
-                    analysis.append("\n  Producer executed: ").append(producerExecuted ? "✓" : "✗");
-
-                    // Show all execution steps for the producer
-                    analysis.append("\n  Producer execution steps:");
-                    boolean foundProducerSteps = false;
-
-                    for (Object satisfied : dt.getAllSatisfied()) {
-                        if (satisfied instanceof ExecStep) {
-                            ExecStep step = (ExecStep) satisfied;
-                            if (step.getName().equals(producer)) {
-                                foundProducerSteps = true;
-                                FrameIter frameIter = step.getFrameIter();
-                                analysis.append("\n    SATISFIED: ").append(step.getType());
-                                if (frameIter != null) {
-                                    analysis.append(" Frame: ").append(frameIter.getFrame())
-                                            .append(", Iter: ").append(frameIter.getIteration());
-                                }
-                            }
-                        }
-                    }
-
-                    for (Object queued : dt.getAllSatisfiedQueue()) {
-                        if (queued instanceof ExecStep) {
-                            ExecStep step = (ExecStep) queued;
-                            if (step.getName().equals(producer)) {
-                                foundProducerSteps = true;
-                                FrameIter frameIter = step.getFrameIter();
-                                analysis.append("\n    QUEUED: ").append(step.getType());
-                                if (frameIter != null) {
-                                    analysis.append(" Frame: ").append(frameIter.getFrame())
-                                            .append(", Iter: ").append(frameIter.getIteration());
-                                }
-                            }
-                        }
-                    }
-
-                    if (!foundProducerSteps) {
-                        analysis.append("\n    No execution steps found for producer");
-                    }
-
-                    // Check if there are any loop condition operations in this frame
-                    List<String> loopCondOps = findLoopConditionOperations(producerFrame);
-                    if (!loopCondOps.isEmpty()) {
-                        analysis.append("\n  Loop condition operations in frame: ").append(loopCondOps);
-
-                        // Analyze each loop condition operation in detail
-                        for (String loopCondOp : loopCondOps) {
-                            boolean executed = isOperationExecuted(loopCondOp);
-                            analysis.append("\n    ").append(loopCondOp).append(" executed: ").append(executed ? "✓" : "✗");
-
-                            if (!executed) {
-                                analysis.append(" <- CRITICAL: Loop condition not evaluated");
-                            }
-
-                            // Show execution steps for loop condition
-                            analysis.append("\n      Execution steps:");
-                            boolean foundLoopSteps = false;
-
-                            for (Object satisfied : dt.getAllSatisfied()) {
-                                if (satisfied instanceof ExecStep) {
-                                    ExecStep step = (ExecStep) satisfied;
-                                    if (step.getName().equals(loopCondOp)) {
-                                        foundLoopSteps = true;
-                                        FrameIter frameIter = step.getFrameIter();
-                                        analysis.append("\n        SATISFIED: ").append(step.getType());
-                                        if (frameIter != null) {
-                                            analysis.append(" Frame: ").append(frameIter.getFrame())
-                                                    .append(", Iter: ").append(frameIter.getIteration());
-                                        }
-                                    }
-                                }
-                            }
-
-                            for (Object queued : dt.getAllSatisfiedQueue()) {
-                                if (queued instanceof ExecStep) {
-                                    ExecStep step = (ExecStep) queued;
-                                    if (step.getName().equals(loopCondOp)) {
-                                        foundLoopSteps = true;
-                                        FrameIter frameIter = step.getFrameIter();
-                                        analysis.append("\n        QUEUED: ").append(step.getType());
-                                        if (frameIter != null) {
-                                            analysis.append(" Frame: ").append(frameIter.getFrame())
-                                                    .append(", Iter: ").append(frameIter.getIteration());
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (!foundLoopSteps) {
-                                analysis.append("\n        No execution steps found");
-                            }
-
-                            // Check what the loop condition depends on
-                            SameDiffOp loopOp = sameDiff.getOps().get(loopCondOp);
-                            if (loopOp != null) {
-                                List<String> loopInputs = loopOp.getInputsToOp();
-                                if (loopInputs != null) {
-                                    analysis.append("\n      Loop condition inputs:");
-                                    for (String input : loopInputs) {
-                                        boolean inputAvailable = isVariableAvailable(input);
-                                        analysis.append("\n        ").append(input).append(": ").append(inputAvailable ? "✓" : "✗");
-
-                                        if (inputAvailable) {
-                                            Object value = getVariableValue(input);
-                                            analysis.append(" Value: ").append(formatValue(value));
-
-                                            // Show all instances of this input
-                                            List<VarId> inputInstances = getVariableInstances(input);
-                                            for (VarId vid : inputInstances) {
-                                                SDValue sdValue = nodeValueOutputs.get(vid);
-                                                analysis.append("\n          Frame: ").append(vid.getFrame())
-                                                        .append(", Iter: ").append(vid.getIteration())
-                                                        .append(", Value: ").append(formatValue(sdValue));
-                                            }
-                                        }
-                                    }
-                                }
-
-                                List<String> loopOutputs = loopOp.getOutputsOfOp();
-                                if (loopOutputs != null) {
-                                    analysis.append("\n      Loop condition outputs:");
-                                    for (String output : loopOutputs) {
-                                        boolean outputAvailable = isVariableAvailable(output);
-                                        analysis.append("\n        ").append(output).append(": ").append(outputAvailable ? "✓" : "✗");
-
-                                        if (outputAvailable) {
-                                            Object value = getVariableValue(output);
-                                            analysis.append(" Value: ").append(formatValue(value));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Show frame transition operations
-                    List<String> frameTransOps = findFrameTransitionOperationsInFrame(producerFrame);
-                    if (!frameTransOps.isEmpty()) {
-                        analysis.append("\n  Frame transition operations in frame:");
-                        for (String transOp : frameTransOps) {
-                            boolean executed = isOperationExecuted(transOp);
-                            analysis.append("\n    ").append(transOp).append(" executed: ").append(executed ? "✓" : "✗");
-
-                            SameDiffOp transOpObj = sameDiff.getOps().get(transOp);
-                            if (transOpObj != null) {
-                                DifferentialFunction transFunc = transOpObj.getOp();
-                                analysis.append(" (").append(transFunc.getClass().getSimpleName()).append(")");
-
-                                if (transFunc instanceof NextIteration) {
-                                    analysis.append(" - Advances loop iteration");
-                                } else if (transFunc instanceof Enter) {
-                                    Enter enter = (Enter) transFunc;
-                                    analysis.append(" - Enters frame: ").append(enter.getFrameName());
-                                } else if (transFunc instanceof Exit) {
-                                    analysis.append(" - Exits current frame");
-                                }
-                            }
-                        }
-                    }
-
-                    // Check for infinite loop indicators
-                    String infiniteLoopCheck = checkForInfiniteLoop(producerFrame);
-                    if (infiniteLoopCheck != null) {
-                        analysis.append("\n  ").append(infiniteLoopCheck);
-                    }
-                }
-            }
-        }
-
-        return analysis.length() > 0 ? analysis.toString() : null;
+        return diagnostics.analyzeLoopConditionIssuesDetailed(itemName);
     }
 
     /**
-     * Get all instances of a variable across different frames/iterations
+     * Get all instances of a variable across frames/iterations. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private List<VarId> getVariableInstances(String variableName) {
-        List<VarId> instances = new ArrayList<>();
-
-        for (VarId vid : nodeValueOutputs.keySet()) {
-            if (vid.getVariable().equals(variableName)) {
-                instances.add(vid);
-            }
-        }
-
-        // Sort by frame and iteration for consistent output
-        instances.sort((a, b) -> {
-            int frameComp = a.getFrame().compareTo(b.getFrame());
-            if (frameComp != 0) return frameComp;
-            return Integer.compare(a.getIteration(), b.getIteration());
-        });
-
-        return instances;
+        return diagnostics.getVariableInstances(variableName);
     }
 
     /**
-     * Format a value for display, handling different types appropriately
-     */
-    /**
-     * Format a value for display, handling different types appropriately
+     * Format a value for display. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String formatValue(Object value) {
-        if (value == null) {
-            return "null";
-        }
-
-        if (value instanceof SDValue) {
-            SDValue sdValue = (SDValue) value;
-            switch (sdValue.getSdValueType()) {
-                case TENSOR:
-                    INDArray tensor = sdValue.getTensorValue();
-                    if (tensor == null) {
-                        return "null tensor";
-                    }
-                    return formatINDArray(tensor);
-                case LIST:
-                    List<INDArray> list = sdValue.getListValue();
-                    if (list.isEmpty()) {
-                        return "List[empty]";
-                    }
-                    StringBuilder sb = new StringBuilder("List[").append(list.size()).append("]: [");
-                    for (int i = 0; i < Math.min(3, list.size()); i++) {
-                        if (i > 0) sb.append(", ");
-                        sb.append(formatINDArray(list.get(i)));
-                    }
-                    if (list.size() > 3) sb.append("...");
-                    sb.append("]");
-                    return sb.toString();
-                default:
-                    return sdValue.toString();
-            }
-        }
-
-        if (value instanceof INDArray) {
-            return formatINDArray((INDArray) value);
-        }
-
-        return value.toString();
+        return diagnostics.formatValue(value);
     }
 
     /**
-     * Format an INDArray for display with actual values
+     * Format an INDArray for display. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String formatINDArray(INDArray arr) {
-        if (arr == null) {
-            return "null";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Array").append(Arrays.toString(arr.shape())).append(" ").append(arr.dataType());
-
-        if (arr.isScalar()) {
-            sb.append(" = ").append(arr.getDouble(0));
-        } else if (arr.length() <= 10) {
-            // Show all values for small arrays
-            sb.append(" = [");
-            for (int i = 0; i < arr.length(); i++) {
-                if (i > 0) sb.append(", ");
-                sb.append(arr.getDouble(i));
-            }
-            sb.append("]");
-        } else {
-            // Show first few and last few values for larger arrays
-            sb.append(" = [");
-            for (int i = 0; i < Math.min(3, arr.length()); i++) {
-                if (i > 0) sb.append(", ");
-                sb.append(arr.getDouble(i));
-            }
-            if (arr.length() > 6) {
-                sb.append("...");
-                for (int i = (int) Math.max(3, arr.length() - 3); i < arr.length(); i++) {
-                    sb.append(", ").append(arr.getDouble(i));
-                }
-            } else {
-                for (int i = 3; i < arr.length(); i++) {
-                    sb.append(", ").append(arr.getDouble(i));
-                }
-            }
-            sb.append("]");
-        }
-
-        return sb.toString();
+        return diagnostics.formatINDArray(arr);
     }
 
-
-
     /**
-     * Find frame transition operations in a specific frame
+     * Find frame transition operations in a frame. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private List<String> findFrameTransitionOperationsInFrame(String frameName) {
-        List<String> transOps = new ArrayList<>();
-
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            SameDiffOp op = entry.getValue();
-            DifferentialFunction func = op.getOp();
-
-            if (func instanceof Enter || func instanceof Exit || func instanceof NextIteration) {
-                String opFrame = getOperationFrame(entry.getKey());
-                if (frameName.equals(opFrame)) {
-                    transOps.add(entry.getKey());
-                }
-            }
-        }
-
-        return transOps;
+        return diagnostics.findFrameTransitionOperationsInFrame(frameName);
     }
 
     /**
-     * Analyze a single remaining item (could be operation or variable) for the failure report
+     * Analyze a remaining item (simplified form). Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String analyzeRemainingItem(String itemName) {
-        StringBuilder analysis = new StringBuilder();
-
-        // First check if it's a variable
-        if (sameDiff.variableMap().containsKey(itemName)) {
-            analysis.append("Variable: ").append(itemName);
-
-            Variable var = sameDiff.getVariables().get(itemName);
-            if (var != null) {
-                SDVariable sdVar = var.getVariable();
-                analysis.append(" (").append(sdVar.getVariableType()).append(")");
-
-                // Check if variable is available
-                boolean available = isVariableAvailable(itemName);
-                analysis.append("\n  Available: ").append(available ? "✓" : "✗");
-
-                if (!available) {
-                    // Find what operation should produce this variable
-                    String producer = findVariableProducer(itemName);
-                    if (producer != null) {
-                        analysis.append("\n  Producer operation: '").append(producer).append("'");
-
-                        // Check if producer has been executed
-                        boolean producerExecuted = isOperationExecuted(producer);
-                        analysis.append("\n  Producer executed: ").append(producerExecuted ? "✓" : "✗");
-
-                        if (!producerExecuted) {
-                            // Analyze why the producer hasn't executed
-                            SameDiffOp producerOp = sameDiff.getOps().get(producer);
-                            if (producerOp != null) {
-                                analysis.append("\n  Producer analysis:");
-                                analysis.append("\n    Type: ").append(producerOp.getOp().getClass().getSimpleName());
-
-                                // Check producer's inputs
-                                List<String> producerInputs = producerOp.getInputsToOp();
-                                if (producerInputs != null && !producerInputs.isEmpty()) {
-                                    analysis.append("\n    Producer inputs: ");
-                                    for (String input : producerInputs) {
-                                        boolean inputAvailable = isVariableAvailable(input);
-                                        analysis.append(input).append(inputAvailable ? "✓" : "✗").append(" ");
-                                    }
-                                }
-
-                                // Check if producer is in execution queue
-                                boolean inQueue = false;
-                                for (Object queued : dt.getAllSatisfiedQueue()) {
-                                    if (queued instanceof ExecStep) {
-                                        ExecStep step = (ExecStep) queued;
-                                        if (step.getName().equals(producer)) {
-                                            inQueue = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                analysis.append("\n    Producer in execution queue: ").append(inQueue ? "✓" : "✗");
-
-                            } else {
-                                analysis.append("\n    ERROR: Producer operation not found in graph");
-                            }
-                        }
-                    } else {
-                        analysis.append("\n  ERROR: No producer operation found for this variable");
-                    }
-                } else {
-                    // Variable is available, so why is it in remaining?
-                    analysis.append("\n  WARNING: Variable is available but still in remaining set");
-                }
-            }
-
-            return analysis.toString();
-        }
-
-        // Check if it's an operation
-        SameDiffOp op = sameDiff.getOps().get(itemName);
-        if (op != null) {
-            analysis.append("Operation: ").append(itemName);
-
-            DifferentialFunction opFunc = op.getOp();
-            analysis.append(" (").append(opFunc.getClass().getSimpleName()).append(")");
-
-            // Check inputs
-            List<String> inputs = op.getInputsToOp();
-            if (inputs != null && !inputs.isEmpty()) {
-                analysis.append("\n  Inputs: ");
-                for (int i = 0; i < inputs.size(); i++) {
-                    String input = inputs.get(i);
-                    boolean available = isVariableAvailable(input);
-                    analysis.append(input).append(available ? "✓" : "✗");
-                    if (i < inputs.size() - 1) analysis.append(", ");
-                }
-
-                // Check for missing inputs
-                List<String> missingInputs = new ArrayList<>();
-                for (String input : inputs) {
-                    if (!isVariableAvailable(input)) {
-                        missingInputs.add(input);
-                    }
-                }
-
-                if (!missingInputs.isEmpty()) {
-                    analysis.append("\n  Missing inputs: ").append(missingInputs);
-                }
-            } else {
-                analysis.append("\n  No inputs required");
-            }
-
-            // Check if operation has been executed
-            boolean executed = isOperationExecuted(itemName);
-            analysis.append("\n  Executed: ").append(executed ? "✓" : "✗");
-
-            if (!executed) {
-                // Check execution step status
-                boolean foundInQueue = false;
-                for (Object queued : dt.getAllSatisfiedQueue()) {
-                    if (queued instanceof ExecStep) {
-                        ExecStep step = (ExecStep) queued;
-                        if (step.getName().equals(itemName)) {
-                            foundInQueue = true;
-                            break;
-                        }
-                    }
-                }
-                analysis.append("\n  In execution queue: ").append(foundInQueue ? "✓" : "✗");
-            }
-
-            return analysis.toString();
-        }
-
-        // Neither variable nor operation found
-        analysis.append("Unknown item: ").append(itemName);
-        analysis.append("\n  ERROR: Item not found in variables or operations");
-
-        return analysis.toString();
+        return diagnostics.analyzeRemainingItem(itemName);
     }
+
 
     /**
      * Update the descendant dependencies
@@ -3298,253 +1698,80 @@ public abstract class AbstractSession<T, O> {
     /**
      *  Get variable dependencies including transformations
      */
+    /**
+     * Get variable dependencies. Delegates to {@link SessionExecutionDiagnostics}.
+     */
     private String[] getVariableDependencies(String varName) {
-        // Check if any operations consume this variable and trace their inputs
-        List<String> dependencies = new ArrayList<>();
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            SameDiffOp op = entry.getValue();
-            if (op.getOutputsOfOp() != null && op.getOutputsOfOp().contains(varName)) {
-                // This operation produces varName, check its inputs
-                List<String> inputs = op.getInputsToOp();
-                if (inputs != null) {
-                    dependencies.addAll(inputs);
-                }
-            }
-        }
-
-        return dependencies.isEmpty() ? null : dependencies.toArray(new String[0]);
+        return diagnostics.getVariableDependencies(varName);
     }
 
     /**
-     * FIX 4: Helper method to check variable dependencies
+     * Check variable dependency. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private boolean isVariableDependentOn(String variable, String target) {
-        Set<String> visited = new HashSet<>();
-        return checkDependencyPath(variable, target, visited);
-    }
-
-    private boolean checkDependencyPath(String current, String target, Set<String> visited) {
-        if (visited.contains(current) || current.equals(target)) {
-            return current.equals(target);
-        }
-        visited.add(current);
-
-        // Check through operations
-        Variable var = sameDiff.getVariables().get(current);
-        if (var != null && var.getOutputOfOp() != null) {
-            SameDiffOp op = sameDiff.getOps().get(var.getOutputOfOp());
-            if (op != null && op.getInputsToOp() != null) {
-                for (String input : op.getInputsToOp()) {
-                    if (checkDependencyPath(input, target, visited)) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-
-        return false;
+        return diagnostics.isVariableDependentOn(variable, target);
     }
 
     /**
-     * Visualize the accumulated DAG data
+     * Recursive dependency path check. Delegates to {@link SessionExecutionDiagnostics}.
+     */
+    private boolean checkDependencyPath(String current, String target, Set<String> visited) {
+        return diagnostics.checkDependencyPath(current, target, visited);
+    }
+
+    /**
+     * Visualize DAG. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private void visualizeDAG(Set<String> requestedOutputs,
                               Map<String, Set<String>> dagFlow,
                               Map<String, String> variableTypes,
                               Map<String, String> producerOps) {
-
-        log.info("=== EXECUTION ORDER ===");
-
-        List<String> executionOrder = topologicalSort(dagFlow);
-
-        for (int i = 0; i < executionOrder.size(); i++) {
-            String var = executionOrder.get(i);
-            String type = variableTypes.get(var);
-            String producer = producerOps.get(var);
-
-            if (producer != null) {
-                log.info("{}: [{}] {} <- {}", i, type, var, producer);
-            } else {
-                log.info("{}: [{}] {}", i, type, var);
-            }
-        }
+        diagnostics.visualizeDAG(requestedOutputs, dagFlow, variableTypes, producerOps);
     }
 
     /**
-     * Topological sort to get execution order
+     * Topological sort. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private List<String> topologicalSort(Map<String, Set<String>> dagFlow) {
-        List<String> result = new ArrayList<>();
-        Set<String> visited = new HashSet<>();
-        Set<String> visiting = new HashSet<>();
-
-        for (String node : dagFlow.keySet()) {
-            if (!visited.contains(node)) {
-                topologicalSortHelper(node, dagFlow, visited, visiting, result);
-            }
-        }
-
-        return result;
+        return diagnostics.topologicalSort(dagFlow);
     }
 
     /**
-     * Helper for topological sort
+     * Topological sort helper. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private void topologicalSortHelper(String node, Map<String, Set<String>> dagFlow,
                                        Set<String> visited, Set<String> visiting, List<String> result) {
-        if (visiting.contains(node)) {
-            return; // Cycle detected, skip
-        }
-        if (visited.contains(node)) {
-            return;
-        }
-
-        visiting.add(node);
-
-        Set<String> dependencies = dagFlow.get(node);
-        if (dependencies != null) {
-            for (String dep : dependencies) {
-                topologicalSortHelper(dep, dagFlow, visited, visiting, result);
-            }
-        }
-
-        visiting.remove(node);
-        visited.add(node);
-        result.add(node);
+        diagnostics.topologicalSortHelper(node, dagFlow, visited, visiting, result);
     }
 
     /**
-     * Find all nodes reachable from a given starting node
+     * Find reachable nodes. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private Set<String> findReachableNodes(String start, Map<String, Set<String>> dagFlow, Set<String> visited) {
-        if (visited.contains(start)) {
-            return new HashSet<>();
-        }
-
-        visited.add(start);
-        Set<String> reachable = new HashSet<>();
-        reachable.add(start);
-
-        Set<String> dependencies = dagFlow.get(start);
-        if (dependencies != null) {
-            for (String dep : dependencies) {
-                reachable.addAll(findReachableNodes(dep, dagFlow, visited));
-            }
-        }
-
-        return reachable;
+        return diagnostics.findReachableNodes(start, dagFlow, visited);
     }
 
-
     /**
-     * Enhanced variable lookup with multiple fallback strategies
+     * Find variable with fallbacks. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private Variable findVariable(String varName) {
-        // Try exact match first
-        Variable var = sameDiff.getVariables().get(varName);
-        if (var != null) {
-            return var;
-        }
-
-        // Try without suffix (handles :0, :1, :2 cases)
-        String baseVarName = stripVarSuffix(varName);
-        if (!baseVarName.equals(varName)) {
-            var = sameDiff.getVariables().get(baseVarName);
-            if (var != null) {
-                log.debug("Found variable using base name: {} -> {}", varName, baseVarName);
-                return var;
-            }
-        }
-
-        // Try with common suffixes if the base name was provided
-        if (!varName.contains(":")) {
-            for (String suffix : Arrays.asList(":0", ":1", ":2")) {
-                String candidateName = varName + suffix;
-                var = sameDiff.getVariables().get(candidateName);
-                if (var != null) {
-                    log.debug("Found variable using suffix: {} -> {}", varName, candidateName);
-                    return var;
-                }
-            }
-        }
-
-        // Try to find through type conversion chains (e.g., input_ids -> input_ids_int32)
-        var = findThroughTypeConversions(varName);
-        if (var != null) {
-            return var;
-        }
-
-        log.debug("Variable not found: {}", varName);
-        return null;
+        return diagnostics.findVariable(varName);
     }
 
-
     /**
-     * Find variables through common type conversion patterns
+     * Find variable through type conversions. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private Variable findThroughTypeConversions(String varName) {
-        // Common conversion patterns
-        String[] patterns = {
-                varName + "_int32",
-                varName + "_float",
-                varName + "_double",
-                varName + "_long",
-                varName.replace("_int32", "").replace("_float", "").replace("_double", "").replace("_long", "")
-        };
-
-        for (String pattern : patterns) {
-            if (!pattern.equals(varName)) {
-                Variable var = sameDiff.getVariables().get(pattern);
-                if (var != null) {
-                    log.debug("Found variable through type conversion: {} -> {}", varName, pattern);
-                    return var;
-                }
-            }
-        }
-
-        return null;
+        return diagnostics.findThroughTypeConversions(varName);
     }
 
-
     /**
-     * Find the operation that produces a given variable
+     * Find producer operation. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private SameDiffOp findProducerOperation(String varName) {
-        // First, try direct lookup through variable's outputOfOp
-        Variable var = findVariable(varName);
-        if (var != null && var.getOutputOfOp() != null) {
-            return sameDiff.getOps().get(var.getOutputOfOp());
-        }
-
-        // Search through all operations to find one that produces this variable
-        for (SameDiffOp op : sameDiff.getOps().values()) {
-            List<String> outputs = op.getOutputsOfOp();
-            if (outputs != null && outputs.contains(varName)) {
-                log.debug("Found producer operation for {}: {}", varName, op.getName());
-                return op;
-            }
-
-            // Also check with base name (without suffix)
-            String baseVarName = stripVarSuffix(varName);
-            if (!baseVarName.equals(varName) && outputs != null && outputs.contains(baseVarName)) {
-                log.debug("Found producer operation for {} using base name {}: {}",
-                        varName, baseVarName, op.getName());
-                return op;
-            }
-        }
-
-        log.debug("No producer operation found for: {}", varName);
-        return null;
+        return diagnostics.findProducerOperation(varName);
     }
 
-    /**
-     * Preprocess the placeholder values, if required.
-     * Mainly reserved for casting in the case of InferenceSession
-     *
-     * @param placeholders Placeholders to preprocess.
-     * @return Preprocessed placeholders
-     */
     protected Map<String, SDValue> preprocessValuePlaceholders(Map<String, SDValue> placeholders, At at) {
         return placeholders;
     }

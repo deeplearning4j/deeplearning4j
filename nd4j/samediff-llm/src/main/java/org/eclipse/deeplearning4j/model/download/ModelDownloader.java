@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.model.download;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -141,7 +142,7 @@ public class ModelDownloader {
         // Authenticate with HuggingFace for gated models (e.g. google/gemma)
         String hfToken = System.getenv("HF_TOKEN");
         if (hfToken == null || hfToken.isEmpty()) {
-            hfToken = System.getProperty("hf.token");
+            hfToken = System.getProperty(ND4JSystemProperties.HF_TOKEN);
         }
         if (hfToken != null && !hfToken.isEmpty()) {
             connection.setRequestProperty("Authorization", "Bearer " + hfToken);

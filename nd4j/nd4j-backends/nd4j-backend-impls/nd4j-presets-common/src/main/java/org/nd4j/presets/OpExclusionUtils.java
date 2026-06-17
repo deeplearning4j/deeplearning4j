@@ -21,6 +21,7 @@ package org.nd4j.presets;/*
 import org.bytedeco.javacpp.tools.Info;
 import org.bytedeco.javacpp.tools.InfoMap;
 import org.bytedeco.javacpp.tools.Logger;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -234,7 +235,7 @@ public class OpExclusionUtils {
 
 
     public static void processOps(Logger logger, java.util.Properties properties, InfoMap infoMap) {
-        boolean funcTrace = System.getProperty("libnd4j.calltrace", "OFF").equalsIgnoreCase("ON");
+        boolean funcTrace = System.getProperty(ND4JSystemProperties.LIBND4J_CALLTRACE, "OFF").equalsIgnoreCase("ON");
         log.debug("Func trace: {}", funcTrace);
         processCustomOps(logger, properties, infoMap);
     }

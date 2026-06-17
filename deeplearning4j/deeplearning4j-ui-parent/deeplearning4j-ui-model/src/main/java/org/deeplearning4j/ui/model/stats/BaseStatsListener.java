@@ -57,6 +57,8 @@ import java.util.*;
 
 @Slf4j
 public abstract class BaseStatsListener implements RoutingIterationListener {
+    private static final long serialVersionUID = 1L;
+
     public static final String TYPE_ID = "StatsListener";
 
     private enum StatType {

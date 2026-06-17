@@ -21,6 +21,8 @@
 package org.nd4j.descriptor.proposal.impl;
 
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedParameterDeclaration;
 import lombok.val;
@@ -42,6 +44,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ArgDescriptorParserUtils {
+    private static final Logger log = LoggerFactory.getLogger(ArgDescriptorParserUtils.class);
     public final static String DEFAULT_OUTPUT_FILE = "op-ir.proto";
     public final static Pattern numberPattern = Pattern.compile("\\([\\d]+\\)");
 
@@ -421,7 +424,7 @@ public class ArgDescriptorParserUtils {
         try {
             return Integer.parseInt(matcher.group().replace("(","").replace(")","").replace(argType,""));
         } catch(NumberFormatException e) {
-            e.printStackTrace();
+            log.error("Failed to parse index from argument type string: {}", argType, e);
             return -1;
         }
     }

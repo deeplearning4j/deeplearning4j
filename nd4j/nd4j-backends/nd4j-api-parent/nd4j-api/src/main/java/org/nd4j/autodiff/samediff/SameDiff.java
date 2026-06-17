@@ -9924,7 +9924,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * Prints the execution DAG to console
      */
     public void printExecutionDAG(String... outputs) {
-        System.out.println(getExecutionDAGSummary(outputs));
+        log.debug("{}", getExecutionDAGSummary(outputs));
     }
 
     /**

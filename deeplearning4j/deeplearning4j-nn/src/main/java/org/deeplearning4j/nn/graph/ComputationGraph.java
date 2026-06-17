@@ -222,6 +222,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private NeuralNetConfiguration defaultConfiguration;
     private Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
+    /** Helper that holds all RNN-specific logic extracted from this class. */
+    private final ComputationGraphRnn rnnHelper = new ComputationGraphRnn(this);
+
 
     public ComputationGraph(ComputationGraphConfiguration configuration) {
         this.configuration = configuration;
@@ -359,6 +362,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         this.inputs = inputs;
+    }
+
+    /**
+     * Clear the inputs field (set to null). Package-private for use by {@link ComputationGraphRnn}.
+     */
+    void clearInputs() {
+        this.inputs = null;
     }
 
     /**
@@ -3493,7 +3503,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer (or unmodified otherwise).
      */
     public INDArray[] rnnTimeStep(INDArray... inputs) {
-        return rnnTimeStepHelper(null, inputs);
+        return rnnHelper.rnnTimeStep(inputs);
     }
 
     /**
@@ -3510,38 +3520,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return The output/activations from the network (either detached or in the specified workspace if provided)
      */
     public INDArray[] rnnTimeStep(MemoryWorkspace outputWorkspace, INDArray... inputs){
-        try{
-            return rnnTimeStepHelper(outputWorkspace, inputs);
-        } catch (OutOfMemoryError e){
-            CrashReportingUtil.writeMemoryCrashDump(this, e);
-            throw e;
-        }
-    }
-
-    private INDArray[] rnnTimeStepHelper(MemoryWorkspace outputWs, INDArray... inputs){
-        boolean inputIs2d = true;
-        for (INDArray i : inputs) {
-            if (i.rank() != 2) {
-                inputIs2d = false;
-                break;
-            }
-        }
-
-        INDArray[] outputs = outputOfLayersDetached(false, FwdPassType.RNN_TIMESTEP, getOutputLayerIndices(), inputs, null, null, true, false, outputWs);
-
-        //As per MultiLayerNetwork.rnnTimeStep(): if inputs are all 2d, then outputs are all 2d
-        if (inputIs2d) {
-            for (int i = 0; i < outputs.length; i++) {
-                if (outputs[i].rank() == 3 && outputs[i].size(2) == 1) {
-                    //Return 2d output with shape [miniBatchSize,nOut]
-                    // instead of 3d output with shape [miniBatchSize,nOut,1]
-                    outputs[i] = outputs[i].tensorAlongDimension(0, 1, 0);
-                }
-            }
-        }
-
-        this.inputs = null;
-        return outputs;
+        return rnnHelper.rnnTimeStep(outputWorkspace, inputs);
     }
 
     /**
@@ -3551,7 +3530,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Hidden state, or null if layer is not an RNN layer
      */
     public Map<String, INDArray> rnnGetPreviousState(int layer) {
-        return rnnGetPreviousState(layers[layer].conf().getLayer().getLayerName());
+        return rnnHelper.rnnGetPreviousState(layer);
     }
 
     /**
@@ -3561,13 +3540,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Hidden state, or null if layer is not an RNN layer
      */
     public Map<String, INDArray> rnnGetPreviousState(String layerName) {
-        Layer l = verticesMap.get(layerName).getLayer();
-        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
-            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
-        }
-        if (l == null || !(l instanceof RecurrentLayer))
-            return null;
-        return ((RecurrentLayer) l).rnnGetPreviousState();
+        return rnnHelper.rnnGetPreviousState(layerName);
     }
 
     /**
@@ -3578,16 +3551,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @see #rnnSetPreviousStates(Map)
      */
     public Map<String, Map<String, INDArray>> rnnGetPreviousStates() {
-        Map<String, Map<String, INDArray>> states = new HashMap<>();
-        for (Layer l : layers) {
-            if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
-                l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
-            }
-            if (l instanceof RecurrentLayer) {
-                states.put(l.conf().getLayer().getLayerName(), ((RecurrentLayer) l).rnnGetPreviousState());
-            }
-        }
-        return states;
+        return rnnHelper.rnnGetPreviousStates();
     }
 
     /**
@@ -3597,7 +3561,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param state The state to set the specified layer to
      */
     public void rnnSetPreviousState(int layer, Map<String, INDArray> state) {
-        rnnSetPreviousState(layers[layer].conf().getLayer().getLayerName(), state);
+        rnnHelper.rnnSetPreviousState(layer, state);
     }
 
     /**
@@ -3607,15 +3571,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param state     The state to set the specified layer to
      */
     public void rnnSetPreviousState(String layerName, Map<String, INDArray> state) {
-        Layer l = verticesMap.get(layerName).getLayer();
-        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
-            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
-        }
-        if (l == null || !(l instanceof RecurrentLayer)) {
-            throw new UnsupportedOperationException(
-                    "Layer \"" + layerName + "\" is not a recurrent layer. Cannot set state");
-        }
-        ((RecurrentLayer) l).rnnSetPreviousState(state);
+        rnnHelper.rnnSetPreviousState(layerName, state);
     }
 
     /**
@@ -3625,24 +3581,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @see #rnnGetPreviousStates()
      */
     public void rnnSetPreviousStates(Map<String, Map<String, INDArray>> previousStates) {
-        for (Map.Entry<String, Map<String, INDArray>> entry : previousStates.entrySet()) {
-            rnnSetPreviousState(entry.getKey(), entry.getValue());
-        }
+        rnnHelper.rnnSetPreviousStates(previousStates);
     }
 
     /**
      * Clear the previous state of the RNN layers (if any), used in {@link #rnnTimeStep(INDArray...)}
      */
     public void rnnClearPreviousState() {
-        if (layers == null)
-            return;
-        for (Layer layer : layers) {
-            if (layer instanceof RecurrentLayer)
-                ((RecurrentLayer) layer).rnnClearPreviousState();
-            else if (layer instanceof MultiLayerNetwork) {
-                ((MultiLayerNetwork) layer).rnnClearPreviousState();
-            }
-        }
+        rnnHelper.rnnClearPreviousState();
     }
 
     /**
@@ -3650,113 +3596,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     protected void doTruncatedBPTT(INDArray[] inputs, INDArray[] labels, INDArray[] featureMasks,
                                    INDArray[] labelMasks, LayerWorkspaceMgr workspaceMgr) {
-        if (flattenedGradients == null) {
-            initGradientsView();
-        }
-
-        //Approach used here to implement truncated BPTT: if input is 3d, split it. Otherwise: input is unmodified
-        long timeSeriesLength = -1;
-        for (INDArray in : inputs) {
-            if (in.rank() != 3)
-                continue;
-            if (timeSeriesLength == -1)
-                timeSeriesLength = in.size(2);
-            else if (timeSeriesLength != in.size(2)) {
-                log.warn("Cannot do TBPTT with time series of different lengths");
-                return;
-            }
-        }
-        for (INDArray out : labels) {
-            if (out.rank() != 3)
-                continue;
-            if (timeSeriesLength == -1)
-                timeSeriesLength = out.size(2);
-            else if (timeSeriesLength != out.size(2)) {
-                log.warn("Cannot do TBPTT with time series of different lengths");
-                return;
-            }
-        }
-
-        long fwdLen = configuration.getTbpttFwdLength();
-        long nSubsets = timeSeriesLength / fwdLen;
-        if (timeSeriesLength % fwdLen != 0)
-            nSubsets++;
-
-        rnnClearPreviousState();
-
-        for (int i = 0; i < nSubsets; i++) {
-            long startTimeIdx = i * fwdLen;
-            long endTimeIdx = startTimeIdx + fwdLen;
-            if (endTimeIdx > timeSeriesLength)
-                endTimeIdx = timeSeriesLength;
-
-            if (startTimeIdx > Integer.MAX_VALUE)
-                throw new ND4JArraySizeException();
-            List<INDArray[]> list = getSubsetsForTbptt((int) startTimeIdx, endTimeIdx, inputs, labels, featureMasks, labelMasks);
-
-            setInputs(list.get(0));
-            setLabels(list.get(1));
-            setLayerMaskArrays(list.get(2), list.get(3));
-
-            if (solver == null) {
-                try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
-                            .build();
-                }
-            }
-            solver.optimize(workspaceMgr);
-
-            //Finally, update the state of the RNN layers:
-            rnnUpdateStateWithTBPTTState();
-        }
-
-        if(clearTbpttState) {
-            rnnClearPreviousState();
-        }
-        clearLayerMaskArrays();
+        rnnHelper.doTruncatedBPTT(inputs, labels, featureMasks, labelMasks, workspaceMgr);
     }
 
     private List<INDArray[]> getSubsetsForTbptt(int startTimeIdx, long endTimeIdx, INDArray[] inputs, INDArray[] labels,
                                                 INDArray[] featureMasks, INDArray[] labelMasks){
-        INDArray[] newInputs = new INDArray[inputs.length];
-        INDArray[] newLabels = new INDArray[labels.length];
-        INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
-        INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
-
-        for (int j = 0; j < inputs.length; j++) {
-            if (inputs[j].rank() != 3)
-                newInputs[j] = inputs[j];
-            else {
-                newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-            }
-        }
-        for (int j = 0; j < labels.length; j++) {
-            if (labels[j].rank() != 3)
-                newLabels[j] = labels[j];
-            else {
-                newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-            }
-        }
-        if (featureMasks != null) {
-            for (int j = 0; j < featureMasks.length; j++) {
-                if (featureMasks[j] == null)
-                    continue;
-                newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
-                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-            }
-        }
-        if (labelMasks != null) {
-            for (int j = 0; j < labelMasks.length; j++) {
-                if (labelMasks[j] == null)
-                    continue;
-                newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
-                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-            }
-        }
-
-        return Arrays.asList(newInputs, newLabels, newFeatureMasks, newLabelMasks);
+        return rnnHelper.getSubsetsForTbptt(startTimeIdx, endTimeIdx, inputs, labels, featureMasks, labelMasks);
     }
 
     /**
@@ -3773,8 +3618,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public Map<String, INDArray> rnnActivateUsingStoredState(INDArray[] inputs, boolean training,
                                                              boolean storeLastForTBPTT) {
-        return ffToLayerActivationsDetached(training, FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE, storeLastForTBPTT, vertices.length-1,
-                null, inputs, inputMaskArrays, labelMaskArrays, true);
+        return rnnHelper.rnnActivateUsingStoredState(inputs, training, storeLastForTBPTT);
     }
 
     /**
@@ -3879,14 +3723,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Update the internal state of RNN layers after a truncated BPTT fit call
      */
     protected void rnnUpdateStateWithTBPTTState() {
-        for (int i = 0; i < layers.length; i++) {
-            if (layers[i] instanceof RecurrentLayer) {
-                RecurrentLayer l = ((RecurrentLayer) layers[i]);
-                l.rnnSetPreviousState(l.rnnGetTBPTTState());
-            } else if (layers[i] instanceof MultiLayerNetwork) {
-                ((MultiLayerNetwork) layers[i]).updateRnnStateWithTBPTTState();
-            }
-        }
+        rnnHelper.rnnUpdateStateWithTBPTTState();
     }
 
     /**

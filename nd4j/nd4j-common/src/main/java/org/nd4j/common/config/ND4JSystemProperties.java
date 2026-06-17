@@ -2021,6 +2021,122 @@ public class ND4JSystemProperties {
      */
     public static final String VLM_IMAGE_SHARPEN = "nd4j.vlm.image.sharpen";
 
+    // ---- libnd4j native build / loader properties ----
+
+    /**
+     * Applicability: nd4j-cuda-preset, nd4j-native-preset, OpExclusionUtils<br>
+     * Description: Enable C-level function call tracing in the native libnd4j library.
+     * Set to "ON" to activate tracing; any other value (or absent) disables it.
+     * <p>
+     * Default: OFF
+     */
+    public static final String LIBND4J_CALLTRACE = "libnd4j.calltrace";
+
+    // ---- Data buffer allocation policy ----
+
+    /**
+     * Applicability: DefaultDataBufferFactory, CudaDataBufferFactory<br>
+     * Description: Controls the allocation policy for data buffers. When set, selects
+     * an alternative buffer allocation strategy. Recognized values depend on the backend.
+     * <p>
+     * Default: unset (uses default allocation)
+     */
+    public static final String ALLOC_POLICY = "alloc";
+
+    // ---- SameDiff import properties ----
+
+    /**
+     * Applicability: OpDescriptorHolder (samediff import)<br>
+     * Description: Path to the nd4j op descriptor JSON/text file used during
+     * SameDiff model import. When set, overrides the default classpath resource.
+     * <p>
+     * Default: unset (uses built-in resource)
+     */
+    public static final String SAMEDIFF_IMPORT_ND4J_DESCRIPTORS = "samediff.import.nd4jdescriptors";
+
+    // ---- VLM decode diagnostics ----
+
+    /**
+     * Applicability: DecodeStepDiagnostics (VLM/LLM generation)<br>
+     * Description: When set to "true", enables per-step decode diagnostics including
+     * KV cache fingerprinting and logit health checks.
+     * <p>
+     * Default: false
+     */
+    public static final String VLM_DECODE_DIAGNOSTICS = "vlm.decode.diagnostics";
+
+    // ---- VLM benchmark properties ----
+
+    /**
+     * Applicability: GenerationPipeline (VLM benchmarking)<br>
+     * Description: When set to "true", enables per-op timing instrumentation during
+     * VLM benchmark runs.
+     * <p>
+     * Default: false
+     */
+    public static final String VLM_BENCHMARK_OP_TIMING = "vlm.benchmark.opTiming";
+
+    /**
+     * Applicability: StaticKvCacheDecodeLoop (VLM benchmarking)<br>
+     * Description: When set to "true", enables per-phase logging during the decode loop
+     * (e.g., prefill vs. decode phase timings).
+     * <p>
+     * Default: true
+     */
+    public static final String VLM_BENCHMARK_DECODE_PHASE_LOGGING = "vlm.benchmark.decodePhaseLogging";
+
+    /**
+     * Applicability: StaticKvCacheDecodeLoop (VLM benchmarking)<br>
+     * Description: When set to "true", enables detailed decode diagnostics during
+     * VLM benchmark runs.
+     * <p>
+     * Default: false
+     */
+    public static final String VLM_BENCHMARK_DECODE_DIAGNOSTICS = "vlm.benchmark.decodeDiagnostics";
+
+    // ---- LLM model cache ----
+
+    /**
+     * Applicability: PerplexityEvaluator and related LLM tooling<br>
+     * Description: Local directory where downloaded LLM model files are cached.
+     * When not set, a default path under the user home directory is used.
+     * <p>
+     * Default: unset
+     */
+    public static final String LLM_MODEL_CACHE_DIR = "llm.model.cache.dir";
+
+    // ---- Benchmark configuration ----
+
+    /**
+     * Applicability: BenchmarkConfig<br>
+     * Description: Maximum number of tokens to generate during a benchmark run.
+     * <p>
+     * Default: 20
+     */
+    public static final String BENCH_MAX_TOKENS = "bench.max.tokens";
+
+    // ---- HuggingFace authentication ----
+
+    /**
+     * Applicability: ModelDownloader<br>
+     * Description: HuggingFace API token used for authenticated model downloads.
+     * Required for gated models (e.g., Llama, Mistral).
+     * <p>
+     * Default: unset
+     */
+    public static final String HF_TOKEN = "hf.token";
+
+    // ---- VLM GPU memory threshold ----
+
+    /**
+     * Applicability: VisionLanguageModel<br>
+     * Description: GPU free-memory fraction threshold (0.0–1.0) below which the VLM
+     * will take memory-pressure actions (e.g., offload weights or refuse to load).
+     * <p>
+     * Default: 0.10
+     */
+    public static final String KOMPILE_VLM_GPU_MEMORY_THRESHOLD = "kompile.vlm.gpu.memory.threshold";
+
     private ND4JSystemProperties() {
     }
 }

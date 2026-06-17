@@ -21,6 +21,7 @@
 package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -70,7 +71,7 @@ public class DecodeStepDiagnostics {
     private boolean autoEnabled = false;
 
     public DecodeStepDiagnostics() {
-        this.enabled = Boolean.parseBoolean(System.getProperty("vlm.decode.diagnostics", "false"));
+        this.enabled = Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.VLM_DECODE_DIAGNOSTICS, "false"));
         this.kvFingerprintEnabled = enabled ||
                 Boolean.parseBoolean(System.getProperty("vlm.decode.diagnostics.kvFingerprint", "false"));
         this.logitHealthEnabled = enabled ||

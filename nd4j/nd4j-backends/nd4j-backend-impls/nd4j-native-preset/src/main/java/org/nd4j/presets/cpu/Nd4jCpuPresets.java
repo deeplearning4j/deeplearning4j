@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.Properties;
 import org.bytedeco.javacpp.tools.*;
 import org.bytedeco.openblas.global.openblas;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.presets.OpExclusionUtils;
 
 import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
@@ -206,14 +207,14 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
     public void map(InfoMap infoMap) {
         //whether to include the SD_GCC_FUNCTRACE definition in the build. Not needed if we're not enabling the profiler.
         // Maven properties are passed via System.getProperty during JavaCPP execution
-        String calltraceProperty = System.getProperty("libnd4j.calltrace", "OFF");
+        String calltraceProperty = System.getProperty(ND4JSystemProperties.LIBND4J_CALLTRACE, "OFF");
         boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");
 
-        System.out.println("==============================================");
-        System.out.println("JavaCPP Preset - Functrace Configuration:");
-        System.out.println("  libnd4j.calltrace property: " + calltraceProperty);
-        System.out.println("  SD_GCC_FUNCTRACE will be: " + (funcTrace ? "DEFINED" : "UNDEFINED"));
-        System.out.println("==============================================");
+        logger.info("==============================================");
+        logger.info("JavaCPP Preset - Functrace Configuration:");
+        logger.info("  libnd4j.calltrace property: " + calltraceProperty);
+        logger.info("  SD_GCC_FUNCTRACE will be: " + (funcTrace ? "DEFINED" : "UNDEFINED"));
+        logger.info("==============================================");
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "SD_TLS_EXPORT", "CUBLASWINAPI",
                         "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED", "DEFAULT_ENGINE").cppTypes().annotations())
                 .put(new Info("openblas_config.h", "cblas.h", "lapacke_config.h", "lapacke_mangling.h", "lapack.h", "lapacke.h", "lapacke_utils.h").skip())

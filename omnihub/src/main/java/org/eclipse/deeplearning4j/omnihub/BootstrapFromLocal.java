@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.omnihub;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -41,6 +42,7 @@ import java.util.Collections;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class BootstrapFromLocal {
 
     public static void main(String...args) {
@@ -56,8 +58,7 @@ public class BootstrapFromLocal {
                     try {
                         extracted(localOmnihubHome, onnxFrameworkImporter, tensorflowFrameworkImporter, framework, inputFile);
                     } catch (Exception e) {
-                        System.err.println("Failed to import model at path " + inputFile.getAbsolutePath());
-                        e.printStackTrace();
+                        log.error("Failed to import model at path {}", inputFile.getAbsolutePath(), e);
                     }
                 }
 
@@ -141,7 +142,7 @@ public class BootstrapFromLocal {
             computationGraph.save(saveModel2,true);
         }catch(Exception e) {
             if(e instanceof InvalidKerasConfigurationException) {
-                e.printStackTrace();
+                log.error("Invalid Keras configuration while importing model from {}", inputFile.getAbsolutePath(), e);
             } else {
                 MultiLayerNetwork multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(inputFile.getAbsolutePath(), true);
                 multiLayerNetwork.save(saveModel2,true);

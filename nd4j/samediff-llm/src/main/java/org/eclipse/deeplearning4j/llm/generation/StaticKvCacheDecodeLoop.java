@@ -88,11 +88,11 @@ public class StaticKvCacheDecodeLoop {
     private static final int DEFAULT_DIAGNOSTIC_STEPS = 3;
 
     private static boolean decodePhaseLoggingEnabled() {
-        return Boolean.parseBoolean(System.getProperty("vlm.benchmark.decodePhaseLogging", "true"));
+        return Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.VLM_BENCHMARK_DECODE_PHASE_LOGGING, "true"));
     }
 
     private static boolean detailedDecodeDiagnosticsEnabled() {
-        return Boolean.parseBoolean(System.getProperty("vlm.benchmark.decodeDiagnostics", "false"))
+        return Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.VLM_BENCHMARK_DECODE_DIAGNOSTICS, "false"))
                 || Boolean.parseBoolean(System.getProperty("vlm.benchmark.logitFingerprints", "false"))
                 || Boolean.parseBoolean(System.getProperty("vlm.benchmark.tensorFingerprints", "false"));
     }

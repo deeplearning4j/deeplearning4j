@@ -25,6 +25,8 @@ import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class StreamWork implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private InputStreamCreator is;
     private AtomicInteger count = new AtomicInteger(0);
 

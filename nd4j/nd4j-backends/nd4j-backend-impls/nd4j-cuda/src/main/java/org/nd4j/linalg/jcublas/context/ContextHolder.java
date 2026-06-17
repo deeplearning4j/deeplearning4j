@@ -148,7 +148,7 @@ public class ContextHolder {
             InputStream is = ContextHolder.class.getResourceAsStream("/function_threads.properties");
             threadProps.load(is);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to load function_threads.properties", e);
         }
 
         for(String prop : threadProps.stringPropertyNames()) {

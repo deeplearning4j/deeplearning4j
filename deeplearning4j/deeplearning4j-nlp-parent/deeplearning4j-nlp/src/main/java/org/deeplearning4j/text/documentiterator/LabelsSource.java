@@ -32,6 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class LabelsSource implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private AtomicLong counter = new AtomicLong(0);
     @Setter
     private String template;

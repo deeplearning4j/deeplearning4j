@@ -51,6 +51,8 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.reflections.Reflections;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.lang.reflect.Modifier;
@@ -62,6 +64,7 @@ import static org.nd4j.descriptor.proposal.impl.ArgDescriptorParserUtils.*;
 
 public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
 
+    private static final Logger log = LoggerFactory.getLogger(JavaSourceArgDescriptorSource.class);
 
     private  SourceRoot sourceRoot;
     private File nd4jOpsRootDir;
@@ -963,7 +966,7 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
 
 
         } catch(Exception e) {
-            e.printStackTrace();
+            log.error("Failed to resolve Java source arg descriptors for op", e);
         }
     }
 
