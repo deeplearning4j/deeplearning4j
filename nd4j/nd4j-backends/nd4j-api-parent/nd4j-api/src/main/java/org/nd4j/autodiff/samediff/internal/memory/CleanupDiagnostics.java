@@ -20,6 +20,8 @@
 
 package org.nd4j.autodiff.samediff.internal.memory;
 
+import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -47,6 +49,7 @@ import java.util.IdentityHashMap;
  * </pre>
  */
 @Slf4j
+@Getter
 public class CleanupDiagnostics {
 
     private final int totalBuffers;
@@ -144,21 +147,6 @@ public class CleanupDiagnostics {
      */
     public CleanupResult newResult(Pointer execStream) {
         return new CleanupResult(execStream);
-    }
-
-    /**
-     * Log before/after cleanup summary at INFO level.
-     * Kept for backward compatibility - delegates to the full version with an empty result.
-     *
-     * @param closedCount      number of buffers closed normally
-     * @param forceClosedCount number of constant-poisoned buffers force-closed
-     * @param label            label for the cleanup path (e.g., "cache-enabled" or "no-cache")
-     */
-    public void logResults(int closedCount, int forceClosedCount, String label) {
-        CleanupResult result = new CleanupResult(null);
-        result.nativeFreedCount = closedCount;
-        result.forceClosedConstant = forceClosedCount;
-        logResults(result, label);
     }
 
     /**
@@ -262,17 +250,12 @@ public class CleanupDiagnostics {
                 physDeltaMB, elapsedMs, streamAddr, nDevices);
     }
 
-    public int getTotalBuffers() { return totalBuffers; }
-    public int getCloseableCount() { return closeableCount; }
-    public int getConstantPoisonedCount() { return constantPoisonedCount; }
-    public long getTotalBytes() { return totalBytes; }
-    public long getPhysicalBytesBefore() { return physicalBytesBefore; }
-
     /**
      * Accumulator for per-buffer cleanup outcomes.
      * Create via {@link CleanupDiagnostics#newResult(Pointer)} and
      * call the record methods inside the cleanup loop.
      */
+    @Data
     public static class CleanupResult {
         private final Pointer execStream;
         private int nativeFreedCount;
@@ -305,11 +288,5 @@ public class CleanupDiagnostics {
         public void recordConstantUnpoisoned() {
             forceClosedConstant++;
         }
-
-        public int getNativeFreedCount() { return nativeFreedCount; }
-        public long getNativeFreedBytes() { return nativeFreedBytes; }
-        public int getOdbNullCount() { return odbNullCount; }
-        public int getJavaFallbackCount() { return javaFallbackCount; }
-        public int getForceClosedConstant() { return forceClosedConstant; }
     }
 }
