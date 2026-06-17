@@ -89,7 +89,7 @@ void TransferMetrics::recordTransfer(TransferType type, uint64_t bytes, uint64_t
             case TransferType::PEER_TO_PEER: typeStr = "P2P"; break;
         }
 
-        sd_printf("Transfer [%s]: %.2f MB in %.2f ms (%.2f GB/s) src=%d dst=%d\n",
+        sd_debug("Transfer [%s]: %.2f MB in %.2f ms (%.2f GB/s) src=%d dst=%d\n",
                   typeStr, mbytes, ms, gbps, srcDevice, dstDevice);
     }
 }
