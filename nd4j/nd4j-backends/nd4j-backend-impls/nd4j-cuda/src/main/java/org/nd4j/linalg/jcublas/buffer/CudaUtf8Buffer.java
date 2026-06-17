@@ -135,6 +135,10 @@ public class CudaUtf8Buffer extends BaseCudaDataBuffer {
         super(underlyingBuffer, dataType, length);
     }
 
+    public CudaUtf8Buffer(ByteBuffer underlyingBuffer, DataType dataType, long length, boolean cpuOnly) {
+        super(underlyingBuffer, dataType, length, cpuOnly);
+    }
+
     public String getString(long index) {
         if (index > numWords)
             throw new IllegalArgumentException("Requested index [" + index + "] is above actual number of words stored: [" + numWords + "]");

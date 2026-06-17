@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.jcublas.buffer.*;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
@@ -54,7 +55,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer.AllocationMode allocationMode() {
         if (allocationMode == null) {
-            String otherAlloc = System.getProperty("alloc");
+            String otherAlloc = System.getProperty(ND4JSystemProperties.ALLOC_POLICY);
             if (otherAlloc.equals("heap"))
                 setAllocationMode(DataBuffer.AllocationMode.HEAP);
             else if (otherAlloc.equals("direct"))
@@ -647,7 +648,41 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         }
     }
 
-
+    @Override
+    public DataBuffer createBufferCpuOnly(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        switch (dataType) {
+            case DOUBLE:
+                return new CudaDoubleDataBuffer(underlyingBuffer, dataType, length, true);
+            case FLOAT:
+                return new CudaFloatDataBuffer(underlyingBuffer, dataType, length, true);
+            case HALF:
+                return new CudaHalfDataBuffer(underlyingBuffer, dataType, length, true);
+            case BFLOAT16:
+                return new CudaBfloat16DataBuffer(underlyingBuffer, dataType, length, true);
+            case LONG:
+                return new CudaLongDataBuffer(underlyingBuffer, dataType, length, true);
+            case INT:
+                return new CudaIntDataBuffer(underlyingBuffer, dataType, length, true);
+            case SHORT:
+                return new CudaShortDataBuffer(underlyingBuffer, dataType, length, true);
+            case UBYTE:
+                return new CudaUByteDataBuffer(underlyingBuffer, dataType, length, true);
+            case UINT16:
+                return new CudaUInt16DataBuffer(underlyingBuffer, dataType, length, true);
+            case UINT32:
+                return new CudaUInt32DataBuffer(underlyingBuffer, dataType, length, true);
+            case UINT64:
+                return new CudaUInt64DataBuffer(underlyingBuffer, dataType, length, true);
+            case BYTE:
+                return new CudaByteDataBuffer(underlyingBuffer, dataType, length, true);
+            case BOOL:
+                return new CudaBoolDataBuffer(underlyingBuffer, dataType, length, true);
+            case UTF8:
+                return new CudaUtf8Buffer(underlyingBuffer, dataType, length, true);
+            default:
+                throw new IllegalStateException("Unknown datatype used: [" + dataType + "]");
+        }
+    }
 
     @Override
     public DataBuffer createHalf(long length) {

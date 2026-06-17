@@ -26,6 +26,8 @@ import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
@@ -34,6 +36,7 @@ import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.BackendRegistry;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.api.memory.Deallocatable;
@@ -88,6 +91,12 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
     }
 
     @Override
+    protected DeviceDescriptor resolveCpuDevice() {
+        DeviceDescriptor cpu = BackendRegistry.getInstance().getDefaultCpuDevice();
+        return cpu != null ? cpu : DeviceDescriptor.cpu();
+    }
+
+    @Override
     protected void init() {
         super.init();
 
@@ -101,6 +110,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
                 workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.WORKSPACE, 0, currentSize.get() + SAFETY_OFFSET);
+                DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), currentSize.get() + SAFETY_OFFSET);
             }
         } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
             long flen = tempFile.length();
@@ -138,7 +148,11 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
             if (stepNumber + 2 < stepCurrent|| extended) {
                 pinnedAllocations.remove();
 
+               if (pair.getRequiredMemory() != null) {
+                   DeviceMemoryManager.getInstance().recordDeallocation(resolveCpuDevice(), pair.getRequiredMemory());
+               }
                Nd4j.getNativeOps().freeHost(pair.getHostPointer());
+               AllocationsTracker.getInstance().getTracker(id).deallocatePinned(MemoryKind.HOST, pair.getRequiredMemory());
 
                 pinnedCount.decrementAndGet();
                 pinnedAllocationsSize.addAndGet(pair.getRequiredMemory() * -1);
@@ -162,8 +176,12 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
         NativeOps nativeOps =Nd4j.getNativeOps();
         for (PointersPair pair: externalAllocations) {
-            if (pair.getHostPointer() != null)
+            if (pair.getHostPointer() != null) {
+                if (pair.getRequiredMemory() != null) {
+                    DeviceMemoryManager.getInstance().recordDeallocation(resolveCpuDevice(), pair.getRequiredMemory());
+                }
                 nativeOps.freeHost(pair.getHostPointer());
+            }
         }
 
 
@@ -189,6 +207,9 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
         if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.RAM) {
             if (workspace.getHostPointer() != null) {
+               if (sizez > 0) {
+                   DeviceMemoryManager.getInstance().recordDeallocation(resolveCpuDevice(), sizez + SAFETY_OFFSET);
+               }
                Nd4j.getNativeOps().freeHost(workspace.getHostPointer());
                 AllocationsTracker.getInstance().markReleased(AllocationKind.WORKSPACE, 0, sizez);
             }

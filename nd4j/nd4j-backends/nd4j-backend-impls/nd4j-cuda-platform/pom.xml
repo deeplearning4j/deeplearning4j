@@ -31,15 +31,16 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-cuda-platform</artifactId>
-    <name>nd4j-cuda-platform</name>
+    <artifactId>nd4j-cuda-12.9-platform</artifactId>
+    <name>nd4j-cuda-12.9-platform</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
-        <cuda.version>12.3</cuda.version>
-        <cudnn.version>8.9</cudnn.version>
-        <javacpp-presets.cuda.version>1.5.10</javacpp-presets.cuda.version>
-        <nd4j.backend>nd4j-cuda</nd4j.backend>
+        <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
+        <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
+        <nd4j.backend>nd4j-cuda-12.9</nd4j.backend>
     </properties>
 
 
@@ -70,5 +71,56 @@
 
     </dependencies>
 
+    <profiles>
+        <!-- llama.cpp CUDA classifier profile for LLM/GGML model support with GPU acceleration -->
+        <profile>
+            <id>llamacpp</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                    <value>llamacpp</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>${nd4j.backend}</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform.linux-x86_64}-llamacpp</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>${nd4j.backend}</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform.windows-x86_64}-llamacpp</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- cuDNN classifier profile for optimized CUDA deep learning operations -->
+        <profile>
+            <id>cudnn</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                    <value>cudnn</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>${nd4j.backend}</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform.linux-x86_64}-cudnn</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>${nd4j.backend}</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform.windows-x86_64}-cudnn</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
 </project>

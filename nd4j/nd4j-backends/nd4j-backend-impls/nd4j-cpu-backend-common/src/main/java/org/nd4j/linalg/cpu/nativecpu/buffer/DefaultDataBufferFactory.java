@@ -32,6 +32,7 @@ import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
@@ -49,7 +50,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer.AllocationMode allocationMode() {
         if (allocationMode == null) {
-            String otherAlloc = System.getProperty("alloc");
+            String otherAlloc = System.getProperty(ND4JSystemProperties.ALLOC_POLICY);
             if (otherAlloc.equals("heap"))
                 setAllocationMode(DataBuffer.AllocationMode.HEAP);
             else if (otherAlloc.equals("direct"))
@@ -151,6 +152,8 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new Int8Buffer(length, initialize, workspace);
             case BOOL:
                 return new BoolBuffer(length, initialize, workspace);
+            case UTF8:
+                return new Utf8Buffer(length, true);
             default:
                 throw new IllegalStateException("Unknown datatype used: [" + dataType + "]");
         }

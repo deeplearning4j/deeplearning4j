@@ -133,6 +133,17 @@
     <profiles>
 
         <profile>
+            <id>sdx</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-sdx</module>
+                <module>nd4j-sdx-preset</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>aurora</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
@@ -167,7 +178,6 @@
                <activeByDefault>false</activeByDefault>
            </activation>
             <modules>
-                <module>../../../libnd4j</module>
                 <module>nd4j-native</module>
                 <module>nd4j-native-preset</module>
                 <module>nd4j-native-platform</module>
@@ -182,11 +192,57 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <modules>
-                <module>../../../libnd4j</module>
                 <module>nd4j-cuda</module>
                 <module>nd4j-cuda-preset</module>
                 <module>nd4j-cuda-platform</module>
             </modules>
+
+        </profile>
+        <profile>
+            <id>tpu</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-tpu</module>
+                <module>nd4j-tpu-preset</module>
+            </modules>
+
+        </profile>
+        <profile>
+            <id>zluda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-zluda</module>
+            </modules>
+
+        </profile>
+        <profile>
+            <id>zluda-amd</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-zluda</module>
+            </modules>
+            <properties>
+                <zluda.target>AMD</zluda.target>
+            </properties>
+
+        </profile>
+        <profile>
+            <id>zluda-intel</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-zluda</module>
+            </modules>
+            <properties>
+                <zluda.target>INTEL</zluda.target>
+            </properties>
 
         </profile>
         <profile>

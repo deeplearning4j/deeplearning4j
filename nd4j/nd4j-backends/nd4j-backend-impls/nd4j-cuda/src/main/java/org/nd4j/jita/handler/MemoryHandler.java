@@ -61,6 +61,18 @@ public interface MemoryHandler {
 
     CudaContext getCudaContext();
 
+    /**
+     * Get a CudaContext for a specific device. This is essential for multi-device operations
+     * where we need to use streams from the device where data resides, not the current thread's device.
+     *
+     * CUDA streams are device-specific - using a stream from device A to operate on device B's memory
+     * will result in cudaErrorInvalidResourceHandle (error 400).
+     *
+     * @param deviceId the target device ID
+     * @return CudaContext with streams valid for the specified device
+     */
+    CudaContext getCudaContextForDevice(int deviceId);
+
 
     /**
      * This method removes AllocationPoint from corresponding device/host trackers

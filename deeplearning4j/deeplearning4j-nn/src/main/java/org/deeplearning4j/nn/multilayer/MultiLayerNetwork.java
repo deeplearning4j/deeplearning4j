@@ -3395,7 +3395,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if(getLayerWiseConfigurations().isValidateOutputLayerConfig()){
             OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
         }
-        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
+        return (T)doEvaluation(iterator, new org.nd4j.evaluation.classification.ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -3418,7 +3418,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if(getLayerWiseConfigurations().isValidateOutputLayerConfig()){
             OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
         }
-        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
+        return (T)doEvaluation(iterator, new org.nd4j.evaluation.classification.ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -3622,7 +3622,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
         }
 
-        Evaluation e = new org.deeplearning4j.eval.Evaluation(labelsList, topN);
+        Evaluation e = new org.nd4j.evaluation.classification.Evaluation(labelsList, topN);
         doEvaluation(iterator, e);
 
         return e;

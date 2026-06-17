@@ -36,6 +36,7 @@
     <name>nd4j-native</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/cpu/nativecpu/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <module.name>nd4j.cpu</module.name>
 
@@ -50,6 +51,8 @@
         <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
         <platform.functrace.libs.unix>-ldl -lunwind -lbfd -ldw</platform.functrace.libs.unix>
         <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cpu</libnd4j.outputPath>
+        <!-- Default libnd4jhome for include paths - can be overridden by LIBND4J_HOME env var or libnd4j-assembly profile -->
+        <libnd4jhome>${project.build.directory}/../../../../../libnd4j</libnd4jhome>
         <!-- NDK specific: https://github.com/android/ndk/issues/1690-->
         <javacpp.compiler.crtoption></javacpp.compiler.crtoption>
 
@@ -170,8 +173,14 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
+                    <!-- ISO-8859-1: JavaCPP-generated bindings may contain non-ASCII from
+                         C++ header comments. On Windows, encoding mismatches produce invalid
+                         UTF-8. ISO-8859-1 accepts all byte values, and the non-ASCII is
+                         only in comments so it doesn't affect compiled output. -->
+                    <encoding>ISO-8859-1</encoding>
+                    <source>11</source>
+                    <target>11</target>
+                    <release combine.self="override"/>
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>java.base/java.nio=ALL-UNNAMED</arg>
@@ -184,6 +193,27 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-native-deps</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- Copy any additional .so files from libnd4j build dir (e.g., libomp.so) -->
+                                <copy todir="${javacpp.build.output.path}" failonerror="false" verbose="true">
+                                    <fileset dir="${libnd4j.outputPath}">
+                                        <include name="*.so"/>
+                                        <include name="*.so.*"/>
+                                        <exclude name="libnd4jcpu.so"/>
+                                    </fileset>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -596,6 +626,82 @@
         </profile>
 
         <profile>
+            <id>clang-to-clangxx</id>
+            <activation>
+                <property>
+                    <name>libnd4j.compiler</name>
+                    <value>clang</value>
+                </property>
+            </activation>
+            <properties>
+                <platform.compiler.actual>clang++</platform.compiler.actual>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>use-specified-compiler</id>
+            <activation>
+                <property>
+                    <name>libnd4j.compiler</name>
+                    <value>!clang</value>
+                </property>
+            </activation>
+            <properties>
+                <platform.compiler.actual>${libnd4j.compiler}</platform.compiler.actual>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>sanitizer</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>libnd4j.sanitize</name>
+                    <value>ON</value>
+                </property>
+            </activation>
+            <properties>
+                <!-- Sanitizer compile/link flags - dynamically set from libnd4j.sanitizers property -->
+                <platform.sanitizer.flag>-fsanitize=${libnd4j.sanitizers}</platform.sanitizer.flag>
+                <!-- Set compiler to the resolved value (clang -> clang++) -->
+                <javacpp.platform.compiler>${platform.compiler.actual}</javacpp.platform.compiler>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <compilerOptions>
+                                <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
+                                <compilerOption>${platform.sanitizer.flag}</compilerOption>
+                            </compilerOptions>
+                            <propertyKeysAndValues>
+                                <property>
+                                    <name>platform.compiler</name>
+                                    <value>${platform.compiler.actual}</value>
+                                </property>
+                                <property>
+                                    <name>platform.compiler.output</name>
+                                    <value>-Wl,-rpath,$ORIGIN/ -Wl,-z,noexecstack -Wl,-Bsymbolic -Wall -fPIC -pthread ${platform.sanitizer.flag} -shared -o </value>
+                                </property>
+                                <property>
+                                    <name>libnd4j.sanitizers</name>
+                                    <value>${libnd4j.sanitizers}</value>
+                                </property>
+                                <property>
+                                    <name>libnd4j.compiler</name>
+                                    <value>${platform.compiler.actual}</value>
+                                </property>
+                            </propertyKeysAndValues>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>compat-profile</id>
             <activation>
                 <property>
@@ -687,6 +793,8 @@
                             <includePaths>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-build/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/</includePath>
                                 <includePath>${libnd4jhome}/blas</includePath>
@@ -796,6 +904,24 @@
                                     <value>${javacpp.platform.extension}</value>
                                 </property>
                             </propertyKeysAndValues>
+                            <includePaths>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/</includePath>
+                                <includePath>${libnd4jhome}/blas</includePath>
+                                <includePath>${libnd4jhome}/include</includePath>
+                                <includePath>${libnd4jhome}/include/helpers</includePath>
+                                <includePath>${libnd4jhome}/include/array</includePath>
+                                <includePath>${libnd4jhome}/include/cnpy</includePath>
+                                <includePath>${libnd4jhome}/include/execution</includePath>
+                                <includePath>${libnd4jhome}/include/exceptions</includePath>
+                                <includePath>${libnd4jhome}/include/graph</includePath>
+                                <includePath>${libnd4jhome}/include/indexing</includePath>
+                                <includePath>${libnd4jhome}/include/memory</includePath>
+                            </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4j.outputPath}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
@@ -848,6 +974,196 @@
             <properties>
                 <javacpp.platform.extension>-avx512</javacpp.platform.extension>
             </properties>
+        </profile>
+
+        <!-- MKL BLAS/VML support profile -->
+        <profile>
+            <id>mkl</id>
+            <activation>
+                <property>
+                    <name>libnd4j.blas</name>
+                    <value>mkl</value>
+                </property>
+            </activation>
+            <dependencies>
+                <!-- MKL base (API) -->
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <!-- MKL platform-specific libraries -->
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>${dependency.platform}</classifier>
+                </dependency>
+                <!-- MKL redist - contains headers and additional libraries -->
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>${dependency.platform}-redist</classifier>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <includePaths>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/</includePath>
+                                <includePath>${libnd4jhome}/blas</includePath>
+                                <includePath>${libnd4jhome}/include</includePath>
+                                <includePath>${libnd4jhome}/include/helpers</includePath>
+                                <includePath>${libnd4jhome}/include/array</includePath>
+                                <includePath>${libnd4jhome}/include/cnpy</includePath>
+                                <includePath>${libnd4jhome}/include/execution</includePath>
+                                <includePath>${libnd4jhome}/include/exceptions</includePath>
+                                <includePath>${libnd4jhome}/include/graph</includePath>
+                                <includePath>${libnd4jhome}/include/indexing</includePath>
+                                <includePath>${libnd4jhome}/include/memory</includePath>
+                            </includePaths>
+                            <linkPaths>
+                                <linkPath>${libnd4j.outputPath}</linkPath>
+                                <linkPath>${env.MKL_PATH}/lib</linkPath>
+                                <linkPath>${env.MKL_PATH}/</linkPath>
+                            </linkPaths>
+                            <buildResources>
+                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                                <buildResource>/org/bytedeco/mkl/${javacpp.platform}/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/${javacpp.platform}/</buildResource>
+                                <buildResource>/lib/</buildResource>
+                                <buildResource>/</buildResource>
+                                <buildResource>${libnd4jhome}/blasbuild/cpu</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
+                                <includeResource>/org/bytedeco/mkl/${javacpp.platform}/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/${javacpp.platform}/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                                <linkResource>/org/bytedeco/mkl/${javacpp.platform}/</linkResource>
+                                <linkResource>/org/bytedeco/mkl/${javacpp.platform}/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/${javacpp.platform}/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
+                            </linkResources>
+                            <compilerOptions>
+                                <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
+                                <compilerOption>-DHAVE_MKL=1</compilerOption>
+                                <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
+                            </compilerOptions>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Default MKL for Linux x86_64 (activates unless libnd4j.blas=openblas) -->
+        <profile>
+            <id>mkl-default-linux-x86_64</id>
+            <activation>
+                <os>
+                    <name>Linux</name>
+                    <arch>amd64</arch>
+                </os>
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>linux-x86_64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>linux-x86_64-redist</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Default MKL for Windows x86_64 -->
+        <profile>
+            <id>mkl-default-windows-x86_64</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                    <arch>amd64</arch>
+                </os>
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>windows-x86_64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>windows-x86_64-redist</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Default MKL for macOS x86_64 -->
+        <profile>
+            <id>mkl-default-macosx-x86_64</id>
+            <activation>
+                <os>
+                    <name>Mac OS X</name>
+                    <arch>x86_64</arch>
+                </os>
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>macosx-x86_64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>macosx-x86_64-redist</classifier>
+                </dependency>
+            </dependencies>
         </profile>
 
         <profile>

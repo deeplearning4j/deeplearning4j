@@ -18,27 +18,94 @@
 
 package org.nd4j.linalg.jcublas.ops.executioner;
 
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocator;
-import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueContext;
 
+/**
+ * Deallocator for CudaOpContext that ensures proper cleanup order to prevent use-after-free.
+ */
+@Slf4j
 public class CudaOpContextDeallocator implements Deallocator {
     private transient final OpaqueContext context;
-    private long ctxId = -1;
+    private final int deviceId;
+    private volatile boolean deallocated = false;
 
-
+    /**
+     * Creates a deallocator that will properly clean up the CudaOpContext.
+     *
+     * @param ctx The CudaOpContext to deallocate
+     */
     public CudaOpContextDeallocator(CudaOpContext ctx) {
-        context = (OpaqueContext) ctx.contextPointer();
-
-
+        this.context = (OpaqueContext) ctx.contextPointer();
+        this.deviceId = ctx.targetDevice();
     }
 
     @Override
     public void deallocate() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().deleteGraphContext(context);
-    }
+        if (deallocated) {
+            return;
+        }
 
+        synchronized (this) {
+            if (deallocated) {
+                return;
+            }
+
+            if (context == null || context.isNull()) {
+                deallocated = true;
+                return;
+            }
+
+            try {
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+                int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                boolean switchedDevice = false;
+
+                if (currentDevice != deviceId) {
+                    // Use switchDevice which properly updates both native device
+                    // AND resets the cached CUDA context (ThreadLocal) for this thread.
+                    // Just calling nativeOps.setDevice() doesn't update the ThreadLocal context,
+                    // so commit() would sync the wrong device's streams.
+                    DeviceMemoryManager.getInstance().switchDevice(deviceId, "CudaOpContextDeallocator.deallocate", "dealloc");
+                    switchedDevice = true;
+                }
+
+                try {
+                    Nd4j.getExecutioner().commit();
+
+                    // Step 1: Clear the native Context's fastpath pointers FIRST.
+                    // This prevents the Context from holding dangling pointers to arrays.
+                    // Double-check isNull() in case close() was called concurrently.
+                    if (context != null && !context.isNull()) {
+                        nativeOps.ctxPurge(context);
+                    }
+
+                    // Step 2: Delete the native Context object.
+                    // Double-check isNull() again for same reason.
+                    if (context != null && !context.isNull()) {
+                        nativeOps.deleteGraphContext(context);
+                    }
+                } finally {
+                    // Restore original device context
+                    if (switchedDevice) {
+                        DeviceMemoryManager.getInstance().switchDevice(currentDevice, "CudaOpContextDeallocator.deallocate", "restore-device");
+                    }
+                }
+
+            } catch (Exception e) {
+                log.error("Error during CudaOpContext deallocation", e);
+            } finally {
+                deallocated = true;
+            }
+        }
+    }
 
     @Override
     public boolean isConstant() {

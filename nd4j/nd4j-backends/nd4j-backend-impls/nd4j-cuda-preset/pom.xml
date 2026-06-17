@@ -31,16 +31,17 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-cuda-preset</artifactId>
+    <artifactId>nd4j-cuda-12.9-preset</artifactId>
 
-    <name>nd4j-cuda-preset</name>
+    <name>nd4j-cuda-12.9-preset</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
         <!-- Note there could be different versions of javacpp for different cuda versions. -->
-        <cuda.version>12.3</cuda.version>
-        <cudnn.version>8.9</cudnn.version>
-        <javacpp-presets.cuda.version>1.5.10</javacpp-presets.cuda.version>
+        <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
+        <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
         <module.name>nd4j.cuda.preset</module.name>
     </properties>
 
@@ -63,10 +64,12 @@
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
+            <version>${javacpp.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
+            <version>${javacpp.version}</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
         <dependency>
@@ -117,6 +120,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <encoding>ISO-8859-1</encoding>
                     <source>11</source>
                     <target>11</target>
                 </configuration>

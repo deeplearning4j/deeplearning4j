@@ -28,6 +28,8 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -50,120 +52,135 @@ import java.util.List;
 public class CudaOpContext extends BaseOpContext implements OpContext, Deallocatable {
     // we might want to have configurable
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-    private OpaqueContext context = nativeOps.createGraphContext(1);
+    private volatile OpaqueContext context = nativeOps.createGraphContext(1);
+    // Track whether close() was already called to prevent double-free
+    private volatile boolean closed = false;
     private final transient long id = Nd4j.getDeallocatorService().nextValue();
     public final static long BASE_CUDA_OP_CONTEXT_OFFSET = RandomUtils.nextLong();
     private long deallocationId;
 
-    // CRITICAL: Keep OpaqueNDArrayArr instances alive to prevent use-after-free in native code.
-    // These hold references to parent INDArrays, preventing GC from freeing their DataBuffers
-    // while the native Context still holds pointers to the sd::NDArray* objects.
-    private OpaqueNDArrayArr inputArraysHolder;
-    private OpaqueNDArrayArr outputArraysHolder;
+    private final int deviceId;
 
     // Keep strong references to INDArrays passed via single-array setters.
     // This prevents GC from collecting them while this OpContext is alive.
-    // The cached OpaqueNDArrays inside these INDArrays will remain valid.
     private final java.util.Map<Integer, INDArray> singleInputArrayRefs = new java.util.HashMap<>();
     private final java.util.Map<Integer, INDArray> singleOutputArrayRefs = new java.util.HashMap<>();
 
+    private final java.util.Map<Integer, OpaqueNDArray> inputOpaqueArrayRefs = new java.util.HashMap<>();
+    private final java.util.Map<Integer, OpaqueNDArray> outputOpaqueArrayRefs = new java.util.HashMap<>();
+
 
     public CudaOpContext() {
+        this.deviceId = AtomicAllocator.getInstance().getDeviceId();
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
     }
 
     @Override
     public void close() {
-        purge();
-        // Clean up array holders to release parent references
-        if (inputArraysHolder != null) {
-            inputArraysHolder.close();
-            inputArraysHolder = null;
+        // Prevent double-close which would cause double-free
+        if (closed) {
+            return;
         }
-        if (outputArraysHolder != null) {
-            outputArraysHolder.close();
-            outputArraysHolder = null;
+
+        synchronized (this) {
+            // Double-check inside synchronized block - return if already closed
+            if (closed) {
+                return;
+            }
+
+            int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            boolean switched = false;
+            if (currentDevice != deviceId) {
+                DeviceMemoryManager.getInstance().switchDevice(deviceId, "CudaOpContext.close", "device-cleanup");
+                switched = true;
+            }
+            try {
+                Nd4j.getExecutioner().commit();
+                purge();
+                singleInputArrayRefs.clear();
+                singleOutputArrayRefs.clear();
+                inputOpaqueArrayRefs.clear();
+                outputOpaqueArrayRefs.clear();
+                Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+                if (context != null && !context.isNull()) {
+                    nativeOps.deleteGraphContext(context);
+                    context.setNull();
+                }
+            } finally {
+                closed = true;
+                if (switched) {
+                    DeviceMemoryManager.getInstance().switchDevice(currentDevice, "CudaOpContext.close", "restore-device");
+                }
+            }
         }
-        // Clear single-array references (no need to close OpaqueNDArrays - they're cached and
-        // managed by the INDArrays themselves, which will clean them up when they're GC'd)
-        singleInputArrayRefs.clear();
-        singleOutputArrayRefs.clear();
-        Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
-        nativeOps.deleteGraphContext(context);
     }
 
     @Override
     public void setIArguments(long... arguments) {
-        if (arguments.length > 0) {
-            super.setIArguments(arguments);
-            LongPointer iArgs = new LongPointer(arguments);
-            nativeOps.setGraphContextIArguments(context, iArgs, arguments.length);
-        }
+        super.setIArguments(arguments);
+        LongPointer iArgs = arguments.length > 0 ? new LongPointer(arguments) : new LongPointer(0);
+        nativeOps.setGraphContextIArguments(context, iArgs, arguments.length);
     }
 
     @Override
     public void setBArguments(boolean... arguments) {
-        if (arguments.length > 0) {
-            super.setBArguments(arguments);
-            BooleanPointer bArgs = new BooleanPointer(arguments);
-            nativeOps.setGraphContextBArguments(context, bArgs, arguments.length);
-        }
+        super.setBArguments(arguments);
+        BooleanPointer bArgs = arguments.length > 0 ? new BooleanPointer(arguments) : new BooleanPointer(0);
+        nativeOps.setGraphContextBArguments(context, bArgs, arguments.length);
     }
 
     @Override
     public void setTArguments(double... arguments) {
-        if (arguments.length > 0) {
-            super.setTArguments(arguments);
-            DoublePointer tArgs = new DoublePointer(arguments);
-            nativeOps.setGraphContextTArguments(context, tArgs, arguments.length);
-        };
+        super.setTArguments(arguments);
+        DoublePointer tArgs = arguments.length > 0 ? new DoublePointer(arguments) : new DoublePointer(0);
+        nativeOps.setGraphContextTArguments(context, tArgs, arguments.length);
     }
 
     @Override
     public void setDArguments(DataType... arguments) {
-        if (arguments.length > 0) {
-            super.setDArguments(arguments);
-            val args = new int[arguments.length];
-            for (int e = 0; e < arguments.length; e++)
-                args[e] = arguments[e].toInt();
+        super.setDArguments(arguments);
+        val args = new int[arguments.length];
+        for (int e = 0; e < arguments.length; e++)
+            args[e] = arguments[e].toInt();
 
-            IntPointer dArgs =  new IntPointer(args);
-            nativeOps.setGraphContextDArguments(context,dArgs, arguments.length);
-        }
+        IntPointer dArgs = args.length > 0 ? new IntPointer(args) : new IntPointer(0);
+        nativeOps.setGraphContextDArguments(context, dArgs, arguments.length);
     }
 
     @Override
     public void setInputArrays(@NonNull List<INDArray> arrays) {
-        // CRITICAL: Store ALL arrays (including empty ones) to prevent GC from freeing
-        // their DataBuffers while native code holds pointers to sd::NDArray* objects.
+        int idx = 0;
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
-            // Always store the array reference, not null - prevents use-after-free under memory pressure
-            fastpath_in.put(i, array);
-        }
-        if (!arrays.isEmpty()) {
-            // Use createFrom() which keeps parent array references and registers with DeallocatorService
-            // Store in instance field to keep alive for duration of this OpContext
-            inputArraysHolder = OpaqueNDArrayArr.createFrom(arrays);
-            nativeOps.setGraphContextInputArraysArr(context, arrays.size(), inputArraysHolder);
+            if (array == null) {
+                continue;  // Skip null inputs
+            }
+            // Note: OpaqueNDArray.fromINDArray() already calls syncToSpecial()
+            // so we don't need a separate sync here.
+            fastpath_in.put(idx, array);
+            singleInputArrayRefs.put(idx, array);
+            OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+            inputOpaqueArrayRefs.put(idx, opaqueArray);
+            nativeOps.setGraphContextInputArray(context, idx, opaqueArray);
+            idx++;
         }
     }
 
     @Override
     public void setOutputArrays(@NonNull List<INDArray> arrays) {
-        // CRITICAL: Store ALL arrays (including empty ones) to prevent GC from freeing
-        // their DataBuffers while native code holds pointers to sd::NDArray* objects.
+        // Use the single-array approach like CpuOpContext - bypasses OpaqueNDArrayArr issues
+        int idx = 0;
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
-            // Always store the array reference, not null - prevents use-after-free under memory pressure
-            fastpath_out.put(i, array);
-        }
-
-        if (!arrays.isEmpty()) {
-            // Use createFrom() which keeps parent array references and registers with DeallocatorService
-            // Store in instance field to keep alive for duration of this OpContext
-            outputArraysHolder = OpaqueNDArrayArr.createFrom(arrays);
-            nativeOps.setGraphContextOutputArraysArr(context, arrays.size(), outputArraysHolder);
+            if (array == null) {
+                continue;  // Skip null outputs
+            }
+            fastpath_out.put(idx, array);
+            singleOutputArrayRefs.put(idx, array);
+            OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+            outputOpaqueArrayRefs.put(idx, opaqueArray);
+            nativeOps.setGraphContextOutputArray(context, idx, opaqueArray);
+            idx++;
         }
     }
     @Override
@@ -221,7 +238,13 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public INDArray getIntermediateResult(int index) {
+        if (context == null || context.isNull()) {
+            throw new IllegalStateException("Cannot get intermediate result: OpContext native context is null");
+        }
         LongPointer shapeInfo = nativeOps.intermediateResultShapeInfoAt(index,context);
+        if (shapeInfo == null || shapeInfo.isNull()) {
+            throw new IllegalStateException("Failed to retrieve intermediate result shape info at index " + index + ": returned null");
+        }
         long rank = shapeInfo.get(0);
         shapeInfo.capacity(Shape.shapeInfoLength(rank));
         DataBuffer shapeInfoBuffer = Nd4j.createBuffer(shapeInfo, shapeInfo.capacity(),DataType.LONG);
@@ -251,6 +274,14 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     }
 
     @Override
+    public void setSArguments(String... arguments) {
+        super.setSArguments(arguments);
+        for (int i = 0; i < arguments.length; i++) {
+            nativeOps.setGraphContextSArgument(context, arguments[i], i);
+        }
+    }
+
+    @Override
     public void setRngStates(long rootState, long nodeState) {
         nativeOps.setRandomGeneratorStates(nativeOps.getGraphContextRandomGenerator(context), rootState, nodeState);
     }
@@ -263,10 +294,11 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
-        // Store strong reference to INDArray to prevent GC while this OpContext is alive
+        // Note: OpaqueNDArray.fromINDArray() already handles syncToSpecial()
+        // for non-constant arrays, so no separate sync needed here.
         singleInputArrayRefs.put(index, array);
-        // Use cached OpaqueNDArray from INDArray - keeping INDArray alive keeps the cached OpaqueNDArray valid
         OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+        inputOpaqueArrayRefs.put(index, opaqueArray);
         nativeOps.setGraphContextInputArray(context, index, opaqueArray);
         super.setInputArray(index, array);
     }
@@ -275,8 +307,8 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     public void setOutputArray(int index, @NonNull INDArray array) {
         // Store strong reference to INDArray to prevent GC while this OpContext is alive
         singleOutputArrayRefs.put(index, array);
-        // Use cached OpaqueNDArray from INDArray - keeping INDArray alive keeps the cached OpaqueNDArray valid
         OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+        outputOpaqueArrayRefs.put(index, opaqueArray);
         nativeOps.setGraphContextOutputArray(context, index, opaqueArray);
         super.setOutputArray(index, array);
     }
@@ -314,11 +346,34 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void purge() {
+        if (closed) {
+            return;
+        }
+        Nd4j.getExecutioner().commit();
         super.purge();
-        nativeOps.ctxPurge(context);
-        Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+        if (context != null && !context.isNull()) {
+            nativeOps.ctxPurge(context);
+        }
+    }
 
-
+    @Override
+    public void purgeForReuse() {
+        if (closed) {
+            return;
+        }
+        // Skip the Java commit() - the caller (InferenceSession) does a single
+        // commit() after the full execution loop instead of per-op.
+        // Use ctxPurgeNoSync to clear the native fast path vectors without
+        // cudaDeviceSynchronize() - the kernel has already read the array pointers
+        // at launch time, so clearing the vectors is safe without a full device sync.
+        super.purgeForReuse();
+        singleInputArrayRefs.clear();
+        singleOutputArrayRefs.clear();
+        inputOpaqueArrayRefs.clear();
+        outputOpaqueArrayRefs.clear();
+        if (context != null && !context.isNull()) {
+            nativeOps.ctxPurgeNoSync(context);
+        }
     }
 
     @Override
@@ -335,6 +390,20 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public int targetDevice() {
-        return 0;
+        return deviceId;
+    }
+
+    @Override
+    public void attachWorkspace(Pointer workspacePointer) {
+        if (context != null && workspacePointer != null) {
+            nativeOps.attachWorkspaceToContext(context, workspacePointer);
+        }
+    }
+
+    @Override
+    public void detachWorkspace() {
+        if (context != null) {
+            nativeOps.detachWorkspaceFromContext(context);
+        }
     }
 }

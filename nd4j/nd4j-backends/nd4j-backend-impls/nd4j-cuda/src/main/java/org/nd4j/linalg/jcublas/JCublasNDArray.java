@@ -46,6 +46,7 @@ import org.nd4j.linalg.jcublas.buffer.CudaUtf8Buffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.api.memory.MemcpyDirection;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.ByteArrayOutputStream;
@@ -438,6 +439,11 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray dup() {
+        // Commit pending CUDA operations before duplicating data.
+        // Without this, asFloat()/synchronizeHostData() in super.dup() may copy
+        // stale/uninitialized data because CUDA kernels haven't completed yet.
+        Nd4j.getExecutioner().commit();
+
         if (this.isCompressed() && this.ordering() == Nd4j.order().charValue()) {
             INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
             ret.markAsCompressed(true);
@@ -448,12 +454,14 @@ public class JCublasNDArray extends BaseNDArray {
         */
 
         val res = super.dup();
-        Nd4j.getExecutioner().commit();
         return res;
     }
 
     @Override
     public INDArray dup(char order) {
+        // Commit pending CUDA operations before duplicating data.
+        Nd4j.getExecutioner().commit();
+
         if (this.isCompressed() && this.ordering() == order) {
             INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
             ret.markAsCompressed(true);
@@ -465,6 +473,12 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public boolean equals(Object o) {
+        // Commit pending CUDA operations before comparing data.
+        // Without this, the element-by-element comparison (sub, lt, sumNumber) may
+        // operate on stale device buffers when the producing op is still queued in a
+        // separate CUDA stream and has not yet been submitted to the driver.
+        // This mirrors the pattern used in dup(), leverageTo(), and toString().
+        Nd4j.getExecutioner().commit();
         return super.equals(o);
     }
 
@@ -533,11 +547,28 @@ public class JCublasNDArray extends BaseNDArray {
         MemcpyDirection direction = MemcpyDirection.HOST_TO_HOST;
         val prof = PerformanceTracker.getInstance().helperStartTransaction();
 
-        if (srcPoint.isActualOnDeviceSide()) {
+        // Check for cross-device copy without P2P - must go through host memory
+        int srcDeviceId = srcPoint.getDeviceId();
+        int dstDeviceId = dstPoint.getDeviceId();
+        boolean crossDevice = srcDeviceId >= 0 && dstDeviceId >= 0 && srcDeviceId != dstDeviceId;
+        boolean p2pAvailable = NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable()
+                && CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed();
+
+        if (srcPoint.isActualOnDeviceSide() && (!crossDevice || p2pAvailable)) {
+            // Same device or P2P available - direct D2D copy is safe
             route = 1;
             NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getDevicePointer(), srcPoint.getDevicePointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyDeviceToDevice, blocking ? context.getOldStream() : context.getSpecialStream());
             dstPoint.tickDeviceWrite();
             direction = MemcpyDirection.DEVICE_TO_DEVICE;
+        } else if (crossDevice && !p2pAvailable && srcPoint.isActualOnDeviceSide()) {
+            // Cross-device without P2P - must sync to host first, then H2D copy
+            route = 2;
+            if (!srcPoint.isActualOnHostSide()) {
+                AtomicAllocator.getInstance().synchronizeHostData(this);
+            }
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getDevicePointer(), srcPoint.getHostPointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, blocking ? context.getOldStream() : context.getSpecialStream());
+            dstPoint.tickDeviceWrite();
+            direction = MemcpyDirection.HOST_TO_DEVICE;
         } else {
             route = 3;
             NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getDevicePointer(), srcPoint.getHostPointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, blocking ? context.getOldStream() : context.getSpecialStream());
@@ -598,9 +629,25 @@ public class JCublasNDArray extends BaseNDArray {
             MemcpyDirection direction = MemcpyDirection.DEVICE_TO_DEVICE;
             val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
-            if (pointSrc.isActualOnDeviceSide()) {
+            // Check for cross-device copy without P2P - must go through host memory
+            int srcDeviceId = pointSrc.getDeviceId();
+            int dstDeviceId = pointDst.getDeviceId();
+            boolean crossDevice = srcDeviceId >= 0 && dstDeviceId >= 0 && srcDeviceId != dstDeviceId;
+            boolean p2pAvailable = NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable()
+                    && CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed();
+
+            if (pointSrc.isActualOnDeviceSide() && (!crossDevice || p2pAvailable)) {
+                // Same device or P2P available - direct D2D copy is safe
                 if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
                     throw new ND4JIllegalStateException("memcpyAsync failed");
+            } else if (crossDevice && !p2pAvailable && pointSrc.isActualOnDeviceSide()) {
+                // Cross-device without P2P - must sync to host first, then H2D copy
+                if (!pointSrc.isActualOnHostSide()) {
+                    AtomicAllocator.getInstance().synchronizeHostData(this);
+                }
+                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getHostPointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
+                    throw new ND4JIllegalStateException("memcpyAsync failed");
+                direction = MemcpyDirection.HOST_TO_DEVICE;
             } else {
                 if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getHostPointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
                     throw new ND4JIllegalStateException("memcpyAsync failed");
@@ -653,9 +700,25 @@ public class JCublasNDArray extends BaseNDArray {
             MemcpyDirection direction = MemcpyDirection.DEVICE_TO_DEVICE;
             val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
-            if (pointSrc.isActualOnDeviceSide()) {
+            // Check for cross-device copy without P2P - must go through host memory
+            int srcDeviceId = pointSrc.getDeviceId();
+            int dstDeviceId = pointDst.getDeviceId();
+            boolean crossDevice = srcDeviceId >= 0 && dstDeviceId >= 0 && srcDeviceId != dstDeviceId;
+            boolean p2pAvailable = NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable()
+                    && CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed();
+
+            if (pointSrc.isActualOnDeviceSide() && (!crossDevice || p2pAvailable)) {
+                // Same device or P2P available - direct D2D copy is safe
                 if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
                     throw new ND4JIllegalStateException("memcpyAsync failed");
+            } else if (crossDevice && !p2pAvailable && pointSrc.isActualOnDeviceSide()) {
+                // Cross-device without P2P - must sync to host first, then H2D copy
+                if (!pointSrc.isActualOnHostSide()) {
+                    AtomicAllocator.getInstance().synchronizeHostData(this);
+                }
+                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getHostPointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
+                    throw new ND4JIllegalStateException("memcpyAsync failed");
+                direction = MemcpyDirection.HOST_TO_DEVICE;
             } else {
                 if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getHostPointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
                     throw new ND4JIllegalStateException("memcpyAsync failed");

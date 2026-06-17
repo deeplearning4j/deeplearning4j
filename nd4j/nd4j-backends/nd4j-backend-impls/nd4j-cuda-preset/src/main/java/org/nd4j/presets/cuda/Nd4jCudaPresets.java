@@ -27,6 +27,7 @@ import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.Properties;
 import org.bytedeco.javacpp.tools.*;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.presets.OpExclusionUtils;
 
 /**
@@ -40,8 +41,21 @@ import org.nd4j.presets.OpExclusionUtils;
                 //going to be the source of ops, see also:
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/blas/CMakeLists.txt#L76
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/buildnativeoperations.sh#L517
-                "generated/include_ops.h",
+                // Subsystem config classes + Environment.h MUST be listed BEFORE any
+                // header that transitively #includes them. TadPack.h → NDArray.h →
+                // DataTypeUtils.h → Environment.h → all config headers, which would
+                // cause header guards to silently skip the explicit parse below.
+                // DataType.h must come first because CoreConfig references sd::DataType.
                 "array/DataType.h",
+                "system/config/CoreConfig.h",
+                "system/config/CudaDeviceConfig.h",
+                "system/config/TritonConfig.h",
+                "system/config/DspConfig.h",
+                "system/config/LifecycleConfig.h",
+                "system/config/MemoryConfig.h",
+                "system/config/PrintConfig.h",
+                "system/Environment.h",
+                "generated/include_ops.h",
                 "array/DataBuffer.h",
                 "array/PointerDeallocator.h",
                 "array/PointerWrapper.h",
@@ -54,9 +68,9 @@ import org.nd4j.presets.OpExclusionUtils;
                 "execution/Engine.h",
                 "execution/ExecutionMode.h",
                 "memory/MemoryType.h",
-                "system/Environment.h",
                 "types/utf8string.h",
                 "legacy/NativeOps.h",
+                "dsp/NativeOpsDsp.h",
                 "memory/ExternalWorkspace.h",
                 "memory/Workspace.h",
                 "indexing/NDIndex.h",
@@ -72,7 +86,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "graph/RandomGenerator.h",
                 "graph/Variable.h",
                 "graph/VariablesSet.h",
-                "graph/FlowPath.h",
                 "graph/Intervals.h",
                 "graph/Stash.h",
                 "graph/VariableSpace.h",
@@ -81,13 +94,13 @@ import org.nd4j.presets.OpExclusionUtils;
                 "graph/profiling/NodeProfile.h",
                 "graph/Context.h",
                 "graph/ContextPrototype.h",
-                "graph/ResultWrapper.h",
                 "helpers/shape.h",
                 "array/ShapeList.h",
                 "system/op_boilerplate.h",
                 "system/CudaLimitType.h",
                 "ops/InputType.h",
                 "ops/declarable/OpDescriptor.h",
+                "helpers/HelperVersionRegistry.h",
                 "ops/declarable/PlatformHelper.h",
                 "ops/declarable/BroadcastableOp.h",
                 "ops/declarable/BroadcastableBoolOp.h",
@@ -129,12 +142,12 @@ import org.nd4j.presets.OpExclusionUtils;
                 },
                 compiler = {"cpp11", "nowarnings"},
                 library = "jnind4jcuda", link = "nd4jcuda", preload = "libnd4jcuda"),
-                @Platform(value = "linux", preload = "gomp@.1", preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"}),
+                @Platform(value = "linux", preload = "gomp@.1", preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"},includepath = {"/usr/local/cuda/targets/x86_64-linux/include/"}),
                 @Platform(value = "linux-armhf", preloadpath = {"/usr/arm-linux-gnueabihf/lib/", "/usr/lib/arm-linux-gnueabihf/"}),
                 @Platform(value = "linux-arm64", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
-                @Platform(extension = {"-cudnn","-"})})
+                @Platform(extension = {"-cudnn","-", "-compile"})})
 public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
     private Logger logger;
     private java.util.Properties properties;
@@ -152,21 +165,42 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         String platform = properties.getProperty("platform");
         List<String> preloads = properties.get("platform.preload");
         List<String> resources = properties.get("platform.preloadresource");
-        boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
-        System.out.println("Functrace on: " + funcTrace);
+
+        // Maven properties are passed via System.getProperty during JavaCPP execution
+        String calltraceProperty = System.getProperty(ND4JSystemProperties.LIBND4J_CALLTRACE, "OFF");
+        boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");
+
+
         // Only apply this at load time since we don't want to copy the CUDA libraries here
         if (!Loader.isLoadLibraries()) {
             return;
         }
+
+        // Add CUDA libraries to preload list with correct version suffixes for CUDA 12.x
+        // Library version mapping (from /usr/local/cuda-12.9/lib64/):
+        //   libcudart.so.12, libcublas.so.12, libcublasLt.so.12, libcusparse.so.12
+        //   libcurand.so.10 (curand is still version 10), libcusolver.so.11 (cusolver is still version 11)
         int i = 0;
-        String[] libs = {"cudart", "cublasLt", "cublas", "curand", "cusolver", "cusparse", "cudnn",
-                "cudnn_ops_infer", "cudnn_ops_train", "cudnn_adv_infer",
-                "cudnn_adv_train", "cudnn_cnn_infer", "cudnn_cnn_train"};
+        String[] libs = {"cudart", "cublasLt", "cublas", "curand", "cusolver", "cusparse"};
         for (String lib : libs) {
             if (platform.startsWith("linux")) {
-                lib += lib.startsWith("cudnn") ? "@.8" : lib.equals("curand") ? "@.10" : lib.equals("cudart") ? "@.11.0" : "@.11";
+                // Version suffixes for CUDA 12.x
+                if (lib.equals("curand")) {
+                    lib += "@.10";  // curand is still version 10
+                } else if (lib.equals("cusolver")) {
+                    lib += "@.11";  // cusolver is still version 11
+                } else {
+                    lib += "@.12";  // cudart, cublas, cublasLt, cusparse use version 12
+                }
             } else if (platform.startsWith("windows")) {
-                lib += lib.startsWith("cudnn") ? "64_8" : lib.equals("curand") ? "64_10" : lib.equals("cudart") ? "64_110" : "64_11";
+                // Windows version suffixes for CUDA 12.x
+                if (lib.equals("curand")) {
+                    lib += "64_10";
+                } else if (lib.equals("cusolver")) {
+                    lib += "64_11";
+                } else {
+                    lib += "64_12";
+                }
             } else {
                 continue; // no CUDA
             }
@@ -182,9 +216,16 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
     @Override
     public void map(InfoMap infoMap) {
         //whether to include the SD_GCC_FUNCTRACE definition in the build. Not needed if we're not enabling the profiler.
-        boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
-        System.out.println("Functrace on: " + funcTrace);
-        infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
+        // Maven properties are passed via System.getProperty during JavaCPP execution
+        String calltraceProperty = System.getProperty(ND4JSystemProperties.LIBND4J_CALLTRACE, "OFF");
+        boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");
+
+        logger.info("==============================================");
+        logger.info("JavaCPP Preset (CUDA) - Functrace Configuration:");
+        logger.info("  libnd4j.calltrace property: " + calltraceProperty);
+        logger.info("  SD_GCC_FUNCTRACE will be: " + (funcTrace ? "DEFINED" : "UNDEFINED"));
+        logger.info("==============================================");
+        infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "SD_TLS_EXPORT", "CUBLASWINAPI",
                         "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("NativeOps.h", "build_info.h").objectify())
                 .put(new Info("OpaqueNDArray").pointerTypes("org.nd4j.nativeblas.OpaqueNDArray"))
@@ -193,7 +234,6 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("createOpaqueNDArray").javaNames("create"))
 
                 .put(new Info("OpaqueTadPack").pointerTypes("org.nd4j.nativeblas.OpaqueTadPack"))
-                .put(new Info("OpaqueResultWrapper").pointerTypes("org.nd4j.nativeblas.OpaqueResultWrapper"))
                 .put(new Info("OpaqueShapeList").pointerTypes("org.nd4j.nativeblas.OpaqueShapeList"))
                 .put(new Info("OpaqueVariablesSet").pointerTypes("org.nd4j.nativeblas.OpaqueVariablesSet"))
                 .put(new Info("OpaqueVariable").pointerTypes("org.nd4j.nativeblas.OpaqueVariable"))
@@ -201,9 +241,50 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("OpaqueConstantShapeBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueConstantShapeBuffer"))
                 .put(new Info("OpaqueConstantOffsetsBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueConstantOffsetsBuffer"))
                 .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
+                .put(new Info("OpaqueWorkspace").cast().pointerTypes("Pointer"))
+                // Workspace management functions - explicit javaText to ensure correct pointer semantics
+                .put(new Info("createNativeWorkspace").javaText(
+                        "public native @Cast(\"OpaqueWorkspace\") Pointer createNativeWorkspace(@Cast(\"sd::LongType\") long initialSize);"))
+                .put(new Info("destroyNativeWorkspace").javaText(
+                        "public native void destroyNativeWorkspace(@Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("workspaceScopeIn").javaText(
+                        "public native void workspaceScopeIn(@Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("workspaceScopeOut").javaText(
+                        "public native void workspaceScopeOut(@Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("attachWorkspaceToContext").javaText(
+                        "public native void attachWorkspaceToContext(org.nd4j.nativeblas.OpaqueContext ctx, @Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("detachWorkspaceFromContext").javaText(
+                        "public native void detachWorkspaceFromContext(org.nd4j.nativeblas.OpaqueContext ctx);"))
+                .put(new Info("getWorkspaceCurrentOffset").javaText(
+                        "public native @Cast(\"sd::LongType\") long getWorkspaceCurrentOffset(@Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("getWorkspaceAllocatedSize").javaText(
+                        "public native @Cast(\"sd::LongType\") long getWorkspaceAllocatedSize(@Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("OpaqueMultiBackendWorkspace").cast().pointerTypes("Pointer"))
                 .put(new Info("OpaqueRandomGenerator").pointerTypes("org.nd4j.nativeblas.OpaqueRandomGenerator"))
+                // Ensure RandomGenerator functions don't use @ByVal - they should return/accept pointers
+                .put(new Info("createRandomGenerator").javaText(
+                        "public native org.nd4j.nativeblas.OpaqueRandomGenerator createRandomGenerator(@Cast(\"sd::LongType\") long rootSeed, @Cast(\"sd::LongType\") long nodeSeed);"))
+                .put(new Info("getGraphContextRandomGenerator").javaText(
+                        "public native org.nd4j.nativeblas.OpaqueRandomGenerator getGraphContextRandomGenerator(org.nd4j.nativeblas.OpaqueContext ptr);"))
                 .put(new Info("OpaqueLaunchContext").pointerTypes("org.nd4j.nativeblas.OpaqueLaunchContext"))
                 .put(new Info("OpaqueDataBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueDataBuffer"))
+                // Add @NoDeallocator to OpaqueDataBuffer-returning methods to prevent JavaCPP
+                // from attaching a NativeDeallocator. ND4J's DeallocatorService manages buffer lifecycle.
+                // Without this, JavaCPP's deallocator races with DeallocatorService causing use-after-free.
+                .put(new Info("dbCreateExternalDataBuffer").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(@Cast(\"sd::LongType\") long elements, int dataType, @Cast(\"sd::Pointer\") Pointer primary, @Cast(\"sd::Pointer\") Pointer special);"))
+                // This function marks the buffer constant in native code before returning to Java,
+                // eliminating the race window between buffer creation and marking constant.
+                .put(new Info("dbCreateConstantExternalDataBuffer").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateConstantExternalDataBuffer(@Cast(\"sd::LongType\") long elements, int dataType, @Cast(\"sd::Pointer\") Pointer primary, @Cast(\"sd::Pointer\") Pointer special);"))
+                .put(new Info("dbAllocateDataBuffer").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(@Cast(\"sd::LongType\") long elements, int dataType, @Cast(\"bool\") boolean allocateBoth);"))
+                .put(new Info("allocateDataBuffer").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer allocateDataBuffer(@Cast(\"sd::LongType\") long elements, int dataType, @Cast(\"bool\") boolean allocateBoth);"))
+                .put(new Info("dbCreateView").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateView(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast(\"sd::LongType\") long length);"))
+                .put(new Info("intermediateResultDataAt").javaText(
+                        "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);"))
                 .put (new Info("std::vector<std::string>","std::vector<std::string>*").cast().pointerTypes("PointerPointer"))
 
                 .put(new Info("const char").valueTypes("byte").pointerTypes("@Cast(\"char*\") String",
@@ -229,6 +310,9 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                         :  new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__NEC__","SD_GCC_FUNCTRACE" ).define(false))
                 .put(funcTrace ? new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__","SD_CUDA","SD_GCC_FUNCTRACE").define(true) :
                         new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__","SD_CUDA").define(true))
+                .put(new Info("SD_PADDED_NEW_DELETE").cppText("#define SD_PADDED_NEW_DELETE"))
+                .put(new Info("SD_VALIDATE_PTR", "SD_VALIDATE_THIS", "SD_VALIDATE_ALIGNED", "SD_VALIDATE_MAGIC").cppText(""))
+                .put(new Info("OpTraits").cast().valueTypes("int").pointerTypes("IntPointer"))
                 .put(funcTrace ? new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
                         "sd::graph::FlatResult",
                         "throwException",
@@ -249,15 +333,31 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("std::vector<const sd::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
                 .put(new Info("Graph").pointerTypes("Pointer"))
-                .put(new Info("sd::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                 .put(new Info("sd::IndicesList").purify())
                 .put(new Info("shape::cuMalloc").skip())
-                .put(new Info("ErrorResult").skip());
+                .put(new Info("ErrorResult").skip())
+                // Skip thread-local variables from DataBuffer.h — not callable from Java
+                .put(new Info("sd::tl_graphExecutionActive", "sd::tl_captureWorkspace",
+                        "sd::tl_captureWorkspaceSize", "sd::tl_captureWorkspaceOffset",
+                        "sd::tl_capturedHostPtrs", "sd::tl_captureReplicateCache",
+                        "sd::tl_graphCaptureStream").skip());
 
         OpExclusionUtils.processOps(logger, properties, infoMap);
         infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
         //skip in case header definition not working
         infoMap.put(new Info("calculateOutputShapesNec").skip());
+        infoMap.put(new Info("sd::ops::platforms::VersionProviderCallback",
+                "sd::ops::platforms::VersionProviderRegistrar",
+                "sd::ops::platforms::HelperVersionRegistry::registerProvider",
+                "sd::ops::platforms::HelperVersionRegistry::getAllHelperInfo").skip());
+        infoMap.put(new Info("sd::ops::platforms::HelperVersion::toString").javaNames("toVersionString"));
+        infoMap.put(new Info("sd::ops::platforms::HelperInfo::getDetailedStatus").javaNames("getDetailedStatusString"));
+        // Subsystem config classes — exposed to Java via env.triton(), env.dsp(), etc.
+        // JavaCPP can't parse std::atomic<T>, so tell it to ignore those private members.
+        // The public getter/setter methods return plain int/bool/int64_t and bind fine.
+        infoMap.put(new Info("std::atomic<bool>", "std::atomic<int>", "std::atomic<int64_t>",
+                "std::atomic<float>", "std::atomic<double>", "std::atomic<long>",
+                "std::atomic<sd::DataType>", "std::atomic<size_t>").cast().skip());
 
 
     }

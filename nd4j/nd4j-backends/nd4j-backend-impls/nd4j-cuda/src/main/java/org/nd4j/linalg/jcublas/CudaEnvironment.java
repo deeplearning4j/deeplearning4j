@@ -17,6 +17,7 @@
  ******************************************************************************/
 package org.nd4j.linalg.jcublas;
 
+import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
 
@@ -27,10 +28,24 @@ import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
  */
 public class CudaEnvironment implements Environment {
 
+    // CUDA limit type definitions
+    public static final int
+        CUDA_LIMIT_STACK_SIZE = 0,
+        CUDA_LIMIT_MALLOC_HEAP_SIZE = 1,
+        CUDA_LIMIT_PRINTF_FIFO_SIZE = 2,
+        CUDA_LIMIT_DEV_RUNTIME_SYNC_DEPTH = 3,
+        CUDA_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT = 4,
+        CUDA_LIMIT_MAX_L2_FETCH_GRANULARITY = 5,
+        CUDA_LIMIT_PERSISTING_L2_CACHE_SIZE = 6;
+
     private static final CudaEnvironment INSTANCE = new CudaEnvironment(Nd4jCuda.Environment.getInstance());
     protected boolean funcTracePrintJavaOnly = false;
     protected boolean workspaceTrackOpenClose = false;
     protected int numEventsToKeep = -1;
+    protected boolean truncateNDArrayLongStrings = false;
+
+    // Variable origin tracing flag for debugging import issues
+    protected boolean variableTracingEnabled = false;
 
     private final Nd4jCuda.Environment e;
     public static CudaEnvironment getInstance(){
@@ -93,12 +108,12 @@ public class CudaEnvironment implements Environment {
 
     @Override
     public boolean isTruncateNDArrayLogStrings() {
-        return false;
+        return truncateNDArrayLongStrings;
     }
 
     @Override
     public void setTruncateLogStrings(boolean truncateLogStrings) {
-
+        this.truncateNDArrayLongStrings = truncateLogStrings;
     }
 
     @Override
@@ -332,6 +347,16 @@ public class CudaEnvironment implements Environment {
         e.setDeleteSpecial(reallyDelete);
     }
 
+    @Override
+    public boolean isVariableTracingEnabled() {
+        return variableTracingEnabled;
+    }
+
+    @Override
+    public void setVariableTracingEnabled(boolean enabled) {
+        this.variableTracingEnabled = enabled;
+    }
+
     // CUDA specific methods
     
     @Override
@@ -467,6 +492,16 @@ public class CudaEnvironment implements Environment {
     @Override
     public void setCudaCachingAllocatorLimit(int limitInMB) {
         e.setCudaCachingAllocatorLimit(limitInMB);
+    }
+
+    @Override
+    public long cudaPinnedHostLimit() {
+        return e.cudaPinnedHostLimit();
+    }
+
+    @Override
+    public void setCudaPinnedHostLimit(long limitInMB) {
+        e.setCudaPinnedHostLimit(limitInMB);
     }
 
     @Override
@@ -627,5 +662,744 @@ public class CudaEnvironment implements Environment {
                 return -1; // Unsupported limit type
         }
         return 0; // Success
+    }
+
+    // Lifecycle tracking methods (delegated to native Environment)
+
+    @Override
+    public boolean isLifecycleTracking() {
+        return e.isLifecycleTracking();
+    }
+
+    @Override
+    public void setLifecycleTracking(boolean enabled) {
+        e.setLifecycleTracking(enabled);
+    }
+
+    @Override
+    public boolean isTrackViews() {
+        return e.isTrackViews();
+    }
+
+    @Override
+    public void setTrackViews(boolean track) {
+        e.setTrackViews(track);
+    }
+
+    @Override
+    public boolean isTrackDeletions() {
+        return e.isTrackDeletions();
+    }
+
+    @Override
+    public void setTrackDeletions(boolean track) {
+        e.setTrackDeletions(track);
+    }
+
+    @Override
+    public int getStackDepth() {
+        return e.getStackDepth();
+    }
+
+    @Override
+    public void setStackDepth(int depth) {
+        e.setStackDepth(depth);
+    }
+
+    @Override
+    public int getReportInterval() {
+        return e.getReportInterval();
+    }
+
+    @Override
+    public void setReportInterval(int seconds) {
+        e.setReportInterval(seconds);
+    }
+
+    @Override
+    public long getMaxDeletionHistory() {
+        return e.getMaxDeletionHistory();
+    }
+
+    @Override
+    public void setMaxDeletionHistory(long max) {
+        e.setMaxDeletionHistory(max);
+    }
+
+    @Override
+    public boolean isSnapshotFiles() {
+        return e.isSnapshotFiles();
+    }
+
+    @Override
+    public void setSnapshotFiles(boolean enabled) {
+        e.setSnapshotFiles(enabled);
+    }
+
+    @Override
+    public boolean isTrackOperations() {
+        return e.isTrackOperations();
+    }
+
+    @Override
+    public void setTrackOperations(boolean enabled) {
+        e.setTrackOperations(enabled);
+    }
+
+    @Override
+    public boolean isNDArrayTracking() {
+        return e.isNDArrayTracking();
+    }
+
+    @Override
+    public void setNDArrayTracking(boolean enabled) {
+        e.setNDArrayTracking(enabled);
+    }
+
+    @Override
+    public boolean isDataBufferTracking() {
+        return e.isDataBufferTracking();
+    }
+
+    @Override
+    public void setDataBufferTracking(boolean enabled) {
+        e.setDataBufferTracking(enabled);
+    }
+
+    @Override
+    public boolean isTADCacheTracking() {
+        return e.isTADCacheTracking();
+    }
+
+    @Override
+    public void setTADCacheTracking(boolean enabled) {
+        e.setTADCacheTracking(enabled);
+    }
+
+    @Override
+    public boolean isShapeCacheTracking() {
+        return e.isShapeCacheTracking();
+    }
+
+    @Override
+    public void setShapeCacheTracking(boolean enabled) {
+        e.setShapeCacheTracking(enabled);
+    }
+
+    @Override
+    public boolean isOpContextTracking() {
+        return e.isOpContextTracking();
+    }
+
+    @Override
+    public void setOpContextTracking(boolean enabled) {
+        e.setOpContextTracking(enabled);
+    }
+
+    // Triton GPU settings
+    @Override
+    public int tritonBuildThreads() {
+        return e.tritonBuildThreads();
+    }
+
+    @Override
+    public void setTritonBuildThreads(int threads) {
+        e.setTritonBuildThreads(threads);
+    }
+
+    @Override
+    public boolean tritonCacheEnabled() {
+        return e.tritonCacheEnabled();
+    }
+
+    @Override
+    public void setTritonCacheEnabled(boolean enabled) {
+        e.setTritonCacheEnabled(enabled);
+    }
+
+    @Override
+    public boolean tritonCooperativeLaunch() {
+        return e.tritonCooperativeLaunch();
+    }
+
+    @Override
+    public void setTritonCooperativeLaunch(boolean enabled) {
+        e.setTritonCooperativeLaunch(enabled);
+    }
+
+    @Override
+    public int tritonCoopTargetBlocks() {
+        return e.tritonCoopTargetBlocks();
+    }
+
+    @Override
+    public void setTritonCoopTargetBlocks(int blocks) {
+        e.setTritonCoopTargetBlocks(blocks);
+    }
+
+    @Override
+    public int tritonMaxSubsegmentOps() {
+        return e.tritonMaxSubsegmentOps();
+    }
+
+    @Override
+    public void setTritonMaxSubsegmentOps(int ops) {
+        e.setTritonMaxSubsegmentOps(ops);
+    }
+
+    @Override
+    public int tritonMaxSubsegmentSections() {
+        return e.tritonMaxSubsegmentSections();
+    }
+
+    @Override
+    public void setTritonMaxSubsegmentSections(int sections) {
+        e.setTritonMaxSubsegmentSections(sections);
+    }
+
+    @Override
+    public boolean tritonVerbose() {
+        return e.tritonVerbose();
+    }
+
+    @Override
+    public void setTritonVerbose(boolean verbose) {
+        e.setTritonVerbose(verbose);
+    }
+
+    @Override
+    public boolean tritonDumpSections() {
+        return e.tritonDumpSections();
+    }
+
+    @Override
+    public void setTritonDumpSections(boolean dumpSections) {
+        e.setTritonDumpSections(dumpSections);
+    }
+
+    @Override
+    public boolean tritonDumpArgs() {
+        return e.tritonDumpArgs();
+    }
+
+    @Override
+    public void setTritonDumpArgs(boolean dumpArgs) {
+        e.setTritonDumpArgs(dumpArgs);
+    }
+
+    @Override
+    public boolean tritonLogAllPatterns() {
+        return e.tritonLogAllPatterns();
+    }
+
+    @Override
+    public void setTritonLogAllPatterns(boolean logAllPatterns) {
+        e.setTritonLogAllPatterns(logAllPatterns);
+    }
+
+    @Override
+    public boolean tritonAlwaysCompile() {
+        return e.tritonAlwaysCompile();
+    }
+
+    @Override
+    public void setTritonAlwaysCompile(boolean alwaysCompile) {
+        e.setTritonAlwaysCompile(alwaysCompile);
+    }
+
+    @Override
+    public boolean tritonKernelDump() {
+        return e.tritonKernelDump();
+    }
+
+    @Override
+    public void setTritonKernelDump(boolean kernelDump) {
+        e.setTritonKernelDump(kernelDump);
+    }
+
+    @Override
+    public boolean tritonKernelOverride() {
+        return e.tritonKernelOverride();
+    }
+
+    @Override
+    public void setTritonKernelOverride(boolean kernelOverride) {
+        e.setTritonKernelOverride(kernelOverride);
+    }
+
+    @Override
+    public long tritonModuleResidencyBudgetBytes() {
+        return e.triton().moduleResidencyBudgetBytes();
+    }
+
+    @Override
+    public void setTritonModuleResidencyBudgetBytes(long bytes) {
+        e.triton().setModuleResidencyBudgetBytes(bytes);
+    }
+
+    @Override
+    public long tritonModuleResidencyWarnBytes() {
+        return e.triton().moduleResidencyWarnBytes();
+    }
+
+    @Override
+    public void setTritonModuleResidencyWarnBytes(long bytes) {
+        e.triton().setModuleResidencyWarnBytes(bytes);
+    }
+
+    @Override
+    public long tritonModuleResidencyWarnFireCount() {
+        return e.triton().moduleResidencyWarnFireCount();
+    }
+
+    @Override
+    public void clearTritonModuleResidencyWarnFireCount() {
+        e.triton().clearModuleResidencyWarnFireCount();
+    }
+
+    @Override
+    public boolean tritonBatchPreloadModules() {
+        return e.triton().batchPreloadModules();
+    }
+
+    @Override
+    public void setTritonBatchPreloadModules(boolean enabled) {
+        e.triton().setBatchPreloadModules(enabled);
+    }
+
+    @Override
+    public int tritonNumWarps() {
+        return e.tritonNumWarps();
+    }
+
+    @Override
+    public void setTritonNumWarps(int numWarps) {
+        e.setTritonNumWarps(numWarps);
+    }
+
+    @Override
+    public int tritonNumStages() {
+        return e.tritonNumStages();
+    }
+
+    @Override
+    public void setTritonNumStages(int numStages) {
+        e.setTritonNumStages(numStages);
+    }
+
+    @Override
+    public int tritonNumCTAs() {
+        return e.tritonNumCTAs();
+    }
+
+    @Override
+    public void setTritonNumCTAs(int numCTAs) {
+        e.setTritonNumCTAs(numCTAs);
+    }
+
+    @Override
+    public int tritonMaxNreg() {
+        return e.tritonMaxNreg();
+    }
+
+    @Override
+    public void setTritonMaxNreg(int maxNreg) {
+        e.setTritonMaxNreg(maxNreg);
+    }
+
+    @Override
+    public int tritonAttentionBlockN() {
+        return e.tritonAttentionBlockN();
+    }
+
+    @Override
+    public void setTritonAttentionBlockN(int blockN) {
+        e.setTritonAttentionBlockN(blockN);
+    }
+
+    @Override
+    public boolean tritonEnableFpFusion() {
+        return e.tritonEnableFpFusion();
+    }
+
+    @Override
+    public void setTritonEnableFpFusion(boolean enableFpFusion) {
+        e.setTritonEnableFpFusion(enableFpFusion);
+    }
+
+    @Override
+    public boolean tritonDisableLineInfo() {
+        return e.tritonDisableLineInfo();
+    }
+
+    @Override
+    public void setTritonDisableLineInfo(boolean disableLineInfo) {
+        e.setTritonDisableLineInfo(disableLineInfo);
+    }
+
+    @Override
+    public String tritonCacheDir() {
+        BytePointer p = e.tritonCacheDir();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonCacheDir(String cacheDir) {
+        e.setTritonCacheDir(cacheDir);
+    }
+
+    @Override
+    public String tritonDumpDir() {
+        BytePointer p = e.tritonDumpDir();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonDumpDir(String dumpDir) {
+        e.setTritonDumpDir(dumpDir);
+    }
+
+    @Override
+    public String tritonOverrideDir() {
+        BytePointer p = e.tritonOverrideDir();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonOverrideDir(String overrideDir) {
+        e.setTritonOverrideDir(overrideDir);
+    }
+
+    @Override
+    public String tritonOverrideArch() {
+        BytePointer p = e.tritonOverrideArch();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonOverrideArch(String overrideArch) {
+        e.setTritonOverrideArch(overrideArch);
+    }
+
+    // Triton + CUDA graph integration
+    @Override
+    public boolean tritonAllowFallbackCapture() {
+        return e.tritonAllowFallbackCapture();
+    }
+
+    @Override
+    public void setTritonAllowFallbackCapture(boolean allow) {
+        e.setTritonAllowFallbackCapture(allow);
+    }
+
+    @Override
+    public boolean tritonGraphCapture() {
+        return e.tritonGraphCapture();
+    }
+
+    @Override
+    public void setTritonGraphCapture(boolean enable) {
+        e.setTritonGraphCapture(enable);
+    }
+
+    @Override
+    public boolean tritonDumpGraphDot() {
+        return e.tritonDumpGraphDot();
+    }
+
+    @Override
+    public void setTritonDumpGraphDot(boolean dump) {
+        e.setTritonDumpGraphDot(dump);
+    }
+
+    @Override
+    public boolean tritonMergedCaptureThroughViews() {
+        return e.tritonMergedCaptureThroughViews();
+    }
+
+    @Override
+    public void setTritonMergedCaptureThroughViews(boolean v) {
+        e.setTritonMergedCaptureThroughViews(v);
+    }
+
+    // Triton debugging flags
+    @Override
+    public boolean tritonSkipKernels() {
+        return e.tritonSkipKernels();
+    }
+
+    @Override
+    public void setTritonSkipKernels(boolean skip) {
+        e.setTritonSkipKernels(skip);
+    }
+
+    @Override
+    public boolean tritonVerifyKernels() {
+        return e.tritonVerifyKernels();
+    }
+
+    @Override
+    public void setTritonVerifyKernels(boolean verify) {
+        e.setTritonVerifyKernels(verify);
+    }
+
+    @Override
+    public boolean tritonVerifyKeepNative() {
+        return e.tritonVerifyKeepNative();
+    }
+
+    @Override
+    public void setTritonVerifyKeepNative(boolean v) {
+        e.setTritonVerifyKeepNative(v);
+    }
+
+    @Override
+    public int tritonMaxSubKernelIndex() {
+        return e.tritonMaxSubKernelIndex();
+    }
+
+    @Override
+    public void setTritonMaxSubKernelIndex(int idx) {
+        e.setTritonMaxSubKernelIndex(idx);
+    }
+
+    @Override
+    public boolean tritonVerifyFullSnapshot() {
+        return e.tritonVerifyFullSnapshot();
+    }
+
+    @Override
+    public void setTritonVerifyFullSnapshot(boolean v) {
+        e.setTritonVerifyFullSnapshot(v);
+    }
+
+    @Override
+    public boolean tritonForceRecapture() {
+        return e.tritonForceRecapture();
+    }
+
+    @Override
+    public void setTritonForceRecapture(boolean v) {
+        e.setTritonForceRecapture(v);
+    }
+
+    @Override
+    public int tritonCaptureMinExec() {
+        return e.tritonCaptureMinExec();
+    }
+
+    @Override
+    public void setTritonCaptureMinExec(int v) {
+        e.setTritonCaptureMinExec(v);
+    }
+
+    // Triton compilation scope
+    @Override
+    public boolean tritonCompileAll() {
+        return e.tritonCompileAll();
+    }
+
+    @Override
+    public void setTritonCompileAll(boolean v) {
+        e.setTritonCompileAll(v);
+    }
+
+    @Override
+    public String tritonExcludeOps() {
+        BytePointer p = e.tritonExcludeOps();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonExcludeOps(String ops) {
+        e.setTritonExcludeOps(ops);
+    }
+
+    @Override
+    public String tritonIncludeTypes() {
+        BytePointer p = e.tritonIncludeTypes();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonIncludeTypes(String types) {
+        e.setTritonIncludeTypes(types);
+    }
+
+    // Triton fusion scoring
+    @Override
+    public boolean tritonFusionScoring() { return e.tritonFusionScoring(); }
+    @Override
+    public void setTritonFusionScoring(boolean v) { e.setTritonFusionScoring(v); }
+    @Override
+    public float tritonFusionMinScore() { return e.tritonFusionMinScore(); }
+    @Override
+    public void setTritonFusionMinScore(float f) { e.setTritonFusionMinScore(f); }
+
+    // Triton segment fusion flags
+    @Override
+    public boolean tritonFuseIdentityShapes() { return e.tritonFuseIdentityShapes(); }
+    @Override
+    public void setTritonFuseIdentityShapes(boolean v) { e.setTritonFuseIdentityShapes(v); }
+    @Override
+    public boolean tritonFuseCastChains() { return e.tritonFuseCastChains(); }
+    @Override
+    public void setTritonFuseCastChains(boolean v) { e.setTritonFuseCastChains(v); }
+    @Override
+    public boolean tritonSpecializePermuteSeq1() { return e.tritonSpecializePermuteSeq1(); }
+    @Override
+    public void setTritonSpecializePermuteSeq1(boolean v) { e.setTritonSpecializePermuteSeq1(v); }
+    @Override
+    public boolean tritonFusedMatmul() { return e.tritonFusedMatmul(); }
+    @Override
+    public void setTritonFusedMatmul(boolean v) { e.setTritonFusedMatmul(v); }
+    @Override
+    public boolean tritonFuseAttentionNeighborhoods() { return e.tritonFuseAttentionNeighborhoods(); }
+    @Override
+    public void setTritonFuseAttentionNeighborhoods(boolean v) { e.setTritonFuseAttentionNeighborhoods(v); }
+
+    // DSP batch-zero flags
+    @Override
+    public boolean dspBatchZero() { return e.dspBatchZero(); }
+    @Override
+    public void setDspBatchZero(boolean v) { e.setDspBatchZero(v); }
+    @Override
+    public boolean dspBatchZeroVerbose() { return e.dspBatchZeroVerbose(); }
+    @Override
+    public void setDspBatchZeroVerbose(boolean v) { e.setDspBatchZeroVerbose(v); }
+    @Override
+    public boolean dspBatchZeroGapOnly() { return e.dspBatchZeroGapOnly(); }
+    @Override
+    public void setDspBatchZeroGapOnly(boolean v) { e.setDspBatchZeroGapOnly(v); }
+    @Override
+    public boolean dspBatchZeroKernel() { return e.dspBatchZeroKernel(); }
+    @Override
+    public void setDspBatchZeroKernel(boolean v) { e.setDspBatchZeroKernel(v); }
+
+    // DSP batched GEMM
+    @Override
+    public boolean dspBatchedGemm() { return e.dspBatchedGemm(); }
+    @Override
+    public void setDspBatchedGemm(boolean v) { e.setDspBatchedGemm(v); }
+
+    // DSP optimization flags
+    @Override
+    public boolean dspCastElimination() {
+        return e.dspCastElimination();
+    }
+
+    @Override
+    public void setDspCastElimination(boolean enabled) {
+        e.setDspCastElimination(enabled);
+    }
+
+    @Override
+    public boolean dspMatmulSegmentation() {
+        return e.dspMatmulSegmentation();
+    }
+
+    @Override
+    public void setDspMatmulSegmentation(boolean enabled) {
+        e.setDspMatmulSegmentation(enabled);
+    }
+
+    @Override
+    public boolean dspFp16Compute() {
+        return e.dspFp16Compute();
+    }
+
+    @Override
+    public void setDspFp16Compute(boolean enabled) {
+        e.setDspFp16Compute(enabled);
+    }
+
+    @Override
+    public boolean cublasTf32Enabled() {
+        return e.cublasTf32Enabled();
+    }
+
+    @Override
+    public void setCublasTf32Enabled(boolean enabled) {
+        e.setCublasTf32Enabled(enabled);
+    }
+
+    @Override
+    public boolean tritonTf32Enabled() {
+        return e.tritonTf32Enabled();
+    }
+
+    @Override
+    public void setTritonTf32Enabled(boolean enabled) {
+        e.setTritonTf32Enabled(enabled);
+    }
+
+    @Override
+    public boolean cublasCaptureWorkspace() {
+        return e.cublasCaptureWorkspace();
+    }
+
+    @Override
+    public void setCublasCaptureWorkspace(boolean enabled) {
+        e.setCublasCaptureWorkspace(enabled);
+    }
+
+    @Override
+    public boolean dspCastSinkMatmul() {
+        return e.dspCastSinkMatmul();
+    }
+
+    @Override
+    public void setDspCastSinkMatmul(boolean enabled) {
+        e.setDspCastSinkMatmul(enabled);
+    }
+
+    @Override
+    public boolean dspFreezeMergeSegments() {
+        return e.dspFreezeMergeSegments();
+    }
+
+    @Override
+    public void setDspFreezeMergeSegments(boolean enabled) {
+        e.setDspFreezeMergeSegments(enabled);
+    }
+
+    @Override
+    public boolean dspFreezeRecompile() {
+        return e.dspFreezeRecompile();
+    }
+
+    @Override
+    public void setDspFreezeRecompile(boolean enabled) {
+        e.setDspFreezeRecompile(enabled);
+    }
+
+    @Override
+    public boolean tritonConsolidatedArgTable() {
+        return e.tritonConsolidatedArgTable();
+    }
+
+    @Override
+    public void setTritonConsolidatedArgTable(boolean enabled) {
+        e.setTritonConsolidatedArgTable(enabled);
+    }
+
+    @Override
+    public boolean tritonArgDirtyTracking() {
+        return e.tritonArgDirtyTracking();
+    }
+
+    @Override
+    public void setTritonArgDirtyTracking(boolean enabled) {
+        e.setTritonArgDirtyTracking(enabled);
+    }
+
+    @Override
+    public boolean tritonSectionFusion() {
+        return e.tritonSectionFusion();
+    }
+
+    @Override
+    public void setTritonSectionFusion(boolean enabled) {
+        e.setTritonSectionFusion(enabled);
     }
 }

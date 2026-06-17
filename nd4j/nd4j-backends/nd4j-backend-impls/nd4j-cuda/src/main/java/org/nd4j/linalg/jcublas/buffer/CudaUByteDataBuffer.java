@@ -80,6 +80,9 @@ public class CudaUByteDataBuffer extends BaseCudaDataBuffer {
         super(underlyingBuffer, dataType, length);
     }
 
+    public CudaUByteDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length, boolean cpuOnly) {
+        super(underlyingBuffer, dataType, length, cpuOnly);
+    }
 
     /**
      * Initialize the opType of this buffer

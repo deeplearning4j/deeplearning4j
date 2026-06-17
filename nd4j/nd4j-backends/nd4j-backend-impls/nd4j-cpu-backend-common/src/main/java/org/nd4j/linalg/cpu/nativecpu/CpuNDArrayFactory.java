@@ -46,6 +46,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.*;
 
+import java.lang.ref.Reference;
 import java.util.*;
 
 @Slf4j
@@ -61,8 +62,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray createFromDescriptor(DataBuffer shapeInformation) {
         NDArray ret = new NDArray();
         ret.setShapeInfoDataBuffer(shapeInformation);
-        DataType dt = Shape.dataType(ret.shapeInfoJava());
-        DataBuffer buff = Nd4j.createBuffer(dt,ret.length(),false);
+        long[] shapeInfo = ret.shapeInfoJava();
+        DataType dt = Shape.dataType(shapeInfo);
+        // Compute length directly from shape info, not from array.length()
+        // because isEmpty() returns true when data buffer is null
+        long length = Shape.isEmpty(shapeInfo) ? 0 : Shape.length(shapeInfo);
+        DataBuffer buff = Nd4j.createBuffer(dt, length, false);
         ret.setData(buff);
         return ret;
     }
@@ -750,23 +755,61 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
 
-        // Convert List<long[]> to long[][]
-        long[][] dimensionsArray = new long[dimensions.size()][];
-        for (int i = 0; i < dimensions.size(); i++) {
-            dimensionsArray[i] = dimensions.get(i);
+        // Determine if all dimension arrays have the same length (uniform) or differ (ragged).
+        // The C++ shuffleGeneric uses a single flat dimension array for ALL arrays. When arrays
+        // have different ranks (e.g., features rank-4 with dims [1,2,3] and labels rank-2 with
+        // dims [1]), we must shuffle each array individually with its own dimension set but
+        // sharing the same pre-built shuffle map to keep the sample order consistent.
+        boolean raggedDimensions = false;
+        int maxDimLen = dimensions.get(0).length;
+        for (int i = 1; i < dimensions.size(); i++) {
+            if (dimensions.get(i).length != maxDimLen) {
+                raggedDimensions = true;
+                if (dimensions.get(i).length > maxDimLen)
+                    maxDimLen = dimensions.get(i).length;
+            }
         }
 
-        // Create an INDArray from the long[][]
-        INDArray dimensionsINDArray = Nd4j.createFromArray(dimensionsArray);
+        if (raggedDimensions) {
+            // Shuffle each array individually using the same map so sample order is consistent.
+            for (int i = 0; i < arrays.size(); i++) {
+                INDArray arr = arrays.get(i);
+                long[] dims = dimensions.get(i);
 
-        // Convert the INDArray to an OpaqueNDArray
-        OpaqueNDArray dimensionsOpaque = OpaqueNDArray.fromINDArray(dimensionsINDArray);
+                OpaqueNDArrayArr singleArr = new OpaqueNDArrayArr(
+                        new OpaqueNDArray[]{OpaqueNDArray.fromINDArray(arr)});
+                INDArray dimsINDArray = Nd4j.createFromArray(dims);
+                OpaqueNDArray dimsOpaque = OpaqueNDArray.fromINDArray(dimsINDArray);
 
+                nativeOps.shuffle(null,
+                        singleArr, singleArr,
+                        1,
+                        dimsOpaque, ptrMap);
 
-        nativeOps.shuffle(null,
-                arraysOpaque, arraysOpaque,
-                arrays.size(),
-                dimensionsOpaque, ptrMap);
+                Reference.reachabilityFence(dimsINDArray);
+                if (nativeOps.lastErrorCode() != 0)
+                    throw new RuntimeException(nativeOps.lastErrorMessage());
+            }
+        } else {
+            // All dimension arrays have the same length — pass them as a uniform 2D matrix.
+            long[][] dimensionsArray = new long[dimensions.size()][];
+            for (int i = 0; i < dimensions.size(); i++) {
+                dimensionsArray[i] = dimensions.get(i);
+            }
+
+            INDArray dimensionsINDArray = Nd4j.createFromArray(dimensionsArray);
+            OpaqueNDArray dimensionsOpaque = OpaqueNDArray.fromINDArray(dimensionsINDArray);
+
+            nativeOps.shuffle(null,
+                    arraysOpaque, arraysOpaque,
+                    arrays.size(),
+                    dimensionsOpaque, ptrMap);
+
+            // Keep the underlying INDArrays alive until the native call completes.
+            Reference.reachabilityFence(dimensionsINDArray);
+        }
+        Reference.reachabilityFence(mapArray);
+        Reference.reachabilityFence(arrays);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -882,10 +925,13 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         Arrays.sort(dimension);
         OpaqueNDArray xOpaque = OpaqueNDArray.fromINDArray(x);
-        OpaqueNDArray dimensionOpaque = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimension));
 
-        nativeOps.sort(null,
+        nativeOps.sortTad(null,
                 xOpaque,
+                new LongPointer(dimension),
+                dimension.length,
+                null,
+                null,
                 descending);
 
         if (nativeOps.lastErrorCode() != 0)

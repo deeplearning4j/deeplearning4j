@@ -110,4 +110,34 @@ public class CpuMemoryManager extends BasicMemoryManager {
     public long allocatedMemory(Integer deviceId) {
         return Pointer.totalBytes() + AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.GENERAL, deviceId) + AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.WORKSPACE, deviceId);
     }
+
+    @Override
+    public void stopPeriodicGc() {
+        // CPU backend doesn't have periodic GC - no-op
+    }
+
+    @Override
+    public void startPeriodicGc() {
+        // CPU backend doesn't have periodic GC - no-op
+    }
+
+    @Override
+    public void setFrequency(int frequency) {
+        // CPU backend doesn't have periodic GC - no-op
+    }
+
+    @Override
+    public int getFrequency() {
+        return 0;
+    }
+
+    @Override
+    public void gcIfHeapPressured() {
+        // CPU backend doesn't have periodic GC - no-op
+    }
+
+    @Override
+    public org.nd4j.linalg.api.memory.deallocation.DeallocatorService getDeallocatorService() {
+        return Nd4j.getDeallocatorService();
+    }
 }

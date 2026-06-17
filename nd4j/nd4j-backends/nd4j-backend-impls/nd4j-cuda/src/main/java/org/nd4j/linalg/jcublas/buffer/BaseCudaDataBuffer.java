@@ -35,8 +35,13 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.HybridDataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -56,6 +61,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.*;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Base class for a data buffer
@@ -72,7 +79,9 @@ import java.util.Collection;
  * @author Adam Gibson
  * @author raver119@gmail.com
  */
-public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer, Deallocatable {
+public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer, Deallocatable, HybridDataBuffer {
+
+    private static final Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
 
     @Getter
     protected transient volatile AllocationPoint allocationPoint;
@@ -80,7 +89,17 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     private static AtomicAllocator allocator = AtomicAllocator.getInstance();
 
+
     protected DataType globalType = DataTypeUtil.getDtypeFromContext();
+
+    // HybridDataBuffer device tracking fields
+    protected volatile DeviceDescriptor ownerDevice;
+    protected volatile DeviceDescriptor pinnedDevice;
+    protected volatile boolean hostDirty = false;
+    protected volatile boolean deviceDirty = false;
+    protected volatile boolean cpuValid = false;   // CPU has valid copy of data
+    protected volatile boolean gpuValid = true;    // GPU has valid copy (true by default for CUDA buffers)
+    protected volatile MultiBackendWorkspace multiBackendWorkspace;
 
     public BaseCudaDataBuffer() {
 
@@ -145,7 +164,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, this.type,  pointer, specialPointer);
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, this.type.width() * length);
 
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
         if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
     }
@@ -168,7 +188,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //cuda specific bits
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, length * elementSize);
         allocationPoint.tickHostWrite();
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
 
         // now we're getting context and copying our stuff to device
         val context = AtomicAllocator.getInstance().getDeviceContext();
@@ -198,11 +219,39 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     protected BaseCudaDataBuffer(ByteBuffer buffer, DataType dtype, long length) {
-        this(buffer, dtype, length, 0L);
+        this(buffer, dtype, length, 0L, false);
+    }
+
+    /**
+     * Constructor for ByteBuffer with optional CPU-only allocation.
+     * When cpuOnly is true, the data is loaded to CPU memory only and GPU
+     * allocation is deferred until the data is actually needed on the device.
+     * This enables faster model loading by avoiding immediate GPU transfers.
+     *
+     * @param buffer the source ByteBuffer
+     * @param dtype the data type
+     * @param length number of elements
+     * @param cpuOnly if true, allocate only on CPU (defer GPU allocation)
+     */
+    protected BaseCudaDataBuffer(ByteBuffer buffer, DataType dtype, long length, boolean cpuOnly) {
+        this(buffer, dtype, length, 0L, cpuOnly);
     }
 
     protected BaseCudaDataBuffer(ByteBuffer buffer, DataType dtype, long length, long offset) {
-        this(length, Nd4j.sizeOfDataType(dtype), false);
+        this(buffer, dtype, length, offset, false);
+    }
+
+    /**
+     * Constructor for ByteBuffer with offset and optional CPU-only allocation.
+     *
+     * @param buffer the source ByteBuffer
+     * @param dtype the data type
+     * @param length number of elements
+     * @param offset offset in elements
+     * @param cpuOnly if true, allocate only on CPU (defer GPU allocation)
+     */
+    protected BaseCudaDataBuffer(ByteBuffer buffer, DataType dtype, long length, long offset, boolean cpuOnly) {
+        this(length, Nd4j.sizeOfDataType(dtype), false, cpuOnly);
 
         Pointer temp = null;
 
@@ -230,7 +279,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 temp = new BytePointer(buffer);
                 break;
             case BOOL:
-                temp = new BooleanPointer(length());
+                // Boolean values are stored as single bytes (0 or 1).
+                // Read the bytes directly from the ByteBuffer using BytePointer,
+                // exactly like UBYTE/BYTE, so the data is not discarded.
+                temp = new BytePointer(buffer);
                 break;
             case UTF8:
                 temp = new BytePointer(length());
@@ -249,18 +301,31 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 break;
         }
 
-        // copy data to device
-        val stream = AtomicAllocator.getInstance().getDeviceContext().getSpecialStream();
-        val ptr = ptrDataBuffer.specialBuffer();
-
         if (offset > 0)
             temp = new PagedPointer(temp.address() + offset * getElementSize());
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(ptr, temp, length * Nd4j.sizeOfDataType(dtype), CudaConstants.cudaMemcpyHostToDevice, stream);
-        stream.synchronize();
+        if (cpuOnly) {
+            // CPU-only mode: copy data to host buffer only, skip GPU transfer
+            val hostPtr = allocationPoint.getHostPointer();
+            if (hostPtr != null && hostPtr.address() != 0) {
+                Pointer.memcpy(hostPtr, temp, length * Nd4j.sizeOfDataType(dtype));
+            }
+            // Mark host as valid, device as needing update
+            allocationPoint.tickHostWrite();
+            this.cpuValid = true;
+            this.gpuValid = false;
+            log.debug("Loaded {} elements to CPU-only buffer (lazy GPU migration)", length);
+        } else {
+            // Normal mode: copy data to device
+            val stream = AtomicAllocator.getInstance().getDeviceContext().getSpecialStream();
+            val ptr = ptrDataBuffer.specialBuffer();
 
-        // mark device buffer as updated
-        allocationPoint.tickDeviceWrite();
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(ptr, temp, length * Nd4j.sizeOfDataType(dtype), CudaConstants.cudaMemcpyHostToDevice, stream);
+            stream.synchronize();
+
+            // mark device buffer as updated
+            allocationPoint.tickDeviceWrite();
+        }
     }
 
     @Override
@@ -360,19 +425,78 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.length = length;
         this.elementSize =  (byte) elementSize;
 
-        // we allocate native DataBuffer AND it will contain our device pointer
+        // Allocate both host and device buffers. The native C++ layer (CudaMemoryPool)
+        // handles device selection and OOM failover (trim pool + retry, other GPUs, pinned host).
         ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, type, true);
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, length * type.width());
 
         if (initialize) {
-            val ctx = AtomicAllocator.getInstance().getDeviceContext();
             val devicePtr = allocationPoint.getDevicePointer();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(devicePtr, 0, length * elementSize, 0, ctx.getSpecialStream());
-            ctx.getSpecialStream().synchronize();
+            int bufferDeviceId = allocationPoint.getDeviceId();
+            val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            int currentDevice = nativeOps.getDevice();
+
+            try {
+                // Switch to the buffer's device if needed for the memset operation
+                if (bufferDeviceId >= 0 && bufferDeviceId != currentDevice) {
+                    nativeOps.setDevice(bufferDeviceId);
+                }
+
+                // Use synchronous memset - no stream needed
+                int result = nativeOps.memsetSync(devicePtr, 0, length * elementSize, 0, null);
+                if (result == 0) {
+                    throw new RuntimeException("memsetSync failed in initPointers");
+                }
+            } finally {
+                // Switch back to original device
+                if (bufferDeviceId >= 0 && bufferDeviceId != currentDevice) {
+                    nativeOps.setDevice(currentDevice);
+                    AtomicAllocator.getInstance().getMemoryHandler().resetCachedContext();
+                }
+            }
         }
 
-        // let deallocator pick up this object
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
+    }
+
+    /**
+     * Initialize pointers with optional CPU-only allocation for lazy GPU migration.
+     * When cpuOnly is true, only the host buffer is allocated. GPU allocation
+     * is deferred until the data is actually needed on the device through
+     * ensureAvailableOn() or similar methods.
+     *
+     * @param length number of elements
+     * @param elementSize size of each element in bytes
+     * @param initialize if true, zero-initialize the buffer
+     * @param cpuOnly if true, allocate only on CPU (defer GPU allocation)
+     */
+    protected void initPointersCpuOnly(long length, int elementSize, boolean initialize, boolean cpuOnly) {
+        if (!cpuOnly) {
+            // Fall back to normal allocation
+            initPointers(length, elementSize, initialize);
+            return;
+        }
+
+        // CPU-only allocation for lazy GPU migration
+        this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
+        initTypeAndSize();
+
+        this.length = length;
+        this.underlyingLength = length;
+
+        // Allocate both host and device memory so we can copy data to host
+        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, type, true);
+        this.allocationPoint = new AllocationPoint(ptrDataBuffer, length * elementSize);
+
+        // Mark CPU as valid, GPU as invalid (deferred)
+        this.gpuValid = false;
+        this.cpuValid = true;
+
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
+
+        log.debug("Created CPU-only buffer for lazy GPU migration: {} elements, {} bytes", length, length * elementSize);
     }
 
     protected void initPointers(long length, int elementSize, boolean initialize, @NonNull MemoryWorkspace workspace) {
@@ -384,6 +508,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         this.length = length;
 
+        // Use synchronous memset to avoid stream/device mismatch issues in multi-GPU setups
+        val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
         if (workspace.getWorkspaceConfiguration().getPolicyMirroring() == MirroringPolicy.FULL) {
             val devicePtr = workspace.alloc(length * elementSize, MemoryKind.DEVICE, type, initialize);
 
@@ -391,26 +518,44 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
 
             if (initialize) {
-                val ctx = AtomicAllocator.getInstance().getDeviceContext();
-                NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(devicePtr, 0, length * elementSize, 0, ctx.getSpecialStream());
-                ctx.getSpecialStream().synchronize();
+                int result = nativeOps.memsetSync(devicePtr, 0, length * elementSize, 0, null);
+                if (result == 0) {
+                    throw new RuntimeException("memsetSync failed in initPointers (workspace FULL mirroring)");
+                }
             }
         }  else {
-            // we can register this pointer as device, because it's pinned memory
-            val devicePtr = workspace.alloc(length * elementSize, MemoryKind.HOST, type, initialize);
-            ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
+            // Non-FULL mirroring: allocate based on actual policy.
+            // HOST policy: allocate pinned host memory, pass as primary (host pointer).
+            // DEVICE policy: allocate device memory, pass as special (device pointer).
+            val mirroringPolicy = workspace.getWorkspaceConfiguration().getPolicyMirroring();
+            if (mirroringPolicy == MirroringPolicy.HOST_ONLY) {
+                val hostPtr = workspace.alloc(length * elementSize, MemoryKind.HOST, type, initialize);
+                ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, hostPtr, null);
 
-            if (initialize) {
-                val ctx = AtomicAllocator.getInstance().getDeviceContext();
-                NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(devicePtr, 0, length * elementSize, 0, ctx.getSpecialStream());
-                ctx.getSpecialStream().synchronize();
+                if (initialize) {
+                    int result = nativeOps.memsetSync(hostPtr, 0, length * elementSize, 0, null);
+                    if (result == 0) {
+                        throw new RuntimeException("memsetSync failed in initPointers (workspace HOST)");
+                    }
+                }
+            } else {
+                // DEVICE or default: allocate device memory, pass as special (device pointer)
+                val devicePtr = workspace.alloc(length * elementSize, MemoryKind.DEVICE, type, initialize);
+                ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
+
+                if (initialize) {
+                    int result = nativeOps.memsetSync(devicePtr, 0, length * elementSize, 0, null);
+                    if (result == 0) {
+                        throw new RuntimeException("memsetSync failed in initPointers (workspace DEVICE)");
+                    }
+                }
             }
         }
 
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, elementSize * length);
 
-        // registering for deallocation
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+            ptrDataBuffer.getDeallocator().getUniqueId() : -1;
 
         workspaceGenerationId = workspace.getGenerationId();
         this.attached = true;
@@ -445,6 +590,21 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public BaseCudaDataBuffer(long length, int elementSize, boolean initialize) {
         initTypeAndSize();
         initPointers(length, elementSize, initialize);
+    }
+
+    /**
+     * Constructor with optional CPU-only allocation for lazy GPU migration.
+     * When cpuOnly is true, only the host buffer is allocated and GPU allocation
+     * is deferred until the data is actually needed on the device.
+     *
+     * @param length number of elements
+     * @param elementSize size of each element in bytes
+     * @param initialize if true, zero-initialize the buffer
+     * @param cpuOnly if true, allocate only on CPU (defer GPU allocation)
+     */
+    public BaseCudaDataBuffer(long length, int elementSize, boolean initialize, boolean cpuOnly) {
+        initTypeAndSize();
+        initPointersCpuOnly(length, elementSize, initialize, cpuOnly);
     }
 
     public BaseCudaDataBuffer(long length, boolean initialize) {
@@ -553,21 +713,65 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
 
 
-    public void copyDataFromSrc(Pointer pointer,long length, long srcOffset,long dstOffset) {
+    public void copyDataFromSrc(Pointer pointer, long length, long srcOffset, long dstOffset) {
         val srcPtr = new CudaPointer(pointer.address() + (srcOffset * elementSize));
-        // now we're getting context and copying our stuff to device
+        val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         val context = AtomicAllocator.getInstance().getDeviceContext();
-        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
-        ptrDataBuffer.setPrimaryBuffer(pointer,length);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getDevicePointer(), srcPtr, length * getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
 
-        PerformanceTracker.getInstance().helperRegisterTransaction(allocationPoint.getDeviceId(), perfD / 2, allocationPoint.getNumberOfBytes(), MemcpyDirection.HOST_TO_DEVICE);
+        // Do NOT call setPrimaryBuffer with the temporary pointer!
+        // The temporary pointer (e.g., LongPointer wrapping a Java array) will be freed
+        // when it goes out of scope, causing use-after-free when syncToPrimary is called.
 
-        context.getSpecialStream().synchronize();
+        // Instead, ensure we have properly allocated HOST memory first
+        if (allocationPoint.getHostPointer() == null || allocationPoint.getHostPointer().isNull()) {
+            nativeOps.dbAllocatePrimaryBuffer(ptrDataBuffer);
+        }
 
-        // we're keeping pointer reference for JVM
+        // Get the properly allocated HOST pointer
+        Pointer hostPtr = allocationPoint.getHostPointer();
+        if (hostPtr == null || hostPtr.isNull()) {
+            throw new IllegalStateException("Failed to allocate HOST buffer for data copy");
+        }
+
+        // Copy from source Java array to our persistent HOST buffer
+        val dstHostPtr = new CudaPointer(hostPtr.address() + (dstOffset * elementSize));
+        Pointer.memcpy(dstHostPtr, srcPtr, length * getElementSize());
+
+        // Copy from HOST buffer to DEVICE (if device buffer exists).
+        // For HOST_ONLY workspace buffers, there is no device buffer — data lives only on host.
+        Pointer devPtr = allocationPoint.getDevicePointer();
+        if (devPtr != null && !devPtr.isNull()) {
+            val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+            val dstDevPtr = new CudaPointer(devPtr.address() + (dstOffset * elementSize));
+
+            // Use synchronous memcpy to avoid stream/device mismatch issues in multi-GPU setups
+            int result = nativeOps.memcpySync(
+                    dstDevPtr,
+                    dstHostPtr,
+                    length * getElementSize(),
+                    CudaConstants.cudaMemcpyHostToDevice,
+                    null);  // null stream means synchronous
+
+            if (result == 0) {
+                throw new RuntimeException("memcpySync failed in copyDataFromSrc");
+            }
+
+            PerformanceTracker.getInstance().helperRegisterTransaction(
+                    allocationPoint.getDeviceId(), perfD / 2,
+                    allocationPoint.getNumberOfBytes(), MemcpyDirection.HOST_TO_DEVICE);
+
+            allocationPoint.tickDeviceWrite();
+            nativeOps.dbTickDeviceWrite(ptrDataBuffer);
+        }
+
+        // Mark HOST as having valid data on BOTH Java and C++ sides.
+        // Without dbTickHostWrite, the C++ DataBuffer doesn't know the host was written,
+        // so isPrimaryActual() returns false. If syncToPrimary() is later called and the
+        // device buffer happens to be stale/zero, it would overwrite the correct host data
+        // with device zeros. By ticking host write on C++, isPrimaryActual() returns true
+        // and syncToPrimary() becomes a no-op, preserving the correct host data.
         allocationPoint.tickHostWrite();
-        allocationPoint.tickDeviceWrite();
+        nativeOps.dbTickHostWrite(ptrDataBuffer);
     }
 
     /**
@@ -586,7 +790,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         switch (dataType()) {
             case BOOL: {
                 val pointer = new BytePointer(ArrayUtil.toBytes(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
             }
             break;
 
@@ -596,7 +800,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             case BYTE: {
                 val pointer = new BytePointer(ArrayUtil.toBytes(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -605,7 +809,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case SHORT: {
                 val pointer = new ShortPointer(ArrayUtil.toShorts(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -615,14 +819,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             case INT: {
                 val pointer = new IntPointer(data);
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
 
             case BFLOAT16: {
                 val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -631,25 +835,25 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case LONG: {
                 val pointer = new LongPointer(LongUtils.toLongs(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case HALF: {
                 val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case FLOAT: {
                 val pointer = new FloatPointer(ArrayUtil.toFloats(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case DOUBLE: {
                 val pointer = new DoublePointer(ArrayUtil.toDouble(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -670,7 +874,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         switch (dataType()) {
             case BOOL: {
                 val pointer = new BytePointer(ArrayUtil.toBytes(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
 
             }
@@ -685,7 +889,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             case BYTE: {
                 val pointer = new BytePointer(ArrayUtil.toBytes(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
 
             }
@@ -698,14 +902,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             break;
             case SHORT: {
                 val pointer = new ShortPointer(ArrayUtil.toShorts(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
             }
             break;
             case UINT32:
                 data = ArrayUtil.cutBelowZero(data);
             case INT: {
                 val pointer = new IntPointer(ArrayUtil.toInts(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -713,31 +917,31 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case LONG: {
                 val pointer = new LongPointer(data);
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
             }
             break;
             case BFLOAT16: {
 
                 val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
             }
             break;
             case HALF: {
                 val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
                 // we're keeping pointer reference for JVM
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
             }
             break;
             case FLOAT: {
                 val pointer = new FloatPointer(ArrayUtil.toFloats(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
 
             }
             break;
             case DOUBLE: {
                 val pointer = new DoublePointer(ArrayUtil.toDouble(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
             }
             break;
             default:
@@ -763,7 +967,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         switch (dataType()) {
             case BOOL: {
                 BytePointer pointer = new BytePointer(ArrayUtil.toBytes(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -779,7 +983,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             case BYTE: {
                 BytePointer pointer = new BytePointer(ArrayUtil.toBytes(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -788,7 +992,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case SHORT: {
                 val pointer = new ShortPointer(ArrayUtil.toShorts(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -797,7 +1001,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case INT: {
                 IntPointer pointer = new IntPointer(ArrayUtil.toInts(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -806,25 +1010,25 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case LONG: {
                 LongPointer pointer = new LongPointer(ArrayUtil.toLongArray(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case HALF: {
                 ShortPointer pointer = new ShortPointer(ArrayUtil.toHalfs(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case FLOAT: {
                 FloatPointer pointer = new FloatPointer(data);
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case DOUBLE: {
                 DoublePointer pointer = new DoublePointer(ArrayUtil.toDoubles(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -851,7 +1055,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         switch (dataType()) {
             case BOOL:  {
                 val pointer = new BytePointer(ArrayUtil.toBytes(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -861,7 +1065,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             case BYTE: {
                 val pointer = new BytePointer(ArrayUtil.toBytes(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -871,7 +1075,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case SHORT: {
                 val pointer = new ShortPointer(data);
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -880,7 +1084,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case INT: {
                 val pointer = new IntPointer(ArrayUtil.toInts(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -888,32 +1092,32 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case LONG: {
                 val pointer = new LongPointer(ArrayUtil.toLongs(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case HALF: {
                 val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
 
             case BFLOAT16: {
                 val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case FLOAT: {
                 val pointer = new FloatPointer(ArrayUtil.toFloats(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case DOUBLE: {
                 val pointer = new DoublePointer(ArrayUtil.toDoubleArray(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -937,7 +1141,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         switch (dataType()) {
             case BOOL:  {
                 val pointer = new BooleanPointer(ArrayUtil.toBooleanArray(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -948,7 +1152,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             case BYTE: {
                 val pointer = new BytePointer(data);
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -958,14 +1162,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             case SHORT: {
                 val pointer = new ShortPointer(ArrayUtil.toShorts(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
 
             case BFLOAT16: {
                 val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -974,7 +1178,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case INT: {
                 val pointer = new IntPointer(ArrayUtil.toInts(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -982,25 +1186,25 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 data = ArrayUtil.cutBelowZero(data);
             case LONG: {
                 val pointer = new LongPointer(ArrayUtil.toLongs(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case HALF: {
                 val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case FLOAT: {
                 val pointer = new FloatPointer(ArrayUtil.toFloats(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case DOUBLE: {
                 val pointer = new DoublePointer(ArrayUtil.toDouble(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -1024,7 +1228,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         switch (dataType()) {
             case BOOL:  {
                 val pointer = new BooleanPointer(data);
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -1033,7 +1237,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 //note this is on purpose. no data is below zero with booleans
             case BYTE: {
                 val pointer = new BytePointer(ArrayUtil.toBytes(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -1141,26 +1345,26 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             break;
             case HALF: {
                 val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
 
             case BFLOAT16: {
                 val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case FLOAT: {
                 val pointer = new FloatPointer(ArrayUtil.toFloats(data));
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
             case DOUBLE: {
                 val pointer = new DoublePointer(data);
-                                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
+                copyDataFromSrc(pointer,length,srcOffset,dstOffset);
 
             }
             break;
@@ -1292,50 +1496,82 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, float element) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        allocator.tickHostWrite(this);
-        super.put(i, element);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            allocator.tickHostWrite(this);
+            super.put(i, element);
+        }
+    }
+
+    /**
+     * Ensures the current thread is on this buffer's device before performing operations.
+     * This is critical for multi-device scenarios where threads may access buffers from different devices.
+     */
+    private void ensureCorrectDevice() {
+        if (allocationPoint != null) {
+            int bufferDevice = allocationPoint.getDeviceId();
+            int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if (bufferDevice >= 0 && bufferDevice != currentDevice) {
+                DeviceMemoryManager.getInstance().switchDevice(bufferDevice, "BaseCudaDataBuffer.ensureCorrectDevice", "buffer-device-align");
+            }
+        }
     }
 
     @Override
     public void put(long i, boolean element) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        allocator.tickHostWrite(this);
-        super.put(i, element);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            allocator.tickHostWrite(this);
+            super.put(i, element);
+        }
     }
 
     @Override
     public void put(long i, double element) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        allocator.tickHostWrite(this);
-        super.put(i, element);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            allocator.tickHostWrite(this);
+            super.put(i, element);
+        }
     }
 
     @Override
     public void put(long i, short element) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        allocator.tickHostWrite(this);
-        super.put(i, element);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            allocator.tickHostWrite(this);
+            super.put(i, element);
+        }
     }
 
     @Override
     public void put(long i, int element) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        allocator.tickHostWrite(this);
-        super.put(i, element);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            allocator.tickHostWrite(this);
+            super.put(i, element);
+        }
     }
 
     @Override
     public void put(long i, long element) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        allocator.tickHostWrite(this);
-        super.put(i, element);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            allocator.tickHostWrite(this);
+            super.put(i, element);
+        }
     }
 
     @Override
@@ -1474,20 +1710,37 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void write(DataOutputStream out) throws IOException {
         lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
+        // Use force-sync to ensure D2H copy happens even when the buffer is marked
+        // constant (via setCloseable(false)) or DSP replay is active. Regular
+        // synchronizeHostData uses dbSyncToPrimary (forceSync=false) which skips
+        // D2H for constant buffers, causing serialization to read stale zeros from
+        // the unsynced host buffer instead of the actual device data.
+        Nd4j.getExecutioner().commit();
+        if (!wasClosed())
+            NativeOpsHolder.getInstance().getDeviceNativeOps().dbForceSyncToPrimary(opaqueBuffer());
         super.write(out);
     }
 
     @Override
     public void write(OutputStream dos) {
         lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
+        // Use force-sync for the same reason as write(DataOutputStream): constant
+        // buffers must be force-synced to get actual device data into the host buffer.
+        Nd4j.getExecutioner().commit();
+        if (!wasClosed())
+            NativeOpsHolder.getInstance().getDeviceNativeOps().dbForceSyncToPrimary(opaqueBuffer());
         super.write(dos);
     }
 
     private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
         lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
+        // Use force-sync: constant buffers (marked via setCloseable(false)) must have
+        // their device data force-synced to host before serialization. The regular
+        // synchronizeHostData (forceSync=false) skips D2H for constant buffers,
+        // causing the serialized bytes to be stale zeros from the host buffer.
+        Nd4j.getExecutioner().commit();
+        if (!wasClosed())
+            NativeOpsHolder.getInstance().getDeviceNativeOps().dbForceSyncToPrimary(opaqueBuffer());
         stream.defaultWriteObject();
         write(stream);
     }
@@ -1498,9 +1751,19 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public String toString() {
-        lazyAllocateHostPointer();
-        AtomicAllocator.getInstance().synchronizeHostData(this);
-        return super.toString();
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return "CudaDataBuffer[DEALLOCATED, length=" + length + ", type=" + type + "]";
+        }
+
+        try {
+            lazyAllocateHostPointer();
+            AtomicAllocator.getInstance().synchronizeHostData(this);
+            return super.toString();
+        } catch (Exception e) {
+            // If we still get an error (e.g., race condition with deallocation),
+            // return a safe fallback string instead of propagating the exception
+            return "CudaDataBuffer[ERROR: " + e.getMessage() + ", length=" + length + ", type=" + type + "]";
+        }
     }
 
     @Override
@@ -1530,7 +1793,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         if (ptrDataBuffer == null) {
             ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length(), type, true);
-            this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+            this.deallocationId = ptrDataBuffer.getDeallocator() != null ?
+                ptrDataBuffer.getDeallocator().getUniqueId() : -1;
         }
 
         actualizePointerAndIndexer();
@@ -1567,7 +1831,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             this.type = t;
 
-            this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+            this.ptrDataBuffer = allocationPoint.getPtrDataBuffer();
+            this.deallocationId = ptrDataBuffer != null && ptrDataBuffer.getDeallocator() != null ?
+                ptrDataBuffer.getDeallocator().getUniqueId() : -1;
 
             switch (type) {
                 case DOUBLE: {
@@ -1701,47 +1967,83 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public DataBuffer dup() {
+        if (released.get()) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: dup() called on a CLOSED DataBuffer. " +
+                "length=" + length + ", type=" + type +
+                ". The buffer was freed but a caller is still trying to duplicate it. " +
+                "Check for premature buffer deallocation in DSP output lifecycle.");
+        }
+        if (ptrDataBuffer == null) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: dup() called but ptrDataBuffer is null (buffer already released). " +
+                "length=" + length + ", type=" + type);
+        }
         lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         DataBuffer buffer = create(this.length);
-        allocator.memcpyBlocking(buffer, new CudaPointer(allocator.getHostPointer(this).address()), this.length * elementSize, 0);
+        Pointer hostPtr = allocator.getHostPointer(this);
+        if (hostPtr == null) {
+            // Host pointer unavailable — fall back to device-side copy
+            Pointer devPtr = allocator.getPointer(this);
+            if (devPtr != null) {
+                allocator.memcpyBlocking(buffer, new CudaPointer(devPtr.address()), this.length * elementSize, 0);
+            }
+        } else {
+            allocator.memcpyBlocking(buffer, new CudaPointer(hostPtr.address()), this.length * elementSize, 0);
+        }
         return buffer;
     }
 
     @Override
     public Number getNumber(long i) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        return super.getNumber(i);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            return super.getNumber(i);
+        }
     }
 
     @Override
     public double getDouble(long i) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        return super.getDouble(i);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            return super.getDouble(i);
+        }
     }
 
     @Override
     public long getLong(long i) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        return super.getLong(i);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            return super.getLong(i);
+        }
     }
 
 
     @Override
     public float getFloat(long i) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        return super.getFloat(i);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            return super.getFloat(i);
+        }
     }
 
     @Override
     public int getInt(long ix) {
-        lazyAllocateHostPointer();
-        allocator.synchronizeHostData(this);
-        return super.getInt(ix);
+        synchronized (this) {
+            ensureCorrectDevice();
+            lazyAllocateHostPointer();
+            allocator.synchronizeHostData(this);
+            return super.getInt(ix);
+        }
     }
 
     public void actualizePointerAndIndexer() {
@@ -1939,10 +2241,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     protected void release() {
         if (!released.get()) {
+            released.set(true);
             ptrDataBuffer.closeBuffer();
             allocationPoint.setReleased(true);
         }
-
     }
 
 
@@ -1967,16 +2269,351 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public int targetDevice() {
+        if (released.get()) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: targetDevice() called on a CLOSED DataBuffer. " +
+                "The buffer was released via close()/release() but something still holds a reference. " +
+                "length=" + length + ", type=" + type +
+                ". Check for premature buffer deallocation — likely DSP output freed while still in use.");
+        }
+        if (ptrDataBuffer == null) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: targetDevice() called but ptrDataBuffer is null. " +
+                "The buffer was released via close()/release() (ptrDataBuffer set to null). " +
+                "length=" + length + ", type=" + type);
+        }
         return AtomicAllocator.getInstance().getAllocationPoint(this).getDeviceId();
     }
 
     @Override
     public void syncToPrimary(){
+        if (released.get() || ptrDataBuffer == null) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: syncToPrimary() called on a " +
+                (released.get() ? "CLOSED" : "null-ptrDataBuffer") + " DataBuffer. " +
+                "length=" + length + ", type=" + type);
+        }
         ptrDataBuffer.syncToPrimary();
     }
 
     @Override
     public void syncToSpecial(){
+        if (released.get() || ptrDataBuffer == null) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: syncToSpecial() called on a " +
+                (released.get() ? "CLOSED" : "null-ptrDataBuffer") + " DataBuffer. " +
+                "length=" + length + ", type=" + type);
+        }
         ptrDataBuffer.syncToSpecial();
+    }
+
+    // ========================
+    // HybridDataBuffer Implementation
+    // ========================
+
+    @Override
+    public boolean isHybrid() {
+        return true;
+    }
+
+    @Override
+    public HybridDataBuffer asHybrid() {
+        return this;
+    }
+
+    @Override
+    public DeviceDescriptor getOwnerDevice() {
+        if (ownerDevice == null) {
+            if (released.get()) {
+                throw new IllegalStateException(
+                    "BUFFER_LIFECYCLE: getOwnerDevice() called on a CLOSED DataBuffer. " +
+                    "length=" + length + ", type=" + type +
+                    ". The buffer was freed but a caller is still trying to determine its device. " +
+                    "This typically means a DSP output was freed by closeSlotArrayCache/releaseGpuIntermediates " +
+                    "before TOKEN_SAMPLE or dup() could use it.");
+            }
+            int deviceId = targetDevice();
+            ownerDevice = DeviceDescriptor.cuda(deviceId);
+        }
+        return ownerDevice;
+    }
+
+    @Override
+    public void setOwnerDevice(DeviceDescriptor device) {
+        validatePinnedDevice(device);
+        this.ownerDevice = device;
+    }
+
+    @Override
+    public DeviceDescriptor getPinnedDevice() {
+        return pinnedDevice;
+    }
+
+    @Override
+    public void pinTo(DeviceDescriptor device) {
+        if (device == null) {
+            unpin();
+            return;
+        }
+
+        DeviceDescriptor previousPinned = pinnedDevice;
+        if (previousPinned != null && !previousPinned.getDeviceId().equals(device.getDeviceId())) {
+            pinnedDevice = null;
+        }
+
+        // Ensure data is available on the target device before pinning
+        ensureAvailableOn(device);
+        pinnedDevice = device;
+        ownerDevice = device;
+
+        // For CPU pinning, mark CPU as valid and potentially invalidate GPU copy
+        if (device.getDeviceType() == DeviceType.CPU) {
+            cpuValid = true;
+            // When pinned to CPU, GPU copy may become stale if modified
+        }
+    }
+
+    @Override
+    public void unpin() {
+        pinnedDevice = null;
+    }
+
+    @Override
+    public boolean isValidOn(DeviceDescriptor device) {
+        if (device == null) {
+            return false;
+        }
+        // Check explicit validity flags
+        if (device.getDeviceType() == DeviceType.CPU) {
+            return cpuValid;
+        } else if (device.getDeviceType().isGpu()) {
+            return gpuValid;
+        }
+        return false;
+    }
+
+    @Override
+    public void markValidOn(DeviceDescriptor device) {
+        if (device == null) {
+            return;
+        }
+        if (device.getDeviceType() == DeviceType.CPU) {
+            cpuValid = true;
+            hostDirty = false;
+        } else if (device.getDeviceType().isGpu()) {
+            validatePinnedDevice(device);
+            gpuValid = true;
+            deviceDirty = false;
+            ownerDevice = device;
+        }
+    }
+
+    @Override
+    public void markInvalidOn(DeviceDescriptor device) {
+        if (device == null) {
+            return;
+        }
+        if (device.getDeviceType() == DeviceType.CPU) {
+            cpuValid = false;
+            hostDirty = true;
+        } else if (device.getDeviceType().isGpu()) {
+            gpuValid = false;
+            deviceDirty = true;
+        }
+    }
+
+    @Override
+    public void ensureAvailableOn(DeviceDescriptor device) {
+        if (device == null || ptrDataBuffer == null) {
+            return;
+        }
+
+        validatePinnedDevice(device);
+
+        if (device.getDeviceType() == DeviceType.CPU) {
+            // Need data on CPU/host
+            if (!cpuValid) {
+                // Sync from GPU to CPU
+                syncToPrimary();
+                cpuValid = true;
+                deviceDirty = false;
+            }
+        } else if (device.getDeviceType().isGpu()) {
+            // Need data on GPU
+            int targetDeviceIndex = device.getDeviceIndex();
+            int currentNativeDevice = targetDevice();
+
+            if (currentNativeDevice != -1 && currentNativeDevice != targetDeviceIndex) {
+                // Check if we need to migrate or if P2P is enough
+                if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()) {
+                    // Save current device context — migrate requires switching to target
+                    // device, but we must restore the caller's context afterward.
+                    // Without this, the calling thread's CUDA device is permanently changed
+                    // to the target device, causing subsequent ops to execute on the wrong
+                    // device (error 700: illegal memory access).
+                    int callerDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                    DeviceMemoryManager.getInstance().switchDevice(targetDeviceIndex, "BaseCudaDataBuffer.ensureAvailableOn", "migrate-to-target");
+                    // Call native migrate to move buffer to target device
+                    ptrDataBuffer.migrate();
+                    gpuValid = true;
+                    hostDirty = false;
+                    // Re-read actual device from native layer — migrate's internal
+                    // failover may have routed to a different device than requested
+                    int actualDevice = targetDevice();
+                    ownerDevice = DeviceDescriptor.cuda(actualDevice);
+                    // Restore caller's device context so the thread doesn't stay on
+                    // the target device after the transfer
+                    if (callerDevice != targetDeviceIndex) {
+                        DeviceMemoryManager.getInstance().switchDevice(callerDevice, "BaseCudaDataBuffer.ensureAvailableOn", "restore-caller-context");
+                    }
+                    return;
+                } else {
+                    // P2P is available - treat device data as valid on target
+                    gpuValid = true;
+                    hostDirty = false;
+                }
+            } else if (!gpuValid) {
+                // Sync from CPU to GPU
+                syncToSpecial();
+                gpuValid = true;
+                hostDirty = false;
+            }
+            // Update owner to target device
+            ownerDevice = device;
+        }
+    }
+
+    private void validatePinnedDevice(DeviceDescriptor device) {
+        DeviceDescriptor pinned = pinnedDevice;
+        if (pinned == null || device == null) {
+            return;
+        }
+
+        // If pinned to a specific device, ensure the requested device matches
+        if (!pinned.getDeviceId().equals(device.getDeviceId())) {
+            // Special case: if pinned to CPU, allow read-only access from GPU
+            // (the data will be synced from CPU to GPU as needed)
+            if (pinned.getDeviceType() == DeviceType.CPU && device.getDeviceType().isGpu()) {
+                // Allow GPU to read from CPU-pinned buffer - will sync as needed
+                return;
+            }
+            // Special case: if pinned to GPU, allow read-only access from CPU
+            // (the data will be synced from GPU to CPU as needed)
+            if (pinned.getDeviceType().isGpu() && device.getDeviceType() == DeviceType.CPU) {
+                // Allow CPU to read from GPU-pinned buffer - will sync as needed
+                return;
+            }
+            // GPU-to-GPU mismatch when pinned
+            throw new IllegalStateException(
+                    "Buffer is pinned to " + pinned.getDeviceId()
+                            + " but requested device is " + device.getDeviceId()
+                            + ". Unpin or repin before transferring.");
+        }
+    }
+
+    public long getDeviceAddress(DeviceDescriptor device) {
+        if (device == null || ptrDataBuffer == null) {
+            return 0;
+        }
+
+        validatePinnedDevice(device);
+
+        // Handle CPU device request - return host/primary buffer address
+        if (device.getDeviceType() == DeviceType.CPU) {
+            ensureAvailableOn(device);
+            Pointer primary = ptrDataBuffer.primaryBuffer();
+            return primary != null ? primary.address() : 0;
+        }
+
+        // Handle GPU device request
+        int currentDeviceIndex = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        int requestedDeviceIndex = device.getDeviceIndex();
+        int bufferDeviceIndex = this.getNativeDeviceId();
+
+        if (bufferDeviceIndex != -1 && bufferDeviceIndex != requestedDeviceIndex) {
+            // Check if P2P access is available for direct access
+            if (Nd4j.getAffinityManager().isCrossDeviceAccessSupported()) {
+                // P2P available - can use current buffer address directly
+                // The CUDA driver handles peer access transparently
+                Pointer special = ptrDataBuffer.specialBuffer();
+                return special != null ? special.address() : 0;
+            } else {
+                // No P2P - need to migrate data to the target device
+                // Ensure data is synced to host first, then allocate on target device
+                ensureAvailableOn(DeviceDescriptor.cpu());
+
+                // Update owner device and migrate
+                ownerDevice = device;
+
+                // The next syncToSpecial call will allocate on the new device
+                gpuValid = false;
+                ensureAvailableOn(device);
+            }
+        } else if (!gpuValid) {
+            // Ensure GPU data is valid
+            ensureAvailableOn(device);
+        }
+
+        // Return device/special buffer address
+        Pointer special = ptrDataBuffer.specialBuffer();
+        return special != null ? special.address() : 0;
+    }
+
+
+    @Override
+    public MultiBackendWorkspace getMultiBackendWorkspace() {
+        return multiBackendWorkspace;
+    }
+
+    @Override
+    public void attachToWorkspace(MultiBackendWorkspace workspace) {
+        this.multiBackendWorkspace = workspace;
+    }
+
+    @Override
+    public void detachFromWorkspace() {
+        this.multiBackendWorkspace = null;
+    }
+
+    @Override
+    public void allocateOnDevice(DeviceDescriptor device, long requiredSize) {
+        if (device == null || !device.getDeviceType().isGpu()) {
+            return;
+        }
+
+        int targetDeviceId = device.getDeviceIndex();
+        int currentDeviceId = targetDevice();
+        if (targetDeviceId == currentDeviceId) {
+            return; // already on target device
+        }
+
+        // Switch to target device and migrate the native buffer
+        DeviceMemoryManager.getInstance().switchDevice(targetDeviceId, "BaseCudaDataBuffer", "allocateOnDevice");
+        ptrDataBuffer.migrate();
+
+        // Update tracking
+        this.ownerDevice = device;
+        this.gpuValid = true;
+        this.hostDirty = false;
+    }
+
+    @Override
+    public boolean isHostDirty() {
+        return hostDirty;
+    }
+
+    @Override
+    public boolean isDeviceDirty() {
+        return deviceDirty;
+    }
+
+    @Override
+    public void markHostDirty() {
+        this.hostDirty = true;
+    }
+
+    @Override
+    public void markDeviceDirty() {
+        this.deviceDirty = true;
     }
 }

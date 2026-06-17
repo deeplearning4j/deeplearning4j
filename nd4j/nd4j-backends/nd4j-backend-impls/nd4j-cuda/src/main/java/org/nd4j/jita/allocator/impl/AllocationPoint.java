@@ -111,15 +111,42 @@ public class AllocationPoint {
     }
 
     public void setPointers(Pointer primary, Pointer special, long numberOfElements) {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: AllocationPoint.setPointers() called but ptrDataBuffer is " +
+                (ptrDataBuffer == null ? "null" : "native-null") +
+                ". objectId=" + objectId + ", bytes=" + bytes);
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetPrimaryBuffer(ptrDataBuffer, primary, numberOfElements);
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetSpecialBuffer(ptrDataBuffer, special, numberOfElements);
     }
 
     public int getDeviceId() {
+        if (ptrDataBuffer == null) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: AllocationPoint.getDeviceId() called but ptrDataBuffer is null. " +
+                "The underlying OpaqueDataBuffer was closed/freed before this access. " +
+                "objectId=" + objectId + ", bytes=" + bytes +
+                ". This typically means a DataBuffer.close() or release() ran while the array is still in use " +
+                "(e.g., DSP output freed by closeSlotArrayCache before TOKEN_SAMPLE/dup).");
+        }
+        if (ptrDataBuffer.isNull()) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: AllocationPoint.getDeviceId() called but ptrDataBuffer native pointer is null. " +
+                "The OpaqueDataBuffer.closeBuffer() already ran (setNull). " +
+                "objectId=" + objectId + ", bytes=" + bytes +
+                ". Check for premature buffer deallocation in DSP output lifecycle.");
+        }
         return ptrDataBuffer.deviceId();
     }
 
     public void setDeviceId(int deviceId) {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            throw new IllegalStateException(
+                "BUFFER_LIFECYCLE: AllocationPoint.setDeviceId() called but ptrDataBuffer is " +
+                (ptrDataBuffer == null ? "null" : "native-null") +
+                ". objectId=" + objectId + ", bytes=" + bytes);
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetDeviceId(ptrDataBuffer, deviceId);
     }
 
@@ -212,9 +239,12 @@ public class AllocationPoint {
      * This method returns CUDA pointer object for this allocation.
      * It can be either device pointer or pinned memory pointer, or null.
      *
-     * @return
+     * @return the device pointer, or null if the underlying buffer is null/deallocated
      */
     public Pointer getDevicePointer() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return null;
+        }
         return NativeOpsHolder.getInstance().getDeviceNativeOps().dbSpecialBuffer(ptrDataBuffer);
     }
 
@@ -222,14 +252,20 @@ public class AllocationPoint {
      * This method returns CUDA pointer object for this allocation.
      * It can be either device pointer or pinned memory pointer, or null.
      *
-     * @return
+     * @return the host pointer, or null if the underlying buffer is null/deallocated
      */
     public Pointer getHostPointer() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return null;
+        }
         return NativeOpsHolder.getInstance().getDeviceNativeOps().dbPrimaryBuffer(ptrDataBuffer);
     }
 
 
     public synchronized void tickDeviceRead() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return;
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickDeviceRead(ptrDataBuffer);
     }
 
@@ -252,6 +288,9 @@ public class AllocationPoint {
     }
 
     public synchronized void tickHostRead() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return;
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickHostRead(ptrDataBuffer);
     }
 
@@ -260,6 +299,9 @@ public class AllocationPoint {
      *
      */
     public synchronized void tickDeviceWrite() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return;
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickDeviceWrite(ptrDataBuffer);
     }
 
@@ -267,6 +309,9 @@ public class AllocationPoint {
      * This method sets time when this point was changed on host
      */
     public synchronized void tickHostWrite() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return;
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickHostWrite(ptrDataBuffer);
     }
 
@@ -276,6 +321,9 @@ public class AllocationPoint {
      * @return true, if data is actual, false otherwise
      */
     public synchronized boolean isActualOnHostSide() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return false;
+        }
         val s = NativeOpsHolder.getInstance().getDeviceNativeOps().dbLocality(ptrDataBuffer);
         return s <= 0;
     }
@@ -286,6 +334,9 @@ public class AllocationPoint {
      * @return
      */
     public synchronized boolean isActualOnDeviceSide() {
+        if (ptrDataBuffer == null || ptrDataBuffer.isNull()) {
+            return false;
+        }
         val s = NativeOpsHolder.getInstance().getDeviceNativeOps().dbLocality(ptrDataBuffer);
         return s >= 0;
     }

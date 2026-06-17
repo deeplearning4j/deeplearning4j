@@ -32,14 +32,15 @@
 
     </parent>
 
-    <artifactId>nd4j-cuda</artifactId>
+    <artifactId>nd4j-cuda-12.9</artifactId>
 
-    <name>nd4j-cuda</name>
+    <name>nd4j-cuda-12.9</name>
 
     <properties>
-        <cuda.version>12.3</cuda.version>
-        <cudnn.version>8.9</cudnn.version>
-        <javacpp-presets.cuda.version>1.5.10</javacpp-presets.cuda.version>
+        <skipPublishing>false</skipPublishing>
+        <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
+        <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <module.name>nd4j.cuda</module.name>
         <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
@@ -59,7 +60,7 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-cuda-preset</artifactId>
+            <artifactId>nd4j-cuda-12.9-preset</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -189,6 +190,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <!-- ISO-8859-1: JavaCPP-generated bindings may contain non-ASCII from
+                         C++ header comments. On Windows, encoding mismatches produce invalid
+                         UTF-8. ISO-8859-1 accepts all byte values, and the non-ASCII is
+                         only in comments so it doesn't affect compiled output. -->
+                    <encoding>ISO-8859-1</encoding>
+                </configuration>
             </plugin>
 
         </plugins>
@@ -207,10 +215,11 @@
                     <plugin>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
                         <dependencies>
                             <dependency>
                                 <groupId>org.eclipse.deeplearning4j</groupId>
-                                <artifactId>nd4j-cuda-preset</artifactId>
+                                <artifactId>nd4j-cuda-12.9-preset</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>
@@ -258,13 +267,14 @@
                                 <includePath>${libnd4jhome}/include/indexing</includePath>
                                 <includePath>${libnd4jhome}/include/memory</includePath>
                                 <includePath>${libnd4jhome}/include/performance</includePath>
+                                <includePath>${env.CUDA_PATH}/include</includePath>
                             </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4jhome}/blasbuild/cuda</linkPath> </linkPaths>
                             <compilerOptions>
                                 <compilerOption>-std=c++17</compilerOption>
                                 <compilerOption>-Wl,--no-undefined</compilerOption>
-                                <compilerOption>-L${libnd4jhome}/blasbuild/cuda/blas</compilerOption> </compilerOptions>
+                                <compilerOption>-L${libnd4jhome}/blasbuild/cuda</compilerOption> </compilerOptions>
                         </configuration>
                         <executions>
                             <execution>
@@ -314,10 +324,11 @@
                     <plugin>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
                         <dependencies>
                             <dependency>
                                 <groupId>org.eclipse.deeplearning4j</groupId>
-                                <artifactId>nd4j-cuda-preset</artifactId>
+                                <artifactId>nd4j-cuda-12.9-preset</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>
@@ -371,13 +382,13 @@
                                 <includePath>${libnd4jhome}/include/legacy</includePath>
                             </includePaths>
                             <linkPaths>
-                                <linkPath>${libnd4jhome}/blasbuild/cuda/blas</linkPath> </linkPaths>
+                                <linkPath>${libnd4jhome}/blasbuild/cuda/</linkPath> </linkPaths>
                             <compilerOptions>
                                 <compilerOption>${javacpp.compiler.options}</compilerOption> <compilerOption>-finstrument-functions</compilerOption> <compilerOption>-rdynamic</compilerOption> <compilerOption>-ldl</compilerOption> <compilerOption>-lbfd</compilerOption> <compilerOption>-O0</compilerOption> <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption> <compilerOption>-v</compilerOption> <compilerOption>-lunwind</compilerOption> <compilerOption>-ldw</compilerOption> <compilerOption>-Bsymbolic</compilerOption>
                                 <compilerOption>-fno-omit-frame-pointer</compilerOption>
                                 <compilerOption>-fno-optimize-sibling-calls</compilerOption>
                                 <compilerOption>-g</compilerOption> <compilerOption>-fPIC</compilerOption> <compilerOption>-std=c++17</compilerOption>
-                                <compilerOption>-L${libnd4jhome}blasbuild/cuda/blas</compilerOption> </compilerOptions>
+                                <compilerOption>-L${libnd4jhome}blasbuild/cuda/</compilerOption> </compilerOptions>
 
                         </configuration>
                         <executions>
@@ -426,9 +437,13 @@
                     <plugin>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+
                         <configuration>
                             <compilerOptions>
-                                <compilerOption>/MT</compilerOption> </compilerOptions>
+                                <compilerOption>/MT</compilerOption>
+                                <compilerOption>/std:c++17</compilerOption>
+                            </compilerOptions>
                         </configuration>
                     </plugin>
                 </plugins>

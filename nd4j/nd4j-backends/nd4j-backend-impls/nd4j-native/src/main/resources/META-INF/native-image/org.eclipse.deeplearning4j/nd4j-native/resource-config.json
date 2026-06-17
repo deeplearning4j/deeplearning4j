@@ -1,0 +1,54 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "nd4j-native\\.properties"
+      },
+      {
+        "pattern": "org/nd4j/linalg/cpu/nativecpu/bindings/.*\\.(so|dll|dylib)"
+      },
+      {
+        "pattern": "linux-x86_64/.*\\.(so|a)"
+      },
+      {
+        "pattern": "linux-x86_64-avx2/.*\\.(so|a)"
+      },
+      {
+        "pattern": "linux-x86_64-avx512/.*\\.(so|a)"
+      },
+      {
+        "pattern": "linux-arm64/.*\\.(so|a)"
+      },
+      {
+        "pattern": "linux-armhf/.*\\.(so|a)"
+      },
+      {
+        "pattern": "windows-x86_64/.*\\.(dll|lib)"
+      },
+      {
+        "pattern": "windows-x86_64-avx2/.*\\.(dll|lib)"
+      },
+      {
+        "pattern": "windows-x86_64-avx512/.*\\.(dll|lib)"
+      },
+      {
+        "pattern": "macosx-x86_64/.*\\.(dylib|a)"
+      },
+      {
+        "pattern": "macosx-arm64/.*\\.(dylib|a)"
+      },
+      {
+        "pattern": ".*libnd4jcpu.*\\.(so|dll|dylib)"
+      },
+      {
+        "pattern": ".*libjnijavacpp.*\\.(so|dll|dylib)"
+      },
+      {
+        "pattern": ".*nd4jcpu.*\\.(so|dll|dylib)"
+      },
+      {
+        "pattern": ".*jnijavacpp.*\\.(so|dll|dylib)"
+      }
+    ]
+  }
+}
