@@ -98,7 +98,6 @@ SD_INLINE static void tripleTransformer(NDArray* input, NDArray* output, const i
 
   const T* x = input->bufferAsT<T>();
   T* z = output->bufferAsT<T>();
-  // TODO: Use tensordot or other optimizied helpers to see if we can get better performance.
 
   if (dimC == rank - 1 && isCContiguous(*input) && isCContiguous(*output) && input->ordering() == 'c' &&
       output->ordering() == 'c') {
@@ -154,8 +153,6 @@ SD_INLINE static void rgbYiq(NDArray* input, NDArray* output, const int dimC) {
 
 template <typename T>
 SD_INLINE static void yiqRgb(NDArray* input, NDArray* output, const int dimC) {
-  // TODO: this operation does not use the clamp operation, so there is a possibility being out of range.
-  // Justify that it  will not be out of range for images data
   T arr[3][3] = {{(T)1, (T)1, (T)1},
                  {(T)0.95598634, (T)-0.27201283, (T)-1.10674021},
                  {(T)0.6208248, (T)-0.64720424, (T)1.70423049}};

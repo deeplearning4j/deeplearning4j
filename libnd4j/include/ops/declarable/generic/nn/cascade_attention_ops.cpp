@@ -21,6 +21,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_cascade_attention)
 
+#include <math/templatemath.h>
 #include <ops/declarable/headers/llm.h>
 #include <ops/declarable/helpers/cascade_attention.h>
 
@@ -66,7 +67,7 @@ CUSTOM_OP_IMPL(cascade_attention, 3, 1, false, 0, 0) {
     REQUIRE_TRUE(chunkSize > 0, 0, "cascade_attention: chunkSize must be positive, got %d", chunkSize);
 
     auto headDim = query->sizeAt(3);
-    double scale = block.getTArguments()->size() > 0 ? T_ARG(0) : (1.0 / std::sqrt(static_cast<double>(headDim)));
+    double scale = block.getTArguments()->size() > 0 ? T_ARG(0) : (1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(headDim)));
 
 #if defined(SD_CUDA)
     helpers::cascadeAttentionCuda(block.launchContext(), query, key, value, output, chunkSize, scale);

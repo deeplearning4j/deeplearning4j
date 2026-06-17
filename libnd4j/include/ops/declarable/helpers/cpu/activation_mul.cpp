@@ -44,7 +44,7 @@ static void siluAndMulImpl(NDArray* gate, NDArray* up, NDArray* output) {
             float g = static_cast<float>(gatePtr[i]);
             float u = static_cast<float>(upPtr[i]);
             // silu(g) = g * sigmoid(g) = g / (1 + exp(-g))
-            float sigmoid_g = 1.0f / (1.0f + sd::math::sd_exp<float>(-g));
+            float sigmoid_g = 1.0f / (1.0f + sd::math::sd_exp<float, float>(-g));
             outPtr[i] = static_cast<T>(g * sigmoid_g * u);
         }
     };
@@ -97,7 +97,7 @@ static void geluTanhAndMulImpl(NDArray* gate, NDArray* up, NDArray* output) {
             float u = static_cast<float>(upPtr[i]);
             // gelu_tanh(g) = 0.5 * g * (1 + tanh(sqrt(2/pi) * (g + 0.044715 * g^3)))
             float inner = SQRT_2_OVER_PI * (g + GELU_COEFF * g * g * g);
-            float gelu_g = 0.5f * g * (1.0f + sd::math::sd_tanh<float>(inner));
+            float gelu_g = 0.5f * g * (1.0f + sd::math::sd_tanh<float, float>(inner));
             outPtr[i] = static_cast<T>(gelu_g * u);
         }
     };

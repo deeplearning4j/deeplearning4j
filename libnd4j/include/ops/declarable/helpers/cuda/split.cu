@@ -24,7 +24,7 @@
 
 #include <array/NDArrayFactory.h>
 #include <array/ResultSet.h>
-#include <exceptions/cuda_exception.h>
+
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
@@ -33,9 +33,6 @@
 #include <ops/declarable/helpers/transforms.h>
 
 #include <numeric>
-
-extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
-extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
 
 namespace sd {
 namespace ops {

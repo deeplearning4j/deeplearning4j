@@ -19,6 +19,7 @@
  */
 
 #include <ops/declarable/helpers/turbo_quant_attention.h>
+#include <math/templatemath.h>
 #include <helpers/PointersManager.h>
 
 #if NOT_EXCLUDED(OP_turbo_quant_attention)
@@ -204,10 +205,10 @@ void turboQuantAttentionForward(
 
   float scale = config.scale;
   if (scale <= 0.0f) {
-    scale = 1.0f / std::sqrt(static_cast<float>(headDim));
+    scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
   }
 
-  float qjlCorrectionScale = std::sqrt(M_PI / 2.0) / static_cast<float>(headDim);
+  float qjlCorrectionScale = sd::math::sd_sqrt<float, float>(static_cast<float>(M_PI / 2.0)) / static_cast<float>(headDim);
 
   // Ensure GPU buffers are current
   query->syncToDevice();

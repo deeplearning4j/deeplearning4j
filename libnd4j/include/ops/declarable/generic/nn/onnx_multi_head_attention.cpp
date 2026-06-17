@@ -26,6 +26,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_onnx_multi_head_attention)
 
+#include <math/templatemath.h>
 #include <helpers/FlashAttentionHelper.h>
 #include <helpers/AttentionWorkspace.h>
 #include <ops/declarable/helpers/kv_scatter.h>
@@ -166,7 +167,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
 
   // Compute scale if not provided
   if (scale <= 0.0) {
-    scale = 1.0 / std::sqrt(static_cast<double>(headDim));
+    scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(headDim));
   }
 
   // Reshape [batch, seq, hidden] -> [batch, seq, heads, headDim] (BSHD format for FlashAttentionHelper)
@@ -350,10 +351,10 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   config.numKvHeads = numKvHeads;
   
   // Cast attention bias to query dtype if needed
-  NDArray* attnBiasCastOwner = nullptr;
+  std::unique_ptr<NDArray> attnBiasCastOwner;
   if (attnBias != nullptr && attnBias->dataType() != query->dataType()) {
-    attnBiasCastOwner = attnBias->cast(query->dataType());
-    attnBias = attnBiasCastOwner;
+    attnBiasCastOwner.reset(attnBias->cast(query->dataType()));
+    attnBias = attnBiasCastOwner.get();
   }
 
   // Output in BSHD format [batch, seqQ, numHeads, headDim]
@@ -413,7 +414,6 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   delete valueCast;
   delete pastKeyCast;
   delete pastValueCast;
-  delete attnBiasCastOwner;
 
   return sd::Status::OK;
 }

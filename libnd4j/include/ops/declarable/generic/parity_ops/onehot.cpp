@@ -32,7 +32,6 @@ namespace ops {
 CUSTOM_OP_IMPL(onehot, 1, 1, false, -2, -2) {
   auto input = INPUT_VARIABLE(0);
 
-  // FIXME: double?
   double on(1.0f);   // T_ARG(0);
   double off(0.0f);  // T_ARG(1);
 

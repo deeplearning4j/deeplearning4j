@@ -61,7 +61,6 @@ CONFIGURABLE_OP_IMPL(lrn_bp, 2, 1, true, 3, 1) {
                "lrn_bp: Both input and grad_output should have the same shape, but got %s and %s correspondingly !",
                ShapeUtils::shapeAsString(input).c_str(), ShapeUtils::shapeAsString(gradO).c_str());
 
-  // FIXME: double/float?
   float bias = T_ARG(0);
   float alpha = T_ARG(1);
   float beta = T_ARG(2);

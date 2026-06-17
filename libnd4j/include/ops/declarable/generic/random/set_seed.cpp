@@ -42,8 +42,6 @@ CUSTOM_OP_IMPL(set_seed, -2, 1, false, 0, -2) {
     REQUIRE_TRUE(false, 0, "SetSeed: either IArg or scalr input should be provided");
   }
 
-  // FIXME: this approach isn't really good for cuda, since it'll assume that CUDA might get nullptr instead of stream
-  // refreshBuffer(nullptr, seed, (sd::Pointer) rng);
   rng.setSeed((int)seed);
   return Status::OK;
 }

@@ -24,6 +24,7 @@
 #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
 
 #include <cmath>
+#include <math/templatemath.h>
 #include <ops/declarable/headers/loss.h>
 #include <ops/declarable/generic/helpers/ScatterHelper.h>
 
@@ -77,10 +78,10 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0)
     // Compute sum(exp(logits[i,c] - maxVal)) for all c
     double sumE = 0.0;
     for (LongType c = 0; c < numClasses; c++) {
-      sumE += std::exp(logits->e<double>(i, c) - maxVal);
+      sumE += sd::math::sd_exp<double, double>(logits->e<double>(i, c) - maxVal);
     }
     // log-partition function (shifted): log(sumE)
-    double logSumExp = std::log(sumE);
+    double logSumExp = sd::math::sd_log<double, double>(sumE);
     // Gather shifted logit at label position
     LongType label = labels->e<LongType>(i);
     double logitAtLabel = logits->e<double>(i, label) - maxVal;
@@ -175,12 +176,12 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 
     // sum of shifted exp
     double sumEGrad = 0.0;
     for (LongType c = 0; c < numClassesGrad; c++) {
-      sumEGrad += std::exp(logits->e<double>(i, c) - maxValGrad);
+      sumEGrad += sd::math::sd_exp<double, double>(logits->e<double>(i, c) - maxValGrad);
     }
     // write softmax(logits)[i,c] - one_hot(labels[i])[c]
     LongType labelGrad = labels->e<LongType>(i);
     for (LongType c = 0; c < numClassesGrad; c++) {
-      double sm = std::exp(logits->e<double>(i, c) - maxValGrad) / sumEGrad;
+      double sm = sd::math::sd_exp<double, double>(logits->e<double>(i, c) - maxValGrad) / sumEGrad;
       double grad = sm - (c == labelGrad ? 1.0 : 0.0);
       dLdp->p(i, c, grad);
     }

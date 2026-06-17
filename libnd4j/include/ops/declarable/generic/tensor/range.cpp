@@ -43,8 +43,6 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
 
   bool localS = false;
   bool localD = false;
-  // FIXME: this op should be fully moved to helpers
-
   if (output->isEmpty()) return Status::OK;
 
   if (numInArrs > 0) {

@@ -35,7 +35,6 @@ static void histogram_(void const *xBuffer, sd::LongType const *xShapeInfo, void
 
   X binSize = static_cast<X>((max_val - min_val) / (numBins));
 
-  // FIXME: this op should be parallelized
   {
     int *bins = new int[numBins + SD_SHAPE_ALLOC_PADDING]();
     std::memset(bins, 0, sizeof(int) * numBins);

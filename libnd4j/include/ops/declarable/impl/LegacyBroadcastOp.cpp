@@ -112,7 +112,6 @@ LegacyOp *LegacyBroadcastOp::clone() { return new LegacyBroadcastOp(this->_opNum
 ShapeList *LegacyBroadcastOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
 
-  // FIXME: remove memcpy
   LongType *newShape;
   ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), sd::LongType);
   memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));

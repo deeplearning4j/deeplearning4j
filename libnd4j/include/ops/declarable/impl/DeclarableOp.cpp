@@ -1045,7 +1045,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 #if defined(SD_GCC_FUNCTRACE)
   // Log operation start before execution
   // Note: Java stack trace would be captured via Context if available
-  std::string javaStackTrace = "";  // TODO: Get from Context if Java side sets it
+  std::string javaStackTrace = "";  // Context has no Java stack trace field; left empty
   OpExecutionLogger::getInstance().logOpStart(this->getOpName()->c_str(), block, javaStackTrace);
   // Set current op name for lifecycle trackers to capture
   OpExecutionLogger::setCurrentOpName(*this->getOpName());
@@ -1553,8 +1553,7 @@ sd::Status sd::ops::DeclarableOp::execute(sd::graph::RandomGenerator &rng, const
 
   for (size_t e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
 
-  // FIXME: iargs should be sd::LongType
-  for (size_t e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(static_cast<int>(iArgs.at(e)));
+  for (size_t e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(iArgs.at(e));
 
   for (size_t e = 0; e < bArgs.size(); e++) block.getBArguments()->push_back(static_cast<int>(bArgs.at(e)));
 
@@ -1775,7 +1774,7 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
 }
 
 sd::ResultSet sd::ops::DeclarableOp::execute(const sd::OpArgsHolder &holder, bool isInplace) {
-  // FIXME: add DArgs to OpArgsHolder
+  // OpArgsHolder does not carry DArgs; passing empty DataType vector
   return evaluate(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), holder.getBArgs(),
                   std::vector<sd::DataType>(), isInplace);
 }

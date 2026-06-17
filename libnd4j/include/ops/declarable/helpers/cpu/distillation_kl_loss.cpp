@@ -39,9 +39,9 @@ static void logSoftmaxWithTemp(const double* logits, double* output, sd::LongTyp
     double logSum = 0.0;
     for (sd::LongType i = 0; i < len; i++) {
         output[i] = logits[i] / temperature - maxVal;
-        logSum += sd::math::sd_exp<double>(output[i]);
+        logSum += sd::math::sd_exp<double, double>(output[i]);
     }
-    logSum = sd::math::sd_log<double>(logSum);
+    logSum = sd::math::sd_log<double, double>(logSum);
     for (sd::LongType i = 0; i < len; i++) {
         output[i] -= logSum;
     }
@@ -51,7 +51,7 @@ static void logSoftmaxWithTemp(const double* logits, double* output, sd::LongTyp
 static void softmaxWithTemp(const double* logits, double* output, sd::LongType len, double temperature) {
     logSoftmaxWithTemp(logits, output, len, temperature);
     for (sd::LongType i = 0; i < len; i++) {
-        output[i] = sd::math::sd_exp<double>(output[i]);
+        output[i] = sd::math::sd_exp<double, double>(output[i]);
     }
 }
 
@@ -65,7 +65,7 @@ void distillationKLLoss(NDArray* studentLogits, NDArray* teacherLogits,
     double klLoss = 0.0;
     double ceLoss = 0.0;
 
-    PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+:klLoss, +:ceLoss)
+    PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+:klLoss, ceLoss)
     for (sd::LongType b = 0; b < batch; b++) {
         // Extract logits for this sample
         std::vector<double> sLogits(classes), tLogits(classes);

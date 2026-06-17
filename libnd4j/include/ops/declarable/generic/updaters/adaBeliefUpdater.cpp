@@ -40,7 +40,6 @@ CONFIGURABLE_OP_IMPL(adabelief_updater, 3, 3, true, 0, 0) {
   auto stateU = OUTPUT_VARIABLE(1);
   auto stateM = OUTPUT_VARIABLE(2);
 
-  // todo maybe we need an error like on Java side
   if (gradient->isEmpty() || initStateU->isEmpty() || initStateM->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(gradient->isSameShape(initStateU), 0,

@@ -38,7 +38,6 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 
   int reductionMode =
       INT_ARG(0);  // 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
-  // FIXME: double?
   double delta = T_ARG(0);
 
   // input validation

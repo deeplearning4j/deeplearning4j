@@ -79,7 +79,6 @@ static void nonMaxSuppressionV2_(NDArray* boxes, NDArray* scales, int maxSize, d
   for (int i = 0; i < numBoxes; ++i) {
     bool shouldSelect = numSelected < output->lengthOf();
 
-    // FIXME: add parallelism here
     for (int j = numSelected - 1; j >= 0; --j) {
       if (shouldSelect)
         if (needToSuppressWithThreshold(*boxes, indices[i], indices[selectedIndices[j]], T(overlapThreshold))) {

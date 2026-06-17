@@ -66,8 +66,8 @@ static void mergeAttentionStatesCpu_(NDArray* attnA, NDArray* lseA,
 
             // Numerically stable merge
             float m = sd::math::sd_max<float>(lA, lB);
-            float wA = std::exp(lA - m);
-            float wB = std::exp(lB - m);
+            float wA = sd::math::sd_exp<float, float>(lA - m);
+            float wB = sd::math::sd_exp<float, float>(lB - m);
             float wSum = wA + wB;
             float invWSum = 1.0f / wSum;
 
@@ -83,7 +83,7 @@ static void mergeAttentionStatesCpu_(NDArray* attnA, NDArray* lseA,
             }
 
             if (lseOutPtr != nullptr) {
-                lseOutPtr[pos] = m + std::log(wSum);
+                lseOutPtr[pos] = m + sd::math::sd_log<float, float>(wSum);
             }
         }
     };
@@ -100,11 +100,6 @@ void mergeAttentionStates(LaunchContext* context,
                            NDArray* lseSuffix,
                            NDArray* output,
                            NDArray* lseOutput) {
-    attnPrefix->syncToHost();
-    lsePrefix->syncToHost();
-    attnSuffix->syncToHost();
-    lseSuffix->syncToHost();
-
     BUILD_SINGLE_SELECTOR(attnPrefix->dataType(), mergeAttentionStatesCpu_,
                           (attnPrefix, lsePrefix, attnSuffix, lseSuffix, output, lseOutput),
                           SD_FLOAT_TYPES);

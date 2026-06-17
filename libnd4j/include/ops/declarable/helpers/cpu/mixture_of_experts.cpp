@@ -46,7 +46,7 @@ static void softmax(T* data, int size) {
     }
     T sum = static_cast<T>(0);
     for (int i = 0; i < size; i++) {
-        data[i] = sd::math::sd_exp<T>(data[i] - maxVal);
+        data[i] = sd::math::sd_exp<T, T>(data[i] - maxVal);
         sum += data[i];
     }
     for (int i = 0; i < size; i++) {
@@ -229,8 +229,6 @@ void mixtureOfExperts(sd::LaunchContext* context,
 
     // For simplicity, delegate to simple implementation if expert weights are provided as single tensor
     // This version handles the list of expert weights case
-    // TODO: Implement full version with capacity constraints and aux loss
-
     if (expertWeights.size() == 1) {
         // Note: normalizeProbs=false to avoid ~numExperts/topK gradient amplification
         // in the backward pass. Pass true only for inference-only (non-training) use.

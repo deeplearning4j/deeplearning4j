@@ -195,7 +195,6 @@ static void activationDeriv(NDArray* x, const int opId, const float alpha, const
 }
 
 //////////////////////////////////////////////////////////////////////////
-// FIXME - derivative undefined when not-clipped c has element/elements equal to -clipVal or clipVal
 static void clipDeriv(const float clipVal, NDArray& c, NDArray& z0, NDArray& z1, NDArray& z2, NDArray& z3) {
   if (clipVal == 0) return;
 

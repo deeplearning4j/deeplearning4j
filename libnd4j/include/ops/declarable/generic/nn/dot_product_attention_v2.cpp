@@ -25,12 +25,14 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_dot_product_attention_v2)
 
+#include <math/templatemath.h>
 #include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/reverse.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <helpers/AttentionHelper.h>
 #include <helpers/FlashAttentionHelper.h>
 #include <cmath>
+#include <memory>
 
 namespace sd {
 namespace ops {
@@ -266,7 +268,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   // Auto scale when scale <= 0: 1/sqrt(headDim or dim)
   if (scale <= 0.0) {
     auto dim = isRank4 ? queries->sizeAt(3) : queries->sizeAt(2);
-    scale = 1.0 / std::sqrt(static_cast<double>(dim));
+    scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(dim));
   }
 
   // B_ARG order: useCausalMask, training, useFlashAttention
@@ -312,13 +314,13 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
   bool hasInputMasks = (qMask != nullptr) || (vMask != nullptr);
   bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
-  NDArray* attentionBiasCastOwner = nullptr;
+  std::unique_ptr<NDArray> attentionBiasCastOwner;
 
   // Additive bias/mask can arrive as BOOL/INT from importer graphs.
   // Cast once to query dtype for arithmetic in the helper path.
   if (hasAttentionBias && attentionBias->dataType() != queries->dataType()) {
-    attentionBiasCastOwner = attentionBias->cast(queries->dataType());
-    attentionBias = attentionBiasCastOwner;
+    attentionBiasCastOwner.reset(attentionBias->cast(queries->dataType()));
+    attentionBias = attentionBiasCastOwner.get();
   }
 
   // Auto-cast K/V to match Q dtype when they differ (e.g. FusedRoPE promotes
@@ -517,7 +519,6 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
   delete keysCastOwner;
   delete valuesCastOwner;
-  delete attentionBiasCastOwner;
 
   return sd::Status::OK;
 }

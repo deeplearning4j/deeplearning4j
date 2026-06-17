@@ -19,7 +19,6 @@
 //
 //  @author raver119@gmail.com
 //
-#include <exceptions/cuda_exception.h>
 #include <legacy/NativeOps.h>
 #include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/dropout.h>
@@ -108,11 +107,11 @@ static void dropoutSimple(LaunchContext* context, NDArray * input, NDArray* outp
   cudaGetDevice(&deviceId);
   dRandom = reinterpret_cast<RandomGenerator*>(memory::CudaMemoryPool::getInstance().allocate(sizeof(RandomGenerator), deviceId, *stream));
   if (dRandom == nullptr) {
-    throw cuda_exception::build("helpers::dropoutSimple: Cannot allocate device memory for random generator.", cudaErrorMemoryAllocation);
+    THROW_EXCEPTION("helpers::dropoutSimple: Cannot allocate device memory for random generator.");
   }
   auto err = cudaMemcpyAsync(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice, *stream);
   if (err) {
-    throw cuda_exception::build("helpers::dropoutSimple: Cannot set up device memory for random generator.", err);
+    { std::string msg = "helpers::dropoutSimple: Cannot set up device memory for random generator.; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   void* maskBuf = (mask != nullptr) ? mask->specialBuffer() : nullptr;
@@ -163,7 +162,6 @@ Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* out
 
     *dropOutMultiplier += *chunk;
 
-    // FIXME: we could do this in one step, aren't we?
     NDArray* ret = (*input) * (*dropOutMultiplier);
     output->assign(ret);
     delete ret;
@@ -306,12 +304,11 @@ static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray*
   dRandom = reinterpret_cast<RandomGenerator*>(memory::CudaMemoryPool::getInstance().allocate(sizeof(RandomGenerator), deviceId, *stream));
   NDArray::prepareSpecialUse({output}, {input});
   if (dRandom == nullptr) {
-    throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot allocate device memory for random generator.",
-                                cudaErrorMemoryAllocation);
+    THROW_EXCEPTION("helpers::alphaDropoutSimple: Cannot allocate device memory for random generator.");
   }
   auto err = cudaMemcpyAsync(dRandom, &nodeRng, sizeof(RandomGenerator), cudaMemcpyHostToDevice, *stream);
   if (err) {
-    throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot set up device memory for random generator.", err);
+    { std::string msg = "helpers::alphaDropoutSimple: Cannot set up device memory for random generator.; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
   dim3 launchDims = getLaunchDims("dropout");
@@ -375,7 +372,6 @@ Status alphaDropOutFunctorBP_(sd::graph::Context& context, NDArray* input, NDArr
                               int seed, double probValue, double alpha, double alpha1, double beta, NDArray* mask) {
   auto res = alphaDropOutFunctor(context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta, mask);
   if (res == Status::OK) {
-    // FIXME: can we make it single-loop?
     (*output) *= alpha;
     (*output) *= (*gradOut);
   }

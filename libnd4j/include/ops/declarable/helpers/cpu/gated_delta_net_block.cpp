@@ -89,7 +89,7 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     auto sigmoidFunc = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; ++i) {
             float val = static_cast<float>(betaBuf[i]);
-            betaBuf[i] = static_cast<T>(1.0f / (1.0f + std::exp(-val)));
+            betaBuf[i] = static_cast<T>(1.0f / (1.0f + sd::math::sd_exp<float, float>(-val)));
         }
     };
     samediff::Threads::parallel_for(sigmoidFunc, 0, betaLen);
@@ -103,7 +103,7 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
                 float val = static_cast<float>(kBuf[base + dk]);
                 normSq += val * val;
             }
-            float invNorm = 1.0f / std::sqrt(normSq + 1e-12f);
+            float invNorm = 1.0f / sd::math::sd_sqrt<float, float>(normSq + 1e-12f);
             for (LongType dk = 0; dk < headDimK; ++dk)
                 kBuf[base + dk] = static_cast<T>(static_cast<float>(kBuf[base + dk]) * invNorm);
         }
@@ -130,7 +130,7 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
                 float val = static_cast<float>(rowPtr[j]);
                 sumSq += val * val;
             }
-            float invRms = 1.0f / std::sqrt(sumSq / static_cast<float>(hdv) + static_cast<float>(rmsEps));
+            float invRms = 1.0f / sd::math::sd_sqrt<float, float>(sumSq / static_cast<float>(hdv) + static_cast<float>(rmsEps));
             for (LongType j = 0; j < hdv; ++j)
                 rowPtr[j] = static_cast<T>(static_cast<float>(rowPtr[j]) * invRms);
         }

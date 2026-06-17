@@ -29,7 +29,6 @@
 
 namespace sd {
 namespace ops {
-// TODO: make broadcastables separate class
 
 /**
  * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:

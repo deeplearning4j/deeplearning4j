@@ -263,7 +263,6 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     ft->applyTransform(transform::Sigmoid, ft);
     rt->applyTransform(transform::Sigmoid, rt);
 
-    // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
     ct->applyTransform(transform::Tanh, gct);
     // ftMinus = 1-ft,  rtMinus = 1-rt
     ft->applyTransform(transform::OneMinus, ftMinus);
@@ -277,7 +276,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     inGradHt->applyPairwiseTransform(pairwise::Multiply, temp1,
                                     gradBRt);  // = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;
 
-    // bF, TODO - tanh
+    // bF gradient, tanh activation:
     // gradTanh = (1.0f - g_ct * g_ct);
     gct->applyPairwiseTransform(pairwise::Multiply, gct, gradTanh);  // gradTanh = g_ct * g_ct
     gradTanh->applyTransform(transform::OneMinus, gradTanh);          // gradTanh = (1.0f - g_ct * g_ct)
@@ -492,8 +491,7 @@ DECLARE_SHAPE_FN(sru_bi) {
 
   char order = shape::order(xShapeInfo);
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize});
-  auto result = ConstantShapeHelper::getInstance().createShapeInfo(descriptor);
+  auto result = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize});
   return SHAPELIST(result, result);
 }
 
@@ -647,15 +645,10 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
   const char order = shape::order(xShapeInfo);
 
-  ShapeDescriptor *descriptor1 = new ShapeDescriptor(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize});
-  ShapeDescriptor *descriptor2 = new ShapeDescriptor(ArrayOptions::dataType(xShapeInfo), order, {time, 2 * inSize, 6 * inSize});
-  ShapeDescriptor *descriptor3 = new ShapeDescriptor(ArrayOptions::dataType(xShapeInfo), order, {4 * inSize});
-  ShapeDescriptor *descriptor4 = new ShapeDescriptor(ArrayOptions::dataType(xShapeInfo), order, {bS, 2 * inSize});
-
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor1),
-                   ConstantShapeHelper::getInstance().createShapeInfo(descriptor2),
-                   ConstantShapeHelper::getInstance().createShapeInfo(descriptor3),
-                   ConstantShapeHelper::getInstance().createShapeInfo(descriptor4));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize}),
+                   ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShapeInfo), order, {time, 2 * inSize, 6 * inSize}),
+                   ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShapeInfo), order, {4 * inSize}),
+                   ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(xShapeInfo), order, {bS, 2 * inSize}));
 }
 
 }  // namespace ops

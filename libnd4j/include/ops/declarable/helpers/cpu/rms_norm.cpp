@@ -46,7 +46,7 @@ static void rmsNorm_(NDArray* input, NDArray* gamma, NDArray* output, float epsi
                 float val = static_cast<float>(xRow[i]);
                 sumSq += val * val;
             }
-            const float invRms = 1.0f / std::sqrt(sumSq / static_cast<float>(rowLen) + epsilon);
+            const float invRms = 1.0f / sd::math::sd_sqrt<float, float>(sumSq / static_cast<float>(rowLen) + epsilon);
 
             if (g != nullptr) {
                 PRAGMA_OMP_SIMD
@@ -179,7 +179,7 @@ static void skipRmsNorm_(NDArray* input, NDArray* skip, NDArray* gamma, NDArray*
                 if (hRow != nullptr) hRow[i] = static_cast<T>(val);
                 sumSq += val * val;
             }
-            const float invRms = 1.0f / std::sqrt(sumSq / static_cast<float>(rowLen) + epsilon);
+            const float invRms = 1.0f / sd::math::sd_sqrt<float, float>(sumSq / static_cast<float>(rowLen) + epsilon);
 
             // Pass 2: normalize and scale
             PRAGMA_OMP_SIMD

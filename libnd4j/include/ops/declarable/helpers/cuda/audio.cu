@@ -22,6 +22,7 @@
 
 #include <ops/declarable/helpers/audio.h>
 #include <helpers/PointersManager.h>
+#include <math/templatemath.h>
 #include <system/op_boilerplate.h>
 #include <cuda_runtime.h>
 
@@ -595,7 +596,7 @@ static void melSpectrogram_(LaunchContext* context, NDArray* input,
                     sumReal += val * std::cos(angle);
                     sumImag += val * std::sin(angle);
                 }
-                T mag = std::sqrt(sumReal * sumReal + sumImag * sumImag);
+                T mag = sd::math::sd_sqrt<T, T>(sumReal * sumReal + sumImag * sumImag);
                 powerSpec[k] = (power == 2.0) ? mag * mag : static_cast<T>(std::pow(static_cast<float>(mag), static_cast<float>(power)));
             }
 
@@ -683,7 +684,7 @@ static void mfcc_(LaunchContext* context, NDArray* input,
                 T sum = 0;
                 for (int k = 0; k < numFreqBins; k++)
                     sum += melFb[m * numFreqBins + k] * powerSpec[k];
-                melEnergies[m] = std::log(std::max(sum, static_cast<T>(1e-10)));
+                melEnergies[m] = sd::math::sd_log<T, T>(sd::math::sd_max<T>(sum, static_cast<T>(1e-10)));
             }
 
             for (int c = 0; c < numMfcc; c++) {
@@ -822,7 +823,7 @@ static void pitchDetection_(LaunchContext* context, NDArray* input,
                     normA += a * a;
                     normB += bv * bv;
                 }
-                T norm = std::sqrt(normA * normB);
+                T norm = sd::math::sd_sqrt<T, T>(normA * normB);
                 T normalizedCorr = (norm > static_cast<T>(1e-10)) ? corr / norm : static_cast<T>(0);
                 if (normalizedCorr > maxCorr) {
                     maxCorr = normalizedCorr;
@@ -967,7 +968,7 @@ static void whisperMelSpectrogram_(LaunchContext* context, NDArray* input,
                     sumReal += val * std::cos(angle);
                     sumImag += val * std::sin(angle);
                 }
-                T mag = std::sqrt(sumReal * sumReal + sumImag * sumImag);
+                T mag = sd::math::sd_sqrt<T, T>(sumReal * sumReal + sumImag * sumImag);
                 powerSpec[k] = mag * mag;  // power=2.0
             }
 
