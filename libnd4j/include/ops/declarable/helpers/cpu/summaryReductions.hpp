@@ -241,7 +241,7 @@ class Deviation {
     double n[8] = {};
     for (int i = 0; i < length_8th; i++) {
       const X* bufferX = &(buffer[i * 8]);
-#pragma omp simd
+PRAGMA_OMP_SIMD
       for (int j = 0; j < 8; j++) {
         n[j] = xn[j] + 1.0;
 #if defined(USE_REDUCED_DIV)
@@ -273,7 +273,7 @@ class Deviation {
       const X* buffer1X = &(buffer1[i * 8]);
       const X* buffer2X = &(buffer2[i * 8]);
       const X* buffer3X = &(buffer3[i * 8]);
-#pragma omp simd
+PRAGMA_OMP_SIMD
       for (int j = 0; j < 8; j++) {
         n[j] = xn[j] + 1.0;
         double delta0 = bufferX[j] - x0mean[j];
