@@ -4645,9 +4645,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     /**
      * Invalidate all plan caches: SameDiff-level DSP plan cache AND per-session
      * DAG/plan/constant caches. Call when graph structure changes (e.g., variable
-     * type changes from placeholder override).
+     * type changes from placeholder override) or when input values are mutated
+     * in-place (e.g., putScalar during numerical gradient computation) and the
+     * next forward pass must see the updated values rather than a cached plan result.
      */
-    private void invalidateAllPlanCaches() {
+    public void invalidateAllPlanCaches() {
         clearDynamicShapePlanCache();
         for (InferenceSession session : sessions.values()) {
             session.clearAllCaches();

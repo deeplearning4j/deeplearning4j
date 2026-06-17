@@ -139,17 +139,6 @@ public class GradCheckUtil {
             }
         }
 
-        // Analytical gradient computation runs with DSP fully enabled (auto-compile on).
-        // The DynamicShapePlanCompiler returns null for any plan that requests an external
-        // input (placeholder/variable) as an output, so backward graphs that reference
-        // forward activations fall through to the standard path automatically.
-        // DSP must remain enabled here so that ops like GRU/LSTM that rely on DSP for
-        // correct gradient propagation work correctly.
-        // These are declared before the try block so they're visible in the finally clause.
-        boolean dspAutoCompileSaved = sd.isDspAutoCompileEnabled();
-        boolean dspNativeAutoCompileSaved = sd.isDspNativeAutoCompileEnabled();
-        try {
-
         Map<String,INDArray> gm = sd.calculateGradients(placeholderValues, varsNeedingGrads);
 
         Map<String,INDArray> grad = new HashMap<>();
@@ -186,19 +175,6 @@ public class GradCheckUtil {
             }
         }
         gm.clear();
-
-        // Disable DSP auto-compilation for the numerical gradient loop ONLY.
-        // The numerical gradient loop uses putScalar to perturb inputs, then calls sd.output().
-        // With DSP auto-compile enabled, DSP may compile a plan during the first sd.output() call
-        // and then reuse it (with cached slot values) for subsequent calls — making the in-place
-        // putScalar perturbation invisible to the plan's cached state.
-        // With auto-compile disabled, DSP either reuses an already-compiled plan (which correctly
-        // re-reads external inputs from the source arrays on each call) or falls back to the
-        // standard path. Either way, putScalar changes are visible.
-        // Note: The analytical gradient (calculateGradients above) runs with DSP ENABLED so that
-        // ops like GRU/LSTM that rely on DSP for correct backward computation work correctly.
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
 
         //Validate gradients for each variable:
         int totalNFailures = 0;
@@ -282,7 +258,12 @@ public class GradCheckUtil {
 
                 totalCount++;
                 double orig = a.getDouble(idx);
+                // Invalidate DSP plan cache after each putScalar so the next sd.output() call
+                // sees the perturbed value rather than a plan cached from the previous iteration.
+                // This avoids disabling DSP entirely, which would break ops like GRU/LSTM that
+                // rely on DSP for correct gradient propagation.
                 a.putScalar(idx, orig + eps);
+                sd.invalidateAllPlanCaches();
                 double scorePlus = 0.0;
                 Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);
                 for(INDArray arr : m.values()) {
@@ -297,6 +278,7 @@ public class GradCheckUtil {
                 }
 
                 a.putScalar(idx, orig-eps);
+                sd.invalidateAllPlanCaches();
                 m = sd.output(placeholderValues, lossFnVariables);
                 double scoreMinus = 0.0;
                 for(INDArray arr : m.values()) {
@@ -309,6 +291,7 @@ public class GradCheckUtil {
                 }
 
                 a.putScalar(idx, orig);
+                sd.invalidateAllPlanCaches();
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);
                 INDArray aGrad = grad.get(s.name());
@@ -389,11 +372,6 @@ public class GradCheckUtil {
         }
 
         return totalNFailures == 0;
-        } finally {
-            // Restore DSP auto-compile flags that were disabled for the numerical gradient loop
-            sd.setDspAutoCompileEnabled(dspAutoCompileSaved);
-            sd.setDspNativeAutoCompileEnabled(dspNativeAutoCompileSaved);
-        }
     }
 
 
