@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 
 import java.util.ArrayList;
@@ -37,6 +38,10 @@ import java.util.List;
 public class DeConv2DDerivative extends DeConv2D {
 
     public DeConv2DDerivative() {}
+
+    public DeConv2DDerivative(INDArray[] inputs, INDArray[] outputs, DeConv2DConfig config) {
+        super(inputs, outputs, config);
+    }
 
     @Builder(builderMethodName = "derivativeBuilder")
     public DeConv2DDerivative(SameDiff sameDiff, SDVariable[] inputs, DeConv2DConfig config) {
