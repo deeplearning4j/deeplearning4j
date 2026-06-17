@@ -533,6 +533,7 @@ public class Reducer implements IAssociativeReducer {
     @AllArgsConstructor
     @Data
     public static class ConditionalReduction implements Serializable {
+        private static final long serialVersionUID = 1L;
         private final String columnName;
         private final List<String> outputNames;
         private final List<ReduceOp> reductions;

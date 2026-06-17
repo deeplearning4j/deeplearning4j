@@ -27,6 +27,7 @@ import java.io.Serializable;
 
 public class CategoricalQualityMergeFunction
                 implements BiFunction<CategoricalQuality, CategoricalQuality, CategoricalQuality>, Serializable {
+    private static final long serialVersionUID = 1L;
     @Override
     public CategoricalQuality apply(CategoricalQuality v1, CategoricalQuality v2){
         return v1.add(v2);

@@ -26,6 +26,7 @@ import org.nd4j.common.function.BiFunction;
 import java.io.Serializable;
 
 public class StringQualityMergeFunction implements BiFunction<StringQuality, StringQuality, StringQuality>, Serializable {
+    private static final long serialVersionUID = 1L;
     @Override
     public StringQuality apply(StringQuality v1, StringQuality v2) {
         return v1.add(v2);

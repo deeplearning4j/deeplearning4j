@@ -350,6 +350,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     @Data
     @JsonIgnoreProperties({"dateTimeFormatter"})
     public static class DerivedColumn implements Serializable {
+        private static final long serialVersionUID = 1L;
         private final String columnName;
         private final ColumnType columnType;
         private final String format;

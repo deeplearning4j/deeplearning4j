@@ -32,6 +32,7 @@ import java.io.Serializable;
 
 @AllArgsConstructor
 public class TimeQualityAddFunction implements BiFunction<TimeQuality, Writable, TimeQuality>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final TimeMetaData meta;
 
