@@ -179,25 +179,25 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // corrupting views (reshape/permute outputs) that share the same DataBuffer.
     // Count > 1 means another live array shares the buffer — do NOT close.
     // Reset at start of each executeOperations() call.
-    private final ThreadLocal<java.util.IdentityHashMap<org.nd4j.linalg.api.buffer.DataBuffer, Integer>>
-            liveDataBufferRefsTl = ThreadLocal.withInitial(java.util.IdentityHashMap::new);
+    private final ThreadLocal<IdentityHashMap<DataBuffer, Integer>>
+            liveDataBufferRefsTl = ThreadLocal.withInitial(IdentityHashMap::new);
 
-    private java.util.IdentityHashMap<org.nd4j.linalg.api.buffer.DataBuffer, Integer> liveDataBufferRefs() {
+    private IdentityHashMap<DataBuffer, Integer> liveDataBufferRefs() {
         return liveDataBufferRefsTl.get();
     }
 
     /** Increment live reference count for the DataBuffer of the given array. */
     private void trackLiveBuffer(INDArray array) {
         if (array == null || array.data() == null) return;
-        org.nd4j.linalg.api.buffer.DataBuffer buf = array.data();
+        DataBuffer buf = array.data();
         liveDataBufferRefs().merge(buf, 1, Integer::sum);
     }
 
     /** Decrement live reference count and remove entry when it reaches zero. */
     private void untrackLiveBuffer(INDArray array) {
         if (array == null || array.data() == null) return;
-        org.nd4j.linalg.api.buffer.DataBuffer buf = array.data();
-        java.util.IdentityHashMap<org.nd4j.linalg.api.buffer.DataBuffer, Integer> refs = liveDataBufferRefs();
+        DataBuffer buf = array.data();
+        IdentityHashMap<DataBuffer, Integer> refs = liveDataBufferRefs();
         Integer count = refs.get(buf);
         if (count == null) return;
         if (count <= 1) {
@@ -217,7 +217,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // DataBuffers from externally-provided placeholder arrays. These must NOT be closed during
     // resetSession() — they are owned by the caller, not by this session.
     @Getter
-    private final java.util.IdentityHashMap<org.nd4j.linalg.api.buffer.DataBuffer, Boolean> externalPlaceholderBuffers = new java.util.IdentityHashMap<>();
+    private final IdentityHashMap<DataBuffer, Boolean> externalPlaceholderBuffers = new IdentityHashMap<>();
 
 
     // ---- Java-side execution timing ----
@@ -225,56 +225,74 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // Tracks where wall-clock time goes during graph execution (shape calc, alloc, exec, etc.)
     private static final boolean TIMING_ENABLED = Boolean.parseBoolean(
             System.getProperty(ND4JSystemProperties.INFERENCE_TIMING, "false"));
-    // Per-call accumulators (reset each output() call)
-    private long timingDagLookupNs, timingInitValuesNs, timingExecLoopNs, timingOutputDupNs, timingCleanupNs;
-    // Per-op phase accumulators within executeOperations
-    private long timingOpContextAcquireNs, timingInputResolveNs, timingShapeCalcNs;
-    private long timingMemAllocNs, timingNativeExecNs, timingResultStoreNs;
-    private long timingDepTrackNs, timingArrayReleaseNs;
-    private long timingIntLongSyncNs;
-    private int timingIntLongSyncCount, timingIntLongSyncSkipCount;
-    private int timingOpCount, timingShapeCacheHits, timingShapeCacheMisses;
-    private int timingReshapeTotal, timingReshapeViewUsed, timingReshapeViewSkipped;
+
+    /**
+     * Encapsulates all per-call timing accumulators for InferenceSession execution.
+     * Fields are package-private for direct access from the enclosing class without
+     * accessor overhead in hot paths.
+     */
+    private static class TimingState {
+        // Per-call accumulators (reset each output() call)
+        long dagLookupNs, initValuesNs, execLoopNs, outputDupNs, cleanupNs;
+        // Per-op phase accumulators within executeOperations
+        long opContextAcquireNs, inputResolveNs, shapeCalcNs;
+        long memAllocNs, nativeExecNs, resultStoreNs;
+        long depTrackNs, arrayReleaseNs;
+        long intLongSyncNs;
+        int intLongSyncCount, intLongSyncSkipCount;
+        int opCount, shapeCacheHits, shapeCacheMisses;
+        int reshapeTotal, reshapeViewUsed, reshapeViewSkipped;
+
+        void reset() {
+            dagLookupNs = initValuesNs = execLoopNs = outputDupNs = cleanupNs = 0;
+            opContextAcquireNs = inputResolveNs = shapeCalcNs = 0;
+            memAllocNs = nativeExecNs = resultStoreNs = 0;
+            depTrackNs = arrayReleaseNs = 0;
+            intLongSyncNs = 0;
+            intLongSyncCount = intLongSyncSkipCount = 0;
+            opCount = shapeCacheHits = shapeCacheMisses = 0;
+            reshapeTotal = reshapeViewUsed = reshapeViewSkipped = 0;
+        }
+
+        void printSummary() {
+            double totalMs = (dagLookupNs + initValuesNs + execLoopNs +
+                    outputDupNs + cleanupNs) / 1_000_000.0;
+            log.info("=== InferenceSession Timing ({} ops, {}ms total) ===", opCount,
+                    String.format("%.1f", totalMs));
+            log.info("  DAG lookup:       {}ms", String.format("%.2f", dagLookupNs / 1_000_000.0));
+            log.info("  Init values:      {}ms", String.format("%.2f", initValuesNs / 1_000_000.0));
+            log.info("  Exec loop:        {}ms", String.format("%.2f", execLoopNs / 1_000_000.0));
+            log.info("    OpCtx acquire:  {}ms", String.format("%.2f", opContextAcquireNs / 1_000_000.0));
+            log.info("    Input resolve:  {}ms", String.format("%.2f", inputResolveNs / 1_000_000.0));
+            log.info("    INT/LONG sync:  {}ms (synced={}, skipped={})",
+                    String.format("%.2f", intLongSyncNs / 1_000_000.0), intLongSyncCount, intLongSyncSkipCount);
+            log.info("    Shape calc:     {}ms (hits={}, misses={})",
+                    String.format("%.2f", shapeCalcNs / 1_000_000.0), shapeCacheHits, shapeCacheMisses);
+            long[] cc = ArrayCacheMemoryMgr.getCacheCounters();
+            log.info("    Mem alloc:      {}ms (exact={}, capacity={}, miss={}, viewSkip={}, cached={}, capKeys={})",
+                    String.format("%.2f", memAllocNs / 1_000_000.0), cc[0], cc[1], cc[2], cc[3], cc[4], cc[5]);
+            ArrayCacheMemoryMgr.resetCacheCounters();
+            if (reshapeTotal > 0) {
+                log.info("    Reshape views:  {}/{} used, {} skipped (non-contiguous)",
+                        reshapeViewUsed, reshapeTotal, reshapeViewSkipped);
+            }
+            log.info("    Native exec:    {}ms", String.format("%.2f", nativeExecNs / 1_000_000.0));
+            log.info("    Result store:   {}ms", String.format("%.2f", resultStoreNs / 1_000_000.0));
+            log.info("    Dep tracking:   {}ms", String.format("%.2f", depTrackNs / 1_000_000.0));
+            log.info("    Array release:  {}ms", String.format("%.2f", arrayReleaseNs / 1_000_000.0));
+            log.info("  Output dup:       {}ms", String.format("%.2f", outputDupNs / 1_000_000.0));
+            log.info("  Cleanup:          {}ms", String.format("%.2f", cleanupNs / 1_000_000.0));
+        }
+    }
+
+    private final TimingState timing = new TimingState();
 
     private void resetTimingCounters() {
-        timingDagLookupNs = timingInitValuesNs = timingExecLoopNs = timingOutputDupNs = timingCleanupNs = 0;
-        timingOpContextAcquireNs = timingInputResolveNs = timingShapeCalcNs = 0;
-        timingMemAllocNs = timingNativeExecNs = timingResultStoreNs = 0;
-        timingDepTrackNs = timingArrayReleaseNs = 0;
-        timingIntLongSyncNs = 0;
-        timingIntLongSyncCount = timingIntLongSyncSkipCount = 0;
-        timingOpCount = timingShapeCacheHits = timingShapeCacheMisses = 0;
-        timingReshapeTotal = timingReshapeViewUsed = timingReshapeViewSkipped = 0;
+        timing.reset();
     }
 
     private void printTimingSummary() {
-        double totalMs = (timingDagLookupNs + timingInitValuesNs + timingExecLoopNs +
-                timingOutputDupNs + timingCleanupNs) / 1_000_000.0;
-        log.info("=== InferenceSession Timing ({} ops, {}ms total) ===", timingOpCount,
-                String.format("%.1f", totalMs));
-        log.info("  DAG lookup:       {}ms", String.format("%.2f", timingDagLookupNs / 1_000_000.0));
-        log.info("  Init values:      {}ms", String.format("%.2f", timingInitValuesNs / 1_000_000.0));
-        log.info("  Exec loop:        {}ms", String.format("%.2f", timingExecLoopNs / 1_000_000.0));
-        log.info("    OpCtx acquire:  {}ms", String.format("%.2f", timingOpContextAcquireNs / 1_000_000.0));
-        log.info("    Input resolve:  {}ms", String.format("%.2f", timingInputResolveNs / 1_000_000.0));
-        log.info("    INT/LONG sync:  {}ms (synced={}, skipped={})",
-                String.format("%.2f", timingIntLongSyncNs / 1_000_000.0), timingIntLongSyncCount, timingIntLongSyncSkipCount);
-        log.info("    Shape calc:     {}ms (hits={}, misses={})",
-                String.format("%.2f", timingShapeCalcNs / 1_000_000.0), timingShapeCacheHits, timingShapeCacheMisses);
-        long[] cc = ArrayCacheMemoryMgr.getCacheCounters();
-        log.info("    Mem alloc:      {}ms (exact={}, capacity={}, miss={}, viewSkip={}, cached={}, capKeys={})",
-                String.format("%.2f", timingMemAllocNs / 1_000_000.0), cc[0], cc[1], cc[2], cc[3], cc[4], cc[5]);
-        ArrayCacheMemoryMgr.resetCacheCounters();
-        if (timingReshapeTotal > 0) {
-            log.info("    Reshape views:  {}/{} used, {} skipped (non-contiguous)",
-                    timingReshapeViewUsed, timingReshapeTotal, timingReshapeViewSkipped);
-        }
-        log.info("    Native exec:    {}ms", String.format("%.2f", timingNativeExecNs / 1_000_000.0));
-        log.info("    Result store:   {}ms", String.format("%.2f", timingResultStoreNs / 1_000_000.0));
-        log.info("    Dep tracking:   {}ms", String.format("%.2f", timingDepTrackNs / 1_000_000.0));
-        log.info("    Array release:  {}ms", String.format("%.2f", timingArrayReleaseNs / 1_000_000.0));
-        log.info("  Output dup:       {}ms", String.format("%.2f", timingOutputDupNs / 1_000_000.0));
-        log.info("  Cleanup:          {}ms", String.format("%.2f", timingCleanupNs / 1_000_000.0));
+        timing.printSummary();
     }
 
     // ---- DynamicShapePlan-based execution (for autoregressive inference with dynamic shapes) ----
@@ -412,7 +430,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
         int nodeOutputsClosed = closeNodeValueOutputBuffers();
         if (nodeOutputsClosed > 0) {
-            log.info("clearNodeOutputsOnly: closed {} node output buffers", nodeOutputsClosed);
+            log.debug("clearNodeOutputsOnly: closed {} node output buffers", nodeOutputsClosed);
         }
     }
 
@@ -433,7 +451,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         flushArrayCache(protectedBuffers);
 
         if (nodeOutputsClosed > 0) {
-            log.info("Session cache invalidation closed {} node output buffers", nodeOutputsClosed);
+            log.debug("Session cache invalidation closed {} node output buffers", nodeOutputsClosed);
         }
     }
 
@@ -771,7 +789,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 ForwardExecutionDAGBuilder builder = new ForwardExecutionDAGBuilder(sameDiff);
                 return builder.buildForwardDAG(allRequired);
             });
-            if (TIMING_ENABLED) timingDagLookupNs = System.nanoTime() - t0;
+            if (TIMING_ENABLED) timing.dagLookupNs = System.nanoTime() - t0;
 
             // Debug: Print execution plan when debug mode is enabled
             if (Nd4j.getEnvironment().isDebug()) {
@@ -923,7 +941,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     sb.append("║\n");
                 }
                 sb.append("╚══════════════════════════════════════════════════════════════════════════════╝\n");
-                log.info(sb.toString());
+                log.debug(sb.toString());
             }
 
             // Enter memory manager scope before any allocations
@@ -1115,7 +1133,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                             if (a != null && a.isAttached()) { needsDetach = true; break; }
                                         }
                                         if (needsDetach) {
-                                            List<INDArray> detachedList = new java.util.ArrayList<>(list.size());
+                                            List<INDArray> detachedList = new ArrayList<>(list.size());
                                             for (INDArray a : list) {
                                                 detachedList.add(a != null && a.isAttached() ? a.detach() : a);
                                             }
@@ -1159,7 +1177,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
             Map<String, SDValue> results = executeOperations(dag, processedPlaceholders,
                     processedOtherPlaceholders, allRequired, listeners, at, batch);
-            if (TIMING_ENABLED) timingExecLoopNs = System.nanoTime() - tExec0;
+            if (TIMING_ENABLED) timing.execLoopNs = System.nanoTime() - tExec0;
             OpaqueDataBuffer.suppressCrossDeviceRouting(false);
 
             // Commit all pending operations before accessing results.
@@ -1205,7 +1223,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     sb.append("\n");
                 }
                 sb.append("╚══════════════════════════════════════════════════════════════════╝\n");
-                log.info(sb.toString());
+                log.debug(sb.toString());
             }
 
             // Mark output dependencies as satisfied so buffers can be released before clearing tracker
@@ -1265,7 +1283,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                 }
                             }
                             if (needsDetach) {
-                                List<INDArray> detached = new java.util.ArrayList<>(list.size());
+                                List<INDArray> detached = new ArrayList<>(list.size());
                                 for (INDArray arr : list) {
                                     detached.add(arr != null && arr.isAttached() ? arr.detach() : arr);
                                 }
@@ -1289,7 +1307,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Skip when DSP handled execution: DSP manages its own memory lifecycle and the
             // synchronized JNI call adds ~10-50ms overhead per token.
             if (!dspHandledExecution) {
-                org.nd4j.linalg.factory.Nd4j.clearTADCache();
+                Nd4j.clearTADCache();
             }
 
             // Note: nodeValueOutputs is intentionally NOT cleared or closed here.
@@ -1301,7 +1319,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // intermediate arrays during execution.
 
             if (TIMING_ENABLED) {
-                timingCleanupNs = System.nanoTime() - tCleanup0;
+                timing.cleanupNs = System.nanoTime() - tCleanup0;
                 printTimingSummary();
             }
             log.debug("CLEANUP: all phases complete");
@@ -1605,7 +1623,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Initialize constants, variables, and placeholders
         long tInit0 = TIMING_ENABLED ? System.nanoTime() : 0;
         initializeValues(variableValues, dag, placeholderValues, otherPlaceholderValues);
-        if (TIMING_ENABLED) timingInitValuesNs = System.nanoTime() - tInit0;
+        if (TIMING_ENABLED) timing.initValuesNs = System.nanoTime() - tInit0;
 
 
         // Execute operations in topological order.
@@ -1758,7 +1776,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             Dep opDep = new OpDep(opName, OUTER_FRAME, 0, null);
             arrayUseTracker().markSatisfied(opDep, true);
 
-            if (TIMING_ENABLED) timingDepTrackNs += System.nanoTime() - tDep0;
+            if (TIMING_ENABLED) timing.depTrackNs += System.nanoTime() - tDep0;
 
             // Mid-execution release: free arrays whose all consumers have completed.
             // Uses liveDataBufferRefs to safely skip arrays whose DataBuffer is shared
@@ -1805,7 +1823,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
             }
-            if (TIMING_ENABLED) timingArrayReleaseNs += System.nanoTime() - tRelease0;
+            if (TIMING_ENABLED) timing.arrayReleaseNs += System.nanoTime() - tRelease0;
         }
 
         } catch (Exception execException) {
@@ -1855,7 +1873,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             } else if (val != null && val.getSdValueType() == SDValueType.LIST) {
                 List<INDArray> list = val.getListValue();
                 if (list != null) {
-                    List<INDArray> duped = new java.util.ArrayList<>(list.size());
+                    List<INDArray> duped = new ArrayList<>(list.size());
                     for (INDArray arr : list) {
                         duped.add(arr != null ? arr.dup() : null);
                     }
@@ -1868,7 +1886,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
         }
 
-        if (TIMING_ENABLED) timingOutputDupNs = System.nanoTime() - tDup0;
+        if (TIMING_ENABLED) timing.outputDupNs = System.nanoTime() - tDup0;
 
         // Handle intermediate arrays: either return to cache or close directly.
         Set<String> preserveNames = new HashSet<>();
@@ -2677,7 +2695,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
             sb.append("└──────────────────────────────────────────────────────────────────────────────┘\n");
 
-            log.info(sb.toString());
+            log.debug(sb.toString());
         }
 
         try {
@@ -2831,7 +2849,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
                 sb.append("└──────────────────────────────────────────────────────────────────────────────┘\n");
 
-                log.info(sb.toString());
+                log.debug(sb.toString());
             }
         }
     }
@@ -3583,7 +3601,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         if (opContext == null) {
             opContext = Nd4j.getExecutioner().buildContext();
         }
-        if (TIMING_ENABLED) timingOpContextAcquireNs += System.nanoTime() - tOpCtx0;
+        if (TIMING_ENABLED) timing.opContextAcquireNs += System.nanoTime() - tOpCtx0;
 
         // Prepare inputs
         long tInput0 = TIMING_ENABLED ? System.nanoTime() : 0;
@@ -3614,7 +3632,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     SDVariable argVar = sameDiff.getVariable(argName);
                     if (argVar != null && argVar.getCreator() != null) {
                         SameDiffOp producerOp = sameDiff.getOps().get(argVar.getCreator().getOwnName());
-                        if (producerOp != null && producerOp.getOp() instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge) {
+                        if (producerOp != null && producerOp.getOp() instanceof Merge) {
                             for (String mergeInputName : producerOp.getInputsToOp()) {
                                 if(variableValues.containsKey(mergeInputName)) {
                                     SDValue v = variableValues.get(mergeInputName);
@@ -3703,7 +3721,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     boolean isFromSwitch = false;
                     if (argVar != null && argVar.getCreator() != null) {
                         DifferentialFunction creator = argVar.getCreator();
-                        if (creator instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch) {
+                        if (creator instanceof Switch) {
                             isFromSwitch = true;
                         }
                     }
@@ -3743,7 +3761,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             opContext.setInputArrays(inputArrays);
         }
-        if (TIMING_ENABLED) timingInputResolveNs += System.nanoTime() - tInput0;
+        if (TIMING_ENABLED) timing.inputResolveNs += System.nanoTime() - tInput0;
 
         // Fire preOpExecution listener callback before executing the operation.
         // This matches the behavior of the old opPair-based execution path.
@@ -3765,7 +3783,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         // Attach native workspace to OpContext if available - this allows C++ ops to
         // use bump allocation for internal temporaries instead of per-op malloc/cudaMalloc
-        org.bytedeco.javacpp.Pointer wsPtr = mmgr.getNativeWorkspacePointer();
+        Pointer wsPtr = mmgr.getNativeWorkspacePointer();
         if (wsPtr != null) {
             opContext.attachWorkspace(wsPtr);
         }
@@ -3892,8 +3910,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         if (outShape != null) {
             // Cache hit - no need for INT/LONG sync or shape calculation
             if (TIMING_ENABLED) {
-                timingShapeCacheHits++;
-                timingIntLongSyncSkipCount++;
+                timing.shapeCacheHits++;
+                timing.intLongSyncSkipCount++;
             }
         } else {
             // Cache miss - need to sync INT/LONG arrays and calculate shape
@@ -3920,7 +3938,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
                 if (needsSync) {
-                    if (TIMING_ENABLED) timingIntLongSyncCount++;
+                    if (TIMING_ENABLED) timing.intLongSyncCount++;
                     Nd4j.getExecutioner().commit();
                     NativeOps syncNativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                     // DSP gate: if DSP owns the current thread (capture or replay),
@@ -3944,12 +3962,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         }
                     }
                 } else {
-                    if (TIMING_ENABLED) timingIntLongSyncSkipCount++;
+                    if (TIMING_ENABLED) timing.intLongSyncSkipCount++;
                 }
             }
-            if (TIMING_ENABLED) timingIntLongSyncNs += System.nanoTime() - tSync0;
+            if (TIMING_ENABLED) timing.intLongSyncNs += System.nanoTime() - tSync0;
 
-            if (TIMING_ENABLED) timingShapeCacheMisses++;
+            if (TIMING_ENABLED) timing.shapeCacheMisses++;
 
             // Calculate shape outside workspace scope so shape buffers are heap-allocated
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -3962,7 +3980,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 shapeCache.put(shapeKey, outShape);
             }
         }
-        if (TIMING_ENABLED) timingShapeCalcNs += System.nanoTime() - tShape0;
+        if (TIMING_ENABLED) timing.shapeCalcNs += System.nanoTime() - tShape0;
 
         // Allocate output arrays
         long tAlloc0 = TIMING_ENABLED ? System.nanoTime() : 0;
@@ -3980,7 +3998,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         boolean reshapeViewPossible = false; // DISABLED: view optimization causes use-after-free on CPU (shared buffer released while view alive)
         char reshapeOrder = 'c';
         if (isReshapeOp && inputArrays != null && !inputArrays.isEmpty() && outShape.size() == 1) {
-            if (TIMING_ENABLED) timingReshapeTotal++;
+            if (TIMING_ENABLED) timing.reshapeTotal++;
             INDArray reshapeInput = inputArrays.get(0);
             if (reshapeInput != null && !reshapeInput.isEmpty()) {
                 long[] iArgs = customOp.iArgs();
@@ -3995,8 +4013,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 long[] targetShape = Shape.shape(outShape.get(0).asLong());
                 reshapeViewPossible = Shape.ableToReshapeWithView(reshapeInput, isFOrder, targetShape);
                 if (TIMING_ENABLED) {
-                    if (reshapeViewPossible) timingReshapeViewUsed++;
-                    else timingReshapeViewSkipped++;
+                    if (reshapeViewPossible) timing.reshapeViewUsed++;
+                    else timing.reshapeViewSkipped++;
                 }
             }
         }
@@ -4044,7 +4062,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         } finally {
             // Shape buffers from calculateOutputShape() are CACHED by ConstantShapeHelper - do not close.
         }
-        if (TIMING_ENABLED) timingMemAllocNs += System.nanoTime() - tAlloc0;
+        if (TIMING_ENABLED) timing.memAllocNs += System.nanoTime() - tAlloc0;
 
         // Re-sync input arrays to device after calculateOutputShape().
         // Shape functions (e.g. Where) call syncToHost() on inputs to read data values,
@@ -4085,7 +4103,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             "id={} identityHash={} shape={} dtype={}",
                             ownNameDiag, opNameDiag, di, dArr.getId(),
                             System.identityHashCode(dArr),
-                            java.util.Arrays.toString(dArr.shape()), dArr.dataType());
+                            Arrays.toString(dArr.shape()), dArr.dataType());
                     String[] diagArgNames = dynOp.argNames();
                     if (diagArgNames != null && di < diagArgNames.length) {
                         INDArray modelArr = sameDiff.getArrForVarName(diagArgNames[di]);
@@ -4102,8 +4120,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
         INDArray[] execOutputArrays = Nd4j.exec(dynOp, opContext);
         if (TIMING_ENABLED) {
-            timingNativeExecNs += System.nanoTime() - tExec0;
-            timingOpCount++;
+            timing.nativeExecNs += System.nanoTime() - tExec0;
+            timing.opCount++;
         }
 
         // After exec, use the arrays actually written by the executor.
@@ -4161,7 +4179,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             String varName = outputNames.get(i);
             addConsumerDependencies(outputValue, varName, allRequired);
         }
-        if (TIMING_ENABLED) timingResultStoreNs += System.nanoTime() - tStore0;
+        if (TIMING_ENABLED) timing.resultStoreNs += System.nanoTime() - tStore0;
     }
 
     private void executeStandardOp(Op op, OpContext opContext, ExecutionNode node,
@@ -4187,7 +4205,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             boolean isOutput = !outputNames.isEmpty() && allRequired.contains(outputNames.get(0));
             outputArray = mmgr.allocate(isOutput, input.dataType(), input.shape());
             opContext.setOutputArray(0, outputArray);
-            if (TIMING_ENABLED) timingMemAllocNs += System.nanoTime() - tAlloc0;
+            if (TIMING_ENABLED) timing.memAllocNs += System.nanoTime() - tAlloc0;
         } else {
             // Calculate output shape outside workspace scope so shape buffers are heap-allocated
             long tShape0 = TIMING_ENABLED ? System.nanoTime() : 0;
@@ -4199,8 +4217,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 throw new IllegalStateException("No output shape calculated for op: " + op.opName());
             }
             if (TIMING_ENABLED) {
-                timingShapeCalcNs += System.nanoTime() - tShape0;
-                timingShapeCacheMisses++; // standard ops don't use shape cache
+                timing.shapeCalcNs += System.nanoTime() - tShape0;
+                timing.shapeCacheMisses++; // standard ops don't use shape cache
             }
 
             long tAlloc0 = TIMING_ENABLED ? System.nanoTime() : 0;
@@ -4212,15 +4230,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 opContext.setOutputArray(0, outputArray);
             } finally {
             }
-            if (TIMING_ENABLED) timingMemAllocNs += System.nanoTime() - tAlloc0;
+            if (TIMING_ENABLED) timing.memAllocNs += System.nanoTime() - tAlloc0;
         }
 
         // Execute the operation
         long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
         Nd4j.exec(op, opContext);
         if (TIMING_ENABLED) {
-            timingNativeExecNs += System.nanoTime() - tExec0;
-            timingOpCount++;
+            timing.nativeExecNs += System.nanoTime() - tExec0;
+            timing.opCount++;
         }
 
         // Trace removed — use --debug flag for InferenceSession tracing
@@ -4233,7 +4251,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             variableValues.put(varName, outputValue);
             addConsumerDependencies(outputValue, varName, allRequired);
         }
-        if (TIMING_ENABLED) timingResultStoreNs += System.nanoTime() - tStore0;
+        if (TIMING_ENABLED) timing.resultStoreNs += System.nanoTime() - tStore0;
     }
 
     private void handleReduceOpAxis(Op op, OpContext opContext) {
