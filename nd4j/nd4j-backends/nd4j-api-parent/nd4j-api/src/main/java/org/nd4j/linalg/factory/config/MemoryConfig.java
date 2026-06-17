@@ -21,6 +21,7 @@
 package org.nd4j.linalg.factory.config;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 /**
  * Memory pool and allocator configuration: release thresholds, failover
@@ -51,13 +52,13 @@ public final class MemoryConfig {
     private MemoryConfig() {
         // Read optional system property overrides
         String poolStr = System.getenv("SD_POOL_RELEASE_THRESHOLD_PERCENT");
-        if (poolStr == null) poolStr = System.getProperty("nd4j.memory.poolReleaseThresholdPercent");
+        if (poolStr == null) poolStr = System.getProperty(ND4JSystemProperties.MEMORY_POOL_RELEASE_THRESHOLD_PERCENT);
         if (poolStr != null) {
             try { setPoolReleaseThresholdPercent(Integer.parseInt(poolStr)); } catch (NumberFormatException ignored) {}
         }
 
         String headStr = System.getenv("SD_NON_PEER_HEADROOM_PERCENT");
-        if (headStr == null) headStr = System.getProperty("nd4j.memory.nonPeerHeadroomPercent");
+        if (headStr == null) headStr = System.getProperty(ND4JSystemProperties.MEMORY_NON_PEER_HEADROOM_PERCENT);
         if (headStr != null) {
             try { setNonPeerHeadroomPercent(Integer.parseInt(headStr)); } catch (NumberFormatException ignored) {}
         }

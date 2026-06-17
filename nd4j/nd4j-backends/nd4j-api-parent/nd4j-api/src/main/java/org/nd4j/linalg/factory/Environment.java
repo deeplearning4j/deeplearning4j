@@ -19,6 +19,7 @@
  */
 package org.nd4j.linalg.factory;
 
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.factory.config.CoreEnvironmentConfig;
 import org.nd4j.linalg.factory.config.CudaEnvironmentConfig;
 import org.nd4j.linalg.factory.config.DspEnvironmentConfig;
@@ -1634,7 +1635,7 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
 
     // Memory environment methods
     default double heapPressureThreshold() {
-        String val = System.getProperty("org.nd4j.memory.heap.pressure.threshold");
+        String val = System.getProperty(ND4JSystemProperties.HEAP_PRESSURE_THRESHOLD);
         if (val == null) return 0.9;
         try {
             return Double.parseDouble(val);
@@ -1644,7 +1645,7 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
     }
 
     default boolean isFuncTracePrintFree() {
-        String val = System.getProperty("org.nd4j.functrace.print.free");
+        String val = System.getProperty(ND4JSystemProperties.FUNCTRACE_PRINT_FREE);
         return val != null && Boolean.parseBoolean(val);
     }
 

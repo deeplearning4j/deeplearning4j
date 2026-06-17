@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
@@ -273,7 +274,7 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
      */
     public static boolean isAutoMultiBackendEnabled() {
         return Boolean.parseBoolean(
-                System.getProperty("nd4j.multibackend.enabled", "false"));
+                System.getProperty(ND4JSystemProperties.MULTI_BACKEND_EXECUTION_ENABLED, "false"));
     }
 
     /**

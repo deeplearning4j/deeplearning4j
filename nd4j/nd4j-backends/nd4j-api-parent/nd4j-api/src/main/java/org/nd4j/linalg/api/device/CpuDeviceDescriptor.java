@@ -20,6 +20,8 @@
 
 package org.nd4j.linalg.api.device;
 
+import org.nd4j.common.config.ND4JSystemProperties;
+
 /**
  * Device descriptor for CPU devices.
  * Provides CPU-specific information like core count, cache sizes, and SIMD capabilities.
@@ -122,7 +124,7 @@ public class CpuDeviceDescriptor extends BaseDeviceDescriptor {
             addCapability("sse2");
 
             // Check for AVX support via system property or environment
-            String avxSupport = System.getProperty("nd4j.cpu.avx", System.getenv("ND4J_CPU_AVX"));
+            String avxSupport = System.getProperty(ND4JSystemProperties.CPU_AVX, System.getenv("ND4J_CPU_AVX"));
             if (avxSupport != null) {
                 if (avxSupport.contains("512")) {
                     addCapability(CAPABILITY_AVX);
@@ -144,7 +146,7 @@ public class CpuDeviceDescriptor extends BaseDeviceDescriptor {
             addCapability(CAPABILITY_NEON);
 
             // Check for SVE support
-            String sveSupport = System.getProperty("nd4j.cpu.sve", System.getenv("ND4J_CPU_SVE"));
+            String sveSupport = System.getProperty(ND4JSystemProperties.CPU_SVE, System.getenv("ND4J_CPU_SVE"));
             if ("true".equalsIgnoreCase(sveSupport)) {
                 addCapability(CAPABILITY_SVE);
             }

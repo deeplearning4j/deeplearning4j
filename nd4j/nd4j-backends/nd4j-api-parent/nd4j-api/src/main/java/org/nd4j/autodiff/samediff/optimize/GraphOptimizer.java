@@ -30,6 +30,7 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.debug.OptimizationDebugger;
 import org.nd4j.autodiff.samediff.optimize.optimizations.*;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.util.*;
 
@@ -58,7 +59,7 @@ public class GraphOptimizer {
      */
     private static final Set<String> SKIP_OPTIMIZERS;
     static {
-        String skipProp = System.getProperty("nd4j.optimizer.skip", "");
+        String skipProp = System.getProperty(ND4JSystemProperties.OPTIMIZER_SKIP, "");
         Set<String> s = new HashSet<>();
         if (!skipProp.isEmpty()) {
             for (String name : skipProp.split(",")) {

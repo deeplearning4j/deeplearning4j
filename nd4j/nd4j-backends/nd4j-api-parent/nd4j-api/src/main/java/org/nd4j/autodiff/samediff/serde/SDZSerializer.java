@@ -87,36 +87,36 @@ public class SDZSerializer {
     private static int maxZipEntries = getConfiguredMaxEntries();
 
     private static long getConfiguredMaxSize() {
-        String prop = System.getProperty("nd4j.sdz.maxZipSize");
+        String prop = System.getProperty(ND4JSystemProperties.SDZ_MAX_ZIP_SIZE);
         if (prop != null) {
             try {
                 return Long.parseLong(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for nd4j.sdz.maxZipSize: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", ND4JSystemProperties.SDZ_MAX_ZIP_SIZE, prop);
             }
         }
         return DEFAULT_MAX_TOTAL_UNCOMPRESSED_SIZE;
     }
 
     private static double getConfiguredMaxRatio() {
-        String prop = System.getProperty("nd4j.sdz.maxCompressionRatio");
+        String prop = System.getProperty(ND4JSystemProperties.SDZ_MAX_ZIP_SIZE_RATIO);
         if (prop != null) {
             try {
                 return Double.parseDouble(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for nd4j.sdz.maxCompressionRatio: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", ND4JSystemProperties.SDZ_MAX_ZIP_SIZE_RATIO, prop);
             }
         }
         return DEFAULT_MAX_COMPRESSION_RATIO;
     }
 
     private static int getConfiguredMaxEntries() {
-        String prop = System.getProperty("nd4j.sdz.maxZipEntries");
+        String prop = System.getProperty(ND4JSystemProperties.SDZ_MAX_ZIP_ENTRIES);
         if (prop != null) {
             try {
                 return Integer.parseInt(prop);
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for nd4j.sdz.maxZipEntries: {}, using default", prop);
+                log.warn("Invalid value for {}: {}, using default", ND4JSystemProperties.SDZ_MAX_ZIP_ENTRIES, prop);
             }
         }
         return DEFAULT_MAX_ZIP_ENTRIES;
@@ -792,7 +792,7 @@ public class SDZSerializer {
                     throw new IOException("Potential zip bomb detected: too many entries. " +
                             "Found " + entryCount + " entries, maximum allowed is " + maxZipEntries + ". " +
                             "If this is a legitimate SDZ file, increase the limit using " +
-                            "SDZSerializer.setMaxZipEntries() or system property 'nd4j.sdz.maxZipEntries'");
+                            "SDZSerializer.setMaxZipEntries() or system property '" + ND4JSystemProperties.SDZ_MAX_ZIP_ENTRIES + "'");
                 }
 
                 String entryName = entry.getName();
@@ -815,7 +815,7 @@ public class SDZSerializer {
                                 ":1 (compressed: " + compressedSize + " bytes, uncompressed: " + uncompressedSize + " bytes). " +
                                 "Maximum allowed ratio is " + String.format("%.1f", maxCompressionRatio) + ":1. " +
                                 "If this is a legitimate SDZ file, increase the limit using " +
-                                "SDZSerializer.setMaxCompressionRatio() or system property 'nd4j.sdz.maxCompressionRatio'");
+                                "SDZSerializer.setMaxCompressionRatio() or system property '" + ND4JSystemProperties.SDZ_MAX_ZIP_SIZE_RATIO + "'");
                     }
                 }
 
@@ -826,7 +826,7 @@ public class SDZSerializer {
                             "which would bring total to " + (totalBytesExtracted + uncompressedSize) + " bytes. " +
                             "Maximum allowed is " + maxTotalUncompressedSize + " bytes (" + (maxTotalUncompressedSize / (1024 * 1024)) + " MB). " +
                             "If this is a legitimate SDZ file, increase the limit using " +
-                            "SDZSerializer.setMaxTotalUncompressedSize() or system property 'nd4j.sdz.maxZipSize'");
+                            "SDZSerializer.setMaxTotalUncompressedSize() or system property '" + ND4JSystemProperties.SDZ_MAX_ZIP_SIZE + "'");
                 }
 
                 if (entry.isDirectory()) {
@@ -858,7 +858,7 @@ public class SDZSerializer {
                                         "Total extracted size " + totalBytesExtracted + " bytes exceeded maximum allowed " +
                                         maxTotalUncompressedSize + " bytes. " +
                                         "If this is a legitimate SDZ file, increase the limit using " +
-                                        "SDZSerializer.setMaxTotalUncompressedSize() or system property 'nd4j.sdz.maxZipSize'");
+                                        "SDZSerializer.setMaxTotalUncompressedSize() or system property '" + ND4JSystemProperties.SDZ_MAX_ZIP_SIZE + "'");
                             }
 
                             bos.write(buffer, 0, len);

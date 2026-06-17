@@ -3,6 +3,7 @@ package org.nd4j.nativeblas;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
@@ -56,7 +57,7 @@ public class OpaqueNDArray extends Pointer {
      * Set via system property "nd4j.opaque.stacktrace" (default: false).
      */
     private static final boolean CAPTURE_STACK_TRACE =
-            Boolean.parseBoolean(System.getProperty("nd4j.opaque.stacktrace", "false"));
+            Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.OPAQUE_STACKTRACE, "false"));
 
     // Track the deallocator for this instance
     private OpaqueNDArrayDeallocator deallocator;

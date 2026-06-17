@@ -22,6 +22,7 @@ package org.nd4j.linalg.framework.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.allocator.impl.MemoryTracker;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 
 /**
@@ -54,7 +55,7 @@ public class MemoryEnvironmentAccess {
     public MemoryEnvironmentAccess() {
         // Singleton constructor
         // Read system properties for configuration
-        String memFrac = System.getProperty("org.nd4j.memory.fraction");
+        String memFrac = System.getProperty(ND4JSystemProperties.MEMORY_FRACTION);
         if (memFrac != null) {
             try {
                 defaultMemoryFraction = Float.parseFloat(memFrac);

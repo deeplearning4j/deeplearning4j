@@ -1659,6 +1659,140 @@ public class ND4JSystemProperties {
     public static final String ENV_TRITON_DUMP_DIR = "nd4j.environment.tritonDumpDir";
     public static final String ENV_TRITON_OVERRIDE_ARCH = "nd4j.environment.tritonOverrideArch";
 
+    // ---- Array cache properties ----
+
+    /**
+     * Applicability: ArrayCacheMemoryMgr<br>
+     * Description: Growth factor for over-allocation on cache miss. Buffers are allocated
+     * with this multiplier so that the next step's slightly larger request (e.g. growing KV cache)
+     * can reuse the buffer via capacity matching.
+     * Set to 1.0 to disable over-allocation on memory-constrained systems.
+     * <p>
+     * Default: 1.05
+     */
+    public static final String CACHE_GROWTH_FACTOR = "org.nd4j.cache.growthFactor";
+
+    // ---- Graph optimizer properties ----
+
+    /**
+     * Applicability: SameDiff GraphOptimizer<br>
+     * Description: Comma-separated list of optimizer class simple names to skip during graph optimization.
+     * For example: {@code -Dnd4j.optimizer.skip=NormalizationFusionOptimizations,QuantizationOptimizations}
+     * <p>
+     * Default: "" (empty - no optimizers are skipped)
+     */
+    public static final String OPTIMIZER_SKIP = "nd4j.optimizer.skip";
+
+    // ---- SDZ (SameDiff ZIP archive) properties ----
+
+    /**
+     * Applicability: SDZSerializer<br>
+     * Description: Maximum total decompressed size in bytes allowed when extracting SDZ ZIP archives.
+     * This limit protects against zip bomb attacks that could exhaust disk space.
+     * <p>
+     * Default: 10737418240 (10 GB)
+     */
+    public static final String SDZ_MAX_ZIP_SIZE = "nd4j.sdz.maxZipSize";
+
+    /**
+     * Applicability: SDZSerializer<br>
+     * Description: Maximum allowed compression ratio (uncompressed / compressed size) for SDZ ZIP entries.
+     * Protects against zip bomb attacks with highly compressed data.
+     * <p>
+     * Default: 100.0
+     */
+    public static final String SDZ_MAX_ZIP_SIZE_RATIO = "nd4j.sdz.maxCompressionRatio";
+
+    /**
+     * Applicability: SDZSerializer<br>
+     * Description: Maximum number of entries allowed in a model SDZ ZIP archive.
+     * Protects against zip-based denial-of-service attacks that create many entries.
+     * <p>
+     * Default: 1000
+     */
+    public static final String SDZ_MAX_ZIP_ENTRIES = "nd4j.sdz.maxZipEntries";
+
+    // ---- CPU device descriptor properties ----
+
+    /**
+     * Applicability: CpuDeviceDescriptor (nd4j-native backend)<br>
+     * Description: Override for CPU AVX capability detection. When set, the value is used
+     * instead of auto-detecting AVX support from the CPU. Also checks environment variable ND4J_CPU_AVX.
+     * <p>
+     * Default: auto-detected
+     */
+    public static final String CPU_AVX = "nd4j.cpu.avx";
+
+    /**
+     * Applicability: CpuDeviceDescriptor (nd4j-native backend)<br>
+     * Description: Override for CPU SVE (Scalable Vector Extension) capability detection.
+     * When set, the value is used instead of auto-detecting SVE support from the CPU.
+     * Also checks environment variable ND4J_CPU_SVE.
+     * <p>
+     * Default: auto-detected
+     */
+    public static final String CPU_SVE = "nd4j.cpu.sve";
+
+    // ---- Memory configuration properties ----
+
+    /**
+     * Applicability: MemoryConfig<br>
+     * Description: Percentage of total device memory the CUDA memory pool is allowed to keep reserved
+     * during pool release. Range: 1-100. Also checks environment variable SD_POOL_RELEASE_THRESHOLD_PERCENT.
+     * <p>
+     * Default: 75
+     */
+    public static final String MEMORY_POOL_RELEASE_THRESHOLD_PERCENT = "nd4j.memory.poolReleaseThresholdPercent";
+
+    /**
+     * Applicability: MemoryConfig<br>
+     * Description: Minimum percentage of total GPU memory that must remain free AFTER a managed-memory
+     * allocation for it to use the fast cudaMallocManaged path on non-peer devices. Range: 1-100.
+     * Also checks environment variable SD_NON_PEER_HEADROOM_PERCENT.
+     * <p>
+     * Default: 50
+     */
+    public static final String MEMORY_NON_PEER_HEADROOM_PERCENT = "nd4j.memory.nonPeerHeadroomPercent";
+
+    /**
+     * Applicability: MemoryEnvironmentAccess<br>
+     * Description: Default fraction of device memory to use for ND4J operations.
+     * Accepts a float value in the range [0.0, 1.0].
+     * <p>
+     * Default: 0.9
+     */
+    public static final String MEMORY_FRACTION = "org.nd4j.memory.fraction";
+
+    /**
+     * Applicability: OpaqueDataBuffer<br>
+     * Description: When set to "false", disables CPU fallback when CUDA/GPU allocation fails.
+     * By default, if GPU allocation fails, ND4J will fall back to allocating on CPU host memory.
+     * <p>
+     * Default: true
+     */
+    public static final String MEMORY_FALLBACK_ENABLED = "nd4j.memory.fallback.enabled";
+
+    /**
+     * Applicability: CUDA backend (CudaMemoryManager)<br>
+     * Description: When set to "false", disables CPU host-memory fallback when CUDA device allocation
+     * fails. By default, failed CUDA allocations fall back to host memory so execution can continue.
+     * <p>
+     * Default: true
+     */
+    public static final String CUDA_MEMORY_FALLBACK_ENABLED = "nd4j.cuda.memory.fallback.enabled";
+
+    // ---- Opaque native buffer diagnostics ----
+
+    /**
+     * Applicability: OpaqueNDArray<br>
+     * Description: When set to "true", enables Java stack trace capture at OpaqueNDArray allocation time.
+     * Useful for diagnosing native memory leaks. Stack trace capture is expensive and should only be
+     * enabled for debugging.
+     * <p>
+     * Default: false
+     */
+    public static final String OPAQUE_STACKTRACE = "nd4j.opaque.stacktrace";
+
     private ND4JSystemProperties() {
     }
 }

@@ -23,6 +23,7 @@ package org.nd4j.nativeblas;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
@@ -65,7 +66,7 @@ public class OpaqueDataBuffer extends Pointer {
      * Can be disabled via system property: nd4j.memory.fallback.enabled=false
      */
     private static final boolean CPU_FALLBACK_ENABLED = Boolean.parseBoolean(
-            System.getProperty("nd4j.memory.fallback.enabled", "true"));
+            System.getProperty(ND4JSystemProperties.MEMORY_FALLBACK_ENABLED, "true"));
 
     /**
      * Tracks buffers that were allocated using CPU NativeOps as a fallback.

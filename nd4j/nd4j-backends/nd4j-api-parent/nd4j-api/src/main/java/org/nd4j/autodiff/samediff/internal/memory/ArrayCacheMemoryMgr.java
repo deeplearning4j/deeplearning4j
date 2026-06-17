@@ -55,7 +55,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     // with this multiplier so that next step's slightly larger request (e.g.
     // growing KV cache) can reuse the buffer via capacity matching.
     // Default 1.05 (5% headroom) for better buffer reuse in autoregressive generation.
-    // Disable with org.nd4j.cache.growthFactor=1.0 on memory-constrained systems.
+    // Disable with -Dorg.nd4j.cache.growthFactor=1.0 on memory-constrained systems (see ND4JSystemProperties.CACHE_GROWTH_FACTOR).
     public final static double DEFAULT_GROWTH_FACTOR = 1.05;
 
     private static AtomicDouble largerArrayMaxMultiple;
@@ -187,7 +187,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         maxMemFrac = new AtomicDouble(Double.parseDouble(System.getProperty(ND4JSystemProperties.CACHE_MEM_FRACTION,String.valueOf(DEFAULT_MAX_MEM_FRACTION))));
         smallArrayThreshold = new AtomicLong(Long.parseLong(System.getProperty(ND4JSystemProperties.SMALL_ARRAY_THRESHOLD,String.valueOf(DEFAULT_SMALL_ARRAY_THRESHOLD))));
         largerArrayMaxMultiple = new AtomicDouble(Double.parseDouble(System.getProperty(ND4JSystemProperties.LARGE_ARRAY_MAX_MULTIPLE,String.valueOf(DEFAULT_LARGE_ARRAY_MAX_MULTIPLE))));
-        growthFactor = new AtomicDouble(Double.parseDouble(System.getProperty("org.nd4j.cache.growthFactor", String.valueOf(DEFAULT_GROWTH_FACTOR))));
+        growthFactor = new AtomicDouble(Double.parseDouble(System.getProperty(ND4JSystemProperties.CACHE_GROWTH_FACTOR, String.valueOf(DEFAULT_GROWTH_FACTOR))));
 
         if (isCpu()) {
             totalMemBytes = new AtomicLong(Pointer.maxBytes());
