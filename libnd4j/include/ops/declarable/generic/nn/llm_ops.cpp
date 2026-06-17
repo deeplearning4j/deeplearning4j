@@ -996,8 +996,8 @@ CUSTOM_OP_IMPL(fused_gemm_swiglu_bp, 4, 3, false, 0, 0) {
             M *= x->sizeAt(d);
         std::vector<sd::LongType> flatX = {M, K};
         std::vector<sd::LongType> flatG = {M, N};
-        xFlat = new NDArray(x->reshape('c', flatX));
-        gradFlat = new NDArray(gradOut->reshape('c', flatG));
+        xFlat = x->reshape('c', flatX);
+        gradFlat = gradOut->reshape('c', flatG);
     } else {
         xFlat = x;
         gradFlat = gradOut;

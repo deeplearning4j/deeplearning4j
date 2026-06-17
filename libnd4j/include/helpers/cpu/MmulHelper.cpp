@@ -431,7 +431,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     // which would reinterpret B/C buffers with wrong element size.
     if (!ABC) {
       // Promote to A's type — cast B and C if they differ.
-      NDArray* castB = (bType != aType) ? new NDArray(B->cast(aType)) : nullptr;
+      NDArray* castB = (bType != aType) ? B->cast(aType) : nullptr;
       std::vector<LongType> cShape = {M, N};
       NDArray* castC = (cType != aType) ? new NDArray(NDArray('c', cShape, aType, C->getContext())) : nullptr;
       NDArray* effB = (castB != nullptr) ? castB : const_cast<NDArray*>(B);
