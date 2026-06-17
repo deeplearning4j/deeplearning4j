@@ -114,7 +114,7 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
             UIServer.getInstance().attach((StatsStorage) ssr);
         }
 
-        System.out.println("ConvolutionTrainingListener path: " + path);
+        log.info("ConvolutionTrainingListener path: {}", path);
     }
 
     /**

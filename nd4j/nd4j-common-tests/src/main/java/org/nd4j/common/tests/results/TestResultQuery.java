@@ -18,6 +18,9 @@
 
 package org.nd4j.common.tests.results;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.file.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -51,6 +54,7 @@ import java.util.stream.Collectors;
  */
 public class TestResultQuery {
 
+    private static final Logger log = LoggerFactory.getLogger(TestResultQuery.class);
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private TestResultQuery() {}
@@ -264,47 +268,46 @@ public class TestResultQuery {
                 LocalDate date = args.length > 1 ? LocalDate.parse(args[1]) : LocalDate.now();
                 List<TestResult> failures = getFailures(date);
                 if (failures.isEmpty()) {
-                    System.out.println("No failures for " + date);
+                    log.info("No failures for {}", date);
                 } else {
-                    System.out.println("=== Failures for " + date + " (" + failures.size() + ") ===");
-                    failures.forEach(System.out::println);
+                    log.info("=== Failures for {} ({}) ===", date, failures.size());
+                    failures.forEach(r -> log.info("{}", r));
                 }
                 break;
             }
             case "regressions": {
                 if (args.length < 3) {
-                    System.out.println("Usage: regressions <older-date> <newer-date>");
+                    log.info("Usage: regressions <older-date> <newer-date>");
                     return;
                 }
                 LocalDate older = LocalDate.parse(args[1]);
                 LocalDate newer = LocalDate.parse(args[2]);
                 List<TestResult> regressions = getRegressions(older, newer);
                 if (regressions.isEmpty()) {
-                    System.out.println("No regressions between " + older + " and " + newer);
+                    log.info("No regressions between {} and {}", older, newer);
                 } else {
-                    System.out.println("=== Regressions: " + older + " -> " + newer
-                            + " (" + regressions.size() + ") ===");
-                    regressions.forEach(System.out::println);
+                    log.info("=== Regressions: {} -> {} ({}) ===", older, newer, regressions.size());
+                    regressions.forEach(r -> log.info("{}", r));
                 }
                 break;
             }
             case "history": {
                 if (args.length < 2) {
-                    System.out.println("Usage: history <class-name-substring>");
+                    log.info("Usage: history <class-name-substring>");
                     return;
                 }
                 List<TestResult> history = getHistory(args[1]);
                 if (history.isEmpty()) {
-                    System.out.println("No results matching '" + args[1] + "'");
+                    log.info("No results matching '{}'", args[1]);
                 } else {
-                    System.out.println("=== History for '" + args[1] + "' (" + history.size() + ") ===");
-                    history.forEach(System.out::println);
+                    log.info("=== History for '{}' ({}) ===", args[1], history.size());
+                    history.forEach(r -> log.info("{}", r));
                 }
                 break;
             }
             case "summary": {
                 LocalDate date = args.length > 1 ? LocalDate.parse(args[1]) : LocalDate.now();
-                System.out.println(summary(date));
+                log.info("{}", summary(date));
                 break;
             }
             case "milestones": {
@@ -314,18 +317,17 @@ public class TestResultQuery {
             case "flaky": {
                 Set<String> flaky = getFlakyTests();
                 if (flaky.isEmpty()) {
-                    System.out.println("No flaky tests detected (need multiple runs to detect)");
+                    log.info("No flaky tests detected (need multiple runs to detect)");
                 } else {
-                    System.out.println("=== Flaky Tests (" + flaky.size() + ") ===");
-                    flaky.forEach(System.out::println);
+                    log.info("=== Flaky Tests ({}) ===", flaky.size());
+                    flaky.forEach(t -> log.info("{}", t));
                 }
                 break;
             }
             case "files": {
                 List<Path> files = TestResultStore.listResultFiles();
-                System.out.println("=== Result files (" + files.size() + ") in "
-                        + TestResultStore.getResultsDir() + " ===");
-                files.forEach(System.out::println);
+                log.info("=== Result files ({}) in {} ===", files.size(), TestResultStore.getResultsDir());
+                files.forEach(f -> log.info("{}", f));
                 break;
             }
             default:
@@ -334,18 +336,18 @@ public class TestResultQuery {
     }
 
     private static void printUsage() {
-        System.out.println("Usage: TestResultQuery <command> [args]");
-        System.out.println();
-        System.out.println("Commands:");
-        System.out.println("  failures [date]                  Show failures (default: today)");
-        System.out.println("  regressions <older> <newer>      Tests that passed then failed");
-        System.out.println("  history <class-substring>        All results for matching tests");
-        System.out.println("  summary [date]                   Pass/fail/skip counts by backend");
-        System.out.println("  milestones                       Show recorded milestones");
-        System.out.println("  flaky                            Tests that both pass and fail");
-        System.out.println("  files                            List result files");
-        System.out.println();
-        System.out.println("Dates: yyyy-MM-dd format (e.g. 2026-05-30)");
-        System.out.println("Data dir: " + TestResultStore.getResultsDir());
+        log.info("Usage: TestResultQuery <command> [args]");
+        log.info("");
+        log.info("Commands:");
+        log.info("  failures [date]                  Show failures (default: today)");
+        log.info("  regressions <older> <newer>      Tests that passed then failed");
+        log.info("  history <class-substring>        All results for matching tests");
+        log.info("  summary [date]                   Pass/fail/skip counts by backend");
+        log.info("  milestones                       Show recorded milestones");
+        log.info("  flaky                            Tests that both pass and fail");
+        log.info("  files                            List result files");
+        log.info("");
+        log.info("Dates: yyyy-MM-dd format (e.g. 2026-05-30)");
+        log.info("Data dir: {}", TestResultStore.getResultsDir());
     }
 }

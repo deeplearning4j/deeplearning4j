@@ -18,6 +18,9 @@
 
 package org.nd4j.common.tests.results;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 /**
@@ -40,6 +43,8 @@ import java.util.*;
  * }</pre>
  */
 public class TestMilestone {
+
+    private static final Logger log = LoggerFactory.getLogger(TestMilestone.class);
 
     private TestMilestone() {}
 
@@ -78,12 +83,12 @@ public class TestMilestone {
     public static void printAll() {
         List<String> lines = list();
         if (lines.isEmpty()) {
-            System.out.println("No milestones recorded at " + TestResultStore.getMilestoneFile());
+            log.info("No milestones recorded at {}", TestResultStore.getMilestoneFile());
             return;
         }
-        System.out.println("=== Milestones (" + lines.size() + ") from " + TestResultStore.getMilestoneFile() + " ===");
+        log.info("=== Milestones ({}) from {} ===", lines.size(), TestResultStore.getMilestoneFile());
         for (String line : lines) {
-            System.out.println(line);
+            log.info("{}", line);
         }
     }
 }

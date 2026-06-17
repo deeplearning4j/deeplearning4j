@@ -193,7 +193,7 @@ public class ModelDownloader {
             }
 
             printProgressBar(totalRead, contentLength, outputFile.getName());
-            System.out.println();
+            log.debug("");
         }
 
         Files.move(tempFile, outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -211,7 +211,6 @@ public class ModelDownloader {
             int empty = barWidth - filled;
 
             StringBuilder bar = new StringBuilder();
-            bar.append("\r");
             bar.append(String.format("%-30s ", truncateFileName(fileName, 30)));
             bar.append("[");
             for (int i = 0; i < filled; i++) bar.append("=");
@@ -221,22 +220,19 @@ public class ModelDownloader {
             bar.append(String.format("%3d%% ", percent));
             bar.append(String.format("%s / %s", downloadedStr, formatBytes(total)));
 
-            System.out.print(bar);
-            System.out.flush();
+            log.debug("{}", bar);
         } else {
             char[] spinner = {'|', '/', '-', '\\'};
             int spinIdx = (int) ((current / 10000) % 4);
 
             StringBuilder bar = new StringBuilder();
-            bar.append("\r");
             bar.append(String.format("%-30s ", truncateFileName(fileName, 30)));
             bar.append("[");
             bar.append(spinner[spinIdx]);
             bar.append("] ");
             bar.append(downloadedStr);
 
-            System.out.print(bar);
-            System.out.flush();
+            log.debug("{}", bar);
         }
     }
 
