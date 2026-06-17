@@ -210,8 +210,7 @@ DECLARE_SHAPE_FN(deconv2d) {
     outputShape[3] = oC;
   }
 
-  auto desc = new  ShapeDescriptor(ArrayOptions::dataType(weightsShapeInfo), shape::order(inputShapeInfo), outputShape, 4);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weightsShapeInfo), shape::order(inputShapeInfo), 4, outputShape));
 }
 
 DECLARE_TYPES(deconv2d_bp) {

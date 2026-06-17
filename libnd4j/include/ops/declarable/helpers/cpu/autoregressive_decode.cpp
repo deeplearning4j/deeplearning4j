@@ -522,7 +522,7 @@ void autoregressiveDecodeCpu(
         tokensGenerated++;
 
         if (step < 10 && env_isVerbose()) {
-          sd_printf("CPU_DECODE_STEP[%d/%d]: nextTokenId=%lld currentPosition=%lld stopTokenCount=%d\n",
+          sd_debug("CPU_DECODE_STEP[%d/%d]: nextTokenId=%lld currentPosition=%lld stopTokenCount=%d\n",
                     step, maxNewTokens, (long long)nextTokenId, (long long)currentPosition,
                     (int)stopTokenIds.size());
         }
@@ -533,7 +533,7 @@ void autoregressiveDecodeCpu(
             if (nextTokenId == static_cast<LongType>(s)) {
                 shouldStop = true;
                 if (env_isVerbose()) {
-                  sd_printf("CPU_DECODE_STEP[%d]: STOP matched token %lld == stopId %d\n",
+                  sd_debug("CPU_DECODE_STEP[%d]: STOP matched token %lld == stopId %d\n",
                             step, (long long)nextTokenId, s);
                 }
                 break;

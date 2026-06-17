@@ -39,6 +39,7 @@
 #include <ops/declarable/helpers/fused_llm_ops.h>
 #include <array/NDArray.h>
 #include <execution/Threads.h>
+#include <math/templatemath.h>
 #include <system/op_boilerplate.h>
 #include <system/type_boilerplate.h>
 #include <cmath>
@@ -69,13 +70,14 @@ static void applyMRoPEContiguous(
   const int halfH   = sectionH / 2;
   // halfW = sectionW / 2  (implicit: halfT + halfH + halfW == halfDim)
 
+  PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(3)
   for (int b = 0; b < batch; b++) {
     for (int s = 0; s < seq; s++) {
-      const float posTval = static_cast<float>(posT[b * seq + s]);
-      const float posHval = static_cast<float>(posH[b * seq + s]);
-      const float posWval = static_cast<float>(posW[b * seq + s]);
-
       for (int h = 0; h < heads; h++) {
+        const float posTval = static_cast<float>(posT[b * seq + s]);
+        const float posHval = static_cast<float>(posH[b * seq + s]);
+        const float posWval = static_cast<float>(posW[b * seq + s]);
+
         const int base = ((b * seq + s) * heads + h) * headDim;
 
         for (int d = 0; d < halfDim; d++) {
@@ -97,11 +99,11 @@ static void applyMRoPEContiguous(
             sectionSize   = sectionW;
           }
 
-          const float freq   = 1.0f / std::pow(freqBase,
+          const float freq   = 1.0f / sd::math::sd_pow<float, float, float>(freqBase,
                                                 (2.0f * sectionLocalD) / static_cast<float>(sectionSize));
           const float angle  = pos * freq;
-          const float cosVal = std::cos(angle);
-          const float sinVal = std::sin(angle);
+          const float cosVal = sd::math::sd_cos<float, float>(angle);
+          const float sinVal = sd::math::sd_sin<float, float>(angle);
 
           const int idx1 = base + d;
           const int idx2 = base + d + halfDim;
@@ -139,13 +141,14 @@ static void applyMRoPEInterleaved(
   const int halfDim    = headDim / 2;
   const int sectionSize = (headDim + 2) / 3;
 
+  PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(3)
   for (int b = 0; b < batch; b++) {
     for (int s = 0; s < seq; s++) {
-      const float posTval = static_cast<float>(posT[b * seq + s]);
-      const float posHval = static_cast<float>(posH[b * seq + s]);
-      const float posWval = static_cast<float>(posW[b * seq + s]);
-
       for (int h = 0; h < heads; h++) {
+        const float posTval = static_cast<float>(posT[b * seq + s]);
+        const float posHval = static_cast<float>(posH[b * seq + s]);
+        const float posWval = static_cast<float>(posW[b * seq + s]);
+
         const int base = ((b * seq + s) * heads + h) * headDim;
 
         for (int d = 0; d < halfDim; d++) {
@@ -157,11 +160,11 @@ static void applyMRoPEInterleaved(
           }
 
           const int   localD  = d / 3;
-          const float freq    = 1.0f / std::pow(10000.0f,
+          const float freq    = 1.0f / sd::math::sd_pow<float, float, float>(10000.0f,
                                                  (2.0f * localD) / static_cast<float>(sectionSize));
           const float angle   = pos * freq;
-          const float cosVal  = std::cos(angle);
-          const float sinVal  = std::sin(angle);
+          const float cosVal  = sd::math::sd_cos<float, float>(angle);
+          const float sinVal  = sd::math::sd_sin<float, float>(angle);
 
           const int idx1 = base + d;
           const int idx2 = base + d + halfDim;

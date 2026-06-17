@@ -19,6 +19,7 @@
  */
 
 #include <ops/declarable/helpers/attention_distillation_loss.h>
+#include <system/openmp_pragmas.h>
 
 namespace sd {
 namespace ops {
@@ -47,6 +48,7 @@ void attentionDistillationLoss(NDArray* studentAttn, NDArray* teacherAttn,
         // Teacher heads per student head
         sd::LongType ratio = tHeads / sHeads;
 
+        PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+:totalLoss, totalElements)
         for (sd::LongType b = 0; b < batch; b++) {
             for (sd::LongType sh = 0; sh < sHeads; sh++) {
                 for (sd::LongType i = 0; i < seqLen; i++) {
@@ -104,6 +106,7 @@ void attentionDistillationLossBp(NDArray* studentAttn, NDArray* teacherAttn,
         double totalElements = static_cast<double>(batch * sHeads * seqLen * seqLen);
         double scale = 2.0 / totalElements;
 
+        PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
         for (sd::LongType b = 0; b < batch; b++) {
             for (sd::LongType sh = 0; sh < sHeads; sh++) {
                 sd::LongType startHead = sh * ratio;

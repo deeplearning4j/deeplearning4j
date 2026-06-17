@@ -45,7 +45,7 @@ void hSoftmax_(T *vsyn0, T *vsyn1, T *vexpTable, T *vneu1e, const double alpha, 
 
 
   // dot
-  PRAGMA_OMP_SIMD
+  PRAGMA_OMP_SIMD_ARGS(reduction(+:dot))
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1[e];
 
@@ -89,7 +89,7 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
   T dot = (T)0.0f;
   T g = (T)0.0f;
 
-  PRAGMA_OMP_SIMD
+  PRAGMA_OMP_SIMD_ARGS(reduction(+:dot))
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1Neg[e];
   }
@@ -484,7 +484,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
         lrs[t] = ((lr.e<double>(t) - static_cast<double>(minLearningRate)) / (static_cast<double>(iterations - curr))) + static_cast<double>(minLearningRate);
       }
 
-#pragma omp parallel for num_threads(numThreads) schedule(guided)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(numThreads) schedule(guided))
       for(int t = 0; t < numTargets; t++) {
         auto currNeu1e = neu1e[t];
         std::fill_n(currNeu1e, vectorLength, T(0));
@@ -510,7 +510,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
 
       std::vector<std::vector<T> > buffer(numThreads, std::vector<T>(vectorLength));
 
-#pragma omp parallel num_threads(numThreads)
+PRAGMA_OMP_PARALLEL_THREADS(numThreads)
       {
         int threadId = omp_get_thread_num();
         auto& vec_local = buffer[threadId];
@@ -574,7 +574,7 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, NDArray&tar
   std::vector<int> currRows(hsRounds);
   std::vector<int> codes_vals(hsRounds);
 
-#pragma omp parallel
+PRAGMA_OMP_PARALLEL
   {
 #pragma omp for nowait
     for (LongType e = 0; e < hsRounds; e++) {
@@ -596,7 +596,7 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, NDArray&tar
 
 
       int nsStarter = irows[0];
-#pragma omp parallel for
+PRAGMA_OMP_PARALLEL_FOR
       for (int r = 0; r < nsRounds + 1; r++) {
         if (r != 0 && irows[r] == nsStarter) continue;
 
@@ -608,7 +608,7 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, NDArray&tar
 
   }
 
-#pragma omp parallel for
+PRAGMA_OMP_PARALLEL_FOR
   for (LongType e = 0; e < hsRounds; e++) {
     if(codes_vals[e] < 0) {
       continue;

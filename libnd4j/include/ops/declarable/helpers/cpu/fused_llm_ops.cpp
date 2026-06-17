@@ -28,6 +28,7 @@
 #include <helpers/MmulHelper.h>
 #include <helpers/shape.h>
 #include <execution/Threads.h>
+#include <math/templatemath.h>
 #include <system/type_boilerplate.h>
 #include <cmath>
 #include <random>
@@ -60,7 +61,7 @@ static void fusedGELU_(NDArray* input, NDArray* output) {
       PRAGMA_OMP_SIMD
       for (auto i = start; i < stop; i++) {
         const float x   = static_cast<float>(xBuf[i]);
-        const float sig = 1.0f / (1.0f + std::exp(-1.702f * x));
+        const float sig = 1.0f / (1.0f + sd::math::sd_exp<float>(-1.702f * x));
         zBuf[i] = static_cast<T>(x * sig);
       }
     };
@@ -69,7 +70,7 @@ static void fusedGELU_(NDArray* input, NDArray* output) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         const float x   = static_cast<float>(xBuf[i * xStride]);
-        const float sig = 1.0f / (1.0f + std::exp(-1.702f * x));
+        const float sig = 1.0f / (1.0f + sd::math::sd_exp<float>(-1.702f * x));
         zBuf[i * zStride] = static_cast<T>(x * sig);
       }
     };
@@ -104,7 +105,7 @@ static void fusedGELUBackward_(NDArray* input, NDArray* gradOut, NDArray* gradIn
         const float x    = static_cast<float>(xBuf[i]);
         const float dout = static_cast<float>(doBuf[i]);
         // d/dx[x * sigmoid(1.702*x)] = sigmoid(1.702*x) + x * 1.702 * sigmoid(1.702*x) * (1 - sigmoid(1.702*x))
-        const float sig  = 1.0f / (1.0f + std::exp(-1.702f * x));
+        const float sig  = 1.0f / (1.0f + sd::math::sd_exp<float>(-1.702f * x));
         diBuf[i] = static_cast<T>(dout * (sig + x * 1.702f * sig * (1.0f - sig)));
       }
     };
@@ -114,7 +115,7 @@ static void fusedGELUBackward_(NDArray* input, NDArray* gradOut, NDArray* gradIn
       for (auto i = start; i < stop; i++) {
         const float x    = static_cast<float>(xBuf[i * xStride]);
         const float dout = static_cast<float>(doBuf[i * doStride]);
-        const float sig  = 1.0f / (1.0f + std::exp(-1.702f * x));
+        const float sig  = 1.0f / (1.0f + sd::math::sd_exp<float>(-1.702f * x));
         diBuf[i * diStride] = static_cast<T>(dout * (sig + x * 1.702f * sig * (1.0f - sig)));
       }
     };
@@ -180,7 +181,7 @@ static void fusedLayerNorm_(NDArray* input, NDArray* gain, NDArray* bias, NDArra
         M2    += delta * delta2;
       }
       const float variance = M2 / count;
-      const float invStd   = 1.0f / std::sqrt(variance + epsilon);
+      const float invStd   = 1.0f / sd::math::sd_sqrt<float>(variance + epsilon);
 
       // Normalize, scale and shift
       PRAGMA_OMP_SIMD
@@ -270,7 +271,7 @@ void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
   // Heap-allocated to support any headDim without stack overflow (halfRotate = rotateDims/2).
   float* invFreq = new float[halfRotate];
   for (LongType i = 0; i < halfRotate; ++i) {
-    invFreq[i] = freqScale / std::pow(freqBase, (2.0f * static_cast<float>(i)) / static_cast<float>(rotateDims));
+    invFreq[i] = freqScale / sd::math::sd_pow<float, float, float>(freqBase, (2.0f * static_cast<float>(i)) / static_cast<float>(rotateDims));
   }
 
   // Parallelise over (batch * seqLen * numHeads)
@@ -297,8 +298,8 @@ void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
           PRAGMA_OMP_SIMD
           for (LongType i = 0; i < halfRotate; ++i) {
             const float theta = posF * invFreq[i];
-            const float cosT  = std::cos(theta);
-            const float sinT  = std::sin(theta);
+            const float cosT  = sd::math::sd_cos<float, float>(theta);
+            const float sinT  = sd::math::sd_sin<float, float>(theta);
             const float x0 = static_cast<float>(xPtr[(2 * i)     * xS[3]]);
             const float x1 = static_cast<float>(xPtr[(2 * i + 1) * xS[3]]);
             zPtr[(2 * i)     * zS[3]] = static_cast<T>(x0 * cosT - x1 * sinT);
@@ -312,8 +313,8 @@ void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
           PRAGMA_OMP_SIMD
           for (LongType i = 0; i < halfRotate; ++i) {
             const float theta = posF * invFreq[i];
-            const float cosT  = std::cos(theta);
-            const float sinT  = std::sin(theta);
+            const float cosT  = sd::math::sd_cos<float, float>(theta);
+            const float sinT  = sd::math::sd_sin<float, float>(theta);
             const float x0 = static_cast<float>(xPtr[i               * xS[3]]);
             const float x1 = static_cast<float>(xPtr[(i + halfRotate) * xS[3]]);
             zPtr[i                * zS[3]] = static_cast<T>(x0 * cosT - x1 * sinT);
@@ -351,8 +352,8 @@ void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
         const LongType base = (b * seqLen + s) * numHeads * headDim + h * headDim;
         for (LongType i = 0; i < halfRotate; ++i) {
           const float theta = posF * invFreq[i];
-          const float cosT  = std::cos(theta);
-          const float sinT  = std::sin(theta);
+          const float cosT  = sd::math::sd_cos<float, float>(theta);
+          const float sinT  = sd::math::sd_sin<float, float>(theta);
           LongType idx1, idx2;
           if (ropeType == 1) { idx1 = base + i * 2; idx2 = base + i * 2 + 1; }
           else                { idx1 = base + i;     idx2 = base + i + halfRotate; }
@@ -405,7 +406,7 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
   // Pre-compute invFreq — heap-allocated to support any headDim without stack overflow.
   float* invFreq = new float[halfRotate];
   for (LongType i = 0; i < halfRotate; ++i) {
-    invFreq[i] = freqScale / std::pow(freqBase, (2.0f * static_cast<float>(i)) / static_cast<float>(rotateDims));
+    invFreq[i] = freqScale / sd::math::sd_pow<float, float, float>(freqBase, (2.0f * static_cast<float>(i)) / static_cast<float>(rotateDims));
   }
 
   const LongType outerSize = batch * seqLen * numHeads;
@@ -429,8 +430,8 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
           PRAGMA_OMP_SIMD
           for (LongType i = 0; i < halfRotate; ++i) {
             const float theta = posF * invFreq[i];
-            const float cosT  = std::cos(theta);
-            const float sinT  = std::sin(theta);
+            const float cosT  = sd::math::sd_cos<float, float>(theta);
+            const float sinT  = sd::math::sd_sin<float, float>(theta);
             const float g0 = static_cast<float>(gPtr[(2 * i)     * gS[3]]);
             const float g1 = static_cast<float>(gPtr[(2 * i + 1) * gS[3]]);
             oPtr[(2 * i)     * oS[3]] = static_cast<T>(g0 * cosT + g1 * sinT);
@@ -441,8 +442,8 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
           PRAGMA_OMP_SIMD
           for (LongType i = 0; i < halfRotate; ++i) {
             const float theta = posF * invFreq[i];
-            const float cosT  = std::cos(theta);
-            const float sinT  = std::sin(theta);
+            const float cosT  = sd::math::sd_cos<float, float>(theta);
+            const float sinT  = sd::math::sd_sin<float, float>(theta);
             const float g0 = static_cast<float>(gPtr[i               * gS[3]]);
             const float g1 = static_cast<float>(gPtr[(i + halfRotate) * gS[3]]);
             oPtr[i                * oS[3]] = static_cast<T>(g0 * cosT + g1 * sinT);
@@ -474,8 +475,8 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
             const LongType base = (b * seqLen + s) * numHeads * headDim + h * headDim;
             for (LongType i = 0; i < halfRotate; i++) {
               const float theta = posF * invFreq[i];
-              const float cosT  = std::cos(theta);
-              const float sinT  = std::sin(theta);
+              const float cosT  = sd::math::sd_cos<float, float>(theta);
+              const float sinT  = sd::math::sd_sin<float, float>(theta);
               LongType idx1, idx2;
               if (ropeType == 1) { idx1 = base + i * 2; idx2 = base + i * 2 + 1; }
               else                { idx1 = base + i;     idx2 = base + i + halfRotate; }
@@ -767,7 +768,7 @@ static void fusedRmsNormSwiGLU_(NDArray* input, NDArray* gamma, NDArray* wGate, 
         const float v = static_cast<float>(xRow[i]);
         sumSq += v * v;
       }
-      const float invRms = 1.0f / std::sqrt(sumSq / static_cast<float>(hiddenDim) + epsilon);
+      const float invRms = 1.0f / sd::math::sd_sqrt<float>(sumSq / static_cast<float>(hiddenDim) + epsilon);
 
       // Normalize and apply gamma
       PRAGMA_OMP_SIMD
@@ -804,7 +805,7 @@ static void fusedRmsNormSwiGLU_(NDArray* input, NDArray* gamma, NDArray* wGate, 
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) {
       const float g      = static_cast<float>(gBufG[i]);
-      const float silu_g = g / (1.0f + std::exp(-g));  // g * sigmoid(g)
+      const float silu_g = g / (1.0f + sd::math::sd_exp<float>(-g));  // g * sigmoid(g)
       oBuf[i] = static_cast<T>(silu_g * static_cast<float>(uBuf[i]));
     }
   };
@@ -922,7 +923,7 @@ static void fusedLayerNormBackward_(NDArray* input, NDArray* gain, NDArray* grad
         M2    += delta * (val - mean);
       }
       const float variance = M2 / count;
-      const float invStd   = 1.0f / std::sqrt(variance + epsilon);
+      const float invStd   = 1.0f / sd::math::sd_sqrt<float>(variance + epsilon);
 
       // Accumulate dvar and dmean, and fill per-row gain/bias grad accumulators
       float dvar  = 0.0f;

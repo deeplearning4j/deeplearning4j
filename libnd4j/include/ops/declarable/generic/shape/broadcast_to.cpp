@@ -103,9 +103,8 @@ DECLARE_SHAPE_FN(broadcast_to) {
     outShape.reserve(1);
     auto firstVal = shape->cast(INT64)->e<LongType>(0);
     outShape.push_back(firstVal);
-    ShapeDescriptor shapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), {firstVal});
-
-    auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(&shapeDescriptor);
+    std::vector<LongType> scalarShape = {firstVal};
+    auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), scalarShape);
     return SHAPELIST(outShapeInfo);
   }
 

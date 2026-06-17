@@ -62,7 +62,7 @@ static void moeTopkSigmoidCpu_(NDArray* gatingLogits, NDArray* expertBias,
                 if (bias != nullptr) {
                     logit += static_cast<float>(bias[e]);
                 }
-                float score = 1.0f / (1.0f + std::exp(-logit));
+                float score = 1.0f / (1.0f + sd::math::sd_exp<float>(-logit));
                 expertVals[e] = {score, static_cast<int32_t>(e)};
             }
 
@@ -124,7 +124,7 @@ static void moeTopkSoftmaxCpu_(NDArray* gatingLogits, NDArray* expertScores,
             for (LongType e = 0; e < numExperts; ++e) {
                 float val = static_cast<float>(tokenLogits[e]);
                 if (softcapScale > 0.0f) {
-                    val = std::tanh(val / softcapScale) * softcapScale;
+                    val = sd::math::sd_tanh<float>(val / softcapScale) * softcapScale;
                 }
                 softmaxVals[e] = val;
                 if (val > maxLogit) maxLogit = val;
@@ -133,7 +133,7 @@ static void moeTopkSoftmaxCpu_(NDArray* gatingLogits, NDArray* expertScores,
             // Softmax: exp(x - max) / sum
             float sumExp = 0.0f;
             for (LongType e = 0; e < numExperts; ++e) {
-                softmaxVals[e] = std::exp(softmaxVals[e] - maxLogit);
+                softmaxVals[e] = sd::math::sd_exp<float>(softmaxVals[e] - maxLogit);
                 sumExp += softmaxVals[e];
             }
             float invSum = 1.0f / sumExp;
@@ -182,8 +182,6 @@ void moeAlignBlockSize(LaunchContext* context,
                         NDArray* sortedTokenIds,
                         NDArray* expertIds,
                         NDArray* numTokensPerExpert) {
-    expertIndices->syncToHost();
-
     const LongType numTokens = expertIndices->sizeAt(0);
     const int topK = static_cast<int>(expertIndices->sizeAt(1));
     const int32_t* idxPtr = reinterpret_cast<const int32_t*>(expertIndices->buffer());
@@ -267,9 +265,6 @@ void moeSumReduce(LaunchContext* context,
                    NDArray* routingWeights,
                    NDArray* output,
                    int topK) {
-    expertOutputs->syncToHost();
-    routingWeights->syncToHost();
-
     const LongType numTokens = output->sizeAt(0);
     const LongType hiddenDim = output->sizeAt(1);
 
@@ -343,9 +338,6 @@ void moeTopkSigmoid(LaunchContext* context,
                       int topK,
                       bool renormalize,
                       float routingScale) {
-    gatingLogits->syncToHost();
-    if (expertBias != nullptr) expertBias->syncToHost();
-
     BUILD_SINGLE_SELECTOR(gatingLogits->dataType(), moeTopkSigmoidCpu_,
                           (gatingLogits, expertBias, expertScores, expertIndices,
                            topK, renormalize, routingScale), SD_FLOAT_TYPES);
@@ -364,8 +356,6 @@ void moeTopkSoftmax(LaunchContext* context,
                       int topK,
                       bool renormalize,
                       float softcapScale) {
-    gatingLogits->syncToHost();
-
     BUILD_SINGLE_SELECTOR(gatingLogits->dataType(), moeTopkSoftmaxCpu_,
                           (gatingLogits, expertScores, expertIndices,
                            topK, renormalize, softcapScale), SD_FLOAT_TYPES);

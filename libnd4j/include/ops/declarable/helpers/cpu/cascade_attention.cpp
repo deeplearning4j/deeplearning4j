@@ -19,6 +19,8 @@
  */
 
 #include <ops/declarable/helpers/cascade_attention.h>
+#include <math/templatemath.h>
+#include <system/op_boilerplate.h>
 #include <cmath>
 #include <vector>
 #include <limits>
@@ -27,31 +29,33 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-void cascadeAttentionCpu(LaunchContext* context,
-                          NDArray* query, NDArray* key, NDArray* value,
-                          NDArray* output, int chunkSize, double scale) {
+template <typename T>
+static void cascadeAttentionCpu_(LaunchContext* context,
+                                  NDArray* query, NDArray* key, NDArray* value,
+                                  NDArray* output, int chunkSize, double scale) {
     auto batch = query->sizeAt(0);
     auto heads = query->sizeAt(1);
     auto queryLen = query->sizeAt(2);
     auto headDim = query->sizeAt(3);
     auto kvLen = key->sizeAt(2);
 
-    float scaleF = static_cast<float>(scale);
+    T scaleF = static_cast<T>(scale);
 
+    PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
     for (LongType b = 0; b < batch; b++) {
         for (LongType h = 0; h < heads; h++) {
             for (LongType q = 0; q < queryLen; q++) {
                 // Read Q vector
-                std::vector<float> qVec(headDim);
+                std::vector<T> qVec(headDim);
                 for (LongType d = 0; d < headDim; d++) {
-                    qVec[d] = query->e<float>(b, h, q, d);
+                    qVec[d] = query->e<T>(b, h, q, d);
                 }
 
                 // Per-query accumulation across chunks
                 // Using log-sum-exp merge for numerical stability
-                std::vector<float> outAccum(headDim, 0.0f);
-                float globalMax = -std::numeric_limits<float>::infinity();
-                float globalSumExp = 0.0f;
+                std::vector<T> outAccum(headDim, static_cast<T>(0));
+                T globalMax = -std::numeric_limits<T>::infinity();
+                T globalSumExp = static_cast<T>(0);
 
                 // Process KV cache in chunks
                 for (LongType chunkStart = 0; chunkStart < kvLen; chunkStart += chunkSize) {
@@ -59,31 +63,31 @@ void cascadeAttentionCpu(LaunchContext* context,
                     LongType chunkLen = chunkEnd - chunkStart;
 
                     // Compute attention scores for this chunk: Q @ K_chunk^T * scale
-                    std::vector<float> scores(chunkLen);
-                    float chunkMax = -std::numeric_limits<float>::infinity();
+                    std::vector<T> scores(chunkLen);
+                    T chunkMax = -std::numeric_limits<T>::infinity();
 
                     for (LongType k2 = 0; k2 < chunkLen; k2++) {
-                        float dot = 0.0f;
+                        T dot = static_cast<T>(0);
                         for (LongType d = 0; d < headDim; d++) {
-                            dot += qVec[d] * key->e<float>(b, h, chunkStart + k2, d);
+                            dot += qVec[d] * key->e<T>(b, h, chunkStart + k2, d);
                         }
                         scores[k2] = dot * scaleF;
                         if (scores[k2] > chunkMax) chunkMax = scores[k2];
                     }
 
                     // Compute chunk softmax numerators and sum
-                    float chunkSumExp = 0.0f;
+                    T chunkSumExp = static_cast<T>(0);
                     for (LongType k2 = 0; k2 < chunkLen; k2++) {
-                        scores[k2] = std::exp(scores[k2] - chunkMax);
+                        scores[k2] = sd::math::sd_exp<T>(scores[k2] - chunkMax);
                         chunkSumExp += scores[k2];
                     }
 
                     // Compute chunk output: softmax_weights @ V_chunk
-                    std::vector<float> chunkOut(headDim, 0.0f);
+                    std::vector<T> chunkOut(headDim, static_cast<T>(0));
                     for (LongType k2 = 0; k2 < chunkLen; k2++) {
-                        float w = scores[k2]; // unnormalized softmax weight
+                        T w = scores[k2]; // unnormalized softmax weight
                         for (LongType d = 0; d < headDim; d++) {
-                            chunkOut[d] += w * value->e<float>(b, h, chunkStart + k2, d);
+                            chunkOut[d] += w * value->e<T>(b, h, chunkStart + k2, d);
                         }
                     }
 
@@ -95,11 +99,11 @@ void cascadeAttentionCpu(LaunchContext* context,
                         outAccum = chunkOut;
                     } else {
                         // Merge: rescale both accumulators to common max
-                        float newMax = std::max(globalMax, chunkMax);
-                        float globalRescale = std::exp(globalMax - newMax);
-                        float chunkRescale = std::exp(chunkMax - newMax);
+                        T newMax = std::max(globalMax, chunkMax);
+                        T globalRescale = sd::math::sd_exp<T>(globalMax - newMax);
+                        T chunkRescale = sd::math::sd_exp<T>(chunkMax - newMax);
 
-                        float newSumExp = globalSumExp * globalRescale + chunkSumExp * chunkRescale;
+                        T newSumExp = globalSumExp * globalRescale + chunkSumExp * chunkRescale;
 
                         for (LongType d = 0; d < headDim; d++) {
                             outAccum[d] = outAccum[d] * globalRescale + chunkOut[d] * chunkRescale;
@@ -111,7 +115,7 @@ void cascadeAttentionCpu(LaunchContext* context,
                 }
 
                 // Normalize by total sum of exponentials
-                if (globalSumExp > 0.0f) {
+                if (globalSumExp > static_cast<T>(0)) {
                     for (LongType d = 0; d < headDim; d++) {
                         output->p(b, h, q, d, outAccum[d] / globalSumExp);
                     }
@@ -120,6 +124,18 @@ void cascadeAttentionCpu(LaunchContext* context,
         }
     }
 }
+
+void cascadeAttentionCpu(LaunchContext* context,
+                          NDArray* query, NDArray* key, NDArray* value,
+                          NDArray* output, int chunkSize, double scale) {
+    BUILD_SINGLE_SELECTOR(query->dataType(), cascadeAttentionCpu_,
+                          (context, query, key, value, output, chunkSize, scale),
+                          SD_FLOAT_TYPES);
+}
+
+BUILD_SINGLE_TEMPLATE(template void cascadeAttentionCpu_,
+                      (LaunchContext*, NDArray*, NDArray*, NDArray*, NDArray*, int, double),
+                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

@@ -29,6 +29,7 @@
 //
 
 #include <ops/declarable/helpers/kl_divergence_per_layer.h>
+#include <math/templatemath.h>
 #include <system/openmp_pragmas.h>
 #include <cmath>
 #include <algorithm>
@@ -49,9 +50,9 @@ static void logSoftmaxRow(const double* src, double* dst, LongType dim, double t
     double logSum = 0.0;
     for (LongType c = 0; c < dim; c++) {
         dst[c] = src[c] / temperature - maxVal;
-        logSum += std::exp(dst[c]);
+        logSum += sd::math::sd_exp<double>(dst[c]);
     }
-    logSum = std::log(logSum);
+    logSum = sd::math::sd_log<double>(logSum);
     for (LongType c = 0; c < dim; c++) {
         dst[c] -= logSum;
     }
@@ -71,13 +72,14 @@ void klDivergencePerLayer(NDArray* referenceLogits,
 
     double totalKL = 0.0;
 
-    std::vector<double> refRow(dim);
-    std::vector<double> quantRow(dim);
-    std::vector<double> logP(dim);
-    std::vector<double> logQ(dim);
-
+    PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+:totalKL)
     for (LongType r = 0; r < numRows; r++) {
         LongType offset = r * dim;
+
+        std::vector<double> refRow(dim);
+        std::vector<double> quantRow(dim);
+        std::vector<double> logP(dim);
+        std::vector<double> logQ(dim);
 
         // Read row from NDArray (handles arbitrary strides)
         for (LongType c = 0; c < dim; c++) {
@@ -91,7 +93,7 @@ void klDivergencePerLayer(NDArray* referenceLogits,
         // KL(P||Q) = sum_c P_c * (log P_c - log Q_c)
         double kl = 0.0;
         for (LongType c = 0; c < dim; c++) {
-            double p = std::exp(logP[c]);
+            double p = sd::math::sd_exp<double>(logP[c]);
             if (p > 1e-12) {
                 kl += p * (logP[c] - logQ[c]);
             }

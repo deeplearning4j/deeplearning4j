@@ -19,6 +19,7 @@
  */
 
 #include <ops/declarable/helpers/ema_update.h>
+#include <system/openmp_pragmas.h>
 
 namespace sd {
 namespace ops {
@@ -30,6 +31,7 @@ void emaUpdate(NDArray* model, NDArray* shadow, NDArray* output,
     // output[i] = decay * shadow[i] + (1 - decay) * model[i]
     double oneMinusDecay = 1.0 - decay;
     auto len = output->lengthOf();
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
     for (sd::LongType i = 0; i < len; i++) {
         double s = shadow->e<double>(i);
         double m = model->e<double>(i);
@@ -44,6 +46,7 @@ void emaUpdateBp(NDArray* model, NDArray* shadow, NDArray* gradOutput,
     // d(output)/d(shadow) = decay
     double oneMinusDecay = 1.0 - decay;
     auto len = gradOutput->lengthOf();
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
     for (sd::LongType i = 0; i < len; i++) {
         double g = gradOutput->e<double>(i);
         dLdModel->p(i, g * oneMinusDecay);

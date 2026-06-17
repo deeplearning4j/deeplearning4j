@@ -22,6 +22,7 @@
 
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/audio.h>
+#include <math/templatemath.h>
 #include <cmath>
 #include <algorithm>
 #include <vector>
@@ -163,11 +164,11 @@ static void melSpectrogram_(LaunchContext* context, NDArray* input,
                     T sumReal = 0, sumImag = 0;
                     for (int n = 0; n < fftSize; n++) {
                         T angle = static_cast<T>(-2.0 * M_PI * k * n / fftSize);
-                        sumReal += frame[n] * std::cos(angle);
-                        sumImag += frame[n] * std::sin(angle);
+                        sumReal += frame[n] * sd::math::sd_cos<T>(angle);
+                        sumImag += frame[n] * sd::math::sd_sin<T>(angle);
                     }
-                    T mag = std::sqrt(sumReal * sumReal + sumImag * sumImag);
-                    powerSpec[k] = (power == 2.0) ? mag * mag : static_cast<T>(std::pow(mag, static_cast<T>(power)));
+                    T mag = sd::math::sd_sqrt<T>(sumReal * sumReal + sumImag * sumImag);
+                    powerSpec[k] = (power == 2.0) ? mag * mag : static_cast<T>(sd::math::sd_pow<T,T,T>(mag, static_cast<T>(power)));
                 }
 
                 // Apply mel filterbank
@@ -260,8 +261,8 @@ static void mfcc_(LaunchContext* context, NDArray* input,
                     T sumReal = 0, sumImag = 0;
                     for (int n = 0; n < fftSize; n++) {
                         T angle = static_cast<T>(-2.0 * M_PI * k * n / fftSize);
-                        sumReal += frame[n] * std::cos(angle);
-                        sumImag += frame[n] * std::sin(angle);
+                        sumReal += frame[n] * sd::math::sd_cos<T>(angle);
+                        sumImag += frame[n] * sd::math::sd_sin<T>(angle);
                     }
                     powerSpec[k] = sumReal * sumReal + sumImag * sumImag;
                 }
@@ -272,7 +273,7 @@ static void mfcc_(LaunchContext* context, NDArray* input,
                     for (int k = 0; k < numFreqBins; k++) {
                         sum += melFb[m * numFreqBins + k] * powerSpec[k];
                     }
-                    melEnergies[m] = std::log(std::max(sum, static_cast<T>(1e-10)));
+                    melEnergies[m] = sd::math::sd_log<T>(sd::math::sd_max<T>(sum, static_cast<T>(1e-10)));
                 }
 
                 // DCT-II to get MFCCs

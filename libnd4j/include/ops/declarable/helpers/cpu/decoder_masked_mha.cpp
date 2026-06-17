@@ -70,6 +70,7 @@ static void decoderMaskedMhaCpu_(
     // Copy existing cache to output cache
     const LongType kvCacheMaxSeq = keyCache->sizeAt(2);
     const LongType kvCacheSize = batch * numKvHeads * kvCacheMaxSeq * headDim;
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
     for (LongType i = 0; i < kvCacheSize; ++i) {
         updatedKBuf[i] = keyCacheBuf[i];
         updatedVBuf[i] = valueCacheBuf[i];
@@ -90,6 +91,7 @@ static void decoderMaskedMhaCpu_(
 
             // Step 1: QKV projection: hidden [1, H] @ qkvWeight [H, 3H] -> qkv [3H]
             const T* hRow = hiddenBuf + b * hiddenDim;
+            PRAGMA_OMP_PARALLEL_FOR
             for (LongType j = 0; j < totalQkvDim; ++j) {
                 T sum = static_cast<T>(0);
                 for (LongType k = 0; k < hiddenDim; ++k) {
@@ -113,8 +115,10 @@ static void decoderMaskedMhaCpu_(
                 const T* sinRow = sinBuf + cachePosition * halfDim;
 
                 // Apply RoPE to Q heads
+                PRAGMA_OMP_PARALLEL_FOR
                 for (int h = 0; h < numHeads; ++h) {
                     T* qHead = qPtr + h * headDim;
+                    PRAGMA_OMP_SIMD
                     for (int i = 0; i < halfDim; ++i) {
                         T c = static_cast<T>(cosRow[i]);
                         T s = static_cast<T>(sinRow[i]);
@@ -135,8 +139,10 @@ static void decoderMaskedMhaCpu_(
                 }
 
                 // Apply RoPE to K heads
+                PRAGMA_OMP_PARALLEL_FOR
                 for (int h = 0; h < numKvHeads; ++h) {
                     T* kHead = kPtr + h * headDim;
+                    PRAGMA_OMP_SIMD
                     for (int i = 0; i < halfDim; ++i) {
                         T c = static_cast<T>(cosRow[i]);
                         T s = static_cast<T>(sinRow[i]);
@@ -157,10 +163,12 @@ static void decoderMaskedMhaCpu_(
 
             // Step 4: Write K, V to cache at cachePosition
             // Cache layout: [B, numKvHeads, maxSeq, headDim]
+            PRAGMA_OMP_PARALLEL_FOR
             for (int h = 0; h < numKvHeads; ++h) {
                 LongType cacheOffset = ((b * numKvHeads + h) * kvCacheMaxSeq + cachePosition) * headDim;
                 const T* kHead = kPtr + h * headDim;
                 const T* vHead = vPtr + h * headDim;
+                PRAGMA_OMP_SIMD
                 for (int d = 0; d < headDim; ++d) {
                     updatedKBuf[cacheOffset + d] = kHead[d];
                     updatedVBuf[cacheOffset + d] = vHead[d];
@@ -171,6 +179,7 @@ static void decoderMaskedMhaCpu_(
             // attnOut: [numHeads, headDim]
             std::vector<T> attnOut(numHeads * headDim, static_cast<T>(0));
 
+            PRAGMA_OMP_PARALLEL_FOR
             for (int qh = 0; qh < numHeads; ++qh) {
                 // GQA mapping: which KV head does this query head use
                 int kvh = qh * numKvHeads / numHeads;
@@ -178,21 +187,22 @@ static void decoderMaskedMhaCpu_(
                 const T* qHead = qPtr + qh * headDim;
 
                 // Compute attention scores: Q @ K^T for all positions up to seqLen
-                std::vector<float> scores(seqLen);
-                float maxScore = -1e30f;
+                std::vector<T> scores(seqLen);
+                T maxScore = static_cast<T>(-1e30);
 
                 for (LongType pos = 0; pos < seqLen; ++pos) {
                     LongType kOffset = ((b * numKvHeads + kvh) * kvCacheMaxSeq + pos) * headDim;
-                    float dot = 0.0f;
+                    T dot = static_cast<T>(0);
+                    PRAGMA_OMP_SIMD
                     for (int d = 0; d < headDim; ++d) {
-                        dot += static_cast<float>(qHead[d]) * static_cast<float>(updatedKBuf[kOffset + d]);
+                        dot += static_cast<T>(qHead[d]) * static_cast<T>(updatedKBuf[kOffset + d]);
                     }
-                    dot *= attScale;
+                    dot *= static_cast<T>(attScale);
 
                     // Apply mask if present
                     if (maskBuf != nullptr) {
                         // mask layout: [B, 1, 1, seqLen]
-                        dot += static_cast<float>(maskBuf[b * seqLen + pos]);
+                        dot += static_cast<T>(maskBuf[b * seqLen + pos]);
                     }
 
                     scores[pos] = dot;
@@ -200,12 +210,13 @@ static void decoderMaskedMhaCpu_(
                 }
 
                 // Softmax
-                float sumExp = 0.0f;
+                T sumExp = static_cast<T>(0);
                 for (LongType pos = 0; pos < seqLen; ++pos) {
-                    scores[pos] = sd::math::sd_exp<float, float>(scores[pos] - maxScore);
+                    scores[pos] = sd::math::sd_exp<T, T>(scores[pos] - maxScore);
                     sumExp += scores[pos];
                 }
-                float invSumExp = 1.0f / sumExp;
+                T invSumExp = static_cast<T>(1) / sumExp;
+                PRAGMA_OMP_SIMD
                 for (LongType pos = 0; pos < seqLen; ++pos) {
                     scores[pos] *= invSumExp;
                 }
@@ -215,6 +226,7 @@ static void decoderMaskedMhaCpu_(
                 for (LongType pos = 0; pos < seqLen; ++pos) {
                     LongType vOffset = ((b * numKvHeads + kvh) * kvCacheMaxSeq + pos) * headDim;
                     T weight = static_cast<T>(scores[pos]);
+                    PRAGMA_OMP_SIMD
                     for (int d = 0; d < headDim; ++d) {
                         attnHead[d] += weight * updatedVBuf[vOffset + d];
                     }
@@ -225,6 +237,7 @@ static void decoderMaskedMhaCpu_(
             // attnOut is [numHeads * headDim] = [hiddenDim]
             // output = attnOut @ oWeight [H, H]
             T* outRow = outputBuf + b * hiddenDim;
+            PRAGMA_OMP_PARALLEL_FOR
             for (LongType j = 0; j < hiddenDim; ++j) {
                 T sum = static_cast<T>(0);
                 for (LongType k = 0; k < hiddenDim; ++k) {
@@ -251,15 +264,6 @@ void decoderMaskedMhaCpu(
     NDArray* updatedKeyCache,
     NDArray* updatedValueCache,
     const DecoderMhaConfig& config) {
-
-    hiddenStates->syncToHost();
-    qkvWeight->syncToHost();
-    oWeight->syncToHost();
-    keyCache->syncToHost();
-    valueCache->syncToHost();
-    if (mask != nullptr) mask->syncToHost();
-    if (cosCache != nullptr) cosCache->syncToHost();
-    if (sinCache != nullptr) sinCache->syncToHost();
 
     BUILD_SINGLE_SELECTOR(hiddenStates->dataType(), decoderMaskedMhaCpu_,
                           (hiddenStates, qkvWeight, oWeight, keyCache, valueCache,
