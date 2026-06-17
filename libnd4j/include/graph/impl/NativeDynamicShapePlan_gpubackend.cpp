@@ -135,7 +135,7 @@ void NativeDynamicShapePlan::dumpSegmentGraphState(const char* tag) const {
 
   DspDiagnostics::getInstance().recordGraphStateDump(tag, json.c_str());
   // Also print to stderr for immediate visibility when debugging
-  sd_printf("=== GRAPH STATE DUMP [%s] ===\n%s\n", tag, json.c_str());
+  sd_debug("=== GRAPH STATE DUMP [%s] ===\n%s\n", tag, json.c_str());
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -76,7 +76,7 @@ void HelperVersionRegistry::registerProvider(const std::string& name, VersionPro
   _cacheValid = false;  // Invalidate cache when new provider is added
 
   if (_verboseLogging) {
-    sd_printf("HelperVersionRegistry: Registered provider for %s\n", name.c_str());
+    sd_debug("HelperVersionRegistry: Registered provider for %s\n", name.c_str());
   }
 }
 
@@ -145,7 +145,7 @@ bool HelperVersionRegistry::checkVersion(const std::string& name, const HelperVe
   bool result = info.runtime.meetsMinimum(minVersion);
 
   if (_verboseLogging) {
-    sd_printf("HelperVersionRegistry: Version check for %s - runtime %s %s minimum %s\n", name.c_str(),
+    sd_debug("HelperVersionRegistry: Version check for %s - runtime %s %s minimum %s\n", name.c_str(),
               info.runtime.toString().c_str(), result ? ">=" : "<", minVersion.toString().c_str());
   }
 
@@ -221,11 +221,11 @@ void HelperVersionRegistry::refresh() {
 
 void HelperVersionRegistry::logVersionCheck(const std::string& name, const HelperInfo& info, bool success) {
   if (success) {
-    sd_printf("HelperVersionRegistry: %s version check PASSED - runtime %s in range [%s, %s]\n", name.c_str(),
+    sd_debug("HelperVersionRegistry: %s version check PASSED - runtime %s in range [%s, %s]\n", name.c_str(),
               info.runtime.toString().c_str(), info.minSupported.toString().c_str(),
               info.maxSupported.toString().c_str());
   } else {
-    sd_printf(
+    sd_debug(
         "HelperVersionRegistry: %s version check FAILED - runtime %s NOT in range [%s, %s]. %s\n",
         name.c_str(), info.runtime.toString().c_str(), info.minSupported.toString().c_str(),
         info.maxSupported.toString().c_str(),
