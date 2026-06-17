@@ -210,11 +210,6 @@ void treeSpeculativeSampling(LaunchContext* context,
                               NDArray* randVals,
                               NDArray* outputTokenIds,
                               NDArray* numAccepted) {
-    targetProbs->syncToHost();
-    draftProbs->syncToHost();
-    draftTokenIds->syncToHost();
-    randVals->syncToHost();
-
     BUILD_SINGLE_SELECTOR(targetProbs->dataType(), treeSpeculativeSamplingCpu_,
                           (targetProbs, draftProbs, draftTokenIds, randVals,
                            outputTokenIds, numAccepted), SD_FLOAT_TYPES);
@@ -228,9 +223,6 @@ void treeVerifyGreedy(LaunchContext* context,
                        NDArray* draftTokenIds,
                        NDArray* outputTokenIds,
                        NDArray* numAccepted) {
-    targetLogits->syncToHost();
-    draftTokenIds->syncToHost();
-
     BUILD_SINGLE_SELECTOR(targetLogits->dataType(), treeVerifyGreedyCpu_,
                           (targetLogits, draftTokenIds, outputTokenIds, numAccepted),
                           SD_FLOAT_TYPES);

@@ -215,8 +215,6 @@ static void kvCacheDequantizeFp8Cpu_(NDArray* quantized, NDArray* scales, NDArra
 // Public interface
 //////////////////////////////////////////////////////////////////////////////
 void kvCacheQuantizeCpu(NDArray* input, NDArray* quantized, NDArray* scales, int quantFormat) {
-    input->syncToHost();
-
     auto format = static_cast<KVQuantFormat>(quantFormat);
 
     switch (format) {
@@ -241,9 +239,6 @@ void kvCacheQuantizeCpu(NDArray* input, NDArray* quantized, NDArray* scales, int
 }
 
 void kvCacheDequantizeCpu(NDArray* quantized, NDArray* scales, NDArray* output, int quantFormat) {
-    quantized->syncToHost();
-    scales->syncToHost();
-
     auto format = static_cast<KVQuantFormat>(quantFormat);
 
     switch (format) {

@@ -36,7 +36,6 @@ void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<LongType>& o
   }
   output.resize(axisVector->lengthOf());
   axisVector->tickReadDevice();  // mark input as read on device
-  axisVector->syncToHost();      // sync to host
   for (int e = 0; e < axisVector->lengthOf(); e++) {
     auto ca = axisVector->e<sd::LongType>(e);
     if (ca < 0)  // shift values on rank for negative vals

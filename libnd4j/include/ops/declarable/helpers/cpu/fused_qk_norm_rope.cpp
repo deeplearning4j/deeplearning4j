@@ -141,14 +141,6 @@ void fusedQkNormRope(LaunchContext* context,
                       float epsilon,
                       double freqBase,
                       bool isNeox) {
-    // Sync all inputs to host
-    query->syncToHost();
-    key->syncToHost();
-    gammaQ->syncToHost();
-    gammaK->syncToHost();
-    if (cosCache != nullptr) cosCache->syncToHost();
-    if (sinCache != nullptr) sinCache->syncToHost();
-
     const LongType batch = query->sizeAt(0);
     const LongType seqLen = query->sizeAt(1);
     const LongType numQHeads = query->sizeAt(2);

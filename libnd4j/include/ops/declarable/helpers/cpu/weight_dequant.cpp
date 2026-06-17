@@ -133,10 +133,6 @@ void awqDequantize(LaunchContext* context,
                     NDArray* zeros,
                     NDArray* output,
                     int groupSize) {
-    packedWeights->syncToHost();
-    scales->syncToHost();
-    zeros->syncToHost();
-
     BUILD_SINGLE_SELECTOR(output->dataType(), awqDequantizeCpu_,
                           (packedWeights, scales, zeros, output, groupSize),
                           SD_FLOAT_TYPES);
@@ -155,11 +151,6 @@ void gptqDequantize(LaunchContext* context,
                      NDArray* output,
                      int groupSize,
                      int bits) {
-    packedWeights->syncToHost();
-    scales->syncToHost();
-    if (zeros != nullptr) zeros->syncToHost();
-    if (gIdx != nullptr) gIdx->syncToHost();
-
     BUILD_SINGLE_SELECTOR(output->dataType(), gptqDequantizeCpu_,
                           (packedWeights, scales, zeros, gIdx, output, groupSize, bits),
                           SD_FLOAT_TYPES);
@@ -178,10 +169,6 @@ void marlinGemm(LaunchContext* context,
                  NDArray* output,
                  NDArray* workspace,
                  int groupSize) {
-    input->syncToHost();
-    marlinWeights->syncToHost();
-    scales->syncToHost();
-
     const LongType M = input->sizeAt(0);
     const LongType K = input->sizeAt(1);
     const LongType N = output->sizeAt(1);

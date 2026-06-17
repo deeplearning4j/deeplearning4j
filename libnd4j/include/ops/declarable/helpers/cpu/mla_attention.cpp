@@ -143,13 +143,6 @@ static void mlaAttentionCpu_(NDArray* query, NDArray* latentKVCache, NDArray* kv
 void mlaAttentionCpu(NDArray* query, NDArray* latentKVCache, NDArray* kvDownProj,
                       NDArray* ropeCache, NDArray* output, int seqLen,
                       const MLAConfig& config) {
-    query->syncToHost();
-    latentKVCache->syncToHost();
-    kvDownProj->syncToHost();
-    if (ropeCache != nullptr) {
-        ropeCache->syncToHost();
-    }
-
     BUILD_SINGLE_SELECTOR(query->dataType(), mlaAttentionCpu_,
                            (query, latentKVCache, kvDownProj, ropeCache, output, seqLen, config),
                            SD_FLOAT_TYPES);

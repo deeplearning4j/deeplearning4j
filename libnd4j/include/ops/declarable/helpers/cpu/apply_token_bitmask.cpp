@@ -78,10 +78,6 @@ void applyTokenBitmaskInplace(LaunchContext* context,
                                NDArray* logits,
                                NDArray* bitmask,
                                NDArray* indices) {
-    logits->syncToHost();
-    bitmask->syncToHost();
-    if (indices != nullptr) indices->syncToHost();
-
     BUILD_SINGLE_SELECTOR(logits->dataType(), applyTokenBitmaskCpu_,
                           (logits, bitmask, indices), SD_FLOAT_TYPES);
 

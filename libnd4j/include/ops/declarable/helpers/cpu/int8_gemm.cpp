@@ -40,12 +40,6 @@ void int8ScaledGemm(LaunchContext* context,
                      NDArray* scaleB,
                      NDArray* output,
                      NDArray* bias) {
-    A->syncToHost();
-    B->syncToHost();
-    scaleA->syncToHost();
-    scaleB->syncToHost();
-    if (bias != nullptr) bias->syncToHost();
-
     const LongType M = A->sizeAt(0);
     const LongType K = A->sizeAt(1);
     const LongType N = B->sizeAt(1);
@@ -122,11 +116,6 @@ void fp8ScaledGemm(LaunchContext* context,
                     NDArray* scaleA,
                     NDArray* scaleB,
                     NDArray* output) {
-    A->syncToHost();
-    B->syncToHost();
-    scaleA->syncToHost();
-    scaleB->syncToHost();
-
     const LongType M = A->sizeAt(0);
     const LongType K = A->sizeAt(1);
     const LongType N = B->sizeAt(1);

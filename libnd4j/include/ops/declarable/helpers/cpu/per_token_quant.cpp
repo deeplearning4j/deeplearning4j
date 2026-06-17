@@ -165,7 +165,6 @@ void perTokenQuantFp8(LaunchContext* context,
                        NDArray* input,
                        NDArray* quantized,
                        NDArray* scales) {
-    input->syncToHost();
     BUILD_SINGLE_SELECTOR(input->dataType(), perTokenQuantFp8Cpu_, (input, quantized, scales), SD_FLOAT_TYPES);
     quantized->tickWriteHost();
     scales->tickWriteHost();
@@ -175,8 +174,6 @@ void perTokenDequantFp8(LaunchContext* context,
                          NDArray* quantized,
                          NDArray* scales,
                          NDArray* output) {
-    quantized->syncToHost();
-    scales->syncToHost();
     BUILD_SINGLE_SELECTOR(output->dataType(), perTokenDequantFp8Cpu_, (quantized, scales, output), SD_FLOAT_TYPES);
     output->tickWriteHost();
 }
@@ -187,7 +184,6 @@ void perTokenGroupQuant(LaunchContext* context,
                          NDArray* scales,
                          int groupSize,
                          bool useFp8) {
-    input->syncToHost();
     BUILD_SINGLE_SELECTOR(input->dataType(), perTokenGroupQuantCpu_,
                           (input, quantized, scales, groupSize, useFp8), SD_FLOAT_TYPES);
     quantized->tickWriteHost();
