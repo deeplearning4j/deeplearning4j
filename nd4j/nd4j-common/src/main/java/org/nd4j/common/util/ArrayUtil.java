@@ -535,30 +535,13 @@ public class ArrayUtil {
      * @param check
      * @return
      */
-    public static boolean anyLargerThan(int[] arrs, int check) {
-        for(int i = 0; i < arrs.length; i++) {
-            if(arrs[i] > check)
-                return true;
-        }
+    /** @deprecated Use {@link ArrayMathUtils#anyLargerThan(int[], int)} instead. */
+    @Deprecated
+    public static boolean anyLargerThan(int[] arrs, int check) { return ArrayMathUtils.anyLargerThan(arrs, check); }
 
-        return false;
-    }
-
-
-    /**
-     *
-     * @param arrs
-     * @param check
-     * @return
-     */
-    public static boolean anyLessThan(int[] arrs, int check) {
-        for(int i = 0; i < arrs.length; i++) {
-            if(arrs[i] < check)
-                return true;
-        }
-
-        return false;
-    }
+    /** @deprecated Use {@link ArrayMathUtils#anyLessThan(int[], int)} instead. */
+    @Deprecated
+    public static boolean anyLessThan(int[] arrs, int check) { return ArrayMathUtils.anyLessThan(arrs, check); }
 
 
     /**
@@ -2853,32 +2836,21 @@ public class ArrayUtil {
         return nums;
     }
 
-    public static double[] toDouble(boolean[] data) {
-        double[] ret = new double[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = data[i] ? 1.0 : 0.0;
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDouble(boolean[])} instead. */
+    @Deprecated
+    public static double[] toDouble(boolean[] data) { return ArrayTypeConverters.toDouble(data); }
 
-    public static double[] toDouble(byte[] data) {
-        double[] ret = new double[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = data[i];
-        return ret;
-    }
-    public static double[] toDouble(int[] data) {
-        double[] ret = new double[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = data[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDouble(byte[])} instead. */
+    @Deprecated
+    public static double[] toDouble(byte[] data) { return ArrayTypeConverters.toDouble(data); }
 
-    public static double[] toDouble(long[] data) {
-        double[] ret = new double[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = data[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDouble(int[])} instead. */
+    @Deprecated
+    public static double[] toDouble(int[] data) { return ArrayTypeConverters.toDouble(data); }
+
+    /** @deprecated Use {@link ArrayTypeConverters#toDouble(long[])} instead. */
+    @Deprecated
+    public static double[] toDouble(long[] data) { return ArrayTypeConverters.toDouble(data); }
 
     public static float[] copy(float[] data) {
         float[] result = new float[data.length];
@@ -3284,297 +3256,122 @@ public class ArrayUtil {
      * Convert an int
      * @param bool
      * @return
+     * @deprecated Use {@link ArrayTypeConverters#fromBoolean(boolean)} instead.
      */
-    public static int fromBoolean(boolean bool) {
-        return bool ? 1 : 0;
-    }
+    @Deprecated
+    public static int fromBoolean(boolean bool) { return ArrayTypeConverters.fromBoolean(bool); }
 
-    public static long[] toPrimitives(Long[] array) {
-        val res = new long[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Long[])} instead. */
+    @Deprecated
+    public static long[] toPrimitives(Long[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Integer[])} instead. */
+    @Deprecated
+    public static int[] toPrimitives(Integer[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static int[] toPrimitives(Integer[] array) {
-        val res = new int[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Short[])} instead. */
+    @Deprecated
+    public static short[] toPrimitives(Short[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Byte[])} instead. */
+    @Deprecated
+    public static byte[] toPrimitives(Byte[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static short[] toPrimitives(Short[] array) {
-        val res = new short[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Float[])} instead. */
+    @Deprecated
+    public static float[] toPrimitives(Float[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Double[])} instead. */
+    @Deprecated
+    public static double[] toPrimitives(Double[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static byte[] toPrimitives(Byte[] array) {
-        val res = new byte[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Boolean[])} instead. */
+    @Deprecated
+    public static boolean[] toPrimitives(Boolean[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Long[][])} instead. */
+    @Deprecated
+    public static long[][] toPrimitives(Long[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static float[] toPrimitives(Float[] array) {
-        val res = new float[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Integer[][])} instead. */
+    @Deprecated
+    public static int[][] toPrimitives(Integer[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Short[][])} instead. */
+    @Deprecated
+    public static short[][] toPrimitives(Short[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static double[] toPrimitives(Double[] array) {
-        val res = new double[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Byte[][])} instead. */
+    @Deprecated
+    public static byte[][] toPrimitives(Byte[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Double[][])} instead. */
+    @Deprecated
+    public static double[][] toPrimitives(Double[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static boolean[] toPrimitives(Boolean[] array) {
-        val res = new boolean[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Float[][])} instead. */
+    @Deprecated
+    public static float[][] toPrimitives(Float[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Boolean[][])} instead. */
+    @Deprecated
+    public static boolean[][] toPrimitives(Boolean[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static long[][] toPrimitives(Long[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new long[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Long[][][])} instead. */
+    @Deprecated
+    public static long[][][] toPrimitives(Long[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Integer[][][])} instead. */
+    @Deprecated
+    public static int[][][] toPrimitives(Integer[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static int[][] toPrimitives(Integer[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new int[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Short[][][])} instead. */
+    @Deprecated
+    public static short[][][] toPrimitives(Short[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Byte[][][])} instead. */
+    @Deprecated
+    public static byte[][][] toPrimitives(Byte[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static short[][] toPrimitives(Short[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new short[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Double[][][])} instead. */
+    @Deprecated
+    public static double[][][] toPrimitives(Double[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Float[][][])} instead. */
+    @Deprecated
+    public static float[][][] toPrimitives(Float[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static byte[][] toPrimitives(Byte[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new byte[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Boolean[][][])} instead. */
+    @Deprecated
+    public static boolean[][][] toPrimitives(Boolean[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Long[][][][])} instead. */
+    @Deprecated
+    public static long[][][][] toPrimitives(Long[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static double[][] toPrimitives(Double[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new double[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Integer[][][][])} instead. */
+    @Deprecated
+    public static int[][][][] toPrimitives(Integer[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Short[][][][])} instead. */
+    @Deprecated
+    public static short[][][][] toPrimitives(Short[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static float[][] toPrimitives(Float[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new float[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Byte[][][][])} instead. */
+    @Deprecated
+    public static byte[][][][] toPrimitives(Byte[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Double[][][][])} instead. */
+    @Deprecated
+    public static double[][][][] toPrimitives(Double[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static boolean [][] toPrimitives(Boolean[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new boolean[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Float[][][][])} instead. */
+    @Deprecated
+    public static float[][][][] toPrimitives(Float[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
-
-    public static long[][][] toPrimitives(Long[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new long[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static int[][][] toPrimitives(Integer[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new int[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static short[][][] toPrimitives(Short[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new short[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static byte[][][] toPrimitives(Byte[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new byte[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static double[][][] toPrimitives(Double[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new double[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static float[][][] toPrimitives(Float[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new float[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static boolean[][][] toPrimitives(Boolean[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new boolean[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static long[][][][] toPrimitives(Long[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new long[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static int[][][][] toPrimitives(Integer[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new int[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static short[][][][] toPrimitives(Short[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new short[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static byte[][][][] toPrimitives(Byte[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new byte[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static double[][][][] toPrimitives(Double[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new double[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static float[][][][] toPrimitives(Float[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new float[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static boolean[][][][] toPrimitives(Boolean[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new boolean[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Boolean[][][][])} instead. */
+    @Deprecated
+    public static boolean[][][][] toPrimitives(Boolean[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
 
     /**
@@ -3748,39 +3545,19 @@ public class ArrayUtil {
         return ret;
     }
 
-    public static int[] toInt(short[] v) {
-        int[] ret = new int[v.length];
-        for(int i = 0; i < v.length; i++) {
-            ret[i] = v[i];
-        }
+    /** @deprecated Use {@link ArrayTypeConverters#toInt(short[])} instead. */
+    @Deprecated
+    public static int[] toInt(short[] v) { return ArrayTypeConverters.toInt(v); }
 
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toInt(byte[])} instead. */
+    @Deprecated
+    public static int[] toInt(byte[] v) { return ArrayTypeConverters.toInt(v); }
 
-    public static int[] toInt(byte[] v) {
-        int[] ret = new int[v.length];
-        for(int i = 0; i < v.length; i++) {
-            ret[i] = v[i];
-        }
+    /** @deprecated Use {@link ArrayTypeConverters#toInt(char[])} instead. */
+    @Deprecated
+    public static int[] toInt(char[] v) { return ArrayTypeConverters.toInt(v); }
 
-        return ret;
-    }
-
-    public static int[] toInt(char[] v) {
-        int[] ret = new int[v.length];
-        for(int i = 0; i < v.length; i++) {
-            ret[i] = v[i];
-        }
-
-        return ret;
-    }
-
-    public static double[] toDouble(float[] v) {
-        double[] ret = new double[v.length];
-        for(int i = 0; i < v.length; i++) {
-            ret[i] = v[i];
-        }
-
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDouble(float[])} instead. */
+    @Deprecated
+    public static double[] toDouble(float[] v) { return ArrayTypeConverters.toDouble(v); }
 }

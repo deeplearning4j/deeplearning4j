@@ -77,7 +77,7 @@ public class RandomStandardNormal extends DynamicCustomOp {
     @Override
     public Object[] getExtraArgs() {
         // FIXME: why the hell we need this?
-        return new Object[] {new Double(0.0), new Double(1.0)};
+        return new Object[] {0.0, 1.0};
     }
 
     @Override

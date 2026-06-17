@@ -1696,9 +1696,6 @@ public abstract class AbstractSession<T, O> {
 
 
     /**
-     *  Get variable dependencies including transformations
-     */
-    /**
      * Get variable dependencies. Delegates to {@link SessionExecutionDiagnostics}.
      */
     private String[] getVariableDependencies(String varName) {
@@ -1955,8 +1952,6 @@ public abstract class AbstractSession<T, O> {
         return null;
     }
 
-    ;
-
     /**
      * Used in getting the next ExecStep that matches the specified (current)
      * frame/iteration
@@ -1993,6 +1988,4 @@ public abstract class AbstractSession<T, O> {
             return frameMatches && iterationMatches && parentFrameMatches;
         }
     }
-
-    ;
 }

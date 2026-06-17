@@ -22,6 +22,7 @@ package org.nd4j.ir;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.common.config.ND4JClassLoading;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.shade.protobuf.TextFormat;
 
@@ -43,7 +44,7 @@ public class OpDescriptorHolder {
     private static final Logger log = LoggerFactory.getLogger(OpDescriptorHolder.class);
 
     public static String  nd4jFileNameTextDefault = "/nd4j-op-def.pbtxt";
-    public static String nd4jFileSpecifierProperty = "samediff.import.nd4jdescriptors";
+    public static String nd4jFileSpecifierProperty = ND4JSystemProperties.SAMEDIFF_IMPORT_ND4J_DESCRIPTORS;
     public static OpNamespace.OpDescriptorList INSTANCE;
     private static Map<String, OpNamespace.OpDescriptor> opDescriptorByName;
 
