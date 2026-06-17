@@ -29,7 +29,9 @@
 #include <memory/Workspace.h>
 #include <system/common.h>
 #include <system/op_boilerplate.h>
+#include <system/PointerValidation.h>
 
+#include <climits>
 #include <cstring>
 #include <mutex>
 #include <unordered_map>
@@ -37,117 +39,59 @@
 namespace sd {
 
 #ifndef __JAVACPP_HACK__
-/**
- * Thread-local flag indicating graph execution/capture is in progress.
- * When true, syncToPrimary() skips D2H transfers -- data must stay
- * on the compute device during graph execution. Applies to all graph
- * backends: CUDA Graphs (capture/replay), oneDNN Graph, and ACL
- * Dynamic Fusion. Set by NativeDynamicShapePlan around graph segment
- * execution, cleared when execution completes or is aborted.
- */
-extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
 
+struct DataBufferThreadState {
+  bool graphExecutionActive = false;
+  std::vector<void*> capturedHostPtrs;
+  std::unordered_map<uint64_t, void*> captureReplicateCache;
+  void* captureWorkspace = nullptr;
+  size_t captureWorkspaceSize = 0;
+  size_t captureWorkspaceOffset = 0;
+  void* captureHostWorkspace = nullptr;
+  size_t captureHostWorkspaceSize = 0;
+  size_t captureHostWorkspaceOffset = 0;
+  void* cublasWorkspacePtr = nullptr;
+  size_t cublasWorkspaceSize = 0;
+  long long dspAllocBytes = 0;
+  long long dspFreeBytes = 0;
+  int dspAllocCount = 0;
+  int dspFreeCount = 0;
+  int dspFreeSkipCount = 0;
 #ifdef SD_CUDA
-/**
- * Set during DSP composite replay gap-slot execution. Suppresses post-op
- * cudaStreamSynchronize calls in PointersManager, cuDNN ops, etc.
- * Unlike tl_graphExecutionActive, this does NOT affect allocation or
- * memory freeing behavior — it only signals that all work is on a single
- * unified stream (tl_dspGapStream) where FIFO ordering makes per-op
- * syncs redundant.
- */
-extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
-
-/**
- * Captured CUDA stream for the current graph capture session.
- * Some capture-safe paths must enqueue work on the exact captured stream;
- * using a different stream can invalidate capture.
- */
-extern SD_TLS_EXPORT thread_local cudaStream_t tl_graphCaptureStream;
+  bool dspReplayActive = false;
+  bool cublasLtDisabled = false;
+  cudaStream_t graphCaptureStream = nullptr;
+  cudaStream_t dspExecutionStream = nullptr;
+  int islandSlotMin = INT_MAX;
+  int islandSlotMax = INT_MIN;
 #endif
+};
 
-/**
- * Thread-local accumulator for pinned host buffers allocated during CUDA graph capture.
- * PointersManager::replicatePointer copies host data to persistent pinned memory
- * during capture so graph replay reads from valid addresses.
- * After capture, these are transferred to CudaGraphHandle for lifetime management.
- */
-extern SD_TLS_EXPORT thread_local std::vector<void*> tl_capturedHostPtrs;
-/**
- * Thread-local cache for PointersManager H2D copies during CUDA graph capture.
- * Maps {content_hash ^ size} -> device pointer. When the same data is uploaded
- * multiple times during capture (e.g., dimension arrays [0,1] used by many ops),
- * the cached device pointer is returned without creating a redundant memcpy node.
- * Cleared at the start of each capture.
- */
-extern SD_TLS_EXPORT thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
+extern SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
 
-/**
- * Capture workspace: pre-allocated GPU buffer used during CUDA graph capture
- * to eliminate cudaMallocAsync/cudaFreeAsync nodes from the captured graph.
- * CudaMemoryPool::allocate uses bump allocation from this workspace instead of
- * cudaMallocAsync when tl_graphExecutionActive && tl_captureWorkspace != nullptr.
- * CudaMemoryPool::free becomes a no-op for addresses within this workspace.
- * The workspace buffer persists for graph lifetime (stored on GraphSegment).
- */
-extern SD_TLS_EXPORT thread_local void* tl_captureWorkspace;
-extern SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize;
-extern SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset;
-
-/**
- * Capture host workspace: pre-allocated PINNED HOST buffer used during CUDA
- * graph capture as H2D memcpy source. DataBuffer::syncToSpecial and
- * PointersManager bump-allocate from this workspace instead of using
- * _primaryBuffer directly. Temporary host arrays (axis/dimension params for
- * gap ops) get freed after the op completes, but the graph's H2D node bakes
- * the source address — reading freed memory on replay causes SIGSEGV.
- * The pinned workspace persists for the graph's lifetime via tl_capturedHostPtrs.
- */
-extern SD_TLS_EXPORT thread_local void* tl_captureHostWorkspace;
-extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceSize;
-extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceOffset;
-
-/**
- * cuBLAS workspace buffer and size for graph capture.
- * Set by NativeDynamicShapePlan::setCublasWorkspaceForCapture().
- * Read by MmulHelper after cublasSetStream resets workspace.
- * (cublasSetStream resets user-provided workspace per cuBLAS docs.)
- */
-extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
-extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
-
-
-/**
- * Per-step GPU allocation/free tracking for leak diagnosis.
- * Reset at segment entry, logged at segment exit via DSP_DIAG.
- */
-extern SD_TLS_EXPORT thread_local long long tl_dspAllocBytes;
-extern SD_TLS_EXPORT thread_local long long tl_dspFreeBytes;
-extern SD_TLS_EXPORT thread_local int tl_dspAllocCount;
-extern SD_TLS_EXPORT thread_local int tl_dspFreeCount;
-extern SD_TLS_EXPORT thread_local int tl_dspFreeSkipCount;
-
+#define tl_graphExecutionActive   tl_dataBufferState.graphExecutionActive
+#define tl_capturedHostPtrs       tl_dataBufferState.capturedHostPtrs
+#define tl_captureReplicateCache  tl_dataBufferState.captureReplicateCache
+#define tl_captureWorkspace       tl_dataBufferState.captureWorkspace
+#define tl_captureWorkspaceSize   tl_dataBufferState.captureWorkspaceSize
+#define tl_captureWorkspaceOffset tl_dataBufferState.captureWorkspaceOffset
+#define tl_captureHostWorkspace       tl_dataBufferState.captureHostWorkspace
+#define tl_captureHostWorkspaceSize   tl_dataBufferState.captureHostWorkspaceSize
+#define tl_captureHostWorkspaceOffset tl_dataBufferState.captureHostWorkspaceOffset
+#define tl_cublasWorkspacePtr     tl_dataBufferState.cublasWorkspacePtr
+#define tl_cublasWorkspaceSize    tl_dataBufferState.cublasWorkspaceSize
+#define tl_dspAllocBytes          tl_dataBufferState.dspAllocBytes
+#define tl_dspFreeBytes           tl_dataBufferState.dspFreeBytes
+#define tl_dspAllocCount          tl_dataBufferState.dspAllocCount
+#define tl_dspFreeCount           tl_dataBufferState.dspFreeCount
+#define tl_dspFreeSkipCount       tl_dataBufferState.dspFreeSkipCount
 #ifdef SD_CUDA
-/**
- * DSP execution stream override for syncToSpecial().
- * When set, syncToSpecial uses this stream instead of stream 0 and skips
- * per-call cudaStreamSynchronize (caller guarantees ordering via same-stream
- * graph launch). Set/unset by DSP replay path around ext input sync loops.
- */
-extern SD_TLS_EXPORT thread_local cudaStream_t tl_dspExecutionStream;
-
-/**
- * Per-island slot range filter for composite CUDA graph capture.
- * When tl_islandSlotMin <= tl_islandSlotMax, TritonGraphBackend::executeSegment
- * skips sub-kernels whose slot range falls entirely outside [tl_islandSlotMin,
- * tl_islandSlotMax]. This allows capturing a single Triton island from a
- * composite (mixed Triton/gap) segment without capturing other islands.
- * When tl_islandSlotMin > tl_islandSlotMax, no filtering is applied.
- * Set by the per-island capture loop in NativeDynamicShapePlan_gpubackend.cpp,
- * cleared after each island's capture completes.
- */
-extern SD_TLS_EXPORT thread_local int tl_islandSlotMin;
-extern SD_TLS_EXPORT thread_local int tl_islandSlotMax;
+#define tl_dspReplayActive        tl_dataBufferState.dspReplayActive
+#define tl_cublasLtDisabled       tl_dataBufferState.cublasLtDisabled
+#define tl_graphCaptureStream     tl_dataBufferState.graphCaptureStream
+#define tl_dspExecutionStream     tl_dataBufferState.dspExecutionStream
+#define tl_islandSlotMin          tl_dataBufferState.islandSlotMin
+#define tl_islandSlotMax          tl_dataBufferState.islandSlotMax
 #endif
 #endif  // __JAVACPP_HACK__
 
@@ -157,12 +101,12 @@ class SD_LIB_EXPORT DataBuffer {
   // Set in constructor, cleared in destructor, checked before use
   // Helps detect use-after-free and corrupted pointers
   static constexpr uint32_t MAGIC_NUMBER = 0xDA7ABF01;  // "DA7ABF01" (DataBuffer v01)
-  uint32_t _magicNumber = MAGIC_NUMBER;
 
-  // Padding added beyond the requested allocation size when not using a workspace.
-  // The extra bytes are filled with canary values (0xDEADBEEFCAFEBABE) so that
-  // buffer overruns can be detected in deletePrimary() before calling free().
+  // Padding appended to non-workspace host allocations to absorb minor buffer overruns.
+  // The padding region is filled with canary values (0xDEADBEEFCAFEBABE) so that
+  // deletePrimary() can detect overruns before calling free().
   static constexpr sd::LongType HOST_ALLOC_PADDING = 65536;
+  uint32_t _magicNumber = MAGIC_NUMBER;
 
   void *_primaryBuffer = nullptr;
   void *_specialBuffer = nullptr;
@@ -326,7 +270,7 @@ class SD_LIB_EXPORT DataBuffer {
    * This is useful for detecting use-after-free and preventing double-free.
    * @return true if the buffer has been destroyed, false if it's still valid
    */
-  bool isDestroyed() const { return _magicNumber == 0xDEADBEEF; }
+  bool isDestroyed() const { return _magicNumber == MAGIC_DESTROYED; }
 
   /**
    * Check if this DataBuffer is valid (not destroyed and has correct magic number).
@@ -452,27 +396,7 @@ class SD_LIB_EXPORT DataBuffer {
   void printBufferDebug(const char* msg = nullptr, sd::LongType offset = 0, sd::LongType limit = 10);
 #endif
 
-  // Padded operator new/delete to protect adjacent glibc chunks from
-  // overruns on nearby allocations. DataBuffer objects are ~200 bytes on
-  // the heap with zero padding — any adjacent overrun corrupts the next
-  // chunk metadata → SIGABRT on free(). Adding 4KB padding keeps the
-  // next chunk's header safely out of reach.
-  static void* operator new(size_t size) {
-    return std::malloc(size + 4096);
-  }
-#ifndef __JAVACPP_HACK__
-  static void* operator new(size_t size, const std::nothrow_t&) noexcept {
-    return std::malloc(size + 4096);
-  }
-#endif
-  static void operator delete(void* ptr) noexcept {
-    std::free(ptr);
-  }
-#ifndef __JAVACPP_HACK__
-  static void operator delete(void* ptr, const std::nothrow_t&) noexcept {
-    std::free(ptr);
-  }
-#endif
+  SD_PADDED_NEW_DELETE
 };
 ///// IMPLEMENTATION OF INLINE METHODS /////
 

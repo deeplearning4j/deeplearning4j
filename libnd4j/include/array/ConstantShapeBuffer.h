@@ -27,6 +27,7 @@
 
 #include <array/PointerWrapper.h>
 #include <system/common.h>
+#include <system/PointerValidation.h>
 
 #include <atomic>
 #include <memory>
@@ -55,26 +56,7 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   ConstantShapeBuffer();
   ~ConstantShapeBuffer();
 
-  // Padded operator new/delete to protect adjacent glibc chunks from
-  // overruns. ConstantShapeBuffer objects are small (~48 bytes) and
-  // heavily allocated during shape trie population — any adjacent
-  // overrun corrupts the next chunk metadata → SIGABRT on free().
-  static void* operator new(size_t size) {
-    return std::malloc(size + 4096);
-  }
-#ifndef __JAVACPP_HACK__
-  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
-    return std::malloc(size + 4096);
-  }
-#endif
-  static void operator delete(void* ptr) noexcept {
-    std::free(ptr);
-  }
-#ifndef __JAVACPP_HACK__
-  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
-    std::free(ptr);
-  }
-#endif
+  SD_PADDED_NEW_DELETE
 
   // =========================================================================
   // COPY PREVENTION

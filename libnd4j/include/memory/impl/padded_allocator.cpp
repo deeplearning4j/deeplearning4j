@@ -37,9 +37,7 @@
 
 #include <cstdlib>
 #include <new>
-
-// 4KB padding — enough to absorb any realistic op overrun
-static constexpr size_t GLOBAL_NEW_PADDING = 4096;
+#include <system/common.h>
 
 #if defined(__ANDROID__) || defined(__APPLE__) || defined(_MSC_VER) || defined(_WIN32)
 #define SD_ALLOC_VIS
@@ -49,26 +47,26 @@ static constexpr size_t GLOBAL_NEW_PADDING = 4096;
 
 SD_ALLOC_VIS
 void* operator new(size_t size) {
-  void* p = std::malloc(size + GLOBAL_NEW_PADDING);
+  void* p = std::malloc(size + SD_ALLOC_PADDING);
   if (!p) throw std::bad_alloc();
   return p;
 }
 
 SD_ALLOC_VIS
 void* operator new[](size_t size) {
-  void* p = std::malloc(size + GLOBAL_NEW_PADDING);
+  void* p = std::malloc(size + SD_ALLOC_PADDING);
   if (!p) throw std::bad_alloc();
   return p;
 }
 
 SD_ALLOC_VIS
 void* operator new(size_t size, const std::nothrow_t&) noexcept {
-  return std::malloc(size + GLOBAL_NEW_PADDING);
+  return std::malloc(size + SD_ALLOC_PADDING);
 }
 
 SD_ALLOC_VIS
 void* operator new[](size_t size, const std::nothrow_t&) noexcept {
-  return std::malloc(size + GLOBAL_NEW_PADDING);
+  return std::malloc(size + SD_ALLOC_PADDING);
 }
 
 SD_ALLOC_VIS

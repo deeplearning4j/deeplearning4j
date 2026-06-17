@@ -23,8 +23,6 @@
 #include <array/DataType.h>
 #include <array/DataTypeValidation.h>
 
-#include <system/op_enums.h>
-
 #include <sstream>
 
 #include "system/op_boilerplate.h"

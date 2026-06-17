@@ -26,6 +26,7 @@
 #include <array/DataType.h>
 #include <helpers/shape.h>
 #include <system/common.h>
+#include <system/PointerValidation.h>
 
 #include <cstdlib>
 #include <initializer_list>
@@ -260,23 +261,7 @@ class SD_LIB_EXPORT ShapeDescriptor {
   }
   bool isScalar() const;
 
-  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
-  static void* operator new(size_t size) {
-    return std::malloc(size + 4096);
-  }
-#ifndef __JAVACPP_HACK__
-  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
-    return std::malloc(size + 4096);
-  }
-#endif
-  static void operator delete(void* ptr) noexcept {
-    std::free(ptr);
-  }
-#ifndef __JAVACPP_HACK__
-  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
-    std::free(ptr);
-  }
-#endif
+  SD_PADDED_NEW_DELETE
 
   SD_INLINE void fillStrides() {
     if(_rank == 0) {

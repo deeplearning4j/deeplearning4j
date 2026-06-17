@@ -25,7 +25,9 @@
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
+#include <system/CanaryConstants.h>
 #include <system/Environment.h>
+#include <system/PointerValidation.h>
 #include <system/env_functions.h>
 #include <sstream>
 
@@ -540,9 +542,9 @@ void DataBuffer::validateIntegrity() const {
   if (_workspace == nullptr && _lenInBytes > 0 && _primaryBuffer != nullptr && _primaryAllocBytes > _lenInBytes) {
     const uint64_t* canary = reinterpret_cast<const uint64_t*>(
         static_cast<const int8_t*>(_primaryBuffer) + _lenInBytes);
-    size_t numCanaries = (HOST_ALLOC_PADDING / sizeof(uint64_t));
+    size_t numCanaries = (static_cast<size_t>(HOST_ALLOC_PADDING) / sizeof(uint64_t));
     for (size_t i = 0; i < numCanaries; i++) {
-      if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
+      if (canary[i] != sd::CanaryConstants::DATA_BUFFER_CANARY) {
         std::stringstream ss;
         ss << "DataBuffer integrity check FAILED - BUFFER OVERRUN DETECTED!\n";
         ss << "  Canary value at offset " << (i * sizeof(uint64_t)) << " is corrupted\n";
@@ -645,7 +647,7 @@ void DataBuffer::allocatePrimary() {
     // Add padding for non-workspace heap allocations. C++ ops can overrun output
     // buffers by a few bytes, corrupting adjacent glibc malloc chunk headers.
     // Workspace allocations use bump allocation where overruns are harmless.
-    size_t allocSize = getLenInBytes() + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
+    size_t allocSize = getLenInBytes() + (_workspace == nullptr ? static_cast<size_t>(HOST_ALLOC_PADDING) : 0);
     ALLOCATE(_primaryBuffer, _workspace, allocSize, int8_t);
     _isOwnerPrimary = true;
     _primaryAllocBytes = allocSize;
@@ -654,8 +656,8 @@ void DataBuffer::allocatePrimary() {
     if (_workspace == nullptr && _primaryBuffer != nullptr) {
       uint64_t* canary = reinterpret_cast<uint64_t*>(
           static_cast<int8_t*>(_primaryBuffer) + getLenInBytes());
-      for (size_t i = 0; i < (HOST_ALLOC_PADDING / sizeof(uint64_t)); i++) {
-        canary[i] = 0xDEADBEEFCAFEBABEULL;
+      for (size_t i = 0; i < (static_cast<size_t>(HOST_ALLOC_PADDING) / sizeof(uint64_t)); i++) {
+        canary[i] = sd::CanaryConstants::DATA_BUFFER_CANARY;
       }
     }
 
@@ -702,7 +704,7 @@ void DataBuffer::deletePrimary() {
       size_t canaryCount = paddingBytes / sizeof(uint64_t);
       size_t checkCount = (canaryCount > 16) ? 16 : canaryCount;  // check first 128 bytes
       for (size_t i = 0; i < checkCount; i++) {
-        if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
+        if (canary[i] != sd::CanaryConstants::DATA_BUFFER_CANARY) {
           canaryCorrupted = true;
           if (sd::Environment::getInstance().isDebug()) {
             fprintf(stderr, "\n!!! CANARY CORRUPTED in deletePrimary — LEAKING BUFFER TO PREVENT CRASH !!!\n");
@@ -805,7 +807,7 @@ void DataBuffer::deleteBuffers() {
 DataBuffer::~DataBuffer() {
   // Clear magic number to detect use-after-free
   // If anyone tries to use this buffer after destruction, validateIntegrity() will catch it
-  _magicNumber = 0xDEADBEEF;
+  _magicNumber = MAGIC_DESTROYED;
   deleteBuffers();
 }
 

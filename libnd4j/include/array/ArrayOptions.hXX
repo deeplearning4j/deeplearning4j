@@ -25,8 +25,7 @@ SD_HOST  SD_INLINE sd::LongType ArrayOptions::extraIndex(sd::LongType *shapeInfo
   if(rank == 0)
     idx = 3;
   else
-    // FIXME magic numbers
-    idx = rank + rank + 1;
+    idx = SD_SHAPE_INFO_EXTRA_IDX(rank);
 
   return idx;
 }
