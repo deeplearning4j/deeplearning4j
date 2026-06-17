@@ -846,7 +846,7 @@ void Context::setTArguments(double *arguments, int numberOfArguments) {
   _tArgs.clear();
   _tArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _tArgs.push_back(arguments[e]);
-  if(sd::env_isDebug() || sd::env_isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("float values set in context: ");
     for (auto d : _bArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -859,7 +859,7 @@ void Context::setIArguments(LongType *arguments, int numberOfArguments) {
   _iArgs.clear();
   _iArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _iArgs.push_back(arguments[e]);
-  if(sd::env_isDebug() || sd::env_isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("int arguments set in context: ");
     for (auto d : _bArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -872,7 +872,7 @@ void Context::setBArguments(bool *arguments, int numberOfArguments) {
   _bArgs.clear();
   _bArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _bArgs.push_back(arguments[e]);
-  if(sd::env_isDebug() || sd::env_isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("boolean types set in context: ");
     for (auto d : _bArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -901,7 +901,7 @@ bool Context::helpersAllowed() { return _helpersAllowed; }
 void Context::setTArguments(const std::vector<double> &tArgs) {
   _tArgs.clear();
   for (auto t : tArgs) _tArgs.emplace_back(t);
-  if(sd::env_isDebug() || sd::env_isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("t argument types set in context: ");
     for (auto d : _bArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -913,7 +913,7 @@ void Context::setTArguments(const std::vector<double> &tArgs) {
 void Context::setIArguments(const std::vector<LongType> &iArgs) {
   _iArgs.clear();
   for (auto i : iArgs) _iArgs.emplace_back(i);
-  if(sd::env_isDebug() || sd::env_isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("int argument types set in context: ");
     for (auto d : iArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -925,7 +925,7 @@ void Context::setIArguments(const std::vector<LongType> &iArgs) {
 void Context::setBArguments(const std::vector<bool> &bArgs) {
   _bArgs.clear();
   for (auto b : bArgs) _bArgs.push_back(b);
-  if(sd::env_isDebug() || sd::env_isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("boolean types set in context: ");
     for (auto d : _bArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -949,7 +949,7 @@ bool Context::isInference() { return _execMode == samediff::ExecutionMode::MODE_
 void Context::setDArguments(DataType *arguments, int numberOfArguments) {
   _dArgs.clear();
   for (int e = 0; e < numberOfArguments; e++) _dArgs.emplace_back(arguments[e]);
-  if(sd::env_isDebug() || sd::env_isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("data types set in context: ");
     for (auto d : _dArgs) {
       printf("%s\n, ", DataTypeUtils::asString(d).c_str());
@@ -961,7 +961,7 @@ void Context::setDArguments(DataType *arguments, int numberOfArguments) {
 void Context::setDArguments(const std::vector<DataType> &dArgs) {
   _dArgs.clear();
   for (auto d : dArgs) _dArgs.emplace_back(d);
-  if(sd::env_isDebug() || sd::env_isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("data types set in context: ");
     for (auto d : dArgs) {
       printf("%s\n, ", DataTypeUtils::asString(d).c_str());

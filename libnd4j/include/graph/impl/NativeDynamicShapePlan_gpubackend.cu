@@ -4775,7 +4775,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             cudaGetLastError(); // Clear any error from dot print
           }
           // Write stats to a file for diagnostic inspection
-          if (sd::Environment::getInstance().isVerbose()) {
+          if (sd::Environment::getInstance().isDebug()) {
             std::string statsDir;
             {
               const std::string& dd = Environment::getInstance().tritonDumpDir();

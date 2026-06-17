@@ -7807,7 +7807,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     std::string ttirDump;
     llvm::raw_string_ostream os(ttirDump);
     moduleOp.print(os);
-    sd_debug("TritonIRBuilder: built sectioned module '%s' with %d sections, %d ops, "
+    DSP_DIAG(COMPILE, "TritonIRBuilder: built sectioned module '%s' with %d sections, %d ops, "
               "%d input args, %d output args, maxGrid=%d, cooperative=%s, multiPhase=%s(%d phases)\nTTIR:\n%s\n",
               result.kernelName.c_str(), static_cast<int>(sections.size()),
               segSize, static_cast<int>(inputArgs.size()),

@@ -173,7 +173,7 @@ int executeDynamicShapePlan(
       }
 
       // DIAGNOSTIC: Dump raw bytes and INT64 values for INT64 inputs (to find source of negative gather indices)
-      if (sd::Environment::getInstance().isDebug() && inputPtrs[i]->dataType() == sd::DataType::INT64 && db != nullptr) {
+      if (inputPtrs[i]->dataType() == sd::DataType::INT64 && db != nullptr) {
         void* primary = db->primary();
         sd::LongType len = inputPtrs[i]->lengthOf();
         if (primary != nullptr && len > 0 && len <= 32) {
