@@ -128,14 +128,6 @@ public class PotentialLeak {
      * Format bytes to human-readable string
      */
     private String formatBytes(long bytes) {
-        if (bytes < 1024) {
-            return bytes + " B";
-        } else if (bytes < 1024 * 1024) {
-            return String.format("%.1f KB", bytes / 1024.0);
-        } else if (bytes < 1024 * 1024 * 1024) {
-            return String.format("%.1f MB", bytes / (1024.0 * 1024.0));
-        } else {
-            return String.format("%.1f GB", bytes / (1024.0 * 1024.0 * 1024.0));
-        }
+        return org.nd4j.common.util.ND4JFileUtils.formatBytes(bytes);
     }
 }

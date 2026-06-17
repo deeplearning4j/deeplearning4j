@@ -50,6 +50,24 @@ public class ND4JFileUtils {
     }
 
     /**
+     * Format a byte count as a human-readable string (e.g. "1.5 MB", "3.20 GB").
+     * Uses binary units (1 KB = 1024 bytes).
+     * @param bytes The number of bytes
+     * @return Human-readable string
+     */
+    public static String formatBytes(long bytes) {
+        if (bytes < 1024) {
+            return bytes + " B";
+        } else if (bytes < 1024 * 1024) {
+            return String.format("%.1f KB", bytes / 1024.0);
+        } else if (bytes < 1024L * 1024 * 1024) {
+            return String.format("%.1f MB", bytes / (1024.0 * 1024));
+        } else {
+            return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
+        }
+    }
+
+    /**
      * Get the temporary directory. This is the location specified by {@link ND4JSystemProperties#ND4J_TEMP_DIR_PROPERTY} if set,
      * or the default temporary directory (usually specified by java.io.tmpdir system property)
      * @return Temporary directory
