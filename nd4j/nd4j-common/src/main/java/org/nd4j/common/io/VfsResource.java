@@ -78,8 +78,8 @@ public class VfsResource extends AbstractResource {
         if (!relativePath.startsWith(".") && relativePath.contains("/")) {
             try {
                 return new VfsResource(VfsUtils.getChild(this.resource, relativePath));
-            } catch (IOException var3) {
-
+            } catch (IOException ignored) {
+                // Fall through to getRelative path below
             }
         }
 

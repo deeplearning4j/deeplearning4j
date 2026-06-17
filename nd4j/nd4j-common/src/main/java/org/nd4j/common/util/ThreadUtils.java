@@ -27,7 +27,9 @@ public class ThreadUtils {
     public static void uncheckedSleep(long sleepTimeMs){
         try{
             Thread.sleep(sleepTimeMs);
-        } catch (InterruptedException e){ }
+        } catch (InterruptedException e){
+            Thread.currentThread().interrupt();
+        }
     }
 
 }

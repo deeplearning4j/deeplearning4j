@@ -391,7 +391,7 @@ public abstract class StringUtils {
             }
 
             String[] pathArray = delimitedListToStringArray(pathToUse, "/");
-            LinkedList pathElements = new LinkedList();
+            LinkedList<String> pathElements = new LinkedList<>();
             int tops = 0;
 
             int i;
@@ -482,7 +482,7 @@ public abstract class StringUtils {
         } else if (ObjectUtils.isEmpty(array2)) {
             return array1;
         } else {
-            ArrayList result = new ArrayList();
+            ArrayList<String> result = new ArrayList<>();
             result.addAll(Arrays.asList(array1));
             String[] arr$ = array2;
             int len$ = array2.length;
@@ -605,7 +605,7 @@ public abstract class StringUtils {
             return null;
         } else {
             StringTokenizer st = new StringTokenizer(str, delimiters);
-            ArrayList tokens = new ArrayList();
+            ArrayList<String> tokens = new ArrayList<>();
 
             while (st.hasMoreTokens()) {
                 String token = st.nextToken();
@@ -632,7 +632,7 @@ public abstract class StringUtils {
         } else if (delimiter == null) {
             return new String[] {str};
         } else {
-            ArrayList result = new ArrayList();
+            ArrayList<String> result = new ArrayList<>();
             int pos;
             if ("".equals(delimiter)) {
                 for (pos = 0; pos < str.length(); ++pos) {

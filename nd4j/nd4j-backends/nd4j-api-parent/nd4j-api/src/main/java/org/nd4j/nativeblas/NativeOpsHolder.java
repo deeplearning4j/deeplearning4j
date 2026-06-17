@@ -248,8 +248,8 @@ public class NativeOpsHolder {
             }
 
 
-        } catch (java.io.IOException exception) {
-
+        } catch (java.io.IOException ignored) {
+            // VE library extraction is optional — not all platforms have it
         }
 
         if (logInit) {
