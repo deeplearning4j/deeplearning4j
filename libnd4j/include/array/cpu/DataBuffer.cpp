@@ -23,8 +23,9 @@
 #include <array/DataBuffer.h>
 #include <array/DataBufferLifecycleTracker.h>
 #include <array/DataTypeUtils.h>
-#include <types/types.h>
+#include <system/CanaryConstants.h>
 #include <system/type_boilerplate.h>
+#include <types/types.h>
 
 
 namespace sd {
@@ -83,7 +84,7 @@ void DataBuffer::expand(const uint64_t size) {
     if (_workspace == nullptr) {
       uint64_t* canary = reinterpret_cast<uint64_t*>(newBuffer + size);
       for (size_t i = 0; i < (HOST_ALLOC_PADDING / sizeof(uint64_t)); i++) {
-        canary[i] = 0xDEADBEEFCAFEBABEULL;
+        canary[i] = sd::CanaryConstants::DATA_BUFFER_CANARY;
       }
     }
 

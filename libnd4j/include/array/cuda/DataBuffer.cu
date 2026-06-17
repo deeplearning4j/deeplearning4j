@@ -27,6 +27,7 @@
 #include <execution/AffinityManager.h>
 #include <memory/MemoryCounter.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <system/CanaryConstants.h>
 #include <system/Environment.h>
 #include <system/env_functions.h>
 #include <system/op_boilerplate.h>
@@ -347,7 +348,7 @@ void DataBuffer::expand(const uint64_t size) {
       if (_workspace == nullptr) {
         uint64_t* canary = reinterpret_cast<uint64_t*>(newBuffer + size);
         for (size_t i = 0; i < (static_cast<size_t>(HOST_ALLOC_PADDING) / sizeof(uint64_t)); i++) {
-          canary[i] = 0xDEADBEEFCAFEBABEULL;
+          canary[i] = sd::CanaryConstants::DATA_BUFFER_CANARY;
         }
       }
 

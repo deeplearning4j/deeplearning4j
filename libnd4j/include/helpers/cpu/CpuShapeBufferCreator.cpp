@@ -20,6 +20,7 @@
 
 #include <helpers/cpu/CpuShapeBufferCreator.h>
 #include <array/PrimaryPointerDeallocator.h>
+#include <system/CanaryConstants.h>
 #include <mutex>
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -46,9 +47,8 @@ ConstantShapeBuffer* CpuShapeBufferCreator::create(const LongType* shapeInfo, in
     std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
 
     // Write canary stamps in the padding area to detect buffer overruns
-    static constexpr LongType SHAPE_CANARY = static_cast<LongType>(0x5AFE5AFE5AFE5AFELL);
     for (int i = 0; i < 8 && (shapeInfoLength + i) < (shapeInfoLength + SD_SHAPE_ALLOC_PADDING); i++) {
-        shapeCopy[shapeInfoLength + i] = SHAPE_CANARY;
+        shapeCopy[shapeInfoLength + i] = sd::CanaryConstants::SHAPE_BUFFER_CANARY;
     }
 
     // Previously used PointerDeallocator (no-op) which leaked memory

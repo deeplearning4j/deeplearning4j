@@ -20,6 +20,7 @@
 
 #include <helpers/ConstantHelper.h>
 #include <helpers/cuda/CudaShapeBufferCreator.h>
+#include <system/CanaryConstants.h>
 
 #include "array/CudaPointerDeallocator.h"
 #include "array/PrimaryPointerDeallocator.h"
@@ -61,9 +62,8 @@ ConstantShapeBuffer* CudaShapeBufferCreator::create(const LongType* shapeInfo, i
     // canaries are intact, the write came from WITHIN the buffer (pointer
     // mutation or reinterpretation). If the canaries are also corrupted,
     // an adjacent allocation overran into this buffer.
-    static constexpr LongType SHAPE_CANARY = static_cast<LongType>(0x5AFE5AFE5AFE5AFELL);
     for (int i = 0; i < 8 && (shapeInfoLength + i) < (shapeInfoLength + SD_SHAPE_ALLOC_PADDING); i++) {
-        shapeCopy[shapeInfoLength + i] = SHAPE_CANARY;
+        shapeCopy[shapeInfoLength + i] = sd::CanaryConstants::SHAPE_BUFFER_CANARY;
     }
 
     // Verify copy is correct (the rank at index 0 should match)

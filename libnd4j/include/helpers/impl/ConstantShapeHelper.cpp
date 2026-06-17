@@ -23,6 +23,7 @@
 #include <helpers/ShapeBuilders.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/shape.h>
+#include <system/CanaryConstants.h>
 #include <system/Environment.h>
 #include <mutex>
 #include <string>
@@ -130,12 +131,11 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
  if (returnedRank < 0 || returnedRank > SD_MAX_RANK) {
    // Shape data corruption detected. Check canary stamps in the padding area
    // to determine whether this is an adjacent buffer overrun or a pointer mutation.
-   static constexpr LongType SHAPE_CANARY = static_cast<LongType>(0x5AFE5AFE5AFE5AFELL);
    int expectedLen = shape::shapeInfoLength(static_cast<int>(inputRank));
    int canariesIntact = 0;
    int canariesCorrupted = 0;
    for (int i = 0; i < 8; i++) {
-     if (returnedShapeInfo[expectedLen + i] == SHAPE_CANARY) {
+     if (returnedShapeInfo[expectedLen + i] == sd::CanaryConstants::SHAPE_BUFFER_CANARY) {
        canariesIntact++;
      } else {
        canariesCorrupted++;

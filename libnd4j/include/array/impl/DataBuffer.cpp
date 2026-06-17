@@ -25,6 +25,7 @@
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
+#include <system/CanaryConstants.h>
 #include <system/Environment.h>
 #include <system/env_functions.h>
 #include <sstream>
@@ -542,7 +543,7 @@ void DataBuffer::validateIntegrity() const {
         static_cast<const int8_t*>(_primaryBuffer) + _lenInBytes);
     size_t numCanaries = (static_cast<size_t>(HOST_ALLOC_PADDING) / sizeof(uint64_t));
     for (size_t i = 0; i < numCanaries; i++) {
-      if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
+      if (canary[i] != sd::CanaryConstants::DATA_BUFFER_CANARY) {
         std::stringstream ss;
         ss << "DataBuffer integrity check FAILED - BUFFER OVERRUN DETECTED!\n";
         ss << "  Canary value at offset " << (i * sizeof(uint64_t)) << " is corrupted\n";
@@ -655,7 +656,7 @@ void DataBuffer::allocatePrimary() {
       uint64_t* canary = reinterpret_cast<uint64_t*>(
           static_cast<int8_t*>(_primaryBuffer) + getLenInBytes());
       for (size_t i = 0; i < (static_cast<size_t>(HOST_ALLOC_PADDING) / sizeof(uint64_t)); i++) {
-        canary[i] = 0xDEADBEEFCAFEBABEULL;
+        canary[i] = sd::CanaryConstants::DATA_BUFFER_CANARY;
       }
     }
 
@@ -702,7 +703,7 @@ void DataBuffer::deletePrimary() {
       size_t canaryCount = paddingBytes / sizeof(uint64_t);
       size_t checkCount = (canaryCount > 16) ? 16 : canaryCount;  // check first 128 bytes
       for (size_t i = 0; i < checkCount; i++) {
-        if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
+        if (canary[i] != sd::CanaryConstants::DATA_BUFFER_CANARY) {
           canaryCorrupted = true;
           if (sd::Environment::getInstance().isDebug()) {
             fprintf(stderr, "\n!!! CANARY CORRUPTED in deletePrimary — LEAKING BUFFER TO PREVENT CRASH !!!\n");
