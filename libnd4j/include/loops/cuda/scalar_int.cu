@@ -99,7 +99,7 @@ namespace scalar {
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-__device__ void ScalarIntTransform<X>::transformCuda(
+SD_DEVICE void ScalarIntTransform<X>::transformCuda(
     void const* vscalar,
     void const* vy,
     sd::LongType const* yShapeInfo,
@@ -161,7 +161,7 @@ __device__ void ScalarIntTransform<X>::transformCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-__device__ void ScalarIntTransform<X>::transformCuda(
+SD_DEVICE void ScalarIntTransform<X>::transformCuda(
     sd::LongType len,
     void const* vx,
     void const* vy,
@@ -187,7 +187,7 @@ __device__ void ScalarIntTransform<X>::transformCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-__device__ void ScalarIntTransform<X>::transformCuda(
+SD_DEVICE void ScalarIntTransform<X>::transformCuda(
     void const* vx,
     sd::LongType const* xShapeInfo,
     void* vextraParams,
@@ -263,7 +263,7 @@ __device__ void ScalarIntTransform<X>::transformCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-__host__ void ScalarIntTransform<X>::intermediateAlongDimension(
+SD_HOST void ScalarIntTransform<X>::intermediateAlongDimension(
     dim3& launchDims,
     cudaStream_t* stream,
     void const* x,
@@ -301,7 +301,7 @@ __host__ void ScalarIntTransform<X>::intermediateAlongDimension(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-__host__ void ScalarIntTransform<X>::intermediateShaped(
+SD_HOST void ScalarIntTransform<X>::intermediateShaped(
     dim3& launchDims,
     cudaStream_t* stream,
     void const* vx,
@@ -328,7 +328,7 @@ __host__ void ScalarIntTransform<X>::intermediateShaped(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
-__host__ void ScalarIntTransform<X>::executeCudaShaped(
+SD_HOST void ScalarIntTransform<X>::executeCudaShaped(
     dim3& launchDims,
     cudaStream_t* stream,
     int opNum,
@@ -353,7 +353,7 @@ __host__ void ScalarIntTransform<X>::executeCudaShaped(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
-__host__ void ScalarIntTransform<X>::executeCudaAlongDimension(
+SD_HOST void ScalarIntTransform<X>::executeCudaAlongDimension(
     dim3& launchDims,
     cudaStream_t* stream,
     int opNum,

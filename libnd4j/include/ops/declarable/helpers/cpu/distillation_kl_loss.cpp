@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/distillation_kl_loss.h>
 #include <math/templatemath.h>
+#include <system/openmp_pragmas.h>
 #include <cmath>
 #include <algorithm>
 #include <vector>
@@ -64,10 +65,7 @@ void distillationKLLoss(NDArray* studentLogits, NDArray* teacherLogits,
     double klLoss = 0.0;
     double ceLoss = 0.0;
 
-    std::vector<double> studentSoftmax(classes);
-    std::vector<double> teacherLogSoftmax(classes);
-    std::vector<double> teacherSoftmax(classes);
-
+    PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+:klLoss, +:ceLoss)
     for (sd::LongType b = 0; b < batch; b++) {
         // Extract logits for this sample
         std::vector<double> sLogits(classes), tLogits(classes);
@@ -77,6 +75,8 @@ void distillationKLLoss(NDArray* studentLogits, NDArray* teacherLogits,
         }
 
         // KL divergence: KL(P_teacher || P_student) = sum(P_t * (log P_t - log P_s))
+        std::vector<double> teacherSoftmax(classes);
+        std::vector<double> teacherLogSoftmax(classes);
         softmaxWithTemp(tLogits.data(), teacherSoftmax.data(), classes, temperature);
         logSoftmaxWithTemp(tLogits.data(), teacherLogSoftmax.data(), classes, temperature);
 
@@ -119,6 +119,7 @@ void distillationKLLossBp(NDArray* studentLogits, NDArray* teacherLogits,
 
     double scale = 1.0 / batch;
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (sd::LongType b = 0; b < batch; b++) {
         std::vector<double> sLogits(classes), tLogits(classes);
         for (sd::LongType c = 0; c < classes; c++) {

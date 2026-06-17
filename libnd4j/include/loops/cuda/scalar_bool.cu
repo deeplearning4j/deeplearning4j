@@ -184,7 +184,7 @@ namespace scalar {
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-__device__ void ScalarBoolTransform<X,Z>::transformCuda(
+SD_DEVICE void ScalarBoolTransform<X,Z>::transformCuda(
    void const* vscalar,
    void const* vy,
    const sd::LongType* yShapeInfo,
@@ -244,7 +244,7 @@ __device__ void ScalarBoolTransform<X,Z>::transformCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-__host__ void ScalarBoolTransform<X,Z>::intermediateAlongDimension(
+SD_HOST void ScalarBoolTransform<X,Z>::intermediateAlongDimension(
    dim3& launchDims,
    cudaStream_t* stream,
    void const* x,
@@ -281,7 +281,7 @@ __host__ void ScalarBoolTransform<X,Z>::intermediateAlongDimension(
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-__host__ void ScalarBoolTransform<X,Z>::intermediateShaped(
+SD_HOST void ScalarBoolTransform<X,Z>::intermediateShaped(
    dim3& launchDims,
    cudaStream_t* stream,
    void const* vx,
@@ -307,7 +307,7 @@ __host__ void ScalarBoolTransform<X,Z>::intermediateShaped(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-__host__ void ScalarBoolTransform<X, Z>::executeCudaShaped(
+SD_HOST void ScalarBoolTransform<X, Z>::executeCudaShaped(
    dim3& launchDims,
    cudaStream_t* stream,
    int opNum,
@@ -331,7 +331,7 @@ __host__ void ScalarBoolTransform<X, Z>::executeCudaShaped(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-__host__ void ScalarBoolTransform<X, Z>::executeCudaAlongDimension(
+SD_HOST void ScalarBoolTransform<X, Z>::executeCudaAlongDimension(
    dim3& launchDims,
    cudaStream_t* stream,
    int opNum,

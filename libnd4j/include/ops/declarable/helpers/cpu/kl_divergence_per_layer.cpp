@@ -72,13 +72,14 @@ void klDivergencePerLayer(NDArray* referenceLogits,
 
     double totalKL = 0.0;
 
-    std::vector<double> refRow(dim);
-    std::vector<double> quantRow(dim);
-    std::vector<double> logP(dim);
-    std::vector<double> logQ(dim);
-
+    PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+:totalKL)
     for (LongType r = 0; r < numRows; r++) {
         LongType offset = r * dim;
+
+        std::vector<double> refRow(dim);
+        std::vector<double> quantRow(dim);
+        std::vector<double> logP(dim);
+        std::vector<double> logQ(dim);
 
         // Read row from NDArray (handles arbitrary strides)
         for (LongType c = 0; c < dim; c++) {
