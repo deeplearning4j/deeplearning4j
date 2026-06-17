@@ -20,12 +20,8 @@
 
 package org.deeplearning4j.gradientcheck;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.common.function.Consumer;
@@ -96,52 +92,6 @@ public class GradientCheckUtil {
         }
 
         log.info("Done setting clipping");
-    }
-
-    public enum PrintMode {
-        ALL,
-        ZEROS,
-        FAILURES_ONLY
-    }
-
-    @Accessors(fluent = true)
-    @Data
-    @NoArgsConstructor
-    public static class MLNConfig {
-        private MultiLayerNetwork net;
-        private INDArray input;
-        private INDArray labels;
-        private INDArray inputMask;
-        private INDArray labelMask;
-        private double epsilon = 1e-6;
-        private double maxRelError = 1e-3;
-        private double minAbsoluteError = 1e-8;
-        private PrintMode print = PrintMode.ZEROS;
-        private boolean exitOnFirstError = false;
-        private boolean subset;
-        private int maxPerParam;
-        private Set<String> excludeParams;
-        private Consumer<MultiLayerNetwork> callEachIter;
-    }
-
-    @Accessors(fluent = true)
-    @Data
-    @NoArgsConstructor
-    public static class GraphConfig {
-        private ComputationGraph net;
-        private INDArray[] inputs;
-        private INDArray[] labels;
-        private INDArray[] inputMask;
-        private INDArray[] labelMask;
-        private double epsilon = 1e-6;
-        private double maxRelError = 1e-3;
-        private double minAbsoluteError = 1e-8;
-        private PrintMode print = PrintMode.ZEROS;
-        private boolean exitOnFirstError = false;
-        private boolean subset;
-        private int maxPerParam;
-        private Set<String> excludeParams;
-        private Consumer<ComputationGraph> callEachIter;
     }
 
     /**

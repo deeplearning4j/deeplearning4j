@@ -35,8 +35,8 @@ import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2DDerivative;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
@@ -121,24 +121,16 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         INDArray opDepthWiseWeightGradView = depthWiseWeightGradView.permute(2, 3, 1, 0);
         INDArray opPointWiseWeightGradView = pointWiseWeightGradView.permute(2, 3, 1, 0);
 
-        CustomOp op;
+        SConv2DDerivative op = new SConv2DDerivative();
         if(layerConf().hasBias()){
             bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
-
-            op = DynamicCustomOp.builder("sconv2d_bp")
-                    .addInputs(input, delta, depthWiseWeights, pointWiseWeights, bias)
-                    .addIntegerArguments(args)
-                    .addOutputs(outEpsilon, opDepthWiseWeightGradView, opPointWiseWeightGradView, biasGradView)
-                    .callInplace(false)
-                    .build();
+            op.addInputArgument(input, delta, depthWiseWeights, pointWiseWeights, bias);
+            op.addOutputArgument(outEpsilon, opDepthWiseWeightGradView, opPointWiseWeightGradView, biasGradView);
         } else {
-            op = DynamicCustomOp.builder("sconv2d_bp")
-                    .addInputs(input, delta, depthWiseWeights, pointWiseWeights)
-                    .addIntegerArguments(args)
-                    .addOutputs(outEpsilon, opDepthWiseWeightGradView, opPointWiseWeightGradView)
-                    .callInplace(false)
-                    .build();
+            op.addInputArgument(input, delta, depthWiseWeights, pointWiseWeights);
+            op.addOutputArgument(outEpsilon, opDepthWiseWeightGradView, opPointWiseWeightGradView);
         }
+        op.addIArgument(args);
         Nd4j.getExecutioner().exec(op);
 
         Gradient retGradient = new DefaultGradient();
@@ -276,12 +268,10 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         }
 
-        CustomOp op = DynamicCustomOp.builder("sconv2d")
-                .addInputs(opInputs)
-                .addIntegerArguments(args)
-                .addOutputs(output)
-                .callInplace(false)
-                .build();
+        SConv2D op = new SConv2D();
+        op.addInputArgument(opInputs);
+        op.addOutputArgument(output);
+        op.addIArgument(args);
         Nd4j.getExecutioner().exec(op);
 
         if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC) {
