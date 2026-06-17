@@ -3791,7 +3791,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            // Merged replay uses mergedReplayHandles indexed by mergedGroupId.
 
            // Record the cast-cache high-water mark.  During capture, merged
-           // gap matmuls consumed tl_castIdxA / tl_castIdxB slots.  Those
+           // gap matmuls consumed tl_castA.index / tl_castB.index slots.  Those
            // slots contain device pointers baked into the merged CUDA graphs.
            // At replay time, unmerged gap matmuls must NOT reuse those slots —
            // they must start from the high-water mark instead of 0.
@@ -4775,7 +4775,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             cudaGetLastError(); // Clear any error from dot print
           }
           // Write stats to a file for diagnostic inspection
-          if (sd::Environment::getInstance().isVerbose()) {
+          if (sd::Environment::getInstance().isDebug()) {
             std::string statsDir;
             {
               const std::string& dd = Environment::getInstance().tritonDumpDir();

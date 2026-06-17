@@ -1017,15 +1017,6 @@ void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
   }
 #endif
 
-  // GEM_TVM is deprecated — TVM backend was removed. Warn and fall through to
-  // SLOT_BY_SLOT via ModeContract default (isSlotBySlot=true, allowsFallback=true).
-  if (mode == GraphExecutionMode::GEM_TVM) {
-    sd_printf("WARNING: GraphExecutionMode::GEM_TVM (16) is deprecated — TVM backend "
-              "has been removed. Falling back to SLOT_BY_SLOT execution. "
-              "Use GEM_TRITON or GEM_NVRTC_JIT instead.\n");
-    DSP_DIAG(EXECUTE, "setGraphExecutionMode: GEM_TVM (deprecated) -> falling through to SLOT_BY_SLOT");
-  }
-
   if (graphExecutionMode_ == mode) return;  // idempotent: no-op if unchanged
   // Mode is set once at plan creation (part of cache key). Phase guard ensures
   // this is never called after the plan has advanced — one flow, no reclassification.
@@ -3640,10 +3631,8 @@ void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& 
 // View wrappers deleted inline in slotexec. No batched/deferred close needed.
 
 void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
-  if (sd::Environment::getInstance().isVerbose()) {
-    DSP_DIAG(EXECUTE, "markExternalInputVariable: CALLED extIdx=%d numExt=%d",
-             extIdx, numExternalInputs_);
-  }
+  DSP_DIAG(EXECUTE, "markExternalInputVariable: CALLED extIdx=%d numExt=%d",
+           extIdx, numExternalInputs_);
   if (extIdx < 0 || extIdx >= numExternalInputs_) return;
 
   // Resize if needed (covers plans loaded from binary that didn't populate this vector).
@@ -3655,10 +3644,8 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
   }
 
   bool wasAlreadyVariable = externalInputIsVariable_[extIdx];
-  if (sd::Environment::getInstance().isVerbose()) {
-    DSP_DIAG(EXECUTE, "markExternalInputVariable: ext[%d] %s", extIdx,
-             wasAlreadyVariable ? "ALREADY variable" : "marking as variable NOW");
-  }
+  DSP_DIAG(EXECUTE, "markExternalInputVariable: ext[%d] %s", extIdx,
+           wasAlreadyVariable ? "ALREADY variable" : "marking as variable NOW");
 
   externalInputIsVariable_[extIdx] = true;
 
@@ -3916,6 +3903,7 @@ void NativeDynamicShapePlan::advancePlanPhase() {
       }
       const char* oldPhase = planLifecycle_.displayName();
       if (graphReplaySegCount == 0) {
+        DSP_DIAG(EXECUTE, "DSP ERROR: plan seal gate — 0 segments have GRAPH_REPLAY outcome");
         sd_printf("DSP ERROR: plan seal gate — 0 segments have GRAPH_REPLAY outcome. "
                   "All segments resolved to slot-by-slot. planPhase=REPLAY_BLOCKED, NOT REPLAYING.\n");
         planLifecycle_.blockReplay("zero_graph_replay_segments");
@@ -4929,6 +4917,8 @@ Status NativeDynamicShapePlan::dispatchSegment(
   // If syncOverrideDepth_ > 0 while shapes are frozen or replaying, this
   // segment is forced slot-by-slot and CUDA graph replay cannot happen.
   if ((planLifecycle_.isShapesFrozen() || planLifecycle_.isReplaying()) && syncOverrideDepth_ > 0) {
+    DSP_DIAG(EXECUTE, "DSP ERROR: syncOverrideDepth=%d during %s phase",
+             syncOverrideDepth_, planLifecycle_.displayName());
     sd_printf("DSP ERROR: syncOverrideDepth=%d during %s phase. "
               "Segment [%d-%d] forced slot-by-slot. This BLOCKS CUDA graph replay.\n",
               syncOverrideDepth_, planLifecycle_.displayName(),

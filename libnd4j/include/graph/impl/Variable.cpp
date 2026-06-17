@@ -115,7 +115,7 @@ void Variable::markReadOnly(bool reallyReadOnly) { this->_readOnly = reallyReadO
 
 NDArray *Variable::getNDArray() {
   if (_variableType != NDARRAY) {
-    sd_printf("Variable[%i:%i/<%s>] is has [%s] type, but NDArray was requested\n", this->_id, this->_index,
+    sd_debug("Variable[%i:%i/<%s>] is has [%s] type, but NDArray was requested\n", this->_id, this->_index,
               this->_name.c_str(), EnumUtils::_VariableTypeToString(_variableType));
   }
 

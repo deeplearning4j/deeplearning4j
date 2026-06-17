@@ -102,13 +102,13 @@ void Stash::clear() {
     // SAFETY CHECK: Validate the NDArray before deletion using ConstantShapeBuffer's magic number
     ConstantShapeBuffer* shapeBuffer = v->shapeInfoConstBuffer();
     if (shapeBuffer == nullptr) {
-      sd_printf("Stash::clear: Skipping NDArray at %p with null shapeInfoConstBuffer\n", v);
+      sd_debug("Stash::clear: Skipping NDArray at %p with null shapeInfoConstBuffer\n", v);
       continue;
     }
 
     // Check magic number validity - this detects use-after-free and garbage pointers
     if (!shapeBuffer->isValid()) {
-      sd_printf("Stash::clear: Skipping NDArray at %p with invalid ConstantShapeBuffer (magic check failed)\n", v);
+      sd_debug("Stash::clear: Skipping NDArray at %p with invalid ConstantShapeBuffer (magic check failed)\n", v);
       continue;
     }
 
@@ -117,7 +117,7 @@ void Stash::clear() {
     if (shapeInfo != nullptr) {
       LongType rank = shapeInfo[0];
       if (rank < 0 || rank > SD_MAX_RANK) {
-        sd_printf("Stash::clear: Skipping corrupted NDArray at %p with invalid rank %lld\n",
+        sd_debug("Stash::clear: Skipping corrupted NDArray at %p with invalid rank %lld\n",
                   v, (long long)rank);
         continue;
       }

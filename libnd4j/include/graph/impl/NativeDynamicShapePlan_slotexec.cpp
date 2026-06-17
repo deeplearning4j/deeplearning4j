@@ -1408,7 +1408,7 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
             if (v) { hasAnyVariable = true; break; }
           }
           if (!hasAnyVariable) {
-            sd_printf("DSP WARN: detectFrozenConstants: externalInputIsVariable_ has %d entries but NONE are true. "
+            sd_debug("DSP WARN: detectFrozenConstants: externalInputIsVariable_ has %d entries but NONE are true. "
                       "markExternalInputVariable() likely not called for decode inputs. "
                       "Falling back to conservative (all externals variable) to prevent incorrect freezing.\n",
                       (int)externalInputIsVariable_.size());
