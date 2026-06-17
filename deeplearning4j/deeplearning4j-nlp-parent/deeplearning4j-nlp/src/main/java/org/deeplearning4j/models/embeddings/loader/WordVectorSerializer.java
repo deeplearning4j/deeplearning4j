@@ -783,7 +783,7 @@ public class WordVectorSerializer {
             InMemoryLookupTable<VocabWord> weightLookupTable = (InMemoryLookupTable<VocabWord>) vectors.lookupTable();
             writeLookupTableBinary(weightLookupTable, bufferedOutputStream);
         } catch(Exception e) {
-            e.printStackTrace();
+            log.error("Error writing paragraph vectors binary", e);
         }
 
     }
@@ -3555,7 +3555,7 @@ public class WordVectorSerializer {
                     outputStream.close();
                 }
             } catch (IOException ex) {
-                ex.printStackTrace();
+                log.error("Error closing output stream", ex);
             }
         }
     }
@@ -3573,12 +3573,12 @@ public class WordVectorSerializer {
             try {
                 result = (FastText) in.readObject();
             } catch (ClassNotFoundException ex) {
-
+                log.error("FastText class not found during deserialization", ex);
             }
         } catch (FileNotFoundException ex) {
-            ex.printStackTrace();
+            log.error("FastText model file not found: {}", path, ex);
         } catch (IOException ex) {
-            ex.printStackTrace();
+            log.error("Error reading FastText model: {}", path, ex);
         }
         return result;
     }

@@ -208,7 +208,7 @@ public class OpValidation {
             try {
                 ok = GradCheckUtil.checkGradients(testCase);
             } catch (Throwable t) {
-                t.printStackTrace();
+                log.error("Exception encountered during gradient check{}", testCase.testNameErrMsg(), t);
                 throw new IllegalStateException("Exception encountered during gradient check" + testCase.testNameErrMsg(), t);
             }
 
