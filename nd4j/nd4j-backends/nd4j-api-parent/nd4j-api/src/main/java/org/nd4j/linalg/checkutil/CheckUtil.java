@@ -28,10 +28,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
 public class CheckUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(CheckUtil.class);
 
     /**Check first.mmul(second) using Apache commons math mmul. Float/double matrices only.<br>
      * Returns true if OK, false otherwise.<br>
@@ -94,7 +98,7 @@ public class CheckUtil {
 
         INDArray out = Nd4j.gemm(a, b, c, transposeA, transposeB, alpha, beta);
         if (out != c) {
-            System.out.println("Returned different array than c");
+            log.debug("Returned different array than c");
             return false;
         }
         if (!checkShape(rmExpected, out))
@@ -200,8 +204,7 @@ public class CheckUtil {
     private static boolean checkShape(RealMatrix rmResult, INDArray result) {
         long[] outShape = {rmResult.getRowDimension(), rmResult.getColumnDimension()};
         if (!Arrays.equals(outShape, result.shape())) {
-            System.out.println("Failure on shape: " + Arrays.toString(result.shape()) + ", expected "
-                            + Arrays.toString(outShape));
+            log.debug("Failure on shape: {}, expected {}", Arrays.toString(result.shape()), Arrays.toString(outShape));
             return false;
         }
         return true;
@@ -209,8 +212,7 @@ public class CheckUtil {
 
     private static boolean checkShape(INDArray expected, INDArray actual) {
         if (!Arrays.equals(expected.shape(), actual.shape())) {
-            System.out.println("Failure on shape: " + Arrays.toString(actual.shape()) + ", expected "
-                            + Arrays.toString(expected.shape()));
+            log.debug("Failure on shape: {}, expected {}", Arrays.toString(actual.shape()), Arrays.toString(expected.shape()));
             return false;
         }
         return true;
@@ -225,7 +227,7 @@ public class CheckUtil {
                 double actOut = result.getDouble(i, j);
 
                 if (Double.isNaN(actOut)) {
-                    System.out.println("NaN failure on value: (" + i + "," + j + " exp=" + expOut + ", act=" + actOut);
+                    log.debug("NaN failure on value: ({},{} exp={}, act={})", i, j, expOut, actOut);
                     return false;
                 }
 
@@ -234,8 +236,7 @@ public class CheckUtil {
                 double absError = Math.abs(expOut - actOut);
                 double relError = absError / (Math.abs(expOut) + Math.abs(actOut));
                 if (relError > maxRelativeDifference && absError > minAbsDifference) {
-                    System.out.println("Failure on value: (" + i + "," + j + " exp=" + expOut + ", act=" + actOut
-                                    + ", absError=" + absError + ", relError=" + relError);
+                    log.debug("Failure on value: ({},{} exp={}, act={}, absError={}, relError={})", i, j, expOut, actOut, absError, relError);
                     return false;
                 }
             }
@@ -255,8 +256,7 @@ public class CheckUtil {
                 double absError = Math.abs(expOut - actOut);
                 double relError = absError / (Math.abs(expOut) + Math.abs(actOut));
                 if (relError > maxRelativeDifference && absError > minAbsDifference) {
-                    System.out.println("Failure on value: (" + i + "," + j + " exp=" + expOut + ", act=" + actOut
-                                    + ", absError=" + absError + ", relError=" + relError);
+                    log.debug("Failure on value: ({},{} exp={}, act={}, absError={}, relError={})", i, j, expOut, actOut, absError, relError);
                     return false;
                 }
             }
@@ -298,40 +298,35 @@ public class CheckUtil {
 
     public static void printFailureDetails(INDArray first, INDArray second, RealMatrix expected, INDArray actual,
                     INDArray onCopies, String op) {
-        System.out.println("\nFactory: " + Nd4j.factory().getClass() + "\n");
-
-        System.out.println("First:");
+        log.debug("\nFactory: {}\n", Nd4j.factory().getClass());
+        log.debug("First:");
         printMatrixFullPrecision(first);
-        System.out.println("\nSecond:");
+        log.debug("\nSecond:");
         printMatrixFullPrecision(second);
-        System.out.println("\nExpected (Apache Commons)");
+        log.debug("\nExpected (Apache Commons)");
         printApacheMatrix(expected);
-        System.out.println("\nSame Nd4j op on copies: (Shape.toOffsetZeroCopy(first)." + op
-                        + "(Shape.toOffsetZeroCopy(second)))");
+        log.debug("\nSame Nd4j op on copies: (Shape.toOffsetZeroCopy(first).{}(Shape.toOffsetZeroCopy(second)))", op);
         printMatrixFullPrecision(onCopies);
-        System.out.println("\nActual:");
+        log.debug("\nActual:");
         printMatrixFullPrecision(actual);
     }
 
     public static void printGemmFailureDetails(INDArray a, INDArray b, INDArray c, boolean transposeA,
                     boolean transposeB, double alpha, double beta, RealMatrix expected, INDArray actual,
                     INDArray onCopies) {
-        System.out.println("\nFactory: " + Nd4j.factory().getClass() + "\n");
-        System.out.println("Op: gemm(a,b,c,transposeA=" + transposeA + ",transposeB=" + transposeB + ",alpha=" + alpha
-                        + ",beta=" + beta + ")");
-
-        System.out.println("a:");
+        log.debug("\nFactory: {}\n", Nd4j.factory().getClass());
+        log.debug("Op: gemm(a,b,c,transposeA={},transposeB={},alpha={},beta={})", transposeA, transposeB, alpha, beta);
+        log.debug("a:");
         printMatrixFullPrecision(a);
-        System.out.println("\nb:");
+        log.debug("\nb:");
         printMatrixFullPrecision(b);
-        System.out.println("\nc:");
+        log.debug("\nc:");
         printMatrixFullPrecision(c);
-        System.out.println("\nExpected (Apache Commons)");
+        log.debug("\nExpected (Apache Commons)");
         printApacheMatrix(expected);
-        System.out.println("\nSame Nd4j op on zero offset copies: gemm(aCopy,bCopy,cCopy," + transposeA + ","
-                        + transposeB + "," + alpha + "," + beta + ")");
+        log.debug("\nSame Nd4j op on zero offset copies: gemm(aCopy,bCopy,cCopy,{},{},{},{})", transposeA, transposeB, alpha, beta);
         printMatrixFullPrecision(onCopies);
-        System.out.println("\nActual:");
+        log.debug("\nActual:");
         printMatrixFullPrecision(actual);
     }
 
@@ -340,54 +335,53 @@ public class CheckUtil {
         printNDArrayHeader(matrix);
         long[] shape = matrix.shape();
         for (int i = 0; i < shape[0]; i++) {
+            StringBuilder row = new StringBuilder();
             for (int j = 0; j < shape[1]; j++) {
                 if (floatType)
-                    System.out.print(matrix.getFloat(i, j));
+                    row.append(matrix.getFloat(i, j));
                 else
-                    System.out.print(matrix.getDouble(i, j));
+                    row.append(matrix.getDouble(i, j));
                 if (j != shape[1] - 1)
-                    System.out.print(", ");
-                else
-                    System.out.println();
+                    row.append(", ");
             }
+            log.debug("{}", row);
         }
     }
 
     public static void printNDArrayHeader(INDArray array) {
-        System.out.println(array.data().dataType() + " - order=" + array.ordering() + ", offset=" + array.offset()
-                        + ", shape=" + Arrays.toString(array.shape()) + ", stride=" + Arrays.toString(array.stride())
-                        + ", length=" + array.length() + ", data().length()=" + array.data().length());
+        log.debug("{} - order={}, offset={}, shape={}, stride={}, length={}, data().length()={}",
+                array.data().dataType(), array.ordering(), array.offset(),
+                Arrays.toString(array.shape()), Arrays.toString(array.stride()),
+                array.length(), array.data().length());
     }
 
     public static void printFailureDetails(INDArray first, INDArray second, INDArray expected, INDArray actual,
                     INDArray onCopies, String op) {
-        System.out.println("\nFactory: " + Nd4j.factory().getClass() + "\n");
-
-        System.out.println("First:");
+        log.debug("\nFactory: {}\n", Nd4j.factory().getClass());
+        log.debug("First:");
         printMatrixFullPrecision(first);
-        System.out.println("\nSecond:");
+        log.debug("\nSecond:");
         printMatrixFullPrecision(second);
-        System.out.println("\nExpected");
+        log.debug("\nExpected");
         printMatrixFullPrecision(expected);
-        System.out.println("\nSame Nd4j op on copies: (Shape.toOffsetZeroCopy(first)." + op
-                        + "(Shape.toOffsetZeroCopy(second)))");
+        log.debug("\nSame Nd4j op on copies: (Shape.toOffsetZeroCopy(first).{}(Shape.toOffsetZeroCopy(second)))", op);
         printMatrixFullPrecision(onCopies);
-        System.out.println("\nActual:");
+        log.debug("\nActual:");
         printMatrixFullPrecision(actual);
     }
 
     public static void printApacheMatrix(RealMatrix matrix) {
         int nRows = matrix.getRowDimension();
         int nCols = matrix.getColumnDimension();
-        System.out.println("Apache Commons RealMatrix: Shape: [" + nRows + "," + nCols + "]");
+        log.debug("Apache Commons RealMatrix: Shape: [{},{}]", nRows, nCols);
         for (int i = 0; i < nRows; i++) {
+            StringBuilder row = new StringBuilder();
             for (int j = 0; j < nCols; j++) {
-                System.out.print(matrix.getEntry(i, j));
+                row.append(matrix.getEntry(i, j));
                 if (j != nCols - 1)
-                    System.out.print(", ");
-                else
-                    System.out.println();
+                    row.append(", ");
             }
+            log.debug("{}", row);
         }
     }
 }

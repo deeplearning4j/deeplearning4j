@@ -682,10 +682,10 @@ public class BackendManager {
     }
 
     /**
-     * Print detailed device information to the console.
+     * Print detailed device information to the log.
      */
     public void printDeviceInfo() {
-        System.out.println(getDeviceInfoString());
+        log.info("{}", getDeviceInfoString());
     }
 
     /**

@@ -29,6 +29,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -73,16 +74,7 @@ public class ValidationResult implements Serializable {
             lines.add("Stack Trace:");
             addWithIndent(ex, lines, "  ", "  ");
         }
-        //Would use String.join but that's Java 8...
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for(String s : lines){
-            if(!first)
-                sb.append("\n");
-            sb.append(s);
-            first = false;
-        }
-        return sb.toString();
+        return String.join("\n", lines);
     }
 
     protected static void addWithIndent(String toAdd, List<String> list, String firstLineIndent, String laterLineIndent){

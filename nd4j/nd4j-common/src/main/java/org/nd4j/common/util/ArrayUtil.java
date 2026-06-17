@@ -34,6 +34,9 @@ import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 /**
  * @author Adam Gibson
@@ -765,10 +768,7 @@ public class ArrayUtil {
      * array is contained in the list
      */
     public static boolean listOfIntsContains(List<int[]> list,int[] target) {
-        for(int[] arr : list)
-            if(Arrays.equals(target,arr))
-                return true;
-        return false;
+        return list.stream().anyMatch(arr -> Arrays.equals(target, arr));
     }
 
     /**
@@ -1795,11 +1795,7 @@ public class ArrayUtil {
         if(ints == null){
             return null;
         }
-        List<Long> ret = new ArrayList<>();
-        for (long anInt : ints) {
-            ret.add(anInt);
-        }
-        return ret;
+        return LongStream.of(ints).boxed().collect(Collectors.toList());
     }
 
 
@@ -1807,11 +1803,7 @@ public class ArrayUtil {
         if(ints == null){
             return null;
         }
-        List<Integer> ret = new ArrayList<>();
-        for (int anInt : ints) {
-            ret.add(anInt);
-        }
-        return ret;
+        return IntStream.of(ints).boxed().collect(Collectors.toList());
     }
 
     public static int[] toArray(List<Integer> list) {
@@ -2288,19 +2280,15 @@ public class ArrayUtil {
 
         }
 
-        List<Integer> listA = new ArrayList<>();
-        for (int i = 0; i < aShape.length; i++) {
-            if (!Ints.contains(axes[0], i))
-                listA.add(i);
-        }
+        List<Integer> listA = IntStream.range(0, aShape.length)
+                .filter(i -> !Ints.contains(axes[0], i))
+                .boxed()
+                .collect(Collectors.toList());
 
-
-
-        List<Integer> listB = new ArrayList<>();
-        for (int i = 0; i < bShape.length; i++) {
-            if (!Ints.contains(axes[1], i))
-                listB.add(i);
-        }
+        List<Integer> listB = IntStream.range(0, bShape.length)
+                .filter(i -> !Ints.contains(axes[1], i))
+                .boxed()
+                .collect(Collectors.toList());
 
 
         int n2 = 1;

@@ -5796,7 +5796,7 @@ public class Nd4j {
     }
 
     private static void showAttractiveMessage(String... strings) {
-        System.out.println(attract(strings));
+        log.info("{}", attract(strings));
     }
 
     private static String attract(String... strings) {

@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @EqualsAndHashCode
 public class CounterMap<F, S> implements Serializable{
@@ -242,11 +243,6 @@ public class CounterMap<F, S> implements Serializable{
      * @return
      */
     public int totalSize() {
-        int size = 0;
-        for (F first: keySet()) {
-            size += getCounter(first).size();
-        }
-
-        return size;
+        return keySet().stream().mapToInt(first -> getCounter(first).size()).sum();
     }
 }

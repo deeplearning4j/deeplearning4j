@@ -127,7 +127,7 @@ public class Nd4jValidator {
 
         //TODO let's do this without reading the whole thing into memory - check header + length...
         try (INDArray arr = Nd4j.readTxt(f.getPath())) {   //Using the fact that INDArray.close() exists -> deallocate memory as soon as reading is done
-            System.out.println();
+            // read succeeded; arr will be closed automatically
         } catch (Throwable t) {
             if (t instanceof OutOfMemoryError || t.getMessage().toLowerCase().contains("failed to allocate")) {
                 //This is a memory exception during reading... result is indeterminant (might be valid, might not be, can't tell here)

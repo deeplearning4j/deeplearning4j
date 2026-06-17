@@ -749,7 +749,7 @@ public class OpaqueDataBuffer extends Pointer {
 
     public void printAllocationTraceIfNeeded() {
         if(allocationTrace != null && Nd4j.getEnvironment().isFuncTracePrintAllocate()) {
-            System.out.println("Java side allocation trace: \n " + allocationTrace);
+            log.debug("Java side allocation trace: \n {}", allocationTrace);
         }
     }
 
@@ -825,7 +825,7 @@ public class OpaqueDataBuffer extends Pointer {
             try {
                 printAllocationTraceIfNeeded();
                 if (Nd4j.getEnvironment().isFuncTracePrintDeallocate()) {
-                    System.out.println("Java side deallocation current trace: \n " + currentTrace());
+                    log.debug("Java side deallocation current trace: \n {}", currentTrace());
                 }
                 long allocationBytes = deallocator != null ? deallocator.getAllocationBytes() : 0L;
                 DeviceDescriptor allocationDevice = allocationBytes > 0 ? resolveAllocationDevice(this) : null;

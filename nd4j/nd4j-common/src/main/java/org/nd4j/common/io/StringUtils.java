@@ -21,6 +21,8 @@
 package org.nd4j.common.io;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public abstract class StringUtils {
@@ -482,18 +484,10 @@ public abstract class StringUtils {
         } else if (ObjectUtils.isEmpty(array2)) {
             return array1;
         } else {
-            ArrayList<String> result = new ArrayList<>();
-            result.addAll(Arrays.asList(array1));
-            String[] arr$ = array2;
-            int len$ = array2.length;
-
-            for (int i$ = 0; i$ < len$; ++i$) {
-                String str = arr$[i$];
-                if (!result.contains(str)) {
-                    result.add(str);
-                }
-            }
-
+            List<String> result = new ArrayList<>(Arrays.asList(array1));
+            Arrays.stream(array2)
+                    .filter(str -> !result.contains(str))
+                    .forEach(result::add);
             return toStringArray(result);
         }
     }
@@ -539,16 +533,7 @@ public abstract class StringUtils {
         if (ObjectUtils.isEmpty(array)) {
             return array;
         } else {
-            TreeSet set = new TreeSet();
-            String[] arr$ = array;
-            int len$ = array.length;
-
-            for (int i$ = 0; i$ < len$; ++i$) {
-                String element = arr$[i$];
-                set.add(element);
-            }
-
-            return toStringArray(set);
+            return toStringArray(Arrays.stream(array).collect(Collectors.toCollection(TreeSet::new)));
         }
     }
 
@@ -658,17 +643,8 @@ public abstract class StringUtils {
     }
 
     public static Set<String> commaDelimitedListToSet(String str) {
-        TreeSet set = new TreeSet();
-        String[] tokens = commaDelimitedListToStringArray(str);
-        String[] arr$ = tokens;
-        int len$ = tokens.length;
-
-        for (int i$ = 0; i$ < len$; ++i$) {
-            String token = arr$[i$];
-            set.add(token);
-        }
-
-        return set;
+        return Arrays.stream(commaDelimitedListToStringArray(str))
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     public static String collectionToDelimitedString(Collection<?> coll, String delim, String prefix, String suffix) {
