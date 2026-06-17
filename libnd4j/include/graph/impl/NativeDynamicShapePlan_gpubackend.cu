@@ -3791,7 +3791,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            // Merged replay uses mergedReplayHandles indexed by mergedGroupId.
 
            // Record the cast-cache high-water mark.  During capture, merged
-           // gap matmuls consumed tl_castIdxA / tl_castIdxB slots.  Those
+           // gap matmuls consumed tl_castA.index / tl_castB.index slots.  Those
            // slots contain device pointers baked into the merged CUDA graphs.
            // At replay time, unmerged gap matmuls must NOT reuse those slots —
            // they must start from the high-water mark instead of 0.

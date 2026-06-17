@@ -1844,7 +1844,7 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
 
   // Reset FP16 cast-cache indices at plan execution boundary.
   // Two interleaved plans share the same thread-local cast cache
-  // (tl_castCacheA/tl_castIdxA). Without resetting, plan2 inherits
+  // (tl_castA/tl_castB). Without resetting, plan2 inherits
   // plan1's stale index and reads wrong HALF-cast buffers, causing
   // maxDiff=83+ in mixed-precision FP16 matmuls.
   MmulHelper::resetCastCacheIndices();
