@@ -21,6 +21,7 @@
 package org.nd4j.autodiff.util;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -68,31 +69,24 @@ public class SameDiffUtils {
      */
     public static Map<String, INDArray> stackOutputs(List<ExecutionResult> outputs){
         Map<String, List<INDArray>> outs = new HashMap<>();
-        for(ExecutionResult batch : outputs) {
+        outputs.forEach(batch -> {
             if(batch.getOutputs() != null) {
-                for(String k : batch.getOutputs().keySet()) {
-                    if(!outs.containsKey(k))
-                        outs.put(k, new ArrayList<>());
-                    outs.get(k).add(batch.getOutputs().get(k).get());
-                }
+                batch.getOutputs().forEach((k, v) ->
+                        outs.computeIfAbsent(k, key -> new ArrayList<>()).add(v.get()));
             } else if(batch.getValueOutputs() != null) {
-                for(String k : batch.getValueOutputs().keySet()) {
-                    if(!outs.containsKey(k))
-                        outs.put(k, new ArrayList<>());
-                    outs.get(k).add(batch.getValueOutputs().get(k).getTensorValue());
-                }
+                batch.getValueOutputs().forEach((k, v) ->
+                        outs.computeIfAbsent(k, key -> new ArrayList<>()).add(v.getTensorValue()));
             }
-
-        }
+        });
 
         Map<String, INDArray> ret = new HashMap<>();
-        for(String k : outs.keySet()) {
+        outs.forEach((k, v) -> {
             try {
-                ret.put(k, Nd4j.concat(0, outs.get(k).toArray(new INDArray[0])));
+                ret.put(k, Nd4j.concat(0, v.toArray(new INDArray[0])));
             } catch(Exception e){
                 throw new ND4JException("Error concatenating batch outputs", e);
             }
-        }
+        });
         return ret;
     }
 
@@ -100,11 +94,9 @@ public class SameDiffUtils {
      * Get a list of batch outputs for a single variable from a list of batch outputs for all variables
      */
     public static List<INDArray> getSingleOutput(List<Map<String, INDArray>> outputs, String output){
-        List<INDArray> batches = new ArrayList<>();
-        for(Map<String, INDArray> batch : outputs)
-            batches.add(batch.get(output));
-
-        return batches;
+        return outputs.stream()
+                .map(batch -> batch.get(output))
+                .collect(Collectors.toList());
     }
 
     public static ExternalErrorsFunction externalErrors(SameDiff sameDiff, Map<String, INDArray> externalGradients, SDVariable... inputs) {

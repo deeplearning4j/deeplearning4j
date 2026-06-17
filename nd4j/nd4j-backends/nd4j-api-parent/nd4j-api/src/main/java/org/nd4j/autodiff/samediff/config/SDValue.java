@@ -51,16 +51,13 @@ public class SDValue implements IDependeeGroup<INDArray> {
         }
 
         if(listValue != null) {
-            for(INDArray arr : listValue) {
-                if(arr != null)
-                    arr.setCloseable(closeable);
-            }
+            listValue.stream()
+                    .filter(arr -> arr != null)
+                    .forEach(arr -> arr.setCloseable(closeable));
         }
 
         if(dictValue != null) {
-            for(Map.Entry<String,INDArray> entry : dictValue.entrySet()) {
-                entry.getValue().setCloseable(closeable);
-            }
+            dictValue.values().forEach(arr -> arr.setCloseable(closeable));
         }
     }
 
