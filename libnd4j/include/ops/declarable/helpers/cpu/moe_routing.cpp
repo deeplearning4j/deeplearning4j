@@ -124,7 +124,7 @@ static void moeTopkSoftmaxCpu_(NDArray* gatingLogits, NDArray* expertScores,
             for (LongType e = 0; e < numExperts; ++e) {
                 float val = static_cast<float>(tokenLogits[e]);
                 if (softcapScale > 0.0f) {
-                    val = std::tanh(val / softcapScale) * softcapScale;
+                    val = sd::math::sd_tanh<float>(val / softcapScale) * softcapScale;
                 }
                 softmaxVals[e] = val;
                 if (val > maxLogit) maxLogit = val;

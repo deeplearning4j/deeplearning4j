@@ -45,7 +45,7 @@ void hSoftmax_(T *vsyn0, T *vsyn1, T *vexpTable, T *vneu1e, const double alpha, 
 
 
   // dot
-  PRAGMA_OMP_SIMD
+  PRAGMA_OMP_SIMD_ARGS(reduction(+:dot))
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1[e];
 
@@ -89,7 +89,7 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
   T dot = (T)0.0f;
   T g = (T)0.0f;
 
-  PRAGMA_OMP_SIMD
+  PRAGMA_OMP_SIMD_ARGS(reduction(+:dot))
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1Neg[e];
   }

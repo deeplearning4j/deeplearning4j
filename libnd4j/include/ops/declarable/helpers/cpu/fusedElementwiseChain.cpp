@@ -44,12 +44,12 @@ static T applyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T clipMaxV
         // Unary ops
         case FUSED_RELU:      return val > T(0) ? val : T(0);
         case FUSED_SIGMOID:   return T(1) / (T(1) + sd::math::sd_exp<T>(-val));
-        case FUSED_TANH:      return std::tanh(val);
+        case FUSED_TANH:      return sd::math::sd_tanh<T>(val);
         case FUSED_GELU: {
             // Approximate GELU: 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
             T c = T(0.7978845608); // sqrt(2/pi)
             T inner = c * (val + T(0.044715) * val * val * val);
-            return T(0.5) * val * (T(1) + std::tanh(inner));
+            return T(0.5) * val * (T(1) + sd::math::sd_tanh<T>(inner));
         }
         case FUSED_EXP:       return sd::math::sd_exp<T>(val);
         case FUSED_LOG:       return val > T(0) ? sd::math::sd_log<T>(val) : T(-1e38);
@@ -61,11 +61,11 @@ static T applyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T clipMaxV
         case FUSED_SILU:      return val / (T(1) + sd::math::sd_exp<T>(-val)); // Same as swish
         case FUSED_MISH: {
             T sp = sd::math::sd_log<T>(T(1) + sd::math::sd_exp<T>(val)); // softplus
-            return val * std::tanh(sp);
+            return val * sd::math::sd_tanh<T>(sp);
         }
 
         // Parameterized ops
-        case FUSED_CLIP:      return std::min(std::max(val, clipMinVal), clipMaxVal);
+        case FUSED_CLIP:      return sd::math::sd_min<T>(sd::math::sd_max<T>(val, clipMinVal), clipMaxVal);
         case FUSED_LEAKY_RELU: return val >= T(0) ? val : val * secondaryVal;
 
         default:              return val;

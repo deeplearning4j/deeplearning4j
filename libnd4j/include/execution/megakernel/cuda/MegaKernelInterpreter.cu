@@ -34,19 +34,19 @@ namespace execution {
 // Device-side barrier operations
 //////////////////////////////////////////////////////////////////////////////
 
-__device__ __forceinline__ void barrierWait(volatile int32_t* barriers, int32_t barrierId, int32_t targetCount) {
+SD_DEVICE SD_INLINE void barrierWait(volatile int32_t* barriers, int32_t barrierId, int32_t targetCount) {
     // Spin-wait until barrier count reaches target
     while (barriers[barrierId] < targetCount) {
         __threadfence();
     }
 }
 
-__device__ __forceinline__ void barrierSignal(volatile int32_t* barriers, int32_t barrierId) {
+SD_DEVICE SD_INLINE void barrierSignal(volatile int32_t* barriers, int32_t barrierId) {
     atomicAdd((int32_t*)&barriers[barrierId], 1);
     __threadfence();
 }
 
-__device__ __forceinline__ bool barrierTryWait(volatile int32_t* barriers, int32_t barrierId, int32_t targetCount) {
+SD_DEVICE SD_INLINE bool barrierTryWait(volatile int32_t* barriers, int32_t barrierId, int32_t targetCount) {
     return barriers[barrierId] >= targetCount;
 }
 
@@ -55,7 +55,7 @@ __device__ __forceinline__ bool barrierTryWait(volatile int32_t* barriers, int32
 //////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-__device__ void executeRelu(const T* input, T* output, int64_t n, int tid, int stride) {
+SD_DEVICE void executeRelu(const T* input, T* output, int64_t n, int tid, int stride) {
     for (int64_t i = tid; i < n; i += stride) {
         T val = input[i];
         output[i] = val > static_cast<T>(0) ? val : static_cast<T>(0);
@@ -63,7 +63,7 @@ __device__ void executeRelu(const T* input, T* output, int64_t n, int tid, int s
 }
 
 template<typename T>
-__device__ void executeSigmoid(const T* input, T* output, int64_t n, int tid, int stride) {
+SD_DEVICE void executeSigmoid(const T* input, T* output, int64_t n, int tid, int stride) {
     for (int64_t i = tid; i < n; i += stride) {
         float val = static_cast<float>(input[i]);
         output[i] = static_cast<T>(1.0f / (1.0f + expf(-val)));
@@ -71,14 +71,14 @@ __device__ void executeSigmoid(const T* input, T* output, int64_t n, int tid, in
 }
 
 template<typename T>
-__device__ void executeTanh(const T* input, T* output, int64_t n, int tid, int stride) {
+SD_DEVICE void executeTanh(const T* input, T* output, int64_t n, int tid, int stride) {
     for (int64_t i = tid; i < n; i += stride) {
         output[i] = static_cast<T>(tanhf(static_cast<float>(input[i])));
     }
 }
 
 template<typename T>
-__device__ void executeSilu(const T* input, T* output, int64_t n, int tid, int stride) {
+SD_DEVICE void executeSilu(const T* input, T* output, int64_t n, int tid, int stride) {
     for (int64_t i = tid; i < n; i += stride) {
         float val = static_cast<float>(input[i]);
         float sig = 1.0f / (1.0f + expf(-val));
@@ -87,7 +87,7 @@ __device__ void executeSilu(const T* input, T* output, int64_t n, int tid, int s
 }
 
 template<typename T>
-__device__ void executeFusedGelu(const T* input, T* output, int64_t n, int tid, int stride) {
+SD_DEVICE void executeFusedGelu(const T* input, T* output, int64_t n, int tid, int stride) {
     for (int64_t i = tid; i < n; i += stride) {
         float val = static_cast<float>(input[i]);
         float sig = 1.0f / (1.0f + expf(-1.702f * val));
@@ -96,21 +96,21 @@ __device__ void executeFusedGelu(const T* input, T* output, int64_t n, int tid, 
 }
 
 template<typename T>
-__device__ void executeAdd(const T* a, const T* b, T* out, int64_t n, int tid, int stride) {
+SD_DEVICE void executeAdd(const T* a, const T* b, T* out, int64_t n, int tid, int stride) {
     for (int64_t i = tid; i < n; i += stride) {
         out[i] = a[i] + b[i];
     }
 }
 
 template<typename T>
-__device__ void executeMul(const T* a, const T* b, T* out, int64_t n, int tid, int stride) {
+SD_DEVICE void executeMul(const T* a, const T* b, T* out, int64_t n, int tid, int stride) {
     for (int64_t i = tid; i < n; i += stride) {
         out[i] = a[i] * b[i];
     }
 }
 
 template<typename T>
-__device__ void executeCopy(const T* src, T* dst, int64_t n, int tid, int stride) {
+SD_DEVICE void executeCopy(const T* src, T* dst, int64_t n, int tid, int stride) {
     for (int64_t i = tid; i < n; i += stride) {
         dst[i] = src[i];
     }
@@ -121,7 +121,7 @@ __device__ void executeCopy(const T* src, T* dst, int64_t n, int tid, int stride
 //////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-__device__ void dispatchOp(const OpDescriptor& op, void** buffers, void* params, int tid, int stride) {
+SD_DEVICE void dispatchOp(const OpDescriptor& op, void** buffers, void* params, int tid, int stride) {
     int64_t n = op.shape[0];
     for (int r = 1; r < op.rank; r++) {
         n *= op.shape[r];
@@ -197,7 +197,7 @@ __device__ void dispatchOp(const OpDescriptor& op, void** buffers, void* params,
 //////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-__device__ void executeTask(MegaKernelTask* task, OpDescriptor* opDescriptors, void** buffers,
+SD_DEVICE void executeTask(MegaKernelTask* task, OpDescriptor* opDescriptors, void** buffers,
                              void* paramBuffer, volatile int32_t* barriers, cg::grid_group& grid) {
 
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -238,7 +238,7 @@ __device__ void executeTask(MegaKernelTask* task, OpDescriptor* opDescriptors, v
 //////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-__global__ void megaKernelInterpreter(DeviceTaskQueue* queue, volatile bool* shouldStop) {
+SD_KERNEL void megaKernelInterpreter(DeviceTaskQueue* queue, volatile bool* shouldStop) {
     cg::grid_group grid = cg::this_grid();
     int globalTid = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -283,7 +283,7 @@ __global__ void megaKernelInterpreter(DeviceTaskQueue* queue, volatile bool* sho
 //////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-__global__ void singleTaskKernel(MegaKernelTask* task, OpDescriptor* opDescriptors,
+SD_KERNEL void singleTaskKernel(MegaKernelTask* task, OpDescriptor* opDescriptors,
                                   void** buffers, void* paramBuffer, volatile int32_t* barriers) {
     cg::grid_group grid = cg::this_grid();
     executeTask<T>(task, opDescriptors, buffers, paramBuffer, barriers, grid);

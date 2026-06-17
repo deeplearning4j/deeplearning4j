@@ -28,6 +28,7 @@
 #include <helpers/MmulHelper.h>
 #include <helpers/shape.h>
 #include <execution/Threads.h>
+#include <math/templatemath.h>
 #include <system/type_boilerplate.h>
 #include <cmath>
 #include <random>
@@ -270,7 +271,7 @@ void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
   // Heap-allocated to support any headDim without stack overflow (halfRotate = rotateDims/2).
   float* invFreq = new float[halfRotate];
   for (LongType i = 0; i < halfRotate; ++i) {
-    invFreq[i] = freqScale / std::pow(freqBase, (2.0f * static_cast<float>(i)) / static_cast<float>(rotateDims));
+    invFreq[i] = freqScale / sd::math::sd_pow<float, float, float>(freqBase, (2.0f * static_cast<float>(i)) / static_cast<float>(rotateDims));
   }
 
   // Parallelise over (batch * seqLen * numHeads)
@@ -297,8 +298,8 @@ void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
           PRAGMA_OMP_SIMD
           for (LongType i = 0; i < halfRotate; ++i) {
             const float theta = posF * invFreq[i];
-            const float cosT  = std::cos(theta);
-            const float sinT  = std::sin(theta);
+            const float cosT  = sd::math::sd_cos<float, float>(theta);
+            const float sinT  = sd::math::sd_sin<float, float>(theta);
             const float x0 = static_cast<float>(xPtr[(2 * i)     * xS[3]]);
             const float x1 = static_cast<float>(xPtr[(2 * i + 1) * xS[3]]);
             zPtr[(2 * i)     * zS[3]] = static_cast<T>(x0 * cosT - x1 * sinT);
@@ -312,8 +313,8 @@ void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
           PRAGMA_OMP_SIMD
           for (LongType i = 0; i < halfRotate; ++i) {
             const float theta = posF * invFreq[i];
-            const float cosT  = std::cos(theta);
-            const float sinT  = std::sin(theta);
+            const float cosT  = sd::math::sd_cos<float, float>(theta);
+            const float sinT  = sd::math::sd_sin<float, float>(theta);
             const float x0 = static_cast<float>(xPtr[i               * xS[3]]);
             const float x1 = static_cast<float>(xPtr[(i + halfRotate) * xS[3]]);
             zPtr[i                * zS[3]] = static_cast<T>(x0 * cosT - x1 * sinT);
@@ -351,8 +352,8 @@ void fusedRoPE(NDArray* input, NDArray* output, NDArray* positionArr,
         const LongType base = (b * seqLen + s) * numHeads * headDim + h * headDim;
         for (LongType i = 0; i < halfRotate; ++i) {
           const float theta = posF * invFreq[i];
-          const float cosT  = std::cos(theta);
-          const float sinT  = std::sin(theta);
+          const float cosT  = sd::math::sd_cos<float, float>(theta);
+          const float sinT  = sd::math::sd_sin<float, float>(theta);
           LongType idx1, idx2;
           if (ropeType == 1) { idx1 = base + i * 2; idx2 = base + i * 2 + 1; }
           else                { idx1 = base + i;     idx2 = base + i + halfRotate; }
@@ -405,7 +406,7 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
   // Pre-compute invFreq — heap-allocated to support any headDim without stack overflow.
   float* invFreq = new float[halfRotate];
   for (LongType i = 0; i < halfRotate; ++i) {
-    invFreq[i] = freqScale / std::pow(freqBase, (2.0f * static_cast<float>(i)) / static_cast<float>(rotateDims));
+    invFreq[i] = freqScale / sd::math::sd_pow<float, float, float>(freqBase, (2.0f * static_cast<float>(i)) / static_cast<float>(rotateDims));
   }
 
   const LongType outerSize = batch * seqLen * numHeads;
@@ -429,8 +430,8 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
           PRAGMA_OMP_SIMD
           for (LongType i = 0; i < halfRotate; ++i) {
             const float theta = posF * invFreq[i];
-            const float cosT  = std::cos(theta);
-            const float sinT  = std::sin(theta);
+            const float cosT  = sd::math::sd_cos<float, float>(theta);
+            const float sinT  = sd::math::sd_sin<float, float>(theta);
             const float g0 = static_cast<float>(gPtr[(2 * i)     * gS[3]]);
             const float g1 = static_cast<float>(gPtr[(2 * i + 1) * gS[3]]);
             oPtr[(2 * i)     * oS[3]] = static_cast<T>(g0 * cosT + g1 * sinT);
@@ -441,8 +442,8 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
           PRAGMA_OMP_SIMD
           for (LongType i = 0; i < halfRotate; ++i) {
             const float theta = posF * invFreq[i];
-            const float cosT  = std::cos(theta);
-            const float sinT  = std::sin(theta);
+            const float cosT  = sd::math::sd_cos<float, float>(theta);
+            const float sinT  = sd::math::sd_sin<float, float>(theta);
             const float g0 = static_cast<float>(gPtr[i               * gS[3]]);
             const float g1 = static_cast<float>(gPtr[(i + halfRotate) * gS[3]]);
             oPtr[i                * oS[3]] = static_cast<T>(g0 * cosT + g1 * sinT);
@@ -474,8 +475,8 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
             const LongType base = (b * seqLen + s) * numHeads * headDim + h * headDim;
             for (LongType i = 0; i < halfRotate; i++) {
               const float theta = posF * invFreq[i];
-              const float cosT  = std::cos(theta);
-              const float sinT  = std::sin(theta);
+              const float cosT  = sd::math::sd_cos<float, float>(theta);
+              const float sinT  = sd::math::sd_sin<float, float>(theta);
               LongType idx1, idx2;
               if (ropeType == 1) { idx1 = base + i * 2; idx2 = base + i * 2 + 1; }
               else                { idx1 = base + i;     idx2 = base + i + halfRotate; }

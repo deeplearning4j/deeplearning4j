@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <math/templatemath.h>
 #include <system/selective_rendering.h>
 
 #if NOT_EXCLUDED(OP_mixture_of_experts)
@@ -45,7 +46,7 @@ static void softmax(T* data, int size) {
     }
     T sum = static_cast<T>(0);
     for (int i = 0; i < size; i++) {
-        data[i] = std::exp(data[i] - maxVal);
+        data[i] = sd::math::sd_exp<T>(data[i] - maxVal);
         sum += data[i];
     }
     for (int i = 0; i < size; i++) {

@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/two_way_cross_attention.h>
 #include <helpers/MmulHelper.h>
 #include <math/templatemath.h>
+#include <system/openmp_pragmas.h>
 #include <cmath>
 
 namespace sd {
@@ -32,6 +33,7 @@ static void applySoftmax2D(NDArray& matrix) {
     auto rows = matrix.sizeAt(0);
     auto cols = matrix.sizeAt(1);
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (sd::LongType r = 0; r < rows; r++) {
         double maxVal = -1e30;
         for (sd::LongType c = 0; c < cols; c++) {
@@ -53,6 +55,7 @@ static void applySoftmax2D(NDArray& matrix) {
 // Helper: scale all elements of matrix by a scalar value
 static void scaleMatrix(NDArray& matrix, double scale) {
     auto len = matrix.lengthOf();
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
     for (sd::LongType i = 0; i < len; i++) {
         matrix.p(i, matrix.e<double>(i) * scale);
     }
@@ -63,6 +66,7 @@ static void softmaxBackward(NDArray& attnWeights, NDArray& dLdAttnWeights, NDArr
     auto rows = attnWeights.sizeAt(0);
     auto cols = attnWeights.sizeAt(1);
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (sd::LongType r = 0; r < rows; r++) {
         double dot = 0.0;
         for (sd::LongType c = 0; c < cols; c++) {
@@ -130,6 +134,7 @@ void twoWayCrossAttention(NDArray* tokenQuery, NDArray* tokenKey,
         // 3D: [batch, seqLen, dim] — iterate over batch
         sd::LongType batchSize = tokenQuery->sizeAt(0);
         std::vector<sd::LongType> dimsToExclude = {0};
+        PRAGMA_OMP_PARALLEL_FOR
         for (sd::LongType b = 0; b < batchSize; b++) {
             NDArray tqSlice = *(*tokenQuery)(b, dimsToExclude);
             NDArray tkSlice = *(*tokenKey)(b, dimsToExclude);

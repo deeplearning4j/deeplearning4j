@@ -55,7 +55,7 @@ constexpr int DEFAULT_BLOCK_SIZE = 512;  // Increased from 256 for better occupa
 // This replaces: create mask array + nullify + fillAsTriangular + broadcast add
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ __launch_bounds__(256, 4) void applyCausalMaskInPlaceKernel(
+SD_KERNEL __launch_bounds__(256, 4) void applyCausalMaskInPlaceKernel(
    T* __restrict__ scores,  // [batch, seqQ, seqKV]
    const LongType batch,
    const LongType seqQ,
@@ -120,7 +120,7 @@ void applyCausalMaskCuda(NDArray* scores, LaunchContext* context) {
 // Fuses: causal mask application + row-wise softmax
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ __launch_bounds__(1024, 2) void fusedCausalMaskSoftmaxKernel(
+SD_KERNEL __launch_bounds__(1024, 2) void fusedCausalMaskSoftmaxKernel(
    const T* __restrict__ input,   // [batch, seqQ, seqKV] - logits from Q@K^T
    T* __restrict__ output,        // [batch, seqQ, seqKV] - softmax output
    T* __restrict__ logitsOut,     // [batch, seqQ, seqKV] - masked logits (optional)
@@ -303,7 +303,7 @@ void fusedCausalMaskSoftmaxCuda(NDArray* input, NDArray* output, NDArray* logits
 // Supports optional additive attention bias for ONNX compatibility
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ __launch_bounds__(512, 1) void fusedAttention3DKernel(
+SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    const T* __restrict__ query,    // [batch, seqQ, dim]
    const T* __restrict__ key,      // [batch, seqKV, dim]
    const T* __restrict__ value,    // [batch, seqKV, dim]
@@ -511,7 +511,7 @@ __global__ __launch_bounds__(512, 1) void fusedAttention3DKernel(
 // This version materializes the full attention row for each query position
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ __launch_bounds__(256, 2) void fusedAttentionWithScores3DKernel(
+SD_KERNEL __launch_bounds__(256, 2) void fusedAttentionWithScores3DKernel(
    const T* __restrict__ query,         // [batch, seqQ, dim]
    const T* __restrict__ key,           // [batch, seqKV, dim]
    const T* __restrict__ value,         // [batch, seqKV, dim]
@@ -895,7 +895,7 @@ void fusedAttentionCuda(
 // fusedAttention3DKernel). NO atomicAdd — each thread owns output dimensions.
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ __launch_bounds__(512, 1) void fusedGQADecodeKernel(
+SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    const T* __restrict__ query,      // [batch, 1, numQHeads, headDim] BSHD
    const T* __restrict__ key,        // [batch, seqKV, numKvHeads, headDim] BSHD
    const T* __restrict__ value,      // [batch, seqKV, numKvHeads, headDim] BSHD

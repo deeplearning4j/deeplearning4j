@@ -22,6 +22,7 @@
 #include <array/NDArrayFactory.h>
 #include <math/templatemath.h>
 #include <system/op_boilerplate.h>
+#include <system/openmp_pragmas.h>
 #include <cmath>
 
 #if NOT_EXCLUDED(OP_turbo_quant_attention)
@@ -59,6 +60,7 @@ static void turboQuantAttentionForward_(
   T qjlCorrectionScale = static_cast<T>(sd::math::sd_sqrt<double>(M_PI / 2.0) / static_cast<float>(headDim));
 
   // Process each batch and head independently
+  PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
   for (sd::LongType b = 0; b < batch; b++) {
     for (sd::LongType h = 0; h < numHeads; h++) {
       for (sd::LongType sq = 0; sq < seqQ; sq++) {

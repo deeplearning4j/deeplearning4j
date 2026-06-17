@@ -64,7 +64,7 @@ static void fusedNormRopeCpu_(const T* input, const T* gamma,
                 float val = static_cast<float>(inPtr[d]);
                 sumSq += val * val;
             }
-            float rms = std::sqrt(sumSq / static_cast<float>(headDim) + epsilon);
+            float rms = sd::math::sd_sqrt<float, float>(sumSq / static_cast<float>(headDim) + epsilon);
             float rmsInv = 1.0f / rms;
 
             // Step 2: normalize with gamma, then apply RoPE
@@ -96,10 +96,10 @@ static void fusedNormRopeCpu_(const T* input, const T* gamma,
                     } else {
                         pairIdx = d / 2;
                     }
-                    float theta = static_cast<float>(s) * std::pow(static_cast<float>(freqBase),
+                    float theta = static_cast<float>(s) * sd::math::sd_pow<float, float, float>(static_cast<float>(freqBase),
                                    -2.0f * static_cast<float>(pairIdx) / static_cast<float>(headDim));
-                    cosVal = std::cos(theta);
-                    sinVal = std::sin(theta);
+                    cosVal = sd::math::sd_cos<float, float>(theta);
+                    sinVal = sd::math::sd_sin<float, float>(theta);
                 }
 
                 float rotatedVal;
