@@ -20,7 +20,6 @@
 
 #include <ops/declarable/helpers/segment_gemm.h>
 #include <system/op_boilerplate.h>
-#include <cmath>
 
 namespace sd {
 namespace ops {
@@ -36,6 +35,7 @@ static void segmentGemmCpu_(LaunchContext* context,
     auto outDim = weights->sizeAt(2);
 
     // For each expert, perform matmul on its token segment
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType e = 0; e < numExperts; e++) {
         LongType offset = segmentOffsets->e<LongType>(e);
         LongType size = segmentSizes->e<LongType>(e);
@@ -44,6 +44,7 @@ static void segmentGemmCpu_(LaunchContext* context,
 
         // output[offset:offset+size, :] = input[offset:offset+size, :] @ weights[e, :, :]
         for (LongType t = 0; t < size; t++) {
+            PRAGMA_OMP_PARALLEL_FOR
             for (LongType j = 0; j < outDim; j++) {
                 T sum = static_cast<T>(0);
                 for (LongType k = 0; k < inDim; k++) {
@@ -63,10 +64,6 @@ void segmentGemmCpu(LaunchContext* context,
                           (context, input, weights, segmentOffsets, segmentSizes, output),
                           SD_FLOAT_TYPES);
 }
-
-BUILD_SINGLE_TEMPLATE(template void segmentGemmCpu_,
-                      (LaunchContext*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*),
-                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

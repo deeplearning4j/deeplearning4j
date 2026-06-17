@@ -19,6 +19,7 @@
  */
 
 #include <ops/declarable/helpers/cascade_attention.h>
+#include <math/templatemath.h>
 #include <system/op_boilerplate.h>
 #include <cmath>
 #include <vector>
@@ -40,6 +41,7 @@ static void cascadeAttentionCpu_(LaunchContext* context,
 
     T scaleF = static_cast<T>(scale);
 
+    PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
     for (LongType b = 0; b < batch; b++) {
         for (LongType h = 0; h < heads; h++) {
             for (LongType q = 0; q < queryLen; q++) {
@@ -76,7 +78,7 @@ static void cascadeAttentionCpu_(LaunchContext* context,
                     // Compute chunk softmax numerators and sum
                     T chunkSumExp = static_cast<T>(0);
                     for (LongType k2 = 0; k2 < chunkLen; k2++) {
-                        scores[k2] = std::exp(scores[k2] - chunkMax);
+                        scores[k2] = sd::math::sd_exp<T, T>(scores[k2] - chunkMax);
                         chunkSumExp += scores[k2];
                     }
 
@@ -98,8 +100,8 @@ static void cascadeAttentionCpu_(LaunchContext* context,
                     } else {
                         // Merge: rescale both accumulators to common max
                         T newMax = std::max(globalMax, chunkMax);
-                        T globalRescale = std::exp(globalMax - newMax);
-                        T chunkRescale = std::exp(chunkMax - newMax);
+                        T globalRescale = sd::math::sd_exp<T, T>(globalMax - newMax);
+                        T chunkRescale = sd::math::sd_exp<T, T>(chunkMax - newMax);
 
                         T newSumExp = globalSumExp * globalRescale + chunkSumExp * chunkRescale;
 
@@ -130,10 +132,6 @@ void cascadeAttentionCpu(LaunchContext* context,
                           (context, query, key, value, output, chunkSize, scale),
                           SD_FLOAT_TYPES);
 }
-
-BUILD_SINGLE_TEMPLATE(template void cascadeAttentionCpu_,
-                      (LaunchContext*, NDArray*, NDArray*, NDArray*, NDArray*, int, double),
-                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

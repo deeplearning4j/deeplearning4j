@@ -45,48 +45,31 @@
 #include <helpers/CutlassHelper.h>
 #endif
 
-// Declared in DataBuffer.h / DataBuffer.cu — true during CUDA graph capture
-extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
-// Declared in DataBuffer.h / DataBuffer.cu — true during DSP composite replay gap execution
-extern SD_TLS_EXPORT thread_local bool tl_dspReplayActive;
 // Declared in NativeDynamicShapePlan_batchgemm.cu — true when cuBLAS stream+workspace
 // already configured for DSP gap loop. When true, skip cublasSetStream +
 // reapplyCublasWorkspace + prepareSpecialUse/registerSpecialUse (arrays device-resident).
 extern SD_TLS_EXPORT thread_local bool tl_cublasGapStreamReady;
 
-// cuBLAS workspace buffer+size set by NativeDynamicShapePlan.
-// cublasSetStream() resets the user-provided workspace (cuBLAS docs), so we must
-// re-apply it after every cublasSetStream call whenever DSP configured an explicit
-// workspace for warmup or graph capture. Without this, warmup may silently use a
-// different workspace/algorithm than capture, and capture may fall back to internal
-// cudaMallocAsync → MemAlloc/MemFree graph nodes that SIGSEGV the driver on replay.
-extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
-extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
-
 namespace sd {
 
-// Set by NativeDynamicShapePlan when graphExecutionMode is CUDA_GRAPHS.
-// Forces MmulHelper to: (1) skip cublasLt (split-K algorithms are non-deterministic
-// under graph replay), and (2) use CUBLAS_GEMM_DEFAULT instead of
-// CUBLAS_GEMM_DEFAULT_TENSOR_OP (tensor core reductions have non-deterministic warp
-// scheduling during graph replay, causing FP drift through GDN recurrent state).
-extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled;
-
 // Thread-local cublasLt epilogue state — set by DSP executor before matmul dispatch
-static thread_local int tl_ltEpilogueType = 0;
-static thread_local const void* tl_ltEpilogueBiasPtr = nullptr;
-static thread_local int64_t tl_ltEpilogueBiasSize = 0;
+struct LtEpilogueState {
+  int type = 0;
+  const void* biasPtr = nullptr;
+  int64_t biasSize = 0;
+
+  void set(int t, const void* bp, int64_t bs) { type = t; biasPtr = bp; biasSize = bs; }
+  void clear() { type = 0; biasPtr = nullptr; biasSize = 0; }
+};
+
+static thread_local LtEpilogueState tl_ltEpilogue;
 
 void MmulHelper::setLtEpilogue(int type, const void* biasPtr, int64_t biasSize) {
-  tl_ltEpilogueType = type;
-  tl_ltEpilogueBiasPtr = biasPtr;
-  tl_ltEpilogueBiasSize = biasSize;
+  tl_ltEpilogue.set(type, biasPtr, biasSize);
 }
 
 void MmulHelper::clearLtEpilogue() {
-  tl_ltEpilogueType = 0;
-  tl_ltEpilogueBiasPtr = nullptr;
-  tl_ltEpilogueBiasSize = 0;
+  tl_ltEpilogue.clear();
 }
 
 // Re-apply cuBLAS workspace after cublasSetStream whenever DSP configured one.
@@ -99,28 +82,65 @@ static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
   }
 }
 
-// Thread-local persistent cast cache for CUDA graph capture.
+// Map sd::DataType to the corresponding cudaDataType constant used by cublasGemmEx /
+// cublasLtMatmulDescCreate.  Returns true when the type is supported, false otherwise.
+// BFLOAT16 requires CUDA 11+ (CUDA_R_16BF).
+static inline bool sdToCudaDataType(DataType dt, cudaDataType& out) {
+  switch (dt) {
+    case FLOAT32:   out = CUDA_R_32F;  return true;
+    case DOUBLE:    out = CUDA_R_64F;  return true;
+    case HALF:      out = CUDA_R_16F;  return true;
+    case BFLOAT16:  out = CUDA_R_16BF; return true;
+    case INT8:      out = CUDA_R_8I;   return true;
+    default:        return false;
+  }
+}
+
+// Per-operand cast cache state for CUDA graph capture.
 // During non-capture execution, cast results are cached here.
 // During capture, cached buffers are reused via assign() to avoid
 // capture workspace allocations that may not replay correctly.
-static thread_local std::vector<NDArray*> tl_castCacheA;
-static thread_local std::vector<NDArray*> tl_castCacheB;
-static thread_local std::vector<NDArray*> tl_retiredCastCache;
-static thread_local size_t tl_castIdxA = 0;
-static thread_local size_t tl_castIdxB = 0;
-static thread_local std::unordered_map<const NDArray*, NDArray*> tl_captureCastReuseA;
-static thread_local std::unordered_map<const NDArray*, NDArray*> tl_captureCastReuseB;
-static thread_local const NDArray* tl_lastCaptureCastSourceA = nullptr;
-static thread_local const NDArray* tl_lastCaptureCastSourceB = nullptr;
-static thread_local NDArray* tl_lastCaptureCastArrayA = nullptr;
-static thread_local NDArray* tl_lastCaptureCastArrayB = nullptr;
+// Consolidates what was 14 separate thread-locals into two struct instances.
+struct CastCacheSide {
+  std::vector<NDArray*> cache;
+  size_t index = 0;
+  std::unordered_map<const NDArray*, NDArray*> captureCastReuse;
+  const NDArray* lastCaptureCastSource = nullptr;
+  NDArray* lastCaptureCastArray = nullptr;
+  // Per-slot source buffer tracking for skip-assign optimization.
+  // When the source NDArray's DataBuffer pointer hasn't changed since the last
+  // assign to a given cache slot, we skip the copy — constant weights (frozen
+  // in DSP) are the same every decode step.
+  std::vector<const void*> sourcePtrs;
 
-// Per-cache source buffer tracking for skip-assign optimization.
-// When the source NDArray's DataBuffer pointer hasn't changed since the last
-// assign to a given cache slot, we skip the copy — constant weights (frozen
-// in DSP) are the same every decode step.
-static thread_local std::vector<const void*> tl_castCacheSourcePtrA;
-static thread_local std::vector<const void*> tl_castCacheSourcePtrB;
+  void resetIndices() {
+    index = 0;
+    captureCastReuse.clear();
+    lastCaptureCastSource = nullptr;
+    lastCaptureCastArray = nullptr;
+  }
+
+  void resetIndicesTo(size_t hwm) {
+    index = (hwm < cache.size()) ? hwm : 0;
+    captureCastReuse.clear();
+    lastCaptureCastSource = nullptr;
+    lastCaptureCastArray = nullptr;
+  }
+
+  void clear(std::vector<NDArray*>& retiredCache) {
+    for (auto* p : cache) delete p;
+    cache.clear();
+    index = 0;
+    captureCastReuse.clear();
+    lastCaptureCastSource = nullptr;
+    lastCaptureCastArray = nullptr;
+    sourcePtrs.clear();
+  }
+};
+
+static thread_local CastCacheSide tl_castA;
+static thread_local CastCacheSide tl_castB;
+static thread_local std::vector<NDArray*> tl_retiredCastCache;
 
 // Persistent PINNED-HOST cuBLAS scalar parameters for CUDA graph capture.
 // cuBLAS internally enqueues H2D memcpy from the alpha/beta host addresses.
@@ -208,14 +228,8 @@ struct LtMatmulAlgoCacheEntry {
 static thread_local std::unordered_map<LtMatmulCacheKey, LtMatmulAlgoCacheEntry, LtMatmulCacheKeyHash> tl_ltAlgoCache;
 
 void MmulHelper::resetCastCacheIndices() {
-  tl_castIdxA = 0;
-  tl_castIdxB = 0;
-  tl_captureCastReuseA.clear();
-  tl_captureCastReuseB.clear();
-  tl_lastCaptureCastSourceA = nullptr;
-  tl_lastCaptureCastSourceB = nullptr;
-  tl_lastCaptureCastArrayA = nullptr;
-  tl_lastCaptureCastArrayB = nullptr;
+  tl_castA.resetIndices();
+  tl_castB.resetIndices();
   // NOTE: tl_ltAlgoCache is intentionally NOT cleared here.
   // The algo cache is keyed by {M, N, K, types, flags} — different shapes have
   // separate entries, so there is no stale-key risk between steps.  Preserving
@@ -227,47 +241,29 @@ void MmulHelper::resetCastCacheIndices() {
 
 void MmulHelper::resetCastCacheIndicesTo(size_t hwmA, size_t hwmB) {
   // Clamp to actual cache sizes — the high-water mark must not exceed them.
-  tl_castIdxA = (hwmA < tl_castCacheA.size()) ? hwmA : 0;
-  tl_castIdxB = (hwmB < tl_castCacheB.size()) ? hwmB : 0;
   // Clear per-call reuse maps: they were populated during capture and
   // are no longer valid for the current replay step's unmerged gap matmuls.
-  tl_captureCastReuseA.clear();
-  tl_captureCastReuseB.clear();
-  tl_lastCaptureCastSourceA = nullptr;
-  tl_lastCaptureCastSourceB = nullptr;
-  tl_lastCaptureCastArrayA = nullptr;
-  tl_lastCaptureCastArrayB = nullptr;
+  tl_castA.resetIndicesTo(hwmA);
+  tl_castB.resetIndicesTo(hwmB);
   // NOTE: tl_ltAlgoCache is intentionally NOT cleared here — see resetCastCacheIndices().
 }
 
 std::pair<size_t, size_t> MmulHelper::getCastCacheHighWaterMark() {
-  return {tl_castIdxA, tl_castIdxB};
+  return {tl_castA.index, tl_castB.index};
 }
 
 void MmulHelper::clearCastCache() {
-  for (auto* p : tl_castCacheA) delete p;
-  for (auto* p : tl_castCacheB) delete p;
+  tl_castA.clear(tl_retiredCastCache);
+  tl_castB.clear(tl_retiredCastCache);
   for (auto* p : tl_retiredCastCache) delete p;
-  tl_castCacheA.clear();
-  tl_castCacheB.clear();
   tl_retiredCastCache.clear();
-  tl_castIdxA = 0;
-  tl_castIdxB = 0;
-  tl_captureCastReuseA.clear();
-  tl_captureCastReuseB.clear();
-  tl_lastCaptureCastSourceA = nullptr;
-  tl_lastCaptureCastSourceB = nullptr;
-  tl_lastCaptureCastArrayA = nullptr;
-  tl_lastCaptureCastArrayB = nullptr;
   tl_ltAlgoCache.clear();
-  tl_castCacheSourcePtrA.clear();
-  tl_castCacheSourcePtrB.clear();
 }
 
-static NDArray* castWithPersistentCache(std::vector<NDArray*>& cache, size_t& index,
-                                        NDArray* source, DataType targetType) {
-  // Determine which source-pointer tracker to use (A or B based on cache identity)
-  auto& srcPtrs = (&cache == &tl_castCacheA) ? tl_castCacheSourcePtrA : tl_castCacheSourcePtrB;
+static NDArray* castWithPersistentCache(CastCacheSide& side, NDArray* source, DataType targetType) {
+  auto& cache = side.cache;
+  auto& index = side.index;
+  auto& srcPtrs = side.sourcePtrs;
 
   if (index < cache.size()) {
     NDArray* cached = cache[index];
@@ -982,7 +978,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    if (A->dataType() == HALF && B->dataType() == FLOAT32) {
      // Weight is HALF, activation is FLOAT32 → upcast weight to FLOAT32
      if (useCastCache) {
-       effA = castWithPersistentCache(tl_castCacheA, tl_castIdxA, effA, FLOAT32);
+       effA = castWithPersistentCache(tl_castA, effA, FLOAT32);
      } else {
        castA = effA->cast(FLOAT32);
        effA = castA;
@@ -990,7 +986,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    } else if (A->dataType() == FLOAT32 && B->dataType() == HALF) {
      // Activation is FLOAT32, weight is HALF → upcast weight to FLOAT32
      if (useCastCache) {
-       effB = castWithPersistentCache(tl_castCacheB, tl_castIdxB, effB, FLOAT32);
+       effB = castWithPersistentCache(tl_castB, effB, FLOAT32);
      } else {
        castB = effB->cast(FLOAT32);
        effB = castB;
@@ -1011,7 +1007,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    if (supportedA && supportedB) {
      if (currentAType != DOUBLE) {
        if (useCastCache) {
-         effA = castWithPersistentCache(tl_castCacheA, tl_castIdxA, effA, DOUBLE);
+         effA = castWithPersistentCache(tl_castA, effA, DOUBLE);
        } else {
          castA = effA->cast(DOUBLE);
          effA = castA;
@@ -1019,7 +1015,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      }
      if (currentBType != DOUBLE) {
        if (useCastCache) {
-         effB = castWithPersistentCache(tl_castCacheB, tl_castIdxB, effB, DOUBLE);
+         effB = castWithPersistentCache(tl_castB, effB, DOUBLE);
        } else {
          castB = effB->cast(DOUBLE);
          effB = castB;
@@ -1114,12 +1110,13 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    // pA/pB data is FLOAT32 but Lt is told the type is CUDA_R_16F for the HALF
    // operand — WRONG: Lt would read FLOAT32 data as HALF. So use effAType/effBType
    // (post-upcast) which correctly reflect the actual data in pA/pB.
-   const cudaDataType ltAType = effAType == HALF ? CUDA_R_16F : CUDA_R_32F;
-   const cudaDataType ltBType = effBType == HALF ? CUDA_R_16F : CUDA_R_32F;
-   const cudaDataType ltCType = cType == HALF ? CUDA_R_16F : CUDA_R_32F;
+   cudaDataType ltAType = CUDA_R_32F, ltBType = CUDA_R_32F, ltCType = CUDA_R_32F;
+   sdToCudaDataType(effAType, ltAType);
+   sdToCudaDataType(effBType, ltBType);
+   sdToCudaDataType(cType,    ltCType);
 
    if (tryLtMatmul(effA, effB, C, alpha, beta, pA, pB, pC, M, N, K, transA, transB, ltAType, ltBType, ltCType,
-                   tl_ltEpilogueType, tl_ltEpilogueBiasPtr, tl_ltEpilogueBiasSize)) {
+                   tl_ltEpilogue.type, tl_ltEpilogue.biasPtr, tl_ltEpilogue.biasSize)) {
      if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({pC}, {pA, pB});
      if (C != pC) C->assign(pC);
      for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
@@ -1565,29 +1562,29 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      // same order.
      if (tl_graphExecutionActive) {
        if (aType == FLOAT32 && bType == HALF) {
-         auto reuseIt = tl_captureCastReuseA.find(A);
-         if (reuseIt != tl_captureCastReuseA.end()) {
-           if (tl_castIdxA < tl_castCacheA.size()) tl_castIdxA++;
+         auto reuseIt = tl_castA.captureCastReuse.find(A);
+         if (reuseIt != tl_castA.captureCastReuse.end()) {
+           if (tl_castA.index < tl_castA.cache.size()) tl_castA.index++;
            effA2d = reuseIt->second;
-         } else if (tl_castIdxA < tl_castCacheA.size()
-                    && tl_castCacheA[tl_castIdxA]->dataType() == HALF
-                    && tl_castCacheA[tl_castIdxA]->isSameShape(a2d)) {
-           NDArray* cached = tl_castCacheA[tl_castIdxA++];
+         } else if (tl_castA.index < tl_castA.cache.size()
+                    && tl_castA.cache[tl_castA.index]->dataType() == HALF
+                    && tl_castA.cache[tl_castA.index]->isSameShape(a2d)) {
+           NDArray* cached = tl_castA.cache[tl_castA.index++];
            cached->assign(a2d);
-           tl_captureCastReuseA.emplace(A, cached);
+           tl_castA.captureCastReuse.emplace(A, cached);
            effA2d = cached;
          }
        } else if (aType == HALF && bType == FLOAT32) {
-         auto reuseIt = tl_captureCastReuseB.find(B);
-         if (reuseIt != tl_captureCastReuseB.end()) {
-           if (tl_castIdxB < tl_castCacheB.size()) tl_castIdxB++;
+         auto reuseIt = tl_castB.captureCastReuse.find(B);
+         if (reuseIt != tl_castB.captureCastReuse.end()) {
+           if (tl_castB.index < tl_castB.cache.size()) tl_castB.index++;
            effB2d = reuseIt->second;
-         } else if (tl_castIdxB < tl_castCacheB.size()
-                    && tl_castCacheB[tl_castIdxB]->dataType() == HALF
-                    && tl_castCacheB[tl_castIdxB]->isSameShape(b2d)) {
-           NDArray* cached = tl_castCacheB[tl_castIdxB++];
+         } else if (tl_castB.index < tl_castB.cache.size()
+                    && tl_castB.cache[tl_castB.index]->dataType() == HALF
+                    && tl_castB.cache[tl_castB.index]->isSameShape(b2d)) {
+           NDArray* cached = tl_castB.cache[tl_castB.index++];
            cached->assign(b2d);
-           tl_captureCastReuseB.emplace(B, cached);
+           tl_castB.captureCastReuse.emplace(B, cached);
            effB2d = cached;
          }
        }

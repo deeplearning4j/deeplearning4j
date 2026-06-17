@@ -81,14 +81,11 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType &extra(sd::LongType *buffer)
     THROW_EXCEPTION("extra:  shapebuffer is nullptr");
   }
   sd::LongType rank = buffer[0];
-  sd::LongType idx = 0;
-  // rank takes up 1 element + usual elements
-  if (rank == 0) {
-    idx = 3;
-  } else {
-    // FIXME magic numbers
-    idx = rank + rank + 1;
-  }
+  // Index into [rank, shape*rank, strides*rank, extra, ews, order].
+  // extra is at 2*rank+1; scalars (rank==0) use the same formula: 0*2+1=1, but
+  // historically rank-0 buffers are laid out with extra at index 3 (a 4-element
+  // header before any shape/stride data).
+  sd::LongType idx = (rank == 0) ? 3 : SD_SHAPE_INFO_EXTRA_IDX(rank);
   return buffer[idx];
 }
 
@@ -97,13 +94,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType extra(const sd::LongType *bu
     THROW_EXCEPTION("extra:  shapebuffer is nullptr");
   }
   sd::LongType rank = buffer[0];
-  sd::LongType idx = 0;
-  // rank takes up 1 element + usual elements
-  if (rank == 0)
-    idx = 3;
-  else
-    // FIXME magic numbers
-    idx = rank + rank + 1;
+  sd::LongType idx = (rank == 0) ? 3 : SD_SHAPE_INFO_EXTRA_IDX(rank);
   return buffer[idx];
 }
 
@@ -1833,9 +1824,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoLength(sd::LongType
   // rank takes up 1 element + usual elements
   if (rank < 1)
     // shape of 0 (scalar) even has elements for shape and stride
-    return 1 * 2 + 4;
-  // FIXME magic numbers
-  return rank * 2 + 4;
+    return SD_SHAPE_INFO_LENGTH(1);
+  return SD_SHAPE_INFO_LENGTH(rank);
 }
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoLength(sd::LongType *shape) {
@@ -1847,14 +1837,12 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoLength(const sd::Lo
 }
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoByteLength(sd::LongType rank) {
-  // scalar formula isn't correct
-  if (rank == 0) return 6 * sizeof(sd::LongType);
-  // FIXME magic numbers
-  return (rank * 2 + 4) * sizeof(sd::LongType);
+  // scalar formula isn't correct; shapeInfoLength(0) returns 6 (uses rank=1 formula)
+  if (rank == 0) return SD_SHAPE_INFO_LENGTH(1) * sizeof(sd::LongType);
+  return SD_SHAPE_INFO_LENGTH(rank) * sizeof(sd::LongType);
 }
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE size_t shapeInfoByteLength(const sd::LongType *shapeInfo) {
-  // FIXME magic numbers
   return shapeInfoByteLength(shapeInfo[0]);
 }
 
@@ -2010,7 +1998,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE char setOrder(sd::LongType *buffer, char 
     buffer[5] = 'c';
     return 'c';
   }
-  // FIXME magic numbers
   if (length(buffer) > 1 && c != 'c' && c != 'f') {
     std::string errorMessage;
     errorMessage += "Invalid order from  descriptor: ";
@@ -2852,9 +2839,9 @@ SD_LIB_EXPORT SD_INLINE SD_HOST int excludeUnitiesFromShapeInfo(const sd::LongTy
 
 
 SD_LIB_EXPORT SD_INLINE void SD_HOST checkStridesEwsAndOrder(sd::LongType *shapeInfo) {
-  // FIXME - indeed we don't need to allocate so large memory amount (2*SD_MAX_RANK), sufficient amount is
-  // (2*oldNumOfNonUnities + 2*newNumOfNonUnities)
-  // Zero-initialize to prevent undefined behavior from uninitialized memory
+  // Allocate a buffer large enough to hold shape and stride arrays for any valid rank.
+  // Using 2*SD_MAX_RANK covers both shape[0..rank-1] and strides[0..rank-1].
+  // Zero-initialize to prevent undefined behavior from uninitialized memory.
   sd::LongType tempBuffer[2 * SD_MAX_RANK] = {0};
   sd::LongType *shape = tempBuffer, *strides = tempBuffer + shape::rank(shapeInfo);
 

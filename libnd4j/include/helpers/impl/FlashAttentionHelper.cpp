@@ -35,6 +35,7 @@
 #include <execution/Threads.h>
 #include <system/Environment.h>
 #include <system/type_boilerplate.h>
+#include <math/templatemath.h>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -143,7 +144,7 @@ void FlashAttentionHelper::forward3D(
   auto dim = query->sizeAt(2);
   auto seqLenKV = key->sizeAt(1);
 
-  float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(dim));
+  float scale = config.scale > 0.0f ? config.scale : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(dim));
 
 #if defined(SD_CUDA)
   // Use fused CUDA kernel - now supports attention bias!
@@ -281,7 +282,7 @@ void FlashAttentionHelper::forward4D(
   auto seqLenKV = key->sizeAt(1);
   auto numKvHeads = key->sizeAt(2);
 
-  float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(headDim));
+  float scale = config.scale > 0.0f ? config.scale : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
   int headsPerKvHead = numHeads / numKvHeads;
 
   auto workspace = AttentionWorkspace::getInstance();
@@ -793,7 +794,7 @@ void FlashAttentionHelper::backward3D(
   auto dim = query->sizeAt(2);
   auto seqLenKV = key->sizeAt(1);
 
-  float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(dim));
+  float scale = config.scale > 0.0f ? config.scale : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(dim));
 
   auto workspace = AttentionWorkspace::getInstance();
   std::vector<LongType> scoresShape = {batch, seqLenQ, seqLenKV};
@@ -869,7 +870,7 @@ void FlashAttentionHelper::backward4D(
   auto seqLenKV = key->sizeAt(1);
   auto numKvHeads = key->sizeAt(2);
 
-  float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(headDim));
+  float scale = config.scale > 0.0f ? config.scale : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
   int headsPerKvHead = numHeads / numKvHeads;
 
   auto workspace = AttentionWorkspace::getInstance();
@@ -1170,22 +1171,22 @@ void FlashAttentionHelper::updateSoftmaxState(SoftmaxState& state, float newMax,
   float maxDiff = newMax - state.maxVal;
 
   if (maxDiff > threshold) {
-    float rescaleFactor = std::exp(state.maxVal - newMax);
+    float rescaleFactor = sd::math::sd_exp<float, float>(state.maxVal - newMax);
     state.correction = rescaleFactor;
     state.sumExp = state.sumExp * rescaleFactor + newSum;
     state.maxVal = newMax;
     state.needsRescale = true;
   } else if (maxDiff < -threshold) {
-    float rescaleFactor = std::exp(newMax - state.maxVal);
+    float rescaleFactor = sd::math::sd_exp<float, float>(newMax - state.maxVal);
     state.sumExp = state.sumExp + newSum * rescaleFactor;
     state.correction = 1.0f;
     state.needsRescale = false;
   } else {
     float maxOfMax = std::max(state.maxVal, newMax);
-    state.sumExp = state.sumExp * std::exp(state.maxVal - maxOfMax) +
-                   newSum * std::exp(newMax - maxOfMax);
+    state.sumExp = state.sumExp * sd::math::sd_exp<float, float>(state.maxVal - maxOfMax) +
+                   newSum * sd::math::sd_exp<float, float>(newMax - maxOfMax);
     state.maxVal = maxOfMax;
-    state.correction = std::exp(state.maxVal - maxOfMax);
+    state.correction = sd::math::sd_exp<float, float>(state.maxVal - maxOfMax);
     state.needsRescale = true;
   }
 }
@@ -1230,9 +1231,9 @@ void FlashAttentionHelper::computeTile(const float* queryTile, const float* keyT
       }
       score *= scale;
 
-      float expScore = std::exp(score - states[q].maxVal);
+      float expScore = sd::math::sd_exp<float, float>(score - states[q].maxVal);
       if (score > states[q].maxVal) {
-        float rescale = std::exp(states[q].maxVal - score);
+        float rescale = sd::math::sd_exp<float, float>(states[q].maxVal - score);
         states[q].sumExp = states[q].sumExp * rescale + expScore;
         states[q].maxVal = score;
 

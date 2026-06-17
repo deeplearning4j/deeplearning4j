@@ -24,8 +24,8 @@
 
 #include <ops/declarable/helpers/paged_attention.h>
 #include <array/NDArrayFactory.h>
+#include <math/templatemath.h>
 #include <system/op_boilerplate.h>
-#include <cmath>
 #include <cfloat>
 
 namespace sd {
@@ -52,10 +52,11 @@ static void pagedAttentionForward_(
 
     T scale = static_cast<T>(config.scale);
     if (config.scale <= 0.0f) {
-        scale = static_cast<T>(1.0f / std::sqrt(static_cast<float>(headDim)));
+        scale = static_cast<T>(1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim)));
     }
 
     // Simple CPU implementation: iterate over batch, heads, compute attention
+    PRAGMA_OMP_PARALLEL_FOR
     for (int b = 0; b < batch; b++) {
         int ctxLen = contextLens->e<int>(b);
         if (ctxLen <= 0) continue;
@@ -91,15 +92,17 @@ static void pagedAttentionForward_(
             // Softmax
             T sumExp = static_cast<T>(0);
             for (int pos = 0; pos < ctxLen; pos++) {
-                scores[pos] = static_cast<T>(std::exp(static_cast<float>(scores[pos] - maxScore)));
+                scores[pos] = sd::math::sd_exp<T, T>(scores[pos] - maxScore);
                 sumExp += scores[pos];
             }
             T invSum = static_cast<T>(1) / (sumExp + static_cast<T>(1e-8f));
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int pos = 0; pos < ctxLen; pos++) {
                 scores[pos] *= invSum;
             }
 
             // Weighted sum of values
+            PRAGMA_OMP_PARALLEL_FOR
             for (int d = 0; d < headDim; d++) {
                 T acc = static_cast<T>(0);
                 for (int pos = 0; pos < ctxLen; pos++) {
@@ -132,11 +135,6 @@ void pagedAttentionForward(
                           SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void pagedAttentionForward_,
-                      (NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*,
-                       const PagedAttentionConfig&, LaunchContext*),
-                      SD_FLOAT_TYPES);
-
 template <typename T>
 static void pagedKvCacheAppend_(
     NDArray* keyBlockPool,
@@ -154,6 +152,7 @@ static void pagedKvCacheAppend_(
     int headDim = static_cast<int>(newKeys->sizeAt(3));
     int maxBlocksPerSeq = static_cast<int>(pageTables->sizeAt(1));
 
+    PRAGMA_OMP_PARALLEL_FOR
     for (int b = 0; b < batch; b++) {
         int startPos = contextLens->e<int>(b);
 
@@ -168,6 +167,7 @@ static void pagedKvCacheAppend_(
             if (physicalBlock < 0) continue;
 
             for (int h = 0; h < numKvHeads; h++) {
+                PRAGMA_OMP_PARALLEL_FOR_SIMD
                 for (int d = 0; d < headDim; d++) {
                     T kVal = newKeys->e<T>(b, t, h, d);
                     T vVal = newValues->e<T>(b, t, h, d);
@@ -193,10 +193,6 @@ void pagedKvCacheAppend(
                           (keyBlockPool, valueBlockPool, newKeys, newValues, pageTables, contextLens, blockSize, context),
                           SD_FLOAT_TYPES);
 }
-
-BUILD_SINGLE_TEMPLATE(template void pagedKvCacheAppend_,
-                      (NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, int, LaunchContext*),
-                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

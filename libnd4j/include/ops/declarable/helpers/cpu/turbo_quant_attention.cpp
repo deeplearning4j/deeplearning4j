@@ -20,7 +20,9 @@
 
 #include <ops/declarable/helpers/turbo_quant_attention.h>
 #include <array/NDArrayFactory.h>
+#include <math/templatemath.h>
 #include <system/op_boilerplate.h>
+#include <system/openmp_pragmas.h>
 #include <cmath>
 
 #if NOT_EXCLUDED(OP_turbo_quant_attention)
@@ -51,13 +53,14 @@ static void turboQuantAttentionForward_(
 
   T scale = static_cast<T>(config.scale);
   if (config.scale <= 0.0f) {
-    scale = static_cast<T>(1.0f / std::sqrt(static_cast<float>(headDim)));
+    scale = static_cast<T>(1.0) / sd::math::sd_sqrt<T, T>(static_cast<T>(headDim));
   }
 
   // QJL correction factor: sqrt(π/2) / m
-  T qjlCorrectionScale = static_cast<T>(std::sqrt(M_PI / 2.0) / static_cast<float>(headDim));
+  T qjlCorrectionScale = sd::math::sd_sqrt<T, T>(static_cast<T>(M_PI / 2.0)) / static_cast<T>(headDim);
 
   // Process each batch and head independently
+  PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
   for (sd::LongType b = 0; b < batch; b++) {
     for (sd::LongType h = 0; h < numHeads; h++) {
       for (sd::LongType sq = 0; sq < seqQ; sq++) {
@@ -127,7 +130,7 @@ static void turboQuantAttentionForward_(
         T sumExp = static_cast<T>(0);
         std::vector<T> weights(seqK);
         for (sd::LongType sk = 0; sk < seqK; sk++) {
-          weights[sk] = static_cast<T>(std::exp(static_cast<float>(scores[sk] - maxScore)));
+          weights[sk] = static_cast<T>(sd::math::sd_exp<float, float>(static_cast<float>(scores[sk] - maxScore)));
           sumExp += weights[sk];
         }
         if (sumExp > static_cast<T>(0)) {
@@ -166,11 +169,6 @@ void turboQuantAttentionForward(
                          attentionMask, output, config, context),
                         SD_FLOAT_TYPES);
 }
-
-BUILD_SINGLE_TEMPLATE(template void turboQuantAttentionForward_,
-                      (NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*,
-                       NDArray*, NDArray*, const TurboQuantAttentionConfig&, LaunchContext*),
-                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops
