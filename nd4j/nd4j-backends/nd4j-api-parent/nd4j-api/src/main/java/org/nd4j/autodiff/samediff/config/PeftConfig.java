@@ -87,6 +87,7 @@ import java.util.List;
     @JsonSubTypes.Type(value = LoftQConfig.class, name = "loftq")
 })
 public abstract class PeftConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * The type of PEFT method.

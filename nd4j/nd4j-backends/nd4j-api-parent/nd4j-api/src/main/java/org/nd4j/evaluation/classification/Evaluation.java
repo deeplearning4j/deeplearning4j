@@ -56,6 +56,7 @@ import java.util.*;
 @Setter
 @JsonIgnoreProperties({"confusionMatrixMetaData"})
 public class Evaluation extends BaseEvaluation<Evaluation> {
+    private static final long serialVersionUID = 1L;
 
     public enum Metric implements IMetric {ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC;
 

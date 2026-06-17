@@ -47,6 +47,7 @@ import java.util.Map;
 @NoArgsConstructor
 @Slf4j
 public class SDVariable implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     protected SameDiff sameDiff;
 

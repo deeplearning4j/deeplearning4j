@@ -43,6 +43,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ContinuedPretrainingConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Chunk size for splitting text into training sequences.

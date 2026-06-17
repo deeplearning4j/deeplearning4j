@@ -40,6 +40,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
+    private static final long serialVersionUID = 1L;
     public static final int DEFAULT_STATS_PRECISION = 4;
 
     /**

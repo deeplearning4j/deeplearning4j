@@ -26,6 +26,7 @@ import org.nd4j.common.util.ArrayUtil;
 import java.io.Serializable;
 
 public class LinearIndexLookup implements Serializable {
+    private static final long serialVersionUID = 1L;
     private char ordering;
     private long[][] indexes;
     private long[] shape;

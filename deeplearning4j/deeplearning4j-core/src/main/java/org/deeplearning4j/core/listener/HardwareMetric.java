@@ -42,6 +42,7 @@ import java.util.*;
 @Data
 @AllArgsConstructor
 public class HardwareMetric implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 

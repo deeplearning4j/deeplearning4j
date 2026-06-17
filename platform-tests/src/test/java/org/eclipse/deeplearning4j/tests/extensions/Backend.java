@@ -18,29 +18,32 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.core.listener;
+package org.eclipse.deeplearning4j.tests.extensions;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+/**
+ * Backend types (CPU vs GPU).
+ */
+public enum Backend {
+    CPU("cpu"),
+    CUDA("cuda"),
+    ROCM("rocm"),
+    TPU("tpu");
 
-import java.io.Serializable;
+    private final String id;
 
-@Data
-@Builder
-@AllArgsConstructor
-public class DeviceMetric implements Serializable {
-    private static final long serialVersionUID = 1L;
-
-    private double load;
-    private double totalMemory;
-    private String deviceName;
-    private double temp;
-    private double memAvailable;
-    private long bandwidthDeviceToHost,bandwidthHostToDevice,bandwidthDeviceToDevice;
-
-    private DeviceMetric(){
-        //No-arg constructor for JSON/YAML
+    Backend(String id) {
+        this.id = id;
     }
 
+    public String getId() { return id; }
+
+    public static Backend fromString(String str) {
+        if (str == null) return CPU;
+        for (Backend b : values()) {
+            if (b.id.equalsIgnoreCase(str.trim())) {
+                return b;
+            }
+        }
+        return CPU;
+    }
 }

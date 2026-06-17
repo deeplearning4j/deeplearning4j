@@ -49,6 +49,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FP8TrainingConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Use E4M3 format for forward pass activations (higher precision, narrower range).

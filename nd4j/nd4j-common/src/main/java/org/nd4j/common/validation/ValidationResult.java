@@ -35,6 +35,7 @@ import java.util.List;
 @Builder
 @Data
 public class ValidationResult implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private String formatType;       //Human readable format/model type
     private Class<?> formatClass;    //Actual class the format/model is (or should be)

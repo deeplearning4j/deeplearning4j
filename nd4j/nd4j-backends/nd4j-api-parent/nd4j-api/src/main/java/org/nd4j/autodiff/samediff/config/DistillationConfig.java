@@ -48,6 +48,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DistillationConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Distillation strategy type.

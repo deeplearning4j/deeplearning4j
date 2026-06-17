@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StackTraceQuery implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Builder.Default
     private int lineNumber = -1;
     private String className;

@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializable, Closeable {
+    private static final long serialVersionUID = 1L;
     private static final String ROUTE_IS_DOWN = "Info posted to RemoteUIStatsStorageRouter but router is shut down.";
     private static final String MAX_WARNINGS_REACHED = "RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.";
     /**

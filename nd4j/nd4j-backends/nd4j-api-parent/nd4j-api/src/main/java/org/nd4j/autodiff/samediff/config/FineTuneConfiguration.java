@@ -64,6 +64,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public class FineTuneConfiguration implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * The default updater applied to all trainable variables that do not have a per-variable

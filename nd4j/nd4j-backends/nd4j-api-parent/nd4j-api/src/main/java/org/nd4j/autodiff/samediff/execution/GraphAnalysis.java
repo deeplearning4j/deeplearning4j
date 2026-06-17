@@ -18,29 +18,33 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.core.listener;
+package org.nd4j.autodiff.samediff.execution;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
-import java.io.Serializable;
+import java.util.Map;
 
+/**
+ * Structural analysis of a compiled DSP plan. Produced by {@link AutoTuner#analyze(DynamicShapePlan)}
+ * and consumed by the cost model.
+ */
 @Data
 @Builder
-@AllArgsConstructor
-public class DeviceMetric implements Serializable {
-    private static final long serialVersionUID = 1L;
-
-    private double load;
-    private double totalMemory;
-    private String deviceName;
-    private double temp;
-    private double memAvailable;
-    private long bandwidthDeviceToHost,bandwidthHostToDevice,bandwidthDeviceToDevice;
-
-    private DeviceMetric(){
-        //No-arg constructor for JSON/YAML
-    }
-
+public class GraphAnalysis {
+    private final int totalSlots;
+    private final int computeOps;
+    private final int elementwiseOps;
+    private final int reductionOps;
+    private final int valueDependentOps;
+    private final int capturableSlots;
+    private final int totalSegments;
+    private final int capturableSegments;
+    private final int maxSegmentSize;
+    private final long estimatedPeakMemoryBytes;
+    private final double computeOpFraction;
+    private final double elementwiseOpFraction;
+    private final double reductionOpFraction;
+    private final double valueDependentFraction;
+    private final Map<String, Integer> opHistogram;
 }

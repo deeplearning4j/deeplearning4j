@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @Builder
 public class NDArrayEvent implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private StackTraceElement[] stackTrace;
     private static final AtomicLong arrayCounter = new AtomicLong(0);

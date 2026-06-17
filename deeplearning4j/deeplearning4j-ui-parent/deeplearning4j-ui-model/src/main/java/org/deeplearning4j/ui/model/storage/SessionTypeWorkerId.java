@@ -18,29 +18,37 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.core.listener;
+package org.deeplearning4j.ui.model.storage;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
 
 @Data
-@Builder
-@AllArgsConstructor
-public class DeviceMetric implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class SessionTypeWorkerId implements Serializable, Comparable<SessionTypeWorkerId> {
+    private final String sessionID;
+    private final String typeID;
+    private final String workerID;
 
-    private double load;
-    private double totalMemory;
-    private String deviceName;
-    private double temp;
-    private double memAvailable;
-    private long bandwidthDeviceToHost,bandwidthHostToDevice,bandwidthDeviceToDevice;
-
-    private DeviceMetric(){
-        //No-arg constructor for JSON/YAML
+    public SessionTypeWorkerId(String sessionID, String typeID, String workerID) {
+        this.sessionID = sessionID;
+        this.typeID = typeID;
+        this.workerID = workerID;
     }
 
+    @Override
+    public int compareTo(SessionTypeWorkerId o) {
+        int c = sessionID.compareTo(o.sessionID);
+        if (c != 0)
+            return c;
+        c = typeID.compareTo(o.typeID);
+        if (c != 0)
+            return c;
+        return workerID.compareTo(workerID);
+    }
+
+    @Override
+    public String toString() {
+        return "(" + sessionID + "," + typeID + "," + workerID + ")";
+    }
 }

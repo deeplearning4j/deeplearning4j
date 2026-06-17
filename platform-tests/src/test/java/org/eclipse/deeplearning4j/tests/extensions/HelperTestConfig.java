@@ -18,29 +18,25 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.core.listener;
+package org.eclipse.deeplearning4j.tests.extensions;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+/**
+ * Configuration object for parameterized tests.
+ */
+public class HelperTestConfig {
+    private final Helper helper;
+    private final HelperCapabilities capabilities;
 
-import java.io.Serializable;
-
-@Data
-@Builder
-@AllArgsConstructor
-public class DeviceMetric implements Serializable {
-    private static final long serialVersionUID = 1L;
-
-    private double load;
-    private double totalMemory;
-    private String deviceName;
-    private double temp;
-    private double memAvailable;
-    private long bandwidthDeviceToHost,bandwidthHostToDevice,bandwidthDeviceToDevice;
-
-    private DeviceMetric(){
-        //No-arg constructor for JSON/YAML
+    public HelperTestConfig(Helper helper, HelperCapabilities capabilities) {
+        this.helper = helper;
+        this.capabilities = capabilities;
     }
 
+    public Helper getHelper() { return helper; }
+    public HelperCapabilities getCapabilities() { return capabilities; }
+
+    @Override
+    public String toString() {
+        return helper.getId();
+    }
 }

@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class CheckpointListener extends BaseListener implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private enum KeepMode {ALL, LAST, LAST_AND_EVERY};
 

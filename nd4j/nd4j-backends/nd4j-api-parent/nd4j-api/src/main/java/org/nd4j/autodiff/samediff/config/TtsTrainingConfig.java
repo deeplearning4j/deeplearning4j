@@ -62,6 +62,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TtsTrainingConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Peak learning rate for the optimizer.

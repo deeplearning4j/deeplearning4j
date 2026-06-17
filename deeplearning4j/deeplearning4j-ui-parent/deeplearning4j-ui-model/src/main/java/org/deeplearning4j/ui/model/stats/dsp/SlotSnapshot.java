@@ -17,44 +17,22 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.linalg.profiler.data.stacktrace;
+
+package org.deeplearning4j.ui.model.stats.dsp;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StackTraceLookupKey implements Serializable  {
-    private static final long serialVersionUID = 1L;
-
-    private String className;
-    private String methodName;
-    private int lineNumber;
-
-
-    public static StackTraceLookupKey of(StackTraceElement element) {
-        return StackTraceLookupKey.builder()
-                .className(element.getClassName())
-                .methodName(element.getMethodName())
-                .lineNumber(element.getLineNumber())
-                .build();
-    }
-
-    public static StackTraceElement stackTraceElementOf(StackTraceLookupKey key) {
-        return StackTraceElementCache.lookup(key);
-    }
-
-    public static StackTraceLookupKey of(String className, String methodName, int lineNumber) {
-        return StackTraceLookupKey.builder()
-                .className(className)
-                .methodName(methodName)
-                .lineNumber(lineNumber)
-                .build();
-    }
+public class SlotSnapshot implements Serializable {
+    private int index;
+    private String opName;
+    private int flags;
+    private String state;
+    private String flagDescription;
 }

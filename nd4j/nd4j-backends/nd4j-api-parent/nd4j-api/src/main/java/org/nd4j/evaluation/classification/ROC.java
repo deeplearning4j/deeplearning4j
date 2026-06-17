@@ -63,6 +63,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 @JsonSerialize(using = ROCSerializer.class)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public class ROC extends BaseEvaluation<ROC> {
+    private static final long serialVersionUID = 1L;
 
     /**
      * AUROC: Area under ROC curve<br>

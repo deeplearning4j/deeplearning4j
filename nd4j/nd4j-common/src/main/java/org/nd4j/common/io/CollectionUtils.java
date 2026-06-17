@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 
 
 public abstract class CollectionUtils {
+    private static final long serialVersionUID = 1L;
     public CollectionUtils() {}
 
     public static boolean isEmpty(Collection collection) {

@@ -54,6 +54,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VariableGroup implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private String name;
     private double learningRateMultiplier = 1.0;

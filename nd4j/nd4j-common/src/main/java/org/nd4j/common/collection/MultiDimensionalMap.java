@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * Multiple key map
  */
 public class MultiDimensionalMap<K, T, V> implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private Map<Pair<K, T>, V> backedMap;
 

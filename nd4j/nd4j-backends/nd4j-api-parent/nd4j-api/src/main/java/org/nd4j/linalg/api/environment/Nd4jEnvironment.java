@@ -37,6 +37,7 @@ import java.util.Properties;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Nd4jEnvironment implements Serializable {
+    private static final long serialVersionUID = 1L;
     private long ram;
     private int numCores;
     private String os;

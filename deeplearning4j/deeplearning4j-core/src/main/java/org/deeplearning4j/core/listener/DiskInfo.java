@@ -30,6 +30,7 @@ import java.io.Serializable;
 @Builder
 @AllArgsConstructor
 public class DiskInfo implements Serializable {
+    private static final long serialVersionUID = 1L;
     private long bytesRead,bytesWritten,transferTime;
     private String name,modelName;
 

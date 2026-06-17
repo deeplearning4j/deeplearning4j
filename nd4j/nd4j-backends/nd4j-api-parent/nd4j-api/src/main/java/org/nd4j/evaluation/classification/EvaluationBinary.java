@@ -50,6 +50,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
+    private static final long serialVersionUID = 1L;
 
     public enum Metric implements IMetric {ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC, FAR;
 

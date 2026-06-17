@@ -53,6 +53,7 @@ import java.io.Serializable;
         @JsonSubTypes.Type(value = VlmGRPOConfig.class, name = "vlm_grpo")
 })
 public abstract class RLAlignmentConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * KL divergence coefficient for regularization against reference model.

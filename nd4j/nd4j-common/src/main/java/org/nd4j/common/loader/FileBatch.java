@@ -38,6 +38,7 @@ import java.util.zip.ZipOutputStream;
 @AllArgsConstructor
 @Data
 public class FileBatch implements Serializable {
+    private static final long serialVersionUID = 1L;
     /**
      * Name of the file in the zip file that contains the original paths/filenames
      */

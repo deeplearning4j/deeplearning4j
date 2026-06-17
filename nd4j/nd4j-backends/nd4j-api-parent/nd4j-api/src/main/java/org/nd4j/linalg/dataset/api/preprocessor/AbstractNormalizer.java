@@ -23,6 +23,7 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 import java.io.Serializable;
 
 public abstract class AbstractNormalizer implements Serializable {
+    private static final long serialVersionUID = 1L;
     protected abstract boolean isFit();
 
     void assertIsFit() {

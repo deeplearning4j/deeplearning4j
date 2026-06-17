@@ -64,6 +64,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VlmFineTuneConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Whether to freeze the vision encoder during training.

@@ -45,6 +45,7 @@ import java.util.List;
 
 @EqualsAndHashCode
 public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvaluation<T> {
+    private static final long serialVersionUID = 1L;
 
     /**
      * @param yaml  YAML representation

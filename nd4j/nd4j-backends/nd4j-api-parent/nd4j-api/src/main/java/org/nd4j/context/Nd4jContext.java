@@ -30,6 +30,7 @@ import java.util.Properties;
 
 @Slf4j
 public class Nd4jContext implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Getter
     private Properties conf;

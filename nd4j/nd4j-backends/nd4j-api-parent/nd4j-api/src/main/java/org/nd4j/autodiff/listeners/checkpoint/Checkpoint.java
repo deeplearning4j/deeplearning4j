@@ -29,6 +29,7 @@ import java.util.Arrays;
 @AllArgsConstructor
 @Data
 public class Checkpoint implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private int checkpointNum;
     private long timestamp;

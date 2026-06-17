@@ -18,29 +18,16 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.core.listener;
+package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-
-import java.io.Serializable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.tensorflow.framework.GraphDef;
 
 @Data
-@Builder
 @AllArgsConstructor
-public class DeviceMetric implements Serializable {
-    private static final long serialVersionUID = 1L;
-
-    private double load;
-    private double totalMemory;
-    private String deviceName;
-    private double temp;
-    private double memAvailable;
-    private long bandwidthDeviceToHost,bandwidthHostToDevice,bandwidthDeviceToDevice;
-
-    private DeviceMetric(){
-        //No-arg constructor for JSON/YAML
-    }
-
+public class ModelLoadResult {
+    private SameDiff sameDiff;
+    private GraphDef graphDef;
 }
