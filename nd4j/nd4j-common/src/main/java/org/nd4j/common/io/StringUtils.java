@@ -532,7 +532,8 @@ public abstract class StringUtils {
         if (ObjectUtils.isEmpty(array)) {
             return array;
         } else {
-            return toStringArray(Arrays.stream(array).collect(Collectors.toCollection(TreeSet::new)));
+            TreeSet<String> deduped = Arrays.stream(array).collect(Collectors.toCollection(TreeSet::new));
+            return toStringArray((Collection<String>) deduped);
         }
     }
 

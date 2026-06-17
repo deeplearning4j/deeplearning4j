@@ -64,7 +64,6 @@ import org.nd4j.linalg.api.memory.MultiBackendWorkspaceManager;
 import org.nd4j.linalg.api.memory.conf.DeviceAwareWorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.*;
 import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
@@ -74,11 +73,16 @@ import org.nd4j.linalg.api.ops.executioner.KernelSelectionConfig;
 import org.nd4j.linalg.api.ops.executioner.KernelSelector;
 import org.nd4j.linalg.api.ops.executioner.MultiBackendExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.custom.Tri;
+import org.nd4j.linalg.api.ops.custom.Triu;
+import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
+import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
+import org.nd4j.linalg.api.ops.impl.shape.MeshGrid;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad.Mode;
@@ -1012,13 +1016,7 @@ public class Nd4j {
      * @return the multiplication result.
      */
     public static INDArray tensorMmul(INDArray a, INDArray b, int[][] axes) {
-        CustomOp op = DynamicCustomOp.builder("tensordot")
-                .addInputs(a, b)
-                .addIntegerArguments(axes[0].length)
-                .addIntegerArguments(axes[0])
-                .addIntegerArguments(axes[1].length)
-                .addIntegerArguments(axes[1])
-                .build();
+        TensorMmul op = new TensorMmul(a, b, axes);
 
         List<DataBuffer> l = op.calculateOutputShape();
         INDArray out = null;
@@ -2399,10 +2397,8 @@ public class Nd4j {
         INDArray xOut = Nd4j.createUninitialized(x.dataType(), y.length(), x.length());
         INDArray yOut = Nd4j.createUninitialized(x.dataType(), y.length(), x.length());
 
-        CustomOp op = DynamicCustomOp.builder("meshgrid")
-                .addInputs(x, y)
-                .addOutputs(xOut, yOut)
-                .build();
+        MeshGrid op = new MeshGrid(new INDArray[]{x, y}, false);
+        op.addOutputArgument(xOut, yOut);
         Nd4j.getExecutioner().execAndReturn(op);
 
         return new INDArray[]{xOut, yOut};
@@ -6874,12 +6870,8 @@ public class Nd4j {
          */
         INDArray result = Nd4j.createUninitialized(m.shape());
 
-        val op = DynamicCustomOp.builder("triu")
-                .addInputs(m)
-                .addOutputs(result)
-                .addIntegerArguments(k)
-                .build();
-
+        Triu op = new Triu(m, k);
+        op.addOutputArgument(result);
         Nd4j.getExecutioner().execAndReturn(op);
         return result;
     }
@@ -6911,11 +6903,8 @@ public class Nd4j {
      */
     public static INDArray tri(int n,int m,int k) {
         INDArray ret = Nd4j.createUninitialized(n, m);
-        val op = DynamicCustomOp.builder("tri")
-                .addIntegerArguments(n, m, k)
-                .addOutputs(ret)
-                .build();
-
+        Tri op = new Tri(n, m, k);
+        op.addOutputArgument(ret);
         Nd4j.getExecutioner().execAndReturn(op);
         return ret;
     }
@@ -6935,20 +6924,19 @@ public class Nd4j {
     public static INDArray[] where(INDArray condition, INDArray x, INDArray y){
         Preconditions.checkState((x == null && y == null) || (x != null && y != null), "Both X and Y must be" +
                 "null, or neither must be null");
-        DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("where_np");
         List<DataBuffer> outShapes;
+        WhereNumpy op;
         if(x == null){
             //First case: condition only...
-            op.addInputs(condition);
+            op = new WhereNumpy(new INDArray[]{condition}, null);
         } else {
             if(!x.equalShapes(y) || !x.equalShapes(condition)){
                 //noinspection ConstantConditions
                 Preconditions.throwStateEx("Shapes must be equal: condition=%s, x=%s, y=%s", condition.shape(), x.shape(), y.shape());
             }
-            op.addInputs(condition, x, y);
+            op = new WhereNumpy(new INDArray[]{condition, x, y}, null);
         }
-        DynamicCustomOp o = op.build();
-        outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
+        outShapes = Nd4j.getExecutioner().calculateOutputShape(op);
         INDArray[] outputs = new INDArray[outShapes.size()];
 
         // Track how many shape buffers were successfully used by output arrays
@@ -6967,9 +6955,9 @@ public class Nd4j {
                 outputs[i] = Nd4j.createFromDescriptor(outShapes.get(i));
                 buffersUsed++;  // Track successful usage
             }
-            op.addOutputs(outputs);
+            op.addOutputArgument(outputs);
 
-            Nd4j.getExecutioner().execAndReturn(op.build());
+            Nd4j.getExecutioner().execAndReturn(op);
             return outputs;
         } finally {
             // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper

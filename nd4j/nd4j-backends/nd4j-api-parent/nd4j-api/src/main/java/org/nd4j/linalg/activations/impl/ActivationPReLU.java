@@ -24,7 +24,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.scalar.PRelu;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.PReluBp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
@@ -47,14 +48,10 @@ public class ActivationPReLU extends BaseActivationFunction {
         // the native code may read alpha at the wrong buffer offset and see 0 instead of
         // the actual parameter value, producing f(x) = 0*x = 0 for all negative inputs.
         INDArray alphaForOp = alpha.isView() ? alpha.dup() : alpha;
-        DynamicCustomOp.DynamicCustomOpsBuilder prelu = DynamicCustomOp.builder("prelu")
-                .addOutputs(in).addInputs(in, alphaForOp);
-        if (sharedAxes != null) {
-            for (long axis: sharedAxes) {
-                prelu.addIntegerArguments(axis);
-            }
-        }
-        Nd4j.getExecutioner().execAndReturn(prelu.build());
+        int[] sharedAxesInt = sharedAxes != null ? new int[sharedAxes.length] : new int[0];
+        for (int i = 0; i < sharedAxesInt.length; i++) sharedAxesInt[i] = (int) sharedAxes[i];
+        PRelu prelu = new PRelu(in, in, alphaForOp, sharedAxesInt);
+        Nd4j.getExecutioner().execAndReturn(prelu);
         return in;
     }
 
@@ -68,16 +65,10 @@ public class ActivationPReLU extends BaseActivationFunction {
         // the native code may read alpha at the wrong buffer offset and see 0 instead of
         // the actual parameter value, producing dLdI = grO * 0 = 0 for all negative inputs.
         INDArray alphaForOp = alpha.isView() ? alpha.dup() : alpha;
-        DynamicCustomOp.DynamicCustomOpsBuilder preluBp = DynamicCustomOp.builder("prelu_bp")
-                .addInputs(in, alphaForOp, epsilon)
-                .addOutputs(outTemp, dLdalpha);
-
-        if (sharedAxes != null) {
-            for (long axis: sharedAxes) {
-                preluBp.addIntegerArguments(axis);
-            }
-        }
-        Nd4j.exec(preluBp.build());
+        int[] sharedAxesInt = sharedAxes != null ? new int[sharedAxes.length] : new int[0];
+        for (int i = 0; i < sharedAxesInt.length; i++) sharedAxesInt[i] = (int) sharedAxes[i];
+        PReluBp preluBp = new PReluBp(in, alphaForOp, epsilon, outTemp, dLdalpha, sharedAxesInt);
+        Nd4j.exec(preluBp);
         in.assign(outTemp);
         return new Pair<>(in, dLdalpha);
     }
