@@ -93,13 +93,13 @@ public class AggregatorImpls {
 
         private static <U extends Number> Number addNumbers(U a, U b) {
             if (a instanceof Double || b instanceof Double) {
-                return new Double(a.doubleValue() + b.doubleValue());
+                return Double.valueOf(a.doubleValue() + b.doubleValue());
             } else if (a instanceof Float || b instanceof Float) {
-                return new Float(a.floatValue() + b.floatValue());
+                return Float.valueOf(a.floatValue() + b.floatValue());
             } else if (a instanceof Long || b instanceof Long) {
-                return new Long(a.longValue() + b.longValue());
+                return Long.valueOf(a.longValue() + b.longValue());
             } else {
-                return new Integer(a.intValue() + b.intValue());
+                return Integer.valueOf(a.intValue() + b.intValue());
             }
         }
 
@@ -142,13 +142,13 @@ public class AggregatorImpls {
 
         private static <U extends Number> Number multiplyNumbers(U a, U b) {
             if (a instanceof Double || b instanceof Double) {
-                return new Double(a.doubleValue() * b.doubleValue());
+                return Double.valueOf(a.doubleValue() * b.doubleValue());
             } else if (a instanceof Float || b instanceof Float) {
-                return new Float(a.floatValue() * b.floatValue());
+                return Float.valueOf(a.floatValue() * b.floatValue());
             } else if (a instanceof Long || b instanceof Long) {
-                return new Long(a.longValue() * b.longValue());
+                return Long.valueOf(a.longValue() * b.longValue());
             } else {
-                return new Integer(a.intValue() * b.intValue());
+                return Integer.valueOf(a.intValue() * b.intValue());
             }
         }
 

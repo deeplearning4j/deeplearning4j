@@ -36,6 +36,8 @@ import java.io.Serializable;
 @Slf4j
 public class CollectScoresListener extends BaseTrainingListener implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private final int frequency;
     private final boolean logScore;
     private final IntArrayList listIteration;

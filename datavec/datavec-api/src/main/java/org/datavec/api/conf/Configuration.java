@@ -49,6 +49,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public class Configuration implements Iterable<Map.Entry<String, String>>, Writable, Serializable {
+    private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
 
     private boolean quietmode = true;

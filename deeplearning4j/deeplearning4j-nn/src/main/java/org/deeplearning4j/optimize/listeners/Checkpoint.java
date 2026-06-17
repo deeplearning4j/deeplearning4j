@@ -30,6 +30,8 @@ import java.util.Arrays;
 @Data
 public class Checkpoint implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private int checkpointNum;
     private long timestamp;
     private int iteration;

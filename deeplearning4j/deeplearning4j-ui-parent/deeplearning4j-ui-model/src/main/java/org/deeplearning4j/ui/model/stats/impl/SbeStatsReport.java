@@ -44,6 +44,8 @@ import java.util.*;
 @ToString
 @Data
 public class SbeStatsReport implements StatsReport, AgronaPersistable {
+    private static final long serialVersionUID = 1L;
+
     private String sessionID;
     private String typeID;
     private String workerID;
@@ -416,26 +418,6 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
             default:
                 throw new RuntimeException("Unknown summary type: " + summaryType);
         }
-    }
-
-    @Override
-    public String getSessionID() {
-        return sessionID;
-    }
-
-    @Override
-    public String getTypeID() {
-        return typeID;
-    }
-
-    @Override
-    public String getWorkerID() {
-        return workerID;
-    }
-
-    @Override
-    public long getTimeStamp() {
-        return timeStamp;
     }
 
 

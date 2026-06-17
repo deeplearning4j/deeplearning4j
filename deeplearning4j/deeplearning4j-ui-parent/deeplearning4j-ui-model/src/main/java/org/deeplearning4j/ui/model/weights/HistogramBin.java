@@ -35,6 +35,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Data
 public class HistogramBin implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private transient INDArray sourceArray;
     private int numberOfBins;
     private int rounds;

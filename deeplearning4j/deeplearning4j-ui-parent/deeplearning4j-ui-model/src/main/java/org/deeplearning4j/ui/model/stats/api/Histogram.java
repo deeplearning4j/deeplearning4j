@@ -30,6 +30,8 @@ import java.io.Serializable;
 @NoArgsConstructor
 @Data
 public class Histogram implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private double min;
     private double max;
     private int nBins;

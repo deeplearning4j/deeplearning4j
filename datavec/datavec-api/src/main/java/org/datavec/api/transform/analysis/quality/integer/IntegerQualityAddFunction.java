@@ -32,6 +32,7 @@ import java.io.Serializable;
 
 @AllArgsConstructor
 public class IntegerQualityAddFunction implements BiFunction<IntegerQuality, Writable, IntegerQuality>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final IntegerMetaData meta;
 

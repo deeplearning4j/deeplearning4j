@@ -30,6 +30,7 @@ import java.io.Serializable;
 @Builder
 @AllArgsConstructor
 public class DeviceMetric implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private double load;
     private double totalMemory;

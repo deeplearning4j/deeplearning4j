@@ -57,6 +57,8 @@ import java.util.List;
 @Data
 public class DeriveColumnsFromTimeTransform implements Transform {
 
+    private static final long serialVersionUID = 1L;
+
     private final String columnName;
     private final String insertAfter;
     private DateTimeZone inputTimeZone;
@@ -135,11 +137,6 @@ public class DeriveColumnsFromTimeTransform implements Transform {
                             + "\" is not a time column. Is: " + inputSchema.getMetaData(columnName));
         TimeMetaData meta = (TimeMetaData) inputSchema.getMetaData(columnName);
         inputTimeZone = meta.getTimeZone();
-    }
-
-    @Override
-    public Schema getInputSchema() {
-        return inputSchema;
     }
 
     @Override
@@ -353,6 +350,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     @Data
     @JsonIgnoreProperties({"dateTimeFormatter"})
     public static class DerivedColumn implements Serializable {
+        private static final long serialVersionUID = 1L;
         private final String columnName;
         private final ColumnType columnType;
         private final String format;

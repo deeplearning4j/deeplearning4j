@@ -53,6 +53,7 @@ import java.util.*;
 
 @Getter
 public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * When dealing with time series data of different lengths, how should we align the input/labels time series?
@@ -732,11 +733,6 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
     @Override
     public void setPreProcessor(MultiDataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
-    }
-
-    @Override
-    public MultiDataSetPreProcessor getPreProcessor() {
-        return preProcessor;
     }
 
     @Override

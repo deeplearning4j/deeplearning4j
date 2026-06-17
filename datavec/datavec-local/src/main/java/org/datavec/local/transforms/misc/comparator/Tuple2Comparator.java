@@ -28,6 +28,7 @@ import java.util.Comparator;
 
 @AllArgsConstructor
 public class Tuple2Comparator<T> implements Comparator<Pair<T, Long>>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final boolean ascending;
 

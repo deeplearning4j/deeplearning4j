@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class VocabWork implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private AtomicInteger count = new AtomicInteger(0);
     private String work;
     private boolean stem = false;

@@ -26,6 +26,7 @@ import org.nd4j.common.function.BiFunction;
 import java.io.Serializable;
 
 public class TimeQualityMergeFunction implements BiFunction<TimeQuality, TimeQuality, TimeQuality>, Serializable {
+    private static final long serialVersionUID = 1L;
     @Override
     public TimeQuality apply(TimeQuality v1, TimeQuality v2) {
         return v1.add(v2);

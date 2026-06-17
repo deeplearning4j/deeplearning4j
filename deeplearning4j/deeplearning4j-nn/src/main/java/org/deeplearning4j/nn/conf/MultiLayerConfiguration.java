@@ -21,17 +21,9 @@
 
 
 package org.deeplearning4j.nn.conf;
-
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.Setter;
+import org.deeplearning4j.nn.conf.inputs.InputTypeRecurrent;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -68,12 +60,15 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @Slf4j
 public class MultiLayerConfiguration implements Serializable, Cloneable {
+
+    private static final long serialVersionUID = 1L;
 
     protected List<NeuralNetConfiguration> confs;
     protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
@@ -156,10 +151,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         ret.registerModule(customDeserializerModule);
         return ret;
-    }
-
-    public int getEpochCount() {
-        return epochCount;
     }
 
     public void setEpochCount(int epochCount) {
@@ -630,19 +621,13 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             MultiLayerConfiguration clone = (MultiLayerConfiguration) super.clone();
 
             if (clone.confs != null) {
-                List<NeuralNetConfiguration> list = new ArrayList<>();
-                for (NeuralNetConfiguration conf : clone.confs) {
-                    list.add(conf.clone());
-                }
-                clone.confs = list;
+                clone.confs = clone.confs.stream().map(NeuralNetConfiguration::clone).collect(Collectors.toList());
             }
 
             if (clone.inputPreProcessors != null) {
-                Map<Integer, InputPreProcessor> map = new HashMap<>();
-                for (Map.Entry<Integer, InputPreProcessor> entry : clone.inputPreProcessors.entrySet()) {
-                    map.put(entry.getKey(), entry.getValue().clone());
-                }
-                clone.inputPreProcessors = map;
+                clone.inputPreProcessors = clone.inputPreProcessors.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().clone(),
+                                (a, b) -> a, HashMap::new));
             }
 
             clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
@@ -793,10 +778,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                         //convolution 1d is an edge case where it has rnn input type but the filters
                         //should be the output
                         if(layer instanceof Convolution1DLayer) {
-                            if(l instanceof DenseLayer && inputType instanceof InputType.InputTypeRecurrent) {
+                            if(l instanceof DenseLayer && inputType instanceof InputTypeRecurrent) {
                                 FeedForwardLayer feedForwardLayer = (FeedForwardLayer) l;
-                                if(inputType instanceof InputType.InputTypeRecurrent) {
-                                    InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                                if(inputType instanceof InputTypeRecurrent) {
+                                    InputTypeRecurrent recurrent = (InputTypeRecurrent) inputType;
                                     feedForwardLayer.setNIn(recurrent.getTimeSeriesLength());
                                 }
                             }

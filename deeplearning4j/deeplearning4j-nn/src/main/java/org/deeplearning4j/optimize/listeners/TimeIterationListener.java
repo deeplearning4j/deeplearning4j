@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class TimeIterationListener extends BaseTrainingListener implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private final int frequency;
     private final long start;
     private final int iterationCount;

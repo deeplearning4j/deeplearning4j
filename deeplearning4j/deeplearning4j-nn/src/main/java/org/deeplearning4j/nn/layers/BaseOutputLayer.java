@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.Getter;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -47,7 +48,10 @@ import java.util.List;
 public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseOutputLayer>
         extends BaseLayer<LayerConfT> implements Serializable, IOutputLayer {
 
+    private static final long serialVersionUID = 1L;
+
     //current input and label matrices
+    @Getter
     protected INDArray labels;
 
 
@@ -310,11 +314,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public INDArray getLabels() {
-        return labels;
     }
 
     public void setLabels(INDArray labels) {

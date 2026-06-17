@@ -32,6 +32,8 @@ import java.io.Serializable;
 
 @Data
 public class VocabularyWord implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     @NonNull
     private String word;
     private int count = 1;

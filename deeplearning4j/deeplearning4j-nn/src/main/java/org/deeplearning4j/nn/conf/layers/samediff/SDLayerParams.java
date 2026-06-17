@@ -37,6 +37,8 @@ import java.util.*;
 @Data
 public class SDLayerParams implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private Map<String, long[]> weightParams = new LinkedHashMap<>();
     private Map<String, long[]> biasParams = new LinkedHashMap<>();
 
@@ -170,12 +172,7 @@ public class SDLayerParams implements Serializable {
         if (!first.keySet().equals(second.keySet())) {
             return false;
         }
-        for (Map.Entry<String, long[]> e : first.entrySet()) {
-            if (!Arrays.equals(e.getValue(), second.get(e.getKey()))) {
-                return false;
-            }
-        }
-        return true;
+        return first.entrySet().stream().allMatch(e -> Arrays.equals(e.getValue(), second.get(e.getKey())));
     }
 
     @Override

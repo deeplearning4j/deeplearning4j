@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class VocabularyHolder implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final Map<String, VocabularyWord> vocabulary = new ConcurrentHashMap<>();
 
     // idxMap marked as transient, since there's no real reason to save this data on serialization
