@@ -53,6 +53,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 "system/config/TritonConfig.h",
                 "system/config/DspConfig.h",
                 "system/config/LifecycleConfig.h",
+                "system/config/MemoryConfig.h",
                 "system/config/PrintConfig.h",
                 "system/Environment.h",
                 "generated/include_ops.h",
@@ -312,6 +313,9 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                         : new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__","SD_GCC_FUNCTRACE").define(false))
                 .put(funcTrace ?  new Info("__JAVACPP_HACK__", "SD_ALL_OPS","SD_GCC_FUNCTRACE").define(true) :
                         new Info("__JAVACPP_HACK__", "SD_ALL_OPS").define(true))
+                .put(new Info("SD_PADDED_NEW_DELETE").cppText("#define SD_PADDED_NEW_DELETE"))
+                .put(new Info("SD_VALIDATE_PTR", "SD_VALIDATE_THIS", "SD_VALIDATE_ALIGNED", "SD_VALIDATE_MAGIC").cppText(""))
+                .put(new Info("OpTraits").cast().valueTypes("int").pointerTypes("IntPointer"))
                 // Skip raw template class definitions from loop headers
                 // JavaCPP should only see explicit instantiations from javacpp_instantiations.h
                 .put(new Info("functions::scalar::ScalarTransform",

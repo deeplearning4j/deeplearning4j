@@ -52,6 +52,7 @@ import org.nd4j.presets.OpExclusionUtils;
                 "system/config/TritonConfig.h",
                 "system/config/DspConfig.h",
                 "system/config/LifecycleConfig.h",
+                "system/config/MemoryConfig.h",
                 "system/config/PrintConfig.h",
                 "system/Environment.h",
                 "generated/include_ops.h",
@@ -309,6 +310,9 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                         :  new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__NEC__","SD_GCC_FUNCTRACE" ).define(false))
                 .put(funcTrace ? new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__","SD_CUDA","SD_GCC_FUNCTRACE").define(true) :
                         new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__","SD_CUDA").define(true))
+                .put(new Info("SD_PADDED_NEW_DELETE").cppText("#define SD_PADDED_NEW_DELETE"))
+                .put(new Info("SD_VALIDATE_PTR", "SD_VALIDATE_THIS", "SD_VALIDATE_ALIGNED", "SD_VALIDATE_MAGIC").cppText(""))
+                .put(new Info("OpTraits").cast().valueTypes("int").pointerTypes("IntPointer"))
                 .put(funcTrace ? new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
                         "sd::graph::FlatResult",
                         "throwException",
