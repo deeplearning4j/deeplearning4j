@@ -28,7 +28,7 @@ public class LinkedMultiValueMap<K, V> implements MultiValueMap<K, V>, Serializa
     private final Map<K, List<V>> targetMap;
 
     public LinkedMultiValueMap() {
-        this.targetMap = new LinkedHashMap();
+        this.targetMap = new LinkedHashMap<>();
     }
 
     public LinkedMultiValueMap(int initialCapacity) {
@@ -55,7 +55,7 @@ public class LinkedMultiValueMap<K, V> implements MultiValueMap<K, V>, Serializa
     }
 
     public void set(K key, V value) {
-        LinkedList values = new LinkedList();
+        LinkedList<V> values = new LinkedList<>();
         values.add(value);
         this.targetMap.put(key, values);
     }
