@@ -403,7 +403,6 @@ bool OpenVinoGraphBackend::isNativeDeferredOp(const std::string& opName) {
     // Sequential SSM recurrence: state[t] depends on state[t-1]. No OV scan op.
     "gated_delta_rule", "GatedDeltaRule",
     "mamba2_ssm", "Mamba2SSM", "Mamba2Ssm",
-    // TODO: implement these as OV decompositions instead of deferring
     "rope", "Rope", "fused_rope", "FusedRope",
     "dot_product_attention", "DotProductAttention",
     "dot_product_attention_v2", "DotProductAttentionV2",

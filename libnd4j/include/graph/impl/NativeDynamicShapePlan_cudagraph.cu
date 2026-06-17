@@ -64,10 +64,6 @@
 
 namespace sd {
 
-// Thread-local cuBLAS deterministic mode flag — gates workspace usage during capture.
-// Defined in DataBuffer.cu inside namespace sd.
-extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled;
-
 namespace graph {
 
 // Per-GPU capture/execution coordination (defined in _cuda.cu, namespace sd::graph)

@@ -48,8 +48,8 @@ namespace graph {
  *   1. Hard cap:    lru_.size() > DspConfig::planCacheMaxPlans()  → evict LRU until satisfied.
  *   2. Memory soft: estimated cache footprint > planCacheBudgetFraction * freeDeviceMem
  *      → evict LRU until under budget.  "Estimated footprint" is currently approximated
- *      as (entry_count * kBytesPerPlanEstimate); a TODO marks the place to wire per-plan
- *      byte accounting once NativeDynamicShapePlan exposes a memoryUsage() API.
+ *      as (entry_count * kBytesPerPlanEstimate); this is a conservative flat estimate
+ *      until NativeDynamicShapePlan exposes a memoryUsage() API.
  *
  * Ownership: the cache owns every NativeDynamicShapePlan* it stores and deletes them on
  * eviction or destruction.
@@ -200,7 +200,8 @@ class SD_LIB_EXPORT NativePlanCache {
   std::vector<NativeDynamicShapePlan*> evictIfOverBudgetLocked();
 
   // Rough per-plan memory estimate used for the soft memory budget.
-  // TODO: replace with NativeDynamicShapePlan::memoryUsage() once available.
+  // NativeDynamicShapePlan does not expose a memoryUsage() API; this flat constant
+  // is used as a conservative per-plan upper bound until accurate accounting is added.
   static constexpr size_t kBytesPerPlanEstimate = 64ULL * 1024 * 1024;  // 64 MiB
 };
 

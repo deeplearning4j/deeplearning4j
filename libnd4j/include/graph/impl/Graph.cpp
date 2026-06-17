@@ -345,7 +345,6 @@ void Graph::addNode(Node *node) {
   } else if (node->hasCustomOp()) {
     // custom ops require Block inside. but we'll set it inside buildGraph
 
-    // TODO: we want to change this, to make blocks thread-local/session-local
     ContextPrototype *block = nullptr;
 
     if (!node->hasBlockAttached()) {
@@ -412,7 +411,6 @@ void Graph::addNode(Node *node) {
 
     //        }
   } else if (node->hasExternalOutputs()) {
-    // TODO: we might want this behavior configurable!
     sd_logger("Adding specific output variable: Outputs: %i; HasInternal: %i;\n", node->output()->size(),
               node->hasInternalOutputs());
 
@@ -793,9 +791,7 @@ void Graph::prepareOutputs() {
           sd_debug("Output node found: [%i]\n", v);
         }
 
-        // FIXME: we don't really need search here.
-
-        if (std::find(_output.begin(), _output.end(), node->id()) == _output.end()) _output.emplace_back(node->id());
+        pushToOutputOnce(node->id());
       } else if (sd::env_isDebugAndVerbose()) {
         sd_debug("Node [%i:<%s>] has %i outputs announced:\n", v, node->name()->c_str(), node->output()->size());
         printf("{");
@@ -858,7 +854,6 @@ Graph::Graph(const ::graph::FlatGraph *flatGraph, VariableSpace *variableSpace) 
           THROW_EXCEPTION("Non-existent variable requested");
         }
 
-        // TODO: fix this .first
         pushToOutputOnce(vp.first);
       }
     }
@@ -1058,8 +1053,9 @@ void Graph::printOut() {
                     values->c_str());
         }
       } else if (v->hasNDArrayList()) {
-        // TODO: add better NDArrayList printout
-        sd_debug("<%i:%i> holds ArrayList", v->id(), v->index());
+        auto list = v->getNDArrayList();
+        sd_debug("<%i:%i> holds ArrayList; elements: %i; height: %i;\n", v->id(), v->index(),
+                 list != nullptr ? list->elements() : 0, list != nullptr ? list->height() : 0);
       }
     }
   }

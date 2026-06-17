@@ -74,34 +74,21 @@
 
 // DSP gap-stream override — defined in LaunchContext.cu (file scope, no namespace).
 extern thread_local cudaStream_t tl_dspGapStream;
-// cuBLAS workspace thread-locals — defined in MmulHelper.cu / DataBuffer.cu.
-extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
-extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
 // N6: defined in NativeDynamicShapePlan_batchgemm.cu — hoisted cuBLAS stream+workspace flag.
 extern SD_TLS_EXPORT thread_local bool tl_cublasGapStreamReady;
-// cuBLAS Lt disable flag — defined in DataBuffer.cu (inside namespace sd). Temporarily cleared
-// during gap execution to enable cublasLt fast path for logits-projection matmul [1,K]×[K,N].
-namespace sd { extern SD_TLS_EXPORT thread_local bool tl_cublasLtDisabled; }
 
 // Portable buffer accessor (CUDA form).
 #define DSP_BUF(arr) ((arr)->specialBuffer())
 
 // ── Isolation flags for debugging composite replay accuracy ──
-// -fno-threadsafe-statics: use std::call_once for thread-safe initialization.
 static bool dsp_disable_view_fastpath() {
-  static std::once_flag f; static bool v = false;
-  std::call_once(f, []() { v = (std::getenv("ND4J_DSP_DISABLE_VIEW_FASTPATH") != nullptr); });
-  return v;
+  return sd::Environment::getInstance().dsp().dspDisableViewFastpath();
 }
 static bool dsp_disable_cast_hwm() {
-  static std::once_flag f; static bool v = false;
-  std::call_once(f, []() { v = (std::getenv("ND4J_DSP_DISABLE_CAST_HWM") != nullptr); });
-  return v;
+  return sd::Environment::getInstance().dsp().dspDisableCastHwm();
 }
 static bool dsp_disable_workspace_skip() {
-  static std::once_flag f; static bool v = false;
-  std::call_once(f, []() { v = (std::getenv("ND4J_DSP_DISABLE_WS_SKIP") != nullptr); });
-  return v;
+  return sd::Environment::getInstance().dsp().dspDisableWorkspaceSkip();
 }
 
 namespace sd {

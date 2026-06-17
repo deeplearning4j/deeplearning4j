@@ -44,10 +44,6 @@
 #include <queue>
 #include <unordered_set>
 
-// cuBLAS workspace for graph capture (from MmulHelper.cu)
-extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
-extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
-extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
 // N6: When true, compositeReplay has already called cublasSetStream_v2 +
 // cublasSetWorkspace for the current gap loop's stream.  Per-group calls
 // inside executeBatchedGemmGroup skip the redundant setup.

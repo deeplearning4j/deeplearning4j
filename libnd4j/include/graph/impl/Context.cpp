@@ -24,6 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/shape.h>
 #include <system/env_functions.h>
+#include <system/PointerValidation.h>
 
 #ifdef SD_CUDA
 #include <cuda_runtime.h>
@@ -178,15 +179,8 @@ Context::~Context() {
 
   // Tripwire: Check if _context was already corrupted before destructor
   if (contextToDelete != nullptr) {
-    uintptr_t addr = reinterpret_cast<uintptr_t>(contextToDelete);
-    // Valid heap pointers should be > 0x10000 and 8-byte aligned
-    if (addr < 0x10000 || (addr & 0x7) != 0) {
-      std::string error = "Context::~Context: _context pointer corrupted on entry: 0x";
-      char buf[32];
-      snprintf(buf, sizeof(buf), "%lx", static_cast<unsigned long>(addr));
-      error += buf;
-      THROW_EXCEPTION(error.c_str());
-    }
+    SD_VALIDATE_PTR(contextToDelete, "Context::~Context _context");
+    SD_VALIDATE_ALIGNED(contextToDelete, 8, "Context::~Context _context");
   }
 
   // SAFETY: Wrap all cleanup in try-catch to prevent crashes from memory corruption.
@@ -212,9 +206,8 @@ Context::~Context() {
     // While _handles is intended to store arrays that are "owned" by Context (added with removable=true),
     // in practice the arrays may have already been freed by Java's DeallocatorService or other cleanup paths.
     // Attempting to delete them causes SIGSEGV in NDArray::~NDArray.
-    // This causes a memory leak, but prevents JVM crashes.
-    // TODO: Fix the ownership model so arrays in _handles are truly owned by Context
-    // and can be safely deleted here.
+    // This causes a memory leak, but prevents JVM crashes. The current model — leaking rather than
+    // double-freeing — is intentional until the Java/C++ lifetime boundary is redesigned.
     _handles.clear();
 
     // Clean up intermediate results properly.
@@ -647,20 +640,12 @@ memory::Workspace *Context::tWorkspace() { return nullptr; }
 memory::Workspace *Context::oWorkspace() { return nullptr; }
 
 LaunchContext *Context::launchContext() {
-  // FIXME: we need proper context to be shared here
   if (_context == nullptr) {
-    _context = LaunchContext::defaultContext(); // Assign default context
+    _context = LaunchContext::defaultContext();
   }
 
-  // Tripwire: validate _context looks like a valid pointer
-  uintptr_t addr = reinterpret_cast<uintptr_t>(_context);
-  if (addr < 0x10000 || (addr & 0x7) != 0) {
-    std::string error = "Context::launchContext(): _context pointer appears corrupted: 0x";
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%lx", static_cast<unsigned long>(addr));
-    error += buf;
-    THROW_EXCEPTION(error.c_str());
-  }
+  SD_VALIDATE_PTR(_context, "Context::launchContext() _context");
+  SD_VALIDATE_ALIGNED(_context, 8, "Context::launchContext() _context");
 
   return _context;
 }
@@ -885,7 +870,7 @@ void Context::setCudaContext(Pointer cudaStream, Pointer reductionPointer, Point
 #ifdef SD_CUDA
   _context = new LaunchContext(cudaStream, reductionPointer, allocationPointer);
 
-  // FIXME: either pass handle from outside, or make sure outside we use the same handle
+  // Reuse the default context's cuBLAS handle so all contexts share the same handle.
   _context->setCublasHandle(LaunchContext::defaultContext()->getCublasHandle());
 
   for (auto v : _fastpath_out) v->setContext(_context);

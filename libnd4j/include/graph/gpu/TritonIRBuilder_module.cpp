@@ -33,6 +33,7 @@
 #include <array/ArrayOptions.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
+#include <math/templatemath.h>
 #include <system/Environment.h>
 #include <system/common.h>
 
@@ -2675,7 +2676,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               return result;
             }
 
-            float scale = 1.0f / std::sqrt(static_cast<float>(headDim));
+            float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
             auto bpTile = chooseFusedAttentionTileConfig(batchSize, numQHeads, seqQ, seqK, headDim);
             if (!bpTile.fitsSharedMem) {
               std::string msg = "TritonIRBuilder: fused attention backward '" + slot.ident.opName +
@@ -2971,7 +2972,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           }
         }
 
-        float scale = 1.0f / std::sqrt(static_cast<float>(headDim));
+        float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
         auto attnTile = chooseFusedAttentionTileConfig(
             batchSize, numQHeads, seqQ, seqK, headDim);
         if (!attnTile.fitsSharedMem) {
@@ -6635,7 +6636,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   result.valid = false;
                   return result;
                 }
-                float scaleBp = 1.0f / std::sqrt(static_cast<float>(headDimBp));
+                float scaleBp = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDimBp));
                 auto bpTileSec = chooseFusedAttentionTileConfig(
                     batchSizeBp, numQHeadsBp, seqQBp, seqKBp, headDimBp);
                 if (!bpTileSec.fitsSharedMem) {
@@ -7035,7 +7036,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
           }
 
-          float scale = 1.0f / std::sqrt(static_cast<float>(std::max(headDim, 1)));
+          float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(std::max(headDim, 1)));
           auto attnTile = chooseFusedAttentionTileConfig(
               batchSize, numQHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes);
           if (!attnTile.fitsSharedMem) {

@@ -20,6 +20,7 @@
 
 #include <system/common.h>
 #include <types/types.h>
+#include <math/templatemath.h>
 
 #include <atomic>
 #include <chrono>
@@ -293,7 +294,7 @@ struct AggregatedOpStats {
 
   double stdDevMicros() const {
     if (callCount < 2) return 0.0;
-    return std::sqrt(m2 / (callCount - 1)) / 1000.0;
+    return sd::math::sd_sqrt<double, double>(m2 / (callCount - 1)) / 1000.0;
   }
 
   double avgMicros() const {

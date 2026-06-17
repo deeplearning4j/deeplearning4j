@@ -42,9 +42,8 @@ Variable *Variable::asT() {
 
   if (this->_ndarray != nullptr) result->setNDArray(this->_ndarray->template asT<N>());  // asT() already returns NDArray*
 
-  // FIXME: add support for ArrayList
+  // NDArrayList cannot be cast to a different element type; asT<N>() is only valid for NDArray variables.
   if (this->_list != nullptr) {
-    sd_printf("ArrayList not supported yet\n", "");
     THROW_EXCEPTION("ArrayList not supported yet for asT");
   }
 
