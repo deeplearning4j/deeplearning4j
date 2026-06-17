@@ -29,6 +29,8 @@ import java.util.List;
 
 public class FieldSelection implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     public static final Writable DEFAULT_MISSING_VALUE = new Text("");
 
     private List<String[]> fieldPaths;

@@ -36,6 +36,8 @@ import java.io.Serializable;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DataAction implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private Transform transform;
     private Filter filter;
     private ConvertToSequence convertToSequence;

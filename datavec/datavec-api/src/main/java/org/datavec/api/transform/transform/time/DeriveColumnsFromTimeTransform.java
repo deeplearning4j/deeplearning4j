@@ -57,6 +57,8 @@ import java.util.List;
 @Data
 public class DeriveColumnsFromTimeTransform implements Transform {
 
+    private static final long serialVersionUID = 1L;
+
     private final String columnName;
     private final String insertAfter;
     private DateTimeZone inputTimeZone;

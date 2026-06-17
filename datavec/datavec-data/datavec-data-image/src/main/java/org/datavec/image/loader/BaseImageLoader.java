@@ -40,6 +40,8 @@ import java.util.Random;
 @Slf4j
 public abstract class BaseImageLoader implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     public enum MultiPageMode {
         MINIBATCH, FIRST //, CHANNELS,
     }

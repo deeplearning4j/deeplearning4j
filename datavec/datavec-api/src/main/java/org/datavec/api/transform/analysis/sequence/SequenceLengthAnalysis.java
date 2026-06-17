@@ -31,6 +31,8 @@ import java.io.Serializable;
 @Builder
 public class SequenceLengthAnalysis implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private long totalNumSequences;
     private int minSeqLength;
     private int maxSeqLength;

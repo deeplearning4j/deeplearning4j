@@ -82,6 +82,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class TransformProcess implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private final Schema initialSchema;
     private List<DataAction> actionList;
 

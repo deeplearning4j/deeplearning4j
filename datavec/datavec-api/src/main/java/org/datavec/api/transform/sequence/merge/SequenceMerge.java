@@ -32,6 +32,8 @@ import java.util.List;
 @Data
 public class SequenceMerge implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private final SequenceComparator comparator;
 
     public SequenceMerge(SequenceComparator comparator) {

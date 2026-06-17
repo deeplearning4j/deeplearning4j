@@ -44,6 +44,8 @@ import java.util.*;
 @Data
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public class DataAnalysis implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private static final String COL_NAME = "columnName";
     private static final String COL_IDX = "columnIndex";
     private static final String COL_TYPE = "columnType";

@@ -48,6 +48,8 @@ import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 @Slf4j
 public class CifarLoader extends NativeImageLoader implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     public static final int NUM_TRAIN_IMAGES = 50000;
     public static final int NUM_TEST_IMAGES = 10000;
     public static final int NUM_LABELS = 10; // Note 6000 imgs per class

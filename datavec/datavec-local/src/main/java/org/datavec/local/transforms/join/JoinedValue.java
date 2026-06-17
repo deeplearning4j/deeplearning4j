@@ -31,6 +31,8 @@ import java.util.List;
 @Data
 public class JoinedValue implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private final boolean haveLeft;
     private final boolean haveRight;
     private final List<Writable> values;

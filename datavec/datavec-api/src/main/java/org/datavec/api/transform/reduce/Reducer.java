@@ -43,6 +43,8 @@ import java.util.*;
 @EqualsAndHashCode(exclude = {"schema", "keyColumnsSet"})
 public class Reducer implements IAssociativeReducer {
 
+    private static final long serialVersionUID = 1L;
+
     private Schema schema;
     private final List<String> keyColumns;
     private final Set<String> keyColumnsSet;

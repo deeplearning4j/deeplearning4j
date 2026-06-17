@@ -27,6 +27,8 @@ import java.util.List;
 
 public class SerializableCSVParser implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private final char separator;
 
     private final char quotechar;

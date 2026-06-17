@@ -46,6 +46,8 @@ import java.util.*;
 @Data
 public class Schema implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private List<String> columnNames;
     @JsonProperty("columns")
     private List<ColumnMetaData> columnMetaData;

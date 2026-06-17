@@ -46,6 +46,8 @@ import java.util.Random;
 @Slf4j
 public class LFWLoader extends BaseImageLoader implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     public final static int NUM_IMAGES = 13233;
     public final static int NUM_LABELS = 5749;
     public final static int SUB_NUM_IMAGES = 1054;

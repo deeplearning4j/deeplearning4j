@@ -44,6 +44,8 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public class CalculateSortedRank implements Serializable, ColumnOp {
 
+    private static final long serialVersionUID = 1L;
+
     private final String newColumnName;
     private final String sortOnColumn;
     private final WritableComparator comparator;

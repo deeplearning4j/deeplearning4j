@@ -29,6 +29,8 @@ import java.io.Serializable;
 @Data
 public abstract class ColumnQuality implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     protected final long countValid;
     protected final long countInvalid;
     protected final long countMissing;

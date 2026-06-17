@@ -32,6 +32,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Getter
 public class PartitionMetaData implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private int numRecordsUpdated;
     private long sizeUpdated;
 

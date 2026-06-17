@@ -24,6 +24,8 @@ import java.io.Serializable;
 
 public class StatCounter implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private long count = 0;
     private double runningMean;
     private double runningM2;   // Running variance numerator (sum of (x - mean)^2)

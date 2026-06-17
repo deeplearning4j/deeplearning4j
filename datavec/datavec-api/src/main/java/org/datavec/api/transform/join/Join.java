@@ -33,6 +33,8 @@ import java.util.*;
 @Data
 public class Join implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Type of join<br>
      * Inner: Return examples where the join column values occur in both
