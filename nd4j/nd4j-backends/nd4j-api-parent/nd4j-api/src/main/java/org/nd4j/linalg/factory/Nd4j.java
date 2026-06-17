@@ -5549,7 +5549,7 @@ public class Nd4j {
             log.debug("Affinity Manager property: {} = {}", AFFINITY_MANAGER, affinityManagerName);
             Class<? extends BasicAffinityManager> affinityManagerClazz = ND4JClassLoading
                     .loadClassByName(affinityManagerName);
-            log.debug("Affinity Manager class loaded: {}", (affinityManagerClazz != null ? affinityManagerClazz.getName() : "null"));
+            log.debug("Affinity Manager class loaded: {}", affinityManagerClazz != null ? affinityManagerClazz.getName() : "null");
             if(affinityManagerClazz != null) {
                 affinityManager = affinityManagerClazz.newInstance();
                 log.debug("Affinity Manager instance created: {}", affinityManager.getClass().getName());
@@ -5560,7 +5560,7 @@ public class Nd4j {
             log.debug("NDArray Factory property: {} = {}", NDARRAY_FACTORY_CLASS, ndArrayFactoryName);
             Class<? extends NDArrayFactory> ndArrayFactoryClazz = ND4JClassLoading
                     .loadClassByName(ndArrayFactoryName);
-            log.debug("NDArray Factory class loaded: {}", (ndArrayFactoryClazz != null ? ndArrayFactoryClazz.getName() : "null"));
+            log.debug("NDArray Factory class loaded: {}", ndArrayFactoryClazz != null ? ndArrayFactoryClazz.getName() : "null");
 
             // Debug Convolution Instance
             String convolutionInstanceName = pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName());
@@ -5568,35 +5568,35 @@ public class Nd4j {
             log.debug("Convolution Instance default fallback: {}", DefaultConvolutionInstance.class.getName());
             Class<? extends ConvolutionInstance> convolutionInstanceClazz = ND4JClassLoading
                     .loadClassByName(convolutionInstanceName);
-            log.debug("Convolution Instance class loaded: {}", (convolutionInstanceClazz != null ? convolutionInstanceClazz.getName() : "null"));
+            log.debug("Convolution Instance class loaded: {}", convolutionInstanceClazz != null ? convolutionInstanceClazz.getName() : "null");
 
             // Debug Data Buffer Factory
             String defaultName = pp.toString(DATA_BUFFER_OPS, "org.nd4j.linalg.cpu.nativecpu.buffer.DefaultDataBufferFactory");
             log.debug("Data Buffer Factory property: {} = {}", DATA_BUFFER_OPS, defaultName);
             Class<? extends DataBufferFactory> dataBufferFactoryClazz = ND4JClassLoading
                     .loadClassByName(defaultName);
-            log.debug("Data Buffer Factory class loaded: {}", (dataBufferFactoryClazz != null ? dataBufferFactoryClazz.getName() : "null"));
+            log.debug("Data Buffer Factory class loaded: {}", dataBufferFactoryClazz != null ? dataBufferFactoryClazz.getName() : "null");
 
             // Debug Shape Info Provider
             String shapeInfoProviderName = pp.toString(SHAPEINFO_PROVIDER);
             log.debug("Shape Info Provider property: {} = {}", SHAPEINFO_PROVIDER, shapeInfoProviderName);
             Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz = ND4JClassLoading
                     .loadClassByName(shapeInfoProviderName);
-            log.debug("Shape Info Provider class loaded: {}", (shapeInfoProviderClazz != null ? shapeInfoProviderClazz.getName() : "null"));
+            log.debug("Shape Info Provider class loaded: {}", shapeInfoProviderClazz != null ? shapeInfoProviderClazz.getName() : "null");
 
             // Debug Constant Provider
             String constantProviderName = pp.toString(CONSTANT_PROVIDER);
             log.debug("Constant Provider property: {} = {}", CONSTANT_PROVIDER, constantProviderName);
             Class<? extends BasicConstantHandler> constantProviderClazz = ND4JClassLoading
                     .loadClassByName(constantProviderName);
-            log.debug("Constant Provider class loaded: {}", (constantProviderClazz != null ? constantProviderClazz.getName() : "null"));
+            log.debug("Constant Provider class loaded: {}", constantProviderClazz != null ? constantProviderClazz.getName() : "null");
 
             // Debug Memory Manager
             String memoryManagerName = pp.toString(MEMORY_MANAGER);
             log.debug("Memory Manager property: {} = {}", MEMORY_MANAGER, memoryManagerName);
             Class<? extends BasicMemoryManager> memoryManagerClazz = ND4JClassLoading
                     .loadClassByName(memoryManagerName);
-            log.debug("Memory Manager class loaded: {}", (memoryManagerClazz != null ? memoryManagerClazz.getName() : "null"));
+            log.debug("Memory Manager class loaded: {}", memoryManagerClazz != null ? memoryManagerClazz.getName() : "null");
 
             allowsOrder = backend.allowsOrder();
             log.debug("Backend allows order: {}", allowsOrder);
@@ -5606,7 +5606,7 @@ public class Nd4j {
             log.debug("Random Provider property: {} = {}", RANDOM_PROVIDER, rand);
             log.debug("Random Provider default fallback: {}", DefaultRandom.class.getName());
             Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz = ND4JClassLoading.loadClassByName(rand);
-            log.debug("Random Provider class loaded: {}", (randomClazz != null ? randomClazz.getName() : "null"));
+            log.debug("Random Provider class loaded: {}", randomClazz != null ? randomClazz.getName() : "null");
             randomFactory = new RandomFactory(randomClazz);
 
             // Debug Device ID Provider
@@ -5614,7 +5614,7 @@ public class Nd4j {
             log.debug("Device ID Provider property: {} = {}", DEVICE_ID_PROVDER_KEY, deviceIDProviderName);
             Class<? extends DeviceIDProvider> deviceIDProviderClass = ND4JClassLoading
                     .loadClassByName(deviceIDProviderName);
-            log.debug("Device ID Provider class loaded: {}", (deviceIDProviderClass != null ? deviceIDProviderClass.getName() : "null"));
+            log.debug("Device ID Provider class loaded: {}", deviceIDProviderClass != null ? deviceIDProviderClass.getName() : "null");
             if(deviceIDProviderClass != null) {
                 DEVICE_ID_PROVIDER = deviceIDProviderClass.newInstance();
                 log.debug("Device ID Provider instance created: {}", DEVICE_ID_PROVIDER.getClass().getName());
@@ -5625,20 +5625,20 @@ public class Nd4j {
             log.debug("Workspace Manager property: {} = {}", WORKSPACE_MANAGER, workspaceManagerName);
             Class<? extends MemoryWorkspaceManager> workspaceManagerClazz = ND4JClassLoading
                     .loadClassByName(workspaceManagerName);
-            log.debug("Workspace Manager class loaded: {}", (workspaceManagerClazz != null ? workspaceManagerClazz.getName() : "null"));
+            log.debug("Workspace Manager class loaded: {}", workspaceManagerClazz != null ? workspaceManagerClazz.getName() : "null");
 
             // Debug BLAS Wrapper
             String blasWrapperName = pp.toString(BLAS_OPS);
             log.debug("BLAS Wrapper property: {} = {}", BLAS_OPS, blasWrapperName);
             Class<? extends BlasWrapper> blasWrapperClazz = ND4JClassLoading.loadClassByName(blasWrapperName);
-            log.debug("BLAS Wrapper class loaded: {}", (blasWrapperClazz != null ? blasWrapperClazz.getName() : "null"));
+            log.debug("BLAS Wrapper class loaded: {}", blasWrapperClazz != null ? blasWrapperClazz.getName() : "null");
 
             // Debug Distribution Factory
             String clazzName = pp.toString(DISTRIBUTION, DefaultDistributionFactory.class.getName());
             log.debug("Distribution Factory property: {} = {}", DISTRIBUTION, clazzName);
             log.debug("Distribution Factory default fallback: {}", DefaultDistributionFactory.class.getName());
             Class<? extends DistributionFactory> distributionFactoryClazz = ND4JClassLoading.loadClassByName(clazzName);
-            log.debug("Distribution Factory class loaded: {}", (distributionFactoryClazz != null ? distributionFactoryClazz.getName() : "null"));
+            log.debug("Distribution Factory class loaded: {}", distributionFactoryClazz != null ? distributionFactoryClazz.getName() : "null");
 
             log.debug("=== Instance Creation Phase ===");
 
@@ -5647,16 +5647,14 @@ public class Nd4j {
                 memoryManager = memoryManagerClazz.newInstance();
                 log.debug("Memory Manager instance created: {}", memoryManager.getClass().getName());
             } catch (Exception e) {
-                System.err.println("Failed to create Memory Manager instance: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Failed to create Memory Manager instance: {}", e.getMessage(), e);
             }
 
             try {
                 constantHandler = constantProviderClazz.newInstance();
                 log.debug("Constant Handler instance created: {}", constantHandler.getClass().getName());
             } catch (Exception e) {
-                System.err.println("Failed to create Constant Handler instance: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Failed to create Constant Handler instance: {}", e.getMessage(), e);
             }
 
             if(shapeInfoProviderClazz != null) {
@@ -5664,8 +5662,7 @@ public class Nd4j {
                     shapeInfoProvider = shapeInfoProviderClazz.newInstance();
                     log.debug("Shape Info Provider instance created: {}", shapeInfoProvider.getClass().getName());
                 } catch (Exception e) {
-                    System.err.println("Failed to create Shape Info Provider instance: " + e.getMessage());
-                    e.printStackTrace();
+                    log.error("Failed to create Shape Info Provider instance: {}", e.getMessage(), e);
                 }
             }
 
@@ -5674,8 +5671,7 @@ public class Nd4j {
                     workspaceManager = workspaceManagerClazz.newInstance();
                     log.debug("Workspace Manager instance created: {}", workspaceManager.getClass().getName());
                 } catch (Exception e) {
-                    System.err.println("Failed to create Workspace Manager instance: " + e.getMessage());
-                    e.printStackTrace();
+                    log.error("Failed to create Workspace Manager instance: {}", e.getMessage(), e);
                 }
             }
 
@@ -5685,21 +5681,20 @@ public class Nd4j {
             log.debug("Op Executioner default fallback: {}", DefaultOpExecutioner.class.getName());
             Class<? extends OpExecutioner> opExecutionerClazz = ND4JClassLoading
                     .loadClassByName(opExecutionerName);
-            log.debug("Op Executioner class loaded: {}", (opExecutionerClazz != null ? opExecutionerClazz.getName() : "null"));
+            log.debug("Op Executioner class loaded: {}", opExecutionerClazz != null ? opExecutionerClazz.getName() : "null");
 
             // Debug BLAS Lapack Delegator
             String blasLapackDelegatorName = pp.toString(BLAS_LAPACK_DELEGATOR);
             log.debug("BLAS Lapack Delegator property: {} = {}", BLAS_LAPACK_DELEGATOR, blasLapackDelegatorName);
             Class<? extends BLASLapackDelegator> blasLapackDelegator = ND4JClassLoading
                     .loadClassByName(blasLapackDelegatorName);
-            log.debug("BLAS Lapack Delegator class loaded: {}", (blasLapackDelegator != null ? blasLapackDelegator.getName() : "null"));
+            log.debug("BLAS Lapack Delegator class loaded: {}", blasLapackDelegator != null ? blasLapackDelegator.getName() : "null");
 
             try {
                 BLAS_HANDLER = blasLapackDelegator.newInstance();
                 log.debug("BLAS Handler instance created: {}", BLAS_HANDLER.getClass().getName());
             } catch (Exception e) {
-                System.err.println("Failed to create BLAS Handler instance: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Failed to create BLAS Handler instance: {}", e.getMessage(), e);
             }
 
             // Debug Array Stats Provider
@@ -5707,22 +5702,20 @@ public class Nd4j {
             log.debug("Array Stats Provider property: {} = {}", STATS_PROVIDER_KEY, arrayStatsProviderName);
             Class<? extends INDArrayStatisticsProvider> arrayStatsProviderClazz = ND4JClassLoading
                     .loadClassByName(arrayStatsProviderName);
-            log.debug("Array Stats Provider class loaded: {}", (arrayStatsProviderClazz != null ? arrayStatsProviderClazz.getName() : "null"));
+            log.debug("Array Stats Provider class loaded: {}", arrayStatsProviderClazz != null ? arrayStatsProviderClazz.getName() : "null");
 
             try {
                 STATS_PROVIDER = arrayStatsProviderClazz.newInstance();
                 log.debug("Stats Provider instance created: {}", STATS_PROVIDER.getClass().getName());
             } catch (Exception e) {
-                System.err.println("Failed to create Stats Provider instance: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Failed to create Stats Provider instance: {}", e.getMessage(), e);
             }
 
             try {
                 OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
                 log.debug("Op Executioner instance created: {}", OP_EXECUTIONER_INSTANCE.getClass().getName());
             } catch (Exception e) {
-                System.err.println("Failed to create Op Executioner instance: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Failed to create Op Executioner instance: {}", e.getMessage(), e);
             }
 
             try {
@@ -5730,40 +5723,35 @@ public class Nd4j {
                 INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
                 log.debug("NDArray Factory instance created: {} with dtype={}, order={}", INSTANCE.getClass().getName(), dtype, ORDER);
             } catch (Exception e) {
-                System.err.println("Failed to create NDArray Factory instance: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Failed to create NDArray Factory instance: {}", e.getMessage(), e);
             }
 
             try {
                 CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
                 log.debug("Convolution Instance created: {}", CONVOLUTION_INSTANCE.getClass().getName());
             } catch (Exception e) {
-                System.err.println("Failed to create Convolution Instance: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Failed to create Convolution Instance: {}", e.getMessage(), e);
             }
 
             try {
                 BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
                 log.debug("BLAS Wrapper instance created: {}", BLAS_WRAPPER_INSTANCE.getClass().getName());
             } catch (Exception e) {
-                System.err.println("Failed to create BLAS Wrapper instance: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Failed to create BLAS Wrapper instance: {}", e.getMessage(), e);
             }
 
             try {
                 DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
                 log.debug("Data Buffer Factory instance created: {}", DATA_BUFFER_FACTORY_INSTANCE.getClass().getName());
             } catch (Exception e) {
-                System.err.println("Failed to create Data Buffer Factory instance: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Failed to create Data Buffer Factory instance: {}", e.getMessage(), e);
             }
 
             try {
                 DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
                 log.debug("Distribution Factory instance created: {}", DISTRIBUTION_FACTORY.getClass().getName());
             } catch (Exception e) {
-                System.err.println("Failed to create Distribution Factory instance: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Failed to create Distribution Factory instance: {}", e.getMessage(), e);
             }
 
             log.debug("=== ND4J Property Loading Complete ===");
@@ -5808,7 +5796,7 @@ public class Nd4j {
     }
 
     private static void showAttractiveMessage(String... strings) {
-        System.out.println(attract(strings));
+        log.info("{}", attract(strings));
     }
 
     private static String attract(String... strings) {

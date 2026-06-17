@@ -37,7 +37,10 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = false)
 @Setter
 public class MultiNormalizerHybrid extends AbstractNormalizer implements MultiDataNormalization, Serializable {
+    private static final long serialVersionUID = 1L;
+    @Getter
     private Map<Integer, NormalizerStats> inputStats;
+    @Getter
     private Map<Integer, NormalizerStats> outputStats;
     @Getter
     private NormalizerStrategy globalInputStrategy;

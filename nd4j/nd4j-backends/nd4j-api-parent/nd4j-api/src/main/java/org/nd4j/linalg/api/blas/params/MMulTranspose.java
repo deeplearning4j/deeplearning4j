@@ -33,6 +33,7 @@ import java.util.Map;
 @Getter
 @EqualsAndHashCode
 public class MMulTranspose implements Serializable {
+    private static final long serialVersionUID = 1L;
     private static MMulTranspose allFalse = MMulTranspose.builder().build();
     private boolean transposeA;
     private boolean transposeB;

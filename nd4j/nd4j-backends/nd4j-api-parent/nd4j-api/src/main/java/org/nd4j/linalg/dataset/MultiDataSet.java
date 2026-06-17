@@ -30,6 +30,7 @@ import java.io.*;
 import java.util.*;
 
 public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
+    private static final long serialVersionUID = 1L;
     private static final ThreadLocal<INDArray> EMPTY_MASK_ARRAY_PLACEHOLDER = new ThreadLocal<>();
 
     private INDArray[] features;

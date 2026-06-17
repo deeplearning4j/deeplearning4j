@@ -31,6 +31,7 @@ import java.nio.ByteOrder;
 
 @Data
 public class CompressionDescriptor implements Cloneable, Serializable {
+    private static final long serialVersionUID = 1L;
     private CompressionType compressionType;
     private String compressionAlgorithm;
     private long originalLength;

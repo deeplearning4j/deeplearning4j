@@ -86,13 +86,13 @@ public class BackendManager {
     private static volatile BackendManager INSTANCE;
     private static final Object LOCK = new Object();
 
-    // System property keys
-    public static final String PROP_PRIORITY = "nd4j.backend.priority";
-    public static final String PROP_MEMORY_FALLBACK = "nd4j.backend.memory.fallback";
-    public static final String PROP_GPU_MEMORY_FRACTION = "nd4j.backend.gpu.memory.fraction";
-    public static final String PROP_CPU_MEMORY_FRACTION = "nd4j.backend.cpu.memory.fraction";
-    public static final String PROP_AUTO_TRANSFER = "nd4j.backend.auto.transfer";
-    public static final String PROP_AUTO_INIT = "nd4j.backend.auto.init";
+    // System property keys — centralized in ND4JSystemProperties; kept here as aliases for backward compatibility
+    public static final String PROP_PRIORITY = ND4JSystemProperties.BACKEND_PRIORITY;
+    public static final String PROP_MEMORY_FALLBACK = ND4JSystemProperties.BACKEND_MEMORY_FALLBACK;
+    public static final String PROP_GPU_MEMORY_FRACTION = ND4JSystemProperties.BACKEND_GPU_MEMORY_FRACTION;
+    public static final String PROP_CPU_MEMORY_FRACTION = ND4JSystemProperties.BACKEND_CPU_MEMORY_FRACTION;
+    public static final String PROP_AUTO_TRANSFER = ND4JSystemProperties.BACKEND_AUTO_TRANSFER;
+    public static final String PROP_AUTO_INIT = ND4JSystemProperties.BACKEND_AUTO_INIT;
 
     // Delegates to existing singletons
     private final BackendRegistry registry;
@@ -682,10 +682,10 @@ public class BackendManager {
     }
 
     /**
-     * Print detailed device information to the console.
+     * Print detailed device information to the log.
      */
     public void printDeviceInfo() {
-        System.out.println(getDeviceInfoString());
+        log.info("{}", getDeviceInfoString());
     }
 
     /**

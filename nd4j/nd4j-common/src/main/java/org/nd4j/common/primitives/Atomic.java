@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @NoArgsConstructor
 public class Atomic<T extends Serializable> implements Serializable {
+    private static final long serialVersionUID = 1L;
     private volatile T value;
     private transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 

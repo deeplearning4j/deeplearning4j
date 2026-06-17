@@ -20,12 +20,7 @@
 
 package org.nd4j.evaluation.classification;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.val;
-
+import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
@@ -68,6 +63,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 @JsonSerialize(using = ROCSerializer.class)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public class ROC extends BaseEvaluation<ROC> {
+    private static final long serialVersionUID = 1L;
 
     /**
      * AUROC: Area under ROC curve<br>

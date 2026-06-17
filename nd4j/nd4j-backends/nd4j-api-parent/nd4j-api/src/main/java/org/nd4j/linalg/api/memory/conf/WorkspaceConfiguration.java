@@ -35,6 +35,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 // TODO: add json mapping here
 public class WorkspaceConfiguration implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Builder.Default protected AllocationPolicy policyAllocation = AllocationPolicy.OVERALLOCATE;
     @Builder.Default protected SpillPolicy policySpill = SpillPolicy.EXTERNAL;
     @Builder.Default protected MirroringPolicy policyMirroring = MirroringPolicy.FULL;

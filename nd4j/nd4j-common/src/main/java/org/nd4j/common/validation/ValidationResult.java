@@ -35,6 +35,7 @@ import java.util.List;
 @Builder
 @Data
 public class ValidationResult implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private String formatType;       //Human readable format/model type
     private Class<?> formatClass;    //Actual class the format/model is (or should be)
@@ -73,16 +74,7 @@ public class ValidationResult implements Serializable {
             lines.add("Stack Trace:");
             addWithIndent(ex, lines, "  ", "  ");
         }
-        //Would use String.join but that's Java 8...
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for(String s : lines){
-            if(!first)
-                sb.append("\n");
-            sb.append(s);
-            first = false;
-        }
-        return sb.toString();
+        return String.join("\n", lines);
     }
 
     protected static void addWithIndent(String toAdd, List<String> list, String firstLineIndent, String laterLineIndent){

@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @Builder
 public class BreakDownComparison implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private List<NDArrayEvent> first;
     private Map<NDArrayEventType,List<NDArrayEvent>> firstEventsSegmented;

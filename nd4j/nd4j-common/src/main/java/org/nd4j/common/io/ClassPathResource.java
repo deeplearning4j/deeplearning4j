@@ -136,11 +136,10 @@ public class ClassPathResource extends AbstractFileResolvingResource {
 
         tmpFile.deleteOnExit();
 
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
-
-        IOUtils.copy(is, bos);
-        bos.flush();
-        bos.close();
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile))) {
+            IOUtils.copy(is, bos);
+            bos.flush();
+        }
         return tmpFile;
     }
 

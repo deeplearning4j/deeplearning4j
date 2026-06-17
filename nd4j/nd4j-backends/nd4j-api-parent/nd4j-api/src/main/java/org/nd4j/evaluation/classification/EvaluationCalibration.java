@@ -51,6 +51,7 @@ import java.util.List;
 @Getter
 @EqualsAndHashCode
 public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration> {
+    private static final long serialVersionUID = 1L;
 
     public static final int DEFAULT_RELIABILITY_DIAG_NUM_BINS = 10;
     public static final int DEFAULT_HISTOGRAM_NUM_BINS = 50;

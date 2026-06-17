@@ -34,6 +34,7 @@ import java.io.ObjectOutputStream;
  * @author Susan Eraly
  */
 public class BaseNDArrayProxy implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * This is a proxy class so that ndarrays can be serialized and deserialized independent of the backend

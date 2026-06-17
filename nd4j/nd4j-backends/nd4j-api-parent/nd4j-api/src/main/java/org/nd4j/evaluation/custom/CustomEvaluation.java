@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class CustomEvaluation<T> extends BaseEvaluation<CustomEvaluation> {
+    private static final long serialVersionUID = 1L;
 
     /**
      * The metric used to get a score for the CustomEvaluation.  Uses a ResultLambda

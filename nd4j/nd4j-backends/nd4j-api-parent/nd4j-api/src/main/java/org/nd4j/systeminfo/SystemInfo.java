@@ -46,9 +46,13 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.versioncheck.VersionCheck;
 import org.nd4j.versioncheck.VersionInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import oshi.software.os.OperatingSystem;
 
 public class SystemInfo {
+
+    private static final Logger log = LoggerFactory.getLogger(SystemInfo.class);
 
     private static void appendField(StringBuilder sb, String name, Object value){
         sb.append(name).append(": ").append(value.toString()).append("\n");
@@ -410,10 +414,10 @@ public class SystemInfo {
     }
 
     /**
-     * Prints system info
+     * Logs system info
      */
     public static void printSystemInfo(){
-        System.out.println(getSystemInfo());
+        log.info("{}", getSystemInfo());
     }
 
     public static Pair<String,String> inferVersion(){

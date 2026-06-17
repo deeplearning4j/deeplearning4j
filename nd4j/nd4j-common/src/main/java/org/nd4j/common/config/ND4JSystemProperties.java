@@ -1145,6 +1145,14 @@ public class ND4JSystemProperties {
     public static final String OPTIMIZER_FP16 = "nd4j.optimizer.fp16";
 
     /**
+     * Applicability: SameDiff graph optimizer<br>
+     * Description: Enable BF16 optimizations in the graph optimizer. Takes precedence over FP16 if both are set.
+     * <p>
+     * Default: false
+     */
+    public static final String OPTIMIZER_BF16 = "nd4j.optimizer.bf16";
+
+    /**
      * Applicability: DynamicShapePlan-based inference<br>
      * Description: When true, disables attention override optimization in DSP execution.
      * <p>
@@ -1650,6 +1658,484 @@ public class ND4JSystemProperties {
     public static final String ENV_TRITON_CACHE_DIR = "nd4j.environment.tritonCacheDir";
     public static final String ENV_TRITON_DUMP_DIR = "nd4j.environment.tritonDumpDir";
     public static final String ENV_TRITON_OVERRIDE_ARCH = "nd4j.environment.tritonOverrideArch";
+
+    // ---- Array cache properties ----
+
+    /**
+     * Applicability: ArrayCacheMemoryMgr<br>
+     * Description: Growth factor for over-allocation on cache miss. Buffers are allocated
+     * with this multiplier so that the next step's slightly larger request (e.g. growing KV cache)
+     * can reuse the buffer via capacity matching.
+     * Set to 1.0 to disable over-allocation on memory-constrained systems.
+     * <p>
+     * Default: 1.05
+     */
+    public static final String CACHE_GROWTH_FACTOR = "org.nd4j.cache.growthFactor";
+
+    // ---- Graph optimizer properties ----
+
+    /**
+     * Applicability: SameDiff GraphOptimizer<br>
+     * Description: Comma-separated list of optimizer class simple names to skip during graph optimization.
+     * For example: {@code -Dnd4j.optimizer.skip=NormalizationFusionOptimizations,QuantizationOptimizations}
+     * <p>
+     * Default: "" (empty - no optimizers are skipped)
+     */
+    public static final String OPTIMIZER_SKIP = "nd4j.optimizer.skip";
+
+    /**
+     * Applicability: SameDiff GraphOptimizer<br>
+     * Description: Maximum number of optimization iterations to run on a graph.
+     * Increasing this value allows more aggressive optimization at the cost of compile time.
+     * <p>
+     * Default: 3
+     */
+    public static final String OPTIMIZER_MAX_ITERATIONS = "nd4j.optimizer.maxIterations";
+
+    /**
+     * Applicability: SameDiff GraphOptimizer<br>
+     * Description: When set to "true", logs each optimization pass that is applied to the graph.
+     * Useful for debugging optimizer behavior.
+     * <p>
+     * Default: false
+     */
+    public static final String OPTIMIZER_LOG_APPLIED = "nd4j.optimizer.logApplied";
+
+    // ---- SDZ (SameDiff ZIP archive) properties ----
+
+    /**
+     * Applicability: SDZSerializer<br>
+     * Description: Maximum total decompressed size in bytes allowed when extracting SDZ ZIP archives.
+     * This limit protects against zip bomb attacks that could exhaust disk space.
+     * <p>
+     * Default: 10737418240 (10 GB)
+     */
+    public static final String SDZ_MAX_ZIP_SIZE = "nd4j.sdz.maxZipSize";
+
+    /**
+     * Applicability: SDZSerializer<br>
+     * Description: Maximum allowed compression ratio (uncompressed / compressed size) for SDZ ZIP entries.
+     * Protects against zip bomb attacks with highly compressed data.
+     * <p>
+     * Default: 100.0
+     */
+    public static final String SDZ_MAX_ZIP_SIZE_RATIO = "nd4j.sdz.maxCompressionRatio";
+
+    /**
+     * Applicability: SDZSerializer<br>
+     * Description: Maximum number of entries allowed in a model SDZ ZIP archive.
+     * Protects against zip-based denial-of-service attacks that create many entries.
+     * <p>
+     * Default: 1000
+     */
+    public static final String SDZ_MAX_ZIP_ENTRIES = "nd4j.sdz.maxZipEntries";
+
+    // ---- CPU device descriptor properties ----
+
+    /**
+     * Applicability: CpuDeviceDescriptor (nd4j-native backend)<br>
+     * Description: Override for CPU AVX capability detection. When set, the value is used
+     * instead of auto-detecting AVX support from the CPU. Also checks environment variable ND4J_CPU_AVX.
+     * <p>
+     * Default: auto-detected
+     */
+    public static final String CPU_AVX = "nd4j.cpu.avx";
+
+    /**
+     * Applicability: CpuDeviceDescriptor (nd4j-native backend)<br>
+     * Description: Override for CPU SVE (Scalable Vector Extension) capability detection.
+     * When set, the value is used instead of auto-detecting SVE support from the CPU.
+     * Also checks environment variable ND4J_CPU_SVE.
+     * <p>
+     * Default: auto-detected
+     */
+    public static final String CPU_SVE = "nd4j.cpu.sve";
+
+    // ---- Memory configuration properties ----
+
+    /**
+     * Applicability: MemoryConfig<br>
+     * Description: Percentage of total device memory the CUDA memory pool is allowed to keep reserved
+     * during pool release. Range: 1-100. Also checks environment variable SD_POOL_RELEASE_THRESHOLD_PERCENT.
+     * <p>
+     * Default: 75
+     */
+    public static final String MEMORY_POOL_RELEASE_THRESHOLD_PERCENT = "nd4j.memory.poolReleaseThresholdPercent";
+
+    /**
+     * Applicability: MemoryConfig<br>
+     * Description: Minimum percentage of total GPU memory that must remain free AFTER a managed-memory
+     * allocation for it to use the fast cudaMallocManaged path on non-peer devices. Range: 1-100.
+     * Also checks environment variable SD_NON_PEER_HEADROOM_PERCENT.
+     * <p>
+     * Default: 50
+     */
+    public static final String MEMORY_NON_PEER_HEADROOM_PERCENT = "nd4j.memory.nonPeerHeadroomPercent";
+
+    /**
+     * Applicability: MemoryEnvironmentAccess<br>
+     * Description: Default fraction of device memory to use for ND4J operations.
+     * Accepts a float value in the range [0.0, 1.0].
+     * <p>
+     * Default: 0.9
+     */
+    public static final String MEMORY_FRACTION = "org.nd4j.memory.fraction";
+
+    /**
+     * Applicability: OpaqueDataBuffer<br>
+     * Description: When set to "false", disables CPU fallback when CUDA/GPU allocation fails.
+     * By default, if GPU allocation fails, ND4J will fall back to allocating on CPU host memory.
+     * <p>
+     * Default: true
+     */
+    public static final String MEMORY_FALLBACK_ENABLED = "nd4j.memory.fallback.enabled";
+
+    /**
+     * Applicability: CUDA backend (CudaMemoryManager)<br>
+     * Description: When set to "false", disables CPU host-memory fallback when CUDA device allocation
+     * fails. By default, failed CUDA allocations fall back to host memory so execution can continue.
+     * <p>
+     * Default: true
+     */
+    public static final String CUDA_MEMORY_FALLBACK_ENABLED = "nd4j.cuda.memory.fallback.enabled";
+
+    // ---- Opaque native buffer diagnostics ----
+
+    /**
+     * Applicability: OpaqueNDArray<br>
+     * Description: When set to "true", enables Java stack trace capture at OpaqueNDArray allocation time.
+     * Useful for diagnosing native memory leaks. Stack trace capture is expensive and should only be
+     * enabled for debugging.
+     * <p>
+     * Default: false
+     */
+    public static final String OPAQUE_STACKTRACE = "nd4j.opaque.stacktrace";
+
+    // ---- Multi-GPU debug ----
+
+    /**
+     * Applicability: Multi-GPU execution (MultiGpuTracer)<br>
+     * Description: When set to "true", enables detailed trace logging for multi-GPU device
+     * decisions, data transfers, stream usage, and buffer lifecycle. All output is logged at
+     * debug level with the [MultiGpu] prefix. When disabled (default), all trace methods are
+     * no-ops with zero overhead.
+     * <p>
+     * Default: false
+     */
+    public static final String MULTI_GPU_DEBUG = "org.nd4j.multiGpu.debug";
+
+    // ---- BackendManager configuration ----
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: Comma-separated list of device types in priority order for backend selection.
+     * Supported values: CUDA_GPU, ROCM_GPU, METAL_GPU, TPU, CPU (and aliases cuda, gpu, rocm, cpu).
+     * Example: {@code -Dnd4j.backend.priority=CUDA_GPU,CPU}
+     * <p>
+     * Default: CUDA_GPU, ROCM_GPU, METAL_GPU, TPU, CPU
+     */
+    public static final String BACKEND_PRIORITY = "nd4j.backend.priority";
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: When set to "true", enables automatic memory fallback from GPU to CPU
+     * when GPU memory is exhausted.
+     * <p>
+     * Default: true
+     */
+    public static final String BACKEND_MEMORY_FALLBACK = "nd4j.backend.memory.fallback";
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: Fraction of GPU memory to use (0.0-1.0).
+     * <p>
+     * Default: 0.9
+     */
+    public static final String BACKEND_GPU_MEMORY_FRACTION = "nd4j.backend.gpu.memory.fraction";
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: Fraction of CPU memory to use (0.0-1.0).
+     * <p>
+     * Default: 0.8
+     */
+    public static final String BACKEND_CPU_MEMORY_FRACTION = "nd4j.backend.cpu.memory.fraction";
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: When set to "true", enables automatic cross-device data transfer when
+     * an operation requires data on a device where it is not currently resident.
+     * <p>
+     * Default: true
+     */
+    public static final String BACKEND_AUTO_TRANSFER = "nd4j.backend.auto.transfer";
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: When set to "true", enables automatic initialization of BackendManager
+     * during Nd4j startup. Set to "false" to defer or suppress auto-initialization.
+     * <p>
+     * Default: true
+     */
+    public static final String BACKEND_AUTO_INIT = "nd4j.backend.auto.init";
+
+    // ---- Parallel executor service ----
+
+    /**
+     * Applicability: ExecutorServiceProvider<br>
+     * Description: Number of threads in the global ND4J parallel executor service.
+     * Default is the number of available processors.
+     * <p>
+     * Default: Runtime.getRuntime().availableProcessors()
+     */
+    public static final String PARALLEL_THREADS = "org.nd4j.parallel.threads";
+
+    /**
+     * Applicability: ExecutorServiceProvider<br>
+     * Description: When set to "false", disables the global ND4J parallel executor service
+     * and forces single-threaded execution (nThreads = 1).
+     * <p>
+     * Default: true
+     */
+    public static final String PARALLEL_ENABLED = "org.nd4j.parallel.enabled";
+
+    // ---- Native plugin loading ----
+
+    /**
+     * Applicability: NativePluginLoader<br>
+     * Description: Filesystem path from which to load native ND4J plugin libraries (.so/.dll/.dylib).
+     * When not set, the loader falls back to the default search path under the user home directory.
+     * <p>
+     * Default: unset
+     */
+    public static final String NATIVE_PLUGIN_PATH = "nd4j.native.plugin.path";
+
+    // ---- FileBatch ZIP security properties ----
+
+    /**
+     * Applicability: FileBatch ZIP reader<br>
+     * Description: Maximum total decompressed size in bytes allowed when reading FileBatch ZIP files.
+     * Protects against zip bomb attacks that could exhaust memory or disk space.
+     * <p>
+     * Default: 1073741824 (1 GB)
+     */
+    public static final String ND4J_FILEBATCH_MAX_ZIP_SIZE = "nd4j.filebatch.maxZipSize";
+
+    /**
+     * Applicability: FileBatch ZIP reader<br>
+     * Description: Maximum allowed compression ratio (uncompressed / compressed size) for FileBatch ZIP entries.
+     * Protects against zip bomb attacks with highly compressed data.
+     * <p>
+     * Default: 100.0
+     */
+    public static final String ND4J_FILEBATCH_MAX_COMPRESSION_RATIO = "nd4j.filebatch.maxCompressionRatio";
+
+    /**
+     * Applicability: FileBatch ZIP reader<br>
+     * Description: Maximum number of entries allowed in a FileBatch ZIP archive.
+     * Protects against zip-based denial-of-service attacks that create many entries.
+     * <p>
+     * Default: 10000
+     */
+    public static final String ND4J_FILEBATCH_MAX_ZIP_ENTRIES = "nd4j.filebatch.maxZipEntries";
+
+    // ---- ArchiveUtils ZIP/TAR security properties ----
+
+    /**
+     * Applicability: ArchiveUtils (ZIP/TAR extraction)<br>
+     * Description: Maximum total decompressed size in bytes allowed when extracting archives.
+     * Protects against zip bomb attacks that could exhaust disk space.
+     * <p>
+     * Default: 10737418240 (10 GB)
+     */
+    public static final String ND4J_ARCHIVE_MAX_UNCOMPRESSED_SIZE = "nd4j.archive.maxUncompressedSize";
+
+    /**
+     * Applicability: ArchiveUtils (ZIP/TAR extraction)<br>
+     * Description: Maximum allowed compression ratio (uncompressed / compressed size) for archive entries.
+     * Protects against zip bomb attacks with highly compressed data.
+     * <p>
+     * Default: 100.0
+     */
+    public static final String ND4J_ARCHIVE_MAX_COMPRESSION_RATIO = "nd4j.archive.maxCompressionRatio";
+
+    /**
+     * Applicability: ArchiveUtils (ZIP/TAR extraction)<br>
+     * Description: Maximum number of entries allowed in an archive.
+     * Protects against zip-based denial-of-service attacks that create many entries.
+     * <p>
+     * Default: 100000
+     */
+    public static final String ND4J_ARCHIVE_MAX_ENTRIES = "nd4j.archive.maxEntries";
+
+    // ---- Frozen decode step diagnostics ----
+
+    /**
+     * Applicability: FrozenDecodeStep (speculative decoding)<br>
+     * Description: When set to "true", dumps the graph summary to the log after
+     * FrozenDecodeStep compilation. Useful for inspecting graph structure for
+     * seqLen&gt;1 edge cases.
+     * <p>
+     * Default: false
+     */
+    public static final String ND4J_FROZEN_SUMMARY = "nd4j.frozen.summary";
+
+    /**
+     * Applicability: FrozenDecodeStep (speculative decoding)<br>
+     * Description: When set to "true", enables debug+verbose ND4J environment logging
+     * during the first (warmup) execution of a FrozenDecodeStep. Useful for tracing
+     * all op shapes during warmup.
+     * <p>
+     * Default: false
+     */
+    public static final String ND4J_FROZEN_DEBUG = "nd4j.frozen.debug";
+
+    // ---- Decode loop diagnostics ----
+
+    /**
+     * Applicability: StaticKvCacheDecodeLoop<br>
+     * Description: When set to "true", enables per-step GPU free-memory diagnostics
+     * during autoregressive decoding. Logs free memory and delta for the first 10 steps.
+     * <p>
+     * Default: false
+     */
+    public static final String ND4J_DECODE_MEMORY_DIAG = "nd4j.decode.memoryDiag";
+
+    /**
+     * Applicability: StaticKvCacheDecodeLoop / DSP padded-shape decode path<br>
+     * Description: When set to "true", disables the DSP padded-shape (static KV) decode
+     * path. Forces the fallback dynamic-shape path for each decode step.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_NO_PADDED = "nd4j.dsp.noPadded";
+
+    // ---- VLM image preprocessing ----
+
+    /**
+     * Applicability: ImageTiler (VLM image preprocessing)<br>
+     * Description: When set to "true", applies a mild sharpening kernel to resized
+     * images before tiling. Helps preserve character edge clarity for OCR-heavy VLM tasks.
+     * <p>
+     * Default: false
+     */
+    public static final String VLM_IMAGE_SHARPEN = "nd4j.vlm.image.sharpen";
+
+    // ---- libnd4j native build / loader properties ----
+
+    /**
+     * Applicability: nd4j-cuda-preset, nd4j-native-preset, OpExclusionUtils<br>
+     * Description: Enable C-level function call tracing in the native libnd4j library.
+     * Set to "ON" to activate tracing; any other value (or absent) disables it.
+     * <p>
+     * Default: OFF
+     */
+    public static final String LIBND4J_CALLTRACE = "libnd4j.calltrace";
+
+    // ---- Data buffer allocation policy ----
+
+    /**
+     * Applicability: DefaultDataBufferFactory, CudaDataBufferFactory<br>
+     * Description: Controls the allocation policy for data buffers. When set, selects
+     * an alternative buffer allocation strategy. Recognized values depend on the backend.
+     * <p>
+     * Default: unset (uses default allocation)
+     */
+    public static final String ALLOC_POLICY = "alloc";
+
+    // ---- SameDiff import properties ----
+
+    /**
+     * Applicability: OpDescriptorHolder (samediff import)<br>
+     * Description: Path to the nd4j op descriptor JSON/text file used during
+     * SameDiff model import. When set, overrides the default classpath resource.
+     * <p>
+     * Default: unset (uses built-in resource)
+     */
+    public static final String SAMEDIFF_IMPORT_ND4J_DESCRIPTORS = "samediff.import.nd4jdescriptors";
+
+    // ---- VLM decode diagnostics ----
+
+    /**
+     * Applicability: DecodeStepDiagnostics (VLM/LLM generation)<br>
+     * Description: When set to "true", enables per-step decode diagnostics including
+     * KV cache fingerprinting and logit health checks.
+     * <p>
+     * Default: false
+     */
+    public static final String VLM_DECODE_DIAGNOSTICS = "vlm.decode.diagnostics";
+
+    // ---- VLM benchmark properties ----
+
+    /**
+     * Applicability: GenerationPipeline (VLM benchmarking)<br>
+     * Description: When set to "true", enables per-op timing instrumentation during
+     * VLM benchmark runs.
+     * <p>
+     * Default: false
+     */
+    public static final String VLM_BENCHMARK_OP_TIMING = "vlm.benchmark.opTiming";
+
+    /**
+     * Applicability: StaticKvCacheDecodeLoop (VLM benchmarking)<br>
+     * Description: When set to "true", enables per-phase logging during the decode loop
+     * (e.g., prefill vs. decode phase timings).
+     * <p>
+     * Default: true
+     */
+    public static final String VLM_BENCHMARK_DECODE_PHASE_LOGGING = "vlm.benchmark.decodePhaseLogging";
+
+    /**
+     * Applicability: StaticKvCacheDecodeLoop (VLM benchmarking)<br>
+     * Description: When set to "true", enables detailed decode diagnostics during
+     * VLM benchmark runs.
+     * <p>
+     * Default: false
+     */
+    public static final String VLM_BENCHMARK_DECODE_DIAGNOSTICS = "vlm.benchmark.decodeDiagnostics";
+
+    // ---- LLM model cache ----
+
+    /**
+     * Applicability: PerplexityEvaluator and related LLM tooling<br>
+     * Description: Local directory where downloaded LLM model files are cached.
+     * When not set, a default path under the user home directory is used.
+     * <p>
+     * Default: unset
+     */
+    public static final String LLM_MODEL_CACHE_DIR = "llm.model.cache.dir";
+
+    // ---- Benchmark configuration ----
+
+    /**
+     * Applicability: BenchmarkConfig<br>
+     * Description: Maximum number of tokens to generate during a benchmark run.
+     * <p>
+     * Default: 20
+     */
+    public static final String BENCH_MAX_TOKENS = "bench.max.tokens";
+
+    // ---- HuggingFace authentication ----
+
+    /**
+     * Applicability: ModelDownloader<br>
+     * Description: HuggingFace API token used for authenticated model downloads.
+     * Required for gated models (e.g., Llama, Mistral).
+     * <p>
+     * Default: unset
+     */
+    public static final String HF_TOKEN = "hf.token";
+
+    // ---- VLM GPU memory threshold ----
+
+    /**
+     * Applicability: VisionLanguageModel<br>
+     * Description: GPU free-memory fraction threshold (0.0–1.0) below which the VLM
+     * will take memory-pressure actions (e.g., offload weights or refuse to load).
+     * <p>
+     * Default: 0.10
+     */
+    public static final String KOMPILE_VLM_GPU_MEMORY_THRESHOLD = "kompile.vlm.gpu.memory.threshold";
 
     private ND4JSystemProperties() {
     }

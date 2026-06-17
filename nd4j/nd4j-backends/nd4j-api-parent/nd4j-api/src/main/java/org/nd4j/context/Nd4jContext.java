@@ -20,6 +20,7 @@
 
 package org.nd4j.context;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -29,7 +30,9 @@ import java.util.Properties;
 
 @Slf4j
 public class Nd4jContext implements Serializable {
+    private static final long serialVersionUID = 1L;
 
+    @Getter
     private Properties conf;
     private static Nd4jContext INSTANCE = new Nd4jContext();
 
@@ -56,12 +59,4 @@ public class Nd4jContext implements Serializable {
         }
     }
 
-    /**
-     * Get the configuration for nd4j
-     *
-     * @return
-     */
-    public Properties getConf() {
-        return conf;
-    }
 }

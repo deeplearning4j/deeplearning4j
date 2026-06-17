@@ -24,6 +24,7 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.profiler.data.stacktrace.StackTraceQuery;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Utilities for working with stack traces
@@ -111,13 +112,8 @@ public class StackTraceUtils {
 
             return ret.toArray(new StackTraceElement[0]);
         } else {
-            List<StackTraceElement> ret = new ArrayList<>();
-            for (StackTraceElement stackTraceElement : stackTrace) {
-                //note we break because it doesn't make sense to continue rendering when we've hit a package we should be ignoring.
-                //this allows a user to specify 1 namespace and ignore anything after it.
-               ret.add(stackTraceElement);
-            }
-            return ret.toArray(new StackTraceElement[0]);
+            //note we return a copy; no filtering needed when ignorePackages is empty/null
+            return stackTrace.clone();
         }
 
     }
@@ -128,15 +124,10 @@ public class StackTraceUtils {
      * @return
      */
     public static String renderStackTrace(StackTraceElement[] stackTrace, List<StackTraceQuery> ignorePackages, List<StackTraceQuery> skipFullPatterns) {
-        StringBuilder stringBuilder = new StringBuilder();
         StackTraceElement[] stackTrace1 = trimStackTrace(stackTrace,ignorePackages,skipFullPatterns);
-
-        for (StackTraceElement stackTraceElement : stackTrace1) {
-            stringBuilder.append(stackTraceElement.toString() + "\n");
-        }
-
-        return stringBuilder.toString();
-
+        return Arrays.stream(stackTrace1)
+                .map(e -> e.toString() + "\n")
+                .collect(Collectors.joining());
     }
 
 
@@ -229,14 +220,9 @@ public class StackTraceUtils {
         if(elements == null || elements.length < 1)
             return null;
 
-        List<StackTraceElement> ret = new ArrayList<>();
-        for(int i = 0; i < elements.length; i++) {
-            if(elements[i].getClassName().equals(className)) {
-                ret.add(elements[i]);
-            }
-        }
-
-        return ret.toArray(new StackTraceElement[0]);
+        return Arrays.stream(elements)
+                .filter(e -> e.getClassName().equals(className))
+                .toArray(StackTraceElement[]::new);
     }
 
     /**
