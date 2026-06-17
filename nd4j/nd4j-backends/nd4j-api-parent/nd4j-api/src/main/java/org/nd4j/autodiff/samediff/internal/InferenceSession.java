@@ -187,37 +187,28 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     /** Increment live reference count for the DataBuffer of the given array. */
-    private void trackLiveBuffer(INDArray array) {
-        if (array == null || array.data() == null) return;
-        DataBuffer buf = array.data();
-        liveDataBufferRefs().merge(buf, 1, Integer::sum);
+    void trackLiveBuffer(INDArray array) {
+        bufferLifecycleManager.trackLiveBuffer(array, liveDataBufferRefs());
     }
 
     /** Decrement live reference count and remove entry when it reaches zero. */
-    private void untrackLiveBuffer(INDArray array) {
-        if (array == null || array.data() == null) return;
-        DataBuffer buf = array.data();
-        IdentityHashMap<DataBuffer, Integer> refs = liveDataBufferRefs();
-        Integer count = refs.get(buf);
-        if (count == null) return;
-        if (count <= 1) {
-            refs.remove(buf);
-        } else {
-            refs.put(buf, count - 1);
-        }
+    void untrackLiveBuffer(INDArray array) {
+        bufferLifecycleManager.untrackLiveBuffer(array, liveDataBufferRefs());
     }
 
     /** Return true if the DataBuffer is exclusively owned (ref count == 1 or not tracked). */
-    private boolean isBufferExclusivelyOwned(INDArray array) {
-        if (array == null || array.data() == null) return true;
-        Integer count = liveDataBufferRefs().get(array.data());
-        return count == null || count <= 1;
+    boolean isBufferExclusivelyOwned(INDArray array) {
+        return bufferLifecycleManager.isBufferExclusivelyOwned(array, liveDataBufferRefs());
     }
 
     // DataBuffers from externally-provided placeholder arrays. These must NOT be closed during
     // resetSession() — they are owned by the caller, not by this session.
     @Getter
     private final IdentityHashMap<DataBuffer, Boolean> externalPlaceholderBuffers = new IdentityHashMap<>();
+
+    // Delegate helpers extracted from this class for cohesion
+    final ControlFlowExecutor controlFlowExecutor = new ControlFlowExecutor(this);
+    final BufferLifecycleManager bufferLifecycleManager = new BufferLifecycleManager(this);
 
 
     // ---- Java-side execution timing ----
@@ -469,68 +460,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     private void collectCloseableBuffers(SDValue value, IdentityHashMap<DataBuffer, Boolean> buffers) {
-        if (value == null) {
-            return;
-        }
-
-        switch (value.getSdValueType()) {
-            case TENSOR:
-                INDArray tensor = value.getTensorValue();
-                if (tensor != null && !tensor.wasClosed() && tensor.data() != null) {
-                    buffers.put(tensor.data(), Boolean.TRUE);
-                }
-                break;
-            case LIST:
-                if (value.getListValue() != null) {
-                    for (INDArray arr : value.getListValue()) {
-                        if (arr != null && !arr.wasClosed() && arr.data() != null) {
-                            buffers.put(arr.data(), Boolean.TRUE);
-                        }
-                    }
-                }
-                break;
-            case DICT:
-                if (value.getDictValue() != null) {
-                    for (INDArray arr : value.getDictValue().values()) {
-                        if (arr != null && !arr.wasClosed() && arr.data() != null) {
-                            buffers.put(arr.data(), Boolean.TRUE);
-                        }
-                    }
-                }
-                break;
-            default:
-                break;
-        }
+        bufferLifecycleManager.collectCloseableBuffers(value, buffers);
     }
 
     private int closeLatestRequestedOutputBuffers() {
         Map<String, SDValue> latestOutputs = latestRequestedOutputsTl.get();
-        if (latestOutputs == null || latestOutputs.isEmpty()) {
-            return 0;
-        }
-
         IdentityHashMap<DataBuffer, Boolean> protectedBuffers = snapshotProtectedBuffersForCleanup();
-        IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
-        for (SDValue value : latestOutputs.values()) {
-            collectCloseableBuffers(value, uniqueBuffers);
-        }
-
-        int closed = 0;
-        for (DataBuffer buf : uniqueBuffers.keySet()) {
-            if (buf == null || protectedBuffers.containsKey(buf)) {
-                continue;
-            }
-            if (buf.closeable()) {
-                try {
-                    buf.close();
-                    closed++;
-                } catch (Exception ignored) {
-                    // Buffer may already be deallocated or owned elsewhere.
-                }
-            }
-        }
-        latestOutputs.clear();
-        return closed;
+        return bufferLifecycleManager.closeLatestRequestedOutputBuffers(latestOutputs, protectedBuffers);
     }
 
     private IdentityHashMap<DataBuffer, Boolean> snapshotProtectedBuffersForCleanup() {
@@ -564,42 +500,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     private int closeNodeValueOutputBuffers() {
-        if (nodeValueOutputs.isEmpty()) {
-            return 0;
-        }
-
         IdentityHashMap<DataBuffer, Boolean> protectedBuffers = snapshotProtectedBuffersForCleanup();
-        IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
-        for (SDValue value : nodeValueOutputs.values()) {
-            collectCloseableBuffers(value, uniqueBuffers);
-        }
-
-        int closed = 0;
-        for (DataBuffer buf : uniqueBuffers.keySet()) {
-            if (buf == null || protectedBuffers.containsKey(buf)) {
-                continue;
-            }
-
-            // Never force-close constant buffers — they are model weights that must
-            // survive session cleanup. The protectedBuffers snapshot may miss them if
-            // identity ops alias a constant's DataBuffer to an output slot, causing the
-            // buffer to appear in nodeValueOutputs with a different identity.
-            if (buf.isConstant()) {
-                continue;
-            }
-
-            if (buf.closeable()) {
-                try {
-                    buf.close();
-                    closed++;
-                } catch (Exception ignored) {
-                    // Buffer may already be deallocated or owned elsewhere.
-                }
-            }
-        }
-
-        nodeValueOutputs.clear();
-        return closed;
+        return bufferLifecycleManager.closeNodeValueOutputBuffers(nodeValueOutputs, protectedBuffers);
     }
 
     /**
@@ -719,10 +621,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      *                         May be null if no protection is needed.
      */
     public void flushArrayCache(IdentityHashMap<DataBuffer, Boolean> protectedBuffers) {
-        if (mmgr instanceof ArrayCacheMemoryMgr) {
-            ((ArrayCacheMemoryMgr) mmgr).close(protectedBuffers);
-            log.info("Flushed ArrayCacheMemoryMgr");
-        }
+        bufferLifecycleManager.flushArrayCache(mmgr, protectedBuffers);
     }
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
@@ -2196,12 +2095,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * @return Formatted string with dependent values
      */
     public String getDependentValuesString(Map<String, SDValue> variableValues, String variableName) {
-        Map<String, String> deps = getDependentValuesMap(variableValues, variableName);
-        StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, String> entry : deps.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-        }
-        return sb.toString();
+        return DebugFormatHelper.getDependentValuesString(variableValues, variableName, sameDiff);
     }
 
     /**
@@ -2212,49 +2106,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * @return Map of variable names to their values
      */
     public Map<String, String> getDependentValuesMap(Map<String, SDValue> variableValues, String variableName) {
-        Map<String, String> result = new LinkedHashMap<>();
-        Set<String> visited = new HashSet<>();
-        collectDependentValues(variableValues, variableName, result, visited);
-        return result;
+        return DebugFormatHelper.getDependentValuesMap(variableValues, variableName, sameDiff);
     }
 
     private void collectDependentValues(Map<String, SDValue> variableValues, String varName,
                                         Map<String, String> result, Set<String> visited) {
-        if (visited.contains(varName)) {
-            return;
-        }
-        visited.add(varName);
-
-        // Add this variable's value
-        SDValue value = variableValues.get(varName);
-        if (value != null) {
-            result.put(varName, formatValue(value));
-        }
-
-        // Find the op that produces this variable
-        for (SameDiffOp op : sameDiff.getOps().values()) {
-            if (op.getOutputsOfOp() != null && op.getOutputsOfOp().contains(varName)) {
-                // Collect values from all inputs
-                if (op.getInputsToOp() != null) {
-                    for (String input : op.getInputsToOp()) {
-                        collectDependentValues(variableValues, input, result, visited);
-                    }
-                }
-                break;
-            }
-        }
+        DebugFormatHelper.collectDependentValues(variableValues, varName, result, visited, sameDiff);
     }
 
     private String formatValue(SDValue value) {
-        if (value.getSdValueType() == SDValueType.TENSOR) {
-            INDArray arr = value.getTensorValue();
-            if (arr == null) return "null";
-            if (arr.isScalar()) return String.valueOf(arr.getDouble(0));
-            return Arrays.toString(arr.shape()) + " = " + arr.toString().replaceAll("\\s+", " ").trim();
-        } else if (value.getSdValueType() == SDValueType.LIST) {
-            return "List[" + value.getListValue().size() + "]";
-        }
-        return value.toString();
+        return DebugFormatHelper.formatValue(value);
     }
     private void initializeValues(Map<String, SDValue> variableValues,
                                   ForwardExecutionDAG dag,
@@ -2357,85 +2218,21 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * Formats a shape array as a readable string for debug output.
      */
     private String formatShape(long[] shape) {
-        if (shape == null) return "null";
-        if (shape.length == 0) return "[]";
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < shape.length; i++) {
-            if (i > 0) sb.append(", ");
-            sb.append(shape[i]);
-        }
-        sb.append("]");
-        return sb.toString();
+        return DebugFormatHelper.formatShape(shape);
     }
 
     /**
      * Formats input information for debug output.
      */
     private String formatInputsDebug(ExecutionNode node, Map<String, SDValue> variableValues) {
-        StringBuilder sb = new StringBuilder();
-        List<String> inputs = node.getInputVariables();
-        if (inputs == null || inputs.isEmpty()) {
-            sb.append("    Inputs: (none)\n");
-        } else {
-            sb.append("    Inputs:\n");
-            for (int i = 0; i < inputs.size(); i++) {
-                String inputName = inputs.get(i);
-                SDValue value = variableValues.get(inputName);
-                sb.append("      [").append(i).append("] ").append(inputName).append(": ");
-                if (value == null) {
-                    sb.append("null");
-                } else if (value.getSdValueType() == SDValueType.TENSOR) {
-                    INDArray arr = value.getTensorValue();
-                    if (arr == null) {
-                        sb.append("null tensor");
-                    } else {
-                        sb.append("shape=").append(formatShape(arr.shape()))
-                          .append(", dtype=").append(arr.dataType());
-                    }
-                } else if (value.getSdValueType() == SDValueType.LIST) {
-                    List<INDArray> list = value.getListValue();
-                    sb.append("list[").append(list != null ? list.size() : 0).append("]");
-                } else {
-                    sb.append(value.getSdValueType());
-                }
-                sb.append("\n");
-            }
-        }
-        return sb.toString();
+        return DebugFormatHelper.formatInputsDebug(node, variableValues);
     }
 
     /**
      * Formats output information for debug output.
      */
     private String formatOutputsDebug(ExecutionNode node, Map<String, SDValue> variableValues) {
-        StringBuilder sb = new StringBuilder();
-        List<String> outputs = node.getOutputVariables();
-        if (outputs == null || outputs.isEmpty()) {
-            sb.append("    Outputs: (none)\n");
-        } else {
-            sb.append("    Outputs:\n");
-            for (int i = 0; i < outputs.size(); i++) {
-                String outputName = outputs.get(i);
-                SDVariable outVar = sameDiff.getVariable(outputName);
-                sb.append("      [").append(i).append("] ").append(outputName);
-                if (outVar != null) {
-                    sb.append(": dtype=").append(outVar.dataType());
-                    if (outVar.getShape() != null) {
-                        sb.append(", expectedShape=").append(formatShape(outVar.getShape()));
-                    }
-                }
-                // Check if already computed
-                SDValue computed = variableValues.get(outputName);
-                if (computed != null && computed.getSdValueType() == SDValueType.TENSOR) {
-                    INDArray arr = computed.getTensorValue();
-                    if (arr != null) {
-                        sb.append(" -> actualShape=").append(formatShape(arr.shape()));
-                    }
-                }
-                sb.append("\n");
-            }
-        }
-        return sb.toString();
+        return DebugFormatHelper.formatOutputsDebug(node, variableValues, sameDiff);
     }
 
     /**
@@ -2448,100 +2245,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * @return formatted string with node metadata for error context
      */
     private String formatNodeErrorContext(ExecutionNode node, Map<String, SDValue> variableValues) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n========================================\n");
-        sb.append("SAMEDIFF NODE EXECUTION ERROR CONTEXT\n");
-        sb.append("========================================\n");
-
-        String opName = node.getOperationName();
-        sb.append("Operation Name: ").append(opName).append("\n");
-
-        // Get the SameDiff op for additional info
-        SameDiffOp sameDiffOp = sameDiff.getOps().get(opName);
-        if (sameDiffOp != null) {
-            DifferentialFunction op = sameDiffOp.getOp();
-            if (op != null) {
-                sb.append("Op Type: ").append(op.opName()).append("\n");
-                sb.append("Op Class: ").append(op.getClass().getSimpleName()).append("\n");
-            }
-        }
-
-        // Input variables with details
-        List<String> inputs = node.getInputVariables();
-        sb.append("\nINPUT VARIABLES (").append(inputs != null ? inputs.size() : 0).append("):\n");
-        if (inputs != null && !inputs.isEmpty()) {
-            for (int i = 0; i < inputs.size(); i++) {
-                String inputName = inputs.get(i);
-                sb.append("  [").append(i).append("] '").append(inputName).append("'");
-
-                SDValue value = variableValues.get(inputName);
-                if (value == null) {
-                    sb.append(" -> VALUE NOT FOUND IN CONTEXT");
-                } else if (value.getSdValueType() == SDValueType.TENSOR) {
-                    INDArray arr = value.getTensorValue();
-                    if (arr == null) {
-                        sb.append(" -> null tensor");
-                    } else {
-                        sb.append("\n      Shape: ").append(formatShape(arr.shape()));
-                        sb.append(", DataType: ").append(arr.dataType());
-                        sb.append(", Closed: ").append(arr.wasClosed());
-                        if (arr.data() != null && !arr.wasClosed()) {
-                            try {
-                                sb.append("\n      Buffer Address: 0x").append(Long.toHexString(arr.data().pointer().address()));
-                            } catch (Exception e) {
-                                sb.append("\n      Buffer Address: <released>");
-                            }
-                        }
-                        // For scalars, show the value
-                        if (arr.isScalar() && !arr.wasClosed()) {
-                            try {
-                                if (arr.dataType() == DataType.INT64) {
-                                    long val = arr.getLong(0);
-                                    sb.append("\n      Scalar Value: ").append(val);
-                                    sb.append(" (hex: 0x").append(Long.toHexString(val)).append(")");
-                                } else if (arr.dataType().isFPType()) {
-                                    sb.append("\n      Scalar Value: ").append(arr.getDouble(0));
-                                }
-                            } catch (Exception e) {
-                                sb.append("\n      Scalar Value: <error reading value>");
-                            }
-                        }
-                    }
-                } else if (value.getSdValueType() == SDValueType.LIST) {
-                    List<INDArray> list = value.getListValue();
-                    sb.append(" -> list[").append(list != null ? list.size() : 0).append("]");
-                } else {
-                    sb.append(" -> ").append(value.getSdValueType());
-                }
-                sb.append("\n");
-            }
-        } else {
-            sb.append("  (no inputs)\n");
-        }
-
-        // Output variables
-        List<String> outputs = node.getOutputVariables();
-        sb.append("\nOUTPUT VARIABLES (").append(outputs != null ? outputs.size() : 0).append("):\n");
-        if (outputs != null && !outputs.isEmpty()) {
-            for (int i = 0; i < outputs.size(); i++) {
-                String outputName = outputs.get(i);
-                sb.append("  [").append(i).append("] '").append(outputName).append("'");
-
-                SDVariable outVar = sameDiff.getVariable(outputName);
-                if (outVar != null) {
-                    sb.append(" -> dtype=").append(outVar.dataType());
-                    if (outVar.getShape() != null) {
-                        sb.append(", expectedShape=").append(formatShape(outVar.getShape()));
-                    }
-                }
-                sb.append("\n");
-            }
-        } else {
-            sb.append("  (no outputs)\n");
-        }
-
-        sb.append("========================================\n");
-        return sb.toString();
+        return DebugFormatHelper.formatNodeErrorContext(node, variableValues, sameDiff);
     }
 
     /**
@@ -2558,7 +2262,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * @param varName     The variable name (output of the producing op)
      * @param allRequired Set of required output variable names
      */
-    private void addConsumerDependencies(SDValue outputValue, String varName, Set<String> allRequired) {
+    void addConsumerDependencies(SDValue outputValue, String varName, Set<String> allRequired) {
         // Track this array's DataBuffer for mid-execution release safety.
         // ALL arrays are tracked (including those marked constant) to ensure
         // correct ref counting for shared buffers (reshape/permute views).
@@ -2594,12 +2298,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
     }
 
-    private void executeNode(ExecutionNode node,
-                             Map<String, SDValue> variableValues,
-                             Set<String> allRequired,
-                             List<Listener> listeners,
-                             At at,
-                             MultiDataSet batch) {
+    void executeNode(ExecutionNode node,
+                     Map<String, SDValue> variableValues,
+                     Set<String> allRequired,
+                     List<Listener> listeners,
+                     At at,
+                     MultiDataSet batch) {
 
         String opName = node.getOperationName();
         boolean debugMode = Nd4j.getEnvironment().isDebug();
@@ -2856,168 +2560,32 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     private void executeIdentityNode(ExecutionNode node, Map<String, SDValue> variableValues) {
-        String opName = node.getOperationName();
-        List<String> inputs = node.getInputVariables();
-        List<String> outputs = node.getOutputVariables();
-
-        if (inputs.isEmpty() || outputs.isEmpty()) {
-            throw new IllegalStateException("Identity operation " + opName + " has no inputs or outputs");
-        }
-
-        String inputVar = inputs.get(0);
-        String outputVar = outputs.get(0);
-
-        SDValue inputValue = variableValues.get(inputVar);
-        if (inputValue == null) {
-            throw new IllegalStateException("Input variable " + inputVar + " not found for Identity operation " + opName);
-        }
-
-        variableValues.put(outputVar, inputValue);
+        controlFlowExecutor.executeIdentityNode(node, variableValues);
     }
 
     private void executeSwitchNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
-        Switch switchOp = (Switch) op;
-        List<String> inputs = node.getInputVariables();
-        List<String> outputs = node.getOutputVariables();
-
-        if (inputs.size() < 2) {
-            throw new IllegalStateException("Switch operation requires at least 2 inputs");
-        }
-
-        String dataInput = inputs.get(0);
-        String predicateInput = inputs.get(1);
-
-        SDValue dataValue = variableValues.get(dataInput);
-        SDValue predicateValue = variableValues.get(predicateInput);
-
-        if (dataValue == null || predicateValue == null) {
-            throw new IllegalStateException("Switch inputs not available: data=" + (dataValue != null) +
-                    ", predicate=" + (predicateValue != null));
-        }
-
-        INDArray predicate = predicateValue.getTensorValue();
-        boolean condition = predicate.getDouble(0) != 0.0;
-
-        // Switch outputs: [false_output, true_output]
-        if (outputs.size() >= 2) {
-            if (condition) {
-                variableValues.put(outputs.get(1), dataValue); // true branch
-                variableValues.put(outputs.get(0), null);       // false branch (null)
-            } else {
-                variableValues.put(outputs.get(0), dataValue);  // false branch
-                variableValues.put(outputs.get(1), null);       // true branch (null)
-            }
-        }
+        controlFlowExecutor.executeSwitchNode(node, variableValues, op);
     }
 
     private void executeEnterNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
-        Enter enterOp = (Enter) op;
-        List<String> inputs = node.getInputVariables();
-        List<String> outputs = node.getOutputVariables();
-
-        if (inputs.isEmpty() || outputs.isEmpty()) {
-            throw new IllegalStateException("Enter operation requires inputs and outputs");
-        }
-
-        String inputVar = inputs.get(0);
-        String outputVar = outputs.get(0);
-
-        SDValue inputValue = variableValues.get(inputVar);
-        if (inputValue == null) {
-            throw new IllegalStateException("Input variable " + inputVar + " not found for Enter operation");
-        }
-
-        // Enter just forwards the input to the output (entering a new frame)
-        variableValues.put(outputVar, inputValue);
+        controlFlowExecutor.executeEnterNode(node, variableValues, op);
     }
 
     private void executeExitNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
-        List<String> inputs = node.getInputVariables();
-        List<String> outputs = node.getOutputVariables();
-
-        if (inputs.isEmpty() || outputs.isEmpty()) {
-            throw new IllegalStateException("Exit operation requires inputs and outputs");
-        }
-
-        String inputVar = inputs.get(0);
-        String outputVar = outputs.get(0);
-
-        SDValue inputValue = variableValues.get(inputVar);
-        if (inputValue == null) {
-            throw new IllegalStateException("Input variable " + inputVar + " not found for Exit operation");
-        }
-
-        // Exit forwards the input to the parent frame
-        variableValues.put(outputVar, inputValue);
+        controlFlowExecutor.executeExitNode(node, variableValues, op);
     }
 
     private void executeNextIterationNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
-        List<String> inputs = node.getInputVariables();
-        List<String> outputs = node.getOutputVariables();
-
-        if (inputs.isEmpty() || outputs.isEmpty()) {
-            throw new IllegalStateException("NextIteration operation requires inputs and outputs");
-        }
-
-        String inputVar = inputs.get(0);
-        String outputVar = outputs.get(0);
-
-        SDValue inputValue = variableValues.get(inputVar);
-        if (inputValue == null) {
-            throw new IllegalStateException("Input variable " + inputVar + " not found for NextIteration operation");
-        }
-
-        // NextIteration forwards input to next iteration
-        variableValues.put(outputVar, inputValue);
+        controlFlowExecutor.executeNextIterationNode(node, variableValues, op);
     }
 
     private void executeMergeNode(ExecutionNode node, Map<String, SDValue> variableValues,
                                    DifferentialFunction op, Set<String> allRequired) {
-        List<String> inputs = node.getInputVariables();
-        List<String> outputs = node.getOutputVariables();
-
-        if (inputs.size() < 2 || outputs.isEmpty()) {
-            throw new IllegalStateException("Merge operation requires at least 2 inputs and 1 output");
-        }
-
-        String outputVar = outputs.get(0);
-
-        // Find the first available input (standard Merge behavior)
-        for (String inputVar : inputs) {
-            SDValue inputValue = variableValues.get(inputVar);
-            if (inputValue != null) {
-                variableValues.put(outputVar, inputValue);
-
-                // Add dependency tracking for the Merge output
-                // This is crucial: the Merge shares the SDValue with its input,
-                // so we need to add a dependency to prevent the array from being
-                // freed when the input's dependency is satisfied
-                addConsumerDependencies(inputValue, outputVar, allRequired);
-                return;
-            }
-        }
-
-        throw new IllegalStateException("No inputs available for Merge operation " + node.getOperationName());
+        controlFlowExecutor.executeMergeNode(node, variableValues, op, allRequired);
     }
 
     private void executeLoopCondNode(ExecutionNode node, Map<String, SDValue> variableValues, DifferentialFunction op) {
-        List<String> inputs = node.getInputVariables();
-        List<String> outputs = node.getOutputVariables();
-
-        if (inputs.isEmpty() || outputs.isEmpty()) {
-            throw new IllegalStateException("LoopCond operation requires inputs and outputs");
-        }
-
-        String inputVar = inputs.get(0);
-        String outputVar = outputs.get(0);
-
-        SDValue inputValue = variableValues.get(inputVar);
-        if (inputValue == null) {
-            throw new IllegalStateException("Input variable " + inputVar + " not found for LoopCond operation");
-        }
-
-        // LoopCond forwards boolean condition
-        variableValues.put(outputVar, inputValue);
+        controlFlowExecutor.executeLoopCondNode(node, variableValues, op);
     }
 
     // ======================== Control Flow Helpers ========================
@@ -3264,157 +2832,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                    Set<String> completedOps,
                                    Set<String> allRequired,
                                    List<Listener> listeners, At at, MultiDataSet batch) {
-        Map<String, ExecutionNode> opNodes = dag.getOperationNodes();
-        int maxIterations = 10000;
-
-        // Build a map from NextIteration output var → Merge input var
-        // so we can find which Merge input comes from NextIteration
-        Set<String> nextIterOutputVars = new HashSet<>();
-        for (String nextIterOp : region.nextIterOps) {
-            ExecutionNode nextIterNode = opNodes.get(nextIterOp);
-            if (nextIterNode != null) {
-                nextIterOutputVars.addAll(nextIterNode.getOutputVariables());
-            }
-        }
-
-        for (int iteration = 0; iteration < maxIterations; iteration++) {
-            // 1. Execute Merge ops
-            // On iteration 0: pick the Enter input (first non-null)
-            // On iteration 1+: pick the NextIteration input (which was just updated)
-            for (String mergeOp : region.mergeOps) {
-                ExecutionNode mergeNode = opNodes.get(mergeOp);
-                if (mergeNode == null) continue;
-
-                if (iteration == 0) {
-                    // First iteration: use standard Merge (picks Enter input)
-                    executeNode(mergeNode, variableValues, allRequired, listeners, at, batch);
-                } else {
-                    // Subsequent iterations: prefer the NextIteration input
-                    List<String> inputs = mergeNode.getInputVariables();
-                    List<String> outputs = mergeNode.getOutputVariables();
-                    String outputVar = outputs.get(0);
-
-                    SDValue nextIterValue = null;
-                    for (String input : inputs) {
-                        if (nextIterOutputVars.contains(input)) {
-                            nextIterValue = variableValues.get(input);
-                            break;
-                        }
-                    }
-
-                    if (nextIterValue != null) {
-                        variableValues.put(outputVar, nextIterValue);
-                    } else {
-                        // Fallback to standard Merge
-                        executeNode(mergeNode, variableValues, allRequired, listeners, at, batch);
-                    }
-                }
-                completedOps.add(mergeOp);
-            }
-
-            // 2. Execute condition ops (between Merge and LoopCond)
-            for (String condOp : region.condOps) {
-                ExecutionNode condNode = opNodes.get(condOp);
-                if (condNode != null) {
-                    executeNode(condNode, variableValues, allRequired, listeners, at, batch);
-                    completedOps.add(condOp);
-                }
-            }
-
-            // 3. Execute LoopCond
-            if (region.loopCondOp != null) {
-                ExecutionNode loopCondNode = opNodes.get(region.loopCondOp);
-                if (loopCondNode != null) {
-                    executeNode(loopCondNode, variableValues, allRequired, listeners, at, batch);
-                    completedOps.add(region.loopCondOp);
-                }
-            }
-
-            // 4. Execute Switch ops
-            for (String switchOp : region.switchOps) {
-                ExecutionNode switchNode = opNodes.get(switchOp);
-                if (switchNode != null) {
-                    executeNode(switchNode, variableValues, allRequired, listeners, at, batch);
-                    completedOps.add(switchOp);
-                }
-            }
-
-            // 5. Check condition: if any Switch routed to false (exit), stop looping
-            boolean conditionTrue = true;
-            for (String switchOp : region.switchOps) {
-                ExecutionNode switchNode = opNodes.get(switchOp);
-                if (switchNode == null) continue;
-                List<String> outputs = switchNode.getOutputVariables();
-                if (outputs.size() >= 2) {
-                    // If true output is null, condition is false
-                    SDValue trueOutput = variableValues.get(outputs.get(1));
-                    if (trueOutput == null) {
-                        conditionTrue = false;
-                        break;
-                    }
-                }
-            }
-
-            if (!conditionTrue) {
-                // Execute Exit ops to forward false-branch values out of the loop
-                for (String exitOp : region.exitOps) {
-                    ExecutionNode exitNode = opNodes.get(exitOp);
-                    if (exitNode != null) {
-                        executeNode(exitNode, variableValues, allRequired, listeners, at, batch);
-                        completedOps.add(exitOp);
-                    }
-                }
-                log.debug("While loop '{}' exited after {} iterations", region.frameName, iteration + 1);
-                break;
-            }
-
-            // 6. Execute body ops (with nested control flow support)
-            // Body ops may contain nested if-conditionals (Switch/Merge pairs).
-            // After executing a nested Switch, mark inactive branch ops for skipping.
-            // Reset skip set each iteration since if-condition may change between iterations.
-            Set<String> bodySkipOps = new HashSet<>();
-            for (String bodyOp : region.bodyOps) {
-                if (bodySkipOps.contains(bodyOp)) {
-                    continue; // Skip inactive branch ops from nested if
-                }
-                ExecutionNode bodyNode = opNodes.get(bodyOp);
-                if (bodyNode != null) {
-                    // For nested Merge ops (from if-conditionals), relax readiness:
-                    // only need at least one non-null input
-                    DifferentialFunction bodyNodeOp = bodyNode.getOperation();
-                    if (bodyNodeOp instanceof Merge) {
-                        boolean hasInput = false;
-                        for (String input : bodyNode.getInputVariables()) {
-                            if (variableValues.get(input) != null) {
-                                hasInput = true;
-                                break;
-                            }
-                        }
-                        if (!hasInput) {
-                            log.warn("Nested Merge {} in while body has no available inputs, skipping", bodyOp);
-                            continue;
-                        }
-                    }
-
-                    executeNode(bodyNode, variableValues, allRequired, listeners, at, batch);
-                    completedOps.add(bodyOp);
-
-                    // After nested Switch, mark inactive branch for skipping
-                    if (bodyNodeOp instanceof Switch) {
-                        markInactiveBranchForSkipping(bodyNode, dag, variableValues, bodySkipOps);
-                    }
-                }
-            }
-
-            // 7. Execute NextIteration ops (feed values back to Merge)
-            for (String nextIterOp : region.nextIterOps) {
-                ExecutionNode nextIterNode = opNodes.get(nextIterOp);
-                if (nextIterNode != null) {
-                    executeNode(nextIterNode, variableValues, allRequired, listeners, at, batch);
-                    completedOps.add(nextIterOp);
-                }
-            }
-        }
+        controlFlowExecutor.executeWhileLoop(region, dag, variableValues, completedOps,
+                allRequired, listeners, at, batch);
     }
 
     /**
@@ -3424,41 +2843,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private void markInactiveBranchForSkipping(ExecutionNode switchNode, ForwardExecutionDAG dag,
                                                 Map<String, SDValue> variableValues,
                                                 Set<String> skipOps) {
-        List<String> outputs = switchNode.getOutputVariables();
-        if (outputs.size() < 2) return;
-
-        for (String output : outputs) {
-            SDValue val = variableValues.get(output);
-            if (val != null) continue; // Active branch
-
-            // This output is null (inactive). BFS through consumers.
-            Queue<String> queue = new LinkedList<>();
-            Set<String> consumers = dag.getVariableConsumers().get(output);
-            if (consumers != null) {
-                queue.addAll(consumers);
-            }
-
-            while (!queue.isEmpty()) {
-                String consumerOp = queue.poll();
-                if (skipOps.contains(consumerOp)) continue;
-
-                ExecutionNode consumerNode = dag.getOperationNodes().get(consumerOp);
-                if (consumerNode == null) continue;
-
-                // Stop at Merge nodes — they handle null inputs by picking the other
-                if (consumerNode.getOperation() instanceof Merge) continue;
-
-                skipOps.add(consumerOp);
-
-                // Continue BFS through this op's outputs
-                for (String consumerOutput : consumerNode.getOutputVariables()) {
-                    Set<String> nextConsumers = dag.getVariableConsumers().get(consumerOutput);
-                    if (nextConsumers != null) {
-                        queue.addAll(nextConsumers);
-                    }
-                }
-            }
-        }
+        controlFlowExecutor.markInactiveBranchForSkipping(switchNode, dag, variableValues, skipOps);
     }
 
     /**
