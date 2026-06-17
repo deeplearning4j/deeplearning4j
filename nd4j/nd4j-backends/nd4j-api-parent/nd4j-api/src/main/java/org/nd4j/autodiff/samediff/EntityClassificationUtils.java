@@ -53,12 +53,7 @@ public class EntityClassificationUtils {
      */
     public static EntityClassificationResult classifyEntities(Collection<String> entityNames, SameDiff sameDiff) {
         EntityClassificationResult result = new EntityClassificationResult();
-        
-        for (String entityName : entityNames) {
-            EntityType type = classifyEntity(entityName, sameDiff);
-            result.addEntity(entityName, type);
-        }
-        
+        entityNames.forEach(entityName -> result.addEntity(entityName, classifyEntity(entityName, sameDiff)));
         return result;
     }
     
@@ -93,17 +88,11 @@ public class EntityClassificationUtils {
     /**
      * Find variable locations across all frames
      */
-    public static List<VarId> findVariableLocations(String variableName, 
+    public static List<VarId> findVariableLocations(String variableName,
                                                     Map<VarId, org.nd4j.autodiff.samediff.config.SDValue> nodeValueOutputs) {
-        List<VarId> locations = new ArrayList<>();
-        
-        for (VarId varId : nodeValueOutputs.keySet()) {
-            if (varId.getVariable().equals(variableName)) {
-                locations.add(varId);
-            }
-        }
-        
-        return locations;
+        return nodeValueOutputs.keySet().stream()
+                .filter(varId -> varId.getVariable().equals(variableName))
+                .collect(Collectors.toList());
     }
     
     /**

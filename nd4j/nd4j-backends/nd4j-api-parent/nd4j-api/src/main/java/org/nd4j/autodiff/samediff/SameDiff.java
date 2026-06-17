@@ -794,17 +794,9 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         if (nameScopes.isEmpty())
             return null;
 
-        //Would use String.join but that is Java 8+
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (NameScope ns : nameScopes) {
-            if (!first) {
-                sb.append("/");
-            }
-            sb.append(ns.getName());
-            first = false;
-        }
-        return sb.toString();
+        return nameScopes.stream()
+                .map(NameScope::getName)
+                .collect(Collectors.joining("/"));
     }
 
     /**
@@ -1013,13 +1005,8 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 }
             }
 
-            for (val arg : clone.args()) {
-                arg.setSameDiff(sameDiff);
-            }
-
-            for (val output : clone.outputVariables()) {
-                output.setSameDiff(sameDiff);
-            }
+            Arrays.stream(clone.args()).forEach(arg -> arg.setSameDiff(sameDiff));
+            Arrays.stream(clone.outputVariables()).forEach(output -> output.setSameDiff(sameDiff));
 
             clone.configureWithSameDiff(sameDiff);
 
@@ -1554,9 +1541,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
         ops.get(function.getOwnName()).setOutputsOfOp(Arrays.asList(varNames));
 
-        for (String resultName : varNames) {
-            variables.get(resultName).setOutputOfOp(function.getOwnName());
-        }
+        Arrays.stream(varNames).forEach(resultName -> variables.get(resultName).setOutputOfOp(function.getOwnName()));
     }
 
     /**

@@ -101,14 +101,7 @@ public class CommonSubexpressionElimination extends BaseOptimizerSet {
 
                 // Validate that canonical outputs still exist in the graph.
                 // Prior passes may have removed the canonical op.
-                boolean allExist = true;
-                for (String cv : canonical) {
-                    if (!sd.hasVariable(cv)) {
-                        allExist = false;
-                        break;
-                    }
-                }
-                if (!allExist) {
+                if (!canonical.stream().allMatch(sd::hasVariable)) {
                     // Canonical was removed — this op becomes the new canonical
                     canonicalOutputs.put(signature, new ArrayList<>(outputs));
                     return false;
@@ -116,12 +109,8 @@ public class CommonSubexpressionElimination extends BaseOptimizerSet {
 
                 // Don't eliminate ops whose outputs are registered graph outputs
                 List<String> graphOutputs = sd.outputs();
-                if (graphOutputs != null) {
-                    for (String out : outputs) {
-                        if (graphOutputs.contains(out)) {
-                            return false;
-                        }
-                    }
+                if (graphOutputs != null && outputs.stream().anyMatch(graphOutputs::contains)) {
+                    return false;
                 }
 
                 // Redirect all consumers of this op's outputs to the canonical outputs
@@ -131,9 +120,7 @@ public class CommonSubexpressionElimination extends BaseOptimizerSet {
 
                 // Remove the duplicate op and its output variables
                 OptimizationUtils.removeOp(sd, helper, op.getName());
-                for (String out : outputs) {
-                    OptimizationUtils.removeVariable(sd, helper, out);
-                }
+                outputs.forEach(out -> OptimizationUtils.removeVariable(sd, helper, out));
 
                 log.debug("CSE: eliminated duplicate op {} ({}) — redirected {} -> canonical {}",
                         op.getName(), df.opName(), outputs, canonical);
@@ -155,10 +142,7 @@ public class CommonSubexpressionElimination extends BaseOptimizerSet {
             sb.append('|');
 
             // Input variable names in order (order matters for non-commutative ops like sub, div)
-            for (int i = 0; i < inputs.size(); i++) {
-                if (i > 0) sb.append(',');
-                sb.append(inputs.get(i));
-            }
+            sb.append(String.join(",", inputs));
             sb.append('|');
 
             // Op-specific arguments that affect the computation result

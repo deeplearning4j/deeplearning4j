@@ -1683,6 +1683,24 @@ public class ND4JSystemProperties {
      */
     public static final String OPTIMIZER_SKIP = "nd4j.optimizer.skip";
 
+    /**
+     * Applicability: SameDiff GraphOptimizer<br>
+     * Description: Maximum number of optimization iterations to run on a graph.
+     * Increasing this value allows more aggressive optimization at the cost of compile time.
+     * <p>
+     * Default: 3
+     */
+    public static final String OPTIMIZER_MAX_ITERATIONS = "nd4j.optimizer.maxIterations";
+
+    /**
+     * Applicability: SameDiff GraphOptimizer<br>
+     * Description: When set to "true", logs each optimization pass that is applied to the graph.
+     * Useful for debugging optimizer behavior.
+     * <p>
+     * Default: false
+     */
+    public static final String OPTIMIZER_LOG_APPLIED = "nd4j.optimizer.logApplied";
+
     // ---- SDZ (SameDiff ZIP archive) properties ----
 
     /**
@@ -1792,6 +1810,105 @@ public class ND4JSystemProperties {
      * Default: false
      */
     public static final String OPAQUE_STACKTRACE = "nd4j.opaque.stacktrace";
+
+    // ---- Multi-GPU debug ----
+
+    /**
+     * Applicability: Multi-GPU execution (MultiGpuTracer)<br>
+     * Description: When set to "true", enables detailed trace logging for multi-GPU device
+     * decisions, data transfers, stream usage, and buffer lifecycle. All output is logged at
+     * debug level with the [MultiGpu] prefix. When disabled (default), all trace methods are
+     * no-ops with zero overhead.
+     * <p>
+     * Default: false
+     */
+    public static final String MULTI_GPU_DEBUG = "org.nd4j.multiGpu.debug";
+
+    // ---- BackendManager configuration ----
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: Comma-separated list of device types in priority order for backend selection.
+     * Supported values: CUDA_GPU, ROCM_GPU, METAL_GPU, TPU, CPU (and aliases cuda, gpu, rocm, cpu).
+     * Example: {@code -Dnd4j.backend.priority=CUDA_GPU,CPU}
+     * <p>
+     * Default: CUDA_GPU, ROCM_GPU, METAL_GPU, TPU, CPU
+     */
+    public static final String BACKEND_PRIORITY = "nd4j.backend.priority";
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: When set to "true", enables automatic memory fallback from GPU to CPU
+     * when GPU memory is exhausted.
+     * <p>
+     * Default: true
+     */
+    public static final String BACKEND_MEMORY_FALLBACK = "nd4j.backend.memory.fallback";
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: Fraction of GPU memory to use (0.0-1.0).
+     * <p>
+     * Default: 0.9
+     */
+    public static final String BACKEND_GPU_MEMORY_FRACTION = "nd4j.backend.gpu.memory.fraction";
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: Fraction of CPU memory to use (0.0-1.0).
+     * <p>
+     * Default: 0.8
+     */
+    public static final String BACKEND_CPU_MEMORY_FRACTION = "nd4j.backend.cpu.memory.fraction";
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: When set to "true", enables automatic cross-device data transfer when
+     * an operation requires data on a device where it is not currently resident.
+     * <p>
+     * Default: true
+     */
+    public static final String BACKEND_AUTO_TRANSFER = "nd4j.backend.auto.transfer";
+
+    /**
+     * Applicability: BackendManager<br>
+     * Description: When set to "true", enables automatic initialization of BackendManager
+     * during Nd4j startup. Set to "false" to defer or suppress auto-initialization.
+     * <p>
+     * Default: true
+     */
+    public static final String BACKEND_AUTO_INIT = "nd4j.backend.auto.init";
+
+    // ---- Parallel executor service ----
+
+    /**
+     * Applicability: ExecutorServiceProvider<br>
+     * Description: Number of threads in the global ND4J parallel executor service.
+     * Default is the number of available processors.
+     * <p>
+     * Default: Runtime.getRuntime().availableProcessors()
+     */
+    public static final String PARALLEL_THREADS = "org.nd4j.parallel.threads";
+
+    /**
+     * Applicability: ExecutorServiceProvider<br>
+     * Description: When set to "false", disables the global ND4J parallel executor service
+     * and forces single-threaded execution (nThreads = 1).
+     * <p>
+     * Default: true
+     */
+    public static final String PARALLEL_ENABLED = "org.nd4j.parallel.enabled";
+
+    // ---- Native plugin loading ----
+
+    /**
+     * Applicability: NativePluginLoader<br>
+     * Description: Filesystem path from which to load native ND4J plugin libraries (.so/.dll/.dylib).
+     * When not set, the loader falls back to the default search path under the user home directory.
+     * <p>
+     * Default: unset
+     */
+    public static final String NATIVE_PLUGIN_PATH = "nd4j.native.plugin.path";
 
     private ND4JSystemProperties() {
     }

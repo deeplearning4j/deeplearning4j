@@ -20,12 +20,15 @@
 
 package org.nd4j.linalg.executors;
 
+import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.common.config.SystemPropertyUtils;
 import java.util.concurrent.*;
 
 public class ExecutorServiceProvider {
 
-    public static final String EXEC_THREADS = "org.nd4j.parallel.threads";
-    public final static String ENABLED = "org.nd4j.parallel.enabled";
+    // Centralized in ND4JSystemProperties; kept here as aliases for backward compatibility
+    public static final String EXEC_THREADS = ND4JSystemProperties.PARALLEL_THREADS;
+    public final static String ENABLED = ND4JSystemProperties.PARALLEL_ENABLED;
 
     private static final int nThreads;
     private static ExecutorService executorService;
@@ -33,11 +36,11 @@ public class ExecutorServiceProvider {
 
     static {
         int defaultThreads = Runtime.getRuntime().availableProcessors();
-        boolean enabled = Boolean.parseBoolean(System.getProperty(ENABLED, "true"));
+        boolean enabled = SystemPropertyUtils.getBooleanProperty(ND4JSystemProperties.PARALLEL_ENABLED, true);
         if (!enabled)
             nThreads = 1;
         else
-            nThreads = Integer.parseInt(System.getProperty(EXEC_THREADS, String.valueOf(defaultThreads)));
+            nThreads = SystemPropertyUtils.getIntProperty(ND4JSystemProperties.PARALLEL_THREADS, defaultThreads);
     }
 
     public static synchronized ExecutorService getExecutorService() {

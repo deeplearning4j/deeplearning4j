@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.api.device;
 
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,7 @@ public class MultiGpuTracer {
     private static final Logger log = LoggerFactory.getLogger(MultiGpuTracer.class);
 
     /** Master toggle — set via {@code -Dorg.nd4j.multiGpu.debug=true} */
-    public static final boolean ENABLED = Boolean.getBoolean("org.nd4j.multiGpu.debug");
+    public static final boolean ENABLED = Boolean.getBoolean(ND4JSystemProperties.MULTI_GPU_DEBUG);
 
     private MultiGpuTracer() {}
 

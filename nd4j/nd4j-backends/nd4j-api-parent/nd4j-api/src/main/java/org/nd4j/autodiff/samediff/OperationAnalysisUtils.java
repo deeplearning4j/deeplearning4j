@@ -28,6 +28,7 @@ import org.nd4j.autodiff.samediff.internal.VarId;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Utility class for analyzing operations and their context
@@ -227,27 +228,19 @@ public class OperationAnalysisUtils {
      * Find the operation that produces a given variable
      */
     public static SameDiffOp findProducerOperation(SameDiff sameDiff, String variableName) {
-        for (SameDiffOp op : sameDiff.getOps().values()) {
-            if (op.getOutputsOfOp() != null && op.getOutputsOfOp().contains(variableName)) {
-                return op;
-            }
-        }
-        return null;
+        return sameDiff.getOps().values().stream()
+                .filter(op -> op.getOutputsOfOp() != null && op.getOutputsOfOp().contains(variableName))
+                .findFirst()
+                .orElse(null);
     }
-    
+
     /**
      * Find operations that consume a given variable
      */
     public static List<SameDiffOp> findConsumerOperations(SameDiff sameDiff, String variableName) {
-        List<SameDiffOp> consumers = new ArrayList<>();
-        
-        for (SameDiffOp op : sameDiff.getOps().values()) {
-            if (op.getInputsToOp() != null && op.getInputsToOp().contains(variableName)) {
-                consumers.add(op);
-            }
-        }
-        
-        return consumers;
+        return sameDiff.getOps().values().stream()
+                .filter(op -> op.getInputsToOp() != null && op.getInputsToOp().contains(variableName))
+                .collect(Collectors.toList());
     }
     
     /**

@@ -30,6 +30,7 @@ import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 public class OptimizationUtils {
@@ -75,11 +76,9 @@ public class OptimizationUtils {
             List<String> merged = v2.getInputsForOp() != null
                     ? new ArrayList<>(v2.getInputsForOp()) : new ArrayList<>();
             if (v.getInputsForOp() != null) {
-                for (String opName : v.getInputsForOp()) {
-                    if (!merged.contains(opName)) {
-                        merged.add(opName);
-                    }
-                }
+                v.getInputsForOp().stream()
+                        .filter(opName -> !merged.contains(opName))
+                        .forEach(merged::add);
             }
             v2.setInputsForOp(merged);
             v.setInputsForOp(new ArrayList<>());
@@ -111,12 +110,13 @@ public class OptimizationUtils {
         if (opCheck != null && opCheck.getOutputsOfOp() != null) {
             List<String> graphOutputs = sd.outputs();
             if (graphOutputs != null && !graphOutputs.isEmpty()) {
-                for (String outVar : opCheck.getOutputsOfOp()) {
-                    if (graphOutputs.contains(outVar)) {
-                        log.warn("Refusing to remove op '{}' — its output '{}' is a registered graph output",
-                                opToRemove, outVar);
-                        return;
-                    }
+                Optional<String> blockedOutput = opCheck.getOutputsOfOp().stream()
+                        .filter(graphOutputs::contains)
+                        .findFirst();
+                if (blockedOutput.isPresent()) {
+                    log.warn("Refusing to remove op '{}' — its output '{}' is a registered graph output",
+                            opToRemove, blockedOutput.get());
+                    return;
                 }
             }
         }
@@ -132,19 +132,17 @@ public class OptimizationUtils {
         if (inputs == null) {
             return;
         }
-        for(String s : inputs){
+        inputs.forEach(s -> {
             // Use fast O(1) lookup via helper, with fallback to graph
             Variable v = helper != null ? helper.getVariable(s) : null;
-            if (v == null) {
-                v = sd.getVariables().get(s);
-            }
-            if (v != null && v.getInputsForOp() != null) {
+            Variable resolved = v != null ? v : sd.getVariables().get(s);
+            if (resolved != null && resolved.getInputsForOp() != null) {
                 // removeAll to handle ops that use the same variable as multiple inputs
                 // (e.g., x*x). List.remove(Object) only removes the first occurrence,
                 // leaving a stale entry that causes DSP to see a phantom consumer.
-                while (v.getInputsForOp().remove(op.getName())) { }
+                while (resolved.getInputsForOp().remove(op.getName())) { }
             }
-        }
+        });
     }
 
     /**

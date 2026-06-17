@@ -25,6 +25,7 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +51,8 @@ public class NativePluginLoader {
     /**
      * System property to override the plugin directory path.
      */
-    public static final String PLUGIN_PATH_PROPERTY = "nd4j.native.plugin.path";
+    // Centralized in ND4JSystemProperties; kept here as an alias for backward compatibility.
+    public static final String PLUGIN_PATH_PROPERTY = ND4JSystemProperties.NATIVE_PLUGIN_PATH;
 
     /**
      * Default plugin directory relative to the user's home directory.
