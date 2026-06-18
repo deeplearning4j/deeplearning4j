@@ -22,7 +22,6 @@
 //  @author raver119@gmail.com
 //
 
-#ifndef SD_CUDA
 #include <array/PrimaryPointerDeallocator.h>
 #include <execution/AffinityManager.h>
 #include <helpers/ConstantHelper.h>
@@ -143,5 +142,3 @@ sd::LongType ConstantHelper::getCachedAmount(int deviceId) {
     return _counters[deviceId];
 }
 }  // namespace sd
-
-#endif

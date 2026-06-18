@@ -16,7 +16,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-// Platform-specific implementations:
-//   helpers/cpu/CutlassGemmHelper.cpp  (CPU build)
-//   helpers/cuda/CutlassGemmHelper.cu  (CUDA build)
-// This file is intentionally empty.
+#include <helpers/ShapeBufferPlatformHelper.h>
+#include <helpers/cpu/CpuShapeBufferCreator.h>
+#include <mutex>
+
+namespace sd {
+
+struct ShapeBufferInitializer {
+  ShapeBufferInitializer() {
+    ShapeBufferPlatformHelper::initialize();
+  }
+};
+static ShapeBufferInitializer _force_early_init;
+
+void ShapeBufferPlatformHelper::initialize() {
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    ShapeBufferCreatorHelper::setCurrentCreator(&CpuShapeBufferCreator::getInstance());
+  });
+}
+
+}  // namespace sd

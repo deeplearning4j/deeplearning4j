@@ -36,7 +36,7 @@ namespace sd {
 namespace {
 SD_INLINE cudaStream_t captureSafeStream(const LaunchContext* context) {
   if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
-    return tl_graphCaptureStream;
+    return reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
   }
   auto* streamPtr = (context != nullptr) ? context->getCudaStream()
                                           : LaunchContext::defaultContext()->getCudaStream();

@@ -36,6 +36,7 @@
 #include <system/Environment.h>
 #include <system/type_boilerplate.h>
 #include <math/templatemath.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -146,25 +147,25 @@ void FlashAttentionHelper::forward3D(
 
   float scale = config.scale > 0.0f ? config.scale : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(dim));
 
-#if defined(SD_CUDA)
-  // Use fused CUDA kernel - now supports attention bias!
-  // cuBLAS matmuls are only faster when we need intermediate score results
-  bool supportedType = (query->dataType() == DataType::FLOAT32 ||
-                        query->dataType() == DataType::DOUBLE ||
-                        query->dataType() == DataType::HALF);
-  bool needScores = (attentionScores != nullptr && !attentionScores->isEmpty());
-  bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
+  if (sd::graph::dspIsCudaBuild()) {
+    // Use fused CUDA kernel - now supports attention bias!
+    // cuBLAS matmuls are only faster when we need intermediate score results
+    bool supportedType = (query->dataType() == DataType::FLOAT32 ||
+                          query->dataType() == DataType::DOUBLE ||
+                          query->dataType() == DataType::HALF);
+    bool needScores = (attentionScores != nullptr && !attentionScores->isEmpty());
+    bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
 
-  if (supportedType && !needScores && !needLogits) {
-    // Use fast fused kernel - handles attention bias internally
-    fusedAttentionCuda(query, key, value, output, scale, config.isCausal, context, attentionBias);
-    if (softmaxLse != nullptr) {
-      softmaxLse->nullify();
+    if (supportedType && !needScores && !needLogits) {
+      // Use fast fused kernel - handles attention bias internally
+      fusedAttentionCuda(query, key, value, output, scale, config.isCausal, context, attentionBias);
+      if (softmaxLse != nullptr) {
+        softmaxLse->nullify();
+      }
+      return;
     }
-    return;
+    // Fall through to cuBLAS path when scores are needed
   }
-  // Fall through to cuBLAS path when scores are needed
-#endif
 
   // Get workspace for scores buffer - REUSED across calls
   auto workspace = AttentionWorkspace::getInstance();
@@ -218,32 +219,32 @@ void FlashAttentionHelper::forward3D(
     workBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), biasForAdd, workBuffer, false);
   }
 
-#if defined(SD_CUDA)
-  // Fused causal mask + softmax (single kernel instead of mask + softmax)
-  fusedCausalMaskSoftmaxCuda(workBuffer, workBuffer, logitsBuffer, config.isCausal, context);
-#else
-  // CPU fallback: separate causal mask and softmax
-  if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
-    std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
-    // Get mask from workspace
-    NDArray* causalMask = workspace->getBuffer("forward3d_mask", maskShape, query->dataType(), context);
-    causalMask->nullify();
-    int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
-    // Fill strict upper triangle (row < col - causalLower) with -1e9
-    // to prevent attending to future tokens.
-    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
-                          (-1.0e9f, causalLower, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
-    workBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, workBuffer, false);
+  if (sd::graph::dspIsCudaBuild()) {
+    // Fused causal mask + softmax (single kernel instead of mask + softmax)
+    fusedCausalMaskSoftmaxCuda(workBuffer, workBuffer, logitsBuffer, config.isCausal, context);
+  } else {
+    // CPU fallback: separate causal mask and softmax
+    if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
+      std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
+      // Get mask from workspace
+      NDArray* causalMask = workspace->getBuffer("forward3d_mask", maskShape, query->dataType(), context);
+      causalMask->nullify();
+      int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
+      // Fill strict upper triangle (row < col - causalLower) with -1e9
+      // to prevent attending to future tokens.
+      BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
+                            (-1.0e9f, causalLower, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
+      workBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, workBuffer, false);
+    }
+    if (logitsBuffer != nullptr) {
+      logitsBuffer->assign(workBuffer);
+    }
+    // IMPORTANT: Must use explicit positive dimension for softmax.
+    // The TAD helper treats -1 as sentinel meaning "all dimensions" (entire array as one TAD),
+    // NOT as "last dimension". Using -1 produces all-1.0 output instead of proper softmax.
+    int softmaxDim3D = workBuffer->rankOf() - 1;
+    ops::helpers::softmax(context, workBuffer, workBuffer, softmaxDim3D);
   }
-  if (logitsBuffer != nullptr) {
-    logitsBuffer->assign(workBuffer);
-  }
-  // IMPORTANT: Must use explicit positive dimension for softmax.
-  // The TAD helper treats -1 as sentinel meaning "all dimensions" (entire array as one TAD),
-  // NOT as "last dimension". Using -1 produces all-1.0 output instead of proper softmax.
-  int softmaxDim3D = workBuffer->rankOf() - 1;
-  ops::helpers::softmax(context, workBuffer, workBuffer, softmaxDim3D);
-#endif
 
   // Batched matmul: scores @ V -> [batch, seqQ, dim]
   // IMPORTANT: Do NOT write directly to `output`. When the DSP allocator produces
@@ -287,127 +288,127 @@ void FlashAttentionHelper::forward4D(
 
   auto workspace = AttentionWorkspace::getInstance();
 
-#if defined(SD_CUDA)
-  // Use fused CUDA kernel - supports attention bias in the kernel itself
-  bool supportedType = (query->dataType() == DataType::FLOAT32 ||
-                        query->dataType() == DataType::DOUBLE ||
-                        query->dataType() == DataType::HALF);
-  bool noGQA = (headsPerKvHead == 1);
-  bool needScores = (attentionScores != nullptr && !attentionScores->isEmpty());
-  bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
-  bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
+  if (sd::graph::dspIsCudaBuild()) {
+    // Use fused CUDA kernel - supports attention bias in the kernel itself
+    bool supportedType = (query->dataType() == DataType::FLOAT32 ||
+                          query->dataType() == DataType::DOUBLE ||
+                          query->dataType() == DataType::HALF);
+    bool noGQA = (headsPerKvHead == 1);
+    bool needScores = (attentionScores != nullptr && !attentionScores->isEmpty());
+    bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
+    bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
 
-  // Decode fast path: fused kernel handles Q@K^T + softmax + attn@V in a single kernel
-  // launch — eliminates 6 extra graph nodes per layer (permute copies, 2 cuBLAS calls,
-  // softmax kernel). Works for both GQA (headsPerKvHead>1) and non-GQA (headsPerKvHead=1)
-  // cases via kvHead = qHead / headsPerKvHead indexing.
-  // For FLOAT32: kernel's FP32 dot products match cuBLAS SGEMV (no TensorCore benefit).
-  // For HALF: single kernel avoids permute D2D copies that dominate decode latency.
-  bool isDecode = (seqLenQ == 1);
-  if (supportedType && isDecode && !needScores && !needLogits) {
-    fusedGQADecodeCuda(query, key, value, output, scale, context,
-                       hasAttentionBias ? attentionBias : nullptr);
-    if (softmaxLse != nullptr) softmaxLse->nullify();
-    return;
-  }
-
-  // Use fused kernel when no scores needed - cuBLAS is only faster when we need intermediate results
-  // The fused kernel now handles attention bias internally for maximum performance
-  if (supportedType && noGQA && !needScores && !needLogits) {
-    // Use workspace for permuted arrays -  this eliminates malloc/free per call
-    std::vector<LongType> qPermShape = {batch, numHeads, seqLenQ, headDim};
-    std::vector<LongType> kvPermShape = {batch, numKvHeads, seqLenKV, headDim};
-    std::vector<LongType> permOrder = {0, 2, 1, 3};
-
-    NDArray* qPermBuffer = workspace->getBuffer("forward4d_qPerm", qPermShape, query->dataType(), context);
-    NDArray* kPermBuffer = workspace->getBuffer("forward4d_kPerm", kvPermShape, key->dataType(), context);
-    NDArray* vPermBuffer = workspace->getBuffer("forward4d_vPerm", kvPermShape, value->dataType(), context);
-
-    // Permute into workspace buffers using permute() which returns a view
-    auto qPerm = query->permute(permOrder, false, false);
-    auto kPerm = key->permute(permOrder, false, false);
-    auto vPerm = value->permute(permOrder, false, false);
-    qPermBuffer->assign(qPerm);
-    kPermBuffer->assign(kPerm);
-    vPermBuffer->assign(vPerm);
-    delete qPerm;
-    delete kPerm;
-    delete vPerm;
-
-    // Reshape to 3D: [batch*heads, seq, dim]
-    std::vector<LongType> shape3D_Q = {batch * numHeads, seqLenQ, headDim};
-    std::vector<LongType> shape3D_KV = {batch * numKvHeads, seqLenKV, headDim};
-
-    qPermBuffer->reshapei(shape3D_Q);
-    kPermBuffer->reshapei(shape3D_KV);
-    vPermBuffer->reshapei(shape3D_KV);
-
-    // Get output buffer from workspace and zero it — the fused kernel may not write
-    // all positions (e.g., causal mask), and stale data from a previous call would leak.
-    NDArray* outFlat = workspace->getBuffer("forward4d_outFlat", shape3D_Q, query->dataType(), context);
-    outFlat->nullify();
-
-    // Prepare attention bias if present - broadcast+reshape to [batch*heads, seqQ, seqKV]
-    //  The fused CUDA kernel templates on query dtype (float32/float64/half).
-    // If the bias is a different dtype (e.g. LONG from ONNX mask), we MUST cast it
-    // to match the query type, otherwise the kernel reads raw bytes as wrong type.
-    NDArray* biasFlat = nullptr;
-    std::unique_ptr<NDArray> biasReshapedOwner;
-    std::unique_ptr<NDArray> biasBroadcastOwner;
-    std::unique_ptr<NDArray> biasCastOwner;
-    if (hasAttentionBias) {
-      NDArray* biasToUse = attentionBias;
-
-      // Cast bias to query dtype if mismatched (LONG->FLOAT32 is common for ONNX masks)
-      if (attentionBias->dataType() != query->dataType()) {
-        biasCastOwner.reset(attentionBias->cast(query->dataType()));
-        biasToUse = biasCastOwner.get();
-      }
-
-      auto biasElements = biasToUse->lengthOf();
-      auto targetElements = batch * numHeads * seqLenQ * seqLenKV;
-
-      if (biasElements == targetElements) {
-        // Direct reshape: [batch, numHeads, seqQ, seqKV] -> [batch*numHeads, seqQ, seqKV]
-        std::vector<LongType> biasShape3D = {batch * numHeads, seqLenQ, seqLenKV};
-        biasReshapedOwner.reset(biasToUse->reshape('c', biasShape3D, false));
-        biasFlat = biasReshapedOwner.get();
-      } else {
-        // Bias needs broadcasting (e.g. [1,1,1,seqKV] -> [batch,numHeads,seqQ,seqKV])
-        std::vector<LongType> targetShape4D = {batch, numHeads, seqLenQ, seqLenKV};
-        biasBroadcastOwner.reset(new NDArray('c', targetShape4D, query->dataType(), context));
-        biasToUse->applyTrueBroadcast(BroadcastOpsTuple::Assign(), biasBroadcastOwner.get(),
-                                          biasBroadcastOwner.get(), false);
-        std::vector<LongType> biasShape3D = {batch * numHeads, seqLenQ, seqLenKV};
-        biasReshapedOwner.reset(biasBroadcastOwner->reshape('c', biasShape3D, false));
-        biasFlat = biasReshapedOwner.get();
-      }
+    // Decode fast path: fused kernel handles Q@K^T + softmax + attn@V in a single kernel
+    // launch — eliminates 6 extra graph nodes per layer (permute copies, 2 cuBLAS calls,
+    // softmax kernel). Works for both GQA (headsPerKvHead>1) and non-GQA (headsPerKvHead=1)
+    // cases via kvHead = qHead / headsPerKvHead indexing.
+    // For FLOAT32: kernel's FP32 dot products match cuBLAS SGEMV (no TensorCore benefit).
+    // For HALF: single kernel avoids permute D2D copies that dominate decode latency.
+    bool isDecode = (seqLenQ == 1);
+    if (supportedType && isDecode && !needScores && !needLogits) {
+      fusedGQADecodeCuda(query, key, value, output, scale, context,
+                         hasAttentionBias ? attentionBias : nullptr);
+      if (softmaxLse != nullptr) softmaxLse->nullify();
+      return;
     }
 
-    // Fast path: fused kernel with optional bias
-    fusedAttentionCuda(qPermBuffer, kPermBuffer, vPermBuffer, outFlat, scale, config.isCausal, context, biasFlat);
+    // Use fused kernel when no scores needed - cuBLAS is only faster when we need intermediate results
+    // The fused kernel now handles attention bias internally for maximum performance
+    if (supportedType && noGQA && !needScores && !needLogits) {
+      // Use workspace for permuted arrays -  this eliminates malloc/free per call
+      std::vector<LongType> qPermShape = {batch, numHeads, seqLenQ, headDim};
+      std::vector<LongType> kvPermShape = {batch, numKvHeads, seqLenKV, headDim};
+      std::vector<LongType> permOrder = {0, 2, 1, 3};
 
-    // Reshape back to 4D: [batch, heads, seq, dim]
-    std::vector<LongType> shape4D = {batch, numHeads, seqLenQ, headDim};
-    outFlat->reshapei(shape4D);
+      NDArray* qPermBuffer = workspace->getBuffer("forward4d_qPerm", qPermShape, query->dataType(), context);
+      NDArray* kPermBuffer = workspace->getBuffer("forward4d_kPerm", kvPermShape, key->dataType(), context);
+      NDArray* vPermBuffer = workspace->getBuffer("forward4d_vPerm", kvPermShape, value->dataType(), context);
 
-    // Permute back and assign to output: [batch, heads, seq, dim] -> [batch, seq, heads, dim]
-    auto outPerm = outFlat->permute(permOrder, false, false);
-    output->assign(outPerm);
-    delete outPerm;
+      // Permute into workspace buffers using permute() which returns a view
+      auto qPerm = query->permute(permOrder, false, false);
+      auto kPerm = key->permute(permOrder, false, false);
+      auto vPerm = value->permute(permOrder, false, false);
+      qPermBuffer->assign(qPerm);
+      kPermBuffer->assign(kPerm);
+      vPermBuffer->assign(vPerm);
+      delete qPerm;
+      delete kPerm;
+      delete vPerm;
 
-    // Restore workspace buffer shapes for next call.
-    // Keeping the original shape avoids workspace reallocation for the same key
-    // in later attention ops captured into the same CUDA graph segment.
-    outFlat->reshapei(shape3D_Q);
-    qPermBuffer->reshapei(qPermShape);
-    kPermBuffer->reshapei(kvPermShape);
-    vPermBuffer->reshapei(kvPermShape);
+      // Reshape to 3D: [batch*heads, seq, dim]
+      std::vector<LongType> shape3D_Q = {batch * numHeads, seqLenQ, headDim};
+      std::vector<LongType> shape3D_KV = {batch * numKvHeads, seqLenKV, headDim};
 
-    if (softmaxLse != nullptr) softmaxLse->nullify();
-    return;
+      qPermBuffer->reshapei(shape3D_Q);
+      kPermBuffer->reshapei(shape3D_KV);
+      vPermBuffer->reshapei(shape3D_KV);
+
+      // Get output buffer from workspace and zero it — the fused kernel may not write
+      // all positions (e.g., causal mask), and stale data from a previous call would leak.
+      NDArray* outFlat = workspace->getBuffer("forward4d_outFlat", shape3D_Q, query->dataType(), context);
+      outFlat->nullify();
+
+      // Prepare attention bias if present - broadcast+reshape to [batch*heads, seqQ, seqKV]
+      //  The fused CUDA kernel templates on query dtype (float32/float64/half).
+      // If the bias is a different dtype (e.g. LONG from ONNX mask), we MUST cast it
+      // to match the query type, otherwise the kernel reads raw bytes as wrong type.
+      NDArray* biasFlat = nullptr;
+      std::unique_ptr<NDArray> biasReshapedOwner;
+      std::unique_ptr<NDArray> biasBroadcastOwner;
+      std::unique_ptr<NDArray> biasCastOwner;
+      if (hasAttentionBias) {
+        NDArray* biasToUse = attentionBias;
+
+        // Cast bias to query dtype if mismatched (LONG->FLOAT32 is common for ONNX masks)
+        if (attentionBias->dataType() != query->dataType()) {
+          biasCastOwner.reset(attentionBias->cast(query->dataType()));
+          biasToUse = biasCastOwner.get();
+        }
+
+        auto biasElements = biasToUse->lengthOf();
+        auto targetElements = batch * numHeads * seqLenQ * seqLenKV;
+
+        if (biasElements == targetElements) {
+          // Direct reshape: [batch, numHeads, seqQ, seqKV] -> [batch*numHeads, seqQ, seqKV]
+          std::vector<LongType> biasShape3D = {batch * numHeads, seqLenQ, seqLenKV};
+          biasReshapedOwner.reset(biasToUse->reshape('c', biasShape3D, false));
+          biasFlat = biasReshapedOwner.get();
+        } else {
+          // Bias needs broadcasting (e.g. [1,1,1,seqKV] -> [batch,numHeads,seqQ,seqKV])
+          std::vector<LongType> targetShape4D = {batch, numHeads, seqLenQ, seqLenKV};
+          biasBroadcastOwner.reset(new NDArray('c', targetShape4D, query->dataType(), context));
+          biasToUse->applyTrueBroadcast(BroadcastOpsTuple::Assign(), biasBroadcastOwner.get(),
+                                            biasBroadcastOwner.get(), false);
+          std::vector<LongType> biasShape3D = {batch * numHeads, seqLenQ, seqLenKV};
+          biasReshapedOwner.reset(biasBroadcastOwner->reshape('c', biasShape3D, false));
+          biasFlat = biasReshapedOwner.get();
+        }
+      }
+
+      // Fast path: fused kernel with optional bias
+      fusedAttentionCuda(qPermBuffer, kPermBuffer, vPermBuffer, outFlat, scale, config.isCausal, context, biasFlat);
+
+      // Reshape back to 4D: [batch, heads, seq, dim]
+      std::vector<LongType> shape4D = {batch, numHeads, seqLenQ, headDim};
+      outFlat->reshapei(shape4D);
+
+      // Permute back and assign to output: [batch, heads, seq, dim] -> [batch, seq, heads, dim]
+      auto outPerm = outFlat->permute(permOrder, false, false);
+      output->assign(outPerm);
+      delete outPerm;
+
+      // Restore workspace buffer shapes for next call.
+      // Keeping the original shape avoids workspace reallocation for the same key
+      // in later attention ops captured into the same CUDA graph segment.
+      outFlat->reshapei(shape3D_Q);
+      qPermBuffer->reshapei(qPermShape);
+      kPermBuffer->reshapei(kvPermShape);
+      vPermBuffer->reshapei(kvPermShape);
+
+      if (softmaxLse != nullptr) softmaxLse->nullify();
+      return;
+    }
   }
-#endif
 
   // Fallback path with workspace optimization
   std::vector<LongType> permOrder = {0, 2, 1, 3};
@@ -523,50 +524,50 @@ void FlashAttentionHelper::forward4D(
     logitsBuffer = workspace->getBuffer("forward4d_logits", scoresShape, query->dataType(), context);
   }
 
-#if defined(SD_CUDA)
-  fusedCausalMaskSoftmaxCuda(workBuffer, workBuffer, logitsBuffer, config.isCausal, context);
-#else
-  // FP16 softmax overflow prevention: cast scores to FLOAT32 before softmax.
-  // In HALF, exp(x) overflows for x > ~11.09. With headDim=128 and scale ~0.088,
-  // a raw Q·K dot product of ~126 (common in FP16 models) overflows after scaling,
-  // producing NaN via inf/inf in softmax. FP32 has range up to ~88.7 for exp().
-  // GPU paths (cuBLAS, OneDNN) accumulate in FP32 internally; CPU must do it explicitly.
-  bool needsFp32Softmax = (workBuffer->dataType() == DataType::HALF || workBuffer->dataType() == DataType::BFLOAT16);
-  NDArray* softmaxBuffer = workBuffer;
-  NDArray* fp32Buffer = nullptr;
-  if (needsFp32Softmax) {
-    fp32Buffer = workspace->getBuffer("forward4d_fp32_scores", scoresShape, DataType::FLOAT32, context);
-    fp32Buffer->assign(workBuffer);
-    softmaxBuffer = fp32Buffer;
-  }
+  if (sd::graph::dspIsCudaBuild()) {
+    fusedCausalMaskSoftmaxCuda(workBuffer, workBuffer, logitsBuffer, config.isCausal, context);
+  } else {
+    // FP16 softmax overflow prevention: cast scores to FLOAT32 before softmax.
+    // In HALF, exp(x) overflows for x > ~11.09. With headDim=128 and scale ~0.088,
+    // a raw Q·K dot product of ~126 (common in FP16 models) overflows after scaling,
+    // producing NaN via inf/inf in softmax. FP32 has range up to ~88.7 for exp().
+    // GPU paths (cuBLAS, OneDNN) accumulate in FP32 internally; CPU must do it explicitly.
+    bool needsFp32Softmax = (workBuffer->dataType() == DataType::HALF || workBuffer->dataType() == DataType::BFLOAT16);
+    NDArray* softmaxBuffer = workBuffer;
+    NDArray* fp32Buffer = nullptr;
+    if (needsFp32Softmax) {
+      fp32Buffer = workspace->getBuffer("forward4d_fp32_scores", scoresShape, DataType::FLOAT32, context);
+      fp32Buffer->assign(workBuffer);
+      softmaxBuffer = fp32Buffer;
+    }
 
-  if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
-    std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
-    NDArray causalMask('c', maskShape, softmaxBuffer->dataType(), context);
-    causalMask.nullify();
-    // For standard causal attention (seqQ == seqKV): causalOffset = 0.
-    // For cross-attention decode (seqKV > seqQ): offset the mask to align positions.
-    int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
-    // Fill strict upper triangle (row < col - causalLower) with -1e9
-    // to prevent attending to future tokens.
-    BUILD_SINGLE_SELECTOR(softmaxBuffer->dataType(), causalMask.fillAsTriangular,
-                          (-1.0e9f, causalLower, 0, causalMask, 'u', false), SD_COMMON_TYPES);
-    softmaxBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), &causalMask, softmaxBuffer, false);
-  }
-  if (logitsBuffer != nullptr) {
-    logitsBuffer->assign(softmaxBuffer);
-  }
-  // IMPORTANT: Must use explicit positive dimension for softmax.
-  // The TAD helper treats -1 as sentinel meaning "all dimensions",
-  // NOT as "last dimension".
-  int softmaxDim4D = softmaxBuffer->rankOf() - 1;
-  ops::helpers::softmax(context, softmaxBuffer, softmaxBuffer, softmaxDim4D);
+    if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
+      std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
+      NDArray causalMask('c', maskShape, softmaxBuffer->dataType(), context);
+      causalMask.nullify();
+      // For standard causal attention (seqQ == seqKV): causalOffset = 0.
+      // For cross-attention decode (seqKV > seqQ): offset the mask to align positions.
+      int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
+      // Fill strict upper triangle (row < col - causalLower) with -1e9
+      // to prevent attending to future tokens.
+      BUILD_SINGLE_SELECTOR(softmaxBuffer->dataType(), causalMask.fillAsTriangular,
+                            (-1.0e9f, causalLower, 0, causalMask, 'u', false), SD_COMMON_TYPES);
+      softmaxBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), &causalMask, softmaxBuffer, false);
+    }
+    if (logitsBuffer != nullptr) {
+      logitsBuffer->assign(softmaxBuffer);
+    }
+    // IMPORTANT: Must use explicit positive dimension for softmax.
+    // The TAD helper treats -1 as sentinel meaning "all dimensions",
+    // NOT as "last dimension".
+    int softmaxDim4D = softmaxBuffer->rankOf() - 1;
+    ops::helpers::softmax(context, softmaxBuffer, softmaxBuffer, softmaxDim4D);
 
-  // Cast back to original dtype for the output matmul
-  if (needsFp32Softmax) {
-    workBuffer->assign(softmaxBuffer);
+    // Cast back to original dtype for the output matmul
+    if (needsFp32Softmax) {
+      workBuffer->assign(softmaxBuffer);
+    }
   }
-#endif
 
   // Output buffer
   std::vector<LongType> outShape = {batch * numHeads, seqLenQ, headDim};
@@ -638,121 +639,120 @@ void FlashAttentionHelper::forward4DDecode(
   
   auto workspace = AttentionWorkspace::getInstance();
   
-#if defined(SD_CUDA)
-  // Permute Q, K, V to [batch*heads, seq, dim] layout for cuBLAS
-  std::vector<LongType> permOrder = {0, 2, 1, 3};
-  std::vector<LongType> qShape = {batch * numHeads, 1, headDim};
-  std::vector<LongType> kvShape = {batch * numKvHeads, seqKV, headDim};
-  std::vector<LongType> scoresShape = {batch * numHeads, 1, seqKV};
-  
-  NDArray* qPerm = workspace->getBuffer("decode_qPerm", qShape, query->dataType(), context);
-  NDArray* kPerm = workspace->getBuffer("decode_kPerm", kvShape, key->dataType(), context);
-  NDArray* vPerm = workspace->getBuffer("decode_vPerm", kvShape, value->dataType(), context);
-  
-  // Permute and assign
-  auto qView = query->permute(permOrder, false, false);
-  auto kView = key->permute(permOrder, false, false);
-  auto vView = value->permute(permOrder, false, false);
-  qPerm->assign(qView);
-  kPerm->assign(kView);
-  vPerm->assign(vView);
-  delete qView;
-  delete kView;
-  delete vView;
-  
-  // Handle GQA: expand KV heads if needed
-  NDArray* kExpanded = kPerm;
-  NDArray* vExpanded = vPerm;
-  
-  if (headsPerKvHead > 1) {
-    std::vector<LongType> expandedShape = {batch * numHeads, seqKV, headDim};
-    NDArray* kExpBuf = workspace->getBuffer("decode_kExp", expandedShape, key->dataType(), context);
-    NDArray* vExpBuf = workspace->getBuffer("decode_vExp", expandedShape, value->dataType(), context);
-    
-    // Tile KV heads
-    std::vector<LongType> tileShape = {batch, numKvHeads, 1, seqKV, headDim};
-    kPerm->reshapei(tileShape);
-    vPerm->reshapei(tileShape);
-    std::vector<LongType> reps = {1, 1, static_cast<LongType>(headsPerKvHead), 1, 1};
-    kPerm->tile(reps, *kExpBuf);
-    vPerm->tile(reps, *vExpBuf);
-    kPerm->reshapei(kvShape);
-    vPerm->reshapei(kvShape);
-    
-    kExpBuf->reshapei(expandedShape);
-    vExpBuf->reshapei(expandedShape);
-    kExpanded = kExpBuf;
-    vExpanded = vExpBuf;
-  }
-  
-  // Workspace for scores [batch*heads, 1, seqKV]
-  NDArray* scores = workspace->getBuffer("decode_scores", scoresShape, query->dataType(), context);
-  
-  // Q @ K^T: [batch*heads, 1, dim] × [batch*heads, dim, seqKV] → [batch*heads, 1, seqKV]
-  // For seqQ=1, this is batched GEMV, not GEMM
-  MmulHelper::matmul(qPerm, kExpanded, scores, false, true, scale, 0.0);
-  
-  // Add attention bias if present
-  if (attentionBias != nullptr && !attentionBias->isEmpty()) {
-    // Bias shape: [batch, seqQ, seqKV] or [batch, numHeads, seqQ, seqKV]
-    if (attentionBias->rankOf() == 3) {
-      // [batch, 1, seqKV] -> broadcast to [batch*heads, 1, seqKV]
-      scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), attentionBias, scores, false);
-    } else if (attentionBias->rankOf() == 4) {
-      // Bias may be [batch, numHeads, seqQ, seqKV] (full) or broadcastable
-      // (e.g. [1, 1, 1, seqKV]). Broadcast to full shape first, then reshape.
-      auto biasElements = attentionBias->lengthOf();
-      auto targetElements = batch * numHeads * 1 * seqKV;
-      std::vector<LongType> biasShape3D = {batch * numHeads, 1, seqKV};
-      if (biasElements == targetElements) {
-        NDArray* biasFlat = attentionBias->reshape('c', biasShape3D, false);
-        scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), biasFlat, scores, false);
-        delete biasFlat;
-      } else {
-        // Broadcast [1,1,1,seqKV] -> [batch,numHeads,1,seqKV] then reshape
-        std::vector<LongType> fullShape = {batch, numHeads, 1, seqKV};
-        NDArray biasFull('c', fullShape, attentionBias->dataType(), context);
-        attentionBias->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &biasFull, &biasFull, false);
-        NDArray* biasFlat = biasFull.reshape('c', biasShape3D, false);
-        scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), biasFlat, scores, false);
-        delete biasFlat;
+  if (sd::graph::dspIsCudaBuild()) {
+    // Permute Q, K, V to [batch*heads, seq, dim] layout for cuBLAS
+    std::vector<LongType> permOrder = {0, 2, 1, 3};
+    std::vector<LongType> qShape = {batch * numHeads, 1, headDim};
+    std::vector<LongType> kvShape = {batch * numKvHeads, seqKV, headDim};
+    std::vector<LongType> scoresShape = {batch * numHeads, 1, seqKV};
+
+    NDArray* qPerm = workspace->getBuffer("decode_qPerm", qShape, query->dataType(), context);
+    NDArray* kPerm = workspace->getBuffer("decode_kPerm", kvShape, key->dataType(), context);
+    NDArray* vPerm = workspace->getBuffer("decode_vPerm", kvShape, value->dataType(), context);
+
+    // Permute and assign
+    auto qView = query->permute(permOrder, false, false);
+    auto kView = key->permute(permOrder, false, false);
+    auto vView = value->permute(permOrder, false, false);
+    qPerm->assign(qView);
+    kPerm->assign(kView);
+    vPerm->assign(vView);
+    delete qView;
+    delete kView;
+    delete vView;
+
+    // Handle GQA: expand KV heads if needed
+    NDArray* kExpanded = kPerm;
+    NDArray* vExpanded = vPerm;
+
+    if (headsPerKvHead > 1) {
+      std::vector<LongType> expandedShape = {batch * numHeads, seqKV, headDim};
+      NDArray* kExpBuf = workspace->getBuffer("decode_kExp", expandedShape, key->dataType(), context);
+      NDArray* vExpBuf = workspace->getBuffer("decode_vExp", expandedShape, value->dataType(), context);
+
+      // Tile KV heads
+      std::vector<LongType> tileShape = {batch, numKvHeads, 1, seqKV, headDim};
+      kPerm->reshapei(tileShape);
+      vPerm->reshapei(tileShape);
+      std::vector<LongType> reps = {1, 1, static_cast<LongType>(headsPerKvHead), 1, 1};
+      kPerm->tile(reps, *kExpBuf);
+      vPerm->tile(reps, *vExpBuf);
+      kPerm->reshapei(kvShape);
+      vPerm->reshapei(kvShape);
+
+      kExpBuf->reshapei(expandedShape);
+      vExpBuf->reshapei(expandedShape);
+      kExpanded = kExpBuf;
+      vExpanded = vExpBuf;
+    }
+
+    // Workspace for scores [batch*heads, 1, seqKV]
+    NDArray* scores = workspace->getBuffer("decode_scores", scoresShape, query->dataType(), context);
+
+    // Q @ K^T: [batch*heads, 1, dim] × [batch*heads, dim, seqKV] → [batch*heads, 1, seqKV]
+    // For seqQ=1, this is batched GEMV, not GEMM
+    MmulHelper::matmul(qPerm, kExpanded, scores, false, true, scale, 0.0);
+
+    // Add attention bias if present
+    if (attentionBias != nullptr && !attentionBias->isEmpty()) {
+      // Bias shape: [batch, seqQ, seqKV] or [batch, numHeads, seqQ, seqKV]
+      if (attentionBias->rankOf() == 3) {
+        // [batch, 1, seqKV] -> broadcast to [batch*heads, 1, seqKV]
+        scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), attentionBias, scores, false);
+      } else if (attentionBias->rankOf() == 4) {
+        // Bias may be [batch, numHeads, seqQ, seqKV] (full) or broadcastable
+        // (e.g. [1, 1, 1, seqKV]). Broadcast to full shape first, then reshape.
+        auto biasElements = attentionBias->lengthOf();
+        auto targetElements = batch * numHeads * 1 * seqKV;
+        std::vector<LongType> biasShape3D = {batch * numHeads, 1, seqKV};
+        if (biasElements == targetElements) {
+          NDArray* biasFlat = attentionBias->reshape('c', biasShape3D, false);
+          scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), biasFlat, scores, false);
+          delete biasFlat;
+        } else {
+          // Broadcast [1,1,1,seqKV] -> [batch,numHeads,1,seqKV] then reshape
+          std::vector<LongType> fullShape = {batch, numHeads, 1, seqKV};
+          NDArray biasFull('c', fullShape, attentionBias->dataType(), context);
+          attentionBias->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &biasFull, &biasFull, false);
+          NDArray* biasFlat = biasFull.reshape('c', biasShape3D, false);
+          scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), biasFlat, scores, false);
+          delete biasFlat;
+        }
       }
     }
+
+    // NOTE: Causal mask is NOT needed for decode (seqQ=1).
+    // During decode, we attend to all past tokens (positions 0..cachePos),
+    // and there are no "future" positions to mask out.
+    // Causal masking only applies during prefill (seqQ > 1).
+
+    // Fused softmax with warp-shuffle reductions — more efficient than generic softmax
+    // for decode shape [batch*numHeads, 1, seqKV]. isCausal=false since seqQ=1 has nothing to mask.
+    fusedCausalMaskSoftmaxCuda(scores, scores, nullptr, false, context);
+
+    // attn @ V: [batch*heads, 1, seqKV] × [batch*heads, seqKV, dim] → [batch*heads, 1, dim]
+    NDArray* outFlat = workspace->getBuffer("decode_out", qShape, query->dataType(), context);
+    MmulHelper::matmul(scores, vExpanded, outFlat, false, false, 1.0, 0.0);
+
+    // Permute back to [batch, 1, numHeads, dim] -> [batch, 1, numHeads, dim]
+    outFlat->reshapei({batch, numHeads, 1, headDim});
+    auto outPerm = outFlat->permute(permOrder, false, false);
+    output->assign(outPerm);
+    delete outPerm;
+
+    // Restore workspace shapes
+    qPerm->reshapei(qShape);
+    kPerm->reshapei(kvShape);
+    if (headsPerKvHead > 1) {
+      kExpanded->reshapei({batch * numHeads, seqKV, headDim});
+    }
+  } else {
+    // CPU fallback - use standard forward4D path
+    Config config;
+    config.scale = scale;
+    config.isCausal = isCausal;
+    forward4D(query, key, value, output, config, softmaxLse, nullptr, nullptr, context, attentionBias);
   }
-  
-  // NOTE: Causal mask is NOT needed for decode (seqQ=1).
-  // During decode, we attend to all past tokens (positions 0..cachePos),
-  // and there are no "future" positions to mask out.
-  // Causal masking only applies during prefill (seqQ > 1).
-  
-  // Fused softmax with warp-shuffle reductions — more efficient than generic softmax
-  // for decode shape [batch*numHeads, 1, seqKV]. isCausal=false since seqQ=1 has nothing to mask.
-  fusedCausalMaskSoftmaxCuda(scores, scores, nullptr, false, context);
-  
-  // attn @ V: [batch*heads, 1, seqKV] × [batch*heads, seqKV, dim] → [batch*heads, 1, dim]
-  NDArray* outFlat = workspace->getBuffer("decode_out", qShape, query->dataType(), context);
-  MmulHelper::matmul(scores, vExpanded, outFlat, false, false, 1.0, 0.0);
-  
-  // Permute back to [batch, 1, numHeads, dim] -> [batch, 1, numHeads, dim]
-  outFlat->reshapei({batch, numHeads, 1, headDim});
-  auto outPerm = outFlat->permute(permOrder, false, false);
-  output->assign(outPerm);
-  delete outPerm;
-  
-  // Restore workspace shapes
-  qPerm->reshapei(qShape);
-  kPerm->reshapei(kvShape);
-  if (headsPerKvHead > 1) {
-    kExpanded->reshapei({batch * numHeads, seqKV, headDim});
-  }
-  
-#else
-  // CPU fallback - use standard forward4D path
-  Config config;
-  config.scale = scale;
-  config.isCausal = isCausal;
-  forward4D(query, key, value, output, config, softmaxLse, nullptr, nullptr, context, attentionBias);
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -805,19 +805,19 @@ void FlashAttentionHelper::backward3D(
 
   // Apply causal mask if needed
   if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
-#if defined(SD_CUDA)
-    applyCausalMaskCuda(scores, context);
-#else
-    std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
-    NDArray* causalMask = workspace->getBuffer("backward3d_mask", maskShape, query->dataType(), context);
-    causalMask->nullify();
-    int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
-    // Fill strict upper triangle (row < col - causalLower) with -1e9
-    // to prevent attending to future tokens.
-    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
-                          (-1.0e9f, causalLower, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
-    scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, scores, false);
-#endif
+    if (sd::graph::dspIsCudaBuild()) {
+      applyCausalMaskCuda(scores, context);
+    } else {
+      std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
+      NDArray* causalMask = workspace->getBuffer("backward3d_mask", maskShape, query->dataType(), context);
+      causalMask->nullify();
+      int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
+      // Fill strict upper triangle (row < col - causalLower) with -1e9
+      // to prevent attending to future tokens.
+      BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
+                            (-1.0e9f, causalLower, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
+      scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, scores, false);
+    }
   }
 
   // Softmax - use explicit positive dimension (TAD treats -1 as "all dimensions")
@@ -948,19 +948,19 @@ void FlashAttentionHelper::backward4D(
 
   // Apply causal mask
   if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
-#if defined(SD_CUDA)
-    applyCausalMaskCuda(scores, context);
-#else
-    std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
-    NDArray* causalMask = workspace->getBuffer("backward4d_mask", maskShape, query->dataType(), context);
-    causalMask->nullify();
-    int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
-    // Fill strict upper triangle (row < col - causalLower) with -1e9
-    // to prevent attending to future tokens.
-    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
-                          (-1.0e9f, causalLower, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
-    scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, scores, false);
-#endif
+    if (sd::graph::dspIsCudaBuild()) {
+      applyCausalMaskCuda(scores, context);
+    } else {
+      std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
+      NDArray* causalMask = workspace->getBuffer("backward4d_mask", maskShape, query->dataType(), context);
+      causalMask->nullify();
+      int causalLower = (seqLenKV > seqLenQ) ? static_cast<int>(seqLenKV - seqLenQ) : 0;
+      // Fill strict upper triangle (row < col - causalLower) with -1e9
+      // to prevent attending to future tokens.
+      BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
+                            (-1.0e9f, causalLower, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
+      scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, scores, false);
+    }
   }
 
   // Softmax - use explicit positive dimension (TAD treats -1 as "all dimensions")

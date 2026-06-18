@@ -37,6 +37,15 @@ struct bfloat16;
     // Fall back to OpenBLAS CBLAS
     #include <blas/cblas.h>
   #endif
+#else
+  // CUDA builds: define the minimal CBLAS enum types needed so that
+  // CblasSgemv / CblasSgemm etc. typedefs compile on both platforms.
+  // The actual cblas.h (OpenBLAS/MKL) is not available in CUDA builds.
+  #ifndef CBLAS_ENUM_DEFINED_H
+  #define CBLAS_ENUM_DEFINED_H
+  enum CBLAS_ORDER     { CblasRowMajor = 101, CblasColMajor = 102 };
+  enum CBLAS_TRANSPOSE { CblasNoTrans = 111, CblasTrans = 112, CblasConjTrans = 113, AtlasConj = 114 };
+  #endif
 #endif
 #include <helpers/logger.h>
 #include <types/float16.h>
@@ -87,7 +96,6 @@ typedef enum {
   CUDA_C_32U = 13  /* complex as a pair of unsigned int numbers */
 } cublasDataType_t;
 
-#if !defined(SD_CUDA)
 typedef void (*CblasSgemv)(CBLAS_ORDER Layout, CBLAS_TRANSPOSE TransA, int M, int N, float alpha, float *A, int lda,
                            float *X, int incX, float beta, float *Y, int incY);
 
@@ -109,7 +117,6 @@ typedef void (*CblasDgemmBatch)(CBLAS_ORDER Layout, CBLAS_TRANSPOSE *TransA_Arra
                                 int *M_Array, int *N_Array, int *K_Array, double *alpha_Array, double **A_Array,
                                 int *lda_Array, double **B_Array, int *ldb_Array, double *beta_Array, double **C_Array,
                                 int *ldc_Array, int group_count, int *group_size);
-#endif
 #ifdef LAPACK_ROW_MAJOR
 #undef LAPACK_ROW_MAJOR
 #endif
@@ -269,7 +276,6 @@ class BlasHelper {
 
   // Number of threads OpenBLAS should use (0 = use OpenBLAS default)
   std::atomic<int> _openblasThreads{0};
-#if !defined(SD_CUDA)
   CblasSgemv cblasSgemv;
   CblasDgemv cblasDgemv;
   CblasSgemm cblasSgemm;
@@ -280,7 +286,6 @@ class BlasHelper {
   LapackeDgesvd lapackeDgesvd;
   LapackeSgesdd lapackeSgesdd;
   LapackeDgesdd lapackeDgesdd;
-#endif
 
 #if defined(SD_CUDA)
   CublasSgemv cublasSgemv;
@@ -315,7 +320,6 @@ class BlasHelper {
 
   template <typename T>
   bool hasBatchedGEMM();
-#if !defined(SD_CUDA)
   CblasSgemv sgemv();
   CblasDgemv dgemv();
 
@@ -330,7 +334,6 @@ class BlasHelper {
 
   LapackeSgesdd sgesdd();
   LapackeDgesdd dgesdd();
-#endif
 
   // BLAS call serialization methods to prevent OpenBLAS TLS corruption
   // and race conditions in multi-threaded environments

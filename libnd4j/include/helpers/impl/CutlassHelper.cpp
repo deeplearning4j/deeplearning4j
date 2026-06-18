@@ -16,28 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#include <helpers/CutlassHelper.h>
-
-#ifndef SD_CUDA
-namespace sd {
-
-// CPU stubs — CUTLASS requires CUDA, so all queries return false/0 on CPU.
-
-int CutlassHelper::getSmVersion(int deviceId) {
-  return 0;
-}
-
-bool CutlassHelper::hasFp8NativeSupport(int deviceId) {
-  return false;
-}
-
-bool CutlassHelper::hasHopperFeatures(int deviceId) {
-  return false;
-}
-
-bool CutlassHelper::isCutlassAvailable() {
-  return false;
-}
-
-}  // namespace sd
-#endif  // !SD_CUDA
+// Platform-specific implementations:
+//   helpers/cpu/CutlassHelper.cpp  (CPU build)
+//   helpers/cuda/CutlassHelper.cu  (CUDA build)
+// This file is intentionally empty.

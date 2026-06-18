@@ -32,7 +32,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void tokenSampleCpu_(NDArray* logits, NDArray* output,
+static void tokenSample_(NDArray* logits, NDArray* output,
                              double temperature, int topK, double topP,
                              LongType seed, LaunchContext* context) {
   auto rank = logits->rankOf();
@@ -165,15 +165,15 @@ static void tokenSampleCpu_(NDArray* logits, NDArray* output,
   }
 }
 
-void tokenSampleCpu(NDArray* logits, NDArray* output,
+void tokenSample(NDArray* logits, NDArray* output,
                     double temperature, int topK, double topP,
                     LongType seed, LaunchContext* context) {
-  BUILD_SINGLE_SELECTOR(logits->dataType(), tokenSampleCpu_,
+  BUILD_SINGLE_SELECTOR(logits->dataType(), tokenSample_,
                         (logits, output, temperature, topK, topP, seed, context),
                         SD_FLOAT_TYPES);
 }
 
-void tokenSampleWithPenaltiesCpu(NDArray* logits, NDArray* output,
+void tokenSampleWithPenalties(NDArray* logits, NDArray* output,
                                  NDArray* inputIds,
                                  double temperature, int topK,
                                  double topP, double minP,
@@ -182,16 +182,16 @@ void tokenSampleWithPenaltiesCpu(NDArray* logits, NDArray* output,
                                  LongType seed, LaunchContext* context) {
     // Step 1: Apply penalties to logits (in-place)
     if (inputIds != nullptr && (repPenalty != 1.0 || freqPenalty != 0.0 || presPenalty != 0.0)) {
-        applyLogitPenaltiesCpu(logits, inputIds, repPenalty, freqPenalty, presPenalty, context);
+        applyLogitPenalties(logits, inputIds, repPenalty, freqPenalty, presPenalty, context);
     }
 
     // Step 2: Apply min-p filtering (in-place)
     if (minP > 0.0) {
-        applyMinPFilterCpu(logits, minP, context);
+        applyMinPFilter(logits, minP, context);
     }
 
     // Step 3: Standard sampling (temperature, topK, topP)
-    tokenSampleCpu(logits, output, temperature, topK, topP, seed, context);
+    tokenSample(logits, output, temperature, topK, topP, seed, context);
 }
 
 }  // namespace helpers
