@@ -19,9 +19,7 @@
 #include <graph/SlotBufferOwnership.h>
 #include <graph/DspDiagnostics.h>
 #include <array/NDArray.h>
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
+#include <graph/gpu/DspCudaDispatch.h>
 
 namespace sd {
 namespace graph {
@@ -199,13 +197,8 @@ void BufferPointerSnapshot::capture(NDArray** outputSlots, int numSlots,
   totalSlots = numSlots;
   numExternalInputs = numExt;
 
-#ifdef SD_CUDA
-  int currentDevice = -1;
-  cudaGetDevice(&currentDevice);
-  capturedDeviceId = currentDevice;
-#else
-  capturedDeviceId = 0;
-#endif
+  capturedDeviceId = dspGetCurrentDevice();
+  if (capturedDeviceId < 0) capturedDeviceId = 0;  // CPU default
 
   if (numSlots > 0) {
     slotGpuAddresses = new void*[numSlots];
@@ -671,11 +664,9 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
   }
 
   // Execution device check: validate current device matches capture device
-#ifdef SD_CUDA
   if (capturedDeviceId >= 0) {
-    int currentDevice = -1;
-    cudaGetDevice(&currentDevice);
-    if (currentDevice != capturedDeviceId) {
+    int currentDevice = dspGetCurrentDevice();
+    if (currentDevice >= 0 && currentDevice != capturedDeviceId) {
       snprintf(errMsg, errMsgLen,
                "LIFECYCLE_ERROR: execution device changed from %d (at capture) to %d "
                "— CUDA graphs captured on device %d cannot replay on device %d",
@@ -683,7 +674,6 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
       return false;
     }
   }
-#endif
 
   return true;
 }
@@ -884,9 +874,8 @@ bool validateLifecycleForPhase(
   // so every SLOT_OWNED buffer must remain device-authoritative (sAct=true).
   // If pAct=1 && sAct=0, a host write poisoned the device state.
   // Only SLOT_OWNED buffers are checked — views/weights have external owners.
-  // CPU builds: pAct/sAct flags are vestigial, gated on SD_CUDA.
-#ifdef SD_CUDA
-  if (planPhase >= 2 && ownership != nullptr && outputSlots != nullptr) {
+  // CPU builds: pAct/sAct flags are vestigial; check is harmless (always passes).
+  if (dspIsCudaBuild() && planPhase >= 2 && ownership != nullptr && outputSlots != nullptr) {
     for (int i = 0; i < totalSlots; i++) {
       const auto& info = ownership[i];
       if (info.ownership != BufferOwnership::SLOT_OWNED) continue;
@@ -920,7 +909,6 @@ bool validateLifecycleForPhase(
       // pAct=1/sAct=0 above, not here.
     }
   }
-#endif  // SD_CUDA
 
   return true;
 }
@@ -1138,12 +1126,10 @@ ArrayInvalidReason validateArrayForExecution(const NDArray* arr) {
   if (!db->isValid())
     return ArrayInvalidReason::INVALID_DATABUFFER;
 
-#ifdef SD_CUDA
   // On CUDA, non-empty arrays must have a GPU buffer allocated.
   // special() is a plain pointer read — no sync, no side effects.
-  if (db->special() == nullptr && a->lengthOf() > 0)
+  if (sd::graph::dspIsCudaBuild() && db->special() == nullptr && a->lengthOf() > 0)
     return ArrayInvalidReason::NULL_GPU_POINTER;
-#endif
 
   return ArrayInvalidReason::VALID;
 }

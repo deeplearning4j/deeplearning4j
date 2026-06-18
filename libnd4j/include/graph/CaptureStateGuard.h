@@ -53,7 +53,7 @@ class CaptureStateGuard {
   CaptureStateGuard(cudaStream_t captureStream,
                     void* captureWs, size_t captureWsSize,
                     void* hostWs, size_t hostWsSize)
-      : prevCaptureStream_(tl_graphCaptureStream),
+      : prevCaptureStream_(reinterpret_cast<cudaStream_t>(tl_graphCaptureStream)),
         prevGraphActive_(tl_graphExecutionActive),
         committed_(false) {
     tl_graphExecutionActive = true;

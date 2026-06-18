@@ -18,7 +18,7 @@
 
 #include <config.h>
 
-#if defined(SD_CUDA) || defined(HAVE_MLIR) || HAVE_TRITON || HAVE_MLX
+#if defined(HAVE_MLIR) || HAVE_TRITON || HAVE_MLX
 
 #include <graph/GraphAnalysisUtils.h>
 #include <graph/DspDiagnostics.h>
@@ -198,4 +198,4 @@ std::unordered_set<int> GraphAnalysisUtils::computeExternallyVisibleOutputs(
 }  // namespace graph
 }  // namespace sd
 
-#endif  // defined(SD_CUDA) || defined(HAVE_MLIR) || HAVE_TRITON || HAVE_MLX
+#endif  // defined(HAVE_MLIR) || HAVE_TRITON || HAVE_MLX

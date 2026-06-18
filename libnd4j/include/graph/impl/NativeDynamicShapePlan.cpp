@@ -31,17 +31,7 @@
 #include <graph/gpu/SymbolicShapeRanges.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/LegacyOpTypeCodes.h>
-
-// Portable buffer accessor for DSP: specialBuffer() on CUDA, buffer() on CPU.
-// CPU specialBuffer() throws when _buffer is nullptr (freed arrays) because
-// CPU has no separate device buffer. Use buffer() on CPU instead.
-#ifdef SD_CUDA
-#define DSP_BUF(arr) ((arr)->specialBuffer())
-#else
-#define DSP_BUF(arr) ((arr)->buffer())
-#endif
-// Null-safe version
-#define DSP_BUF_SAFE(arr) ((arr) != nullptr ? DSP_BUF(arr) : nullptr)
+#include <graph/gpu/DspCudaDispatch.h>
 #include <graph/FusionPass.h>
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <graph/GraphBackend.h>
@@ -110,17 +100,7 @@
 // GPU graph backends are included only in the files that use them
 // (_gpubackend.cpp, platform dispatch files). This file is platform-neutral.
 
-#ifdef SD_CUDA
-// DSP gap stream — defined in LaunchContext.cu, shared across translation units
-extern thread_local cudaStream_t tl_dspGapStream;
-// CudaMemoryPool needed for deferred workspace free in ~NativeDynamicShapePlan
-#include <memory/cuda/CudaMemoryPool.h>
-#endif
-
 namespace sd {
-#ifdef SD_CUDA
-void dspPublishThreadCompletionEvent(void* streamPtr);
-#endif
 namespace graph {
 
 static void releasePlanFrozenRefsForTeardown(
@@ -756,7 +736,7 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   // after delete is use-after-free on the destroyed NDArray's _shapeInfo.
   uint64_t oldBufAddr = 0;
   if (old != nullptr && old->dataBuffer() != nullptr) {
-    oldBufAddr = reinterpret_cast<uint64_t>(DSP_BUF_SAFE(old));
+    oldBufAddr = reinterpret_cast<uint64_t>(sd::graph::dspBufferSafe(old));
   }
 
   // Free the OLD plan-owned array when it's being replaced, unless its
@@ -825,7 +805,7 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   // computing newAddr and the two DSP_BUF_SAFE() calls on every write.
   if (trace_ != nullptr) {
     uint64_t newAddr = (value != nullptr && value->dataBuffer() != nullptr)
-        ? reinterpret_cast<uint64_t>(DSP_BUF_SAFE(value)) : 0;
+        ? reinterpret_cast<uint64_t>(sd::graph::dspBufferSafe(value)) : 0;
     if (oldBufAddr != 0 && oldBufAddr != newAddr) {
       // Buffer REPLACED — record both old and new addresses.
       trace_->recordBufferReplaced(-1, slotIdx,
@@ -1008,9 +988,9 @@ void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
   // isSlotBySlot=true, so populateDerivedState() correctly stays on the
   // slot-by-slot execution path while still tracking replay lifecycle
   // (shape freezing, pointer stability, segment timing).
-#if !defined(SD_CUDA) && !defined(HAVE_ONEDNN) && !defined(HAVE_OPENVINO) && \
+#if !defined(HAVE_ONEDNN) && !defined(HAVE_OPENVINO) && \
     !defined(HAVE_ARMCOMPUTE) && !defined(HAVE_MLIR) && !defined(HAVE_NNAPI) && !defined(HAVE_MLX)
-  if (ModeContract::forMode(mode).usesGraphCapture) {
+  if (!sd::graph::dspIsCudaBuild() && ModeContract::forMode(mode).usesGraphCapture) {
     DSP_DIAG(EXECUTE, "setGraphExecutionMode: remapping %d -> GEM_EMULATED_REPLAY (no graph backend on this platform)",
              static_cast<int>(mode));
     mode = GraphExecutionMode::GEM_EMULATED_REPLAY;
@@ -1213,30 +1193,8 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // The capture workspace is freed HERE — after all plan-owned DataBuffers have
   // been destroyed — so that DataBuffer::deleteSpecial() can use
   // CudaMemoryPool::isInCaptureWorkspace() to skip invalid cudaFreeAsync calls
-  // on workspace-interior pointers. If we freed the workspace earlier (in
-  // platformFreePlanResources), the isInCaptureWorkspace guard would fail because
-  // the range was already removed from captureWorkspaceRanges_, leading to
-  // cudaFreeAsync on freed GPU memory → error 700 → CUDA context corruption.
-#ifdef SD_CUDA
-  if (sharedCaptureWorkspace_ != nullptr) {
-    // Don't free if this is the global shared workspace — other plans still need it.
-    // The global workspace persists for the process lifetime. Individual plans just
-    // borrow a reference to it.
-    extern void* g_globalCaptureWorkspace;
-    if (sharedCaptureWorkspace_ == g_globalCaptureWorkspace) {
-      DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: releasing reference to GLOBAL capture workspace %zuMB (NOT freeing)",
-               sharedCaptureWorkspaceBytes_ / (1024*1024));
-    } else {
-      memory::CudaMemoryPool::getInstance().unregisterCaptureWorkspace(sharedCaptureWorkspace_);
-      cudaFree(sharedCaptureWorkspace_);
-      DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed SHARED capture workspace %zuMB on device %d",
-               sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
-    }
-    sharedCaptureWorkspace_ = nullptr;
-    sharedCaptureWorkspaceBytes_ = 0;
-    sharedCaptureWorkspaceDevice_ = -1;
-  }
-#endif
+  // on workspace-interior pointers. Handled in platform-specific destructor code.
+  platformFreeCaptureWorkspace();
 
   // Free control flow structures
   delete[] loopRegions_;
@@ -1996,43 +1954,27 @@ Status NativeDynamicShapePlan::execute(
            numSlots_, numExternalInputs, numExternalInputs_,
            executeCount_, planLifecycle_.isShapesFrozen() ? 1 : 0);
 
-#ifdef SD_CUDA
   // Clear any sticky CUDA error that accumulated from a previous plan execution
   // (e.g., Triton compilation capture errors, ContextBuffers init errors, or
   // cross-plan errors from a shared thread). Without this, error 906/901 from
   // a previous capture attempt causes all cudaMemsetAsync / kernel launches in
   // THIS execution to fail with 901, even though this plan is NOT capturing.
-  cudaGetLastError();
+  sd::graph::dspClearLastCudaError();
 
   // Additionally verify the default LaunchContext stream and the execution stream
   // aren't stuck in capture mode. During Triton compilation, beginCapture may capture
   // on the plan's execution stream; if capture is aborted but endCapture wasn't called,
   // all subsequent kernel launches on that stream fail with 901.
-  auto checkAndEndStaleCapture = [](cudaStream_t s, const char* label) {
-    if (s == nullptr) return;
-    cudaStreamCaptureStatus capStatus;
-    auto capErr = cudaStreamGetCaptureInfo(s, &capStatus, nullptr);
-    if (capErr == cudaSuccess && capStatus != cudaStreamCaptureStatusNone) {
-      DSP_DIAG(STREAM_SYNC,
-               "WARNING: NativeDSP::execute: %s stream %p still in capture mode "
-               "(status=%d). Ending stale capture.",
-               label, (void*)s, static_cast<int>(capStatus));
-      cudaGraph_t staleGraph;
-      cudaStreamEndCapture(s, &staleGraph);
-      if (staleGraph != nullptr) cudaGraphDestroy(staleGraph);
-      cudaGetLastError();
-    }
-  };
   {
-    auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    if (defaultStreamPtr != nullptr && *defaultStreamPtr != nullptr) {
-      checkAndEndStaleCapture(*defaultStreamPtr, "default");
+    void* defaultStream = sd::graph::dspGetLcDefaultStream();
+    if (defaultStream != nullptr) {
+      sd::graph::dspEndStaleCapture(defaultStream, "default");
     }
   }
   if (stream != nullptr) {
-    checkAndEndStaleCapture(*static_cast<cudaStream_t*>(stream), "execution");
+    sd::graph::dspEndStaleCapture(stream, "execution");
   }
-  checkAndEndStaleCapture(tl_graphCaptureStream, "tl_graphCaptureStream");
+  sd::graph::dspEndStaleCapture(sd::graph::dspGetGraphCaptureStream(), "tl_graphCaptureStream");
   // Clear graph execution TLS state so that downstream slot-by-slot operations
   // do not mistakenly use the capture stream. The stale capture has already been
   // ended above, but the TLS flag persists and causes DataBuffer::setToZeroBuffers
@@ -2040,9 +1982,8 @@ Status NativeDynamicShapePlan::execute(
   // producing error 901.
   if (tl_graphExecutionActive) {
     tl_graphExecutionActive = false;
-    tl_graphCaptureStream = nullptr;
+    sd::graph::dspSetGraphCaptureStream(nullptr);
   }
-#endif
 
   // ── Warmup serialization gate ──────────────────────────────────────────
   // Serialize execute() calls across threads while any plan on this device
@@ -2060,11 +2001,8 @@ Status NativeDynamicShapePlan::execute(
     WarmupSerializationGuard(const WarmupSerializationGuard&) = delete;
     WarmupSerializationGuard& operator=(const WarmupSerializationGuard&) = delete;
   };
-  int warmupDeviceIdx = 0;
-#ifdef SD_CUDA
-  cudaGetDevice(&warmupDeviceIdx);
+  int warmupDeviceIdx = sd::graph::dspGetCurrentDevice();
   if (warmupDeviceIdx < 0 || warmupDeviceIdx >= kMaxDevices) warmupDeviceIdx = 0;
-#endif
   bool needsWarmupLock = !planLifecycle_.isReplaying();
   WarmupSerializationGuard warmupGuard(needsWarmupLock ? &g_warmupSerializationMtx[warmupDeviceIdx] : nullptr);
 
@@ -2429,18 +2367,18 @@ Status NativeDynamicShapePlan::execute(
                  executeCount_, traceExt, (int)extArr->dataType(),
                  (long long)(extArr->rankOf() > 0 ? extArr->sizeAt(0) : 0),
                  (long long)extArr->lengthOf(),
-                 DSP_BUF(extArr), extArr->buffer(),
+                 sd::graph::dspBuffer(extArr), extArr->buffer(),
                  static_cast<void*>(extArr->dataBuffer()),
                  extArr->dataBuffer() ? (extArr->dataBuffer()->isPrimaryActual() ? 1 : 0) : -1,
                  extArr->dataBuffer() ? (extArr->dataBuffer()->isSpecialActual() ? 1 : 0) : -1);
         platformDumpExtInputGpuValues(extArr, traceExt, executeCount_, stream);
       }
       // Check if the traced external input shares a buffer with any output slot in the cache
-      if (extArr != nullptr && DSP_BUF(extArr) != nullptr && outputSlots_ != nullptr) {
-        void* extAddr = DSP_BUF(extArr);
+      if (extArr != nullptr && sd::graph::dspBuffer(extArr) != nullptr && outputSlots_ != nullptr) {
+        void* extAddr = sd::graph::dspBuffer(extArr);
         int aliasCount = 0;
         for (int si = 0; si < totalOutputSlots_; si++) {
-          if (outputSlots_[si] != nullptr && DSP_BUF(outputSlots_[si]) == extAddr) {
+          if (outputSlots_[si] != nullptr && sd::graph::dspBuffer(outputSlots_[si]) == extAddr) {
             DSP_DIAG(VERIFY, "EXT_INPUT_ALIAS: extIdx=%d addr=%p == slotArrayCache[%d] (len=%lld)",
                      traceExt, extAddr, si, (long long)outputSlots_[si]->lengthOf());
             aliasCount++;
@@ -3237,36 +3175,19 @@ Status NativeDynamicShapePlan::execute(
     // memory from the capturing stream's pool will fail with
     // cudaErrorStreamCaptureImplicit (901). Check ALL DSP streams and end
     // any stale capture before entering the replay phase.
-#ifdef SD_CUDA
     {
-      auto endStaleCapture = [](cudaStream_t s, const char* label) {
-        if (s == nullptr) return;
-        cudaStreamCaptureStatus capStatus;
-        auto capErr = cudaStreamGetCaptureInfo(s, &capStatus, nullptr);
-        if (capErr == cudaSuccess && capStatus != cudaStreamCaptureStatusNone) {
-          DSP_DIAG(STREAM_SYNC,
-                   "WARNING: NativeDSP::afterPhaseCompile: %s stream %p still "
-                   "in capture mode (status=%d). Ending stale capture.",
-                   label, (void*)s, static_cast<int>(capStatus));
-          cudaGraph_t staleGraph;
-          cudaStreamEndCapture(s, &staleGraph);
-          if (staleGraph != nullptr) cudaGraphDestroy(staleGraph);
-          cudaGetLastError();
-        }
-      };
       // Check execution stream (passed by Java)
-      if (stream != nullptr) endStaleCapture(*static_cast<cudaStream_t*>(stream), "execution");
+      if (stream != nullptr) sd::graph::dspEndStaleCapture(stream, "execution");
       // Check default LaunchContext stream
       {
-        auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-        if (defaultStreamPtr != nullptr) endStaleCapture(*defaultStreamPtr, "default");
+        void* defaultStream = sd::graph::dspGetLcDefaultStream();
+        if (defaultStream != nullptr) sd::graph::dspEndStaleCapture(defaultStream, "default");
       }
       // Check DSP-managed streams (Triton compilation targets)
-      endStaleCapture(tl_dspExecutionStream, "tl_dspExecutionStream");
-      endStaleCapture(tl_dspGapStream, "tl_dspGapStream");
-      endStaleCapture(tl_graphCaptureStream, "tl_graphCaptureStream");
+      sd::graph::dspEndStaleCapture(sd::graph::dspGetExecutionStream(), "tl_dspExecutionStream");
+      sd::graph::dspEndStaleCapture(sd::graph::dspGetGapStream(), "tl_dspGapStream");
+      sd::graph::dspEndStaleCapture(sd::graph::dspGetGraphCaptureStream(), "tl_graphCaptureStream");
     }
-#endif
   }
 
   platformDetectAndPrepareBatchedGemm(externalInputs, numExternalInputs, stream);
@@ -3404,53 +3325,13 @@ Status NativeDynamicShapePlan::executeSteadyState(
     steadyStateExecCtx_ = static_cast<void*>(execCtx);
   }
 
-#ifdef SD_CUDA
-  // Capture the CUDA device for this execution — all events created during
-  // execute() must be on this device to avoid cross-device handle errors.
-  cudaGetDevice(&execCtx->deviceId);
+  // Save previous DSP stream for RAII-style restore at all exit points.
+  // On CPU builds dspGetExecutionStream() returns nullptr — no-op on all DSP calls below.
+  void* prevDspStream = sd::graph::dspGetExecutionStream();
 
-  // Save previous DSP stream for RAII-style restore at all exit points
-  // tl_dspExecutionStream is declared at file scope via DataBuffer.h (included by DspStreamGuard.h)
-  cudaStream_t prevDspStream = tl_dspExecutionStream;
-
-  // Reuse cross-stream event (avoid cudaEventCreate/Destroy per step)
-  if (steadyStateCrossStreamEvent_ == nullptr) {
-    cudaEvent_t evt;
-    cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
-    steadyStateCrossStreamEvent_ = static_cast<void*>(new cudaEvent_t(evt));
-  }
-  execCtx->crossStreamEvent = *static_cast<cudaEvent_t*>(steadyStateCrossStreamEvent_);
-
-  // Resolve CUDA streams and set DSP execution stream
-  if (stream != nullptr) {
-    execCtx->dspStream = *static_cast<cudaStream_t*>(stream);
-    tl_dspExecutionStream = execCtx->dspStream;
-
-    auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    execCtx->lcDefaultStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
-
-    // Event-based cross-stream ordering in steady state.
-    cudaEvent_t evt = execCtx->crossStreamEvent;
-    if (execCtx->lcDefaultStream != nullptr && execCtx->lcDefaultStream != execCtx->dspStream) {
-      cudaEventRecord(evt, execCtx->lcDefaultStream);
-      cudaStreamWaitEvent(execCtx->dspStream, evt, 0);
-    }
-    cudaEventRecord(evt, nullptr);  // CUDA stream 0
-    cudaStreamWaitEvent(execCtx->dspStream, evt, 0);
-    // Advance sync phase so platformTryFrozenFastPath and compositeReplay skip the duplicate
-    execCtx->markCrossStreamSynced();
-  }
-
-  // Deterministic cuBLAS for modes that require it (CUDA_GRAPHS, AUTO).
-  // platformBeginExecution sets this for execute(), but executeSteadyState bypasses
-  // platformBeginExecution for speed. Without this, slot-by-slot fallback segments
-  // within the frozen fast path use non-deterministic cuBLAS (cublasLt + tensor ops),
-  // while the graph was captured with PEDANTIC_MATH — producing FP drift that causes
-  // token divergence at step ~14.
-  if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
-    platformSetDeterministicCublas(true);
-  }
-#endif
+  // CUDA-only: device capture, cross-stream events, deterministic cuBLAS.
+  // No-op on CPU builds.
+  platformSetupSteadyStateCuda(static_cast<void*>(execCtx), stream);
 
   // Populate derived state for steady state.
   // Use anySegmentNeedsWarmup() — the SINGLE source of truth for warmup state.
@@ -3502,15 +3383,15 @@ Status NativeDynamicShapePlan::executeSteadyState(
 
   if (result != Status::OK) {
     activeExecCtx_ = nullptr;
-#ifdef SD_CUDA
-    if (stream != nullptr) {
-      tl_dspExecutionStream = prevDspStream;
+    if (sd::graph::dspIsCudaBuild()) {
+      if (stream != nullptr) {
+        sd::graph::dspSetExecutionStream(prevDspStream);
+      }
+      // Restore cuBLAS on early exit too
+      if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
+        platformSetDeterministicCublas(false);
+      }
     }
-    // Restore cuBLAS on early exit too
-    if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
-      platformSetDeterministicCublas(false);
-    }
-#endif
     return result;
   }
 
@@ -3527,64 +3408,9 @@ Status NativeDynamicShapePlan::executeSteadyState(
     executeCount_++;
   }
 
-#ifdef SD_CUDA
-  // Event-based completion signal (reuses executionCompleteEvent_)
-  if (stream != nullptr) {
-    // Ensure correct device before event creation/recording (an op may
-    // have temporarily switched devices during slot execution).
-    cudaSetDevice(execCtx->deviceId);
-
-    // Clear any sticky CUDA error before event operations.
-    auto stickyErr = cudaGetLastError();
-    bool cudaContextHealthy = (stickyErr == cudaSuccess);
-
-    if (cudaContextHealthy) {
-      // Re-create executionCompleteEvent_ if it was created on a different device.
-      if (executionCompleteEvent_ != nullptr && executionCompleteEventDeviceId_ != execCtx->deviceId) {
-        cudaEvent_t oldEvt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
-        int savedDev;
-        cudaGetDevice(&savedDev);
-        cudaSetDevice(executionCompleteEventDeviceId_);
-        cudaEventDestroy(oldEvt);
-        cudaSetDevice(savedDev);
-        delete static_cast<cudaEvent_t*>(executionCompleteEvent_);
-        executionCompleteEvent_ = nullptr;
-        executionCompleteEventDeviceId_ = -1;
-      }
-
-      if (executionCompleteEvent_ == nullptr) {
-        cudaEvent_t evt;
-        auto createErr = cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
-        if (createErr != cudaSuccess) {
-          cudaGetLastError();
-          cudaContextHealthy = false;
-        } else {
-          executionCompleteEvent_ = static_cast<void*>(new cudaEvent_t(evt));
-          executionCompleteEventDeviceId_ = execCtx->deviceId;
-        }
-      }
-    }
-
-    if (cudaContextHealthy && executionCompleteEvent_ != nullptr) {
-      cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
-      cudaEventRecord(evt, execCtx->dspStream);
-      sd::dspPublishThreadCompletionEvent(static_cast<void*>(execCtx->dspStream));
-      cudaStreamWaitEvent(nullptr, evt, 0);  // CUDA stream 0
-      if (execCtx->lcDefaultStream != nullptr && execCtx->lcDefaultStream != execCtx->dspStream) {
-        cudaStreamWaitEvent(execCtx->lcDefaultStream, evt, 0);
-      }
-    }
-
-    // Restore DspStreamGuard
-    tl_dspExecutionStream = prevDspStream;
-  }
-
-  // Restore cuBLAS state for modes that enforced deterministic cuBLAS.
-  // Mirrors platformEndExecution's restore logic.
-  if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
-    platformSetDeterministicCublas(false);
-  }
-#endif
+  // CUDA-only: completion event, stream restore, cuBLAS restore.
+  // No-op on CPU builds.
+  platformTeardownSteadyStateCuda(static_cast<void*>(execCtx), stream, prevDspStream);
 
   activeExecCtx_ = nullptr;
   return Status::OK;
@@ -4371,8 +4197,7 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
   //   read on host during graph replay. Skipping primary allocation for these
   //   saves ~50% of warmup GPU memory overhead (host mirrors waste address space
   //   and prevent the pool from reclaiming device memory).
-#if defined(SD_CUDA)
-  {
+  if (sd::graph::dspIsCudaBuild()) {
     std::vector<NDArray*> allocationPrepareReads;
 
     auto ensureFullAllocation = [&](NDArray* arr) {
@@ -4444,7 +4269,6 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
         "weights=%d outputSlots(full)=%d outputSlots(deviceOnly)=%d",
         weightEnsuredCount, outputEnsuredFull, outputEnsuredDeviceOnly);
   }
-#endif
 
   // Freeze all DataBuffers now that warmup execution has fully allocated them.
   // Track exactly the refs owned by this plan so teardown/rebind never guesses
@@ -5241,7 +5065,7 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
           if (si < 0 || si >= totalOutputSlots_ || outputSlots_[si] == nullptr) continue;
           auto* arr = outputSlots_[si];
           auto* db = arr->dataBuffer();
-          if (db == nullptr || DSP_BUF(arr) == nullptr || arr->lengthOf() == 0) continue;
+          if (db == nullptr || sd::graph::dspBuffer(arr) == nullptr || arr->lengthOf() == 0) continue;
           bool dbClosed = db->isClosed();
           if (dbClosed) {
             DSP_DIAG_SLOT(VERIFY, stepIdx, slot.ident.opName.c_str(),
@@ -5723,13 +5547,8 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // causes Triton recompilation to be skipped, and the plan tries to replay
   // CUDA graphs that were destroyed, leading to error 700.
   planLifecycle_.reset();
-  // legacy sync
-#ifdef SD_CUDA
-  gapPrezeroTargetsCached_ = false;
-  cachedGapPrezeroCount_ = 0;
-  activeGapSlotsCachedSet_.clear();
-  cachedActiveGapSlotsMap_.clear();
-#endif
+  // Reset CUDA-only gap caches (no-op on CPU)
+  platformResetGapCaches();
 
   // Clear protected weight buffers so they're rebuilt from the next session's
   // external inputs. Stale DataBuffer pointers from the old session would cause
@@ -5876,13 +5695,8 @@ void NativeDynamicShapePlan::executeKvScatterPostExec(void* stream) {
     }
 
     sd::ops::helpers::KvScatterDynEntry dynEntry;
-#ifdef SD_CUDA
-    dynEntry.srcPtr = present->specialBuffer();
-    dynEntry.dstPtr = entry.staticBuf->specialBuffer();
-#else
-    dynEntry.srcPtr = present->buffer();
-    dynEntry.dstPtr = entry.staticBuf->buffer();
-#endif
+    dynEntry.srcPtr = sd::graph::dspBuffer(present);
+    dynEntry.dstPtr = sd::graph::dspBuffer(entry.staticBuf);
     dynEntry.kvPosPtr = kvPositionDevice_;
     dynEntry.heads = entry.heads;
     // Use actual present tensor's seqLen (may differ from configured srcSeqLen in edge cases)
@@ -6416,19 +6230,16 @@ int NativeDynamicShapePlan::writeDeviceBufferOnDefaultStream(int extIdx, void* s
         lastExt->dataType(), LaunchContext::defaultContext());
   }
   NDArray* staging = placeholderStagingBuffers_[extIdx];
-  if (staging == nullptr || staging->specialBuffer() == nullptr) return -2;
-#ifdef SD_CUDA
-  auto err = cudaMemcpyAsync(staging->specialBuffer(), srcHost,
-                             static_cast<size_t>(numBytes),
-                             cudaMemcpyHostToDevice, nullptr);
-  if (err != cudaSuccess) return -3;
+  if (staging == nullptr || sd::graph::dspBuffer(staging) == nullptr) return -2;
+  int err = sd::graph::dspMemcpyH2DAsync(sd::graph::dspBuffer(staging), srcHost,
+                                         static_cast<size_t>(numBytes), nullptr);
+  if (err != 0) return -3;
   // Also write to the external array's device buffer so warmup execution
   // (which reads from externalArrays directly, not staging) sees the data.
   NDArray* ext = getLastExternalInput(extIdx);
-  if (ext != nullptr && ext->specialBuffer() != nullptr) {
-    cudaMemcpyAsync(ext->specialBuffer(), srcHost,
-                    static_cast<size_t>(numBytes),
-                    cudaMemcpyHostToDevice, nullptr);
+  if (ext != nullptr && sd::graph::dspBuffer(ext) != nullptr) {
+    sd::graph::dspMemcpyH2DAsync(sd::graph::dspBuffer(ext), srcHost,
+                                 static_cast<size_t>(numBytes), nullptr);
     // Mark device as authoritative so performPreReplaySync H2D doesn't
     // overwrite our write with stale host data.
     ext->dataBuffer()->writeSpecial();
@@ -6438,17 +6249,6 @@ int NativeDynamicShapePlan::writeDeviceBufferOnDefaultStream(int extIdx, void* s
     deviceWritePending_.resize(numExternalInputs_, false);
   deviceWritePending_[extIdx] = true;
   return 0;
-#else
-  std::memcpy(staging->buffer(), srcHost, static_cast<size_t>(numBytes));
-  NDArray* ext = getLastExternalInput(extIdx);
-  if (ext != nullptr && ext->buffer() != nullptr) {
-    std::memcpy(ext->buffer(), srcHost, static_cast<size_t>(numBytes));
-  }
-  if (static_cast<int>(deviceWritePending_.size()) <= extIdx)
-    deviceWritePending_.resize(numExternalInputs_, false);
-  deviceWritePending_[extIdx] = true;
-  return 0;
-#endif
 }
 
 int NativeDynamicShapePlan::writeDeviceBufferOnExplicitStream(int extIdx, void* srcHost, long long numBytes, void* stream) {
@@ -6468,36 +6268,21 @@ int NativeDynamicShapePlan::writeDeviceBufferOnExplicitStream(int extIdx, void* 
         lastExt->dataType(), LaunchContext::defaultContext());
   }
   NDArray* staging = placeholderStagingBuffers_[extIdx];
-  if (staging == nullptr || staging->specialBuffer() == nullptr) return -2;
-#ifdef SD_CUDA
-  cudaStream_t cs = reinterpret_cast<cudaStream_t>(stream);
-  auto err = cudaMemcpyAsync(staging->specialBuffer(), srcHost,
-                             static_cast<size_t>(numBytes),
-                             cudaMemcpyHostToDevice, cs);
-  if (err != cudaSuccess) return -3;
+  if (staging == nullptr || sd::graph::dspBuffer(staging) == nullptr) return -2;
+  int err = sd::graph::dspMemcpyH2DAsync(sd::graph::dspBuffer(staging), srcHost,
+                                         static_cast<size_t>(numBytes), stream);
+  if (err != 0) return -3;
   // Also write to external array so warmup execution sees the data.
   NDArray* ext = getLastExternalInput(extIdx);
-  if (ext != nullptr && ext->specialBuffer() != nullptr) {
-    cudaMemcpyAsync(ext->specialBuffer(), srcHost,
-                    static_cast<size_t>(numBytes),
-                    cudaMemcpyHostToDevice, cs);
+  if (ext != nullptr && sd::graph::dspBuffer(ext) != nullptr) {
+    sd::graph::dspMemcpyH2DAsync(sd::graph::dspBuffer(ext), srcHost,
+                                 static_cast<size_t>(numBytes), stream);
     ext->dataBuffer()->writeSpecial();
   }
   if (static_cast<int>(deviceWritePending_.size()) <= extIdx)
     deviceWritePending_.resize(numExternalInputs_, false);
   deviceWritePending_[extIdx] = true;
   return 0;
-#else
-  std::memcpy(staging->buffer(), srcHost, static_cast<size_t>(numBytes));
-  NDArray* ext = getLastExternalInput(extIdx);
-  if (ext != nullptr && ext->buffer() != nullptr) {
-    std::memcpy(ext->buffer(), srcHost, static_cast<size_t>(numBytes));
-  }
-  if (static_cast<int>(deviceWritePending_.size()) <= extIdx)
-    deviceWritePending_.resize(numExternalInputs_, false);
-  deviceWritePending_[extIdx] = true;
-  return 0;
-#endif
 }
 
 std::string NativeDynamicShapePlan::getSegmentsSummaryJson() const {

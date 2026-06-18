@@ -31,13 +31,7 @@
 #include <graph/PlanExecutionContext.h>
 #include <graph/DspThreadState.h>
 #include <graph/DspSegmentLifecycle.h>
-
-// Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
-#ifdef SD_CUDA
-#define DSP_BUF(arr) ((arr)->specialBuffer())
-#else
-#define DSP_BUF(arr) ((arr)->buffer())
-#endif
+#include <graph/gpu/DspCudaDispatch.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/ShapeUtils.h>
@@ -49,10 +43,6 @@
 // GraphSegment static methods (moved from header to avoid Environment.h in NativeDynamicShapePlan.h)
 int GraphSegment::maxOomRetries() { return sd::Environment::getInstance().dspCaptureOomMaxRetries(); }
 int GraphSegment::retryInterval() { return sd::Environment::getInstance().dspCaptureOomRetryInterval(); }
-
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
 
 // Include CPU graph backends conditionally
 #include <config.h>
@@ -383,7 +373,6 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getCpuGraphBackendChai
   if (mode == GraphExecutionMode::GEM_SLOT_BY_SLOT) {
     return cpuGraphBackendChain_;
   }
-#ifdef SD_CUDA
   if (mode == GraphExecutionMode::GEM_TRITON ||
       mode == GraphExecutionMode::GEM_NVRTC_JIT ||
       mode == GraphExecutionMode::GEM_PTX_JIT ||
@@ -395,24 +384,9 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getCpuGraphBackendChai
       mode == GraphExecutionMode::GEM_HEXAGON) {
     return cpuGraphBackendChain_;
   }
-#endif
 
-#ifdef SD_CUDA
   const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
-                             mode == GraphExecutionMode::GEM_CUDA_GRAPHS);
-#else
-  const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
-                             mode == GraphExecutionMode::GEM_CUDA_GRAPHS ||
-                             mode == GraphExecutionMode::GEM_TRITON ||
-                             mode == GraphExecutionMode::GEM_NVRTC_JIT ||
-                             mode == GraphExecutionMode::GEM_PTX_JIT ||
-                             mode == GraphExecutionMode::GEM_HIP_GRAPHS ||
-                             mode == GraphExecutionMode::GEM_LEVELZERO ||
-                             mode == GraphExecutionMode::GEM_VULKAN ||
-                             mode == GraphExecutionMode::GEM_METAL ||
-                             mode == GraphExecutionMode::GEM_TPU ||
-                             mode == GraphExecutionMode::GEM_HEXAGON);
-#endif
+                             (dspGetCurrentDevice() >= 0 && mode == GraphExecutionMode::GEM_CUDA_GRAPHS));
 
   // If a specific backend is forced, only return that one
   bool forcedMode = !autoLikeMode;
@@ -936,7 +910,6 @@ inline void forwardInput(NativeDynamicShapePlan* plan, NativeSlot& slot, NDArray
   }
 }
 
-#ifdef SD_CUDA
 // Verify helper: log control flow slot output mutations
 inline void verifyCfSlotWrite(int stepIdx, const char* cfType, const char* opName,
                                NDArray** outputSlots, int* outputSlotIndices,
@@ -952,11 +925,10 @@ inline void verifyCfSlotWrite(int stepIdx, const char* cfType, const char* opNam
       DSP_DIAG(VERIFY, "SLOT_WRITE slot=%d tag=CF_FORWARD cf=%s op=%s dtype=%s len=%lld addr=%p",
                 si, cfType, opName,
                 DataTypeUtils::asString(out->dataType()).c_str(),
-                (long long)out->lengthOf(), DSP_BUF(out));
+                (long long)out->lengthOf(), dspBuffer(out));
     }
   }
 }
-#endif
 
 }  // namespace
 
@@ -986,21 +958,13 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   // Reset per-segment allocation counters
   tl_dspAllocBytes = 0; tl_dspFreeBytes = 0;
   tl_dspAllocCount = 0; tl_dspFreeCount = 0; tl_dspFreeSkipCount = 0;
-  bool streamIsCapturing = false;
-#ifdef SD_CUDA
-  if (stream != nullptr) {
-    cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
-    cudaStreamIsCapturing(*static_cast<cudaStream_t*>(stream), &capStat);
-    streamIsCapturing = (capStat != cudaStreamCaptureStatusNone);
-  }
-  cudaStream_t segmentStream =
-      (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  bool streamIsCapturing = dspStreamIsCapturing(stream);
+  void* segmentStream = stream;
   DspThreadState segmentThreadState(
-      segmentStream != nullptr ? segmentStream : tl_dspExecutionStream,
-      segmentStream != nullptr ? segmentStream : tl_dspGapStream,
+      segmentStream != nullptr ? segmentStream : dspGetExecutionStream(),
+      segmentStream != nullptr ? segmentStream : dspGetGapStream(),
       tl_graphExecutionActive,
       tl_dspReplayActive);
-#endif
 
   // Dead-slot flags are reset once per plan execution (in the main execute loop),
   // NOT per segment — dead flags from Switch in seg N must persist to affect
@@ -1103,10 +1067,8 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
               }
             }
           }
-#ifdef SD_CUDA
           verifyCfSlotWrite(stepIdx, "SWITCH", slot.ident.opName.c_str(),
                             outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
-#endif
           break;
         }
 
@@ -1131,10 +1093,8 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
               if (slotIsDead_) slotIsDead_[si] = (selected == nullptr);
             }
           }
-#ifdef SD_CUDA
           verifyCfSlotWrite(stepIdx, "MERGE", slot.ident.opName.c_str(),
                             outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
-#endif
           break;
         }
 
@@ -1146,24 +1106,20 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                        slot.cf.controlFlowType == CF_ENTER ? "cf-enter"
                        : slot.cf.controlFlowType == CF_EXIT ? "cf-exit"
                        : "cf-loop-cond");
-#ifdef SD_CUDA
           {
             const char* cfName = (slot.cf.controlFlowType == CF_ENTER) ? "ENTER" :
                                   (slot.cf.controlFlowType == CF_EXIT) ? "EXIT" : "LOOP_COND";
             verifyCfSlotWrite(stepIdx, cfName, slot.ident.opName.c_str(),
                               outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
           }
-#endif
           break;
 
         case CF_NEXT_ITERATION: {
           // Forward input[0] to output[0]
           forwardInput(this, slot, outputSlots_, totalOutputSlots_, externalArrays, numExt,
                        "cf-next-iter");
-#ifdef SD_CUDA
           verifyCfSlotWrite(stepIdx, "NEXT_ITER", slot.ident.opName.c_str(),
                             outputSlots_, slot.wiring.outputSlotIndices, slot.wiring.numOutputs, totalOutputSlots_);
-#endif
 
           // Loop-back is handled at the phaseReplay level (across segments),
           // not here, because NextIteration and its target Merge are typically
@@ -1200,16 +1156,16 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     // When reached, it executes the entire batch and populates outputs for
     // ALL members. Non-first members are skipped (output already computed).
     // This ensures downstream ops between members see valid outputs.
-#ifdef SD_CUDA
-    if (!batchedGemmGroups_.empty() && stepIdx < (int)slotToBatchedGemmGroup_.size()) {
+    // batchedGemmGroups_ is always empty on CPU builds — the inner body never runs.
+    if (sd::graph::dspIsCudaBuild() &&
+        !batchedGemmGroups_.empty() && stepIdx < (int)slotToBatchedGemmGroup_.size()) {
       int bgIdx = slotToBatchedGemmGroup_[stepIdx];
       if (bgIdx >= 0 && bgIdx < (int)batchedGemmGroups_.size()) {
         auto& bgGroup = batchedGemmGroups_[bgIdx];
         if (stepIdx == bgGroup.triggerSlot) {
           // This is the trigger (FIRST slot in group) — execute entire batch.
           // All members' inputs are guaranteed available (checked at detection time).
-          cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
-          Status batchStatus = executeBatchedGemmGroup(bgIdx, externalArrays, numExt, execStream);
+          Status batchStatus = executeBatchedGemmGroup(bgIdx, externalArrays, numExt, stream);
 
           if (batchStatus == Status::OK) {
             // Release schedule removed: arrays persist (one array per slot)
@@ -1229,7 +1185,6 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         }
       }
     }
-#endif
 
     // ── Outer-level fast skips (frozen steady-state) ─────────────────
     // When shapes are frozen and past warmup, skip trivially no-op slots
@@ -1292,28 +1247,25 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         status = executeSlot(stepIdx, externalArrays, numExt, stream);
       } catch (const std::exception& e) {
         std::string msg = e.what();
-#ifdef SD_CUDA
         if (!streamIsCapturing &&
             !retriedAfterTrim && (msg.find("cannot allocate") != std::string::npos ||
                                    msg.find("out of memory") != std::string::npos ||
                                    msg.find("Error code: [2]") != std::string::npos)) {
           retriedAfterTrim = true;
-	          shouldRetry = true;
-	          DSP_DIAG_SLOT(MEMORY, stepIdx, "slot %d (%s) OOM, trimming pool and retrying...",
-	                    stepIdx, slots_[stepIdx].ident.opName.c_str());
-	          cudaGetLastError();
-	          {
-	            cudaMemPool_t pool = nullptr;
-	            int dev = 0;
-            cudaGetDevice(&dev);
-            if (cudaDeviceGetMemPool(&pool, dev) == cudaSuccess && pool != nullptr) {
-              cudaMemPoolTrimTo(pool, 0);
-              DSP_DIAG(MEMORY, "trimmed memory pool on device %d", dev);
+          shouldRetry = true;
+          DSP_DIAG_SLOT(MEMORY, stepIdx, "slot %d (%s) OOM, trimming pool and retrying...",
+                    stepIdx, slots_[stepIdx].ident.opName.c_str());
+          dspClearLastCudaError();
+          {
+            int dev = dspGetCurrentDevice();
+            if (dev >= 0) {
+              if (dspMemPoolTrim(dev, 0)) {
+                DSP_DIAG(MEMORY, "trimmed memory pool on device %d", dev);
+              }
             }
           }
           continue;  // retry the slot execution after trimming
         }
-#endif
         std::string detail = e.what();
         appendSlotInputExceptionContext(detail, slots_[stepIdx],
                                         slots_, numSlots_,
@@ -1351,16 +1303,15 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
     }
 
-	    // ── Diagnostic: per-slot CUDA launch error check on warmup execution ─
-	    // This is intentionally non-blocking. It catches immediate launch/setup
-	    // errors without draining the device or stream.
-#ifdef SD_CUDA
-	    if (DSP_DIAG_ENABLED(EXECUTE) && status == Status::OK && seg.exec.executionCount == 0
-	        && !streamIsCapturing && tl_graphCaptureStream == nullptr) {
-	      cudaError_t launchErr = cudaPeekAtLastError();
-	      if (launchErr != cudaSuccess) {
-	        // Log all inputs to the failing slot
-	        auto& faultSlot = slots_[stepIdx];
+    // ── Diagnostic: per-slot CUDA launch error check on warmup execution ─
+    // This is intentionally non-blocking. It catches immediate launch/setup
+    // errors without draining the device or stream.
+    if (DSP_DIAG_ENABLED(EXECUTE) && status == Status::OK && seg.exec.executionCount == 0
+        && !streamIsCapturing && dspGetGraphCaptureStream() == nullptr) {
+      int launchErr = dspPeekLastCudaError();
+      if (launchErr != 0) {
+        // Log all inputs to the failing slot
+        auto& faultSlot = slots_[stepIdx];
         for (int i = 0; i < faultSlot.wiring.numInputs; i++) {
           int srcIdx = faultSlot.wiring.inputSourceIndices[i];
           NDArray* inp = nullptr;
@@ -1398,16 +1349,15 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                      i, si, out ? "db=null" : "null");
           }
         }
-	        DSP_THROW_CUDA(EXECUTE, launchErr,
-	                       "CUDA LAUNCH DIAGNOSTIC: cudaPeekAtLastError after slot %d (%s) "
-	                       "returned error %d. "
-	                       "seg=[%d-%d] execCount=%d shapesFrozen=%d",
-	                       stepIdx, slots_[stepIdx].ident.opName.c_str(),
-	                       static_cast<int>(launchErr),
-	                       seg.def.startSlot, seg.def.endSlot, executeCount_, static_cast<int>(planLifecycle_.isShapesFrozen()));
-	      }
-	    }
-#endif
+        DSP_THROW_CUDA(EXECUTE, launchErr,
+                       "CUDA LAUNCH DIAGNOSTIC: dspPeekLastCudaError after slot %d (%s) "
+                       "returned error %d. "
+                       "seg=[%d-%d] execCount=%d shapesFrozen=%d",
+                       stepIdx, slots_[stepIdx].ident.opName.c_str(),
+                       static_cast<int>(launchErr),
+                       seg.def.startSlot, seg.def.endSlot, executeCount_, static_cast<int>(planLifecycle_.isShapesFrozen()));
+      }
+    }
 
     if (status != Status::OK) {
       // Record the failure in the execution flow log FIRST so it's
@@ -1492,9 +1442,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         }
       }
 
-#ifdef SD_CUDA
-      cudaGetLastError();
-#endif
+      dspClearLastCudaError();
       DSP_THROW(EXECUTE, "%s", buf);
     }
 
@@ -1633,11 +1581,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
         if (externalInputIsVariable_[extIdx]) continue;
         NDArray* extArr = externalInputs[extIdx];
         if (extArr == nullptr) continue;
-#if defined(SD_CUDA)
-        mix(reinterpret_cast<uintptr_t>(extArr->specialBuffer()));
-#else
-        mix(reinterpret_cast<uintptr_t>(extArr->buffer()));
-#endif
+        mix(reinterpret_cast<uintptr_t>(dspBuffer(extArr)));
         continue;
       }
       NDArray* arr = nullptr;
@@ -1656,11 +1600,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
         if (db == nullptr || !db->isValid()) {
           mix(0);
         } else {
-#if defined(SD_CUDA)
-          mix(reinterpret_cast<uintptr_t>(arr->specialBuffer()));
-#else
-          mix(reinterpret_cast<uintptr_t>(arr->buffer()));
-#endif
+          mix(reinterpret_cast<uintptr_t>(dspBuffer(arr)));
         }
       } else {
         mix(0);  // cross-segment nullptr sentinel

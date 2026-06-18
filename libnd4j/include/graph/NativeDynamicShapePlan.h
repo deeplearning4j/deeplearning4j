@@ -2824,6 +2824,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status platformCheckPostSegment(GraphSegment& seg);
   void platformCleanupSegmentForRebuild(GraphSegment& seg);
   void platformFreePlanResources();
+  void platformFreeCaptureWorkspace();
   int platformCountCapturedGraphSegments() const;
   void platformMaybeSplitIfEnabled();
 
@@ -2834,6 +2835,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void platformDumpExtInputGpuValues(NDArray* arr, int extIdx, int execCount, void* stream);
   void platformClearCastCache();
   void platformSetDeterministicCublas(bool enable);
+  void platformSetupSteadyStateCuda(void* execCtxVoid, void* stream);
+  void platformTeardownSteadyStateCuda(void* execCtxVoid, void* stream, void* prevDspStream);
+  void platformResetGapCaches();
+  void platformResetBatchD2D();
   void platformPostSegmentPoolManagement(bool frozen, int execCount);
   void platformDumpLogitsArgmax(int execCount, void* stream);
   void platformDetectAndPrepareBatchedGemm(NDArray** ext, int numExt, void* stream);
@@ -3057,11 +3062,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void freeBatchD2DResources() {}
 #endif
 
-#ifdef SD_CUDA
   // ── Batched GEMM optimization ──────────────────────────────────────────
   // Groups matmul slots with identical dimensions, transpose flags, and
   // A/B/C dtypes into single cublasGemmBatchedEx calls, reducing CUDA graph node count.
   // For SmolDocling (24 layers × 9 matmuls), reduces ~211 → ~120 matmul nodes.
+  // Declared unconditionally; on CPU builds the vectors stay empty and
+  // the implementation functions are no-ops.
   struct BatchedGemmGroup {
     std::vector<int> slotIndices;  // matmul slot indices in this group (non-consecutive OK)
     int triggerSlot;    // first slot in group — execution happens here
@@ -3092,12 +3098,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   const LongType* resolveInputShapeInfo(int srcIdx, NDArray** externalArrays, int numExt) const;
   void detectBatchedGemmGroups(NDArray** externalArrays, int numExt);
   void reconcileSlotDispatchAfterMerge(const ReplaySchedule& sched);
-  void prepareBatchedGemmDevice(cudaStream_t stream);
-  Status executeBatchedGemmGroup(int groupIdx, NDArray** externalArrays, int numExt, cudaStream_t stream);
+  // stream is void* (cudaStream_t on CUDA, nullptr on CPU)
+  void prepareBatchedGemmDevice(void* stream);
+  Status executeBatchedGemmGroup(int groupIdx, NDArray** externalArrays, int numExt, void* stream);
   void freeBatchedGemmResources();
-#else
-  void freeBatchedGemmResources() {}
-#endif
 };
 
 inline bool NativeDynamicShapePlan::isPassivated() const { return passivated_; }

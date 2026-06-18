@@ -543,7 +543,8 @@ void NativeDynamicShapePlan::reconcileSlotDispatchAfterMerge(const ReplaySchedul
 
 // ── Device resource allocation ───────────────────────────────────────────────
 
-void NativeDynamicShapePlan::prepareBatchedGemmDevice(cudaStream_t stream) {
+void NativeDynamicShapePlan::prepareBatchedGemmDevice(void* streamPtr) {
+  cudaStream_t stream = reinterpret_cast<cudaStream_t>(streamPtr);
   for (auto& group : batchedGemmGroups_) {
     if (group.d_A_ptrs != nullptr) continue;  // already allocated
 
@@ -613,7 +614,8 @@ static inline void reapplyCublasWorkspaceBG(cublasHandle_t handle) {
 }
 
 Status NativeDynamicShapePlan::executeBatchedGemmGroup(
-    int groupIdx, NDArray** externalArrays, int numExt, cudaStream_t stream) {
+    int groupIdx, NDArray** externalArrays, int numExt, void* streamPtr) {
+  cudaStream_t stream = reinterpret_cast<cudaStream_t>(streamPtr);
 
   auto& group = batchedGemmGroups_[groupIdx];
   int batchCount = static_cast<int>(group.slotIndices.size());

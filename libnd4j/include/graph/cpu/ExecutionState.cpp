@@ -16,7 +16,23 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-// Platform-specific implementations:
-//   graph/cpu/DeviceExecutionContext.cpp    (CPU build)
-//   graph/cuda/DeviceExecutionContext.cu    (CUDA build)
-// This file is intentionally empty.
+#include <graph/ExecutionState.h>
+
+// CPU stubs for stream/device management.
+// GPU implementations are in ExecutionState_cuda.cu.
+
+namespace sd {
+namespace graph {
+
+void* ExecutionState::bindSegmentDevice(int segIdx) {
+  (void)segIdx;
+  return nullptr;  // No streams on CPU
+}
+
+void ExecutionState::restoreSegmentContext(void* previousStream, int previousDevice) {
+  (void)previousStream;
+  (void)previousDevice;
+}
+
+}  // namespace graph
+}  // namespace sd

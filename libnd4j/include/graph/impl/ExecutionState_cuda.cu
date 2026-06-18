@@ -35,7 +35,7 @@ void* ExecutionState::bindSegmentDevice(int segIdx) {
   auto& seg = segmentStates_[segIdx];
 
   // Save current tl_dspExecutionStream (will be restored by restoreSegmentContext)
-  cudaStream_t previousStream = tl_dspExecutionStream;
+  void* previousStream = tl_dspExecutionStream;
 
   // Set device if segment has a specific device
   if (seg.deviceId >= 0) {
@@ -50,16 +50,16 @@ void* ExecutionState::bindSegmentDevice(int segIdx) {
   // This allows syncToSpecial() and CudaMemoryPool to use the segment's stream
   // instead of stream 0, avoiding cross-stream synchronization.
   if (seg.stream != nullptr) {
-    tl_dspExecutionStream = static_cast<cudaStream_t>(seg.stream);
+    tl_dspExecutionStream = seg.stream;
   }
 
   DSP_DIAG(EXECUTE, "ExecutionState: bound segment %d (device=%d)", segIdx, seg.deviceId);
-  return static_cast<void*>(previousStream);
+  return previousStream;
 }
 
 void ExecutionState::restoreSegmentContext(void* previousStream, int previousDevice) {
   // Restore tl_dspExecutionStream
-  tl_dspExecutionStream = static_cast<cudaStream_t>(previousStream);
+  tl_dspExecutionStream = previousStream;
 
   // Restore device if needed
   if (previousDevice >= 0) {

@@ -40,6 +40,7 @@
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <graph/DspStreamGuard.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <graph/PlanExecutionContext.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/cublasHelper.h>
@@ -1504,6 +1505,22 @@ int NativeDynamicShapePlan::platformCountCapturedGraphSegments() const {
   return count;
 }
 
+void NativeDynamicShapePlan::platformFreeCaptureWorkspace() {
+  if (sharedCaptureWorkspace_ != nullptr) {
+    if (sd::graph::dspIsGlobalCaptureWorkspace(sharedCaptureWorkspace_)) {
+      DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: releasing reference to GLOBAL capture workspace %zuMB (NOT freeing)",
+               sharedCaptureWorkspaceBytes_ / (1024*1024));
+    } else {
+      sd::graph::dspFreeWorkspaceOnPool(sharedCaptureWorkspace_);
+      DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed SHARED capture workspace %zuMB on device %d",
+               sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
+    }
+    sharedCaptureWorkspace_ = nullptr;
+    sharedCaptureWorkspaceBytes_ = 0;
+    sharedCaptureWorkspaceDevice_ = -1;
+  }
+}
+
 void NativeDynamicShapePlan::platformMaybeSplitIfEnabled() {
   // Adaptive splitting removed — segments with shape instability simply recompile
   // via the shape key cache. No physical splitting needed.
@@ -1665,6 +1682,23 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   // the old default stream pointer.
   if (ownedStream_ != nullptr) {
     stream = reinterpret_cast<void*>(ownedStream_);
+  } else {
+    // ownedStream_ creation failed above (e.g. a stale CUDA error tripped
+    // cudaStreamCreateWithFlags). Do NOT fall through to dereferencing the
+    // caller-passed `stream`: the Java executor CACHES that pointer across
+    // executions (DynamicShapePlanExecutor.cachedExecStream). It can dangle —
+    // pointing at a previously-destroyed ownedStream_ (platformFreePlanResources
+    // does `delete ownedStream_`) or into a thread-local ContextBuffers that was
+    // since released. Dereferencing it yields a dead stream, and every pool
+    // alloc/free + kernel stream-sync then fails with CUDA 201
+    // (cudaErrorDeviceUninitialized). Resolve the LIVE current-thread stream
+    // instead — getCudaStream() always returns a stream valid for this thread.
+    auto* liveStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    stream = (liveStreamPtr != nullptr) ? reinterpret_cast<void*>(liveStreamPtr) : nullptr;
+    DSP_DIAG(EXECUTE,
+             "platformBeginExecution: ownedStream_ unavailable — using live thread-local "
+             "stream=%p instead of caller-cached pointer (avoids stale-stream CUDA 201)",
+             stream);
   }
 
   // Wait if another thread is capturing a CUDA graph on this device.
@@ -1718,20 +1752,25 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   // Create the per-execution cross-stream sync event.
   // This replaces the file-scope thread_local tl_crossStreamEvent so each
   // execute() call owns its event and there is no hidden per-thread state.
-  cudaEventCreateWithFlags(&ctx->crossStreamEvent, cudaEventDisableTiming);
+  {
+    cudaEvent_t tmpEvt = nullptr;
+    cudaEventCreateWithFlags(&tmpEvt, cudaEventDisableTiming);
+    ctx->crossStreamEvent = static_cast<void*>(tmpEvt);
+  }
 
   // Resolve CUDA streams and set up DspStreamGuard RAII
   if (stream != nullptr) {
-    ctx->dspStream = *static_cast<cudaStream_t*>(stream);
+    cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
+    ctx->dspStream = static_cast<void*>(cudaStr);
     // Pass deviceId to DspStreamGuard so it pins cudaSetDevice for the
     // duration of execution and restores the previous device on destruction.
-    ctx->streamGuard = new DspStreamGuard(ctx->dspStream, ctx->deviceId);
+    ctx->streamGuard = static_cast<void*>(new DspStreamGuard(cudaStr, ctx->deviceId));
 
     // Resolve LC default stream (a real async stream from ContextBuffers,
     // NOT CUDA stream 0). Post-execution ops (KvScatter, assign, mask updates)
     // run on this stream.
     auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    ctx->lcDefaultStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
+    ctx->lcDefaultStream = static_cast<void*>((lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr);
   }
 
   // Stream ordering: ensure all async CUDA operations from Java complete
@@ -1745,22 +1784,24 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     }
     DSP_DIAG(EXECUTE, "platformBeginExecution: frozen=%d execCount=%d dspStream=%p lcDefault=%p",
              static_cast<int>(frozen), execCount,
-             static_cast<void*>(ctx->dspStream), static_cast<void*>(ctx->lcDefaultStream));
+             ctx->dspStream, ctx->lcDefaultStream);
 
     // Cross-stream sync: make the DSP stream wait for both the LC default
     // stream and CUDA stream 0 before starting execution.
     // Advances PreReplaySyncPhase to CROSS_STREAM_DONE so performPreReplaySync
     // (called later from dispatchSegment) skips the redundant cross-stream sync.
     {
-      cudaEvent_t evt = ctx->crossStreamEvent;
+      cudaEvent_t evt = reinterpret_cast<cudaEvent_t>(ctx->crossStreamEvent);
+      cudaStream_t dspStr = reinterpret_cast<cudaStream_t>(ctx->dspStream);
+      cudaStream_t lcStr  = reinterpret_cast<cudaStream_t>(ctx->lcDefaultStream);
       // 1) LC default stream → DSP stream
-      if (ctx->lcDefaultStream != nullptr && ctx->lcDefaultStream != ctx->dspStream) {
-        cudaEventRecord(evt, ctx->lcDefaultStream);
-        cudaStreamWaitEvent(ctx->dspStream, evt, 0);
+      if (lcStr != nullptr && lcStr != dspStr) {
+        cudaEventRecord(evt, lcStr);
+        cudaStreamWaitEvent(dspStr, evt, 0);
       }
       // 2) CUDA stream 0 → DSP stream (cuBLAS default handle, misc)
       cudaEventRecord(evt, nullptr);
-      cudaStreamWaitEvent(ctx->dspStream, evt, 0);
+      cudaStreamWaitEvent(dspStr, evt, 0);
       ctx->recordEventSync();  // Track: cross-stream event ordering at entry
       ctx->markCrossStreamSynced();  // Advance sync phase — single source of truth
       DSP_DIAG(EXECUTE, "platformBeginExecution: cross-stream sync done (syncPhase=%s)",
@@ -1842,7 +1883,7 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     DSP_DIAG(EXECUTE, "platformEndExecution: frozen=%d execCount=%d syncLevel=%s "
              "dspStream=%p lcDefault=%p deviceId=%d",
              static_cast<int>(ctx->frozen), ctx->execCount, ctx->syncLevelName(),
-             static_cast<void*>(ctx->dspStream), static_cast<void*>(ctx->lcDefaultStream),
+             ctx->dspStream, ctx->lcDefaultStream,
              ctx->deviceId);
 
     // Ensure we're on the correct device before creating/recording events.
@@ -1893,18 +1934,20 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
 
     if (cudaContextHealthy && executionCompleteEvent_ != nullptr) {
       cudaEvent_t evt = *static_cast<cudaEvent_t*>(executionCompleteEvent_);
-      cudaEventRecord(evt, ctx->dspStream);
-      sd::dspPublishThreadCompletionEvent(static_cast<void*>(ctx->dspStream));
+      cudaStream_t dspStr = reinterpret_cast<cudaStream_t>(ctx->dspStream);
+      cudaStream_t lcStr  = reinterpret_cast<cudaStream_t>(ctx->lcDefaultStream);
+      cudaEventRecord(evt, dspStr);
+      sd::dspPublishThreadCompletionEvent(ctx->dspStream);
       // Make BOTH CUDA stream 0 AND the LC default stream wait for DSP.
       // Post-execution ops (KvScatter, assign, etc.) run on the LC default
       // stream. Without this ordering, they read outputs the DSP stream
       // hasn't finished writing yet. This is async and applies to warmup,
       // capture, and replay uniformly.
       cudaStreamWaitEvent(nullptr, evt, 0);  // CUDA stream 0
-      if (ctx->lcDefaultStream != nullptr && ctx->lcDefaultStream != ctx->dspStream) {
-        cudaStreamWaitEvent(ctx->lcDefaultStream, evt, 0);
+      if (lcStr != nullptr && lcStr != dspStr) {
+        cudaStreamWaitEvent(lcStr, evt, 0);
         DSP_DIAG(EXECUTE, "platformEndExecution: lcDefault=%p waiting on DSP=%p",
-                 (void*)ctx->lcDefaultStream, (void*)ctx->dspStream);
+                 ctx->lcDefaultStream, ctx->dspStream);
       }
       ctx->recordEventSync();  // Track: event-based ordering at exit
     }
@@ -1912,7 +1955,7 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
 
   // Destroy the per-execution cross-stream sync event.
   if (ctx->crossStreamEvent != nullptr) {
-    cudaEventDestroy(ctx->crossStreamEvent);
+    cudaEventDestroy(reinterpret_cast<cudaEvent_t>(ctx->crossStreamEvent));
     ctx->crossStreamEvent = nullptr;
   }
 
@@ -1992,7 +2035,7 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
 
   // Explicitly delete the stream guard before the context.
   // DspStreamGuard restores tl_dspExecutionStream to its previous value.
-  delete ctx->streamGuard;
+  delete static_cast<DspStreamGuard*>(ctx->streamGuard);
   ctx->streamGuard = nullptr;
   delete ctx;
 
@@ -2038,6 +2081,111 @@ void NativeDynamicShapePlan::platformSetDeterministicCublas(bool enable) {
       cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
     }
   }
+}
+
+void NativeDynamicShapePlan::platformSetupSteadyStateCuda(void* execCtxVoid, void* stream) {
+  auto* execCtx = static_cast<PlanExecutionContext*>(execCtxVoid);
+
+  // Capture the CUDA device for this execution — all events created during
+  // execute() must be on this device to avoid cross-device handle errors.
+  execCtx->deviceId = sd::graph::dspGetCurrentDevice();
+
+  // Reuse cross-stream event (avoid cudaEventCreate/Destroy per step)
+  if (steadyStateCrossStreamEvent_ == nullptr) {
+    steadyStateCrossStreamEvent_ = sd::graph::dspCreateEvent();
+  }
+  execCtx->crossStreamEvent = steadyStateCrossStreamEvent_;
+
+  // Resolve CUDA streams and set DSP execution stream
+  if (stream != nullptr) {
+    execCtx->dspStream = stream;
+    sd::graph::dspSetExecutionStream(stream);
+
+    execCtx->lcDefaultStream = sd::graph::dspGetLcDefaultStream();
+
+    // Event-based cross-stream ordering in steady state.
+    void* evt = steadyStateCrossStreamEvent_;
+    if (execCtx->lcDefaultStream != nullptr && execCtx->lcDefaultStream != execCtx->dspStream) {
+      sd::graph::dspEventRecord(evt, execCtx->lcDefaultStream);
+      sd::graph::dspStreamWaitEvent(stream, evt);
+    }
+    sd::graph::dspEventRecord(evt, nullptr);  // CUDA stream 0
+    sd::graph::dspStreamWaitEvent(stream, evt);
+    // Advance sync phase so platformTryFrozenFastPath and compositeReplay skip the duplicate
+    execCtx->markCrossStreamSynced();
+  }
+
+  // Deterministic cuBLAS for modes that require it (CUDA_GRAPHS, AUTO).
+  if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
+    platformSetDeterministicCublas(true);
+  }
+}
+
+void NativeDynamicShapePlan::platformTeardownSteadyStateCuda(void* execCtxVoid, void* stream, void* prevDspStream) {
+  auto* execCtx = static_cast<PlanExecutionContext*>(execCtxVoid);
+
+  // Event-based completion signal (reuses executionCompleteEvent_)
+  if (stream != nullptr) {
+    // Ensure correct device before event creation/recording (an op may
+    // have temporarily switched devices during slot execution).
+    sd::graph::dspSetCurrentDevice(execCtx->deviceId);
+
+    // Clear any sticky CUDA error before event operations.
+    int stickyErr = sd::graph::dspClearLastCudaError();
+    bool cudaContextHealthy = (stickyErr == 0);
+
+    if (cudaContextHealthy) {
+      // Re-create executionCompleteEvent_ if it was created on a different device.
+      if (executionCompleteEvent_ != nullptr && executionCompleteEventDeviceId_ != execCtx->deviceId) {
+        int savedDev = sd::graph::dspGetCurrentDevice();
+        sd::graph::dspSetCurrentDevice(executionCompleteEventDeviceId_);
+        sd::graph::dspDestroyEvent(executionCompleteEvent_);
+        sd::graph::dspSetCurrentDevice(savedDev);
+        executionCompleteEvent_ = nullptr;
+        executionCompleteEventDeviceId_ = -1;
+      }
+
+      if (executionCompleteEvent_ == nullptr) {
+        void* newEvt = sd::graph::dspCreateEvent();
+        if (newEvt == nullptr) {
+          sd::graph::dspClearLastCudaError();
+          cudaContextHealthy = false;
+        } else {
+          executionCompleteEvent_ = newEvt;
+          executionCompleteEventDeviceId_ = execCtx->deviceId;
+        }
+      }
+    }
+
+    if (cudaContextHealthy && executionCompleteEvent_ != nullptr) {
+      void* evtVoid = executionCompleteEvent_;
+      sd::graph::dspEventRecord(evtVoid, execCtx->dspStream);
+      sd::graph::dspPublishThreadCompletionEvent(execCtx->dspStream);
+      sd::graph::dspStreamWaitEvent(nullptr, evtVoid);  // CUDA stream 0
+      if (execCtx->lcDefaultStream != nullptr && execCtx->lcDefaultStream != execCtx->dspStream) {
+        sd::graph::dspStreamWaitEvent(execCtx->lcDefaultStream, evtVoid);
+      }
+    }
+
+    // Restore DspStreamGuard
+    sd::graph::dspSetExecutionStream(prevDspStream);
+  }
+
+  // Restore cuBLAS state for modes that enforced deterministic cuBLAS.
+  if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
+    platformSetDeterministicCublas(false);
+  }
+}
+
+void NativeDynamicShapePlan::platformResetGapCaches() {
+  gapPrezeroTargetsCached_ = false;
+  cachedGapPrezeroCount_ = 0;
+  activeGapSlotsCachedSet_.clear();
+  cachedActiveGapSlotsMap_.clear();
+}
+
+void NativeDynamicShapePlan::platformResetBatchD2D() {
+  batchD2DCount_ = 0;
 }
 
 void NativeDynamicShapePlan::platformDumpExternalInputDiagnostics(NDArray** ext, int numExt, int execCount) {
@@ -2113,8 +2261,7 @@ void NativeDynamicShapePlan::platformDetectAndPrepareBatchedGemm(NDArray** ext, 
       Environment::getInstance().dspBatchedGemm()) {
     detectBatchedGemmGroups(ext, numExt);
     if (!batchedGemmGroups_.empty()) {
-      cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
-      prepareBatchedGemmDevice(execStream);
+      prepareBatchedGemmDevice(stream);
     }
   }
 }

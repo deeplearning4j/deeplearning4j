@@ -19,6 +19,7 @@
 #include <graph/GraphReplayHandle.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
+#include <graph/gpu/DspCudaDispatch.h>
 
 // ZLUDA: check native targets before SD_CUDA to select the correct replay handle.
 #if defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_AMD)
@@ -191,7 +192,8 @@ std::unique_ptr<GraphReplayHandle> GraphReplayFactory::create(int deviceId) {
 }
 
 bool GraphReplayFactory::hasHardwareReplay() {
-#if defined(SD_CUDA) || defined(SD_HIP) || defined(SD_METAL) || \
+  if (sd::graph::dspIsCudaBuild()) return true;
+#if defined(SD_HIP) || defined(SD_METAL) || \
     defined(HAVE_LEVELZERO) || defined(HAVE_VULKAN) || \
     defined(SD_TPU) || defined(HAVE_HEXAGON_MLIR)
   return true;

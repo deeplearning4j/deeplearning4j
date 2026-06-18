@@ -25,9 +25,7 @@
 #include <memory/MemoryUtils.h>
 #include <system/Environment.h>
 
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
+#include <graph/gpu/DspCudaDispatch.h>
 
 namespace sd {
 namespace graph {
@@ -258,11 +256,7 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
   auto& dsp = sd::Environment::getInstance().dsp();
 
   // Select the correct hard cap based on build type
-#ifdef SD_CUDA
-  const int maxPlans = dsp.planCacheMaxPlans();
-#else
-  const int maxPlans = dsp.planCacheMaxPlansCpu();
-#endif
+  const int maxPlans = dspIsCudaBuild() ? dsp.planCacheMaxPlans() : dsp.planCacheMaxPlansCpu();
   const float fraction = dsp.planCacheBudgetFraction();
 
   // Helper lambda: find oldest unpinned, non-passivated plan (LRU end toward MRU front)
@@ -306,13 +300,10 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
   // CPU: uses free system RAM (self-defeating loop doesn't apply — CPU plans
   // don't hold GPU-like exclusive memory and free RAM is usually abundant).
   auto queryDeviceMemForBudget = []() -> size_t {
-#ifdef SD_CUDA
-    size_t freeMem = 0, totalMem = 0;
-    cudaError_t err = cudaMemGetInfo(&freeMem, &totalMem);
-    return (err == cudaSuccess) ? totalMem : 0;
-#else
-    return sd::memory::MemoryUtils::getSystemFreeMemoryBytes();
-#endif
+    // GPU: use total device memory (not free — self-defeating).
+    // CPU: use free system RAM.
+    size_t gpuMem = dspGetDeviceTotalMemory();
+    return (gpuMem > 0) ? gpuMem : sd::memory::MemoryUtils::getSystemFreeMemoryBytes();
   };
 
   // ═══════════════════════════════════════════════════════════════════════

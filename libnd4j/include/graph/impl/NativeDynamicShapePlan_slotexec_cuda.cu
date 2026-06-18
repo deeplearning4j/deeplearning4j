@@ -142,6 +142,10 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
       cudaGetLastError();
       res = cudaMemset(targets[0].buf, 0, targets[0].bytes);
     }
+    // No silent "context recovery" for error 201/200/InvalidResourceHandle: a dead-stream
+    // 201 means a stale/cross-thread execution stream — fixed at the root in
+    // platformBeginExecution / DynamicShapePlanExecutor — so fail loud here instead of
+    // masking it with a cudaSetDevice + synchronous-memset retry.
     if (res != cudaSuccess) {
       DSP_THROW_CUDA(MEMORY, res, "prezeroSegmentOutputs: cudaMemsetAsync failed for slot %d (bytes=%zu)", targets[0].slotIdx, targets[0].bytes);
     }

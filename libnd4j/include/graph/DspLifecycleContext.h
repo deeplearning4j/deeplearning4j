@@ -159,8 +159,8 @@ class DspLifecycleContext {
    * surrounding DSP graph launches, so ordering is implicit.
    */
   static SD_INLINE cudaStream_t streamOrDefault(cudaStream_t fallback = nullptr) {
-    if (tl_dspExecutionStream != nullptr) return tl_dspExecutionStream;
-    if (tl_graphCaptureStream != nullptr) return tl_graphCaptureStream;
+    if (tl_dspExecutionStream != nullptr) return reinterpret_cast<cudaStream_t>(tl_dspExecutionStream);
+    if (tl_graphCaptureStream != nullptr) return reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
     return fallback;
   }
 #endif

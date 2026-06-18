@@ -127,13 +127,20 @@ class DspThreadState {
                  bool graphActive, bool replayActive)
       : prevGraphActive_(tl_graphExecutionActive),
         prevReplayActive_(tl_dspReplayActive),
-        prevExecStream_(tl_dspExecutionStream),
-        prevGapStream_(tl_dspGapStream) {
+        prevExecStream_(reinterpret_cast<cudaStream_t>(tl_dspExecutionStream)),
+        prevGapStream_(reinterpret_cast<cudaStream_t>(tl_dspGapStream)) {
     tl_graphExecutionActive = graphActive;
     tl_dspReplayActive = replayActive;
     tl_dspExecutionStream = execStream;
     tl_dspGapStream = gapStream;
   }
+
+  // Overload for callers using void* streams (e.g. via dspGetExecutionStream()).
+  DspThreadState(void* execStream, void* gapStream,
+                 bool graphActive, bool replayActive)
+      : DspThreadState(reinterpret_cast<cudaStream_t>(execStream),
+                       reinterpret_cast<cudaStream_t>(gapStream),
+                       graphActive, replayActive) {}
 
   ~DspThreadState() {
     tl_graphExecutionActive = prevGraphActive_;

@@ -17,31 +17,22 @@
  ******************************************************************************/
 
 #include <graph/DeviceExecutionContext.h>
-#include <array/DataBuffer.h>  // for tl_dspExecutionStream
 
-#include <cuda_runtime.h>
+// CPU-build implementation of DeviceExecutionContext.
+// CUDA-specific version is in DeviceExecutionContext_cuda.cu.
 
 namespace sd {
 namespace graph {
 
 DeviceExecutionContext DeviceExecutionContext::fromThreadLocals() {
   DeviceExecutionContext ctx;
-  cudaGetDevice(&ctx.deviceId);
-  ctx.stream = tl_dspExecutionStream != nullptr
-      ? static_cast<void*>(&tl_dspExecutionStream)
-      : nullptr;
+  ctx.deviceId = 0;
+  ctx.stream = nullptr;
   return ctx;
 }
 
 void DeviceExecutionContext::applyToThreadLocals() const {
-  int currentDevice;
-  cudaGetDevice(&currentDevice);
-  if (currentDevice != deviceId) {
-    cudaSetDevice(deviceId);
-  }
-  if (stream != nullptr) {
-    tl_dspExecutionStream = static_cast<void*>(*static_cast<cudaStream_t*>(stream));
-  }
+  // No-op on CPU — there are no thread-local device/stream to set
 }
 
 void* DeviceExecutionContext::workspaceAlloc(size_t bytes, size_t align) {

@@ -20,6 +20,7 @@
 #include <graph/DspBufferColorMap.h>
 #include <graph/DspBufferPool.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <array/DataTypeUtils.h>
 #include <helpers/ShapeUtils.h>
 #include <execution/LaunchContext.h>
@@ -446,14 +447,8 @@ int DspBufferColorMap::eject(
         if (sharedDb->primary() != nullptr && freshDb->primary() != nullptr) {
           std::memcpy(freshDb->primary(), sharedDb->primary(), bytes);
         }
-#ifdef SD_CUDA
-        // Copy on device side
-        if (sharedDb->special() != nullptr && freshDb->special() != nullptr) {
-          auto stream = LaunchContext::defaultContext()->getCudaStream();
-          cudaMemcpyAsync(freshDb->special(), sharedDb->special(), bytes,
-                          cudaMemcpyDeviceToDevice, *stream);
-        }
-#endif
+        // Copy on device side (no-op on CPU via dispatch stub)
+        dspMemcpyD2DDefaultStream(freshDb->special(), sharedDb->special(), bytes);
       }
 
       // Create new NDArray with dedicated buffer
