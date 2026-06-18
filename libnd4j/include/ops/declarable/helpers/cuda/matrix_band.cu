@@ -19,7 +19,6 @@
 //
 //  @author George A. Shulinok <sgazeos@gmail.com>
 //
-#include <exceptions/cuda_exception.h>
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>

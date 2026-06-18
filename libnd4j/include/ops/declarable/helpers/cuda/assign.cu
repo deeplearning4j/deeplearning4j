@@ -16,7 +16,6 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
-#include <exceptions/cuda_exception.h>
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/assign.h>

@@ -36,6 +36,36 @@ namespace sd {
 namespace ops {
 namespace platforms {
 
+//////////////////////////////////////////////////////////////////////
+// Get OneDNN data type from NDArray
+static dnnl::memory::data_type getOneDnnDataType(DataType dt) {
+  switch (dt) {
+    case DataType::FLOAT32:
+      return dnnl::memory::data_type::f32;
+    case DataType::BFLOAT16:
+      return dnnl::memory::data_type::bf16;
+    case DataType::HALF:
+      return dnnl::memory::data_type::f16;
+    default:
+      return dnnl::memory::data_type::f32;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+// Check if data type is supported by OneDNN batchnorm (runtime ISA detection)
+static bool isSupportedBatchnormType(DataType dt) {
+  if (dt == DataType::FLOAT32) return true;
+  if (dt == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (dt == DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
+  return false;
+}
+
 //////////////////////////////////////////////////////////////////////////
 static void batchnormMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDArray* weights,
                             NDArray* z, const float epsilon, const bool isNCHW) {
@@ -49,13 +79,14 @@ static void batchnormMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDArra
 
   const int xRank = x->rankOf();
 
-  // input type
-  dnnl::memory::data_type type = dnnl::memory::data_type::f32;
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for batch normalization
+  dnnl::memory::data_type type = getOneDnnDataType(x->dataType());
 
   // indicate whether gamma or/and beta are given
   auto flags =
       dnnl::normalization_flags::use_global_stats;  // don't calculate the mean and variance for each mini-batch
-  if (weights != nullptr) flags |= dnnl::normalization_flags::use_scale_shift;
+  // OneDNN 3.x: use_scale_shift was split into use_scale | use_shift
+  if (weights != nullptr) flags |= dnnl::normalization_flags::use_scale | dnnl::normalization_flags::use_shift;
 
   dnnl::memory::dims dims;
   dnnl::memory::format_tag format;
@@ -96,9 +127,9 @@ static void batchnormMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDArra
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // batchnorm forward description
-  dnnl::batch_normalization_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, x_mkl_md, epsilon, flags);
-  dnnl::batch_normalization_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // batchnorm forward description (OneDNN 3.x API - no separate desc class)
+  dnnl::batch_normalization_forward::primitive_desc op_ff_prim_desc(
+      engine, dnnl::prop_kind::forward_inference, x_mkl_md, z_mkl_md, epsilon, flags);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -155,13 +186,14 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
 
   const sd::LongType xRank = x->rankOf();
 
-  // input type
-  dnnl::memory::data_type type = dnnl::memory::data_type::f32;
+  // Use actual input data type - OneDNN supports f32, bf16, f16 for batch normalization backward
+  dnnl::memory::data_type type = getOneDnnDataType(x->dataType());
 
   // indicate whether gamma or/and beta are given
   auto flags =
       dnnl::normalization_flags::use_global_stats;  // don't calculate the mean and variance for each mini-batch
-  if (weights != nullptr) flags |= dnnl::normalization_flags::use_scale_shift;
+  // OneDNN 3.x: use_scale_shift was split into use_scale | use_shift
+  if (weights != nullptr) flags |= dnnl::normalization_flags::use_scale | dnnl::normalization_flags::use_shift;
 
   dnnl::memory::dims dims;
   dnnl::memory::format_tag format;
@@ -207,13 +239,14 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // batchnorm forward description
-  dnnl::batch_normalization_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, x_mkl_md, epsilon, flags);
-  dnnl::batch_normalization_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+  // batchnorm forward description (OneDNN 3.x API - no separate desc class)
+  // Forward pass primitive_desc is needed as a hint for backward
+  dnnl::batch_normalization_forward::primitive_desc op_ff_prim_desc(
+      engine, dnnl::prop_kind::forward_training, x_mkl_md, dLdO_mkl_md, epsilon, flags);
 
-  // batchnorm backprop description
-  dnnl::batch_normalization_backward::desc op_bp_desc(dnnl::prop_kind::backward, dLdO_mkl_md, x_mkl_md, epsilon, flags);
-  dnnl::batch_normalization_backward::primitive_desc op_bp_prim_desc(op_bp_desc, engine, op_ff_prim_desc);
+  // batchnorm backprop description (OneDNN 3.x API)
+  dnnl::batch_normalization_backward::primitive_desc op_bp_prim_desc(
+      engine, dnnl::prop_kind::backward, dLdI_mkl_md, dLdO_mkl_md, x_mkl_md, epsilon, flags, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -289,28 +322,35 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   const auto Ninv = 1.f * mean->lengthOf() / x->lengthOf();
 
   // x - mean
-  NDArray xMinusMean(x);  // empty array with same shape as x
+  NDArray xMinusMean(*x);  // empty array with same shape as x
   const_cast<NDArray*>(x)->applyBroadcast(sd::broadcast::Subtract, &axes, mean, &xMinusMean);
 
   // stdInv
-  NDArray stdInv = *variance + epsilon;
+  NDArray* stdInvPtr = *variance + epsilon;
+  NDArray stdInv(*stdInvPtr);
+  delete stdInvPtr;
   stdInv.applyTransform(transform::Reciprocal, &stdInv);  // 1 / (variance + epsilon)
   stdInv.applyTransform(transform::Sqrt, &stdInv);        // 1 / (variance + epsilon)^0.5
 
   // dfdm / N
-  auto dfdm = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes);
-  dfdm *= stdInv;
-  dfdm *= -Ninv;
+  NDArray* dfdm = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes);
+  *dfdm *= stdInv;
+  *dfdm *= -Ninv;
 
   // dvdm / 2
-  NDArray dvdm(mean);  // empty array with same shape as mean
+  NDArray dvdm(*mean);  // empty array with same shape as mean
   xMinusMean.reduceAlongDimension(sd::reduce::Sum, &dvdm, excludedAxes);
   dvdm *= -Ninv;
 
   // (2/N)*dfdv
-  NDArray dfdv(variance);  // empty array with same shape as variance
-  (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, &dfdv, excludedAxes);
-  dfdv *= stdInv * stdInv * stdInv;
+  NDArray dfdv(*variance);  // empty array with same shape as variance
+  NDArray* temp = xMinusMean * *dLdO;
+  temp->reduceAlongDimension(sd::reduce::Sum, &dfdv, excludedAxes);
+  delete temp;
+  NDArray* stdInvCubed = stdInv * stdInv;
+  *stdInvCubed *= stdInv;
+  dfdv *= *stdInvCubed;
+  delete stdInvCubed;
   dfdv *= -Ninv;
 
   // dvdm/2  + (x - m)
@@ -318,12 +358,14 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   // dfdv * (dvdm/2  + (x - m))
   xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, &dfdv, &xMinusMean);
   // add dfdm / N
-  xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, &dfdm, &xMinusMean);
+  xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, dfdm, &xMinusMean);
   // * gamma
-  auto gamma = (*weights)({0, 1, 0, 0});
-  xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, &gamma, &xMinusMean);
+  NDArray *gamma = (*weights)({0, 1, 0, 0});
+  xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, gamma, &xMinusMean);
 
   *dLdI += xMinusMean;
+  delete gamma;
+  delete dfdm;
 }
 
 PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
@@ -386,16 +428,22 @@ PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
     std::vector<sd::LongType > shape = {2, input->sizeAt(axes[0])};
     weights = new NDArray(input->ordering(),shape , input->dataType());
 
+    NDArray *weightsFirst = (*weights)({0, 1, 0, 0});
+    NDArray *weightsSecond = (*weights)({1, 2, 0, 0});
+
     if (applyScale)
-      (*weights)({0, 1, 0, 0}).assign(gamma);
+      weightsFirst->assign(gamma);
     else {
       sd::LongType scalarVal = 1;
-      (*weights)({0, 1, 0, 0}).assign(scalarVal);
+      weightsFirst->assign(scalarVal);
     }
     if (applyOffset)
-      (*weights)({1, 2, 0, 0}).assign(beta);
+      weightsSecond->assign(beta);
     else
-      (*weights)({1, 2, 0, 0}).assign(0);
+      weightsSecond->assign(0);
+
+    delete weightsFirst;
+    delete weightsSecond;
   }
 
   const bool isNCHW = !(axes[0] == inRank - 1 && inRank > 2);
@@ -433,24 +481,27 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
   const int inRank = input->rankOf();
 
   Requirements req("ONEDNN BATCHNORM OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
+  req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
       req.expectIn(makeInfoVariable(axes[0], "axes#0"), {1, inRank - 1}) &&
       req.expectIn(makeInfoVariable(inRank, RANK_MSG_INPUT0), {2, 4, 5}) &&
+      req.expectTrue(makeInfoVariable(isSupportedBatchnormType(input->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedBatchnormType(output->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
       req.expectTrue(makeInfoVariable(
                          [input, mean, variance, gamma, beta, output] {
                            DataType inputType = input->dataType();
                            DataType meanType = mean->dataType();
                            DataType varType = variance->dataType();
-                           DataType gammaType = gamma != nullptr ? gamma->dataType() : DataType::FLOAT32;
-                           DataType betaType = beta != nullptr ? beta->dataType() : DataType::FLOAT32;
+                           DataType gammaType = gamma != nullptr ? gamma->dataType() : inputType;
+                           DataType betaType = beta != nullptr ? beta->dataType() : inputType;
                            DataType outType = output->dataType();
-                           return (inputType == DataType::FLOAT32 && meanType == DataType::FLOAT32 &&
-                                   varType == DataType::FLOAT32 && gammaType == DataType::FLOAT32 &&
-                                   betaType == DataType::FLOAT32 && outType == DataType::FLOAT32);
+                           // All types should match the input type
+                           return (meanType == inputType && varType == inputType &&
+                                   gammaType == inputType && betaType == inputType && outType == inputType);
                          },
                          TYPECHECK_MSG),
-                     NO_MSG);
+                     "All inputs must have same data type");
   req.logTheSuccess();
   return req;
 }
@@ -532,14 +583,21 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
     std::vector<sd::LongType> shape =  {2, input->sizeAt(axes[0])};
     weights = new NDArray(input->ordering(),shape, input->dataType());
     dLdW = new NDArray(input->ordering(), shape, input->dataType());
+
+    NDArray *weightsFirst = (*weights)({0, 1, 0, 0});
+    NDArray *weightsSecond = (*weights)({1, 2, 0, 0});
+
     if (applyScale)
-      (*weights)({0, 1, 0, 0}).assign(gamma);
+      weightsFirst->assign(gamma);
     else
-      (*weights)({0, 1, 0, 0}).assign(scalar);
+      weightsFirst->assign(scalar);
     if (applyOffset)
-      (*weights)({1, 2, 0, 0}).assign(beta);
+      weightsSecond->assign(beta);
     else
-      (*weights)({1, 2, 0, 0}).assign(0);
+      weightsSecond->assign(0);
+
+    delete weightsFirst;
+    delete weightsSecond;
   }
 
   const bool isNCHW = !(axes[0] == inRank - 1 && inRank > 2);
@@ -547,20 +605,23 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
   if (shape::strideDescendingCAscendingF(dLdO->shapeInfo()))
     batchnormBpMKLDNN(input, mean, variance, dLdO, weights, dLdI, dLdW, epsilon, isNCHW);
   else {
-    NDArray dupped = dLdO->dup();
-    batchnormBpMKLDNN(input, mean, variance, &dupped, weights, dLdI, dLdW, epsilon, isNCHW);
+    NDArray* dupped = dLdO->dup();
+    batchnormBpMKLDNN(input, mean, variance, dupped, weights, dLdI, dLdW, epsilon, isNCHW);
+    delete dupped;
   }
   *dLdM = 0;
   *dLdV = 0;
 
   if (applyScale || applyOffset) {
     if (applyScale) {
-      NDArray assign = (*dLdW)({0, 1, 0, 0});
-      dLdG->assign(&assign);
+      NDArray *dLdWFirst = (*dLdW)({0, 1, 0, 0});
+      dLdG->assign(dLdWFirst);
+      delete dLdWFirst;
     }
     if (applyOffset)  {
-      NDArray assign = (*dLdW)({1, 2, 0, 0});
-      dLdB->assign(&assign);
+      NDArray *dLdWSecond = (*dLdW)({1, 2, 0, 0});
+      dLdB->assign(dLdWSecond);
+      delete dLdWSecond;
     }
 
     delete weights;
@@ -607,29 +668,31 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
   const sd::LongType inRank = input->rankOf();
   std::vector<sd::LongType> shape =  {1, inRank - 1};
   Requirements req("ONEDNN BATCHNORM_BP OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
+  req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
       req.expectIn(makeInfoVariable(inRank, RANK_MSG_INPUT0), {2, 4, 5}) &&
+      req.expectTrue(makeInfoVariable(isSupportedBatchnormType(input->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedBatchnormType(dLdO->dataType()), TYPE_MSG_INPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
       req.expectTrue(makeInfoVariable(
                          [input, mean, variance, dLdO, gamma, beta, dLdG, dLdB, dLdI] {
                            DataType inputType = input->dataType();
                            DataType meanType = mean->dataType();
                            DataType varType = variance->dataType();
                            DataType dLdOType = dLdO->dataType();
-                           DataType gammaType = gamma != nullptr ? gamma->dataType() : DataType::FLOAT32;
-                           DataType betaType = beta != nullptr ? beta->dataType() : DataType::FLOAT32;
+                           DataType gammaType = gamma != nullptr ? gamma->dataType() : inputType;
+                           DataType betaType = beta != nullptr ? beta->dataType() : inputType;
 
                            DataType dLdIType = dLdI->dataType();
-                           DataType dLdGType = gamma != nullptr ? dLdG->dataType() : DataType::FLOAT32;
-                           DataType dLdBType = beta != nullptr ? dLdB->dataType() : DataType::FLOAT32;
-                           return (inputType == DataType::FLOAT32 && meanType == DataType::FLOAT32 &&
-                                   varType == DataType::FLOAT32 && dLdOType == DataType::FLOAT32 &&
-                                   gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 &&
-                                   dLdIType == DataType::FLOAT32 && dLdGType == DataType::FLOAT32 &&
-                                   dLdBType == DataType::FLOAT32);
+                           DataType dLdGType = gamma != nullptr ? dLdG->dataType() : inputType;
+                           DataType dLdBType = beta != nullptr ? dLdB->dataType() : inputType;
+                           // All types should match the input type
+                           return (meanType == inputType && varType == inputType && dLdOType == inputType &&
+                                   gammaType == inputType && betaType == inputType &&
+                                   dLdIType == inputType && dLdGType == inputType && dLdBType == inputType);
                          },
                          TYPECHECK_MSG),
-                     NO_MSG);
+                     "All inputs must have same data type");
   req.logTheSuccess();
   return req;
 }

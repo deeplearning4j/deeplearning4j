@@ -20,7 +20,6 @@
 //  @author sgazeos@gmail.com
 //
 #include <array/NDArrayFactory.h>
-#include <exceptions/cuda_exception.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/helpers/image_suppression.h>
 
@@ -277,7 +276,7 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
     if (shouldSelect) {
       err = cudaMemcpy(shouldSelectD, &shouldSelect, sizeof(bool), cudaMemcpyHostToDevice);
       if (err) {
-        throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot set up bool flag to device", err);
+        { std::string msg = "helpers::nonMaxSuppressionV2: Cannot set up bool flag to device; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
       }
 
       dim3 selectDims = getLaunchDims("image_suppress_select");
@@ -285,7 +284,7 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
           boxesBuf, boxes->specialShapeInfo(), indexBuf, selectedIndicesData, threshold, numSelected, i, shouldSelectD);
       err = cudaMemcpy(&shouldSelect, shouldSelectD, sizeof(bool), cudaMemcpyDeviceToHost);
       if (err) {
-        throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot set up bool flag to host", err);
+        { std::string msg = "helpers::nonMaxSuppressionV2: Cannot set up bool flag to host; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
       }
     }
 

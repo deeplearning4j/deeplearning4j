@@ -27,6 +27,9 @@
 #include <numeric>
 
 #include "mkldnnUtils.h"
+#if HAVE_ONEDNN
+#include <dnnl.h>
+#endif
 
 namespace sd {
 namespace ops {
@@ -60,24 +63,37 @@ static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, 
     permut[rank - 1] = rank - 2;
   }
 
-  NDArray* xT = (transX && xRank > 1) ? new NDArray(x->permute(permut, false, false)) : x;
-  NDArray* yT = (transY && yRank > 1) ? new NDArray(y->permute(permut, false, false)) : y;
+  NDArray* xT = (transX && xRank > 1) ? x->permute(permut, false, false) : x;  // permute() already returns NDArray*
+  NDArray* yT = (transY && yRank > 1) ? y->permute(permut, false, false) : y;
 
+  // For rank > 3, the reshape to 3D uses applyTransform(Assign) which has a bug
+  // when copying from a higher-rank non-contiguous source to a lower-rank target.
+  // Ensure inputs are contiguous before reshaping.
+  NDArray* xTContiguous = nullptr;
+  NDArray* yTContiguous = nullptr;
+  if (xRank > 3 && !shape::strideDescendingCAscendingF(xT->shapeInfo())) {
+    xTContiguous = new NDArray(xT->dup(xT->ordering()));
+    xT = xTContiguous;
+  }
+  if (xRank > 3 && !shape::strideDescendingCAscendingF(yT->shapeInfo())) {
+    yTContiguous = new NDArray(yT->dup(yT->ordering()));
+    yT = yTContiguous;
+  }
 
   std::vector<sd::LongType> shapeOne =  {xT->lengthOf() / (xT->sizeAt(-2) * xT->sizeAt(-1)),
                                         xT->sizeAt(-2), xT->sizeAt(-1)};
   NDArray* xTR =
       xRank <= 3 ? xT
-                 : new NDArray(xT->reshape(xT->ordering(),shapeOne));
+                 : xT->reshape(xT->ordering(),shapeOne);  // reshape() already returns NDArray*
  std::vector<sd::LongType> shapeTwo =  {yT->lengthOf() / (yT->sizeAt(-2) * yT->sizeAt(-1)),
                                         yT->sizeAt(-2), yT->sizeAt(-1)};
   NDArray* yTR =
       xRank <= 3 ? yT
-                 : new NDArray(yT->reshape(yT->ordering(),shapeTwo));
+                 : yT->reshape(yT->ordering(),shapeTwo);  // reshape() already returns NDArray*
   std::vector<sd::LongType> shapeThree = {z->lengthOf() / (z->sizeAt(-2) * z->sizeAt(-1)),
                                           z->sizeAt(-2), z->sizeAt(-1)};
   NDArray* zR = xRank <= 3 ? z
-                           : new NDArray(z->reshape(z->ordering(), shapeThree) /*, false*/);
+                           : z->reshape(z->ordering(), shapeThree);  // reshape() already returns NDArray*
 
   // [M,K] x [K,N] = [M,N]
   const sd::LongType M = (xRank > 1) ? xTR->sizeAt(-2) : 1;
@@ -113,6 +129,10 @@ static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, 
   dnnl::memory::data_type zType = xType;
   if (z->dataType() == DataType::FLOAT32)
     zType = dnnl::memory::data_type::f32;
+  else if (z->dataType() == DataType::HALF)
+    zType = dnnl::memory::data_type::f16;
+  else if (z->dataType() == DataType::BFLOAT16)
+    zType = dnnl::memory::data_type::bf16;
   else if (z->dataType() == DataType::INT32)
     zType = dnnl::memory::data_type::s32;
   else if (z->dataType() == DataType::UINT8)
@@ -127,44 +147,55 @@ static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, 
   // memory descriptors for arrays
   dnnl::memory::desc x_mkl_md, x_user_md, y_mkl_md, y_user_md, z_mkl_md, z_user_md;
 
-  // x
-  x_user_md = x_mkl_md = dnnl::memory::desc(xShape, xType, xFormat);
-    x_user_md.data.format_kind = dnnl_blocked;  // overrides format
-    x_user_md.data.format_desc.blocking.strides[0] = xRank == 1 ? 1 : xTR->strideAt(0);
-    x_user_md.data.format_desc.blocking.strides[1] = xRank == 1 ? xTR->strideAt(0) : xTR->strideAt(1);
-    if (xRank > 2) x_user_md.data.format_desc.blocking.strides[2] = xTR->strideAt(2);
+  // x - OneDNN 3.x: use strides-based memory descriptor constructor
+  x_mkl_md = dnnl::memory::desc(xShape, xType, xFormat);
+  {
+    dnnl::memory::dims x_strides(xRank);
+    x_strides[0] = xRank == 1 ? 1 : xTR->strideAt(0);
+    x_strides[1] = xRank == 1 ? xTR->strideAt(0) : xTR->strideAt(1);
+    if (xRank > 2) x_strides[2] = xTR->strideAt(2);
+    x_user_md = dnnl::memory::desc(xShape, xType, x_strides);
+  }
 
+  // y - OneDNN 3.x: use strides-based memory descriptor constructor
+  y_mkl_md = dnnl::memory::desc(yShape, yType, yFormat);
+  {
+    dnnl::memory::dims y_strides(yRank);
+    y_strides[0] = yRank == 1 ? 1 : yTR->strideAt(0);
+    y_strides[1] = yRank == 1 ? yTR->strideAt(0) : yTR->strideAt(1);
+    if (yRank > 2) y_strides[2] = yTR->strideAt(2);
+    y_user_md = dnnl::memory::desc(yShape, yType, y_strides);
+  }
 
-  // y
-  y_user_md = y_mkl_md = dnnl::memory::desc(yShape, yType, yFormat);
-    y_user_md.data.format_kind = dnnl_blocked;  // overrides format
-    y_user_md.data.format_desc.blocking.strides[0] = yRank == 1 ? 1 : yTR->strideAt(0);
-    y_user_md.data.format_desc.blocking.strides[1] = yRank == 1 ? yTR->strideAt(0) : yTR->strideAt(1);
-    if (yRank > 2) y_user_md.data.format_desc.blocking.strides[2] = yTR->strideAt(2);
-
-
-  // z
-  z_user_md = z_mkl_md = dnnl::memory::desc(zShape, zType, zFormat);
-    z_user_md.data.format_kind = dnnl_blocked;  // overrides format
-    z_user_md.data.format_desc.blocking.strides[0] = zRank == 1 ? 1 : zR->strideAt(0);
-    z_user_md.data.format_desc.blocking.strides[1] = zRank == 1 ? zR->strideAt(0) : zR->strideAt(1);
-    if (zRank > 2) z_user_md.data.format_desc.blocking.strides[2] = zR->strideAt(2);
-
+  // z - OneDNN 3.x: use strides-based memory descriptor constructor
+  z_mkl_md = dnnl::memory::desc(zShape, zType, zFormat);
+  {
+    dnnl::memory::dims z_strides(zRank);
+    z_strides[0] = zRank == 1 ? 1 : zR->strideAt(0);
+    z_strides[1] = zRank == 1 ? zR->strideAt(0) : zR->strideAt(1);
+    if (zRank > 2) z_strides[2] = zR->strideAt(2);
+    z_user_md = dnnl::memory::desc(zShape, zType, z_strides);
+  }
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
   // Create attributes (to handle alpha and beta if necessary)
-  dnnl::primitive_attr attr;  // it is empty since we have usual values for alpha (=1) and beta (=0)
-  if (alpha != 1.f) attr.set_output_scales(0, {alpha});
+  // OneDNN 3.x: use post_ops for both alpha scaling and beta sum
+  dnnl::primitive_attr attr;
+  dnnl::post_ops po;
+  if (alpha != 1.f) {
+    // In OneDNN 3.x, output scaling is done via eltwise linear post-op: dst = alpha * dst
+    po.append_eltwise(dnnl::algorithm::eltwise_linear, alpha, 0.f);
+  }
   if (beta != 0.f) {
-    dnnl::post_ops po;
     po.append_sum(beta);
+  }
+  if (alpha != 1.f || beta != 0.f) {
     attr.set_post_ops(po);
   }
 
-  // operation primitive description
-  dnnl::matmul::desc op_desc(x_mkl_md, y_mkl_md, z_mkl_md);
-  dnnl::matmul::primitive_desc op_prim_desc(op_desc, attr, engine);
+  // operation primitive description (OneDNN 3.x API)
+  dnnl::matmul::primitive_desc op_prim_desc(engine, x_mkl_md, y_mkl_md, z_mkl_md, attr);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -197,9 +228,11 @@ static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, 
 
   if (zR != z) delete zR;
   if (xTR != xT) delete xTR;
-  if (xT != x) delete xT;
+  if (xT != x && xT != xTContiguous) delete xT;
   if (yTR != yT) delete yTR;
-  if (yT != y) delete yT;
+  if (yT != y && yT != yTContiguous) delete yT;
+  delete xTContiguous;
+  delete yTContiguous;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -282,44 +315,75 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
 
   return sd::Status::OK;
 }
-#include <iostream>
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(matmul, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
-
   auto z = OUTPUT_VARIABLE(0);
 
   const auto xType = x->dataType();
   const auto yType = y->dataType();
   const auto zType = z->dataType();
 
-  float alpha = block.numT() > 0 ? T_ARG(0) : 1.0f;
-  float beta = block.numT() > 1 ? T_ARG(1) : 0.0f;
-
   Requirements req("ONEDNN MATMUL OP");
 
-  // we're skipping if result order is F or arrays are not continuous
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 3);
+  // Use OneDNN for all supported types and ranks - no size threshold needed
+  // OneDNN is well-optimized and competitive with OpenBLAS for all matrix sizes
 
-  req.setPrefix("ONEDNN MATMUL OP")
-      .expectTrue(
-          makeInfoVariable(
-              [xType, yType, zType] {
-                return ((xType == DataType::FLOAT32 && yType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
-                        (xType == DataType::HALF && yType == DataType::HALF && zType == DataType::FLOAT32) ||
-                        (xType == DataType::BFLOAT16 && yType == DataType::BFLOAT16 && zType == DataType::BFLOAT16) ||
-                        ((xType == DataType::UINT8 || xType == DataType::INT8) &&
-                         (yType == DataType::UINT8 || yType == DataType::INT8) &&
-                         (zType == DataType::UINT8 || zType == DataType::INT8 || zType == DataType::INT32 ||
-                          zType == DataType::FLOAT32)));
-              },
-              TYPECHECK_MSG),
-          NO_MSG);
+      req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
+      req.expectFalse(makeInfoVariable(y->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE);
+
+  // OneDNN matmul requires matching ranks (or vector cases handled below).
+  // For rank-mismatched cases like x[batch, M, K] @ y[K, N] (ONNX broadcast),
+  // fall through to the generic matmul which reshapes before calling MmulHelper.
+  auto xRank = x->rankOf();
+  auto yRank = y->rankOf();
+  if (xRank > 2 && yRank != xRank) {
+    req.expectTrue(makeInfoVariable(false, "ONEDNN MATMUL: rank mismatch x>2, need generic broadcast path"), NO_MSG);
+  }
+  if (yRank > 2 && xRank != yRank) {
+    req.expectTrue(makeInfoVariable(false, "ONEDNN MATMUL: rank mismatch y>2, need generic broadcast path"), NO_MSG);
+  }
+
+  // OneDNN matmul supports:
+  // - f32 x f32 -> f32
+  // - f16 x f16 -> f16 or f32
+  // - bf16 x bf16 -> bf16 or f32
+  // - int8 x int8 -> int8, int32, or f32
+  req.expectTrue(
+      makeInfoVariable(
+          [xType, yType, zType] {
+            bool isFloat32 = (xType == DataType::FLOAT32 && yType == DataType::FLOAT32 && zType == DataType::FLOAT32);
+
+            bool isBFloat16 = false;
+            if (xType == DataType::BFLOAT16 && yType == DataType::BFLOAT16 &&
+                (zType == DataType::BFLOAT16 || zType == DataType::FLOAT32)) {
+#if HAVE_ONEDNN
+              dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+              isBFloat16 = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+#endif
+            }
+
+            bool isFloat16 = false;
+            if (xType == DataType::HALF && yType == DataType::HALF &&
+                (zType == DataType::HALF || zType == DataType::FLOAT32)) {
+#if HAVE_ONEDNN
+              dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+              isFloat16 = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+#endif
+            }
+
+            bool isQuantized = ((xType == DataType::UINT8 || xType == DataType::INT8) &&
+                     (yType == DataType::UINT8 || yType == DataType::INT8) &&
+                     (zType == DataType::UINT8 || zType == DataType::INT8 || zType == DataType::INT32 ||
+                      zType == DataType::FLOAT32));
+
+            return isFloat32 || isBFloat16 || isFloat16 || isQuantized;
+          },
+          TYPECHECK_MSG),
+      NO_MSG);
 
   req.logTheSuccess();
-
   return req;
 }
 

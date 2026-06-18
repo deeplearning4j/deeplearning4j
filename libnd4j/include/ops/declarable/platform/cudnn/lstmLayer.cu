@@ -78,6 +78,8 @@ void copyWeights(const cudaStream_t &stream, bool isBidirectional, uint8_t *weig
   if (wEnd - wptr) cudaMemsetAsync(wptr, 0, wEnd - wptr, stream);
 }
 
+// Old RNN API (cuDNN < 9.0) — removed APIs in cuDNN 9.0
+#if CUDNN_VERSION < 9000
 void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDArray *inputWeights,
                    NDArray *recurrentWeights, NDArray *biases, NDArray *prevAct, NDArray *prevMemCell,
                    NDArray *outputActivations, NDArray *finalTimeStepActivations, NDArray *finalMemCellState,
@@ -88,7 +90,7 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   bool training = false;
   cudnnHandle_t handle = *(reinterpret_cast<cudnnHandle_t *>(contextPtr->getCuDnnHandle()));
 
-  auto stream = *(contextPtr->getCudaStream());
+  auto stream = cudnnCaptureAwareStream(contextPtr->getCudaStream());
   CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(handle, stream));
 
   CudnnTensorList xDescList(maxSeqLength);
@@ -201,13 +203,31 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   uint8_t *inputWeightsData = nullptr;
   uint8_t *recurrentWeightsData = nullptr;
   if (inputWeights) {
-    inputWeightsT =
-        inputWeights->rankOf() == 3 ? inputWeights->permute({0, 2, 1}, 0, false).dup('c') : inputWeights->transpose().dup('c');
+    NDArray* pPtr;
+    if (inputWeights->rankOf() == 3) {
+      std::vector<LongType> dims = {0, 2, 1};
+      pPtr = inputWeights->permute(dims, 0, false);
+    } else {
+      pPtr = inputWeights->transpose();
+    }
+    auto* dPtr = pPtr->dup('c');
+    inputWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
     inputWeightsData = (uint8_t *)inputWeightsT.specialBuffer();
   }
   if (recurrentWeights) {
-    recurrentWeightsT = recurrentWeights->rankOf() == 3 ? recurrentWeights->permute({0, 2, 1}, 0, false).dup('c')
-                                                        : recurrentWeights->transpose().dup('c');
+    NDArray* pPtr;
+    if (recurrentWeights->rankOf() == 3) {
+      std::vector<LongType> dims = {0, 2, 1};
+      pPtr = recurrentWeights->permute(dims, 0, false);
+    } else {
+      pPtr = recurrentWeights->transpose();
+    }
+    auto* dPtr = pPtr->dup('c');
+    recurrentWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
     recurrentWeightsData = (uint8_t *)recurrentWeightsT.specialBuffer();
   }
 
@@ -221,13 +241,18 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   NDArray permutedX, outputH;
 
   if (outputActivations != nullptr && (dataFormat != 0 || outputActivations->ordering() != 'c')) {
-    outputH = NDArray('c', std::vector<LongType>{maxSeqLength, batchSize, (numDirections * hiddenSize)},
-                      outputActivations->dataType(), contextPtr);
+    std::vector<LongType> outputHShape = {maxSeqLength, batchSize, (numDirections * hiddenSize)};
+    outputH = NDArray('c', outputHShape, outputActivations->dataType(), contextPtr);
     argOutput = &outputH;
   }
 
   if (dataFormat == 1) {
-    permutedX = input->permute({1, 0, 2}, 0, false).dup('c');
+    std::vector<LongType> dims = {1, 0, 2};
+    auto* pPtr = input->permute(dims, 0, false);
+    auto* dPtr = pPtr->dup('c');
+    permutedX = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
     argX = &permutedX;
   }
 
@@ -255,8 +280,9 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
     // refill output
     if (dataFormat == 1) {
       std::vector<sd::LongType> permute = {1,0,2};
-      NDArray assign = argOutput->permute(permute, 0, false);
-      outputActivations->assign(&assign);
+      NDArray* assign = argOutput->permute(permute, 0, false);
+      outputActivations->assign(assign);
+      delete assign;
     }
   }
   NDArray::registerSpecialUse({outputActivations, finalTimeStepActivations, finalMemCellState},
@@ -264,6 +290,7 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
 
   return;
 }
+#endif  // CUDNN_VERSION < 9000
 
 #if CUDNN_VERSION >= CUDNN_NEW_RNN_API_VER
 
@@ -277,26 +304,41 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
   NDArray *argSeqNdArray = nullptr;
   NDArray seqArrIntData;
   if (seqLengthArray) {
-    if (seqLengthArray->ews() == 1 && seqLengthArray->dataType() == INT32) {
+    auto isCContiguous = [](NDArray& a) {
+      auto r = a.rankOf(); auto s = a.shapeOf(); auto st = a.stridesOf();
+      sd::LongType exp = 1;
+      for (int i = r - 1; i >= 0; --i) { if (s[i] == 1) continue; if (st[i] != exp) return false; exp *= s[i]; }
+      return true;
+    };
+    if (isCContiguous(*seqLengthArray) && seqLengthArray->dataType() == INT32) {
       argSeqNdArray = seqLengthArray;
     } else {
       if (seqLengthArray->dataType() != INT32) {
-        seqArrIntData = seqLengthArray->cast(INT32);
-        if (seqArrIntData.ews() != 1) seqArrIntData = seqArrIntData.dup('c');
+        auto* cPtr = seqLengthArray->cast(INT32);
+        seqArrIntData = std::move(*cPtr);
+        delete cPtr;
+        if (!isCContiguous(seqArrIntData)) {
+          auto* dPtr = seqArrIntData.dup('c');
+          seqArrIntData = std::move(*dPtr);
+          delete dPtr;
+        }
       } else {
-        seqArrIntData = seqLengthArray->dup('c');
+        auto* dPtr = seqLengthArray->dup('c');
+        seqArrIntData = std::move(*dPtr);
+        delete dPtr;
       }
       argSeqNdArray = &seqArrIntData;
     }
   } else {
-    seqArrIntData = NDArray('c', std::vector<LongType>{batchSize}, INT32, contextPtr);
+    std::vector<LongType> seqShape = {(LongType)batchSize};
+    seqArrIntData = NDArray('c', seqShape, INT32, contextPtr);
     seqArrIntData.assign(maxSeqLength);
     argSeqNdArray = &seqArrIntData;
   }
   PointersManager manager(contextPtr, __func__);
   bool training = false;
   cudnnHandle_t handle = *(reinterpret_cast<cudnnHandle_t *>(contextPtr->getCuDnnHandle()));
-  auto stream = *(contextPtr->getCudaStream());
+  auto stream = cudnnCaptureAwareStream(contextPtr->getCudaStream());
   CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(handle, stream));
 
   auto cudnnType = cudnnDataType(input->dataType());
@@ -350,10 +392,12 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
 
   rnnDesc.set(algo, rnnCellMode, bias_mode, direction, inputMode, cudnnType, mathPrec, mathType, inputSize, hiddenSize,
               projSize, numLayers, dropoutDesc, aux_flags);
+#if CUDNN_VERSION < 9000
   if (cellClip > 0) {
     CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnRNNSetClip), cudnnRNNSetClip(handle, rnnDesc, CUDNN_RNN_CLIP_MINMAX,
                                                                         CUDNN_PROPAGATE_NAN, -cellClip, cellClip));
   }
+#endif
   // set Data desc
   RnnDataDesc xDataDesc, yDataDesc;
   bool time_major = false;
@@ -408,13 +452,31 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
   uint8_t *inputWeightsData = nullptr;
   uint8_t *recurrentWeightsData = nullptr;
   if (inputWeights) {
-    inputWeightsT =
-        inputWeights->rankOf() == 3 ? inputWeights->permute({0, 2, 1}).dup('c') : inputWeights->transpose().dup('c');
+    NDArray* pPtr;
+    if (inputWeights->rankOf() == 3) {
+      std::vector<LongType> dims = {0, 2, 1};
+      pPtr = inputWeights->permute(dims, false, false);
+    } else {
+      pPtr = inputWeights->transpose();
+    }
+    auto* dPtr = pPtr->dup('c');
+    inputWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
     inputWeightsData = (uint8_t *)inputWeightsT.specialBuffer();
   }
   if (recurrentWeights) {
-    recurrentWeightsT = recurrentWeights->rankOf() == 3 ? recurrentWeights->permute({0, 2, 1}).dup('c')
-                                                        : recurrentWeights->transpose().dup('c');
+    NDArray* pPtr;
+    if (recurrentWeights->rankOf() == 3) {
+      std::vector<LongType> dims = {0, 2, 1};
+      pPtr = recurrentWeights->permute(dims, false, false);
+    } else {
+      pPtr = recurrentWeights->transpose();
+    }
+    auto* dPtr = pPtr->dup('c');
+    recurrentWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
     recurrentWeightsData = (uint8_t *)recurrentWeightsT.specialBuffer();
   }
 
@@ -540,7 +602,7 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CUDA) {
 #if CUDNN_VERSION < CUDNN_NEW_RNN_API_VER
   cudnn_rnn_old(contextPtr, dataFormat, x, Wx, Wr, b, hI, cI, h, hL, cL, seqLength, bS, nIn, hiddenSize,
                 (double)cellClip, isBidirectional);
-#else
+#elif CUDNN_VERSION < 9000
   if (cudnnGetVersion() >= CUDNN_NEW_RNN_API_VER) {
     cudnn_rnn_v8(contextPtr, dataFormat, x, seqLengthArray, Wx, Wr, b, hI, cI, h, hL, cL, seqLength, bS, nIn,
                  hiddenSize, (double)cellClip, isBidirectional);
@@ -548,6 +610,10 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CUDA) {
     cudnn_rnn_old(contextPtr, dataFormat, x, Wx, Wr, b, hI, cI, h, hL, cL, seqLength, bS, nIn, hiddenSize,
                   (double)cellClip, isBidirectional);
   }
+#else
+  // cuDNN 9.0+ — old RNN API removed, always use v8
+  cudnn_rnn_v8(contextPtr, dataFormat, x, seqLengthArray, Wx, Wr, b, hI, cI, h, hL, cL, seqLength, bS, nIn,
+               hiddenSize, (double)cellClip, isBidirectional);
 #endif
 
   return Status::OK;
@@ -645,24 +711,24 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CUDA) {
   if (b)
     req.expectEq(makeInfoVariable(b->dataType(), TYPE_MSG_INPUT_ "#bias"), makeInfoVariable(xType, TYPE_MSG_INPUT0));
   if (hI) {
-    req.expectEq(makeInfoVariable(hI->dataType(), TYPE_MSG_INPUT_ "#hI"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
-        req.expectEq(makeInfoVariable(hI->ordering(), ORDERING_MSG_INPUT_ "#hI"), 'c') &&
+    req.expectEq(makeInfoVariable(hI->dataType(), TYPE_MSG_INPUT_ "#hI"), makeInfoVariable(xType, TYPE_MSG_INPUT0));
+    req.expectEq(makeInfoVariable(hI->ordering(), ORDERING_MSG_INPUT_ "#hI"), 'c');
   }
   if (cI) {
-    req.expectEq(makeInfoVariable(cI->dataType(), TYPE_MSG_INPUT_ "#cI"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
-        req.expectEq(makeInfoVariable(cI->ordering(), ORDERING_MSG_INPUT_ "#cI"), 'c') &&
+    req.expectEq(makeInfoVariable(cI->dataType(), TYPE_MSG_INPUT_ "#cI"), makeInfoVariable(xType, TYPE_MSG_INPUT0));
+    req.expectEq(makeInfoVariable(cI->ordering(), ORDERING_MSG_INPUT_ "#cI"), 'c');
   }
   if (h) {
-    req.expectEq(makeInfoVariable(h->dataType(), TYPE_MSG_OUTPUT_ "#h"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
-        req.expectEq(makeInfoVariable(h->ordering(), ORDERING_MSG_OUTPUT_ "#h"), 'c') &&
+    req.expectEq(makeInfoVariable(h->dataType(), TYPE_MSG_OUTPUT_ "#h"), makeInfoVariable(xType, TYPE_MSG_INPUT0));
+    req.expectEq(makeInfoVariable(h->ordering(), ORDERING_MSG_OUTPUT_ "#h"), 'c');
   }
   if (hL) {
-    req.expectEq(makeInfoVariable(hL->dataType(), TYPE_MSG_OUTPUT_ "#hL"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
-        req.expectEq(makeInfoVariable(hL->ordering(), ORDERING_MSG_OUTPUT_ "#hL"), 'c') &&
+    req.expectEq(makeInfoVariable(hL->dataType(), TYPE_MSG_OUTPUT_ "#hL"), makeInfoVariable(xType, TYPE_MSG_INPUT0));
+    req.expectEq(makeInfoVariable(hL->ordering(), ORDERING_MSG_OUTPUT_ "#hL"), 'c');
   }
   if (cL) {
-    req.expectEq(makeInfoVariable(cL->dataType(), TYPE_MSG_OUTPUT_ "#cL"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
-        req.expectEq(makeInfoVariable(cL->ordering(), ORDERING_MSG_OUTPUT_ "#cL"), 'c') &&
+    req.expectEq(makeInfoVariable(cL->dataType(), TYPE_MSG_OUTPUT_ "#cL"), makeInfoVariable(xType, TYPE_MSG_INPUT0));
+    req.expectEq(makeInfoVariable(cL->ordering(), ORDERING_MSG_OUTPUT_ "#cL"), 'c');
   }
   req.logTheSuccess();
   return req;

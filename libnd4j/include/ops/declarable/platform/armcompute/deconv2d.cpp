@@ -78,10 +78,8 @@ PLATFORM_IMPL(deconv2d, ENGINE_CPU) {
                  "got %i, %i instead !",
                  oC, bias->rankOf(), bias->lengthOf());
 
-  if (paddingMode) {
-    // Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not deconv) forward
-    // pass
-    ConvolutionUtils::calcPadding2D(pH, pW, iH, iW, oH, oW, kH, kW, sH, sW, dH, dW);
+  if (paddingMode) {  // SAME - use deconv-specific padding calculation
+    ConvolutionUtils::calcPaddingDeconv2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
   }
   padLeft = pW;
   padTop = pH;

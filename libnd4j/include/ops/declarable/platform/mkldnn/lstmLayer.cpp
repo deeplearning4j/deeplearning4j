@@ -212,7 +212,7 @@ static void lstmLayerMKLDNN(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, ND
   if (hL) {
     hL_lstm_md = dnnl::memory::desc({1, dirDim, bS, nOut}, hType, dnnl::memory::format_tag::any);
     hL_user_md = dnnl::memory::desc({1, dirDim, bS, nOut}, hType, dnnl::memory::format_tag::ldnc);
-    hL_user_md.data.format_kind = dnnl_blocked;  // overrides format
+    // setBlockStrides will create a new memory descriptor with explicit strides
     onednnUtils::setBlockStrides(*hL, hL_user_md);
   }
 
@@ -222,14 +222,12 @@ static void lstmLayerMKLDNN(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, ND
     onednnUtils::setBlockStrides(*cL, cL_user_md);
   }
 
-  // lstm memory description
-  lstm_forward::desc lstm_desc(prop_kind::forward_inference, direction, x_lstm_md, hI_lstm_md, cI_lstm_md, wx_lstm_md,
-                               wr_lstm_md, b_lstm_md, h_lstm_md, hL_lstm_md, cL_lstm_md);
-
+  // lstm primitive description (OneDNN 3.x API)
   dnnl::stream stream(engine);
 
-  // lstm primitive description
-  lstm_forward::primitive_desc lstm_prim_desc(lstm_desc, engine);
+  lstm_forward::primitive_desc lstm_prim_desc(engine, prop_kind::forward_inference, direction, x_lstm_md, hI_lstm_md,
+                                               cI_lstm_md, wx_lstm_md, wr_lstm_md, b_lstm_md, h_lstm_md,
+                                               hL_lstm_md, cL_lstm_md);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
@@ -422,33 +420,33 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
   NDArray *xP(const_cast<NDArray*>(x)), *hP(h);
   if (dataFormat == 1) {
     std::vector<sd::LongType> permute = {1,0,2};
-    xP = new NDArray(x->permute(permute.data(), 3, false, false));  // [bS, sL, nIn] -> [sL, bS, nIn]
-    hP = new NDArray(h->permute(permute.data(), 3, false, false));  // [bS, sL, dirDim*nOn] -> [sL, bS, dirDim*nOn]
+    xP = x->permute(permute.data(), 3, false, false);  // permute() already returns NDArray*
+    hP = h->permute(permute.data(), 3, false, false);
   }
 
   // reshape arrays in accordance to mkl allowed formats
   NDArray *WxR(nullptr), *WrR(nullptr), *bR(nullptr), *hIR(nullptr), *cIR(nullptr), *hLR(nullptr), *cLR(nullptr);
 
   std::vector<sd::LongType> shapeOne = {1, dirDim, nIn, 4, nOut};
-  WxR = new NDArray(Wx->reshape(Wx->ordering(), shapeOne));
-  WrR = new NDArray(Wr->reshape(Wr->ordering(), shapeOne));
+  WxR = Wx->reshape(Wx->ordering(), shapeOne);  // reshape() already returns NDArray*
+  WrR = Wr->reshape(Wr->ordering(), shapeOne);  // reshape() already returns NDArray*
 
   std::vector<sd::LongType> shapeTwo = {1, dirDim, 4, nOut};
   if (b)
-    bR = new NDArray(b->reshape(b->ordering(), shapeTwo));
+    bR = b->reshape(b->ordering(), shapeTwo);  // reshape() already returns NDArray*
   else
     bR =
         new NDArray(x->ordering(), shapeTwo, x->dataType(), x->getContext());  // already nullified
 
 
   std::vector<sd::LongType> shapeThree = {1, dirDim, bS, nOut};
-  if (hI) hIR = new NDArray(hI->reshape(hI->ordering(), shapeThree));
+  if (hI) hIR = hI->reshape(hI->ordering(), shapeThree);  // reshape() already returns NDArray*
 
-  if (cI) cIR = new NDArray(cI->reshape(cI->ordering(), shapeThree));
+  if (cI) cIR = cI->reshape(cI->ordering(), shapeThree);  // reshape() already returns NDArray*
 
-  if (hL) hLR = new NDArray(hL->reshape(hL->ordering(), shapeThree, false));
+  if (hL) hLR = hL->reshape(hL->ordering(), shapeThree, false);  // reshape() already returns NDArray*
 
-  if (cL) cLR = new NDArray(cL->reshape(cL->ordering(), shapeThree, false));
+  if (cL) cLR = cL->reshape(cL->ordering(), shapeThree, false);  // reshape() already returns NDArray*
 
   lstmLayerMKLDNN(xP, WxR, WrR, bR, hIR, cIR, params, hP, hLR, cLR);
 
@@ -512,8 +510,7 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
   DataType hLType = hL != nullptr ? hL->dataType() : xType;
   DataType cLType = cL != nullptr ? cL->dataType() : xType;
   Requirements req("ONEDNN LstmLayer OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectEq(makeInfoVariable(cellClip, MSG_CELL_CLIPPING), 0) &&
+  req.expectEq(makeInfoVariable(cellClip, MSG_CELL_CLIPPING), 0) &&
       req.expectTrue(makeInfoVariable(retFullSeq, "Return full sequence")) &&
       req.expectFalse(makeInfoVariable(hasPH, HAVE_PEEPHOLE), EXPECTED_NOT_SUPPORTED) &&
       req.expectFalse(makeInfoVariable(hasSeqLen, HAVE_SEQLENARR), EXPECTED_NOT_SUPPORTED) &&
@@ -524,6 +521,11 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
       req.expectTrue(
           makeInfoVariable(
               [xType, WxType, WrType, bType, hIType, cIType, hType, hLType, cLType] {
+                // HALF requires AVX512_CORE_AMX_FP16 ISA at runtime
+                if (xType == DataType::HALF) {
+                  dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+                  if (isa < dnnl_cpu_isa_avx512_core_amx_fp16) return false;
+                }
                 return ((xType == DataType::FLOAT32 && WxType == DataType::FLOAT32 && WrType == DataType::FLOAT32 &&
                          bType == DataType::FLOAT32 && hIType == DataType::FLOAT32 && cIType == DataType::FLOAT32 &&
                          hType == DataType::FLOAT32 && hLType == DataType::FLOAT32 && cLType == DataType::FLOAT32) ||

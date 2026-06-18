@@ -51,13 +51,13 @@ static void concatMKLDNN(const std::vector<NDArray*>& inArrs, NDArray& output, c
 
   // inputs
   for (size_t i = 0; i < inArrs.size(); ++i) {
-    dnnl::memory::dims dims = inArrs[i]->getShapeAsFlatVector();
+    dnnl::memory::dims dims = *inArrs[i]->getShapeAsFlatVector();
     x_user_md[i] = x_mkl_md[i] = dnnl::memory::desc(dims, type, onednnUtils::getFormat(*inArrs[i]));
     onednnUtils::setBlockStrides(*inArrs[i], x_user_md[i]);
   }
 
   // output
-  dnnl::memory::dims dims = output.getShapeAsFlatVector();
+  dnnl::memory::dims dims = *output.getShapeAsFlatVector();
   dnnl::memory::desc z_mkl_md = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
   dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, onednnUtils::getFormat(output));
   onednnUtils::setBlockStrides(output, z_user_md);
@@ -66,7 +66,8 @@ static void concatMKLDNN(const std::vector<NDArray*>& inArrs, NDArray& output, c
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  dnnl::concat::primitive_desc op_prim_desc(axis, x_mkl_md, engine);
+  // OneDNN 3.x API: primitive_desc(engine, dst_md, concat_dimension, srcs)
+  dnnl::concat::primitive_desc op_prim_desc(engine, z_mkl_md, axis, x_mkl_md);
 
   dnnl::stream stream(engine);
 
@@ -176,18 +177,25 @@ PLATFORM_CHECK(concat, ENGINE_CPU) {
 
   const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
   const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
+
+  // Check if output type is supported by OneDNN
+  // bf16 requires AVX512_CORE_BF16, f16 requires AVX512_CORE_AMX_FP16
+  const auto zType = z->dataType();
+  bool isSupportedType = (zType == DataType::FLOAT32 || zType == DataType::UINT8 || zType == DataType::INT8);
+  if (!isSupportedType && zType == DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (!isSupportedType && zType == DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    isSupportedType = (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
+
   Requirements req("ONEDNN CONCAT OP");
-  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-      req.expectLess(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 7) &&
-      req.expectLessEq(makeInfoVariable(numOfInArrs, "numOfinArrs"), 3072) &&
-      req.expectTrue(makeInfoVariable(
-                         [z] {
-                           const auto zType = z->dataType();
-                           return (zType == DataType::FLOAT32 || zType == DataType::HALF ||
-                                   zType == DataType::BFLOAT16 || zType == DataType::UINT8 || zType == DataType::INT8);
-                         },
-                         TYPECHECK_MSG),
-                     NO_MSG);
+  req.expectLess(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 7) &&
+      req.expectLessEq(makeInfoVariable(numOfInArrs, "NUM_INPUTS"), 3072) &&
+      req.expectTrue(makeInfoVariable(isSupportedType, TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, HALF, BFLOAT16, UINT8, or INT8");
   req.logTheSuccess();
   return req;
 }

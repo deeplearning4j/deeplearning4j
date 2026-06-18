@@ -21,7 +21,7 @@
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <cublas_v2.h>
-#include <exceptions/cuda_exception.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/batched_gemm.h>
 #include <ops/specials_cuda.h>
@@ -151,9 +151,13 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   auto handle = reinterpret_cast<cublasHandle_t*>(context->getCublasHandle());
   auto stream = context->getCudaStream();
 
-  auto status = cublasSetStream_v2(*handle, *stream);
-
-  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda set stream failed ! Please double check the passed in handle.", status);
+  // Skip cublasSetStream_v2 during CUDA graph capture (see MmulHelper mmulMxM comment).
+  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
+  if (!tl_graphExecutionActive) {
+    status = cublasSetStream_v2(*handle, *stream);
+    if (status != CUBLAS_STATUS_SUCCESS) { std::string msg = "MmulHelper::mmulMxM cuda set stream failed ! Please double check the passed in handle.; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
+  }
+  reapplyCublasWorkspace(*handle);
 
   const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
@@ -189,12 +193,16 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
     THROW_EXCEPTION("batched gemm cuda: this mode is not implemented yet !");
 
   if (status != CUBLAS_STATUS_SUCCESS) {
-    throw cuda_exception::build("MmulHelper::mmulMxM cuda execution failed !", status);
+    { std::string msg = "MmulHelper::mmulMxM cuda execution failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
-  auto cudaResult = cudaStreamSynchronize(*stream);
-  if (cudaResult != 0) {
-    throw cuda_exception::build("MmulHelper::mmulMxM cuda stream synchronize failed !", cudaResult);
+  // During CUDA graph capture, cudaStreamSynchronize is illegal. Stream
+  // ordering guarantees cuBLAS results are available to downstream kernels.
+  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+    auto cudaResult = cudaStreamSynchronize(*stream);
+    if (cudaResult != 0) {
+      { std::string msg = "MmulHelper::mmulMxM cuda stream synchronize failed !; Error code: [" + std::to_string(cudaResult) + "]"; THROW_EXCEPTION(msg.c_str()); }
+    }
   }
 
   for (int i = 0; i < bS; ++i)

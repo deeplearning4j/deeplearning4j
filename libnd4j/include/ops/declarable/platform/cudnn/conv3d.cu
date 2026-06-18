@@ -45,7 +45,8 @@ static void conv3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
                                              indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
 
   const std::vector<int> pads = {static_cast<int>(pD), static_cast<int>(pH), static_cast<int>(pW)};
   const std::vector<int> filtStrides = {static_cast<int>(sD), static_cast<int>(sH), static_cast<int>(sW)};
@@ -84,10 +85,17 @@ static void conv3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
   cudnnConvolutionFwdAlgoPerf_t algoPerf;
   int count = 0;
 
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
-                          cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  // During CUDA graph capture, cudnnFindConvolutionForwardAlgorithm runs GPU benchmarks on internal
+  // cuDNN streams that escape from the capture graph, invalidating it. Use heuristic _v7 instead.
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionForwardAlgorithm_v7),
+                            cudnnGetConvolutionForwardAlgorithm_v7(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
+                            cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
+  }
   if (count == 0)
-    throw cuda_exception::build("conv3dCUDNN: cudnnGetConvolutionForwardAlgorithm failed as the count is 0", 0);
+    THROW_EXCEPTION("conv3dCUDNN: cudnnGetConvolutionForwardAlgorithm failed as the count is 0");
   algo = algoPerf.algo;
 
   // allocate auxiliary device memory, abbreviation ws means workspace
@@ -97,8 +105,8 @@ static void conv3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
   void* wsData = manager.allocateDevMem(wsSize);
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* alpha =
       output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta =
@@ -142,7 +150,8 @@ static void conv3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
                                              indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
-  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  auto stream = cudnnCaptureAwareStream(context->getCudaStream());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, stream));
   const std::vector<int> pads = {static_cast<int>(pD), static_cast<int>(pH), static_cast<int>(pW)};
   const std::vector<int> filtStrides = {static_cast<int>(sD), static_cast<int>(sH), static_cast<int>(sW)};
   const std::vector<int> dilations = {static_cast<int>(dD), static_cast<int>(dH), static_cast<int>(dW)};
@@ -182,26 +191,33 @@ static void conv3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
   cudnnConvolutionBwdFilterAlgo_t algoGradW;
   cudnnConvolutionBwdFilterAlgoPerf_t algoGradWPerf;
   int count = 0;
-  CHECK_CUDNN_FAILURE_MSG(
-      STRINGIZE(cudnnFindConvolutionBackwardFilterAlgorithm),
-      cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnGetConvolutionBackwardFilterAlgorithm_v7),
+        cudnnGetConvolutionBackwardFilterAlgorithm_v7(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnFindConvolutionBackwardFilterAlgorithm),
+        cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
+  }
   if (count == 0)
-    throw cuda_exception::build(
-        "conv3dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed as the count is 0", 0);
+    THROW_EXCEPTION("conv3dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed as the count is 0");
   algoGradW = algoGradWPerf.algo;
 
   // gradI algorithm description
   cudnnConvolutionBwdDataAlgo_t algoGradI;
   cudnnConvolutionBwdDataAlgoPerf_t algoGradIPerf;
-  // CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionBackwardDataAlgorithm),
-  // cudnnGetConvolutionBackwardDataAlgorithm( *handle, dw, dz, conv, x, CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0,
-  // &algoGradI));
-  CHECK_CUDNN_FAILURE_MSG(
-      STRINGIZE(cudnnFindConvolutionBackwardDataAlgorithm),
-      cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
+  if (tl_graphExecutionActive) {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnGetConvolutionBackwardDataAlgorithm_v7),
+        cudnnGetConvolutionBackwardDataAlgorithm_v7(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
+  } else {
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnFindConvolutionBackwardDataAlgorithm),
+        cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
+  }
   if (count == 0)
-    throw cuda_exception::build("conv3dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed  as the count is 0",
-                                    0);
+    THROW_EXCEPTION("conv3dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed  as the count is 0");
   algoGradI = algoGradIPerf.algo;
 
   // allocate auxiliary device memory for gradW calculation, abbreviation ws means workspace
@@ -219,8 +235,8 @@ static void conv3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
   void* wsGradIData = manager.allocateDevMem(wsGradISize);
 
   // provide scaling parameters
-  const float alpha32(1), beta32(0);
-  const double alpha64(1), beta64(0);
+  static const float alpha32(1), beta32(0);
+  static const double alpha64(1), beta64(0);
   const void* alpha =
       gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
   const void* beta =
@@ -319,12 +335,13 @@ PLATFORM_IMPL(conv3dnew, ENGINE_CUDA) {
     std::vector<LongType> format0Permute = {4, 3, 0, 1, 2};
     std::vector<LongType> format1Permute = {0, 4, 1, 2, 3};
 
-    NDArray assign = weights->permute(
+    NDArray* assign = weights->permute(
                                 0 == wFormat ? format0Permute : format1Permute,
                                 true,   // copyToNewBuff
                                 true);
     // Use the appropriate one in the permute call
-    newWeights->assign(&assign); // resetStrides
+    newWeights->assign(assign); // resetStrides
+    delete assign;
   }
 
   if (paddingMode == 1) {  // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
@@ -463,13 +480,14 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CUDA) {
     newGradW = tmpGradW.get();
     newWeights = tmpWeights.get();
 
-    NDArray assign = weights->permute(
+    NDArray* assign = weights->permute(
                                 isNCDHW ? ncdhwPermute : ndhwcPermute,
                                 true,   // copyToNewBuff
                                 true);
     // Use the appropriate one in the permute call
-    newWeights->assign(&assign); // resetStrides (kD, kH, kW, iC, oC  --> oC, iC, kD, kH, kW) or (kD, kH, kW,
+    newWeights->assign(assign); // resetStrides (kD, kH, kW, iC, oC  --> oC, iC, kD, kH, kW) or (kD, kH, kW,
                                                         // iC, oC  --> oC, kD, kH, kW, iC)
+    delete assign;
   }
 
   NDArray* newInput = input;
@@ -497,11 +515,11 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CUDA) {
 
   if (newInput != input) {
     if (isNCDHW) {
-      NDArray assign = (*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, gradI->sizeAt(4)});
-      gradI->assign(&assign);
+      auto assign = (*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, gradI->sizeAt(4)});
+      gradI->assign(assign);
     } else {
-      NDArray assign = (*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, 0});
-      gradI->assign(&assign);
+      auto assign = (*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, 0});
+      gradI->assign(assign);
     }
   }
   return Status::OK;

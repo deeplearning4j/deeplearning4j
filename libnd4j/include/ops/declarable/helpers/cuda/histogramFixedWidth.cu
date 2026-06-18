@@ -19,7 +19,6 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 31.08.2018
 //
-#include <exceptions/cuda_exception.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/histogramFixedWidth.h>
 
