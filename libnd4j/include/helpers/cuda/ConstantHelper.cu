@@ -45,7 +45,7 @@ namespace sd {
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
   if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
-    return tl_graphCaptureStream;
+    return reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
   }
   auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
   return (streamPtr != nullptr) ? *streamPtr : nullptr;
@@ -334,8 +334,6 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
                             (INT64, LongType), SD_COMMON_TYPES);
     }
 
-    // we don't have deallocator here.
-    // TODO: we probably want to make use deallocator here, if we're not using constant memory
     auto dbuff = std::make_shared<PointerWrapper>(
         replicatePointer(cbuff->pointer(), descriptor.length() * DataTypeUtils::sizeOf(dataType)));
 
@@ -356,38 +354,12 @@ LongType ConstantHelper::getCachedAmount(int deviceId) {
     return _counters[deviceId];
 }
 
-// Explicit template instantiations for SpecialTypeConverter::convertGeneric
-// These are needed because BUILD_DOUBLE_SELECTOR expands to call these with (DOUBLE, SD_COMMON_TYPES) and (INT64, SD_COMMON_TYPES)
-// #define INSTANTIATE_CONVERT_DOUBLE(T) template void SpecialTypeConverter::convertGeneric<double, GET_SECOND(T)>(sd::Pointer*, void*, sd::LongType, void*);
-// ITERATE_LIST((SD_COMMON_TYPES), INSTANTIATE_CONVERT_DOUBLE)
-template void SpecialTypeConverter::convertGeneric<double, bool>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, float16>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, bfloat16>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, float>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, double>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, int8_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, uint8_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, int16_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, int32_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, sd::LongType>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, uint16_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, uint32_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<double, uint64_t>(sd::Pointer*, void*, sd::LongType, void*);
+BUILD_DOUBLE_TEMPLATE(void SpecialTypeConverter::convertGeneric,
+                      (sd::Pointer*, void*, sd::LongType, void*),
+                      SD_FLOAT_TYPES, SD_COMMON_TYPES);
 
-// #define INSTANTIATE_CONVERT_LONG(T) template void SpecialTypeConverter::convertGeneric<LongType, GET_SECOND(T)>(sd::Pointer*, void*, sd::LongType, void*);
-// ITERATE_LIST((SD_COMMON_TYPES), INSTANTIATE_CONVERT_LONG)
-template void SpecialTypeConverter::convertGeneric<LongType, bool>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, float16>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, bfloat16>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, float>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, double>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, int8_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, uint8_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, int16_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, int32_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, sd::LongType>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, uint16_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, uint32_t>(sd::Pointer*, void*, sd::LongType, void*);
-template void SpecialTypeConverter::convertGeneric<LongType, uint64_t>(sd::Pointer*, void*, sd::LongType, void*);
+BUILD_DOUBLE_TEMPLATE(void SpecialTypeConverter::convertGeneric,
+                      (sd::Pointer*, void*, sd::LongType, void*),
+                      SD_LONG_TYPES, SD_COMMON_TYPES);
 
 }  // namespace sd
