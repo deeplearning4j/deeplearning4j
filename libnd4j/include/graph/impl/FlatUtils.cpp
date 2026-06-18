@@ -25,6 +25,7 @@
 #include <array/DataTypeUtils.h>
 #include <array/NDArrayFactory.h>
 #include <graph/FlatUtils.h>
+#include <helpers/BitwiseUtils.h>
 
 namespace sd {
 namespace graph {
@@ -36,7 +37,7 @@ std::pair<LongType, LongType> FlatUtils::fromLongPair(::graph::LongPair *pair) {
 
 NDArray *FlatUtils::fromFlatArray(const ::graph::FlatArray *flatArray) {
   auto rank = static_cast<int>(flatArray->shape()->Get(0));
-  auto newShape = new LongType[shape::shapeInfoLength(rank)];
+  auto newShape = new LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
   memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
 
   auto length = shape::length(newShape);
@@ -44,10 +45,16 @@ NDArray *FlatUtils::fromFlatArray(const ::graph::FlatArray *flatArray) {
 
   // empty arrays is special case, nothing to restore here
   if (shape::isEmptyConst(newShape)) {
-     delete[] newShape;
+    delete[] newShape;
     return NDArrayFactory::empty_(dtype, nullptr);
   }
-  // TODO fix UTF16 and UTF32
+  // Only UTF8 string arrays are supported. UTF16 and UTF32 lack a vector-based
+  // NDArrayFactory::string_ overload, so arrays with those dtypes fall through to
+  // the generic buffer copy path below (BUILD_SINGLE_SELECTOR), which handles the
+  // raw bytes correctly for non-string numeric types but will not reconstruct
+  // string offsets for UTF16/UTF32. If UTF16/UTF32 string array support is needed,
+  // add NDArrayFactory::string_(vector<LongType>, vector<u16string>/vector<u32string>)
+  // and mirror the UTF8 branch below for those dtypes.
   if (dtype == UTF8) {
 
     std::vector<std::string> substrings(length);
@@ -57,13 +64,16 @@ NDArray *FlatUtils::fromFlatArray(const ::graph::FlatArray *flatArray) {
     auto rawPtr = (void *)flatArray->buffer()->data();
     auto longPtr = reinterpret_cast<LongType *>(rawPtr);
     auto charPtr = reinterpret_cast<char *>(longPtr + length + 1);
-    auto offsets = new LongType[length + 1];
+    auto offsets = new LongType[length + 1 + SD_SHAPE_ALLOC_PADDING]();
 
+    // Determine whether the serialized byte order matches the host byte order.
+    // If they differ, the LongType offset values must be byte-swapped.
+    bool hostIsBE = BitwiseUtils::isBE();
+    ByteOrder serializedOrder = ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder());
+    bool canKeep = (hostIsBE && serializedOrder == BE) || (!hostIsBE && serializedOrder == LE);
     for (LongType e = 0; e <= length; e++) {
       auto o = longPtr[e];
-      // FIXME: BE vs LE on partials
-      // auto v = canKeep ?  o : BitwiseUtils::swap_bytes<sd::LongType>(o);
-      offsets[e] = o;
+      offsets[e] = canKeep ? o : BitwiseUtils::swap_bytes<LongType>(o);
     }
 
     for (LongType e = 0; e < length; e++) {
@@ -104,8 +114,9 @@ flatbuffers::Offset<::graph::FlatArray> FlatUtils::toFlatArray(flatbuffers::Flat
   auto byteVector = array.asByteVector();
 
   auto fBuffer = builder.CreateVector(byteVector);
-  auto fShape = builder.CreateVector(array.getShapeInfoAsFlatVector());
-
+  auto vec = array.getShapeInfoAsFlatVector();
+  auto fShape = builder.CreateVector(*vec);
+  delete vec;
   auto bo = static_cast<::graph::ByteOrder>(BitwiseUtils::asByteOrder());
 
   return CreateFlatArray(builder, fShape, fBuffer, static_cast<::graph::DType>(array.dataType()), bo);

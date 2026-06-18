@@ -300,16 +300,27 @@ std::vector<Variable*>* sd::graph::VariableSpace::handles() { return _handles; }
  * FIXME: this thing have nice chances to become backend-specific!
  */
 sd::graph::VariableSpace::~VariableSpace() {
-  // loop through variables and release them
-  for (auto p : *_handles) {
-    delete p;
+  // SAFETY: Wrap cleanup in try-catch to handle heap corruption gracefully
+  try {
+    // loop through variables and release them
+    if (_handles != nullptr) {
+      for (auto p : *_handles) {
+        if (p != nullptr) delete p;
+      }
+      delete _handles;
+    }
+  } catch (...) {
+    sd_debug("VariableSpace::~VariableSpace: Exception cleaning up _handles\n", "");
   }
 
-  delete _handles;
-
-  for (auto p : _lists) delete p;
-
-  _lists.clear();
+  try {
+    for (auto p : _lists) {
+      if (p != nullptr) delete p;
+    }
+    _lists.clear();
+  } catch (...) {
+    sd_debug("VariableSpace::~VariableSpace: Exception cleaning up _lists\n", "");
+  }
 }
 
 VariableSpace& VariableSpace::operator=(const VariableSpace& other) {
@@ -342,9 +353,9 @@ void VariableSpace::replaceVariable(Variable* variable) {
   bool replaced = false;
   // trying name first
   if (variable->getName() != nullptr && !variable->getName()->empty()) {
-    sd_printf("Trying to replace variable by name: [%s]\n", variable->getName()->c_str());
+    sd_debug("Trying to replace variable by name: [%s]\n", variable->getName()->c_str());
     if (hasVariable(variable->getName())) {
-      sd_printf("Replacing by name: [%s]\n", variable->getName()->c_str());
+      sd_debug("Replacing by name: [%s]\n", variable->getName()->c_str());
       auto vs = getVariable(variable->getName());
       dropVariable(vs->id(), vs->index());
       putVariable(vs->id(), vs->index(), variable);
@@ -352,9 +363,9 @@ void VariableSpace::replaceVariable(Variable* variable) {
       replaced = true;
     }
   } else {
-    sd_printf("Trying to replace variable by id: [%i:%i]\n", variable->id(), variable->index());
+    sd_debug("Trying to replace variable by id: [%i:%i]\n", variable->id(), variable->index());
     if (hasVariable(variable->id(), variable->index())) {
-      sd_printf("Replacing by id: [%i:%i]\n", variable->id(), variable->index());
+      sd_debug("Replacing by id: [%i:%i]\n", variable->id(), variable->index());
       auto vs = getVariable(variable->id(), variable->index());
       dropVariable(variable->id(), variable->index());
       putVariable(vs->id(), vs->index(), variable);
@@ -364,7 +375,7 @@ void VariableSpace::replaceVariable(Variable* variable) {
   }
 
   if (!replaced) {
-    sd_printf("wasn't able to replace variable, putting\n", "");
+    sd_debug("wasn't able to replace variable, putting\n", "");
     putVariable(variable->id(), variable->index(), variable);
   }
 }
@@ -372,10 +383,6 @@ void VariableSpace::replaceVariable(Variable* variable) {
 void VariableSpace::dropVariable(std::pair<int, int>& pair) { dropVariable(pair.first, pair.second); }
 
 void VariableSpace::dropVariable(int id, int idx) {}
-
-void VariableSpace::setFlowPath(FlowPath* flow) { _flow = flow; }
-
-FlowPath* VariableSpace::flowPath() { return _flow; }
 
 VariableSpace::VariableSpace() { _handles = new std::vector<Variable*>; }
 }  // namespace graph

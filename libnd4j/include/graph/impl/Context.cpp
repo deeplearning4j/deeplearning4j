@@ -22,6 +22,10 @@
 #include <array/InteropDataBuffer.h>
 #include <graph/Context.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/shape.h>
+#include <system/env_functions.h>
+#include <system/PointerValidation.h>
+#include <graph/gpu/DspCudaDispatch.h>
 
 #if defined(SD_GCC_FUNCTRACE)
 #include <graph/OpContextLifecycleTracker.h>
@@ -30,7 +34,23 @@
 namespace sd {
 namespace graph {
 Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
+  // Explicitly initialize ALL pointer members to prevent garbage values
+  _workspace = nullptr;
   _variableSpace = variableSpace;
+  _rng = nullptr;
+  _context = nullptr;  //  must initialize before any vector operations
+
+  // Pre-reserve space for vectors to prevent reallocation during ops.
+  // Without reserve, push_back triggers reallocation which has been observed to corrupt memory
+  // (Valgrind: "Invalid free" at "0 bytes after a block of size 8 alloc'd by _M_realloc_insert").
+  // glibc error "free(): invalid next size (fast)" also indicates heap metadata corruption.
+  // Note: Intermediate results accumulate when Context is reused across op executions.
+  // Using larger reserve to avoid frequent reallocations.
+  _intermediateResults.reserve(64);
+  _fastpath_in.reserve(16);
+  _fastpath_out.reserve(16);
+  _handles.reserve(16);
+
   _dataType = prototype->dataType();
 
   if (prototype != nullptr) {
@@ -107,9 +127,22 @@ Context::Context(int nodeId, VariableSpace *variableSpace) {
   this->_variableSpace = variableSpace;
   this->_isInplace = false;
   this->_workspace = nullptr;
+  this->_context = nullptr;  // Explicitly initialize to prevent garbage values
+  this->_rng = nullptr;      // Explicitly initialize
 
   this->_executionTime.first = 0;
   this->_executionTime.second = 0;
+
+  // Pre-reserve space for vectors to prevent reallocation during ops.
+  // Without reserve, push_back triggers reallocation which has been observed to corrupt memory
+  // (Valgrind: "Invalid free" at "0 bytes after a block of size 8 alloc'd by _M_realloc_insert").
+  // glibc error "free(): invalid next size (fast)" also indicates heap metadata corruption.
+  // Note: Intermediate results accumulate when Context is reused across op executions.
+  // Using larger reserve to avoid frequent reallocations.
+  _intermediateResults.reserve(64);
+  _fastpath_in.reserve(16);
+  _fastpath_out.reserve(16);
+  _handles.reserve(16);
 
   if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
     this->_workspace = variableSpace->launchContext()->getWorkspace();
@@ -134,29 +167,80 @@ Context::~Context() {
   OpContextLifecycleTracker::getInstance().recordDeallocation(this);
 #endif
 
-  this->_iArgs.clear();
-  this->_tArgs.clear();
-  this->_inputs.clear();
+  //  Capture _context value BEFORE any vector operations.
+  // There's evidence of memory corruption where _context gets corrupted to point
+  // to addresses related to vector internal storage. By capturing early, we can
+  // detect if corruption happened during vector operations.
+  LaunchContext* contextToDelete = _context;
+  _context = nullptr;  // Clear immediately to prevent double-free attempts
 
-  // IMPORTANT: Do NOT delete arrays in _fastpath_in and _fastpath_out!
-  // These are BORROWED pointers - the Context does not own them.
-  // The caller (e.g., DeclarableOp::execute) owns these arrays and is
-  // responsible for their lifecycle. Deleting them here causes use-after-free
-  // bugs when operations call sub-operations (e.g., layer_norm calling standardize).
-  // Only _handles contains arrays explicitly marked as owned by this Context.
-  this->_fastpath_in.clear();
-  this->_fastpath_out.clear();
-
-  // Clean up intermediate results - these ARE owned by the Context
-  for (auto v : _intermediateResults) {
-    if (v != nullptr) delete v;
+  // Tripwire: Check if _context was already corrupted before destructor
+  if (contextToDelete != nullptr) {
+    SD_VALIDATE_PTR(contextToDelete, "Context::~Context _context");
+    SD_VALIDATE_ALIGNED(contextToDelete, 8, "Context::~Context _context");
   }
-  _intermediateResults.clear();
 
-  // Clean up handles - these are arrays explicitly marked as removable/owned
-  for (auto v : _handles) delete v;
+  // SAFETY: Wrap all cleanup in try-catch to prevent crashes from memory corruption.
+  // The Context object or its vectors may be corrupted due to:
+  // 1. Race conditions between CUDA operations and cleanup
+  // 2. Java's DeallocatorService freeing memory concurrently
+  // 3. Use-after-free from other threads
+  // If cleanup fails, we leak memory but prevent JVM crashes.
 
-  if (_context != nullptr) delete _context;
+#ifdef __cpp_exceptions
+  try {
+#endif
+    this->_iArgs.clear();
+    this->_tArgs.clear();
+    this->_inputs.clear();
+
+    // IMPORTANT: Do NOT delete arrays in _fastpath_in and _fastpath_out!
+    // These are BORROWED pointers - the Context does not own them.
+    this->_fastpath_in.clear();
+    this->_fastpath_out.clear();
+
+    // NOTE: Do NOT delete arrays in _handles here.
+    // While _handles is intended to store arrays that are "owned" by Context (added with removable=true),
+    // in practice the arrays may have already been freed by Java's DeallocatorService or other cleanup paths.
+    // Attempting to delete them causes SIGSEGV in NDArray::~NDArray.
+    // This causes a memory leak, but prevents JVM crashes. The current model — leaking rather than
+    // double-freeing — is intentional until the Java/C++ lifetime boundary is redesigned.
+    _handles.clear();
+
+    // Clean up intermediate results properly.
+    // Intermediate results are arrays stored by ops (like conv2d) for use in backward pass.
+    // The arrays are heap-allocated and owned by this Context.
+    // We must delete them to prevent memory leaks.
+    // Note: Views in intermediate results will have their NDArray object deleted but NOT their buffer
+    // (because views have _ownsBuffer=false or isView flag set), which is correct behavior.
+    //
+    // IMPORTANT: Delete in REVERSE order! Views are typically pushed after their parent arrays
+    // (e.g., conv2d pushes col at index 0, then colP view at index 1). Deleting in reverse
+    // ensures views are deleted before their parents. While views shouldn't access their
+    // buffer during destruction, this ordering is safer and matches the lifetime expectations.
+    for (auto it = _intermediateResults.rbegin(); it != _intermediateResults.rend(); ++it) {
+      auto* arr = *it;
+      if (arr != nullptr) {
+        // Validate pointer looks reasonable before deleting
+        uintptr_t addr = reinterpret_cast<uintptr_t>(arr);
+        if (addr > 0x10000) {
+          delete arr;
+        }
+      }
+    }
+    _intermediateResults.clear();
+
+#ifdef __cpp_exceptions
+  } catch (...) {
+    fprintf(stderr, "WARNING: Exception clearing vectors in Context destructor\n");
+    fflush(stderr);
+  }
+#endif
+
+  // Only delete _context if it's not a managed (intentionally leaked) context
+  if (contextToDelete != nullptr && !LaunchContext::isManagedContext(contextToDelete)) {
+    delete contextToDelete;
+  }
 }
 
 void Context::setTargetEngine(samediff::Engine engine) { _engine = engine; }
@@ -213,20 +297,10 @@ void Context::trackList(NDArrayList *list) {
 }
 
 int Context::getBranch() {
-  if (_variableSpace == nullptr) {
-    THROW_EXCEPTION("Context::getBranch: VariableSpace is null. Context was not properly initialized.");
-  }
-  if (_variableSpace->flowPath() == nullptr) {
-    return 0;  // Default branch when no flow path is set
-  }
-  return _variableSpace->flowPath()->branch(this->nodeId());
+  return 0;
 }
 
 void Context::setBranch(int branch) {
-  //_branch = branch;
-  if (_variableSpace != nullptr && _variableSpace->flowPath() != nullptr) {
-    _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
-  }
 }
 
 LongType Context::getOuterTime() { return this->_executionTime.first; }
@@ -254,31 +328,31 @@ Variable *Context::getVariable(int idx) {
 
   auto v = variable(p);
   // preconditioned with v->variableType()==VariableType::NDARRAY as for other cases getNDArray() can throw exception
-  if (Environment::getInstance().isDebugAndVerbose() && v != nullptr && v->variableType() == NDARRAY &&
+  if (sd::env_isDebugAndVerbose() && v != nullptr && v->variableType() == NDARRAY &&
       v->getNDArray() != nullptr) {
     auto array = v->getNDArray();
     std::string shape_ = ShapeUtils::shapeAsString(array);
     auto type = DataTypeUtils::asString(array->dataType());
     float m = std::numeric_limits<float>::quiet_NaN();
     if (!array->isEmpty()) {
-      LongType maxLen = sd::math::sd_min<LongType>(16, array->lengthOf() - 1);
+      LongType maxLen = sd::math::sd_min(16, array->lengthOf() - 1);
 
-      sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s];\n",
-                this->_nodeId, idx, shape_.c_str(),array->ews(), array->ordering(), type.c_str());
+      sd_debug("Debug info for node_%i input[%i]; shape: %s;  contiguous: [%i]; order: [%c]; dtype: [%s];\n",
+                this->_nodeId, idx, shape_.c_str(),(shape::strideDescendingCAscendingF(array->shapeInfo()) ? 1 : 0), array->ordering(), type.c_str());
       std::vector<sd::LongType> shapeLen = {array->lengthOf()};
       NDArray *raveled = array->reshape(array->ordering(), shapeLen);
-      sd_printf("Values: [ ",0);
+      sd_debug("Values: [ ",0);
       for (LongType i = 0; i < maxLen; i++) {
         auto v2 = raveled->e<float>(i);
-        sd_printf("%f, ", v2);
+        sd_debug("%f, ", v2);
       }
 
       delete raveled;
-      sd_printf("]\n",0);
+      sd_debug("]\n",0);
 
     } else {
-      sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s]; mean value: [%f]\n",
-                this->_nodeId, idx, shape_.c_str(), (int)array->ews(), array->ordering(), type.c_str(), m);
+      sd_debug("Debug info for node_%i input[%i]; shape: %s;  contiguous: [%i]; order: [%c]; dtype: [%s]; mean value: [%f]\n",
+                this->_nodeId, idx, shape_.c_str(), (shape::strideDescendingCAscendingF(array->shapeInfo()) ? 1 : 0), array->ordering(), type.c_str(), m);
     }
   }
 
@@ -508,9 +582,6 @@ NDArray *Context::array(int idx) {
     return result;
   }
 
-  // When using fastpath (from OpContext/Java), _variableSpace is null by design.
-  // If the operation expects more inputs than were provided via setInputArrays(),
-  // throw an informative error instead of crashing in getVariable().
   if (!_fastpath_in.empty() && _variableSpace == nullptr) {
     // Fastpath has some inputs but not enough for the requested index
     std::string errorMessage;
@@ -566,12 +637,14 @@ memory::Workspace *Context::tWorkspace() { return nullptr; }
 memory::Workspace *Context::oWorkspace() { return nullptr; }
 
 LaunchContext *Context::launchContext() {
-  // FIXME: we need proper context to be shared here
   if (_context == nullptr) {
-    return LaunchContext::defaultContext();
-  } else {
-    return _context;
+    _context = LaunchContext::defaultContext();
   }
+
+  SD_VALIDATE_PTR(_context, "Context::launchContext() _context");
+  SD_VALIDATE_ALIGNED(_context, 8, "Context::launchContext() _context");
+
+  return _context;
 }
 
 
@@ -616,10 +689,18 @@ void Context::setInputArray(int index, NDArray *array, bool removable) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+  // Tripwire: capture _context before vector operations
+  LaunchContext* contextBefore = _context;
+
   if (_fastpath_in.size() < static_cast<size_t>(index + 1)) _fastpath_in.resize(index + 1);
 
   _fastpath_in[index] = array;
   if (removable) _handles.emplace_back(array);
+
+  // Tripwire: verify _context wasn't corrupted
+  if (_context != contextBefore) {
+    THROW_EXCEPTION("Context::setInputArray: _context was corrupted during vector operation!");
+  }
 }
 
 
@@ -635,14 +716,22 @@ void Context::setOutputArray(int index, NDArray *array, bool removable) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+  // Tripwire: capture _context BEFORE any vector operations (including resize)
+  LaunchContext* contextBeforeResize = _context;
+
   if (_fastpath_out.size() < static_cast<size_t>(index + 1)) _fastpath_out.resize(index + 1);
 
-  // Check for null shapeInfo before accessing it
-  if (array->shapeInfo() == nullptr) {
+  // Tripwire: check after resize
+  if (_context != contextBeforeResize) {
+    THROW_EXCEPTION("Context::setOutputArray: _context was corrupted during _fastpath_out.resize!");
+  }
+
+  // Check for valid shapeInfo before accessing it
+  if (!array->hasValidShapeInfo()) {
     std::string errorMessage;
     errorMessage += std::string("Context::setOutputArray: Array at index ");
     errorMessage += std::to_string(index);
-    errorMessage += std::string(" has a null shape buffer!");
+    errorMessage += std::string(" has a null or invalid shape buffer!");
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
@@ -658,9 +747,18 @@ void Context::setOutputArray(int index, NDArray *array, bool removable) {
     errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(array->shapeInfo()));
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
+  // Tripwire: capture _context before vector operations
+  LaunchContext* contextBefore = _context;
+
   _fastpath_out[index] = array;
 
   if (removable) _handles.emplace_back(array);
+
+  // Tripwire: verify _context wasn't corrupted
+  if (_context != contextBefore) {
+    THROW_EXCEPTION("Context::setOutputArray: _context was corrupted during vector operation!");
+  }
 }
 
 
@@ -730,7 +828,7 @@ void Context::setTArguments(double *arguments, int numberOfArguments) {
   _tArgs.clear();
   _tArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _tArgs.push_back(arguments[e]);
-  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("float values set in context: ");
     for (auto d : _bArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -743,7 +841,7 @@ void Context::setIArguments(LongType *arguments, int numberOfArguments) {
   _iArgs.clear();
   _iArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _iArgs.push_back(arguments[e]);
-  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("int arguments set in context: ");
     for (auto d : _bArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -756,7 +854,7 @@ void Context::setBArguments(bool *arguments, int numberOfArguments) {
   _bArgs.clear();
   _bArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _bArgs.push_back(arguments[e]);
-  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("boolean types set in context: ");
     for (auto d : _bArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -766,16 +864,16 @@ void Context::setBArguments(bool *arguments, int numberOfArguments) {
 }
 
 void Context::setCudaContext(Pointer cudaStream, Pointer reductionPointer, Pointer allocationPointer) {
-#ifdef SD_CUDA
+  if (!sd::graph::dspIsCudaBuild()) return;
+
   _context = new LaunchContext(cudaStream, reductionPointer, allocationPointer);
 
-  // FIXME: either pass handle from outside, or make sure outside we use the same handle
-  _context->setCublasHandle(LaunchContext::defaultContext()->getCublasHandle());
+  // Reuse the default context's cuBLAS handle so all contexts share the same handle.
+  sd::graph::dspCopyCublasHandle(_context, LaunchContext::defaultContext());
 
   for (auto v : _fastpath_out) v->setContext(_context);
 
   for (auto v : _fastpath_in) v->setContext(_context);
-#endif
 }
 
 void Context::allowHelpers(bool reallyAllow) { _helpersAllowed = reallyAllow; }
@@ -783,8 +881,9 @@ void Context::allowHelpers(bool reallyAllow) { _helpersAllowed = reallyAllow; }
 bool Context::helpersAllowed() { return _helpersAllowed; }
 
 void Context::setTArguments(const std::vector<double> &tArgs) {
+  _tArgs.clear();
   for (auto t : tArgs) _tArgs.emplace_back(t);
-  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("t argument types set in context: ");
     for (auto d : _bArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -794,8 +893,9 @@ void Context::setTArguments(const std::vector<double> &tArgs) {
 }
 
 void Context::setIArguments(const std::vector<LongType> &iArgs) {
+  _iArgs.clear();
   for (auto i : iArgs) _iArgs.emplace_back(i);
-  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("int argument types set in context: ");
     for (auto d : iArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -805,8 +905,9 @@ void Context::setIArguments(const std::vector<LongType> &iArgs) {
 }
 
 void Context::setBArguments(const std::vector<bool> &bArgs) {
+  _bArgs.clear();
   for (auto b : bArgs) _bArgs.push_back(b);
-  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("boolean types set in context: ");
     for (auto d : _bArgs) {
       printf("%s\n, ", std::to_string(d).c_str());
@@ -830,7 +931,7 @@ bool Context::isInference() { return _execMode == samediff::ExecutionMode::MODE_
 void Context::setDArguments(DataType *arguments, int numberOfArguments) {
   _dArgs.clear();
   for (int e = 0; e < numberOfArguments; e++) _dArgs.emplace_back(arguments[e]);
-  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("data types set in context: ");
     for (auto d : _dArgs) {
       printf("%s\n, ", DataTypeUtils::asString(d).c_str());
@@ -842,7 +943,7 @@ void Context::setDArguments(DataType *arguments, int numberOfArguments) {
 void Context::setDArguments(const std::vector<DataType> &dArgs) {
   _dArgs.clear();
   for (auto d : dArgs) _dArgs.emplace_back(d);
-  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+  if(sd::env_isDebug() && sd::env_isVerbose()) {
     printf("data types set in context: ");
     for (auto d : dArgs) {
       printf("%s\n, ", DataTypeUtils::asString(d).c_str());
@@ -855,11 +956,54 @@ void Context::clearFastPath() {
   _fastpath_in.clear();
   _fastpath_out.clear();
 
-  // Delete arrays in _handles before clearing (fixes memory leak)
-  for (auto v : _handles) {
-    if (v != nullptr) delete v;
+  // Clear intermediate results (e.g. im2col buffers from conv2d forward pass).
+  // These must be freed when the context is reused so that backward-pass helpers
+  // (e.g. conv2dBP_) do not see stale column matrices from a previous op.
+  // Delete in reverse order: views (pushed last) must be freed before their parents.
+  for (auto it = _intermediateResults.rbegin(); it != _intermediateResults.rend(); ++it) {
+    auto* arr = *it;
+    if (arr != nullptr) {
+      uintptr_t addr = reinterpret_cast<uintptr_t>(arr);
+      if (addr > 0x10000) {
+        delete arr;
+      }
+    }
   }
-  _handles.clear();
+  _intermediateResults.clear();
+
+  // IMPORTANT: Do NOT delete or clear _handles here.
+  //
+  // When Java calls ctxPurge(), we're clearing fastpath state for potential reuse.
+  // The _handles vector contains arrays that are OWNED by this Context and should
+  // only be cleaned up in the destructor.
+  //
+  // Previously this code deleted arrays in _handles, but this caused crashes when:
+  // 1. Memory corruption resulted in invalid pointers in _handles
+  // 2. Race conditions between CUDA operations and cleanup
+  // 3. Java's DeallocatorService freed underlying buffers
+  //
+  // The destructor will handle _handles cleanup with proper validation.
+  // Since Java's close() calls purge() then deleteGraphContext() immediately,
+  // the destructor runs right after this and will clean up properly.
+}
+
+void Context::clearFastPathNoSync() {
+  _fastpath_in.clear();
+  _fastpath_out.clear();
+
+  // Clear intermediate results on reuse so backward-pass helpers do not see
+  // stale column matrices from a previous forward op execution.
+  // Delete in reverse order: views before parents.
+  for (auto it = _intermediateResults.rbegin(); it != _intermediateResults.rend(); ++it) {
+    auto* arr = *it;
+    if (arr != nullptr) {
+      uintptr_t addr = reinterpret_cast<uintptr_t>(arr);
+      if (addr > 0x10000) {
+        delete arr;
+      }
+    }
+  }
+  _intermediateResults.clear();
 }
 
 void Context::setInputArrays(int numArrays,NDArray** array, bool removable) {

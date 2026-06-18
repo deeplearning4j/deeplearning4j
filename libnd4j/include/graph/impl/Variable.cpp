@@ -40,11 +40,10 @@ Variable *Variable::asT() {
   result->setName(&this->_name);
   result->setIndex(this->_index);
 
-  if (this->_ndarray != nullptr) result->setNDArray(new NDArray(this->_ndarray->template asT<N>()));
+  if (this->_ndarray != nullptr) result->setNDArray(this->_ndarray->template asT<N>());  // asT() already returns NDArray*
 
-  // FIXME: add support for ArrayList
+  // NDArrayList cannot be cast to a different element type; asT<N>() is only valid for NDArray variables.
   if (this->_list != nullptr) {
-    sd_printf("ArrayList not supported yet\n", "");
     THROW_EXCEPTION("ArrayList not supported yet for asT");
   }
 
@@ -61,7 +60,7 @@ Variable *Variable::clone() {
   result->_index = this->_index;
 
   if (this->_ndarray != nullptr) {
-    result->_ndarray = new NDArray(this->_ndarray->dup(this->_ndarray->ordering(), false));
+    result->_ndarray = this->_ndarray->dup(this->_ndarray->ordering(), false);
     result->_readOnly = false;
     result->_removable = true;
   }
@@ -115,7 +114,7 @@ void Variable::markReadOnly(bool reallyReadOnly) { this->_readOnly = reallyReadO
 
 NDArray *Variable::getNDArray() {
   if (_variableType != NDARRAY) {
-    sd_printf("Variable[%i:%i/<%s>] is has [%s] type, but NDArray was requested\n", this->_id, this->_index,
+    sd_debug("Variable[%i:%i/<%s>] is has [%s] type, but NDArray was requested\n", this->_id, this->_index,
               this->_name.c_str(), EnumUtils::_VariableTypeToString(_variableType));
   }
 
@@ -259,8 +258,9 @@ void Variable::setId(int id, int idx) {
 flatbuffers::Offset<::graph::FlatVariable> Variable::asFlatVariable(flatbuffers::FlatBufferBuilder &builder) {
   if (this->hasNDArray()) {
     auto array = this->getNDArray();
-    auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
-
+    auto vec = array->getShapeInfoAsFlatVector();
+    auto fShape = builder.CreateVector(*vec);
+    delete vec;
     auto fBuffer = builder.CreateVector(array->asByteVector());
 
     // packing array

@@ -20,16 +20,14 @@
 // @author raver119@gmail.com
 //
 #include <array/DataTypeUtils.h>
-#include <exceptions/graph_exception.h>
 #include <graph/FlatUtils.h>
 #include <graph/Graph.h>
 #include <graph/VariableProxy.h>
-#include <graph/exceptions/unresolved_input_exception.h>
-#include <graph/exceptions/unresolved_output_exception.h>
 #include <helpers/EnumUtils.h>
 #include <helpers/ShapeUtils.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <system/env_functions.h>
 
 #include <vector>
 
@@ -108,7 +106,7 @@ LongType Graph::estimateRequiredMemory() {
           auto x = _variableSpace->getVariable(in);
           auto z = _variableSpace->getVariable(node->id());
 
-          auto newShape = new LongType[shape::shapeInfoLength(x->getNDArray()->shapeInfo())];
+          auto newShape = new LongType[shape::shapeInfoLength(x->getNDArray()->shapeInfo()) + SD_SHAPE_ALLOC_PADDING];
           memcpy(newShape, x->getNDArray()->shapeInfo(), shape::shapeInfoByteLength(x->getNDArray()->shapeInfo()));
 
           std::pair<int, int> pairAddr(node->id(), 0);
@@ -122,7 +120,7 @@ LongType Graph::estimateRequiredMemory() {
         } else {
           auto prevShape = shapesMap.at(in);
 
-          auto newShape = new LongType[shape::shapeInfoLength(prevShape)];
+          auto newShape = new LongType[shape::shapeInfoLength(prevShape) + SD_SHAPE_ALLOC_PADDING];
           memcpy(newShape, prevShape, shape::shapeInfoByteLength(prevShape));
 
           std::pair<int, int> pairAddr(node->id(), 0);
@@ -199,7 +197,8 @@ std::vector<Variable *> *Graph::fetchOutputs() {
         res->push_back(_variableSpace->getVariable(nodeId, e1));
       } else {
         if (e == 0) {
-          THROW_EXCEPTION(unresolved_output_exception::build("Can't find output variable", nodeId, e).what());
+          std::string msg = "Can't find output variable; Node: [" + std::to_string(nodeId) + ":0]; Output: [" + std::to_string(e) + "]";
+          THROW_EXCEPTION(msg.c_str());
         } else
           break;
       }
@@ -236,19 +235,74 @@ void Graph::expandOnion(int newLayer) {
 VariableSpace *Graph::getVariableSpace() { return _variableSpace; }
 
 Graph::~Graph() {
-  for (auto &v : *_mapped) delete v.second;
+  // SAFETY: Wrap each cleanup section in try-catch to prevent partial destruction
+  // If heap corruption occurs, we want to clean up as much as possible
+  try {
+    if (_mapped != nullptr) {
+      for (auto &v : *_mapped) {
+        if (v.second != nullptr) delete v.second;
+      }
+    }
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception cleaning up _mapped\n", "");
+  }
 
-  for (auto &v : _unmapped) delete v.second;
+  try {
+    for (auto &v : _unmapped) {
+      if (v.second != nullptr) delete v.second;
+    }
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception cleaning up _unmapped\n", "");
+  }
 
-  for (auto &v : *_onion) delete v.second;
+  try {
+    if (_onion != nullptr) {
+      for (auto &v : *_onion) {
+        if (v.second != nullptr) delete v.second;
+      }
+    }
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception cleaning up _onion\n", "");
+  }
 
-  for (auto v : _scopes) delete v;
+  try {
+    for (auto v : _scopes) {
+      if (v != nullptr) delete v;
+    }
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception cleaning up _scopes\n", "");
+  }
 
-  delete _mapped;
-  delete _nodes;
-  delete _variableSpace;
-  delete _onion;
-  delete _configuration;
+  // Delete containers
+  try {
+    delete _mapped;
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception deleting _mapped\n", "");
+  }
+
+  try {
+    delete _nodes;
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception deleting _nodes\n", "");
+  }
+
+  try {
+    delete _variableSpace;
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception deleting _variableSpace\n", "");
+  }
+
+  try {
+    delete _onion;
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception deleting _onion\n", "");
+  }
+
+  try {
+    delete _configuration;
+  } catch (...) {
+    sd_debug("Graph::~Graph: Exception deleting _configuration\n", "");
+  }
 }
 
 void Graph::addNode(Node *node) {
@@ -291,7 +345,6 @@ void Graph::addNode(Node *node) {
   } else if (node->hasCustomOp()) {
     // custom ops require Block inside. but we'll set it inside buildGraph
 
-    // TODO: we want to change this, to make blocks thread-local/session-local
     ContextPrototype *block = nullptr;
 
     if (!node->hasBlockAttached()) {
@@ -358,7 +411,6 @@ void Graph::addNode(Node *node) {
 
     //        }
   } else if (node->hasExternalOutputs()) {
-    // TODO: we might want this behavior configurable!
     sd_logger("Adding specific output variable: Outputs: %i; HasInternal: %i;\n", node->output()->size(),
               node->hasInternalOutputs());
 
@@ -698,7 +750,7 @@ void Graph::prepareOutputs() {
     // we're adding final nodes of the graph. those, not used as input anywhere
     sd_debug("Paring nodes... \n", "");
 
-    if (Environment::getInstance().isDebugAndVerbose()) {
+    if (sd::env_isDebugAndVerbose()) {
       // sd_printv("current _output", _output);
     }
     //_output.clear();
@@ -739,10 +791,8 @@ void Graph::prepareOutputs() {
           sd_debug("Output node found: [%i]\n", v);
         }
 
-        // FIXME: we don't really need search here.
-
-        if (std::find(_output.begin(), _output.end(), node->id()) == _output.end()) _output.emplace_back(node->id());
-      } else if (Environment::getInstance().isDebugAndVerbose()) {
+        pushToOutputOnce(node->id());
+      } else if (sd::env_isDebugAndVerbose()) {
         sd_debug("Node [%i:<%s>] has %i outputs announced:\n", v, node->name()->c_str(), node->output()->size());
         printf("{");
         for (auto s : *node->output()) {
@@ -804,7 +854,6 @@ Graph::Graph(const ::graph::FlatGraph *flatGraph, VariableSpace *variableSpace) 
           THROW_EXCEPTION("Non-existent variable requested");
         }
 
-        // TODO: fix this .first
         pushToOutputOnce(vp.first);
       }
     }
@@ -888,7 +937,8 @@ void Graph::toposortNodes() {
             in.first)) {  // that's probably variable. if not - we'll throw exception later
           // do nothing, maxDepLayer is -1 here, because it's a variable input
         } else {
-          THROW_EXCEPTION(unresolved_input_exception::build("Unknown input specified", id, in).what());
+          std::string msg = "Unknown input specified; Node: [" + std::to_string(id) + ":0]; Variable: [" + std::to_string(in.first) + ":" + std::to_string(in.second) + "]";
+          THROW_EXCEPTION(msg.c_str());
         }
       }
 
@@ -908,7 +958,7 @@ void Graph::toposortNodes() {
     attempts++;
   }
 
-  if (!_unmapped.empty()) THROW_EXCEPTION(graph_exception("Graph wasn't toposorted", 0).what());
+  if (!_unmapped.empty()) THROW_EXCEPTION("Graph wasn't toposorted");
 
   _built = true;
 }
@@ -944,7 +994,7 @@ Status Graph::validate() {
 };
 
 void Graph::printOutNode(Node *node) {
-  sd_printf("%i. ", node->id());
+  sd_debug("%i. ", node->id());
   switch (node->opType()) {
     case ::graph::OpType_CUSTOM: {
       printf("%s; ", node->getCustomOp()->getOpName()->c_str());
@@ -957,12 +1007,12 @@ void Graph::printOutNode(Node *node) {
     }
   }
 
-  sd_printf("Inputs: [", "");
+  sd_debug("Inputs: [", "");
   // auto block = node->getBlock();
   for (size_t e = 0; e < node->input()->size(); e++) {
     auto in = node->input()->at(e);
     printf("{%i:%i}", in.first, in.second);
-    if (e < node->input()->size() - 1) sd_printf(", ", "");
+    if (e < node->input()->size() - 1) sd_debug(", ", "");
   }
 
   if (node->opType() == ::graph::OpType_CUSTOM) {
@@ -972,12 +1022,12 @@ void Graph::printOutNode(Node *node) {
 
       for (size_t e = 0; e < ctx->getIArguments()->size(); e++) {
         printf("%lli", ctx->getIArguments()->at(e));
-        if (e < ctx->getIArguments()->size() - 1) sd_printf(", ", "");
+        if (e < ctx->getIArguments()->size() - 1) sd_debug(", ", "");
       }
     }
   }
 
-  sd_printf("]; \n", "");
+  sd_debug("]; \n", "");
   fflush(stdout);
 }
 
@@ -986,7 +1036,7 @@ void Graph::printOut() {
 
   // print variables first
   if (_variableSpace->totalEntries() > 0) {
-    sd_printf("\nPrinting out Variables...\n", "");
+    sd_debug("\nPrinting out Variables...\n", "");
     auto vars = _variableSpace->getVariables();
 
     for (Variable *v : vars) {
@@ -996,20 +1046,21 @@ void Graph::printOut() {
         auto dtype = DataTypeUtils::asString(v->getNDArray()->dataType());
 
         if (v->getName() != nullptr && !v->getName()->empty()) {
-          sd_printf("<%s> <%i:%i> dtype: %s; shape: %s; values: %s;\n", v->getName()->c_str(), v->id(), v->index(),
+          sd_debug("<%s> <%i:%i> dtype: %s; shape: %s; values: %s;\n", v->getName()->c_str(), v->id(), v->index(),
                     dtype.c_str(), shape.c_str(), values->c_str());
         } else {
-          sd_printf("<%i:%i> dtype: %s; shape: %s; values: %s;\n", v->id(), v->index(), dtype.c_str(), shape.c_str(),
+          sd_debug("<%i:%i> dtype: %s; shape: %s; values: %s;\n", v->id(), v->index(), dtype.c_str(), shape.c_str(),
                     values->c_str());
         }
       } else if (v->hasNDArrayList()) {
-        // TODO: add better NDArrayList printout
-        sd_printf("<%i:%i> holds ArrayList", v->id(), v->index());
+        auto list = v->getNDArrayList();
+        sd_debug("<%i:%i> holds ArrayList; elements: %i; height: %i;\n", v->id(), v->index(),
+                 list != nullptr ? list->elements() : 0, list != nullptr ? list->height() : 0);
       }
     }
   }
 
-  if (_onion->size() > 0) sd_printf("\nPrinting out Graph...\n", "");
+  if (_onion->size() > 0) sd_debug("\nPrinting out Graph...\n", "");
 
   int opCnt = 0;
   for (size_t l = 0; l < _onion->size(); l++) {
@@ -1025,11 +1076,11 @@ void Graph::printOut() {
     }
   }
 
-  if (_scopes.size() > 0) sd_printf("\nPrinting out Scopes...\n", "");
+  if (_scopes.size() > 0) sd_debug("\nPrinting out Scopes...\n", "");
 
   for (size_t s = 0; s < _scopes.size(); s++) {
     Scope *scope = _scopes.at(s);
-    sd_printf("OpScope %i:<%s>:\n", scope->id(), scope->name()->c_str());
+    sd_debug("OpScope %i:<%s>:\n", scope->id(), scope->name()->c_str());
 
     for (size_t n = 0; n < scope->nodes()->size(); n++) {
       Node *node = scope->nodes()->at(n);

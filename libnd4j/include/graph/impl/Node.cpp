@@ -249,7 +249,8 @@ sd::graph::Node::Node(sd::ops::DeclarableOp* customOp, int id, std::initializer_
   for (auto o : output) pickOutput(o);
 
   if (dimensions.size() > 0) {
-    _dim = new sd::LongType[dimensions.size()];
+    _dim = new sd::LongType[dimensions.size() + SD_SHAPE_ALLOC_PADDING];
+    memset(_dim, 0, (dimensions.size() + SD_SHAPE_ALLOC_PADDING) * sizeof(sd::LongType));
     int cnt = 0;
     for (auto d : dimensions) {
       _dimensions.push_back(d);
@@ -291,7 +292,8 @@ sd::graph::Node::Node(::graph::OpType opType, int opNum, int id, std::initialize
   for (auto o : output) pickOutput(o);
 
   if (dimensions.size() > 0) {
-    _dim = new sd::LongType[dimensions.size()];
+    _dim = new sd::LongType[dimensions.size() + SD_SHAPE_ALLOC_PADDING];
+    memset(_dim, 0, (dimensions.size() + SD_SHAPE_ALLOC_PADDING) * sizeof(sd::LongType));
     int cnt = 0;
     for (auto d : dimensions) {
       _dimensions.push_back(d);
@@ -364,6 +366,14 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
 
 
   if (node != nullptr) {
+    auto copyExtraStrings = [node](ContextPrototype* block) {
+      if (node->extraStrings() != nullptr && node->extraStrings()->size() > 0) {
+        for (int e = 0; e < static_cast<int>(node->extraStrings()->size()); e++) {
+          block->getSArguments()->emplace_back(node->extraStrings()->Get(e)->str());
+        }
+      }
+    };
+
     this->_id = node->id();
     // this->_dataType = DataTypeUtils::fromFlatDataType(node->dataType());
     this->_opNum = node->opNum();
@@ -399,7 +409,8 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
     }
 
     if (node->dimensions() != nullptr && node->dimensions()->size() > 0) {
-      _dim = new sd::LongType [node->dimensions()->size()];
+      _dim = new sd::LongType [node->dimensions()->size() + SD_SHAPE_ALLOC_PADDING];
+      memset(_dim, 0, (node->dimensions()->size() + SD_SHAPE_ALLOC_PADDING) * sizeof(sd::LongType));
       for (int e = 0; e < (int)node->dimensions()->size(); e++) {
         _dimensions.emplace_back(node->dimensions()->Get(e));
         _dim[e] = node->dimensions()->Get(e);
@@ -453,6 +464,7 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
             block->getDArguments()->emplace_back((sd::DataType)node->extraTypes()->Get(e));
           }
         }
+        copyExtraStrings(block);
 
         NDArray *_scalar = NDArrayFactory::create(0.0f);
         this->setContextPrototype(block);
@@ -492,6 +504,7 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
             block->getDArguments()->emplace_back((sd::DataType)node->extraTypes()->Get(e));
           }
         }
+        copyExtraStrings(block);
 
         this->setContextPrototype(block);
         NDArray *_scalar = NDArrayFactory::create(0.0f);
@@ -518,8 +531,7 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
       if (node->extraInteger() != nullptr)
         for (uint32_t e = 0; e < node->extraInteger()->size(); e++) {
           auto v = node->extraInteger()->Get(e);
-          // FIXME: remove this static_cast, iArgs should be sd::LongType
-          block->getIArguments()->emplace_back(static_cast<int>(v));
+          block->getIArguments()->emplace_back(v);
         }
 
       if (node->extraParams() != nullptr)
@@ -537,6 +549,8 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
         }
       }
 
+      copyExtraStrings(block);
+
       for (auto v : _dimensions) block->getAxis()->emplace_back(v);
 
       this->setContextPrototype(block);
@@ -553,13 +567,25 @@ sd::DataType Node::dataType() { return _dataType; }
 ContextPrototype* Node::protoContext() { return _protoContext; }
 
 sd::graph::Node::~Node() {
-  if (_extraParams != nullptr) delete[] _extraParams;
+  // SAFETY: Wrap each cleanup in try-catch to handle heap corruption
+  try {
+    if (_extraParams != nullptr) delete[] _extraParams;
+  } catch (...) {
+    sd_debug("Node::~Node: Exception deleting _extraParams\n", "");
+  }
 
-  if (_dim != nullptr) delete[] _dim;
+  try {
+    if (_dim != nullptr) delete[] _dim;
+  } catch (...) {
+    sd_debug("Node::~Node: Exception deleting _dim\n", "");
+  }
 
-
-  if (_isDeductable && _customOp != nullptr) {
-    Node::deleteOpByType(_opType, _customOp);
+  try {
+    if (_isDeductable && _customOp != nullptr) {
+      Node::deleteOpByType(_opType, _customOp);
+    }
+  } catch (...) {
+    sd_debug("Node::~Node: Exception deleting custom op\n", "");
   }
 }
 
@@ -581,66 +607,76 @@ bool sd::graph::Node::equals(Node* other) {
 }
 
 void sd::graph::Node::deleteOpByType(::graph::OpType opType, void* op) {
-  switch (opType) {
-    case ::graph::OpType_PAIRWISE:
-      delete reinterpret_cast<sd::ops::LegacyPairwiseTransformOp*>(op);
-      break;
-    case ::graph::OpType_PAIRWISE_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyPairwiseTransformBoolOp*>(op);
-      break;
-    case ::graph::OpType_TRANSFORM_STRICT:
-      delete reinterpret_cast<sd::ops::LegacyTransformStrictOp*>(op);
-      break;
-    case ::graph::OpType_TRANSFORM_SAME:
-      delete reinterpret_cast<sd::ops::LegacyTransformSameOp*>(op);
-      break;
-    case ::graph::OpType_TRANSFORM_FLOAT:
-      delete reinterpret_cast<sd::ops::LegacyTransformFloatOp*>(op);
-      break;
-    case ::graph::OpType_TRANSFORM_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyTransformBoolOp*>(op);
-      break;
-    case ::graph::OpType_SCALAR:
-      delete reinterpret_cast<sd::ops::LegacyScalarOp*>(op);
-      break;
-    case ::graph::OpType_SCALAR_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyScalarBoolOp*>(op);
-      break;
-    case ::graph::OpType_REDUCE_3:
-      delete reinterpret_cast<sd::ops::LegacyReduce3Op*>(op);
-      break;
-    case ::graph::OpType_REDUCE_SAME:
-      delete reinterpret_cast<sd::ops::LegacyReduceSameOp*>(op);
-      break;
-    case ::graph::OpType_REDUCE_FLOAT:
-      delete reinterpret_cast<sd::ops::LegacyReduceFloatOp*>(op);
-      break;
-    case ::graph::OpType_REDUCE_LONG:
-      delete reinterpret_cast<sd::ops::LegacyReduceLongOp*>(op);
-      break;
-    case ::graph::OpType_REDUCE_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyReduceBoolOp*>(op);
-      break;
-    case ::graph::OpType_INDEX_REDUCE:
-      delete reinterpret_cast<sd::ops::LegacyIndexReduceOp*>(op);
-      break;
-    case ::graph::OpType_SUMMARYSTATS:
-      delete reinterpret_cast<sd::ops::LegacyStatsOp*>(op);
-      break;
-    case ::graph::OpType_RANDOM:
-      delete reinterpret_cast<sd::ops::LegacyRandomOp*>(op);
-      break;
-    case ::graph::OpType_BROADCAST:
-      delete reinterpret_cast<sd::ops::LegacyBroadcastOp*>(op);
-      break;
-    case ::graph::OpType_BROADCAST_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyBroadcastBoolOp*>(op);
-      break;
-    case ::graph::OpType_CUSTOM:
-      delete reinterpret_cast<sd::ops::DeclarableOp*>(op);
-      break;
-    default:
-      THROW_EXCEPTION("Bad opType passed in");
+  // SAFETY: Check for null pointer before casting and deleting
+  if (op == nullptr) {
+    return;
+  }
+
+  // SAFETY: Wrap each delete in try-catch to handle heap corruption
+  try {
+    switch (opType) {
+      case ::graph::OpType_PAIRWISE:
+        delete reinterpret_cast<sd::ops::LegacyPairwiseTransformOp*>(op);
+        break;
+      case ::graph::OpType_PAIRWISE_BOOL:
+        delete reinterpret_cast<sd::ops::LegacyPairwiseTransformBoolOp*>(op);
+        break;
+      case ::graph::OpType_TRANSFORM_STRICT:
+        delete reinterpret_cast<sd::ops::LegacyTransformStrictOp*>(op);
+        break;
+      case ::graph::OpType_TRANSFORM_SAME:
+        delete reinterpret_cast<sd::ops::LegacyTransformSameOp*>(op);
+        break;
+      case ::graph::OpType_TRANSFORM_FLOAT:
+        delete reinterpret_cast<sd::ops::LegacyTransformFloatOp*>(op);
+        break;
+      case ::graph::OpType_TRANSFORM_BOOL:
+        delete reinterpret_cast<sd::ops::LegacyTransformBoolOp*>(op);
+        break;
+      case ::graph::OpType_SCALAR:
+        delete reinterpret_cast<sd::ops::LegacyScalarOp*>(op);
+        break;
+      case ::graph::OpType_SCALAR_BOOL:
+        delete reinterpret_cast<sd::ops::LegacyScalarBoolOp*>(op);
+        break;
+      case ::graph::OpType_REDUCE_3:
+        delete reinterpret_cast<sd::ops::LegacyReduce3Op*>(op);
+        break;
+      case ::graph::OpType_REDUCE_SAME:
+        delete reinterpret_cast<sd::ops::LegacyReduceSameOp*>(op);
+        break;
+      case ::graph::OpType_REDUCE_FLOAT:
+        delete reinterpret_cast<sd::ops::LegacyReduceFloatOp*>(op);
+        break;
+      case ::graph::OpType_REDUCE_LONG:
+        delete reinterpret_cast<sd::ops::LegacyReduceLongOp*>(op);
+        break;
+      case ::graph::OpType_REDUCE_BOOL:
+        delete reinterpret_cast<sd::ops::LegacyReduceBoolOp*>(op);
+        break;
+      case ::graph::OpType_INDEX_REDUCE:
+        delete reinterpret_cast<sd::ops::LegacyIndexReduceOp*>(op);
+        break;
+      case ::graph::OpType_SUMMARYSTATS:
+        delete reinterpret_cast<sd::ops::LegacyStatsOp*>(op);
+        break;
+      case ::graph::OpType_RANDOM:
+        delete reinterpret_cast<sd::ops::LegacyRandomOp*>(op);
+        break;
+      case ::graph::OpType_BROADCAST:
+        delete reinterpret_cast<sd::ops::LegacyBroadcastOp*>(op);
+        break;
+      case ::graph::OpType_BROADCAST_BOOL:
+        delete reinterpret_cast<sd::ops::LegacyBroadcastBoolOp*>(op);
+        break;
+      case ::graph::OpType_CUSTOM:
+        delete reinterpret_cast<sd::ops::DeclarableOp*>(op);
+        break;
+      default:
+        THROW_EXCEPTION("Bad opType passed in");
+    }
+  } catch (...) {
+    sd_debug("Node::deleteOpByType: Exception deleting op of type %d - possible heap corruption\n", opType);
   }
 }
 

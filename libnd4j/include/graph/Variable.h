@@ -25,8 +25,9 @@
 #include <array/NDArray.h>
 #include <array/NDArrayList.h>
 #include <graph/VariableType.h>
+#include <system/PointerValidation.h>
 
-
+#include <cstdlib>
 #include <string>
 
 #ifndef __JAVACPP_HACK__
@@ -138,6 +139,8 @@ class SD_LIB_EXPORT Variable {
    */
   flatbuffers::Offset<::graph::FlatVariable> asFlatVariable(flatbuffers::FlatBufferBuilder &builder);
 #endif
+
+  SD_PADDED_NEW_DELETE
 };
 }  // namespace graph
 }  // namespace sd
