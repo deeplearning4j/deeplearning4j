@@ -74,8 +74,7 @@ NDArray* scalarArrayOpHelper(NDArray* arr, T scalar, sd::scalar::Ops op, bool in
     delete tmp;
     return arr;
   } else {
-    NDArray *result = new NDArray(arr->shapeInfo(), DataTypeUtils::pickPairwiseResultType(arr->dataType(), DataTypeUtils::fromT<T>()),
-                                  false, arr->getContext());
+    NDArray *result = new NDArray(arr->shapeInfo(), false, arr->getContext(), true);
     NDArray::prepareSpecialUse({result}, {arr, tmp});
     NativeOpExecutioner::execScalar(arr->getContext(), op,
                                     arr->buffer(), arr->shapeInfo(), arr->specialBuffer(), arr->specialShapeInfo(),
@@ -184,7 +183,39 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
  INSTANTIATE_SCALAR_OP(*, T) \
  INSTANTIATE_SCALAR_OP(/, T)
 
-ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE_ALL_SCALAR_OPS)
+// Explicit instantiations for scalar operators (replacing ITERATE_LIST which fails on MSVC old preprocessor)
+// SD_NUMERIC_TYPES = float16, bfloat16, float, double, int8_t, uint8_t, int16_t, int32_t, LongType, uint16_t, uint32_t, uint64_t
+#define INST_SCALAR_ALL_OPS(T) \
+    template SD_LIB_EXPORT NDArray* operator+<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(NDArray& arr, T scalar); \
+    template SD_LIB_EXPORT NDArray* operator+<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(NDArray&& arr, T scalar); \
+    template SD_LIB_EXPORT NDArray* operator+<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(T scalar, NDArray& arr); \
+    template SD_LIB_EXPORT NDArray* operator+<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(T scalar, NDArray&& arr); \
+    template SD_LIB_EXPORT NDArray* operator-<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(NDArray& arr, T scalar); \
+    template SD_LIB_EXPORT NDArray* operator-<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(NDArray&& arr, T scalar); \
+    template SD_LIB_EXPORT NDArray* operator-<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(T scalar, NDArray& arr); \
+    template SD_LIB_EXPORT NDArray* operator-<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(T scalar, NDArray&& arr); \
+    template SD_LIB_EXPORT NDArray* operator*<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(NDArray& arr, T scalar); \
+    template SD_LIB_EXPORT NDArray* operator*<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(NDArray&& arr, T scalar); \
+    template SD_LIB_EXPORT NDArray* operator*<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(T scalar, NDArray& arr); \
+    template SD_LIB_EXPORT NDArray* operator*<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(T scalar, NDArray&& arr); \
+    template SD_LIB_EXPORT NDArray* operator/<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(NDArray& arr, T scalar); \
+    template SD_LIB_EXPORT NDArray* operator/<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(NDArray&& arr, T scalar); \
+    template SD_LIB_EXPORT NDArray* operator/<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(T scalar, NDArray& arr); \
+    template SD_LIB_EXPORT NDArray* operator/<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(T scalar, NDArray&& arr);
+
+INST_SCALAR_ALL_OPS(float16)
+INST_SCALAR_ALL_OPS(bfloat16)
+INST_SCALAR_ALL_OPS(float)
+INST_SCALAR_ALL_OPS(double)
+INST_SCALAR_ALL_OPS(int8_t)
+INST_SCALAR_ALL_OPS(uint8_t)
+INST_SCALAR_ALL_OPS(int16_t)
+INST_SCALAR_ALL_OPS(int32_t)
+INST_SCALAR_ALL_OPS(sd::LongType)
+INST_SCALAR_ALL_OPS(uint16_t)
+INST_SCALAR_ALL_OPS(uint32_t)
+INST_SCALAR_ALL_OPS(uint64_t)
+#undef INST_SCALAR_ALL_OPS
 
 /////////////////////////////////////////////////////
 // Subtraction Operators (NDArray - scalar)
@@ -423,7 +454,26 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
  INSTANTIATE_COMPOUND_ASSIGN_OP(*=, T) \
  INSTANTIATE_COMPOUND_ASSIGN_OP(/=, T)
 
-ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE_ALL_COMPOUND_ASSIGN_OPS)
+// Explicit instantiations for compound assignment operators (replacing ITERATE_LIST)
+#define INST_COMPOUND_ALL_OPS(T) \
+    template SD_LIB_EXPORT void NDArray::operator+=<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(const T scalar); \
+    template SD_LIB_EXPORT void NDArray::operator-=<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(const T scalar); \
+    template SD_LIB_EXPORT void NDArray::operator*=<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(const T scalar); \
+    template SD_LIB_EXPORT void NDArray::operator/=<T, typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>(const T scalar);
+
+INST_COMPOUND_ALL_OPS(float16)
+INST_COMPOUND_ALL_OPS(bfloat16)
+INST_COMPOUND_ALL_OPS(float)
+INST_COMPOUND_ALL_OPS(double)
+INST_COMPOUND_ALL_OPS(int8_t)
+INST_COMPOUND_ALL_OPS(uint8_t)
+INST_COMPOUND_ALL_OPS(int16_t)
+INST_COMPOUND_ALL_OPS(int32_t)
+INST_COMPOUND_ALL_OPS(sd::LongType)
+INST_COMPOUND_ALL_OPS(uint16_t)
+INST_COMPOUND_ALL_OPS(uint32_t)
+INST_COMPOUND_ALL_OPS(uint64_t)
+#undef INST_COMPOUND_ALL_OPS
 
 // Helper for compound assignment operators with arrays
 void compoundAssignArray(NDArray& arr1, NDArray& arr2, sd::pairwise::Ops op, sd::BroadcastOpsTuple broadcastOp) {
@@ -460,9 +510,21 @@ void compoundAssignArray(NDArray& arr1, NDArray& arr2, sd::pairwise::Ops op, sd:
     if (shape::equalsTypesAndShapesSoft(arr1.shapeInfo(), bShape)) {
       arr1.applyTrueBroadcast(broadcastOp, &arr2, &arr1, false);
     } else {
-      NDArray result(bShape, true, arr1.getContext());
-      arr1.applyTrueBroadcast(broadcastOp, &arr2, &result, false);
-      arr1 = std::move(result);
+      // Compound assignment operators (+=, -=, *=, /=) must modify in-place.
+      // If broadcast would require a different output shape, we cannot safely
+      // perform the operation in-place as it would corrupt external references
+      // to arr1's buffer (like CUDA streams still accessing it).
+      // This matches numpy/Python behavior where a += b fails if shapes are incompatible.
+      std::string errorMessage;
+      errorMessage += "compoundAssignArray: Cannot perform in-place compound assignment when broadcast ";
+      errorMessage += "would change the array shape. Left operand shape: ";
+      errorMessage += ShapeUtils::shapeAsString(&arr1);
+      errorMessage += ", right operand shape: ";
+      errorMessage += ShapeUtils::shapeAsString(&arr2);
+      errorMessage += ", broadcast result shape would be: ";
+      errorMessage += ShapeUtils::shapeAsString(bShape);
+      errorMessage += ". Use binary operator (e.g., a = a + b) instead of compound assignment (a += b).";
+      THROW_EXCEPTION(errorMessage.c_str());
     }
   }
 }
@@ -565,8 +627,10 @@ NDArray* operator-(T1 &&arr1, T2 &&arr2) {
   if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
       (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL)) {
     // Always throw exception - never use _exit(1) which kills the entire process
-    THROW_EXCEPTION(sd::datatype_exception::build("operator-(T&& arr1, T&& arr2): Cannot subtract different types",
-                                        arr1.dataType(), arr2.dataType()).what());
+    std::string __dt_msg = std::string("operator-(T&& arr1, T&& arr2): Cannot subtract different types") +
+        "; Expected: [" + DataTypeUtils::asString(arr1.dataType()) +
+        "]; Actual: [" + DataTypeUtils::asString(arr2.dataType()) + "]";
+    THROW_EXCEPTION(__dt_msg.c_str());
   }
 
   PointersManager pointersManager(arr1.getContext(), "operator-(T&& arr1, T&& arr2)");
@@ -660,7 +724,6 @@ template SD_LIB_EXPORT NDArray* operator*<NDArray &, NDArray &, void>(NDArray &a
 template SD_LIB_EXPORT NDArray* operator*<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
 template SD_LIB_EXPORT NDArray* operator*<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
 template SD_LIB_EXPORT NDArray* operator*<NDArray&&, NDArray &&, void>(NDArray &&arr1, NDArray &&arr2);
-template SD_LIB_EXPORT NDArray* sd::operator*<NDArray, NDArray, void>(sd::NDArray&&, sd::NDArray&&);
 
 
 template <typename T1, typename T2, typename>
@@ -725,8 +788,10 @@ NDArray* operator/(T1 &&arr1, T2 &&arr2) {
   if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
       (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL)) {
     // Always throw exception - never use _exit(1) which kills the entire process
-    THROW_EXCEPTION(sd::datatype_exception::build("operator/(T&& arr1, T&& arr2): Cannot divide different types",
-                                        arr1.dataType(), arr2.dataType()).what());
+    std::string __dt_msg = std::string("operator/(T&& arr1, T&& arr2): Cannot divide different types") +
+        "; Expected: [" + DataTypeUtils::asString(arr1.dataType()) +
+        "]; Actual: [" + DataTypeUtils::asString(arr2.dataType()) + "]";
+    THROW_EXCEPTION(__dt_msg.c_str());
   }
 
   PointersManager pointersManager(arr1.getContext(), "operator/(T&& arr1, T&& arr2)");
@@ -764,6 +829,19 @@ template SD_LIB_EXPORT NDArray* operator/<NDArray, NDArray &, void>(NDArray &&ar
 template SD_LIB_EXPORT NDArray* operator/<NDArray&&, NDArray &&, void>(NDArray &&arr1, NDArray &&arr2);
 template SD_LIB_EXPORT NDArray* operator/<NDArray, NDArray, void>(sd::NDArray&&, sd::NDArray&&);
 
-
+// Explicit instantiations for scalarArrayOpHelper (replacing ITERATE_LIST)
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<bool>(NDArray*, bool, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<float16>(NDArray*, float16, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<bfloat16>(NDArray*, bfloat16, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<float>(NDArray*, float, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<double>(NDArray*, double, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<int8_t>(NDArray*, int8_t, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<uint8_t>(NDArray*, uint8_t, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<int16_t>(NDArray*, int16_t, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<int32_t>(NDArray*, int32_t, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<sd::LongType>(NDArray*, sd::LongType, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<uint16_t>(NDArray*, uint16_t, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<uint32_t>(NDArray*, uint32_t, sd::scalar::Ops, bool);
+template SD_LIB_EXPORT NDArray* scalarArrayOpHelper<uint64_t>(NDArray*, uint64_t, sd::scalar::Ops, bool);
 
 } // namespace sd

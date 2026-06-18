@@ -23,12 +23,16 @@
 //
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <exceptions/cuda_exception.h>
 #include <helpers/logger.h>
+#include <string>
 #include <math/templatemath.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <system/op_boilerplate.h>
+#include <system/Environment.h>
+
+#include <execution/LaunchContext.h>
 
 #include <atomic>
 #include <cstring>
@@ -37,6 +41,14 @@
 
 namespace sd {
 namespace memory {
+
+// Helper: get the current CUDA compute stream (never nullptr unless no context).
+static cudaStream_t currentStream() {
+  auto ctx = LaunchContext::defaultContext();
+  if (ctx != nullptr && ctx->getCudaStream() != nullptr)
+    return *ctx->getCudaStream();
+  return nullptr;
+}
 Workspace::Workspace(ExternalWorkspace *external) {
   if (external->sizeHost() > 0) {
     _ptrHost = (char *)external->pointerHost();
@@ -59,22 +71,47 @@ Workspace::Workspace(ExternalWorkspace *external) {
 
 Workspace::Workspace(LongType primarySize, LongType secondarySize) {
   if (secondarySize > 0) {
-    auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost), secondarySize, cudaHostAllocDefault);
-    if (res != 0) throw cuda_exception::build("Can't allocate [HOST] memory", res);
+    // Over-allocate by CANARY_SIZE so enableCanary() can write a sentinel region
+    // after the usable host buffer.  The canary is only checked in debug mode.
+    auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost),
+                             secondarySize + CANARY_SIZE, cudaHostAllocDefault);
+    if (res != 0) {
+      std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
 
-    cudaMemset(this->_ptrHost, 0, secondarySize);
+    // Host memory from cudaHostAlloc is CPU-accessible, use memset directly
+    std::memset(this->_ptrHost, 0, secondarySize);
+    // Pre-fill canary region and enable by default (only checked in debug+verbose)
+    std::memset(this->_ptrHost + secondarySize, CANARY_BYTE, CANARY_SIZE);
+    _canaryEnabled = true;
     this->_allocatedHost = true;
   } else
     this->_allocatedHost = false;
 
   if (primarySize > 0) {
-    auto res = cudaMalloc(reinterpret_cast<void **>(&_ptrDevice), primarySize);
-    if (res != 0) throw cuda_exception::build("Can't allocate [DEVICE] memory", res);
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    this->_deviceId = deviceId;  // Store device ID for proper deallocation
+    cudaStream_t stream = currentStream();
+    _ptrDevice = reinterpret_cast<char*>(CudaMemoryPool::getInstance().allocate(primarySize, deviceId, stream));
+    if (_ptrDevice == nullptr) {
+      std::string msg = "Can't allocate [DEVICE] memory; Error code: [" + std::to_string((int)cudaErrorMemoryAllocation) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
 
-    cudaMemset(this->_ptrDevice, 0, primarySize);
+    // Use cudaMemsetAsync on the SAME stream as the allocation to maintain correct
+    // stream ordering. cudaMallocAsync makes memory available on its stream, so
+    // cudaMemsetAsync on the same stream is guaranteed to execute after the allocation.
+    // Using synchronous cudaMemset (which runs on stream 0) would require implicit
+    // synchronization via legacy default stream semantics, which breaks under
+    // per-thread default stream mode.
+    cudaMemsetAsync(this->_ptrDevice, 0, primarySize, stream);
     this->_allocatedDevice = true;
-  } else
+  } else {
     this->_allocatedDevice = false;
+    this->_deviceId = -1;
+  }
 
   this->_initialSize = primarySize;
   this->_initialSizeSecondary = secondarySize;
@@ -89,12 +126,26 @@ Workspace::Workspace(LongType primarySize, LongType secondarySize) {
 
 void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
   if (this->_currentSize < primaryBytes) {
-    if (this->_allocatedDevice && !_externalized) cudaFree((void *)this->_ptrDevice);
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    cudaStream_t stream = currentStream();
+    if (this->_allocatedDevice && !_externalized) {
+      // Use stored device ID if available, otherwise use current device
+      int freeDeviceId = (this->_deviceId >= 0) ? this->_deviceId : deviceId;
+      CudaMemoryPool::getInstance().free((void *)this->_ptrDevice, freeDeviceId, stream);
+    }
 
-    auto res = cudaMalloc(reinterpret_cast<void **>(&_ptrDevice), secondaryBytes);
-    if (res != 0) throw cuda_exception::build("Can't allocate [DEVICE] memory", res);
+    _ptrDevice = reinterpret_cast<char*>(CudaMemoryPool::getInstance().allocate(primaryBytes, deviceId, stream));
+    if (_ptrDevice == nullptr) {
+      std::string msg = "Can't allocate [DEVICE] memory; Error code: [" + std::to_string((int)cudaErrorMemoryAllocation) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
 
-    cudaMemset(this->_ptrDevice, 0, primaryBytes);
+    // Store device ID for proper deallocation later
+    this->_deviceId = deviceId;
+
+    // Use same stream as allocation for correct stream ordering
+    cudaMemsetAsync(this->_ptrDevice, 0, primaryBytes, stream);
     this->_currentSize = primaryBytes;
     this->_allocatedDevice = true;
   }
@@ -102,12 +153,20 @@ void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
   if (this->_currentSizeSecondary < secondaryBytes) {
     if (this->_allocatedHost && !_externalized) cudaFreeHost((void *)this->_ptrHost);
 
-    auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost), secondaryBytes, cudaHostAllocDefault);
-    if (res != 0) throw cuda_exception::build("Can't allocate [HOST] memory", res);
+    auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost),
+                             secondaryBytes + CANARY_SIZE, cudaHostAllocDefault);
+    if (res != 0) {
+      std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
 
-    cudaMemset(this->_ptrHost, 0, secondaryBytes);
+    // Host memory from cudaHostAlloc is CPU-accessible, use memset directly
+    std::memset(this->_ptrHost, 0, secondaryBytes);
+    // Re-fill canary after the new buffer
+    std::memset(this->_ptrHost + secondaryBytes, CANARY_BYTE, CANARY_SIZE);
     this->_currentSizeSecondary = secondaryBytes;
     this->_allocatedHost = true;
+    _canaryEnabled = true;
   }
 }
 
@@ -121,18 +180,41 @@ void Workspace::freeSpills() {
   _spillsSize = 0;
   _spillsSizeSecondary = 0;
 
-  for (auto v : _spills) cudaFree(v);
+  // Only fetch device/stream if there are actual spills to free.
+  // currentStream() triggers ContextBuffers::initialize() which creates CUDA streams.
+  // When called from scopeIn() on a fresh workspace (no spills), this unnecessary
+  // initialization can fail with cudaErrorMemoryAllocation if GPU memory is tight
+  // (e.g., after a large DSP execution that hasn't fully released pool memory).
+  if (!_spills.empty()) {
+    int deviceId = (this->_deviceId >= 0) ? this->_deviceId : 0;
+    if (this->_deviceId < 0) {
+      cudaGetDevice(&deviceId);
+    }
+    cudaStream_t stream = currentStream();
+    for (auto v : _spills) {
+      CudaMemoryPool::getInstance().free(v, deviceId, stream);
+    }
+    _spills.clear();
+  }
 
-  for (auto v : _spillsSecondary) cudaFreeHost(v);
-
-  _spills.clear();
-  _spillsSecondary.clear();
+  if (!_spillsSecondary.empty()) {
+    for (auto v : _spillsSecondary) cudaFreeHost(v);
+    _spillsSecondary.clear();
+  }
 }
 
 Workspace::~Workspace() {
   if (this->_allocatedHost && !_externalized) cudaFreeHost((void *)this->_ptrHost);
 
-  if (this->_allocatedDevice && !_externalized) cudaFree((void *)this->_ptrDevice);
+  if (this->_allocatedDevice && !_externalized) {
+    // Use stored device ID if available, otherwise fall back to current device
+    int deviceId = (this->_deviceId >= 0) ? this->_deviceId : 0;
+    if (this->_deviceId < 0) {
+      // Fallback: get current device if stored ID is not available
+      cudaGetDevice(&deviceId);
+    }
+    CudaMemoryPool::getInstance().free((void *)this->_ptrDevice, deviceId, currentStream());
+  }
 
   freeSpills();
 }
@@ -149,19 +231,54 @@ LongType Workspace::getAllocatedSize() { return getCurrentSize() + getSpilledSiz
 
 void Workspace::scopeIn() {
   freeSpills();
-  init(_cycleAllocations.load());
+  init(_cycleAllocations.load(), _cycleAllocationsSecondary.load());
   _cycleAllocations = 0;
+  _cycleAllocationsSecondary = 0;
 }
 
-void Workspace::scopeOut() { _offset = 0; }
+void Workspace::scopeOut() {
+  // In debug mode, check canary before resetting offsets.
+  // If canary is corrupted, the last op wrote past the workspace boundary.
+  if (_canaryEnabled && sd::Environment::getInstance().isDebugAndVerbose()) {
+    LongType corruptedAt = checkCanary();
+    if (corruptedAt >= 0) {
+      sd_printf("WORKSPACE CANARY CORRUPTED at offset %lld (workspace size %lld, host ptr %p). "
+                "Last op wrote past workspace boundary!\n",
+                corruptedAt, _currentSizeSecondary, _ptrHost);
+      // Re-fill canary so we can detect the NEXT corruption too
+      std::memset(_ptrHost + _currentSizeSecondary, CANARY_BYTE, CANARY_SIZE);
+    }
+  }
+  _offset = 0;
+  _offsetSecondary = 0;
+}
+
+void Workspace::enableCanary() {
+  if (_allocatedHost && _ptrHost != nullptr) {
+    std::memset(_ptrHost + _currentSizeSecondary, CANARY_BYTE, CANARY_SIZE);
+    _canaryEnabled = true;
+  }
+}
+
+LongType Workspace::checkCanary() const {
+  if (!_canaryEnabled || !_allocatedHost || _ptrHost == nullptr) return -1;
+  const unsigned char* canary = reinterpret_cast<const unsigned char*>(
+      _ptrHost + _currentSizeSecondary);
+  for (LongType i = 0; i < CANARY_SIZE; i++) {
+    if (canary[i] != CANARY_BYTE) return i;
+  }
+  return -1;
+}
 
 LongType Workspace::getSpilledSize() { return _spillsSize.load(); }
 
 void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
   switch (type) {
     case HOST: {
-      if (numBytes < 1)
-        throw allocation_exception::build("Number of [HOST] bytes for allocation should be positive", numBytes);
+      if (numBytes < 1) {
+        std::string alloc_msg = "Number of [HOST] bytes for allocation should be positive; Requested bytes: [" + std::to_string(numBytes) + "]";
+        THROW_EXCEPTION(alloc_msg.c_str());
+      }
 
       // numBytes += 32;
       void *result = nullptr;
@@ -172,9 +289,17 @@ void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
         sd_debug("Allocating %lld [HOST] bytes in spills\n", numBytes);
         this->_mutexAllocation.unlock();
 
+        // Add padding to spill allocations — C++ ops can overrun temporary buffers
+        // by a few bytes, corrupting adjacent heap metadata → SIGABRT on free().
+        // Within the workspace buffer, overruns are harmless (bump allocator).
+        // Spills go to separate cudaHostAlloc allocations where overruns hit
+        // adjacent glibc/pinned memory metadata.
         Pointer p;
-        auto res = cudaHostAlloc(reinterpret_cast<void **>(&p), numBytes, cudaHostAllocDefault);
-        if (res != 0) throw cuda_exception::build("Can't allocate [HOST] memory", res);
+        auto res = cudaHostAlloc(reinterpret_cast<void **>(&p), numBytes + SD_ALLOC_PADDING, cudaHostAllocDefault);
+        if (res != 0) {
+          std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
+          THROW_EXCEPTION(msg.c_str());
+        }
 
         _mutexSpills.lock();
         _spillsSecondary.push_back(p);
@@ -197,8 +322,10 @@ void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
       return result;
     } break;
     case DEVICE: {
-      if (numBytes < 1)
-        throw allocation_exception::build("Number of [DEVICE] bytes for allocation should be positive", numBytes);
+      if (numBytes < 1) {
+        std::string alloc_msg = "Number of [DEVICE] bytes for allocation should be positive; Requested bytes: [" + std::to_string(numBytes) + "]";
+        THROW_EXCEPTION(alloc_msg.c_str());
+      }
 
       // numBytes += 32;
       void *result = nullptr;
@@ -209,9 +336,15 @@ void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
         sd_debug("Allocating %lld [DEVICE] bytes in spills\n", numBytes);
         this->_mutexAllocation.unlock();
 
-        Pointer p;
-        auto res = cudaMalloc(reinterpret_cast<void **>(&p), numBytes);
-        if (res != 0) throw cuda_exception::build("Can't allocate [DEVICE] memory", res);
+        int deviceId = 0;
+        cudaGetDevice(&deviceId);
+        Pointer p = CudaMemoryPool::getInstance().allocate(numBytes, deviceId, currentStream());
+        if (p == nullptr) {
+          // GPU OOM: fall back to pinned host memory (accessible from GPU via unified addressing)
+          sd_debug("DEVICE OOM - falling back to pinned host workspace for %lld bytes\n", numBytes);
+          // Re-route to HOST allocation path to keep accounting consistent
+          return allocateBytes(HOST, numBytes);
+        }
 
         _mutexSpills.lock();
         _spills.push_back(p);

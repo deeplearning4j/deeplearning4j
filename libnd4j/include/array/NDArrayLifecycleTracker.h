@@ -141,8 +141,12 @@ public:
      * Get singleton instance
      */
     static NDArrayLifecycleTracker& getInstance() {
-        static NDArrayLifecycleTracker instance;
-        return instance;
+        static NDArrayLifecycleTracker* instance = nullptr;
+        static std::once_flag initFlag;
+        std::call_once(initFlag, []() {
+            instance = new NDArrayLifecycleTracker();
+        });
+        return *instance;
     }
 
     /**
@@ -164,21 +168,21 @@ public:
      * Allocations made while an op context is set will be tagged with it.
      */
     static void setCurrentOpContext(const std::string& opName) {
-        _currentOpContext = opName;
+        currentOpContextRef() = opName;
     }
 
     /**
      * Clear the current operation context for this thread.
      */
     static void clearCurrentOpContext() {
-        _currentOpContext.clear();
+        currentOpContextRef().clear();
     }
 
     /**
      * Get the current operation context for this thread.
      */
     static const std::string& getCurrentOpContext() {
-        return _currentOpContext;
+        return currentOpContextRef();
     }
 
     /**
@@ -242,7 +246,7 @@ public:
         record.segment = segment;
 
         // Capture current operation context
-        record.opContext = _currentOpContext;
+        record.opContext = currentOpContextRef();
 
         // Update per-op statistics
         auto& opStats = record.opContext.empty() ? _perOpStats["(unknown)"] : _perOpStats[record.opContext];
@@ -1092,12 +1096,12 @@ private:
     // Per-operation statistics
     mutable std::map<std::string, PerOpAllocationStats> _perOpStats;
 
-    // Thread-local operation context
-    static thread_local std::string _currentOpContext;
+    // Thread-local operation context (function-local to avoid macOS duplicate symbols)
+    static std::string& currentOpContextRef() {
+      static thread_local std::string _ctx;
+      return _ctx;
+    }
 };
-
-// Define thread-local storage
-inline thread_local std::string NDArrayLifecycleTracker::_currentOpContext;
 
 } // namespace array
 } // namespace sd

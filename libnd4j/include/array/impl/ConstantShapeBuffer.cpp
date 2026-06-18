@@ -22,6 +22,8 @@
 // @author raver119@gmail.com
 //
 #include <array/ConstantShapeBuffer.h>
+#include <system/common.h>
+#include <system/PointerValidation.h>
 #include <sstream>
 
 namespace sd {
@@ -33,7 +35,7 @@ ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary)
 #endif
 
 }
-ConstantShapeBuffer::ConstantShapeBuffer() : _magic(MAGIC_VALID), _refCount(1) {
+ConstantShapeBuffer::ConstantShapeBuffer() : _magic(MAGIC_VALID), _refCount(1), _isOwner(true), _neverDelete(false) {
   _primaryShapeInfo = nullptr;
   _specialShapeInfo = nullptr;
 }
@@ -41,17 +43,87 @@ ConstantShapeBuffer::~ConstantShapeBuffer() {
   // Clear magic number first to mark as invalid during destruction
   _magic = 0;
 
-  if(_primaryShapeInfo != nullptr)
-    delete _primaryShapeInfo;
+  // Only delete the underlying pointers if this instance owns them.
+  // Copies created via copy constructor have _isOwner = false and share pointers.
+  if (_isOwner) {
+    if(_primaryShapeInfo != nullptr)
+      delete _primaryShapeInfo;
+    if(_specialShapeInfo != nullptr)
+      delete _specialShapeInfo;
+  }
   _primaryShapeInfo = nullptr;
-
-  if(_specialShapeInfo != nullptr)
-    delete _specialShapeInfo;
   _specialShapeInfo = nullptr;
 }
 
+// ============================================================================
+// COPY OPERATIONS - DELETED
+// ============================================================================
+// Copy constructor and copy assignment are DELETED in the header.
+// See ConstantShapeBuffer.h for explanation of why this is necessary.
+//
+// The previous implementation created non-owning copies that shared pointers,
+// which led to dangling pointers when the original was deleted.
+// ============================================================================
+
+// ============================================================================
+// MOVE OPERATIONS - ENABLED
+// ============================================================================
+// Move semantics are safe because the source is invalidated after the move.
+// The destination takes full ownership of the pointers.
+
+ConstantShapeBuffer::ConstantShapeBuffer(ConstantShapeBuffer&& other) noexcept
+    : _magic(other._magic),
+      _primaryShapeInfo(other._primaryShapeInfo),
+      _specialShapeInfo(other._specialShapeInfo),
+      _refCount(other._refCount.load(std::memory_order_relaxed)),
+      _isOwner(other._isOwner),
+      _neverDelete(other._neverDelete) {
+  // Invalidate source to prevent double-delete
+  other._magic = 0;
+  other._primaryShapeInfo = nullptr;
+  other._specialShapeInfo = nullptr;
+  other._refCount.store(0, std::memory_order_relaxed);
+  other._isOwner = false;
+  other._neverDelete = false;
+
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+  st = std::move(other.st);
+#endif
+}
+
+ConstantShapeBuffer& ConstantShapeBuffer::operator=(ConstantShapeBuffer&& other) noexcept {
+  if (this != &other) {
+    // Clean up our current resources if we own them
+    if (_isOwner) {
+      if (_primaryShapeInfo != nullptr) delete _primaryShapeInfo;
+      if (_specialShapeInfo != nullptr) delete _specialShapeInfo;
+    }
+
+    // Take ownership from other
+    _magic = other._magic;
+    _primaryShapeInfo = other._primaryShapeInfo;
+    _specialShapeInfo = other._specialShapeInfo;
+    _refCount.store(other._refCount.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    _isOwner = other._isOwner;
+    _neverDelete = other._neverDelete;
+
+    // Invalidate source to prevent double-delete
+    other._magic = 0;
+    other._primaryShapeInfo = nullptr;
+    other._specialShapeInfo = nullptr;
+    other._refCount.store(0, std::memory_order_relaxed);
+    other._isOwner = false;
+    other._neverDelete = false;
+
+#if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
+    st = std::move(other.st);
+#endif
+  }
+  return *this;
+}
+
 ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary,
-                                          PointerWrapper* special) : _magic(MAGIC_VALID), _refCount(1) {
+                                          PointerWrapper* special) : _magic(MAGIC_VALID), _refCount(1), _isOwner(true), _neverDelete(false) {
   _primaryShapeInfo = primary;
   _specialShapeInfo = special;
 #if defined(SD_GCC_FUNCTRACE)
@@ -61,7 +133,11 @@ ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary,
 }
 
 LongType *ConstantShapeBuffer::primary()  {
+  SD_VALIDATE_THIS("ConstantShapeBuffer::primary()");
+  SD_VALIDATE_ALIGNED(this, alignof(ConstantShapeBuffer), "ConstantShapeBuffer::primary()");
+  SD_VALIDATE_MAGIC(_magic, MAGIC_VALID, "ConstantShapeBuffer::primary()");
   if(_primaryShapeInfo != nullptr) {
+    SD_VALIDATE_PTR(_primaryShapeInfo, "ConstantShapeBuffer::primary() _primaryShapeInfo");
     return reinterpret_cast<LongType *>(_primaryShapeInfo->pointer());
   }
 
@@ -69,7 +145,10 @@ LongType *ConstantShapeBuffer::primary()  {
 }
 
 LongType *ConstantShapeBuffer::special()  {
+  SD_VALIDATE_THIS("ConstantShapeBuffer::special()");
+  SD_VALIDATE_MAGIC(_magic, MAGIC_VALID, "ConstantShapeBuffer::special()");
   if(_specialShapeInfo != nullptr) {
+    SD_VALIDATE_PTR(_specialShapeInfo, "ConstantShapeBuffer::special() _specialShapeInfo");
     return reinterpret_cast<LongType *>(_specialShapeInfo->pointer());
   }
 
@@ -77,11 +156,8 @@ LongType *ConstantShapeBuffer::special()  {
 }
 
 LongType *ConstantShapeBuffer::platform()  {
-#ifdef SD_CUDA
-  return special();
-#else
-  return primary();
-#endif  // CUDABLAS
+  auto* s = special();
+  return s != nullptr ? s : primary();
 }
 
 std::string ConstantShapeBuffer::getStackTraceAsString() const {
@@ -110,13 +186,26 @@ void ConstantShapeBuffer::addRef() {
 }
 
 void ConstantShapeBuffer::release() {
-  // Decrement refcount - buffer stays in cache even when refcount reaches baseline
-  // The cache owns these buffers and is responsible for their lifecycle
-  // Don't delete when refcount reaches 1 - that means cache is the only owner
-  _refCount.fetch_sub(1, std::memory_order_acq_rel);
+  // If _neverDelete is set, never delete this buffer
+  // Used for view buffers that shouldn't be deleted by cache clear operations
+  if (_neverDelete) {
+    _refCount.fetch_sub(1, std::memory_order_relaxed);
+    return;
+  }
 
-  // NOTE: Buffers are deleted only when the cache itself is cleared/destroyed,
-  // not when temporary users release their references
+  int oldCount = _refCount.fetch_sub(1, std::memory_order_acq_rel);
+
+  if (oldCount == 1) {
+    // We were the last holder (now refCount == 0), delete ourselves.
+    // This is safe because no other thread can be accessing this buffer
+    // since refCount was 1 (only we held a reference).
+    delete this;
+  }
+  // If oldCount > 1, other holders still exist, don't delete
+}
+
+void ConstantShapeBuffer::setNeverDelete(bool neverDelete) {
+  _neverDelete = neverDelete;
 }
 
 int ConstantShapeBuffer::getRefCount() const {

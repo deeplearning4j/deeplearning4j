@@ -26,6 +26,7 @@
 #include <memory/MemoryType.h>
 #include <system/common.h>
 
+#include <atomic>
 #include <map>
 #include <mutex>
 
@@ -42,7 +43,6 @@ class SD_LIB_EXPORT MemoryCounter {
   // per-device counters
   std::map<int, LongType> _deviceCounters;
 
-  // TODO: change this wrt heterogenous stuff on next iteration
   // per-group counters
   std::map<MemoryType, LongType> _groupCounters;
 
@@ -51,6 +51,9 @@ class SD_LIB_EXPORT MemoryCounter {
 
   // per-group limits
   std::map<MemoryType, LongType> _groupLimits;
+
+  // proactive soft limit: percentage of total system RAM (0=disabled)
+  std::atomic<int> _softLimitPercent{0};
 
   MemoryCounter();
   ~MemoryCounter() = default;
@@ -138,6 +141,31 @@ class SD_LIB_EXPORT MemoryCounter {
    * @return
    */
   LongType groupLimit(MemoryType group);
+
+  /**
+   * Set the proactive soft limit as a percentage of total system RAM.
+   * When system RAM usage exceeds this threshold, allocations will fail
+   * validation early — before the OS runs out and starts swapping/killing.
+   * 0 = disabled (default), 1-100 = active threshold.
+   * @param percent threshold percentage (clamped to 0-100)
+   */
+  void setSoftLimitPercent(int percent);
+
+  /**
+   * Get the current soft limit percentage.
+   * @return 0 if disabled, 1-100 if active
+   */
+  int getSoftLimitPercent();
+
+  /**
+   * Check if allocating numBytes would breach the soft limit.
+   * Uses MemoryUtils::getSystemFreeMemoryBytes() to query actual system RAM.
+   * Returns true if allocation is safe, false if it would cross the threshold.
+   * Always returns true if soft limit is disabled (0).
+   * @param numBytes bytes to allocate
+   * @return true if allocation is safe
+   */
+  bool validateSoftLimit(LongType numBytes);
 };
 }  // namespace memory
 }  // namespace sd

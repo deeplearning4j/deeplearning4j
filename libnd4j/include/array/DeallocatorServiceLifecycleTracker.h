@@ -27,6 +27,7 @@
 
 #include <cstddef>
 #include <atomic>
+#include <mutex>
 #include <system/common.h>
 
 namespace sd {
@@ -52,8 +53,12 @@ public:
      * Get singleton instance
      */
     static DeallocatorServiceLifecycleTracker& getInstance() {
-        static DeallocatorServiceLifecycleTracker instance;
-        return instance;
+        static DeallocatorServiceLifecycleTracker* instance = nullptr;
+        static std::once_flag initFlag;
+        std::call_once(initFlag, []() {
+            instance = new DeallocatorServiceLifecycleTracker();
+        });
+        return *instance;
     }
 
     /**

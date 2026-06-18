@@ -115,7 +115,11 @@ sd::LongType Workspace::getCurrentSize() { return _currentSize; }
 sd::LongType Workspace::getCurrentOffset() { return _offset.load(); }
 
 void *Workspace::allocateBytes(sd::LongType numBytes) {
-  if (numBytes < 1) THROW_EXCEPTION(allocation_exception::build("Number of bytes for allocation should be positive", numBytes).what());
+  if (numBytes < 1) {
+    std::string __alloc_msg = std::string("Number of bytes for allocation should be positive") +
+        "; Requested bytes: [" + std::to_string(numBytes) + "]";
+    THROW_EXCEPTION(__alloc_msg.c_str());
+  }
 
   // numBytes += 32;
   void *result = nullptr;
@@ -125,10 +129,14 @@ void *Workspace::allocateBytes(sd::LongType numBytes) {
   if (_offset.load() + numBytes > _currentSize) {
     sd_debug("Allocating %lld bytes in spills\n", numBytes);
     this->_mutexAllocation.unlock();
+    // Add padding to spill allocations — C++ ops can overrun temporary buffers
+    // by a few bytes, corrupting adjacent glibc heap metadata → SIGABRT on free().
+    // Within the workspace buffer, overruns are harmless (bump allocator).
+    LongType allocBytes = numBytes + SD_ALLOC_PADDING;
 #if defined(SD_ALIGNED_ALLOC)
-    void *p = aligned_alloc(SD_DESIRED_ALIGNMENT, (numBytes + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT));
+    void *p = aligned_alloc(SD_DESIRED_ALIGNMENT, (allocBytes + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT));
 #else
-    void *p = malloc(numBytes);
+    void *p = malloc(allocBytes);
 #endif
     CHECK_ALLOC(p, "Failed to allocate new workspace", numBytes);
 
@@ -188,5 +196,15 @@ Workspace *Workspace::clone() {
   // for clone we take whatever is higher: current allocated size, or allocated size of current loop
   return new Workspace(sd::math::sd_max<sd::LongType>(this->getCurrentSize(), this->_cycleAllocations.load()));
 }
+
+// CPU stubs for canary methods (only used on CUDA for GPU buffer overrun detection)
+void Workspace::enableCanary() {
+  // no-op on CPU
+}
+
+sd::LongType Workspace::checkCanary() const {
+  return -1;  // canary always "intact" on CPU
+}
+
 }  // namespace memory
 }  // namespace sd

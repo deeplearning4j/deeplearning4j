@@ -39,12 +39,18 @@ namespace sd {
 namespace memory {
 
 class SD_LIB_EXPORT Workspace {
+ public:
+  // Size of canary region appended after workspace host buffer (debug mode only)
+  static constexpr sd::LongType CANARY_SIZE = 4096;
+  static constexpr unsigned char CANARY_BYTE = 0xDE;
+
  protected:
   char* _ptrHost = nullptr;
   char* _ptrDevice = nullptr;
 
   bool _allocatedHost = false;
   bool _allocatedDevice = false;
+  bool _canaryEnabled = false;  // true when canary region was written
 
   std::atomic<sd::LongType> _offset;
   std::atomic<sd::LongType> _offsetSecondary;
@@ -68,6 +74,8 @@ class SD_LIB_EXPORT Workspace {
 
   std::atomic<sd::LongType> _spillsSizeSecondary;
   std::atomic<sd::LongType> _cycleAllocationsSecondary;
+
+  int _deviceId = -1;  // Device where device memory was allocated (-1 = not set)
 
   void init(sd::LongType primaryBytes, sd::LongType secondaryBytes = 0L);
   void freeSpills();
@@ -99,6 +107,32 @@ class SD_LIB_EXPORT Workspace {
 
   void scopeIn();
   void scopeOut();
+
+  /**
+   * Enable canary region after the host buffer. Only call once after construction.
+   * Fills CANARY_SIZE bytes after the host buffer with CANARY_BYTE pattern.
+   * Only active in debug/verbose mode.
+   */
+  void enableCanary();
+
+  /**
+   * Check if the canary region has been corrupted.
+   * Returns the byte offset of the first corrupted byte, or -1 if canary is intact.
+   * Only checks if canary was previously enabled.
+   */
+  sd::LongType checkCanary() const;
+
+  /**
+   * Get the raw host (secondary) memory pointer for this workspace.
+   * On CPU backend this is the primary pointer; on CUDA it is the pinned host pointer.
+   */
+  void* getHostPointer() const { return _ptrHost; }
+
+  /**
+   * Get the raw device (primary) memory pointer for this workspace.
+   * On CPU backend this may be nullptr; on CUDA it is the device pointer.
+   */
+  void* getDevicePointer() const { return _ptrDevice; }
 
   /*
    * This method creates NEW workspace of the same memory size and returns pointer to it

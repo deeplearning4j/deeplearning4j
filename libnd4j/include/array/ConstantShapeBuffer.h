@@ -27,6 +27,7 @@
 
 #include <array/PointerWrapper.h>
 #include <system/common.h>
+#include <system/PointerValidation.h>
 
 #include <atomic>
 #include <memory>
@@ -45,6 +46,8 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   PointerWrapper* _primaryShapeInfo;
   PointerWrapper*  _specialShapeInfo;
   std::atomic<int> _refCount;
+  bool _isOwner;
+  bool _neverDelete;  // If true, release() will never delete this buffer
 
 
  public:
@@ -52,6 +55,48 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   ConstantShapeBuffer( PointerWrapper* primary, PointerWrapper* special);
   ConstantShapeBuffer();
   ~ConstantShapeBuffer();
+
+  SD_PADDED_NEW_DELETE
+
+  // =========================================================================
+  // COPY PREVENTION
+  // =========================================================================
+  //
+  // Copy construction and assignment are DELETED to prevent heap corruption.
+  //
+  // The previous implementation allowed copying, creating non-owning copies
+  // that shared pointers with the original. This was dangerous because:
+  //
+  // 1. DANGLING POINTERS: If the original buffer is deleted while copies exist,
+  //    the copies have dangling pointers to freed memory.
+  //
+  // 2. REFERENCE COUNT CONFUSION: Each copy had its own refCount, so the
+  //    original could be deleted (refCount=0) while copies still held pointers.
+  //
+  // 3. JNI/JavaCPP ISSUES: The copy constructor was used for @ByVal returns,
+  //    creating temporaries with shared pointers that could outlive the original.
+  //
+  // HOW TO ADAPT CODE THAT PREVIOUSLY COPIED ConstantShapeBuffer:
+  //
+  // - Use POINTERS instead of values:
+  //     ConstantShapeBuffer* buf = helper.bufferForShapeInfo(...);
+  //     // Use buf directly, don't copy
+  //
+  // - Use REFERENCES for function parameters:
+  //     void process(const ConstantShapeBuffer& buffer) { ... }
+  //
+  // - For JavaCPP/JNI: Use pointer returns (@ByRef or Pointer) instead of @ByVal
+  //
+  // - For STL containers: Use std::vector<ConstantShapeBuffer*> instead of
+  //     std::vector<ConstantShapeBuffer>
+  //
+  // =========================================================================
+  ConstantShapeBuffer(const ConstantShapeBuffer& other) = delete;
+  ConstantShapeBuffer& operator=(const ConstantShapeBuffer& other) = delete;
+
+  // Move semantics ARE allowed - source is invalidated after move
+  ConstantShapeBuffer(ConstantShapeBuffer&& other) noexcept;
+  ConstantShapeBuffer& operator=(ConstantShapeBuffer&& other) noexcept;
 
   /**
    * Check if this buffer is valid (not garbage/use-after-free).
@@ -79,18 +124,25 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
    */
   void addRef();
 
-  /**
-   * Manual reference counting for safe cross-JNI ownership.
-   * Decrements reference count and deletes when reaching zero.
-   * Call when done with a pointer (e.g., in deleteConstantShapeBuffer).
-   */
-  void release();
+   /**
+    * Manual reference counting for safe cross-JNI ownership.
+    * Decrements reference count and deletes when reaching zero.
+    * Call when done with a pointer (e.g., in deleteConstantShapeBuffer).
+    */
+   void release();
 
-  /**
-   * Get current reference count (for debugging).
-   */
-  int getRefCount() const;
-};
+   /**
+    * Set whether this buffer should never be deleted.
+    * Used for view buffers that need to live as long as any NDArray references them,
+    * even if the shape cache is cleared.
+    */
+   void setNeverDelete(bool neverDelete);
+
+   /**
+    * Get current reference count (for debugging).
+    */
+   int getRefCount() const;
+ };
 
 
 }  // namespace sd

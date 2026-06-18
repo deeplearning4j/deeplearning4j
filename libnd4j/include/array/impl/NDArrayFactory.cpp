@@ -23,8 +23,8 @@
 // @author Oleg Semeniv <oleg.semeniv@gmail.com>
 //
 #include <array/NDArrayFactory.h>
-#include <exceptions/cuda_exception.h>
-#include <graph/GraphExecutioner.h>
+
+#include <sys/stat.h>
 #include <helpers/ConstantHelper.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/LoopsCoordsHelper.h>
@@ -36,15 +36,14 @@
 
 namespace sd {
 
-SD_LIB_EXPORT NDArray* NDArrayFactory::create(ShapeDescriptor *shapeDescriptor, LaunchContext* context) {
-  auto status = shapeDescriptor->validate();
-  if (status != SHAPE_DESC_OK) {
-    THROW_EXCEPTION("NDArrayFactory::create: invalid ShapeDescriptor ");
-  }
-  LongType allocSize = shapeDescriptor->allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor->dataType());
-  DataBuffer *  buffer =
-      new DataBuffer(allocSize, shapeDescriptor->dataType(), context->getWorkspace());
-  NDArray *result = new NDArray(buffer, shapeDescriptor, context);
+SD_LIB_EXPORT NDArray* NDArrayFactory::create(DataType dataType, char order, const std::vector<LongType>& shape, LaunchContext* context) {
+  if ((int)shape.size() > SD_MAX_RANK)
+    THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32");
+
+  auto shapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dataType, order, shape);
+  LongType allocSize = shape::length(shapeInfo) * DataTypeUtils::sizeOfElement(dataType);
+  DataBuffer* buffer = new DataBuffer(allocSize, dataType, context->getWorkspace());
+  NDArray* result = new NDArray(buffer, shapeInfo, context);
   result->nullify();
   return result;
 }
@@ -57,11 +56,11 @@ SD_LIB_EXPORT NDArray* NDArrayFactory::create<bool>(const char order, const std:
   if ((int)shape.size() > SD_MAX_RANK)
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(BOOL, order, shape);
+  auto shapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(BOOL, order, shape);
 
-  if (static_cast<size_t>(descriptor->arrLength()) != data.size()) {
+  if (static_cast<size_t>(shape::length(shapeInfo)) != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
-              descriptor->arrLength());
+              shape::length(shapeInfo));
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
   }
 
@@ -71,8 +70,7 @@ SD_LIB_EXPORT NDArray* NDArrayFactory::create<bool>(const char order, const std:
 
   DataBuffer * buffer = new DataBuffer(hostBuffer, data.size() * sizeof(bool), BOOL, true, context->getWorkspace());
 
-  NDArray *result = new NDArray(buffer, descriptor, context);
-  delete descriptor;
+  NDArray *result = new NDArray(buffer, shapeInfo, context);
   return result;
 }
 
@@ -84,13 +82,12 @@ NDArray* NDArrayFactory::create(const char order,
                                LaunchContext* context) {
   if (shape.size() > SD_MAX_RANK)
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
-  ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape);
+  auto shapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(DataTypeUtils::fromT<T>(), order, shape);
 
   //scalars can be created with zero length
-  if (descriptor->arrLength() != 0 && data.size() != 1 && static_cast<size_t>(descriptor->arrLength()) != data.size()) {
-    delete descriptor;
+  if (shape::length(shapeInfo) != 0 && data.size() != 1 && static_cast<size_t>(shape::length(shapeInfo)) != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
-              descriptor->arrLength());
+              shape::length(shapeInfo));
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
   }
 
@@ -100,12 +97,10 @@ NDArray* NDArrayFactory::create(const char order,
 
   //note here we use data.size() to work around the scalar case. If the shape is zero but the data is actually length 1 we need this reflected
   //to create a correct length data buffer
-  auto dtypeString = DataTypeUtils::asString(descriptor->dataType());
   DataBuffer *  buffer = new DataBuffer(
       hostData, DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
 
-  NDArray *result = new NDArray(buffer, descriptor, context);
-  delete descriptor;
+  NDArray *result = new NDArray(buffer, shapeInfo, context);
   return result;
 }
 
@@ -242,8 +237,8 @@ NDArray* NDArrayFactory::create(const T scalar, LaunchContext* context) {
   DataBuffer *  buffer =
       new DataBuffer(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-  auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
-  NDArray *res = new NDArray(buffer,desc , context);
+  auto shapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(DataTypeUtils::fromT<T>());
+  NDArray *res = new NDArray(buffer, shapeInfo, context);
   res->bufferAsT<T>()[0] = scalar;
 
   res->tickWriteHost();
@@ -322,12 +317,18 @@ ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_VALUEOF)
 template <typename T>
 NDArray* NDArrayFactory::linspace(const T from, const T to, const LongType numElements) {
   NDArray* result = NDArrayFactory::vector<T>(numElements);
-  // TO DO: linspace should be executed on DEVICE, but only CPU version implemnted!
-  for (LongType e = 0; e < numElements; e++) {
-    T step = (T)e / ((T)numElements - (T)1);
-    result->p<T>(e, (from * ((T)1 - step) + step * to));
+
+  // Delegate to NDArray::linspace which batches writes and syncs once.
+  // DO NOT use p<T>() per element — each call triggers syncToDevice()
+  // copying the ENTIRE buffer, causing O(n^2) data transfer.
+  if (numElements <= 1) {
+    double startVal = static_cast<double>(from);
+    result->linspace(startVal, 0.0);
+  } else {
+    double startVal = static_cast<double>(from);
+    double stepVal = static_cast<double>(to - from) / static_cast<double>(numElements - 1);
+    result->linspace(startVal, stepVal);
   }
-  result->syncToDevice();
 
   return result;
 }
@@ -390,13 +391,12 @@ NDArray *NDArrayFactory::create(const char order, const std::vector<LongType>& s
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32");
 
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(dtype, order, shape);
+  auto shapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, shape);
 
   DataBuffer *  buffer = new DataBuffer(
-      descriptor->arrLength() * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
+      shape::length(shapeInfo) * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
 
-  NDArray *result = new NDArray(buffer, descriptor, context);
-  delete descriptor;
+  NDArray *result = new NDArray(buffer, shapeInfo, context);
   result->nullify();
 
   return result;
@@ -423,8 +423,8 @@ NDArray *NDArrayFactory::create(const std::vector<T>& values, LaunchContext* con
   DataBuffer *  buffer =
       new DataBuffer(values.size() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-  auto desc = ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>());
-  NDArray *res = new NDArray(buffer, desc, context);
+  auto shapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(values.size(), DataTypeUtils::fromT<T>());
+  NDArray *res = new NDArray(buffer, shapeInfo, context);
   memcpyFromVector<T>(res->buffer(), values);
 
   res->tickWriteHost();
@@ -449,7 +449,7 @@ NDArray* NDArrayFactory::empty_(LaunchContext* context) {
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   auto result = new NDArray(nullptr, shapeInfo, context, false, 0);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  delete[] shapeInfo;
 
   return result;
 }
@@ -463,7 +463,7 @@ NDArray* NDArrayFactory::empty_(DataType dataType, LaunchContext* context) {
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   auto result = new NDArray(nullptr, shapeInfo, context, false, 0);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  delete[] shapeInfo;
 
   return result;
 }
@@ -482,7 +482,7 @@ SD_LIB_EXPORT NDArray* NDArrayFactory::empty(DataType dataType, LaunchContext* c
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   NDArray *result= new NDArray(nullptr, shapeInfo, context, false, 0);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  delete[] shapeInfo;
 
   return result;
 }
@@ -509,13 +509,12 @@ NDArray *NDArrayFactory::create(T* buffer, const char order, const std::initiali
     THROW_EXCEPTION("NDArrayFactory::create: Rank of NDArray can't exceed 32");
 
   std::vector<LongType> shp(shape);
-  ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shp);
+  auto shapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(DataTypeUtils::fromT<T>(), order, shp);
 
   DataBuffer *  pBuffer = new DataBuffer(
-      buffer, descriptor->arrLength() * sizeof(T), descriptor->dataType(), false, context->getWorkspace());
+      buffer, shape::length(shapeInfo) * sizeof(T), DataTypeUtils::fromT<T>(), false, context->getWorkspace());
 
-  NDArray *result = new NDArray(pBuffer, descriptor, context);
-  delete descriptor;
+  NDArray *result = new NDArray(pBuffer, shapeInfo, context);
   return result;
 }
 
@@ -719,6 +718,14 @@ NDArray * NDArrayFactory::string(std::vector<LongType>& shape, const std::vector
   return new NDArray(shape, string, dtype, context);
 }
 #endif
+
+namespace {
+long getFileSize(const char *filename) {
+  struct stat stat_buf;
+  int rc = stat(filename, &stat_buf);
+  return rc == 0 ? stat_buf.st_size : -1;
+}
+}
 
 NDArray NDArrayFactory::fromNpyFile(const char* fileName) {
   auto size = getFileSize(fileName);

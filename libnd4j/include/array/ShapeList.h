@@ -24,7 +24,9 @@
 #define LIBND4J_SHAPELIST_H
 #include <helpers/shape.h>
 #include <system/common.h>
+#include <system/PointerValidation.h>
 
+#include <cstdlib>
 #include <vector>
 
 namespace sd {
@@ -53,6 +55,8 @@ class SD_LIB_EXPORT ShapeList {
    * leak
    */
   void detach();
+
+  SD_PADDED_NEW_DELETE
 };
 }  // namespace sd
 

@@ -21,6 +21,7 @@
 //
 #include "../TadPack.h"
 
+#include <graph/gpu/DspCudaDispatch.h>
 #include <helpers/shape.h>
 #include <system/Environment.h>
 #include <sstream>
@@ -38,7 +39,7 @@ TadPack::TadPack( ConstantShapeBuffer *shapes,
   _numTads = numTads;
   _dimensionsLength = dimLength;
   if(dimensions != nullptr) {
-    _dimensions = new LongType[dimLength];
+    _dimensions = new LongType[dimLength + SD_SHAPE_ALLOC_PADDING];
     for(int i = 0; i < dimLength; i++) {
       _dimensions[i] = dimensions[i];
     }
@@ -98,7 +99,18 @@ TadPack::~TadPack() {
     _tadOffsets = nullptr;
   }
 
-  // DON'T delete _tadShape - it comes from ConstantShapeHelper cache
+  // Handle _tadShape cleanup based on platform:
+  // - CUDA: TadCalculator creates NEW shape buffers via CudaShapeBufferCreator (not cached),
+  //   so TadPack owns and must delete them
+  // - CPU: Shape buffers come from ConstantShapeHelper cache, so TadPack must NOT delete them
+  // On CUDA, TadCalculator creates NEW shape buffers via CudaShapeBufferCreator (not cached),
+  // so TadPack owns and must delete them.
+  // On CPU, shape buffers come from ConstantShapeHelper cache, so TadPack must NOT delete them.
+  // dspIsCudaBuild() returns true/false at link time — no #ifdef needed.
+  if (sd::graph::dspIsCudaBuild() && _tadShape != nullptr) {
+    delete _tadShape;
+    _tadShape = nullptr;
+  }
 }
 
 LongType* TadPack::primaryShapeInfo() {

@@ -22,6 +22,7 @@
 // @author raver119@gmail.com
 //
 #include <array/ConstantOffsetsBuffer.h>
+#include <system/PointerValidation.h>
 
 namespace sd {
 ConstantOffsetsBuffer::ConstantOffsetsBuffer(const std::shared_ptr<PointerWrapper> &primary)
@@ -42,16 +43,13 @@ ConstantOffsetsBuffer::ConstantOffsetsBuffer() {
 }
 
 ConstantOffsetsBuffer::~ConstantOffsetsBuffer() {
-  _magic = 0xDEADBEEF;  // Mark as destroyed - helps detect use-after-free
+  _magic = MAGIC_DESTROYED;  // Mark as destroyed - helps detect use-after-free
 }
 
 LongType *ConstantOffsetsBuffer::primary() {
-  // Check magic number first to detect use-after-free (dangling pointers)
-  if (!isValid()) {
-    THROW_EXCEPTION("ConstantOffsetsBuffer::primary: Object has been destroyed! Use-after-free detected (magic number check failed).");
-  }
+  SD_VALIDATE_MAGIC(_magic, MAGIC_VALID, "ConstantOffsetsBuffer::primary()");
   if (_primaryOffsets == nullptr || !_primaryOffsets) {
-    THROW_EXCEPTION("ConstantOffsetsBuffer::primary: _primaryOffsets is nullptr! Buffer was likely already destroyed.");
+    THROW_EXCEPTION("ConstantOffsetsBuffer::primary: _primaryOffsets is nullptr");
   }
   return reinterpret_cast<LongType *>(_primaryOffsets->pointer());
 }
@@ -61,11 +59,8 @@ LongType *ConstantOffsetsBuffer::special() {
 }
 
 LongType *ConstantOffsetsBuffer::platform() {
-#ifdef SD_CUDA
-  return special();
-#else
-  return primary();
-#endif  // CUDABLAS
+  auto* s = special();
+  return s != nullptr ? s : primary();
 }
 
 }  // namespace sd

@@ -24,7 +24,7 @@
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
 #include <array/NDArray.h>
-#include <exceptions/cuda_exception.h>
+
 #include <execution/ThreadPool.h>
 #include <helpers/DebugHelper.h>
 #include <loops/legacy_ops.h>
@@ -451,7 +451,7 @@ class NDArrayLambdaCuda {
 
 // Implementation of the NDArray Lambda methods for CUDA
 template <typename T>
-SD_LIB_EXPORT void NDArray::applyLambda(std::function<T(T)>& func, NDArray* target) {
+void NDArray::applyLambda(std::function<T(T)>& func, NDArray* target) {
 // Validate types
   if (dataType() != DataTypeUtils::fromT<T>())
     THROW_EXCEPTION(
@@ -475,7 +475,7 @@ SD_LIB_EXPORT void NDArray::applyLambda(std::function<T(T)>& func, NDArray* targ
 }
 
 template <typename T>
-SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>& func, NDArray* target) {
+void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>& func, NDArray* target) {
 // Validate types
   if (dataType() != DataTypeUtils::fromT<T>())
     THROW_EXCEPTION(
@@ -499,7 +499,7 @@ SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>
 }
 
 template <typename T>
-SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other,  std::function<T(T, T)>& func,
+void NDArray::applyPairwiseLambda(NDArray* other,  std::function<T(T, T)>& func,
                                                 NDArray* target) {
 // Validate types
   if (dataType() != DataTypeUtils::fromT<T>())
@@ -533,7 +533,7 @@ SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other,  std::function<T
 }
 
 template <typename T>
-SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other,  std::function<T(sd::LongType, T, T)>& func,
+void NDArray::applyIndexedPairwiseLambda(NDArray* other,  std::function<T(sd::LongType, T, T)>& func,
                                                        NDArray* target) {
 // Validate types
   if (dataType() != DataTypeUtils::fromT<T>())
@@ -564,7 +564,7 @@ SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other,  std::fun
 }
 
 template <typename T>
-SD_LIB_EXPORT void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third,
+void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third,
                                                   std::function<T(T, T, T)>& func, NDArray* target) {
 // Validate types
   if (dataType() != DataTypeUtils::fromT<T>())
@@ -607,18 +607,83 @@ SD_LIB_EXPORT void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* thir
 }
 
 
-#define INSTANTIATE_LAMBDA_METHODS(T) template SD_LIB_EXPORT void NDArray::applyLambda( std::function<GET_SECOND(T)(GET_SECOND(T))>& func, NDArray* target);
-ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_LAMBDA_METHODS);
+// #define INSTANTIATE_LAMBDA_METHODS(T) template SD_LIB_EXPORT void NDArray::applyLambda( std::function<GET_SECOND(T)(GET_SECOND(T))>& func, NDArray* target);
+// ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_LAMBDA_METHODS);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<bool(bool)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<float16(float16)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<bfloat16(bfloat16)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<float(float)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<double(double)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<int8_t(int8_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<uint8_t(uint8_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<int16_t(int16_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<int32_t(int32_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<sd::LongType(sd::LongType)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<uint16_t(uint16_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<uint32_t(uint32_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyLambda(std::function<uint64_t(uint64_t)>& func, NDArray* target);
 
-#define INSTANTIATE_LAMBDA_METHODS_INDEXED(T) template SD_LIB_EXPORT void NDArray::applyIndexedLambda( std::function<GET_SECOND(T)(sd::LongType, GET_SECOND(T))>& func, NDArray* target);
-ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_LAMBDA_METHODS_INDEXED);
+// #define INSTANTIATE_LAMBDA_METHODS_INDEXED(T) template SD_LIB_EXPORT void NDArray::applyIndexedLambda( std::function<GET_SECOND(T)(sd::LongType, GET_SECOND(T))>& func, NDArray* target);
+// ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_LAMBDA_METHODS_INDEXED);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<bool(sd::LongType, bool)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<float16(sd::LongType, float16)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<bfloat16(sd::LongType, bfloat16)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<float(sd::LongType, float)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<double(sd::LongType, double)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<int8_t(sd::LongType, int8_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<uint8_t(sd::LongType, uint8_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<int16_t(sd::LongType, int16_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<int32_t(sd::LongType, int32_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<sd::LongType(sd::LongType, sd::LongType)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<uint16_t(sd::LongType, uint16_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<uint32_t(sd::LongType, uint32_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<uint64_t(sd::LongType, uint64_t)>& func, NDArray* target);
 
-#define INSTANTIATE_LAMBDA_METHODS_PAIRWISE(T) template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other,  std::function<GET_SECOND(T)(GET_SECOND(T), GET_SECOND(T))>& func, NDArray* target);
-ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_LAMBDA_METHODS_PAIRWISE);
+// #define INSTANTIATE_LAMBDA_METHODS_PAIRWISE(T) template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other,  std::function<GET_SECOND(T)(GET_SECOND(T), GET_SECOND(T))>& func, NDArray* target);
+// ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_LAMBDA_METHODS_PAIRWISE);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<bool(bool, bool)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<float16(float16, float16)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<bfloat16(bfloat16, bfloat16)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<float(float, float)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<double(double, double)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<int8_t(int8_t, int8_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<uint8_t(uint8_t, uint8_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<int16_t(int16_t, int16_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<int32_t(int32_t, int32_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<sd::LongType(sd::LongType, sd::LongType)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<uint16_t(uint16_t, uint16_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<uint32_t(uint32_t, uint32_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other, std::function<uint64_t(uint64_t, uint64_t)>& func, NDArray* target);
 
-#define INSTANTIATE_LAMBDA_METHODS_INDEX_PAIR(T) template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other,  std::function<GET_SECOND(T)(sd::LongType, GET_SECOND(T), GET_SECOND(T))>& func, NDArray* target);
-ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_LAMBDA_METHODS_INDEX_PAIR);
+// #define INSTANTIATE_LAMBDA_METHODS_INDEX_PAIR(T) template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other,  std::function<GET_SECOND(T)(sd::LongType, GET_SECOND(T), GET_SECOND(T))>& func, NDArray* target);
+// ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_LAMBDA_METHODS_INDEX_PAIR);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<bool(sd::LongType, bool, bool)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<float16(sd::LongType, float16, float16)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<bfloat16(sd::LongType, bfloat16, bfloat16)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<float(sd::LongType, float, float)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<double(sd::LongType, double, double)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<int8_t(sd::LongType, int8_t, int8_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<uint8_t(sd::LongType, uint8_t, uint8_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<int16_t(sd::LongType, int16_t, int16_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<int32_t(sd::LongType, int32_t, int32_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<sd::LongType(sd::LongType, sd::LongType, sd::LongType)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<uint16_t(sd::LongType, uint16_t, uint16_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<uint32_t(sd::LongType, uint32_t, uint32_t)>& func, NDArray* target);
+template SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::function<uint64_t(sd::LongType, uint64_t, uint64_t)>& func, NDArray* target);
 
-#define INSTANTIATE_LAMBDA_METHODS_TRIPLE(T) template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third,  std::function<GET_SECOND(T)(GET_SECOND(T), GET_SECOND(T), GET_SECOND(T))>& func, NDArray* target);
-ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_LAMBDA_METHODS_TRIPLE);
+// #define INSTANTIATE_LAMBDA_METHODS_TRIPLE(T) template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third,  std::function<GET_SECOND(T)(GET_SECOND(T), GET_SECOND(T), GET_SECOND(T))>& func, NDArray* target);
+// ITERATE_LIST((SD_COMMON_TYPES),INSTANTIATE_LAMBDA_METHODS_TRIPLE);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<bool(bool, bool, bool)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<float16(float16, float16, float16)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<bfloat16(bfloat16, bfloat16, bfloat16)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<float(float, float, float)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<double(double, double, double)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<int8_t(int8_t, int8_t, int8_t)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<uint8_t(uint8_t, uint8_t, uint8_t)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<int16_t(int16_t, int16_t, int16_t)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<int32_t(int32_t, int32_t, int32_t)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<sd::LongType(sd::LongType, sd::LongType, sd::LongType)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<uint16_t(uint16_t, uint16_t, uint16_t)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<uint32_t(uint32_t, uint32_t, uint32_t)>& func, NDArray* target);
+template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third, std::function<uint64_t(uint64_t, uint64_t, uint64_t)>& func, NDArray* target);
 } // namespace sd

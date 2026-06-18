@@ -26,7 +26,9 @@
 #define SD_ARRAY_POINTER_H_
 
 #include <array/PointerDeallocator.h>
+#include <system/PointerValidation.h>
 
+#include <cstdlib>
 #include <memory>
 
 namespace sd {
@@ -39,6 +41,8 @@ class SD_LIB_EXPORT PointerWrapper {
   PointerWrapper(void *ptr, const std::shared_ptr<PointerDeallocator> &deallocator = {});
   PointerWrapper() = default;
   ~PointerWrapper();
+
+  SD_PADDED_NEW_DELETE
 
   void *pointer() const;
 

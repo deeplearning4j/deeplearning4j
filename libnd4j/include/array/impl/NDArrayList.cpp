@@ -45,7 +45,7 @@ NDArrayList::~NDArrayList() {
   _chunks.clear();
 }
 
-NDArray* NDArrayList::read(int idx) { return new NDArray(readRaw(idx)->dup()); }
+NDArray* NDArrayList::read(int idx) { return readRaw(idx)->dup(); }  // dup() already returns NDArray*
 
 sd::DataType NDArrayList::dataType() { return _dtype; }
 
@@ -68,7 +68,7 @@ NDArray* NDArrayList::remove(int idx) {
   delete _chunks[idx];
 
   _elements--;
-  return new NDArray(readRaw(idx)->dup());
+  return readRaw(idx)->dup();
 }
 
 
@@ -147,7 +147,7 @@ void NDArrayList::unstack(NDArray* array, LongType axis) {
   auto result = array->allTensorsAlongDimension(*newAxis);
   for (sd::LongType e = 0; e < result.size(); e++) {
     auto chunk = result.at(e);
-    write(e, new NDArray(chunk->dup(array->ordering())));
+    write(e, chunk->dup(array->ordering()));
   }
 
   delete newAxis;
@@ -252,7 +252,7 @@ NDArrayList* NDArrayList::clone() {
   list->_elements.store(_elements.load());
 
   for (auto const& v : _chunks) {
-    list->_chunks[v.first] = new NDArray(v.second->dup());
+    list->_chunks[v.first] = v.second->dup();  // dup() already returns NDArray*
   }
 
   return list;
