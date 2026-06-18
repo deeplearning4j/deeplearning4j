@@ -48,6 +48,15 @@ class SD_LIB_EXPORT CublasHelper {
 
   void* handle();
   void* handle(int deviceId);
+
+  // Apply or remove TF32 math mode on all cached cuBLAS handles.
+  // Call after setCublasTf32Enabled() to update existing handles.
+  void applyTf32Mode(bool enable);
+
+  // cuBLAS Lt (Library) API for optimized GEMM
+  // Thread-local, created on-demand per device
+  void* ltHandle();
+  void* ltHandle(int deviceId);
 };
 }  // namespace sd
 

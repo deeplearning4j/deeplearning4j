@@ -20,9 +20,11 @@
 
 #include <array/ConstantShapeBuffer.h>
 #include <system/common.h>
+#include <system/PointerValidation.h>
 #include "ShapeBufferPlatformHelper.h"
 #include <array>
 #include <atomic>
+#include <cstdlib>
 #include <memory>
 #include <unordered_set>
 #include <vector>
@@ -37,7 +39,7 @@ class SD_LIB_EXPORT ShapeTrieNode {
   LongType _value;
   int _level;
   bool _isShape;
-  ConstantShapeBuffer* _buffer = nullptr;  // Now accessed atomically
+  std::atomic<ConstantShapeBuffer*> _buffer{nullptr};
   int _shapeHash;   // Store a hash of the shape for validation
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -49,6 +51,8 @@ class SD_LIB_EXPORT ShapeTrieNode {
       : _value(value), _level(level), _isShape(isShape), _shapeHash(shapeHash) {
   }
 
+  SD_PADDED_NEW_DELETE
+
   ~ShapeTrieNode() {
     // Delete children
     for (auto* child : _children) {
@@ -56,22 +60,10 @@ class SD_LIB_EXPORT ShapeTrieNode {
     }
     _children.clear();
 
-    // CRITICAL FIX: Respect reference counting before deleting buffers!
-    // The buffer should ONLY be deleted if refcount == 1 (cache is the only owner).
-    // If refcount > 1, other NDArrays still hold references - deleting would create
-    // dangling pointers that cause SIGSEGV crashes when accessed later.
-    //
-    // This is especially important during JVM shutdown where static destruction order
-    // is unpredictable and NDArrays may outlive the cache singleton.
-    if (_buffer != nullptr) {
-      int refCount = _buffer->getRefCount();
-      if (refCount <= 1) {
-        // Only cache owns it - safe to delete
-        delete _buffer;
-      }
-      // If refCount > 1, intentionally leak to prevent use-after-free crashes.
-      // This is the correct behavior for cache cleanup with external references.
-      _buffer = nullptr;
+    ConstantShapeBuffer* buf = _buffer.exchange(nullptr, std::memory_order_acq_rel);
+
+    if (buf != nullptr) {
+      buf->release();
     }
   }
 
@@ -107,7 +99,8 @@ class SD_LIB_EXPORT ShapeTrieNode {
   int shapeHash() const { return _shapeHash; }
 
   void setBuffer(ConstantShapeBuffer* buf);
-  ConstantShapeBuffer* buffer() const { return _buffer; }
+  // Thread-safe atomic read of the buffer pointer
+  ConstantShapeBuffer* buffer() const { return _buffer.load(std::memory_order_acquire); }
 
 #if defined(SD_GCC_FUNCTRACE)
   void collectStoreStackTrace();
@@ -129,6 +122,10 @@ class SD_LIB_EXPORT DirectShapeTrie {
   mutable std::atomic<LongType> _current_bytes{0};
   mutable std::atomic<LongType> _peak_entries{0};
   mutable std::atomic<LongType> _peak_bytes{0};
+
+  // Shutdown flag to prevent cache clearing during JVM shutdown
+  // When set, clearCache() becomes a no-op to avoid segfaults
+  std::atomic<bool> _shutdownInProgress{false};
 
   // Helper method to create a fallback buffer when trie insertion fails
   // Always returns a valid shape buffer or throws an exception
@@ -164,26 +161,16 @@ class SD_LIB_EXPORT DirectShapeTrie {
   DirectShapeTrie(const DirectShapeTrie&) = delete;
   DirectShapeTrie& operator=(const DirectShapeTrie&) = delete;
 
+  // Destructor - Intentionally leak memory to prevent crashes during JVM shutdown.
+  // During static destruction, memory allocators may already be destroyed, causing
+  // corrupted pointers. Traversing the tree to delete nodes causes SIGSEGV.
+  // The OS reclaims all memory on process exit anyway.
+  // For explicit cleanup during runtime (e.g., testing), use clear() directly.
   ~DirectShapeTrie() {
-    // Clean up all mutexes
-    if (_mutexes != nullptr) {
-      for (size_t i = 0; i < NUM_STRIPES; i++) {
-        if ((*_mutexes)[i] != nullptr) {
-          delete (*_mutexes)[i];
-        }
-      }
-      delete _mutexes;
-    }
-
-    // Clean up all root nodes
-    if (_roots != nullptr) {
-      for (size_t i = 0; i < NUM_STRIPES; i++) {
-        if ((*_roots)[i] != nullptr) {
-          delete (*_roots)[i];
-        }
-      }
-      delete _roots;
-    }
+    // Intentionally do NOT delete anything here.
+    // Setting pointers to nullptr prevents double-free but we don't traverse the tree.
+    _mutexes = nullptr;
+    _roots = nullptr;
   }
 
   // Delete move operations
@@ -213,7 +200,28 @@ class SD_LIB_EXPORT DirectShapeTrie {
   int calculateShapeSignature(const LongType* shapeInfo) const;
 
   // Clear all cached shape buffers
+  // NOTE: Will return early without action if setShutdownInProgress(true) was called.
   void clearCache();
+
+  /**
+   * Mark that JVM/application shutdown is in progress.
+   * When true, clearCache() becomes a no-op to avoid segfaults during static destruction.
+   * The OS will reclaim all memory at process exit anyway.
+   *
+   * @param inProgress true to prevent cache clearing, false to re-enable
+   */
+  void setShutdownInProgress(bool inProgress) {
+    _shutdownInProgress.store(inProgress, std::memory_order_release);
+  }
+
+  /**
+   * Check if shutdown is in progress.
+   *
+   * @return true if setShutdownInProgress(true) was called
+   */
+  bool isShutdownInProgress() const {
+    return _shutdownInProgress.load(std::memory_order_acquire);
+  }
 
   /**
    * Get the total number of cached shape entries.

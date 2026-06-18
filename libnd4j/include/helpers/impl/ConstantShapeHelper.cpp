@@ -23,7 +23,11 @@
 #include <helpers/ShapeBuilders.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/shape.h>
+#include <system/CanaryConstants.h>
 #include <system/Environment.h>
+#include <mutex>
+#include <string>
+
 
 namespace sd {
 
@@ -35,8 +39,12 @@ ConstantShapeHelper::ConstantShapeHelper() {
 }
 
 ConstantShapeHelper& ConstantShapeHelper::getInstance() {
- static ConstantShapeHelper instance;
- return instance;
+ static ConstantShapeHelper* instance = nullptr;
+ static std::once_flag initFlag;
+ std::call_once(initFlag, []() {
+   instance = new ConstantShapeHelper();
+ });
+ return *instance;
 }
 
 void ConstantShapeHelper::initializeEarly() {
@@ -53,21 +61,128 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
  if(shapeInfo == nullptr) {
    THROW_EXCEPTION("shapeInfo is nullptr");
  }
- if(shape::rank(shapeInfo) < 0 || shape::rank(shapeInfo) > SD_MAX_RANK) {
-   THROW_EXCEPTION("shapeInfo is not a valid rank.");
+
+ LongType inputRank = shape::rank(shapeInfo);
+ if(inputRank < 0 || inputRank > SD_MAX_RANK) {
+   std::string errorMessage = "bufferForShapeInfo: input shapeInfo has invalid rank: ";
+   errorMessage += std::to_string(inputRank);
+   errorMessage += " (ptr: 0x";
+
+   // Format address as hex for easier debugging
+   char addrBuf[32];
+   snprintf(addrBuf, sizeof(addrBuf), "%lx", reinterpret_cast<unsigned long>(shapeInfo));
+   errorMessage += addrBuf;
+
+   // Print first few bytes in hex to help diagnose what kind of data this is
+   errorMessage += ", first 8 bytes as hex: ";
+   for (int i = 0; i < 8 && i < 64; i++) {
+     char byteBuf[8];
+     snprintf(byteBuf, sizeof(byteBuf), "%02x ", (unsigned char)(reinterpret_cast<char*>(shapeInfo)[i]));
+     errorMessage += byteBuf;
+   }
+
+   errorMessage += "). This could indicate: 1) Use-after-free, 2) Memory corruption, ";
+   errorMessage += "3) GPU pointer passed to CPU code, or 4) Uninitialized memory.";
+   THROW_EXCEPTION(errorMessage.c_str());
+ }
+
+ const LongType MAX_REASONABLE_DIM = 9000000000LL;  // 9 billion - supports large embedding matrices (e.g. 10M x 300 = 3B elements)
+ const LongType* shapeValues = shape::shapeOf(shapeInfo);
+ for (int i = 0; i < inputRank; i++) {
+   LongType dimValue = shapeValues[i];
+   if (dimValue < 0 || dimValue > MAX_REASONABLE_DIM) {
+     std::string errorMessage = "bufferForShapeInfo: SHAPE CORRUPTION DETECTED! ";
+     errorMessage += "Dimension " + std::to_string(i) + " has value " + std::to_string(dimValue);
+     errorMessage += " (0x";
+     char hexBuf[32];
+     snprintf(hexBuf, sizeof(hexBuf), "%lx", static_cast<unsigned long>(dimValue));
+     errorMessage += hexBuf;
+     errorMessage += ") which exceeds reasonable limit of " + std::to_string(MAX_REASONABLE_DIM);
+     errorMessage += ". Full shape: [";
+     for (int j = 0; j < inputRank; j++) {
+       if (j > 0) errorMessage += ", ";
+       errorMessage += std::to_string(shapeValues[j]);
+     }
+     errorMessage += "]. This indicates memory corruption - the shape buffer was overwritten ";
+     errorMessage += "by garbage data (possibly a pointer value being interpreted as shape data).";
+     THROW_EXCEPTION(errorMessage.c_str());
+   }
  }
 
  auto buffer = _shapeTrie.getOrCreate(shapeInfo);
- if (buffer == nullptr || buffer->primary() == nullptr) {
-   THROW_EXCEPTION("Failed to get/create shape buffer");
+ if (buffer == nullptr) {
+   THROW_EXCEPTION("bufferForShapeInfo: getOrCreate returned nullptr");
  }
+ if (!buffer->isValid()) {
+   std::string errorMessage = "bufferForShapeInfo: getOrCreate returned invalid ConstantShapeBuffer (magic number check failed). ";
+   errorMessage += "ConstantShapeBuffer ptr: ";
+   errorMessage += std::to_string(reinterpret_cast<uintptr_t>(buffer));
+   THROW_EXCEPTION(errorMessage.c_str());
+ }
+ if (buffer->primary() == nullptr) {
+   THROW_EXCEPTION("bufferForShapeInfo: getOrCreate returned buffer with nullptr primary()");
+ }
+
+ LongType* returnedShapeInfo = buffer->primary();
+ LongType returnedRank = returnedShapeInfo[0];
+ if (returnedRank < 0 || returnedRank > SD_MAX_RANK) {
+   // Shape data corruption detected. Check canary stamps in the padding area
+   // to determine whether this is an adjacent buffer overrun or a pointer mutation.
+   int expectedLen = shape::shapeInfoLength(static_cast<int>(inputRank));
+   int canariesIntact = 0;
+   int canariesCorrupted = 0;
+   for (int i = 0; i < 8; i++) {
+     if (returnedShapeInfo[expectedLen + i] == sd::CanaryConstants::SHAPE_BUFFER_CANARY) {
+       canariesIntact++;
+     } else {
+       canariesCorrupted++;
+     }
+   }
+
+   std::string errorMessage = "bufferForShapeInfo: RETURNED buffer contains invalid rank: ";
+   errorMessage += std::to_string(returnedRank);
+   errorMessage += " (input rank was: ";
+   errorMessage += std::to_string(inputRank);
+   errorMessage += ", input ptr: ";
+   errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeInfo));
+   errorMessage += ", returned ptr: ";
+   errorMessage += std::to_string(reinterpret_cast<uintptr_t>(returnedShapeInfo));
+   errorMessage += ", ConstantShapeBuffer ptr: ";
+   errorMessage += std::to_string(reinterpret_cast<uintptr_t>(buffer));
+   errorMessage += ", canaries intact: ";
+   errorMessage += std::to_string(canariesIntact);
+   errorMessage += "/8, corrupted: ";
+   errorMessage += std::to_string(canariesCorrupted);
+   errorMessage += "/8";
+
+   // Dump the first 16 values of the returned shape buffer for forensics
+   errorMessage += ", data[0..15]: ";
+   for (int i = 0; i < 16; i++) {
+     char hexBuf[32];
+     snprintf(hexBuf, sizeof(hexBuf), "0x%lx ", static_cast<unsigned long>(returnedShapeInfo[i]));
+     errorMessage += hexBuf;
+   }
+   errorMessage += ")";
+   THROW_EXCEPTION(errorMessage.c_str());
+ }
+
+ // Verify ranks match
+ if (returnedRank != inputRank) {
+   std::string errorMessage = "bufferForShapeInfo: RANK MISMATCH! Input rank: ";
+   errorMessage += std::to_string(inputRank);
+   errorMessage += ", returned rank: ";
+   errorMessage += std::to_string(returnedRank);
+   errorMessage += ". This indicates cache corruption or hash collision.";
+   THROW_EXCEPTION(errorMessage.c_str());
+ }
+
  return buffer;
 }
 ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo( sd::LongType* inShapeInfo,  LongType* dims,
                                                                  sd::LongType dimsSize) {
  sd::LongType* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, nullptr);
  auto ret = bufferForShapeInfo(newShapeInfo);
- delete[] newShapeInfo;
+ RELEASE(newShapeInfo, nullptr);
  return ret;
 }
 
@@ -137,7 +252,9 @@ LongType* ConstantShapeHelper::emptyShapeInfo(DataType dataType) {
 
 LongType* ConstantShapeHelper::scalarShapeInfo(DataType dataType) {
  auto descriptor = ShapeBuilders::createScalarShapeInfo(dataType);
- return bufferForShapeInfo(descriptor)->primary();
+ auto result = bufferForShapeInfo(descriptor)->primary();
+ delete[] descriptor;  // Fix memory leak - descriptor was never freed
+ return result;
 }
 
 LongType* ConstantShapeHelper::vectorShapeInfo(LongType length, DataType dataType) {
@@ -157,21 +274,51 @@ LongType* ConstantShapeHelper::createShapeInfo(ShapeDescriptor* descriptor) {
 
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithView(LongType* shapeInfo) {
- if (shapeInfo == nullptr) {
-   THROW_EXCEPTION("shapeInfo is nullptr");
- }
+  if (shapeInfo == nullptr) {
+    THROW_EXCEPTION("shapeInfo is nullptr");
+  }
 
- LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, false, nullptr);
+  // BUGFIX: Must pass true to preserve strides (e.g., for transposed/permuted views)
+  // Previously passed false which caused strides to be reset to contiguous
+  LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, true, nullptr);
 
+  ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_IS_VIEW);
 
+  auto buffer = bufferForShapeInfo(newShapeInfo);
 
- ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_IS_VIEW);
+  // Check guard bytes before freeing — detect if anything wrote past the shape info
+  if (sd::Environment::getInstance().isDebug()) {
+    LongType rank = newShapeInfo[0];
+    if (rank >= 0 && rank <= SD_MAX_RANK) {
+      LongType shapeLen = shape::shapeInfoLength(rank);
+      auto guardBytes = reinterpret_cast<uint8_t*>(newShapeInfo) + (shapeLen * sizeof(LongType));
+      bool guardCorrupted = false;
+      size_t firstCorruptedOffset = 0;
+      for (size_t i = 0; i < 64; i++) {  // check first 64 guard bytes
+        if (guardBytes[i] != 0xAB) {
+          guardCorrupted = true;
+          firstCorruptedOffset = i;
+          break;
+        }
+      }
+      if (guardCorrupted) {
+        fprintf(stderr, "\n!!! SHAPE INFO GUARD BYTES CORRUPTED in bufferForShapeInfoWithView !!!\n");
+        fprintf(stderr, "  shapeInfo=%p, rank=%lld, shapeLen=%lld\n",
+                newShapeInfo, static_cast<long long>(rank), static_cast<long long>(shapeLen));
+        fprintf(stderr, "  First corrupted guard byte at offset %zu from shape info end\n", firstCorruptedOffset);
+        fprintf(stderr, "  Guard bytes: ");
+        for (size_t j = 0; j < 16; j++) {
+          fprintf(stderr, "%02x ", guardBytes[j]);
+        }
+        fprintf(stderr, "\n");
+        fflush(stderr);
+      }
+    }
+  }
 
- auto buffer = bufferForShapeInfo(newShapeInfo);
+  delete[] newShapeInfo;
 
- delete[] newShapeInfo;
-
- return buffer;
+  return buffer;
 }
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithoutView(LongType* shapeInfo) {

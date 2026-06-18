@@ -133,7 +133,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
   LongType* vectorShapeInfo(LongType length, DataType dataType);
   LongType* createShapeInfo(ShapeDescriptor *descriptor);
   LongType* createShapeInfo(DataType dataType, char order, const std::vector<LongType>& shape);
-  LongType* createShapeInfo(DataType dataType, const char order, const int rank,  LongType* shape, LongType extraProperties);
+  LongType* createShapeInfo(DataType dataType, const char order, const int rank,  LongType* shape, LongType extraProperties = 0);
   LongType* createShapeInfo(DataType dataType,  LongType* shapeInfo);
   LongType* createFromExisting(LongType* shapeInfo);
 
@@ -147,8 +147,29 @@ class SD_LIB_EXPORT ConstantShapeHelper {
   /**
    * Clears all cached shape buffers to prevent memory leaks.
    * This is called during application shutdown to free accumulated cache memory.
+   * NOTE: Will return early without action if setShutdownInProgress(true) was called.
    */
   void clearCache();
+
+  /**
+   * Mark that JVM/application shutdown is in progress.
+   * When true, clearCache() becomes a no-op to avoid segfaults during static destruction.
+   * The OS will reclaim all memory at process exit anyway.
+   *
+   * @param inProgress true to prevent cache clearing, false to re-enable
+   */
+  void setShutdownInProgress(bool inProgress) {
+    _shapeTrie.setShutdownInProgress(inProgress);
+  }
+
+  /**
+   * Check if shutdown is in progress.
+   *
+   * @return true if setShutdownInProgress(true) was called
+   */
+  bool isShutdownInProgress() const {
+    return _shapeTrie.isShutdownInProgress();
+  }
 
   /**
    * Get the total number of cached shape entries.

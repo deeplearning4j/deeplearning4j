@@ -24,7 +24,7 @@
 #define LIBND4J_LOGGER_H
 #include <stdio.h>
 #include <stdlib.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 #include <cstdarg>
@@ -42,15 +42,15 @@
 
 #ifndef __CUDA_ARCH__
 
-#define sd_debug(FORMAT, ...)                                                                 \
-  if (sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) \
+#define sd_debug(FORMAT, ...)                           \
+  if (sd::env_isDebug() && sd::env_isVerbose())         \
     sd::Logger::info(FORMAT, __VA_ARGS__);
-#define sd_logger(FORMAT, ...)                                                                \
-  if (sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) \
+#define sd_logger(FORMAT, ...)                           \
+  if (sd::env_isDebug() && sd::env_isVerbose())          \
     sd::Logger::info(FORMAT, __VA_ARGS__);
 #define sd_verbose(FORMAT, ...) \
-  if (sd::Environment::getInstance().isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
-#define sd_printf(FORMAT, ...) sd::Logger::info(FORMAT, __VA_ARGS__);
+  if (sd::env_isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
+#define sd_printf(FORMAT, ...) sd::Logger::info(FORMAT, ##__VA_ARGS__);
 #define sd_print(FORMAT) sd::Logger::infoEmpty(FORMAT);
 #define sd_printv(FORMAT, VECTOR) sd::Logger::printv(FORMAT, VECTOR);
 
@@ -59,7 +59,7 @@
 #define sd_debug(FORMAT, A, ...)
 #define sd_logger(FORMAT, A, ...)
 #define sd_verbose(FORMAT, ...)
-#define sd_printf(FORMAT, ...) sd::Logger::info(FORMAT, __VA_ARGS__);
+#define sd_printf(FORMAT, ...) sd::Logger::info(FORMAT, ##__VA_ARGS__);
 #define sd_print(FORMAT) sd::Logger::infoEmpty(FORMAT);
 #define sd_printv(FORMAT, VECTOR)
 

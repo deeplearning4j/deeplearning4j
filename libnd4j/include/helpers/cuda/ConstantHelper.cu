@@ -19,30 +19,53 @@
 //
 //  @author raver119@gmail.com
 //
+#include <array/DataBuffer.h>
 #include <array/DataTypeUtils.h>
 #include <array/PrimaryPointerDeallocator.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <exceptions/cuda_exception.h>
+#include <cstring>
 #include <execution/AffinityManager.h>
+#include <string>
 #include <execution/LaunchContext.h>
 #include <helpers/ConstantHelper.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
+#include <memory/cuda/CudaMemoryPool.h>
+#include <mutex>
 #include <ops/specials.h>
+#include <ops/impl/specials_double.hpp>
 #include <system/selective_rendering.h>
 #define CONSTANT_LIMIT 49152
 
 __constant__ char deviceConstantMemory[CONSTANT_LIMIT];
 
 namespace sd {
+
+namespace {
+SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
+  if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
+    return reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
+  }
+  auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+  return (streamPtr != nullptr) ? *streamPtr : nullptr;
+}
+}  // namespace
+
 void * ConstantHelper::getConstantSpace() {
-  Pointer dConstAddr;
-  auto dZ = cudaGetSymbolAddress(reinterpret_cast<void **>(&dConstAddr), deviceConstantMemory);
-
-  if (dZ != 0) throw cuda_exception::build("cudaGetSymbolAddress(...) failed", dZ);
-
-  return dConstAddr;
+  // Always use memory pool for constant space
+  // The __constant__ memory approach via cudaGetSymbolAddress was causing issues
+  // with CUDA module registration timing, leading to error 400 on kernel launches.
+  // Using regular device memory is functionally equivalent and more reliable.
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  void* ptr = memory::CudaMemoryPool::getInstance().allocate(CONSTANT_LIMIT, deviceId, nullptr);
+  if (ptr == nullptr) {
+    cudaGetLastError();  // Clear error state
+    std::string msg = "Failed to allocate constant space; Error code: [" + std::to_string((int)cudaErrorMemoryAllocation) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
+  return ptr;
 }
 
 int ConstantHelper::getCurrentDevice() { return AffinityManager::currentDeviceId(); }
@@ -50,6 +73,13 @@ int ConstantHelper::getCurrentDevice() { return AffinityManager::currentDeviceId
 int ConstantHelper::getNumberOfDevices() { return AffinityManager::numberOfDevices(); }
 
 ConstantHelper::ConstantHelper() {
+  // Force CUDA runtime initialization by making a simple API call
+  // This ensures the CUDA context and module registration happen before we use any CUDA features
+  cudaFree(0);
+
+  // Clear any stale CUDA errors from previous operations
+  cudaGetLastError();
+
   auto initialDevice = getCurrentDevice();
 
   auto numDevices = getNumberOfDevices();
@@ -61,7 +91,11 @@ ConstantHelper::ConstantHelper() {
   // filling all pointers
   for (int e = 0; e < numDevices; e++) {
     auto res = cudaSetDevice(e);
-    if (res != 0) throw cuda_exception::build("cudaSetDevice failed", res);
+    if (res != 0) {
+      cudaGetLastError();  // Clear error before throwing
+      std::string msg = "cudaSetDevice failed; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
+    }
     auto constant = getConstantSpace();
 
     SD_MAP_IMPL<ConstantDescriptor, ConstantHolder *> devCache;
@@ -74,7 +108,14 @@ ConstantHelper::ConstantHelper() {
 
   //
   auto res = cudaSetDevice(initialDevice);
-  if (res != 0) throw cuda_exception::build("Final cudaSetDevice failed", res);
+  if (res != 0) {
+    cudaGetLastError();  // Clear error before throwing
+    std::string msg = "Final cudaSetDevice failed; Error code: [" + std::to_string(res) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
+
+  // Clear any errors that may have accumulated
+  cudaGetLastError();
 }
 
 ConstantHelper::~ConstantHelper() {
@@ -86,8 +127,12 @@ ConstantHelper::~ConstantHelper() {
 }
 
 ConstantHelper &ConstantHelper::getInstance() {
-  static ConstantHelper instance;
-  return instance;
+  static ConstantHelper* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new ConstantHelper();
+  });
+  return *instance;
 }
 
 void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace) {
@@ -109,17 +154,141 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
   }
 
   int8_t *ptr = nullptr;
-  ALLOCATE_SPECIAL(ptr, workspace, numBytes, int8_t);
-  auto res = cudaMemcpy(ptr, src, numBytes, cudaMemcpyHostToDevice);
-  if (res != 0) {
-    std::string errorMessage = "cudaMemcpy failed with error code " + std::to_string(res);
-    auto lastError = cudaGetLastError(); // get last error
-    if (lastError != cudaSuccess) {
-      errorMessage += "; last error: " + std::string(cudaGetErrorString(lastError));
+  bool usedPinnedHost = false;
+  if (workspace == nullptr) {
+    // Constant shape buffers MUST be on the correct device or GPU-accessible from all devices.
+    // If allocateFailover places a shape buffer on a different device, non-P2P GPUs can't
+    // access it → CUDA error 700 (illegal memory access). Fix: trim + retry, then fall back
+    // to pinned host memory which is accessible from ALL GPUs.
+    int actualDevice = deviceId;
+    size_t allocSize = numBytes + SD_ALLOC_PADDING;
+    // During CUDA graph capture, allocations MUST use the captured stream.
+    // Using nullptr (legacy default stream) causes implicit sync with the captured
+    // stream, invalidating the capture (error 901).
+    cudaStream_t allocStream = nullptr;
+    if (tl_graphExecutionActive) {
+      allocStream = captureSafeStreamOrDefault();
     }
+    ptr = reinterpret_cast<int8_t*>(
+        memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, allocStream, &actualDevice));
+    if (ptr == nullptr && tl_graphExecutionActive) {
+      // During CUDA graph capture, CudaMemoryPool::allocate() uses the capture
+      // workspace (bump allocator). If it returned nullptr, the workspace is
+      // exhausted. The fallback paths (trimPool, cudaMallocHost, pool.free) are
+      // all synchronous or use nullptr stream, which would poison the capture
+      // stream (error 901). Abort immediately — the caller's capture segment
+      // will fall back to slot-by-slot execution.
+      THROW_EXCEPTION("[DEVICE] replicatePointer: capture workspace exhausted during CUDA graph capture. "
+                      "Increase via -Dnd4j.dsp.captureWorkspaceMb=512 or ND4J_DSP_CAPTURE_WORKSPACE_MB=512");
+    }
+    if (ptr == nullptr) {
+      // Shape buffers are tiny (~200 bytes). Failure likely means a stale CUDA
+      // error is blocking allocations, not true OOM. Clear errors, trim pool, retry.
+      cudaGetLastError();
+      memory::CudaMemoryPool::getInstance().trimPool(deviceId);
+      ptr = reinterpret_cast<int8_t*>(
+          memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, allocStream, &actualDevice));
+    }
+    if (ptr == nullptr) {
+      // Pool retry failed — fall back to pinned host memory which is
+      // GPU-accessible from ALL devices. Shape buffers are read-only constants
+      // so pinned host is safe and avoids OOM for trivial allocations.
+      cudaGetLastError();
+      auto hostRes = cudaMallocHost(reinterpret_cast<void**>(&ptr), allocSize);
+      if (hostRes != cudaSuccess || ptr == nullptr) {
+        cudaGetLastError();
+        THROW_EXCEPTION("[DEVICE] replicatePointer allocation failed (pool + pinned host both failed)");
+      }
+      // Register in hostAllocations_ so CudaMemoryPool::free() can route to cudaFreeHost
+      memory::CudaMemoryPool::getInstance().registerHostAllocation(ptr, allocSize);
+      usedPinnedHost = true;
+      sd_debug("replicatePointer: pool alloc failed for device %d, using pinned host (%zu bytes)\n",
+               deviceId, allocSize);
+    }
+    if (actualDevice != deviceId) {
+      // Wrong device: free and fall back to pinned host memory immediately.
+      // Shape/constant buffers are tiny (~200 bytes). Using pinned host memory
+      // (cudaMallocHost) is safe because it's GPU-accessible from ALL devices,
+      // including non-P2P GPUs. This avoids expensive cudaDeviceSynchronize()
+      // calls that would block all GPU compute for a tiny allocation.
+      memory::CudaMemoryPool::getInstance().free(ptr, actualDevice, nullptr);
+      ptr = nullptr;
 
-    THROW_EXCEPTION(errorMessage.c_str());
+      auto hostRes = cudaMallocHost(reinterpret_cast<void**>(&ptr), allocSize);
+      if (hostRes != cudaSuccess || ptr == nullptr) {
+        cudaGetLastError();
+        THROW_EXCEPTION("[DEVICE] replicatePointer: pinned host fallback allocation failed");
+      }
+      // Register in hostAllocations_ so CudaMemoryPool::free() can route to cudaFreeHost
+      memory::CudaMemoryPool::getInstance().registerHostAllocation(ptr, allocSize);
+      usedPinnedHost = true;
+      sd_debug("replicatePointer: device %d OOM, using pinned host for constant (%zu bytes)\n",
+               deviceId, numBytes);
+    }
+  } else {
+    size_t allocSize = numBytes + SD_ALLOC_PADDING;
+    ptr = reinterpret_cast<int8_t*>(workspace->allocateBytes(memory::MemoryType::DEVICE, allocSize));
+    if (ptr == nullptr) {
+      THROW_EXCEPTION("[DEVICE] replicatePointer workspace allocation failed");
+    }
+  }
 
+  if (usedPinnedHost) {
+    // Host-to-host copy for pinned memory (no CUDA context needed)
+    memcpy(ptr, src, numBytes);
+  } else {
+    if (tl_graphExecutionActive) {
+      // During CUDA graph capture, synchronous cudaMemcpy on the legacy default stream
+      // implicitly syncs with ALL named streams (including the captured stream), causing
+      // capture invalidation (error 901). Use cudaMemcpyAsync on the CAPTURED stream
+      // so it becomes a recorded graph node.
+      //
+      //  The H2D memcpy node bakes the source address into the graph. If `src`
+      // points to stack/temporary memory, graph replay will read garbage (the stack frame
+      // is gone). Copy src into the capture host workspace (persistent pinned memory) first,
+      // matching the pattern in DataBuffer::syncToSpecial().
+      cudaStream_t capturedStream = captureSafeStreamOrDefault();
+
+      // Check if the capture has been invalidated before attempting memcpy.
+      // A prior op (e.g., data-dependent Where) may have invalidated the capture
+      // via host sync. Detect this early and skip — the capture loop will handle it.
+      cudaStreamCaptureStatus capStat;
+      auto capChk = cudaStreamGetCaptureInfo(capturedStream, &capStat, nullptr);
+      if (capChk != cudaSuccess || capStat == cudaStreamCaptureStatusInvalidated) {
+        // Capture already invalidated — skip memcpy, let capture loop detect and abort
+        return reinterpret_cast<int8_t*>(ptr) + constantOffset;
+      }
+
+      void* h2dSource = src;
+      if (tl_captureHostWorkspace != nullptr) {
+        size_t aligned = (numBytes + 255) & ~255ULL;
+        if (tl_captureHostWorkspaceOffset + aligned <= tl_captureHostWorkspaceSize) {
+          void* pinnedCopy = static_cast<char*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
+          tl_captureHostWorkspaceOffset += aligned;
+          std::memcpy(pinnedCopy, src, numBytes);
+          h2dSource = pinnedCopy;
+        }
+        // If workspace exhausted, fall through to use src directly — best effort
+      }
+      auto res = cudaMemcpyAsync(ptr, h2dSource, numBytes, cudaMemcpyHostToDevice, capturedStream);
+      if (res != 0) {
+        std::string errorMessage = "cudaMemcpyAsync (graph capture) failed with error code " + std::to_string(res);
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+    } else {
+      // Use cudaMemcpyAsync on cudaStreamPerThread instead of synchronous cudaMemcpy
+      // on the legacy stream (stream 0). Synchronous cudaMemcpy on stream 0 causes
+      // error 906 when another thread on the same device is mid-CUDA-graph-capture,
+      // because stream 0 implicitly depends on the capturing stream.
+      // cudaStreamPerThread is a per-thread default stream that avoids this conflict.
+      auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
+      if (res != 0) {
+        cudaGetLastError();
+        std::string errorMessage = "cudaMemcpyAsync (per-thread stream) failed with error code " + std::to_string(res);
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+      cudaStreamSynchronize(cudaStreamPerThread);
+    }
   }
 
   constantPtr = ptr;
@@ -155,19 +324,16 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
     // create buffer with this dtype
     if (descriptor.isFloat()) {
       BUILD_DOUBLE_SELECTOR(
-          sd::DataType::DOUBLE, dataType, sd::SpecialTypeConverter::convertGeneric,
+          sd::DataType::DOUBLE, dataType, SpecialTypeConverter::convertGeneric,
           (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff->pointer()),
-          (sd::DataType::DOUBLE, double), SD_COMMON_TYPES);
+          (DOUBLE, double), SD_COMMON_TYPES);
     } else if (descriptor.isInteger()) {
-      auto int64DType = sd::DataType::INT64;
-      BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::SpecialTypeConverter::convertGeneric,
-                            (nullptr, const_cast<sd::LongType *>(descriptor.integerValues().data()),
+      BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, SpecialTypeConverter::convertGeneric,
+                            (nullptr, const_cast<LongType *>(descriptor.integerValues().data()),
                                 descriptor.length(), cbuff->pointer()),
-                            (sd::DataType::INT64, sd::LongType), SD_COMMON_TYPES);
+                            (INT64, LongType), SD_COMMON_TYPES);
     }
 
-    // we don't have deallocator here.
-    // TODO: we probably want to make use deallocator here, if we're not using constant memory
     auto dbuff = std::make_shared<PointerWrapper>(
         replicatePointer(cbuff->pointer(), descriptor.length() * DataTypeUtils::sizeOf(dataType)));
 
@@ -187,4 +353,13 @@ LongType ConstantHelper::getCachedAmount(int deviceId) {
   else
     return _counters[deviceId];
 }
+
+BUILD_DOUBLE_TEMPLATE(void SpecialTypeConverter::convertGeneric,
+                      (sd::Pointer*, void*, sd::LongType, void*),
+                      SD_FLOAT_TYPES, SD_COMMON_TYPES);
+
+BUILD_DOUBLE_TEMPLATE(void SpecialTypeConverter::convertGeneric,
+                      (sd::Pointer*, void*, sd::LongType, void*),
+                      SD_LONG_TYPES, SD_COMMON_TYPES);
+
 }  // namespace sd

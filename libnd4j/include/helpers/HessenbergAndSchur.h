@@ -53,8 +53,8 @@ class Hessenberg {
 
 // this class implements real Schur decomposition of square matrix using orthogonal similarity transformation
 // A = U T U^T
-// T - real quasi-upper-triangular matrix - block upper triangular matrix where the blocks on the diagonal are 1×1 or
-// 2×2 with complex eigenvalues U - real orthogonal matrix
+// T - real quasi-upper-triangular matrix - block upper triangular matrix where the blocks on the diagonal are 1x1 or
+// 2x2 with complex eigenvalues U - real orthogonal matrix
 
 template <typename T>
 class Schur {

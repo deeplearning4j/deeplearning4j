@@ -22,7 +22,6 @@
 //  @author raver119@gmail.com
 //
 
-#ifndef SD_CUDA
 #include <array/PrimaryPointerDeallocator.h>
 #include <execution/AffinityManager.h>
 #include <helpers/ConstantHelper.h>
@@ -31,6 +30,7 @@
 #include <types/types.h>
 
 #include <cstring>
+#include <mutex>
 #include <system/selective_rendering.h>
 namespace sd {
 
@@ -55,8 +55,12 @@ ConstantHelper::~ConstantHelper() {
 }
 
 ConstantHelper &ConstantHelper::getInstance() {
-  static ConstantHelper instance;
-  return instance;
+  static ConstantHelper* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new ConstantHelper();
+  });
+  return *instance;
 }
 
 void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace) {
@@ -105,15 +109,12 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
 
     // create buffer with this dtype
     if (descriptor.isFloat()) {
-      auto doubleDtype = sd::DataType::DOUBLE;
-
       BUILD_DOUBLE_SELECTOR(
-          DOUBLE, dataType, sd::TypeCast::convertGeneric,
+          sd::DataType::DOUBLE, dataType, sd::TypeCast::convertGeneric,
           (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff->pointer()),
           (DOUBLE, double), SD_COMMON_TYPES);
     } else if (descriptor.isInteger()) {
-      auto int64DType = INT64;
-      BUILD_DOUBLE_SELECTOR(INT64, dataType, sd::TypeCast::convertGeneric,
+      BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::TypeCast::convertGeneric,
                             (nullptr, const_cast<sd::LongType *>(descriptor.integerValues().data()),
                              descriptor.length(), cbuff->pointer()),
                             (INT64, LongType), SD_COMMON_TYPES);
@@ -141,5 +142,3 @@ sd::LongType ConstantHelper::getCachedAmount(int deviceId) {
     return _counters[deviceId];
 }
 }  // namespace sd
-
-#endif

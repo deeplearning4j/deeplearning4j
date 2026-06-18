@@ -77,6 +77,13 @@ class SD_LIB_EXPORT ShapeUtils {
   static LongType* evalPermShapeInfo(LongType* dimensions, LongType rank, NDArray* arr,
                                      memory::Workspace* workspace, const bool setContigStrides = false);
 
+  // Build permuted view shapeInfo from an input array and a permutation vector.
+  // Handles rank mismatch (e.g. expand_dims added leading size-1 dims beyond
+  // the permutation length). Returns a ConstantShapeHelper-managed buffer.
+  // Returns nullptr if permutation cannot be constructed (invalid indices, newAxis).
+  static const LongType* evalPermutedViewShapeInfo(NDArray* input,
+                                                    const int* perm, int permLen);
+
 
   // evaluate shapeInfo of transposed array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
@@ -200,6 +207,13 @@ class SD_LIB_EXPORT ShapeUtils {
    *   comparing of shapes, not strides
    */
   static bool areShapesEqual(const LongType* shapeInfo, const std::vector<LongType>& shapeOnly);
+
+  /**
+   * Read integer values from an NDArray input, handling CUDA sync correctly.
+   * Syncs to host once, reads directly from buffer. No per-element GPU->CPU copies.
+   * Supports INT64, INT32, FLOAT32, and FLOAT64 inputs (truncated to LongType).
+   */
+  static std::vector<LongType> readIntParams(NDArray* paramArray);
 };
 
 

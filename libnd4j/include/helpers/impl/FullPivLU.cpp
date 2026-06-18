@@ -45,7 +45,7 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   NDArray luRef = *LU;
   const int rows = LU->sizeAt(0);
   const int cols = LU->sizeAt(1);
-  const int diagLen = math::sd_min<int>(rows, cols);
+  const int diagLen = math::sd_min(rows, cols);
 
   std::vector<int> rowsInds(rows), colsInds(cols);
 

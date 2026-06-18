@@ -18,12 +18,17 @@
 #include <array/TadPack.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <mutex>
 
 namespace sd {
 
 ConstantTadHelper& ConstantTadHelper::getInstance() {
-  static ConstantTadHelper instance;
-  return instance;
+  static ConstantTadHelper* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new ConstantTadHelper();
+  });
+  return *instance;
 }
 
 std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType dimension) {
@@ -71,25 +76,51 @@ std::shared_ptr<TadPack> ConstantTadHelper::tadForDimensions(LongType* originalS
     }
   }
 
-  // Handle zero dimension length case - treat entire array as single TAD
-  if (dimLength <= 0) {
-    // When no dimensions specified, create TAD along all dimensions
+  // Handle scalar case - rank 0 means there are no dimensions to reduce along
+  // The entire scalar is the TAD itself
+  if (rank == 0) {
+    // For scalars, create a TadPack with the scalar's shape info
+    std::vector<LongType> emptyDims;
+    std::shared_ptr<TadPack> result = nullptr;
+    try {
+      result = _trie.getOrCreate(emptyDims, originalShape);
+    } catch (const std::exception& e) {
+      THROW_EXCEPTION("Failed to create TAD pack for scalar");
+    }
+    return result;
+  }
+
+  // Handle zero dimension length case OR -1/SD_MAX_INT sentinel - treat entire array as single TAD
+  // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+  if (dimLength <= 0 || (dimLength == 1 && (dimensions[0] == -1 || dimensions[0] == SD_MAX_INT))) {
+    // When no dimensions specified or -1 sentinel, create TAD along all dimensions
     // This means the entire array is treated as a single TAD
     std::vector<LongType> allDims;
     for (LongType i = 0; i < rank; i++) {
       allDims.push_back(i);
     }
 
-    // Recursively call with all dimensions
+    // Recursively call with all dimensions (rank > 0 guaranteed here)
     return tadForDimensions(originalShape, allDims.data(), rank);
   }
 
   // Additional validation: check if dimensions are within valid range
   for (LongType i = 0; i < dimLength; i++) {
     LongType dim = dimensions[i];
+    LongType originalDim = dim;  // Keep original for error message
     if (dim < 0) dim += rank;  // Handle negative dimensions
     if (dim < 0 || dim >= rank) {
-      THROW_EXCEPTION("Dimension index is out of bounds");
+      std::string errorMessage = "Dimension index is out of bounds: dimension[";
+      errorMessage += std::to_string(i);
+      errorMessage += "] = ";
+      errorMessage += std::to_string(originalDim);
+      errorMessage += " (normalized: ";
+      errorMessage += std::to_string(dim);
+      errorMessage += ") is invalid for array with rank ";
+      errorMessage += std::to_string(rank);
+      errorMessage += ". Shape: ";
+      errorMessage += ShapeUtils::shapeAsString(originalShape);
+      THROW_EXCEPTION(errorMessage.c_str());
     }
   }
 

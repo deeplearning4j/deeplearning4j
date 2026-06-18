@@ -234,7 +234,6 @@ class SD_LIB_EXPORT RandomBuffer {
   }
 
   uint64_t SD_HOST_DEVICE getNextElement() {
-    // TODO: proper implementation needed here
     return generation == 1 ? buffer[getNextIndex()] : buffer[getNextIndex()] * generation;
   }
 

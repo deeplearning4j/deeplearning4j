@@ -29,10 +29,10 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 HHcolPivQR::HHcolPivQR(NDArray &matrix) {
   _qr = matrix.dup(matrix.ordering());
-  std::vector<LongType> coeffsShape = {1,_diagSize};
-  _diagSize = math::sd_min<int>(matrix.sizeAt(0), matrix.sizeAt(1));
+  _diagSize = math::sd_min(matrix.sizeAt(0), matrix.sizeAt(1));
+  std::vector<LongType> coeffsShape = {1, _diagSize};
   std::vector<LongType> permShape = {matrix.sizeAt(1), matrix.sizeAt(1)};
-  _coeffs = new NDArray(matrix.ordering(),coeffsShape, matrix.dataType(), matrix.getContext());
+  _coeffs = new NDArray(matrix.ordering(), coeffsShape, matrix.dataType(), matrix.getContext());
 
   _permut = new NDArray(matrix.ordering(), permShape, matrix.dataType(), matrix.getContext());
 
@@ -68,7 +68,7 @@ void HHcolPivQR::_evalData() {
 
   T nonZeroPivots = static_cast<T>(_diagSize);
   T maxPivot = static_cast<T>(0.);
- delete max;
+  delete max;
   for (int k = 0; k < _diagSize; ++k) {
     NDArray *normsUpdViewPtr = normsUpd({k, -1});
     NDArray *indexNum = normsUpdViewPtr->indexReduceNumber(indexreduce::IndexMax);

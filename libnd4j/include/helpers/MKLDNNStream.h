@@ -49,12 +49,10 @@ class ONEDNNStream {
  public:
   template <typename X, typename Y>
   static bool isSupported() {
-    // FIXME: strict float support doesn't work anymore
     return std::is_same<X, float>::value && std::is_same<Y, float>::value;
   }
 
   static bool isSupported(const std::vector<NDArray *> &arrays) {
-    // FIXME: strict float support doesn't work anymore
     for (auto v : arrays) {
       if (v != nullptr && v->dataType() != sd::DataType::FLOAT32) {
         return false;
