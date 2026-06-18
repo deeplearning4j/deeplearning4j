@@ -18,8 +18,7 @@
 #include <array/ConstantDataBuffer.h>
 #include <array/DataTypeUtils.h>
 #include <array/ShapeDescriptor.h>
-#include <exceptions/cuda_exception.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
@@ -69,13 +68,11 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext* lc, int opNu
         "NativeOpExecutioner::execSummaryStatsScalar:: unable to execute on strings. Please write logic higher level "
         "in each op for the string data type.")
   }
-#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::summarystats::SummaryStatsReduce,
       ::execSummaryStatsReduceScalar(launchDims, stream, opNum, const_cast<void*>(dX), dXShapeInfo, hXShapeInfo, extraParams, dZ,
                                      dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, reductionPointer),
       SD_COMMON_TYPES, SD_FLOAT_TYPES);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -94,10 +91,6 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, voi
     THROW_EXCEPTION(
         "NativeOpExecutioner::execSummaryStats:: unable to execute on strings. Please write logic higher level in each "
         "op for the string data type.")
-  }
-  if (!sd::DataTypeUtils::isR(zType)) {
-    std::string errorMessage = "NativeOpExecutioner::execSummaryStats requires Z operand to have floating point data type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
   }
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::summarystats::SummaryStatsReduce,
@@ -125,11 +118,6 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, voi
         "NativeOpExecutioner::execSummaryStats:: unable to execute on strings. Please write logic higher level in each "
         "op for the string data type.")
   }
-  if (!sd::DataTypeUtils::isR(zType)) {
-    std::string errorMessage = "NativeOpExecutioner::execSummaryStats requires Z operand to have floating point data type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-
   // First, compute TAD shape info if needed based on dimensions
   sd::LongType* computedTadShapeInfo = tadShapeInfo;
   sd::LongType* computedTadOffsets = tadOffsets;

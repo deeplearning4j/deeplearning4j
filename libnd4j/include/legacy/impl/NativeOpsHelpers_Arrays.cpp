@@ -16,8 +16,16 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
-#include <graph/GraphExecutioner.h>
-#include <graph/GraphHolder.h>
+// On Windows, include windows.h early so _WINDOWS_ is defined before types.h
+// constexpr alias guards are evaluated (avoids BOOL/INT64/etc. typedef conflicts)
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
+#include <array/ArrayOptions.h>
 #include <helpers/ConstantTadHelper.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -25,11 +33,13 @@
 #include "execution/Threads.h"
 #include "helpers/OpTracker.h"
 
-#include <exceptions/allocation_exception.h>
+#include <cstdio>
+#include <string>
+
 #include <fcntl.h>
-#include <graph/GraphExecutioner.h>
 
 #include <helpers/BlasHelper.h>
+#include <system/PointerValidation.h>
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
 #include <legacy/NativeOpExecutioner.h>
@@ -50,7 +60,6 @@
 #include <io.h>
 #endif
 #include <errno.h>
-#include <ops/declarable/CustomOperations.h>
 #include <sys/types.h>
 #include <unordered_map>
 #include <memory>
@@ -63,18 +72,18 @@ extern std::unordered_map<sd::TadPack*, std::shared_ptr<sd::TadPack>> g_tadPackR
 extern std::mutex g_tadPackMutex;
 
 // OpaqueNDArray allocation tracking
-static std::atomic<size_t> g_opaqueArrayCount{0};
-static std::atomic<size_t> g_opaqueArrayBytes{0};
-static std::mutex g_opaqueArrayMutex;
+// Note: Not static - these need external linkage for platform-specific deleteNDArray implementations
+std::atomic<size_t> g_opaqueArrayCount{0};
+std::atomic<size_t> g_opaqueArrayBytes{0};
+std::mutex g_opaqueArrayMutex;
 
-// InteropDataBuffer/OpaqueDataBuffer allocation tracking
-static std::atomic<size_t> g_dataBufferCount{0};
-static std::atomic<size_t> g_dataBufferBytes{0};
-static std::mutex g_dataBufferMutex;
+// DataBuffer allocation tracking - defined here for all files to use
+std::atomic<size_t> g_dataBufferCount{0};
+std::atomic<size_t> g_dataBufferBytes{0};
+std::mutex g_dataBufferMutex;
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
-#include <graph/ResultWrapper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
 
@@ -88,29 +97,9 @@ static std::mutex g_dataBufferMutex;
 #include <array/DataTypeUtils.h>
 
 
-
-
-/*
- * TypeDef:
- *     void convertTypes(Pointer *extras, DataType srcType, Pointer hX, long N, DataType dstType, Pointer hZ);
- */
-void deleteNDArray(OpaqueNDArray array) {
-  if (array == nullptr) {
-    return;
-  }
-
-  // Track deallocation
-  size_t bytes = array->lengthOf() * array->sizeOfT();
-  g_opaqueArrayCount.fetch_sub(1, std::memory_order_relaxed);
-  g_opaqueArrayBytes.fetch_sub(bytes, std::memory_order_relaxed);
-
-  if(sd::Environment::getInstance().isVerbose()) {
-    sd_printf("deleteNDArray: deallocating array at %p, count=%zu, total_bytes=%zu, freed_bytes=%zu\n",
-              array, g_opaqueArrayCount.load(), g_opaqueArrayBytes.load(), bytes);
-  }
-
-  delete array;
-}
+// deleteNDArray is implemented in platform-specific files:
+// - cpu/NativeOpsHelpers_Arrays_delete.cpp for CPU (no sync needed)
+// - cuda/NativeOpsHelpers_Arrays_delete.cu for CUDA (with cudaDeviceSynchronize)
 
 sd::LongType getOpaqueNDArrayOffset(OpaqueNDArray array) {
   return array->offset();
@@ -118,31 +107,52 @@ sd::LongType getOpaqueNDArrayOffset(OpaqueNDArray array) {
 
 
 const sd::LongType* getOpaqueNDArrayShapeInfo(OpaqueNDArray array) {
+  if (array == nullptr) return nullptr;
   return array->shapeInfo();
 }
 
 
 
 void* getOpaqueNDArrayBuffer(OpaqueNDArray array) {
-  if(array == nullptr || array->dataBuffer() == nullptr) {
-    THROW_EXCEPTION("getOpaqueNDArrayBuffer: Array or data buffer was null!");
+  // Return nullptr for empty arrays or arrays with null buffers
+  // Return nullptr for empty arrays or arrays with null/closed buffers.
+  if(array == nullptr || array->dataBuffer() == nullptr
+     || array->dataBuffer()->isClosed()) {
+    return nullptr;
   }
-  return array->dataBuffer()->primary();
+  return array->buffer();
 }
 
 void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
-  if(array == nullptr || array->dataBuffer() == nullptr) {
-    THROW_EXCEPTION("getOpaqueNDArraySpecialBuffer: Array or data buffer was null!");
+  // Return nullptr for empty arrays or arrays with null/closed buffers.
+  // A closed DataBuffer still has a non-null pointer but its GPU memory
+  // has been freed — accessing it would cause cudaMemcpyAsync invalid arg.
+  if(array == nullptr || array->dataBuffer() == nullptr
+     || array->dataBuffer()->isClosed()) {
+    return nullptr;
   }
-  return array->dataBuffer()->special();
+  return array->specialBuffer();
 }
 
 sd::LongType getShapeInfoLength(OpaqueNDArray array) {
+  if (array == nullptr || array->shapeInfo() == nullptr) return 0;
   return shape::shapeInfoLength(array->rankOf());
 }
 
 sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) {
-  return array->dataBuffer()->getNumElements();
+  // Return 0 for empty arrays or arrays with null/invalid buffers.
+  // Views sharing a placeholder's DataBuffer become invalid (dangling) after
+  // the placeholder is closed via dbClose(): the destructor sets
+  // _magicNumber=0xDEADBEEF BEFORE deleteBuffers() sets closed=true.
+  // Using isClosed() reads 'closed' from potentially freed memory (UB), which
+  // is unreliable when the allocator reuses that memory. isValid() checks
+  // (_magicNumber == MAGIC_NUMBER && !closed), reliably detecting freed
+  // DataBuffers via the sentinel magic number regardless of allocator behavior.
+  if(array == nullptr || array->dataBuffer() == nullptr
+     || !array->dataBuffer()->isValid()) {
+    return 0;
+  }
+  return array->lengthOf();
 }
 
 
@@ -164,18 +174,110 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
                     "This indicates the Java-side DataBuffer for shape information is corrupted or deallocated.");
   }
 
-  if(shape::isEmpty(shapeInfoCast) && buffer != nullptr) {
+  sd::LongType rank = shapeInfoCast[0];
+
+
+  if (rank < 0 || rank > SD_MAX_RANK) {
+    std::string errorMessage;
+    errorMessage += "createOpaqueNDArray: shapeInfo->primary() contains invalid rank: ";
+    errorMessage += std::to_string(rank);
+    errorMessage += " (expected 0-";
+    errorMessage += std::to_string(SD_MAX_RANK);
+    errorMessage += "). This indicates memory corruption, use-after-free, or uninitialized host buffer. ";
+    errorMessage += "shapeInfo primary ptr: ";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeInfoCast));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  // An array is effectively empty if:
+  // 1) ARRAY_EMPTY flag is set in native shape info, OR
+  // 2) length is 0 (shape like [0,1] or [2,0]), OR
+  // 3) rank is 0 and buffer is null — this is the Java Nd4j.empty(DataType) singleton pattern.
+  //    Java's javaShapeInformation carries the ARRAY_EMPTY bit but the native DataBuffer does not,
+  //    so shape::isEmpty() returns false even though the array is genuinely empty.
+  //    NDArray::isEmpty() uses the same rank==0 && _buffer==nullptr fallback for this case.
+  bool javaStyleEmpty = (shape::rank(shapeInfoCast) == 0 && buffer == nullptr);
+  bool effectivelyEmpty = shape::isEmpty(shapeInfoCast) || shape::length(shapeInfoCast) == 0 || javaStyleEmpty;
+
+  if(effectivelyEmpty && buffer != nullptr) {
     THROW_EXCEPTION("createOpaqueNDArray: Shape info was empty but buffer was not null!");
-  } else if(!shape::isEmpty(shapeInfoCast) && buffer == nullptr) {
+  } else if(!effectivelyEmpty && buffer == nullptr) {
     THROW_EXCEPTION("createOpaqueNDArray: Shape info was not empty but buffer was null!");
+  }
+
+  // Validate buffer integrity before using (debug only — canary scan is O(8K))
+  if(buffer != nullptr && buffer->getDataBuffer() != nullptr && sd::Environment::getInstance().isDebug()) {
+    buffer->getDataBuffer()->validateIntegrity();
+  }
+
+  // For javaStyleEmpty arrays (rank-0, null buffer, Nd4j.empty(DataType) singleton pattern):
+  // The Java-side shapeInfo has ARRAY_EMPTY set in its extras, but the native DataBuffer copy may
+  // not carry that bit because JavaCPP copies the raw long[] without re-applying Java ArrayOptions.
+  // Without ARRAY_EMPTY, NDArray::isEmpty() returns false (checks ARRAY_EMPTY + length==0),
+  // BroadcastHelper empty guards don't fire, and the null DataBuffer is dereferenced → SIGSEGV.
+  // Fix: create a stack copy of the shapeInfo with ARRAY_EMPTY explicitly set so that all
+  // downstream isEmpty() checks and empty-guard code paths see a genuinely-empty descriptor.
+  // The NDArray constructor passes this through ConstantShapeHelper which caches the result;
+  // the local copy is safe to release after construction.
+  sd::LongType shapeInfoLen = shape::shapeInfoLength(shape::rank(shapeInfoCast));
+  std::vector<sd::LongType> shapeInfoWithEmpty;
+  const sd::LongType* shapeInfoPtr = shapeInfoCast;
+  if (javaStyleEmpty && !shape::isEmptyConst(shapeInfoCast)) {
+    // Copy only the required shapeInfo bytes (shapeInfoLen elements); the NDArray constructor
+    // passes this through ConstantShapeHelper which stores its own permanent copy, so we
+    // only need the local copy to survive until the constructor returns.
+    shapeInfoWithEmpty.assign(shapeInfoCast, shapeInfoCast + shapeInfoLen);
+    sd::ArrayOptions::setPropertyBit(shapeInfoWithEmpty.data(), ARRAY_EMPTY);
+    shapeInfoPtr = shapeInfoWithEmpty.data();
   }
 
   sd::NDArray* ret = new sd::NDArray(
     buffer != nullptr ? buffer->getDataBuffer() : nullptr,
-    shapeInfoCast,
+    const_cast<sd::LongType*>(shapeInfoPtr),
     sd::LaunchContext::defaultContext(),
     offset
   );
+
+  // Note: The specialBuffer parameter is intentionally not used here because in practice,
+  // Java passes the same OpaqueDataBuffer for both buffer and specialBuffer. The DataBuffer
+  // already contains both primary (host) and special (device) pointers correctly configured.
+  // Attempting to modify the special buffer here would cause use-after-free issues because
+  // setSpecialBuffer() calls deleteSpecial() first.
+
+  if (ret != nullptr) {
+    sd::ConstantShapeBuffer* shapeBuffer = ret->shapeInfoConstBuffer();
+
+    if (shapeBuffer == nullptr) {
+      std::string errorMessage;
+      errorMessage += "createOpaqueNDArray: newly created NDArray has nullptr _shapeInfoBuffer! ";
+      errorMessage += "NDArray ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ret));
+      delete ret;
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    // Check if shapeBuffer equals ret - this would indicate corruption
+    if (reinterpret_cast<uintptr_t>(shapeBuffer) == reinterpret_cast<uintptr_t>(ret)) {
+      std::string errorMessage;
+      errorMessage += "createOpaqueNDArray: _shapeInfoBuffer equals NDArray ptr! ";
+      errorMessage += "This indicates uninitialized memory or constructor failure. ";
+      errorMessage += "NDArray ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ret));
+      delete ret;
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    if (!shapeBuffer->isValid()) {
+      std::string errorMessage;
+      errorMessage += "createOpaqueNDArray: newly created NDArray has invalid _shapeInfoBuffer! ";
+      errorMessage += "NDArray ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ret));
+      errorMessage += ", shapeBuffer ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeBuffer));
+      delete ret;
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+  }
 
   // Track allocation
   if (ret != nullptr) {
@@ -194,7 +296,7 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
 
 
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
-  sd::DataBuffer::memcpy(target->dataBuffer(), from->dataBuffer(), targetOffset, fromOffset);
+  sd::DataBuffer::memcpy(target->dataBuffer(), from->dataBuffer(), fromOffset, targetOffset, n);
 }
 
 
@@ -274,88 +376,8 @@ void setTADThreshold(int num) {
 }
 
 
-sd::Status registerGraph(sd::Pointer *extraPointers, sd::LongType  graphId, sd::Pointer flatBufferPointer) {
-#ifdef __cpp_exceptions
-  try {
-    auto graph = sd::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
-
-    GraphHolder::getInstance().registerGraph(graphId, graph);
-
-    return sd::Status::OK;
-  } catch (std::exception &e) {
-    safeSetErrorContext(1, e.what());
-    return sd::Status::BAD_INPUT;
-  }
-#else
-  auto graph = sd::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
-
-  GraphHolder::getInstance().registerGraph(graphId, graph);
-
-  return sd::Status::OK;
-#endif
-}
-
-static VariablesSet *executeStoredGraphT(sd::Pointer *extraPointers, sd::LongType  graphId, sd::Pointer *inputBuffers,
-                                         sd::Pointer *inputShapes, int *inputIndices, int numInputs) {
-  auto graph = sd::graph::GraphHolder::getInstance().cloneGraph(graphId);
-  auto varSpace = graph->getVariableSpace();
-
-  std::vector<sd::NDArray *> handles;
-
-  for (int e = 0; e < numInputs; e++) {
-    auto idx = inputIndices[e];
-
-    // we'll delete this array later, together with cloned VariableSpace
-    auto array = new sd::NDArray(inputBuffers[e], reinterpret_cast<sd::LongType  *>(inputShapes[e]), nullptr, 0, 0);
-    handles.emplace_back(array);
-
-    if (varSpace->hasVariable(idx)) {
-      auto var = varSpace->getVariable(idx);
-      if (var->hasNDArray()) delete var->getNDArray();
-
-      var->setNDArray(array);
-    } else
-      varSpace->putVariable(idx, array);
-  }
-
-  auto hZ = sd::graph::GraphExecutioner::execute(graph, varSpace);
-  auto varSet = new sd::graph::VariablesSet(hZ);
-
-  if (hZ == sd::Status::OK) {
-    // pull back results, and provide them
-    auto outputs = graph->fetchOutputs();
-    int size = static_cast<int>(outputs->size());
-    for (int e = 0; e < size; e++) {
-      // we're only getting variable ID/Index from original grap. values will be taken from cloned workspace
-      std::pair<int, int> varId(outputs->at(e)->id(), outputs->at(e)->index());
-
-      auto var = varSpace->getVariable(varId);
-
-      varSet->push_back(var->clone());
-    }
-
-    delete outputs;
-  }
-
-  delete graph;
-
-  return varSet;
-}
 
 
-VariablesSet *executeStoredGraph(sd::Pointer *extraPointers, sd::LongType  graphId, sd::Pointer *inputBuffers, sd::Pointer *inputShapes,
-                                 int *inputIndices, int numInputs) {
-#ifdef __cpp_exceptions
-  try {
-    return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
-  } catch (std::exception &e) {
-    safeSetErrorContext(1, e.what());
-    return nullptr;
-  }
-#else
-  return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
-#endif
-}
 
 sd::LongType  getVariablesSetSize(OpaqueVariablesSet *set) { return set->size(); }
 
@@ -373,22 +395,8 @@ sd::LongType  const *getVariableShape(Variable *variable) { return variable->get
 
 void *getVariableBuffer(Variable *variable) { return variable->getNDArray()->buffer(); }
 
-sd::Status unregisterGraph(sd::Pointer *extraPointers, sd::LongType  graphId) {
-#ifdef __cpp_exceptions
-  try {
-    GraphHolder::getInstance().dropGraphAny(graphId);
 
-    return sd::Status::OK;
-  } catch (std::exception &e) {
-    safeSetErrorContext(1, e.what());
-    return sd::Status::BAD_INPUT;
-  }
-#else
-  GraphHolder::getInstance().dropGraphAny(graphId);
 
-  return sd::Status::OK;
-#endif
-}
 
 void deletePointerArray(sd::Pointer pointer) {
   sd::Pointer *ptr = reinterpret_cast<sd::Pointer *>(pointer);
@@ -428,74 +436,15 @@ void deleteGraphState(sd::Pointer state) {
   delete stateP;
 }
 
-sd::Status execCustomOpWithScope_(sd::Pointer *extraPointers, sd::graph::GraphState *state, sd::LongType  opHash,
-                                  sd::LongType  *scopes, int numScopes, sd::Pointer *inputBuffers,
+sd::Status execCustomOpWithScope_(sd::Pointer *extraPointers, sd::graph::GraphState *state, sd::LongType opHash,
+                                  sd::LongType *scopes, int numScopes, sd::Pointer *inputBuffers,
                                   sd::Pointer *inputShapes, int numInputs, sd::Pointer *outputBuffers,
                                   sd::Pointer *outputShapes, int numOutputs) {
-  /**
-   * That's basically exec, with VariableSpace provided in GraphState:
-   * depending on operation (i.e. while of if), different logic executors could be used
-   */
-
-  auto graph = state->graph();
-  auto varSpace = state->variableSpace();
-
-  // Node is dynamically created, and has nothing beyond it: only inputs and outputs
-  // this node has id of 0, and inputs are
-  Node node(::graph::OpType_LOGIC, opHash, 0);
-
-  // mapping inputs
-  for (int e = 0; e < numInputs; e++) {
-    auto buffer = inputBuffers[e];
-    auto shapeInfo = reinterpret_cast<sd::LongType  *>(inputShapes[e]);
-
-    auto array = new sd::NDArray(buffer, shapeInfo, varSpace->launchContext(), 0, 0);
-
-    // now we just put array to VarSpace
-    varSpace->putVariable(0, e, *array);
-    node.pickInput(0, e);
-  }
-
-  // mapping scopes
-  for (int e = 0; e < numScopes; e++) {
-    // we should check scope existence in GraphState/Graph
-    int scopeId = (int)scopes[e];
-    if (!state->hasScope(scopeId)) {
-      return sd::Logger::logKernelFailureMsg();
-    }
-    node.pickInput(scopeId, 0);
-  }
-
-  auto hZ = LogicExecutor::processNode(graph, &node);
-  if (hZ != sd::Status::OK) return hZ;
-
-  // mapping outputs
-
-  for (int e = 0; e < numOutputs; e++) {
-    auto buffer = outputBuffers[e];
-    auto shapeInfo = reinterpret_cast<sd::LongType  *>(outputShapes[e]);
-
-    sd::NDArray array(buffer, shapeInfo, varSpace->launchContext(), 0, 0);
-
-    // now we just put array to VarSpace to the same ID
-    // varSpace->putVariable(0, e, array);
-
-    auto t = varSpace->getVariable(0, e)->getNDArray();
-    array.assign(t);
-  }
-
-  // removing input variables
-  for (int e = 0; e < numInputs; e++) {
-    varSpace->dropVariable(0, e);
-  }
-
   return sd::Status::OK;
 }
 
-void deleteResultWrapper(sd::Pointer ptr) {
-  auto p = reinterpret_cast<ResultWrapper *>(ptr);
-  delete p;
-}
+
+
 
 
 template <typename T>
@@ -556,9 +505,14 @@ void deleteTadPack(sd::TadPack *ptr) {
       g_tadPackRegistry.erase(it);
       // DON'T delete ptr manually - shared_ptr destructor will handle it when refcount reaches 0
     } else {
-      // Not in registry - this might be a TadPack created without going through tadOnlyShapeInfo
-      // Or it's already been removed from registry. Safe to delete directly.
-      delete ptr;
+      // Not in registry — either:
+      // (a) Another thread already called deleteTadPack for the same pointer
+      //     (multiple threads can get the same TadPack* from the shared cache),
+      //     so the shared_ptr was already erased and handled cleanup.
+      // (b) clearCache() removed the trie's reference and the registry entry
+      //     was already erased by a prior deleteTadPack call.
+      // In both cases the TadPack is already freed. Do NOT delete again —
+      // that would be a double-free (SIGSEGV in ConstantOffsetsBuffer destructor).
     }
   }
 }
@@ -583,7 +537,39 @@ sd::Pointer getConstantDataBufferSpecial(OpaqueConstantDataBuffer dbf) { return 
 sd::LongType getConstantDataBufferLength(OpaqueConstantDataBuffer dbf) { return dbf->length(); }
 sd::LongType getConstantDataBufferSizeOf(OpaqueConstantDataBuffer dbf) { return dbf->sizeOf(); }
 
-sd::Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf) { return const_cast<sd::LongType *>(dbf->primary()); }
+sd::Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf) {
+  if (dbf == nullptr) {
+    THROW_EXCEPTION("getConstantShapeBufferPrimary: OpaqueConstantShapeBuffer is null");
+  }
+
+  // Check if the ConstantShapeBuffer is valid
+  if (!dbf->isValid()) {
+    THROW_EXCEPTION("getConstantShapeBufferPrimary: ConstantShapeBuffer failed validity check (possible use-after-free or garbage pointer)");
+  }
+
+  sd::LongType* primary = const_cast<sd::LongType *>(dbf->primary());
+  if (primary == nullptr) {
+    THROW_EXCEPTION("getConstantShapeBufferPrimary: primary() returned nullptr");
+  }
+
+  // Validate the shape data at this point to catch corruption early
+  sd::LongType rank = primary[0];
+  if (rank < 0 || rank > SD_MAX_RANK) {
+    std::string errorMessage;
+    errorMessage += "getConstantShapeBufferPrimary: Shape buffer contains invalid rank: ";
+    errorMessage += std::to_string(rank);
+    errorMessage += " (expected 0-";
+    errorMessage += std::to_string(SD_MAX_RANK);
+    errorMessage += "). This indicates memory corruption in the cached shape buffer. ";
+    errorMessage += "ConstantShapeBuffer ptr: ";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(dbf));
+    errorMessage += ", primary ptr: ";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(primary));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  return primary;
+}
 
 sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf) { return const_cast<sd::LongType *>(dbf->special()); }
 
@@ -611,34 +597,34 @@ const char* getConstantShapeBufferStackTrace(OpaqueConstantShapeBuffer buffer) {
 
 Context *createGraphContext(int nodeId) { return new Context(nodeId); }
 
-OpaqueRandomGenerator getGraphContextRandomGenerator(Context *ptr) { return &ptr->randomGenerator(); }
+OpaqueRandomGenerator* getGraphContextRandomGenerator(Context *ptr) { return &ptr->randomGenerator(); }
 
 void markGraphContextInplace(Context *ptr, bool reallyInplace) { ptr->markInplace(reallyInplace); }
 
 
-// NOTE ABOUT SIGNATURE AND JAVACPP MAPPING
-// ----------------------------------------
-// OpaqueNDArrayArr represents `NDArray**` (a pointer to an array of NDArray*).
-//
-// Earlier versions of this function used the signature:
-//   void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr* arr)
-// which treated the argument as `NDArray***`. That required double‑dereferencing
-// (e.g. `(*arr)[i]`) and did not match how JavaCPP passes the native pointer.
-//
-// In the JavaCPP mapping, the Java side already passes an `NDArray**` directly for
-// this parameter. Using `OpaqueNDArrayArr*` added an extra level of indirection,
-// so the native code tried to dereference one level too many, leading to invalid
-// pointers and hard‑to‑debug crashes.
-//
-// The corrected signature below:
-//   void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr)
-// matches the JavaCPP mapping exactly: `arr` is already an `NDArray**`, so
-// `arr[i]` yields the i‑th `NDArray*` without any extra dereference.
+// OpaqueNDArrayArr is NDArray** (pointer to array of NDArray pointers).
+// Java passes this directly, so arr[i] gives the i-th NDArray*.
 void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr) {
   if (arr == nullptr)
     THROW_EXCEPTION("setGraphContextInputArraysArr: Input arrays were null!");
   if (ptr == nullptr)
     THROW_EXCEPTION("setGraphContextInputArraysArr: Context was null!");
+
+  // Debug: Print the OpaqueNDArrayArr pointer and raw memory layout
+  fprintf(stderr, "=== setGraphContextInputArraysArr DEBUG ===\n");
+  fprintf(stderr, "numArrays=%d, arr base ptr=%p\n", numArrays, (void*)arr);
+  fflush(stderr);
+
+  // Print raw memory at the arr pointer to see what's actually stored
+  uint64_t* rawArr = reinterpret_cast<uint64_t*>(arr);
+  fprintf(stderr, "Raw memory at arr (interpreting as uint64_t array):\n");
+  for (int i = 0; i < numArrays && i < 5; i++) {
+    fprintf(stderr, "  rawArr[%d] at %p = 0x%016lx, arr[%d] = %p\n",
+            i, (void*)&rawArr[i], rawArr[i], i, (void*)arr[i]);
+    fflush(stderr);
+  }
+  fprintf(stderr, "===========================================\n");
+  fflush(stderr);
 
   for (int i = 0; i < numArrays; i++) {
     if (arr[i] == nullptr) {
@@ -646,6 +632,60 @@ void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDAr
       errorMessage += "setGraphContextInputArraysArr: Input array at index ";
       errorMessage += std::to_string(i);
       errorMessage += " was null!";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    sd::NDArray* ndarray = arr[i];
+
+    // DEBUG: Print memory layout of the NDArray pointer to detect corruption
+    fprintf(stderr, "  Checking arr[%d]: NDArray ptr=%p\n", i, (void*)ndarray);
+    fflush(stderr);
+    // Print first 64 bytes at the NDArray address as raw hex to see if it's valid object data
+    uint64_t* rawPtr = reinterpret_cast<uint64_t*>(ndarray);
+    fprintf(stderr, "    Raw memory at NDArray: [0]=0x%016lx [1]=0x%016lx [2]=0x%016lx [3]=0x%016lx\n",
+              rawPtr[0], rawPtr[1], rawPtr[2], rawPtr[3]);
+    fflush(stderr);
+
+    // Check the shapeInfo directly from the buffer, not via shapeInfo() which may re-cache
+    sd::ConstantShapeBuffer* shapeBuffer = ndarray->shapeInfoConstBuffer();
+    fprintf(stderr, "    shapeInfoConstBuffer() returned: %p\n", (void*)shapeBuffer);
+    fflush(stderr);
+    if (shapeBuffer == nullptr || !shapeBuffer->isValid()) {
+      std::string errorMessage;
+      errorMessage += "setGraphContextInputArraysArr: Array at index ";
+      errorMessage += std::to_string(i);
+      errorMessage += " has invalid ConstantShapeBuffer (null or magic check failed). ";
+      errorMessage += "NDArray ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ndarray));
+      errorMessage += ", shapeBuffer ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeBuffer));
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    sd::LongType* shapeInfoPtr = shapeBuffer->primary();
+    if (shapeInfoPtr == nullptr) {
+      std::string errorMessage;
+      errorMessage += "setGraphContextInputArraysArr: Array at index ";
+      errorMessage += std::to_string(i);
+      errorMessage += " has null primary shapeInfo!";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    sd::LongType rank = shapeInfoPtr[0];
+    if (rank < 0 || rank > SD_MAX_RANK) {
+      std::string errorMessage;
+      errorMessage += "setGraphContextInputArraysArr: Array at index ";
+      errorMessage += std::to_string(i);
+      errorMessage += " has corrupt shapeInfo! Rank: ";
+      errorMessage += std::to_string(rank);
+      errorMessage += " (expected 0-";
+      errorMessage += std::to_string(SD_MAX_RANK);
+      errorMessage += "). NDArray ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(ndarray));
+      errorMessage += ", shapeInfo ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeInfoPtr));
+      errorMessage += ", ConstantShapeBuffer ptr: ";
+      errorMessage += std::to_string(reinterpret_cast<uintptr_t>(shapeBuffer));
       THROW_EXCEPTION(errorMessage.c_str());
     }
 
@@ -674,11 +714,27 @@ void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfA
   ptr->setDArguments(dtypes);
 }
 
+void setGraphContextSArgument(OpaqueContext *ptr, const char *argument, int index) {
+  auto sArgs = ptr->getSArguments();
+  while ((int)sArgs->size() <= index) {
+    sArgs->push_back(std::string());
+  }
+  sArgs->at(index) = std::string(argument);
+}
+
 void deleteGraphContext(Context *ptr) {
+  // Tripwire: validate Context pointer before deletion
+  if (ptr == nullptr) {
+    return;  // Nothing to delete
+  }
+
+  SD_VALIDATE_PTR(ptr, "deleteGraphContext");
+  SD_VALIDATE_ALIGNED(ptr, 8, "deleteGraphContext");
+
   delete ptr;
 }
 
-OpaqueRandomGenerator createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed) {
+OpaqueRandomGenerator* createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed) {
 #ifdef __cpp_exceptions
   try {
     return new RandomGenerator(rootSeed, nodeSeed);
@@ -691,29 +747,29 @@ OpaqueRandomGenerator createRandomGenerator(sd::LongType rootSeed, sd::LongType 
 #endif
 }
 
-sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator ptr) { return ptr->rootState(); }
+sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator* ptr) { return ptr->rootState(); }
 
-sd::LongType getRandomGeneratorNodeState(OpaqueRandomGenerator ptr) { return ptr->nodeState(); }
+sd::LongType getRandomGeneratorNodeState(OpaqueRandomGenerator* ptr) { return ptr->nodeState(); }
 
-void setRandomGeneratorStates(OpaqueRandomGenerator ptr, sd::LongType rootSeed, sd::LongType nodeSeed) {
+void setRandomGeneratorStates(OpaqueRandomGenerator* ptr, sd::LongType rootSeed, sd::LongType nodeSeed) {
   ptr->setStates(rootSeed, nodeSeed);
 }
 
-float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr, sd::LongType index) {
+float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator* ptr, sd::LongType index) {
   return ptr->relativeT<float>(index);
 }
 
-double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, sd::LongType index) {
+double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator* ptr, sd::LongType index) {
   return ptr->relativeT<double>(index);
 }
 
-int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, sd::LongType index) { return ptr->relativeInt(index); }
+int getRandomGeneratorRelativeInt(OpaqueRandomGenerator* ptr, sd::LongType index) { return ptr->relativeInt(index); }
 
-sd::LongType getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, sd::LongType index) {
+sd::LongType getRandomGeneratorRelativeLong(OpaqueRandomGenerator* ptr, sd::LongType index) {
   return ptr->relativeLong(index);
 }
 
-int getRandomGeneratorNextInt(OpaqueRandomGenerator ptr) {
+int getRandomGeneratorNextInt(OpaqueRandomGenerator* ptr) {
   // to nullify  _nodeState._long ^= (steps ^ 0xdeadbeef);
   // we will use step = 0xdeadbeef
   auto result = ptr->relativeInt(1);
@@ -721,25 +777,25 @@ int getRandomGeneratorNextInt(OpaqueRandomGenerator ptr) {
   return result;
 }
 
-sd::LongType getRandomGeneratorNextLong(OpaqueRandomGenerator ptr) {
+sd::LongType getRandomGeneratorNextLong(OpaqueRandomGenerator* ptr) {
   auto result = ptr->relativeLong(1);
   ptr->rewindH(0xdeadbeef);
   return result;
 }
 
-float getRandomGeneratorNextFloat(OpaqueRandomGenerator ptr) {
+float getRandomGeneratorNextFloat(OpaqueRandomGenerator* ptr) {
   auto result = ptr->relativeT<float>(1);
   ptr->rewindH(0xdeadbeef);
   return result;
 }
 
-double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr) {
+double getRandomGeneratorNextDouble(OpaqueRandomGenerator* ptr) {
   auto result = ptr->relativeT<double>(1);
   ptr->rewindH(0xdeadbeef);
   return result;
 }
 
-void deleteRandomGenerator(OpaqueRandomGenerator ptr) { delete ptr; }
+void deleteRandomGenerator(OpaqueRandomGenerator* ptr) { delete ptr; }
 
 
 /**

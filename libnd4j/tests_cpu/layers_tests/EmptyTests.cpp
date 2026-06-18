@@ -180,7 +180,9 @@ TEST_F(EmptyTests, test_shaped_empty_1) {
   ASSERT_EQ(sd::DataType::FLOAT32, empty.dataType());
   ASSERT_EQ(0, empty.lengthOf());
   ASSERT_TRUE(empty.isEmpty());
-  ASSERT_EQ(shape, empty.getShapeAsVector());
+  auto* emptyShape = empty.getShapeAsVector();
+  ASSERT_EQ(shape, *emptyShape);
+  delete emptyShape;
   ASSERT_EQ(3, empty.rankOf());
 }
 
@@ -191,7 +193,9 @@ TEST_F(EmptyTests, test_shaped_empty_2) {
   ASSERT_EQ(sd::DataType::FLOAT32, empty.dataType());
   ASSERT_EQ(0, empty.lengthOf());
   ASSERT_TRUE(empty.isEmpty());
-  ASSERT_EQ(shape, empty.getShapeAsVector());
+  auto* emptyShape = empty.getShapeAsVector();
+  ASSERT_EQ(shape, *emptyShape);
+  delete emptyShape;
   ASSERT_EQ(2, empty.rankOf());
 }
 
@@ -203,7 +207,9 @@ TEST_F(EmptyTests, test_shaped_empty_3) {
   ASSERT_EQ(sd::DataType::FLOAT32, empty.dataType());
   ASSERT_EQ(0, empty.lengthOf());
   ASSERT_TRUE(empty.isEmpty());
-  ASSERT_EQ(shape, empty.getShapeAsVector());
+  auto* emptyShape = empty.getShapeAsVector();
+  ASSERT_EQ(shape, *emptyShape);
+  delete emptyShape;
   ASSERT_EQ(1, empty.rankOf());
 }
 
@@ -214,7 +220,9 @@ TEST_F(EmptyTests, test_shaped_empty_4) {
 
   ASSERT_TRUE(array.isEmpty());
   ASSERT_EQ(1, array.rankOf());
-  ASSERT_EQ(shapeOf, array.getShapeAsVector());
+  auto* arrayShape = array.getShapeAsVector();
+  ASSERT_EQ(shapeOf, *arrayShape);
+  delete arrayShape;
 }
 
 TEST_F(EmptyTests, test_empty_matmul_1) {

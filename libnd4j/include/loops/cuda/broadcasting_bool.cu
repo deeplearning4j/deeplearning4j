@@ -25,7 +25,7 @@
 #include <helpers/StringUtils.h>
 #include <loops/broadcasting_bool.h>
 #include <loops/legacy_ops.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -33,7 +33,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpClass>
-static SD_KERNEL void broadcastBoolSimple(
+static SD_KERNEL SD_INLINE void broadcastBoolSimple(
     void const* x,
     sd::LongType const* xShapeInfo,
     void const* y,
@@ -66,7 +66,7 @@ static SD_KERNEL void broadcastBoolSimple(
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpClass>
-static SD_KERNEL void broadcastBoolSimple(
+static SD_KERNEL SD_INLINE void broadcastBoolSimple(
     const void* x,
     const sd::LongType* xShapeInfo,
     const void* y,
@@ -87,7 +87,7 @@ static SD_KERNEL void broadcastBoolSimple(
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpClass>
-static SD_KERNEL void broadcastBoolInverseSimple(
+static SD_KERNEL SD_INLINE void broadcastBoolInverseSimple(
     void const* x,
     sd::LongType const* xShapeInfo,
     void const* y,
@@ -188,8 +188,8 @@ SD_HOST void BroadcastBool<X, Z>::intermediateBroadcast(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST void BroadcastBool<X, Y>::execBroadcast(
+template <typename X, typename Z>
+SD_HOST void BroadcastBool<X, Z>::execBroadcast(
     dim3 launchDims,
     cudaStream_t* stream,
     int opNum,
@@ -218,8 +218,8 @@ SD_HOST void BroadcastBool<X, Y>::execBroadcast(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST void BroadcastBool<X, Y>::execBroadcast(
+template <typename X, typename Z>
+SD_HOST void BroadcastBool<X, Z>::execBroadcast(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
@@ -279,8 +279,8 @@ SD_HOST void BroadcastBool<X, Z>::intermediateInverseBroadcast(
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST void BroadcastBool<X, Y>::execInverseBroadcast(
+template <typename X, typename Z>
+SD_HOST void BroadcastBool<X, Z>::execInverseBroadcast(
     dim3 launchDims,
     cudaStream_t* stream,
     int opNum,
@@ -564,7 +564,13 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(
 }
 
 // build the class
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+BUILD_DOUBLE_TEMPLATE( class BroadcastBool, , SD_SPLIT_TYPE_LIST, SD_BOOL_TYPES);
+#endif
+#else
 BUILD_DOUBLE_TEMPLATE( class BroadcastBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+#endif
 
 }  // namespace broadcast
 }  // namespace functions

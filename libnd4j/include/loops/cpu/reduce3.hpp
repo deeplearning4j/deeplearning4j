@@ -16,6 +16,8 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
+#pragma once
+
 // @author raver119@gmail.com
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 19.11.2018
 
@@ -26,6 +28,7 @@
 #include <loops/reduce3.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+#include <system/env_functions.h>
 
 using namespace simdOps;
 
@@ -65,7 +68,7 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
 
   Z extraParamsVals[3] = {(Z)0.0f, (Z)0.0f, (Z)0.0f};
   Z startingVal = OpType::startingValue(x);
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
   Z intermediate[64];
   Z extraParamsLocal[3 * 64];
 
@@ -82,20 +85,44 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
     }
   }
 
+  // Check if both arrays are contiguous with same shape
+  bool isContiguous = (xRank == yRank);
+  if (isContiguous && xRank > 0) {
+    sd::LongType expectedStride = 1;
+    for (int i = xRank - 1; i >= 0; --i) {
+      if (xShape[i] == 1) continue;
+      if (xStride[i] != expectedStride || yStride[i] != expectedStride || xShape[i] != yShape[i]) {
+        isContiguous = false;
+        break;
+      }
+      expectedStride *= xShape[i];
+    }
+  }
+
   auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
-      sd::LongType xCoords[SD_MAX_RANK];
-      sd::LongType yCoords[SD_MAX_RANK];
+    if (isContiguous) {
+      // Fast path: direct indexing for contiguous arrays
+      for (auto i = start; i < stop; i++) {
+        intermediate[thread_id] = OpType::update(intermediate[thread_id],
+                                                 OpType::op(x[i], y[i], extraParamsLocal + 3 * thread_id),
+                                                 extraParamsLocal + 3 * thread_id);
+      }
+    } else {
+      // General path with coordinate calculation
+      for (auto i = start; i < stop; i++) {
+        sd::LongType xCoords[SD_MAX_RANK];
+        sd::LongType yCoords[SD_MAX_RANK];
 
-      INDEX2COORDS(i, xRank, xShape, xCoords);
-      INDEX2COORDS(i, yRank, yShape, yCoords);
-      sd::LongType xOffset = 0, yOffset = 0;
-      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
-      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+        INDEX2COORDS(i, xRank, xShape, xCoords);
+        INDEX2COORDS(i, yRank, yShape, yCoords);
+        sd::LongType xOffset = 0, yOffset = 0;
+        COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
 
-      intermediate[thread_id] = OpType::update(intermediate[thread_id],
-                                               OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id),
-                                               extraParamsLocal + 3 * thread_id);
+        intermediate[thread_id] = OpType::update(intermediate[thread_id],
+                                                 OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id),
+                                                 extraParamsLocal + 3 * thread_id);
+      }
     }
   };
 

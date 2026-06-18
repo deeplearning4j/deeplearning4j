@@ -7,10 +7,11 @@
 #include <system/op_boilerplate.h>
 
 #include <array/DataTypeUtils.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/pairwise_bool.h>
+#include <system/env_functions.h>
 #include <types/types.h>
 
 ////////////////////////////////////////////////////////////////////////
@@ -33,6 +34,13 @@ void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext *lc, int o
     errorMessage += sd::DataTypeUtils::asString(zType);
     THROW_EXCEPTION(errorMessage.c_str());
   }
+  // Empty array fast-path: if any operand has a null data pointer or an empty shape,
+  // there is nothing to compute. Handles Nd4j.empty() singletons with null data buffers.
+  if (hX == nullptr || hY == nullptr || hZ == nullptr
+      || shape::isEmptyConst(hZShapeInfo) || shape::length(hZShapeInfo) == 0) {
+    return;
+  }
+
   auto func = PRAGMA_THREADS_FOR {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform,
                           ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),
@@ -42,5 +50,5 @@ void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext *lc, int o
   auto zLen = shape::length(hZShapeInfo);
   samediff::Threads::parallel_for(
       func, 0, zLen, 1,
-      sd::math::sd_max<int>(1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+      sd::math::sd_max(1, sd::math::sd_min(zLen / 1024, sd::env_maxMasterThreads())));
 }

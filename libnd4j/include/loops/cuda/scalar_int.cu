@@ -28,7 +28,7 @@
 #include "../legacy_ops.h"
 #include "../scalar_int.h"
 #include <helpers/DebugHelper.h>
-#include <system/Environment.h>
+#include <system/env_functions.h>
 
     using namespace simdOps;
 
@@ -36,7 +36,7 @@
 // A kernel that applies an integer-based scalar transform along specified dimension (via TAD).
 // We'll cache shape info in shared memory to reduce repeated calls to shapeOf, strideOf, etc.
 template <typename X, typename OpType>
-__global__ void scalarAlongDimensionCachedKernel(
+SD_KERNEL SD_INLINE void scalarAlongDimensionCachedKernel(
     void const* x,
     sd::LongType const* xShapeInfo,
     void* extraParams,
@@ -44,7 +44,7 @@ __global__ void scalarAlongDimensionCachedKernel(
     sd::LongType const* zShapeInfo,
     void const* scalars,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets,
     sd::LongType const* tadShapeInfoZ,
@@ -72,7 +72,7 @@ __global__ void scalarAlongDimensionCachedKernel(
 // A kernel to handle shaped transforms: x is "scalar," y is "array," but
 // we store shape data in shared memory.
 template <typename X, typename OpType>
-__global__ void scalarSimpleShapedCachedKernel(
+SD_KERNEL SD_INLINE void scalarSimpleShapedCachedKernel(
     void const* x,
     void const* y,
     sd::LongType const* xShapeInfo,
@@ -99,7 +99,7 @@ namespace scalar {
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-__device__ void ScalarIntTransform<X>::transformCuda(
+SD_DEVICE void ScalarIntTransform<X>::transformCuda(
     void const* vscalar,
     void const* vy,
     sd::LongType const* yShapeInfo,
@@ -161,7 +161,7 @@ __device__ void ScalarIntTransform<X>::transformCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-__device__ void ScalarIntTransform<X>::transformCuda(
+SD_DEVICE void ScalarIntTransform<X>::transformCuda(
     sd::LongType len,
     void const* vx,
     void const* vy,
@@ -187,7 +187,7 @@ __device__ void ScalarIntTransform<X>::transformCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-__device__ void ScalarIntTransform<X>::transformCuda(
+SD_DEVICE void ScalarIntTransform<X>::transformCuda(
     void const* vx,
     sd::LongType const* xShapeInfo,
     void* vextraParams,
@@ -195,7 +195,7 @@ __device__ void ScalarIntTransform<X>::transformCuda(
     sd::LongType const* zShapeInfo,
     void const* vscalars,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets,
     sd::LongType const* tadShapeInfoZ,
@@ -263,7 +263,7 @@ __device__ void ScalarIntTransform<X>::transformCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-__host__ void ScalarIntTransform<X>::intermediateAlongDimension(
+SD_HOST void ScalarIntTransform<X>::intermediateAlongDimension(
     dim3& launchDims,
     cudaStream_t* stream,
     void const* x,
@@ -273,7 +273,7 @@ __host__ void ScalarIntTransform<X>::intermediateAlongDimension(
     void const* scalars,
     void* extraParams,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets,
     sd::LongType const* tadShapeInfoZ,
@@ -301,7 +301,7 @@ __host__ void ScalarIntTransform<X>::intermediateAlongDimension(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-__host__ void ScalarIntTransform<X>::intermediateShaped(
+SD_HOST void ScalarIntTransform<X>::intermediateShaped(
     dim3& launchDims,
     cudaStream_t* stream,
     void const* vx,
@@ -328,7 +328,7 @@ __host__ void ScalarIntTransform<X>::intermediateShaped(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
-__host__ void ScalarIntTransform<X>::executeCudaShaped(
+SD_HOST void ScalarIntTransform<X>::executeCudaShaped(
     dim3& launchDims,
     cudaStream_t* stream,
     int opNum,
@@ -339,7 +339,7 @@ __host__ void ScalarIntTransform<X>::executeCudaShaped(
     void const* vscalar,
     void* vextraParams)
 {
-  if (sd::Environment::getInstance().isDebugAndVerbose()) {
+  if (sd::env_isDebugAndVerbose()) {
     printf("H14 scalar int transform opNum:[%i]\n", opNum);
   }
 
@@ -353,7 +353,7 @@ __host__ void ScalarIntTransform<X>::executeCudaShaped(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
-__host__ void ScalarIntTransform<X>::executeCudaAlongDimension(
+SD_HOST void ScalarIntTransform<X>::executeCudaAlongDimension(
     dim3& launchDims,
     cudaStream_t* stream,
     int opNum,
@@ -364,7 +364,7 @@ __host__ void ScalarIntTransform<X>::executeCudaAlongDimension(
     void const* vscalars,
     void* vextraParams,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets,
     sd::LongType const* tadShapeInfoZ,

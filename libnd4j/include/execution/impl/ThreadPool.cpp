@@ -21,7 +21,9 @@
 //
 #include <execution/ThreadPool.h>
 #include <helpers/logger.h>
+#include <system/Environment.h>
 
+#include <mutex>
 #include <stdexcept>
 
 
@@ -64,14 +66,17 @@ static void executionLoopWithInterface_(int thread_id, CallableInterface *c) {
     // blocking here until there's something to do
     c->waitForTask();
 
+    // Check if shutdown was requested
+    if (c->isShutdown()) {
+      break;
+    }
+
     // execute whatever we have
     c->execute();
   }
 }
 
 ThreadPool::ThreadPool() {
-  // TODO: number of threads must reflect number of cores for UMA system. In case of NUMA it should be per-device pool
-  // FIXME: on mobile phones this feature must NOT be used
   _available = sd::Environment::getInstance().maxThreads();
 
   _queues.resize(_available.load());
@@ -87,13 +92,12 @@ ThreadPool::ThreadPool() {
     _tickets.push(new Ticket());
     // _threads[e] = new std::thread(executionLoop_, e, _queues[e]);
 
-    // TODO: add other platforms here as well
-    // now we must set affinity, and it's going to be platform-specific thing
+    // Thread affinity is currently implemented for Linux only.
 #ifdef LINUX_BUILD
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(e, &cpuset);
-    int rc = pthread_setaffinity_np(_threads[e]->native_handle(), sizeof(cpu_set_t), &cpuset);
+    int rc = pthread_setaffinity_np(_threads[e].native_handle(), sizeof(cpu_set_t), &cpuset);
     if (rc != 0) THROW_EXCEPTION("Failed to set pthread affinity");
 #endif
 
@@ -103,13 +107,21 @@ ThreadPool::ThreadPool() {
 }
 
 ThreadPool::~ThreadPool() {
-  // TODO: implement this one properly
-  for (size_t e = 0; e < _queues.size(); e++) {
-    // stop each and every thread
+  // Signal all threads to shutdown BEFORE destroying anything
+  for (size_t e = 0; e < _interfaces.size(); e++) {
+    _interfaces[e]->shutdown();
+  }
 
-    // release queue and thread
+  // Wait for all threads to finish
+  for (size_t e = 0; e < _threads.size(); e++) {
+    if (_threads[e].joinable()) {
+      _threads[e].join();
+    }
+  }
+
+  // Now it's safe to delete resources
+  for (size_t e = 0; e < _queues.size(); e++) {
     delete _queues[e];
-    _threads[e].detach();
     delete _interfaces[e];
   }
 
@@ -121,8 +133,12 @@ ThreadPool::~ThreadPool() {
 }
 
 ThreadPool &ThreadPool::getInstance() {
-  static ThreadPool instance;
-  return instance;
+  static ThreadPool* instance = nullptr;
+  static std::once_flag initFlag;
+  std::call_once(initFlag, []() {
+    instance = new ThreadPool();
+  });
+  return *instance;
 }
 
 void ThreadPool::release(int numThreads) { _available += numThreads; }

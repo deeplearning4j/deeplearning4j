@@ -18,8 +18,7 @@
 #include <array/ConstantDataBuffer.h>
 #include <array/DataTypeUtils.h>
 #include <array/ShapeDescriptor.h>
-#include <exceptions/cuda_exception.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
@@ -48,6 +47,7 @@
 #include <loops/transform_same.h>
 #include <loops/transform_strict.h>
 #include <system/op_boilerplate.h>
+#include <system/env_functions.h>
 #include <helpers/ConstantTadHelper.h>
 #include <system/selective_rendering.h>
 
@@ -61,7 +61,7 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
   auto reductionPointer = lc->getReductionPointer();
   auto allocationPointer = lc->getAllocationPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) {
+  if (sd::env_isDebugAndVerbose()) {
     printf("F2 opType:[%i]\n", opNum);
   }
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);

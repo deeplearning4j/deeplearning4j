@@ -25,6 +25,72 @@
 #define SD_COMMON_TYPES_HEADER_INCLUDE
 
 #include <system/type_boilerplate.h>
+
+// ============================================================================
+// DATATYPE ALIASES — declared at file scope BEFORE other type headers
+// ============================================================================
+// These must come BEFORE bfloat16.h/float16.h which contain namespace std {}
+// blocks for numeric_limits specializations. On MSVC (especially with NVCC),
+// those namespace std {} blocks can confuse the compiler's scope tracking,
+// causing subsequent file-scope declarations to be misinterpreted.
+//
+// On Windows (MinGW/MSVC), some names (BOOL, INT8..INT64, UINT8..UINT64)
+// conflict with typedefs from basetsd.h/minwindef.h that get included via
+// standard headers. These conflicting aliases are only defined on non-Windows.
+// ============================================================================
+
+// Undefine Windows SDK macros that conflict with our DataType aliases.
+// wtypes.h defines DOUBLE, FLOAT, HALF as macros (e.g. #define DOUBLE double)
+#ifdef _WIN32
+  #ifdef DOUBLE
+    #undef DOUBLE
+  #endif
+  #ifdef FLOAT
+    #undef FLOAT
+  #endif
+  #ifdef HALF
+    #undef HALF
+  #endif
+#endif
+
+// These names should be safe on all platforms
+static constexpr auto INHERIT = sd::DataType::INHERIT;
+static constexpr auto FLOAT8 = sd::DataType::FLOAT8;
+static constexpr auto HALF2 = sd::DataType::HALF2;
+static constexpr auto FLOAT32 = sd::DataType::FLOAT32;
+static constexpr auto QINT8 = sd::DataType::QINT8;
+static constexpr auto QINT16 = sd::DataType::QINT16;
+static constexpr auto BFLOAT16 = sd::DataType::BFLOAT16;
+static constexpr auto UTF8 = sd::DataType::UTF8;
+static constexpr auto UTF16 = sd::DataType::UTF16;
+static constexpr auto UTF32 = sd::DataType::UTF32;
+static constexpr auto ANY = sd::DataType::ANY;
+static constexpr auto AUTO = sd::DataType::AUTO;
+
+// DOUBLE, HALF conflict with Windows SDK typedefs in wtypesbase.h
+// (typedef double DOUBLE; etc.) — typedefs, not macros, so #undef doesn't help.
+// Exclude on all Windows builds (_WIN32) because include order is unpredictable:
+// if types.h is included before windows.h, the constexpr aliases are declared first
+// and then windows.h's "typedef double DOUBLE" triggers a redeclaration error.
+#if !defined(_WIN32)
+static constexpr auto DOUBLE = sd::DataType::DOUBLE;
+static constexpr auto HALF = sd::DataType::HALF;
+#endif
+
+// These names conflict with Windows SDK typedefs (basetsd.h / minwindef.h)
+#if !defined(_WIN32)
+static constexpr auto BOOL = sd::DataType::BOOL;
+static constexpr auto INT8 = sd::DataType::INT8;
+static constexpr auto INT16 = sd::DataType::INT16;
+static constexpr auto INT32 = sd::DataType::INT32;
+static constexpr auto INT64 = sd::DataType::INT64;
+static constexpr auto UINT8 = sd::DataType::UINT8;
+static constexpr auto UINT16 = sd::DataType::UINT16;
+static constexpr auto UINT32 = sd::DataType::UINT32;
+static constexpr auto UINT64 = sd::DataType::UINT64;
+#endif
+
+// Now include the remaining type headers (which contain namespace std {} blocks)
 #include <types/bfloat16.h>
 #include <types/float16.h>
 #include <types/float8.h>
@@ -36,30 +102,8 @@
 #include <types/types_impl.h>
 #include <type_traits>
 
-// ============================================================================
-// DATATYPE CONSTEXPR ALIASES
-// ============================================================================
-
-
-  static constexpr auto BFLOAT16 = sd::DataType::BFLOAT16;
-  static constexpr auto BOOL = sd::DataType::BOOL;
-  static constexpr auto DOUBLE = sd::DataType::DOUBLE;
-  static constexpr auto FLOAT32 = sd::DataType::FLOAT32;
-  static constexpr auto HALF = sd::DataType::HALF;
-  static constexpr auto INT16 = sd::DataType::INT16;
-  static constexpr auto INT32 = sd::DataType::INT32;
-  static constexpr auto INT64 = sd::DataType::INT64;
-  static constexpr auto INT8 = sd::DataType::INT8;
-  static constexpr auto UINT16 = sd::DataType::UINT16;
-  static constexpr auto UINT32 = sd::DataType::UINT32;
-  static constexpr auto UINT64 = sd::DataType::UINT64;
-  static constexpr auto UINT8 = sd::DataType::UINT8;
-  static constexpr auto UTF16 = sd::DataType::UTF16;
-  static constexpr auto UTF32 = sd::DataType::UTF32;
-  static constexpr auto UTF8 = sd::DataType::UTF8;
-
-  using LongType = sd::LongType;
-  using UnsignedLong = sd::UnsignedLong;
+// Type aliases in namespace sd
+namespace sd {
   using stdstring = std::string;
   using u32string = std::u32string;
   using u16string = std::u16string;
@@ -75,6 +119,27 @@
   // Required for macro processing - multi-word type names break BUILD_*_TEMPLATE macros
 #if defined(__linux__) && !defined(__ANDROID__)
   using PlatformUInt64 = unsigned long;
+#endif
+}  // namespace sd
+
+// File-scope using declarations for types needed outside namespace sd.
+// The TTYPE macros (e.g. TTYPE_INT8 → SignedChar) expand at file scope inside
+// BUILD_SINGLE_SELECTOR etc., so these names must be visible without sd:: prefix.
+// None of these conflict with std or Windows SDK names.
+using LongType = sd::LongType;
+using UnsignedLong = sd::UnsignedLong;
+using SignedChar = sd::SignedChar;
+using UnsignedChar = sd::UnsignedChar;
+using Int16Type = sd::Int16Type;
+using Int32Type = sd::Int32Type;
+using UInt16Type = sd::UInt16Type;
+using UInt32Type = sd::UInt32Type;
+using UInt64Type = sd::UInt64Type;
+using stdstring = sd::stdstring;
+using u16string = sd::u16string;
+using u32string = sd::u32string;
+#if defined(__linux__) && !defined(__ANDROID__)
+using PlatformUInt64 = sd::PlatformUInt64;
 #endif
 
   // ============================================================================
@@ -242,9 +307,12 @@
   #define TTYPE_BOOL
 #endif
 
-// Float8 type
+// Float8 E4M3 type
 #if SD_SINGLE_TYPE_2_COMPILED
   #define HAS_FLOAT8 1
+  #define TTYPE_FLOAT8 , (FLOAT8, float8)
+#else
+  #define TTYPE_FLOAT8
 #endif
 
 // Float16/Half type
@@ -478,13 +546,18 @@
 // (which uses UnsignedLong = uint64_t) already covers unsigned long. Including TTYPE_PLATFORM_UINT64
 // would create duplicate template instantiations. Only include it on non-__LP64__ systems where
 // uint64_t is unsigned long long and we need unsigned long as a separate type.
-#if defined(__LP64__)
+// On Windows (MSVC and MinGW), unsigned long is 32-bit (covered by UINT32), and uint64_t is
+// unsigned long long (covered by TTYPE_UINT64), so TTYPE_PLATFORM_UINT64 is not needed.
+#if defined(__LP64__) || defined(_WIN32)
 #define SD_LONG_TYPES_L TTYPE_INT64 TTYPE_UINT64
 #else
 #define SD_LONG_TYPES_L TTYPE_INT64 TTYPE_UINT64 TTYPE_PLATFORM_UINT64
 #endif
 // NOTE: SD_STRING_TYPES_L and SD_STRING_TYPES are defined later, after selective rendering adjusts TTYPE_UTF* macros
 #define SD_COMMON_TYPES_ALL_L TTYPE_HALF TTYPE_FLOAT32 TTYPE_DOUBLE TTYPE_BOOL TTYPE_INT8 TTYPE_UINT8 TTYPE_INT16 TTYPE_INT32 TTYPE_INT64 TTYPE_UINT16 TTYPE_UINT64 TTYPE_UINT32 TTYPE_BFLOAT16
+// FP8 types — targeted list for CUTLASS-specific .cu files only.
+// NOT added to SD_COMMON_TYPES_ALL_L to avoid template explosion across all ops.
+#define SD_FP8_TYPES_L TTYPE_FLOAT8
 #define SD_INDEXING_TYPES_L TTYPE_INT32 TTYPE_INT64
 #define SD_FLOAT_NATIVE_L TTYPE_FLOAT32 TTYPE_DOUBLE TTYPE_HALF
 #define SD_FLOAT_TYPES_L TTYPE_BFLOAT SD_FLOAT_NATIVE_L
@@ -665,6 +738,7 @@
 
 // Undefine all TTYPE_* macros before redefining them
 #undef TTYPE_BOOL
+#undef TTYPE_FLOAT8
 #undef TTYPE_HALF
 #undef TTYPE_FLOAT32
 #undef TTYPE_DOUBLE
@@ -695,6 +769,9 @@
 
 #if SD_SINGLE_TYPE_2_COMPILED
   #define HAS_FLOAT8 1
+  #define TTYPE_FLOAT8 , (FLOAT8, float8)
+#else
+  #define TTYPE_FLOAT8
 #endif
 
 #if SD_SINGLE_TYPE_3_COMPILED
@@ -800,6 +877,9 @@
 #if SD_SINGLE_TYPE_50_COMPILED
   #define HAS_UTF8 1
   #define TTYPE_UTF8 , (UTF8, stdstring)
+#elif defined(ORIGINAL_HAS_UTF8)
+  #define HAS_UTF8 1
+  #define TTYPE_UTF8 , (UTF8, stdstring)
 #else
   #define TTYPE_UTF8
 #endif
@@ -807,11 +887,17 @@
 #if SD_SINGLE_TYPE_51_COMPILED
   #define HAS_UTF16 1
   #define TTYPE_UTF16 , (UTF16, u16string)
+#elif defined(ORIGINAL_HAS_UTF16)
+  #define HAS_UTF16 1
+  #define TTYPE_UTF16 , (UTF16, u16string)
 #else
   #define TTYPE_UTF16
 #endif
 
 #if SD_SINGLE_TYPE_52_COMPILED
+  #define HAS_UTF32 1
+  #define TTYPE_UTF32 , (UTF32, u32string)
+#elif defined(ORIGINAL_HAS_UTF32)
   #define HAS_UTF32 1
   #define TTYPE_UTF32 , (UTF32, u32string)
 #else
@@ -2044,5 +2130,8 @@ static_assert(true, "Selective rendering integration active in types.h");
     (defined(macro) && macro)
 
 #endif // SD_ENABLE_SELECTIVE_RENDERING
+
+// OpenMP custom reductions for float16/bfloat16 — must come after type definitions
+#include <types/omp_reductions.h>
 
 #endif // SD_COMMON_TYPES_HEADER_INCLUDE

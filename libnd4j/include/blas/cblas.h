@@ -27,12 +27,22 @@
 #include <config.h>
 #endif
 
+// Guard against including multiple CBLAS implementations
+// MKL and OpenBLAS both provide CBLAS with conflicting declarations
+
 #ifdef __MKL_CBLAS_H__
 // CBLAS from MKL is already included
 #define CBLAS_H
 #endif
 
-#ifdef HAVE_OPENBLAS
+#if defined(HAVE_MKL) && HAVE_MKL
+// When MKL is available, prefer MKL's CBLAS (included via mkl_cblas.h)
+// Do NOT include OpenBLAS cblas.h to avoid conflicts
+#ifndef CBLAS_H
+#include <mkl_cblas.h>
+#define CBLAS_H
+#endif
+#elif defined(HAVE_OPENBLAS) && HAVE_OPENBLAS
 // include CBLAS from OpenBLAS
 #ifdef __GNUC__
 #include <cblas.h>
@@ -63,14 +73,15 @@ enum CBLAS_SIDE { CblasLeft = 141, CblasRight = 142 };
 int cblas_errprn(int ierr, int info, char *form, ...);
 void cblas_xerbla(int p, char *rout, char *form, ...);
 
-#ifdef __MKL
+// BLAS thread control declarations (for fallback when headers not included)
+#if defined(__MKL) || defined(HAVE_MKL)
 void MKL_Set_Num_Threads(int num);
 int MKL_Domain_Set_Num_Threads(int num, int domain);
 int MKL_Set_Num_Threads_Local(int num);
-#elif __OPENBLAS
+#elif defined(__OPENBLAS) || HAVE_OPENBLAS
 void openblas_set_num_threads(int num);
 #else
-// do nothing
+// No BLAS thread control available
 #endif
 
 /*
@@ -403,6 +414,24 @@ void cblas_zherk(enum CBLAS_ORDER Order, enum CBLAS_UPLO Uplo, enum CBLAS_TRANSP
                  void *A, int lda, double beta, void *C, int ldc);
 void cblas_zher2k(enum CBLAS_ORDER Order, enum CBLAS_UPLO Uplo, enum CBLAS_TRANSPOSE Trans, int N, int K, void *alpha,
                   void *A, int lda, void *B, int ldb, double beta, void *C, int ldc);
+
+/*
+ * ===========================================================================
+ * Prototypes for batch GEMM (MKL / __EXTERNAL_BLAS__ extension only)
+ * OpenBLAS does NOT reliably provide these symbols -- omit declarations
+ * to avoid undefined-symbol errors at link time.
+ * ===========================================================================
+ */
+#if defined(HAVE_MKL) || defined(__EXTERNAL_BLAS__)
+void cblas_sgemm_batch(enum CBLAS_ORDER Order, enum CBLAS_TRANSPOSE *TransA_Array, enum CBLAS_TRANSPOSE *TransB_Array,
+                       int *M_Array, int *N_Array, int *K_Array, float *alpha_Array, float **A_Array, int *lda_Array,
+                       float **B_Array, int *ldb_Array, float *beta_Array, float **C_Array, int *ldc_Array,
+                       int group_count, int *group_size);
+void cblas_dgemm_batch(enum CBLAS_ORDER Order, enum CBLAS_TRANSPOSE *TransA_Array, enum CBLAS_TRANSPOSE *TransB_Array,
+                       int *M_Array, int *N_Array, int *K_Array, double *alpha_Array, double **A_Array, int *lda_Array,
+                       double **B_Array, int *ldb_Array, double *beta_Array, double **C_Array, int *ldc_Array,
+                       int group_count, int *group_size);
+#endif
 
 int cblas_errprn(int ierr, int info, char *form, ...);
 #ifdef __cplusplus

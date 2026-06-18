@@ -16,8 +16,15 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
-#include <graph/GraphExecutioner.h>
-#include <graph/GraphHolder.h>
+// On Windows, include windows.h early so _WINDOWS_ is defined before types.h
+// constexpr alias guards are evaluated (avoids BOOL/INT64/etc. typedef conflicts)
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 #include <helpers/ConstantTadHelper.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -25,9 +32,8 @@
 #include "execution/Threads.h"
 #include "helpers/OpTracker.h"
 
-#include <exceptions/allocation_exception.h>
+
 #include <fcntl.h>
-#include <graph/GraphExecutioner.h>
 
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
@@ -50,25 +56,22 @@
 #include <io.h>
 #endif
 #include <errno.h>
-#include <ops/declarable/CustomOperations.h>
 #include <sys/types.h>
 
 
 extern bool experimentalSupport; // Defined in NativeOpsHelpers_Arrays.cpp
 
-// OpaqueNDArray allocation tracking
-static std::atomic<size_t> g_opaqueArrayCount{0};
-static std::atomic<size_t> g_opaqueArrayBytes{0};
-static std::mutex g_opaqueArrayMutex;
+// External references to allocation tracking variables (defined in NativeOpsHelpers_Arrays.cpp and NativeOpsHelpers_DataBuffers.cpp)
+extern std::atomic<size_t> g_opaqueArrayCount;
+extern std::atomic<size_t> g_opaqueArrayBytes;
+extern std::mutex g_opaqueArrayMutex;
 
-// InteropDataBuffer/OpaqueDataBuffer allocation tracking
-static std::atomic<size_t> g_dataBufferCount{0};
-static std::atomic<size_t> g_dataBufferBytes{0};
-static std::mutex g_dataBufferMutex;
+extern std::atomic<size_t> g_dataBufferCount;
+extern std::atomic<size_t> g_dataBufferBytes;
+extern std::mutex g_dataBufferMutex;
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
-#include <graph/ResultWrapper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
 

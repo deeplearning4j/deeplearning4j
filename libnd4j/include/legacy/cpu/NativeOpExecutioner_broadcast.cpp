@@ -12,12 +12,12 @@
 #include <system/selective_rendering/int_types.h>
 #include <system/selective_rendering/uint_types.h>
 
-#include <exceptions/datatype_exception.h>
 #include <execution/Threads.h>
 #include <helpers/LoopKind.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/broadcasting.h>
 #include <loops/broadcasting_bool.h>
+#include <system/env_functions.h>
 #include <types/types.h>
 
 ////////////////////////////////////////////////////////////////////////
@@ -72,10 +72,12 @@ void NativeOpExecutioner::execInverseBroadcast(
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
 
-  if (!sd::Environment::getInstance().isExperimentalBuild())
+  if (!sd::env_isExperimentalBuild())
     if ((yType != xType && yType != sd::DataType::BOOL) || xType != zType)
-      THROW_EXCEPTION(sd::datatype_exception::build("NativeOps::execBroadcast both operands must have same data type", xType,
-                                          yType).what());
+    {
+      std::string dtMsg = std::string("NativeOps::execBroadcast both operands must have same data type") + "; Expected: [" + sd::DataTypeUtils::asString(xType) + "]; Actual: [" + sd::DataTypeUtils::asString(xType) + ", " + sd::DataTypeUtils::asString(yType) + "]";
+      THROW_EXCEPTION(dtMsg.c_str());
+    }
 
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR_THRICE(
@@ -147,10 +149,12 @@ void NativeOpExecutioner::execInverseBroadcastBool(
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
 
-  if (!sd::Environment::getInstance().isExperimentalBuild())
+  if (!sd::env_isExperimentalBuild())
     if (yType != xType || sd::DataType::BOOL != zType)
-      THROW_EXCEPTION(sd::datatype_exception::build("NativeOps::execInverseBroadcastBool both operands must have same data type",
-                                          xType, yType).what());
+    {
+      std::string dtMsg = std::string("NativeOps::execInverseBroadcastBool both operands must have same data type") + "; Expected: [" + sd::DataTypeUtils::asString(xType) + "]; Actual: [" + sd::DataTypeUtils::asString(xType) + ", " + sd::DataTypeUtils::asString(yType) + "]";
+      THROW_EXCEPTION(dtMsg.c_str());
+    }
 
   auto func = PRAGMA_THREADS_FOR {
     BUILD_DOUBLE_SELECTOR(

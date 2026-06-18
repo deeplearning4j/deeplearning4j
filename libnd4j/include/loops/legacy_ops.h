@@ -31,12 +31,28 @@
   (0, EqualTo), (1, GreaterThan), (2, LessThan), (3, Epsilon), (4, GreaterThanOrEqual), (5, MatchCondition), \
       (6, NotEqualTo), (7, And), (8, Or), (9, Xor), (10, Not), (11, LessThanOrEqual)
 
+// Split BROADCAST_OPS into groups to reduce per-compilation-unit memory usage
+// Group 1: Basic arithmetic operations (8 ops)
+#define BROADCAST_OPS_PART1 \
+  (0, Add), (1, Subtract), (2, Multiply), (3, Divide), (4, ReverseDivide), (5, ReverseSubtract), (6, CopyPws), (7, Pow)
+
+// Group 2: Pairwise and math operations (12 ops)
+#define BROADCAST_OPS_PART2 \
+  (13, MinPairwise), (14, MaxPairwise), (15, AMinPairwise), (16, AMaxPairwise), (17, SquaredSubtract), \
+  (18, FloorMod), (19, FloorDiv), (20, ReverseMod), (21, SafeDivide), (22, Mod), (23, TruncateDiv), (26, Atan2)
+
+// Group 3: Logical and special operations (11 ops)
+#define BROADCAST_OPS_PART3 \
+  (27, LogicalOr), (28, LogicalXor), (29, LogicalNot), (30, LogicalAnd), (31, DivideNoNan), (32, IGamma), \
+  (33, IGammac), (34, PowDerivative), (35, Xdivy), (36, Xlogy), (37, Xlog1py)
+
+// Full BROADCAST_OPS for backward compatibility (all 31 ops)
 #define BROADCAST_OPS                                                                                                \
   (0, Add), (1, Subtract), (2, Multiply), (3, Divide), (4, ReverseDivide), (5, ReverseSubtract), (6, CopyPws),       \
       (7, Pow), (13, MinPairwise), (14, MaxPairwise), (15, AMinPairwise), (16, AMaxPairwise), (17, SquaredSubtract), \
       (18, FloorMod), (19, FloorDiv), (20, ReverseMod), (21, SafeDivide), (22, Mod), (23, TruncateDiv), (26, Atan2), \
       (27, LogicalOr), (28, LogicalXor), (29, LogicalNot), (30, LogicalAnd), (31, DivideNoNan), (32, IGamma),        \
-      (33, IGammac), (34, PowDerivative)
+      (33, IGammac), (34, PowDerivative), (35, Xdivy), (36, Xlogy), (37, Xlog1py)
 
 // these ops return same data type as input
 #define TRANSFORM_SAME_OPS                                                                                      \
@@ -75,6 +91,25 @@
   (0, EqualTo), (1, GreaterThan), (2, LessThan), (3, Epsilon), (4, GreaterThanOrEqual), (5, MatchCondition), \
       (6, NotEqualTo), (7, And), (8, Or), (9, Xor), (10, Not), (11, LessThanOrEqual)
 
+// Split SCALAR_OPS into groups to reduce per-compilation-unit memory usage
+// Group 1: Basic arithmetic and math operations (18 ops)
+#define SCALAR_OPS_PART1 \
+  (0, Add), (1, Subtract), (2, Multiply), (3, Divide), (4, ReverseDivide), (5, ReverseSubtract), (6, MaxPairwise), \
+  (7, ELU), (8, ELUDerivative), (13, MinPairwise), (14, CopyPws), (15, Mod), (16, ReverseMod), (17, Remainder), \
+  (18, FMod), (19, TruncateDiv), (20, FloorDiv), (21, FloorMod)
+
+// Group 2: Comparison and logical operations (18 ops)
+#define SCALAR_OPS_PART2 \
+  (22, SquaredSubtract), (23, SafeDivide), (24, AMaxPairwise), (25, AMinPairwise), (26, Atan2), (27, LogicalOr), \
+  (28, LogicalXor), (29, LogicalNot), (30, LogicalAnd), (31, Pow), (32, PowDerivative), (33, CompareAndSet), \
+  (34, SXELogitsSmoother), (35, LeakyRELU), (36, LeakyRELUDerivative), (37, ReplaceNans), (38, LogX), (39, RELU)
+
+// Group 3: Activation and special operations (13 ops)
+#define SCALAR_OPS_PART3 \
+  (40, RELU6), (41, Step), (42, LstmClip), (43, TruncateMod), (44, SquaredReverseSubtract), (45, ReversePow), \
+  (46, DivideNoNan), (47, IGamma), (48, IGammac), (49, RELUDerivative), (50, Xdivy), (51, Xlogy), (52, Xlog1py)
+
+// Full SCALAR_OPS for backward compatibility (all 49 ops)
 #define SCALAR_OPS                                                                                                     \
   (0, Add), (1, Subtract), (2, Multiply), (3, Divide), (4, ReverseDivide), (5, ReverseSubtract), (6, MaxPairwise),     \
       (7, ELU), (8, ELUDerivative), (13, MinPairwise), (14, CopyPws), (15, Mod), (16, ReverseMod), (17, Remainder),    \
@@ -83,7 +118,7 @@
       (30, LogicalAnd), (31, Pow), (32, PowDerivative), (33, CompareAndSet), (34, SXELogitsSmoother), (35, LeakyRELU), \
       (36, LeakyRELUDerivative), (37, ReplaceNans), (38, LogX), (39, RELU), (40, RELU6), (41, Step), (42, LstmClip),   \
       (43, TruncateMod), (44, SquaredReverseSubtract), (45, ReversePow), (46, DivideNoNan), (47, IGamma),              \
-      (48, IGammac), (49, RELUDerivative)
+      (48, IGammac), (49, RELUDerivative), (50, Xdivy), (51, Xlogy), (52, Xlog1py)
 
 #define SCALAR_STRING_OPS                                                                                                     \
   (0, AssignString)
@@ -118,6 +153,26 @@
   (0, EqualTo), (1, GreaterThan), (2, LessThan), (3, Epsilon), (4, GreaterThanOrEqual), (5, MatchCondition), \
       (6, NotEqualTo), (7, And), (8, Or), (9, Xor), (10, Not), (11, LessThanOrEqual)
 
+// Split PAIRWISE_TRANSFORM_OPS into groups to reduce per-compilation-unit memory usage
+// Group 1: Basic arithmetic and copy operations (15 ops)
+#define PAIRWISE_TRANSFORM_OPS_PART1 \
+  (0, Add), (1, CopyPws), (2, Divide), (3, Multiply), (4, Pow), (5, ReverseSubtract), (6, Subtract), (7, MaxPairwise), \
+  (8, MinPairwise), (9, Copy2), (10, Axpy), (11, ReverseDivide), (12, CompareAndSet), (13, CompareAndReplace), \
+  (14, Remainder)
+
+// Group 2: Math and comparison operations (15 ops)
+#define PAIRWISE_TRANSFORM_OPS_PART2 \
+  (15, FMod), (16, Atan2), (17, TruncateDiv), (18, FloorDiv), (19, FloorMod), (20, SquaredSubtract), \
+  (21, ReverseMod), (22, SafeDivide), (23, Mod), (24, RelativeError), (25, BinaryRelativeError), \
+  (26, BinaryMinimumAbsoluteRelativeError), (27, LogicalOr), (28, LogicalXor), (29, LogicalNot)
+
+// Group 3: Logical and special operations (14 ops)
+#define PAIRWISE_TRANSFORM_OPS_PART3 \
+  (30, LogicalAnd), (31, PowDerivative), (32, LogPoissonLoss), (33, LogPoissonLossFull), (34, AMaxPairwise), \
+  (35, AMinPairwise), (36, TruncateMod), (37, ReplaceNans), (38, DivideNoNan), (39, IGamma), \
+  (40, IGammac), (41, Xdivy), (42, Xlogy), (43, Xlog1py)
+
+// Full PAIRWISE_TRANSFORM_OPS for backward compatibility (all 44 ops)
 #define PAIRWISE_TRANSFORM_OPS                                                                                         \
   (0, Add), (1, CopyPws), (2, Divide), (3, Multiply), (4, Pow), (5, ReverseSubtract), (6, Subtract), (7, MaxPairwise), \
       (8, MinPairwise), (9, Copy2), (10, Axpy), (11, ReverseDivide), (12, CompareAndSet), (13, CompareAndReplace),     \
@@ -126,7 +181,7 @@
       (25, BinaryRelativeError), (26, BinaryMinimumAbsoluteRelativeError), (27, LogicalOr), (28, LogicalXor),          \
       (29, LogicalNot), (30, LogicalAnd), (31, PowDerivative), (32, LogPoissonLoss), (33, LogPoissonLossFull),         \
       (34, AMaxPairwise), (35, AMinPairwise), (36, TruncateMod), (37, ReplaceNans), (38, DivideNoNan), (39, IGamma),   \
-      (40, IGammac)
+      (40, IGammac), (41, Xdivy), (42, Xlogy), (43, Xlog1py)
 
 #define INDEX_REDUCE_OPS \
   (0, IndexMax), (1, IndexMin), (2, IndexAbsoluteMax), (3, IndexAbsoluteMin), (4, FirstIndex), (5, LastIndex)

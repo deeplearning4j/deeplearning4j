@@ -103,7 +103,7 @@ SD_DEVICE void concatKernelHStack(int numArrays, Pointer *data, Pointer *inputSh
 }
 
 template <typename T>
-SD_KERNEL void execConcatKernelHStack(int numArrays, Pointer *data, Pointer *inputShapeInfos, void *vz,
+SD_KERNEL SD_INLINE void execConcatKernelHStack(int numArrays, Pointer *data, Pointer *inputShapeInfos, void *vz,
                                       LongType *zShapeInfo) {
   concatKernelHStack<T>(numArrays, data, inputShapeInfos, vz, zShapeInfo);
 }

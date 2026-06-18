@@ -23,6 +23,7 @@
 
 #include <execution/Threads.h>
 #include <helpers/LoopKind.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -61,7 +62,7 @@ void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xS
 
   const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
   const int numTads = shape::length(xShapeInfo) / tadLength;
-  int num_threads = sd::math::sd_min<int>(numTads, sd::Environment::getInstance().maxThreads());
+  int num_threads = sd::math::sd_min(numTads, sd::env_maxThreads());
 
   for (auto r = start; r < stop; r++) {
     auto oZ = z + zTadOffsets[r];
@@ -69,11 +70,12 @@ void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xS
 
     PRAGMA_OMP_SIMD
     for (int f = 0; f < tadLength; f++) {
-      sd::LongType coords[SD_MAX_RANK];
+      sd::LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
       sd::LongType xOffset, zOffset;
-      INDEX2COORDS(f, xTadRank, xTadShape, coords);
-      COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
-      COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
+      INDEX2COORDS(f, xTadRank, xTadShape, xCoords);
+      COORDS2INDEX(xTadRank, xTadStride, xCoords, xOffset);
+      INDEX2COORDS(f, zTadRank, zTadShape, zCoords);
+      COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
       oZ[zOffset] = OpType::op(oX[xOffset], scalars[0], extraParams);
     }
   }
@@ -128,13 +130,17 @@ void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xS
       z[offset] = OpType::op(x[offset], scalar, extraParams);
     };
   } else {
+    // Compute offsets independently for each array to handle rank mismatches
+    // (e.g. x=[6] rank 1, z=[1,6] rank 2 — sharing coords between different ranks
+    // reads uninitialized stack memory)
     PRAGMA_OMP_SIMD
     for (auto i2 = start; i2 < stop; i2++) {
-      sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i2, xRank, xShape, coords);
+      sd::LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
       sd::LongType xOffset, zOffset;
-      COORDS2INDEX(xRank, xStride, coords, xOffset);
-      COORDS2INDEX(zRank, zStride, coords, zOffset);
+      INDEX2COORDS(i2, xRank, xShape, xCoords);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+      INDEX2COORDS(i2, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
       z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
     };
   }

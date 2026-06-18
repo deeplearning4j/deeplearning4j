@@ -34,6 +34,16 @@
 #include "config.h"
 #endif
 
+// Forward declarations for CUDA graph support
+#ifdef SD_CUDA
+namespace sd {
+namespace cuda {
+    class CudaGraphHandle;
+    class CudaGraphScheduler;
+}  // namespace cuda
+}  // namespace sd
+#endif
+
 // used for MKLDNN etc
 #if !defined(__STANDALONE_BUILD__)
 #include "config.h"
@@ -51,7 +61,23 @@
 
 namespace sd {
 
+// Forward declaration needed for LaunchContextNoOpDeleter
+class LaunchContext;
+
+// Custom deleter for sd::LaunchContext instances that are intentionally leaked
+// by the LaunchContext::defaultContext() mechanism.
+// This prevents std::shared_ptr from attempting to delete these objects,
+// avoiding double-free or invalid memory access issues during shutdown.
+struct LaunchContextNoOpDeleter {
+    void operator()(LaunchContext* lc) const {
+        // Do nothing. The LaunchContext instance is managed by the static contexts() vector
+        // and is intentionally leaked to avoid static destruction order problems.
+        // Its memory is reclaimed by the operating system on process exit.
+    }
+};
+
 class SD_LIB_EXPORT LaunchContext {
+
  private:
   // Previous implementation used heap-allocated pointer which caused crashes during JVM shutdown:
   // - The vector* was allocated with new and "intentionally leaked"
@@ -76,6 +102,18 @@ class SD_LIB_EXPORT LaunchContext {
 #endif  // JCPP
 
   bool _isAllocated = false;
+
+  // CUDA graph capture state
+  bool _graphCaptureActive = false;
+  cudaStreamCaptureMode _captureMode = cudaStreamCaptureModeGlobal;
+
+  // Externally provided stream pointer (when using the Pointer constructor)
+  // If non-null, getCudaStream() returns this instead of thread_local contextBuffers
+  cudaStream_t* _externalStream = nullptr;
+  void* _externalReductionPointer = nullptr;
+  void* _externalScalarPointer = nullptr;
+  void* _externalAllocationPointer = nullptr;
+
 #endif  // CUDA
   memory::Workspace* _workspace = nullptr;
   int _deviceID = 0;
@@ -103,6 +141,62 @@ class SD_LIB_EXPORT LaunchContext {
   void setCudaSpecialStream(cudaStream_t* cudaStream);
   void setCublasHandle(void* handle);
 
+  // =========================================================================
+  // CUDA Graph Support
+  // =========================================================================
+
+  /**
+   * Begin capturing operations to a CUDA graph on this context's stream
+   * @param mode Capture mode (global, thread-local, or relaxed)
+   * @return true if capture started successfully
+   */
+  bool beginGraphCapture(cudaStreamCaptureMode mode = cudaStreamCaptureModeGlobal);
+
+  /**
+   * End graph capture and return the captured graph
+   * @param outGraph Pointer to store the captured graph
+   * @return true if capture ended successfully
+   */
+  bool endGraphCapture(cudaGraph_t* outGraph);
+
+  /**
+   * Check if currently capturing a graph
+   */
+  bool isCapturingGraph() const { return _graphCaptureActive; }
+
+  /**
+   * Get the current capture mode
+   */
+  cudaStreamCaptureMode getCaptureMode() const { return _captureMode; }
+
+  /**
+   * Abort current graph capture
+   */
+  void abortGraphCapture();
+
+  /**
+   * Instantiate a captured graph for execution
+   * @param graph The captured graph
+   * @param outGraphExec Pointer to store the executable graph
+   * @return true if instantiation succeeded
+   */
+  static bool instantiateGraph(cudaGraph_t graph, cudaGraphExec_t* outGraphExec);
+
+  /**
+   * Launch an executable graph on this context's stream
+   * @param graphExec The executable graph
+   * @return true if launch succeeded
+   */
+  bool launchGraph(cudaGraphExec_t graphExec);
+
+  /**
+   * Launch an executable graph asynchronously
+   * @param graphExec The executable graph
+   * @param completionEvent Optional event to signal completion
+   * @return true if launch succeeded
+   */
+  bool launchGraphAsync(cudaGraphExec_t graphExec, cudaEvent_t completionEvent = nullptr);
+
 #endif  // JCPP
 
 #endif  // CUDA
@@ -110,6 +204,8 @@ class SD_LIB_EXPORT LaunchContext {
                 Pointer allocationPointer = nullptr);
   LaunchContext();
   ~LaunchContext();
+  static bool isManagedContext(LaunchContext* contextPtr);
+  void operator delete(void* ptr) noexcept;
   memory::Workspace* getWorkspace() const {
     return _workspace;
   }

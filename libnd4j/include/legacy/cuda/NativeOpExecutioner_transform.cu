@@ -18,8 +18,7 @@
 #include <array/ConstantDataBuffer.h>
 #include <array/DataTypeUtils.h>
 #include <array/ShapeDescriptor.h>
-#include <exceptions/cuda_exception.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
@@ -98,7 +97,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, c
   }
 
   if (xType != zType) {
-    THROW_EXCEPTION("NativeOpExecutioner::execTransformFloat requires X & Z to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execTransformSame requires X & Z to have same type");
   }
 
   dim3 launchDims = getLaunchDims("transformScan");
@@ -137,6 +136,31 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext *lc, int opNum, 
 
 
 ////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, const void *hX,
+                                            const sd::LongType *hXShapeInfo, const void *dX,
+                                            const sd::LongType *dXShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
+                                            void *dZ, const sd::LongType *dZShapeInfo, void *extraParams) {
+  auto stream = lc->getCudaStream();
+
+  auto xRank = shape::rank(hXShapeInfo);
+  auto zRank = shape::rank(hZShapeInfo);
+  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+  auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+
+  if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(zType)) {
+    THROW_EXCEPTION(
+        "NativeOpExecutioner::execTransformBool:: unable to execute on strings. Please write logic higher level in "
+        "each op for the string data type.")
+  }
+
+  dim3 launchDims = getLaunchDims("transformScan");
+  BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool,
+                        ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
+                                                 dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
+                        SD_COMMON_TYPES, SD_BOOL_TYPES);
+}
+
+////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, const void *hX,
                                            const sd::LongType *hXShapeInfo, const void *dX,
                                            const sd::LongType *dXShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
@@ -155,19 +179,10 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
         "op for the string data type.")
   }
   dim3 launchDims = getLaunchDims("transformScan");
-  if (sd::DataTypeUtils::isS(xType)) {
-#if defined(HAS_UTF8) || defined(HAS_UTF16) || defined(HAS_UTF32)
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
-                          ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
-                                                   dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
-                          SD_STRING_TYPES, SD_STRING_TYPES);
-#endif
-  } else {
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
-                          ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
-                                                   dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES);
-  }
+  BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
+                        ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
+                                                 dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
+                        SD_COMMON_TYPES, SD_COMMON_TYPES);
 }
 
 

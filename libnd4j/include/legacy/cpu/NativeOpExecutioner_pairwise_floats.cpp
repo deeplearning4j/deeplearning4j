@@ -13,10 +13,11 @@
 #include <system/selective_rendering/uint_types.h>
 
 #include <array/DataTypeUtils.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/pairwise_transform.h>
+#include <system/env_functions.h>
 #include <types/types.h>
 
 ////////////////////////////////////////////////////////////////////////
@@ -43,9 +44,9 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (xType != zType && yType != zType) {
+  if (xType != zType || yType != zType) {
     std::string errorMessage;
-    errorMessage += "NativeOpExecutioner::execPairwiseTransform both operands must have same data type. ";
+    errorMessage += "NativeOpExecutioner::execPairwiseTransform requires all operands to have the same data type. ";
     errorMessage += "X type: ";
     errorMessage += sd::DataTypeUtils::asString(xType);
     errorMessage += " Y type: ";
@@ -55,14 +56,23 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+  // Empty array fast-path: if any operand has a null data pointer or an empty shape,
+  // there is nothing to compute. This handles Java-created Nd4j.empty() singletons whose
+  // native shape info may lack the ARRAY_EMPTY flag but whose data buffer pointer is null,
+  // as well as shape infos that do carry the ARRAY_EMPTY flag or have zero length.
+  if (hX == nullptr || hY == nullptr || hZ == nullptr
+      || shape::isEmptyConst(hZShapeInfo) || shape::length(hZShapeInfo) == 0) {
+    return;
+  }
+
   auto func = PRAGMA_THREADS_FOR {
-    BUILD_TRIPLE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
-                          ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),
-                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform,
+                                 ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),
+                                 SD_COMMON_TYPES);
   };
 
   auto zLen = shape::length(hZShapeInfo);
   samediff::Threads::parallel_for(
       func, 0, zLen, 1,
-      sd::math::sd_max<int>(1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+      sd::math::sd_max(1, sd::math::sd_min(zLen / 1024, sd::env_maxMasterThreads())));
 }

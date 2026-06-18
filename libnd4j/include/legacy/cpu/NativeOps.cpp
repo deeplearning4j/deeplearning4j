@@ -22,18 +22,35 @@
 
 #define __STDC_CONSTANT_MACROS
 
-#include <exceptions/allocation_exception.h>
+// On Windows, include windows.h early so _WINDOWS_ is defined before types.h
+// constexpr alias guards are evaluated (avoids BOOL/INT64/etc. typedef conflicts)
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
+
 #include <fcntl.h>
 #include <array/DataTypeUtils.h>
-#include <graph/GraphExecutioner.h>
-#include <graph/GraphHolder.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
+
+// Include MKL service header for thread control when MKL is available
+#ifdef HAVE_MKL
+#include <mkl_service.h>
+#endif
+
 #include <helpers/logger.h>
 #include <legacy/NativeOps.h>
+#include <dsp/NativeOpsDsp.h>
 #include <loops/type_conversions.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/transforms.h>
+#include <graph/NativeDynamicShapePlan.h>
+#include <memory/MemoryCounter.h>
+#include <memory/MultiBackendWorkspace.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -48,7 +65,6 @@
 #include <io.h>
 #endif
 #include <errno.h>
-#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/OpExecutionLogger.h>
 #include <graph/OpContextLifecycleTracker.h>
 #include <array/NDArrayLifecycleTracker.h>
@@ -57,7 +73,6 @@
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
-#include <graph/ResultWrapper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>
@@ -317,6 +332,76 @@ int freeDevice(sd::Pointer pointer, int deviceId) {
 }
 
 /**
+ * CPU implementation - memory pools are a CUDA-only feature.
+ * Returns false since CPU backend doesn't use memory pools.
+ */
+bool isMemoryPoolEnabled() {
+  return false;
+}
+
+/**
+ * CPU implementation - no-op since memory pools are CUDA-only.
+ */
+void setMemoryPoolEnabled(bool enabled) {
+  // no-op for CPU
+}
+
+/**
+ * CPU implementation - returns zeros since memory pools are CUDA-only.
+ */
+void getMemoryPoolStats(int deviceId, sd::LongType* usedBytes, sd::LongType* reservedBytes) {
+  if (usedBytes) *usedBytes = 0;
+  if (reservedBytes) *reservedBytes = 0;
+}
+
+/**
+ * CPU implementation - no-op since memory pools are CUDA-only.
+ */
+void trimMemoryPool(int deviceId) {
+  // no-op for CPU
+}
+
+void trimMemoryPoolOnStream(int deviceId, void *stream) {
+  // no-op for CPU
+}
+
+sd::LongType getPinnedHostBytesUsed() {
+  return 0;  // no pinned memory on CPU
+}
+
+sd::LongType getPinnedHostBytesLimit() {
+  return 0;  // no pinned memory on CPU
+}
+
+void setPinnedHostBytesLimit(sd::LongType maxBytes) {
+  // no-op for CPU
+}
+
+void setMemoryPoolSoftLimitPercent(int percent) {
+  sd::memory::MemoryCounter::getInstance().setSoftLimitPercent(percent);
+}
+
+int getMemoryPoolSoftLimitPercent() {
+  return sd::memory::MemoryCounter::getInstance().getSoftLimitPercent();
+}
+
+void addExcludedFailoverDevice(int deviceId) {
+  // no-op for CPU
+}
+
+void removeExcludedFailoverDevice(int deviceId) {
+  // no-op for CPU
+}
+
+void clearExcludedFailoverDevices() {
+  // no-op for CPU
+}
+
+bool isDeviceExcludedFromFailover(int deviceId) {
+  return false;  // no failover on CPU
+}
+
+/**
  * Returns the maximum number open mp threads
  */
 int ompGetMaxThreads() { return omp_get_max_threads(); }
@@ -327,9 +412,12 @@ int ompGetMaxThreads() { return omp_get_max_threads(); }
 int ompGetNumThreads() { return omp_get_num_threads(); }
 
 /**
- * Sets the number of openmp threads
+ * Sets the number of openmp threads.
+ * MKL and OneDNN built with OpenMP runtime will automatically use OpenMP thread settings.
  */
-void setOmpNumThreads(int threads) { omp_set_num_threads(threads); }
+void setOmpNumThreads(int threads) {
+  omp_set_num_threads(threads);
+}
 
 /**
  * Sets the number of threads used by OpenBLAS for BLAS operations.
@@ -337,14 +425,16 @@ void setOmpNumThreads(int threads) { omp_set_num_threads(threads); }
  * Default should be 1 to prevent TLS corruption crashes in multi-threaded Java applications.
  */
 void setOpenBlasThreads(int threads) {
-#if defined(__OPENBLAS)
+#if defined(HAVE_MKL) || defined(__MKL)
+  // MKL uses mkl_set_num_threads
+  mkl_set_num_threads(threads);
+#elif defined(__OPENBLAS) || HAVE_OPENBLAS
+  // OpenBLAS thread control
   openblas_set_num_threads(threads);
-#elif defined(__MKL)
-  // MKL uses a different function
-  MKL_Set_Num_Threads(threads);
 #else
   // No OpenBLAS or MKL - this is a no-op
   // The OMP thread setting may still affect BLAS behavior in some configurations
+  (void)threads;  // Suppress unused parameter warning
 #endif
   // Also update the Environment setting
   sd::Environment::getInstance().setOpenBlasThreads(threads);
@@ -386,6 +476,10 @@ int registerEvent(sd::Pointer event, sd::Pointer stream) { return 0L; }
 
 int setDevice(int deviceId) { return 0L; }
 
+void setAvailableDevices(int *devices, int size) {
+  // no-op for CPU backend
+}
+
 sd::LongType getDeviceFreeMemory(int deviceId) { return 0L; }
 
 sd::LongType getDeviceFreeMemoryDefault() { return 0L; }
@@ -407,6 +501,8 @@ int streamSynchronize(sd::Pointer stream) { return 0L; }
 int eventSynchronize(sd::Pointer event) { return 0L; }
 
 int getAvailableDevices() { return 0L; }
+
+bool isPeerAccessSupported(int srcDevice, int dstDevice) { return false; }
 
 void enableDebugMode(bool reallyEnable) { sd::Environment::getInstance().setDebug(reallyEnable); }
 
@@ -450,8 +546,8 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
   const auto tadLength = shape::length(tadShapeInfo);
 
   int elementsPerThread = n / TAD_THRESHOLD;
-  int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-  _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+  int _threads = sd::math::sd_max(1, elementsPerThread);
+  _threads = sd::math::sd_min(_threads, sd::Environment::getInstance().maxThreads());
 
   sd::LongType tadRank = shape::rank(tadShapeInfo);
   sd::LongType *tadShape = shape::shapeOf(tadShapeInfo);
@@ -469,18 +565,18 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
       auto rX = hX + xTadOffsetForBlock;
       auto rZ = hZ + zTadOffsetForBlock;
 
-      sd::LongType xCoords[SD_MAX_RANK];
-      sd::LongType zCoords[SD_MAX_RANK];
-      sd::LongType xOffset;
-      sd::LongType zOffset;
-
-      INDEX2COORDS(idx2, tadRank, tadShape, xCoords);
-      COORDS2INDEX(tadRank, tadStride, xCoords, xOffset);
-      INDEX2COORDS(idx2, zTadRank,zTadShape, zCoords);
-      COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
-
       for (sd::LongType i = 0; i < tadLength; i++) {
-        hZ[zOffset + i] = hX[xOffset + i];
+        sd::LongType xCoords[SD_MAX_RANK];
+        sd::LongType zCoords[SD_MAX_RANK];
+        sd::LongType xOffset;
+        sd::LongType zOffset;
+
+        INDEX2COORDS(i, tadRank, tadShape, xCoords);
+        COORDS2INDEX(tadRank, tadStride, xCoords, xOffset);
+        INDEX2COORDS(i, zTadRank, zTadShape, zCoords);
+        COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
+
+        rZ[zOffset] = rX[xOffset];
       }
     }
   };
@@ -722,7 +818,7 @@ void shuffle(sd::Pointer *extras,
 bool isExperimentalEnabled() { return sd::Environment::getInstance().isExperimentalBuild(); }
 
 void setOmpMinThreads(int threads) {
-  // TODO: to be implemented
+  sd::Environment::getInstance().setMaxThreads(threads);
 }
 
 int getDevice() { return 0; }
@@ -743,8 +839,14 @@ const char *getDeviceName(int deviceId) {
       std::memset(name, 0, 256 * sizeof(char));
       nameSet = true;
 
-      // TODO: provide proper CPU model name here
+#ifdef CPU_FEATURES
+      cpu_features::FillX86BrandString(name);
+      if (name[0] == '\0') {
+        sprintf(name, "x86-compatible CPU");
+      }
+#else
       sprintf(name, "x86-compatible CPU");
+#endif
     }
   } catch (std::exception &e) {
    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -759,8 +861,14 @@ const char *getDeviceName(int deviceId) {
       std::memset(name, 0, 256 * sizeof(char));
       nameSet = true;
 
-      // TODO: provide proper CPU model name here
+#ifdef CPU_FEATURES
+      cpu_features::FillX86BrandString(name);
+      if (name[0] == '\0') {
+        sprintf(name, "x86-compatible CPU");
+      }
+#else
       sprintf(name, "x86-compatible CPU");
+#endif
     }
   #endif
 
@@ -1807,96 +1915,43 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
       return;
     }
 
-    // If we validate first (call shapeInfo()), then cache later (call shapeInfo() again),
-    // the pointer could become invalid between the two calls, causing SIGSEGV.
-    // By caching once and validating the cached value, we ensure consistency.
-    const sd::LongType *xShapeInfoH = x->shapeInfo();
-    const sd::LongType *xShapeInfoD = x->specialShapeInfo();
-    void *xBuffer = x->buffer();
-    void *xSpecialBuffer = x->specialBuffer();
-
-    void *zBuffer = z->buffer();
-    const sd::LongType *zShapeInfoH = z->shapeInfo();
-    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
-    const sd::LongType zLength = z->lengthOf();
-
-    if (xShapeInfoH == nullptr) {
+    if (x->shapeInfo() == nullptr) {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: input array x has null shapeInfo");
       return;
     }
-    if (zShapeInfoH == nullptr) {
+    if (z->shapeInfo() == nullptr) {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: output array z has null shapeInfo");
       return;
     }
 
-    void *dimensionBuffer = dimension->buffer();
-    sd::DataBuffer *dimensionDb = dimension->getDataBuffer();
-    if (dimensionBuffer == nullptr || dimensionDb == nullptr) {
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: dimension array has null buffer");
-      return;
-    }
-
-    const sd::LongType xRank = shape::rank(xShapeInfoH);
-    const sd::DataType dimType = dimension->dataType();
-    if (dimType != sd::DataType::INT32 && dimType != sd::DataType::INT64) {
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      std::string err = "execReduceLong2: unsupported dimension buffer data type: ";
-      err += sd::DataTypeUtils::asString(dimType);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(err.c_str());
-      return;
-    }
-
-    const sd::LongType dimensionLength =
-        static_cast<sd::LongType>(dimensionDb->getLenInBytes() / sd::DataTypeUtils::sizeOf(dimType));
-
-    // Extract dimension values directly from the raw buffer. Do not rely on dimension->shapeInfo()
-    // because some callers mutate or free the dimension shape buffer once the NDArray is created.
-    std::vector<sd::LongType> dimensions(dimensionLength);
-    if (dimensionLength > 0) {
-      if (dimType == sd::DataType::INT32) {
-        auto dimensionData = reinterpret_cast<int *>(dimensionBuffer);
-        for (sd::LongType i = 0; i < dimensionLength; i++) {
-          sd::LongType curr = static_cast<sd::LongType>(dimensionData[i]);
-          if (curr < 0) {
-            curr += xRank;
-          }
-          dimensions[i] = curr;
-        }
-      } else {
-        auto dimensionData = reinterpret_cast<sd::LongType *>(dimensionBuffer);
-        for (sd::LongType i = 0; i < dimensionLength; i++) {
-          sd::LongType curr = dimensionData[i];
-          if (curr < 0) {
-            curr += xRank;
-          }
-          dimensions[i] = curr;
-        }
+    std::vector<sd::LongType> dimensions(dimension->lengthOf());
+    for (sd::LongType i = 0; i < dimension->lengthOf(); i++) {
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if (curr < 0) {
+        curr += x->rankOf();
       }
+      dimensions[i] = curr;
     }
 
-    // Validate output shape matches expected dimensions after reduction
-    // If ranks don't match, this indicates a shape mismatch from the calling layer
-    // DO NOT attempt to reshape - the buffer and shape must match
-    if (shape::rank(xShapeInfoH) - dimensionLength != shape::rank(zShapeInfoH) && zLength != 1) {
-      std::string errorMsg = "execReduceLong2: Output shape rank mismatch. ";
-      errorMsg += "Input rank: " + std::to_string(shape::rank(xShapeInfoH));
-      errorMsg += ", reduction dimensions: " + std::to_string(dimensionLength);
-      errorMsg += ", expected output rank: " + std::to_string(shape::rank(xShapeInfoH) - dimensionLength);
-      errorMsg += ", but got output rank: " + std::to_string(shape::rank(zShapeInfoH));
-      THROW_EXCEPTION(errorMsg.c_str());
+    const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
+
+    if (shape::rank(x->shapeInfo()) - dimension->lengthOf() != shape::rank(z->shapeInfo()) && z->lengthOf() != 1) {
+      auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
-    std::vector<sd::LongType> *dims = (zLength != 1) ?
-                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(xShapeInfoH), &dimensions) :
+    std::vector<sd::LongType> *dims = (z->lengthOf() != 1) ?
+                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) :
                                   new std::vector<sd::LongType>();
 
     NativeOpExecutioner::execReduceLong(nullptr, opNum,
-                                        xBuffer, xShapeInfoH, xSpecialBuffer, xShapeInfoD,
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                         extraParams,
-                                        zBuffer, zShapeInfoH, nullptr, nullptr,
+                                        z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
                                         dims->data(), dims->size());
 
     delete dims;
@@ -1925,96 +1980,43 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
       return;
     }
 
-    // If we validate first (call shapeInfo()), then cache later (call shapeInfo() again),
-    // the pointer could become invalid between the two calls, causing SIGSEGV.
-    // By caching once and validating the cached value, we ensure consistency.
-    const sd::LongType *xShapeInfoH = x->shapeInfo();
-    const sd::LongType *xShapeInfoD = x->specialShapeInfo();
-    void *xBuffer = x->buffer();
-    void *xSpecialBuffer = x->specialBuffer();
-
-    void *zBuffer = z->buffer();
-    const sd::LongType *zShapeInfoH = z->shapeInfo();
-    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
-    const sd::LongType zLength = z->lengthOf();
-
-    if (xShapeInfoH == nullptr) {
+    if (x->shapeInfo() == nullptr) {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: input array x has null shapeInfo");
       return;
     }
-    if (zShapeInfoH == nullptr) {
+    if (z->shapeInfo() == nullptr) {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: output array z has null shapeInfo");
       return;
     }
 
-    void *dimensionBuffer = dimension->buffer();
-    sd::DataBuffer *dimensionDb = dimension->getDataBuffer();
-    if (dimensionBuffer == nullptr || dimensionDb == nullptr) {
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: dimension array has null buffer");
-      return;
-    }
-
-    const sd::LongType xRank = shape::rank(xShapeInfoH);
-    const sd::DataType dimType = dimension->dataType();
-    if (dimType != sd::DataType::INT32 && dimType != sd::DataType::INT64) {
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      std::string err = "execReduceLong2: unsupported dimension buffer data type: ";
-      err += sd::DataTypeUtils::asString(dimType);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(err.c_str());
-      return;
-    }
-
-    const sd::LongType dimensionLength =
-        static_cast<sd::LongType>(dimensionDb->getLenInBytes() / sd::DataTypeUtils::sizeOf(dimType));
-
-    // Extract dimension values directly from the raw buffer. Do not rely on dimension->shapeInfo()
-    // because some callers mutate or free the dimension shape buffer once the NDArray is created.
-    std::vector<sd::LongType> dimensions(dimensionLength);
-    if (dimensionLength > 0) {
-      if (dimType == sd::DataType::INT32) {
-        auto dimensionData = reinterpret_cast<int *>(dimensionBuffer);
-        for (sd::LongType i = 0; i < dimensionLength; i++) {
-          sd::LongType curr = static_cast<sd::LongType>(dimensionData[i]);
-          if (curr < 0) {
-            curr += xRank;
-          }
-          dimensions[i] = curr;
-        }
-      } else {
-        auto dimensionData = reinterpret_cast<sd::LongType *>(dimensionBuffer);
-        for (sd::LongType i = 0; i < dimensionLength; i++) {
-          sd::LongType curr = dimensionData[i];
-          if (curr < 0) {
-            curr += xRank;
-          }
-          dimensions[i] = curr;
-        }
+    std::vector<sd::LongType> dimensions(dimension->lengthOf());
+    for (sd::LongType i = 0; i < dimension->lengthOf(); i++) {
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if (curr < 0) {
+        curr += x->rankOf();
       }
+      dimensions[i] = curr;
     }
 
-    // Validate output shape matches expected dimensions after reduction
-    // If ranks don't match, this indicates a shape mismatch from the calling layer
-    // DO NOT attempt to reshape - the buffer and shape must match
-    if (shape::rank(xShapeInfoH) - dimensionLength != shape::rank(zShapeInfoH) && zLength != 1) {
-      std::string errorMsg = "execReduceLong2: Output shape rank mismatch. ";
-      errorMsg += "Input rank: " + std::to_string(shape::rank(xShapeInfoH));
-      errorMsg += ", reduction dimensions: " + std::to_string(dimensionLength);
-      errorMsg += ", expected output rank: " + std::to_string(shape::rank(xShapeInfoH) - dimensionLength);
-      errorMsg += ", but got output rank: " + std::to_string(shape::rank(zShapeInfoH));
-      THROW_EXCEPTION(errorMsg.c_str());
+    const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
+
+    if (shape::rank(x->shapeInfo()) - dimension->lengthOf() != shape::rank(z->shapeInfo()) && z->lengthOf() != 1) {
+      auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
-    std::vector<sd::LongType> *dims = (zLength != 1) ?
-                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(xShapeInfoH), &dimensions) :
+    std::vector<sd::LongType> *dims = (z->lengthOf() != 1) ?
+                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) :
                                   new std::vector<sd::LongType>();
 
     NativeOpExecutioner::execReduceLong(nullptr, opNum,
-                                        xBuffer, xShapeInfoH, xSpecialBuffer, xShapeInfoD,
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                         extraParams,
-                                        zBuffer, zShapeInfoH, nullptr, nullptr,
+                                        z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
                                         dims->data(), dims->size());
 
     delete dims;
@@ -2170,7 +2172,7 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
   #ifdef __cpp_exceptions
   try {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execSummaryStats(nullptr, opNum,
@@ -2186,7 +2188,7 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
   }
   #else
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execSummaryStats(nullptr, opNum,
@@ -2603,3 +2605,158 @@ BUILD_SINGLE_TEMPLATE( void tearGeneric,
 BUILD_SINGLE_TEMPLATE( void shuffleGeneric,
                       (OpaqueNDArrayArr, OpaqueNDArrayArr, int, int *,sd::LongType *, sd::LongType),
                       SD_COMMON_TYPES);
+
+// ========================
+// Workspace Management API Implementation (CPU)
+// ========================
+
+OpaqueWorkspace createNativeWorkspace(sd::LongType initialSize) {
+    return new sd::memory::Workspace(initialSize, 0);
+}
+
+void destroyNativeWorkspace(OpaqueWorkspace workspace) {
+    if (workspace != nullptr) {
+        delete workspace;
+    }
+}
+
+void workspaceScopeIn(OpaqueWorkspace workspace) {
+    if (workspace != nullptr) {
+        workspace->scopeIn();
+    }
+}
+
+void workspaceScopeOut(OpaqueWorkspace workspace) {
+    if (workspace != nullptr) {
+        workspace->scopeOut();
+    }
+}
+
+void attachWorkspaceToContext(OpaqueContext* ctx, OpaqueWorkspace workspace) {
+    if (ctx != nullptr) {
+        ctx->attachWorkspace(workspace);
+    }
+}
+
+void detachWorkspaceFromContext(OpaqueContext* ctx) {
+    if (ctx != nullptr) {
+        ctx->forgetWorkspace();
+    }
+}
+
+sd::LongType getWorkspaceCurrentOffset(OpaqueWorkspace workspace) {
+    if (workspace == nullptr) return 0;
+    return workspace->getCurrentOffset();
+}
+
+sd::LongType getWorkspaceAllocatedSize(OpaqueWorkspace workspace) {
+    if (workspace == nullptr) return 0;
+    return workspace->getAllocatedSize();
+}
+
+// Multi-Backend Workspace API (CPU)
+
+OpaqueMultiBackendWorkspace createNativeMultiBackendWorkspace(
+    sd::LongType initialSize, int primaryDeviceType, int primaryDeviceIndex) {
+    return sd::memory::createMultiBackendWorkspace(initialSize, primaryDeviceType, primaryDeviceIndex);
+}
+
+void destroyNativeMultiBackendWorkspace(OpaqueMultiBackendWorkspace handle) {
+    sd::memory::destroyMultiBackendWorkspace(handle);
+}
+
+void* nativeMbwAllocateBytes(OpaqueMultiBackendWorkspace handle, sd::LongType numBytes) {
+    return sd::memory::mbwAllocateBytes(handle, numBytes);
+}
+
+void nativeMbwScopeIn(OpaqueMultiBackendWorkspace handle) {
+    sd::memory::mbwScopeIn(handle);
+}
+
+void nativeMbwScopeOut(OpaqueMultiBackendWorkspace handle) {
+    sd::memory::mbwScopeOut(handle);
+}
+
+void nativeMbwTransferTo(OpaqueMultiBackendWorkspace handle,
+    int srcDeviceType, int srcDeviceIndex, int dstDeviceType, int dstDeviceIndex) {
+    sd::memory::mbwTransferTo(handle, srcDeviceType, srcDeviceIndex, dstDeviceType, dstDeviceIndex);
+}
+
+int nativeMbwGetCoherenceState(OpaqueMultiBackendWorkspace handle,
+    int deviceType, int deviceIndex) {
+    return sd::memory::mbwGetCoherenceState(handle, deviceType, deviceIndex);
+}
+
+sd::LongType nativeMbwGetTotalAllocatedSize(OpaqueMultiBackendWorkspace handle) {
+    return sd::memory::mbwGetTotalAllocatedSize(handle);
+}
+
+// Dynamic Shape Plan configuration methods (CPU implementations)
+// These delegate to NativeDynamicShapePlan which exists on both CPU and GPU
+
+void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
+                                 const int* slotIndices, const sd::LongType* maxSizes) {
+    if (planHandle == nullptr || numSlots <= 0 || slotIndices == nullptr || maxSizes == nullptr) return;
+    auto* plan = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
+    plan->setOutputSlotMaxSizes(slotIndices, maxSizes, static_cast<int>(numSlots));
+}
+
+void configurePlanKvScatter(sd::Pointer planHandle,
+                             const int* presentSlotIndices,
+                             const sd::Pointer* staticKvBufferPtrs,
+                             sd::LongType numPairs,
+                             int dtypeInt,
+                             sd::LongType heads,
+                             sd::LongType srcSeqLen,
+                             sd::LongType dstSeqLen,
+                             sd::LongType dim,
+                             sd::LongType* kvPositionPtr) {
+    if (planHandle == nullptr || presentSlotIndices == nullptr ||
+        staticKvBufferPtrs == nullptr || numPairs <= 0 || kvPositionPtr == nullptr) {
+        return;
+    }
+
+    std::vector<sd::NDArray*> staticBufs(numPairs);
+    for (sd::LongType i = 0; i < numPairs; i++) {
+        staticBufs[i] = reinterpret_cast<sd::NDArray*>(staticKvBufferPtrs[i]);
+    }
+
+    auto dtype = static_cast<sd::DataType>(dtypeInt);
+    auto* plan = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
+    plan->configureKvScatter(presentSlotIndices, staticBufs.data(),
+                              static_cast<int>(numPairs),
+                              dtype, heads, srcSeqLen, dstSeqLen, dim,
+                              kvPositionPtr);
+}
+
+void resetPlanKvCachePosition(sd::Pointer planHandle, sd::LongType position) {
+    if (planHandle == nullptr) return;
+    reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle)->resetKvCachePosition(position);
+}
+
+sd::LongType getPlanKvCachePosition(sd::Pointer planHandle) {
+    if (planHandle == nullptr) return -1LL;
+    return reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle)->getKvCachePosition();
+}
+
+// Constant Cache Statistics API (CPU)
+SD_LIB_EXPORT sd::LongType getConstantCacheBytes(int deviceId) {
+    return sd::ConstantHelper::getInstance().getCachedAmount(deviceId);
+}
+
+SD_LIB_EXPORT sd::LongType getTadCacheEntries() {
+    return sd::ConstantTadHelper::getInstance().getCachedEntries();
+}
+
+SD_LIB_EXPORT sd::LongType getTadCacheBytes() {
+    return sd::ConstantTadHelper::getInstance().getCachedBytes();
+}
+
+SD_LIB_EXPORT void clearConstantCache() {
+    // ConstantHelper doesn't have a purge method - constants are cached for lifetime
+    // This is a no-op for now
+}
+
+SD_LIB_EXPORT void clearTadCache() {
+    sd::ConstantTadHelper::getInstance().clearCache();
+}

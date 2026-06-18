@@ -20,9 +20,12 @@
 //  @author raver119@gmail.com
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
-#include <exceptions/cuda_exception.h>
 #include <execution/LaunchContext.h>
+#include <string>
+#include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>
+#include <helpers/StringUtils.h>
+#include <system/env_functions.h>
 #include <loops/legacy_ops.h>
 #include <loops/reduce_same.h>
 #include <loops/scalar.h>
@@ -61,7 +64,7 @@ SD_KERNEL SD_INLINE void simpleScalar(
     void* z,
     const sd::LongType* zShapeInfo,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {
 
@@ -254,6 +257,8 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::execScalarCuda(
     xRank      = shape::rank(xShapeInfo);
     xShapePtr  = shape::shapeOf(xShapeInfo);
     xStridePtr = shape::stride(xShapeInfo);
+
+
   }
   __syncthreads();
 
@@ -356,8 +361,8 @@ SD_HOST SD_INLINE void ReduceSameFunction<X>::intermediate(
         cudaMemcpyHostToDevice,
         *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceSameFunction<X>::intermediate: failed to copy temporary scalar", res);
+      std::string msg = "ReduceSameFunction<X>::intermediate: failed to copy temporary scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
 
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
@@ -424,9 +429,8 @@ SD_HOST SD_INLINE void ReduceSameFunction<X>::intermediateScalar(
     auto res = cudaMemcpyAsync(z, &startingVal, sizeof(X),
                                cudaMemcpyHostToDevice, *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceSameFunction<X>::intermediateScalar: failed to copy resulting scalar",
-          res);
+      std::string msg = "ReduceSameFunction<X>::intermediateScalar: failed to copy resulting scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
   } else {
     simpleScalar<X, OpType>
@@ -547,7 +551,26 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
         void* reductionBuffer, \
         const sd::LongType* tadOnlyShapeInfo);
 
-ITERATE_LIST((SD_COMMON_TYPES), INSTANT_PROCESS_SINGLE)
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+INSTANT_PROCESS_SINGLE(SD_SPLIT_TYPE_LIST)
+#endif
+#else
+// ITERATE_LIST((SD_COMMON_TYPES), INSTANT_PROCESS_SINGLE)
+INSTANT_PROCESS_SINGLE((BOOL, bool))
+INSTANT_PROCESS_SINGLE((FLOAT16, float16))
+INSTANT_PROCESS_SINGLE((BFLOAT16, bfloat16))
+INSTANT_PROCESS_SINGLE((FLOAT32, float))
+INSTANT_PROCESS_SINGLE((DOUBLE, double))
+INSTANT_PROCESS_SINGLE((INT8, int8_t))
+INSTANT_PROCESS_SINGLE((UINT8, uint8_t))
+INSTANT_PROCESS_SINGLE((INT16, int16_t))
+INSTANT_PROCESS_SINGLE((INT32, int32_t))
+INSTANT_PROCESS_SINGLE((INT64, sd::LongType))
+INSTANT_PROCESS_SINGLE((UINT16, uint16_t))
+INSTANT_PROCESS_SINGLE((UINT32, uint32_t))
+INSTANT_PROCESS_SINGLE((UINT64, uint64_t))
+#endif
 
 }  // namespace reduce
 }  // namespace functions

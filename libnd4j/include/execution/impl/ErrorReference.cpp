@@ -21,6 +21,7 @@
 //
 
 #include <execution/ErrorReference.h>
+#include <cstring>
 
 namespace sd {
 int ErrorReference::errorCode() { return _errorCode; }
@@ -28,22 +29,18 @@ int ErrorReference::errorCode() { return _errorCode; }
 const char* ErrorReference::errorMessage() {
   // since we're fetching error message - error code will be assumed consumed & nullified
   _errorCode = 0;
-  if(_errorMessage != nullptr)
-    return _errorMessage->c_str();
-  return "";
+  return _errorMessage;
 }
 
 void ErrorReference::setErrorCode(int errorCode) { _errorCode = errorCode; }
 
 void ErrorReference::setErrorMessage(std::string message) {
-  if(_errorMessage != nullptr)
-    delete _errorMessage;
-  _errorMessage = new std::string(message);
+  std::strncpy(_errorMessage, message.c_str(), ERROR_MSG_SIZE - 1);
+  _errorMessage[ERROR_MSG_SIZE - 1] = '\0';
 }
 
 void ErrorReference::setErrorMessage(const char* message) {
-  if(_errorMessage != nullptr)
-    delete _errorMessage;
-  _errorMessage = new std::string(message);
+  std::strncpy(_errorMessage, message, ERROR_MSG_SIZE - 1);
+  _errorMessage[ERROR_MSG_SIZE - 1] = '\0';
 }
 }  // namespace sd

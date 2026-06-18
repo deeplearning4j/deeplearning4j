@@ -21,6 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <execution/ThreadPool.h>
+#include <system/Environment.h>
 #include <vector>
 #include <thread>
 #include <helpers/logger.h>
@@ -38,10 +39,10 @@ namespace samediff {
 
 int ThreadsHelper::numberOfThreads(int maxThreads, uint64_t numberOfElements) {
   // let's see how many threads we actually need first
-  auto optimalThreads = sd::math::sd_max<uint64_t>(1, numberOfElements / 1024);
+  auto optimalThreads = sd::math::sd_max<sd::UnsignedLong>(1, numberOfElements / 1024);
 
   // now return the smallest value
-  return sd::math::sd_min<int>(optimalThreads, maxThreads);
+  return sd::math::sd_min(optimalThreads, maxThreads);
 }
 
 Span3::Span3(int64_t startX, int64_t stopX, int64_t incX, int64_t startY, int64_t stopY, int64_t incY, int64_t startZ, int64_t stopZ, int64_t incZ) {
@@ -276,7 +277,7 @@ int ThreadsHelper::numberOfThreads2d(int maxThreads, uint64_t iters_x, uint64_t 
   uint64_t  typeCastedMaxThreads =  static_cast<uint64_t>(maxThreads);
   // in some cases there's nothing to think about, part 1
   if (iters_x < typeCastedMaxThreads && iters_y < typeCastedMaxThreads)
-    return sd::math::sd_max<int>(iters_x, iters_y);
+    return sd::math::sd_max(iters_x, iters_y);
 
   auto remX = iters_x % maxThreads;
   auto remY = iters_y % maxThreads;
@@ -340,7 +341,7 @@ int ThreadsHelper::pickLoop3d(int numThreads, uint64_t itersX, uint64_t itersY, 
     return 1;
   else if (remY == 0)
     return 2;
-  else if (remZ == 0) // TODO: we don't want too smal splits over last dimension? or we do?
+  else if (remZ == 0)
     return 3;
 
   if (itersX > typeCastedNumThreads)
@@ -381,6 +382,10 @@ int Threads::parallel_tad(FUNC_1D function, sd::LongType start, sd::LongType sto
   if (start > stop)
     THROW_EXCEPTION("Threads::parallel_for got start > stop");
 
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
+
   auto delta = (stop - start);
 
   if (numThreads > delta)
@@ -399,7 +404,7 @@ int Threads::parallel_tad(FUNC_1D function, sd::LongType start, sd::LongType sto
   if (tryAcquire(numThreads)) {
 
 			auto span = delta / numThreads;
-#pragma omp parallel for  schedule(guided) proc_bind(close) default(shared)
+#pragma omp parallel for  schedule(guided) default(shared)
 			for (sd::LongType e = 0; e < numThreads; e++) {
 				auto start_ = span * e + start;
 				auto stop_ = start_ + span;
@@ -460,6 +465,10 @@ int Threads::parallel_for(FUNC_1D function, sd::LongType start, sd::LongType sto
   if (start > stop)
     THROW_EXCEPTION("Threads::parallel_for got start > stop");
 
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
+
   auto delta = (stop - start);
 
   // in some cases we just fire func as is
@@ -481,6 +490,10 @@ int Threads::parallel_for(FUNC_2D function, int64_t startX, int64_t stopX, int64
 
   if (startY > stopY)
     THROW_EXCEPTION("Threads::parallel_for got startY > stopY");
+
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
 
   // number of elements per loop
   auto delta_x = (stopX - startX);
@@ -522,7 +535,7 @@ int Threads::parallel_for(FUNC_2D function, int64_t startX, int64_t stopX, int64
 
     if (tryAcquire(numThreads)) {
 #pragma omp parallel for
-				for (uint64_t e = 0; e < numThreads; e++) {
+				for (sd::LongType e = 0; e < numThreads; e++) {
 					auto span = Span2::build(splitLoop, e, numThreads, startX, stopX, incX, startY, stopY, incY);
 					function(e, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY());
 				}
@@ -575,6 +588,10 @@ int Threads::parallel_for(FUNC_3D function, int64_t startX, int64_t stopX, int64
   if (startZ > stopZ)
     THROW_EXCEPTION("Threads::parallel_for got startZ > stopZ");
 
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
+
   auto delta_x = stopX - startX;
   auto delta_y = stopY - startY;
   auto delta_z = stopZ - startZ;
@@ -596,7 +613,7 @@ int Threads::parallel_for(FUNC_3D function, int64_t startX, int64_t stopX, int64
 
 			auto splitLoop = ThreadsHelper::pickLoop3d(numThreads, itersX, itersY, itersZ);
 #pragma omp parallel for
-			for (uint64_t e = 0; e < numThreads; e++) {
+			for (sd::LongType e = 0; e < numThreads; e++) {
 				auto thread_id = numThreads - e - 1;
 				auto span = Span3::build(splitLoop, thread_id, numThreads, startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);
 				function(e, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY(), span.startZ(), span.stopZ(), span.incZ());
@@ -642,6 +659,9 @@ int Threads::parallel_for(FUNC_3D function, int64_t startX, int64_t stopX, int64
 }
 
 int Threads::parallel_do(FUNC_DO function, sd::LongType numThreads) {
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
 
   if (numThreads == 1) {
     function(0, numThreads);
@@ -697,6 +717,10 @@ int64_t Threads::parallel_long(FUNC_RL function, FUNC_AL aggregator, sd::LongTyp
                                sd::LongType increment, sd::LongType numThreads) {
   if (start > stop)
     THROW_EXCEPTION("Threads::parallel_long got start > stop");
+
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
 
   auto delta = (stop - start);
   if (delta == 0 || numThreads == 1)
@@ -760,6 +784,10 @@ double Threads::parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t st
   if (start > stop)
     THROW_EXCEPTION("Threads::parallel_long got start > stop");
 
+  // Resolve sentinel: 0 means "use Environment default"
+  if (numThreads == 0)
+    numThreads = sd::Environment::getInstance().maxMasterThreads();
+
   auto delta = (stop - start);
   if (delta == 0 || numThreads == 1)
     return function(0, start, stop, increment);
@@ -779,7 +807,7 @@ double Threads::parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t st
 
   if (tryAcquire(numThreads)) {
 #pragma omp parallel for
-			for (uint64_t e = 0; e < numThreads; e++) {
+			for (sd::LongType e = 0; e < numThreads; e++) {
 				auto start_ = span * e + start;
 				auto stop_ = span * (e + 1) + start;
 
@@ -827,6 +855,11 @@ int  Threads::parallel_aligned_increment(FUNC_1D function, int64_t start, int64_
                                          uint32_t req_numThreads) {
   if (start > stop)
     THROW_EXCEPTION("Threads::parallel_for got start > stop");
+
+  // Resolve sentinel: 0 means "use Environment default"
+  if (req_numThreads == 0)
+    req_numThreads = sd::Environment::getInstance().maxMasterThreads();
+
   auto num_elements = (stop - start);
   //this way we preserve increment starts offset
   //so we will partition considering delta but not total elements

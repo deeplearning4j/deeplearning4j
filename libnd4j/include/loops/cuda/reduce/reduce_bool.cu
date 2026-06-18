@@ -20,12 +20,16 @@
 //  @author raver119@gmail.com
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
-#include <exceptions/cuda_exception.h>
 #include <execution/LaunchContext.h>
+#include <string>
+#include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>
+#include <helpers/StringUtils.h>
+#include <system/env_functions.h>
 #include <loops/legacy_ops.h>
 #include <loops/reduce_bool.h>
 #include <loops/scalar.h>
+#include <loops/pairwise_instantiations.h>
 #include <system/op_boilerplate.h>
 #include <system/common.h>
 #include <types/types.h>
@@ -346,8 +350,8 @@ SD_HOST SD_INLINE void ReduceBoolFunction<X, Z>::intermediate(
         cudaMemcpyHostToDevice,
         *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceBoolFunction<X,Z>::intermediate: failed to copy temporary scalar", res);
+      std::string msg = "ReduceBoolFunction<X,Z>::intermediate: failed to copy temporary scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
 
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
@@ -417,8 +421,8 @@ SD_HOST SD_INLINE void ReduceBoolFunction<X, Z>::intermediateScalar(
         cudaMemcpyHostToDevice,
         *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceBoolFunction<X,Z>::intermediateScalar: failed to copy resulting scalar", res);
+      std::string msg = "ReduceBoolFunction<X,Z>::intermediateScalar: failed to copy resulting scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
     sd::DebugHelper::checkErrorCode(stream, "reduceBoolScalar empty(...) failed");
   } else {
@@ -438,8 +442,8 @@ SD_HOST SD_INLINE void ReduceBoolFunction<X, Z>::intermediateScalar(
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST  SD_INLINE void ReduceBoolFunction<X, Y>::execReduceScalar(
+template <typename X, typename Z>
+SD_HOST  SD_INLINE void ReduceBoolFunction<X, Z>::execReduceScalar(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
@@ -465,8 +469,8 @@ SD_HOST  SD_INLINE void ReduceBoolFunction<X, Y>::execReduceScalar(
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST SD_INLINE void ReduceBoolFunction<X, Y>::execReduce(
+template <typename X, typename Z>
+SD_HOST SD_INLINE void ReduceBoolFunction<X, Z>::execReduce(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
@@ -510,49 +514,14 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
   }
 }
 
-
-ITERATE_COMBINATIONS(
-    (SD_COMMON_TYPES),
-    (SD_BOOL_TYPES),
-    INSTANT_PROCESS_COMBINATION,
-    functions::reduce::ReduceBoolFunction,
-    ::execReduce(
-        dim3 launchDims,
-        cudaStream_t* stream,
-        const int opNum,
-        const void* x,
-        sd::LongType* dXShapeInfo,
-        sd::LongType* hXShapeInfo,
-        void* extraParams,
-        void* vreductionBuffer,
-        void* z,
-        sd::LongType* dZShapeInfo,
-        sd::LongType* hZShapeInfo,
-        sd::LongType* dims);
-);
-
-ITERATE_COMBINATIONS(
-    (SD_COMMON_TYPES),
-    (SD_BOOL_TYPES),
-    INSTANT_PROCESS_COMBINATION,
-    functions::reduce::ReduceBoolFunction,
-    ::execReduceScalar(
-        dim3 launchDims,
-        cudaStream_t* stream,
-        const int opNum,
-        const void* x,
-        const sd::LongType* xShapeInfo,
-        const sd::LongType* hXShapeInfo,
-        void* extraParams,
-        void* z,
-        const sd::LongType* zShapeInfo,
-        const sd::LongType* hZShapeInfo,
-        sd::LongType* dimension,
-        sd::LongType dimensionLength,
-        void* reductionBuffer,
-        const sd::LongType* tadOnlyShapeInfo);
-);
-
+// Explicit template instantiations for ReduceBoolFunction
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+BUILD_DOUBLE_TEMPLATE(class ReduceBoolFunction, , SD_SPLIT_TYPE_LIST, SD_BOOL_TYPES)
+#endif
+#else
+BUILD_DOUBLE_TEMPLATE(class ReduceBoolFunction, , SD_COMMON_TYPES, SD_BOOL_TYPES)
+#endif
 
 }  // namespace reduce
 }  // namespace functions

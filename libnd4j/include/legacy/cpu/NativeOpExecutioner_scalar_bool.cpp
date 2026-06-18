@@ -1,14 +1,16 @@
 /* ******************************************************************************
  *
  * Scalar operations - BOOL TYPES ONLY (non-TAD version)
+ * Uses ScalarBoolTransform with BUILD_DOUBLE_SELECTOR (X input type, Z=bool output)
  *
  ******************************************************************************/
 
 #include <array/DataTypeUtils.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
-#include <loops/scalar.h>
+#include <loops/scalar_bool.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -19,7 +21,6 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
                                          const void *hScalar, const sd::LongType *hScalarShapeInfo, const void *dScalar,
                                          const sd::LongType *dScalarShapeInfo, void *extraParams, bool allowParallelism) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   // Only handle operations that result in boolean output
@@ -28,9 +29,9 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
   }
 
   auto func = PRAGMA_THREADS_FOR {
-    BUILD_TRIPLE_SELECTOR(xType,yType,zType,functions::scalar::ScalarTransform,
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform,
                           ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop),
-                          SD_COMMON_TYPES,SD_COMMON_TYPES,SD_BOOL_TYPES);
+                          SD_COMMON_TYPES, SD_BOOL_TYPES);
   };
 
   auto zLen = shape::length(hZShapeInfo);
@@ -38,6 +39,6 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
       func, 0, zLen, 1,
       !allowParallelism
       ? 1
-      : sd::math::sd_max<int>(
-          1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+      : sd::math::sd_max(
+          1, sd::math::sd_min(zLen / 1024, sd::env_maxMasterThreads())));
 }

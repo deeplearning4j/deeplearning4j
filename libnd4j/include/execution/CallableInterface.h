@@ -59,6 +59,7 @@ class CallableInterface {
   std::atomic<bool> _finished;
   std::atomic<bool> _filled;
   std::atomic<bool> _available;
+  std::atomic<bool> _shutdown;
 
   std::condition_variable _starter;
   std::condition_variable _finisher;
@@ -75,6 +76,7 @@ class CallableInterface {
 
   void waitForTask();
   void waitForCompletion();
+  void shutdown();
 
   void fill(int thread_id, int num_threads, int64_t *lpt, FUNC_RL func, int64_t start_x, int64_t stop_x, int64_t inc_x);
   void fill(int thread_id, int num_threads, double *dpt, FUNC_RD func, int64_t start_x, int64_t stop_x, int64_t inc_x);
@@ -93,6 +95,7 @@ class CallableInterface {
   void finish();
 
   void execute();
+  bool isShutdown();
 };
 }  // namespace samediff
 

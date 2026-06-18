@@ -18,8 +18,7 @@
 #include <array/ConstantDataBuffer.h>
 #include <array/DataTypeUtils.h>
 #include <array/ShapeDescriptor.h>
-#include <exceptions/cuda_exception.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
@@ -48,6 +47,7 @@
 #include <loops/transform_same.h>
 #include <loops/transform_strict.h>
 #include <system/op_boilerplate.h>
+#include <system/env_functions.h>
 #include <helpers/ConstantTadHelper.h>
 #include <system/selective_rendering.h>
 
@@ -77,16 +77,14 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, int opNum, vo
   if (yType != xType)
     THROW_EXCEPTION("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F3B opType:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("F3B opType:[%i]\n", opNum);
 
   dim3 launchDims = getLaunchDims("broadcast");
-#if SD_IS_PAIR_TYPE_COMPILED(xType,zType)
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::broadcast::BroadcastBool,
       ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams,
                       dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES, SD_BOOL_TYPES)
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -228,7 +226,7 @@ void NativeOpExecutioner::execInverseBroadcastInt(
   if (yType != xType || zType != xType)
     THROW_EXCEPTION("NativeOpExecutioner::execInverseBroadcastInt requires both X & Y operands to have same type");
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F3BI opType:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("F3BI opType:[%i]\n", opNum);
 
   dim3 launchDims = getLaunchDims("broadcastInt");
 
@@ -297,7 +295,6 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, const int opNum, 
   }
 
   dim3 launchDims = getLaunchDims("broadcast");
-  // shared memory
 
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, functions::broadcast::Broadcast,

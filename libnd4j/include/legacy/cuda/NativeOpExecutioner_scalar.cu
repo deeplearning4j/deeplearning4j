@@ -18,8 +18,7 @@
 #include <array/ConstantDataBuffer.h>
 #include <array/DataTypeUtils.h>
 #include <array/ShapeDescriptor.h>
-#include <exceptions/cuda_exception.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
@@ -230,28 +229,27 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (sd::DataTypeUtils::isS(xType)) {
-#if defined(HAS_UTF8) || defined(HAS_UTF16) || defined(HAS_UTF32)
-     BUILD_SINGLE_SELECTOR_THRICE(
-        xType, functions::scalar::ScalarTransform,
-        ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
-                                    dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
-        SD_STRING_TYPES);
-#endif
-  } else {
-    BUILD_SINGLE_SELECTOR_THRICE(
-        xType, functions::scalar::ScalarTransform,
-        ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
-                                    dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
-        SD_COMMON_TYPES);
+  if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(yType) || sd::DataTypeUtils::isS(zType)) {
+    THROW_EXCEPTION(
+        "NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op "
+        "for the string data type.")
   }
+
+  BUILD_SINGLE_SELECTOR_THRICE(
+      xType, functions::scalar::ScalarTransform,
+      ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
+                                  dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
+      SD_COMMON_TYPES);
 
 
   // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) {
-    std::string errorMessage = "execScalar B failed with error code: " + std::to_string(static_cast<int>(res));
-    THROW_EXCEPTION(errorMessage.c_str());
+  // Skip sync during CUDA graph capture — kernels are recorded, not executed.
+  if (!sd::tl_graphExecutionActive) {
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0) {
+      std::string errorMessage = "execScalar B failed with error code: " + std::to_string(static_cast<int>(res));
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   }}
 
 ////////////////////////////////////////////////////////////////////////

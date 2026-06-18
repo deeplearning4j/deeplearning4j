@@ -37,7 +37,7 @@ SD_DEVICE void concatKernelScalar(int numArrays, Pointer *data, void *vz) {
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execConcatKernelScalar(int numArrays, Pointer *data, void *vz) {
+SD_KERNEL SD_INLINE void execConcatKernelScalar(int numArrays, Pointer *data, void *vz) {
   concatKernelScalar<T>(numArrays, data, vz);
 }
 

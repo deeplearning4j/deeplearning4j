@@ -22,6 +22,7 @@
 #include <execution/ThreadPool.h>
 #include <execution/Ticket.h>
 #include <helpers/logger.h>
+#include <system/Environment.h>
 
 
 namespace samediff {

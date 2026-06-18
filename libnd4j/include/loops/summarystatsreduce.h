@@ -32,7 +32,8 @@
 #include <jni.h>
 #endif
 #include <loops/legacy_ops.h>
-#include <ops/ops.h>
+// NOTE: Removed #include <ops/ops.h> - this header only uses templatemath.h functions
+// (sd_min, sd_max, sd_sqrt, sd_pow) and including ops.h created a circular dependency
 #include <system/op_boilerplate.h>
 
 namespace functions {
@@ -232,13 +233,13 @@ class SummaryStatsReduce {
   static SD_DEVICE void transform(void * dx, sd::LongType * xShapeInfo, void* extraParams, void* vz,
                                   sd::LongType * zShapeInfo, sd::LongType* dimension,
                                   sd::LongType dimensionLength,
-                                  int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
+                                  int postProcessOrNot, bool biasCorrected, sd::LongType* allocationBuffer, void* reductionBuffer,
                                   sd::LongType * tadOnlyShapeInfo, sd::LongType * tadOffsets);
 
   static SD_DEVICE void transform( int opNum, void * dx, sd::LongType * xShapeInfo, void* extraParams,
                                   void* vz, sd::LongType * zShapeInfo, sd::LongType* dimension,
                                   sd::LongType dimensionLength,
-                                  int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
+                                  int postProcessOrNot, bool biasCorrected, sd::LongType* allocationBuffer, void* reductionBuffer,
                                   sd::LongType * tadOnlyShapeInfo, sd::LongType * tadOffsets);
 
   static SD_HOST void execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t* stream, int opNum, void * x,

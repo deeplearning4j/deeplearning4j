@@ -3,7 +3,7 @@
 #include <graph/Context.h>
 
 
-void recordJavaOpContextAllocation(OpaqueContext *context, int nodeId, long fastpathInSize, long fastpathOutSize, long intermediateResultsSize, long handlesSize, bool hasWorkspace, bool isFastPath) {
+SD_LIB_EXPORT void recordJavaOpContextAllocation(OpaqueContext *context, int nodeId, long fastpathInSize, long fastpathOutSize, long intermediateResultsSize, long handlesSize, bool hasWorkspace, bool isFastPath) {
 #if defined(SD_GCC_FUNCTRACE)
     if (context != nullptr) {
         sd::graph::OpContextLifecycleTracker::getInstance().recordAllocation(
@@ -12,7 +12,7 @@ void recordJavaOpContextAllocation(OpaqueContext *context, int nodeId, long fast
 #endif
 }
 
-void recordJavaOpContextDeallocation(OpaqueContext *context) {
+SD_LIB_EXPORT void recordJavaOpContextDeallocation(OpaqueContext *context) {
 #if defined(SD_GCC_FUNCTRACE)
     if (context != nullptr) {
         sd::graph::OpContextLifecycleTracker::getInstance().recordDeallocation(context);

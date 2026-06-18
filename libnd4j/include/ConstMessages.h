@@ -131,6 +131,8 @@ extern const char *SHAPE_MSG_OUTPUT2;
 extern const char *IS_USE_ONEDNN_MSG;
 extern const char *ONEDNN_STREAM_NOT_SUPPORTED;
 
+extern const char *IS_USE_MPS_MSG;
+
 extern const char *REQUIREMENTS_MEETS_MSG;
 extern const char *REQUIREMENTS_FAILS_MSG;
 

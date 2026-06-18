@@ -66,11 +66,12 @@ void ScalarIntTransform<X>::transform(const void *vx, const sd::LongType *xShape
 
     PRAGMA_OMP_SIMD
     for (int f = 0; f < tadLength; f++) {
-      sd::LongType coords[SD_MAX_RANK];
+      sd::LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
       sd::LongType xOffset, zOffset;
-      INDEX2COORDS(f, xTadRank, xTadShape, coords);
-      COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
-      COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
+      INDEX2COORDS(f, xTadRank, xTadShape, xCoords);
+      COORDS2INDEX(xTadRank, xTadStride, xCoords, xOffset);
+      INDEX2COORDS(f, zTadRank, zTadShape, zCoords);
+      COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
       oZ[zOffset] = OpType::op(oX[xOffset], scalars[0], extraParams);
     }
   }
@@ -134,11 +135,12 @@ void ScalarIntTransform<X>::transform(const void *vx, const sd::LongType *xShape
   } else {
     PRAGMA_OMP_SIMD
     for (auto i2 = start; i2 < stop; i2++) {
-      sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i2, xRank, xShape, coords);
+      sd::LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
       sd::LongType xOffset, zOffset;
-      COORDS2INDEX(xRank, xStride, coords, xOffset);
-      COORDS2INDEX(zRank, zStride, coords, zOffset);
+      INDEX2COORDS(i2, xRank, xShape, xCoords);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+      INDEX2COORDS(i2, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
       z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
     };
   }
@@ -157,9 +159,7 @@ void ScalarIntTransform<X>::transform(const void *vx, sd::LongType xEws, void *v
   if (scalar < static_cast<X>((sizeof(X) * 8))) {
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) {
-      auto xi = i * xEws;
-      auto zi = i * zEws;
-      z[zi] = OpType::op(x[xi], scalar, extraParams);
+      z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
     }
   }
 }

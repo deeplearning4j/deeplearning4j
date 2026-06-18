@@ -1,14 +1,16 @@
 /* ******************************************************************************
  *
  * Scalar TAD operations - BOOL TYPES ONLY
+ * Uses ScalarBoolTransform with BUILD_DOUBLE_SELECTOR (X input type, Z=bool output)
  *
  ******************************************************************************/
 
 #include <array/DataTypeUtils.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/Threads.h>
 #include <legacy/NativeOpExecutioner.h>
-#include <loops/scalar.h>
+#include <loops/scalar_bool.h>
+#include <system/env_functions.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -23,7 +25,6 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
                                          const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                          const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   // Only handle operations that result in boolean output
@@ -32,13 +33,13 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
   }
 
   auto func = PRAGMA_THREADS_FOR {
-    BUILD_TRIPLE_SELECTOR(xType,yType,zType,functions::scalar::ScalarTransform,
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform,
                           ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength,
                                      tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ, start, stop),
-                          SD_COMMON_TYPES,SD_COMMON_TYPES,SD_BOOL_TYPES);
+                          SD_COMMON_TYPES, SD_BOOL_TYPES);
   };
 
   auto yLen = shape::length(hScalarShapeInfo);
   samediff::Threads::parallel_tad(func, 0, yLen, 1,
-                                  sd::math::sd_min<int>(yLen, sd::Environment::getInstance().maxMasterThreads()));
+                                  sd::math::sd_min(yLen, sd::env_maxMasterThreads()));
 }

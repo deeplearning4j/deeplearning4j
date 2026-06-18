@@ -92,7 +92,7 @@
   }
 
   template <typename T>
-  SD_KERNEL void execConcatKernelVStack(
+  SD_KERNEL SD_INLINE void execConcatKernelVStack(
       int numArrays,
       Pointer* data,
       Pointer* inputShapeInfos,

@@ -113,6 +113,7 @@ const char *SHAPE_MSG_OUTPUT2 = SHAPE_MSG_OUTPUT_ "#2";
 
 const char *IS_USE_ONEDNN_MSG = "isUseONEDNN should be enabled to use ONEDNN";
 const char *ONEDNN_STREAM_NOT_SUPPORTED = "ONEDNN stream is not supported";
+const char *IS_USE_MPS_MSG = "isUseMPS should be enabled to use Metal Performance Shaders";
 const char *REQUIREMENTS_MEETS_MSG = "meets the requirements";
 const char *REQUIREMENTS_FAILS_MSG = "fails the requirements";
 }  // namespace sd

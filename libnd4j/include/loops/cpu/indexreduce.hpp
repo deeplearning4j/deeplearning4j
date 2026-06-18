@@ -16,6 +16,8 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
+#pragma once
+
 //
 // Created by raver on 4/9/2018.
 //
@@ -26,6 +28,7 @@
 #include <loops/legacy_ops.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+#include <system/env_functions.h>
 
 using namespace simdOps;
 
@@ -67,20 +70,43 @@ sd::LongType IndexReduce<X, Z>::execScalar(const void *vx, const sd::LongType *x
 
  sd::LongType xShapeInfoCast[SD_MAX_RANK];
  bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
- int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+ int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
  IndexValue<X> intermediatery[64];
  for (int e = 0; e < maxThreads; e++) intermediatery[e].index = -1;
+
+ // Check if array is contiguous
+ bool isContiguous = true;
+ if (xRank > 0) {
+   sd::LongType expectedStride = 1;
+   for (int i = xRank - 1; i >= 0; --i) {
+     if (xShape[i] == 1) continue;
+     if (xStride[i] != expectedStride) {
+       isContiguous = false;
+       break;
+     }
+     expectedStride *= xShape[i];
+   }
+ }
 
  auto func = PRAGMA_THREADS_FOR {
    intermediatery[thread_id] = OpType::startingIndexValue(x);
 
-   for (auto i = start; i < stop; i++) {
-     sd::LongType coords[SD_MAX_RANK];
-     INDEX2COORDS(i, xRank, xShape, coords);
-     sd::LongType offset;
-     COORDS2INDEX(xRank, xStride, coords, offset);
-     IndexValue<X> curr(x[offset], i);
-     intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
+   if (isContiguous) {
+     // Fast path: direct indexing for contiguous arrays
+     for (auto i = start; i < stop; i++) {
+       IndexValue<X> curr(x[i], i);
+       intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
+     }
+   } else {
+     // General path with coordinate calculation
+     for (auto i = start; i < stop; i++) {
+       sd::LongType coords[SD_MAX_RANK];
+       INDEX2COORDS(i, xRank, xShape, coords);
+       sd::LongType offset;
+       COORDS2INDEX(xRank, xStride, coords, offset);
+       IndexValue<X> curr(x[offset], i);
+       intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
+     }
    }
  };
 

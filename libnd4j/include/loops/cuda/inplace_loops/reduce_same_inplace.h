@@ -179,7 +179,7 @@ SD_INLINE void SD_DEVICE ReduceSameInplace<X>::execScalarCuda(
   aggregatePartials<OpClass>(
       sPartials,
       threadIdx.x,
-      sd::math::sd_min<int>(blockDim.x, length),
+      sd::math::sd_min(blockDim.x, length),
       extraParams);
   __syncthreads();
 
@@ -217,7 +217,7 @@ SD_INLINE void SD_DEVICE ReduceSameInplace<X>::execScalarCuda(
       aggregatePartials<OpClass>(
           sPartials,
           threadIdx.x,
-          sd::math::sd_min<int>(gridDim.x, blockDim.x),
+          sd::math::sd_min(gridDim.x, blockDim.x),
           extraParams);
       __syncthreads();
 

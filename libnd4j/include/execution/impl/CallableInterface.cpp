@@ -28,6 +28,7 @@ CallableInterface::CallableInterface() {
   _available = true;
   _filled = false;
   _finished = false;
+  _shutdown = false;
 }
 
 bool CallableInterface::available() { return _available.load(); }
@@ -35,6 +36,16 @@ bool CallableInterface::available() { return _available.load(); }
 void CallableInterface::markUnavailable() { _available = false; }
 
 void CallableInterface::markAvailable() { _available = true; }
+
+bool CallableInterface::isShutdown() { return _shutdown.load(); }
+
+void CallableInterface::shutdown() {
+  {
+    std::unique_lock<std::mutex> l(_ms);
+    _shutdown = true;
+  }
+  _starter.notify_one();
+}
 
 void CallableInterface::fill(int threadID, int numThreads, FUNC_DO func) {
   _function_do = std::move(func);
@@ -159,9 +170,9 @@ void CallableInterface::fill(int threadID, int numThreads, double *dptr, FUNC_RD
 }
 
 void CallableInterface::waitForTask() {
-  // block until task is available
+  // block until task is available OR shutdown is requested
   std::unique_lock<std::mutex> lock(_ms);
-  _starter.wait(lock, [&] { return _filled.load(); });
+  _starter.wait(lock, [&] { return _filled.load() || _shutdown.load(); });
 }
 
 void CallableInterface::waitForCompletion() {

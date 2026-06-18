@@ -18,8 +18,7 @@
 #include <array/ConstantDataBuffer.h>
 #include <array/DataTypeUtils.h>
 #include <array/ShapeDescriptor.h>
-#include <exceptions/cuda_exception.h>
-#include <exceptions/datatype_exception.h>
+
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
@@ -48,6 +47,7 @@
 #include <loops/transform_same.h>
 #include <loops/transform_strict.h>
 #include <system/op_boilerplate.h>
+#include <system/env_functions.h>
 #include <helpers/ConstantTadHelper.h>
 #include <system/selective_rendering.h>
 
@@ -59,7 +59,7 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext* lc, int opNum, void 
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("SF7 opType:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("SF7 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -90,7 +90,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext* lc, int opNum, void 
   auto reductionPointer = lc->getReductionPointer();
   sd::LongType* allocationPointer = lc->getAllocationPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("LF7 opType:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("LF7 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -130,7 +130,7 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext* lc, int opNum, void 
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("BF7 opType:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("BF7 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -185,104 +185,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext* lc, int opNum, cons
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
 
-////////////////////////////////////////////////////////////////////////
-/**
- *
- * @param opNum
- * @param dX
- * @param dXShapeInfo
- * @param extraParams
- * @param dZ
- * @param dZShapeInfo
- * @param dimension
- * @param dimensionLength
- */
-void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo,
-                                          void const* dX, sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
-                                          sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                          sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadShapeInfo,
-                                          sd::LongType const* tadOffsets) {
-  auto stream = lc->getCudaStream();
-  auto reductionPointer = lc->getReductionPointer();
-  auto allocationPointer = lc->getAllocationPointer();
-
-  if (sd::Environment::getInstance().isDebugAndVerbose()) {
-    printf("F2 opType:[%i]\n", opNum);
-  }
-  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION(
-        "NativeOpExecutioner::execIndexReduce:: unable to execute on strings. Please write logic higher level in each "
-        "op for the string data type.")
-  }
-  auto numBlocks = shape::length(hZShapeInfo);
-  auto tadLength = shape::length(hXShapeInfo) / numBlocks;
-  dim3 launchDims = getReduceDims(numBlocks);
-  if (zType != sd::INT64 && zType != sd::INT32) {
-    std::string errorMessage = "NativeOpExecutioner::execIndexReduce requires Z operand to have INT32/INT64 type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  auto dz = reinterpret_cast<sd::LongType*>(dZ);
-  BUILD_DOUBLE_SELECTOR(
-      xType, zType, functions::indexreduce::IndexReduce,
-      ::executeIndexReduce(launchDims,
-                           stream,
-                           opNum,
-                           dX,
-                           dXShapeInfo, shape::rank(hXShapeInfo),
-                           extraParams,
-                           dz,
-                           dZShapeInfo,
-                           shape::rank(hZShapeInfo),
-                           dimension,
-                           dimensionLength,
-                           1,
-                           allocationPointer,
-                           reductionPointer,
-                           tadShapeInfo,
-                           tadOffsets),
-      SD_COMMON_TYPES, SD_INDEXING_TYPES);
-}
-
-/**
- *
- * @param opNum
- * @param dX
- * @param dXShapeInfo
- * @param extraParams
- */
-////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum, void const* hX,
-                                                sd::LongType const* hXShapeInfo, void const* dX,
-                                                sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
-                                                sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo) {
-  auto stream = lc->getCudaStream();
-  auto reductionPointer = lc->getReductionPointer();
-  sd::LongType* allocationPointer = lc->getAllocationPointer();
-
-  auto xLength = shape::length(hXShapeInfo);
-  dim3 launchDims = getReduceDims(xLength);
-
-  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION(
-        "NativeOpExecutioner::execIndexReduceScalar:: unable to execute on strings. Please write logic higher level in "
-        "each op for the string data type.")
-  }
-
-  if (zType != sd::INT64 && zType != sd::INT32) {
-    std::string errorMessage = "NativeOpExecutioner::execIndexReduceScalar requires Z operand to have INT32/INT64 data type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  auto dz = reinterpret_cast<sd::LongType*>(dZ);
-  BUILD_DOUBLE_SELECTOR(
-      xType, zType, functions::indexreduce::IndexReduce,
-      ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz,
-                                 dZShapeInfo, 0, nullptr, 0, 1, allocationPointer, reductionPointer, nullptr, nullptr),
-      SD_COMMON_TYPES, SD_INDEXING_TYPES);
-}
+// NOTE: execIndexReduce and execIndexReduceScalar are defined in NativeOpExecutioner_indexreduce.cu
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext* lc, int opNum, void const* hX,
@@ -414,14 +317,10 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext* lc, int opNum, void con
     std::string errorMessage = "NativeOpExecutioner::execReduce3 requires Y operand to have X type. X type: " + sd::DataTypeUtils::asString(xType) + ", Y type: " + sd::DataTypeUtils::asString(yType);
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  if (!sd::DataTypeUtils::isR(zType)) {
-    std::string errorMessage = "NativeOpExecutioner::execReduce3 requires Z operand to have floating point data type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3,
                         ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ,
                                      dZShapeInfo, allocationPointer, reductionPointer, nullptr),
-                        SD_COMMON_TYPES, SD_FLOAT_TYPES);
+                        SD_COMMON_TYPES, SD_COMMON_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -454,17 +353,13 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext* lc, int opNum, const vo
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (!sd::DataTypeUtils::isR(zType)) {
-    std::string errorMessage = "NativeOpExecutioner::execReduce3 requires Z operand to have floating point data type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   auto numBlocks = shape::length(hZShapeInfo);
   dim3 launchDims = getReduceDims(numBlocks);
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce3::Reduce3,
       ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo, dimension,
              dimensionLength, 1, allocationPointer, xTadOnlyShapeInfo, xTadOffsets, yTadOnlyShapeInfo, yTadOffsets),
-      SD_COMMON_TYPES, SD_FLOAT_TYPES);
+      SD_COMMON_TYPES, SD_COMMON_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -493,14 +388,10 @@ void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext* lc, int opNum, vo
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (!sd::DataTypeUtils::isR(zType)) {
-    std::string errorMessage = "NativeOpExecutioner::execReduce3Scalar requires Z operand to have floating point data type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3,
                         ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ,
                                      dZShapeInfo, allocationPointer, reductionPointer, nullptr),
-                        SD_COMMON_TYPES, SD_FLOAT_TYPES);
+                        SD_COMMON_TYPES, SD_COMMON_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -515,11 +406,11 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext* lc, int opNum, const
   auto allocationPointer = lc->getAllocationPointer();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("D119 opType:[%i]\n", opNum);
+  if (sd::env_isDebugAndVerbose()) printf("D119 opType:[%i]\n", opNum);
 
   dim3 launchDims = getReduceAllDims(shape::length(hZShapeInfo));
 
-  if (sd::Environment::getInstance().isVerbose() && launchDims.x == 1) printf("AD119 opType:[%i]\n", opNum);
+  if (sd::env_isVerbose() && launchDims.x == 1) printf("AD119 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -534,13 +425,17 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext* lc, int opNum, const
       xType, zType, functions::reduce3::Reduce3,
       ::execAll(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo,
                 dimension, dimensionLength, 1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets),
-      SD_COMMON_TYPES, SD_FLOAT_TYPES);
+      SD_COMMON_TYPES, SD_COMMON_TYPES);
 
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) {
-    std::string errorMessage = "execReduce3All failed with error code: " + std::to_string(static_cast<int>(res));
-    THROW_EXCEPTION(errorMessage.c_str());
-  }}
+  // Skip sync during CUDA graph capture — kernels are recorded, not executed.
+  if (!sd::tl_graphExecutionActive) {
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0) {
+      std::string errorMessage = "execReduce3All failed with error code: " + std::to_string(static_cast<int>(res));
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext* lc, int opNum, const void* hX, const sd::LongType* hXShapeInfo,
@@ -548,7 +443,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext* lc, int opNum, const
                                          const void* hY, const sd::LongType* hYShapeInfo, const void* dY,
                                          const sd::LongType* dYShapeInfo, void* hZ, const sd::LongType* hZShapeInfo, void* dZ,
                                          const sd::LongType* dZShapeInfo, sd::LongType* dimension,
-                                         long long int dimensionLength, const sd::LongType* tadShapeInfo,
+                                         sd::LongType dimensionLength, const sd::LongType* tadShapeInfo,
                                          const sd::LongType* tadOffsets, const sd::LongType* yTadShapeInfo,
                                          const sd::LongType* yTadOffsets) {
   if (shape::isScalar(hZShapeInfo)) {
@@ -570,22 +465,20 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext* lc, int opNum, const
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (!sd::DataTypeUtils::isR(zType)) {
-    std::string errorMessage = "NativeOpExecutioner::execReduce3TAD requires Z operand to have floating point data type. Z data type: "
-                               + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   auto numBlocks = shape::length(hZShapeInfo);
   dim3 launchDims = getReduceDims(numBlocks);
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce3::Reduce3,
       ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo, dimension,
              dimensionLength, 1, allocationPointer, tadShapeInfo, tadOffsets, yTadShapeInfo, yTadOffsets),
-      SD_COMMON_TYPES, SD_FLOAT_TYPES);
+      SD_COMMON_TYPES, SD_COMMON_TYPES);
 
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) {
-    std::string errorMessage = "execReduce3TAD failed with error code: " + std::to_string(static_cast<int>(res));
-    THROW_EXCEPTION(errorMessage.c_str());
+  // Skip sync during CUDA graph capture — kernels are recorded, not executed.
+  if (!sd::tl_graphExecutionActive) {
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0) {
+      std::string errorMessage = "execReduce3TAD failed with error code: " + std::to_string(static_cast<int>(res));
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   }
 }

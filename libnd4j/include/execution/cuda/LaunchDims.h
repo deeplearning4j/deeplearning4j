@@ -598,6 +598,10 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_SCATTER_UPDATE getEnvVariable("BLOCK_SIZE_SCATTER_UPDATE",256)
 #define SHARED_MEM_SIZE_SCATTER_UPDATE getEnvVariable("SHARED_MEM_SIZE_SCATTER_UPDATE", 1024)
 
+#define GRID_SIZE_WHERE getEnvVariable("GRID_SIZE_WHERE", 512)
+#define BLOCK_SIZE_WHERE getEnvVariable("BLOCK_SIZE_WHERE", 256)
+#define SHARED_MEM_SIZE_WHERE getEnvVariable("SHARED_MEM_SIZE_WHERE", 1024)
+
 #define GRID_SIZE_SEGMENT_INDICES_VALIDATE getEnvVariable("GRID_SIZE_SEGMENT_INDICES_VALIDATE", 1)
 #define BLOCK_SIZE_SEGMENT_INDICES_VALIDATE getEnvVariable("BLOCK_SIZE_SEGMENT_INDICES_VALIDATE",1)
 #define SHARED_MEM_SIZE_SEGMENT_INDICES_VALIDATE getEnvVariable("SHARED_MEM_SIZE_SEGMENT_INDICES_VALIDATE", 128)
@@ -649,6 +653,14 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define GRID_SIZE_TOP_K_MOVER getEnvVariable("GRID_SIZE_TOP_K_MOVER", 256)
 #define BLOCK_SIZE_TOP_K_MOVER getEnvVariable("BLOCK_SIZE_TOP_K_MOVER",256)
 #define SHARED_MEM_SIZE_TOP_K_MOVER getEnvVariable("SHARED_MEM_SIZE_TOP_K_MOVER", 1024)
+
+#define GRID_SIZE_TOKEN_SAMPLE getEnvVariable("GRID_SIZE_TOKEN_SAMPLE", 256)
+#define BLOCK_SIZE_TOKEN_SAMPLE getEnvVariable("BLOCK_SIZE_TOKEN_SAMPLE", 256)
+#define SHARED_MEM_SIZE_TOKEN_SAMPLE getEnvVariable("SHARED_MEM_SIZE_TOKEN_SAMPLE", 4096)
+
+#define GRID_SIZE_KV_SCATTER getEnvVariable("GRID_SIZE_KV_SCATTER", 256)
+#define BLOCK_SIZE_KV_SCATTER getEnvVariable("BLOCK_SIZE_KV_SCATTER", 256)
+#define SHARED_MEM_SIZE_KV_SCATTER getEnvVariable("SHARED_MEM_SIZE_KV_SCATTER", 1024)
 
 
 #define GRID_SIZE_TOP_K_INDICES getEnvVariable("GRID_SIZE_TOP_K_INDICES", 256)
@@ -708,6 +720,10 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_DIGAMMA getEnvVariable("BLOCK_SIZE_DIGAMMA", 512)
 #define SHARED_MEM_SIZE_DIGAMMA getEnvVariable("SHARED_MEM_SIZE_DIGAMMA", 1024)
 
+#define GRID_SIZE_LGAMMA getEnvVariable("GRID_SIZE_LGAMMA", 256)
+#define BLOCK_SIZE_LGAMMA getEnvVariable("BLOCK_SIZE_LGAMMA", 512)
+#define SHARED_MEM_SIZE_LGAMMA getEnvVariable("SHARED_MEM_SIZE_LGAMMA", 1024)
+
 
 #define GRID_SIZE_FILL_TRI getEnvVariable("GRID_SIZE_FILL_TRI", 256)
 #define BLOCK_SIZE_FILL_TRI getEnvVariable("BLOCK_SIZE_FILL_TRI", 512)
@@ -735,12 +751,42 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_LUP getEnvVariable("BLOCK_SIZE_LUP", 256)
 #define SHARED_MEM_SIZE_LUP getEnvVariable("SHARED_MEM_SIZE_LUP", 1024)
 
-#define GRID_SIZE_SOFTMAX getEnvVariable("GRID_SIZE_SOFTMAX", 128)
+// Softmax launch dims - adaptive based on number of TADs and TAD length
+// Uses warp shuffle reductions so only needs inter-warp shared memory (32 warps max)
+#define GRID_SIZE_SOFTMAX getEnvVariable("GRID_SIZE_SOFTMAX", 256)
 #define BLOCK_SIZE_SOFTMAX getEnvVariable("BLOCK_SIZE_SOFTMAX", 256)
-#define SHARED_MEM_SIZE_SOFTMAX getEnvVariable("SHARED_MEM_SIZE_SOFTMAX", 1024)
+#define BLOCK_SIZE_SOFTMAX_LARGE getEnvVariable("BLOCK_SIZE_SOFTMAX_LARGE", 512)
+#define SHARED_MEM_SIZE_SOFTMAX getEnvVariable("SHARED_MEM_SIZE_SOFTMAX", 256)
 
+#define GRID_SIZE_FUSED_ROPE_CACHED getEnvVariable("GRID_SIZE_FUSED_ROPE_CACHED", 256)
+#define BLOCK_SIZE_FUSED_ROPE_CACHED getEnvVariable("BLOCK_SIZE_FUSED_ROPE_CACHED", 256)
+#define SHARED_MEM_SIZE_FUSED_ROPE_CACHED getEnvVariable("SHARED_MEM_SIZE_FUSED_ROPE_CACHED", 0)
 
-dim3 getSoftmaxDims(int numTads);
+#define GRID_SIZE_DUAL_ROPE getEnvVariable("GRID_SIZE_DUAL_ROPE", 256)
+#define BLOCK_SIZE_DUAL_ROPE getEnvVariable("BLOCK_SIZE_DUAL_ROPE", 256)
+#define SHARED_MEM_SIZE_DUAL_ROPE getEnvVariable("SHARED_MEM_SIZE_DUAL_ROPE", 0)
+
+#define GRID_SIZE_SQUARED_RELU getEnvVariable("GRID_SIZE_SQUARED_RELU", 256)
+#define BLOCK_SIZE_SQUARED_RELU getEnvVariable("BLOCK_SIZE_SQUARED_RELU", 256)
+#define SHARED_MEM_SIZE_SQUARED_RELU getEnvVariable("SHARED_MEM_SIZE_SQUARED_RELU", 0)
+
+#define GRID_SIZE_MAMBA2_SSM getEnvVariable("GRID_SIZE_MAMBA2_SSM", 256)
+#define BLOCK_SIZE_MAMBA2_SSM getEnvVariable("BLOCK_SIZE_MAMBA2_SSM", 256)
+#define SHARED_MEM_SIZE_MAMBA2_SSM getEnvVariable("SHARED_MEM_SIZE_MAMBA2_SSM", 0)
+
+#define GRID_SIZE_FUSED_MROPE getEnvVariable("GRID_SIZE_FUSED_MROPE", 256)
+#define BLOCK_SIZE_FUSED_MROPE getEnvVariable("BLOCK_SIZE_FUSED_MROPE", 256)
+#define SHARED_MEM_SIZE_FUSED_MROPE getEnvVariable("SHARED_MEM_SIZE_FUSED_MROPE", 0)
+
+#define GRID_SIZE_VISION_EMBEDDING_MERGE getEnvVariable("GRID_SIZE_VISION_EMBEDDING_MERGE", 256)
+#define BLOCK_SIZE_VISION_EMBEDDING_MERGE getEnvVariable("BLOCK_SIZE_VISION_EMBEDDING_MERGE", 256)
+#define SHARED_MEM_SIZE_VISION_EMBEDDING_MERGE getEnvVariable("SHARED_MEM_SIZE_VISION_EMBEDDING_MERGE", 0)
+
+#define GRID_SIZE_PER_LAYER_EMBEDDING getEnvVariable("GRID_SIZE_PER_LAYER_EMBEDDING", 256)
+#define BLOCK_SIZE_PER_LAYER_EMBEDDING getEnvVariable("BLOCK_SIZE_PER_LAYER_EMBEDDING", 256)
+#define SHARED_MEM_SIZE_PER_LAYER_EMBEDDING getEnvVariable("SHARED_MEM_SIZE_PER_LAYER_EMBEDDING", 0)
+
+dim3 getSoftmaxDims(sd::LongType numTads, sd::LongType tadLen);
 
 dim3 getLupDims(int batchSize);
 
@@ -863,5 +909,31 @@ dim3 mirrorPadTad(int length,int rank);
 
 
 dim3 digammaDims(int length);
+
+dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int dtypeSize);
+
+// Shared KV attention (Gemma 4 pattern): one block per (batch, head, query_pos)
+#define GRID_SIZE_SHARED_KV_ATTENTION getEnvVariable("GRID_SIZE_SHARED_KV_ATTENTION", 256)
+#define BLOCK_SIZE_SHARED_KV_ATTENTION getEnvVariable("BLOCK_SIZE_SHARED_KV_ATTENTION", 128)
+#define SHARED_MEM_SIZE_SHARED_KV_ATTENTION getEnvVariable("SHARED_MEM_SIZE_SHARED_KV_ATTENTION", 8192)
+
+// MoE with shared experts (Granite 4.0 pattern): one block per token
+#define GRID_SIZE_MOE_SHARED_EXPERTS getEnvVariable("GRID_SIZE_MOE_SHARED_EXPERTS", 256)
+#define BLOCK_SIZE_MOE_SHARED_EXPERTS getEnvVariable("BLOCK_SIZE_MOE_SHARED_EXPERTS", 128)
+#define SHARED_MEM_SIZE_MOE_SHARED_EXPERTS getEnvVariable("SHARED_MEM_SIZE_MOE_SHARED_EXPERTS", 8192)
+
+// Fused RMSNorm + Linear: grid covers N output columns, block threads do K reduction + GEMV
+// Shared memory holds K normalized floats + warp reduction scratch.
+// Default 33792 = 8192 * 4 + 256 bytes: covers K up to 8192 (hidden_dim).
+#define GRID_SIZE_RMS_NORM_LINEAR getEnvVariable("GRID_SIZE_RMS_NORM_LINEAR", 256)
+#define BLOCK_SIZE_RMS_NORM_LINEAR getEnvVariable("BLOCK_SIZE_RMS_NORM_LINEAR", 256)
+#define SHARED_MEM_SIZE_RMS_NORM_LINEAR getEnvVariable("SHARED_MEM_SIZE_RMS_NORM_LINEAR", 33792)
+
+// Fused GQA decode attention: one block per (batch, qHead) pair.
+// Block threads tile over KV positions. Shared memory holds scores tile + output accumulator.
+// Default shared = (64 + 64) * 4 + 256 = 768 bytes (tile + dim accum + warp scratch).
+#define GRID_SIZE_FUSED_GQA_DECODE getEnvVariable("GRID_SIZE_FUSED_GQA_DECODE", 256)
+#define BLOCK_SIZE_FUSED_GQA_DECODE getEnvVariable("BLOCK_SIZE_FUSED_GQA_DECODE", 256)
+#define SHARED_MEM_SIZE_FUSED_GQA_DECODE getEnvVariable("SHARED_MEM_SIZE_FUSED_GQA_DECODE", 8192)
 
 #endif //LIBND4J_LAUNCHCONTEXT_H

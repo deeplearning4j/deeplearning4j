@@ -20,12 +20,16 @@
 //  @author raver119@gmail.com
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
-#include <exceptions/cuda_exception.h>
 #include <execution/LaunchContext.h>
+#include <string>
+#include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>
+#include <helpers/StringUtils.h>
+#include <system/env_functions.h>
 #include <loops/legacy_ops.h>
 #include <loops/reduce_long.h>
 #include <loops/scalar.h>
+#include <loops/pairwise_instantiations.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -61,7 +65,7 @@ SD_DEVICE SD_INLINE void reduceScalarGeneric(
     void* z,
     const sd::LongType* zShapeInfo,
     sd::LongType* dimension,
-    long long int dimensionLength,
+    sd::LongType dimensionLength,
     void* reductionBuffer,
     const sd::LongType* tadOnlyShapeInfo) {
 
@@ -366,8 +370,8 @@ SD_HOST  SD_INLINE void ReduceLongFunction<X, Z>::intermediate(
         cudaMemcpyHostToDevice,
         *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceLongFunction<X,Z>::intermediate: failed to copy temporary scalar", res);
+      std::string msg = "ReduceLongFunction<X,Z>::intermediate: failed to copy temporary scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
 
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
@@ -424,9 +428,8 @@ SD_HOST  SD_INLINE void ReduceLongFunction<X, Z>::intermediateScalar(
     auto res = cudaMemcpyAsync(z, &startingVal, sizeof(Z),
                                cudaMemcpyHostToDevice, *stream);
     if (res != 0) {
-      throw sd::cuda_exception::build(
-          "ReduceLongFunction<X,Z>::intermediateScalar: failed to copy resulting scalar",
-          res);
+      std::string msg = "ReduceLongFunction<X,Z>::intermediateScalar: failed to copy resulting scalar; Error code: [" + std::to_string(res) + "]";
+      THROW_EXCEPTION(msg.c_str());
     }
   } else {
     simpleScalar<X, Z, OpType>
@@ -445,8 +448,8 @@ SD_HOST  SD_INLINE void ReduceLongFunction<X, Z>::intermediateScalar(
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST SD_INLINE void ReduceLongFunction<X, Y>::execReduceScalar(
+template <typename X, typename Z>
+SD_HOST SD_INLINE void ReduceLongFunction<X, Z>::execReduceScalar(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
@@ -472,8 +475,8 @@ SD_HOST SD_INLINE void ReduceLongFunction<X, Y>::execReduceScalar(
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-SD_HOST SD_INLINE void ReduceLongFunction<X, Y>::execReduce(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
+template <typename X, typename Z>
+SD_HOST SD_INLINE void ReduceLongFunction<X, Z>::execReduce(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
                                                     sd::LongType *dXShapeInfo,  sd::LongType *hXShapeInfo, void *extraParams,
                                                     void *vreductionBuffer, void *vz,  sd::LongType *dZShapeInfo,
                                                     sd::LongType *hZShapeInfo,  sd::LongType *dims) {
@@ -505,48 +508,14 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
   }
 }
 
-
-ITERATE_COMBINATIONS(
-    (SD_COMMON_TYPES),
-    (SD_LONG_TYPES),
-    INSTANT_PROCESS_COMBINATION,
-    functions::reduce::ReduceLongFunction,
-    ::execReduce(
-        dim3 launchDims,
-        cudaStream_t* stream,
-        int opNum,
-        const void* vx,
-        sd::LongType* dXShapeInfo,
-        sd::LongType* hXShapeInfo,
-        void* extraParams,
-        void* vreductionBuffer,
-        void* vz,
-        sd::LongType* dZShapeInfo,
-        sd::LongType* hZShapeInfo,
-        sd::LongType* dims);
-);
-
-ITERATE_COMBINATIONS(
-    (SD_COMMON_TYPES),
-    (SD_LONG_TYPES),
-    INSTANT_PROCESS_COMBINATION,
-    functions::reduce::ReduceLongFunction,
-    ::execReduceScalar(
-        dim3 launchDims,
-        cudaStream_t* stream,
-        const int opNum,
-        const void* x,
-        sd::LongType* xShapeInfo,
-        sd::LongType* hXShapeInfo,
-        void* extraParams,
-        void* z,
-        sd::LongType* zShapeInfo,
-        sd::LongType* hZShapeInfo,
-        sd::LongType* dimension,
-        sd::LongType dimensionLength,
-        void* reductionBuffer,
-        sd::LongType* tadOnlyShapeInfo);
-);
+// Explicit template instantiations for ReduceLongFunction
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+BUILD_DOUBLE_TEMPLATE(class ReduceLongFunction, , SD_SPLIT_TYPE_LIST, SD_LONG_TYPES)
+#endif
+#else
+BUILD_DOUBLE_TEMPLATE(class ReduceLongFunction, , SD_COMMON_TYPES, SD_LONG_TYPES)
+#endif
 
 }  // namespace reduce
 }  // namespace functions

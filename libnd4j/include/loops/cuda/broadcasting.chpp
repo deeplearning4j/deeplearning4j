@@ -24,13 +24,8 @@
 #include <loops/broadcasting.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
-#include <system/Environment.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <string>
-#include <stdexcept>
-#include <helpers/StringUtils.h>
-#include <ops/specials_cuda.h>
 #include <loops/pairwise_instantiations_single.h>
 
 using namespace simdOps;
@@ -131,6 +126,20 @@ SD_HOST void Broadcast<X,Y,Z>::intermediateBroadcast(
           z, zShapeInfo);
 }
 
+// MEMORY OPTIMIZATION: Use BROADCAST_OP_GROUP to compile only a subset of operations
+// This reduces per-file memory usage by ~66% (31 ops -> ~10 ops per file)
+// Define BROADCAST_OP_GROUP=1, 2, or 3 to compile only that group
+// If not defined, compile all ops (backward compatible)
+#if defined(BROADCAST_OP_GROUP) && BROADCAST_OP_GROUP == 1
+  #define BROADCAST_OPS_ACTIVE BROADCAST_OPS_PART1
+#elif defined(BROADCAST_OP_GROUP) && BROADCAST_OP_GROUP == 2
+  #define BROADCAST_OPS_ACTIVE BROADCAST_OPS_PART2
+#elif defined(BROADCAST_OP_GROUP) && BROADCAST_OP_GROUP == 3
+  #define BROADCAST_OPS_ACTIVE BROADCAST_OPS_PART3
+#else
+  #define BROADCAST_OPS_ACTIVE BROADCAST_OPS
+#endif
+
 template<typename X, typename Y, typename Z>
 SD_HOST void Broadcast<X,Y,Z>::execBroadcast(
     dim3 launchDims, cudaStream_t* stream,
@@ -151,7 +160,7 @@ SD_HOST void Broadcast<X,Y,Z>::execBroadcast(
              dimension, dimensionLength,
              tadOnlyShapeInfo, tadOffsets,
              tadOnlyShapeInfoZ, tadOffsetsZ),
-      OPS_A(BROADCAST_OPS))
+      OPS_A(BROADCAST_OPS_ACTIVE))
 
   sd::DebugHelper::checkErrorCode(stream, "execBroadcast(...) failed");
 }
@@ -170,7 +179,7 @@ SD_HOST void Broadcast<X,Y,Z>::execBroadcast(
              x, xShapeInfo,
              y, yShapeInfo,
              z, zShapeInfo),
-      OPS_A(BROADCAST_OPS))
+      OPS_A(BROADCAST_OPS_ACTIVE))
 
   sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcast(...) failed");
 }
@@ -216,7 +225,7 @@ SD_HOST void Broadcast<X,Y,Z>::execInverseBroadcast(
              dimension, dimensionLength,
              tadOnlyShapeInfo, tadOffsets,
              tadOnlyShapeInfoZ, tadOffsetsZ),
-      OPS_A(BROADCAST_OPS))
+      OPS_A(BROADCAST_OPS_ACTIVE))
 
   sd::DebugHelper::checkErrorCode(stream, "execInverseBroadcast(...) failed");
 }
