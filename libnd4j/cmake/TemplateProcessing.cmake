@@ -104,8 +104,21 @@ else()
     if(NOT DEFINED CHUNK_MAX_INSTANTIATIONS)
         set(CHUNK_MAX_INSTANTIATIONS "10" CACHE STRING "Maximum template instantiations per chunk file")
     endif()
-    # Force chunk size to 10 for CUDA builds - 30 templates = ~8min, 10 = ~2.5min per file
-    set(MULTI_PASS_CHUNK_SIZE "10" CACHE STRING "Chunk size for direct instantiation files" FORCE)
+    # MULTI_PASS_CHUNK_SIZE is the ACTUAL chunk-size knob for the selective-rendering
+    # direct chunker (create_direct_instantiation_file_impl flushes a chunk once it
+    # reaches this many template instantiations) -- NOT CHUNK_TARGET_INSTANTIATIONS.
+    # 30/file = ~8 min, 10 = ~2.5 min. Smaller = more, faster, more-parallel files.
+    # Core-aware: high-core machines drop the size so the heavy triple-template ops
+    # (scalar/broadcast, ~7.5 MB / 4 MB chunks) fan into enough TUs to keep all cores
+    # busy instead of stalling on a few big serial chunks. Floor keeps file count sane.
+    cmake_host_system_information(RESULT _sd_mp_cores QUERY NUMBER_OF_LOGICAL_CORES)
+    if(_sd_mp_cores GREATER_EQUAL 24)
+        set(MULTI_PASS_CHUNK_SIZE "3" CACHE STRING "Chunk size for direct instantiation files" FORCE)
+    elseif(_sd_mp_cores GREATER_EQUAL 12)
+        set(MULTI_PASS_CHUNK_SIZE "6" CACHE STRING "Chunk size for direct instantiation files" FORCE)
+    else()
+        set(MULTI_PASS_CHUNK_SIZE "10" CACHE STRING "Chunk size for direct instantiation files" FORCE)
+    endif()
 endif()
 
 # Enable selective rendering diagnostics in debug builds
