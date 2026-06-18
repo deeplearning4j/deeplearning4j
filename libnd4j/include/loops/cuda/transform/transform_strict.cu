@@ -132,6 +132,12 @@ SD_HOST void TransformStrict<X>::intermediateShaped(dim3 launchDims, cudaStream_
  sd::DebugHelper::checkErrorCode(stream, "transformStrict(...) failed");
 }
 
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+BUILD_SINGLE_TEMPLATE( class TransformStrict, , SD_SPLIT_TYPE_LIST);
+#endif
+#else
 BUILD_SINGLE_TEMPLATE( class TransformStrict, , SD_COMMON_TYPES);
+#endif
 }  // namespace transform
 }  // namespace functions

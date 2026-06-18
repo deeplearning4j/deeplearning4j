@@ -357,7 +357,13 @@ SD_HOST void ScalarBoolTransform<X, Z>::executeCudaAlongDimension(
      SCALAR_BOOL_OPS);
 }
 
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+BUILD_DOUBLE_TEMPLATE( class ScalarBoolTransform, , SD_SPLIT_TYPE_LIST, SD_BOOL_TYPES);
+#endif
+#else
 BUILD_DOUBLE_TEMPLATE( class ScalarBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+#endif
 
 }  // namespace scalar
 }  // namespace functions

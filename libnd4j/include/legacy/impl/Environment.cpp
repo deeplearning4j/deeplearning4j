@@ -25,6 +25,7 @@
 
 #include <system/Environment.h>
 #include <memory/MemoryCounter.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <mutex>
 
 // Lifecycle tracker includes for enabling/disabling via Environment setters
@@ -42,13 +43,7 @@ Environment::Environment() {
   // Order matters: core first (threading), then CUDA (device init), then the rest.
   _core.initFromEnvironment();
 
-#ifdef SD_CUDA
-  try {
-    _cuda.initFromEnvironment();
-  } catch (...) {
-    printf("Environment::Environment: WARNING - CUDA environment initialization failed\n");
-  }
-#endif
+  _cuda.initFromEnvironment();
 
   // Sync BLAS version from CUDA subsystem to legacy public fields
   _blasMajorVersion = _cuda.blasMajorVersion();
@@ -78,11 +73,7 @@ Environment &Environment::getInstance() {
 }
 
 bool Environment::isCPU() {
-#ifdef SD_CUDA
-  return false;
-#else
-  return true;
-#endif
+  return !sd::graph::dspIsCudaBuild();
 }
 
 // --- Memory limits/counters (delegate to MemoryCounter singleton) ---

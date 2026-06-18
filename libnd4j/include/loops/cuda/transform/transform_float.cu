@@ -195,7 +195,13 @@ SD_HOST void TransformFloat<X, Z>::intermediateShaped(
  sd::DebugHelper::checkErrorCode(stream, "transformFloat(...) cached kernel failed");
 }
 
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+BUILD_DOUBLE_TEMPLATE( class TransformFloat, , SD_SPLIT_TYPE_LIST, SD_COMMON_TYPES);
+#endif
+#else
 BUILD_DOUBLE_TEMPLATE( class TransformFloat, , SD_COMMON_TYPES, SD_COMMON_TYPES);
+#endif
 
 }  // namespace transform
 }  // namespace functions

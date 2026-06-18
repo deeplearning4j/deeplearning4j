@@ -237,14 +237,24 @@ SD_HOST void oesTadGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, 
   sd::DebugHelper::checkErrorCode(stream, "execOesTadKernelKey failed");
 }
 
+#ifdef SD_SPLIT_TYPE_INDEX
+#define SD_COMMON_TYPES_FIRST SD_SPLIT_TYPE_LIST
+#else
+#define SD_COMMON_TYPES_FIRST SD_COMMON_TYPES
+#endif
+#if !defined(SD_SPLIT_TYPE_INDEX) || (COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX)
 BUILD_SINGLE_TEMPLATE( void oesTadGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
                        sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType const *tadShapeInfo,
                        sd::LongType const *tadOffsets, bool descending),
-                      SD_COMMON_TYPES);
+                      SD_COMMON_TYPES_FIRST);
 
 BUILD_DOUBLE_TEMPLATE( void oesTadGenericKey,
                       (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, void *vy,
                        sd::LongType const *yShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                        sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending),
-                      SD_COMMON_TYPES, SD_COMMON_TYPES);
+                      SD_COMMON_TYPES_FIRST, SD_COMMON_TYPES);
+#endif
+#ifdef SD_COMMON_TYPES_FIRST
+#undef SD_COMMON_TYPES_FIRST
+#endif

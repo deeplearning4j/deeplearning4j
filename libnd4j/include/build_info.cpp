@@ -569,7 +569,7 @@ const char *buildInfo() {
   ret += "CUDA: " STRINGIZE(__CUDACC_VER_MAJOR__) "." STRINGIZE(__CUDACC_VER_MINOR__) "." STRINGIZE(__CUDACC_VER_BUILD__) "\n";
 #endif
 
-#if defined(SD_CUDA)
+#if defined(__CUDACC_VER_MAJOR__)
   ret += "CUDA: " STRINGIZE(__CUDACC_VER_MAJOR__) "." STRINGIZE(__CUDACC_VER_MINOR__) "." STRINGIZE(__CUDACC_VER_BUILD__) "\n";
 #endif
 
