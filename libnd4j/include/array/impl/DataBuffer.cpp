@@ -314,7 +314,6 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   _specialDeviceId.store(other._specialDeviceId.load());  // Also copy special device ID for multi-GPU
 
   copyCounters(other);
-#if defined(SD_CUDA)
   _writeEvent = other._writeEvent;
   _writeEventRecorded.store(other._writeEventRecorded.load(std::memory_order_acquire),
                             std::memory_order_release);
@@ -323,7 +322,6 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   other._writeEvent = nullptr;
   other._writeEventRecorded.store(false, std::memory_order_release);
   other._writeEventDeviceId.store(-1, std::memory_order_release);
-#endif
 #if defined(SD_GCC_FUNCTRACE)
   allocationStackTracePrimary = other.allocationStackTracePrimary;
   allocationStackTraceSpecial = other.allocationStackTraceSpecial;
@@ -416,7 +414,6 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   _specialDeviceId.store(other._specialDeviceId.load());  // Also copy special device ID for multi-GPU
 
   copyCounters(other);
-#if defined(SD_CUDA)
   _writeEvent = other._writeEvent;
   _writeEventRecorded.store(other._writeEventRecorded.load(std::memory_order_acquire),
                             std::memory_order_release);
@@ -425,7 +422,6 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   other._writeEvent = nullptr;
   other._writeEventRecorded.store(false, std::memory_order_release);
   other._writeEventDeviceId.store(-1, std::memory_order_release);
-#endif
 
 #if defined(SD_GCC_FUNCTRACE)
   allocationStackTracePrimary = other.allocationStackTracePrimary;
@@ -918,11 +914,9 @@ void DataBuffer::close() {
 void DataBuffer::setDeviceId(int deviceId) { _deviceId = deviceId; }
 
 void DataBuffer::resetCounters() {
-#ifdef SD_CUDA
   _writePrimary.store(0);
   _writeSpecial.store(0);
   _readPrimary.store(0);
   _readSpecial.store(0);
-#endif
 }
 }  // namespace sd

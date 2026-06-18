@@ -21,6 +21,7 @@
 //
 #include "../TadPack.h"
 
+#include <graph/gpu/DspCudaDispatch.h>
 #include <helpers/shape.h>
 #include <system/Environment.h>
 #include <sstream>
@@ -102,13 +103,14 @@ TadPack::~TadPack() {
   // - CUDA: TadCalculator creates NEW shape buffers via CudaShapeBufferCreator (not cached),
   //   so TadPack owns and must delete them
   // - CPU: Shape buffers come from ConstantShapeHelper cache, so TadPack must NOT delete them
-#ifdef SD_CUDA
-  if (_tadShape != nullptr) {
+  // On CUDA, TadCalculator creates NEW shape buffers via CudaShapeBufferCreator (not cached),
+  // so TadPack owns and must delete them.
+  // On CPU, shape buffers come from ConstantShapeHelper cache, so TadPack must NOT delete them.
+  // dspIsCudaBuild() returns true/false at link time — no #ifdef needed.
+  if (sd::graph::dspIsCudaBuild() && _tadShape != nullptr) {
     delete _tadShape;
     _tadShape = nullptr;
   }
-#endif
-  // On CPU, _tadShape comes from ConstantShapeHelper cache - DON'T delete
 }
 
 LongType* TadPack::primaryShapeInfo() {

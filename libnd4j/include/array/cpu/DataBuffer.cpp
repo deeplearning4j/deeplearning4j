@@ -131,13 +131,7 @@ void DataBuffer::printBufferDebug(const char* msg, sd::LongType offset, sd::Long
     sd_printf("Device buffer: nullptr\n", 0);
   }
 
-#if defined(SD_CUDA)
-  // Print sync state counters
-  sd_printf("Sync state: _counter=%lld, _writePrimary=%lld, _writeSpecial=%lld, _readPrimary=%lld, _readSpecial=%lld\n",
-            (long long)_counter.load(), (long long)_writePrimary.load(), (long long)_writeSpecial.load(),
-            (long long)_readPrimary.load(), (long long)_readSpecial.load());
-  sd_printf("isPrimaryActual=%d, isSpecialActual=%d\n", isPrimaryActual(), isSpecialActual());
-#endif
+  // Sync state counters are only meaningful on CUDA builds (printed in cuda/DataBuffer.cu)
 }
 
 // Helper template to print host buffer content
@@ -438,4 +432,17 @@ void* DataBuffer::specialAtOffset(const LongType offset) {
 
 #define SPECIALOFFSET(T) template void* DataBuffer::specialAtOffset<GET_SECOND(T)>(const LongType offset);
 ITERATE_LIST((SD_COMMON_TYPES),SPECIALOFFSET)
+
+void DataBuffer::waitForSpecialWriteEvent(void* stream) const {
+  // No write events on CPU
+}
+
+void DataBuffer::recordSpecialWriteEvent(void* stream) const {
+  // No write events on CPU
+}
+
+void DataBuffer::clearSpecialWriteEvent() const {
+  // No write events on CPU
+}
+
 }  // namespace sd

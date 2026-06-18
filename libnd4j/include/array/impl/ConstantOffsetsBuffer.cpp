@@ -59,11 +59,8 @@ LongType *ConstantOffsetsBuffer::special() {
 }
 
 LongType *ConstantOffsetsBuffer::platform() {
-#ifdef SD_CUDA
-  return special();
-#else
-  return primary();
-#endif  // CUDABLAS
+  auto* s = special();
+  return s != nullptr ? s : primary();
 }
 
 }  // namespace sd
