@@ -340,6 +340,29 @@ else()
         set(MULTI_PASS_CHUNK_SIZE "60" CACHE STRING "Optimized direct chunks" FORCE)
         message(STATUS "💾 Very high memory detected: Using large chunks (12/60)")
     endif()
+
+    # Core-aware reduction (normal builds only). The RAM tiers above pick the
+    # LARGEST chunk RAM allows — but big chunks become serial compile long-poles on
+    # high-core machines (a triple-template chunk is ~7.5 MB / 100+ s and cannot
+    # parallelize). Scale the target DOWN as cores rise so heavy ops fan into enough
+    # TUs to keep all cores busy. The RAM tier stays the ceiling (never increased)
+    # and a floor of 4 avoids excessive small-file / linking overhead. Low-core
+    # machines keep the RAM tier value (more files there is pure overhead).
+    cmake_host_system_information(RESULT _sd_cores QUERY NUMBER_OF_LOGICAL_CORES)
+    if(_sd_cores GREATER_EQUAL 24)
+        math(EXPR _sd_core_chunk "${CHUNK_TARGET_INSTANTIATIONS} / 2")
+    elseif(_sd_cores GREATER_EQUAL 12)
+        math(EXPR _sd_core_chunk "(${CHUNK_TARGET_INSTANTIATIONS} * 3) / 4")
+    else()
+        set(_sd_core_chunk "${CHUNK_TARGET_INSTANTIATIONS}")
+    endif()
+    if(_sd_core_chunk LESS 4)
+        set(_sd_core_chunk 4)
+    endif()
+    if(_sd_core_chunk LESS CHUNK_TARGET_INSTANTIATIONS)
+        message(STATUS "🧩 Core-aware chunking: ${_sd_cores} cores -> CHUNK_TARGET ${CHUNK_TARGET_INSTANTIATIONS} -> ${_sd_core_chunk}")
+        set(CHUNK_TARGET_INSTANTIATIONS "${_sd_core_chunk}" CACHE STRING "Core-aware chunk target" FORCE)
+    endif()
 endif()
 
 set(CHUNK_MAX_INSTANTIATIONS "3" CACHE STRING "Maximum template instantiations per chunk file")

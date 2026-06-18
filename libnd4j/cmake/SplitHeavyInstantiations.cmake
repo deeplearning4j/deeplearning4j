@@ -46,6 +46,7 @@ function(split_heavy_op src_list_var op_basename op_include max_idx)
     list(FILTER ${src_list_var} EXCLUDE REGEX "/${_mono_re}$")
 
     get_filename_component(_stem "${op_basename}" NAME_WE)
+    get_filename_component(_ext "${op_basename}" EXT)   # .cu (CUDA) or .cpp (CPU); generated TUs match
     set(_gen_dir "${CMAKE_BINARY_DIR}/split_instantiations")
     file(MAKE_DIRECTORY "${_gen_dir}")
 
@@ -53,7 +54,7 @@ function(split_heavy_op src_list_var op_basename op_include max_idx)
     foreach(_idx RANGE 0 ${max_idx})
         set(SD_SPLIT_IDX "${_idx}")
         set(OP_INCLUDE "${op_include}")
-        set(_out "${_gen_dir}/${_stem}_${_idx}.cu")
+        set(_out "${_gen_dir}/${_stem}_${_idx}${_ext}")
         configure_file("${_SPLIT_GENERIC_TEMPLATE}" "${_out}" @ONLY)
         list(APPEND _generated "${_out}")
     endforeach()
