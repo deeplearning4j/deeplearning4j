@@ -1682,6 +1682,23 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   // the old default stream pointer.
   if (ownedStream_ != nullptr) {
     stream = reinterpret_cast<void*>(ownedStream_);
+  } else {
+    // ownedStream_ creation failed above (e.g. a stale CUDA error tripped
+    // cudaStreamCreateWithFlags). Do NOT fall through to dereferencing the
+    // caller-passed `stream`: the Java executor CACHES that pointer across
+    // executions (DynamicShapePlanExecutor.cachedExecStream). It can dangle —
+    // pointing at a previously-destroyed ownedStream_ (platformFreePlanResources
+    // does `delete ownedStream_`) or into a thread-local ContextBuffers that was
+    // since released. Dereferencing it yields a dead stream, and every pool
+    // alloc/free + kernel stream-sync then fails with CUDA 201
+    // (cudaErrorDeviceUninitialized). Resolve the LIVE current-thread stream
+    // instead — getCudaStream() always returns a stream valid for this thread.
+    auto* liveStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    stream = (liveStreamPtr != nullptr) ? reinterpret_cast<void*>(liveStreamPtr) : nullptr;
+    DSP_DIAG(EXECUTE,
+             "platformBeginExecution: ownedStream_ unavailable — using live thread-local "
+             "stream=%p instead of caller-cached pointer (avoids stale-stream CUDA 201)",
+             stream);
   }
 
   // Wait if another thread is capturing a CUDA graph on this device.

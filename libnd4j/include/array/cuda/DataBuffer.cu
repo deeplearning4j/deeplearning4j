@@ -1797,65 +1797,11 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     if (attrRes != cudaSuccess) cudaGetLastError();  // Clear attribute query error
     if (isHostPtr) {
       memset(special(), 0, getLenInBytes());
-    } else if (static_cast<int>(res) == 201 || static_cast<int>(res) == 200 ||
-               res == cudaErrorInvalidResourceHandle) {
-      // Error 201 = cudaErrorDeviceUninitialized (invalid device context)
-      // Error 200 = cudaErrorInvalidDevice
-      // cudaErrorInvalidResourceHandle = stale stream handle
-      //
-      // The CUDA primary context on this device has become invalid. This happens
-      // when a stale async error corrupts the context, or when thread-local state
-      // loses its CUDA context association. CudaMemoryPool::allocate handles this
-      // via allocateFailover(), but cudaMemsetAsync had no equivalent recovery.
-      //
-      // Recovery: re-establish the context via cudaSetDevice, get a fresh stream,
-      // and retry. If that still fails, fall back to synchronous cudaMemset.
-      sd_printf("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed with %s (%d) on device %d — "
-                "attempting context recovery\n",
-                cudaGetErrorString(res), static_cast<int>(res), bufferDeviceId);
-      cudaGetLastError();  // Clear sticky error
-
-      // Re-establish CUDA primary context
-      cudaError_t setDevErr = cudaSetDevice(bufferDeviceId);
-      if (setDevErr != cudaSuccess) {
-        cudaGetLastError();
-      }
-
-      // Get a fresh stream after context recovery
-      cudaStream_t freshStream = captureSafeStreamOrDefault();
-      if (freshStream == nullptr) {
-        freshStream = cudaStreamPerThread;
-      }
-
-      // Retry cudaMemsetAsync with recovered context
-      cudaError_t retryRes = cudaMemsetAsync(special(), 0, getLenInBytes(), freshStream);
-      if (retryRes == cudaSuccess) {
-        sd_debug("DataBuffer::setToZeroBuffers: context recovery succeeded on device %d\n",
-                 bufferDeviceId);
-        stream = freshStream;
-        res = cudaSuccess;
-      } else {
-        cudaGetLastError();  // Clear retry error
-        // Last resort: synchronous cudaMemset (uses default stream, no explicit stream needed)
-        cudaError_t syncRes = cudaMemset(special(), 0, getLenInBytes());
-        if (syncRes == cudaSuccess) {
-          sd_debug("DataBuffer::setToZeroBuffers: synchronous cudaMemset fallback succeeded "
-                   "on device %d\n", bufferDeviceId);
-          res = cudaSuccess;
-        } else {
-          cudaGetLastError();  // Clear sync error
-          sd_printf("DataBuffer::setToZeroBuffers: all recovery attempts failed on device %d "
-                    "(async=%s(%d), sync=%s(%d))\n",
-                    bufferDeviceId,
-                    cudaGetErrorString(retryRes), static_cast<int>(retryRes),
-                    cudaGetErrorString(syncRes), static_cast<int>(syncRes));
-          if (switchedDevice) {
-            cudaSetDevice(currentDeviceId);
-          }
-          throwCudaStatus("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed", res);
-        }
-      }
     } else {
+      // No silent "context recovery" for error 201/200/InvalidResourceHandle here.
+      // A dead-stream 201 is a real bug (stale/cross-thread execution stream) and is
+      // fixed at the root in platformBeginExecution / DynamicShapePlanExecutor. Fail
+      // loud so any remaining stream-lifecycle defect surfaces instead of being masked.
       if (switchedDevice) {
         cudaSetDevice(currentDeviceId);
       }

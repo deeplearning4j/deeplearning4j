@@ -3298,35 +3298,31 @@ public class DynamicShapePlanExecutor implements Closeable {
                 nativeOps.setGraphContextOutputArray(opContext, i, opaqueOut);
             }
 
-            // Get execution stream — use the plan's own CUDA stream to avoid
-            // cross-thread capture poisoning (each plan creates its own stream
-            // in platformBeginExecution so captures don't conflict with other
-            // threads' syncToDevice on the shared default stream).
-            Pointer execStream;
-            if (execStreamCached) {
-                execStream = cachedExecStream;
-            } else {
-                execStream = null;
-                try {
-                    // Prefer plan-owned stream (created after first execution)
-                    if (nativePlanHandle != null) {
-                        execStream = nativeOps.dspGetExecutionStream(nativePlanHandle);
-                    }
-                    // Fallback to LaunchContext default before plan has executed
-                    if (execStream == null) {
-                        OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-                        if (lc != null) {
-                            execStream = nativeOps.lcExecutionStream(lc);
-                        }
-                    }
-                    if (execStream != null) execStream.retainReference();
-                } catch (Exception e) {
-                    // CPU backend
+            // Get execution stream — resolve it FRESH every execution; never reuse a
+            // cached raw CUDA stream pointer. The plan-owned stream (dspGetExecutionStream)
+            // is destroyed+recreated across recompiles (platformFreePlanResources deletes
+            // it), and the LaunchContext fallback stream is thread-local — a cached pointer
+            // to either can dangle. When that stale pointer is later handed to
+            // dbFreeBuffersOnStream, cudaFreeAsync fails with CUDA 201 (invalid device
+            // context). Re-resolving is a trivial JNI getter relative to a decode step.
+            // (Native platformBeginExecution also no longer trusts this pointer for the
+            // execution path — it uses its own ownedStream_ / live thread-local stream.)
+            Pointer execStream = null;
+            try {
+                // Prefer plan-owned stream (created after first execution)
+                if (nativePlanHandle != null) {
+                    execStream = nativeOps.dspGetExecutionStream(nativePlanHandle);
                 }
-                if (shapesFrozen) {
-                    cachedExecStream = execStream;
-                    execStreamCached = true;
+                // Fallback to LaunchContext default before plan has executed
+                if (execStream == null) {
+                    OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
+                    if (lc != null) {
+                        execStream = nativeOps.lcExecutionStream(lc);
+                    }
                 }
+                if (execStream != null) execStream.retainReference();
+            } catch (Exception e) {
+                // CPU backend
             }
 
             // Clear native shape caches before each execution — unless shapes are frozen.
