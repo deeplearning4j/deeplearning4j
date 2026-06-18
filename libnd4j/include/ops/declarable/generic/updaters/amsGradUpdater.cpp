@@ -25,7 +25,7 @@
 #include <array/NDArray.h>
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/updaters.h>
 #include <ops/declarable/headers/updaters.h>
 #if NOT_EXCLUDED(OP_ams_grad_updater)
 namespace sd {
@@ -42,7 +42,6 @@ CONFIGURABLE_OP_IMPL(ams_grad_updater, 4, 4, true, 0, 0) {
   auto stateM = OUTPUT_VARIABLE(2);
   auto stateH = OUTPUT_VARIABLE(3);
 
-  // todo maybe we need an error like on Java side
   if (gradient->isEmpty() || initStateV->isEmpty() || initStateM->isEmpty() || initStateH->isEmpty())
     return Status::OK;
 

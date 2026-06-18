@@ -42,6 +42,11 @@ CUSTOM_OP_IMPL(split_v, 2, -1, false, 0, -2) {
 
   if (axis < 0) axis += input->rankOf();
 
+  // Handle empty input arrays — outputs are already empty from shape function
+  if (input->isEmpty()) {
+    return sd::Status::OK;
+  }
+
   std::vector<sd::LongType> axisVec = {axis};
 
   int pos = 0;
@@ -77,6 +82,7 @@ DECLARE_TYPES(split_v) {
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_SPLIT_V);
 }
 
 DECLARE_SHAPE_FN(split_v) {
@@ -101,7 +107,7 @@ DECLARE_SHAPE_FN(split_v) {
   // this op assumes we have sizes defined
   auto sizes = INPUT_VARIABLE(1);
 
-  auto length = sizes->lengthOf();
+  auto length = shape::length(inputShape->at(1));
   int pos = 0;
   for (sd::LongType e = 0; e < length; e++) {
     int c_size = sizes->e<int>(e);

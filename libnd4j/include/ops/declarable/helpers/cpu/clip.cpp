@@ -42,20 +42,62 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
     z = output;
   }
 
+  // Compare two scalar NDArrays in the array's native precision.
+  // Using e<double>() on a FLOAT array can cause boundary-exact cases to be
+  // incorrectly clipped when float norm computes as 2.0000001f vs clip 2.0f.
+  // Read both in float precision for FLOAT32 arrays; double precision for others.
+  const double clipNormVal = (z->dataType() == DataType::FLOAT32)
+      ? (double)clipNorm->e<float>(0)
+      : clipNorm->e<double>(0);
+
   if (dimensions.empty()) {
     std::vector<sd::LongType> emptyVec = {};
 
     NDArray *norm2Result = z->reduceAlongDimension(reduce::Norm2, &emptyVec);
+    const double norm2Val = (z->dataType() == DataType::FLOAT32)
+        ? (double)norm2Result->e<float>(0)
+        : norm2Result->e<double>(0);
     if (useAverage) {
       NDArray *divResult = (*norm2Result) / z->lengthOf();
-      if (divResult->e<float>(0) > clipNorm->e<float>(0)) {
+      const double divVal = (z->dataType() == DataType::FLOAT32)
+          ? (double)divResult->e<float>(0)
+          : divResult->e<double>(0);
+      if (divVal > clipNormVal) {
         NDArray *clipDivResult = (*clipNorm) / (*divResult);
         *z *= (*clipDivResult);
         delete clipDivResult;
       }
       delete divResult;
     } else {
-      if (norm2Result->e<float>(0) > clipNorm->e<float>(0)) {
+      if (norm2Val > clipNormVal) {
+        NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
+        *z *= (*clipDivResult);
+        delete clipDivResult;
+      }
+    }
+    delete norm2Result;
+  } else if (dimensions.size() >= (size_t)z->rankOf()) {
+    // All dimensions specified: equivalent to no-dimensions case (global norm over entire array).
+    // allTensorsAlongDimension with all dims produces element-wise scalar TADs, which is wrong
+    // for clipByNorm semantics — we need a single global norm, not per-element norms.
+    std::vector<sd::LongType> emptyVec = {};
+    NDArray *norm2Result = z->reduceAlongDimension(reduce::Norm2, &emptyVec);
+    const double norm2Val = (z->dataType() == DataType::FLOAT32)
+        ? (double)norm2Result->e<float>(0)
+        : norm2Result->e<double>(0);
+    if (useAverage) {
+      NDArray *divResult = (*norm2Result) / z->lengthOf();
+      const double divVal = (z->dataType() == DataType::FLOAT32)
+          ? (double)divResult->e<float>(0)
+          : divResult->e<double>(0);
+      if (divVal > clipNormVal) {
+        NDArray *clipDivResult = (*clipNorm) / (*divResult);
+        *z *= (*clipDivResult);
+        delete clipDivResult;
+      }
+      delete divResult;
+    } else {
+      if (norm2Val > clipNormVal) {
         NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
         *z *= (*clipDivResult);
         delete clipDivResult;
@@ -64,21 +106,28 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
     delete norm2Result;
   } else {
     auto listOfSubArrs = z->allTensorsAlongDimension(dimensions);
+    const bool isFP32 = (z->dataType() == DataType::FLOAT32);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         std::vector<sd::LongType> emptyVec = {};
         NDArray *norm2Result = listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec);
+        const double norm2Val = isFP32
+            ? (double)norm2Result->e<float>(0)
+            : norm2Result->e<double>(0);
         if (useAverage) {
           NDArray *divResult = (*norm2Result) / listOfSubArrs.at(i)->lengthOf();
-          if (divResult->e<float>(0) > clipNorm->e<float>(0)) {
+          const double divVal = isFP32
+              ? (double)divResult->e<float>(0)
+              : divResult->e<double>(0);
+          if (divVal > clipNormVal) {
             NDArray *clipDivResult = (*clipNorm) / (*divResult);
             *listOfSubArrs.at(i) *= (*clipDivResult);
             delete clipDivResult;
           }
           delete divResult;
         } else {
-          if (norm2Result->e<float>(0) > clipNorm->e<float>(0)) {
+          if (norm2Val > clipNormVal) {
             NDArray *clipDivResult = (*clipNorm) / (*norm2Result);
             *listOfSubArrs.at(i) *= (*clipDivResult);
             delete clipDivResult;
@@ -95,65 +144,85 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
 template <typename T>
 static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
                           const std::vector<LongType>& dimensions, NDArray *clipNorm, const bool useAverage) {
-  const int rank = input->rankOf();
+  // Correct gradient formula for clipByNorm:
+  // dL/dx_j = (clip/norm)*gradO_j - (clip/norm^3)*x_j*dot(gradO,x)
+  // where dot(gradO,x) = sum_k(gradO_k * x_k) is the inner product over the TAD.
+  //
+  // Implementation note: norm is computed via a single global reduceAlongDimension call,
+  // then indexed per-TAD. This is consistent with the known-good baseline.
+  // Per-TAD sub-array reductions on views can produce incorrect threshold decisions.
 
+  const auto clipVal = clipNorm->e<T>(0);
+
+  // Compute per-TAD norms and dot products using a single global reduction.
+  // norm2Ptr: for each TAD i, norm2Ptr[i] = L2 norm of TAD i.
+  // dotsPtr:  for each TAD i, dotsPtr[i] = dot(gradO, input) over TAD i.
+  //
+  // IMPORTANT: NDArray copy constructor creates a VIEW (shared DataBuffer).
+  // The pointers norm2Ptr and dotsPtr must NOT be deleted until after all
+  // accesses to norm2 and dots are complete — deleting them early frees the
+  // shared buffer and causes use-after-free with undefined behaviour.
   auto *norm2Ptr = input->reduceAlongDimension(reduce::Norm2, &dimensions);
-  auto norm2 = *norm2Ptr;
-  auto *sumsPtr = input->reduceAlongDimension(reduce::Sum, &dimensions);
-  auto sums = *sumsPtr;
+  auto norm2 = *norm2Ptr;  // view into norm2Ptr's buffer — do NOT delete norm2Ptr yet
+
+  // dot(gradO, input) = sum(gradO * input) per TAD
+  auto *elemwiseProductPtr = (*input) * (*gradO);
+  auto *dotsPtr = elemwiseProductPtr->reduceAlongDimension(reduce::Sum, &dimensions);
+  auto dots = *dotsPtr;  // view into dotsPtr's buffer — do NOT delete dotsPtr yet
+  delete elemwiseProductPtr;
 
   if (norm2.lengthOf() == 1) {
-    const T norm = useAverage ? norm2.e<T>(0) / input->lengthOf() : norm2.e<T>(0);
-
-    auto clipVal = clipNorm->e<T>(0);
+    // Global norm case: entire array is one TAD
+    const T norm2Raw = norm2.e<T>(0);
+    const T norm = useAverage ? norm2Raw / static_cast<T>(input->lengthOf()) : norm2Raw;
 
     if (norm > clipVal) {
-      const T sum = sums.e<T>(0);  // reduce to scalar
+      const T dot = dots.e<T>(0);
       const T factor1 = clipVal / norm;
-      const T factor2 = static_cast<T>(1.f) / (norm * norm);  // 1 / (norm*norm*norm)
+      const T factor2 = static_cast<T>(1.f) / (norm * norm);
 
-      auto lambda = LAMBDA_TT(x, y, sum, factor1, factor2) {
-        return factor1 * y * (static_cast<T>(1.f) - factor2 * x * sum);
+      auto lambda = LAMBDA_TT(x, y, dot, factor1, factor2) {
+        return factor1 * y - factor1 * factor2 * x * dot;
       });
 
       input->applyPairwiseLambda<T>(gradO, lambda, gradI);
     } else
       gradI->assign(gradO);
   } else {
-    auto gradISubArrs = gradI->allTensorsAlongDimension({dimensions});
-    auto gradOSubArrs = gradO->allTensorsAlongDimension({dimensions});
-    auto inputSubArrs = input->allTensorsAlongDimension({dimensions});
-
-    auto clipVal = clipNorm->e<T>(0);
+    // Per-TAD case
+    auto gradISubArrs = gradI->allTensorsAlongDimension(dimensions);
+    auto gradOSubArrs = gradO->allTensorsAlongDimension(dimensions);
+    auto inputSubArrs = input->allTensorsAlongDimension(dimensions);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        auto gradOSubArr = gradOSubArrs.at(i);
-        auto gradISubArr = gradISubArrs.at(i);
-
-        const T norm = useAverage ? norm2.e<T>(i) / gradISubArr->lengthOf() : norm2.e<T>(i);
+        const T norm2Raw = norm2.e<T>(i);
+        const T norm = useAverage ? norm2Raw / static_cast<T>(gradISubArrs.at(i)->lengthOf()) : norm2Raw;
 
         if (norm > clipVal) {
           auto inputSubArr = inputSubArrs.at(i);
+          auto gradOSubArr = gradOSubArrs.at(i);
+          auto gradISubArr = gradISubArrs.at(i);
 
-          const T sum = sums.e<T>(i);  // reduce to scalar
+          const T dot = dots.e<T>(i);
           const T factor1 = clipVal / norm;
-          const T factor2 = static_cast<T>(1.f) / (norm * norm);  // 1 / (norm*norm*norm)
+          const T factor2 = static_cast<T>(1.f) / (norm * norm);
 
-          auto lambda = LAMBDA_TT(x, y, sum, factor1, factor2) {
-            return factor1 * y * (static_cast<T>(1.f) - factor2 * x * sum);
+          auto lambda = LAMBDA_TT(x, y, dot, factor1, factor2) {
+            return factor1 * y - factor1 * factor2 * x * dot;
           });
 
           inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
         } else
-          gradISubArr->assign(gradOSubArr);
+          gradISubArrs.at(i)->assign(gradOSubArrs.at(i));
       }
     };
     samediff::Threads::parallel_tad(func, 0, gradISubArrs.size());
   }
-  
+
+  // Delete after all uses of norm2 and dots are complete.
   delete norm2Ptr;
-  delete sumsPtr;
+  delete dotsPtr;
 }
 BUILD_SINGLE_TEMPLATE(void clipByNormBp_,
                       (NDArray *input, NDArray *gradO, NDArray *gradI, const std::vector<sd::LongType>& dimensions,
@@ -220,12 +289,12 @@ static void clipByValue_(NDArray* input, double leftBound, double rightBound, ND
 }
 
 void clipByValue(LaunchContext* context, NDArray* input, double leftBound, double rightBound, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), clipByValue_, (input, leftBound, rightBound, output), SD_FLOAT_TYPES);
+  BUILD_SINGLE_SELECTOR(input->dataType(), clipByValue_, (input, leftBound, rightBound, output), SD_COMMON_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE( void clipByValue_,
                       (NDArray * input, double leftBound, double rightBound, NDArray* output);
-                      , SD_FLOAT_TYPES);
+                      , SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reversedivide)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {
@@ -46,7 +46,8 @@ DECLARE_TYPES(reversedivide) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, INHERIT);
+      ->setAllowedOutputTypes(0, INHERIT)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(reversedivide_bp) {
@@ -110,8 +111,10 @@ CUSTOM_OP_IMPL(reversedivide_bp, 3, 2, false, 0, 0) {
     delete xSquared;
     preXTemp->applyTransform(transform::Neg, preXTemp);
 
-    auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-    auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+    // Use preXTemp/preY shapes (the broadcast result), NOT epsNext shape —
+    // epsNext may be scalar even when x/y are non-scalar.
+    auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), preXTemp->shapeInfo());
+    auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), preY->shapeInfo());
 
     if (axisX.size() > 0) {
       auto* sum = preXTemp->reduceAlongDimension(reduce::Sum, &axisX);

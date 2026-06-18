@@ -36,7 +36,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ static void stackScalarsCuda(void* pVx, void* vz, const LongType* zShapeInfo) {
+SD_KERNEL static void stackScalarsCuda(void* pVx, void* vz, const LongType* zShapeInfo) {
   T* z = reinterpret_cast<T*>(vz);
 
   // Shared memory for caching shape information of z
@@ -104,7 +104,16 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
 
   NDArray::prepareSpecialUse({&output}, inArrs);
 
-  if (inArrs[0]->rankOf() < 1 && !inArrs[0]->isEmpty()) {
+  // Check if ALL inputs are effectively single-element tensors (scalar or [1])
+  // This handles the case where some inputs are scalar and others are [1]
+  bool allSingleElement = true;
+  for (int i = 0; i < numOfSubArrs && allSingleElement; ++i) {
+    if (!inArrs[i]->isEmpty() && inArrs[i]->lengthOf() != 1) {
+      allSingleElement = false;
+    }
+  }
+
+  if (allSingleElement && !inArrs[0]->isEmpty()) {
     std::vector<void *> hInBuffers(numOfSubArrs);
 
     for (int i = 0; i < numOfSubArrs; ++i) hInBuffers[i] = inArrs[i]->specialBuffer();
@@ -114,7 +123,7 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
     void* dInBuffers = manager.replicatePointer(hInBuffers.data(), hInBuffers.size() * sizeof(void*));
 
     dim3 stackDims2 = stackDims(output.lengthOf());
-    stackScalarsCudaLauncher<T>(stackDims2.y, stackDims2.x, stackDims2.z, context->getCudaStream(), dInBuffers,
+    stackScalarsCudaLauncher<T>(stackDims2.x, stackDims2.y, stackDims2.z, context->getCudaStream(), dInBuffers,
                                 output.specialBuffer(), output.specialShapeInfo());
 
     manager.synchronize();
@@ -149,7 +158,7 @@ BUILD_SINGLE_TEMPLATE( void stack_,
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ static void unstackScalarsCuda(const void* vx, const LongType* xShapeInfo, void* pVz) {
+SD_KERNEL static void unstackScalarsCuda(const void* vx, const LongType* xShapeInfo, void* pVz) {
   const T* x = reinterpret_cast<const T*>(vx);
 
   // Shared memory for caching shape information

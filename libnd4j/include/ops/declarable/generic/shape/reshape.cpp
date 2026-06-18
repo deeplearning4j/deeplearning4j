@@ -22,7 +22,9 @@
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reshape)
-#include <ops/declarable/CustomOperations.h>
+#include <helpers/ShapeUtils.h>
+#include <ops/declarable/headers/shape.h>
+#include <cstring>
 namespace sd {
 namespace ops {
 
@@ -33,46 +35,64 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
+  // OPTIMIZATION: Identity reshape - skip if shapes are identical.
+  // For decode (seq_len=1), many reshapes are [1,1,D] → [1,D] or similar no-ops.
+  if (x->rankOf() == z->rankOf()) {
+    bool sameShape = true;
+    for (int i = 0; i < x->rankOf(); i++) {
+      if (x->sizeAt(i) != z->sizeAt(i)) {
+        sameShape = false;
+        break;
+      }
+    }
+    if (sameShape) {
+      z->assign(x);
+      return Status::OK;
+    }
+  }
+
+  // Fast path: if same buffer, this is just a view change - nothing to copy
+  if (x->dataBuffer() == z->dataBuffer()) {
+    return Status::OK;
+  }
+
   // Special case: empty.reshape(<other empty shape>) -> return empty
-  if (x->isEmpty()) {
-    REQUIRE_TRUE(z->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
-    return Status::OK;  // No op
-  }
-  x->syncToHost();
-
-  //scalars can either be 0 or 1
-  if(!x->isScalar() && !x->isEmpty())
-  REQUIRE_TRUE(x->lengthOf() == z->lengthOf(), 0,
-               "Reshape: lengths before and after reshape should match, but "
-               "got %i vs %i",
-               x->lengthOf(), z->lengthOf());
-
-  auto* zShapeVec = z->getShapeAsVector();
-  if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", *zShapeVec);
-  if(z->ordering() != 'c' && z->ordering() != 'f') {
-    std::string errorMessage;
-    errorMessage += "Reshape: new shape has unknown order: [";
-    errorMessage += z->ordering();
-    errorMessage += "]";
-    delete zShapeVec;
-    THROW_EXCEPTION(errorMessage.c_str());
+  // Check both ARRAY_EMPTY flag and actual length to handle all empty array cases
+  bool xIsEmpty = x->isEmpty() || x->lengthOf() == 0;
+  bool zIsEmpty = z->isEmpty() || z->lengthOf() == 0;
+  if (xIsEmpty) {
+    // Both input and output should have 0 elements
+    REQUIRE_TRUE(zIsEmpty, 0, "Reshape: when input is empty, output must also be empty");
+    return Status::OK;
   }
 
-  //only perform assign when we aren't using a view
-  if(x->dataBuffer() != z->dataBuffer()) {
-    NDArray *reshapedX = x->reshape(z->ordering(), *zShapeVec, true);
-    delete zShapeVec;
-    z->assign(reshapedX);
-    delete reshapedX;
-  } else {
-    delete zShapeVec;
+  const sd::LongType len = x->lengthOf();
+  const sd::LongType zLen = z->lengthOf();
+
+  // Special case: scalar/length-1 input being expanded to larger output
+  // This is used in ONNX models for broadcasting scalar conditions
+  if ((x->isScalar() || len == 1) && zLen > 1) {
+    // Fill output with the scalar value
+    z->assign(x);
+    return Status::OK;
   }
+
+  // Validate lengths match for non-scalar inputs
+  if (!x->isScalar()) {
+    REQUIRE_TRUE(len == zLen, 0,
+                 "Reshape: lengths before and after reshape should match, but "
+                 "got %i vs %i",
+                 len, zLen);
+  }
+
+  z->assign(x);
 
   return Status::OK;
 }
 
 DECLARE_TYPES(reshape) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 
 bool handleOptionalOrder(std::vector<LongType> &reshapeArgs, char &ordering) {
@@ -102,6 +122,20 @@ LongType* handleScalarAndLength1Case(NDArray* x, std::vector<LongType>& reshapeA
       return ConstantShapeHelper::getInstance().scalarShapeInfo(x->dataType());
     }
 
+    // For scalar/length-1 input with all-(-1) reshape args, preserve scalar rank.
+    // Reshaping a scalar with [-1] should stay scalar (rank 0), not become [1] (rank 1).
+    // This matters for DSP shape consistency — the output must match the pre-allocated slot.
+    bool allNegOne = true;
+    for (size_t i = 0; i < reshapeArgs.size(); i++) {
+      if (reshapeArgs[i] != -1) {
+        allNegOne = false;
+        break;
+      }
+    }
+    if (allNegOne && x->isScalar()) {
+      return ConstantShapeHelper::getInstance().scalarShapeInfo(x->dataType());
+    }
+
     // For scalar/length-1 input, if reshape args contain -1, replace it with 1
     std::vector<LongType> finalShape = reshapeArgs;
     for (size_t i = 0; i < finalShape.size(); i++) {
@@ -115,50 +149,128 @@ LongType* handleScalarAndLength1Case(NDArray* x, std::vector<LongType>& reshapeA
   return nullptr;
 }
 
-void processReshapeArgs(std::vector<LongType>& reshapeArgs, std::vector<LongType>& shapeNew,
+void processReshapeArgs(NDArray* x, std::vector<LongType>& reshapeArgs, std::vector<LongType>& shapeNew,
                         LongType& newShapeLen, int& pos, bool& newShapeEmpty) {
   newShapeLen = 1;
   pos = -1;
   newShapeEmpty = false;
 
+  // Check if input has any zero dimensions (which makes it empty)
+  bool xHasZeroDim = false;
+  for (int i = 0; i < x->rankOf(); i++) {
+    if (x->sizeAt(i) == 0) {
+      xHasZeroDim = true;
+      break;
+    }
+  }
+
   for (size_t i = 0; i < reshapeArgs.size(); i++) {
-    int dim = reshapeArgs[i];
+    LongType dim = reshapeArgs[i];
     if (dim == -1) {
       REQUIRE_TRUE(pos == -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
       pos = i;
       shapeNew.push_back(1);
     } else if (dim == 0) {
-      shapeNew.push_back(0);
-      newShapeEmpty = true;
+      // ONNX semantics: 0 means "copy dimension from input at same position"
+      // If the input has zero dimensions and the output rank differs from input rank,
+      // 0 is treated as literal zero (the empty array's zero propagates).
+      if (xHasZeroDim) {
+        // When input has a zero dim, all 0s in reshape args produce 0 in output.
+        // The zero "infects" all 0-marked positions.
+        shapeNew.push_back(0);
+        newShapeEmpty = true;
+      } else if (i < static_cast<size_t>(x->rankOf())) {
+        LongType inputDim = x->sizeAt(i);
+        shapeNew.push_back(inputDim);
+        if (inputDim == 0) {
+          newShapeEmpty = true;
+        } else {
+          newShapeLen *= inputDim;
+        }
+      } else {
+        // Position beyond input rank, no zero in input - treat as 1
+        shapeNew.push_back(1);
+      }
     } else {
       shapeNew.push_back(dim);
-      newShapeLen *= dim;
+      // If input has zero dimension, don't multiply into length (output will be empty)
+      if (!xHasZeroDim && dim > 0) {
+        newShapeLen *= dim;
+      }
     }
+  }
+
+  // If input has zero dimension, mark output as empty
+  if (xHasZeroDim) {
+    newShapeEmpty = true;
   }
 }
 
 void computeUnknownDimension(NDArray* x, std::vector<LongType>& shapeNew, int pos,
                              LongType newShapeLen, bool newShapeEmpty) {
   if (pos != -1) {
-    LongType xLen = x->lengthOf();
-    if (x->isEmpty()) {
-      xLen = 1;
-      // For empty shapes, calculate length considering non-zero dimensions
-      for (LongType i = 0; i < x->rankOf(); ++i)  // take into account possible empty shapes
-        if (x->sizeAt(i) > 0 || !newShapeEmpty) xLen *= x->sizeAt(i);
+    if (x->isEmpty() || x->lengthOf() == 0) {
+      // When input has zero-size dimensions, the output also has zero-size dims.
+      // But the -1 dimension should be computed from the product of NON-ZERO dims
+      // in input vs output, not from lengthOf() (which is 0).
+      //
+      // E.g. input [10, 0] reshape [2, 0, -1]:
+      //   0 at position 1 copies input dim 1 = 0
+      //   Non-zero input product = 10
+      //   Non-zero known output product = 2
+      //   => -1 = 10 / 2 = 5 => output [2, 0, 5]
+      //
+      // E.g. input [1, 0, 64] reshape [-1, 64]:
+      //   Non-zero input product = 1 * 64 = 64
+      //   Non-zero known output product = 64
+      //   But output has a zero dim (from input dim 1) => -1 = 64/64 = 1
+      //   Actually, the output should be [0, 64] — the zero "leaks" into the -1.
+      //   Only when the output already has a zero dim can the -1 be non-zero.
+      bool outputHasZero = false;
+      LongType nonZeroInputProduct = 1;
+      LongType nonZeroKnownOutputProduct = 1;
+
+      for (int i = 0; i < x->rankOf(); i++) {
+        if (x->sizeAt(i) != 0) nonZeroInputProduct *= x->sizeAt(i);
+      }
+
+      for (size_t i = 0; i < shapeNew.size(); i++) {
+        if ((int)i == pos) continue;  // skip the unknown dim
+        if (shapeNew[i] == 0) {
+          outputHasZero = true;
+        } else {
+          nonZeroKnownOutputProduct *= shapeNew[i];
+        }
+      }
+
+      if (outputHasZero) {
+        // Output already has a zero dim — the -1 dimension carries the non-zero ratio
+        if (nonZeroKnownOutputProduct > 0) {
+          shapeNew[pos] = nonZeroInputProduct / nonZeroKnownOutputProduct;
+        } else {
+          shapeNew[pos] = 0;
+        }
+      } else {
+        // No zero in output yet — the -1 must be zero to make output empty
+        shapeNew[pos] = 0;
+      }
+      return;
     }
 
+    LongType xLen = x->lengthOf();
     shapeNew[pos] = xLen / newShapeLen;
   }
 }
 
-LongType* handleEmptyShapeCase(NDArray* x, std::vector<LongType> reshapeArgs, bool newShapeEmpty) {
-  if(newShapeEmpty) {
-    for(size_t i = 0; i < reshapeArgs.size(); i++) {
-      if(reshapeArgs[i] < 0)
-        reshapeArgs[i] = 1;
+LongType* handleEmptyShapeCase(NDArray* x, std::vector<LongType>& shapeNew, bool newShapeEmpty) {
+  // If newShapeEmpty is set (target shape has zeros), return empty shape with correct dimensions
+  if (newShapeEmpty) {
+    // Ensure all inferred dimensions (-1) are set to 1 for empty output
+    for(size_t i = 0; i < shapeNew.size(); i++) {
+      if(shapeNew[i] < 0)
+        shapeNew[i] = 1;
     }
-    return ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), reshapeArgs);
+    return ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), shapeNew);
   }
   return nullptr;
 }
@@ -187,7 +299,43 @@ DECLARE_SHAPE_FN(reshape) {
           "being specified.");
     };
   } else {
-    reshapeArgs = INPUT_VARIABLE(1)->getBufferAsVector<LongType>();
+    auto* shapeArr = INPUT_VARIABLE(1);
+
+    // Read shape values using bulk host sync — avoids per-element GPU->CPU copies.
+    reshapeArgs = ShapeUtils::readIntParams(shapeArr);
+
+    // VALIDATION: Check for pointer-like values in shape array
+    // This catches a corruption bug where pointer addresses are stored as shape values
+    for (size_t i = 0; i < reshapeArgs.size(); i++) {
+      LongType value = reshapeArgs[i];
+      // Pointer values typically have high bits set (> 0x100000000000 = 256TB address space)
+      // Valid shape dimensions should be much smaller (typically < 1 billion)
+      if (value > 0x100000000000ULL && value < 0x8000000000000000ULL) {
+        std::string errorMsg = "reshape:: Shape input array at index ";
+        errorMsg += std::to_string(i);
+        errorMsg += " contains a value that looks like a pointer address: ";
+        errorMsg += std::to_string(value);
+        errorMsg += " (hex: 0x";
+        char hexBuf[32];
+        snprintf(hexBuf, sizeof(hexBuf), "%lx", static_cast<unsigned long>(value));
+        errorMsg += hexBuf;
+        errorMsg += "). Full shape array: [";
+        for (size_t j = 0; j < reshapeArgs.size(); j++) {
+          if (j > 0) errorMsg += ", ";
+          errorMsg += std::to_string(reshapeArgs[j]);
+        }
+        errorMsg += "]. This indicates the shape array's data buffer contains pointer addresses ";
+        errorMsg += "instead of actual shape values. Possible causes: ";
+        errorMsg += "1) Use-after-free where a scalar buffer was deallocated and memory reused, ";
+        errorMsg += "2) Concat operation received corrupted scalar inputs, ";
+        errorMsg += "3) Race condition during shape calculation. ";
+        errorMsg += "Shape input buffer address: 0x";
+        snprintf(hexBuf, sizeof(hexBuf), "%lx", reinterpret_cast<unsigned long>(INPUT_VARIABLE(1)->buffer()));
+        errorMsg += hexBuf;
+        THROW_EXCEPTION(errorMsg.c_str());
+      }
+    }
+
     if (block.numI() > 0) {
       // Note here that the ordering for this case can not be negative.
       // Negative is used in the long array case to be used as a flag to
@@ -217,26 +365,45 @@ DECLARE_SHAPE_FN(reshape) {
   int pos;
   bool newShapeEmpty;
 
-  // Process reshape arguments
-  processReshapeArgs(reshapeArgs, shapeNew, newShapeLen, pos, newShapeEmpty);
+  // Process reshape arguments (with ONNX "0 means copy from input" support)
+  processReshapeArgs(x, reshapeArgs, shapeNew, newShapeLen, pos, newShapeEmpty);
 
   // Compute unknown dimension if needed
   computeUnknownDimension(x, shapeNew, pos, newShapeLen, newShapeEmpty);
 
   // Handle empty shape case
-  LongType* emptyResult = handleEmptyShapeCase(x, reshapeArgs, newShapeEmpty);
+  LongType* emptyResult = handleEmptyShapeCase(x, shapeNew, newShapeEmpty);
   if (emptyResult != nullptr) {
     return SHAPELIST(emptyResult);
   }
 
   auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
-  if(!x->isScalar() && !x->isEmpty())
-  REQUIRE_TRUE(x->lengthOf() == len, 0,
-               "Reshape: lengths before and after reshape should match, but "
-               "got %i vs %i",
-               x->lengthOf(), len);
+  auto xShapeInfo = inputShape->at(0);
+  // Check if input has any zero dimensions (which makes it empty)
+  bool xHasZeroDim = false;
+  auto xRank = shape::rank(xShapeInfo);
+  for (int i = 0; i < xRank; i++) {
+    if (shape::sizeAt(xShapeInfo, static_cast<sd::LongType>(i)) == 0) {
+      xHasZeroDim = true;
+      break;
+    }
+  }
+  bool xIsScalar = shape::isScalar(xShapeInfo);
+  LongType xLen = shape::length(xShapeInfo);
+  if(!xIsScalar && !xHasZeroDim) {
+    REQUIRE_TRUE(xLen == len, 0,
+                 "Reshape: lengths before and after reshape should match, but "
+                 "got %lld vs %lld",
+                 (long long)xLen, (long long)len);
+  }
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), orderNew, shapeNew));
+  auto xDtype = ArrayOptions::dataType(xShapeInfo);
+  // If result should be empty, use emptyShapeInfoWithShape
+  if (len == 0 || xHasZeroDim) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(xDtype, shapeNew));
+  }
+
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(xDtype, orderNew, shapeNew));
 }
 
 }  // namespace ops

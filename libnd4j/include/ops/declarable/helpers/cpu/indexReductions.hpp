@@ -15,6 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+#pragma once
 //
 // @author AbdelRauf
 //
@@ -22,6 +23,7 @@
 #include <execution/Threads.h>
 #include <helpers/LoopsCoordsHelper.h>
 #include <ops/declarable/helpers/reductions.h>
+#include <system/env_functions.h>
 
 #include <cmath>
 #include <memory>
@@ -404,7 +406,7 @@ static void argIndexCase1Scalar(const int& second_rank, const sd::LongType* inne
                                 const sd::LongType* inner_strides, const X* bufferX, Z* outputZ) {
   sd::LongType inner_total;
   sd::LongType inner_last = 0;
-  int maxThreads = sd::Environment::getInstance().maxMasterThreads();
+  int maxThreads = sd::env_maxMasterThreads();
   if (second_rank == 1) {
     inner_total = inner_bases[0];
     if (inner_total < threadingThreshold) {
@@ -448,12 +450,7 @@ static void argIndexCase1Scalar(const int& second_rank, const sd::LongType* inne
     }
     ptrMaxValues[thread_id] = current;
   };
-#if 0
-                int Count = 0;
-                func(0, 0, inner_total, 1);
-#else
   int Count = samediff::Threads::parallel_tad(func, 0, inner_total, 1, maxThreads);
-#endif
   Z arg = 0;
   X current = ptrMaxValues[0];
 
@@ -757,11 +754,7 @@ static void argIndexCaseNonScalar(const int& first_rank, const int& output_rank,
                                                 outputZ);
     }
   };
-#if 0
-                func(0, 0, total, 1);
-#else
-  //
-  uint32_t numThreads = sd::Environment::getInstance().maxMasterThreads();
+  uint32_t numThreads = sd::env_maxMasterThreads();
   sd::LongType inner_total = getLength<true>(inner_bases, second_rank);
   if (total * inner_total <= threadingThreshold) {
     numThreads = 1;
@@ -773,13 +766,33 @@ static void argIndexCaseNonScalar(const int& first_rank, const int& output_rank,
   }
 
   samediff::Threads::parallel_tad(func, 0, total, 1, numThreads);
-#endif
 }
 
 template <typename X, typename Z, typename ReductionOp>
 SD_LIB_HIDDEN void argIndex_(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   char input_order = input.ordering();
-  bool try_squash_outer = (input_order == output.ordering()) && output.ews() != 0;
+  auto isContiguousInOrder = [](NDArray& arr) {
+    auto rank = arr.rankOf();
+    auto shp = arr.shapeOf();
+    auto strides = arr.stridesOf();
+    if (arr.ordering() == 'c') {
+      sd::LongType expected = 1;
+      for (int i = rank - 1; i >= 0; --i) {
+        if (shp[i] == 1) continue;
+        if (strides[i] != expected) return false;
+        expected *= shp[i];
+      }
+    } else {
+      sd::LongType expected = 1;
+      for (int i = 0; i < rank; ++i) {
+        if (shp[i] == 1) continue;
+        if (strides[i] != expected) return false;
+        expected *= shp[i];
+      }
+    }
+    return true;
+  };
+  bool try_squash_outer = (input_order == output.ordering()) && isContiguousInOrder(output);
   const sd::LongType* input_shapeInfo = input.shapeInfo();
   const sd::LongType* output_shapeInfo = output.shapeInfo();
   const sd::LongType rank = input_shapeInfo[0];

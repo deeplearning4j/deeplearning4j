@@ -19,8 +19,10 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 01.06.2018
 //
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <system/op_boilerplate.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <string>
 
 #if NOT_EXCLUDED(OP_reduce_mean)
 #include <ops/declarable/helpers/axis.h>
@@ -32,9 +34,15 @@ CUSTOM_OP_IMPL(reduce_mean, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   auto dimensions = *block.getIArguments();
+
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input unchanged)
+    if (dimensions.empty()) {
+      output->assign(input);
+      return sd::Status::OK;
+    }
   }
 
   bool keepDims = false;
@@ -64,6 +72,10 @@ DECLARE_SHAPE_FN(reduce_mean) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(shape::rank(in), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input shape unchanged)
+    if (dimensions.empty()) {
+      return SHAPELIST(CONSTANT(inputShape->at(0)));
+    }
   }
 
   bool keepDims = false;
@@ -89,7 +101,7 @@ DECLARE_SHAPE_FN(reduce_mean) {
 }
 
 DECLARE_TYPES(reduce_mean) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS})->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -97,6 +109,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
+
   auto dimensions = *block.getIArguments();
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
@@ -123,16 +136,16 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
   }
 
   if (gradO->isScalar()) {
+    // Use e<double>(0) to get scalar value directly, rather than e(0) which returns NDArray
+    // and can produce an NDArray with null shapeInfo when used with division operator
+    double gradOVal = gradO->e<double>(0);
     if (dimensions.size() > 0) {
-      NDArray *assign = gradO->e(0) / (static_cast<double>(dimLength));
-      gradI->assign(assign);
-      delete assign;
+      double result = gradOVal / dimLength;
+      gradI->assign(result);
     } else {
-      NDArray *assign = gradO->e(0) / (static_cast<double>(input->lengthOf()));
-      gradI->assign(assign);
-      delete assign;
+      double result = gradOVal / static_cast<double>(input->lengthOf());
+      gradI->assign(result);
     }
-
   } else {
     auto val = (static_cast<double>(gradO->lengthOf() < 1 ? 1.0 : gradO->lengthOf()) )
                / (static_cast<double>(input->lengthOf() < 1 ? 1.0 : input->lengthOf()));
@@ -146,8 +159,10 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
       NDArray *reshapedGradO = gradO->reshape(gradO->ordering(), shape);
-      *gradI *= *reshapedGradO;
-      delete reshapedGradO;
+      gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), reshapedGradO, gradI);
+      if (reshapedGradO != nullptr && !reshapedGradO->isView()) {
+        delete reshapedGradO;
+      }
     } else {
       gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
     }
@@ -177,11 +192,9 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
       "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !", rank,
       rank, item);
 
-  sd::LongType *gradIshapeInfo = new sd::LongType[shape::shapeInfoLength(rank)];
-  memcpy(gradIshapeInfo, in, shape::shapeInfoByteLength(in));
-  auto ret =  SHAPELIST(CONSTANT(gradIshapeInfo));
-  delete[] gradIshapeInfo;
-  return ret;
+  // Use ConstantShapeHelper to create a persistent copy of the shape
+  auto outShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(in);
+  return SHAPELIST(outShapeInfo);
 }
 
 DECLARE_TYPES(reduce_mean_bp) {

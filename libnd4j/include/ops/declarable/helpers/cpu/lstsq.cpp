@@ -37,9 +37,18 @@ namespace helpers {
 
 template <typename T>
 static void fillRegularizer(NDArray* ioMatrix, double const value) {
-  auto lastDims = ioMatrix->allTensorsAlongDimension({-2, -1});
   auto rows = ioMatrix->sizeAt(-2);
 
+  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs.
+  // Process the single matrix directly.
+  if (ioMatrix->rankOf() == 2) {
+    for (auto r = 0; r < rows; r++) {
+      ioMatrix->r<T>(r, r) = (T)value;
+    }
+    return;
+  }
+
+  auto lastDims = ioMatrix->allTensorsAlongDimension({-2, -1});
   for (auto x = 0; x < lastDims.size(); x++) {
     for (auto r = 0; r < rows; r++) {
       lastDims[x]->r<T>(r, r) = (T)value;
@@ -57,15 +66,19 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
     auto tAtShape = ShapeUtils::evalShapeForMatmul(leftInput->shapeInfo(), leftInput->shapeInfo(), true, false);
     // tAtShape[tAtShape.size() - 2] = output->sizeAt(-2);
     NDArray leftOutput('c', tAtShape, output->dataType(), context);
-    MmulHelper::matmul(leftInput, leftInput, &leftOutput, true, false, 0, 0, &leftOutput);  // Computing A2 = A^T * A
+    MmulHelper::matmul(leftInput, leftInput, &leftOutput, true, false, 1.0, 0.0, &leftOutput);  // Computing A2 = A^T * A
     // 2. Computing B' = A^T * b
     auto rightOutput = output->ulike();
 
-    MmulHelper::matmul(leftInput, rightInput, rightOutput, true, false, 0, 0, rightOutput);  // Computing B' = A^T * b
-    // 3. due l2Regularizer = 0, skip regularization ( indeed A' = A2 - l2Regularizer * I)
-    auto regularizer = leftOutput.ulike();
-    fillRegularizer<T>(regularizer, l2Regularizer);
-    leftOutput += *regularizer;
+    MmulHelper::matmul(leftInput, rightInput, rightOutput, true, false, 1.0, 0.0, rightOutput);  // Computing B' = A^T * b
+    // 3. Apply l2 regularization if needed: A' = A2 + l2Regularizer * I
+    if (l2Regularizer != 0.0) {
+      auto regularizer = leftOutput.ulike();
+      regularizer->nullify();
+      fillRegularizer<T>(regularizer, l2Regularizer);
+      leftOutput += *regularizer;
+      delete regularizer;
+    }
     // 4. Cholesky decomposition -- output matrix is square and lower triangular
     //            auto leftOutputT = leftOutput.ulike();
     auto status = helpers::cholesky(context, &leftOutput, &leftOutput, true);  // inplace decomposition
@@ -75,6 +88,7 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
 
     // 5. Solve two triangular systems:
     auto rightB = rightOutput->ulike();
+    rightB->nullify();
     helpers::triangularSolveFunctor(context, &leftOutput, rightOutput, true, false, rightB);
     helpers::adjointMatrix(context, &leftOutput, true, &leftOutput);
     helpers::triangularSolveFunctor(context, &leftOutput, rightB, false, false, output);
@@ -97,7 +111,7 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
     helpers::qr(context, leftInput, &Q, &R, true);
     // 2. b` = Q^t * b:
     auto rightOutput = rightInput->ulike();
-    MmulHelper::matmul(&Q, rightInput, rightOutput, true, false, 0, 0, rightOutput);
+    MmulHelper::matmul(&Q, rightInput, rightOutput, true, false, 1.0, 0.0, rightOutput);
     // 3. Solve triangular system
     helpers::triangularSolveFunctor(context, &R, rightOutput, false, false, output);
   }

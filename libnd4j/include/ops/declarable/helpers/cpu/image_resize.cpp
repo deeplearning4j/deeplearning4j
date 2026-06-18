@@ -1,3 +1,4 @@
+#include <array/NDArrayFactory.h>
 /*
  *  ******************************************************************************
  *  *
@@ -714,7 +715,6 @@ static void gatherSpans(int const rowSpanSize, NDArray& rowStarts, NDArray& rowW
   auto intermediatePixPerBatch = inputWidth * outputHeight * channels;
   auto outputPixPerBatch = outputWidth * outputHeight * channels;
   Z* intermediatePtr = intermediate.bufferAsT<Z>();
-  bool inputEws1 = images->ews() == 1;
   auto inRowStride = images->strideAt(1);
   auto wStride = images->strideAt(2);
   auto cStride = images->strideAt(3);
@@ -723,7 +723,7 @@ static void gatherSpans(int const rowSpanSize, NDArray& rowStarts, NDArray& rowW
   for (int b = 0; b < batchSize;
        ++b, imagePtr += inputPixPerBatch, intermediatePtr += intermediatePixPerBatch, outPtr += outputPixPerBatch) {
     gatherRows<X, Z>(rowSpanSize, rowStarts.bufferAsT<int>(), rowWeights.bufferAsT<Z>(), imagePtr, inputHeight,
-                     inputWidth, outputHeight, inputWidth, channels, intermediatePtr, inputEws1, inRowStride, wStride,
+                     inputWidth, outputHeight, inputWidth, channels, intermediatePtr, inRowStride, wStride,
                      cStride);
     gatherColumns<Z>(colSpanSize, columnStarts.bufferAsT<int>(), columnWeights.bufferAsT<Z>(), intermediatePtr,
                      outputHeight, inputWidth, outputHeight, outputWidth, channels, outPtr);

@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reversesubtract)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {
@@ -50,7 +50,8 @@ DECLARE_TYPES(reversesubtract) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, INHERIT);
+      ->setAllowedOutputTypes(0, INHERIT)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {

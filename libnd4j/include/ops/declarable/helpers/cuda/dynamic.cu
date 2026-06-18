@@ -26,7 +26,6 @@
 #include "execution/cuda/LaunchDims.h"
 #include "helpers/DebugHelper.h"
 
-
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -243,50 +242,101 @@ template <typename X, typename Y>
 static SD_KERNEL void dynamicStitchScalarKernel(void **vx, LongType **xShapeInfos, void **vindices,
                                                 LongType **iShapeInfos, int inputSize, void *vz,
                                                 const LongType *zShapeInfo, LongType zLength) {
-  __shared__ LongType zRank;
-  __shared__ const LongType *zShapePtr, *zStridePtr;
+  // Each block processes one input array
+  int e = blockIdx.x;
+  if (e >= inputSize) return;
+
+  // Shared variables to cache all needed info from global memory
+  __shared__ X* z;
+  __shared__ X* x;
+  __shared__ Y* indices;
+  __shared__ const LongType* xShapeInfo;
+  __shared__ const LongType* iShapeInfo;
+  __shared__ LongType zRank, xRank, iRank;
+  __shared__ LongType iLength, xLength;
+  __shared__ const LongType* zShapePtr;
+  __shared__ const LongType* zStridePtr;
+  __shared__ const LongType* xShapePtr;
+  __shared__ const LongType* xStridePtr;
+  __shared__ const LongType* iShapePtr;
+  __shared__ const LongType* iStridePtr;
 
   if (threadIdx.x == 0) {
+    // Cache data pointers
+    z = reinterpret_cast<X *>(vz);
+    x = reinterpret_cast<X *>(vx[e]);
+    indices = reinterpret_cast<Y *>(vindices[e]);
+
+    // Cache shape info pointers
+    xShapeInfo = xShapeInfos[e];
+    iShapeInfo = iShapeInfos[e];
+
+    // Cache ranks
     zRank = shape::rank(zShapeInfo);
+    xRank = shape::rank(xShapeInfo);
+    iRank = shape::rank(iShapeInfo);
+
+    // Cache lengths
+    iLength = shape::length(iShapeInfo);
+    xLength = shape::length(xShapeInfo);
+
+    // Cache shape and stride pointers
     zShapePtr = shape::shapeOf(zShapeInfo);
     zStridePtr = shape::stride(zShapeInfo);
+    xShapePtr = shape::shapeOf(xShapeInfo);
+    xStridePtr = shape::stride(xShapeInfo);
+    iShapePtr = shape::shapeOf(iShapeInfo);
+    iStridePtr = shape::stride(iShapeInfo);
   }
   __syncthreads();
 
-  auto z = reinterpret_cast<X *>(vz);
+  // Handle scalar or empty arrays
+  if (iLength == 0 || xLength == 0) return;
 
-  // Process each input array
-  for (int e = blockIdx.x; e < inputSize; e += gridDim.x) {
-    auto x = reinterpret_cast<X *>(vx[e]);
-    auto indices = reinterpret_cast<Y *>(vindices[e]);
+  // Loop over indices in parallel
+  for (LongType i = threadIdx.x; i < iLength; i += blockDim.x) {
+    // Calculate index offset using proper coordinate conversion
+    LongType iOffset;
+    if (iRank == 0) {
+      iOffset = 0;  // Scalar
+    } else if (iRank == 1) {
+      iOffset = i * iStridePtr[0];
+    } else {
+      LongType iCoords[SD_MAX_RANK];
+      INDEX2COORDS(i, iRank, iShapePtr, iCoords);
+      COORDS2INDEX(iRank, iStridePtr, iCoords, iOffset);
+    }
 
-    auto xShapeInfo = xShapeInfos[e];
-    auto iShapeInfo = iShapeInfos[e];
+    Y idx = indices[iOffset];
 
-    auto iLength = shape::length(iShapeInfo);
-
-    // Loop over indices in parallel
-    for (int i = threadIdx.x; i < iLength; i += blockDim.x) {
-      LongType iCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
-      LongType iOffset, xOffset, zOffset;
-
-      // Compute index for indices array
-      INDEX2COORDS(i, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords);
-      COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), iCoords, iOffset);
-
-      auto idx = indices[iOffset];
-      if (idx >= 0 && idx < zLength) {
-        // Compute z offset
-        INDEX2COORDS(idx, zRank, zShapePtr, zCoords);
-        COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
-
-        // Compute x offset
-        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-
-        // Assign value to z
-        z[zOffset] = x[xOffset];
+    // Bounds check: ensure index is valid for output array
+    if (idx >= 0 && idx < static_cast<Y>(zLength) && i < xLength) {
+      // Calculate x offset
+      LongType xOffset;
+      if (xRank == 0) {
+        xOffset = 0;  // Scalar
+      } else if (xRank == 1) {
+        xOffset = i * xStridePtr[0];
+      } else {
+        LongType xCoords[SD_MAX_RANK];
+        INDEX2COORDS(i, xRank, xShapePtr, xCoords);
+        COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
       }
+
+      // Calculate z offset
+      LongType zOffset;
+      if (zRank == 0) {
+        zOffset = 0;  // Scalar output
+      } else if (zRank == 1) {
+        zOffset = static_cast<LongType>(idx) * zStridePtr[0];
+      } else {
+        LongType zCoords[SD_MAX_RANK];
+        INDEX2COORDS(static_cast<LongType>(idx), zRank, zShapePtr, zCoords);
+        COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
+      }
+
+      // Assign value to z
+      z[zOffset] = x[xOffset];
     }
   }
 }
@@ -389,9 +439,16 @@ static Status _dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray 
         reinterpret_cast<LongType **>(pm.replicatePointer(inputShapes.data(), inputSize * sizeof(LongType *)));
     auto dIndicesShapes = reinterpret_cast<LongType **>(
         pm.replicatePointer(indicesShapes.data(), inputSize * sizeof(LongType *)));
-    dim3 launchDims = getLaunchDims("dynamic_stitch_tad");
 
-    dynamicStitchScalarKernel<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
+    // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
+    // Ensure all pointer replications are complete before kernel launch
+    if (!tl_graphExecutionActive && !tl_dspReplayActive) { cudaStreamSynchronize(*context->getCudaStream()); }
+
+    // Use grid size based on number of inputs, with reasonable thread count
+    int numBlocks = static_cast<int>(inputSize);
+    int threadsPerBlock = 256;  // Reasonable default for most GPUs
+
+    dynamicStitchScalarKernel<X, Y><<<numBlocks, threadsPerBlock, 0, *context->getCudaStream()>>>(
         dInputBuffers, dInputShapes, dIndicesBuffers, dIndicesShapes, inputSize, output->specialBuffer(),
         output->specialShapeInfo(), output->lengthOf());
     DebugHelper::checkErrorCode(context->getCudaStream(),"dynamicStitchScalarKernel failed");
@@ -469,8 +526,6 @@ void dynamicPartitionFunctor(LaunchContext *context, NDArray *input, NDArray *in
 
   NDArray::registerSpecialUse({}, {indices, input});
 
-  // TODO: it would be nice to have NDArray::registerSpecialUse signature that accepts something else beyond
-  // initializer_list
   for (auto v : outputList) {
     v->tickWriteDevice();
   }
@@ -480,6 +535,7 @@ template <typename T>
 static Status _dynamicStitchFunctorBP(std::vector<NDArray *> const &inputs, std::vector<NDArray *> const &indices,
                                       NDArray *gradInput, std::vector<NDArray *> &outputList) {
   THROW_EXCEPTION("Not implemented yet");
+  return Status::OK;  // unreachable
 }
 
 Status dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray *> const &inputs,

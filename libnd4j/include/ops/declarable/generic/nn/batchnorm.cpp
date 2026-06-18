@@ -26,7 +26,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_batchnorm)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/batchnorm.h>
 
 namespace sd {
@@ -106,7 +106,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
   return sd::Status::OK;
 }
 
-DECLARE_TYPES(batchnorm) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(batchnorm) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true)->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING); }
 
 DECLARE_SHAPE_FN(batchnorm) {
   auto inShapeInfo = inputShape->at(0);

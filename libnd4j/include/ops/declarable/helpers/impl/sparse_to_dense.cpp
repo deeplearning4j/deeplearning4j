@@ -101,7 +101,6 @@ void compat_sparse_to_dense(NDArray& values, NDArray& indices, NDArray* def, NDA
           str = "";
       }
 
-      // TODO: make it unicode compliant
       memcpy(&dataBuffer[offsetsBuffer[e]], str.c_str(), str.length());
 
       // writing down offset

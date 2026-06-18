@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_compat_sparse_to_dense)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/compat.h>
 #include <ops/declarable/helpers/sparse_to_dense.h>
 
 namespace sd {

@@ -21,15 +21,16 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_fused_batch_norm)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
 
 namespace sd {
 namespace ops {
 
 DECLARE_TYPES(fused_batch_norm) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS})->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
@@ -149,19 +150,25 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   delete xScaled1;
   
   if (dataFormat) {
-    // need to reshape from matrix to 4d then permute the ordering due to NWHC  ordering
+    // need to reshape from matrix to 4d then permute the ordering due to NWHC ordering
     auto* newShapePtr = xCast->getShapeAsVector();
     std::vector<LongType> newShape = *newShapePtr;
     delete newShapePtr;
-    auto* reshaped = xShifted1->reshape(xCast->ordering(), newShape, false);
+    auto* reshaped = xShifted1->reshape(xCast->ordering(), newShape, true);  // use copy=true
     delete xShifted1;
     reshaped->permutei({0, 3, 1, 2}, 0, false);
     y->assign(reshaped);
     delete reshaped;
 
-  } else {  // NWHC case
-    y->assign(xShifted1);
+  } else {  // NHWC case
+    // Reshape from 2D {restSize, iD} back to original 4D shape {bS, iH, iW, iD}
+    auto* newShapePtr = x->getShapeAsVector();
+    std::vector<LongType> newShape = *newShapePtr;
+    delete newShapePtr;
+    auto* reshaped = xShifted1->reshape(x->ordering(), newShape, true);  // use copy=true
     delete xShifted1;
+    y->assign(reshaped);
+    delete reshaped;
   }
 
   if (isTraining) {

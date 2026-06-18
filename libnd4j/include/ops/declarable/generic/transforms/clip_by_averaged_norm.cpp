@@ -22,16 +22,17 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_clipbyavgnorm)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
 namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
-CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, true, -2, 0) {
+CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, false, -2, 0) {
   if (block.inputs()->size() > 1) {
     auto input = INPUT_VARIABLE(0);
     auto clipNorm = INPUT_VARIABLE(1);

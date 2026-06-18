@@ -43,22 +43,6 @@ static void rmsPropUpdater_(NDArray& gradient, NDArray& initState, NDArray& upda
   const T rmsDecay = static_cast<T>(dRmsDecay);
   const T epsilon = static_cast<T>(dEpsilon);
 
-  bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateG.ews() && 1 == initState.ews();
-  bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateG.ordering() &&
-                       stateG.ordering() == initState.ordering();
-
-  if (bEws1 && bSameOrdering) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        st[i] = init[i] * rmsDecay + grad[i] * grad[i] * (1 - rmsDecay);
-        up[i] = (lr * grad[i]) / (math::sd_sqrt<T, T>(st[i]) + epsilon);
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
-    return;
-  }
-
   bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
   bool bXInSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initState.shapeInfo());
   bool bXStSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateG.shapeInfo());

@@ -20,7 +20,7 @@
 // Created by GS <sgazeos@gmail.com> at 10/17/2019
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/image_suppression.h>
 
 #if NOT_EXCLUDED(OP_non_max_suppression_overlaps)
@@ -54,7 +54,6 @@ CUSTOM_OP_IMPL(non_max_suppression_overlaps, 2, 1, false, 0, 0) {
   if (block.getTArguments()->size() > 0) overlapThreshold = T_ARG(0);
   if (block.getTArguments()->size() > 1) scoreThreshold = T_ARG(1);
 
-  // TODO: refactor helpers to multithreaded facility
   helpers::nonMaxSuppressionGeneric(block.launchContext(), boxes, scales, maxOutputSize, overlapThreshold,
                                     scoreThreshold, output);
   return Status::OK;

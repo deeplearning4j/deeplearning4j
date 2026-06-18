@@ -389,8 +389,27 @@ static SD_KERNEL void tripleTransformerCuda(const void* vx, const LongType* xSha
 
   LongType* coords = sharedMem + threadIdx.x * rank;
 
-  if (dimC == (rank - 1) && 'c' == shape::order(xShapeInfo) && 1 == shape::elementWiseStride(xShapeInfo) &&
-      'c' == shape::order(zShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo)) {
+  // Check contiguity: C-order with last-dim stride == 1 means contiguous for this pattern
+  bool xContiguous = ('c' == shape::order(xShapeInfo) && shape::stride(xShapeInfo)[rank - 1] == 1);
+  bool zContiguous = ('c' == shape::order(zShapeInfo) && shape::stride(zShapeInfo)[rank - 1] == 1);
+  // Verify full contiguity by checking all strides match C-order pattern
+  if (xContiguous) {
+    LongType expected = 1;
+    for (int d = rank - 1; d >= 0; --d) {
+      if (shape::shapeOf(xShapeInfo)[d] == 1) continue;
+      if (shape::stride(xShapeInfo)[d] != expected) { xContiguous = false; break; }
+      expected *= shape::shapeOf(xShapeInfo)[d];
+    }
+  }
+  if (zContiguous) {
+    LongType expected = 1;
+    for (int d = rank - 1; d >= 0; --d) {
+      if (shape::shapeOf(zShapeInfo)[d] == 1) continue;
+      if (shape::stride(zShapeInfo)[d] != expected) { zContiguous = false; break; }
+      expected *= shape::shapeOf(zShapeInfo)[d];
+    }
+  }
+  if (dimC == (rank - 1) && xContiguous && zContiguous) {
     for (uint64_t f = blockIdx.x * blockDim.x + threadIdx.x; f < zLen / 3; f += gridDim.x * blockDim.x) {
       auto i = f * 3;
 

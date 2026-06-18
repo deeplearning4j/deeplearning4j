@@ -174,7 +174,7 @@ void gruCell(NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh, NDArray* b,
   NDArray *gatesULike = gates->ulike();
   NDArray temp = *gatesULike;
   MmulHelper::mmul(x, Wx, &temp);  // [bS, nIn] × [nIn, 3*nOut] = [bS, 3*nOut]
-  temp += *b;
+  temp.applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), b, &temp, false);
 
   MmulHelper::mmul(hI, Wh, gates);  // [bS, nOut] × [nOut, 3*nOut] = [bS, 3*nOut]
 
@@ -527,7 +527,6 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   NDArray *c = (*gates)({0, 0, 2 * nOut, 3 * nOut});  // [bS, nOut]
 
   NDArray *WhView = (*Wh)({0, 0, 2 * nOut, 3 * nOut});
-  NDArray *WhcT = WhView->transpose();
 
   if (dLdh) *dLdhI += *dLdh;
 
@@ -556,15 +555,20 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   delete dLdzuTemp;
   delete oneMinusU;
 
-  // dLdzr = (dLdzc * hI * r * (1-r)) × WhcT
+  // dLdzr = dLdzc * (hI × Whc) * r * (1-r)
+  // Forward: zc[i,j] = ... + r[i,j] * (hI × Whc)[i,j] + ...
+  // So ∂zc[i,j]/∂r[i,j] = (hI × Whc)[i,j]  — purely element-wise, no cross-j contraction.
+  // Therefore: dLdzr = dLdzc * (hI × Whc) * σ'(zr)  where σ'(zr) = r*(1-r)
   auto* oneMinusR = 1 - (*r);
   auto* rTimesOneMinusR = (*r) * (*oneMinusR);
   delete oneMinusR;
-  auto* temp3 = (*dLdzc) * (*hI);
+  NDArray hIWhc(dLdzr->shapeInfo(), dLdzr->dataType(), context);
+  MmulHelper::mmul(hI, WhView, &hIWhc);  // [bS, nOut] x [nOut, nOut] = [bS, nOut]
+  auto* temp3 = (*dLdzc) * hIWhc;
   auto* temp4 = (*temp3) * (*rTimesOneMinusR);
   delete temp3;
   delete rTimesOneMinusR;
-  MmulHelper::mmul(temp4, WhcT, dLdzr);  // [bS, nOut] x [nOut, nOut] = [bS, nOut]
+  dLdzr->assign(temp4);
   delete temp4;
 
   // dLdx = dLdz × WxT
@@ -610,7 +614,6 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   delete u;
   delete c;
   delete WhView;
-  delete WhcT;
   delete hITranspose;
   delete WhT;
   delete xT;
@@ -640,7 +643,7 @@ void gruTimeLoopBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray*
   const int bS = x->sizeAt(1);
   const int nOut = hI->sizeAt(1);
 
-  std::vector<sd::LongType> shape = {bS, 3 * nOut};
+  std::vector<sd::LongType> shape = {sL, bS, 3 * nOut};
   std::vector<sd::LongType> hShape = {sL + 1, bS, nOut};
   NDArray gates(x->ordering(), shape, dLdh->dataType(), x->getContext());
   NDArray h(x->ordering(), hShape, dLdh->dataType(), x->getContext());

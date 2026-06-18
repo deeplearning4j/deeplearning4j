@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #if NOT_EXCLUDED(OP_slice)
 namespace sd {
 namespace ops {
@@ -82,7 +82,8 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
   }
 
   if (empty) {
-    REQUIRE_TRUE(output->isEmpty(), 0, "Slice: empty array indices requested, but output array is not empty");
+    // Check both isEmpty() flag AND lengthOf() == 0 since arrays with shape [0] might not have ARRAY_EMPTY flag set
+    REQUIRE_TRUE(output->isEmpty() || output->lengthOf() == 0, 0, "Slice: empty array indices requested, but output array is not empty");
     return Status::OK;
   }
 
@@ -111,7 +112,10 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
   return Status::OK;
 }
 
-DECLARE_TYPES(slice) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(slice) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_SLICE);
+}
 
 DECLARE_SHAPE_FN(slice) {
   auto inShape = inputShape->at(0);
@@ -129,7 +133,7 @@ DECLARE_SHAPE_FN(slice) {
     auto e = INPUT_VARIABLE(2);
 
     // Check if begin/end are empty - this can happen during graph construction
-    if (b->isEmpty() || e->isEmpty()) {
+    if (shape::isEmpty(inputShape->at(1)) || shape::isEmpty(inputShape->at(2))) {
       // For slicing a 1D shape tensor to extract a single element, return scalar
       if (x_rank == 1) {
         auto scalarShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));

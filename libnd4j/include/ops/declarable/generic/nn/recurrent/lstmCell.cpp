@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_lstmCell)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/recurrent.h>
 #include <ops/declarable/helpers/lstm.h>
 
 namespace sd {
@@ -49,7 +49,6 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
   const int projection = INT_ARG(1);
   // if 1, then projection is performed, if false then numProj==numUnits is mandatory!!!!
 
-  // FIXME: double?
   const double clippingCellValue = T_ARG(0);
   // clipping value for ct, if it is not equal to zero, then cell state is clipped
   const double clippingProjValue = T_ARG(1);

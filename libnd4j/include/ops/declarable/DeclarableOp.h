@@ -43,6 +43,11 @@ using namespace sd::graph;
 namespace sd {
 namespace ops {
 
+// Forward declaration for friend class
+namespace platforms {
+class MultiPlatformDispatcher;
+}
+
 SD_LIB_EXPORT ErrorResult conditionHelper(const char* file, int line, int condition, int argNumber, const char* format,
                                          ...);
 
@@ -65,12 +70,18 @@ sd::Status resultHelper(T status, const char* func, const char* file, int line) 
  *
  */
 class SD_LIB_EXPORT DeclarableOp {
+  friend class platforms::MultiPlatformDispatcher;
+
  private:
-  std::mutex _registrator;
-  bool _registered = false;
   std::string _name;
 
  protected:
+  // _registrator and _registered are protected so subclass shape functions
+  // (e.g. BroadcastableOp::calculateOutputShape) can call registerTypes() before
+  // validateDataTypes to ensure _descriptor->_outputTypes is populated early.
+  std::mutex _registrator;
+  bool _registered = false;
+
   OpDescriptor* _descriptor;
   NDArray* _scalar = nullptr;
 

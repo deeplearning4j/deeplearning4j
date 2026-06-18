@@ -24,7 +24,9 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_multiply)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
+#include <ops/declarable/generic/helpers/BroadcastHelper.h>
+#include <ops/declarable/helpers/broadcastableFused.h>
 
 namespace sd {
 namespace ops {
@@ -36,18 +38,152 @@ BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
-   LongType* zShapeInfo = nullptr;
-  const bool areShapesBroadcastable =
-      ShapeUtils::evalBroadcastShapeInfo(x->shapeInfo(), y->shapeInfo(), true, zShapeInfo, block.getWorkspace());
-  REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !",
-               ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
+  // When input types differ, cast to output type to avoid type-punning in kernels
+  NDArray *castX = nullptr, *castY = nullptr;
+  auto cleanupCasts = [&]() { delete castX; delete castY; };
+  if (x->dataType() != z->dataType()) {
+    castX = x->cast(z->dataType());
+    x = castX;
+  }
+  if (y->dataType() != z->dataType()) {
+    castY = y->cast(z->dataType());
+    y = castY;
+  }
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo()) && !shape::isViewConst(x->shapeInfo());
+    const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo()) && !shape::isViewConst(y->shapeInfo());
+    const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo()) && !shape::isViewConst(z->shapeInfo());
+
+    if (xContiguous && yContiguous && zContiguous) {
+      helpers::fusedMultiplyContiguous(*x, *y, *z);
+      cleanupCasts();
+      return Status::OK;
+    }
+
+    x->applyPairwiseTransform(pairwise::Multiply, y, z, nullptr);
+    cleanupCasts();
+    return Status::OK;
+  }
+
+  const auto xLen = x->lengthOf();
+  const auto yLen = y->lengthOf();
+
+  if (yLen == 1) {
+    x->applyScalarArr(scalar::Multiply, y, z);
+    cleanupCasts();
+    return Status::OK;
+  }
+  if (xLen == 1) {
+    y->applyScalarArr(scalar::Multiply, x, z);
+    cleanupCasts();
+    return Status::OK;
+  }
+
+  const auto xRank = x->rankOf();
+  const auto yRank = y->rankOf();
+
+  if (xRank > 1 && yLen == x->sizeAt(-1)) {
+    bool compatible = true;
+    for (int i = 0; i < yRank - 1; i++) {
+      if (y->sizeAt(i) != 1) { compatible = false; break; }
+    }
+    if (compatible && (yRank == 1 || y->sizeAt(-1) == x->sizeAt(-1))) {
+      std::vector<sd::LongType> dims = {xRank - 1};
+      // applyBroadcast expects the other array to match TAD shape exactly,
+      // so reshape y to strip leading 1s when yRank > 1.
+      // Use view (copyToNewBuff=false) to avoid buffer allocation/deallocation
+      // which breaks CUDA graph capture (cudaFreeAsync on default stream).
+      if (yRank > 1) {
+        std::vector<sd::LongType> yShape = {yLen};
+        auto yReshaped = y->reshape(y->ordering(), yShape, false);
+        x->applyBroadcast(broadcast::Multiply, &dims, yReshaped, z);
+        delete yReshaped;
+      } else {
+        x->applyBroadcast(broadcast::Multiply, &dims, y, z);
+      }
+      cleanupCasts();
+      return Status::OK;
+    }
+  }
+  if (yRank > 1 && xLen == y->sizeAt(-1)) {
+    bool compatible = true;
+    for (int i = 0; i < xRank - 1; i++) {
+      if (x->sizeAt(i) != 1) { compatible = false; break; }
+    }
+    if (compatible && (xRank == 1 || x->sizeAt(-1) == y->sizeAt(-1))) {
+      std::vector<sd::LongType> dims = {yRank - 1};
+      if (xRank > 1) {
+        std::vector<sd::LongType> xShape = {xLen};
+        auto xReshaped = x->reshape(x->ordering(), xShape, false);
+        y->applyBroadcast(broadcast::Multiply, &dims, xReshaped, z);
+        delete xReshaped;
+      } else {
+        y->applyBroadcast(broadcast::Multiply, &dims, x, z);
+      }
+      cleanupCasts();
+      return Status::OK;
+    }
+  }
+
+  if (xRank == yRank && yRank >= 2) {
+    int leadingOnes = 0;
+    bool allTrailingMatch = true;
+    for (int i = 0; i < yRank; i++) {
+      if (y->sizeAt(i) == 1 && x->sizeAt(i) != 1) {
+        if (allTrailingMatch && leadingOnes == i) leadingOnes++;
+        else { allTrailingMatch = false; break; }
+      } else if (y->sizeAt(i) != x->sizeAt(i)) { allTrailingMatch = false; break; }
+    }
+    if (allTrailingMatch && leadingOnes > 0 && leadingOnes < yRank) {
+      std::vector<sd::LongType> dims;
+      std::vector<sd::LongType> yShape;
+      for (int i = leadingOnes; i < xRank; i++) {
+        dims.push_back(i);
+        yShape.push_back(y->sizeAt(i));
+      }
+      // Reshape y to match TAD shape (strip leading 1s)
+      auto yReshaped = y->reshape(y->ordering(), yShape, false);
+      x->applyBroadcast(broadcast::Multiply, &dims, yReshaped, z);
+      delete yReshaped;
+      cleanupCasts();
+      return Status::OK;
+    }
+  }
+
+  if (xRank == yRank && xRank >= 2) {
+    int leadingOnes = 0;
+    bool allTrailingMatch = true;
+    for (int i = 0; i < xRank; i++) {
+      if (x->sizeAt(i) == 1 && y->sizeAt(i) != 1) {
+        if (allTrailingMatch && leadingOnes == i) leadingOnes++;
+        else { allTrailingMatch = false; break; }
+      } else if (x->sizeAt(i) != y->sizeAt(i)) { allTrailingMatch = false; break; }
+    }
+    if (allTrailingMatch && leadingOnes > 0 && leadingOnes < xRank) {
+      std::vector<sd::LongType> dims;
+      std::vector<sd::LongType> xShape;
+      for (int i = leadingOnes; i < yRank; i++) {
+        dims.push_back(i);
+        xShape.push_back(x->sizeAt(i));
+      }
+      auto xReshaped = x->reshape(x->ordering(), xShape, false);
+      y->applyBroadcast(broadcast::Multiply, &dims, xReshaped, z);
+      delete xReshaped;
+      cleanupCasts();
+      return Status::OK;
+    }
+  }
 
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Multiply(), x, y, z);
-  if (tZ == nullptr)
+  if (tZ == nullptr) {
+    cleanupCasts();
     return Status::KERNEL_FAILURE;
-  else if (tZ != z)
+  } else if (tZ != z)
     THROW_EXCEPTION("multiply: result was replaced");
 
+  cleanupCasts();
   return Status::OK;
 }
 DECLARE_SYN(Mul, multiply);
@@ -105,7 +241,10 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
     y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
   } else if (x->isSameShape(dLdz)) {
-    auto yTiled = NDArray(dLdz, false, block.launchContext());
+    // Allocate a fresh buffer — NDArray(other, copyStrides, ctx) shares the raw data pointer
+    // with `other`, so tiling into it would corrupt dLdz.
+    std::vector<LongType> tileShape(dLdz->shapeOf(), dLdz->shapeOf() + dLdz->rankOf());
+    NDArray yTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
     y->tile(yTiled);
     std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
@@ -116,10 +255,12 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     delete dLdyTemp;
     yTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
   } else if (y->isSameShape(dLdz)) {
-    auto xTiled = NDArray(dLdz, false, block.launchContext());
+    // Allocate a fresh buffer — NDArray(other, copyStrides, ctx) shares the raw data pointer
+    // with `other`, so tiling into it would corrupt dLdz.
+    std::vector<LongType> tileShape(dLdz->shapeOf(), dLdz->shapeOf() + dLdz->rankOf());
+    NDArray xTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
     x->tile(xTiled);
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
-    // FIXED: Clean up intermediate result from operator*
     NDArray *yMulDldz = (*y) * (*dLdz);
     NDArray *dLdxTemp = yMulDldz->reduceAlongDimension(reduce::Sum, &axesForX);
     dLdx->assign(dLdxTemp);
@@ -127,8 +268,11 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     delete dLdxTemp;
     xTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
   } else {
-    auto xTiled = NDArray(dLdz, false, block.launchContext());
-    auto yTiled = NDArray(dLdz, false, block.launchContext());
+    // Allocate fresh buffers — NDArray(other, copyStrides, ctx) shares the raw data pointer
+    // with `other`, so tiling into either array would corrupt dLdz (and each other).
+    std::vector<LongType> tileShape(dLdz->shapeOf(), dLdz->shapeOf() + dLdz->rankOf());
+    NDArray xTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
+    NDArray yTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
     x->tile(xTiled);
     y->tile(yTiled);
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
@@ -142,7 +286,6 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     delete dLdxTemp;
 
     // For dLdy
-    // FIXED: Clean up intermediate result from operator*
     NDArray *xMulDldz = (*x) * (*dLdz);
     NDArray *dLdyTemp = xMulDldz->reduceAlongDimension(reduce::Sum, &axesForY);
     dLdy->assign(dLdyTemp);

@@ -24,7 +24,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_stack_list)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/list.h>
 
 namespace sd {
 namespace ops {
@@ -32,7 +32,6 @@ LIST_OP_IMPL(stack_list, 1, 1, 0, 0) {
   auto list = INPUT_LIST(0);
   // auto z = OUTPUT_VARIABLE(0);
 
-  // FIXME: this is obviously bad
   auto result = list->stack();
 
   // OVERWRITE_RESULT(result);

@@ -34,7 +34,22 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
 }
 
 void concat(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
-auto outputTYpe = output.dataType();
+  // Handle case where there are no input arrays
+  if (inArrs.empty()) {
+    return;
+  }
+
+  // Handle case where output is empty - check both isEmpty() flag AND length
+  // Arrays with shape like [0,1] might not have ARRAY_EMPTY flag but still have no data
+  if (output.isEmpty() || output.lengthOf() == 0) {
+    return;
+  }
+
+  // Also check if output buffer is null (defensive check)
+  if (output.getDataBuffer() == nullptr) {
+    return;
+  }
+
   BUILD_SINGLE_SELECTOR(output.dataType(), concat_, (inArrs, output, axis), SD_COMMON_TYPES);
 }
 

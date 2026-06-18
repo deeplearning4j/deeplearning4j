@@ -35,7 +35,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void rmsPropUpdaterCuda(const void *vx, const LongType *xShapeInfo, const void *vin,
+SD_KERNEL SD_INLINE void rmsPropUpdaterCuda(const void *vx, const LongType *xShapeInfo, const void *vin,
                                   const LongType *inShapeInfo, void *vz, const LongType *zShapeInfo, void *vst,
                                   const LongType *stShapeInfo, const T lr, const T rmsDecay, const T epsilon) {
   const auto x = reinterpret_cast<const T *>(vx);
@@ -127,6 +127,7 @@ void rmsPropUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "rmsPropUpdaterCudaLauncher failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void rmsPropUpdaterCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory, const cudaStream_t *stream, const void *vx, const LongType *xShapeInfo, const void *vin, const LongType *inShapeInfo, void *vz, const LongType *zShapeInfo, void *vst, const LongType *stShapeInfo, const double dLr, const double dRmsDecay, const double dEpsilon), SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 void updaterRmsProp(LaunchContext *context, NDArray&gradient, NDArray&initState, NDArray &update,

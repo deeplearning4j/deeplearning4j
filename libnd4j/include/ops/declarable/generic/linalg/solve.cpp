@@ -25,7 +25,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_solve)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/solve.h>
 namespace sd {
 namespace ops {
@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(solve, 2, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(solve) {
-  auto in0 = inputShape->at(1);
+  auto in0 = inputShape->at(0);
   auto in1 = inputShape->at(1);
   auto luShape = ShapeBuilders::copyShapeInfoAndType(in1, in0, true, block.workspace());
 

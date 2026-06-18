@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_prelu)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/activations.h>
 #include <ops/declarable/helpers/activations.h>
 
 #include <numeric>
@@ -37,18 +37,16 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
   auto alpha = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<LongType> sharedAxes = *block.getIArguments();
+  // Use reference to avoid copy-constructing a vector from a pointer,
+  // which crashes if heap corruption has damaged the vector's internal metadata.
+  const auto& iArgs = *block.getIArguments();
+  std::vector<LongType> sharedAxes(iArgs.begin(), iArgs.end());
 
   const int inputRank = input->rankOf();
   const int numSharedAxes = sharedAxes.size();  // can be zero as well
-  const LongType inputLen = input->lengthOf();
-  const LongType alphaLen = alpha->lengthOf();
-  auto* inputShapeVec = input->getShapeAsVector();
-  auto* alphaShapeVec = alpha->getShapeAsVector();
-  const std::vector<LongType> inputShape = *inputShapeVec;
-  const std::vector<LongType> alphaShape = *alphaShapeVec;
-  delete inputShapeVec;
-  delete alphaShapeVec;
+
+  const std::vector<LongType> inputShape(input->shapeOf(), input->shapeOf() + inputRank);
+  const std::vector<LongType> alphaShape(alpha->shapeOf(), alpha->shapeOf() + alpha->rankOf());
 
   //***** input validation *****//
   std::vector<LongType> expectedAlphaShape(&inputShape[1], &inputShape[inputRank]);
@@ -91,18 +89,16 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
   auto dLdI = OUTPUT_VARIABLE(0);
   auto dLdA = OUTPUT_VARIABLE(1);
 
-  std::vector<LongType> sharedAxes = *block.getIArguments();
+  const auto& iArgs = *block.getIArguments();
+  std::vector<LongType> sharedAxes(iArgs.begin(), iArgs.end());
 
   const int inputRank = input->rankOf();
   const int numSharedAxes = sharedAxes.size();  // can be zero as well
   const LongType inputLen = input->lengthOf();
   const LongType alphaLen = alpha->lengthOf();
-  auto* inputShapeVec = input->getShapeAsVector();
-  auto* alphaShapeVec = alpha->getShapeAsVector();
-  const std::vector<LongType> inputShape = *inputShapeVec;
-  const std::vector<LongType> alphaShape = *alphaShapeVec;
-  delete inputShapeVec;
-  delete alphaShapeVec;
+
+  const std::vector<LongType> inputShape(input->shapeOf(), input->shapeOf() + inputRank);
+  const std::vector<LongType> alphaShape(alpha->shapeOf(), alpha->shapeOf() + alpha->rankOf());
 
   //***** input validation *****//
 
@@ -159,10 +155,10 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
 DECLARE_TYPES(prelu_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
-      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedInputTypes(2, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedOutputTypes(1, {FLOAT32, DOUBLE, HALF});
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedInputTypes(2, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS})
+      ->setAllowedOutputTypes(1, {ALL_FLOATS});
 }
 
 }  // namespace ops

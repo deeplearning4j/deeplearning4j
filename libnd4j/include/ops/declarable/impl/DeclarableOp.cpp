@@ -20,9 +20,12 @@
 // @author raver119@gmail.com
 //
 #include <array/NDArrayFactory.h>
-#include <exceptions/datatype_exception.h>
-#include <exceptions/graph_exception.h>
-#include <graph/exceptions/unresolved_input_exception.h>
+#include <array/DataTypeUtils.h>
+#include <system/env_functions.h>
+#include <graph/profiling/GraphProfile.h>
+#include <graph/profiling/NodeProfile.h>
+#include <graph/profiling/OpTimingTracker.h>
+#include <helpers/KernelSelectionEnvironment.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/StringUtils.h>
 #include <ops/declarable/DeclarableOp.h>
@@ -33,8 +36,20 @@
 #include <ops/declarable/OpExecutionLogger.h>
 #endif
 
+// Define thread_local storage here (single translation unit) to avoid
+// MinGW/GCC multiple TLS init function definitions from inline thread_local in header.
+// This must be unconditional since NativeOpsHelpers_LifecycleTracking_Enable.cpp
+// uses OpExecutionLogger without the SD_GCC_FUNCTRACE guard.
+#include <ops/declarable/OpExecutionLogger.h>
+thread_local std::string sd::ops::OpExecutionLogger::_currentOpName;
+
 #include <cstdarg>
+#include <cstring>
 #include <sstream>
+#include <vector>
+#ifdef __linux__
+#include <malloc.h>
+#endif
 
 namespace sd {
 namespace ops {
@@ -151,15 +166,41 @@ static std::string dumpContextStackTraces(Context* block, const char* opName) {
 ErrorResult conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
   if (!condition) {
     va_list args;
+    va_list args_copy;
 
+    // First, print to stdout for debugging (keep existing behavior)
     printf("Error at [%s:%i:%i]:\n", file, line, argNumber);
     va_start(args, format);
     vprintf(format, args);
     va_end(args);
     printf("\n");
     fflush(stdout);
+
+    // Now build the error message string for the ErrorResult
+    // First pass: determine required buffer size
+    va_start(args, format);
+    va_copy(args_copy, args);
+    int msgLen = vsnprintf(nullptr, 0, format, args_copy);
+    va_end(args_copy);
+    va_end(args);
+
+    // Build the complete error message with file/line context
+    char locationBuf[256];
+    snprintf(locationBuf, sizeof(locationBuf), "Error at [%s:%d:%d]: ", file, line, argNumber);
+
+    // Allocate buffer for the formatted message
+    std::string formattedMsg;
+    if (msgLen > 0) {
+      std::vector<char> msgBuf(msgLen + 1);
+      va_start(args, format);
+      vsnprintf(msgBuf.data(), msgBuf.size(), format, args);
+      va_end(args);
+      formattedMsg = msgBuf.data();
+    }
+
     ErrorResult errorResult;
     errorResult.status = Status::BAD_ARGUMENTS;
+    errorResult.message = std::string(locationBuf) + formattedMsg;
     return errorResult;
   }
   ErrorResult errorResult;
@@ -249,7 +290,7 @@ sd::NDArray *sd::ops::DeclarableOp::getZ(Context &ctx, int inputId) {
       if (var->getNDArray() != nullptr && var->getNDArray()->nonNull()) {
         z = var->getNDArray();
       } else {
-        sd_printf("Can't get Z variable for node_%i!\n", ctx.nodeId());
+        sd_debug("Can't get Z variable for node_%i!\n", ctx.nodeId());
       }
     } else {
       THROW_EXCEPTION("getZ: Unable to return z variable!");
@@ -268,15 +309,8 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
   auto fp = ctx.isFastPath();
 
-  if (Environment::getInstance().isProfiling()) {
-    if (ctx.getVariableSpace() != nullptr && ctx.getVariableSpace()->flowPath() != nullptr) {
-      prof = ctx.getVariableSpace()->flowPath()->profile();
-      node = prof->nodeById(ctx.nodeId());
-    }
-  }
-
   if (ctx.isInplace()) {
-    if (Environment::getInstance().isProfiling() && node != nullptr) {
+    if (sd::env_isProfiling() && node != nullptr) {
       if (fp) {
         //
       } else {
@@ -334,12 +368,20 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     ShapeList inSha;
     int results = 0;
 
-    if (Environment::getInstance().isProfiling() && node != nullptr) inputStart = std::chrono::system_clock::now();
+    if (sd::env_isProfiling() && node != nullptr) inputStart = std::chrono::system_clock::now();
 
     // we build list of input shapes
     if (fp) {
-      for (const auto p : ctx.fastpath_in()) {
-        inSha.push_back(p == nullptr ? nullptr : p->shapeInfo());
+      int fpIdx = 0;
+      auto& fpIn = ctx.fastpath_in();
+      for (const auto p : fpIn) {
+        if (p != nullptr) {
+          auto si = p->shapeInfo();
+          inSha.push_back(si);
+        } else {
+          inSha.push_back(nullptr);
+        }
+        fpIdx++;
       }
     } else {
       int arrCnt = 0;
@@ -348,8 +390,10 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
         if (var->variableType() == VariableType::NDARRAY) {
           NDArray *array = var->getNDArray();
           var->markRemovable(false);
-          if (array == nullptr)
-            THROW_EXCEPTION(unresolved_input_exception::build("OP PREPARE OUTPUTS: Variable wasn't resolved prior shape calculation", p).what());
+          if (array == nullptr) {
+            std::string msg = "OP PREPARE OUTPUTS: Variable wasn't resolved prior shape calculation; Variable: [" + std::to_string(p.first) + ":" + std::to_string(p.second) + "]";
+            THROW_EXCEPTION(msg.c_str());
+          }
 
           inSha.push_back(array->shapeInfo());
 
@@ -368,7 +412,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     }
 
     // optionally saving input time
-    if (Environment::getInstance().isProfiling() && node != nullptr) {
+    if (sd::env_isProfiling() && node != nullptr) {
       inputEnd = std::chrono::system_clock::now();
       auto inputTime = std::chrono::duration_cast<std::chrono::nanoseconds>(inputEnd - inputStart).count();
       node->setInputTime(inputTime);
@@ -381,24 +425,27 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
 
     auto outSha = this->calculateOutputShape(&inSha, ctx);
-    if (sd::Environment::getInstance().isDebugAndVerbose()) {
-      sd_printf("Node_%i: %s\n", ctx.nodeId(), this->getOpDescriptor()->getOpName()->c_str());
-      sd_printf("Input shapes:\n",0);
+    if (sd::env_isDebugAndVerbose()) {
+      auto* desc = this->getOpDescriptor();
+      auto* namePtr = desc ? desc->getOpName() : nullptr;
+      const char* opNameStr = (namePtr && !namePtr->empty()) ? namePtr->c_str() : "<unknown>";
+      sd_debug("Node_%i: %s\n", ctx.nodeId(), opNameStr);
+      sd_debug("Input shapes:\n",0);
       for (int e = 0; e < inSha.size(); e++) {
         if (inSha.at(e) != nullptr) {
-          sd_printf("Shape_%i: ", e);
+          sd_debug("Shape_%i: ", e);
           shape::printShapeInfoLinear(inSha.at(e));
         } else {
-          sd_printf("Shape_%i: nullptr\n", e);
+          sd_debug("Shape_%i: nullptr\n", e);
         }
       }
-      sd_printf("Output shapes:\n",0);
+      sd_debug("Output shapes:\n",0);
       for (int e = 0; e < outSha->size(); e++) {
         if (outSha->at(e) != nullptr) {
-          sd_printf("Shape_%i: ", e);
+          sd_debug("Shape_%i: ", e);
           shape::printShapeInfoLinear(outSha->at(e));
         } else {
-          sd_printf("Shape_%i: nullptr\n", e);
+          sd_debug("Shape_%i: nullptr\n", e);
         }
       }
     }
@@ -407,7 +454,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     results = outSha->size();
 
     // optionally saving shapeTime
-    if (Environment::getInstance().isProfiling() && node != nullptr) {
+    if (sd::env_isProfiling() && node != nullptr) {
       shapeEnd = std::chrono::system_clock::now();
       auto prepTime = std::chrono::duration_cast<std::chrono::nanoseconds>(shapeEnd - shapeStart).count();
       node->setShapeFunctionTime(prepTime);
@@ -426,7 +473,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
         std::pair<int, int> pair(ctx.nodeId(), cnt++);
 
         if (!ctx.isValueAvailable(pair.second)) {
-          if (Environment::getInstance().isDebugAndVerbose())
+          if (sd::env_isDebugAndVerbose())
             shape::printShapeInfoLinear("OP PREPARE OUTPUTS: Going to create variable with shape", out);
 
           // we're creating non-initialized array here
@@ -471,7 +518,8 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
             std::string msg =
                 "Provided array [" + StringUtils::valueToString<int>(pair.second) + "] has unexpected data type";
             delete outSha;
-            THROW_EXCEPTION(sd::datatype_exception::build(msg, ArrayOptions::dataType(out), ArrayOptions::dataType(shape)).what());
+            std::string dtMsg = msg + "; Expected: [" + DataTypeUtils::asString(ArrayOptions::dataType(out)) + "]; Actual: [" + DataTypeUtils::asString(ArrayOptions::dataType(shape)) + "]";
+            THROW_EXCEPTION(dtMsg.c_str());
           }
         }
       } else {
@@ -483,14 +531,36 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
           ctx.setOutputArray(idx, outArr, true);
         } else {
           auto array = fout[idx];
-          int shapeEquals = shape::equalsSoft(out, array->shapeInfo());
+          if (array == nullptr) {
+            std::string errorMessage = "OP PREPARE OUTPUTS: Output array at index ";
+            errorMessage += std::to_string(idx);
+            errorMessage += " is nullptr for op ";
+            errorMessage += *getOpName();
+            delete outSha;
+            THROW_EXCEPTION(errorMessage.c_str());
+          }
+          sd::LongType* arrayShapeInfo = nullptr;
+          try {
+            arrayShapeInfo = array->shapeInfo();
+          } catch (...) {
+            std::string errorMessage = "OP PREPARE OUTPUTS: Output array at index ";
+            errorMessage += std::to_string(idx);
+            errorMessage += " has null or invalid shapeInfo for op ";
+            errorMessage += *getOpName();
+            errorMessage += ". This usually indicates the OpaqueNDArray was invalidated "
+                           "after being passed to native code (possible Java GC issue or "
+                           "array was closed/modified).";
+            delete outSha;
+            THROW_EXCEPTION(errorMessage.c_str());
+          }
+          int shapeEquals = shape::equalsSoft(out, arrayShapeInfo);
           int arrayEmpty = array->isEmpty();
           // checking out shape equality
           if (!shapeEquals) {
             auto eShape = ShapeUtils::shapeAsString(out);
-            auto aShape = ShapeUtils::shapeAsString(array->shapeInfo());
+            auto aShape = ShapeUtils::shapeAsString(arrayShapeInfo);
             auto eShapeInfoString = ShapeUtils::shapeInfoAsString(out);
-            auto aShapeInfoString = ShapeUtils::shapeInfoAsString(array->shapeInfo());
+            auto aShapeInfoString = ShapeUtils::shapeInfoAsString(arrayShapeInfo);
             if (eShapeInfoString != aShapeInfoString) {
               delete outSha;
 
@@ -511,7 +581,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     delete outSha;
 
     // saving arrayTime
-    if (Environment::getInstance().isProfiling() && node != nullptr) {
+    if (sd::env_isProfiling() && node != nullptr) {
       arrayEnd = std::chrono::system_clock::now();
       auto arrayTime = std::chrono::duration_cast<std::chrono::nanoseconds>(arrayEnd - arrayStart).count();
       node->setArrayTime(arrayTime);
@@ -714,7 +784,20 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
     for (auto array : block.fastpath_out()) {
       if (array == nullptr) continue;
 
-      auto cType = array->dataType();
+      sd::DataType cType;
+      try {
+        cType = array->dataType();
+      } catch (...) {
+        std::string errorMessage = "validateDataTypes: Output array at index ";
+        errorMessage += std::to_string(index);
+        errorMessage += " has null or invalid shapeInfo for op ";
+        errorMessage += _descriptor->getOpName()->data();
+        errorMessage += ". This usually indicates the OpaqueNDArray was invalidated "
+                       "after being passed to native code (possible Java GC issue or "
+                       "array was closed/modified). Output array pointer: ";
+        errorMessage += std::to_string(reinterpret_cast<uintptr_t>(array));
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
 
       if (_descriptor->isSameMode()) {
         if (index >= block.width()) {
@@ -864,29 +947,96 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 }
 
 sd::Status sd::ops::DeclarableOp::execute(Context *block) {
-  sd_debug("Executing op: [%s]\n", this->getOpName()->c_str());
+  auto* _opNamePtr = this->getOpName();
+  const char* _safeOpName = (_opNamePtr && !_opNamePtr->empty()) ? _opNamePtr->c_str() : "<unknown>";
+  sd_debug("Executing op: [%s]\n", _safeOpName);
 
   std::chrono::time_point<std::chrono::system_clock> timeEnter, timeStart, timeEnd;
   sd::LongType prepTime, outerTime;
 
+  // Op Timing Tracker setup — only construct OpTimingRecord when timing is enabled.
+  // In frozen DSP steady-state, timing is off and we skip the ~200 bytes of memset
+  // per op (1761 ops/token × 200 bytes = ~350KB wasted memset per token).
+  auto& timingTracker = graph::OpTimingTracker::getInstance();
+  const bool doTiming = timingTracker.isEnabled();
+  const bool doDetailedTiming = doTiming && timingTracker.isDetailedMode();
+  // Use aligned storage to avoid default-constructor overhead when !doTiming.
+  // OpTimingRecord has a non-trivial ctor (memset + loop) that costs ~200 bytes zero-init.
+  // The 'timingRecord' reference is only valid when doTiming is true — all direct
+  // accesses are already inside if(doTiming) blocks, and OpPhaseTimer receives nullptr
+  // when !doDetailedTiming, so no UB occurs.
+  alignas(graph::OpTimingRecord) char timingRecordStorage_[sizeof(graph::OpTimingRecord)];
+  graph::OpTimingRecord& timingRecord = *reinterpret_cast<graph::OpTimingRecord*>(timingRecordStorage_);
+  std::chrono::high_resolution_clock::time_point timingStart;
+
+  if (doTiming) {
+    new (&timingRecord) graph::OpTimingRecord();
+    timingRecord.hash = this->getOpHash();
+    const std::string* opNamePtr = this->getOpName();
+    if (opNamePtr != nullptr) {
+      size_t copyLen = std::min(opNamePtr->length(), graph::OP_NAME_MAX_LEN - 1);
+      std::memcpy(timingRecord.name, opNamePtr->c_str(), copyLen);
+      timingRecord.name[copyLen] = '\0';
+    }
+    timingRecord.threadId = std::this_thread::get_id();
+    timingRecord.timestampNanos = timingTracker.getTraceTimestamp();
+    timingStart = std::chrono::high_resolution_clock::now();
+
+    // Enter indirect helper tracking - track when nested ops use helpers
+    graph::getIndirectHelperTracker().enter();
+  }
+
   sd::LongType memoryBefore =
       block->workspace() == nullptr ? 0L : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
-  if (Environment::getInstance().isProfiling()) timeEnter = std::chrono::system_clock::now();
-  // basic validation: ensure inputs are set
-  REQUIRE_OK(this->validateNonEmptyInput(*block));
+  if (sd::env_isProfiling()) timeEnter = std::chrono::system_clock::now();
 
-  // ensure number of IArgs, TArgs match our expectations
-  REQUIRE_OK(this->validateArguments(*block));
-  // validating data types for inputs and (optionally) outputs
-  REQUIRE_OK(this->validateDataTypes(*block));
+  // Phase: VALIDATION
+  // When shapeFunctionOverride is set, the caller has pre-validated inputs
+  // and pre-allocated outputs (frozen DSP steady-state). Skip validation +
+  // shape inference to eliminate ~50ms per-op overhead on CPU decode.
+  int numOutputs;
+  if (block->shapeFunctionOverride()) {
+    numOutputs = static_cast<int>(block->fastpath_out().size());
+  } else {
+    {
+      graph::OpPhaseTimer validationTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::VALIDATION);
+      // basic validation: ensure inputs are set
+      REQUIRE_OK(this->validateNonEmptyInput(*block));
+      // ensure number of IArgs, TArgs match our expectations
+      REQUIRE_OK(this->validateArguments(*block));
+      // validating data types for inputs and (optionally) outputs
+      REQUIRE_OK(this->validateDataTypes(*block));
+    }
 
-  // this method will allocate output NDArrays for this op
-  auto numOutputs = this->prepareOutputs(*block);
+    // Phase: MEMORY_ALLOC - allocate output NDArrays
+    {
+      graph::OpPhaseTimer allocTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::MEMORY_ALLOC);
+      numOutputs = this->prepareOutputs(*block);
+    }
+  }
 
-
-  if (Environment::getInstance().isProfiling()) {
+  if (sd::env_isProfiling()) {
     timeStart = std::chrono::system_clock::now();
     prepTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeStart - timeEnter).count();
+  }
+
+  // Empty input short-circuit: if any input is empty and this op uses EMPTY_SKIP
+  // (the default for all ops), skip kernel execution entirely.
+  // TF semantics: op(x, empty) -> empty. The output shape has already been computed
+  // correctly by calculateOutputShape; the output array is already allocated as empty.
+  // Executing the kernel would crash on NULL DataBuffer dereference.
+  if (this->emptyHandling() == samediff::EmptyHandling::EMPTY_SKIP) {
+    bool hasEmptyInput = false;
+    for (int i = 0; i < block->width(); i++) {
+      auto input = block->array(i);
+      if (input != nullptr && input->isEmpty()) {
+        hasEmptyInput = true;
+        break;
+      }
+    }
+    if (hasEmptyInput) {
+      return sd::Status::OK;
+    }
   }
 
   sd::Status status;
@@ -895,7 +1045,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 #if defined(SD_GCC_FUNCTRACE)
   // Log operation start before execution
   // Note: Java stack trace would be captured via Context if available
-  std::string javaStackTrace = "";  // TODO: Get from Context if Java side sets it
+  std::string javaStackTrace = "";  // Context has no Java stack trace field; left empty
   OpExecutionLogger::getInstance().logOpStart(this->getOpName()->c_str(), block, javaStackTrace);
   // Set current op name for lifecycle trackers to capture
   OpExecutionLogger::setCurrentOpName(*this->getOpName());
@@ -904,19 +1054,30 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   // Wrap execution in try-catch to dump stack traces on exceptions
 #ifdef __cpp_exceptions
   try {
-    // platform helpers use might be forbidden for various reasons, so we'll check it out first
-    if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
-      // if we have platform-specific helper for this op - invoke it
-      if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
-        auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
-        if (helper->isUsable(*block)) {
-          status = helper->invokeHelper(*block);
+    if (block->helpersAllowed() && sd::env_helpersAllowed()) {
+      // Use the new multi-backend kernel selection infrastructure
+      // This will auto-tune and select the best available backend helper
+      {
+        graph::OpPhaseTimer helperCheckTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_CHECK);
+        graph::OpPhaseTimer helperExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_EXEC);
+
+        auto dispatchResult = platforms::KernelDispatchHelper::dispatchWithAutoTune(this, *block);
+        if (dispatchResult.first) {
+          // A helper was used successfully
+          status = dispatchResult.second;
           hasHelper = true;
+          if (doTiming) timingRecord.usedHelper = true;
+          // Mark helper used for indirect tracking - parent ops will see this
+          graph::getIndirectHelperTracker().markHelperUsed();
         }
       }
     }
 
-    if (!hasHelper) status = this->validateAndExecute(*block);
+    if (!hasHelper) {
+      // Phase: NATIVE_EXEC
+      graph::OpPhaseTimer nativeExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::NATIVE_EXEC);
+      status = this->validateAndExecute(*block);
+    }
 
 #if defined(SD_GCC_FUNCTRACE)
     // Log successful execution
@@ -967,18 +1128,30 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   }
 #else
   // platform helpers use might be forbidden for various reasons, so we'll check it out first
-  if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
-    // if we have platform-specific helper for this op - invoke it
-    if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
-      auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
-      if (helper->isUsable(*block)) {
-        status = helper->invokeHelper(*block);
+  if (block->helpersAllowed() && sd::env_helpersAllowed()) {
+    // Use the new multi-backend kernel selection infrastructure
+    // This will auto-tune and select the best available backend helper
+    {
+      graph::OpPhaseTimer helperCheckTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_CHECK);
+      graph::OpPhaseTimer helperExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::HELPER_EXEC);
+
+      auto dispatchResult = platforms::KernelDispatchHelper::dispatchWithAutoTune(this, *block);
+      if (dispatchResult.first) {
+        // A helper was used successfully
+        status = dispatchResult.second;
         hasHelper = true;
+        if (doTiming) timingRecord.usedHelper = true;
+        // Mark helper used for indirect tracking - parent ops will see this
+        graph::getIndirectHelperTracker().markHelperUsed();
       }
     }
   }
 
-  if (!hasHelper) status = this->validateAndExecute(*block);
+  if (!hasHelper) {
+    // Phase: NATIVE_EXEC
+    graph::OpPhaseTimer nativeExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::NATIVE_EXEC);
+    status = this->validateAndExecute(*block);
+  }
 
 #if defined(SD_GCC_FUNCTRACE)
   // Log result (no exceptions in this path)
@@ -992,104 +1165,159 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 #endif
 #endif
   // optionally saving execution time
-  if (Environment::getInstance().isProfiling()) {
+  if (sd::env_isProfiling()) {
     timeEnd = std::chrono::system_clock::now();
     outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
     block->setInnerTime(outerTime);
-    sd_debug("%s [%s] prepTime %lld time %lld \n", hasHelper ? "helper" : "ordinary", this->getOpName()->c_str(),
+    auto* _profOpName = this->getOpName();
+    const char* _profSafeName = (_profOpName && !_profOpName->empty()) ? _profOpName->c_str() : "<unknown>";
+    sd_debug("%s [%s] prepTime %lld time %lld \n", hasHelper ? "helper" : "ordinary", _profSafeName,
              static_cast<sd::LongType>(prepTime), static_cast<sd::LongType>(outerTime));
   }
 
-  if (Environment::getInstance().isProfiling() && block->getVariableSpace() != nullptr) {
-    auto fp = block->getVariableSpace()->flowPath();
-    if (fp != nullptr) {
-      auto p = fp->profile();
-      if (p != nullptr) {
-        sd::LongType memoryAfter = block->workspace() == nullptr
-                                   ? 0L
-                                   : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
-        sd::LongType memoryUsed = memoryAfter - memoryBefore;
-        p->nodeById(block->nodeId())->setPreparationTime(prepTime);
-        p->nodeById(block->nodeId())->setExecutionTime(outerTime);
-        p->nodeById(block->nodeId())->setTotalSize(memoryUsed);
-      }
-    }
+  if (sd::env_isProfiling() && block->getVariableSpace() != nullptr) {
   }
 
   // now we print out all outputs for this node
-  if (sd::Environment::getInstance().isDebugAndVerbose()) {
-    std::string * opName = this->getOpName();
-    if(opName == nullptr) {
-      THROW_EXCEPTION("Op name is null!");
-    }
+  if (sd::env_isDebugAndVerbose()) {
+    auto* _dbgOpName = this->getOpName();
+    const char* _dbgSafeName = (_dbgOpName && !_dbgOpName->empty()) ? _dbgOpName->c_str() : "<unknown>";
+
     if(block == nullptr) {
       THROW_EXCEPTION("Block is null!");
     }
-    sd::LongType  width = block->width();
-    sd_printf("Op with name %s and num inputs %i \n", opName->c_str(), block->width());
+    sd_debug("Op with name %s and num inputs %i \n", _dbgSafeName, block->width());
     auto vs = block->getVariableSpace();
     int numInputs = block->width();
     for (int e = 0; e < numInputs; e++) {
       auto array = block->isFastPath() ?  block->fastpath_in()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
-      sd_printf("Checking input %d  block fast path %d op name %s\n",e,block->isFastPath(),this->getOpName()->c_str());
+      sd_debug("Checking input %d  block fast path %d op name %s\n", e, block->isFastPath(), _dbgSafeName);
+      if (array == nullptr) {
+        std::string msg = "DeclarableOp::execute: input array at index " + std::to_string(e) +
+                          " is nullptr for op " + std::string(_dbgSafeName);
+        THROW_EXCEPTION(msg.c_str());
+      }
+
+      // Validate buffer before reading values — corrupt/freed buffers crash in strlen
+      auto shapeInfo = array->shapeInfo();
+      if (shapeInfo == nullptr) {
+        sd_debug("node_%i:%i input  shape: CORRUPT (null shapeInfo); skipping\n", block->nodeId(), e);
+        continue;
+      }
+      auto dataBuffer = array->dataBuffer();
+      if (dataBuffer == nullptr || (dataBuffer->primary() == nullptr && dataBuffer->special() == nullptr)) {
+        auto shape = ShapeUtils::shapeAsString(array);
+        sd_debug("node_%i:%i input  shape: %s; dtype: ?; values: UNALLOCATED BUFFER\n", block->nodeId(), e, shape.c_str());
+        continue;
+      }
+      // Guard against closed buffers — asString() calls syncToHost() which crashes on closed DataBuffers
+      if (dataBuffer->isClosed()) {
+        auto shape = ShapeUtils::shapeAsString(array);
+        sd_debug("node_%i:%i input  shape: %s; dtype: %s; values: CLOSED BUFFER\n",
+                  block->nodeId(), e, shape.c_str(), DataTypeUtils::asString(array->dataType()).c_str());
+        continue;
+      }
+
       auto shape = ShapeUtils::shapeAsString(array);
-      //limit size preview for string arrays due to allocation size when debugging
-      int sizePreview = array->isS() ? 2 : 32;
-      auto first = array->isEmpty() ? new std::string(std::string("Empty NDArray")) : array->asString(sizePreview);
       auto type = DataTypeUtils::asString(array->dataType());
 
-      sd_printf("node_%i:%i input  shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
-                type.c_str(), first->c_str());
+      // SAFETY: Do NOT read buffer values here (no asString / e<T> / syncToHost).
+      // asString() → e<float>() → preparePrimaryUse() → cudaMemcpy on CUDA.
+      // If the device buffer was freed (view of a replaced constant, DSP slot
+      // whose GPU allocation was reclaimed, or offset past valid allocation),
+      // cudaMemcpy triggers SIGSEGV which kills the JVM. SIGSEGV is a signal —
+      // C++ try-catch cannot intercept it. Shape and dtype are always safe to
+      // read (stored in CPU-side metadata). Value preview requires explicit
+      // opt-in via printIndexedBuffer() at call sites that guarantee buffer validity.
+      sd_debug("node_%i:%i input  shape: %s; dtype: %s; length: %lld%s\n",
+                block->nodeId(), e, shape.c_str(), type.c_str(),
+                (long long)array->lengthOf(), array->isEmpty() ? " (empty)" : "");
     }
 
     for (size_t e = 0; e < static_cast<size_t>(numOutputs); e++) {
-      // if given output index doesn't exist - we're done
-      sd_printf("Declarable op execute: processing output %d\n",e);
+      sd_debug("Declarable op execute: processing output %d\n", e);
 
       if (!block->isFastPath()) {
         if (!vs->hasVariable(block->nodeId(), e)) break;
       } else {
-        // we have to check either in or out stack, depending on isInplace()
-        if (block->isInplace()) {
-          if (block->fastpath_out().size() <= e) break;
-        } else {
-          if (block->fastpath_out().size() <= e) break;
-        }
+        if (block->fastpath_out().size() <= e) break;
       }
 
       auto array = block->isFastPath() ?  block->fastpath_out()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
 
       if(array == nullptr) {
-        THROW_EXCEPTION("DeclarableOp::execute: array is nullptr");
+        THROW_EXCEPTION("DeclarableOp::execute: output array is nullptr");
+      }
+
+      auto shapeInfo = array->shapeInfo();
+      if (shapeInfo == nullptr) {
+        sd_debug("node_%i:%i result shape: CORRUPT (null shapeInfo); skipping\n", block->nodeId(), (int)e);
+        continue;
+      }
+      auto dataBuffer = array->dataBuffer();
+      if (dataBuffer == nullptr || (dataBuffer->primary() == nullptr && dataBuffer->special() == nullptr)) {
+        auto shape = ShapeUtils::shapeAsString(array);
+        sd_debug("node_%i:%i result shape: %s; dtype: ?; values: UNALLOCATED BUFFER\n", block->nodeId(), (int)e, shape.c_str());
+        continue;
+      }
+      if (dataBuffer->isClosed()) {
+        auto shape = ShapeUtils::shapeAsString(array);
+        sd_debug("node_%i:%i result shape: %s; dtype: %s; values: CLOSED BUFFER\n",
+                  block->nodeId(), (int)e, shape.c_str(), DataTypeUtils::asString(array->dataType()).c_str());
+        continue;
       }
 
       auto shape = ShapeUtils::shapeAsString(array);
-      bool isEmpty = array->isEmpty();
-      bool isScalar = array->isScalar();
-      int lengthOf = array->lengthOf();
-      sd::LongType len = sd::math::sd_min<LongType>(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
-      auto first = array->isEmpty() ? new std::string(std::string("Empty NDArray")) : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());
 
-      sd_printf("node_%i:%i result shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
-                type.c_str(), first->c_str());
+      // SAFETY: Same as input logging — no value reads. See comment above.
+      sd_debug("node_%i:%i result shape: %s; dtype: %s; length: %lld%s\n",
+                block->nodeId(), (int)e, shape.c_str(), type.c_str(),
+                (long long)array->lengthOf(), array->isEmpty() ? " (empty)" : "");
     }
   }
 
   traceExecIfNeeded(*block);
 
+  // Record timing if enabled
+  if (doTiming) {
+    auto timingEnd = std::chrono::high_resolution_clock::now();
+    timingRecord.phaseNanos[static_cast<int>(graph::OpPhase::TOTAL)] =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(timingEnd - timingStart).count();
+
+    // Exit indirect helper tracking - check if any nested ops used helpers
+    bool indirectHelperUsed = graph::getIndirectHelperTracker().exit();
+    // If this op didn't directly use a helper, but nested ops did, mark it as using helper
+    if (!timingRecord.usedHelper && indirectHelperUsed) {
+      timingRecord.usedHelper = true;
+    }
+
+    timingTracker.record(timingRecord);
+  }
 
   return status;
 }
 
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array, bool remove) {
   if (block.isFastPath()) {
-    if (remove && block.fastpath_out()[outputIdx] != nullptr) {
-      // delete reference/call destructor if remove is true
+    auto existing = block.fastpath_out()[outputIdx];
+    if (block.shapeFunctionOverride() && existing != nullptr && existing != array) {
+      // DSP mode: Java pre-allocated the output and owns its DataBuffer.
+      // We must NOT delete it (Java still has a reference).
+      // Copy data from the new array if shapes match.
+      if (existing->isSameShape(array) && existing->dataType() == array->dataType()) {
+        existing->assign(array);
+        delete array;
+        return;
+      }
+      // Shapes differ — fall through but NEVER delete the Java-managed output
+      remove = false;
+    }
+    if (remove && existing != nullptr) {
       sd_debug("Deleting extra reference in fast path at idx %d\n",outputIdx);
-      delete block.fastpath_out()[outputIdx];
+      delete existing;
     }
     sd_debug("In fast path, setting variable\n", 0);
     block.fastpath_out()[outputIdx] = array;
@@ -1121,17 +1349,47 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
 }
 
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array) {
-  block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
-  auto varSpace = block.getVariableSpace();
-  if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
-    auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
-    if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
-
-    var->setNDArray(array);
-    var->markRemovable(true);
+  if (block.isFastPath()) {
+    auto existing = block.fastpath_out()[outputIdx];
+    if (block.shapeFunctionOverride() && existing != nullptr && existing != array) {
+      // DSP mode: Java pre-allocated the output and owns its DataBuffer.
+      // Replacing the pointer orphans the Java-managed NDArray and leaks the
+      // C++-created temporary (tZ) since Java never sees the replacement.
+      // Instead, copy data from tZ into the existing output if shapes match.
+      if (existing->isSameShape(array) && existing->dataType() == array->dataType()) {
+        existing->assign(array);
+        delete array;  // Free the C++-created temporary
+        return;
+      }
+      // Shapes differ — DSP shape computation didn't match the op's actual output.
+      // Log once and fall through to replacement (will leak, but avoids data corruption).
+      static bool warnedOnce = false;
+      if (!warnedOnce) {
+        auto existingShape = ShapeUtils::shapeAsString(existing);
+        auto newShape = ShapeUtils::shapeAsString(array);
+        sd_debug("WARNING: OVERWRITE_RESULT in DSP mode with shape mismatch: existing=%s new=%s (op output idx %d). "
+                  "This leaks the C++ temporary array. Fix DSP shape computation for this op.\n",
+                  existingShape.c_str(), newShape.c_str(), outputIdx);
+        warnedOnce = true;
+      }
+    }
+    block.fastpath_out()[outputIdx] = array;
   } else {
-    auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
-    varSpace->putVariable(block.getNodeId(), outputIdx, var);
+    auto varSpace = block.getVariableSpace();
+    if (varSpace == nullptr) {
+      THROW_EXCEPTION("Var space should not be null in overwriteResult!");
+    }
+    block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
+    if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
+      auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
+      if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
+
+      var->setNDArray(array);
+      var->markRemovable(true);
+    } else {
+      auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
+      varSpace->putVariable(block.getNodeId(), outputIdx, var);
+    }
   }
 }
 
@@ -1266,8 +1524,6 @@ sd::Status sd::ops::DeclarableOp::execute(sd::graph::RandomGenerator &rng, const
                                           const std::vector<sd::LongType> &iArgs, const std::vector<bool> &bArgs,
                                           const std::vector<sd::DataType> &dArgs, bool isInplace, sd::DataType type) {
   VariableSpace variableSpace;
-  FlowPath fp;
-  variableSpace.setFlowPath(&fp);
 
   int cnt = -1;
   std::vector<int> in;
@@ -1297,8 +1553,7 @@ sd::Status sd::ops::DeclarableOp::execute(sd::graph::RandomGenerator &rng, const
 
   for (size_t e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
 
-  // FIXME: iargs should be sd::LongType
-  for (size_t e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(static_cast<int>(iArgs.at(e)));
+  for (size_t e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(iArgs.at(e));
 
   for (size_t e = 0; e < bArgs.size(); e++) block.getBArguments()->push_back(static_cast<int>(bArgs.at(e)));
 
@@ -1429,9 +1684,6 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
                                      const std::vector<sd::LongType> &iArgs, const std::vector<bool> &bArgs,
                                      const std::vector<sd::DataType> &dArgs, bool isInplace) {
   VariableSpace variableSpace;
-  // ResultSet arrayList;
-  FlowPath fp;
-  variableSpace.setFlowPath(&fp);
 
   int cnt = -1;
   std::vector<int> in;
@@ -1522,7 +1774,7 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
 }
 
 sd::ResultSet sd::ops::DeclarableOp::execute(const sd::OpArgsHolder &holder, bool isInplace) {
-  // FIXME: add DArgs to OpArgsHolder
+  // OpArgsHolder does not carry DArgs; passing empty DataType vector
   return evaluate(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), holder.getBArgs(),
                   std::vector<sd::DataType>(), isInplace);
 }

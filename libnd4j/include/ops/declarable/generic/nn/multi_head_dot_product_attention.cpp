@@ -26,7 +26,8 @@
 #if NOT_EXCLUDED(OP_multi_head_dot_product_attention)
 
 #include <helpers/AttentionHelper.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
+#include <ops/declarable/headers/blas.h>
 
 namespace sd {
 namespace ops {
@@ -116,22 +117,28 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention, 7, -1, false, 0, 2) {
       shape,
       projectedValues.dataType(), block.launchContext());
   sd::ops::dot_product_attention attention;
-  attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask},
-                    {&attnResults, weights ? OUTPUT_VARIABLE(1) : nullptr}, {}, {normalization, weights}, {});
+  if (weights) {
+    attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask},
+                      {&attnResults, OUTPUT_VARIABLE(1)}, {}, {normalization, 1}, {});
+  } else {
+    attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask},
+                      {&attnResults}, {}, {normalization, 0}, {});
+  }
 
-  // Project attention results
+  // Project attention results — dup after permute to make contiguous before reshape
   attnResults.permutei({0, 3, 1, 2}, 0, false);
-  attnResults.reshapei(attnResults.ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
+  auto attnContig = attnResults.dup('c');
+  attnContig->reshapei(attnContig->ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
 
   sd::ops::matmul mmul;
-  std::vector<sd::LongType> projShape ={attnResults.sizeAt(0), Wo->sizeAt(1)};
+  std::vector<sd::LongType> projShape ={attnContig->sizeAt(0), Wo->sizeAt(1)};
   NDArray projRes('c', projShape, values->dataType(), block.launchContext());
-  mmul.execute({&attnResults, Wo}, {&projRes}, {}, {}, {});
+  mmul.execute({attnContig, Wo}, {&projRes}, {}, {}, {});
   projRes.reshapei(projRes.ordering(), {miniBatchSize, queryCount, outSize});
   projRes.permutei({0, 2, 1}, 0, false);
 
-  // FIXME: bad for performance
   output->assign(&projRes);
+  delete attnContig;
 
   return sd::Status::OK;
 }
@@ -139,6 +146,7 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention, 7, -1, false, 0, 2) {
 DECLARE_TYPES(multi_head_dot_product_attention) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(multi_head_dot_product_attention) {
@@ -256,19 +264,24 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1) {
   attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask}, {&attnResults}, {}, {normalization, 0},
                     {});
 
-  // Project attention results
+  // Project attention results — dup after permute to make contiguous before reshape
   attnResults.permutei({0, 3, 1, 2}, 0, false);
-  attnResults.reshapei(attnResults.ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
+  auto attnContigBp = attnResults.dup('c');
+  attnContigBp->reshapei(attnContigBp->ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
 
   std::vector<sd::LongType> perm = {0,2,1};
-  // dLdWo
+  // dLdWo — dup after permute to make contiguous before reshape
   auto epsPerm = eps->permute(perm, false, false);
+  auto epsPermDup = epsPerm->dup('c');
   std::vector<sd::LongType> epsShape =  {miniBatchSize * queryCount, outSize};
-  auto epsPostReshape = epsPerm->reshape(eps->ordering(), epsShape);
+  auto epsPostReshape = epsPermDup->reshape(eps->ordering(), epsShape);
   sd::ops::matmul_bp matmulBp;
-  NDArray dLdPreWo(attnResults.shapeInfo(), false, block.launchContext());
-  matmulBp.execute({&attnResults, Wo, epsPostReshape}, std::vector<NDArray *>{&dLdPreWo, dLdWo}, {}, {}, {});
+  NDArray dLdPreWo(attnContigBp->shapeInfo(), false, block.launchContext());
+  matmulBp.execute({attnContigBp, Wo, epsPostReshape}, std::vector<NDArray *>{&dLdPreWo, dLdWo}, {}, {}, {});
   delete epsPostReshape;
+  delete epsPermDup;
+  delete epsPerm;
+  delete attnContigBp;
   // dLdAttn
   dLdPreWo.reshapei({miniBatchSize, queryCount, numHeads, projectedValues.sizeAt(2)});
   dLdPreWo.permutei({0, 2, 3, 1}, 0, false);
@@ -290,6 +303,7 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1) {
 DECLARE_TYPES(multi_head_dot_product_attention_bp) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(multi_head_dot_product_attention_bp) {

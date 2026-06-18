@@ -24,7 +24,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_clipbyvalue)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
@@ -33,7 +33,10 @@ CONFIGURABLE_OP_IMPL(clipbyvalue, -2, 1, true, -2, 0) {
  auto input = INPUT_VARIABLE(0);
  auto output = OUTPUT_VARIABLE(0);
 
- if (block.getTArguments()->size() > 0) {
+ // When 3+ inputs are provided (input, min, max), always use input arrays.
+ // This is the ONNX calling convention. Only use tArgs when there's a single input
+ // and tArgs are explicitly provided (the legacy/direct calling convention).
+ if (block.width() < 3 && block.getTArguments()->size() > 0) {
    auto left = T_ARG(0);
    auto right = T_ARG(1);
 
@@ -90,36 +93,68 @@ CONFIGURABLE_OP_IMPL(clipbyvalue, -2, 1, true, -2, 0) {
      case HALF2:
        break;
 #if defined(HAS_INT8)
-     case INT8:
+     case INT8: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_INT16)
-     case INT16:
+     case INT16: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_INT32)
-     case INT32:
+     case INT32: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_LONG)
-     case INT64:
+     case INT64: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_UINT8)
-     case UINT8:
+     case UINT8: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_UINT16)
-     case UINT16:
+     case UINT16: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_UINT32)
-     case UINT32:
+     case UINT32: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_UNSIGNEDLONG)
-     case UINT64:
+     case UINT64: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
      case QINT8:
        break;
@@ -155,7 +190,8 @@ CONFIGURABLE_OP_IMPL(clipbyvalue, -2, 1, true, -2, 0) {
 DECLARE_SYN(ClipByValue, clipbyvalue);
 
 DECLARE_TYPES(clipbyvalue) {
- getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+ getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+ getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

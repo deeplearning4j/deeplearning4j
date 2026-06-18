@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_onehot)
 
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/one_hot.h>
 
 namespace sd {
@@ -32,7 +32,6 @@ namespace ops {
 CUSTOM_OP_IMPL(onehot, 1, 1, false, -2, -2) {
   auto input = INPUT_VARIABLE(0);
 
-  // FIXME: double?
   double on(1.0f);   // T_ARG(0);
   double off(0.0f);  // T_ARG(1);
 

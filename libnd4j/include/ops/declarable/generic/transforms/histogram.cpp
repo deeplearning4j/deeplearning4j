@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_histogram)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/histogram.h>
 #include <ops/declarable/helpers/transforms.h>
 

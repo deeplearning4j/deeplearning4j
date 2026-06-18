@@ -85,7 +85,7 @@ static void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGen
       arr = &output;
     }
 
-    const sd::LongType ews = arr->ews();
+    const bool isContiguous = shape::strideDescendingCAscendingF(arr->shapeInfo());
 
     const sd::LongType len = arr->lengthOf();
     const sd::LongType threshold = 1 << 22;  // this number was deduced from diagram in article
@@ -99,7 +99,7 @@ static void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGen
       for (auto i = start; i < stop; ++i) {
         sd::LongType offset = (len * i) >> power;
         sd::LongType currLen = ((len * (i + 1)) >> power) - offset;
-        fisherYates<T>(rng, arr->bufferAsT<T>() + offset * ews, currLen, ews, offset);
+        fisherYates<T>(rng, arr->bufferAsT<T>() + offset, currLen, isContiguous ? 1 : arr->stridesOf()[0], offset);
       }
     };
 
@@ -108,7 +108,7 @@ static void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGen
         sd::LongType offset = len * i >> power;
         sd::LongType len1 = (len * (i + increment / 2) >> power) - offset;
         sd::LongType totLen = (len * (i + increment) >> power) - offset;
-        mergeShuffle<T>(rng, arr->bufferAsT<T>() + offset * ews, len1, totLen, ews, len * k + offset);
+        mergeShuffle<T>(rng, arr->bufferAsT<T>() + offset, len1, totLen, isContiguous ? 1 : arr->stridesOf()[0], len * k + offset);
       }
     };
 

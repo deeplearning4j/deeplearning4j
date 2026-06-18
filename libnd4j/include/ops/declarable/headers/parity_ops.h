@@ -906,6 +906,101 @@ DECLARE_CUSTOM_OP(xw_plus_b_bp, 4, 3, false, 0, 0);
 #endif
 
 /**
+ * LoRA (Low-Rank Adaptation) fused matrix multiplication.
+ * Computes: output = input @ weight^T + scaling * (input @ A^T @ B^T)
+ *
+ * This fused operation is more efficient than computing the two matmuls
+ * separately and supports automatic differentiation for training LoRA adapters.
+ *
+ * Input params:
+ *   0: input   - [batch, in_features]
+ *   1: weight  - [out_features, in_features] (frozen base weight)
+ *   2: loraA   - [r, in_features] (trainable, Kaiming initialized)
+ *   3: loraB   - [out_features, r] (trainable, zero initialized)
+ *
+ * T Arguments:
+ *   0: scaling - alpha/r scaling factor (default: 1.0)
+ *   1: dropout - dropout probability (default: 0.0)
+ *
+ * B Arguments:
+ *   0: transposeWeight - whether weight needs transpose (default: true)
+ *
+ * Output:
+ *   0: output  - [batch, out_features]
+ */
+#if NOT_EXCLUDED(OP_lora_matmul)
+DECLARE_CUSTOM_OP(lora_matmul, 4, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(lora_matmul_bp, 5, 4, false, 0, 0);
+#endif
+
+/**
+ * LoHa (Low-Rank Hadamard Product) fused matrix multiplication.
+ * Computes: output = input @ weight^T + scaling * input @ ((B1 @ A1) * (B2 @ A2))^T
+ *
+ * Uses two low-rank decompositions with Hadamard product for effective rank up to dim^2.
+ *
+ * Input params:
+ *   0: input   - [batch, in_features]
+ *   1: weight  - [out_features, in_features]
+ *   2: lohaA1  - [dim, in_features]
+ *   3: lohaB1  - [out_features, dim]
+ *   4: lohaA2  - [dim, in_features]
+ *   5: lohaB2  - [out_features, dim]
+ *
+ * T Arguments:
+ *   0: scaling - alpha/dim scaling factor
+ */
+#if NOT_EXCLUDED(OP_loha_matmul)
+DECLARE_CUSTOM_OP(loha_matmul, 6, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(loha_matmul_bp, 7, 6, false, 0, 0);
+#endif
+
+/**
+ * LoKr (Low-Rank Kronecker Product) fused matrix multiplication.
+ * Computes: output = input @ weight^T + scaling * input @ (C ⊗ (B @ A))^T
+ *
+ * Uses Kronecker products for weight updates with controllable factorization.
+ *
+ * Input params:
+ *   0: input   - [batch, in_features]
+ *   1: weight  - [out_features, in_features]
+ *   2: lokrC   - [f1, f2] Kronecker factor
+ *   3: lokrA   - [dim, d2]
+ *   4: lokrB   - [d1, dim]
+ *
+ * I Arguments:
+ *   0: factor1 - Kronecker factor dimension 1
+ *   1: factor2 - Kronecker factor dimension 2
+ */
+#if NOT_EXCLUDED(OP_lokr_matmul)
+DECLARE_CUSTOM_OP(lokr_matmul, 5, 1, false, 0, 2);
+DECLARE_CUSTOM_OP(lokr_matmul_bp, 6, 5, false, 0, 2);
+#endif
+
+/**
+ * DoRA (Weight-Decomposed Low-Rank Adaptation) fused matrix multiplication.
+ * Computes: output = input @ (m * (W + scaling * B @ A) / ||W + scaling * B @ A||)^T
+ *
+ * Decomposes updates into magnitude and direction components.
+ *
+ * Input params:
+ *   0: input     - [batch, in_features]
+ *   1: weight    - [out_features, in_features]
+ *   2: loraA     - [r, in_features]
+ *   3: loraB     - [out_features, r]
+ *   4: magnitude - [out_features]
+ *
+ * T Arguments:
+ *   0: scaling - alpha/r scaling factor
+ *   1: dropout - dropout probability
+ *   2: eps     - epsilon for numerical stability
+ */
+#if NOT_EXCLUDED(OP_dora_matmul)
+DECLARE_CUSTOM_OP(dora_matmul, 5, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(dora_matmul_bp, 6, 5, false, 0, 0);
+#endif
+
+/**
  * This operation is missed due it simplicy.
  * Input and output params are the same after operation.
  * Input - NDArray, output - NDArray with the same shape.
@@ -1901,6 +1996,29 @@ DECLARE_CUSTOM_OP(compare_and_bitpack, 2, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_eig)
 DECLARE_CUSTOM_OP(eig, 1, 2, false, 0, 0);
+#endif
+
+
+/**
+ * cast_and_scale - Fused cast and scale operation for mixed precision training
+ *
+ * Casts input to target data type and multiplies by scale factor in a single pass.
+ * More efficient than separate cast + multiply operations.
+ *
+ * input params:
+ *    0 - NDArray (input) - tensor to cast and scale
+ *
+ * T_ARG params:
+ *    0 - scale factor (double)
+ *
+ * int params:
+ *    0 - target data type (as integer, use DataTypeUtils::fromInt)
+ *
+ * output:
+ *    0 - NDArray with target data type, values = input * scale
+ */
+#if NOT_EXCLUDED(OP_cast_and_scale)
+DECLARE_CUSTOM_OP(cast_and_scale, 1, 1, false, 1, 1);
 #endif
 
 }  // namespace ops

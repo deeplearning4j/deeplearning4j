@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_zeta)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/zeta.h>
 
 namespace sd {
@@ -39,7 +39,6 @@ CONFIGURABLE_OP_IMPL(zeta, 2, 1, false, 0, 0) {
 
   LongType arrLen = x->lengthOf();
 
-  // FIXME: this should NOT be loop.
   for (LongType i = 0; i < arrLen; ++i) {
     REQUIRE_TRUE(x->e<float>(i) > 1.f, 0, "ZETA op: all elements of x array must be > 1 !");
     REQUIRE_TRUE(q->e<float>(i) > 0.f, 0, "ZETA op: all elements of q array must be > 0 !");

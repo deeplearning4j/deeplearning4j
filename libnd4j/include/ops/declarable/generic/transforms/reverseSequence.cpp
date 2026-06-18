@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reverse_sequence)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/transforms.h>
 #include <ops/declarable/helpers/reverse.h>
 
 namespace sd {

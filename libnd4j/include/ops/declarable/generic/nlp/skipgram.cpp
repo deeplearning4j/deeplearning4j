@@ -21,9 +21,10 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_skipgram)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nlp.h>
 #include <ops/declarable/helpers/sg_cb.h>
 
 namespace sd {

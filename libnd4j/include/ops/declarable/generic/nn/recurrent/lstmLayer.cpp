@@ -23,9 +23,10 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_lstmLayer)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/recurrent.h>
 #include <ops/declarable/helpers/lstmLayer.h>
 
 namespace sd {
@@ -311,7 +312,6 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
       }
     }
 
-    // FIXME - following two calls are independent and may run in different streams
     helpers::lstmLayerTimeLoop(x, WxFwd, WrFwd, bFwd, seqLen, hIFwd, cIFwd, WpFwd, params, true, hFwd, hLFwd, cLFwd);
     helpers::lstmLayerTimeLoop(x, WxBwd, WrBwd, bBwd, seqLen, hIBwd, cIBwd, WpBwd, params, false, hBwd, hLBwd, cLBwd);
 
@@ -357,22 +357,23 @@ DECLARE_SHAPE_FN(lstmLayer) {
   const auto retLastC = B_ARG(7);  // indicates whether to return cells state at last time step only, in this case shape
   // would be [bS, nOut] (exact shape depends on dataFormat argument)
 
-  const auto x = INPUT_VARIABLE(0);   // input
-  const auto Wx = INPUT_VARIABLE(1);  // input weights
-  const auto Wr = INPUT_VARIABLE(2);  // recurrent weights
+  auto xSI = inputShape->at(0);   // input
+  auto WxSI = inputShape->at(1);  // input weights
 
   // evaluate dimensions
-  const LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
-  const LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
-  const LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
-  const LongType nOut = Wx->sizeAt(-1) / 4;
+  const LongType sL = dataFormat == 3 ? shape::sizeAt(xSI, static_cast<LongType>(0)) : shape::sizeAt(xSI, static_cast<LongType>(dataFormat));
+  const LongType bS = dataFormat == 1 || dataFormat == 2 ? shape::sizeAt(xSI, static_cast<LongType>(0)) : shape::sizeAt(xSI, static_cast<LongType>(1));
+  const LongType nIn = dataFormat == 2 ? shape::sizeAt(xSI, static_cast<LongType>(1)) : shape::sizeAt(xSI, static_cast<LongType>(2));
+  const LongType nOut = shape::sizeAt(WxSI, static_cast<LongType>(-1)) / 4;
 
+  const DataType xDataType = ArrayOptions::dataType(xSI);
   DataType type;
-  if (x->isR())
-    type = x->dataType();
+  if (DataTypeUtils::isR(xDataType))
+    type = xDataType;
   else
     type = FLOAT32;
 
+  const char xOrder = shape::order(xSI);
   auto shapes = SHAPELIST();
 
   // evaluate h shape (output)
@@ -398,7 +399,7 @@ DECLARE_SHAPE_FN(lstmLayer) {
       hShape = {sL, 2, bS, nOut};
     }
 
-    shapes->push_back(ConstantShapeHelper::getInstance().createShapeInfo(type, x->ordering(), hShape));
+    shapes->push_back(ConstantShapeHelper::getInstance().createShapeInfo(type, xOrder, hShape));
   }
 
   // evaluate hL shape (output at last step)
@@ -410,7 +411,7 @@ DECLARE_SHAPE_FN(lstmLayer) {
     else
       hLShape = {2, bS, nOut};
 
-    shapes->push_back(ConstantShapeHelper::getInstance().createShapeInfo(type, x->ordering(), hLShape));
+    shapes->push_back(ConstantShapeHelper::getInstance().createShapeInfo(type, xOrder, hLShape));
 
     if (retLastC)  // cL and hL have same shapes
       shapes->push_back(shapes->at(shapes->size() - 1));
@@ -425,7 +426,7 @@ DECLARE_SHAPE_FN(lstmLayer) {
     else
       cLShape = {2, bS, nOut};
 
-    shapes->push_back(ConstantShapeHelper::getInstance().createShapeInfo(type, x->ordering(), cLShape));
+    shapes->push_back(ConstantShapeHelper::getInstance().createShapeInfo(type, xOrder, cLShape));
   }
 
   return shapes;
@@ -866,7 +867,6 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
 
     NDArray *dLdxBwd = dLdx->ulike();
 
-    // FIXME - following two calls are independent and may run in different streams
     helpers::lstmLayerTimeLoopBp(x, WxFwd, WrFwd, bFwd, seqLen, hIFwd, cIFwd, WpFwd, dLdhFwd, dLdhLFwd, dLdcLFwd,
                                  params, true, dLdx,dLdWxFwd, dLdWrFwd, dLdbFwd, dLdhIFwd, dLdcIFwd, dLdWpFwd);
     helpers::lstmLayerTimeLoopBp(x, WxBwd, WrBwd, bBwd, seqLen, hIBwd, cIBwd, WpBwd, dLdhBwd, dLdhLBwd, dLdcLBwd,
@@ -908,11 +908,6 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
       delete dLdhBwd;
     }
 
-    if(directionMode > 2) {
-      delete dLdhFwd;
-      delete dLdhBwd;
-    }
-
   }
 
   return Status::OK;
@@ -930,32 +925,32 @@ DECLARE_SHAPE_FN(lstmLayer_bp) {
   const auto hasPH = B_ARG(4);      // indicates whether peephole connections are present
 
   int count = 3;
-  const auto x = INPUT_VARIABLE(0);                                   // input
-  const auto Wx = INPUT_VARIABLE(1);                                  // input weights
-  const auto Wr = INPUT_VARIABLE(2);                                  // recurrent weights
-  const auto b = hasBiases ? INPUT_VARIABLE(count++) : nullptr;       // biases
-  const auto seqLen = hasSeqLen ? INPUT_VARIABLE(count++) : nullptr;  // seqLen vector
-  const auto hI = hasInitH ? INPUT_VARIABLE(count++) : nullptr;       // initial output
-  const auto cI = hasInitC ? INPUT_VARIABLE(count++) : nullptr;       // initial cell state
-  const auto Wp = hasPH ? INPUT_VARIABLE(count++) : nullptr;          // peephole weights
+  auto xSI = inputShape->at(0);                                                  // input
+  auto WxSI = inputShape->at(1);                                                 // input weights
+  auto WrSI = inputShape->at(2);                                                 // recurrent weights
+  LongType* const bSI = hasBiases ? inputShape->at(count++) : nullptr;           // biases
+  LongType* const seqLenSI = hasSeqLen ? inputShape->at(count++) : nullptr;      // seqLen vector
+  LongType* const hISI = hasInitH ? inputShape->at(count++) : nullptr;           // initial output
+  LongType* const cISI = hasInitC ? inputShape->at(count++) : nullptr;           // initial cell state
+  LongType* const WpSI = hasPH ? inputShape->at(count++) : nullptr;              // peephole weights
 
-  auto outShapes = SHAPELIST(x->shapeInfo(), Wx->shapeInfo(), Wr->shapeInfo());
+  auto outShapes = SHAPELIST(xSI, WxSI, WrSI);
 
-  if (b != nullptr) {
-    outShapes->push_back(b->shapeInfo());
+  if (bSI != nullptr) {
+    outShapes->push_back(bSI);
   }
-  if (seqLen != nullptr) {
-    outShapes->push_back(seqLen->shapeInfo());
+  if (seqLenSI != nullptr) {
+    outShapes->push_back(seqLenSI);
   }
-  if (hI != nullptr) {
-    outShapes->push_back(hI->shapeInfo());
+  if (hISI != nullptr) {
+    outShapes->push_back(hISI);
   }
-  if (cI != nullptr) {
-    outShapes->push_back(cI->shapeInfo());
+  if (cISI != nullptr) {
+    outShapes->push_back(cISI);
   }
 
-  if (Wp != nullptr) {
-    outShapes->push_back(Wp->shapeInfo());
+  if (WpSI != nullptr) {
+    outShapes->push_back(WpSI);
   }
 
   return outShapes;

@@ -64,55 +64,34 @@ static void amsGradUpdater_(NDArray& gradient, NDArray& initStateV, NDArray& ini
   const T mbeta1 = (1 - beta1);
   const T mbeta2 = (1 - beta2);
 
-  bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateM.ews() && 1 == initStateM.ews() &&
-               1 == stateV.ews() && 1 == initStateV.ews() && 1 == stateH.ews() && 1 == initStateH.ews();
-  bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateV.ordering() &&
-                       stateV.ordering() == initStateV.ordering() && stateV.ordering() == initStateM.ordering() &&
-                       stateM.ordering() == initStateM.ordering() && stateM.ordering() == initStateH.ordering() &&
-                       stateH.ordering() == initStateH.ordering();
+  // Cache shape information
+  const auto gradientShapeInfo = gradient.shapeInfo();
+  const auto updateShapeInfo = update.shapeInfo();
+  const auto initStateVShapeInfo = initStateV.shapeInfo();
+  const auto stateVShapeInfo = stateV.shapeInfo();
+  const auto initStateMShapeInfo = initStateM.shapeInfo();
+  const auto stateMShapeInfo = stateM.shapeInfo();
+  const auto initStateHShapeInfo = initStateH.shapeInfo();
+  const auto stateHShapeInfo = stateH.shapeInfo();
 
-  if (bEws1 && bSameOrdering) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        stM[i] = beta1 * initM[i] + grad[i] * mbeta1;
-        stV[i] = beta2 * initV[i] + grad[i] * grad[i] * mbeta2;
-        stH[i] = sd::math::sd_max(initH[i], stV[i]);
+  const auto gradRank = shape::rank(gradientShapeInfo);
+  const auto* gradShape = shape::shapeOf(gradientShapeInfo);
+  const auto* gradStride = shape::stride(gradientShapeInfo);
+  const auto* updateStride = shape::stride(updateShapeInfo);
+  const auto* initStateVStride = shape::stride(initStateVShapeInfo);
+  const auto* stateVStride = shape::stride(stateVShapeInfo);
+  const auto* initStateMStride = shape::stride(initStateMShapeInfo);
+  const auto* stateMStride = shape::stride(stateMShapeInfo);
+  const auto* initStateHStride = shape::stride(initStateHShapeInfo);
+  const auto* stateHStride = shape::stride(stateHShapeInfo);
 
-        up[i] = epsilonT * stM[i] / (sd::math::sd_sqrt<T, T>(stH[i]) + epsilon);
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
-    return;
-  }
-
-  // Cache shape and stride information
-  sd::LongType gradRank = gradient.rankOf();
-  sd::LongType updateRank = update.rankOf();
-  sd::LongType initStateVRank = initStateV.rankOf();
-  sd::LongType stateVRank = stateV.rankOf();
-  sd::LongType initStateMRank = initStateM.rankOf();
-  sd::LongType stateMRank = stateM.rankOf();
-  sd::LongType initStateHRank = initStateH.rankOf();
-  sd::LongType stateHRank = stateH.rankOf();
-
-  sd::LongType *gradShape = shape::shapeOf(gradient.shapeInfo());
-  sd::LongType *gradStride = shape::stride(gradient.shapeInfo());
-  sd::LongType *updateStride = shape::stride(update.shapeInfo());
-  sd::LongType *initStateVStride = shape::stride(initStateV.shapeInfo());
-  sd::LongType *stateVStride = shape::stride(stateV.shapeInfo());
-  sd::LongType *initStateMStride = shape::stride(initStateM.shapeInfo());
-  sd::LongType *stateMStride = shape::stride(stateM.shapeInfo());
-  sd::LongType *initStateHStride = shape::stride(initStateH.shapeInfo());
-  sd::LongType *stateHStride = shape::stride(stateH.shapeInfo());
-
-  bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
-  bool bXInVSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateV.shapeInfo());
-  bool bXStVSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateV.shapeInfo());
-  bool bXInMSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateM.shapeInfo());
-  bool bXStMSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateM.shapeInfo());
-  bool bXInHSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateH.shapeInfo());
-  bool bXStHSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateH.shapeInfo());
+  bool bXZsame = shape::haveSameShapeAndStrides(gradientShapeInfo, updateShapeInfo);
+  bool bXInVSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateVShapeInfo);
+  bool bXStVSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateVShapeInfo);
+  bool bXInMSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateMShapeInfo);
+  bool bXStMSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateMShapeInfo);
+  bool bXInHSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateHShapeInfo);
+  bool bXStHSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateHShapeInfo);
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
@@ -126,49 +105,49 @@ static void amsGradUpdater_(NDArray& gradient, NDArray& initStateV, NDArray& ini
       if (bXZsame) {
         zOffset = xOffset;
       } else {
-        COORDS2INDEX(updateRank, updateStride, coords, zOffset);
+        COORDS2INDEX(gradRank, updateStride, coords, zOffset);
       }
 
       sd::LongType initVOffset;
       if (bXInVSame) {
         initVOffset = xOffset;
       } else {
-        COORDS2INDEX(initStateVRank, initStateVStride, coords, initVOffset);
+        COORDS2INDEX(gradRank, initStateVStride, coords, initVOffset);
       }
 
       sd::LongType stVOffset;
       if (bXStVSame) {
         stVOffset = xOffset;
       } else {
-        COORDS2INDEX(stateVRank, stateVStride, coords, stVOffset);
+        COORDS2INDEX(gradRank, stateVStride, coords, stVOffset);
       }
 
       sd::LongType initMOffset;
       if (bXInMSame) {
         initMOffset = xOffset;
       } else {
-        COORDS2INDEX(initStateMRank, initStateMStride, coords, initMOffset);
+        COORDS2INDEX(gradRank, initStateMStride, coords, initMOffset);
       }
 
       sd::LongType stMOffset;
       if (bXStMSame) {
         stMOffset = xOffset;
       } else {
-        COORDS2INDEX(stateMRank, stateMStride, coords, stMOffset);
+        COORDS2INDEX(gradRank, stateMStride, coords, stMOffset);
       }
 
       sd::LongType initHOffset;
       if (bXInHSame) {
         initHOffset = xOffset;
       } else {
-        COORDS2INDEX(initStateHRank, initStateHStride, coords, initHOffset);
+        COORDS2INDEX(gradRank, initStateHStride, coords, initHOffset);
       }
 
       sd::LongType stHOffset;
       if (bXStHSame) {
         stHOffset = xOffset;
       } else {
-        COORDS2INDEX(stateHRank, stateHStride, coords, stHOffset);
+        COORDS2INDEX(gradRank, stateHStride, coords, stHOffset);
       }
 
       stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * mbeta1;

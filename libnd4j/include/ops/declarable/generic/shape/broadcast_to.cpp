@@ -34,6 +34,16 @@ CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {
 
   auto output = OUTPUT_VARIABLE(0);
 
+  // Fast path: if input and output already have the same shape, just assign.
+  // Common in decode mode where seq_len=1 makes broadcast a no-op.
+  if (shape::equalsSoft(input->shapeInfo(), output->shapeInfo())) {
+    if (input->dataBuffer() == output->dataBuffer() && input->offset() == output->offset()) {
+      return Status::OK;  // Same buffer, same shape — truly no-op
+    }
+    output->assign(input);
+    return Status::OK;
+  }
+
   const int inputRank = input->rankOf();
   const int shapeRank = shape->rankOf();
   const LongType shapeLen = shape->lengthOf();
@@ -48,6 +58,15 @@ CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {
   std::vector<LongType> shapeBuff = shape->getBufferAsVector<LongType>();
   std::vector<LongType> outShape(shapeBuff.begin(), shapeBuff.end());
 
+  // Numpy broadcast rules (ONNX Expand semantics):
+  // result_dim = max(input_dim, target_dim) when one is 1 or ≤0
+  for (int i = 1; i <= inputRank; ++i) {
+    LongType& dim = outShape[shapeLen - i];
+    LongType inputDim = input->sizeAt(inputRank - i);
+    if (dim <= 0) dim = inputDim;
+    else if (dim == 1 && inputDim > 1) dim = inputDim;
+  }
+
   for (int i = 1; i <= inputRank; ++i)
     REQUIRE_TRUE(input->sizeAt(inputRank - i) == outShape[shapeLen - i] || input->sizeAt(inputRank - i) == 1, 0,
                  "BROADCAST_TO op: shape of input array %s can't be broadcasted to the shape %s !",
@@ -58,7 +77,10 @@ CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(broadcast_to) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(broadcast_to) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+}
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(broadcast_to) {
@@ -80,16 +102,22 @@ DECLARE_SHAPE_FN(broadcast_to) {
     std::vector<LongType> outShape;
     outShape.reserve(1);
     auto firstVal = shape->cast(INT64)->e<LongType>(0);
-    outShape[0] = firstVal;
-    ShapeDescriptor shapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), {firstVal});
-
-    auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(&shapeDescriptor);
+    outShape.push_back(firstVal);
+    std::vector<LongType> scalarShape = {firstVal};
+    auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), scalarShape);
     return SHAPELIST(outShapeInfo);
-
   }
 
   std::vector<LongType> shapeBuff = shape->getBufferAsVector<LongType>();
   std::vector<LongType> outShape(shapeBuff.begin(), shapeBuff.end());
+
+  // Numpy broadcast rules (ONNX Expand semantics)
+  for (int i = 1; i <= inputRank; ++i) {
+    LongType& dim = outShape[shapeLen - i];
+    LongType inputDim = inputShapeInfo[inputRank + 1 - i];
+    if (dim <= 0) dim = inputDim;
+    else if (dim == 1 && inputDim > 1) dim = inputDim;
+  }
 
   for (int i = 1; i <= inputRank; ++i)
     REQUIRE_TRUE(inputShapeInfo[inputRank + 1 - i] == outShape[shapeLen - i] || inputShapeInfo[inputRank + 1 - i] == 1,

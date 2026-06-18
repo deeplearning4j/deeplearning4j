@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_broadcast_dynamic_shape)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 
 namespace sd {
 namespace ops {
@@ -57,6 +57,10 @@ CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
       sd::DataType::INT64);  // fill with some data type, it doesn't matter what type exactly to choose
   ArrayOptions::setDataType(yShapeInfo.data(), sd::DataType::INT64);
 
+  // Set order field (last element of shape info) to 'c' (99)
+  xShapeInfo[xShapeInfo.size() - 1] = 'c';
+  yShapeInfo[yShapeInfo.size() - 1] = 'c';
+
   for (sd::LongType i = 0; i < x->lengthOf(); ++i) xShapeInfo[i + 1] = x->e<sd::LongType>(i);
 
   for (sd::LongType i = 0; i < y->lengthOf(); ++i) yShapeInfo[i + 1] = y->e<sd::LongType>(i);
@@ -82,8 +86,8 @@ DECLARE_TYPES(broadcast_dynamic_shape) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(broadcast_dynamic_shape) {
-  const int xRank = INPUT_VARIABLE(0)->lengthOf();
-  const int yRank = INPUT_VARIABLE(1)->lengthOf();
+  const int xRank = shape::length(inputShape->at(0));
+  const int yRank = shape::length(inputShape->at(1));
 
   const int maxRank = xRank > yRank ? xRank : yRank;
 

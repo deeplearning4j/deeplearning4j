@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_to_double)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/datatypes.h>
 
 namespace sd {
 namespace ops {

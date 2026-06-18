@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_realdiv)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {
@@ -34,6 +34,19 @@ BROADCASTABLE_OP_IMPL(realdiv, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
 
   BROADCAST_CHECK_EMPTY(x, y, z);
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::Divide, y, z, nullptr);
+    return Status::OK;
+  }
+
+  // Fast path: scalar divisor - common for normalization
+  if (y->isScalar()) {
+    x->applyScalarArr(scalar::Divide, y, z);
+    return Status::OK;
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Divide(), x, y, z);
   if (tZ == nullptr) {
     return Status::KERNEL_FAILURE;
@@ -85,18 +98,16 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
 
   } else if (y->isScalar()) {
     // scalar case
+    NDArray tmp(gradY->dataType(), block.launchContext());
+    epsNext->reduceNumber(reduce::Sum, &tmp);
+    NDArray tmpX(gradY->dataType(), block.launchContext());
+    x->reduceNumber(reduce::Sum, &tmpX);
 
-    auto tmp = epsNext->reduceNumber(reduce::Sum);
-    auto tmpX = x->reduceNumber(reduce::Sum);
-
-    NDArray negTmpX = -*tmpX;
-    NDArray *tmpMulNegTmpX = (*tmp) * negTmpX;
-    NDArray *ySquared = (*y) * (*y);
-    NDArray *gradYTemp = (*tmpMulNegTmpX) / (*ySquared);
-    gradY->assign(gradYTemp);
-    delete tmpMulNegTmpX;
-    delete ySquared;
-    delete gradYTemp;
+    double tmpVal = tmp.e<double>(0);
+    double tmpXVal = tmpX.e<double>(0);
+    double yVal = y->e<double>(0);
+    double gradYVal = -(tmpVal * tmpXVal) / (yVal * yVal);
+    gradY->assign(gradYVal);
 
     epsNext->applyScalarArr(scalar::Divide, y, gradX);
   } else {
@@ -104,29 +115,39 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
 
     auto preX = *epsNext / *y;
 
-    NDArray negX(*x);
-    x->applyTransform(transform::Neg, &negX);
-    NDArray *epsNextMulNegX = (*epsNext) * negX;
+    // Use dup() for a deep copy — NDArray copy constructor creates a VIEW (shares buffer).
+    // Writing into a view of x would permanently negate the input variable in-place.
+    NDArray *negX = x->dup();
+    negX->applyTransform(transform::Neg, negX);
+    NDArray *epsNextMulNegX = (*epsNext) * (*negX);
+    delete negX;
     NDArray *ySquared = (*y) * (*y);
     NDArray *preY = (*epsNextMulNegX) / (*ySquared);
     delete epsNextMulNegX;
     delete ySquared;
 
-    auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-    auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+    // Use preX/preY shapes (the broadcast result), NOT epsNext shape —
+    // epsNext may be scalar even when x/y are non-scalar.
+    auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), preX->shapeInfo());
+    auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), preY->shapeInfo());
 
     if (axisX.size() > 0) {
       auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
       gradX->assign(sum);
-    } else
+      delete sum;
+    } else {
       gradX->assign(preX);
+    }
+    delete preX;
 
     if (axisY.size() > 0) {
       auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
       delete sum;
-    } else
+    } else {
       gradY->assign(preY);
+    }
+    delete preY;
   }
 
   return Status::OK;

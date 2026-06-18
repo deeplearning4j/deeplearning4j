@@ -85,10 +85,8 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xS
     for (int j = rankMinusOne; j >= 0; --j) {
       if (xShape[j] == zShape[j]) continue;
 
-      LongType leftOffset;
-      LongType leftCoords[] = {yStride0 * j};
-      COORDS2INDEX(1, shape::stride(yShapeInfo), leftCoords, leftOffset);
-      const auto left = y[leftOffset];
+      // Access paddings[j, 0] (left/begin padding for dimension j)
+      const auto left = y[j * yStride0];
 
       if (xzCoord[j] < left || xzCoord[j] >= left + xShape[j]) {
         within = false;
@@ -142,6 +140,7 @@ void pad(LaunchContext* context, const int mode, NDArray& input, NDArray& paddin
   const auto xType = input.dataType();
   const auto yType = paddings.dataType();
 
+  // dim3 convention: x=threadsPerBlock, y=blocksPerGrid, z=sharedMem
   BUILD_DOUBLE_SELECTOR(
       xType, yType, padCudaLauncher,
       (padLaunch.y, padLaunch.x, padLaunch.z, context->getCudaStream(), mode, input.specialBuffer(),

@@ -23,7 +23,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_flatten2d)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
+#include <system/env_functions.h>
 
 namespace sd {
 namespace ops {
@@ -46,7 +47,7 @@ CUSTOM_OP_IMPL(flatten_2d, 1, 1, false, 0, -2) {
                z->lengthOf());
 
   auto* zShapeVec = z->getShapeAsVector();
-  if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", *zShapeVec);
+  if (sd::env_isDebugAndVerbose()) sd_printv("Reshape: new shape", *zShapeVec);
 
   auto xReshaped = x->reshape(z->ordering(), *zShapeVec);
   delete zShapeVec;
@@ -57,6 +58,7 @@ CUSTOM_OP_IMPL(flatten_2d, 1, 1, false, 0, -2) {
 
 DECLARE_TYPES(flatten_2d) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING);
 }
 
 DECLARE_SHAPE_FN(flatten_2d) {

@@ -59,22 +59,6 @@ static void adaGradUpdater_(NDArray& gradient, NDArray& initState, NDArray& upda
   if(epsilon == 0.0) {
     epsilon = static_cast<T>(1e-7);
   }
-  bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateH.ews() && 1 == initState.ews();
-  bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateH.ordering() &&
-                       stateH.ordering() == initState.ordering();
-
-  if (bEws1 && bSameOrdering) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        st[i] = init[i] + grad[i] * grad[i];
-        up[i] = (lr * grad[i]) / (math::sd_sqrt<T, T>(st[i]) + epsilon);
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
-    return;
-  }
-
   bool bXZsame = shape::haveSameShapeAndStrides(gradientShapeInfo, updateShapeInfo);
   bool bXInSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateShapeInfo);
   bool bXStSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateHShapeInfo);

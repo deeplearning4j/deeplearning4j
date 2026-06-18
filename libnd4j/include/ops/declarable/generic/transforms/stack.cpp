@@ -23,37 +23,68 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_stack)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/stack.h>
 
 namespace sd {
 namespace ops {
 
 CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
-  auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-  int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
-  if (dim < 0) dim += input->rankOf() + 1;
 
   // no-op in case of empty output array
   if (output->isEmpty()) return Status::OK;
 
-  // input validation
-  // check whether shapes of all input array are the same
-  for (size_t i = 0; i < block.width() - 1; ++i)
-  REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->shapeInfo(), (INPUT_VARIABLE(i + 1))->shapeInfo()), 0,
-               "STACK op: the shapes of all input arrays must be the same !");
+  const int numInputs = block.width();
+  if (numInputs == 0) return Status::OK;
 
+  auto input = INPUT_VARIABLE(0);
+  int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
+  if (dim < 0) dim += input->rankOf() + 1;
+
+  REQUIRE_TRUE(dim >= 0, 0,
+               "STACK op: the input dimension parameter must be non-negative after normalization, but got %i!", dim);
   REQUIRE_TRUE(
       dim <= input->rankOf(), 0,
       "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !",
       input->shapeOf(), dim);
 
-  std::vector<NDArray*> inArrs(block.width());
-  for (size_t i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
+  // Collect all input arrays and validate shapes in single pass
+  std::vector<NDArray*> inArrs(numInputs);
+  inArrs[0] = input;
+  const sd::LongType* firstShape = input->shapeInfo();
 
-  //empty arrays are a no op
-  if(block.width() >= 1 && !inArrs[0]->isEmpty())
+  // Helper lambda to check if two shapes are compatible for stacking
+  // Treats scalar [] and [1] as compatible (common in ONNX models)
+  auto shapesCompatibleForStack = [](const sd::LongType* shapeA, const sd::LongType* shapeB) -> bool {
+    // If shapes are equal, they're compatible
+    if (shape::equalsSoft(shapeA, shapeB)) return true;
+
+    // Check if one is scalar and other is [1] - treat as compatible
+    int rankA = shape::rank(shapeA);
+    int rankB = shape::rank(shapeB);
+    sd::LongType lengthA = shape::length(shapeA);
+    sd::LongType lengthB = shape::length(shapeB);
+
+    // Both must have length 1 (scalar or [1] tensor)
+    if (lengthA == 1 && lengthB == 1) {
+      // Allow scalar vs [1] compatibility
+      if ((rankA == 0 && rankB == 1) || (rankA == 1 && rankB == 0)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  for (int i = 1; i < numInputs; ++i) {
+    inArrs[i] = INPUT_VARIABLE(i);
+    REQUIRE_TRUE(shapesCompatibleForStack(firstShape, inArrs[i]->shapeInfo()), 0,
+                 "STACK op: the shapes of all input arrays must be the same or compatible (scalar vs [1])!");
+  }
+
+  // empty arrays are a no op
+  if (!inArrs[0]->isEmpty())
     helpers::stack(block.launchContext(), inArrs, *output, dim);
 
   return Status::OK;
@@ -63,6 +94,7 @@ DECLARE_SYN(Pack, stack);
 
 DECLARE_TYPES(stack) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_STACK);
 }
 
 DECLARE_SHAPE_FN(stack) {
@@ -73,6 +105,8 @@ DECLARE_SHAPE_FN(stack) {
   int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
   if (dim < 0) dim += rank + 1;
 
+  REQUIRE_TRUE(dim >= 0, 0,
+               "STACK op: the input dimension parameter must be non-negative after normalization, but got %i!", dim);
   REQUIRE_TRUE(
       dim <= inShapeInfo[0], 0,
       "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !",

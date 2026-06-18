@@ -37,7 +37,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinv,
+SD_KERNEL SD_INLINE void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinv,
                                     const LongType* invShapeInfo, const void* vinm,
                                     const LongType* inmShapeInfo, void* vz, const LongType* zShapeInfo,
                                     void* vstV, const LongType* stvShapeInfo, void* vstM,
@@ -176,6 +176,7 @@ void adaBeliefUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerB
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "adaBeliefUpdaterCuda failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void adaBeliefUpdaterCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory, const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, const void* vinv, const LongType* invShapeInfo, const void* vinm, const LongType* inmShapeInfo, void* vz, const LongType* zShapeInfo, void* vstV, const LongType* stvShapeInfo, void* vstM, const LongType* stmShapeInfo, const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration), SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 void updaterAdaBelief(LaunchContext* context, NDArray& gradient, NDArray& initStateU,

@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_crop_and_resize)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/images.h>
 #include <ops/declarable/helpers/crop_and_resize.h>
 
 namespace sd {
@@ -80,8 +80,8 @@ DECLARE_SHAPE_FN(crop_and_resize) {
   int width;
   int height;
   auto newImageSize = INPUT_VARIABLE(3);
-  REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.",
-               newImageSize->lengthOf());
+  REQUIRE_TRUE(shape::length(inputShape->at(3)) == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.",
+               shape::length(inputShape->at(3)));
   // REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params
   // are expensive.");
   width = newImageSize->e<int>(0);
@@ -91,8 +91,7 @@ DECLARE_SHAPE_FN(crop_and_resize) {
   outputShape[1] = width;
   outputShape[2] = height;
   outputShape[3] = in[4];
-  auto desc = new  ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), shape::order(in), 4, outputShape));
 }
 
 DECLARE_TYPES(crop_and_resize) {

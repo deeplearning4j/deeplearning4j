@@ -35,7 +35,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static SD_KERNEL void fillUpElementKernel(void* outputBuffer, const LongType* outputShapeInfo, void* inputBuffer,
+static SD_KERNEL SD_INLINE void fillUpElementKernel(void* outputBuffer, const LongType* outputShapeInfo, void* inputBuffer,
                                           const LongType* inputShapeInfo, const LongType* pTadShape,
                                           const LongType* pTadOffsets, LongType n) {
   __shared__ LongType bufferLength;
@@ -118,6 +118,8 @@ void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDAr
   }
   NDArray::registerSpecialUse({output}, {input});
 }
+BUILD_SINGLE_TEMPLATE(void nthElementFunctor_, (LaunchContext* context, NDArray* input, LongType n, NDArray* output, bool reverse), SD_COMMON_TYPES);
+
 void nthElementFunctor(LaunchContext* context, NDArray* input, LongType n, NDArray* output, bool reverse) {
   auto inputDType = input->dataType();
 

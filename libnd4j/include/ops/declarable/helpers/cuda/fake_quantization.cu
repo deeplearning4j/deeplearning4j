@@ -152,10 +152,10 @@ void fakeQuantWithMinMaxVarsPerChannel_(LaunchContext* context, NDArray* input, 
   auto length = input->lengthOf();
   NDArray::prepareSpecialUse({output}, {min, max, input});
   auto stream = context->getCudaStream();
-  T* inputBuf = input->dataBuffer()->specialAsT<T>();
-  T* outputBuf = output->dataBuffer()->specialAsT<T>();
-  T* minBuf = min->dataBuffer()->specialAsT<T>();
-  T* maxBuf = max->dataBuffer()->specialAsT<T>();
+  T* inputBuf = input->dataBuffer()->template specialAsT<T>();
+  T* outputBuf = output->dataBuffer()->template specialAsT<T>();
+  T* minBuf = min->dataBuffer()->template specialAsT<T>();
+  T* maxBuf = max->dataBuffer()->template specialAsT<T>();
   dim3 launchDims = getLaunchDims("fake_quantization");
   fakeQuantWithMinMaxKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, input->specialShapeInfo(), minBuf, maxBuf,
                                                         lowIntBound, upperIntBound, channels, outputBuf,

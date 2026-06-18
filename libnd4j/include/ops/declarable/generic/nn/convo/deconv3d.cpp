@@ -21,10 +21,11 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_deconv3d)
 
 #include <helpers/MmulHelper.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/convo.h>
 #include <ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/convolutions.h>
 
@@ -111,7 +112,9 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
   if (bias)
     helpers::addBias(block, *output, *bias, *output, true);
 
-  //if (!isNCDHW) delete output;
+  if (!isNCDHW) {
+    delete output;
+  }
 
   return sd::Status::OK;
 }

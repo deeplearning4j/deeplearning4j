@@ -74,28 +74,6 @@ static void nadamUpdater_(NDArray& gradient, NDArray& initStateV, NDArray& initS
   const T mbeta1 = (1 - beta1);
   const T mbeta2 = (1 - beta2);
 
-  bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateM.ews() && 1 == initStateM.ews() &&
-               1 == stateV.ews() && 1 == initStateV.ews();
-  bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateV.ordering() &&
-                       stateV.ordering() == initStateV.ordering() && stateV.ordering() == initStateM.ordering() &&
-                       stateM.ordering() == initStateM.ordering();
-
-  if (bEws1 && bSameOrdering) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        auto oneMinusBeta1Grad = grad[i] * mbeta1;
-
-        stM[i] = beta1 * initM[i] + oneMinusBeta1Grad;
-        stV[i] = beta2 * initV[i] + grad[i] * grad[i] * mbeta2;
-
-        up[i] = (lr * ((stM[i] * beta1 + oneMinusBeta1Grad) / mbeta1T)) / (sd::math::sd_sqrt<T, T>(stV[i]) + epsilon);
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
-    return;
-  }
-
   bool bXZsame = shape::haveSameShapeAndStrides(gradientShapeInfo, updateShapeInfo);
   bool bXInVSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateVShapeInfo);
   bool bXStVSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateVShapeInfo);

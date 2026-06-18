@@ -22,6 +22,7 @@
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
 #include <legacy/NativeOps.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/image_suppression.h>
 
 #include <queue>
@@ -32,6 +33,12 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+
+// Simple min/max helpers to avoid SD_PROMOTE_FUNC SFINAE issues with NVCC+MSVC
+template <typename T>
+static SD_HOST_DEVICE SD_INLINE T _local_min(T a, T b) { return a < b ? a : b; }
+template <typename T>
+static SD_HOST_DEVICE SD_INLINE T _local_max(T a, T b) { return a > b ? a : b; }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // needToSuppressWithThreshold - predicate for suppression
 //      boxes - boxes tensor buffer
@@ -68,14 +75,14 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, LongType const* boxe
 
   // we have rectangle with given max values. Compute vexes of rectangle first
 
-  T minYPrev = math::sd_min(boxes[prevOffset0], boxes[prevOffset2]);
-  T minXPrev = math::sd_min(boxes[prevOffset1], boxes[prevOffset3]);
-  T maxYPrev = math::sd_max(boxes[prevOffset0], boxes[prevOffset2]);
-  T maxXPrev = math::sd_max(boxes[prevOffset1], boxes[prevOffset3]);
-  T minYNext = math::sd_min(boxes[nextOffset0], boxes[nextOffset2]);
-  T minXNext = math::sd_min(boxes[nextOffset1], boxes[nextOffset3]);
-  T maxYNext = math::sd_max(boxes[nextOffset0], boxes[nextOffset2]);
-  T maxXNext = math::sd_max(boxes[nextOffset1], boxes[nextOffset3]);
+  T minYPrev = _local_min(boxes[prevOffset0], boxes[prevOffset2]);
+  T minXPrev = _local_min(boxes[prevOffset1], boxes[prevOffset3]);
+  T maxYPrev = _local_max(boxes[prevOffset0], boxes[prevOffset2]);
+  T maxXPrev = _local_max(boxes[prevOffset1], boxes[prevOffset3]);
+  T minYNext = _local_min(boxes[nextOffset0], boxes[nextOffset2]);
+  T minXNext = _local_min(boxes[nextOffset1], boxes[nextOffset3]);
+  T maxYNext = _local_max(boxes[nextOffset0], boxes[nextOffset2]);
+  T maxXNext = _local_max(boxes[nextOffset1], boxes[nextOffset3]);
 
   // compute areas for comparation
   T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
@@ -85,12 +92,12 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, LongType const* boxe
   if (areaNext <= T(0.f) || areaPrev <= T(0.f)) return false;
 
   // compute intersection of rectangles
-  T minIntersectionY = math::sd_max(minYPrev, minYNext);
-  T minIntersectionX = math::sd_max(minXPrev, minXNext);
-  T maxIntersectionY = math::sd_min(maxYPrev, maxYNext);
-  T maxIntersectionX = math::sd_min(maxXPrev, maxXNext);
-  T intersectionArea = math::sd_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
-                       math::sd_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
+  T minIntersectionY = _local_max(minYPrev, minYNext);
+  T minIntersectionX = _local_max(minXPrev, minXNext);
+  T maxIntersectionY = _local_min(maxYPrev, maxYNext);
+  T maxIntersectionX = _local_min(maxXPrev, maxXNext);
+  T intersectionArea = _local_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
+                       _local_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
   T intersectionValue = intersectionArea / (areaPrev + areaNext - intersectionArea);
   // final check
   return intersectionValue > threshold;
@@ -99,26 +106,28 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, LongType const* boxe
 template <typename T>
 static  inline T similirityV3_(NDArray& boxes, LongType i, LongType j) {
   const T zero = static_cast<T>(0.f);
-  const T yminI = math::sd_min(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
-  const T xminI = math::sd_min(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
-  const T ymaxI = math::sd_max(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
-  const T xmaxI = math::sd_max(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
-  const T yminJ = math::sd_min(boxes.t<T>(j, 0), boxes.t<T>(j, 2));
-  const T xminJ = math::sd_min(boxes.t<T>(j, 1), boxes.t<T>(j, 3));
-  const T ymaxJ = math::sd_max(boxes.t<T>(j, 0), boxes.t<T>(j, 2));
-  const T xmaxJ = math::sd_max(boxes.t<T>(j, 1), boxes.t<T>(j, 3));
+  const T bi0 = boxes.t<T>(i, 0), bi1 = boxes.t<T>(i, 1), bi2 = boxes.t<T>(i, 2), bi3 = boxes.t<T>(i, 3);
+  const T bj0 = boxes.t<T>(j, 0), bj1 = boxes.t<T>(j, 1), bj2 = boxes.t<T>(j, 2), bj3 = boxes.t<T>(j, 3);
+  const T yminI = _local_min(bi0, bi2);
+  const T xminI = _local_min(bi1, bi3);
+  const T ymaxI = _local_max(bi0, bi2);
+  const T xmaxI = _local_max(bi1, bi3);
+  const T yminJ = _local_min(bj0, bj2);
+  const T xminJ = _local_min(bj1, bj3);
+  const T ymaxJ = _local_max(bj0, bj2);
+  const T xmaxJ = _local_max(bj1, bj3);
   const T areaI = (ymaxI - yminI) * (xmaxI - xminI);
   const T areaJ = (ymaxJ - yminJ) * (xmaxJ - xminJ);
   if (areaI <= zero || areaJ <= zero) {
     return zero;
   }
-  const T intersectionYmin = math::sd_max(yminI, yminJ);
-  const T intersectionXmin = math::sd_max(xminI, xminJ);
-  const T intersectionYmax = math::sd_min(ymaxI, ymaxJ);
-  const T intersectionXmax = math::sd_min(xmaxI, xmaxJ);
+  const T intersectionYmin = _local_max(yminI, yminJ);
+  const T intersectionXmin = _local_max(xminI, xminJ);
+  const T intersectionYmax = _local_min(ymaxI, ymaxJ);
+  const T intersectionXmax = _local_min(xmaxI, xmaxJ);
   const T intersectionY = intersectionYmax - intersectionYmin;
   const T intersectionX = intersectionXmax - intersectionXmin;
-  const T intersectionArea = math::sd_max(intersectionY, zero) * math::sd_max(intersectionX, zero);
+  const T intersectionArea = _local_max(intersectionY, zero) * _local_max(intersectionX, zero);
   return intersectionArea / (areaI + areaJ - intersectionArea);
 }
 
@@ -148,14 +157,14 @@ static SD_DEVICE T similirityV3(T* boxes, LongType const* boxesShape, int previo
 
   // we have rectangle with given max values. Compute vexes of rectangle first
 
-  T minYPrev = math::sd_min(boxes[prevOffset0], boxes[prevOffset2]);
-  T minXPrev = math::sd_min(boxes[prevOffset1], boxes[prevOffset3]);
-  T maxYPrev = math::sd_max(boxes[prevOffset0], boxes[prevOffset2]);
-  T maxXPrev = math::sd_max(boxes[prevOffset1], boxes[prevOffset3]);
-  T minYNext = math::sd_min(boxes[nextOffset0], boxes[nextOffset2]);
-  T minXNext = math::sd_min(boxes[nextOffset1], boxes[nextOffset3]);
-  T maxYNext = math::sd_max(boxes[nextOffset0], boxes[nextOffset2]);
-  T maxXNext = math::sd_max(boxes[nextOffset1], boxes[nextOffset3]);
+  T minYPrev = _local_min(boxes[prevOffset0], boxes[prevOffset2]);
+  T minXPrev = _local_min(boxes[prevOffset1], boxes[prevOffset3]);
+  T maxYPrev = _local_max(boxes[prevOffset0], boxes[prevOffset2]);
+  T maxXPrev = _local_max(boxes[prevOffset1], boxes[prevOffset3]);
+  T minYNext = _local_min(boxes[nextOffset0], boxes[nextOffset2]);
+  T minXNext = _local_min(boxes[nextOffset1], boxes[nextOffset3]);
+  T maxYNext = _local_max(boxes[nextOffset0], boxes[nextOffset2]);
+  T maxXNext = _local_max(boxes[nextOffset1], boxes[nextOffset3]);
 
   // compute areas for comparator
   T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
@@ -165,12 +174,12 @@ static SD_DEVICE T similirityV3(T* boxes, LongType const* boxesShape, int previo
   if (areaNext <= T(0.f) || areaPrev <= T(0.f)) return false;
 
   // compute intersection of rectangles
-  T minIntersectionY = math::sd_max(minYPrev, minYNext);
-  T minIntersectionX = math::sd_max(minXPrev, minXNext);
-  T maxIntersectionY = math::sd_min(maxYPrev, maxYNext);
-  T maxIntersectionX = math::sd_min(maxXPrev, maxXNext);
-  T intersectionArea = math::sd_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
-                       math::sd_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
+  T minIntersectionY = _local_max(minYPrev, minYNext);
+  T minIntersectionX = _local_max(minXPrev, minXNext);
+  T maxIntersectionY = _local_min(maxYPrev, maxYNext);
+  T maxIntersectionX = _local_min(maxXPrev, maxXNext);
+  T intersectionArea = _local_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
+                       _local_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
   T intersectionValue = intersectionArea / (areaPrev + areaNext - intersectionArea);
   // final check
   return intersectionValue;
@@ -251,27 +260,29 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
 
   NDArray scores(*scales);
   Pointer extras[2] = {nullptr, stream};
-  auto indexBuf = indices.dataBuffer()->specialAsT<I>();
-  auto scoreBuf = scores.dataBuffer()->specialAsT<T>();
+  auto indexBuf = indices.dataBuffer()->template specialAsT<I>();
+  auto scoreBuf = scores.dataBuffer()->template specialAsT<T>();
   dim3 launchDims = getLaunchDims("image_suppress_scores");
   suppressScores<T, I><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(scoreBuf, indexBuf, scores.lengthOf(), T(scoreThreshold));
   indices.tickWriteDevice();
   sortByValue(extras, &indices,
               &scores,true);
   indices.tickWriteDevice();
-  NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()}, context);
+  NDArray* selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()}, context);
   int numSelected = 0;
   int numBoxes = boxes->sizeAt(0), tt(0);
   auto boxesBuf = reinterpret_cast<T*>(boxes->specialBuffer());
 
-  auto selectedIndicesData = reinterpret_cast<I*>(selectedIndices.specialBuffer());
+  auto selectedIndicesData = reinterpret_cast<I*>(selectedIndices->specialBuffer());
   auto outputBuf = reinterpret_cast<I*>(output->specialBuffer());
 
   bool* shouldSelectD;
-  auto err = cudaMalloc(&shouldSelectD, sizeof(bool));
-  if (err) {
-    throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot allocate memory for bool flag", err);
+  int devId = 0; cudaGetDevice(&devId);
+  shouldSelectD = reinterpret_cast<bool*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(bool), devId, nullptr));
+  if (shouldSelectD == nullptr) {
+    THROW_EXCEPTION("helpers::nonMaxSuppressionV2: Cannot allocate memory for bool flag");
   }
+  cudaError_t err;
   for (I i = 0; i < boxes->sizeAt(0); ++i) {
     bool shouldSelect = numSelected < output->lengthOf();
     if (shouldSelect) {
@@ -297,10 +308,8 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
     }
   }
 
-  err = cudaFree(shouldSelectD);
-  if (err) {
-    throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot deallocate memory for bool flag", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(shouldSelectD, devId, nullptr);
+  delete selectedIndices;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

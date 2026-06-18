@@ -23,7 +23,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_sufficient_statistics)
 
-#include <ops/declarable/CustomOperations.h>
+#include <array/NDArrayFactory.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 namespace sd {
 namespace ops {

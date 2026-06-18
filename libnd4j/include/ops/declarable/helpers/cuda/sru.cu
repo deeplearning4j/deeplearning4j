@@ -41,7 +41,7 @@ static SD_INLINE NDArray activation(NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray sigmoid(NDArray& arr) {
+static SD_INLINE NDArray* sigmoid(NDArray& arr) {
   return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
 }
 
@@ -60,24 +60,58 @@ void sruCell(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, NDArra
 
   auto z = mmul(*x, *w);  //  [bS x 3*inSize]
 
-  // forget gate = sigmoid(x*Wf + bf)
-  NDArray fIn = z({0, 0, inSize, 2 * inSize}) + (*b)({0, inSize});
-  auto f = sigmoid(fIn);
+  // Get subarray slices - operator() returns NDArray*
+  NDArray* zSlice1 = (*z)({0, 0, inSize, 2 * inSize});
+  NDArray* bSlice1 = (*b)({0, inSize});
 
-  NDArray rIn = z({0, 0, 2 * inSize, 3 * inSize}) + (*b)({inSize, 2 * inSize});
+  // forget gate = sigmoid(x*Wf + bf)
+  NDArray* fInPtr = *zSlice1 + *bSlice1;
+  auto f = sigmoid(*fInPtr);
+
+  NDArray* zSlice2 = (*z)({0, 0, 2 * inSize, 3 * inSize});
+  NDArray* bSlice2 = (*b)({inSize, 2 * inSize});
+
+  NDArray* rInPtr = *zSlice2 + *bSlice2;
   // reset gate = sigmoid(x*Wr + br)
-  auto r = sigmoid(rIn);
+  auto r = sigmoid(*rInPtr);
 
   // ◦ means element-wise product or so called Hadamard product
   // current sell state = f◦c0 + (1 - f)◦(x*Wc)
-  NDArray cAssign = f * (*c0) + (1.f - f) * z({0, 0, 0, inSize});
-  c->assign(&cAssign);
+  NDArray* zSlice3 = (*z)({0, 0, 0, inSize});
+  NDArray* oneMinusFPtr = 1.f - (*f);
+  NDArray* fMulC0 = (*f) * (*c0);
+  NDArray* oneMinusFMulZ = (*oneMinusFPtr) * (*zSlice3);
+  NDArray* cAssignPtr = *fMulC0 + *oneMinusFMulZ;
+  c->assign(cAssignPtr);
   // *c = f*(*c0 - z({},{0, inSize})) + z({{},{0, inSize}});
 
   // current cell output = r◦activation(c) + (1 - r)◦x
-  NDArray resultTwo = r * activation(*c) + (1.f - r) * (*x);
-  h->assign(&resultTwo);
+  NDArray* oneMinusRPtr = 1.f - (*r);
+  NDArray activationC = activation(*c);
+  NDArray* rMulAct = (*r) * activationC;
+  NDArray* oneMinusRMulX = (*oneMinusRPtr) * (*x);
+  NDArray* resultPtr = *rMulAct + *oneMinusRMulX;
+  h->assign(resultPtr);
   // *h = r * (activation<T>(c) - *x) + *x;
+
+  delete zSlice1;
+  delete bSlice1;
+  delete zSlice2;
+  delete bSlice2;
+  delete zSlice3;
+  delete fInPtr;
+  delete rInPtr;
+  delete oneMinusFPtr;
+  delete fMulC0;
+  delete oneMinusFMulZ;
+  delete cAssignPtr;
+  delete oneMinusRPtr;
+  delete rMulAct;
+  delete oneMinusRMulX;
+  delete resultPtr;
+  delete z;
+  delete f;
+  delete r;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -103,8 +137,12 @@ void sruTimeLoop(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, ND
     auto ht = (*h)({0, 0, 0, 0, t, t + 1});
     auto ct = (*c)({0, 0, 0, 0, t, t + 1});
 
-    sruCell(context, &xt, &ct_1, &wT, b, &ht, &ct);
-    ct_1.assign(&ct);
+    sruCell(context, xt, &ct_1, wT, b, ht, ct);
+    ct_1.assign(ct);
+
+    delete xt;
+    delete ht;
+    delete ct;
   }
 
   delete wT;
@@ -112,7 +150,7 @@ void sruTimeLoop(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, ND
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ static void sruBICuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
+SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
                                  const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo,
                                  const void* vc0, const LongType* c0ShapeInfo, const void* vmask,
                                  const LongType* maskShapeInfo, void* vht, const LongType* htShapeInfo,
@@ -298,27 +336,29 @@ void sruBI(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* 
   if (mask) x->applyBroadcast(broadcast::Multiply, &dims, mask, x);  // apply mask
 
   // U = x * w
-  NDArray wi = mmul(*x, *w);  //  U [time x bS x 6*K]
+  auto wi = mmul(*x, *w);  //  U [time x bS x 6*K]
 
   PointersManager manager(context, "sru_bi");
 
   dim3 sruBiDims2 = sruBiDims(x->sizeAt(1) * x->sizeAt(2),x->rankOf());
-  NDArray::prepareSpecialUse({ht, ct}, {x, &wi, b, c0, mask});
+  NDArray::prepareSpecialUse({ht, ct}, {x, wi, b, c0, mask});
   BUILD_SINGLE_SELECTOR(
       x->dataType(), sruBICudaLauncher,
       (sruBiDims2.y,sruBiDims2.x, sruBiDims2.z, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
-          wi.specialBuffer(), wi.specialShapeInfo(), b->specialBuffer(), b->specialShapeInfo(), c0->specialBuffer(),
+          wi->specialBuffer(), wi->specialShapeInfo(), b->specialBuffer(), b->specialShapeInfo(), c0->specialBuffer(),
           c0->specialShapeInfo(), mask ? mask->specialBuffer() : nullptr, mask ? mask->specialShapeInfo() : nullptr,
           ht->specialBuffer(), ht->specialShapeInfo(), ct->specialBuffer(), ct->specialShapeInfo()),
       SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({ht, ct}, {x, &wi, b, c0, mask});
+  NDArray::registerSpecialUse({ht, ct}, {x, wi, b, c0, mask});
 
   manager.synchronize();
+
+  delete wi;
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
+SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
                                    const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo,
                                    const void* vc0, const LongType* c0ShapeInfo, const void* vmask,
                                    const LongType* maskShapeInfo, const void* vct, const LongType* ctShapeInfo,
@@ -578,7 +618,7 @@ void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray
   if (mask) x->applyBroadcast(broadcast::Multiply, &dims, mask, x);  // apply mask
 
   // U = x * w
-  NDArray wi = mmul(*x, *w);  //  U [time x bS x 6*K]
+  auto wi = mmul(*x, *w);  //  U [time x bS x 6*K]
 
   const int time = x->sizeAt(0);
   const int bS = x->sizeAt(1);
@@ -596,18 +636,18 @@ void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray
                             threadsPerBlock;  // loop through last two dimensions of x array -> bS, 2*K
   const int sharedMem = threadsPerBlock * sizeof(LongType) * x->rankOf() + 128;
   dim3 sruBiBpDims = sruBiDims(x->sizeAt(1) + x->sizeAt(2),x->rankOf());
-  NDArray::prepareSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, &wi, b, c0, ct, gradCt, gradHt, mask});
+  NDArray::prepareSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, wi, b, c0, ct, gradCt, gradHt, mask});
   BUILD_SINGLE_SELECTOR(
       x->dataType(), sruBIBPCudaLauncher,
       (sruBiBpDims.y, sruBiBpDims.x,sruBiBpDims.z, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
-          wi.specialBuffer(), wi.specialShapeInfo(), b->specialBuffer(), b->specialShapeInfo(), c0->specialBuffer(),
+          wi->specialBuffer(), wi->specialShapeInfo(), b->specialBuffer(), b->specialShapeInfo(), c0->specialBuffer(),
           c0->specialShapeInfo(), mask ? mask->specialBuffer() : nullptr, mask ? mask->specialShapeInfo() : nullptr,
           ct->specialBuffer(), ct->specialShapeInfo(), gradHt->specialBuffer(), gradHt->specialShapeInfo(),
           gradCt->specialBuffer(), gradCt->specialShapeInfo(), gradI->specialBuffer(), gradI->specialShapeInfo(),
           gradWi.specialBuffer(), gradWi.specialShapeInfo(), gradBias.specialBuffer(), gradBias.specialShapeInfo(),
           gradC0->specialBuffer(), gradC0->specialShapeInfo()),
       SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, &wi, b, c0, ct, gradCt, gradHt, mask});
+  NDArray::registerSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, wi, b, c0, ct, gradCt, gradHt, mask});
 
   manager.synchronize();
 
@@ -619,6 +659,8 @@ void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray
   // gradW
   x->permutei({0, 2, 1}, false, false);                       // [time, bS, 2*K] -> [time, 2*K,  bS]
   MmulHelper::mmul(x, &gradWi, gradW, 1., 0.);  // [time, 2*K, bS] x [time, bS , 6*K] = [time, 2*K, 6*K]
+
+  delete wi;
 }
 
 }  // namespace helpers

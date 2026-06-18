@@ -25,9 +25,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_bits_hamming_distance)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/bitwise.h>
 #include <ops/declarable/helpers/hamming.h>
-#include <ops/declarable/helpers/helpers.h>
 
 namespace sd {
 namespace ops {

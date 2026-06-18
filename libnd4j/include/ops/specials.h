@@ -37,12 +37,6 @@
 namespace sd {
 class NDArray;
 
-// FIXME: get rid of this redefinition
-typedef union {
-  float f_;
-  int i_;
-} FloatBits2;
-
 class SD_LIB_EXPORT SpecialTypeConverter {
  public:
   template <typename S, typename T>

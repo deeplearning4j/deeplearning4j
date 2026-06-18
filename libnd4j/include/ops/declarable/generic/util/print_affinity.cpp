@@ -23,13 +23,12 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_print_affinity)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/util.h>
 #include <ops/declarable/helpers/print_variable.h>
 
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(print_affinity, 1, 1, true, 0, 0) {
-  // TODO: make this op compatible with ArrayList etc
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 

@@ -160,24 +160,26 @@ void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<int>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, output, &axisVector);
+  tempInput->reduceAlongDimension(reduce::Sum, output, &axisVector);
   output->applyTransform(transform::Log, output);
+  delete tempInput;
 }
 
 template <typename T>
 void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
   // reduce along axis with
   NDArray *tempInput = input->dup();
-  input->applyPairwiseTransform(pairwise::Subtract, subtrah, &tempInput);
-  tempInput.applyTransform(transform::Exp, &tempInput);
+  input->applyPairwiseTransform(pairwise::Subtract, subtrah, tempInput);
+  tempInput->applyTransform(transform::Exp, tempInput);
 
   std::vector<LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<int>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, output, &axisVector);
+  tempInput->reduceAlongDimension(reduce::Sum, output, &axisVector);
   output->applyTransform(transform::Log, output);
+  delete tempInput;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -213,7 +215,10 @@ void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * input, 
     std::unique_ptr<NDArray> targetVector(new NDArray(*weights));
     targetVector->applyScalar(scalar::Add, -1.f, targetVector.get());
 
-    *targets = (*targetVector * *targets) + T(1.f);
+    NDArray* temp = (*targetVector) * (*targets);
+    *temp += T(1.f);
+    targets->assign(temp);
+    delete temp;
     input->applyPairwiseLambda(targets, mainRoutineT1, output);
 
   }

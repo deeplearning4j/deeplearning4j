@@ -21,9 +21,10 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <array/NDArrayFactory.h>
 #if NOT_EXCLUDED(OP_im2col)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/convo.h>
 #include <ops/declarable/helpers/col2im.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
@@ -49,7 +50,6 @@ CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
   double zeroPadVal = 0.0;
   if (block.getTArguments()->size() > 0) zeroPadVal = T_ARG(0);
 
-  // FIXME: zeropad value is void
   LaunchContext* ctx = block.launchContext();
   NDArray *zero =  NDArrayFactory::create(zeroPadVal, block.launchContext());
   sd::ops::helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX,
@@ -128,7 +128,6 @@ CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
   int imgW = input->sizeAt(3);
 
   LaunchContext* ctx = block.launchContext();
-  // FIXME:: all helpers should accept NDArray
   ops::helpers::col2im(*ctx, gradAtOutput, z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
 
   return sd::Status::OK;
@@ -138,14 +137,16 @@ DECLARE_TYPES(im2col) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedOutputTypes(0, DataType::INHERIT)
-      ->setSameMode(true);
+      ->setSameMode(true)
+      ->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(im2col_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedOutputTypes(0, DataType::INHERIT)
-      ->setSameMode(true);
+      ->setSameMode(true)
+      ->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(im2col_bp) {

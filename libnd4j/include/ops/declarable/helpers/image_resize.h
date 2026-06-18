@@ -25,6 +25,7 @@
 #define __IMAGE_RESIZE_HELPERS__
 #include <array/NDArray.h>
 #include <system/op_boilerplate.h>
+#include <math/templatemath.h>
 
 namespace sd {
 namespace ops {
@@ -179,7 +180,7 @@ struct GaussianKernelFunc
   SD_HOST_DEVICE float operator()(float x) const {
     x = math::sd_abs<float,float>(x);
     if (x >= _radius) return 0.0f;
-    return std::exp(-x * x / (2.0 * _sigma * _sigma));
+    return sd::math::sd_exp<float, float>(-x * x / (2.0 * _sigma * _sigma));
   }
   SD_HOST_DEVICE float radius() const { return _radius; }
   const float _radius;
@@ -293,7 +294,6 @@ struct ImageResizerStateCommon {
     channels = input->sizeAt(3);  //.dim_size(3);
     heightScale = calculateResizeScale(inHeight, outHeight, _alignCorners);
     widthScale = calculateResizeScale(inWidth, outWidth, _alignCorners);
-    inputEws1 = input->ews() == 1;
     bStride = input->strideAt(0);
     hStride = input->strideAt(1);
     wStride = input->strideAt(2);
@@ -326,7 +326,6 @@ struct ImageResizerStateCommon {
   I hStride;
   I wStride;
   I cStride;
-  bool inputEws1;
   F heightScale;
   F widthScale;
   NDArray* output = nullptr;
@@ -650,60 +649,33 @@ SD_HOST_DEVICE void computePatchSum(T scale, const ImageResizerState& st, const 
 template <typename X, typename Z>
 SD_HOST_DEVICE void gatherRows(int const spanSize, int const* starts, Z const* weights, X const* imagePtr,
                                LongType const inputHeight, LongType const inputWidth, LongType const outputHeight,
-                               LongType const outputWidth, LongType const channels, Z* outputPtr, bool inputEws1,
+                               LongType const outputWidth, LongType const channels, Z* outputPtr,
                                LongType inRowStride, LongType wStride, LongType cStride) {
-  auto inRowSize = inputWidth * channels;
   auto outRowSize = outputWidth * channels;
 
-  if (inputEws1) {
-    auto addScaledVector = [](const X* inVector, int vectorLen, Z weight, Z* outVector) {
-      Z* outVecEnd = outVector + vectorLen;
-      for (; outVector != outVecEnd; ++outVector, ++inVector) {
-        *outVector += weight * static_cast<Z>(*inVector);
+  auto addScaledVector = [](const X* inVector, int inputWidth, int channels, const LongType wStride,
+                            const LongType cStride, Z weight, Z* outVector) {
+    const X* inVec = inVector;
+    for (int i = 0; i < inputWidth; i++) {
+      for (int c = 0; c < channels; c++) {
+        *outVector += weight * static_cast<Z>(inVec[c * cStride]);
+        ++outVector;
       }
-    };
-
-    for (int y = 0; y < outputHeight; ++y) {
-      Z* outRowData = outputPtr + outRowSize * y;
-      memset(outRowData, '\0',
-             outRowSize * sizeof(Z));  //            std::fill(outRowData, outRowData + outRowSize, 0.f);
-      int inRow = starts[y];
-      auto inRowData = imagePtr + inRowSize * inRow;
-      auto weightsStart = weights + y * spanSize;
-      auto realSpanSize = math::sd_min(starts[y] + spanSize, static_cast<int>(inputHeight)) - starts[y];
-      auto weightsEnd = weightsStart + realSpanSize;
-      for (auto weightPtr = weightsStart; weightPtr != weightsEnd; ++weightPtr) {
-        addScaledVector(inRowData, inRowSize, *weightPtr, outRowData);
-        inRowData += inRowSize;
-      }
+      inVec += wStride;
     }
+  };
 
-  } else {
-    auto addScaledVector = [](const X* inVector, int inputWidth, int channels, const LongType wStride,
-                              const LongType cStride, Z weight, Z* outVector) {
-      const X* inVec = inVector;
-      for (int i = 0; i < inputWidth; i++) {
-        for (int c = 0; c < channels; c++) {
-          *outVector += weight * static_cast<Z>(inVec[c * cStride]);
-          ++outVector;
-        }
-        inVec += wStride;
-      }
-    };
-
-    for (int y = 0; y < outputHeight; ++y) {
-      Z* outRowData = outputPtr + outRowSize * y;
-      memset(outRowData, '\0',
-             outRowSize * sizeof(Z));  //            std::fill(outRowData, outRowData + outRowSize, 0.f);
-      int inRow = starts[y];
-      auto inRowData = imagePtr + inRowStride * inRow;
-      auto weightsStart = weights + y * spanSize;
-      auto realSpanSize = math::sd_min(starts[y] + spanSize, static_cast<int>(inputHeight)) - starts[y];
-      auto weightsEnd = weightsStart + realSpanSize;
-      for (auto weightPtr = weightsStart; weightPtr != weightsEnd; ++weightPtr) {
-        addScaledVector(inRowData, inputWidth, channels, wStride, cStride, *weightPtr, outRowData);
-        inRowData += inRowStride;
-      }
+  for (int y = 0; y < outputHeight; ++y) {
+    Z* outRowData = outputPtr + outRowSize * y;
+    memset(outRowData, '\0', outRowSize * sizeof(Z));
+    int inRow = starts[y];
+    auto inRowData = imagePtr + inRowStride * inRow;
+    auto weightsStart = weights + y * spanSize;
+    auto realSpanSize = math::sd_min(starts[y] + spanSize, static_cast<int>(inputHeight)) - starts[y];
+    auto weightsEnd = weightsStart + realSpanSize;
+    for (auto weightPtr = weightsStart; weightPtr != weightsEnd; ++weightPtr) {
+      addScaledVector(inRowData, inputWidth, channels, wStride, cStride, *weightPtr, outRowData);
+      inRowData += inRowStride;
     }
   }
 }

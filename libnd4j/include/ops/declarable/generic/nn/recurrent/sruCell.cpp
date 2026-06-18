@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_sruCell)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/recurrent.h>
 #include <ops/declarable/helpers/sru.h>
 
 namespace sd {
@@ -58,7 +58,6 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
                "SRUCELL operation: wrong shape of biases, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(correctBShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
 
-  // fixme: shitty initializer lists
   helpers::sruCell(block.launchContext(), xt, ct_1, w, b, ht, ct);
 
   return Status::OK;

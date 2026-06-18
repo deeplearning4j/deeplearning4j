@@ -35,7 +35,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinMsg,
+SD_KERNEL SD_INLINE void adaDeltaUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinMsg,
                                    const LongType* inMsgShapeInfo, const void* vinMsdx,
                                    const LongType* inMsdxShapeInfo, void* vz, const LongType* zShapeInfo,
                                    void* vstMsg, const LongType* stMsgShapeInfo, void* vstMsdx,
@@ -165,6 +165,7 @@ void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBl
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "adaDeltaUpdaterCuda failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void adaDeltaUpdaterCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory, const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, const void* vinMsg, const LongType* inMsgShapeInfo, const void* vinMsdx, const LongType* inMsdxShapeInfo, void* vz, const LongType* zShapeInfo, void* vstMsg, const LongType* stMsgShapeInfo, void* vstMsdx, const LongType* stMsdxShapeInfo, const double dRho, const double dEpsilon), SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 void updaterAdaDelta(LaunchContext* context, NDArray& gradient, NDArray& initStateMsg,

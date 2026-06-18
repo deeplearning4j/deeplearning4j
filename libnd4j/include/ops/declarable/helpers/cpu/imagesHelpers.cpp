@@ -30,14 +30,31 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+/**
+ * Check if an NDArray is C-order contiguous by verifying strides.
+ * Replaces ews()==1 checks which can be unreliable for views.
+ */
+static bool isCContiguous(NDArray& arr) {
+  auto rank = arr.rankOf();
+  auto shape = arr.shapeOf();
+  auto strides = arr.stridesOf();
+  sd::LongType expected = 1;
+  for (int i = rank - 1; i >= 0; --i) {
+    if (shape[i] == 1) continue;
+    if (strides[i] != expected) return false;
+    expected *= shape[i];
+  }
+  return true;
+}
+
 template <typename T>
 static void rgbToGrs_(NDArray& input, NDArray& output, const int dimC) {
   const T* x = input.bufferAsT<T>();
   T* z = output.bufferAsT<T>();
   const int rank = input.rankOf();
 
-  if (dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() && 'c' == output.ordering() &&
-      1 == output.ews()) {
+  if (dimC == rank - 1 && 'c' == input.ordering() && isCContiguous(input) && 'c' == output.ordering() &&
+      isCContiguous(output)) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         const auto xStep = i * 3;
@@ -81,9 +98,8 @@ SD_INLINE static void tripleTransformer(NDArray* input, NDArray* output, const i
 
   const T* x = input->bufferAsT<T>();
   T* z = output->bufferAsT<T>();
-  // TODO: Use tensordot or other optimizied helpers to see if we can get better performance.
 
-  if (dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' &&
+  if (dimC == rank - 1 && isCContiguous(*input) && isCContiguous(*output) && input->ordering() == 'c' &&
       output->ordering() == 'c') {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i += increment) {
@@ -137,8 +153,6 @@ SD_INLINE static void rgbYiq(NDArray* input, NDArray* output, const int dimC) {
 
 template <typename T>
 SD_INLINE static void yiqRgb(NDArray* input, NDArray* output, const int dimC) {
-  // TODO: this operation does not use the clamp operation, so there is a possibility being out of range.
-  // Justify that it  will not be out of range for images data
   T arr[3][3] = {{(T)1, (T)1, (T)1},
                  {(T)0.95598634, (T)-0.27201283, (T)-1.10674021},
                  {(T)0.6208248, (T)-0.64720424, (T)1.70423049}};
@@ -152,7 +166,7 @@ SD_INLINE static void hsvRgb(NDArray* input, NDArray* output, const int dimC) {
   const T* x = input->bufferAsT<T>();
   T* z = output->bufferAsT<T>();
 
-  if (dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' &&
+  if (dimC == rank - 1 && isCContiguous(*input) && isCContiguous(*output) && input->ordering() == 'c' &&
       output->ordering() == 'c') {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i += increment) {
@@ -189,7 +203,7 @@ SD_INLINE static void rgbHsv(NDArray* input, NDArray* output, const int dimC) {
   const T* x = input->bufferAsT<T>();
   T* z = output->bufferAsT<T>();
 
-  if (dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' &&
+  if (dimC == rank - 1 && isCContiguous(*input) && isCContiguous(*output) && input->ordering() == 'c' &&
       output->ordering() == 'c') {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i += increment) {
@@ -224,8 +238,8 @@ SD_INLINE static void rgbYuv_(NDArray& input, NDArray& output, const int dimC) {
   const T* x = input.bufferAsT<T>();
   T* z = output.bufferAsT<T>();
   const int rank = input.rankOf();
-  bool bSimple = (dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() && 'c' == output.ordering() &&
-                  1 == output.ews());
+  bool bSimple = (dimC == rank - 1 && 'c' == input.ordering() && isCContiguous(input) && 'c' == output.ordering() &&
+                  isCContiguous(output));
 
   if (bSimple) {
     auto func = PRAGMA_THREADS_FOR {
@@ -263,8 +277,8 @@ SD_INLINE static void yuvRgb_(NDArray& input, NDArray& output, const int dimC) {
   const T* x = input.bufferAsT<T>();
   T* z = output.bufferAsT<T>();
   const int rank = input.rankOf();
-  bool bSimple = (dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() && 'c' == output.ordering() &&
-                  1 == output.ews());
+  bool bSimple = (dimC == rank - 1 && 'c' == input.ordering() && isCContiguous(input) && 'c' == output.ordering() &&
+                  isCContiguous(output));
 
   if (bSimple) {
     auto func = PRAGMA_THREADS_FOR {

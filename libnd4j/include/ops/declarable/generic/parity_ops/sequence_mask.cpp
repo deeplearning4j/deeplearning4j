@@ -20,7 +20,7 @@
 // Created to use with batched tensor by GS <sgazeos@gmail.com> 3/27/2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/sequence_mask.h>
 #if NOT_EXCLUDED(OP_sequence_mask)
 namespace sd {

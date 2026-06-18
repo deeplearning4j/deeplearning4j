@@ -23,7 +23,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_rank)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
+#include <ops/declarable/helpers/shapeOpsHelper.h>
 
 namespace sd {
 namespace ops {
@@ -33,8 +34,7 @@ CUSTOM_OP_IMPL(rank, 1, 1, false, 0, 0) {
 
   REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
-  output->p(0, input->rankOf());
-  output->syncToDevice();
+  helpers::rankHelper(block.launchContext(), input, output);
 
   return Status::OK;
 }
@@ -44,7 +44,8 @@ DECLARE_TYPES(rank) {
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
-      ->allowOverride(true);
+      ->allowOverride(true)
+      ->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

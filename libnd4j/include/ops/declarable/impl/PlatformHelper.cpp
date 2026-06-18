@@ -31,6 +31,25 @@ PlatformHelper::PlatformHelper(const char* name, samediff::Engine engine) {
   _name = std::string(name);
   _hash = HashHelper::getInstance().getLongHash(_name);
   _engine = engine;
+  // Default: no version requirements
+  _helperLibraryName = "";
+  _minVersion = {0, 0, 0};
+  _maxVersion = {99, 99, 99};
+  _requiredCapabilities = HelperCapability::NONE;
+}
+
+PlatformHelper::PlatformHelper(const char* name, samediff::Engine engine, const std::string& helperLibrary,
+                               const HelperVersion& minVersion, const HelperVersion& maxVersion,
+                               HelperCapability requiredCapabilities) {
+  // we just store name/hash of target operation
+  _name = std::string(name);
+  _hash = HashHelper::getInstance().getLongHash(_name);
+  _engine = engine;
+  // Store version requirements
+  _helperLibraryName = helperLibrary;
+  _minVersion = minVersion;
+  _maxVersion = maxVersion;
+  _requiredCapabilities = requiredCapabilities;
 }
 
 NDArray* PlatformHelper::getNullifiedZ(graph::Context& block, int inputId) {
@@ -73,7 +92,7 @@ NDArray* PlatformHelper::getZ(graph::Context& ctx, int inputId) {
       if (var->getNDArray() != nullptr && var->getNDArray()->nonNull()) {
         z = var->getNDArray();
       } else {
-        sd_printf("Can't get Z variable for node_%i!\n", ctx.nodeId());
+        sd_debug("Can't get Z variable for node_%i!\n", ctx.nodeId());
       }
     } else {
       THROW_EXCEPTION("Failed execution after attempting to get result outside of fast_path. This should not happen.\n");

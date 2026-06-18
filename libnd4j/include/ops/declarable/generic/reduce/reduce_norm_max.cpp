@@ -21,7 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/transforms.h>
 
@@ -75,7 +75,7 @@ DECLARE_SHAPE_FN(reduce_norm_max) {
   std::vector<sd::LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
 
@@ -126,24 +126,31 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
 
   *gradI = 0.0;
 
-  if (gradO->lengthOf() == 1) {
+  // Handle scalar case: when gradO is a scalar (length 1) or when dimensions reduce to scalar
+  // Also handle edge case where gradO might have shape [0] instead of [] for scalar
+  bool isScalarGrad = gradO->lengthOf() == 1 || gradO->isScalar() ||
+                      (dimensions.empty() && gradO->lengthOf() <= 1);
+
+  if (isScalarGrad) {
     auto* indOfAbsMaxElem = input->indexReduceNumber(sd::indexreduce::IndexAbsoluteMax);
     const sd::LongType ind = indOfAbsMaxElem->t<sd::LongType>(0);
     delete indOfAbsMaxElem;
-    
-    const int sign = input->e<float>(ind) >= 0 ? 1 : -1;
-    auto put = sign * gradO->e(0);
-    gradI->p(ind, put);
-    delete put;
+
+    // Handle empty gradient case - gradient is effectively 0
+    if (gradO->lengthOf() == 0) {
+      return sd::Status::OK;
+    }
+
+    const double sign = input->e<double>(ind) >= 0.0 ? 1.0 : -1.0;
+    const double gradOVal = gradO->e<double>(0);
+    gradI->p(ind, sign * gradOVal);
 
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexAbsoluteMax, &dimensions);
-    auto* vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(), dimensions.data());
     helpers::scatterSimple(
         block.launchContext(), 6, *gradI, *gradO, *indicesArr,
-        *vec);  // 6 corresponds to copy operation
-    delete vec;
-   delete indicesArr;
+        dimensions);  // 6 corresponds to copy operation
+    delete indicesArr;
     
     auto* signArr = input->transform(sd::transform::Sign);
     *gradI *= (*signArr);
@@ -157,7 +164,7 @@ DECLARE_SHAPE_FN(reduce_norm_max_bp) {
   auto dimensions = *block.getIArguments();
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
-    helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    helpers::adjustAxis(shape::rank(inputShape->at(0)), axesVector, dimensions);
   }
 
   REQUIRE_TRUE(

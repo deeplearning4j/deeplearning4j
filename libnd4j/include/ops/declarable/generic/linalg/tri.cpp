@@ -20,7 +20,7 @@
 // @author Yurii Shyrma, created on 31.03.2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/transforms.h>
 #if NOT_EXCLUDED(OP_tri)
 
 namespace sd {

@@ -40,24 +40,25 @@ void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     // PWT case case
 
     // X gradient
-    epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
+    epsNext->applyTriplewiseLambda<T>(x, y, lambdaX, gradX);
 
     // Y gradient
-    epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
+    epsNext->applyTriplewiseLambda<T>(x, y, lambdaY, gradY);
 
   } else if (y->isScalar()) {
     T s = y->e<T>(0);
     auto lambdaS = LAMBDA_TT(_e, _x, s) { return _x <= s ? _e : (T)0.; });
 
-    float zero = 0.f;
+    float zero = 0.0f;
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     if (x <= y)
-      gradY->assign(&tmp);
+      gradY->assign(tmp);
     else
       gradY->assign(zero);
 
-    epsNext->applyPairwiseLambda(x, lambdaS, gradX);
+    delete tmp;
+    epsNext->applyPairwiseLambda<T>(x, lambdaS, gradX);
   } else {
     // broadcast case
 
@@ -66,32 +67,37 @@ void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     auto preX = x->dup();
     auto preY = y->dup();
 
-    auto* targetShapePtr = epsNext->getShapeAsVector();
-    std::vector<LongType> targetShape = *targetShapePtr;
-    delete targetShapePtr;
+    auto targetShape = epsNext->getShapeAsVector();
 
-    preX.tileToShape(targetShape, preX);
-    preY.tileToShape(targetShape, preY);
+    preX->tileToShape(*targetShape, *preX);
+    preY->tileToShape(*targetShape, *preY);
 
-    epsNext->applyTriplewiseLambda(&preX, &preY, lambdaX, &preX);
-    epsNext->applyTriplewiseLambda(&preX, &preY, lambdaY, &preY);
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaX, preX);
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaY, preY);
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(&sum);
+      auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
+      gradX->assign(sum);
+      delete sum;
     } else
-      gradX->assign(&preX);
+      gradX->assign(preX);
 
     if (axisY.size() > 0) {
-      auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(&sum);
+      auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
+      gradY->assign(sum);
+      delete sum;
     } else
-      gradY->assign(&preY);
+      gradY->assign(preY);
+
+    delete targetShape;
+    delete preX;
+    delete preY;
   }
 }
+BUILD_SINGLE_TEMPLATE(void minimumBPFunctor_, (NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
 
 void minimumBPFunctor(LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
                       NDArray* gradY) {

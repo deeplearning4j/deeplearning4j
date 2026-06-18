@@ -19,6 +19,7 @@
 //
 //  @author raver119@gmail.com
 //
+#include <array/NDArrayFactory.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/flatten.h>
 
@@ -56,11 +57,19 @@ static void SD_KERNEL flattenKernel(void **xBuffers, LongType **xShapeInfos, Lon
       LongType xOffset;
       LongType xCoords[SD_MAX_RANK];
 
-      // Compute x coordinates and offset
-      INDEX2COORDS(i, xRank, xShapePtr, xCoords);
+      if (order == 'f') {
+        // F-order: decompose linear index with dim 0 as fastest (LSB first)
+        LongType idx = i;
+        for (int d = 0; d < xRank; d++) {
+          xCoords[d] = idx % xShapePtr[d];
+          idx /= xShapePtr[d];
+        }
+      } else {
+        // C-order: decompose linear index with last dim as fastest
+        INDEX2COORDS(i, xRank, xShapePtr, xCoords);
+      }
       COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
 
-      // Write the value from xBuffer to the flattened zBuffer
       z[i] = xBuffer[xOffset];
     }
   }
@@ -97,7 +106,6 @@ static void flatten_(LaunchContext *context, std::vector<NDArray *> &inputs, NDA
 }
 
 void flatten(LaunchContext *context, std::vector<NDArray *> &inputs, NDArray *output, char order) {
-  // FIXME: we want NDArrayFactory::prepareSpecialUse here eventually
   const std::vector<NDArray *> v(inputs.begin(), inputs.end());
   //prepareSpecialUse requires const
   NDArray::prepareSpecialUse({output}, v, {});

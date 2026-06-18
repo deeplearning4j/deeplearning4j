@@ -24,6 +24,7 @@
 #define SD_PLATFORMHELPER_H
 #include <execution/Engine.h>
 #include <graph/Context.h>
+#include <helpers/HelperVersionRegistry.h>
 #include <helpers/ShapeUtils.h>
 #include <system/RequirementsHelper.h>
 
@@ -46,8 +47,32 @@ class SD_LIB_EXPORT PlatformHelper {
   // hash of the operation this helper is built for
   LongType _hash;
 
+  // ============================================================================
+  // Version Metadata Fields
+  // ============================================================================
+
+  // Name of the helper library (e.g., "cuDNN", "OneDNN", "ARM_COMPUTE")
+  std::string _helperLibraryName;
+
+  // Minimum required version for this helper
+  HelperVersion _minVersion{0, 0, 0};
+
+  // Maximum supported version for this helper
+  HelperVersion _maxVersion{99, 99, 99};
+
+  // Required capabilities for this helper
+  HelperCapability _requiredCapabilities = HelperCapability::NONE;
+
  public:
   PlatformHelper(const char *name, samediff::Engine engine);
+
+  /**
+   * Constructor with version requirements
+   */
+  PlatformHelper(const char *name, samediff::Engine engine, const std::string &helperLibrary,
+                 const HelperVersion &minVersion = {0, 0, 0},
+                 const HelperVersion &maxVersion = {99, 99, 99},
+                 HelperCapability requiredCapabilities = HelperCapability::NONE);
 
   virtual ~PlatformHelper() = default;
 
@@ -88,6 +113,135 @@ class SD_LIB_EXPORT PlatformHelper {
    * @return
    */
   NDArray *getNullifiedZ(graph::Context &ctx, int inputId);
+
+  // ============================================================================
+  // Version Validation Methods
+  // ============================================================================
+
+  /**
+   * Get the helper library name (e.g., "cuDNN", "OneDNN")
+   */
+  std::string helperLibraryName() const { return _helperLibraryName; }
+
+  /**
+   * Get minimum required version
+   */
+  HelperVersion minVersion() const { return _minVersion; }
+
+  /**
+   * Get maximum supported version
+   */
+  HelperVersion maxVersion() const { return _maxVersion; }
+
+  /**
+   * Get required capabilities
+   */
+  HelperCapability requiredCapabilities() const { return _requiredCapabilities; }
+
+  /**
+   * Set version requirements (for helpers that need to configure this dynamically)
+   */
+  void setVersionRequirements(const HelperVersion &minVersion, const HelperVersion &maxVersion) {
+    _minVersion = minVersion;
+    _maxVersion = maxVersion;
+  }
+
+  /**
+   * Set required capabilities
+   */
+  void setRequiredCapabilities(HelperCapability capabilities) { _requiredCapabilities = capabilities; }
+
+  /**
+   * Set helper library name
+   */
+  void setHelperLibraryName(const std::string &name) { _helperLibraryName = name; }
+
+  /**
+   * Validate that the runtime version of the helper library meets requirements
+   * @return true if version is compatible, false otherwise
+   */
+  virtual bool validateRuntimeVersion() const {
+    if (_helperLibraryName.empty()) {
+      // No helper library specified, assume compatible
+      return true;
+    }
+
+    auto &registry = HelperVersionRegistry::getInstance();
+    auto info = registry.getHelperInfo(_helperLibraryName);
+
+    if (!info.available) {
+      return false;
+    }
+
+    return info.runtime.inRange(_minVersion, _maxVersion);
+  }
+
+  /**
+   * Check if the helper has all required capabilities
+   * @return true if all required capabilities are present
+   */
+  virtual bool hasRequiredCapabilities() const {
+    if (_helperLibraryName.empty() || _requiredCapabilities == HelperCapability::NONE) {
+      return true;
+    }
+
+    auto &registry = HelperVersionRegistry::getInstance();
+    auto info = registry.getHelperInfo(_helperLibraryName);
+
+    if (!info.available) {
+      return false;
+    }
+
+    return hasCapability(info.capabilities, _requiredCapabilities);
+  }
+
+  /**
+   * Combined check: version compatible AND has required capabilities
+   * Use this in isUsable() implementations for complete validation
+   * @param context The execution context
+   * @return true if the helper is usable with version checks
+   */
+  virtual bool isUsableWithVersionCheck(graph::Context &context) {
+    // First check version and capabilities
+    if (!validateRuntimeVersion()) {
+      return false;
+    }
+
+    if (!hasRequiredCapabilities()) {
+      return false;
+    }
+
+    // Then delegate to the actual isUsable check
+    return isUsable(context);
+  }
+
+  /**
+   * Get a detailed status message about version compatibility
+   */
+  std::string getVersionStatusMessage() const {
+    if (_helperLibraryName.empty()) {
+      return "No version requirements specified";
+    }
+
+    auto &registry = HelperVersionRegistry::getInstance();
+    auto info = registry.getHelperInfo(_helperLibraryName);
+
+    std::stringstream ss;
+    ss << _helperLibraryName << ": ";
+
+    if (!info.available) {
+      ss << "NOT AVAILABLE";
+    } else {
+      ss << "v" << info.runtime.toString();
+      if (validateRuntimeVersion()) {
+        ss << " (compatible)";
+      } else {
+        ss << " (INCOMPATIBLE - requires v" << _minVersion.toString() << " - v" << _maxVersion.toString() << ")";
+      }
+    }
+
+    return ss.str();
+  }
 };
 }  // namespace platforms
 }  // namespace ops

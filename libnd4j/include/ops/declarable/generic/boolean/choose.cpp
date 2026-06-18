@@ -23,8 +23,9 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_choose)
 
+#include <array/NDArrayFactory.h>
 #include <helpers/ShapeUtils.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/boolean.h>
 #include <ops/declarable/helpers/choose.h>
 
 namespace sd {

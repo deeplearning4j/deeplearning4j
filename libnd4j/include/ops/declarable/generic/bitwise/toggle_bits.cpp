@@ -23,8 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_toggle_bits)
 
-#include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/helpers.h>
+#include <ops/declarable/headers/bitwise.h>
 #include <ops/declarable/helpers/toggle_bits.h>
 
 namespace sd {

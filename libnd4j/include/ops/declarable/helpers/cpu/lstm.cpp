@@ -210,7 +210,7 @@ void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDAr
  const int nIn = xt->sizeAt(1);
  const int nOut = cLast->sizeAt(1);
 
- std::vector<sd::LongType> cOutShape = {xt->sizeAt(0),xt->sizeAt(1), xt->sizeAt(1) + yLast->sizeAt(1)};
+ std::vector<sd::LongType> cOutShape = {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)};
  // Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
  NDArray concatOut(xt->ordering(), cOutShape, xt->dataType(),
                    xt->getContext());
@@ -250,9 +250,9 @@ void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDAr
    zf->applyTransform(transform::Sigmoid, f);  // f = sigmoid(zf);
  }
 
- if (z->ews() == 1 && i->ews() == 1 && c->ews() == 1 && cLast->ews() == 1 && f->ews() == 1 && h->ews() == 1 &&
-     z->ordering() == i->ordering() && z->ordering() == c->ordering() && z->ordering() == cLast->ordering() &&
-     z->ordering() == f->ordering() && z->ordering() == h->ordering()) {
+  if (shape::strideDescendingCAscendingF(z->shapeInfo()) && shape::strideDescendingCAscendingF(i->shapeInfo()) && shape::strideDescendingCAscendingF(c->shapeInfo()) && shape::strideDescendingCAscendingF(cLast->shapeInfo()) && shape::strideDescendingCAscendingF(f->shapeInfo()) && shape::strideDescendingCAscendingF(h->shapeInfo()) &&
+      z->ordering() == i->ordering() && z->ordering() == c->ordering() && z->ordering() == cLast->ordering() &&
+      z->ordering() == f->ordering() && z->ordering() == h->ordering()) {
    // cell state = blockInput .* inputGate + prevCellState .* forgetGate
    BUILD_SINGLE_SELECTOR(z->dataType(), fusedTanh, (z, i, c, cLast, f, h), SD_FLOAT_TYPES);
  } else {

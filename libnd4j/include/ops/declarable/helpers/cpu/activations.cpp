@@ -53,7 +53,7 @@ void static _softMaxDerivForVector(sd::LaunchContext* context, const void* input
   for (sd::LongType i = 0; i < length; i++) {
     INDEX2COORDS(i, rank, shape, coords);
     COORDS2INDEX(rank, stride, coords, offset);
-    max = sd::math::sd_max<T>(max, inBuff[offset]);
+    max = sd::math::sd_max(max, inBuff[offset]);
   }
 
   // Calculate exponentials and sum
@@ -134,6 +134,7 @@ void logSoftMaxForVector_(void const* input, sd::LongType const* inShapeInfo, vo
     COORDS2INDEX(outRank, outStrides, coords, idx2);
     outBuff[idx2] = sd::math::sd_exp<T, T>(inBuff[inIndices[i2]] - max);
     sum += outBuff[idx2];
+    outIndices[i2] = idx2;
   }
 
   PRAGMA_OMP_SIMD
@@ -161,10 +162,8 @@ void prelu(LaunchContext* context, NDArray* input, NDArray* alpha, NDArray* outp
 
   auto func = PRAGMA_THREADS_FOR {
     for (sd::LongType i = start; i < stop; i++) {
-      // FIXME: double!
       double x = input->e<double>(i);
       if (x < 0.0) {
-        // FIXME: double
         output->p(i, (x * alpha->e<double>(shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo))));
       } else
         output->p(i, x);
@@ -184,7 +183,6 @@ void preluBP(LaunchContext* context, NDArray* input, NDArray* alpha, NDArray* dL
   dLdA->assign(zero);
 
   for (sd::LongType i = 0; i < inputLen; ++i) {
-    // FIXME: double
     double x = input->e<double>(i);
     double grO =  dLdO->isScalar() ?  dLdO->e<double>(0) : dLdO->e<double>(i);
     if (x < 0.0) {
@@ -228,8 +226,16 @@ static void thresholdReluDerivative_(sd::LaunchContext* context, NDArray* input,
 
 void thresholdReluDerivative(sd::LaunchContext* context, NDArray* input, double threshold, NDArray* dLdO,
                              NDArray* output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (context, input, threshold, dLdO, output),
+  // applyPairwiseLambda requires all arrays to share the same type; cast dLdO if needed
+  NDArray* dLdOToUse = dLdO;
+  NDArray* dLdOCast = nullptr;
+  if (dLdO->dataType() != input->dataType()) {
+    dLdOCast = dLdO->cast(input->dataType());
+    dLdOToUse = dLdOCast;
+  }
+  BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (context, input, threshold, dLdOToUse, output),
                         SD_FLOAT_TYPES);
+  if (dLdOCast != nullptr) delete dLdOCast;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -243,16 +249,22 @@ void logSoftmax(LaunchContext* context, NDArray* input, NDArray* output, const i
     } else
       *output = 0.;
   } else {
+    // log(softmax(x)) = x - max(x) - log(sum(exp(x - max(x))))
     std::vector<sd::LongType> dimVector = {dimension};
     auto maxAlongDim = input->reduceAlongDimension(reduce::Max, &dimVector, true);
-    auto maxMinusDim = *input - *maxAlongDim;
-    maxMinusDim->applyTransform(transform::Exp, output);  // output contains exponents temporarily
-    auto sumAlongDim = output->reduceAlongDimension(reduce::Sum, &dimVector, true);
-    *output /= *sumAlongDim;
-    output->applyTransform(transform::Log, output);
+    auto inputMinusMax = *input - *maxAlongDim;
+    // Compute exp(x - max) into a temp array
+    NDArray expTemp(output->shapeInfo(), false, const_cast<LaunchContext*>(context), true);
+    inputMinusMax->applyTransform(transform::Exp, &expTemp);
+    auto sumExp = expTemp.reduceAlongDimension(reduce::Sum, &dimVector, true);
+    sumExp->applyTransform(transform::Log, sumExp);
+    // output = (x - max) - log(sumExp)
+    auto* result = (*inputMinusMax) - (*sumExp);
+    output->assign(result);
+    delete result;
     delete maxAlongDim;
-    delete maxMinusDim;
-    delete sumAlongDim;
+    delete inputMinusMax;
+    delete sumExp;
   }
 }
 

@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_identity)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/activations.h>
 
 namespace sd {
 namespace ops {
@@ -41,7 +41,10 @@ OP_IMPL(identity, 1, 1, true) {
 }
 DECLARE_SYN(linear, identity);
 
-DECLARE_TYPES(identity) { getOpDescriptor()->setAllowedInputTypes(0, ANY)->setSameMode(true); }
+DECLARE_TYPES(identity) {
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_IDENTITY | OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+}
 
 OP_IMPL(identity_bp, 2, 1, true) {
   auto first = INPUT_VARIABLE(0);

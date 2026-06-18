@@ -20,6 +20,7 @@
 // Created by raver119 on 16.10.2017.
 //
 #include <helpers/ShapeUtils.h>
+#include <helpers/ConstantTadHelper.h>
 
 #include <ops/declarable/LegacyReduceOp.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -49,7 +50,9 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
 
     if (block.getIArguments()->size() == x->rankOf()) allAxes = true;
 
-    if ((block.getIArguments()->size() == 0) || (block.getIArguments()->size() == 1 && INT_ARG(0) == SD_MAX_INT) ||
+    // Check for -1 or SD_MAX_INT sentinel (means "reduce all dimensions")
+    // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+    if ((block.getIArguments()->size() == 0) || (block.getIArguments()->size() == 1 && (INT_ARG(0) == -1 || INT_ARG(0) == SD_MAX_INT)) ||
         allAxes) {
       // scalar
       NativeOpExcutioner::execReduceFloatScalar(opType, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
@@ -65,13 +68,11 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
 
       REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-      shape::TAD tad(x->shapeInfo(), dims.data(), dims.size());
-      tad.createTadOnlyShapeInfo();
-      tad.createOffsets();
+      auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
 
       NativeOpExcutioner::execReduceFloat(opType, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
                                           z->buffer(), z->shapeInfo(), dims.data(), (int)dims.size(),
-                                          tad.tadOnlyShapeInfo, tad.tadOffsets);
+                                          tadPack->primaryShapeInfo(), tadPack->primaryOffsets());
     }
 
     STORE_RESULT(*z);
@@ -86,7 +87,9 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
       axis[e] = f >= 0 ? f : f += x->rankOf();
     }
 
-    if ((block.getIArguments()->size() == 1 && INT_ARG(0) == SD_MAX_INT) || allAxes) {
+    // Check for -1 or SD_MAX_INT sentinel (means "reduce all dimensions")
+    // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+    if ((block.getIArguments()->size() == 1 && (INT_ARG(0) == -1 || INT_ARG(0) == SD_MAX_INT)) || allAxes) {
       auto z = OUTPUT_VARIABLE(0);
 
       auto b = x->buffer();
@@ -102,20 +105,20 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
 
       REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-      shape::TAD tad(x->shapeInfo(), axis.data(), axis.size());
-      tad.createTadOnlyShapeInfo();
-      tad.createOffsets();
+      auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &axis);
 
       auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
       auto z = new NDArray(newShape, x->getWorkspace());
 
       NativeOpExcutioner::execReduceFloat(opType, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
                                           z->buffer(), z->shapeInfo(), axis.data(), (int)axis.size(),
-                                          tad.tadOnlyShapeInfo, tad.tadOffsets);
+                                          tadPack->primaryShapeInfo(), tadPack->primaryOffsets());
 
       // keepDims processing, for TF compatibility
       if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
-        std::vector<sd::LongType> newshape(z->getShapeAsVector());
+        auto* newshapePtr = z->getShapeAsVector();
+        std::vector<sd::LongType> newshape = *newshapePtr;
+        delete newshapePtr;
         for (int e = 0; e < axis.size(); e++) {
           auto a = axis.at(e);
           newshape.insert(newshape.begin() + a, 1);
@@ -145,7 +148,9 @@ ShapeList *LegacyReduceOp::calculateOutputShape(ShapeList *inputShape, sd::graph
 
   if (block.getIArguments()->size() == shape::rank(inShape)) allAxes = true;
 
-  if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == SD_MAX_INT) ||
+  // Check for -1 or SD_MAX_INT sentinel (means "reduce all dimensions")
+  // -1 is the standard sentinel, SD_MAX_INT (Integer.MAX_VALUE) is deprecated but still supported
+  if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && (INT_ARG(0) == -1 || INT_ARG(0) == SD_MAX_INT)) ||
       allAxes) {
     if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
       // in this case we just return legacy scalar
@@ -159,7 +164,7 @@ ShapeList *LegacyReduceOp::calculateOutputShape(ShapeList *inputShape, sd::graph
       newShape[6] = 1;
       newShape[7] = 99;
     } else {
-      ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), sd::LongType);
+      ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(static_cast<sd::LongType>(0)), sd::LongType);
       newShape[0] = 0;
       newShape[1] = 0;
       newShape[2] = 1;

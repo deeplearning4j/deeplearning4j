@@ -35,7 +35,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void amsGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinv,
+SD_KERNEL SD_INLINE void amsGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinv,
                                   const LongType* invShapeInfo, const void* vinm, const LongType* inmShapeInfo,
                                   const void* vinh, const LongType* inhShapeInfo, void* vz,
                                   const LongType* zShapeInfo, void* vstV, const LongType* stvShapeInfo,
@@ -201,6 +201,7 @@ void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "amsGradUpdaterCudaLauncher failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void amsGradUpdaterCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory, const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, const void* vinv, const LongType* invShapeInfo, const void* vinm, const LongType* inmShapeInfo, const void* vinh, const LongType* inhShapeInfo, void* vz, const LongType* zShapeInfo, void* vstV, const LongType* stvShapeInfo, void* vstM, const LongType* stmShapeInfo, void* vstH, const LongType* sthShapeInfo, const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration), SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 void updaterAmsGrad(LaunchContext* context, NDArray& gradient, NDArray& initStateV,

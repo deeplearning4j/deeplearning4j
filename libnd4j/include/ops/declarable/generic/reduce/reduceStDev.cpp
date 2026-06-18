@@ -20,7 +20,8 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 04.06.2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/reductions.h>
 #if NOT_EXCLUDED(OP_reduce_stdev)
@@ -43,6 +44,11 @@ CUSTOM_OP_IMPL(reduce_stdev, -1, 1, false, 0, 0) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input unchanged)
+    if (dimensions.empty()) {
+      output->assign(input);
+      return sd::Status::OK;
+    }
   }
 
   if (block.getBArguments()->size()) {
@@ -76,6 +82,10 @@ DECLARE_SHAPE_FN(reduce_stdev) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(rank, axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input shape unchanged)
+    if (dimensions.empty()) {
+      return SHAPELIST(CONSTANT(inputShape->at(0)));
+    }
   }
 
   if (block.getBArguments()->size()) {
@@ -102,7 +112,7 @@ DECLARE_SHAPE_FN(reduce_stdev) {
 }
 
 DECLARE_TYPES(reduce_stdev) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS})->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -165,13 +175,15 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
       auto* reshaped = gradO->reshape(gradO->ordering(), shape);
-      *gradI *= (*reshaped);  // for example could be something like [a,b] -> [1,a,1,b]
-      delete reshaped;
+      gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), reshaped, gradI);
+      if (reshaped != nullptr && !reshaped->isView()) {
+        delete reshaped;
+      }
     } else {
-      *gradI *= (*gradO);  // for example could be something like [a,b] -> [1,a,1,b]
+      gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
     }
   } else {
-    *gradI *= (*gradO);  // automatic broadcasting happens here
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
   }
   return sd::Status::OK;
 }

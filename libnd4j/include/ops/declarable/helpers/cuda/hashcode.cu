@@ -19,6 +19,7 @@
 //
 // @author raver119@gmail.com
 //
+#include <array/NDArrayFactory.h>
 #include <ops/declarable/helpers/hashcode.h>
 
 #include "execution/cuda/LaunchDims.h"
@@ -78,12 +79,12 @@ void hashCode_(LaunchContext* context, NDArray& array, NDArray& result) {
   NDArray::prepareSpecialUse({&result}, {&array});
   auto length = array.lengthOf();
   int numBlocks = length / blockSize + ((length % blockSize == 0) ? 0 : 1);
-  auto tempA = NDArrayFactory::create<LongType>('c', {numBlocks}, context);
-  auto tempB = NDArrayFactory::create<LongType>('c', {numBlocks / blockSize + 1}, context);
+  NDArray* tempA = NDArrayFactory::create<LongType>('c', {numBlocks}, context);
+  NDArray* tempB = NDArrayFactory::create<LongType>('c', {numBlocks / blockSize + 1}, context);
 
   auto buffer = reinterpret_cast<T*>(array.specialBuffer());                  // bufferAsT<T>();
-  auto tempBufferA = reinterpret_cast<LongType*>(tempA.specialBuffer());  // bufferAsT<sd::LongType>();
-  auto tempBufferB = reinterpret_cast<LongType*>(tempB.specialBuffer());  // bufferAsT<sd::LongType>();
+  auto tempBufferA = reinterpret_cast<LongType*>(tempA->specialBuffer());  // bufferAsT<sd::LongType>();
+  auto tempBufferB = reinterpret_cast<LongType*>(tempB->specialBuffer());  // bufferAsT<sd::LongType>();
 
   dim3 launchDims = getHashCodeSplit(length,numBlocks);
   // default buffer is the first one, because it might be the last one in case of small arrays (< blockSize)

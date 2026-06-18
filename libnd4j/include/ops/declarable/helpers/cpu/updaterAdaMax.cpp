@@ -73,28 +73,6 @@ static void adaMaxUpdater_(NDArray& gradient, NDArray& initStateU, NDArray& init
   T epsilonT = lr / (1.0 - beta1T);
   if (sd::math::sd_isnan(epsilonT) || 0 == epsilonT || sd::math::sd_isinf(epsilonT)) epsilonT = epsilon;
 
-  bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateM.ews() && 1 == initStateM.ews() &&
-               1 == stateU.ews() && 1 == initStateU.ews();
-  bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateU.ordering() &&
-                       stateU.ordering() == initStateU.ordering() && stateU.ordering() == initStateM.ordering() &&
-                       stateM.ordering() == initStateM.ordering();
-
-  if (bEws1 && bSameOrdering) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        // m = B_1 * m + (1-B_1)*grad
-        stM[i] = beta1 * initM[i] + grad[i] * (1 - beta1);
-        // u = max(B_2 * u, |grad|)
-        stU[i] = sd::math::sd_max((beta2 * initU[i]), sd::math::sd_abs<T, T>(grad[i])) + 1e-32;
-
-        up[i] = stM[i] * epsilonT / stU[i];
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
-    return;
-  }
-
   bool bXZsame = shape::haveSameShapeAndStrides(gradientShapeInfo, updateShapeInfo);
   bool bXInVSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateUShapeInfo);
   bool bXStVSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateUShapeInfo);

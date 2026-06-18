@@ -46,6 +46,7 @@ static SD_KERNEL void mergeMaxIndexCudaLauncher(void** inArrs, void** inShapes, 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
+  // Output shape info - safe to use shared memory since it's constant across all elements
   __shared__ int rankOutput;
   __shared__ const LongType *shapeOutput, *strideOutput;
 
@@ -63,19 +64,17 @@ static SD_KERNEL void mergeMaxIndexCudaLauncher(void** inArrs, void** inShapes, 
     Z mIdx(0);
 
     // Iterate through all input arrays to find the maximum value and its index
+    // NOTE: Do NOT use __shared__ memory for input shapes inside this loop!
+    // Different threads may be at different positions in the outer 'e' loop,
+    // causing race conditions if shared memory is used here.
     for (int i = 0; i < numArrays; ++i) {
       auto x = reinterpret_cast<const T*>(inArrs[i]);
       auto xShape = reinterpret_cast<const LongType*>(inShapes[i]);
 
-      __shared__ int rankInput;
-      __shared__ const LongType *shapeInput, *strideInput;
-
-      if (threadIdx.x == 0) {
-        rankInput = shape::rank(xShape);
-        shapeInput = shape::shapeOf(xShape);
-        strideInput = shape::stride(xShape);
-      }
-      __syncthreads();
+      // Read shape info directly per-thread (no shared memory)
+      int rankInput = shape::rank(xShape);
+      const LongType* shapeInput = shape::shapeOf(xShape);
+      const LongType* strideInput = shape::stride(xShape);
 
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
@@ -146,6 +145,7 @@ static SD_KERNEL void mergeMaxCudaLauncher(void** inArrs, void** inShapes, const
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
+  // Output shape info - safe to use shared memory since it's constant across all elements
   __shared__ int rankOutput;
   __shared__ const LongType *shapeOutput, *strideOutput;
 
@@ -162,19 +162,17 @@ static SD_KERNEL void mergeMaxCudaLauncher(void** inArrs, void** inShapes, const
     T mVal = -DataTypeUtils::max<T>();
 
     // Iterate through all input arrays to find the maximum value
+    // NOTE: Do NOT use __shared__ memory for input shapes inside this loop!
+    // Different threads may be at different positions in the outer 'e' loop,
+    // causing race conditions if shared memory is used here.
     for (int i = 0; i < numArrays; ++i) {
       auto x = reinterpret_cast<const T*>(inArrs[i]);
       auto xShape = reinterpret_cast<const LongType*>(inShapes[i]);
 
-      __shared__ int rankInput;
-      __shared__ const LongType *shapeInput, *strideInput;
-
-      if (threadIdx.x == 0) {
-        rankInput = shape::rank(xShape);
-        shapeInput = shape::shapeOf(xShape);
-        strideInput = shape::stride(xShape);
-      }
-      __syncthreads();
+      // Read shape info directly per-thread (no shared memory)
+      int rankInput = shape::rank(xShape);
+      const LongType* shapeInput = shape::shapeOf(xShape);
+      const LongType* strideInput = shape::stride(xShape);
 
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
@@ -359,6 +357,7 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
+  // Output shape info - safe to use shared memory since it's constant across all elements
   __shared__ int rankOutput;
   __shared__ const LongType *shapeOutput, *strideOutput;
 
@@ -372,22 +371,20 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
   LongType outputCoords[SD_MAX_RANK];
 
   for (LongType e = tid; e < length; e += step) {
-    T sum = static_cast<T>(0.0);
+    T sum = static_cast<T>(0);
 
     // Sum values from all input arrays
+    // NOTE: Do NOT use __shared__ memory for input shapes inside this loop!
+    // Different threads may be at different positions in the outer 'e' loop,
+    // causing race conditions if shared memory is used here.
     for (int i = 0; i < numArrays; ++i) {
-      auto x = reinterpret_cast<T*>(inArrs[i]);
+      auto x = reinterpret_cast<const T*>(inArrs[i]);
       auto xShape = reinterpret_cast<const LongType*>(inShapes[i]);
 
-      __shared__ int rankInput;
-      __shared__ const LongType *shapeInput, *strideInput;
-
-      if (threadIdx.x == 0) {
-        rankInput = shape::rank(xShape);
-        shapeInput = shape::shapeOf(xShape);
-        strideInput = shape::stride(xShape);
-      }
-      __syncthreads();
+      // Read shape info directly per-thread (no shared memory)
+      int rankInput = shape::rank(xShape);
+      const LongType* shapeInput = shape::shapeOf(xShape);
+      const LongType* strideInput = shape::stride(xShape);
 
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
@@ -396,7 +393,8 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
       INDEX2COORDS(e, rankInput, shapeInput, xCoords);
       COORDS2INDEX(rankInput, strideInput, xCoords, xOffset);
 
-      sum += x[xOffset];
+      const auto val = x[xOffset];
+      sum += val;
     }
 
     // Compute output coordinates and offset
@@ -547,6 +545,7 @@ static SD_KERNEL void mergeAddCudaLauncher(void** inArrs, void** inShapes, const
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
+  // Output shape info - safe to use shared memory since it's constant across all elements
   __shared__ int rankOutput;
   __shared__ const LongType *shapeOutput, *strideOutput;
 
@@ -560,22 +559,20 @@ static SD_KERNEL void mergeAddCudaLauncher(void** inArrs, void** inShapes, const
   LongType outputCoords[SD_MAX_RANK];
 
   for (LongType e = tid; e < length; e += step) {
-    T sum(0.0f);
+    T sum = static_cast<T>(0);
 
     // Compute the sum across all input arrays
+    // NOTE: Do NOT use __shared__ memory for input shapes inside this loop!
+    // Different threads may be at different positions in the outer 'e' loop,
+    // causing race conditions if shared memory is used here.
     for (int i = 0; i < numArrays; ++i) {
-      auto x = reinterpret_cast<T*>(inArrs[i]);
+      auto x = reinterpret_cast<const T*>(inArrs[i]);
       auto xShape = reinterpret_cast<const LongType*>(inShapes[i]);
 
-      __shared__ int rankInput;
-      __shared__ const LongType *shapeInput, *strideInput;
-
-      if (threadIdx.x == 0) {
-        rankInput = shape::rank(xShape);
-        shapeInput = shape::shapeOf(xShape);
-        strideInput = shape::stride(xShape);
-      }
-      __syncthreads();
+      // Read shape info directly per-thread (no shared memory)
+      int rankInput = shape::rank(xShape);
+      const LongType* shapeInput = shape::shapeOf(xShape);
+      const LongType* strideInput = shape::stride(xShape);
 
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
@@ -584,7 +581,8 @@ static SD_KERNEL void mergeAddCudaLauncher(void** inArrs, void** inShapes, const
       INDEX2COORDS(e, rankInput, shapeInput, xCoords);
       COORDS2INDEX(rankInput, strideInput, xCoords, xOffset);
 
-      sum += x[xOffset];
+      const auto val = x[xOffset];
+      sum += val;
     }
 
     // Compute output coordinates and offset
@@ -616,7 +614,7 @@ static void mergeAdd_(LaunchContext* context, const std::vector<NDArray*>& inArr
 
   dim3 mergeLaunchDims = mergeDims(length);
 
-  mergeAddCudaLauncher<T><<<mergeLaunchDims.x, mergeLaunchDims.y, mergeLaunchDims.z, *context->getCudaStream()>>>(
+  mergeAddCudaLauncher<T><<<mergeLaunchDims.y, mergeLaunchDims.x, mergeLaunchDims.z, *context->getCudaStream()>>>(
       pInBuffers, pInShapes, nArrSize, output.specialBuffer(), output.specialShapeInfo(), length);
   sd::DebugHelper::checkErrorCode(context->getCudaStream(), "mergeAddCudaLauncher failed");
 

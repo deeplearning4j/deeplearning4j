@@ -97,7 +97,10 @@ static void ismax_(LaunchContext* context, NDArray* input, NDArray* output,
 void ismax(LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
   NDArray::prepareSpecialUse({output}, {input});
 
-  BUILD_SINGLE_SELECTOR(input->dataType(), ismax_, (context, input, output, dimensions), SD_COMMON_TYPES);
+  // Dispatch on input->dataType() here is harmless for CUDA because the outer template T
+  // is not used for writing to output (the fills use zType internally).  Keep consistent
+  // with the CPU helper by dispatching on output->dataType() so both paths match.
+  BUILD_SINGLE_SELECTOR(output->dataType(), ismax_, (context, input, output, dimensions), SD_COMMON_TYPES);
 
   NDArray::registerSpecialUse({output}, {input});
 }

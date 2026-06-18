@@ -231,6 +231,10 @@ DECLARE_CUSTOM_OP(hashcode, 1, 1, false, 0, 0);
 #if NOT_EXCLUDED(OP_histogram)
 DECLARE_CUSTOM_OP(histogram, 1, 1, false, 0, 1);
 #endif
+#if NOT_EXCLUDED(OP_einsum)
+DECLARE_CUSTOM_OP(einsum, -2, 1, false, 0, 0);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

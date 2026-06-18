@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_argamax)
 
 #include <helpers/ConstantTadHelper.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/reductions.h>
 
@@ -48,6 +48,7 @@ CUSTOM_OP_IMPL(argamax, 1, 1, false, 0, -2) {
     helpers::adjustAxis(input->rankOf(), axisVector, axis);
     helpers::argAbsMax(*input, *output, axis);
   } else {
+    helpers::adjustAxis(input->rankOf(), axis);
     helpers::argAbsMax(*input, *output, axis);
   }
 

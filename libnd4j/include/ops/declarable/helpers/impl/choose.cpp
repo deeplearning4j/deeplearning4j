@@ -44,45 +44,45 @@ NDArray* processCondition_(int mode, NDArray* arg, NDArray* comp, NDArray* outpu
   // Convert to straight ndarray based on input
 
   int numResults = 0;
+  auto argBuf = arg->bufferAsT<T>();
+  T* outputBuf = (output != nullptr) ? output->bufferAsT<T>() : nullptr;
+
   if (comp != nullptr) {
     if (comp->isScalar()) {
-      // Other input for compare could be an ndarray or a secondary scalar
-      // for comparison
-      //                sd::NDArray arg1 = *arg;
-      //                sd::NDArray comp1 = *comp;
+      T compVal = comp->bufferAsT<T>()[0];
       for (LongType i = 0; i < arg->lengthOf(); i++) {
-        T result2 = processElementCondition(mode, arg->e<T>(i), comp->e<T>(0));
+        T result2 = processElementCondition(mode, argBuf[i], compVal);
         if (result2 > static_cast<T>(0)) {
-          if (output != nullptr) output->p(numResults, arg->e<T>(i));
+          if (outputBuf != nullptr) outputBuf[numResults] = argBuf[i];
           numResults++;
         }
       }
     } else {
-      // Other input for compare could be an ndarray or a secondary scalar
-      // for comparison
-      NDArray arg1 = *arg;
+      auto compBuf = comp->bufferAsT<T>();
       for (LongType i = 0; i < arg->lengthOf(); i++) {
-        T result2 = processElementCondition(mode, arg->e<T>(i), comp->e<T>(i));
+        T result2 = processElementCondition(mode, argBuf[i], compBuf[i]);
         if (result2 > static_cast<T>(0)) {
-          if (output != nullptr) output->p(numResults, arg->e<T>(i));
+          if (outputBuf != nullptr) outputBuf[numResults] = argBuf[i];
           numResults++;
         }
       }
     }
 
   } else {
-    //        sd::NDArray arg1 = *arg;
-    // Other input for compare could be an ndarray or a secondary scalar
-    // for comparison
+    T compScalarVal = compScalar.bufferAsT<T>()[0];
     for (LongType i = 0; i < arg->lengthOf(); i++) {
-      T result2 = processElementCondition(mode, arg->e<T>(i), compScalar.e<T>(0));
+      T result2 = processElementCondition(mode, argBuf[i], compScalarVal);
       if (result2 > static_cast<T>(0)) {
-        if (output != nullptr) output->p(numResults, arg->e<T>(i));
+        if (outputBuf != nullptr) outputBuf[numResults] = argBuf[i];
         numResults++;
       }
     }
   }
 
+  if (output != nullptr) {
+    output->tickWriteHost();
+    output->syncToDevice();
+  }
   if (numResult != nullptr) numResult->p(0, numResults);
 
   return output;

@@ -20,7 +20,8 @@
 //  @author GS <sgazeos@gmail.com>
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/nn.h>
+#include <ops/declarable/headers/parity_ops.h>
 #if NOT_EXCLUDED(OP_relu_layer)
 namespace sd {
 namespace ops {

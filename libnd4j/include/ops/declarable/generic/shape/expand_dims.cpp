@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_expand_dims)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
 
 namespace sd {
 namespace ops {
@@ -39,9 +39,12 @@ CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
                axis);
 
 
-  //note we used to have a specific copy case here but we should
-  //be abstracting away data copy and reshape details like buffer copying
   if(input->isEmpty()) {
+    return Status::OK;
+  }
+
+  // Fast path: if same buffer, this is just a view change - nothing to copy
+  if (input->dataBuffer() == output->dataBuffer()) {
     return Status::OK;
   }
 
@@ -49,7 +52,10 @@ CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
   return Status::OK;
 }
 
-DECLARE_TYPES(expand_dims) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(expand_dims) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING);
+}
 
 DECLARE_SHAPE_FN(expand_dims) {
   auto inShape = inputShape->at(0);
@@ -68,8 +74,7 @@ DECLARE_SHAPE_FN(expand_dims) {
 
   }
 
-  auto input = INPUT_VARIABLE(0);
-  if(input->isEmpty() && input->rankOf() < 1) {
+  if(shape::isEmpty(inShape) && shape::rank(inShape) < 1) {
     auto newShape = ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShape));
     return SHAPELIST(newShape);
   }
@@ -81,8 +86,8 @@ DECLARE_SHAPE_FN(expand_dims) {
   LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<LongType>(0);
   if (axis < 0) axis += x_rank + 1;
 
-  REQUIRE_TRUE(axis >= 0 && axis <= input->rankOf(), 0,
-               "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", input->rankOf() + 1,
+  REQUIRE_TRUE(axis >= 0 && axis <= x_rank, 0,
+               "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", x_rank + 1,
                axis);
 
   std::vector<LongType> shape;
@@ -90,8 +95,8 @@ DECLARE_SHAPE_FN(expand_dims) {
 
   shape.insert(shape.begin() + axis, 1);
 
-  auto newShape = input->isEmpty() ? ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), shape) :
-                                   ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), order, shape);
+  auto newShape = shape::isEmpty(inShape) ? ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), shape) :
+                                           ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), order, shape);
   return SHAPELIST(newShape);
 }
 }  // namespace ops

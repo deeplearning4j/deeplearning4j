@@ -75,7 +75,6 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
                  expectedCropShape.c_str(), ShapeUtils::shapeAsString(crop).c_str());
   }
 
-  // FIXME - should we use this time-consuming validation ?
   for (sd::LongType i = 0; i < numOfSpatialDims; ++i) {
     const auto cropLeft = crop->e<sd::LongType>(i, 0);
     const auto cropRight = crop->e<sd::LongType>(i, 1);

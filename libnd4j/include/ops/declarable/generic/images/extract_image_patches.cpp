@@ -20,7 +20,7 @@
 // Created by GS <sgazeos@gmail.com> at 3/30/2018
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/extract_patches.h>
 #if NOT_EXCLUDED(OP_extract_image_patches)
 namespace sd {

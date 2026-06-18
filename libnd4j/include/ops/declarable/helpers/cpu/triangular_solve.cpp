@@ -116,6 +116,16 @@ template <typename T>
 static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
                                           bool lower, bool adjoint, NDArray* output) {
 
+  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs
+  // which breaks coordinate-based indexing. Process the single matrix directly.
+  if (leftInput->rankOf() == 2) {
+    if (lower) {
+      lowerTriangularSolve<T>(context, leftInput, rightInput, false, output);
+    } else {
+      upperTriangularSolve<T>(context, leftInput, rightInput, false, output);
+    }
+    return sd::Status::OK;
+  }
 
   auto leftPart = leftInput->allTensorsAlongDimension({-2, -1});
   auto rightPart = rightInput->allTensorsAlongDimension({-2, -1});
@@ -139,10 +149,30 @@ static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* l
 template <typename T>
 static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray * input, bool const lower,
                                      NDArray* output) {
-  auto inputPart = input->allTensorsAlongDimension({-2, -1});
-  auto outputPart = output->allTensorsAlongDimension({-2, -1});
   auto cols = input->sizeAt(-1);
   auto rows = input->sizeAt(-2);
+
+  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs.
+  // Process the single matrix directly.
+  if (input->rankOf() == 2) {
+    if (!lower) {
+      for (sd::LongType r = 0; r < rows; r++) {
+        for (sd::LongType c = 0; c <= r; c++) {
+          output->r<T>(r, c) = input->t<T>(c, r);
+        }
+      }
+    } else {
+      for (sd::LongType r = 0; r < rows; r++) {
+        for (sd::LongType c = r; c < cols; c++) {
+          output->r<T>(r, c) = input->t<T>(c, r);
+        }
+      }
+    }
+    return;
+  }
+
+  auto inputPart = input->allTensorsAlongDimension({-2, -1});
+  auto outputPart = output->allTensorsAlongDimension({-2, -1});
 
   auto batchLoop = PRAGMA_THREADS_FOR {
     for (auto batch = start; batch < stop; batch++) {

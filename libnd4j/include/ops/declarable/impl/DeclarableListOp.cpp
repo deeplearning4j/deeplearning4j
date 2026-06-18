@@ -42,8 +42,8 @@ DeclarableListOp::DeclarableListOp(int numInputs, int numOutputs, const char* op
  * @return
  */
 ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, Context& block) {
-  // TODO: ensure this method isn't ever called
-
+  // This method should never be called for list ops; return a dummy shape
+  THROW_EXCEPTION("DeclarableListOp::calculateOutputShape should never be called");
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', {1, 1});
   return SHAPELIST(newShape);
 }

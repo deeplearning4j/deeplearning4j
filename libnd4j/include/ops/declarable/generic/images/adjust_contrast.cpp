@@ -93,7 +93,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   NDArray* factor = nullptr;
   auto size = input->sizeAt(-2) * input->sizeAt(-3);
   auto channels = input->sizeAt(-1);
-  int sizeChannels = sd::math::sd_max<int>(1,size * channels);
+  int sizeChannels = sd::math::sd_max(1,size * channels);
   auto batch = input->lengthOf() / sizeChannels;
   std::vector<LongType> shape = {batch, size, channels};
   auto* input3D = input->reshape(input->ordering(), shape);

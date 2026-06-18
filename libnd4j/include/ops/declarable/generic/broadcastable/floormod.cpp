@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_floormod)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {
@@ -36,6 +36,13 @@ BROADCASTABLE_OP_IMPL(floormod, 0, 0) {
   BROADCAST_CHECK_EMPTY(x, y, z);
 
   REQUIRE_TRUE(!y->isB(), 0, "FLOORMOD OP: you can't divide by bool array!");
+
+  // Fast path: same shape - skip BroadcastHelper dispatch overhead
+  if (x->isSameShape(y)) {
+    x->applyPairwiseTransform(pairwise::FloorMod, y, z, nullptr);
+    return Status::OK;
+  }
+
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;
@@ -50,7 +57,8 @@ DECLARE_TYPES(floormod) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, INHERIT);
+      ->setAllowedOutputTypes(0, INHERIT)
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(floormod_bp) {
@@ -66,23 +74,26 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
   auto gradY = OUTPUT_VARIABLE(1);
   gradX->assign(epsNext);
 
-  NDArray temp(*epsNext);
-  BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, &temp);
+  // Use dup() for a deep copy — NDArray copy constructor creates a VIEW (shares buffer).
+  // Writing into a view of epsNext would corrupt the upstream gradient in-place.
+  NDArray *temp = epsNext->dup();
+  BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, temp);
   if (gradY->rankOf() == gradX->rankOf()) {
-    epsNext->applyPairwiseTransform(pairwise::Multiply, &temp, gradY);
+    epsNext->applyPairwiseTransform(pairwise::Multiply, temp, gradY);
   } else  { // epsNext is greater than gradY
     std::vector<LongType> dims(epsNext->rankOf() * 2);
     LongType gap = epsNext->rankOf() - gradY->rankOf();
     for (LongType d = 0; d < gap; d++) {
       dims[d * 2 + 1] = 1;
     }
-    auto tempIn((temp)(dims));
+    auto tempIn((*temp)(dims));
     NDArray negTempIn = -*tempIn;
     auto get=  (*epsNext)(dims);
     get->applyPairwiseTransform(pairwise::Multiply, &negTempIn, gradY);
     delete get;
     delete tempIn;
   }
+  delete temp;
   return Status::OK;
 }
 

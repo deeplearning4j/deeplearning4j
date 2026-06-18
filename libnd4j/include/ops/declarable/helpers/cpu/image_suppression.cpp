@@ -48,14 +48,16 @@ static void nonMaxSuppressionV2_(NDArray* boxes, NDArray* scales, int maxSize, d
   std::vector<int> selectedIndices(output->lengthOf(), 0);
   auto needToSuppressWithThreshold = [](NDArray& boxes, int previousIndex, int nextIndex, T threshold) -> bool {
     if (previousIndex < 0 || nextIndex < 0) return true;
-    T minYPrev = sd::math::sd_min(boxes.t<T>(previousIndex, 0), boxes.t<T>(previousIndex, 2));
-    T minXPrev = sd::math::sd_min(boxes.t<T>(previousIndex, 1), boxes.t<T>(previousIndex, 3));
-    T maxYPrev = sd::math::sd_max(boxes.t<T>(previousIndex, 0), boxes.t<T>(previousIndex, 2));
-    T maxXPrev = sd::math::sd_max(boxes.t<T>(previousIndex, 1), boxes.t<T>(previousIndex, 3));
-    T minYNext = sd::math::sd_min(boxes.t<T>(nextIndex, 0), boxes.t<T>(nextIndex, 2));
-    T minXNext = sd::math::sd_min(boxes.t<T>(nextIndex, 1), boxes.t<T>(nextIndex, 3));
-    T maxYNext = sd::math::sd_max(boxes.t<T>(nextIndex, 0), boxes.t<T>(nextIndex, 2));
-    T maxXNext = sd::math::sd_max(boxes.t<T>(nextIndex, 1), boxes.t<T>(nextIndex, 3));
+    T bp0 = boxes.t<T>(previousIndex, 0), bp1 = boxes.t<T>(previousIndex, 1), bp2 = boxes.t<T>(previousIndex, 2), bp3 = boxes.t<T>(previousIndex, 3);
+    T bn0 = boxes.t<T>(nextIndex, 0), bn1 = boxes.t<T>(nextIndex, 1), bn2 = boxes.t<T>(nextIndex, 2), bn3 = boxes.t<T>(nextIndex, 3);
+    T minYPrev = sd::math::sd_min(bp0, bp2);
+    T minXPrev = sd::math::sd_min(bp1, bp3);
+    T maxYPrev = sd::math::sd_max(bp0, bp2);
+    T maxXPrev = sd::math::sd_max(bp1, bp3);
+    T minYNext = sd::math::sd_min(bn0, bn2);
+    T minXNext = sd::math::sd_min(bn1, bn3);
+    T maxYNext = sd::math::sd_max(bn0, bn2);
+    T maxXNext = sd::math::sd_max(bn1, bn3);
     T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
     T areaNext = (maxYNext - minYNext) * (maxXNext - minXNext);
 
@@ -77,7 +79,6 @@ static void nonMaxSuppressionV2_(NDArray* boxes, NDArray* scales, int maxSize, d
   for (int i = 0; i < numBoxes; ++i) {
     bool shouldSelect = numSelected < output->lengthOf();
 
-    // FIXME: add parallelism here
     for (int j = numSelected - 1; j >= 0; --j) {
       if (shouldSelect)
         if (needToSuppressWithThreshold(*boxes, indices[i], indices[selectedIndices[j]], T(overlapThreshold))) {
@@ -95,14 +96,16 @@ static void nonMaxSuppressionV2_(NDArray* boxes, NDArray* scales, int maxSize, d
 template <typename T>
 static inline T similirityV3_(NDArray& boxes, sd::LongType i, sd::LongType j) {
   const T zero = static_cast<T>(0.f);
-  const T yminI = math::sd_min(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
-  const T xminI = math::sd_min(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
-  const T ymaxI = math::sd_max(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
-  const T xmaxI = math::sd_max(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
-  const T yminJ = math::sd_min(boxes.t<T>(j, 0), boxes.t<T>(j, 2));
-  const T xminJ = math::sd_min(boxes.t<T>(j, 1), boxes.t<T>(j, 3));
-  const T ymaxJ = math::sd_max(boxes.t<T>(j, 0), boxes.t<T>(j, 2));
-  const T xmaxJ = math::sd_max(boxes.t<T>(j, 1), boxes.t<T>(j, 3));
+  const T bi0 = boxes.t<T>(i, 0), bi1 = boxes.t<T>(i, 1), bi2 = boxes.t<T>(i, 2), bi3 = boxes.t<T>(i, 3);
+  const T bj0 = boxes.t<T>(j, 0), bj1 = boxes.t<T>(j, 1), bj2 = boxes.t<T>(j, 2), bj3 = boxes.t<T>(j, 3);
+  const T yminI = math::sd_min(bi0, bi2);
+  const T xminI = math::sd_min(bi1, bi3);
+  const T ymaxI = math::sd_max(bi0, bi2);
+  const T xmaxI = math::sd_max(bi1, bi3);
+  const T yminJ = math::sd_min(bj0, bj2);
+  const T xminJ = math::sd_min(bj1, bj3);
+  const T ymaxJ = math::sd_max(bj0, bj2);
+  const T xmaxJ = math::sd_max(bj1, bj3);
   const T areaI = (ymaxI - yminI) * (xmaxI - xminI);
   const T areaJ = (ymaxJ - yminJ) * (xmaxJ - xminJ);
   if (areaI <= zero || areaJ <= zero) {

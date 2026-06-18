@@ -22,8 +22,8 @@
 
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
-#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/headers/images.h>
+#include <ops/declarable/helpers/imagesHelpers.h>
 #if NOT_EXCLUDED(OP_yiq_to_rgb)
 namespace sd {
 namespace ops {

@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_square)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 
 namespace sd {
 namespace ops {
@@ -37,7 +37,10 @@ OP_IMPL(square, 1, 1, true) {
   return Status::OK;
 }
 
-DECLARE_TYPES(square) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(square) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+}
 }  // namespace ops
 }  // namespace sd
 

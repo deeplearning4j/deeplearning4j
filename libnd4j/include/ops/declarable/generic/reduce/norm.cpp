@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_norm)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 
 namespace sd {
@@ -79,8 +79,6 @@ REDUCTION_OP_IMPL(norm, 1, 1, false, 1, -2) {
       // p-norm
       REQUIRE_TRUE(block.getIArguments()->size() > 1, 0,
                    "P-Norm reductions requires 2 TArguments, but only 1 was provided");
-      // FIXME: p is required here
-      // T p = T_ARG(1);
       input->reduceAlongDimension(reduce::NormP, output, &dims, false, output->rankOf() == 2);
     }
   }

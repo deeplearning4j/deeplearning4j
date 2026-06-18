@@ -107,6 +107,7 @@ static void prefix_(scalar::Ops op, NDArray* x, NDArray* z, const std::vector<Lo
   }
 
   NDArray::registerPrimaryUse({z}, {x});
+  z->syncToDevice();
 };
 
 ///////////////////////////////////////////////////////////////////

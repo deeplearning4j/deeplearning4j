@@ -36,7 +36,7 @@ static void adjustHue_(NDArray *input, NDArray *deltaScalarArr, NDArray *output,
   const T *x = input->bufferAsT<T>();
   T *z = output->bufferAsT<T>();
 
-  if (dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' &&
+  if (dimC == rank - 1 && shape::strideDescendingCAscendingF(input->shapeInfo()) && shape::strideDescendingCAscendingF(output->shapeInfo()) && input->ordering() == 'c' &&
       output->ordering() == 'c') {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i += increment) {

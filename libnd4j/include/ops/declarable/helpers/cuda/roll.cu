@@ -334,7 +334,6 @@ static void rollFunctorLinear_(NDArray *input, NDArray *output, int shift, bool 
        output->specialBuffer(), output->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
        fullLen, actualShift, shiftCount);
    sd::DebugHelper::checkErrorCode(output->getContext()->getCudaStream(), "rollKernelLinearStage2 failed");
-   // FIXME: no parallelism here :(
    // stage 3) swap remainer of items.
    if (remainShift && shiftCount)
      rollKernelLinearStage3<T><<<launchDims.y,launchDims.x,launchDims.z, *(output->getContext()->getCudaStream())>>>(

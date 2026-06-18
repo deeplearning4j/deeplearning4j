@@ -73,10 +73,10 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   static inline LongType inChannels(const LongType* inputShapeInfo, int weightFormat) {
-    if (weightFormat == 0) {  // [kH, kW, iC, oC] or
+    if (weightFormat == 0) {  // [kH, kW, iC, oC]
       return shape::sizeAt(inputShapeInfo, -2);
     } else if(weightFormat == 1) { //[oC, iC, kH, kW]
-      return shape::sizeAt(inputShapeInfo, -2);
+      return shape::sizeAt(inputShapeInfo, 1);
     } else if (weightFormat == 2) {  // [oC, kH, kW, iC]
       return shape::sizeAt(inputShapeInfo, -1);
     } else {
@@ -177,8 +177,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     const LongType dilatedKernelDim = kernelDim + (kernelDim - 1) * (dilation - 1);
     LongType outputLength = 0;
 
-    if (paddingMode == 0) {  // valid
-      outputLength = inputDim - dilatedKernelDim + 1;
+    if (paddingMode == 0) {  // valid with explicit padding
+      outputLength = inputDim + 2 * padding - dilatedKernelDim + 1;
     } else if (paddingMode == 1 || paddingMode == 2) {  // same
       outputLength = inputDim;
     } else {
@@ -207,24 +207,24 @@ class SD_LIB_HIDDEN ConvolutionUtils {
       oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
       oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
     } else if (paddingMode == 1) {  // same
+      // For SAME padding, output size is ceil(input / stride)
+      // This is the TensorFlow definition for SAME padding
       oD = (iD + sD - 1) / sD;
       oH = (iH + sH - 1) / sH;
       oW = (iW + sW - 1) / sW;
 
-      // Calculate the padding needed to achieve the same output size
+      // Calculate the padding needed to achieve the target output size
+      // Note: padding is calculated but output size is NOT recalculated
+      // because integer division in padding calculation can cause off-by-one
+      // when recalculating. The target output size is the correct value.
       LongType paddingNeededD = ((oD - 1) * sD + (kD - 1) * dD + 1 - iD) / 2;
       LongType paddingNeededH = ((oH - 1) * sH + (kH - 1) * dH + 1 - iH) / 2;
       LongType paddingNeededW = ((oW - 1) * sW + (kW - 1) * dW + 1 - iW) / 2;
 
-      // Update the padding values
+      // Update the padding values (passed by reference to caller)
       pD = paddingNeededD;
       pH = paddingNeededH;
       pW = paddingNeededW;
-
-      // Recalculate the output depth, height, and width with the updated padding
-      oD = (iD + 2 * pD - (kD - 1) * dD - 1) / sD + 1;
-      oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
-      oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
     } else {  // causal
       // Update the padding values for causal convolution
       pD = (kD - 1) * dD;
@@ -250,19 +250,35 @@ class SD_LIB_HIDDEN ConvolutionUtils {
       pH = ((oH - 1) * sH + eKH - iH) / 2;
       pW = ((oW - 1) * sW + eKW - iW) / 2;
 
-      // Handle odd padding cases
-      int padBottomH = (oH - 1) * sH + eKH - iH - pH;
-      int padBottomW = (oW - 1) * sW + eKW - iW - pW;
+      // Note: For SAME padding, output size is already correct (ceil(input/stride)).
+      // Do NOT adjust oH/oW based on padding asymmetry - this causes off-by-one errors.
+      // The padding asymmetry is handled by the convolution implementation.
+    } else {  // causal
+      pH = (kH - 1) * dH;
+      pW = (kW - 1) * dW;
+    }
+  }
 
-      // Adjust padding to ensure symmetry
-      if (padBottomH != pH) {
-        oH -= 1;
-        pH = ((oH - 1) * sH + eKH - iH) / 2;
-      }
-      if (padBottomW != pW) {
-        oW -= 1;
-        pW = ((oW - 1) * sW + eKW - iW) / 2;
-      }
+  // Padding calculation for deconvolution (conv_transpose) with SAME mode
+  // For deconv: output = stride * (input - 1) + dilated_kernel - 2 * padding
+  // For SAME: output = stride * input, so we solve for padding
+  // Note: This uses the same approach as regular conv - swap input/output roles
+  static inline void calcPaddingDeconv2D(LongType& pH, LongType& pW, LongType oH, LongType oW, LongType iH, LongType iW, LongType kH, LongType kW, LongType sH, LongType sW,
+                                   LongType dH, LongType dW, const int paddingMode = 1 /* default is same mode*/) {
+    if (paddingMode == 0) {  // valid
+      pH = 0;
+      pW = 0;
+    } else if (paddingMode == 1) {  // same
+      // For deconv SAME mode, we calculate padding by treating it as the inverse of conv
+      // The effective kernel size
+      const LongType eKH = (kH - 1) * dH + 1;
+      const LongType eKW = (kW - 1) * dW + 1;
+      
+      // For deconv with SAME: output = stride * input
+      // Using formula: padding = ((input - 1) * stride + effective_kernel - output) / 2
+      // But for deconv, input/output roles are swapped compared to conv
+      pH = ((iH - 1) * sH + eKH - oH) / 2;
+      pW = ((iW - 1) * sW + eKW - oW) / 2;
     } else {  // causal
       pH = (kH - 1) * dH;
       pW = (kW - 1) * dW;
@@ -337,24 +353,14 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     oW = calcOutDimDeconv(iW, kW, sW, pW, dW, paddingMode);
   }
 
-  // calculation of output height and width in 3D deconvolution procedure
+  // calculation of output depth, height and width in 3D deconvolution procedure
   static inline void calcOutSizeDeconv3D(LongType& oD, LongType& oH, LongType& oW, const LongType kD, const LongType kH, const LongType kW,
                                          const LongType sD, const LongType sH, const LongType sW,  LongType pD,  LongType pH,
                                          LongType pW, const LongType dD, const LongType dH, const LongType dW, const LongType iD,
                                          const LongType iH, const LongType iW, const int paddingMode) {
-    if (paddingMode == 1) {  // same
-      oD = sD * (iD - 1) + dD * (kD - 1) + 1 - 2 * pD;
-      oH = sH * (iH - 1) + dH * (kH - 1) + 1 - 2 * pH;
-      oW = sW * (iW - 1) + dW * (kW - 1) + 1 - 2 * pW;
-    } else if (paddingMode == 2) {  // causal
-      oD = sD * (iD - 1) + dD * (kD - 1) + 1 - pD;
-      oH = sH * (iH - 1) + dH * (kH - 1) + 1 - pH;
-      oW = sW * (iW - 1) + dW * (kW - 1) + 1 - pW;
-    } else {  // valid
-      oD = sD * (iD - 1) + dD * (kD - 1) + 1;
-      oH = sH * (iH - 1) + dH * (kH - 1) + 1;
-      oW = sW * (iW - 1) + dW * (kW - 1) + 1;
-    }
+    oD = calcOutDimDeconv(iD, kD, sD, pD, dD, paddingMode);
+    oH = calcOutDimDeconv(iH, kH, sH, pH, dH, paddingMode);
+    oW = calcOutDimDeconv(iW, kW, sW, pW, dW, paddingMode);
   }
 
   // evaluates sizes values and indexes using input and output arrays depending on data format
@@ -470,11 +476,11 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static std::vector<LongType> expectWeightsShape(const int wFormat, const LongType kD, const LongType kH, const LongType kW,
                                                   const LongType iC, const LongType oC) {
-    if (0 == wFormat) return std::vector<LongType>({kH, kW, iC, oC});
+    if (0 == wFormat) return std::vector<LongType>({kD, kH, kW, iC, oC});
 
-    if (1 == wFormat) return std::vector<LongType>({oC, iC, kH, kW});
+    if (1 == wFormat) return std::vector<LongType>({oC, iC, kD, kH, kW});
 
-    return std::vector<LongType>({oC, kH, kW, iC});
+    return std::vector<LongType>({oC, kD, kH, kW, iC});
   }
 
   static void conv2d(sd::graph::Context& block, NDArray* input, NDArray* weights, NDArray* bias,

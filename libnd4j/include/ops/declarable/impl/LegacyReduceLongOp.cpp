@@ -39,6 +39,14 @@ LegacyReduceLongOp::LegacyReduceLongOp(int opNum) : LegacyOp(1, opNum) {
 
 LegacyOp* LegacyReduceLongOp::clone() { return new LegacyReduceLongOp(this->_opNum); }
 
+void LegacyReduceLongOp::registerTypes() {
+  // Reduce-long ops (countNonZero, countZero, matchConditionCount) produce
+  // INT64 output regardless of input type — NOT same mode.
+  this->getOpDescriptor()->setSameMode(false);
+  this->getOpDescriptor()->setAllowedOutputTypes({INT64});
+  this->getOpDescriptor()->setAllowedInputTypes(ANY);
+}
+
 Status LegacyReduceLongOp::validateAndExecute(Context& block) {
   auto x = INPUT_VARIABLE(0);
 
@@ -86,7 +94,7 @@ Status LegacyReduceLongOp::validateAndExecute(Context& block) {
 
       std::vector<LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
       NativeOpExecutioner::execReduceLong(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                          x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
+                                          x->specialShapeInfo(), extras.argumentsAsT(x->dataType()), z->buffer(), zShapeInfoH, z->specialBuffer(),
                                           zShapeInfoD, dims2->data(), dims2->size());
 
       delete dims2;
@@ -127,7 +135,7 @@ Status LegacyReduceLongOp::validateAndExecute(Context& block) {
 
       std::vector<LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
       NativeOpExecutioner::execReduceLong(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-                                          x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
+                                          x->specialShapeInfo(), extras.argumentsAsT(x->dataType()), z->buffer(), zShapeInfoH, z->specialBuffer(),
                                           zShapeInfoD, dims2->data(), dims2->size());
       delete  dims2;
 

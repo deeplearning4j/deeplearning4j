@@ -31,11 +31,17 @@ namespace simdOps {
 /**
  * @brief Declares an index reduce operation with proper SIMD handling
  */
-#define DECLARE_INDEX_REDUCE_OP(OP_NAME, STARTING_VAL, UPDATE_CONDITION, MERGE_CONDITION)       \
-  template <typename X, typename Z,                                                             \
+#if defined(__CUDACC__) && defined(_MSC_VER)
+// NVCC+MSVC: skip is_arithmetic SFINAE check (causes template deduction failure)
+#define _INDEX_REDUCE_TEMPLATE_PARAMS template <typename X, typename Z>
+#else
+#define _INDEX_REDUCE_TEMPLATE_PARAMS template <typename X, typename Z,                         \
             typename std::enable_if<                                                            \
                 std::is_arithmetic<X>::value &&                                                 \
-                std::is_arithmetic<Z>::value, int>::type = 0>                                   \
+                std::is_arithmetic<Z>::value, int>::type = 0>
+#endif
+#define DECLARE_INDEX_REDUCE_OP(OP_NAME, STARTING_VAL, UPDATE_CONDITION, MERGE_CONDITION)       \
+  _INDEX_REDUCE_TEMPLATE_PARAMS                                                                 \
   class OP_NAME {                                                                               \
    public:                                                                                      \
     static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, \

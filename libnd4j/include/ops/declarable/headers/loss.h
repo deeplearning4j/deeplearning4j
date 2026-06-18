@@ -87,7 +87,7 @@ DECLARE_CUSTOM_OP(hinge_loss_grad, 3, 3, false, 0, 1);
  */
 #if NOT_EXCLUDED(OP_huber_loss)
 DECLARE_CUSTOM_OP(huber_loss, 3, 1, false, 1, 1);
-DECLARE_CUSTOM_OP(huber_loss_grad, 3, 1, false, 1, 1);
+DECLARE_CUSTOM_OP(huber_loss_grad, 3, 3, false, 1, 1);
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -394,6 +394,45 @@ DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, fals
 #if NOT_EXCLUDED(OP_ctc_loss)
 DECLARE_CUSTOM_OP(ctc_loss, 4, 1, false, 0, 1);
 DECLARE_CUSTOM_OP(ctc_loss_grad, 4, 1, false, 0, 1);
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+/**
+ * InfoNCE Contrastive Loss for CLIP-style contrastive alignment.
+ *
+ * Given L2-normalized image and text embeddings, computes the symmetric
+ * cross-entropy over the cosine similarity matrix:
+ *   similarity = image_embeds @ text_embeds^T * temperature
+ *   loss = (CE_rows + CE_cols) / (2 * batch)
+ *
+ * Input arrays:
+ *   0: imageEmbeddings [batch, embedDim] - L2-normalized image embeddings
+ *   1: textEmbeddings  [batch, embedDim] - L2-normalized text embeddings
+ *
+ * Float args:
+ *   0: temperature (default: 1.0) - logit temperature scale
+ *
+ * Output array:
+ *   0: scalar loss value
+ */
+#if NOT_EXCLUDED(OP_contrastive_loss)
+DECLARE_CUSTOM_OP(contrastive_loss, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(contrastive_loss_grad, 2, 2, false, 0, 0);
+#endif
+
+#if NOT_EXCLUDED(OP_attention_distillation_loss)
+DECLARE_CUSTOM_OP(attention_distillation_loss, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(attention_distillation_loss_grad, 2, 2, false, 0, 0);
+#endif
+
+#if NOT_EXCLUDED(OP_distillation_kl_loss)
+DECLARE_CUSTOM_OP(distillation_kl_loss, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(distillation_kl_loss_grad, 2, 2, false, 0, 0);
+#endif
+
+#if NOT_EXCLUDED(OP_feature_distillation_loss)
+DECLARE_CUSTOM_OP(feature_distillation_loss, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(feature_distillation_loss_grad, 2, 2, false, 0, 0);
 #endif
 
 }  // namespace ops

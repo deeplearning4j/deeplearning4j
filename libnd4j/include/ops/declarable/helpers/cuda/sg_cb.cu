@@ -21,6 +21,7 @@
 //
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/sg_cb.h>
 
 #include "helpers/DebugHelper.h"
@@ -37,7 +38,7 @@ namespace helpers {
 
 
 template <typename T>
-SD_KERNEL void hSoftmaxKernel(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength,
+SD_KERNEL SD_INLINE void hSoftmaxKernel(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength,
                               int code, int expLength, bool isInference) {
   auto syn0 = reinterpret_cast<T *>(vsyn0);
   auto syn1 = reinterpret_cast<T *>(vsyn1);
@@ -85,9 +86,10 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double a
   sd::DebugHelper::checkErrorCode(stream, "hSoftmaxKernel failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void hSoftmax_, (void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code, int expLength, bool isInference, cudaStream_t *stream), SD_FLOAT_TYPES);
 
 template <typename T>
-SD_KERNEL void nSamplingKernel(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, double alpha,
+SD_KERNEL SD_INLINE void nSamplingKernel(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, double alpha,
                                int vectorLength, int code, int expLength, bool isInference) {
   auto syn0 = reinterpret_cast<T *>(vsyn0);
   auto syn1Neg = reinterpret_cast<T *>(vsyn1Neg);
@@ -135,6 +137,7 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
   sd::DebugHelper::checkErrorCode(stream, "nSamplingKernel failed");
 
 }
+BUILD_SINGLE_TEMPLATE(void nSampling_, (void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code, int expLength, bool isInference, cudaStream_t *stream), SD_FLOAT_TYPES);
 
 /*
  * binarySearch - find element in haystack buffer (haystack - sorted device memory)
@@ -156,7 +159,7 @@ int binarySearch(const int *haystack, const int needle, const int totalElements)
   return (haystack[halfIndex] == needle) ? halfIndex : -1;
 }
 template <typename T>
-SD_KERNEL void addInfVectorKernel(T *neu1, T *infVector, int vectorLength) {
+SD_KERNEL SD_INLINE void addInfVectorKernel(T *neu1, T *infVector, int vectorLength) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
@@ -186,8 +189,10 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
   auto stream = s0.getContext()->getCudaStream();
 
   T *neu1e;
-  auto err = cudaMalloc(&neu1e, sizeof(T) * vectorLength);
-  err = cudaMemset(neu1e, 0, sizeof(T) * vectorLength);
+  int sgDevId1 = 0; cudaGetDevice(&sgDevId1);
+  neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(T) * vectorLength, sgDevId1, nullptr));
+  if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for skipgram neu1e");
+  auto err = cudaMemset(neu1e, 0, sizeof(T) * vectorLength);
   // hierarchic softmax goes first (if enabled)
 
   auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
@@ -235,10 +240,7 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
     throw cuda_exception::build("helpers::skipgram_: Cannot synchronize stream after addInfVectorKernel", err);
   }
 
-  err = cudaFree(neu1e);
-  if (0 != err) {
-    throw cuda_exception::build("helpers::skipgram_: Cannot deallocate temp memory for lingual net", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId1, nullptr);
 }
 BUILD_SINGLE_TEMPLATE( void skipgram_,
                       (NDArray & syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
@@ -284,8 +286,10 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
 
   for (int t = 0; t < numTargets; t++) {
     T *neu1e;
-    auto err = cudaMalloc(&neu1e, vectorLength * sizeof(T));
-    err = cudaMemset(neu1e, 0, vectorLength * sizeof(T));
+    int sgDevId2 = 0; cudaGetDevice(&sgDevId2);
+    neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(vectorLength * sizeof(T), sgDevId2, nullptr));
+    if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for skipgramBatch neu1e");
+    auto err = cudaMemset(neu1e, 0, vectorLength * sizeof(T));
 
     auto target = bTarget[t];
     auto alpha = lr.e<double>(t);
@@ -337,12 +341,8 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
                                   err);
     }
 
-    // optionally release temp arrays
-    err = cudaFree(neu1e);
-    if (err != 0) {
-      throw cuda_exception::build("helpers::skipgramBatchExec_: Cannot deallocate memory with stage", err);
-      break;
-    }
+    // release temp arrays
+    sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId2, nullptr);
   }
 }
 BUILD_SINGLE_TEMPLATE( void skipgramBatchExec_,
@@ -408,7 +408,7 @@ const int hsRounds, const int nsRounds)
 
 
 template <typename T>
-static SD_KERNEL void checkContextKernel(int *context, T *syn0, T *neu1, int contextWidth, int vectorLength,
+static SD_KERNEL SD_INLINE void checkContextKernel(int *context, T *syn0, T *neu1, int contextWidth, int vectorLength,
                                          int vocabSize) {
   __shared__ bool hasError;
   if (0 == threadIdx.x) {
@@ -434,7 +434,7 @@ static SD_KERNEL void checkContextKernel(int *context, T *syn0, T *neu1, int con
 }
 
 template <typename T>
-SD_KERNEL void shiftKernel(T *neu1, T *infVector, int contextWidth, int vectorLength) {
+SD_KERNEL SD_INLINE void shiftKernel(T *neu1, T *infVector, int contextWidth, int vectorLength) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
@@ -444,7 +444,7 @@ SD_KERNEL void shiftKernel(T *neu1, T *infVector, int contextWidth, int vectorLe
 }
 
 template <typename T>
-SD_KERNEL void fillUpSynonymsKernel(int starter, int contextWidth, int vectorLength, int *lockedWords, int *context,
+SD_KERNEL SD_INLINE void fillUpSynonymsKernel(int starter, int contextWidth, int vectorLength, int *lockedWords, int *context,
                                     T *neu1e, T *syn0) {
   auto start = threadIdx.x + blockIdx.x * blockDim.x;
   auto step = blockDim.x * gridDim.x;
@@ -477,9 +477,12 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
   T *neu1;   // = new T[vectorLength];
   T *neu1e;  // = new T[vectorLength];
   size_t buffSize = sizeof(T) * vectorLength;
-  auto err = cudaMalloc(&neu1, buffSize);
-  err = cudaMalloc(&neu1e, buffSize);
-  err = cudaMemset(neu1, 0, buffSize);
+  int sgDevId3 = 0; cudaGetDevice(&sgDevId3);
+  neu1 = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(buffSize, sgDevId3, nullptr));
+  if (neu1 == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for cbow neu1");
+  neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(buffSize, sgDevId3, nullptr));
+  if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for cbow neu1e");
+  auto err = cudaMemset(neu1, 0, buffSize);
   err = cudaMemset(neu1e, 0, buffSize);
 
   // building neu1 for current window
@@ -551,15 +554,8 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
   if (0 != err) {
     throw cuda_exception::build("helpers::cbow_: Cannot synchronize stream after kernel executing", err);
   }
-  err = cudaFree(neu1);
-  if (0 != err) {
-    throw cuda_exception::build("helpers::cbow_: Cannot deallocate memory for synonims table", err);
-  }
-
-  err = cudaFree(neu1e);
-  if (0 != err) {
-    throw cuda_exception::build("helpers::cbow_: Cannot deallocate memory for antonims table", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(neu1, sgDevId3, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId3, nullptr);
 }
 BUILD_SINGLE_TEMPLATE( void cbow_,
                       (LaunchContext * lc, void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable,
@@ -579,7 +575,7 @@ void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expT
 }
 
 template <typename T>
-static SD_KERNEL void buildCurrentWindowKernel(int vocabSize, int contextWidth, int vectorLength, int *bContext,
+static SD_KERNEL SD_INLINE void buildCurrentWindowKernel(int vocabSize, int contextWidth, int vectorLength, int *bContext,
                                                T *syn0, T *neu1, int *actualContext, int e) {
   // building neu1 for current window
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
@@ -603,7 +599,7 @@ static SD_KERNEL void buildCurrentWindowKernel(int vocabSize, int contextWidth, 
 }
 
 template <typename T>
-SD_KERNEL void arrangeNeuKernel(int vectorLength, T *neu1, T *infVector, int *actualContext) {
+SD_KERNEL SD_INLINE void arrangeNeuKernel(int vectorLength, T *neu1, T *infVector, int *actualContext) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
@@ -612,7 +608,7 @@ SD_KERNEL void arrangeNeuKernel(int vectorLength, T *neu1, T *infVector, int *ac
 }
 
 template <typename T>
-SD_KERNEL void applyShiftKernel(int *bContext, int *bLocker, T *syn0, T *neu1e, int contextWidth, int vectorLength,
+SD_KERNEL SD_INLINE void applyShiftKernel(int *bContext, int *bLocker, T *syn0, T *neu1e, int contextWidth, int vectorLength,
                                 int e, int starter) {
   auto step = blockDim.x * gridDim.x;
   auto start = blockDim.x * blockIdx.x + threadIdx.x;
@@ -676,19 +672,15 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
   T *neu1;  // = reinterpret_cast<T*>(neuVector.specialBuffer());// = vectorLength <= 600 ? sneu1 : new T[vectorLength];
   T *neu1e;  // = reinterpret_cast<T*>(neuVector.specialBuffer()); // = vectorLength <= 600 ? sneu1e : new
              // T[vectorLength];
-  auto cerr = cudaMalloc(&neu1, sizeof(T) * vectorLength);
-  if (cerr) {
-    throw cuda_exception::build("Cannot allocate temp vector buffer", cerr);
-  }
-  cerr = cudaMalloc(&neu1e, sizeof(T) * vectorLength);
-  if (cerr) {
-    throw cuda_exception::build("Cannot allocate temp vector buffer", cerr);
-  }
+  int sgDevId4 = 0; cudaGetDevice(&sgDevId4);
+  neu1 = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(T) * vectorLength, sgDevId4, nullptr));
+  if (neu1 == nullptr) THROW_EXCEPTION("Cannot allocate temp vector buffer neu1");
+  neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(T) * vectorLength, sgDevId4, nullptr));
+  if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp vector buffer neu1e");
   int *actualContext;
-  cerr = cudaMalloc(&actualContext, sizeof(LongType));
-  if (cerr) {
-    throw cuda_exception::build("Cannot allocate counter buffer", cerr);
-  }
+  actualContext = reinterpret_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), sgDevId4, nullptr));
+  if (actualContext == nullptr) THROW_EXCEPTION("Cannot allocate counter buffer");
+  cudaError_t cerr;
 
   for (int e = 0; e < numTargets; e++) {
     auto alpha = lr.e<double>(e);
@@ -757,18 +749,9 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
     throw cuda_exception::build("Cannot syncronize stream before memory deallocation", cerr);
   }
 
-  cerr = cudaFree(neu1);
-  if (cerr) {
-    throw cuda_exception::build("Cannot deallocate temp buffer1", cerr);
-  }
-  cerr = cudaFree(neu1e);
-  if (cerr) {
-    throw cuda_exception::build("Cannot deallocate temp buffer1 E", cerr);
-  }
-  cerr = cudaFree(actualContext);
-  if (cerr) {
-    throw cuda_exception::build("Cannot deallocate temp buffer1", cerr);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(neu1, sgDevId4, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId4, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(actualContext, sgDevId4, nullptr);
 }
 BUILD_SINGLE_TEMPLATE( void cbowBatchExec_,
                       (LaunchContext * lc, NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable,

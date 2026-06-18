@@ -26,7 +26,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_conv2d)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/convo.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <system/op_boilerplate.h>
@@ -60,6 +60,7 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
   isNCHW = isNCHW == 0;
   LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(weights->sizeAt(0));  // filter(kernel) height
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) width
+
   ConvolutionUtils::conv2d(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
                            wFormat);
 
@@ -133,7 +134,8 @@ DECLARE_SHAPE_FN(conv2d) {
 
   }
 
-  LongType* outputShapeInfo = new LongType[shape::shapeInfoLength(rank)];
+  LongType* outputShapeInfo = new LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
+  memset(outputShapeInfo, 0, shape::shapeInfoLength(rank) * sizeof(LongType));
 
   outputShapeInfo[0] = 4;
   LongType    oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
@@ -150,7 +152,7 @@ DECLARE_SHAPE_FN(conv2d) {
   strideCalcShape[2] = bS;
   strideCalcShape[3] = oC;
 
-  sd::LongType *permute = new sd::LongType[4];
+  sd::LongType *permute = new sd::LongType[4 + SD_SHAPE_ALLOC_PADDING];
   permute[0] = 2;
   permute[1] = 3;
   permute[2] = 1;
@@ -193,6 +195,7 @@ DECLARE_SHAPE_FN(conv2d) {
   delete[] second;
   delete[] permute;
   auto ret = ConstantShapeHelper::getInstance().createFromExisting(outputShapeInfo);
+  delete[] outputShapeInfo;
   return SHAPELIST(ret);
 }
 
@@ -202,11 +205,13 @@ DECLARE_TYPES(conv2d) {
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_FLOATS})
-      ->setAllowedOutputTypes({ALL_FLOATS});
+      ->setAllowedOutputTypes({ALL_FLOATS})
+      ->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(conv2d_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -316,14 +321,14 @@ DECLARE_SHAPE_FN(conv2d_bp) {
 
   }
 
-  sd::LongType * strideCalcShapeGradI = new sd::LongType[shape::rank(inputShapeInfo)];
+  sd::LongType * strideCalcShapeGradI = new sd::LongType[shape::rank(inputShapeInfo) + SD_SHAPE_ALLOC_PADDING];
   strideCalcShapeGradI[0] = iC;
   strideCalcShapeGradI[1] = bS;
   strideCalcShapeGradI[2] = iH;
   strideCalcShapeGradI[3] = iW;
 
-  sd::LongType *strides = new sd::LongType[4];
-  sd::LongType *permute = new sd::LongType[4];
+  sd::LongType *strides = new sd::LongType[4 + SD_SHAPE_ALLOC_PADDING];
+  sd::LongType *permute = new sd::LongType[4 + SD_SHAPE_ALLOC_PADDING];
   permute[0] = 1;
   permute[1] = isNCHW ? 0 : 2;
   permute[2] = isNCHW ? 2 : 3;
@@ -339,9 +344,9 @@ DECLARE_SHAPE_FN(conv2d_bp) {
                                                   false);
   shape::setStride(shapeDesc,strides);
   auto gradIshapeInfo = ConstantShapeHelper::getInstance().createFromExisting(shapeDesc);
-  RELEASE(strides,block.getWorkspace());
-  RELEASE(strideCalcShapeGradI,block.getWorkspace());
-  RELEASE(permute,block.getWorkspace());
+  delete[] strides;
+  delete[] strideCalcShapeGradI;
+  delete[] permute;
   auto gradWshapeInfo =
       ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
   if (biasShapeInfo) {
@@ -420,6 +425,7 @@ CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
 
 DECLARE_TYPES(conv2d_input_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(conv2d_input_bp) {

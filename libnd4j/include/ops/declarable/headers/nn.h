@@ -287,6 +287,524 @@ DECLARE_CUSTOM_OP(dot_product_attention_v2_bp, -2, -3, false, -2, 1);
 DECLARE_CUSTOM_OP(multi_head_dot_product_attention, 7, -1, false, 0, 2);
 DECLARE_CUSTOM_OP(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1);
 #endif
+
+/**
+ * ONNX MultiHeadAttention - for pre-projected queries, keys, values
+ *
+ * Compatible with Microsoft's ONNX MultiHeadAttention operator.
+ * Takes already-projected Q, K, V tensors (unlike multi_head_dot_product_attention
+ * which takes unprojected inputs and weight matrices).
+ *
+ * Inputs:
+ *   0: query      [batch, seqQ, hidden] - already projected
+ *   1: key        [batch, seqKV, hidden] - already projected  
+ *   2: value      [batch, seqKV, hidden] - already projected
+ *   3: attn_bias  [batch, numHeads, seqQ, seqKV] or broadcastable (optional)
+ *   4: past_key   [batch, numHeads, pastSeq, headDim] (optional)
+ *   5: past_value [batch, numHeads, pastSeq, headDim] (optional)
+ *
+ * Int args:
+ *   0: numHeads
+ *   1: useCausalMask (0 or 1)
+ *
+ * Float args:
+ *   0: scale (0 = auto compute 1/sqrt(headDim))
+ *
+ * Outputs:
+ *   0: output        [batch, seqQ, hidden]
+ *   1: present_key   [batch, numHeads, totalSeq, headDim] (optional)
+ *   2: present_value [batch, numHeads, totalSeq, headDim] (optional)
+ */
+#if NOT_EXCLUDED(OP_onnx_multi_head_attention)
+DECLARE_CUSTOM_OP(onnx_multi_head_attention, 3, -1, false, -2, 2);
+#endif
+
+/**
+ * CTC Greedy Decoder - Connectionist Temporal Classification decoding
+ *
+ * Used in OCR and speech recognition to decode CTC output to text sequences.
+ *
+ * Inputs:
+ *   0: logits [batch, time, num_classes] - log probabilities from CTC output
+ *   1: sequence_length [batch] (optional) - actual sequence lengths
+ *
+ * Integer args:
+ *   0: merge_repeated - whether to merge repeated characters (default 1)
+ *   1: blank_index - index of blank label (default 0)
+ *
+ * Outputs:
+ *   0: decoded [batch, time] - decoded sequences (padded with blank)
+ *   1: log_probability [batch] - log probability of decoded sequences
+ */
+#if NOT_EXCLUDED(OP_ctc_greedy_decoder)
+DECLARE_CUSTOM_OP(ctc_greedy_decoder, 1, 2, false, 0, 2);
+#endif
+
+/**
+ * Adaptive Average Pooling 2D
+ *
+ * Automatically computes kernel size and stride to produce output
+ * of the specified spatial dimensions. Common in vision models.
+ *
+ * Inputs:
+ *   0: input [batch, channels, height, width] (NCHW) or [batch, height, width, channels] (NHWC)
+ *
+ * Integer args:
+ *   0: output_height - target output height
+ *   1: output_width - target output width
+ *   2: isNCHW - 1 for NCHW format, 0 for NHWC (default 1)
+ *
+ * Outputs:
+ *   0: output [batch, channels, output_height, output_width] or corresponding NHWC
+ */
+#if NOT_EXCLUDED(OP_adaptive_avgpool2d)
+DECLARE_CUSTOM_OP(adaptive_avgpool2d, 1, 1, false, 0, 3);
+DECLARE_CUSTOM_OP(adaptive_avgpool2d_bp, 2, 1, false, 0, 3);
+DECLARE_CUSTOM_OP(adaptive_maxpool2d, 1, 1, false, 0, 3);
+DECLARE_CUSTOM_OP(adaptive_maxpool2d_bp, 2, 1, false, 0, 3);
+DECLARE_CUSTOM_OP(adaptive_avgpool3d, 1, 1, false, 0, 4);
+#endif
+
+/**
+ * Mixture of Experts (MoE) layer
+ *
+ * Implements sparse MoE routing where each token is processed by top-k
+ * selected experts. Used in models like DeepSeek, Mixtral, etc.
+ *
+ * Inputs:
+ *   0: input [batch, seq_len, hidden_size] - input embeddings
+ *   1: router_weights [hidden_size, num_experts] - router projection
+ *   2: expert_weights [num_experts, hidden_size, expert_hidden] - expert weight matrices
+ *   3: expert_bias [num_experts, expert_hidden] (optional) - expert biases
+ *
+ * Integer args:
+ *   0: num_experts - total number of experts
+ *   1: top_k - number of experts to route to per token (default 2)
+ *   2: normalize_probs - whether to normalize router probs (default 1)
+ *
+ * T args:
+ *   0: capacity_factor - expert capacity factor (default 1.0)
+ *
+ * Outputs:
+ *   0: output [batch, seq_len, expert_hidden] - combined expert outputs
+ *   1: router_probs [batch, seq_len, num_experts] - router probabilities
+ *   2: expert_indices [batch, seq_len, top_k] - selected expert indices
+ */
+#if NOT_EXCLUDED(OP_mixture_of_experts)
+DECLARE_CUSTOM_OP(mixture_of_experts, 3, 3, false, -2, 3);
+#endif
+
+/**
+ * Mixture of Experts with Shared Experts
+ *
+ * Extends MoE with an always-on shared expert pathway (IBM Granite 4.0 pattern).
+ * The shared expert processes every token unconditionally, while routed experts
+ * are selected via top-K gating.
+ *
+ * output = shared_expert(input) + weighted_sum(routed_experts(input))
+ *
+ * Shared expert uses SwiGLU: down_proj(silu(gate_proj(x)) * up_proj(x))
+ *
+ * Inputs:
+ *   0: input [batch, seq_len, hidden_size]
+ *   1: router_weights [hidden_size, num_routed_experts]
+ *   2: routed_expert_weights [num_routed_experts, hidden_size, expert_hidden]
+ *   3: shared_gate_proj [hidden_size, shared_intermediate_size]
+ *   4: shared_up_proj [hidden_size, shared_intermediate_size]
+ *   5: shared_down_proj [shared_intermediate_size, hidden_size]
+ *   6: routed_expert_bias (optional)
+ *
+ * Integer args:
+ *   0: num_routed_experts - number of routed experts
+ *   1: top_k - number of experts to route to per token (default 2)
+ *   2: normalize_probs - whether to normalize router probs (default 1)
+ *
+ * T args:
+ *   0: capacity_factor - expert capacity factor (default 1.0)
+ *
+ * Outputs:
+ *   0: output [batch, seq_len, hidden_size] - combined output
+ *   1: router_probs [batch, seq_len, num_routed_experts] - router probabilities
+ *   2: expert_indices [batch, seq_len, top_k] - selected expert indices
+ */
+#if NOT_EXCLUDED(OP_moe_shared_experts)
+DECLARE_CUSTOM_OP(moe_shared_experts, 6, 3, false, -2, 3);
+#endif
+
+/**
+ * Deformable Convolution 2D
+ *
+ * Implements deformable convolution where learned offsets are added to
+ * the regular sampling grid, allowing the convolution to adapt to
+ * geometric transformations in the input.
+ *
+ * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)
+ *            "Deformable ConvNets v2" (Zhu et al., 2019)
+ *
+ * Inputs:
+ *   0: input [batch, channels, height, width] (NCHW) or NHWC
+ *   1: weights [out_channels, in_channels/groups, kernel_h, kernel_w]
+ *   2: offset [batch, 2*kernel_h*kernel_w*offset_groups, out_h, out_w]
+ *   3: bias [out_channels] (optional)
+ *   4: mask [batch, kernel_h*kernel_w*offset_groups, out_h, out_w] (optional, for v2)
+ *
+ * Integer args:
+ *   0: kernel_h
+ *   1: kernel_w
+ *   2: stride_h
+ *   3: stride_w
+ *   4: pad_h
+ *   5: pad_w
+ *   6: dilation_h
+ *   7: dilation_w
+ *   8: groups
+ *   9: offset_groups (deformable groups)
+ *   10: isNCHW (1 for NCHW, 0 for NHWC)
+ *
+ * Outputs:
+ *   0: output [batch, out_channels, out_h, out_w] or corresponding NHWC
+ */
+#if NOT_EXCLUDED(OP_deformable_conv2d)
+DECLARE_CUSTOM_OP(deformable_conv2d, 3, 1, false, 0, 11);
+#endif
+
+/**
+ * Windowed Attention - Local/Sliding Window Attention
+ *
+ * Implements windowed attention mechanisms used in efficient transformers
+ * like Longformer, BigBird, Swin Transformer, and SAM.
+ *
+ * Supports both 1D (sequence) and 2D (spatial) windowed attention.
+ *
+ * Inputs:
+ *   0: query [batch, seq_len, num_heads, head_dim] or [batch, height, width, num_heads, head_dim]
+ *   1: key [batch, seq_len, num_heads, head_dim] or corresponding 2D
+ *   2: value [batch, seq_len, num_heads, head_dim] or corresponding 2D
+ *   3: relative_position_bias [num_heads, window_size, window_size] (optional)
+ *   4: attention_mask [batch, num_heads, window_size, window_size] (optional)
+ *
+ * Integer args:
+ *   0: window_size - size of attention window
+ *   1: num_heads - number of attention heads
+ *   2: shift_size - shift for shifted window attention (default 0)
+ *
+ * T args:
+ *   0: scale - attention scale factor (default 1/sqrt(head_dim))
+ *
+ * Outputs:
+ *   0: output - same shape as query
+ *   1: attention_weights (optional) [batch, num_windows, num_heads, window_size, window_size]
+ */
+#if NOT_EXCLUDED(OP_windowed_attention)
+DECLARE_CUSTOM_OP(windowed_attention, 3, -1, false, -2, 2);
+#endif
+
+/**
+ * Relative Position Bias - Compute relative position bias for attention
+ *
+ * Supports two modes:
+ * 1. Learned bias (Swin/SAM style): looks up bias values from a learned table
+ * 2. ALiBi: computes linear position-based bias
+ *
+ * Inputs (for learned bias):
+ *   0: bias_table [num_relative_positions, num_heads] - learned bias values
+ *   1: relative_position_index [window_size^2, window_size^2] (optional)
+ *
+ * Inputs (for ALiBi):
+ *   0: sequence_length (scalar) - length of sequence
+ *
+ * Integer args:
+ *   0: num_heads - number of attention heads
+ *   1: window_size - window size for 2D position encoding
+ *   2: use_alibi - 1 for ALiBi mode, 0 for learned bias mode
+ *
+ * Outputs:
+ *   0: bias [num_heads, window_size^2, window_size^2] or [num_heads, seq_len, seq_len]
+ */
+#if NOT_EXCLUDED(OP_relative_position_bias)
+DECLARE_CUSTOM_OP(relative_position_bias, 1, 1, false, 0, 3);
+#endif
+
+/**
+ * token_sample - Token sampling for LLM inference
+ *
+ * Full sampling pipeline in a single native call:
+ *   temperature scaling -> top-K -> softmax -> top-P -> sample/argmax
+ *
+ * Input:
+ *   0: logits [batch, vocabSize], [vocabSize], or [batch, seqLen, vocabSize]
+ *      For rank 3, samples from the last sequence position (seqLen-1).
+ *
+ * Output:
+ *   0: token indices INT64 [batch] or scalar
+ *
+ * Float args:
+ *   0: temperature (default: 0.0 = greedy/argmax)
+ *   1: topP nucleus threshold (default: 0.0 = disabled)
+ *
+ * Int args:
+ *   0: topK (default: 0 = disabled)
+ *   1: seed (default: 0 = random)
+ */
+#if NOT_EXCLUDED(OP_token_sample)
+DECLARE_CUSTOM_OP(token_sample, 1, 1, false, 0, 0);
+#endif
+
+/**
+ * sampling_penalties - Apply repetition, frequency, presence penalties and min-P filtering
+ *
+ * Modifies logits before sampling to control repetition and token diversity.
+ *
+ * Input:
+ *   0: logits   [batch, vocabSize] or [vocabSize] — float
+ *   1: inputIds [batch, seqLen] or [seqLen] — INT64 prior tokens
+ *
+ * Output:
+ *   0: penalized logits (same shape/type as input 0)
+ *
+ * Float args:
+ *   0: repetitionPenalty (1.0 = off, >1.0 penalizes repetition)
+ *   1: frequencyPenalty  (0.0 = off, positive penalizes by count)
+ *   2: presencePenalty   (0.0 = off, positive penalizes any presence)
+ *   3: minP              (0.0 = off, 0.05-0.1 typical)
+ */
+#if NOT_EXCLUDED(OP_sampling_penalties)
+DECLARE_CUSTOM_OP(sampling_penalties, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * fp8_quantize - Quantize float tensor to FP8 E4M3 representation.
+ *
+ * Input:  0: [numTokens, hiddenDim] float
+ * Output: 0: [numTokens, hiddenDim] INT8 (FP8 values)
+ *         1: scale factors (shape depends on mode)
+ *
+ * Int args: 0: mode (0=per-tensor, 1=per-token, 2=per-group)
+ *           1: groupSize (for mode=2, default 128)
+ *           2: fp8Format (0=E4M3, 1=E5M2)
+ */
+#if NOT_EXCLUDED(OP_fp8_quantize)
+DECLARE_CUSTOM_OP(fp8_quantize, 1, 2, false, 0, 0);
+#endif
+
+/**
+ * fp8_dequantize - Dequantize FP8 E4M3 tensor back to float.
+ *
+ * Input:  0: [numTokens, hiddenDim] INT8 (FP8 values)
+ *         1: scale factors (float32)
+ * Output: 0: [numTokens, hiddenDim] float/half
+ *
+ * Int args: 0: outputType (0=FLOAT32, 1=FLOAT16)
+ */
+#if NOT_EXCLUDED(OP_fp8_dequantize)
+DECLARE_CUSTOM_OP(fp8_dequantize, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * silu_and_mul - Fused SiLU (Swish) activation with element-wise multiply.
+ * Computes: output = silu(gate) * up = (gate * sigmoid(gate)) * up
+ * Core SwiGLU computation used in LLaMA, Qwen, Gemma, Mistral.
+ */
+#if NOT_EXCLUDED(OP_silu_and_mul)
+DECLARE_CUSTOM_OP(silu_and_mul, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * gelu_and_mul - Fused GELU activation with element-wise multiply.
+ * Computes: output = gelu(gate) * up
+ * Int args: 0: useTanhApprox (0=exact, 1=tanh approximation)
+ */
+#if NOT_EXCLUDED(OP_gelu_and_mul)
+DECLARE_CUSTOM_OP(gelu_and_mul, 2, 1, false, 0, 0);
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+/**
+ * ema_update - Exponential Moving Average parameter update
+ *
+ * Used in DINOv2 for updating teacher network parameters:
+ *   output = decay * shadow + (1 - decay) * model
+ *
+ * Input:
+ *   0: model parameters (student) - any shape
+ *   1: shadow parameters (teacher/EMA) - same shape as model
+ *
+ * Float args:
+ *   0: decay factor (default: 0.999, typically 0.996-0.9999)
+ *
+ * Output:
+ *   0: updated shadow parameters - same shape as inputs
+ */
+#if NOT_EXCLUDED(OP_ema_update)
+DECLARE_CUSTOM_OP(ema_update, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(ema_update_bp, 3, 2, false, 0, 0);
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+/**
+ * center_and_sharpen - DINOv2 centering and sharpening
+ *
+ * Prevents mode collapse in self-supervised learning:
+ *   output = softmax((input - center) / temperature)
+ *
+ * Input:
+ *   0: input logits [batch, features] - teacher output
+ *   1: center vector [features] - running mean of teacher outputs
+ *
+ * Float args:
+ *   0: temperature (default: 0.07, typically 0.04-0.07)
+ *
+ * Output:
+ *   0: sharpened probabilities [batch, features]
+ */
+#if NOT_EXCLUDED(OP_center_and_sharpen)
+DECLARE_CUSTOM_OP(center_and_sharpen, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(center_and_sharpen_bp, 3, 2, false, 0, 0);
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+/**
+ * two_way_cross_attention - SAM-style bidirectional cross-attention
+ *
+ * Performs two cross-attention operations simultaneously:
+ *   1. tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV
+ *   2. imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV
+ *
+ * Input:
+ *   0: tokenQuery  [batch, tokenSeqLen, embedDim]
+ *   1: tokenKey    [batch, tokenSeqLen, embedDim]
+ *   2: tokenValue  [batch, tokenSeqLen, embedDim]
+ *   3: imageQuery  [batch, imageSeqLen, embedDim]
+ *   4: imageKey    [batch, imageSeqLen, embedDim]
+ *   5: imageValue  [batch, imageSeqLen, embedDim]
+ *
+ * Float args:
+ *   0: scale factor (default: 1/sqrt(embedDim))
+ *
+ * Output:
+ *   0: tokenOutput [batch, tokenSeqLen, embedDim]
+ *   1: imageOutput [batch, imageSeqLen, embedDim]
+ */
+#if NOT_EXCLUDED(OP_two_way_cross_attention)
+DECLARE_CUSTOM_OP(two_way_cross_attention, 6, 2, false, 0, 0);
+DECLARE_CUSTOM_OP(two_way_cross_attention_bp, 8, 6, false, 0, 0);
+#endif
+
+/**
+ * kv_scatter - Batch KV cache scatter update
+ *
+ * Copies a single time-step slice from each present KV tensor into the
+ * corresponding static KV buffer at a given cache position.
+ * Replaces N individual Java view+assign calls with one native kernel launch.
+ *
+ * Inputs (2*N tensors):
+ *   [0..N-1]:   present_kv tensors [batch, heads, seqLen, dim] (source; last position extracted)
+ *   [N..2N-1]:  static_kv  tensors [batch, heads, maxKvLen, dim] (destination; written in-place)
+ *
+ * Int args:
+ *   0: cachePos  — position in static buffer to write to
+ *   1: numPairs  — N (number of present/static pairs)
+ *
+ * Output:
+ *   0: scalar INT64 (returns 0 on success; framework requires at least 1 output)
+ */
+#if NOT_EXCLUDED(OP_kv_scatter)
+DECLARE_CUSTOM_OP(kv_scatter, 2, 1, false, 0, 1);
+#endif
+
+/**
+ * turbo_quant_attention - Asymmetric attention with TurboQuant compressed keys.
+ *
+ * Computes scaled dot-product attention using compressed key representations
+ * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner
+ * product estimator combines MSE reconstruction with QJL correction:
+ *
+ *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs>
+ *
+ * Input 0: Q              [B, H, Sq, D] query
+ * Input 1: K_mse          [B, H, Sk, D] MSE-reconstructed keys (FLOAT16)
+ * Input 2: QJL_signs      [B, H, Sk, D] sign bits (INT8, +1/-1)
+ * Input 3: residual_norms [B, H, Sk]    residual L2 norms (FLOAT16)
+ * Input 4: QJL_matrix     [D, D]        random Gaussian projection matrix
+ * Input 5: V              [B, H, Sk, D] dequantized values
+ * Input 6: attention_mask [B, 1, 1, Sk] or compatible broadcastable shape
+ *
+ * IArgs: 0=numHeads, 1=headDim
+ * TArgs: 0=scale (0=auto: 1/sqrt(headDim))
+ *
+ * Output 0: [B, H, Sq, D]
+ */
+#if NOT_EXCLUDED(OP_turbo_quant_attention)
+DECLARE_CUSTOM_OP(turbo_quant_attention, 7, 1, false, 1, 2);
+#endif
+
+#if NOT_EXCLUDED(OP_paged_attention_forward)
+DECLARE_CUSTOM_OP(paged_attention_forward, 5, 1, false, 1, 4);
+#endif
+
+#if NOT_EXCLUDED(OP_paged_kv_append)
+DECLARE_CUSTOM_OP(paged_kv_append, 6, 1, false, 0, 1);
+#endif
+
+/**
+ * top_k_renorm - Top-K filtering with renormalization.
+ *
+ * Keeps only the top-K highest-probability tokens, zeros the rest,
+ * then renormalizes so the kept probabilities sum to 1.
+ *
+ * Input:
+ *   0: logits [batch, vocabSize] or [vocabSize] — pre-softmax logits
+ *
+ * Int args:
+ *   0: k — number of top tokens to keep
+ *
+ * Output:
+ *   0: renormalized probabilities (same shape as input)
+ */
+#if NOT_EXCLUDED(OP_top_k_renorm)
+DECLARE_CUSTOM_OP(top_k_renorm, 1, 1, false, 0, 1);
+#endif
+
+/**
+ * top_p_renorm - Top-P (nucleus) filtering with renormalization.
+ *
+ * Sorts tokens by descending probability, accumulates until cumulative
+ * probability >= p, zeros the rest, then renormalizes.
+ *
+ * Input:
+ *   0: logits [batch, vocabSize] or [vocabSize] — pre-softmax logits
+ *
+ * Float args:
+ *   0: p — cumulative probability threshold (0.0-1.0)
+ *
+ * Output:
+ *   0: renormalized probabilities (same shape as input)
+ */
+#if NOT_EXCLUDED(OP_top_p_renorm)
+DECLARE_CUSTOM_OP(top_p_renorm, 1, 1, false, 1, 0);
+#endif
+
+/**
+ * segment_gemm - Variable-length batched GEMM for MoE expert dispatch.
+ *
+ * Performs per-expert matrix multiply where each expert processes a
+ * variable number of tokens. Core operation for Mixture of Experts.
+ *
+ * Input:
+ *   0: input          [totalTokens, inDim]
+ *   1: weights        [numExperts, inDim, outDim]
+ *   2: segmentOffsets [numExperts] INT64
+ *   3: segmentSizes   [numExperts] INT64
+ *
+ * Output:
+ *   0: output [totalTokens, outDim]
+ */
+#if NOT_EXCLUDED(OP_segment_gemm)
+DECLARE_CUSTOM_OP(segment_gemm, 4, 1, false, 0, 0);
+#endif
+
+// dual_rope, shared_kv_attention, squared_relu, and mamba2_ssm are declared in headers/llm.h
+
 }  // namespace ops
 }  // namespace sd
 

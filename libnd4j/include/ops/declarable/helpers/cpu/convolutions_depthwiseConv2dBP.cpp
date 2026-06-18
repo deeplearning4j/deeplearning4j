@@ -1,3 +1,4 @@
+#include <array/NDArrayFactory.h>
 /* ******************************************************************************
  *
  *
@@ -66,6 +67,10 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
   std::vector<std::vector<sd::LongType>> modifGradO1, modifGradO2, modifWeights;
   std::vector<sd::LongType> gradOreShape;
 
+  // For NHWC: keep the original gradI pointer for the final copy-back
+  NDArray* gradIOriginal = gradI;
+  NDArray* gradINchw = nullptr;  // fresh contiguous NCHW buffer for col2im (NHWC only)
+
   if (!isNCHW) {
     gradOreShape = {bS, oH, oW, iC, mC};  // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
     modifGradO1 = {{3, 0, 1, 2, 4},
@@ -73,7 +78,11 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
     modifGradO2 = {{3, 0, 1, 2}, {iC, mC, bS * oH * oW}};  // [bS,oH,oW,iC*mC] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
     std::vector<sd::LongType> perm = {0,3,1,2};
     input = input->permute(perm, false, false);     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
-    gradI = gradI->permute(perm, false, false);     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    // Allocate a fresh contiguous NCHW buffer for col2im to avoid precision issues
+    // from accumulating into a non-contiguous permuted view (FLOAT is sensitive, DOUBLE is not)
+    std::vector<sd::LongType> gradINchwShape = {bS, iC, iH, iW};
+    gradINchw = new NDArray('c', gradINchwShape, gradI->dataType(), gradI->getContext());
+    gradI = gradINchw;  // col2im will accumulate into the contiguous buffer
   } else {
     gradOreShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
     modifGradO1 = {{1, 0, 3, 4, 2},
@@ -122,8 +131,14 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
                   dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
   if (!isNCHW) {
+    // gradI now points to gradINchw (fresh contiguous NCHW buffer).
+    // Permute [bS, iC, iH, iW] -> [bS, iH, iW, iC] and assign to original NHWC gradI.
+    std::vector<sd::LongType> perm = {0, 2, 3, 1};
+    NDArray *gradINchwPermuted = gradINchw->permute(perm, false, false);
+    gradIOriginal->assign(gradINchwPermuted);
+    delete gradINchwPermuted;
+    delete gradINchw;
     delete input;
-    delete gradI;
   }
 
   delete gradOreshaped;

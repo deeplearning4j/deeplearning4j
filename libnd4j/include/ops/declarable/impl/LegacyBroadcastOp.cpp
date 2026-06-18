@@ -21,6 +21,7 @@
 //
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <system/env_functions.h>
 
 #include <ops/declarable/LegacyBroadcastOp.h>
 #include <ops/declarable/helpers/axis.h>
@@ -54,10 +55,10 @@ Status LegacyBroadcastOp::validateAndExecute(Context &block) {
                (int)y->lengthOf());
 
   PointersManager manager(block.launchContext(), "LegacyBroadcastOp");
-  auto pTadShape = Environment::getInstance().isCPU()
+  auto pTadShape = sd::env_isCPU()
                        ? packX->primaryShapeInfo()
                        : packX->specialShapeInfo();
-  auto pTadOffsets = Environment::getInstance().isCPU()
+  auto pTadOffsets = sd::env_isCPU()
                          ? packX->primaryOffsets()
                          : packX->specialOffsets();
 
@@ -72,10 +73,10 @@ Status LegacyBroadcastOp::validateAndExecute(Context &block) {
     // and pass separate TAD info
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims);
 
-    auto zTadShape = Environment::getInstance().isCPU()
+    auto zTadShape = sd::env_isCPU()
                          ? packZ->primaryShapeInfo()
                          : packZ->specialShapeInfo();
-    auto zTadOffsets = Environment::getInstance().isCPU()
+    auto zTadOffsets = sd::env_isCPU()
                            ? packZ->primaryOffsets()
                            : packZ->specialOffsets();
 
@@ -111,7 +112,6 @@ LegacyOp *LegacyBroadcastOp::clone() { return new LegacyBroadcastOp(this->_opNum
 ShapeList *LegacyBroadcastOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
 
-  // FIXME: remove memcpy
   LongType *newShape;
   ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), sd::LongType);
   memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));

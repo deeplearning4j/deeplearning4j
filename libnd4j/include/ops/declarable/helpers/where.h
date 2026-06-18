@@ -27,9 +27,24 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+
+// Single input where: returns coordinates of true elements
+// Output shape is [numTrue, conditionRank]
 SD_LIB_HIDDEN void _where(LaunchContext *context, NDArray &condition, NDArray &output,
                           memory::Workspace *workspace);
-}
+
+// Three input where: condition ? x : y (element-wise)
+SD_LIB_HIDDEN void _whereElementWise(LaunchContext *context, NDArray &condition, NDArray &x,
+                                      NDArray &y, NDArray &output);
+
+// TAD-based where: select entire TADs based on 1D condition
+SD_LIB_HIDDEN void _whereTad(LaunchContext *context, NDArray &condition, NDArray &x,
+                              NDArray &y, NDArray &output, const std::vector<LongType> &axis);
+
+// Count true elements in condition (for shape function, GPU-accelerated)
+SD_LIB_HIDDEN LongType countTrue(LaunchContext *context, NDArray &condition);
+
+}  // namespace helpers
 }  // namespace ops
 }  // namespace sd
 

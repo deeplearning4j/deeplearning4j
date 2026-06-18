@@ -22,7 +22,7 @@
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_image_resize)
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/images.h>
 #include <ops/declarable/helpers/image_resize.h>
 
 namespace sd {
@@ -126,8 +126,8 @@ DECLARE_SHAPE_FN(image_resize) {
   int height;
   double ratio = shape::sizeAt(in, static_cast<LongType>(1)) / (0.0 + shape::sizeAt(in, static_cast<LongType>(2)));
   auto newImageSize = INPUT_VARIABLE(1);
-  REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_bilinear: Resize params is a pair of values, not %i.",
-               newImageSize->lengthOf());
+  REQUIRE_TRUE(shape::length(inputShape->at(1)) == 2, 0, "resize_bilinear: Resize params is a pair of values, not %i.",
+               shape::length(inputShape->at(1)));
 
   width = newImageSize->e<int>(1);
   height = newImageSize->e<int>(0);

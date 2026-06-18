@@ -23,7 +23,9 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
 
-#include <ops/declarable/CustomOperations.h>
+#include <cmath>
+#include <math/templatemath.h>
+#include <ops/declarable/headers/loss.h>
 #include <ops/declarable/generic/helpers/ScatterHelper.h>
 
 namespace sd {
@@ -60,34 +62,32 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0)
       "logits shape with last dimension excluded, however got labels_shape = %s and logits_shape = %s instead !",
       ShapeUtils::shapeAsString(labelsShape).c_str(), ShapeUtils::shapeAsString(logitsShape).c_str());
 
-  std::vector<LongType> dimension = {-1};
+  // Compute sparse softmax cross-entropy via a simple per-example scalar loop.
+  // loss[i] = log(sum_c exp(logits[i,c])) - logits[i, labels[i]]
+  // Numerically stable: subtract per-row max before computing exp and log-sum-exp.
+  const LongType batch = labels->lengthOf();
+  const LongType numClasses = logits->sizeAt(logitsRank - 1);
 
-  // Compute log softmax: -log(exp(logits - max) / sum(exp(logits - max)))
-  NDArray* maxAlongDim_ptr = logits->reduceAlongDimension(reduce::Max, &dimension, true);
-  NDArray maxAlongDim = *maxAlongDim_ptr;
-  delete maxAlongDim_ptr;
-  
-  NDArray* shiftedLogits_ptr = (*logits) - maxAlongDim;
-  NDArray* logitsExp_ptr = shiftedLogits_ptr->transform(transform::Exp, nullptr);
-  delete shiftedLogits_ptr;
-  NDArray logitsExp = *logitsExp_ptr;
-  delete logitsExp_ptr;
-  
-  NDArray* sumLogitsExp_ptr = logitsExp.reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray sumLogitsExp = *sumLogitsExp_ptr;
-  delete sumLogitsExp_ptr;
-  
-  NDArray* softmaxRatio_ptr = logitsExp / sumLogitsExp;
-  NDArray* logSoftmax_ptr = softmaxRatio_ptr->transform(transform::Log);
-  delete softmaxRatio_ptr;
-  
-  // Apply negation: -log(softmax)
-  NDArray negLogSoftmax = -(*logSoftmax_ptr);  // unary negation returns value
-  delete logSoftmax_ptr;
-  
-  NDArray logSoftMax = negLogSoftmax;
-
-  helpers::scatterForLoss(block.launchContext(), *labels, logSoftMax, *output, false);
+  for (LongType i = 0; i < batch; i++) {
+    // Compute per-row max for numerical stability
+    double maxVal = logits->e<double>(i, 0);
+    for (LongType c = 1; c < numClasses; c++) {
+      double v = logits->e<double>(i, c);
+      if (v > maxVal) maxVal = v;
+    }
+    // Compute sum(exp(logits[i,c] - maxVal)) for all c
+    double sumE = 0.0;
+    for (LongType c = 0; c < numClasses; c++) {
+      sumE += sd::math::sd_exp<double, double>(logits->e<double>(i, c) - maxVal);
+    }
+    // log-partition function (shifted): log(sumE)
+    double logSumExp = sd::math::sd_log<double, double>(sumE);
+    // Gather shifted logit at label position
+    LongType label = labels->e<LongType>(i);
+    double logitAtLabel = logits->e<double>(i, label) - maxVal;
+    // loss[i] = logSumExp - logitAtLabel
+    output->p(i, logSumExp - logitAtLabel);
+  }
 
   return Status::OK;
 }
@@ -160,31 +160,32 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 
                "logits_shape = %s instead !",
                ShapeUtils::shapeAsString(labelsShape).c_str(), ShapeUtils::shapeAsString(logitsShape).c_str());
 
-  std::vector<LongType> dimension = {-1};
+  // dEdp = softmax(logits) - one_hot(labels)
+  // Compute per-example softmax via scalar loop for numerical stability.
+  // dLdp[i, c] = exp(logits[i,c] - max_i) / sum_c exp(logits[i,c] - max_i) - 1{c == labels[i]}
+  const LongType batchGrad = labels->lengthOf();
+  const LongType numClassesGrad = logits->sizeAt(logitsRank - 1);
 
-  // Compute softmax
-  NDArray* maxAlongDim_ptr = logits->reduceAlongDimension(reduce::Max, &dimension, true);
-  NDArray maxAlongDim = *maxAlongDim_ptr;
-  delete maxAlongDim_ptr;
-  
-  NDArray* shiftedLogits_ptr = (*logits) - maxAlongDim;
-  NDArray* softmax_ptr = shiftedLogits_ptr->transform(transform::Exp);
-  delete shiftedLogits_ptr;
-  NDArray softmax = *softmax_ptr;
-  delete softmax_ptr;
-  
-  NDArray* sumSoftmax_ptr = softmax.reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray sumSoftmax = *sumSoftmax_ptr;
-  delete sumSoftmax_ptr;
-  
-  softmax /= sumSoftmax;
-
-  // dEdp = softmax - 1 (or 0)
-  dLdp->assign(&softmax);
-
-  // subtract unities at appropriate indexes of dLdp array
-  helpers::scatterForLoss(block.launchContext(), *labels, *dLdp,
-                          *labels /*actually third array is unnecessary for gradient calculation*/, true);
+  for (LongType i = 0; i < batchGrad; i++) {
+    // per-row max for numerical stability
+    double maxValGrad = logits->e<double>(i, 0);
+    for (LongType c = 1; c < numClassesGrad; c++) {
+      double v = logits->e<double>(i, c);
+      if (v > maxValGrad) maxValGrad = v;
+    }
+    // sum of shifted exp
+    double sumEGrad = 0.0;
+    for (LongType c = 0; c < numClassesGrad; c++) {
+      sumEGrad += sd::math::sd_exp<double, double>(logits->e<double>(i, c) - maxValGrad);
+    }
+    // write softmax(logits)[i,c] - one_hot(labels[i])[c]
+    LongType labelGrad = labels->e<LongType>(i);
+    for (LongType c = 0; c < numClassesGrad; c++) {
+      double sm = sd::math::sd_exp<double, double>(logits->e<double>(i, c) - maxValGrad) / sumEGrad;
+      double grad = sm - (c == labelGrad ? 1.0 : 0.0);
+      dLdp->p(i, c, grad);
+    }
+  }
 
   return Status::OK;
 }

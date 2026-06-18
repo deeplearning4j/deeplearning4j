@@ -22,9 +22,11 @@
 
 #include <system/op_boilerplate.h>
 #include <indexing/NDIndexUtils.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <array/ShapeDescriptor.h>
 #if NOT_EXCLUDED(OP_create_view)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 
 namespace sd {
 namespace ops {
@@ -119,21 +121,33 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
       //Interval index: Axis is in both in and output arrays, but output might be smaller
       auto start = indexIndices[0];
       auto end = indexIndices[1];
+      // For INTERVAL_TYPE, actual stride is at indexIndices[2] (position 5 in vector)
+      // indexVector[2] is a hardcoded header value, not the actual stride
+      auto intervalStride = indexIndices.size() > 2 ? indexIndices[2] : stride;
+      auto dimSize = inputBase->sizeAt(inIdx);
+
+      // Handle negative indices: any negative end means "to end of dimension"
+      if (start < 0) start += dimSize;
+      if (start < 0) start = 0;
+      if (start > dimSize) start = dimSize;
+      if (end < 0) end = dimSize;
+      if (end > dimSize) end = dimSize;
+
       auto endInc = end - (inclusive[currDimension] > 0 ? 0 : 1);
-      if (endInc > inputBase->sizeAt(inIdx)) {
+      if (endInc > dimSize) {
         std::string errorMessage;
         errorMessage += "CREATE_VIEW: Indices are out of range: Cannot get interval index ";
         errorMessage += std::to_string(endInc);
         errorMessage += " on dimension ";
-        errorMessage += std::to_string(inputBase->sizeAt(inIdx));
+        errorMessage += std::to_string(dimSize);
         THROW_EXCEPTION(errorMessage.c_str());
       }
 
-      auto length = (endInc - start) / stride + 1;
+      auto length = (endInc - start) / intervalStride + 1;
 
       baseOffset += start * inputBase->strideAt(inIdx);
       outputShape[outIdx] = length;
-      outputStrides[outIdx] = stride *  inputBase->strideAt(inIdx);
+      outputStrides[outIdx] = intervalStride *  inputBase->strideAt(inIdx);
 
       inIdx++;
       outIdx++;
@@ -154,22 +168,109 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
 
   auto outputLength = shape::prodLong(outputShape.data(),outRank);
 
+  // Create a ShapeDescriptor with the computed strides (not standard C-order strides)
+  // so the view correctly maps back into the original array's memory layout.
+  auto descriptor = new ShapeDescriptor(inputBase->dataType(), 'c', outputShape, outputStrides);
+  auto viewArray = NDArray(inputBase->dataBuffer(), descriptor, inputBase->getContext(), baseOffset);
 
-  auto newResult = new NDArray(inputBase->dataBuffer(),'c',outputShape,inputBase->dataType(),inputBase->getContext(),false,true,baseOffset);
-  //note we pass in delete false here so we don't cause a double free
-  //overwrite first calls push ndarray which has an option to delete the array if it's not relevant
-  //we also call delete later when it's removable.
+  // When a pre-allocated output exists, copy the viewed data into it.
+  // Creating a view and trying to overwrite the output doesn't work reliably
+  // in all execution paths (SameDiff pre-allocates output buffers).
   if(block.isFastPath() && block.fastpath_out().size() > 0) {
-    OVERWRITE_RESULT_NO_DELETE(newResult);
-  } else if(block.isFastPath() && block.fastpath_out().size() < 1) {
+    auto output = OUTPUT_VARIABLE(0);
+    output->assign(&viewArray);
+  } else {
+    auto newResult = new NDArray(inputBase->dataBuffer(), new ShapeDescriptor(inputBase->dataType(), 'c', outputShape, outputStrides), inputBase->getContext(), baseOffset);
     STORE_RESULT(newResult);
   }
+  delete descriptor;
   return Status::OK;
 }
 
 DECLARE_SHAPE_FN(create_view) {
-  auto shapeInput = INPUT_VARIABLE(0);
-  return SHAPELIST(shapeInput->shapeInfo());
+  auto inputBase = INPUT_VARIABLE(0);
+  auto numNewAxis = 0;
+  auto numPoint = 0;
+  std::vector<std::vector<LongType>> indexVectors;
+  std::vector<LongType> inclusive;
+
+  for (size_t i = 0; i < block.width() - 1; i++) {
+    auto inputIndex = INPUT_VARIABLE(i + 1);
+    auto indexVector = inputIndex->asVectorT<LongType>();
+    indexVectors.push_back(indexVector);
+    auto indexType = indexVector[0];
+
+    if (indexType == POINT_TYPE) {
+      numPoint++;
+      inclusive.push_back(1);
+    } else if (indexType == INTERVAL_TYPE) {
+      inclusive.push_back(indexVector[indexVector.size() - 1]);
+    } else if (indexType == ALL_TYPE) {
+      inclusive.push_back(1);
+    } else if (indexType == NEW_AXIS) {
+      numNewAxis++;
+      inclusive.push_back(1);
+    }
+  }
+
+  auto outRank = inputBase->rankOf() + numNewAxis - numPoint;
+  std::vector<LongType> outputShape(outRank);
+
+  auto numIndices = block.width() - 1;
+  auto all = NDIndexUtils::createAll();
+  if (numIndices - numNewAxis < static_cast<size_t>(inputBase->rankOf())) {
+    for (int e = numIndices; e < inputBase->rankOf() + numNewAxis; e++) {
+      indexVectors.push_back(all->asVectorT<LongType>());
+    }
+  }
+
+  int outIdx = 0;
+  int inIdx = 0;
+  for (size_t i = 0; i < indexVectors.size(); i++) {
+    auto indexVector = indexVectors[i];
+    auto indexType = indexVector[0];
+    auto stride = indexVector[2];
+    int indexOffset = 3;
+    std::vector<LongType> indexIndices;
+    for (size_t j = 0; j < indexVector.size() - indexOffset; j++) {
+      indexIndices.push_back(indexVector[j + indexOffset]);
+    }
+
+    if (indexType == POINT_TYPE) {
+      inIdx++;
+    } else if (indexType == ALL_TYPE) {
+      outputShape[outIdx] = inputBase->sizeAt(inIdx);
+      inIdx++;
+      outIdx++;
+    } else if (indexType == INTERVAL_TYPE) {
+      auto start = indexIndices[0];
+      auto end = indexIndices[1];
+      // For INTERVAL_TYPE, actual stride is at indexIndices[2] (position 5 in vector)
+      auto intervalStride = indexIndices.size() > 2 ? indexIndices[2] : stride;
+      auto dimSize = inputBase->sizeAt(inIdx);
+
+      // Handle negative indices: any negative end means "to end of dimension"
+      if (start < 0) start += dimSize;
+      if (start < 0) start = 0;
+      if (start > dimSize) start = dimSize;
+      if (end < 0) end = dimSize;
+      if (end > dimSize) end = dimSize;
+
+      auto endInc = end - (inclusive[i] > 0 ? 0 : 1);
+      auto length = (endInc - start) / intervalStride + 1;
+      outputShape[outIdx] = length;
+      inIdx++;
+      outIdx++;
+    } else if (indexType == NEW_AXIS) {
+      outputShape[outIdx] = 1;
+      outIdx++;
+    }
+  }
+  delete all;
+
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(
+      inputBase->dataType(), inputBase->ordering(), outRank, outputShape.data(), 0);
+  return SHAPELIST(newShape);
 }
 
 DECLARE_TYPES(create_view) { getOpDescriptor()->setAllowedInputTypes({ANY})->setAllowedOutputTypes(ANY); }

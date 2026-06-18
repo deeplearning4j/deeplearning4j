@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+#pragma once
+
 //
 // @author raver119@gmail.com, created on 07.10.2017.
 // @author Yurii Shyrma (iuriish@yahoo.com)
@@ -29,6 +31,7 @@
 #include <ops/specials.h>
 #include <types/types.h>
 #include <loops/pairwise_instantiations.h>
+#include <system/env_functions.h>
 
 namespace sd {
 
@@ -263,14 +266,14 @@ static void quickSort_parallel_value(NDArray *x, NDArray *y, sd::LongType lenArr
 template <typename X, typename Y>
 void DoubleMethods<X, Y>::sortByKey(NDArray *x,NDArray *y,
                                     bool descending) {
-  quickSort_parallel_key<X, Y>(x,y, x->lengthOf(),Environment::getInstance().maxMasterThreads(),
+  quickSort_parallel_key<X, Y>(x,y, x->lengthOf(),sd::env_maxMasterThreads(),
                                descending);
 }
 
 template <typename X, typename Y>
 void DoubleMethods<X, Y>::sortByValue(NDArray *x,NDArray *y,
                                       bool descending) {
-  quickSort_parallel_value<X, Y>(x,y,x->lengthOf(),Environment::getInstance().maxMasterThreads(),
+  quickSort_parallel_value<X, Y>(x,y,x->lengthOf(),sd::env_maxMasterThreads(),
                                  descending);
 }
 

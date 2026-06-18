@@ -25,7 +25,6 @@
 #include <loops/ReduceType.h>
 #include <loops/summarystatsreduce.h>
 #include <math/templatemath.h>
-#include <system/Environment.h>
 #include <system/common.h>
 #include <system/op_boilerplate.h>
 
@@ -214,16 +213,18 @@ DECLARE_UNARY_SIMPLE_OP(Reciprocal, static_cast<X>(1) / d1)
 // =============================================================================
 
 
-DECLARE_UNARY_CONDITIONAL_OP(Sign,
-                             (d1 > static_cast<X>(0)) - (d1 < static_cast<X>(0)),
-                             static_cast<X>(1), static_cast<X>(-1))
+DECLARE_UNARY_SIMPLE_OP(Sign, (d1 > static_cast<X>(0)) - (d1 < static_cast<X>(0)))
 
 
 DECLARE_UNARY_CONDITIONAL_OP(HardTanhDerivative,
-                             ((d1 >= static_cast<X>(-1.f) && d1 <= static_cast<X>(1.f)) ? static_cast<X>(1.f) : static_cast<X>(0.f)), d1, d1)
+                             d1 >= static_cast<X>(-1.f) && d1 <= static_cast<X>(1.f),
+                             static_cast<X>(1.f),
+                             static_cast<X>(0.f))
 
 DECLARE_UNARY_CONDITIONAL_OP(HardSigmoidDerivative,
-                             d1 < static_cast<X>(-2.5f) || d1 > static_cast<X>(2.5f) ? static_cast<X>(0.f) : static_cast<X>(0.2f), d1, d1)
+                             d1 >= static_cast<X>(-2.5f) && d1 <= static_cast<X>(2.5f),
+                             static_cast<X>(0.2f),
+                             static_cast<X>(0.f))
 
 DECLARE_BINARY_MATH_OP(Remainder, sd_remainder)
 DECLARE_BINARY_MATH_OP(FMod, sd_fmod)
@@ -231,6 +232,45 @@ DECLARE_BINARY_MATH_OP(FMod, sd_fmod)
 
 DECLARE_SAFE_DIVISION_OP(DivideNoNan, d2 == static_cast<Y>(0))
 DECLARE_SAFE_DIVISION_OP(SafeDivide, d2 == static_cast<Y>(0))
+
+// Xdivy: returns 0 where x == 0, otherwise x / y (TensorFlow compatible)
+DECLARE_SAFE_DIVISION_OP(Xdivy, d1 == static_cast<X>(0))
+
+// Xlogy: returns 0 where x == 0, otherwise x * log(y)
+template <typename X, typename Y, typename Z>
+class Xlogy {
+ public:
+  no_op_exec_special no_op_exec_special_cuda;
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y d2) {
+    return d1 == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(d1) * sd::math::sd_log<Y, Z>(d2);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y d2, Z *params) {
+    return op(d1, d2);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1) { return static_cast<Z>(d1); }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y *params) {
+    return d1 == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(d1) * sd::math::sd_log<Y, Z>(params[0]);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE X startingValue() { return static_cast<X>(0); }
+};
+
+// Xlog1py: returns 0 where x == 0, otherwise x * log(1 + y)
+template <typename X, typename Y, typename Z>
+class Xlog1py {
+ public:
+  no_op_exec_special no_op_exec_special_cuda;
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y d2) {
+    return d1 == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(d1) * sd::math::sd_log<Y, Z>(static_cast<Y>(1) + d2);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y d2, Z *params) {
+    return op(d1, d2);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1) { return static_cast<Z>(d1); }
+  SD_OP_DEF static SD_HOST_DEVICE Z op(X d1, Y *params) {
+    return d1 == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(d1) * sd::math::sd_log<Y, Z>(static_cast<Y>(1) + params[0]);
+  }
+  SD_OP_DEF static SD_HOST_DEVICE X startingValue() { return static_cast<X>(0); }
+};
 
 // Floor division:
 DECLARE_FLOOR_DIVISION_OP(FloorDiv, sd_floor)
@@ -534,6 +574,22 @@ DECLARE_DISTANCE_OP_WITH_BOOL_SUPPORT(EuclideanDistance,
                                       0.0f
 )
 
+// Override EuclideanDistance::postProcess to apply sqrt
+// The macro-generated postProcess returns reduction unchanged (sum of squared diffs).
+// Euclidean distance = sqrt(sum((x-y)^2)), so postProcess must apply sqrt.
+template <>
+SD_HOST_DEVICE SD_INLINE float EuclideanDistance<float, float>::postProcess(float reduction, sd::LongType n, float* extraParamsRef) {
+  return sd::math::sd_sqrt<float, float>(reduction);
+}
+template <>
+SD_HOST_DEVICE SD_INLINE double EuclideanDistance<double, double>::postProcess(double reduction, sd::LongType n, double* extraParamsRef) {
+  return sd::math::sd_sqrt<double, double>(reduction);
+}
+template <>
+SD_HOST_DEVICE SD_INLINE float16 EuclideanDistance<float16, float16>::postProcess(float16 reduction, sd::LongType n, float16* extraParamsRef) {
+  return sd::math::sd_sqrt<float16, float16>(reduction);
+}
+
 DECLARE_DISTANCE_OP_WITH_BOOL_SUPPORT(ManhattanDistance,
                                       static_cast<int>(d1) != static_cast<int>(d2) ? 1 : 0,
                                       sd::math::sd_abs<X COMMA X>(d1 - d2),
@@ -549,7 +605,7 @@ class DropOut {
 #ifdef __CUDACC__
     X length = params[1];
    X tid = blockIdx.x * blockDim.x + threadIdx.x;
-   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X>( static_cast<X>(tid) +
+   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X, X>( static_cast<X>(tid) +
                                                       static_cast<X>(length) * static_cast<X>(tid)));
 #else
     X rnd = static_cast<X>(rand() / RAND_MAX);
@@ -570,7 +626,7 @@ class DropOutInverted {
 #ifdef __CUDACC__
     X length = params[1];
    X tid = blockIdx.x * blockDim.x + threadIdx.x;
-   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X>( static_cast<X>(tid) +
+   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X, X>( static_cast<X>(tid) +
                                                       static_cast<X>(length) * static_cast<X>(tid)));
 #else
     X rnd = static_cast<X>(rand() / RAND_MAX);
@@ -1800,6 +1856,10 @@ template <typename X, typename Z>
 class MatchConditionBool {
  private:
   static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, X *extraParams) {
+    // Null check to prevent SIGSEGV - return false (0) if extraParams is null
+    if (extraParams == nullptr) {
+      return static_cast<Z>(0);
+    }
     X compare = extraParams[0];
     X eps = extraParams[1];
     auto mode = static_cast<int>(extraParams[2]);
@@ -1846,8 +1906,8 @@ class MatchConditionBool {
     return static_cast<Z>(d1);
   }
 
-  // Remove SD_OP_DEF to avoid SIMD issues with float16/bfloat16
-  static Z op_simd(X d1, X *extraParams) { return op_logic(d1, extraParams); }
+  // SD_HOST_DEVICE required for NVCC to generate correct device code
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1, X *extraParams) { return op_logic(d1, extraParams); }
 
  public:
   // Fix: Use explicit declarations instead of problematic macros

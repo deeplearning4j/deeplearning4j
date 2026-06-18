@@ -30,7 +30,7 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(random_normal, 1, 1, true, 2, 0) {
   // normal distribution
-  auto rng = block.randomGenerator();
+  auto& rng = block.randomGenerator();
 
   RandomLauncher::fillGaussian(block.launchContext(), rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
 
@@ -40,14 +40,11 @@ CUSTOM_OP_IMPL(random_normal, 1, 1, true, 2, 0) {
 DECLARE_SHAPE_FN(random_normal) {
   auto in = INPUT_VARIABLE(0);
   auto shape = in->template asVectorT<LongType>();
-  if(block.getDArguments()->size() > 0) {
-    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(D_ARG(0), 'c', shape);
-    return SHAPELIST(newShape);
-  } else {
-    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
-    return SHAPELIST(newShape);
-  }
-
+  // Input[0] is the shape descriptor (may be INT or FLOAT), not the value dtype.
+  // Use D arg if explicitly provided; otherwise default to FLOAT32.
+  auto dtype = block.getDArguments()->size() > 0 ? D_ARG(0) : FLOAT32;
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
+  return SHAPELIST(newShape);
 }
 
 DECLARE_SYN(randomnormal, random_normal);

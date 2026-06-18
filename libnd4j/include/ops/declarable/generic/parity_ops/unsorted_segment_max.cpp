@@ -20,7 +20,7 @@
 // Created by george@skymind.io on 9/6/2018.
 //
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/segment.h>
 #if NOT_EXCLUDED(OP_unsorted_segment_max)
 namespace sd {
@@ -66,7 +66,7 @@ DECLARE_SHAPE_FN(unsorted_segment_max) {
   LongType* outputShape = nullptr;
   LongType numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<LongType>(0) : INT_ARG(0);
 
-  if (INPUT_VARIABLE(0)->rankOf() >= 2) {
+  if (shape::rank(in) >= 2) {
     ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
     outputShape[0] = outRank;
     outputShape[1] = numOfClasses;

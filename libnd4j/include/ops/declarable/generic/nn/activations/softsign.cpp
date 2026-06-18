@@ -23,7 +23,7 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_softsign)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/activations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace sd {
@@ -41,6 +41,7 @@ CONFIGURABLE_OP_IMPL(softsign, 1, 1, true, 0, 0) {
 
 DECLARE_TYPES(softsign) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
 }
 
 CONFIGURABLE_OP_IMPL(softsign_bp, 2, 1, true, 0, 0) {
@@ -57,8 +58,8 @@ DECLARE_SYN(SoftsignGrad, softsign_bp);
 DECLARE_TYPES(softsign_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
-      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
-      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

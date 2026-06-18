@@ -74,7 +74,7 @@ SD_KERNEL static void checkIndicesCuda(const void *vx, const LongType *xShapeInf
     const LongType currentInd = x[xOffset];
 
     const LongType limit = shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank - 1] : axis);
-    if (currentInd >= limit) {
+    if (currentInd < 0 || currentInd >= limit) {
       sd::math::atomics::sd_atomicAdd<LongType>(&numOfBadIndxPerBlock, 1);
     }
   }
@@ -430,10 +430,14 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
 
     for (LongType j = 0; j < len; j++) {
       if (is1Dcase) {
+        // For 1D case, x contains the index values directly
+        // j iterates through x elements, i iterates through z positions
+        // We check if x[j] == i (meaning update z[i] with y[j])
         if (x[j * xStride[xNonUnitDim]] != i) continue;
 
-        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
-        COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+        // Compute offsets directly for 1D case (coords not initialized for this path)
+        yOffset = j * yStride[yNonUnitDim];
+        zOffset = i * zStride[zNonUnitDim];
       } else {
         INDEX2COORDS(j, xRank - 1, xShape, yCoords);
 
@@ -552,10 +556,21 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void* vx, const Long
     }
 
     // Map y coordinates to x and z coordinates
+    // Read the index values from x (indices array) to determine which z position to update
+    bool validIndex = true;
     for (LongType j = 0; j < xLastDim; ++j) {
       yCoords[xRank - 1] = j;
-      COORDS2INDEX(xRank, shape::stride(xShapeInfo), yCoords, zCoords[j]);
+      LongType xOffset;
+      COORDS2INDEX(xRank, shape::stride(xShapeInfo), yCoords, xOffset);
+      zCoords[j] = x[xOffset];  // Get the actual index value from x
+      // Bounds check: ensure index is within z's dimension
+      if (zCoords[j] < 0 || zCoords[j] >= shape::shapeOf(zShapeInfo)[j]) {
+        validIndex = false;
+        break;
+      }
     }
+
+    if (!validIndex) continue;
 
     // Adjust remaining coordinates for z
     for (LongType j = xLastDim + 1; j < zRank; ++j) {
@@ -642,7 +657,7 @@ void scatterND(LaunchContext *context, pairwise::Ops op, NDArray&indices, NDArra
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_KERNEL void scatterForLossCuda(const void* vx, const LongType* xShapeInfo, void* vy, const LongType* yShapeInfo,
+SD_KERNEL SD_INLINE void scatterForLossCuda(const void* vx, const LongType* xShapeInfo, void* vy, const LongType* yShapeInfo,
                                   void* vz, const LongType* zShapeInfo) {
   // Cast input and output pointers
   const auto x = reinterpret_cast<const X*>(vx);
@@ -714,6 +729,7 @@ static void scatterForLossCudaLauncher(const int blocksPerGrid, const int thread
       <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "scatterUpdateCuda failed");
 }
+BUILD_DOUBLE_TEMPLATE(void scatterForLossCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const LongType *xShapeInfo, void *vy, const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo), SD_INDEXING_TYPES, SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 void scatterForLoss(LaunchContext *context, NDArray&indices, NDArray &updates, NDArray &output,

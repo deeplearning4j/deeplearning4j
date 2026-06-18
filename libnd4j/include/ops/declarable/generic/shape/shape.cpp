@@ -21,7 +21,8 @@
 //
 
 #include <system/op_boilerplate.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
+#include <ops/declarable/helpers/shapeOpsHelper.h>
 
 #if NOT_EXCLUDED(OP_shape_of)
 
@@ -33,7 +34,16 @@ CUSTOM_OP_IMPL(shape_of, 1, 1, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  for (int e = 0; e < x->rankOf(); e++) z->p(e, x->sizeAt(e));
+  const int rank = x->rankOf();
+
+  // Guard: output buffer must be large enough for input rank
+  REQUIRE_TRUE(z->lengthOf() >= rank, 0,
+      "shape_of: output length (%lld) < input rank (%d)", z->lengthOf(), rank);
+
+  // Delegate to platform-specific helper:
+  // CPU: writes to host buffer directly
+  // CUDA: uses D2D operations (capturable by CUDA graphs)
+  helpers::shapeOfHelper(block.launchContext(), x, z, rank);
 
   STORE_RESULT(z);
 
@@ -53,7 +63,8 @@ DECLARE_SHAPE_FN(shape_of) {
 }
 
 DECLARE_TYPES(shape_of) {
-  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INTS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INTS})
+      ->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

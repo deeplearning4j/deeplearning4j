@@ -37,6 +37,21 @@ static void svd_(NDArray* x, const std::vector<NDArray*>& outArrs, const bool fu
   auto u = outArrs[1];
   auto v = outArrs[2];
   const int rank = x->rankOf();
+
+  // A plain matrix does not need batched TAD slicing; passing the TAD view through
+  // here can lose the expected 2D shape metadata before SVD construction.
+  if (rank == 2) {
+    helpers::SVD<T> svdObj(*x, switchNum, calcUV, calcUV, fullUV);
+    s->assign(&svdObj._s);
+
+    if (calcUV) {
+      u->assign(&svdObj._u);
+      v->assign(&svdObj._v);
+    }
+
+    return;
+  }
+
   const int sRank = rank - 1;
 
   auto listX = x->allTensorsAlongDimension({rank - 2, rank - 1});
