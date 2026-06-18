@@ -70,15 +70,15 @@
 #define OP_BOILERPLATE_HH
 
 #include <config.h>  // Required for HAS_* type availability macros
-#include <exceptions/allocation_exception.h>
 #include <map>
 #include <stdlib.h>
 #include <string.h>
 #include <system/common.h>
+#include <system/env_functions.h>
 #include <system/type_boilerplate.h>
 
-#define ELEMENT_THRESHOLD sd::Environment::getInstance().elementwiseThreshold()
-#define TAD_THRESHOLD sd::Environment::getInstance().tadThreshold()
+#define ELEMENT_THRESHOLD sd::env_elementwiseThreshold()
+#define TAD_THRESHOLD sd::env_tadThreshold()
 
 // Helper to pick the correct macro based on the number of arguments.
 // This macro works by “peeling” off up to 10 parameters; if only one parameter is passed,
@@ -113,7 +113,7 @@
 #endif
 
 #define DEBUG_CALL(STREAM)                             \
-  if (sd::Environment::getInstance().isDebug()) {      \
+  if (sd::env_isDebug()) {                              \
     cudaError_t tRes = cudaStreamSynchronize(*STREAM); \
     checkCudaErrors(tRes);                             \
     if (tRes != 0) {                                   \
@@ -121,7 +121,7 @@
     };                                                 \
   }
 #define DEBUG_KERNEL(STREAM, OP_NUM)                                                             \
-  if (sd::Environment::getInstance().isDebug()) {                                                \
+  if (sd::env_isDebug()) {                                                                       \
     cudaError_t tRes = cudaStreamSynchronize(*STREAM);                                           \
     checkCudaErrors(tRes);                                                                       \
     if (tRes != 0) {                                                                             \
@@ -2485,9 +2485,6 @@
                 }                                                                                                      \
              }                                                                                                        \
                                                                                                                       \
-            auto dtString = DataTypeUtils::asString(ArrayOptions::dataType(shapeInfo));                               \
-             printf("CONFIGURABLE_OP_IMPL: Creating empty data type: %s for index %d\n",dtString.c_str(),static_cast<int>(e));\
-                                                                                                          \
             auto newShape = ConstantShapeHelper::getInstance()                                                        \
                             .emptyShapeInfoWithShape(ArrayOptions::dataType(shapeInfo),shape2);               \
             shapeList->push_back(newShape);                                                                                  \
@@ -2587,59 +2584,41 @@
 
 #if defined(SD_CUDA)
 
-#if defined(_RELEASE)
+#include <memory/cuda/CudaMemoryPool.h>
 
-// we intentionally add 8 tail bytes here to avoid problems with atomic operations
-#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT)                                                         \
-  if (WORKSPACE == nullptr) {                                                                                     \
-    auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT) + 8);               \
-    if (erc_##VARIABLE != 0) {                                                                                    \
-     THROW_EXCEPTION("[DEVICE] allocation failed", erc_##VARIABLE);                                  \
-    } else {                                                                                                      \
-    };                                                                                                            \
-  } else {                                                                                                        \
-    VARIABLE =                                                                                                    \
-        reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, LENGTH * sizeof(TT) + 8)); \
-  }
-#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)                                         \
-  if (VARIABLE != nullptr) {                                                         \
-    if (WORKSPACE == nullptr) {                                                      \
-      auto erc_##VARIABLE = cudaFree(reinterpret_cast<void*>(VARIABLE));             \
-      if (erc_##VARIABLE != 0) {                                                     \
-        THROW_EXCEPTION("[DEVICE] deallocation failed", erc_##VARIABLE); \
-      };                                                                             \
-    };                                                                               \
-  };
-
-#else
-
-
-// we intentionally add 8 tail bytes here to avoid problems with atomic operations
+// Use CudaMemoryPool for all CUDA allocations to ensure consistent alloc/free pairing
 #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT)                                                             \
   if (WORKSPACE == nullptr) {                                                                                         \
-                                                                                          \
-    /* Calculate allocation size */                                                                                   \
-    size_t allocSize = LENGTH * sizeof(TT) + 8;                                                                       \
-                                                                                                                      \
-    /* Allocation with proper error handling */                                                                       \
-    checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&VARIABLE), allocSize));                          \
-                                                                                                              \
+    int deviceId_##VARIABLE = 0;                                                                                      \
+    cudaGetDevice(&deviceId_##VARIABLE);                                                                              \
+    size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + SD_ALLOC_PADDING;                                                            \
+    VARIABLE = reinterpret_cast<TT*>(sd::memory::CudaMemoryPool::getInstance().allocate(                              \
+        allocSize_##VARIABLE, deviceId_##VARIABLE, nullptr));                                                         \
+    if (VARIABLE == nullptr) {                                                                                        \
+      THROW_EXCEPTION("[DEVICE] allocation failed");                                                                  \
+    }                                                                                                                 \
   } else {                                                                                                            \
-    /* Using workspace allocator */                                                                                   \
-    size_t allocSize = LENGTH * sizeof(TT) + 8;                                                                       \
-    VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize));            \
-  }
-#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)                                         \
-  if (VARIABLE != nullptr) {                                                         \
-    if (WORKSPACE == nullptr) {                                                      \
-      auto erc_##VARIABLE = cudaFree(reinterpret_cast<void*>(VARIABLE));             \
-      if (erc_##VARIABLE != 0) {                                                     \
-        throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE); \
-      };                                                                             \
-    };                                                                               \
-  };
+    size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + SD_ALLOC_PADDING;                                                            \
+    VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize_##VARIABLE)); \
+   }
 
-#endif
+#define RELEASE_SPECIAL_WITH_DEVICE(VARIABLE, DEVICE_ID, WORKSPACE)                                                      \
+  if (VARIABLE != nullptr) {                                                                                           \
+    if (WORKSPACE == nullptr) {                                                                                        \
+      int deviceIdToUse = (DEVICE_ID >= 0) ? DEVICE_ID : 0;                                                           \
+      sd::memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(VARIABLE), deviceIdToUse, nullptr);          \
+    }                                                                                                                   \
+  }
+
+// Original RELEASE_SPECIAL - uses cudaGetDevice() at free time (problematic for multi-GPU)
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)                                                                            \
+  if (VARIABLE != nullptr) {                                                                                           \
+    if (WORKSPACE == nullptr) {                                                                                        \
+      int deviceId_##VARIABLE = 0;                                                                                     \
+      cudaGetDevice(&deviceId_##VARIABLE);                                                                             \
+      sd::memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(VARIABLE), deviceId_##VARIABLE, nullptr);  \
+    }                                                                                                                   \
+  }
 
 #else
 
@@ -2655,15 +2634,27 @@
 template <typename TT, typename WW>
 SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
   TT* var;
-  if (workSpace == nullptr) {
+  // Use if constexpr to avoid compiling workSpace->allocateBytes when WW is std::nullptr_t
+  // (GCC ARM64 errors on dereferencing nullptr_t even in dead code)
+  if constexpr (std::is_null_pointer_v<WW>) {
+    size_t requestedBytes = len * sizeof(TT);
+    size_t allocBytes = requestedBytes + SD_ALLOC_PADDING;
 #if defined(SD_ALIGNED_ALLOC)
-    // Allocate aligned memory, ensuring the size is a multiple of the alignment
     var = static_cast<TT*>(
         aligned_alloc(SD_DESIRED_ALIGNMENT,
-                      (len * sizeof(TT) + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
+                      (allocBytes + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
 #else
-    // Fallback to standard array allocation
-    var = new TT[len];
+    var = new TT[len + (SD_ALLOC_PADDING / sizeof(TT)) + 1];
+#endif
+  } else if (workSpace == nullptr) {
+    size_t requestedBytes = len * sizeof(TT);
+    size_t allocBytes = requestedBytes + SD_ALLOC_PADDING;
+#if defined(SD_ALIGNED_ALLOC)
+    var = static_cast<TT*>(
+        aligned_alloc(SD_DESIRED_ALIGNMENT,
+                      (allocBytes + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
+#else
+    var = new TT[len + (SD_ALLOC_PADDING / sizeof(TT)) + 1];
 #endif
   } else {
     // Allocate memory from a provided workspace
@@ -2686,6 +2677,9 @@ SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
 template <typename TT_PTR, typename WW>
 SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
   if (workspace == nullptr) {
+    if (var == nullptr) {
+      return;  // Don't try to free nullptr
+    }
 #if defined(SD_ALIGNED_ALLOC)
     free(var);
 #else
@@ -2729,15 +2723,6 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
   this->storeResult(block, 4, E)
 #define BROADCAST_CHECK_EMPTY(X, Y, Z)                                                                     \
   if (X->isEmpty() || Y->isEmpty()) {                                                                      \
-    if (!Z->isEmpty()) {                                                                                     \
-       std::string errorMessage;                                                                             \
-       errorMessage += "Broadcast op validation failed: if x or y are empty, z must be empty";               \
-       errorMessage += " X empty:";                                                                     \
-       errorMessage += std::to_string(X->isEmpty());                                                         \
-       errorMessage += "\n Y empty:";                                                                     \
-       errorMessage += std::to_string(Y->isEmpty());                                                          \
-      THROW_EXCEPTION(errorMessage.c_str()); \
-    }                                                                                                      \
     return sd::Status::OK;                                                                                 \
   }
 
@@ -2754,13 +2739,20 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 #define T_ARG(INDEX) block.getTArguments()->at(INDEX)
 #define B_ARG(INDEX) block.getBArguments()->at(INDEX)
 
+// Optional argument macros: return default if index is out of range
+#define INT_ARG_OR(INDEX, DEFAULT) \
+  ((block.getIArguments()->size() > static_cast<size_t>(INDEX)) ? block.getIArguments()->at(INDEX) : (DEFAULT))
+#define T_ARG_OR(INDEX, DEFAULT) \
+  ((block.getTArguments()->size() > static_cast<size_t>(INDEX)) ? block.getTArguments()->at(INDEX) : (DEFAULT))
+
 #define COPY_SHAPE(SRC, TGT) TGT = ShapeBuilders::copyShapeInfo(SRC, true, block.getWorkspace())
 
 #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE) TGT = ShapeBuilders::copyShapeInfo(SRC, true, WORKSPACE)
 
 #define CHECK_ALLOC(PTR, MSG, BYTES)                   \
   if (PTR == nullptr) {                                \
-    THROW_EXCEPTION(sd::allocation_exception::build(MSG, BYTES).what()); \
+    std::string __alloc_msg = std::string(MSG) + "; Requested bytes: [" + std::to_string(BYTES) + "]"; \
+    THROW_EXCEPTION(__alloc_msg.c_str()); \
   };
 
 
@@ -2795,8 +2787,18 @@ using portable_function = std::function<Signature>;
 
 #ifndef __JAVACPP_HACK__
 // ======== Host/Device Decorators ========
-#if IS_CUDA_ENVIRONMENT
+// Note: HOST_DEVICE is used ONLY in LAMBDA macros below.
+// On Windows NVCC (MSVC), extended __host__ __device__ lambdas require the enclosing
+// function to have external linkage, which fails for many template helper functions.
+// Since the CUDA applyLambda implementation doesn't actually execute the lambda on
+// the device (it uses a separate kernel), we can safely omit __host__ __device__
+// from lambdas on Windows NVCC.
+#if IS_CUDA_ENVIRONMENT && !defined(_MSC_VER)
 #define HOST_DEVICE __host__ __device__
+#define DEVICE_ONLY __device__
+#define HOST_ONLY __host__
+#elif IS_CUDA_ENVIRONMENT && defined(_MSC_VER)
+#define HOST_DEVICE
 #define DEVICE_ONLY __device__
 #define HOST_ONLY __host__
 #else

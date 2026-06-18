@@ -203,24 +203,9 @@ LAMBDA_AD { return _old + _new; }
     sd::LongType start_y, sd::LongType stop_y, sd::LongType inc_y, \
     sd::LongType start_z, sd::LongType stop_z, sd::LongType inc_z) -> void
 
-// OpenMP reduction declarations
-
-#if !defined(_MSC_VER)
-
-// Declare custom reductions using the '+' operator for custom types
-
-#if defined(HAS_FLOAT16)
-#pragma omp declare reduction(+: float16 : omp_out += omp_in) \
-  initializer(omp_priv = float16(0.0f))
-#endif
-
-#if defined(HAS_BFLOAT16)
-#pragma omp declare reduction(+: bfloat16 : omp_out += omp_in) \
-  initializer(omp_priv = bfloat16(0.0f))
-#endif
-
-// For other custom types, declare similar reductions using the '+' operator
-
-#endif  // !defined(_MSC_VER)
+// OpenMP reduction declarations for float16/bfloat16 are in
+// types/omp_reductions.h — included AFTER type headers are fully defined.
+// Do NOT put them here: openmp_pragmas.h is included from common.h
+// which is included by float16.h/bfloat16.h, creating a circular dependency.
 
 #endif  // DEV_TESTS_OPENMP_PRAGMAS_H

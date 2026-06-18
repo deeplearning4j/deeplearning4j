@@ -1,6 +1,5 @@
 /* ******************************************************************************
  *
- *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
@@ -16,26 +15,31 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// @author raver119@gmail.com
-//
-
-#ifndef DEV_TESTS_ALLOCATION_EXCEPTION_H
-#define DEV_TESTS_ALLOCATION_EXCEPTION_H
-#include <system/common.h>
-
-#include <stdexcept>
-#include <string>
+#include <system/config/PrintConfig.h>
 
 namespace sd {
-class SD_LIB_EXPORT allocation_exception : public std::runtime_error {
- public:
-  allocation_exception(std::string message);
-  ~allocation_exception() = default;
+namespace config {
 
-  static allocation_exception build(std::string message, LongType bytes);
-  static allocation_exception build(std::string message, LongType limit, LongType bytes);
-};
+void PrintConfig::setEdgeItems(int v) {
+  if (v > 0) _edgeItems.store(v);
+}
+
+void PrintConfig::setThreshold(int v) {
+  if (v > 0) _threshold.store(v);
+}
+
+void PrintConfig::setLineWidth(int v) {
+  if (v > 0) _lineWidth.store(v);
+}
+
+void PrintConfig::setPrecision(int v) {
+  if (v >= 0 && v <= 20) _precision.store(v);
+}
+
+void PrintConfig::initFromEnvironment() {
+  // No env vars for print config currently.
+  // Future: ND4J_PRINT_EDGE_ITEMS, etc.
+}
+
+}  // namespace config
 }  // namespace sd
-
-#endif  // DEV_TESTS_ALLOCATION_EXCEPTION_H
