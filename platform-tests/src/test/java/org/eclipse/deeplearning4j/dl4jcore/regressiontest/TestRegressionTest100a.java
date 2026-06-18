@@ -59,7 +59,6 @@ import java.io.FileInputStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Disabled
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
 public class TestRegressionTest100a extends BaseDL4JTest {
@@ -127,7 +126,6 @@ public class TestRegressionTest100a extends BaseDL4JTest {
 
 
     @Test
-    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testYoloHouseNumber() throws Exception {
 
         File f = Resources.asFile("regression_testing/100a/HouseNumberDetection_100a.bin");

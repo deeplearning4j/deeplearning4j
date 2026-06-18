@@ -165,11 +165,13 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
                                 long[] inputShape;
                                 switch (format) {
                                     case NCHW:
-                                        convWeights = Nd4j.linspace(1, 5 * 1 * 2 * 2, 5 * 1 * 2 * 2).reshape(2, 2, 1, 5).castTo(networkDtype);
+                                        // NCHW uses OIYX weight format: [nOut, nIn, kH, kW]
+                                        convWeights = Nd4j.linspace(1, 5 * 1 * 2 * 2, 5 * 1 * 2 * 2).reshape(5, 1, 2, 2).castTo(networkDtype);
                                         inputShape = new long[]{2, 1, 8, 8};
                                         break;
                                     case NHWC:
-                                        convWeights = Nd4j.linspace(1, 1 * 5 * 2 * 2, 1 * 5 * 2 * 2).reshape(5, 1, 2, 2).castTo(networkDtype);
+                                        // NHWC uses YXIO weight format: [kH, kW, nIn, nOut]
+                                        convWeights = Nd4j.linspace(1, 1 * 5 * 2 * 2, 1 * 5 * 2 * 2).reshape(2, 2, 1, 5).castTo(networkDtype);
                                         inputShape = new long[]{2, 8, 8, 1};
                                         break;
                                     default:

@@ -81,7 +81,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 999999999L;
+        return 600000;
     }
 
 
@@ -130,7 +130,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String testName = new Object() {
             }.getClass().getEnclosingMethod().getName();
             if (PRINT_RESULTS) {
-                System.out.println(testName + "- activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst);
+                log.info("{}- activationFn={}, lossFn={}, outputActivation={}, doLearningFirst={}", testName, afn, lf, outputActivation, doLearningFirst);
             }
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
             assertTrue(gradOK);
@@ -187,7 +187,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         assertTrue(scoreAfter < 0.9 * scoreBefore,msg);
                     }
                     if (PRINT_RESULTS) {
-                        System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst);
+                        log.info("{} - activationFn={}, lossFn={}, outputActivation={}, doLearningFirst={}", name, afn, lf, outputActivation, doLearningFirst);
                     }
                     boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                     assertTrue(gradOK);
@@ -229,7 +229,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         INDArray labels = ds.getLabels();
 
         if (PRINT_RESULTS) {
-            System.out.println("testBasicIris()");
+            log.info("testBasicIris()");
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -278,7 +278,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         INDArray labels = ds.getLabels();
 
         if (PRINT_RESULTS) {
-            System.out.println("testBasicIrisWithMerging()");
+            log.info("testBasicIrisWithMerging()");
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -333,7 +333,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             INDArray labels = ds.getLabels();
 
             if (PRINT_RESULTS) {
-                System.out.println("testBasicIrisWithElementWiseVertex(op=" + op + ")");
+                log.info("testBasicIrisWithElementWiseVertex(op={})", op);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -391,7 +391,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             INDArray labels = ds.getLabels();
 
             if (PRINT_RESULTS) {
-                System.out.println("testBasicIrisWithElementWiseVertex(op=" + op + ")");
+                log.info("testBasicIrisWithElementWiseVertex(op={})", op);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -493,7 +493,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 labels.putScalar(new int[]{i, r.nextInt(3)}, 1.0);
 
             if (PRINT_RESULTS) {
-                System.out.println(msg);
+                log.info("{}", msg);
 
             }
 
@@ -549,13 +549,13 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             ComputationGraph graph = new ComputationGraph(conf);
             graph.init();
-            System.out.println("Configuration for " + format + " " + conf);
+            log.debug("Configuration for {} {}", format, conf);
 
             INDArray input = Nd4j.rand(DataType.DOUBLE, format == RNNFormat.NCW ? new long[]{batchSize, inputChannels, timeSeriesLength} : new long[]{batchSize,timeSeriesLength,inputChannels});
             INDArray labels = TestUtils.randomOneHotTimeSeries(format, batchSize, outSize, timeSeriesLength, new Random(12345));
 
             if (PRINT_RESULTS) {
-                System.out.println(msg);
+                log.info("{}", msg);
 
             }
 
@@ -593,7 +593,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         INDArray labels = TestUtils.randomOneHotTimeSeries(batchSize, 2, timeSeriesLength);
 
         if (PRINT_RESULTS) {
-            System.out.println("testLSTMWithSubset()");
+            log.info("testLSTMWithSubset()");
 
         }
 
@@ -629,7 +629,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         INDArray labels = TestUtils.randomOneHot(2, 2); //Here: labels are 2d (due to LastTimeStepVertex)
 
         if (PRINT_RESULTS) {
-            System.out.println("testLSTMWithLastTimeStepVertex()");
+            log.info("testLSTMWithLastTimeStepVertex()");
 
         }
 
@@ -691,7 +691,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         INDArray labels = TestUtils.randomOneHotTimeSeries(batchSize, outSize, timeSeriesLength);
 
         if (PRINT_RESULTS) {
-            System.out.println("testLSTMWithDuplicateToTimeSeries()");
+            log.info("testLSTMWithDuplicateToTimeSeries()");
 
         }
 
@@ -739,7 +739,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         INDArray labels = TestUtils.randomOneHotTimeSeries(2, 2, 4);
 
         if (PRINT_RESULTS) {
-            System.out.println("testLSTMWithReverseTimeSeriesVertex()");
+            log.info("testLSTMWithReverseTimeSeriesVertex()");
 
         }
 
@@ -793,7 +793,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             String msg = "testMultipleInputsLayer() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
-                System.out.println(msg);
+                log.info("{}", msg);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(inputs)
@@ -831,7 +831,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             String msg = "testMultipleOutputsLayer() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
-                System.out.println(msg);
+                log.info("{}", msg);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -875,7 +875,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             String msg = "testMultipleOutputsMergeVertex() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
-                System.out.println(msg);
+                log.info("{}", msg);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(input)
@@ -924,7 +924,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             String msg = "testMultipleOutputsMergeVertex() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
-                System.out.println(msg);
+                log.info("{}", msg);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -987,7 +987,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
 
         if (PRINT_RESULTS) {
-            System.out.println("testBasicIrisTripletStackingL2Loss()");
+            log.info("testBasicIrisTripletStackingL2Loss()");
 
         }
 
@@ -1047,7 +1047,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
                 String msg = "testBasicCenterLoss() - lambda = " + lambda + ", trainFirst = " + train;
                 if (PRINT_RESULTS) {
-                    System.out.println(msg);
+                    log.info("{}", msg);
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{example})
@@ -1110,7 +1110,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
                 String msg = "testBasicCenterLoss() - trainFirst = " + train;
                 if (PRINT_RESULTS) {
-                    System.out.println(msg);
+                    log.info("{}", msg);
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -1157,7 +1157,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String testName = "testBasicL2() - minibatch = " + minibatch;
 
             if (PRINT_RESULTS) {
-                System.out.println(testName);
+                log.info("{}", testName);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
@@ -1213,7 +1213,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String testName = "testBasicStackUnstack() - minibatch = " + minibatch;
 
             if (PRINT_RESULTS) {
-                System.out.println(testName);
+                log.info("{}", testName);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
@@ -1269,7 +1269,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String testName = "testBasicStackUnstack() - minibatch = " + minibatch;
 
             if (PRINT_RESULTS) {
-                System.out.println(testName);
+                log.info("{}", testName);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
@@ -1330,7 +1330,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String testName = "testBasicStackUnstackVariableLengthTS() - minibatch = " + minibatch;
 
             if (PRINT_RESULTS) {
-                System.out.println(testName);
+                log.info("{}", testName);
             }
 
             graph.setLayerMaskArrays(new INDArray[] {inMask1, inMask2}, null);
@@ -1367,8 +1367,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
-        System.out.println("Num layers: " + graph.getNumLayers());
-        System.out.println("Num params: " + graph.numParams());
+        log.info("Num layers: {}", graph.getNumLayers());
+        log.info("Num params: {}", graph.numParams());
 
 
         Nd4j.getRandom().setSeed(12345);
@@ -1387,7 +1387,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String testName = "testBasicStackUnstack() - minibatch = " + minibatch;
 
             if (PRINT_RESULTS) {
-                System.out.println(testName);
+                log.info("{}", testName);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
@@ -1431,7 +1431,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 String testName = "testL2NormalizeVertex2d() - minibatch = " + minibatch;
 
                 if (PRINT_RESULTS) {
-                    System.out.println(testName);
+                    log.info("{}", testName);
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1})
@@ -1480,7 +1480,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String testName = "testL2NormalizeVertex4d() - minibatch = " + minibatch;
 
             if (PRINT_RESULTS) {
-                System.out.println(testName);
+                log.info("{}", testName);
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1})
@@ -1516,7 +1516,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         cg.init();
 
         if (PRINT_RESULTS) {
-            System.out.println("testGraphEmbeddingLayerSimple");
+            log.info("testGraphEmbeddingLayerSimple");
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(cg).inputs(new INDArray[]{input})

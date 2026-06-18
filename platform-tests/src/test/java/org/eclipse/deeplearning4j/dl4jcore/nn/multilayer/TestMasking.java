@@ -23,7 +23,7 @@ package org.eclipse.deeplearning4j.dl4jcore.nn.multilayer;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
-import org.deeplearning4j.eval.EvaluationBinary;
+import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.eclipse.deeplearning4j.dl4jcore.gradientcheck.LossFunctionGradientCheck;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.*;

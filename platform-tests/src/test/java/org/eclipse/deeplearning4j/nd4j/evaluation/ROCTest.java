@@ -46,6 +46,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Tag(TagNames.EVAL_METRICS)
+@Tag(TagNames.FULL_CI)
 @NativeTag
 public class ROCTest extends BaseNd4jTestWithBackends {
 

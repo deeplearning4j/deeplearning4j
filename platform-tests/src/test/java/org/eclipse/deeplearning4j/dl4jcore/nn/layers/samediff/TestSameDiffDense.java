@@ -88,7 +88,7 @@ public class TestSameDiffDense extends BaseDL4JTest {
         assertNotNull(pt1.get(DefaultParamInitializer.BIAS_KEY));
 
         assertArrayEquals(new long[]{nIn, nOut}, pt1.get(DefaultParamInitializer.WEIGHT_KEY).shape());
-        assertArrayEquals(new long[]{1, nOut}, pt1.get(DefaultParamInitializer.BIAS_KEY).shape());
+        assertArrayEquals(new long[]{nOut}, pt1.get(DefaultParamInitializer.BIAS_KEY).shape());
     }
 
     @Test

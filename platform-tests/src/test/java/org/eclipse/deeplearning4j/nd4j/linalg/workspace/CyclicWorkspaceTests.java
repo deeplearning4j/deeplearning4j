@@ -43,6 +43,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 @Slf4j
 @Tag(TagNames.WORKSPACES)
+@Tag(TagNames.SMOKE)
 @NativeTag
 public class CyclicWorkspaceTests extends BaseNd4jTestWithBackends {
 

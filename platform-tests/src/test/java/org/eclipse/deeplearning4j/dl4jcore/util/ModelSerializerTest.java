@@ -61,7 +61,6 @@ import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
 
 @DisplayName("Model Serializer Test")
-@Disabled
 @NativeTag
 @Tag(TagNames.FILE_IO)
 class ModelSerializerTest extends BaseDL4JTest {
@@ -194,7 +193,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in").addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(2).nOut(3).build(), "dense").setOutputs("out").build();
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
-        File tempFile = tempDir.toFile();
+        File tempFile = new File(tempDir.toFile(), "invalid-loading-1.zip");
         ModelSerializer.writeModel(cg, tempFile, true);
         try {
             ModelSerializer.restoreMultiLayerNetwork(tempFile);

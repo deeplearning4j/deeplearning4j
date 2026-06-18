@@ -22,7 +22,7 @@ package org.eclipse.deeplearning4j.dl4jcore.nn.layers.convolution;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
@@ -277,7 +277,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
         int[] padding = { 0, 0 };
         int nChannelsIn = 1;
         int depth = 2;
-        INDArray W = Nd4j.create(new double[] { 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5 }, new int[] { 2, 1, 2, 2 });
+        INDArray W = Nd4j.create(new double[] { 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5 }, new int[] { 2, 2, 1, 2 });
         INDArray b = Nd4j.create(new double[] { 1, 1 });
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
         layer.setParam("W", W);

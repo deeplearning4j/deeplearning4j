@@ -54,6 +54,7 @@ import java.nio.file.Path;
 @NativeTag
 @Tag(TagNames.JAVA_ONLY)
 @Tag(TagNames.FILE_IO)
+@Tag(TagNames.SMOKE)
 class CrashReportingUtilTest extends BaseDL4JTest {
 
     @Override
@@ -77,7 +78,6 @@ class CrashReportingUtilTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test")
-    @Disabled
     void test() throws Exception {
         File dir = testDir.toFile();
         CrashReportingUtil.crashDumpOutputDirectory(dir);
@@ -101,13 +101,14 @@ class CrashReportingUtilTest extends BaseDL4JTest {
         String str = FileUtils.readFileToString(list[0]);
         // System.out.println(str);
         assertTrue(str.contains("Network Information"));
-        assertTrue(str.contains("Layer Helpers"));
+        assertTrue(str.contains("Network Training Listeners"));
         assertTrue(str.contains("JavaCPP"));
         assertTrue(str.contains("ScoreIterationListener"));
         // Train:
         DataSetIterator iter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, true, 12345), 5);
         net.fit(iter);
         dir = testDir.toFile();
+        FileUtils.cleanDirectory(dir);
         CrashReportingUtil.crashDumpOutputDirectory(dir);
         CrashReportingUtil.writeMemoryCrashDump(net, e);
         list = dir.listFiles();
@@ -115,7 +116,7 @@ class CrashReportingUtilTest extends BaseDL4JTest {
         assertEquals(1, list.length);
         str = FileUtils.readFileToString(list[0]);
         assertTrue(str.contains("Network Information"));
-        assertTrue(str.contains("Layer Helpers"));
+        assertTrue(str.contains("Network Training Listeners"));
         assertTrue(str.contains("JavaCPP"));
         assertTrue(str.contains("ScoreIterationListener(1)"));
         // System.out.println("///////////////////////////////////////////////////////////");
@@ -127,12 +128,13 @@ class CrashReportingUtilTest extends BaseDL4JTest {
         // System.out.println(mlnMemoryInfo);
         // System.out.println("///////////////////////////////////////////////////////////");
         assertTrue(mlnMemoryInfo.contains("Network Information"));
-        assertTrue(mlnMemoryInfo.contains("Layer Helpers"));
+        assertTrue(mlnMemoryInfo.contains("Network Training Listeners"));
         assertTrue(mlnMemoryInfo.contains("JavaCPP"));
         assertTrue(mlnMemoryInfo.contains("ScoreIterationListener(1)"));
         // //////////////////////////////////////
         // Same thing on ComputationGraph:
         dir = testDir.toFile();
+        FileUtils.cleanDirectory(dir);
         CrashReportingUtil.crashDumpOutputDirectory(dir);
         ComputationGraph cg = net.toComputationGraph();
         cg.setListeners(new ScoreIterationListener(1));
@@ -143,12 +145,13 @@ class CrashReportingUtilTest extends BaseDL4JTest {
         assertEquals(1, list.length);
         str = FileUtils.readFileToString(list[0]);
         assertTrue(str.contains("Network Information"));
-        assertTrue(str.contains("Layer Helpers"));
+        assertTrue(str.contains("Network Training Listeners"));
         assertTrue(str.contains("JavaCPP"));
         assertTrue(str.contains("ScoreIterationListener(1)"));
         // Train:
         cg.fit(iter);
         dir = testDir.toFile();
+        FileUtils.cleanDirectory(dir);
         CrashReportingUtil.crashDumpOutputDirectory(dir);
         CrashReportingUtil.writeMemoryCrashDump(cg, e);
         list = dir.listFiles();
@@ -156,7 +159,7 @@ class CrashReportingUtilTest extends BaseDL4JTest {
         assertEquals(1, list.length);
         str = FileUtils.readFileToString(list[0]);
         assertTrue(str.contains("Network Information"));
-        assertTrue(str.contains("Layer Helpers"));
+        assertTrue(str.contains("Network Training Listeners"));
         assertTrue(str.contains("JavaCPP"));
         assertTrue(str.contains("ScoreIterationListener(1)"));
         // System.out.println("///////////////////////////////////////////////////////////");
@@ -168,7 +171,7 @@ class CrashReportingUtilTest extends BaseDL4JTest {
         // System.out.println(cgMemoryInfo);
         // System.out.println("///////////////////////////////////////////////////////////");
         assertTrue(cgMemoryInfo.contains("Network Information"));
-        assertTrue(cgMemoryInfo.contains("Layer Helpers"));
+        assertTrue(cgMemoryInfo.contains("Network Training Listeners"));
         assertTrue(cgMemoryInfo.contains("JavaCPP"));
         assertTrue(cgMemoryInfo.contains("ScoreIterationListener(1)"));
     }

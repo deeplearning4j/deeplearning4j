@@ -70,7 +70,7 @@ public class TestRnnGradientChecks extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled("AB 2019/06/24 - Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
+    @Disabled("Fails with OOM (physicalBytes > maxPhysicalBytes 24576M) after running ~2 forward passes - re-tested 2026-06-12, see original disable issue #7912")
     public void testBidirectionalWrapper() {
 
         int nIn = 3;
@@ -154,7 +154,6 @@ public class TestRnnGradientChecks extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled("AB 2019/06/24 - Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testSimpleRnn() {
         int nOut = 5;
 
@@ -234,7 +233,6 @@ public class TestRnnGradientChecks extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled("AB 2019/06/24 - Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testLastTimeStepLayer(){
         int nIn = 3;
         int nOut = 5;

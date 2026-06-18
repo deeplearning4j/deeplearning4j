@@ -58,9 +58,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +79,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.NEEDS_VERIFY)
-@Disabled("Permissions issues on CI")
 public class SequenceVectorsTest extends BaseDL4JTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(SequenceVectorsTest.class);
@@ -90,8 +90,7 @@ public class SequenceVectorsTest extends BaseDL4JTest {
 
     @Test
     public void testAbstractW2VModel() throws Exception {
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("big/raw_sentences.txt");
 
         logger.info("dtype: {}", Nd4j.dataType());
 
@@ -200,9 +199,24 @@ public class SequenceVectorsTest extends BaseDL4JTest {
          */
         logger.info("Starting training...");
 
+        // Diagnostic: capture syn0 norm before training to verify weights change
+        INDArray syn0Before = lookupTable.getWeights().dup();
+        double normBefore = syn0Before.norm2Number().doubleValue();
+        logger.info("syn0 norm BEFORE training: {}", normBefore);
+        // Print day vector before
+        int dayIdx = vocabCache.indexOf("day");
+        logger.info("day index: {}, day vector[0] BEFORE: {}", dayIdx, syn0Before.getDouble(dayIdx, 0));
+
         vectors.fit();
 
         logger.info("Model saved...");
+
+        // Diagnostic: check if syn0 changed after training
+        INDArray syn0After = lookupTable.getWeights();
+        double normAfter = syn0After.norm2Number().doubleValue();
+        logger.info("syn0 norm AFTER training: {}", normAfter);
+        logger.info("syn0 changed: {}", Math.abs(normAfter - normBefore) > 1e-6);
+        logger.info("day vector[0] AFTER: {}", syn0After.getDouble(dayIdx, 0));
 
         /*
             As soon as fit() exits, model considered built, and we can test it.
@@ -227,8 +241,7 @@ public class SequenceVectorsTest extends BaseDL4JTest {
     @Test
 
     public void testInternalVocabConstruction() throws Exception {
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("big/raw_sentences.txt");
 
         BasicLineIterator underlyingIterator = new BasicLineIterator(file);
 
@@ -283,6 +296,7 @@ public class SequenceVectorsTest extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Requires external BlogCatalog dataset at hardcoded /ext/Temp/BlogCatalog/ path")
     public void testDeepWalk() throws Exception {
         AbstractCache<Blogger> vocabCache = new AbstractCache.Builder<Blogger>().build();
 

@@ -449,7 +449,7 @@ public class TadParallelBroadcastTests {
                     
                     // Immediately check shape info (this is the critical test for the off-by-one issue)
                     if (rowView.length() != 3) {
-                        String msg = "CRITICAL: Row view has incorrect length: " + rowView.length() + 
+                        String msg = " Row view has incorrect length: " + rowView.length() + 
                                      " (expected 3) in thread " + threadIdx;
                         firstError.compareAndSet(null, msg);
                         failures.incrementAndGet();
@@ -457,7 +457,7 @@ public class TadParallelBroadcastTests {
                     }
                     
                     if (rowView.shape()[0] != 3) {
-                        String msg = "CRITICAL: Row view has incorrect shape[0]: " + rowView.shape()[0] + 
+                        String msg = " Row view has incorrect shape[0]: " + rowView.shape()[0] + 
                                      " (expected 3) in thread " + threadIdx;
                         firstError.compareAndSet(null, msg);
                         failures.incrementAndGet();

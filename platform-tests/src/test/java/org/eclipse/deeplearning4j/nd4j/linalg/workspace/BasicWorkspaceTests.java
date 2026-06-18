@@ -53,6 +53,7 @@ import static org.nd4j.linalg.api.buffer.DataType.DOUBLE;
 
 @Slf4j
 @Tag(TagNames.WORKSPACES)
+@Tag(TagNames.SMOKE)
 @NativeTag
 @Execution(ExecutionMode.SAME_THREAD)
 public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
@@ -428,7 +429,8 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
             INDArray arrayL = array.leverageTo("ITER");
 
             assertFalse(array.isAttached());
-            assertFalse(arrayL.isAttached());
+            // leverageTo copies data INTO the workspace, so the result IS attached
+            assertTrue(arrayL.isAttached());
 
         }
 
@@ -447,7 +449,8 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
             INDArray arrayL = array.leverageTo("ITER");
 
             assertFalse(array.isAttached());
-            assertFalse(arrayL.isAttached());
+            // leverageTo copies data INTO the workspace, so the result IS attached
+            assertTrue(arrayL.isAttached());
         }
 
         INDArray array2 = Nd4j.create(100);
@@ -950,7 +953,8 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
     @Execution(ExecutionMode.SAME_THREAD)
     public void testMmap1(Nd4jBackend backend) {
         // we don't support MMAP on cuda yet
-        if (Nd4j.getExecutioner().getClass().getName().toLowerCase().contains("cuda"))
+        if (backend.getClass().getName().toLowerCase().contains("cublas") ||
+            backend.getClass().getName().toLowerCase().contains("cuda"))
             return;
 
         WorkspaceConfiguration mmap = WorkspaceConfiguration.builder()
@@ -1271,6 +1275,60 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
 
             // since this array doesn't have HOST buffer - it will allocate one now
             array.getDouble(3L);
+        }
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testWorkspaceBackedArrayData(Nd4jBackend backend) {
+        // Test that arrays allocated within a workspace hold correct data
+        val configuration = WorkspaceConfiguration.builder()
+                .initialSize(10 * 1024 * 1024)
+                .maxSize(10 * 1024 * 1024)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policySpill(SpillPolicy.REALLOCATE)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "data_test_ws")) {
+            INDArray arr = Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0});
+            assertTrue(arr.isAttached(), "Array should be attached to workspace");
+            assertEquals(1.0, arr.getDouble(0), 1e-6);
+            assertEquals(5.0, arr.getDouble(4), 1e-6);
+
+            // Verify sum works (tests data integrity)
+            assertEquals(15.0, arr.sumNumber().doubleValue(), 1e-6);
+        }
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testWorkspaceOpExecution(Nd4jBackend backend) {
+        // Test that ops execute correctly within workspace scope
+        val configuration = WorkspaceConfiguration.builder()
+                .initialSize(10 * 1024 * 1024)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policySpill(SpillPolicy.REALLOCATE)
+                .build();
+
+        for (int cycle = 0; cycle < 10; cycle++) {
+            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "op_exec_ws")) {
+                INDArray a = Nd4j.create(new double[]{1.0, 2.0, 3.0});
+                INDArray b = Nd4j.create(new double[]{4.0, 5.0, 6.0});
+                INDArray c = a.add(b);
+
+                assertTrue(c.isAttached(), "Result should be attached to workspace");
+                assertEquals(5.0, c.getDouble(0), 1e-6);
+                assertEquals(7.0, c.getDouble(1), 1e-6);
+                assertEquals(9.0, c.getDouble(2), 1e-6);
+            }
         }
 
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();

@@ -169,6 +169,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
         //avg pool, batch norm, conv2d, max pool 2d, pooling2d, upsampling
         //Tested elsewhere: deconv2d, depthwise2d, LRN, sconv2d
 
+        Nd4j.getEnvironment().setDebug(true);
+        Nd4j.getEnvironment().setVerbose(true);
         Nd4j.getRandom().setSeed(12345);
 
         int[][] inputSizes = new int[][]{{1, 3, 8, 8}}; //, {3, 6, 12, 12}};
@@ -991,8 +993,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
         sd.setLossVariables("loss");
 
-        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        INDArray outArr = Nd4j.createFromArray(mb, nOut, 27L);
+        //Expected output size with SAME padding: out = ceil(in / stride) = ceil(28/1) = 28
+        INDArray outArr = Nd4j.createFromArray(mb, nOut, 28L);
         TestCase tc = new TestCase(sd).expectedOutput("out", outArr).gradientCheck(true);
         String err = OpValidation
                 .validate(tc);
@@ -1545,7 +1547,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         int outChannels = 3;
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.rand(bS, inChannels, 5,5));
+        SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, bS, inChannels, 5, 5));
         SDVariable weights = sd.var("weights", Nd4j.rand(DataType.DOUBLE, kernelHeight, kernelWidth, inChannels, outChannels));
         SDVariable bias = sd.var("bias", Nd4j.rand(DataType.DOUBLE, inChannels*outChannels));
         Conv2DConfig config = Conv2DConfig.builder()
@@ -1633,7 +1635,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
                 assertArrayEquals(hL, outputs.getLastOutput().eval().shape());
                 assertArrayEquals(cL, outputs.getLastState().eval().shape());
 
-                sd.setLossVariables(outputs.getOutput(), outputs.getLastTimeStepOutput(), outputs.getTimeSeriesOutput());
+                sd.setLossVariables(outputs.getOutput(), outputs.getLastOutput(), outputs.getLastState());
 
                 String err = OpValidation.validate(new TestCase(sd)
                         .gradientCheck(true)

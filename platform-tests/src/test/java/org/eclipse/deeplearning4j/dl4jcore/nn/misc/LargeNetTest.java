@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -40,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 
-@Disabled
 @DisplayName("Large Net Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
@@ -48,7 +46,6 @@ import org.junit.jupiter.api.DisplayName;
 @Tag(TagNames.WORKSPACES)
 class LargeNetTest extends BaseDL4JTest {
 
-    @Disabled
     @Test
     @DisplayName("Test Large Multi Layer Network")
     void testLargeMultiLayerNetwork() {
@@ -66,11 +63,10 @@ class LargeNetTest extends BaseDL4JTest {
         assertArrayEquals(expW, net.getParam("0_W").shape());
         long[] expW1 = new long[] { 300, 10 };
         assertArrayEquals(expW1, net.getParam("1_W").shape());
-        long[] expB1 = new long[] { 1, 10 };
+        long[] expB1 = new long[] { 10 };
         assertArrayEquals(expB1, net.getParam("1_b").shape());
     }
 
-    @Disabled
     @Test
     @DisplayName("Test Large Comp Graph")
     void testLargeCompGraph() {
@@ -88,7 +84,7 @@ class LargeNetTest extends BaseDL4JTest {
         assertArrayEquals(expW, net.getParam("0_W").shape());
         long[] expW1 = new long[] { 300, 10 };
         assertArrayEquals(expW1, net.getParam("1_W").shape());
-        long[] expB1 = new long[] { 1, 10 };
+        long[] expB1 = new long[] { 10 };
         assertArrayEquals(expB1, net.getParam("1_b").shape());
     }
 }

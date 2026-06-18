@@ -250,11 +250,12 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
 
     public void testEmptyReduction_3(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.FLOAT, 2, 0);
-        val e = Nd4j.create(DataType.FLOAT, 0);
+        val e = Nd4j.create(DataType.LONG, 0);
 
         val reduced = x.argMax(0);
 
         assertArrayEquals(e.shape(), reduced.shape());
+        assertEquals(e.dataType(), reduced.dataType());
         assertEquals(e, reduced);
     }
 

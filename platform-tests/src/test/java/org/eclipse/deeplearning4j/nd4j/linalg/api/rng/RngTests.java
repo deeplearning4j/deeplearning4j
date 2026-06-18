@@ -89,22 +89,24 @@ public class RngTests extends BaseNd4jTestWithBackends {
         INDArray narr = Nd4j.randn('c', rows, cols);
         assertArrayEquals(new long[] {rows, cols}, narr.shape());
         assertEquals('c', narr.ordering());
-        assertEquals(0.0, narr.meanNumber().doubleValue(), 0.05);
+        // Use 0.1 tolerance: for N=400, std error = 1/sqrt(400) = 0.05, so 0.1 covers ~2 sigma
+        assertEquals(0.0, narr.meanNumber().doubleValue(), 0.1);
 
         INDArray narr2 = Nd4j.randn('f', rows, cols);
         assertArrayEquals(new long[] {rows, cols}, narr2.shape());
         assertEquals('f', narr2.ordering());
-        assertEquals(0.0, narr2.meanNumber().doubleValue(), 0.05);
+        assertEquals(0.0, narr2.meanNumber().doubleValue(), 0.1);
 
         INDArray narr3 = Nd4j.randn('c', new int[] {rows, cols, dim2});
         assertArrayEquals(new long[] {rows, cols, dim2}, narr3.shape());
         assertEquals('c', narr3.ordering());
-        assertEquals(0.0, narr3.meanNumber().doubleValue(), 0.05);
+        // For N=28000, std error = 1/sqrt(28000) ~= 0.006, so 0.1 is very conservative
+        assertEquals(0.0, narr3.meanNumber().doubleValue(), 0.1);
 
         INDArray narr4 = Nd4j.randn('f', new int[] {rows, cols, dim2});
         assertArrayEquals(new long[] {rows, cols, dim2}, narr4.shape());
         assertEquals('f', narr4.ordering());
-        assertEquals(0.0, narr4.meanNumber().doubleValue(), 0.05);
+        assertEquals(0.0, narr4.meanNumber().doubleValue(), 0.1);
 
     }
 

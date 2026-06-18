@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.eclipse.deeplearning4j.dl4jcore.regressiontest.customlayer100a.CustomLayer;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -55,7 +54,6 @@ import java.io.FileInputStream;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-@Disabled
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
 public class TestRegressionTest100b3 extends BaseDL4JTest {

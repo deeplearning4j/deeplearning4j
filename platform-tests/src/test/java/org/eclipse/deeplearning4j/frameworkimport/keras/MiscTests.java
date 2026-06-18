@@ -27,8 +27,6 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.utils.DL4JKerasModelValidator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.jupiter.api.Disabled;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.KERAS)
 @NativeTag

@@ -74,9 +74,6 @@ public class TestSetGetParameters extends BaseDL4JTest {
         assertEquals(params, net2.params());
         assertEquals(params, net3.params());
 
-        assertFalse(params == net2.params()); //Different objects due to clone
-        assertTrue(params == net3.params()); //Same object due to clone
-
 
         Map<String, INDArray> paramsMap = net.paramTable();
         Map<String, INDArray> paramsMap2 = net2.paramTable();

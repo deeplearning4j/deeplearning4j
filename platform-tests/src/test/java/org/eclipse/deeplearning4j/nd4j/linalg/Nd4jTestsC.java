@@ -56,6 +56,8 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMax;
@@ -100,6 +102,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpaceND;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Svd;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
@@ -323,16 +326,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Disabled // with broadcastables mechanic it'll be ok
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testShapeEqualsOnElementWise(Nd4jBackend backend) {
-        assertThrows(IllegalStateException.class,() -> {
-            Nd4j.ones(10000, 1).sub(Nd4j.ones(1, 2));
-
-        });
-    }
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMaxVectorCase(Nd4jBackend backend) {
@@ -366,6 +359,29 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
         assertTrue(max.isScalar());
         assertEquals(2L, max.getInt(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testArgMaxLargeArray(Nd4jBackend backend) {
+        // Test argMax on arrays larger than one CUDA block (256 threads)
+        // to verify multi-block reduction merges values correctly.
+        // The bug was that only indices (not values) were stored per-block,
+        // so the first block's result always won regardless of actual maximum.
+        int[] sizes = {1000, 10000, 49280};
+        int[] maxPositions = {500, 9999, 49229};
+        for (int t = 0; t < sizes.length; t++) {
+            INDArray arr = Nd4j.zeros(DataType.FLOAT, sizes[t]);
+            arr.putScalar(maxPositions[t], 100.0f);
+            INDArray result = Nd4j.argMax(arr);
+            assertEquals(maxPositions[t], result.getInt(0),
+                "argMax failed for array size " + sizes[t] + " with max at " + maxPositions[t]);
+        }
+
+        // Also test with max in the first block to ensure no regression
+        INDArray arr2 = Nd4j.zeros(DataType.FLOAT, 49280);
+        arr2.putScalar(100, 50.0f);
+        assertEquals(100, Nd4j.argMax(arr2).getInt(0));
     }
 
     @ParameterizedTest
@@ -521,7 +537,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testMmulOp(Nd4jBackend backend) throws Exception {
         INDArray arr = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
         INDArray z = Nd4j.create(2, 2);
@@ -914,13 +929,14 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         //[0 2]    [0 1]
         //[2 1] -> [0 0]bg
         INDArray orig = Nd4j.create(new double[][] {{0, 3}, {2, 1}});
-        INDArray exp = Nd4j.create(new double[][] {{0, 1}, {0, 0}});
+        INDArray exp = Nd4j.create(DataType.BOOL, 2, 2);
+        exp.putScalar(new long[]{0, 1}, 1);
         INDArray outc = Transforms.isMax(orig.dup('c'));
         assertEquals(exp, outc);
 
 //        log.info("Orig: {}", orig.dup('f').data().asFloat());
 
-        INDArray outf = Transforms.isMax(orig.dup('f'), orig.dup('f').ulike());
+        INDArray outf = Transforms.isMax(orig.dup('f'), Nd4j.createUninitialized(DataType.BOOL, orig.shape(), 'f'));
 //        log.info("OutF: {}", outf.data().asFloat());
         assertEquals(exp, outf);
     }
@@ -931,11 +947,12 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         //[0 2]    [0 1]
         //[2 1] -> [0 0]
         INDArray orig = Nd4j.create(new double[][] {{0, 2}, {3, 1}});
-        INDArray exp = Nd4j.create(new double[][] {{0, 0}, {1, 0}});
+        INDArray exp = Nd4j.create(DataType.BOOL, 2, 2);
+        exp.putScalar(new long[]{1, 0}, 1);
         INDArray outc = Transforms.isMax(orig.dup('c'));
         assertEquals(exp, outc);
 
-        INDArray outf = Transforms.isMax(orig.dup('f'), orig.dup('f').ulike());
+        INDArray outf = Transforms.isMax(orig.dup('f'), Nd4j.createUninitialized(DataType.BOOL, orig.shape(), 'f'));
         assertEquals(exp, outf);
     }
 
@@ -1136,7 +1153,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testSumAlongDim1sEdgeCases(Nd4jBackend backend) {
         val shapes = new long[][] {
                 //Standard case:
@@ -1314,6 +1330,9 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiSum(Nd4jBackend backend) {
+        Nd4j.getEnvironment().setDebug(true);
+        Nd4j.getEnvironment().setVerbose(true);
+
         /**
          * ([[[ 0.,  1.],
          [ 2.,  3.]],
@@ -1550,7 +1569,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testSubRowVector(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray row = Nd4j.linspace(1, 3, 3, DataType.DOUBLE);
@@ -2367,7 +2385,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testTensorDot(Nd4jBackend backend) {
         INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5).castTo(DataType.DOUBLE);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2).castTo(DataType.DOUBLE);
@@ -2544,6 +2561,180 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray outCF = colVectorC.mmul(rowVectorF);
         assertArrayEquals(outCF.shape(), new long[] {5, 3});
         assertEquals(outCF, Nd4j.ones(5, 3));
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMMulRowColVectorMixedOrderLarge(Nd4jBackend backend) {
+        INDArray colVectorC = Nd4j.linspace(1, 96, 96, DataType.FLOAT).reshape('c', 96, 1);
+        INDArray rowVectorF = Nd4j.linspace(1, 384, 384, DataType.FLOAT).reshape('f', 1, 384);
+
+        boolean originalBlas = Nd4j.getEnvironment().isEnableBlas();
+        INDArray expected;
+        INDArray actual;
+        try {
+            Nd4j.getEnvironment().setEnableBlas(false);
+            expected = colVectorC.mmul(rowVectorF);
+
+            Nd4j.getEnvironment().setEnableBlas(true);
+            actual = colVectorC.mmul(rowVectorF);
+        } finally {
+            Nd4j.getEnvironment().setEnableBlas(originalBlas);
+        }
+
+        assertEquals(expected, actual);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularFullUV(Nd4jBackend backend) {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray s = Nd4j.linalg().svd(input, true, true);
+        assertArrayEquals(new long[] {96}, s.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularFullUVPreallocatedCOrderV(Nd4jBackend backend) {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray s = Nd4j.create(DataType.FLOAT, 96);
+        INDArray u = Nd4j.create(DataType.FLOAT, 96, 96);
+        INDArray v = Nd4j.create(DataType.FLOAT, new long[] {384, 384}, 'c');
+        Nd4j.exec(new Svd(input, true, s, u, v));
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularFullUVPreallocatedFOrderV(Nd4jBackend backend) {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray s = Nd4j.create(DataType.FLOAT, 96);
+        INDArray u = Nd4j.create(DataType.FLOAT, 96, 96);
+        INDArray v = Nd4j.create(DataType.FLOAT, new long[] {384, 384}, 'f');
+        Nd4j.exec(new Svd(input, true, s, u, v));
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularDescriptorOutputsPreallocated(Nd4jBackend backend) {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        List<DataBuffer> shapes = Nd4j.getExecutioner().calculateOutputShape(new Svd(input, true, true, 16));
+
+        INDArray s = Nd4j.createFromDescriptor(shapes.get(0));
+        INDArray u = Nd4j.createFromDescriptor(shapes.get(1));
+        INDArray v = Nd4j.createFromDescriptor(shapes.get(2));
+
+        INDArray manualS = Nd4j.create(DataType.FLOAT, 96);
+        INDArray manualU = Nd4j.create(DataType.FLOAT, 96, 96);
+        INDArray manualV = Nd4j.create(DataType.FLOAT, 384, 384);
+
+        assertArrayEquals(manualS.shape(), s.shape());
+        assertArrayEquals(manualU.shape(), u.shape());
+        assertArrayEquals(manualV.shape(), v.shape());
+        assertArrayEquals(manualS.stride(), s.stride());
+        assertArrayEquals(manualU.stride(), u.stride());
+        assertArrayEquals(manualV.stride(), v.stride());
+        assertEquals(manualS.data().length(), s.data().length());
+        assertEquals(manualU.data().length(), u.data().length());
+        assertEquals(manualV.data().length(), v.data().length());
+        assertEquals(manualS.ordering(), s.ordering());
+        assertEquals(manualU.ordering(), u.ordering());
+        assertEquals(manualV.ordering(), v.ordering());
+
+        Nd4j.exec(new Svd(input, true, s, u, v));
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularDescriptorOutputsPreallocatedWithShapeOverride(Nd4jBackend backend) throws Exception {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        List<DataBuffer> shapes = Nd4j.getExecutioner().calculateOutputShape(new Svd(input, true, true, 16));
+
+        INDArray s = Nd4j.createFromDescriptor(shapes.get(0));
+        INDArray u = Nd4j.createFromDescriptor(shapes.get(1));
+        INDArray v = Nd4j.createFromDescriptor(shapes.get(2));
+        Svd op = new Svd(input, true, s, u, v);
+
+        try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+            op.setupOpContextFromCustomOp(ctx);
+            ctx.shapeFunctionOverride(true);
+            Nd4j.getExecutioner().exec(op, ctx);
+        }
+
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularManualOutputsPreallocatedWithShapeOverride(Nd4jBackend backend) throws Exception {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray s = Nd4j.create(DataType.FLOAT, 96);
+        INDArray u = Nd4j.create(DataType.FLOAT, 96, 96);
+        INDArray v = Nd4j.create(DataType.FLOAT, 384, 384);
+        Svd op = new Svd(input, true, s, u, v);
+
+        try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+            op.setupOpContextFromCustomOp(ctx);
+            ctx.shapeFunctionOverride(true);
+            Nd4j.getExecutioner().exec(op, ctx);
+        }
+
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularAutoOutputsReusedOpFreshContext(Nd4jBackend backend) throws Exception {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        Svd op = new Svd(input, true, true, 16);
+        boolean shapeOverride;
+
+        try (OpContext shapeCtx = Nd4j.getExecutioner().buildContext()) {
+            op.setupOpContextFromCustomOp(shapeCtx);
+            shapeOverride = op.initializeOutputs(shapeCtx);
+        }
+
+        try (OpContext execCtx = Nd4j.getExecutioner().buildContext()) {
+            DefaultOpExecutioner.initOpContext(op, shapeOverride, execCtx);
+            Nd4j.getExecutioner().exec(op, execCtx);
+        }
+
+        assertArrayEquals(new long[] {384, 384}, op.getOutputArgument(2).shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularLateOutputBindingFreshOp(Nd4jBackend backend) throws Exception {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray s = Nd4j.create(DataType.FLOAT, 96);
+        INDArray u = Nd4j.create(DataType.FLOAT, 96, 96);
+        INDArray v = Nd4j.create(DataType.FLOAT, 384, 384);
+        Svd op = new Svd(input, true, true, 16);
+        op.addOutputArgument(s, u, v);
+
+        try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+            DefaultOpExecutioner.initOpContext(op, true, ctx);
+            Nd4j.getExecutioner().exec(op, ctx);
+        }
+
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularFullUVAutoOutputsRawOp(Nd4jBackend backend) {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray[] out = Nd4j.exec(new Svd(input, true, true, 16));
+        try {
+            assertArrayEquals(new long[] {96}, out[0].shape());
+            assertArrayEquals(new long[] {96, 96}, out[1].shape());
+            assertArrayEquals(new long[] {384, 384}, out[2].shape());
+        } finally {
+            out[1].close();
+            out[2].close();
+        }
     }
 
     @ParameterizedTest
@@ -4225,7 +4416,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
         //Test 2,3
-        exp = Nd4j.create(s);
+        exp = Nd4j.create(DataType.BOOL, s);
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 3; j++) {
                 INDArray subset = arr.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(),
@@ -4251,8 +4442,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             }
         }
 
-        actC = Nd4j.getExecutioner().exec(new IsMax(arr.dup('c'), arr.dup('c').ulike(), 2, 3))[0];
-        actF = Nd4j.getExecutioner().exec(new IsMax(arr.dup('f'), arr.dup('f').ulike(), 2, 3))[0];
+        actC = Nd4j.getExecutioner().exec(new IsMax(arr.dup('c'), Nd4j.createUninitialized(DataType.BOOL, arr.shape()), 2, 3))[0];
+        actF = Nd4j.getExecutioner().exec(new IsMax(arr.dup('f'), Nd4j.createUninitialized(DataType.BOOL, arr.shape(), 'f'), 2, 3))[0];
 
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -5491,7 +5682,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Crashes")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSort3(Nd4jBackend backend) {
         int length = isIntegrationTests() ? 1048576 : 16484;
@@ -5686,7 +5876,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Crashes")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSortAlongDimension3(Nd4jBackend backend) {
         INDArray array = Nd4j.create(2000,  2000);
@@ -5723,7 +5912,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Crashes")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSortAlongDimension2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(100, 10);
@@ -6163,7 +6351,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeFailure(Nd4jBackend backend) {
-        assertThrows(ND4JIllegalStateException.class,() -> {
+        assertThrows(RuntimeException.class,() -> {
             val a = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2,2);
             val b = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2,2);
             val score = a.mmul(b);
@@ -7314,10 +7502,10 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
         //First element: index 5
         //Last element: index 95
-        //91 total elements
+        //Column is a view; data() returns the full underlying buffer (100 elements)
         assertEquals(5, m.getDouble(5), 1e-6);
         assertEquals(95, m.getDouble(95), 1e-6);
-        assertEquals(91, col.data().length());
+        assertEquals(100, col.data().length());
 
         assertEquals(exp, col);
         assertEquals(exp.toString(), col.toString());
@@ -7780,7 +7968,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled()
     public void testArangeWithStep(Nd4jBackend backend) {
         int begin = -9, end = 9, step = 2;
         INDArray in = Nd4j.arange(begin, end, step);
@@ -7797,7 +7984,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Crashes")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testRollingMean(Nd4jBackend backend) {
         val wsconf = WorkspaceConfiguration.builder()
@@ -8769,6 +8955,152 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.createFromArray(0.1, 0.2, 0.4, 0.5);
         INDArray sorted = Nd4j.sort(arr, true);
         assertEquals(expected, sorted);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPut3dPointPointAllSyncsCorrectly(Nd4jBackend backend) {
+        // Regression test: put() with point/point/all indices on a 3D array must
+        // correctly update the underlying data so that minNumber()/maxNumber() and
+        // subsequent operations (e.g. neural network forward pass) see the new values.
+        // On CUDA, put() delegates to get(view).assign() which runs a CUDA kernel.
+        // If host/device sync is broken, minNumber()/maxNumber() may return stale values.
+
+        int batch = 1, seqLen = 10, hidden = 8;
+        INDArray arr = Nd4j.zeros(DataType.FLOAT, batch, seqLen, hidden);
+
+        // Put large values at positions 2 and 5 (simulating vision embedding injection)
+        INDArray bigRow1 = Nd4j.ones(DataType.FLOAT, hidden).mul(50.0f);
+        INDArray bigRow2 = Nd4j.ones(DataType.FLOAT, hidden).mul(-40.0f);
+
+        // put large values via view assign
+        INDArray view2 = arr.get(NDArrayIndex.point(0), NDArrayIndex.point(2), NDArrayIndex.all());
+        view2.assign(bigRow1);
+        Nd4j.getExecutioner().commit();
+
+        arr.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(5), NDArrayIndex.all()}, bigRow2);
+        Nd4j.getExecutioner().commit();
+
+        // The real assertions
+        double max = arr.maxNumber().doubleValue();
+        double min = arr.minNumber().doubleValue();
+        assertEquals(50.0, max, 1e-3, "maxNumber() should reflect put() values. Got " + max);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCausalMaskComputation(Nd4jBackend backend) {
+        int N = 15;
+
+        // Test 1: Direct op - reshape [1, N] to [N, 1] preserves values
+        INDArray input1N = Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).reshape(1, N);
+        log.info("Input [1,{}]: min={}, max={}, values={}", N, input1N.minNumber(), input1N.maxNumber(), input1N);
+        INDArray reshapedN1 = input1N.reshape(N, 1);
+        log.info("Reshaped [{},1]: min={}, max={}, values={}", N, reshapedN1.minNumber(), reshapedN1.maxNumber(), reshapedN1);
+        assertEquals(1.0, reshapedN1.getDouble(0, 0), 1e-5, "First element should be 1");
+        assertEquals((double) N, reshapedN1.getDouble(N - 1, 0), 1e-5, "Last element should be N");
+        for (int i = 0; i < N; i++) {
+            assertEquals(i + 1.0, reshapedN1.getDouble(i, 0), 1e-5, "Element " + i + " mismatch after reshape");
+        }
+
+        // Test 2: Direct op - Less with broadcasting [N] < [N, 1] -> [N, N]
+        INDArray range = Nd4j.arange(N).castTo(DataType.FLOAT);  // [0..N-1] shape [N]
+        INDArray column = Nd4j.arange(N).castTo(DataType.FLOAT).reshape(N, 1);  // [0..N-1] shape [N, 1]
+        INDArray lessResult = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan(range, column))[0];
+        log.info("Less result shape: {}", Arrays.toString(lessResult.shape()));
+        assertArrayEquals(new long[]{N, N}, lessResult.shape(), "Less should broadcast to [N,N]");
+
+        // Verify causal pattern: lessResult[i,j] = (j < i) - lower triangular (excluding diagonal)
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                boolean expected = j < i;  // range[j] < column[i,0]
+                boolean actual = lessResult.getDouble(i, j) != 0;
+                assertEquals(expected, actual, String.format("Mismatch at [%d,%d]: expected %s got %s", i, j, expected, actual));
+            }
+        }
+
+        // Test 3: SameDiff graph - same computation
+        org.nd4j.autodiff.samediff.SameDiff sd = org.nd4j.autodiff.samediff.SameDiff.create();
+        org.nd4j.autodiff.samediff.SDVariable sdInput = sd.placeHolder("input", DataType.FLOAT, 1, N);
+        org.nd4j.autodiff.samediff.SDVariable sdShape = sd.constant("shape", Nd4j.createFromArray(new long[]{N, 1}));
+        org.nd4j.autodiff.samediff.SDVariable sdReshaped = sd.reshape("reshaped", sdInput, sdShape);
+        org.nd4j.autodiff.samediff.SDVariable sdRange = sd.constant("range", Nd4j.arange(N).castTo(DataType.FLOAT));
+        org.nd4j.autodiff.samediff.SDVariable sdLess = sd.lt("less", sdRange, sdReshaped);
+
+        Map<String, INDArray> placeholders = new HashMap<>();
+        placeholders.put("input", Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).reshape(1, N));
+
+        Map<String, INDArray> result = sd.output(placeholders, "reshaped", "less");
+
+        INDArray sdReshapedResult = result.get("reshaped");
+        log.info("SameDiff reshaped shape: {}, min={}, max={}", Arrays.toString(sdReshapedResult.shape()),
+                sdReshapedResult.minNumber(), sdReshapedResult.maxNumber());
+        assertEquals(1.0, sdReshapedResult.getDouble(0, 0), 1e-5, "SameDiff: first element should be 1");
+        assertEquals((double) N, sdReshapedResult.getDouble(N - 1, 0), 1e-5, "SameDiff: last element should be N");
+        for (int i = 0; i < N; i++) {
+            assertEquals(i + 1.0, sdReshapedResult.getDouble(i, 0), 1e-5, "SameDiff: element " + i + " mismatch");
+        }
+
+        INDArray sdLessResult = result.get("less");
+        log.info("SameDiff less shape: {}", Arrays.toString(sdLessResult.shape()));
+        assertArrayEquals(new long[]{N, N}, sdLessResult.shape(), "SameDiff: Less should broadcast to [N,N]");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testFloatPlusLongAddition(Nd4jBackend backend) {
+        // Reproduces VLM attention mask bug: FLOAT attention scores + LONG causal mask
+        // The LONG mask has values 0 (unmasked) and Long.MIN_VALUE (masked)
+        // When added to FLOAT scores, the masked values should become very negative
+        int N = 4;
+
+        // Create FLOAT attention scores
+        INDArray scores = Nd4j.ones(DataType.FLOAT, 1, 1, N, N).muli(2.0f);
+        log.info("Scores: dtype={}, shape={}, min={}, max={}", scores.dataType(), Arrays.toString(scores.shape()),
+                scores.minNumber(), scores.maxNumber());
+
+        // Create LONG causal mask: lower triangle = 0, upper triangle = Long.MIN_VALUE
+        INDArray mask = Nd4j.zeros(DataType.LONG, 1, 1, N, N);
+        for (int i = 0; i < N; i++) {
+            for (int j = i + 1; j < N; j++) {
+                mask.putScalar(new int[]{0, 0, i, j}, Long.MIN_VALUE);
+            }
+        }
+        log.info("Mask: dtype={}, shape={}, min={}, max={}", mask.dataType(), Arrays.toString(mask.shape()),
+                mask.minNumber(), mask.maxNumber());
+
+        // Test 1: Direct Nd4j.exec with AddOp
+        INDArray addResult = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp(
+                scores, mask))[0];
+        log.info("Add result: dtype={}, shape={}, min={}, max={}", addResult.dataType(),
+                Arrays.toString(addResult.shape()), addResult.minNumber(), addResult.maxNumber());
+
+        // The min should be very negative (Long.MIN_VALUE cast to float ≈ -9.22e18)
+        double expectedMin = (double) Long.MIN_VALUE;
+        assertTrue(addResult.minNumber().doubleValue() < -1e10,
+                "Add FLOAT+LONG: min should be very negative (masked), got " + addResult.minNumber());
+
+        // Unmasked positions should have score + 0 = 2.0
+        assertEquals(2.0, addResult.getFloat(0, 0, 0, 0), 1e-3,
+                "Unmasked position [0,0,0,0] should be 2.0");
+
+        // Test 2: SameDiff graph (same as VLM model does it)
+        org.nd4j.autodiff.samediff.SameDiff sd = org.nd4j.autodiff.samediff.SameDiff.create();
+        org.nd4j.autodiff.samediff.SDVariable sdScores = sd.placeHolder("scores", DataType.FLOAT, 1, 1, N, N);
+        org.nd4j.autodiff.samediff.SDVariable sdMask = sd.placeHolder("mask", DataType.LONG, 1, 1, N, N);
+        org.nd4j.autodiff.samediff.SDVariable sdAdd = sdScores.add("add_result", sdMask);
+
+        Map<String, INDArray> placeholders = new HashMap<>();
+        placeholders.put("scores", scores);
+        placeholders.put("mask", mask);
+
+        Map<String, INDArray> resultMap = sd.output(placeholders, "add_result");
+        INDArray sdResult = resultMap.get("add_result");
+        log.info("SameDiff add result: dtype={}, shape={}, min={}, max={}", sdResult.dataType(),
+                Arrays.toString(sdResult.shape()), sdResult.minNumber(), sdResult.maxNumber());
+
+        assertTrue(sdResult.minNumber().doubleValue() < -1e10,
+                "SameDiff FLOAT+LONG: min should be very negative, got " + sdResult.minNumber());
     }
 
     @Override

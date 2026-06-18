@@ -97,7 +97,7 @@ public class TestDownload extends BaseDL4JTest {
 
 
         for (int i = 0; i < models.length; i++) {
-            log.info("Testing zoo model " + models[i].getClass().getName());
+            System.out.println("Testing zoo model " + models[i].getClass().getName());
             ZooModel model = models[i];
 
             for (PretrainedType pretrainedType : PretrainedType.values()) {

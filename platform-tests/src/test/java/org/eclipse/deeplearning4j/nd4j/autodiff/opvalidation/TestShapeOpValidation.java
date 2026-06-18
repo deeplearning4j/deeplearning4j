@@ -25,7 +25,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.math3.linear.LUDecomposition;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -78,21 +77,11 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 @Tag(TagNames.SAMEDIFF)
 public class TestShapeOpValidation extends BaseOpValidation {
 
-    /*
-    To test:
-    tile
-    reshape
-    permute
-    expandDims
-    repeat
-    rollAxis
-    doRepeat
-     */
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat(Nd4jBackend backend, TestInfo testInfo) {
-//        int[] concatDim = new int[]{0,0,0,1,1,1,2,2,2};
         int[] concatDim = new int[]{0, 0, 0};
         List<List<int[]>> origShapes = new ArrayList<>();
         origShapes.add(Arrays.asList(new int[]{3, 4}, new int[]{5, 4}));
@@ -184,20 +173,42 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", inArr);
                 SDVariable permute = sd.permute(in, perm);
+                // Print iArgs immediately after creation
+                System.out.println("  iArgs after creation: " + java.util.Arrays.toString(((Permute) sd.getOps().get(permute.getCreator().getOwnName()).getOp()).iArgs()));
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
                 SDVariable stdev = sd.standardDeviation("out", permute, true);
 
                 INDArray exp = inArr.permute(perm);
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
 
-
                 TestCase tc = new TestCase(sd);
                 tc.testName(msg)
                         .expected("out", expOut)
                         .expected(permute, exp);
 
+                // Debug: Compare expected vs actual permute output
+                // Check the iArguments in the permute op
+                try {
+                    Permute permuteOp = (Permute) sd.getOps().get(permute.getCreator().getOwnName()).getOp();
+                    System.out.println("  Permute op iArguments: " + Arrays.toString(permuteOp.iArgs()));
+                } catch (Exception e) {
+                    System.out.println("  ERROR getting iArgs: " + e.getMessage());
+                }
+
+                Map<String, INDArray> outputs = sd.output((Map<String, INDArray>)null, permute.name());
+                INDArray actual = outputs.get(permute.name());
+                System.out.println("  Expected shape: " + Arrays.toString(exp.shape()) + ", Actual shape: " + Arrays.toString(actual.shape()));
+                if (!exp.equals(actual)) {
+                    System.out.println("  Shapes match: " + Arrays.equals(exp.shape(), actual.shape()));
+                    System.out.println("  Expected [0,0,0]: " + exp.getDouble(0, 0, 0) + ", Actual [0,0,0]: " + actual.getDouble(0, 0, 0));
+                    if (exp.shape()[1] > 1 && exp.shape()[2] > 0) {
+                        System.out.println("  Expected [0,1,0]: " + exp.getDouble(0, 1, 0) + ", Actual [0,1,0]: " + actual.getDouble(0, 1, 0));
+                    }
+                }
+
                 String error = OpValidation.validate(tc, true);
                 if(error != null){
+                    System.out.println("VALIDATION FAILED: " + error);
                     failed.add(msg);
                 }
             }
@@ -224,7 +235,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
             SDVariable rank = sd.rank(var);
 
-            INDArray expRank = Nd4j.scalar(DataType.INT, shape == null ? 0 : shape.length);
+            INDArray expRank = Nd4j.scalar(DataType.INT64, shape == null ? 0 : shape.length);
             String msg = "Rank " + (shape == null ? 0 : shape.length);
             String err = OpValidation.validate(new TestCase(sd)
                     .gradientCheck(false)
@@ -567,34 +578,48 @@ public class TestShapeOpValidation extends BaseOpValidation {
                     SDVariable[] arr = new SDVariable[numArrays];
 
                     for (int i = 0; i < numArrays; i++) {
-                        arr[i] = sd.var(String.valueOf(i), Nd4j.rand(shape));
+                        INDArray randArr = Nd4j.rand(shape);
+                        // Force sync by reading a value - ensures device data is copied to host
+                        randArr.getDouble(0);
+                        arr[i] = sd.var(String.valueOf(i), randArr);
                     }
 
-                    INDArray exp = arr[0].getArr().dup();
+                    // Compute expected by explicitly extracting and summing input arrays
+                    INDArray[] inputArrays = new INDArray[numArrays];
+                    for (int i = 0; i < numArrays; i++) {
+                        inputArrays[i] = arr[i].getArr();
+                    }
+
+                    INDArray exp;
                     SDVariable merge;
                     String name;
                     switch (t) {
                         case 0:
                             name = "mergeAdd";
                             merge = sd.math().mergeAdd(arr);
-                            for( int i=1; i<numArrays; i++ ){
-                                exp.addi(arr[i].getArr().dup());
+                            // Compute expected: sum all arrays
+                            exp = inputArrays[0].dup();
+                            for (int i = 1; i < numArrays; i++) {
+                                exp = exp.add(inputArrays[i]);
                             }
                             break;
                         case 1:
                             name = "mergeMax";
                             merge = sd.math().mergeMax(arr);
+                            exp = inputArrays[0].dup();
                             for( int i=1; i<numArrays; i++ ){
-                                exp = Transforms.max(exp, arr[i].getArr(), true);
+                                exp = Transforms.max(exp, inputArrays[i], true);
                             }
                             break;
                         case 2:
                             name = "mergeAvg";
                             merge = sd.math().mergeAvg(arr);
-                            for( int i=1; i<numArrays; i++ ){
-                                exp.addi(arr[i].getArr().dup());
+                            // Compute expected: average all arrays
+                            exp = inputArrays[0].dup();
+                            for (int i = 1; i < numArrays; i++) {
+                                exp = exp.add(inputArrays[i]);
                             }
-                            exp.divi(numArrays);
+                            exp = exp.div(numArrays);
                             break;
                         default:
                             throw new RuntimeException();
@@ -625,7 +650,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return Long.MAX_VALUE;
+        return 600000;
     }
 
     @ParameterizedTest
@@ -1247,7 +1272,6 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("MatrixDeterminant does not have a gradient yet.")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testMatrixDeterminant(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -1269,7 +1293,6 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("MatrixDeterminant does not have a gradient yet.")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testDeterminant22(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -1294,7 +1317,33 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("MatrixDeterminant does not have a gradient yet.")
+    @Tag(TagNames.NEEDS_VERIFY)
+    public void testMatrixInverseCorrectness(Nd4jBackend backend) {
+        // Verify matrix_inverse op produces correct results for a 2x2 matrix
+        // A = [[1, 2.5], [3.5, 4.5]], det = -4.25
+        // Expected inverse: [[-1.0588.., 0.5882..], [0.8235.., -0.2353..]]
+        INDArray in = Nd4j.create(new double[][]{{1, 2.5}, {3.5, 4.5}});
+        // Use MatrixInverse directly - no pre-allocated output, let the op create it
+        org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixInverse miOp =
+            new org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixInverse(in.dup());
+        INDArray[] results = Nd4j.exec(miOp);
+        INDArray out = results[0];
+
+        double det = -4.25;
+        double expectedInv00 = 4.5 / det;   // -1.0588..
+        double expectedInv01 = -2.5 / det;  //  0.5882..
+        double expectedInv10 = -3.5 / det;  //  0.8235..
+        double expectedInv11 = 1.0 / det;   // -0.2353..
+
+        assertNotNull(out, "MatrixInverse output should not be null");
+        assertEquals(expectedInv00, out.getDouble(0, 0), 1e-4, "inv[0,0]");
+        assertEquals(expectedInv01, out.getDouble(0, 1), 1e-4, "inv[0,1]");
+        assertEquals(expectedInv10, out.getDouble(1, 0), 1e-4, "inv[1,0]");
+        assertEquals(expectedInv11, out.getDouble(1, 1), 1e-4, "inv[1,1]");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testMatrixDeterminant3(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -1327,7 +1376,6 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("MatrixDeterminant does not have a gradient yet.")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testMatrixDeterminant4(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -1554,7 +1602,6 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Adam: 5/11/22: invalid with latest indexing changes")
     public void testGather(Nd4jBackend backend) {
         List<INDArray> inArrs = new ArrayList<>();
         List<Integer> axis = new ArrayList<>();
@@ -1858,7 +1905,10 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
         assertEquals(inArr.get(point(0), all(), all()), slice.getArr());
         assertEquals(inArr.get(point(2), all(), all()), slice2.getArr());
-        assertEquals(inArr.get(point(1), point(2), interval(1, 5)).reshape(4), slice3.getArr());
+        // For C-order [3,4,5] array with values 1-60: element [i,j,k] = i*20 + j*5 + k + 1
+        // At [1,2,1:5]: values 32, 33, 34, 35
+        INDArray expectedSlice3 = Nd4j.createFromArray(32.0, 33.0, 34.0, 35.0);
+        assertEquals(expectedSlice3, slice3.getArr());
     }
 
     @ParameterizedTest
@@ -1924,8 +1974,10 @@ public class TestShapeOpValidation extends BaseOpValidation {
         INDArray out1 = Nd4j.create(new long[]{5});
         INDArray out2 = Nd4j.create(new long[]{5});
 
-        INDArray exp1 = in.get(NDArrayIndex.interval(0,5)).reshape(5);
-        INDArray exp2 = in.get(NDArrayIndex.interval(5,10)).reshape(5);
+        // Hardcode expected values to avoid CUDA issues with get() indexing
+        // linspace(1,10,10) = [1,2,3,4,5,6,7,8,9,10]
+        INDArray exp1 = Nd4j.createFromArray(1.0, 2.0, 3.0, 4.0, 5.0);
+        INDArray exp2 = Nd4j.createFromArray(6.0, 7.0, 8.0, 9.0, 10.0);
 
         assertNull(OpValidation.validate(new OpTestCase(DynamicCustomOp.builder("split")
                 .addInputs(axis, in)
@@ -2074,12 +2126,13 @@ public class TestShapeOpValidation extends BaseOpValidation {
         INDArray in = Nd4j.create(DataType.BOOL, 1917);
         DynamicCustomOp op = DynamicCustomOp.builder("Where")
                 .addInputs(in)
-                .addOutputs(Nd4j.empty(DataType.LONG))
                 .build();
         List<DataBuffer> l = op.calculateOutputShape();
-        Nd4j.getExecutioner().exec(op);
+        INDArray[] out = Nd4j.exec(op);
         long[] shape = Shape.shape(l.get(0).asLong());
         boolean isEmpty = Shape.isEmpty(l.get(0).asLong());
+        assertEquals(1, out.length);
+        assertTrue(out[0].isEmpty());
         assertTrue(isEmpty);    //Not empty, but should be
     }
 
@@ -2098,7 +2151,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
         long[] shape = Shape.shape(l.get(0).asLong());
         assertArrayEquals(new long[0], shape);
 
-        INDArray arr = Nd4j.create(l.get(0));
+        INDArray arr = Nd4j.createFromDescriptor(l.get(0));
 
         op.addOutputArgument(arr);
 
@@ -2119,8 +2172,9 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .build();
 
         List<DataBuffer> l = op.calculateOutputShape();
-        long[] shape = Shape.shape(l.get(0).asLong());
-        boolean isEmpty = Shape.isEmpty(l.get(0).asLong());
+        long[] rawShapeInfo = l.get(0).asLong();
+        long[] shape = Shape.shape(rawShapeInfo);
+        boolean isEmpty = Shape.isEmpty(rawShapeInfo);
         assertEquals(0, shape.length);
         assertTrue(isEmpty);
     }
@@ -2175,7 +2229,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
     print(out[0]);
      */
 
-        INDArray emptyIn = Nd4j.empty(DataType.FLOAT).reshape(0, 4);
+        INDArray emptyIn = Nd4j.create(DataType.FLOAT, 0, 4);
         INDArray axis = Nd4j.scalar(1);
 
         DynamicCustomOp op = DynamicCustomOp.builder("split")
@@ -2189,7 +2243,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
             val desc = l.get(i);
             assertArrayEquals(new long[]{0, 1}, Shape.shape(desc.asLong()));
             assertTrue(Shape.isEmpty(desc.asLong()));
-            op.addOutputArgument(Nd4j.empty(DataType.FLOAT).reshape(Shape.shape(desc.asLong())));
+            op.addOutputArgument(Nd4j.create(DataType.FLOAT, Shape.shape(desc.asLong())));
         }
 
         Nd4j.exec(op);
@@ -2226,8 +2280,9 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
         List<DataBuffer> l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertTrue(Shape.isEmpty(l.get(0).asLong()));
-        assertArrayEquals(new long[]{0, 1}, Shape.shape(l.get(0).asLong()));
+        long[] shapeInfo = l.get(0).asLong();
+        assertTrue(Shape.isEmpty(shapeInfo));
+        assertArrayEquals(new long[]{0, 1}, Shape.shape(shapeInfo));
 
         op.addOutputArgument(Nd4j.create(DataType.FLOAT, 0, 1));
         Nd4j.exec(op);
@@ -2260,7 +2315,9 @@ public class TestShapeOpValidation extends BaseOpValidation {
         assertEquals(1, l.size());
         assertTrue(Shape.isEmpty(l.get(0).asLong()));
         assertArrayEquals(new long[]{2, 0}, Shape.shape(l.get(0).asLong()));
-        assertEquals(DataType.INT, l.get(0).dataType());
+        // Shape info buffers store 64-bit values, so dataType() returns LONG
+        // Use Shape.dataType() to extract the encoded array data type
+        assertEquals(DataType.INT, Shape.dataType(l.get(0).asLong()));
 
         op.addOutputArgument(Nd4j.create(DataType.INT, 2, 0));
         Nd4j.exec(op);
@@ -2406,7 +2463,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStridedSliceEdgeCase(Nd4jBackend backend) {
-        INDArray in = Nd4j.scalar(10).reshape(1);   //Int [1]
+        INDArray in = Nd4j.createFromArray(new int[]{10});   //Int [1]
         INDArray begin = Nd4j.ones(DataType.INT, 1);
         INDArray end = Nd4j.zeros(DataType.INT, 1);
         INDArray stride = Nd4j.ones(DataType.INT, 1);
@@ -2418,13 +2475,15 @@ public class TestShapeOpValidation extends BaseOpValidation {
                         1,  //End mask
                         0,  //New axis mask
                         0)  //Shrink axis mask
-                .addOutputs(Nd4j.empty(DataType.INT))
+                .addOutputs(Nd4j.create(DataType.INT, 0))  // Empty 1D array with shape [0]
                 .build();
 
         List<DataBuffer> l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertEquals(DataType.INT, l.get(0).dataType());
-        assertTrue(Shape.isEmpty(l.get(0).asLong())); //Should be empty array, is rank 0 scalar
+        // Shape info buffers store 64-bit values, so dataType() returns LONG
+        // Use Shape.dataType() to extract the encoded array data type
+        assertEquals(DataType.INT, Shape.dataType(l.get(0).asLong()));
+        assertTrue(Shape.isEmpty(l.get(0).asLong())); //Should be empty 1D array with shape [0]
 
         Nd4j.exec(op);  //Execution is OK
     }
@@ -2713,5 +2772,303 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .gradientCheck(true));
         assertNull(err);
 
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRepeat(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Test 1: Simple repeat along axis 0 with uniform repeats
+        INDArray in1 = Nd4j.createFromArray(new double[][]{{1, 2}, {3, 4}});
+        // Repeat each row 2 times along axis 0
+        // Expected: [[1,2], [1,2], [3,4], [3,4]]
+        INDArray exp1 = Nd4j.createFromArray(new double[][]{{1, 2}, {1, 2}, {3, 4}, {3, 4}});
+
+        DynamicCustomOp op1 = DynamicCustomOp.builder("repeat")
+                .addInputs(in1)
+                .addIntegerArguments(2, 0)  // repeats=2, axis=0
+                .build();
+        List<DataBuffer> shapes1 = op1.calculateOutputShape();
+        INDArray out1 = Nd4j.createFromDescriptor(shapes1.get(0));
+        op1.addOutputArgument(out1);
+        Nd4j.exec(op1);
+        assertEquals(exp1, out1);
+
+        // Test 2: Repeat along axis 1 with uniform repeats
+        INDArray in2 = Nd4j.createFromArray(new double[][]{{1, 2, 3}, {4, 5, 6}});
+        // Repeat each column 3 times along axis 1
+        // Expected: [[1,1,1,2,2,2,3,3,3], [4,4,4,5,5,5,6,6,6]]
+        INDArray exp2 = Nd4j.createFromArray(new double[][]{
+                {1, 1, 1, 2, 2, 2, 3, 3, 3},
+                {4, 4, 4, 5, 5, 5, 6, 6, 6}
+        });
+
+        DynamicCustomOp op2 = DynamicCustomOp.builder("repeat")
+                .addInputs(in2)
+                .addIntegerArguments(3, 1)  // repeats=3, axis=1
+                .build();
+        List<DataBuffer> shapes2 = op2.calculateOutputShape();
+        INDArray out2 = Nd4j.createFromDescriptor(shapes2.get(0));
+        op2.addOutputArgument(out2);
+        Nd4j.exec(op2);
+        assertEquals(exp2, out2);
+
+        // Test 3: Non-uniform repeats (different repeat count per element)
+        INDArray in3 = Nd4j.createFromArray(new double[]{1, 2, 3});
+        // Repeat with [1, 2, 3] along axis 0 means:
+        // 1 repeated 1 time, 2 repeated 2 times, 3 repeated 3 times
+        // Expected: [1, 2, 2, 3, 3, 3]
+        INDArray exp3 = Nd4j.createFromArray(new double[]{1, 2, 2, 3, 3, 3});
+
+        DynamicCustomOp op3 = DynamicCustomOp.builder("repeat")
+                .addInputs(in3)
+                .addIntegerArguments(1, 2, 3, 0)  // repeats=[1,2,3], axis=0
+                .build();
+        List<DataBuffer> shapes3 = op3.calculateOutputShape();
+        INDArray out3 = Nd4j.createFromDescriptor(shapes3.get(0));
+        op3.addOutputArgument(out3);
+        Nd4j.exec(op3);
+        assertEquals(exp3, out3);
+
+        // Test 4: 3D array repeat along axis 2
+        INDArray in4 = Nd4j.createFromArray(new double[][][]{
+                {{1, 2}, {3, 4}},
+                {{5, 6}, {7, 8}}
+        });
+        // Repeat each element 2 times along axis 2
+        INDArray exp4 = Nd4j.createFromArray(new double[][][]{
+                {{1, 1, 2, 2}, {3, 3, 4, 4}},
+                {{5, 5, 6, 6}, {7, 7, 8, 8}}
+        });
+
+        DynamicCustomOp op4 = DynamicCustomOp.builder("repeat")
+                .addInputs(in4)
+                .addIntegerArguments(2, 2)  // repeats=2, axis=2
+                .build();
+        List<DataBuffer> shapes4 = op4.calculateOutputShape();
+        INDArray out4 = Nd4j.createFromDescriptor(shapes4.get(0));
+        op4.addOutputArgument(out4);
+        Nd4j.exec(op4);
+        assertEquals(exp4, out4);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRollAxis(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Test 1: Roll axis 2 to position 0 for a 3D array
+        // Shape [2,3,4] with rollAxis(2) -> axis 2 moves to front -> shape [4,2,3]
+        INDArray in1 = Nd4j.linspace(1, 24, 24).reshape(2, 3, 4);
+        INDArray result1 = Nd4j.rollAxis(in1, 2);  // default start=0
+        assertArrayEquals(new long[]{4, 2, 3}, result1.shape());
+        // rollAxis(a, 2, 0) is equivalent to permute(2, 0, 1)
+        INDArray exp1 = in1.permute(2, 0, 1);
+        assertEquals(exp1, result1);
+
+        // Test 2: Roll axis 0 to position 2
+        INDArray in2 = Nd4j.linspace(1, 24, 24).reshape(2, 3, 4);
+        INDArray result2 = Nd4j.rollAxis(in2, 0, 2);
+        // rollAxis(a, 0, 2) moves axis 0 to before position 2
+        // For rank 3: axis=0, start=2 -> permute(1, 0, 2)
+        assertArrayEquals(new long[]{3, 2, 4}, result2.shape());
+        INDArray exp2 = in2.permute(1, 0, 2);
+        assertEquals(exp2, result2);
+
+        // Test 3: Roll axis 1 to position 0
+        INDArray in3 = Nd4j.linspace(1, 60, 60).reshape(3, 4, 5);
+        INDArray result3 = Nd4j.rollAxis(in3, 1, 0);
+        // rollAxis(a, 1, 0) moves axis 1 to position 0 -> permute(1, 0, 2)
+        assertArrayEquals(new long[]{4, 3, 5}, result3.shape());
+        INDArray exp3 = in3.permute(1, 0, 2);
+        assertEquals(exp3, result3);
+
+        // Test 4: Roll axis with negative index
+        INDArray in4 = Nd4j.linspace(1, 24, 24).reshape(2, 3, 4);
+        INDArray result4 = Nd4j.rollAxis(in4, -1);  // -1 means last axis (axis 2)
+        assertArrayEquals(new long[]{4, 2, 3}, result4.shape());
+        INDArray exp4 = in4.permute(2, 0, 1);
+        assertEquals(exp4, result4);
+
+        // Test 5: Roll when axis equals start (should return unchanged)
+        INDArray in5 = Nd4j.linspace(1, 24, 24).reshape(2, 3, 4);
+        INDArray result5 = Nd4j.rollAxis(in5, 1, 1);
+        // When axis == start, array is returned unchanged
+        assertArrayEquals(new long[]{2, 3, 4}, result5.shape());
+        assertEquals(in5, result5);
+
+        // Test 6: 4D array roll axis
+        INDArray in6 = Nd4j.linspace(1, 120, 120).reshape(2, 3, 4, 5);
+        INDArray result6 = Nd4j.rollAxis(in6, 3, 1);
+        // rollAxis(a, 3, 1) moves axis 3 to before position 1 -> permute(0, 3, 1, 2)
+        assertArrayEquals(new long[]{2, 5, 3, 4}, result6.shape());
+        INDArray exp6 = in6.permute(0, 3, 1, 2);
+        assertEquals(exp6, result6);
+    }
+
+    /**
+     * Test for stacking scalar constants with sizeAt results.
+     * This reproduces an issue where scalar constants were being confused
+     * with other values when stacked together.
+     *
+     * IMPORTANT: The bug was that Nd4j.createFromArray(-1L) creates shape [1] (1D)
+     * while sizeAt returns a true scalar with shape [] (rank 0).
+     * Stack requires all inputs to have the same shape, so we must use
+     * Nd4j.scalar() to create true scalars.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testStackScalarConstantWithSizeAt(Nd4jBackend backend) {
+        // Test case: mimics the MatMul reshape scenario in ONNX import
+        // Input shape is [196, 1, 768] (like ViT patch embeddings)
+        SameDiff sd = SameDiff.create();
+
+        // Create input with known shape
+        INDArray inputArr = Nd4j.rand(DataType.FLOAT, 196, 1, 768);
+        SDVariable input = sd.var("input", inputArr);
+
+        // IMPORTANT: Use Nd4j.scalar() to create a true scalar with shape []
+        // NOT Nd4j.createFromArray(-1L) which creates shape [1]
+        SDVariable minusOne = sd.constant("minus_one", Nd4j.scalar(DataType.INT64, -1L));
+
+        // Get size at last dimension (should be 768) - this returns shape []
+        SDVariable lastDim = sd.sizeAt("last_dim", input, -1);
+
+        // Stack them: should produce [2] with values [-1, 768]
+        SDVariable stacked = sd.stack("stacked", 0, minusOne, lastDim);
+
+        // Evaluate
+        Map<String, INDArray> results = sd.output(Collections.emptyMap(), "minus_one", "last_dim", "stacked");
+
+        INDArray minusOneResult = results.get("minus_one");
+        INDArray lastDimResult = results.get("last_dim");
+        INDArray stackedResult = results.get("stacked");
+
+        // Verify shape of inputs (both should be scalars with shape [])
+        assertArrayEquals(new long[]{}, minusOneResult.shape(), "Constant should have scalar shape []");
+        assertArrayEquals(new long[]{}, lastDimResult.shape(), "sizeAt result should have scalar shape []");
+
+        // Verify individual values
+        assertEquals(-1L, minusOneResult.getLong(0), "Constant -1 should be -1");
+        assertEquals(768L, lastDimResult.getLong(0), "sizeAt(-1) should be 768");
+
+        // Verify stacked result
+        assertArrayEquals(new long[]{2}, stackedResult.shape(), "Stacked shape should be [2]");
+        assertEquals(-1L, stackedResult.getLong(0), "First element of stacked should be -1");
+        assertEquals(768L, stackedResult.getLong(1), "Second element of stacked should be 768");
+
+        log.info("Stack scalar test passed: minusOne={}, lastDim={}, stacked={}",
+                minusOneResult, lastDimResult, stackedResult);
+    }
+
+    /**
+     * Test for stacking multiple sizeAt results with constants.
+     * This tests a more complex scenario with multiple dynamic shape values.
+     *
+     * IMPORTANT: Use Nd4j.scalar() not Nd4j.createFromArray() for scalar constants
+     * when stacking with sizeAt results, because sizeAt returns true scalars [].
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testStackMultipleSizeAtWithConstants(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+
+        // Create inputs with known shapes
+        INDArray aArr = Nd4j.rand(DataType.FLOAT, 64, 196, 768);  // [batch, seq, hidden]
+        INDArray bArr = Nd4j.rand(DataType.FLOAT, 768, 256);      // [hidden, out]
+
+        SDVariable a = sd.var("a", aArr);
+        SDVariable b = sd.var("b", bArr);
+
+        // Get various dimensions - all return true scalars with shape []
+        SDVariable aLastDim = sd.sizeAt("a_last_dim", a, -1);      // Should be 768
+        SDVariable bLastDim = sd.sizeAt("b_last_dim", b, -1);      // Should be 256
+        SDVariable aSecondDim = sd.sizeAt("a_second_dim", a, 1);   // Should be 196
+
+        // Create scalar constants (use Nd4j.scalar for shape [] to match sizeAt output)
+        SDVariable minusOne = sd.constant("const_minus_one", Nd4j.scalar(DataType.INT64, -1L));
+        SDVariable zero = sd.constant("const_zero", Nd4j.scalar(DataType.INT64, 0L));
+
+        // Test stacking different combinations
+        SDVariable stack1 = sd.stack("stack1", 0, minusOne, aLastDim);           // [-1, 768]
+        SDVariable stack2 = sd.stack("stack2", 0, aSecondDim, bLastDim);         // [196, 256]
+        SDVariable stack3 = sd.stack("stack3", 0, zero, minusOne, aLastDim);     // [0, -1, 768]
+
+        // Evaluate all
+        Map<String, INDArray> results = sd.output(Collections.emptyMap(),
+                "a_last_dim", "b_last_dim", "a_second_dim",
+                "const_minus_one", "const_zero",
+                "stack1", "stack2", "stack3");
+
+        // Verify individual sizeAt results
+        assertEquals(768L, results.get("a_last_dim").getLong(0), "a sizeAt(-1) should be 768");
+        assertEquals(256L, results.get("b_last_dim").getLong(0), "b sizeAt(-1) should be 256");
+        assertEquals(196L, results.get("a_second_dim").getLong(0), "a sizeAt(1) should be 196");
+
+        // Verify constants
+        assertEquals(-1L, results.get("const_minus_one").getLong(0), "const -1 should be -1");
+        assertEquals(0L, results.get("const_zero").getLong(0), "const 0 should be 0");
+
+        // Verify stacked results
+        INDArray s1 = results.get("stack1");
+        assertArrayEquals(new long[]{2}, s1.shape());
+        assertEquals(-1L, s1.getLong(0), "stack1[0] should be -1");
+        assertEquals(768L, s1.getLong(1), "stack1[1] should be 768");
+
+        INDArray s2 = results.get("stack2");
+        assertArrayEquals(new long[]{2}, s2.shape());
+        assertEquals(196L, s2.getLong(0), "stack2[0] should be 196");
+        assertEquals(256L, s2.getLong(1), "stack2[1] should be 256");
+
+        INDArray s3 = results.get("stack3");
+        assertArrayEquals(new long[]{3}, s3.shape());
+        assertEquals(0L, s3.getLong(0), "stack3[0] should be 0");
+        assertEquals(-1L, s3.getLong(1), "stack3[1] should be -1");
+        assertEquals(768L, s3.getLong(2), "stack3[2] should be 768");
+
+        log.info("Multiple stack test passed");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testStridedSliceEmptyDimension(Nd4jBackend backend) {
+        // Test 1: strided_slice where begin==end on one dimension produces empty output
+        // This previously caused out-of-bounds reads because _preprocess_strided_slice
+        // skipped pushing index triplets for empty dimensions, but calcSubArrShapeInfoAndOffset
+        // always reads rank*3 entries.
+        INDArray in = Nd4j.rand(DataType.FLOAT, 3, 4, 5);
+        INDArray begin = Nd4j.createFromArray(0, 2, 0);
+        INDArray end = Nd4j.createFromArray(3, 2, 5);
+        INDArray stride = Nd4j.createFromArray(1, 1, 1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("strided_slice")
+                .addInputs(in, begin, end, stride)
+                .addIntegerArguments(0, 0, 0, 0, 0) // no masks
+                .build();
+
+        List<DataBuffer> shapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        assertEquals(1, shapes.size());
+        long[] shape = Shape.shape(shapes.get(0).asLong());
+        // dim 1 has begin==end so output should have 0 elements in that dim
+        assertArrayEquals(new long[]{3, 0, 5}, shape,
+                "strided_slice with begin==end on dim 1 should produce shape [3,0,5]");
+
+        // Test 2: strided_slice on a 2D array with begin==end on dim 0
+        INDArray in2 = Nd4j.rand(DataType.FLOAT, 5, 3);
+        INDArray begin2 = Nd4j.createFromArray(2, 0);
+        INDArray end2 = Nd4j.createFromArray(2, 3);
+        INDArray stride2 = Nd4j.createFromArray(1, 1);
+
+        DynamicCustomOp op2 = DynamicCustomOp.builder("strided_slice")
+                .addInputs(in2, begin2, end2, stride2)
+                .addIntegerArguments(0, 0, 0, 0, 0)
+                .build();
+
+        List<DataBuffer> shapes2 = Nd4j.getExecutioner().calculateOutputShape(op2);
+        assertEquals(1, shapes2.size());
+        long[] shape2 = Shape.shape(shapes2.get(0).asLong());
+        assertArrayEquals(new long[]{0, 3}, shape2,
+                "strided_slice with begin==end on dim 0 should produce shape [0,3]");
     }
 }

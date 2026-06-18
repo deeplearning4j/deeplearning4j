@@ -36,15 +36,15 @@ import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RealDivOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 @Slf4j
 @NativeTag
@@ -59,9 +59,11 @@ public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
         SDVariable b = sd.constant(Nd4j.createFromArray(true, true).reshape(1, 2)); // with .reshape(2, 1) or .reshape(2) it doesn't work either
         SDVariable result = sd.math().and(a, b);
         INDArray eval = result.eval();
+        // a = [[true,false],[false,true]], b = [[true,true]] broadcast to [[true,true],[true,true]]
+        // a AND b: [[T&&T,F&&T],[F&&T,T&&T]] = [[true,false],[false,true]]
         assertEquals(Nd4j.createFromArray(new boolean[][] {
                 {true,false},
-                {false,false}
+                {false,true}
         }),eval);
     }
 
@@ -268,14 +270,12 @@ public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void emptyBroadcastTest_2(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.FLOAT, 1, 2);
         val y = Nd4j.create(DataType.FLOAT, 0, 2);
 
-        val z = x.addi(y);
-        assertEquals(y, z);
-
+        // In-place addi cannot change the shape of x from [1,2] to [0,2]
+        assertThrows(IllegalStateException.class, () -> x.addi(y));
     }
 
     @ParameterizedTest
@@ -287,7 +287,9 @@ public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
         val op = new RealDivOp(new INDArray[]{x, y}, new INDArray[]{});
         val z = Nd4j.exec(op)[0];
 
-        assertEquals(y, z);
+        assertArrayEquals(y.shape(), z.shape());
+        assertEquals(y.dataType(), z.dataType());
+        assertEquals(0, z.length());
     }
 
 
@@ -387,7 +389,9 @@ public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
 
         val l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertEquals(DataType.BOOL, l.get(0).dataType());
+        // Extract the encoded data type from the shape info buffer
+        val shapeInfo = l.get(0).asLong();
+        assertEquals(DataType.BOOL, ArrayOptionsHelper.dataType(shapeInfo));
     }
 
     @Override

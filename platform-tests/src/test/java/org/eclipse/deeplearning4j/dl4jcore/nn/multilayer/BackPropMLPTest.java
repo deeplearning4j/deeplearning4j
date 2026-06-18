@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -52,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.DisplayName;
 
+@Slf4j
 @DisplayName("Back Prop MLP Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
@@ -154,12 +156,12 @@ class BackPropMLPTest extends BaseDL4JTest {
             float[] dLdbOut = deltaOut;
             float dLdbHidden = deltaHidden;
             if (printCalculations) {
-                System.out.println("deltaOut = " + Arrays.toString(deltaOut));
-                System.out.println("deltaHidden = " + deltaHidden);
-                System.out.println("dLdwOut = " + Arrays.toString(dLdwOut));
-                System.out.println("dLdbOut = " + Arrays.toString(dLdbOut));
-                System.out.println("dLdwHidden = " + Arrays.toString(dLdwHidden));
-                System.out.println("dLdbHidden = " + dLdbHidden);
+                log.debug("deltaOut = {}", Arrays.toString(deltaOut));
+                log.debug("deltaHidden = {}", deltaHidden);
+                log.debug("dLdwOut = {}", Arrays.toString(dLdwOut));
+                log.debug("dLdbOut = {}", Arrays.toString(dLdbOut));
+                log.debug("dLdwHidden = {}", Arrays.toString(dLdwHidden));
+                log.debug("dLdbHidden = {}", dLdbHidden);
             }
             // Calculate new parameters:
             // w_i = w_i - (learningRate)/(batchSize) * sum_j (dL_j/dw_i)
@@ -186,14 +188,14 @@ class BackPropMLPTest extends BaseDL4JTest {
             float[] l2BiasFloatAfter = asFloat(l2BiasAfter);
             
             if( printCalculations) {
-                System.out.println("Expected L1 weights = " + Arrays.toString(expectedL1WeightsAfter));
-                System.out.println("Actual L1 weights = " + Arrays.toString(asFloat(l1WeightsAfter)));
-                System.out.println("Expected L2 weights = " + Arrays.toString(expectedL2WeightsAfter));
-                System.out.println("Actual L2 weights = " + Arrays.toString(asFloat(l2WeightsAfter)));
-                System.out.println("Expected L1 bias = " + expectedL1BiasAfter);
-                System.out.println("Actual L1 bias = " + Arrays.toString(asFloat(l1BiasAfter)));
-                System.out.println("Expected L2 bias = " + Arrays.toString(expectedL2BiasAfter));
-                System.out.println("Actual L2 bias = " + Arrays.toString(asFloat(l2BiasAfter)));
+                log.debug("Expected L1 weights = {}", Arrays.toString(expectedL1WeightsAfter));
+                log.debug("Actual L1 weights = {}", Arrays.toString(asFloat(l1WeightsAfter)));
+                log.debug("Expected L2 weights = {}", Arrays.toString(expectedL2WeightsAfter));
+                log.debug("Actual L2 weights = {}", Arrays.toString(asFloat(l2WeightsAfter)));
+                log.debug("Expected L1 bias = {}", expectedL1BiasAfter);
+                log.debug("Actual L1 bias = {}", Arrays.toString(asFloat(l1BiasAfter)));
+                log.debug("Expected L2 bias = {}", Arrays.toString(expectedL2BiasAfter));
+                log.debug("Actual L2 bias = {}", Arrays.toString(asFloat(l2BiasAfter)));
             }
             
             
@@ -301,7 +303,7 @@ class BackPropMLPTest extends BaseDL4JTest {
      * No regularization, no Adagrad, no momentum etc. One iteration.
      */
     private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes, Activation activationFunction) {
-        ListBuilder lb = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1)).seed(12345L).list();
+        ListBuilder lb = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1)).seed(12345L).trainingWorkspaceMode(org.deeplearning4j.nn.conf.WorkspaceMode.NONE).list();
         for (int i = 0; i < hiddenLayerSizes.length; i++) {
             int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
             lb.layer(i, new DenseLayer.Builder().nIn(nIn).nOut(hiddenLayerSizes[i]).weightInit(WeightInit.XAVIER).activation(activationFunction).build());
@@ -384,5 +386,91 @@ class BackPropMLPTest extends BaseDL4JTest {
 
     public static INDArray doSigmoidDerivative(INDArray input) {
         return Nd4j.getExecutioner().exec(new SigmoidDerivative(input.dup()));
+    }
+
+    @Test
+    @DisplayName("Debug Forward Pass Comparison")
+    void debugForwardPassComparison() {
+        // Reproduce test case 2: (1, [5])
+        int miniBatchSize = 1;
+        int[] hiddenLayerSizes = new int[] { 5 };
+        DataSetIterator iris = new IrisDataSetIterator(miniBatchSize, miniBatchSize);
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes, Activation.SIGMOID));
+        network.init();
+        Layer[] layers = network.getLayers();
+        int nLayers = layers.length;
+
+        DataSet data = iris.next();
+        INDArray x = data.getFeatures();
+        INDArray y = data.getLabels();
+
+        // Get weights
+        INDArray W0 = layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
+        INDArray b0 = layers[0].getParam(DefaultParamInitializer.BIAS_KEY).dup();
+        INDArray W1 = layers[1].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
+        INDArray b1 = layers[1].getParam(DefaultParamInitializer.BIAS_KEY).dup();
+
+        log.debug("x shape={} ordering={} strides={}", java.util.Arrays.toString(x.shape()), x.ordering(), java.util.Arrays.toString(x.stride()));
+        log.debug("W0 shape={} ordering={} strides={}", java.util.Arrays.toString(W0.shape()), W0.ordering(), java.util.Arrays.toString(W0.stride()));
+        log.debug("W0_orig shape={} ordering={} strides={} isView={}", java.util.Arrays.toString(layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY).shape()), layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY).ordering(), java.util.Arrays.toString(layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY).stride()), layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY).isView());
+        log.debug("W0 row0={}", W0.getRow(0));
+        log.debug("W0_orig row0={}", layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY).getRow(0));
+        log.debug("W1 shape={} ordering={} strides={}", java.util.Arrays.toString(W1.shape()), W1.ordering(), java.util.Arrays.toString(W1.stride()));
+
+        // Manual forward pass - use 'f' ordering to match network
+        INDArray W0f = W0.dup('f');
+        INDArray W1f = W1.dup('f');
+        INDArray b0f = b0.dup('f');
+        INDArray b1f = b1.dup('f');
+        INDArray xCast = x.castTo(W0.dataType());
+        log.debug("xCast ordering={} strides={}", xCast.ordering(), java.util.Arrays.toString(xCast.stride()));
+        // Compare: mmul with 'c' vs 'f' weights
+        INDArray z0c = xCast.mmul(W0);
+        INDArray z0f = xCast.mmul(W0f);
+        log.debug("z0c (c-order W)={}", z0c);
+        log.debug("z0f (f-order W)={}", z0f);
+        log.debug("z0 diff={}", z0c.sub(z0f).norm2Number().doubleValue());
+        // Check data contents of W0 (c) vs W0f (f)
+        log.debug("W0c row0={} row1={}", W0.getRow(0), W0.getRow(1));
+        log.debug("W0f row0={} row1={}", W0f.getRow(0), W0f.getRow(1));
+        log.debug("W0c col0={} col1={}", W0.getColumn(0), W0.getColumn(1));
+        log.debug("W0f col0={} col1={}", W0f.getColumn(0), W0f.getColumn(1));
+        // Try Nd4j.gemm directly
+        INDArray gemmResultC = Nd4j.createUninitialized(xCast.dataType(), new long[]{1, 5}, 'f');
+        Nd4j.gemm(xCast, W0, gemmResultC, false, false, 1.0, 0.0);
+        log.debug("gemm(x,W0c)={}", gemmResultC);
+        INDArray gemmResultF = Nd4j.createUninitialized(xCast.dataType(), new long[]{1, 5}, 'f');
+        Nd4j.gemm(xCast, W0f, gemmResultF, false, false, 1.0, 0.0);
+        log.debug("gemm(x,W0f)={}", gemmResultF);
+        INDArray z0 = z0f.addiRowVector(b0f);
+        log.debug("z0 ordering={} vals={}", z0.ordering(), z0);
+        INDArray a0 = doSigmoid(z0.dup());
+        log.debug("a0 ordering={} vals={}", a0.ordering(), a0);
+
+        INDArray z1 = a0.castTo(W1.dataType()).mmul(W1).addiRowVector(b1);
+        log.debug("z1 ordering={} vals={}", z1.ordering(), z1);
+        INDArray a1_manual = doSoftmax(z1.dup());
+        log.debug("a1_manual ordering={} vals={}", a1_manual.ordering(), a1_manual);
+
+        // Network forward pass
+        network.setInput(x);
+        java.util.List<INDArray> netActs = network.feedForward(false);
+        INDArray netA0 = netActs.get(1);
+        INDArray netA1 = netActs.get(2);
+        log.debug("netA0 ordering={} vals={}", netA0.ordering(), netA0);
+        log.debug("netA1 ordering={} vals={}", netA1.ordering(), netA1);
+
+        double a0Diff = a0.sub(netA0).norm2Number().doubleValue();
+        double a1Diff = a1_manual.sub(netA1).norm2Number().doubleValue();
+        log.debug("a0 diff={}", a0Diff);
+        log.debug("a1 diff={}", a1Diff);
+
+        // Also compare delta
+        INDArray manualDelta = a1_manual.sub(y.castTo(a1_manual.dataType()));
+        INDArray netDelta = netA1.sub(y.castTo(netA1.dataType()));
+        log.debug("manual delta={}", manualDelta);
+        log.debug("net delta={}", netDelta);
+        double deltaDiff = manualDelta.sub(netDelta).norm2Number().doubleValue();
+        log.debug("delta diff={}", deltaDiff);
     }
 }

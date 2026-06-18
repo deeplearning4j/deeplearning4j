@@ -53,8 +53,11 @@ public class IrisUtils {
             outcomes[i] = rowOutcome;
         }
 
-        for (int i = 0; i < ret.rows(); i++)
-            list.add(new DataSet(ret.getRow(i), Nd4j.create(outcomes[from + i])));
+        for (int i = 0; i < ret.rows(); i++) {
+            INDArray features = Nd4j.create(new double[][] {ret.getRow(i).dup().toDoubleVector()});
+            INDArray labels = Nd4j.create(new double[][] {outcomes[from + i]});
+            list.add(new DataSet(features, labels));
+        }
 
         return list;
     }

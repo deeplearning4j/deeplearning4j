@@ -43,6 +43,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -50,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 @Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.SMOKE)
 @NativeTag
 public class GraphTransformUtilTests extends BaseNd4jTestWithBackends {
 
@@ -134,7 +136,10 @@ public class GraphTransformUtilTests extends BaseNd4jTestWithBackends {
         });
 
         INDArray exp2 = p1.div(p2).mul(p1.sub(p2));
-        INDArray out2 = sd2.getVariable(mul.name()).eval();
+        Map<String, INDArray> ph = new java.util.LinkedHashMap<>();
+        ph.put("ph1", p1);
+        ph.put("ph2", p2);
+        INDArray out2 = sd2.output(ph, mul.name()).get(mul.name());
         assertEquals(exp2, out2);
 
 

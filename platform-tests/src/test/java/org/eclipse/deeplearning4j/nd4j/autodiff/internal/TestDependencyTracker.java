@@ -38,6 +38,7 @@ import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SMOKE)
 public class TestDependencyTracker extends BaseNd4jTestWithBackends {
 
 

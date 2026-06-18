@@ -1,0 +1,827 @@
+#
+# /* ******************************************************************************
+#  *
+#  * Valgrind Suppression File for libnd4j Testing
+#  *
+#  * This file suppresses all errors from non-libnd4j libraries, allowing
+#  * Valgrind to focus only on memory issues in libnd4j code.
+#  *
+#  * Usage:
+#  *   valgrind --suppressions=valgrind_libnd4j.supp ...
+#  *
+#  * Or with the java wrapper:
+#  *   TEST_RUNNER_PREFIX="valgrind" VALGRIND_LIBND4J_ONLY=1 mvn test
+#  *
+#  * terms of the apache license, version 2.0 which is available at
+#  * https://www.apache.org/licenses/license-2.0.
+#  *
+#  * spdx-license-identifier: apache-2.0
+#  ******************************************************************************/
+#
+
+# =============================================================================
+# JVM / HotSpot Suppressions
+# =============================================================================
+
+# Suppress all errors from libjvm.so (JVM core)
+{
+   suppress_libjvm_cond
+   Memcheck:Cond
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_value1
+   Memcheck:Value1
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_value2
+   Memcheck:Value2
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_value4
+   Memcheck:Value4
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_value8
+   Memcheck:Value8
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_addr1
+   Memcheck:Addr1
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_addr2
+   Memcheck:Addr2
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_addr4
+   Memcheck:Addr4
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_addr8
+   Memcheck:Addr8
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_jump
+   Memcheck:Jump
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_leak_definite
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_leak_possible
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   obj:*/libjvm.so
+}
+{
+   suppress_libjvm_leak_reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*/libjvm.so
+}
+
+# =============================================================================
+# JDK Native Libraries Suppressions
+# =============================================================================
+
+# libjava.so - Core Java native code
+{
+   suppress_libjava_all
+   Memcheck:Cond
+   ...
+   obj:*/libjava.so
+}
+{
+   suppress_libjava_leak
+   Memcheck:Leak
+   ...
+   obj:*/libjava.so
+}
+
+# libnio.so - Java NIO
+{
+   suppress_libnio_all
+   Memcheck:Cond
+   ...
+   obj:*/libnio.so
+}
+{
+   suppress_libnio_leak
+   Memcheck:Leak
+   ...
+   obj:*/libnio.so
+}
+
+# libnet.so - Java networking
+{
+   suppress_libnet_all
+   Memcheck:Cond
+   ...
+   obj:*/libnet.so
+}
+{
+   suppress_libnet_leak
+   Memcheck:Leak
+   ...
+   obj:*/libnet.so
+}
+
+# libzip.so - Java ZIP support
+{
+   suppress_libzip_all
+   Memcheck:Cond
+   ...
+   obj:*/libzip.so
+}
+{
+   suppress_libzip_leak
+   Memcheck:Leak
+   ...
+   obj:*/libzip.so
+}
+
+# libverify.so - Java bytecode verifier
+{
+   suppress_libverify_all
+   Memcheck:Cond
+   ...
+   obj:*/libverify.so
+}
+{
+   suppress_libverify_leak
+   Memcheck:Leak
+   ...
+   obj:*/libverify.so
+}
+
+# libjli.so - Java launcher
+{
+   suppress_libjli_all
+   Memcheck:Cond
+   ...
+   obj:*/libjli.so
+}
+{
+   suppress_libjli_leak
+   Memcheck:Leak
+   ...
+   obj:*/libjli.so
+}
+
+# libmanagement.so - Java management
+{
+   suppress_libmanagement_all
+   Memcheck:Cond
+   ...
+   obj:*/libmanagement*.so
+}
+{
+   suppress_libmanagement_leak
+   Memcheck:Leak
+   ...
+   obj:*/libmanagement*.so
+}
+
+# libawt*.so - Java AWT/Swing
+{
+   suppress_libawt_all
+   Memcheck:Cond
+   ...
+   obj:*/libawt*.so
+}
+{
+   suppress_libawt_leak
+   Memcheck:Leak
+   ...
+   obj:*/libawt*.so
+}
+
+# =============================================================================
+# System C Library Suppressions (glibc)
+# =============================================================================
+
+{
+   suppress_libc_cond
+   Memcheck:Cond
+   ...
+   obj:*/libc*.so*
+}
+{
+   suppress_libc_value
+   Memcheck:Value8
+   ...
+   obj:*/libc*.so*
+}
+{
+   suppress_libc_addr
+   Memcheck:Addr8
+   ...
+   obj:*/libc*.so*
+}
+{
+   suppress_libc_leak
+   Memcheck:Leak
+   ...
+   obj:*/libc*.so*
+}
+
+# libm - Math library
+{
+   suppress_libm_all
+   Memcheck:Cond
+   ...
+   obj:*/libm*.so*
+}
+{
+   suppress_libm_value
+   Memcheck:Value8
+   ...
+   obj:*/libm*.so*
+}
+
+# libdl - Dynamic linker
+{
+   suppress_libdl_all
+   Memcheck:Cond
+   ...
+   obj:*/libdl*.so*
+}
+{
+   suppress_libdl_leak
+   Memcheck:Leak
+   ...
+   obj:*/libdl*.so*
+}
+
+# librt - POSIX realtime
+{
+   suppress_librt_all
+   Memcheck:Cond
+   ...
+   obj:*/librt*.so*
+}
+{
+   suppress_librt_leak
+   Memcheck:Leak
+   ...
+   obj:*/librt*.so*
+}
+
+# =============================================================================
+# Threading Library Suppressions
+# =============================================================================
+
+{
+   suppress_libpthread_cond
+   Memcheck:Cond
+   ...
+   obj:*/libpthread*.so*
+}
+{
+   suppress_libpthread_value
+   Memcheck:Value8
+   ...
+   obj:*/libpthread*.so*
+}
+{
+   suppress_libpthread_leak
+   Memcheck:Leak
+   ...
+   obj:*/libpthread*.so*
+}
+{
+   suppress_libpthread_race
+   Helgrind:Race
+   ...
+   obj:*/libpthread*.so*
+}
+
+# =============================================================================
+# C++ Standard Library Suppressions
+# =============================================================================
+
+{
+   suppress_libstdcpp_cond
+   Memcheck:Cond
+   ...
+   obj:*/libstdc++.so*
+}
+{
+   suppress_libstdcpp_value
+   Memcheck:Value8
+   ...
+   obj:*/libstdc++.so*
+}
+{
+   suppress_libstdcpp_leak
+   Memcheck:Leak
+   ...
+   obj:*/libstdc++.so*
+}
+{
+   suppress_libstdcpp_addr
+   Memcheck:Addr8
+   ...
+   obj:*/libstdc++.so*
+}
+
+# libgcc - GCC runtime
+{
+   suppress_libgcc_cond
+   Memcheck:Cond
+   ...
+   obj:*/libgcc*.so*
+}
+{
+   suppress_libgcc_leak
+   Memcheck:Leak
+   ...
+   obj:*/libgcc*.so*
+}
+
+# =============================================================================
+# Dynamic Linker Suppressions
+# =============================================================================
+
+{
+   suppress_ld_linux_cond
+   Memcheck:Cond
+   ...
+   obj:*/ld-linux*.so*
+}
+{
+   suppress_ld_linux_leak
+   Memcheck:Leak
+   ...
+   obj:*/ld-linux*.so*
+}
+{
+   suppress_ld_linux_addr
+   Memcheck:Addr8
+   ...
+   obj:*/ld-linux*.so*
+}
+{
+   suppress_ld_so
+   Memcheck:Cond
+   ...
+   obj:*/ld*.so*
+}
+{
+   suppress_ld_so_leak
+   Memcheck:Leak
+   ...
+   obj:*/ld*.so*
+}
+
+# =============================================================================
+# OpenMP / Intel MKL Suppressions (commonly used by libnd4j)
+# =============================================================================
+
+{
+   suppress_libgomp_cond
+   Memcheck:Cond
+   ...
+   obj:*/libgomp*.so*
+}
+{
+   suppress_libgomp_leak
+   Memcheck:Leak
+   ...
+   obj:*/libgomp*.so*
+}
+{
+   suppress_libiomp_cond
+   Memcheck:Cond
+   ...
+   obj:*/libiomp*.so*
+}
+{
+   suppress_libiomp_leak
+   Memcheck:Leak
+   ...
+   obj:*/libiomp*.so*
+}
+
+# Intel MKL
+{
+   suppress_libmkl_cond
+   Memcheck:Cond
+   ...
+   obj:*/libmkl*.so*
+}
+{
+   suppress_libmkl_value
+   Memcheck:Value8
+   ...
+   obj:*/libmkl*.so*
+}
+{
+   suppress_libmkl_leak
+   Memcheck:Leak
+   ...
+   obj:*/libmkl*.so*
+}
+{
+   suppress_libmkl_addr
+   Memcheck:Addr8
+   ...
+   obj:*/libmkl*.so*
+}
+
+# =============================================================================
+# OpenBLAS Suppressions
+# =============================================================================
+
+{
+   suppress_libopenblas_cond
+   Memcheck:Cond
+   ...
+   obj:*/libopenblas*.so*
+}
+{
+   suppress_libopenblas_value
+   Memcheck:Value8
+   ...
+   obj:*/libopenblas*.so*
+}
+{
+   suppress_libopenblas_leak
+   Memcheck:Leak
+   ...
+   obj:*/libopenblas*.so*
+}
+{
+   suppress_libopenblas_addr
+   Memcheck:Addr8
+   ...
+   obj:*/libopenblas*.so*
+}
+
+# =============================================================================
+# CUDA Libraries Suppressions (for CUDA backend)
+# =============================================================================
+
+{
+   suppress_libcuda_cond
+   Memcheck:Cond
+   ...
+   obj:*/libcuda*.so*
+}
+{
+   suppress_libcuda_leak
+   Memcheck:Leak
+   ...
+   obj:*/libcuda*.so*
+}
+{
+   suppress_libcudart_cond
+   Memcheck:Cond
+   ...
+   obj:*/libcudart*.so*
+}
+{
+   suppress_libcudart_leak
+   Memcheck:Leak
+   ...
+   obj:*/libcudart*.so*
+}
+{
+   suppress_libcublas_cond
+   Memcheck:Cond
+   ...
+   obj:*/libcublas*.so*
+}
+{
+   suppress_libcublas_leak
+   Memcheck:Leak
+   ...
+   obj:*/libcublas*.so*
+}
+{
+   suppress_libcudnn_cond
+   Memcheck:Cond
+   ...
+   obj:*/libcudnn*.so*
+}
+{
+   suppress_libcudnn_leak
+   Memcheck:Leak
+   ...
+   obj:*/libcudnn*.so*
+}
+{
+   suppress_libnvidia_cond
+   Memcheck:Cond
+   ...
+   obj:*/libnvidia*.so*
+}
+{
+   suppress_libnvidia_leak
+   Memcheck:Leak
+   ...
+   obj:*/libnvidia*.so*
+}
+{
+   suppress_libnccl_cond
+   Memcheck:Cond
+   ...
+   obj:*/libnccl*.so*
+}
+{
+   suppress_libnccl_leak
+   Memcheck:Leak
+   ...
+   obj:*/libnccl*.so*
+}
+
+# =============================================================================
+# JavaCPP / JNI Suppressions (suppress JavaCPP runtime, keep JNI nd4j code)
+# =============================================================================
+
+{
+   suppress_libjnijavacpp_cond
+   Memcheck:Cond
+   ...
+   obj:*/libjnijavacpp*.so
+}
+{
+   suppress_libjnijavacpp_leak
+   Memcheck:Leak
+   ...
+   obj:*/libjnijavacpp*.so
+}
+
+# =============================================================================
+# X11/Graphics Suppressions (if running GUI tests)
+# =============================================================================
+
+{
+   suppress_libX11_cond
+   Memcheck:Cond
+   ...
+   obj:*/libX11*.so*
+}
+{
+   suppress_libX11_leak
+   Memcheck:Leak
+   ...
+   obj:*/libX11*.so*
+}
+{
+   suppress_libGL_cond
+   Memcheck:Cond
+   ...
+   obj:*/libGL*.so*
+}
+{
+   suppress_libGL_leak
+   Memcheck:Leak
+   ...
+   obj:*/libGL*.so*
+}
+
+# =============================================================================
+# NSS/SSL Suppressions
+# =============================================================================
+
+{
+   suppress_libnss_cond
+   Memcheck:Cond
+   ...
+   obj:*/libnss*.so*
+}
+{
+   suppress_libnss_leak
+   Memcheck:Leak
+   ...
+   obj:*/libnss*.so*
+}
+{
+   suppress_libssl_cond
+   Memcheck:Cond
+   ...
+   obj:*/libssl*.so*
+}
+{
+   suppress_libssl_leak
+   Memcheck:Leak
+   ...
+   obj:*/libssl*.so*
+}
+{
+   suppress_libcrypto_cond
+   Memcheck:Cond
+   ...
+   obj:*/libcrypto*.so*
+}
+{
+   suppress_libcrypto_leak
+   Memcheck:Leak
+   ...
+   obj:*/libcrypto*.so*
+}
+
+# =============================================================================
+# zlib Suppressions
+# =============================================================================
+
+{
+   suppress_libz_cond
+   Memcheck:Cond
+   ...
+   obj:*/libz.so*
+}
+{
+   suppress_libz_leak
+   Memcheck:Leak
+   ...
+   obj:*/libz.so*
+}
+
+# =============================================================================
+# Memory allocator suppressions (jemalloc, tcmalloc)
+# =============================================================================
+
+{
+   suppress_libjemalloc_cond
+   Memcheck:Cond
+   ...
+   obj:*/libjemalloc*.so*
+}
+{
+   suppress_libjemalloc_leak
+   Memcheck:Leak
+   ...
+   obj:*/libjemalloc*.so*
+}
+{
+   suppress_libtcmalloc_cond
+   Memcheck:Cond
+   ...
+   obj:*/libtcmalloc*.so*
+}
+{
+   suppress_libtcmalloc_leak
+   Memcheck:Leak
+   ...
+   obj:*/libtcmalloc*.so*
+}
+
+# =============================================================================
+# Compression libraries
+# =============================================================================
+
+{
+   suppress_liblz4_cond
+   Memcheck:Cond
+   ...
+   obj:*/liblz4*.so*
+}
+{
+   suppress_liblz4_leak
+   Memcheck:Leak
+   ...
+   obj:*/liblz4*.so*
+}
+{
+   suppress_libzstd_cond
+   Memcheck:Cond
+   ...
+   obj:*/libzstd*.so*
+}
+{
+   suppress_libzstd_leak
+   Memcheck:Leak
+   ...
+   obj:*/libzstd*.so*
+}
+{
+   suppress_libsnappy_cond
+   Memcheck:Cond
+   ...
+   obj:*/libsnappy*.so*
+}
+{
+   suppress_libsnappy_leak
+   Memcheck:Leak
+   ...
+   obj:*/libsnappy*.so*
+}
+
+# =============================================================================
+# HDF5 Suppressions (used for model saving)
+# =============================================================================
+
+{
+   suppress_libhdf5_cond
+   Memcheck:Cond
+   ...
+   obj:*/libhdf5*.so*
+}
+{
+   suppress_libhdf5_leak
+   Memcheck:Leak
+   ...
+   obj:*/libhdf5*.so*
+}
+
+# =============================================================================
+# OneDNN/DNNL Suppressions (libnd4j may use this)
+# =============================================================================
+
+{
+   suppress_libdnnl_cond
+   Memcheck:Cond
+   ...
+   obj:*/libdnnl*.so*
+}
+{
+   suppress_libdnnl_leak
+   Memcheck:Leak
+   ...
+   obj:*/libdnnl*.so*
+}
+{
+   suppress_libmkldnn_cond
+   Memcheck:Cond
+   ...
+   obj:*/libmkldnn*.so*
+}
+{
+   suppress_libmkldnn_leak
+   Memcheck:Leak
+   ...
+   obj:*/libmkldnn*.so*
+}
+
+# =============================================================================
+# Common Valgrind false positives in JVM
+# =============================================================================
+
+# JIT-compiled code in anonymous memory regions
+{
+   suppress_jit_anonymous
+   Memcheck:Cond
+   ...
+   obj:*
+   fun:*JavaThread*
+}
+
+# JVM internal allocations
+{
+   suppress_jvm_malloc
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   obj:*/libjvm.so
+}
+
+{
+   suppress_jvm_realloc
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:realloc
+   ...
+   obj:*/libjvm.so
+}
+
+{
+   suppress_jvm_calloc
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   ...
+   obj:*/libjvm.so
+}
+
+# =============================================================================
+# END OF SUPPRESSION FILE
+# =============================================================================

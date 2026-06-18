@@ -60,7 +60,7 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 9999999L;
+        return 600000;
     }
 
 
@@ -228,10 +228,13 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
 
         INDArray weights = model.getLayer(0).getParam("W");
         val weightShape = weights.shape();
-        assertEquals(6, weightShape[0]);
-        assertEquals(5, weightShape[1]);
-        assertEquals(3, weightShape[2]);
-        assertEquals(3, weightShape[3]);
+        // DL4J uses YXIO weight format [kH, kW, iC, oC] for all data formats.
+        // For keras_tensorflow: kH=3, kW=3, iC=5, oC=6
+        // For keras_theano:     kH=3, kW=3, iC=5, oC=6  (permuted from Theano's OIYX)
+        assertEquals(3, weightShape[0]);
+        assertEquals(3, weightShape[1]);
+        assertEquals(5, weightShape[2]);
+        assertEquals(6, weightShape[3]);
 
         INDArray bias = model.getLayer(0).getParam("b");
         assertEquals(6,bias.length());

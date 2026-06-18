@@ -21,7 +21,7 @@ package org.eclipse.deeplearning4j.dl4jcore.eval;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.eval.ROCMultiClass;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;

@@ -58,12 +58,12 @@ public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
     public void testEvaluationBinary(Nd4jBackend backend) {
         //Compare EvaluationBinary to Evaluation class
         DataType dtypeBefore = Nd4j.defaultFloatingPointType();
-        EvaluationBinary first = null;
-        String sFirst = null;
         try {
             for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT}) {
                 Nd4j.setDefaultDataTypes(globalDtype, globalDtype.isFPType() ? globalDtype : DataType.DOUBLE);
                 for (DataType lpDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                    EvaluationBinary first = null;
+                    String sFirst = null;
 
                     Nd4j.getRandom().setSeed(12345);
 

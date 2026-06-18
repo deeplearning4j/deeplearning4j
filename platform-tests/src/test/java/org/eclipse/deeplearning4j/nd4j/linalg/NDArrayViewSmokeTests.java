@@ -20,12 +20,15 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 
+@Tag(TagNames.SMOKE)
 public class NDArrayViewSmokeTests {
 
     @Test

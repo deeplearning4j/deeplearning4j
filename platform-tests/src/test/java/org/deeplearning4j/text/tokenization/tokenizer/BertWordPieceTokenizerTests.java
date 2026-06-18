@@ -118,7 +118,6 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled("AB 2019/05/24 - Disabled until dev branch merged - see issue #7657")
     public void testBertWordPieceTokenizer5() throws Exception {
         // Longest Token in Vocab is 22 chars long, so make sure splits on the edge are properly handled
         String toTokenize = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";

@@ -110,13 +110,25 @@ public class DeconvTests extends BaseNd4jTestWithBackends {
                             nchw ? 0 : 1)
                     .callInplace(false)
                     .build();
-            INDArray out = Nd4j.create(op.calculateOutputShape().get(0));
+            INDArray out = Nd4j.createFromDescriptor(op.calculateOutputShape().get(0));
             out.assign(Double.NaN);
             op.addOutputArgument(out);
             Nd4j.exec(op);
 
             boolean eq = expOut.equalsWithEps(out, 1e-4);
-            assertTrue(eq);
+            if (!eq) {
+                INDArray diff = expOut.sub(out);
+                double maxAbs = Nd4j.math().abs(diff).maxNumber().doubleValue();
+                System.out.println("DECONV FAIL: " + s + " maxAbsDiff=" + maxAbs
+                    + " expShape=" + java.util.Arrays.toString(expOut.shape())
+                    + " outShape=" + java.util.Arrays.toString(out.shape())
+                    + " expDtype=" + expOut.dataType() + " outDtype=" + out.dataType());
+                if (expOut.length() <= 100) {
+                    System.out.println("  expected: " + expOut);
+                    System.out.println("  actual:   " + out);
+                }
+            }
+            assertTrue(eq, "Failed for " + s + " - results don't match within eps=1e-4");
         }
     }
 }

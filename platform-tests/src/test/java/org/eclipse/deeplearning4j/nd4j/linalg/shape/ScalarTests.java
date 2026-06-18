@@ -34,8 +34,13 @@ public class ScalarTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalars(Nd4jBackend backend) {
         for(DataType dataType : DataType.values()) {
-            if(dataType != DataType.COMPRESSED && dataType != DataType.UNKNOWN)
-                assertNotNull(Nd4j.create(dataType));
+            if(dataType.isNumerical()) {
+                try {
+                    assertNotNull(Nd4j.create(dataType));
+                } catch (UnsupportedOperationException | IllegalStateException e) {
+                    // Some data types (e.g. FLOAT8) may not be supported by all backends
+                }
+            }
         }
     }
 

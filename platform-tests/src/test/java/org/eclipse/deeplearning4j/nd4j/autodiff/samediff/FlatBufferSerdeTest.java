@@ -33,6 +33,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
@@ -44,12 +45,14 @@ import org.nd4j.graph.IntPair;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMActivations;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDirectionMode;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -68,6 +71,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -84,6 +88,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.SMOKE)
 @NativeTag
 public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
@@ -99,9 +104,21 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testEnum(Nd4jBackend backend) {
-        SameDiff sameDiff = SameDiff.load(Resources.asFile("onnx_graphs/output_cnn_mnist.fb"),true);
-        assertNotNull(sameDiff);
+    public void testEnum(Nd4jBackend backend) throws Exception {
+        // Round-trip test: build a graph with enum-configured ops (LSTM with enums), save, load, verify
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
+        SDVariable mmul = in.mmul(w);
+
+        File f = java.io.File.createTempFile("test_enum_roundtrip", ".fb");
+        f.deleteOnExit();
+        sd.asFlatFile(f);
+
+        SameDiff loaded = SameDiff.fromFlatFile(f);
+        assertNotNull(loaded);
+        assertNotNull(loaded.getVariable("w"));
+        assertNotNull(loaded.getVariable("in"));
     }
 
 
@@ -426,6 +443,55 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void einsumDupRetainsStringArguments(Nd4jBackend backend) throws Exception {
+        SameDiff sd = createEinsumRoundTripGraph();
+
+        INDArray left = Nd4j.linspace(1, 6, 6, DataType.FLOAT).reshape(2, 3);
+        INDArray right = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape(4, 3);
+        INDArray expected = left.mmul(right.transpose());
+
+        SameDiff duplicated = sd.dup();
+        assertEinsumRoundTrip(duplicated, left, right, expected);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void einsumSdzRoundTripRetainsStringArguments(Nd4jBackend backend) throws Exception {
+        SameDiff sd = createEinsumRoundTripGraph();
+
+        INDArray left = Nd4j.linspace(1, 6, 6, DataType.FLOAT).reshape(2, 3);
+        INDArray right = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape(4, 3);
+        INDArray expected = left.mmul(right.transpose());
+
+        File tempFile = File.createTempFile("einsum-roundtrip", ".sdz");
+        tempFile.deleteOnExit();
+
+        SDZSerializer.save(sd, tempFile, false, Collections.emptyMap());
+        SameDiff loaded = SDZSerializer.load(tempFile, false);
+        assertEinsumRoundTrip(loaded, left, right, expected);
+    }
+
+    private SameDiff createEinsumRoundTripGraph() {
+        SameDiff sd = SameDiff.create();
+        SDVariable left = sd.placeHolder("left", DataType.FLOAT, 2, 3);
+        SDVariable right = sd.placeHolder("right", DataType.FLOAT, 4, 3);
+        sd.linalg().einsum("scores", new SDVariable[]{left, right}, "ik,jk->ij");
+        return sd;
+    }
+
+    private void assertEinsumRoundTrip(SameDiff sameDiff, INDArray left, INDArray right, INDArray expected) {
+        DifferentialFunction op = sameDiff.getVariableOutputOp("scores");
+        assertInstanceOf(Einsum.class, op);
+        assertArrayEquals(new String[]{"ik,jk->ij"}, ((CustomOp) op).sArgs());
+
+        Map<String, INDArray> outputs = sameDiff.output(Map.of("left", left, "right", right), "scores");
+        assertTrue(expected.equalsWithEps(outputs.get("scores"), 1e-5),
+                "Round-tripped einsum output differed from the expected matrix product");
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void pooling3DSerialization(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -447,6 +513,24 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void logSumExpSerialization(Nd4jBackend backend) throws IOException {
+        SameDiff sd = SameDiff.create();
+
+        SDVariable x = sd.placeHolder("x", DataType.DOUBLE, 2, 3);
+        sd.math().logSumExp("loss", x);
+
+        SameDiff deserialized = SameDiff.fromFlatBuffers(sd.asFlatBuffers(true));
+        assertEquals("reduce_logsumexp", deserialized.getVariableOutputOp("loss").opName());
+
+        INDArray input = Nd4j.linspace(0.1, 0.6, 6, DataType.DOUBLE).reshape('c', 2, 3);
+        INDArray expected = Nd4j.scalar(Math.log(Transforms.exp(input.dup(), false).sumNumber().doubleValue()));
+        INDArray actual = deserialized.output(Collections.singletonMap("x", input), "loss").get("loss");
+        assertTrue(expected.equalsWithEps(actual, 1e-12),
+                "Round-tripped logsumexp output differed from the original graph");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void pooling3DSerialization2(Nd4jBackend backend){
         SameDiff sd = SameDiff.create();
 
@@ -464,5 +548,79 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
         assertEquals(
                 sd.getVariableOutputOp("pool").getClass(),
                 deserialized.getVariableOutputOp("pool").getClass());
+    }
+
+    /**
+     * Verify that multiple empty/scalar constants get unique DataBuffers after
+     * SDZ serialization round-trip. Previously, the deserializer returned a shared
+     * singleton from Nd4j.empty()/NDArrayFactory.empty(), causing all constants
+     * to share the same DataBuffer. Closing one would close all of them.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.SAMEDIFF)
+    public void testEmptyConstantsGetUniqueDataBuffers(Nd4jBackend backend) throws Exception {
+        SameDiff sd = SameDiff.create();
+
+        // Create a graph with multiple empty/scalar constants — simulates the
+        // SmolDocling decoder which has 60+ small metadata constants (axes, reshape dims)
+        int numConstants = 10;
+        SDVariable[] constants = new SDVariable[numConstants];
+        for (int i = 0; i < numConstants; i++) {
+            INDArray emptyArr = Nd4j.create(DataType.FLOAT, new long[0]);
+            constants[i] = sd.constant("const_" + i, emptyArr);
+        }
+
+        // Add a trivial op so the graph is valid
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 10);
+        SDVariable output = input.add("output", constants[0].castTo(DataType.FLOAT));
+
+        // Save to SDZ
+        File tempFile = testDir.resolve("test_empty_constants.sdz").toFile();
+        SDZSerializer.save(sd, tempFile, false, null);
+
+        // Load back
+        SameDiff loaded = SDZSerializer.load(tempFile, false);
+
+        // Verify each constant has its own DataBuffer (not shared)
+        java.util.IdentityHashMap<org.nd4j.linalg.api.buffer.DataBuffer, String> seenBuffers =
+                new java.util.IdentityHashMap<>();
+        int closedCount = 0;
+
+        for (int i = 0; i < numConstants; i++) {
+            String name = "const_" + i;
+            SDVariable var = loaded.getVariable(name);
+            assertNotNull(var, "Variable " + name + " not found after load");
+            assertEquals(VariableType.CONSTANT, var.getVariableType(),
+                    name + " should be CONSTANT type");
+
+            INDArray arr = var.getArr();
+            assertNotNull(arr, name + " array should not be null");
+            assertNotNull(arr.data(), name + " DataBuffer should not be null");
+            assertFalse(arr.data().wasClosed(),
+                    name + " DataBuffer should NOT be closed after deserialization");
+
+            // Check uniqueness — no two constants should share the same DataBuffer instance
+            String prevOwner = seenBuffers.put(arr.data(), name);
+            assertNull(prevOwner,
+                    name + " shares DataBuffer with " + prevOwner +
+                    " — each constant must have its own DataBuffer to prevent" +
+                    " cascade closure (array id=" + arr.getId() + ")");
+        }
+
+        // Verify that closing one constant's DataBuffer does NOT affect others.
+        // Constants are marked non-closeable, so we need to un-protect first.
+        INDArray first = loaded.getVariable("const_0").getArr();
+        first.data().setConstant(false);
+        first.setCloseable(true);
+        first.data().close();
+        assertTrue(first.data().wasClosed(), "const_0 DataBuffer should be closed after explicit close");
+
+        for (int i = 1; i < numConstants; i++) {
+            INDArray arr = loaded.getVariable("const_" + i).getArr();
+            assertFalse(arr.data().wasClosed(),
+                    "const_" + i + " DataBuffer should NOT be closed when const_0 is closed" +
+                    " — constants must not share DataBuffers");
+        }
     }
 }

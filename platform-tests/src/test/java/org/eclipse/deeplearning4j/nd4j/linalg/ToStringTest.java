@@ -65,7 +65,6 @@ public class ToStringTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testToStringScalars(Nd4jBackend backend){
         DataType[] dataTypes = new DataType[]{DataType.FLOAT, DataType.DOUBLE, DataType.BOOL, DataType.INT, DataType.UINT32};
         String[] strs = new String[]{"1.0000", "1.0000", "true", "1", "1"};
@@ -84,7 +83,7 @@ public class ToStringTest extends BaseNd4jTestWithBackends {
                     sb.append("]");
                 }
                 String exp = sb.toString();
-                assertEquals("Rank: " + i + ", DT: " + dataTypes[dt], exp, str);
+                assertEquals(exp, str, "Rank: " + i + ", DT: " + dataTypes[dt]);
             }
         }
     }

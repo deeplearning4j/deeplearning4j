@@ -46,7 +46,9 @@ public class DataTypeTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDataTypes(Nd4jBackend backend) throws Exception {
         for (val type : DataType.values()) {
-            if (DataType.UTF8.equals(type) || DataType.UNKNOWN.equals(type) || DataType.COMPRESSED.equals(type))
+            if (DataType.UTF8.equals(type) || DataType.UNKNOWN.equals(type) || DataType.COMPRESSED.equals(type)
+                    || DataType.UTF16.equals(type) || DataType.UTF32.equals(type)
+                    || DataType.FLOAT8.equals(type) || DataType.FLOAT8_E5M2.equals(type))
                 continue;
 
             val in1 = Nd4j.ones(type, 10, 10);

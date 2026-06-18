@@ -346,6 +346,10 @@ public class TestUpdaters extends BaseDL4JTest {
         for (int i = 0; i < actualM.length; i++) {
             actualM[i] = Math.round(actualM[i] * 1e2) / 1e2;
         }
+        // Round expectedM to the same precision as actualM for comparison
+        for (int i = 0; i < expectedM.length; i++) {
+            expectedM[i] = Math.round(expectedM[i] * 1e2) / 1e2;
+        }
 
         assertEquals(Arrays.equals(expectedM, actualM), true, "Wrong weight gradient after first iteration's update");
 

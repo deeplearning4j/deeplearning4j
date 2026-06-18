@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Keras 2 Model Configuration Test")
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.KERAS)
+@Tag(TagNames.FULL_CI)
 @NativeTag
 class Keras2ModelConfigurationTest extends BaseDL4JTest {
 
@@ -262,7 +263,7 @@ class Keras2ModelConfigurationTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 999999999L;
+        return 600000;
     }
 
     @Test

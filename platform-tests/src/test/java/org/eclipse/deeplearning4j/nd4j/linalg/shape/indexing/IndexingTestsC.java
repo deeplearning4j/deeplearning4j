@@ -98,7 +98,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiRow(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
-        INDArray assertion = Nd4j.create(new double[][] {{4, 7}});
+        // SpecifiedIndex(1,2) selects rows 1 and 2; interval(0,1) selects column 0
+        // Result shape is (2,1): [[4], [7]]
+        INDArray assertion = Nd4j.create(new double[][] {{4}, {7}});
 
         INDArray test = matrix.get(new SpecifiedIndex(1, 2), NDArrayIndex.interval(0, 1));
         assertEquals(assertion, test);

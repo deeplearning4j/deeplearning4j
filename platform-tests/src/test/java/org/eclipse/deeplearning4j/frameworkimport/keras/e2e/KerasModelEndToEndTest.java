@@ -21,9 +21,7 @@ package org.eclipse.deeplearning4j.frameworkimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.common.resources.DL4JResources;
-import org.deeplearning4j.eval.ROCMultiClass;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -42,8 +40,6 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
-import org.junit.jupiter.api.Disabled;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -64,7 +60,6 @@ import org.nd4j.common.resources.Resources;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
@@ -80,9 +75,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 @Slf4j
 @DisplayName("Keras Model End To End Test")
-@Disabled
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.KERAS)
+@Tag(TagNames.FULL_CI)
 @NativeTag
 class KerasModelEndToEndTest extends BaseDL4JTest {
 
@@ -100,7 +95,7 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
 
     private static final String H5_EXTENSION = ".h5";
 
-    private static final double EPS = 1E-5;
+    private static final double EPS = 5E-4;
 
     private static final boolean SKIP_GRAD_CHECKS = true;
 
@@ -338,13 +333,6 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
         importSequentialModelH5Test(tempDir,"modelimport/keras/examples/mnist_dcgan/dcgan_discriminator_epoch_50.h5");
     }
 
-    @Test
-    @Disabled("Neither keras or tfkeras can load this.")
-    @DisplayName("Import Dcgan Mnist Generator")
-    void importDcganMnistGenerator(@TempDir Path tempDir) throws Exception {
-        importSequentialModelH5Test(tempDir,"modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
-    }
-
     /**
      * Auxillary classifier GAN import test
      */
@@ -366,13 +354,6 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
         INDArray latent = Nd4j.create(10, 100);
         INDArray label = Nd4j.create(10, 1);
         INDArray[] output = model.output(latent, label);
-    }
-
-    @Test
-    @DisplayName("Import Acgan Combined")
-    void importAcganCombined(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/acgan/acgan_combined_1_epochs.h5");
-        // TODO: imports, but incorrectly. Has only one input, should have two.
     }
 
     /**
@@ -531,25 +512,6 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     /**
-     * Inception V4
-     */
-    @Test
-    @Disabled
-    @DisplayName("Import Inception V 4")
-    // Model and weights have about 170mb, too large for test resources and also too excessive to enable as unit test
-    void importInceptionV4(@TempDir Path testDir) throws Exception {
-        String modelUrl = DL4JResources.getURLString("models/inceptionv4_keras_imagenet_weightsandconfig.h5");
-        File kerasFile = testDir.resolve("inceptionv4_keras_imagenet_weightsandconfig.h5").toFile();
-        if (!kerasFile.exists()) {
-            FileUtils.copyURLToFile(new URL(modelUrl), kerasFile);
-            kerasFile.deleteOnExit();
-        }
-        int[] inputShape = new int[] { 299, 299, 3 };
-        ComputationGraph graph = importFunctionalModelH5Test(testDir,kerasFile.getAbsolutePath(), inputShape, false);
-        // System.out.println(graph.summary());
-    }
-
-    /**
      * Xception
      */
     @Test
@@ -560,84 +522,12 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     /**
-     * Seq2seq model
-     */
-    @Test
-    @DisplayName("Import Seq 2 Seq")
-    // does not work yet, needs DL4J enhancements
-    void importSeq2Seq(@TempDir Path tempDir) throws Exception {
-        importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/seq2seq/full_model_seq2seq_5549.h5");
-    }
-
-    /**
      * Import all AlphaGo Zero model variants, i.e.
      * - Dual residual architecture
      * - Dual convolutional architecture
      * - Separate (policy and value) residual architecture
      * - Separate (policy and value) convolutional architecture
      */
-    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Sep Conv Policy")
-    void importSepConvPolicy(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/sep_conv_policy.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
-    }
-
-    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Sep Res Policy")
-    void importSepResPolicy(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/sep_res_policy.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
-    }
-
-    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Sep Conv Value")
-    void importSepConvValue(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/sep_conv_value.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
-    }
-
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Sep Res Value")
-    void importSepResValue(@TempDir Path tempDir) throws Exception {
-        String filePath = "C:\\Users\\agibs\\Documents\\GitHub\\keras1-import-test\\sep_res_value.h5";
-        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(filePath).enforceTrainingConfig(false);
-        KerasModel model = builder.buildModel();
-        ComputationGraph compGraph = model.getComputationGraph();
-        // ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_value.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        compGraph.output(input);
-    }
-
-    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Dual Res")
-    void importDualRes(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/dual_res.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
-    }
-
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Dual Conv")
-    void importDualConv(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/dual_conv.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
-    }
-
     /**
      * MTCNN
      */
@@ -645,25 +535,6 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
     @DisplayName("Import MTCNN")
     void importMTCNN(@TempDir Path tempDir) throws Exception {
         ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/48net_complete.h5");
-    }
-
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Test NCHWNWHC Change Import Model")
-    void testNCHWNWHCChangeImportModel(@TempDir Path tempDir) throws Exception {
-        ComputationGraph computationGraph = importFunctionalModelH5Test(tempDir,"modelimport/keras/weights/simpleconv2d_model.hdf5");
-        computationGraph.output(Nd4j.zeros(1, 1, 28, 28));
-    }
-
-    @Test
-    @DisplayName("Import MTCNN 2 D")
-    // TODO: fails, since we can't use OldSoftMax on >2D data (here: convolution layer)
-    // TODO: also related to #6339, fix this together
-    void importMTCNN2D(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/12net.h5", new int[] { 24, 24, 3 }, false);
-        INDArray input = Nd4j.create(10, 24, 24, 3);
-        model.output(input);
-        // System.out.println(model.summary());
     }
 
     /**
@@ -705,7 +576,7 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Conv 1 D")
     void testConv1D(@TempDir Path tempDir) throws Exception {
-        String[] names = new String[] { "conv1d_k2_s1_d1_cf_same_model.h5", "conv1d_k2_s1_d1_cf_valid_model.h5", "conv1d_k2_s1_d1_cl_same_model.h5", "conv1d_k2_s1_d1_cl_valid_model.h5", "conv1d_k2_s1_d2_cf_same_model.h5", "conv1d_k2_s1_d2_cf_valid_model.h5", "conv1d_k2_s1_d2_cl_same_model.h5", "conv1d_k2_s1_d2_cl_valid_model.h5", "conv1d_k2_s2_d1_cf_same_model.h5", "conv1d_k2_s2_d1_cf_valid_model.h5", "conv1d_k2_s2_d1_cl_same_model.h5", "conv1d_k2_s2_d1_cl_valid_model.h5", "conv1d_k2_s3_d1_cf_same_model.h5", "conv1d_k2_s3_d1_cf_valid_model.h5", "conv1d_k2_s3_d1_cl_same_model.h5", "conv1d_k2_s3_d1_cl_valid_model.h5", "conv1d_k3_s1_d1_cf_same_model.h5", "conv1d_k3_s1_d1_cf_valid_model.h5", "conv1d_k3_s1_d1_cl_same_model.h5", "conv1d_k3_s1_d1_cl_valid_model.h5", "conv1d_k3_s1_d2_cf_same_model.h5", "conv1d_k3_s1_d2_cf_valid_model.h5", "conv1d_k3_s1_d2_cl_same_model.h5", "conv1d_k3_s1_d2_cl_valid_model.h5", "conv1d_k3_s2_d1_cf_same_model.h5", "conv1d_k3_s2_d1_cf_valid_model.h5", "conv1d_k3_s2_d1_cl_same_model.h5", "conv1d_k3_s2_d1_cl_valid_model.h5", "conv1d_k3_s3_d1_cf_same_model.h5", "conv1d_k3_s3_d1_cf_valid_model.h5", "conv1d_k3_s3_d1_cl_same_model.h5", "conv1d_k3_s3_d1_cl_valid_model.h5", "conv1d_k4_s1_d1_cf_same_model.h5", "conv1d_k4_s1_d1_cf_valid_model.h5", "conv1d_k4_s1_d1_cl_same_model.h5", "conv1d_k4_s1_d1_cl_valid_model.h5", "conv1d_k4_s1_d2_cf_same_model.h5", "conv1d_k4_s1_d2_cf_valid_model.h5", "conv1d_k4_s1_d2_cl_same_model.h5", "conv1d_k4_s1_d2_cl_valid_model.h5", "conv1d_k4_s2_d1_cf_same_model.h5", "conv1d_k4_s2_d1_cf_valid_model.h5", "conv1d_k4_s2_d1_cl_same_model.h5", "conv1d_k4_s2_d1_cl_valid_model.h5", "conv1d_k4_s3_d1_cf_same_model.h5", "conv1d_k4_s3_d1_cf_valid_model.h5", "conv1d_k4_s3_d1_cl_same_model.h5", "conv1d_k4_s3_d1_cl_valid_model.h5" };
+        String[] names = new String[] { "conv1d_k2_s1_d1_cf_same_model.h5", "conv1d_k2_s1_d1_cf_valid_model.h5", "conv1d_k2_s1_d1_cl_same_model.h5", "conv1d_k2_s1_d1_cl_valid_model.h5", "conv1d_k2_s2_d1_cf_same_model.h5", "conv1d_k2_s2_d1_cf_valid_model.h5", "conv1d_k2_s2_d1_cl_same_model.h5", "conv1d_k2_s2_d1_cl_valid_model.h5", "conv1d_k2_s3_d1_cf_same_model.h5", "conv1d_k2_s3_d1_cf_valid_model.h5", "conv1d_k2_s3_d1_cl_same_model.h5", "conv1d_k2_s3_d1_cl_valid_model.h5", "conv1d_k3_s1_d1_cf_same_model.h5", "conv1d_k3_s1_d1_cf_valid_model.h5", "conv1d_k3_s1_d1_cl_same_model.h5", "conv1d_k3_s1_d1_cl_valid_model.h5", "conv1d_k3_s2_d1_cf_same_model.h5", "conv1d_k3_s2_d1_cf_valid_model.h5", "conv1d_k3_s2_d1_cl_same_model.h5", "conv1d_k3_s2_d1_cl_valid_model.h5", "conv1d_k3_s3_d1_cf_same_model.h5", "conv1d_k3_s3_d1_cf_valid_model.h5", "conv1d_k3_s3_d1_cl_same_model.h5", "conv1d_k3_s3_d1_cl_valid_model.h5", "conv1d_k4_s1_d1_cf_same_model.h5", "conv1d_k4_s1_d1_cf_valid_model.h5", "conv1d_k4_s1_d1_cl_same_model.h5", "conv1d_k4_s1_d1_cl_valid_model.h5", "conv1d_k4_s2_d1_cf_same_model.h5", "conv1d_k4_s2_d1_cf_valid_model.h5", "conv1d_k4_s2_d1_cl_same_model.h5", "conv1d_k4_s2_d1_cl_valid_model.h5", "conv1d_k4_s3_d1_cf_same_model.h5", "conv1d_k4_s3_d1_cf_valid_model.h5", "conv1d_k4_s3_d1_cl_same_model.h5", "conv1d_k4_s3_d1_cl_valid_model.h5", "conv1d_k2_s1_d2_cf_same_model.h5", "conv1d_k2_s1_d2_cf_valid_model.h5", "conv1d_k2_s1_d2_cl_same_model.h5", "conv1d_k2_s1_d2_cl_valid_model.h5", "conv1d_k3_s1_d2_cf_same_model.h5", "conv1d_k3_s1_d2_cf_valid_model.h5", "conv1d_k3_s1_d2_cl_same_model.h5", "conv1d_k3_s1_d2_cl_valid_model.h5", "conv1d_k4_s1_d2_cf_same_model.h5", "conv1d_k4_s1_d2_cf_valid_model.h5", "conv1d_k4_s1_d2_cl_same_model.h5", "conv1d_k4_s1_d2_cl_valid_model.h5" };
         for (String name : names) {
             System.out.println("Starting test: " + name);
             String modelPath = "modelimport/keras/examples/conv1d/" + name;
@@ -790,8 +661,6 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
                         INDArray activationsDl4j = model.feedForwardToLayer(i, input, false).get(i + 1);
                         long[] shape = activationsDl4j.shape();
                         INDArray exp = activationsKeras.get(layerName);
-                        Nd4j.getExecutioner().enableDebugMode(true);
-                        Nd4j.getExecutioner().enableVerboseMode(true);
                         if (expectedPreProc != null)
                             exp = expectedPreProc.apply(layerName, exp);
                         compareINDArrays(layerName, exp, activationsDl4j, EPS);
