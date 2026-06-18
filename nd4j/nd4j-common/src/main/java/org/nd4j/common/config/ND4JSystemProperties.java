@@ -287,6 +287,22 @@ public class ND4JSystemProperties {
      */
     public final static String ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS = "org.nd4j.linalg.profiler.pointoforigin.patterns";
 
+    /**
+     * Applicability: Graph optimizer (QuantizationOptimizations)<br>
+     * Description: When set to "true", enables FP16 (HALF) quantization of large FP32 constant and variable
+     * weight arrays during SameDiff graph optimization. Provides ~2x memory reduction with minimal accuracy loss
+     * on CUDA tensor-core paths. OFF by default — enable with {@code -Dnd4j.optimizer.fp16=true}.
+     */
+    public static final String OPTIMIZER_FP16 = "nd4j.optimizer.fp16";
+
+    /**
+     * Applicability: Graph optimizer (QuantizationOptimizations)<br>
+     * Description: When set to "true", enables BF16 (BFLOAT16) quantization of large FP32 constant and variable
+     * weight arrays during SameDiff graph optimization. BF16 takes precedence over FP16 if both are set.
+     * Requires hardware support for BF16. OFF by default — enable with {@code -Dnd4j.optimizer.bf16=true}.
+     */
+    public static final String OPTIMIZER_BF16 = "nd4j.optimizer.bf16";
+
     private ND4JSystemProperties() {
     }
 }

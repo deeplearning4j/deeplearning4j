@@ -48,11 +48,64 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class ForwardExecutionDAGBuilder {
-    
+
     private final SameDiff sameDiff;
-    
+
+    // Cached reverse lookup map: variable name -> producer operation name
+    // This eliminates O(N) linear scans through all operations for each variable lookup
+    private Map<String, String> variableToProducerOpCache;
+
+    // Cached reverse lookup map: variable name -> consumer operation names
+    // This eliminates O(N) linear scans when finding all consumers of a variable
+    private Map<String, Set<String>> variableToConsumerOpsCache;
+
     public ForwardExecutionDAGBuilder(SameDiff sameDiff) {
         this.sameDiff = sameDiff;
+        buildCaches();
+    }
+
+    /**
+     * Build the reverse lookup caches for both producer and consumer operations.
+     * This is built once at construction time and provides O(1) lookups instead of O(N) scans.
+     */
+    private void buildCaches() {
+        variableToProducerOpCache = new HashMap<>();
+        variableToConsumerOpsCache = new HashMap<>();
+
+        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
+            String opName = entry.getKey();
+            SameDiffOp op = entry.getValue();
+
+            // Build producer cache from outputs
+            List<String> outputs = op.getOutputsOfOp();
+            if (outputs != null) {
+                for (String output : outputs) {
+                    variableToProducerOpCache.put(output, opName);
+                    // Also cache the base name for multi-output ops
+                    String baseName = stripVariableSuffix(output);
+                    if (!baseName.equals(output)) {
+                        variableToProducerOpCache.putIfAbsent(baseName, opName);
+                    }
+                }
+            }
+
+            // Build consumer cache from inputs
+            List<String> inputs = op.getInputsToOp();
+            if (inputs != null) {
+                for (String input : inputs) {
+                    // Add this op as a consumer of the input variable
+                    variableToConsumerOpsCache.computeIfAbsent(input, k -> new HashSet<>()).add(opName);
+                    // Also index by stripped name for multi-output pattern matching
+                    String baseName = stripVariableSuffix(input);
+                    if (!baseName.equals(input)) {
+                        variableToConsumerOpsCache.computeIfAbsent(baseName, k -> new HashSet<>()).add(opName);
+                    }
+                }
+            }
+        }
+
+        log.debug("Built caches: {} producer entries, {} consumer entries",
+                variableToProducerOpCache.size(), variableToConsumerOpsCache.size());
     }
     
     /**
@@ -63,13 +116,17 @@ public class ForwardExecutionDAGBuilder {
      * @return Properly structured DAG with operation-to-operation dependencies
      */
     public ForwardExecutionDAG buildForwardDAG(Collection<String> requestedOutputs) {
-        log.info("Building forward execution DAG for outputs: {}", requestedOutputs);
+        log.debug("Building forward execution DAG for outputs: {}", requestedOutputs);
 
         Set<String> requiredOperations = new HashSet<>();
         Set<String> requiredVariables = new HashSet<>();
 
         Set<String> allPlaceholders = findAllPlaceholders();
-        requiredVariables.addAll(allPlaceholders);
+        // Seed with requested outputs only — the backward walk will discover which
+        // placeholders are actually needed. Adding ALL placeholders here would pull
+        // in every op reachable from any placeholder, even if it doesn't contribute
+        // to the requested outputs (e.g. GDN state placeholders when only logits
+        // are requested through a non-state path).
         requiredVariables.addAll(requestedOutputs);
 
         boolean foundNewNodes = true;
@@ -89,7 +146,7 @@ public class ForwardExecutionDAGBuilder {
             }
         }
 
-        log.info("Converged after {} iterations: {} operations, {} variables",
+        log.debug("Converged after {} iterations: {} operations, {} variables",
                 iteration, requiredOperations.size(), requiredVariables.size());
 
         validateCompleteness(requestedOutputs, allPlaceholders, requiredVariables);
@@ -104,9 +161,19 @@ public class ForwardExecutionDAGBuilder {
         Set<String> constants = findConstants();
         Set<String> variables = findVariables();
 
+        // Only include placeholders that the backward walk determined are needed
+        // for the requested outputs. Unreachable placeholders (e.g. GDN state when
+        // only logits are requested) must not be registered as external inputs.
+        Set<String> neededPlaceholders = new HashSet<>();
+        for (String ph : allPlaceholders) {
+            if (requiredVariables.contains(ph)) {
+                neededPlaceholders.add(ph);
+            }
+        }
+
         ForwardExecutionDAG dag = new ForwardExecutionDAG(
                 executionOrder, operationNodes, variableProducers, variableConsumers,
-                allPlaceholders, constants, variables
+                neededPlaceholders, constants, variables
         );
 
         dag.validate();
@@ -166,25 +233,15 @@ public class ForwardExecutionDAGBuilder {
                 }
             }
 
-            // Handle placeholder multi-use: find ALL operations that consume this variable
-            if (isPlaceholder(currentVariable)) {
-                Set<String> consumerOps = findAllConsumerOperations(currentVariable);
-                for (String consumerOp : consumerOps) {
-                    if (!requiredOperations.contains(consumerOp)) {
-                        requiredOperations.add(consumerOp);
-
-                        // Add outputs of consumer operations to ensure they're processed
-                        SameDiffOp op = sameDiff.getOps().get(consumerOp);
-                        if (op != null && op.getOutputsOfOp() != null) {
-                            for (String output : op.getOutputsOfOp()) {
-                                if (!processedVariables.contains(output)) {
-                                    variablesToProcess.offer(output);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            // NOTE: Previously, this block expanded forward from every placeholder,
+            // adding ALL consumer operations and their transitive dependents. This
+            // over-included subgraphs whose outputs aren't needed for the requested
+            // outputs, causing shape mismatches in the DSP executor. For example, the
+            // attn_mask_reformat subgraph consumes past_key_values.0.key but produces
+            // intermediates with past_seq_len vs total_seq_len shapes that fail at Add.
+            // The backward traversal from requested outputs (lines 183-220) already
+            // includes all ops that contribute to those outputs, so the forward
+            // expansion from placeholders is unnecessary and harmful.
         }
     }
 
@@ -196,15 +253,18 @@ public class ForwardExecutionDAGBuilder {
     private Set<String> findAllConsumerOperations(String variableName) {
         Set<String> consumers = new HashSet<>();
 
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            SameDiffOp op = entry.getValue();
-            if (op.getInputsToOp() != null) {
-                for (String input : op.getInputsToOp()) {
-                    if (input.equals(variableName) || stripVariableSuffix(input).equals(stripVariableSuffix(variableName))) {
-                        consumers.add(entry.getKey());
-                        break;
-                    }
-                }
+        // Use cached lookup - O(1) instead of O(N) scan through all ops
+        Set<String> directConsumers = variableToConsumerOpsCache.get(variableName);
+        if (directConsumers != null) {
+            consumers.addAll(directConsumers);
+        }
+
+        // Also check by stripped name for multi-output pattern matching
+        String baseName = stripVariableSuffix(variableName);
+        if (!baseName.equals(variableName)) {
+            Set<String> baseConsumers = variableToConsumerOpsCache.get(baseName);
+            if (baseConsumers != null) {
+                consumers.addAll(baseConsumers);
             }
         }
 
@@ -229,14 +289,20 @@ public class ForwardExecutionDAGBuilder {
             }
         }
 
+        // Check that used placeholders are in the graph. Unused placeholders (not
+        // consumed by any op that contributes to the outputs) are expected — they may
+        // exist in the ONNX model but aren't needed for the requested outputs.
+        int usedPlaceholders = 0;
         for (String placeholder : allPlaceholders) {
-            if (!requiredVariables.contains(placeholder)) {
-                throw new IllegalStateException("Placeholder not in graph: " + placeholder);
+            if (requiredVariables.contains(placeholder)) {
+                usedPlaceholders++;
+            } else {
+                log.debug("Placeholder '{}' not needed for requested outputs — skipping", placeholder);
             }
         }
 
-        log.info("Validation passed: {} outputs, {} placeholders included",
-                requestedOutputs.size(), allPlaceholders.size());
+        log.debug("Validation passed: {} outputs, {}/{} placeholders included",
+                requestedOutputs.size(), usedPlaceholders, allPlaceholders.size());
     }
 
     /**
@@ -319,6 +385,16 @@ public class ForwardExecutionDAGBuilder {
             addControlFlowDependencies(node, dependencies, operationNodes);
             
             node.getDependsOnOperations().addAll(dependencies);
+
+            // Break NextIteration→Merge back-edges so Merge appears before body ops
+            // in topological order. The while-loop executor handles the iterative
+            // re-execution of Merge with NextIteration outputs.
+            if (node.getOperation() instanceof Merge) {
+                node.getDependsOnOperations().removeIf(dep -> {
+                    ExecutionNode depNode = operationNodes.get(dep);
+                    return depNode != null && depNode.getOperation() instanceof NextIteration;
+                });
+            }
         }
     }
     
@@ -355,110 +431,229 @@ public class ForwardExecutionDAGBuilder {
     }
     
     /**
-     * Create topological execution order respecting dependencies.
-     * This ensures operations execute in the correct order.
+     * Create topological execution order with memory-aware scheduling.
+     *
+     * Uses Kahn's algorithm (BFS-based topo-sort) with a priority heuristic:
+     * when multiple nodes are ready (in-degree = 0), prefer nodes that free
+     * the most memory — i.e., nodes that are the last consumer of their input
+     * variables. This minimizes peak live memory by releasing buffers as early
+     * as possible.
+     *
+     * For a transformer graph with Q/K/V projections, this naturally schedules
+     * each projection's consumers immediately after it rather than interleaving
+     * branches, which keeps intermediate buffers live for shorter windows.
      */
     private List<ExecutionNode> createTopologicalOrder(Map<String, ExecutionNode> operationNodes) {
-        List<ExecutionNode> result = new ArrayList<>();
-        Set<String> visited = new HashSet<>();
-        Set<String> visiting = new HashSet<>();
-        
-        // Start with nodes that have no dependencies (constants, variables, placeholders)
+        int numNodes = operationNodes.size();
+
+        // Build in-degree map (only counting edges within operationNodes)
+        Map<String, Integer> inDegree = new HashMap<>(numNodes);
         for (ExecutionNode node : operationNodes.values()) {
-            if (node.getDependsOnOperations().isEmpty()) {
-                topologicalSort(node, operationNodes, visited, visiting, result);
+            inDegree.putIfAbsent(node.getOperationName(), 0);
+            for (String dep : node.getDependsOnOperations()) {
+                if (operationNodes.containsKey(dep)) {
+                    inDegree.merge(node.getOperationName(), 1, Integer::sum);
+                }
             }
         }
-        
-        // Then process remaining nodes
+
+        // Build reverse adjacency: dep -> list of nodes that depend on it
+        Map<String, List<String>> successors = new HashMap<>(numNodes);
         for (ExecutionNode node : operationNodes.values()) {
-            if (!visited.contains(node.getOperationName())) {
-                topologicalSort(node, operationNodes, visited, visiting, result);
+            for (String dep : node.getDependsOnOperations()) {
+                if (operationNodes.containsKey(dep)) {
+                    successors.computeIfAbsent(dep, k -> new ArrayList<>())
+                              .add(node.getOperationName());
+                }
             }
         }
-        
-        log.info("Created topological execution order with {} nodes", result.size());
+
+        // Pre-compute consumer counts per input variable across all ops.
+        // A variable's consumer count tells us how many ops read it.
+        // When we schedule an op, we decrement consumer counts for its inputs.
+        // If a count hits 0, that variable's buffer can be freed.
+        Map<String, Integer> varConsumerCount = new HashMap<>();
+        for (ExecutionNode node : operationNodes.values()) {
+            for (String inputVar : node.getInputVariables()) {
+                varConsumerCount.merge(inputVar, 1, Integer::sum);
+            }
+        }
+        // Working copy decremented as nodes are scheduled
+        Map<String, Integer> remainingConsumers = new HashMap<>(varConsumerCount);
+
+        // Pre-compute estimated byte size per variable for size-weighted scheduling.
+        // This makes the scheduler prefer freeing large tensors over small ones,
+        // reducing peak memory more effectively than count-based scheduling.
+        Map<String, Long> varEstimatedBytes = new HashMap<>();
+        for (String varName : varConsumerCount.keySet()) {
+            varEstimatedBytes.put(varName, estimateVariableBytes(varName));
+        }
+
+        List<ExecutionNode> result = new ArrayList<>(numNodes);
+        Set<String> scheduled = new HashSet<>(numNodes);
+
+        // Priority queue sorted by size-weighted memory freed heuristic.
+        // Primary: prefer nodes that free the most bytes (not just most variables).
+        // This is critical for transformer models where matmul outputs (large) and
+        // bias vectors (small) both count as "1 variable" but differ by 100x+ in size.
+        PriorityQueue<ExecutionNode> readyQueue = new PriorityQueue<>((a, b) -> {
+            // Primary: prefer nodes that free more bytes (higher = better)
+            long bytesA = estimateFreedBytes(a, remainingConsumers, varEstimatedBytes);
+            long bytesB = estimateFreedBytes(b, remainingConsumers, varEstimatedBytes);
+            if (bytesA != bytesB) return Long.compare(bytesB, bytesA);  // descending
+
+            // Secondary: prefer nodes with fewer successors (complete short chains first)
+            int succA = successors.getOrDefault(a.getOperationName(), Collections.emptyList()).size();
+            int succB = successors.getOrDefault(b.getOperationName(), Collections.emptyList()).size();
+            if (succA != succB) return succA - succB;  // ascending
+
+            // Tertiary: stable tie-break by name
+            return a.getOperationName().compareTo(b.getOperationName());
+        });
+
+        for (Map.Entry<String, Integer> entry : inDegree.entrySet()) {
+            if (entry.getValue() == 0) {
+                readyQueue.add(operationNodes.get(entry.getKey()));
+            }
+        }
+
+        while (!readyQueue.isEmpty()) {
+            // Re-sort: drain and re-add since priorities depend on remainingConsumers
+            // which changes as nodes are scheduled. Only needed when queue has > 1 element.
+            if (readyQueue.size() > 1) {
+                List<ExecutionNode> pending = new ArrayList<>(readyQueue);
+                readyQueue.clear();
+                readyQueue.addAll(pending);
+            }
+
+            ExecutionNode node = readyQueue.poll();
+            String nodeName = node.getOperationName();
+            scheduled.add(nodeName);
+            result.add(node);
+
+            // Decrement consumer counts for this node's inputs
+            for (String inputVar : node.getInputVariables()) {
+                remainingConsumers.computeIfPresent(inputVar, (k, v) -> v - 1);
+            }
+
+            // Update in-degrees and enqueue newly ready nodes
+            List<String> succs = successors.getOrDefault(nodeName, Collections.emptyList());
+            for (String succName : succs) {
+                int newDeg = inDegree.merge(succName, -1, Integer::sum);
+                if (newDeg == 0 && !scheduled.contains(succName)) {
+                    readyQueue.add(operationNodes.get(succName));
+                }
+            }
+        }
+
+        // Handle any nodes not reached (cycles from control flow)
+        if (result.size() < numNodes) {
+            for (ExecutionNode node : operationNodes.values()) {
+                if (!scheduled.contains(node.getOperationName())) {
+                    log.debug("Adding unscheduled node (cycle): {}", node.getOperationName());
+                    result.add(node);
+                }
+            }
+        }
+
+        log.debug("Created memory-aware topological order with {} nodes", result.size());
         return result;
     }
-    
+
     /**
-     * Recursive topological sort implementation
+     * Estimate total bytes freed if this node were scheduled now.
+     * A variable is freed when its remaining consumer count drops to 0.
+     * Size-weighted: a 1MB tensor freed matters more than a 4-byte scalar.
      */
-    private void topologicalSort(ExecutionNode node, Map<String, ExecutionNode> allNodes,
-                               Set<String> visited, Set<String> visiting, List<ExecutionNode> result) {
-        
-        String nodeName = node.getOperationName();
-        
-        if (visiting.contains(nodeName)) {
-            log.warn("Cycle detected involving node: {}", nodeName);
-            return;
-        }
-        
-        if (visited.contains(nodeName)) {
-            return;
-        }
-        
-        visiting.add(nodeName);
-        
-        // Visit all dependencies first
-        for (String depName : node.getDependsOnOperations()) {
-            ExecutionNode depNode = allNodes.get(depName);
-            if (depNode != null) {
-                topologicalSort(depNode, allNodes, visited, visiting, result);
+    private long estimateFreedBytes(ExecutionNode node, Map<String, Integer> remainingConsumers,
+                                    Map<String, Long> varEstimatedBytes) {
+        long freed = 0;
+        for (String inputVar : node.getInputVariables()) {
+            Integer remaining = remainingConsumers.get(inputVar);
+            if (remaining != null && remaining <= 1) {
+                freed += varEstimatedBytes.getOrDefault(inputVar, 1L);
             }
         }
-        
-        visiting.remove(nodeName);
-        visited.add(nodeName);
-        result.add(node);
+        return freed;
+    }
+
+    /**
+     * Estimate the byte size of a variable's tensor for scheduling decisions.
+     * Uses shape and dtype from the SameDiff graph. For dynamic dimensions (-1),
+     * uses 1 as a conservative placeholder — the count-based tiebreaker still
+     * differentiates correctly when shapes are fully dynamic.
+     */
+    private long estimateVariableBytes(String varName) {
+        org.nd4j.autodiff.samediff.SDVariable sdVar = sameDiff.getVariable(varName);
+        if (sdVar == null) return 1L;
+
+        long[] shape = sdVar.getShape();
+        if (shape == null || shape.length == 0) return 1L;
+
+        long elements = 1;
+        for (long dim : shape) {
+            elements *= (dim > 0) ? dim : 1;  // -1 (dynamic) → 1 (conservative)
+        }
+
+        org.nd4j.linalg.api.buffer.DataType dtype = sdVar.dataType();
+        int bytesPerElement = (dtype != null) ? dtype.width() : 4;  // default to FLOAT32
+
+        return elements * bytesPerElement;
     }
     
     /**
      * Find the operation that produces a given variable.
-     * This fixes the core lookup logic that was causing the mixed dependencies.
-     * 
+     * Uses cached reverse lookup map for O(1) performance instead of O(N) linear scan.
+     *
      * Handles both TensorFlow and ONNX import patterns:
      * - TensorFlow: multi-output ops use ":0", ":1" suffixes
      * - ONNX: different naming patterns
      */
     private String findProducerOperation(String variableName) {
-        // Strip variable suffix for multi-output operations (e.g., "split:1" -> "split")
+        // Check for placeholder overrides first: if a variable was ARRAY but is now
+        // PLACEHOLDER (via addPlaceholderOverride), stop the walk here even though the
+        // cache still maps it to a producer op. This prunes the producing subgraph.
+        Variable overrideCheck = sameDiff.getVariables().get(variableName);
+        if (overrideCheck != null && overrideCheck.getVariable().getVariableType() == VariableType.PLACEHOLDER) {
+            return null;
+        }
+
+        // Fast path: direct cache lookup
+        String producer = variableToProducerOpCache.get(variableName);
+        if (producer != null) {
+            return producer;
+        }
+
+        // Try base name lookup for multi-output operations (e.g., "split:1" -> "split")
         String baseVarName = stripVariableSuffix(variableName);
-        
-        // Check all operations to find the producer
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            SameDiffOp op = entry.getValue();
-            List<String> outputs = op.getOutputsOfOp();
-            
-            if (outputs != null) {
-                // Direct match
-                if (outputs.contains(variableName)) {
-                    return entry.getKey();
-                }
-                
-                // Base name match (for multi-output ops)
-                if (outputs.contains(baseVarName)) {
-                    return entry.getKey();
-                }
-                
-                // Handle TensorFlow import patterns where output might be "op_name:index"
-                for (String output : outputs) {
-                    if (variableName.startsWith(output + ":")) {
-                        return entry.getKey();
-                    }
+        if (!baseVarName.equals(variableName)) {
+            producer = variableToProducerOpCache.get(baseVarName);
+            if (producer != null) {
+                return producer;
+            }
+        }
+
+        // Handle TensorFlow import patterns where variable might be "op_output:index"
+        // but cache has "op_output" without the index
+        int colonIndex = variableName.lastIndexOf(':');
+        if (colonIndex > 0) {
+            // Check if any cached output is a prefix of this variable name
+            for (Map.Entry<String, String> entry : variableToProducerOpCache.entrySet()) {
+                if (variableName.startsWith(entry.getKey() + ":")) {
+                    return entry.getValue();
                 }
             }
         }
-        
-        // Check if it's a variable/constant/placeholder
+
+        // Check if it's a variable/constant/placeholder (these don't have producers)
         Variable var = sameDiff.getVariables().get(variableName);
         if (var != null) {
             VariableType type = var.getVariable().getVariableType();
             if (type == VariableType.CONSTANT || type == VariableType.VARIABLE || type == VariableType.PLACEHOLDER) {
-                return null; // These don't have producer operations
+                return null;
             }
         }
-        
+
         log.trace("No producer operation found for variable: {}", variableName);
         return null;
     }
@@ -584,7 +779,7 @@ public class ForwardExecutionDAGBuilder {
             .map(v -> v.getVariable().name())
             .collect(Collectors.toSet());
     }
-    
+
     private Set<String> findVariables() {
         return sameDiff.getVariables().values().stream()
             .filter(v -> v.getVariable().getVariableType() == VariableType.VARIABLE)

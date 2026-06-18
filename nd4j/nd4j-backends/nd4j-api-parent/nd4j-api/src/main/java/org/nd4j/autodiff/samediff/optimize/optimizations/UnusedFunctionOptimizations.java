@@ -59,7 +59,16 @@ public class UnusedFunctionOptimizations extends BaseOptimizerSet {
                             }
                         });
 
+                        // Skip constants that are registered graph outputs — removing
+                        // them corrupts the graph output list.
+                        List<String> graphOutputs = sd.outputs();
+                        if (graphOutputs != null && graphOutputs.contains(v.getName())) {
+                            continue;
+                        }
                         sd.getVariables().remove(v.getName());
+                        // Update the helper cache so subsequent optimizers don't see
+                        // the now-removed variable via helper.getVariable().
+                        helper.updateVariable(v.getName(), null);
                         log.info("Removed unused constant: {}", v.getName());
                         anyRemoved = true;
                     }

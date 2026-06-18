@@ -27,10 +27,14 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.array.OptimizedGraphArrayHolder;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.function.Supplier;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public class OptimizationHelper {
@@ -41,17 +45,112 @@ public class OptimizationHelper {
     private boolean setConstantHolder = false;
     private boolean setVariableHolder = false;
 
+    // Fast lookup caches to avoid PatriciaTrie overhead during optimization
+    private Map<String, Variable> variablesCache;
+    private Map<String, SameDiffOp> opsCache;
+    // Live SameDiff reference for fallback when cache misses (newly created ops/vars)
+    private SameDiff liveSd;
+
     public OptimizationHelper(SameDiff originalGraph, Properties properties){
         this.originalGraph = originalGraph;
         this.properties = properties;
     }
 
+    /**
+     * Initialize fast lookup caches from the given SameDiff graph.
+     * This converts the PatriciaTrie to a HashMap for O(1) lookups during optimization.
+     */
+    public void initializeCaches(SameDiff sd) {
+        // Create HashMap snapshot of variables for O(1) lookup instead of PatriciaTrie O(k)
+        this.variablesCache = new HashMap<>(sd.getVariables());
+        this.opsCache = new HashMap<>(sd.getOps());
+        this.liveSd = sd;
+    }
+
+    /**
+     * Fast O(1) variable lookup with fallback to live SameDiff graph.
+     * Falls back to sd.getVariables() when the cache misses, since optimizers
+     * create new variables that aren't in the initial snapshot.
+     */
+    public Variable getVariable(String name) {
+        if (variablesCache != null) {
+            Variable v = variablesCache.get(name);
+            if (v != null) return v;
+        }
+        // Fallback to live graph for newly created variables
+        if (liveSd != null) {
+            Variable v = liveSd.getVariables().get(name);
+            if (v != null && variablesCache != null) {
+                variablesCache.put(name, v);  // backfill cache
+            }
+            return v;
+        }
+        return null;
+    }
+
+    /**
+     * Fast O(1) op lookup with fallback to live SameDiff graph.
+     * Falls back to sd.getOps() when the cache misses, since optimizers
+     * create new ops that aren't in the initial snapshot.
+     */
+    public SameDiffOp getOp(String name) {
+        if (opsCache != null) {
+            SameDiffOp op = opsCache.get(name);
+            if (op != null) return op;
+        }
+        // Fallback to live graph for newly created ops
+        if (liveSd != null) {
+            SameDiffOp op = liveSd.getOps().get(name);
+            if (op != null && opsCache != null) {
+                opsCache.put(name, op);  // backfill cache
+            }
+            return op;
+        }
+        return null;
+    }
+
+    /**
+     * Update the variables cache when variables are modified during optimization.
+     */
+    public void updateVariable(String name, Variable var) {
+        if (variablesCache != null) {
+            if (var == null) {
+                variablesCache.remove(name);
+            } else {
+                variablesCache.put(name, var);
+            }
+        }
+    }
+
+    /**
+     * Update the ops cache when ops are modified during optimization.
+     */
+    public void updateOp(String name, SameDiffOp op) {
+        if (opsCache != null) {
+            if (op == null) {
+                opsCache.remove(name);
+            } else {
+                opsCache.put(name, op);
+            }
+        }
+    }
+
     public OptimizationHelper arrayRecoveryFunction(String arrayName, Supplier<INDArray> fn){
         SDVariable v = originalGraph.getVariable(arrayName);
-        Preconditions.checkState(v.getVariableType() == VariableType.VARIABLE || v.getVariableType() == VariableType.CONSTANT,
-                "Can only set an array recovery function for a variable or a constant");
 
-        if(v.getVariableType() == VariableType.VARIABLE){
+        // The variable might not exist in the original graph (created during optimization)
+        // or might have a different type. In these cases, skip setting the recovery function.
+        if (v == null) {
+            return this;
+        }
+
+        VariableType varType = v.getVariableType();
+        if (varType != VariableType.VARIABLE && varType != VariableType.CONSTANT) {
+            // Not a variable or constant (e.g., ARRAY or PLACEHOLDER) - skip recovery function
+            return this;
+        }
+
+        if(varType == VariableType.VARIABLE){
             ArrayHolder h = originalGraph.getVariablesArrays();
             if(!setVariableHolder){
                 originalGraph.setVariablesArrays(new OptimizedGraphArrayHolder(h));
