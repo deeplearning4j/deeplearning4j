@@ -27,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -35,6 +37,7 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.BackendRegistry;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.MemoryManager;
 import org.nd4j.common.util.ND4JFileUtils;
@@ -291,6 +294,14 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     }
 
     /**
+     * Get the initial size (alias for getInitialBlockSize).
+     * @return initial size in bytes
+     */
+    public long getInitialSize() {
+        return getInitialBlockSize();
+    }
+
+    /**
      * This method returns parent Workspace, if any. Null if there's none.
      *
      * @return
@@ -382,6 +393,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         return requiredMemory;
     }
 
+    protected DeviceDescriptor resolveCpuDevice() {
+        DeviceDescriptor cpu = BackendRegistry.getInstance().getDefaultCpuDevice();
+        return cpu != null ? cpu : DeviceDescriptor.cpu();
+    }
+
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
 
         /*
@@ -405,7 +421,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                     numElements);
 
-            externalAllocations.add(new PointersPair(pointer, null));
+            DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
+            externalAllocations.add(new PointersPair(null, requiredMemory, pointer, null));
             AllocationsTracker.getInstance().getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
             return pointer;
         }
@@ -471,7 +488,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                                 numElements);
 
-                        externalAllocations.add(new PointersPair(pointer, null));
+                        DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
+                        externalAllocations.add(new PointersPair(null, requiredMemory, pointer, null));
 
                         return pointer;
                     } else {
@@ -482,6 +500,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                                 numElements);
 
+                        DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
                         pinnedAllocations.add(new PointersPair(stepsCount.get(), requiredMemory, pointer, null));
 
 
@@ -776,17 +795,17 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // we should block stuff since we're going to invalidate spilled allocations
         // TODO: block on spilled allocations probably?
         if(isOpen.get()) {
-            this.lastEntered = Thread.currentThread().getStackTrace();
-            return this;
-        }
-        MemoryWorkspace prev = Nd4j.getMemoryManager().getCurrentWorkspace();
-
-        // if we're opening the same workspace - just increase counter, and skip everything else
-        if (prev == this && isOpen.get()) {
+            // workspace is already open - this is a nested re-entry of the same workspace.
+            // increment tagScope so the matching close() call decrements it and skips the full close,
+            // preserving offsets and keeping the workspace open for the outer scope.
+            // Ensure the current workspace is set to this (it may have been changed by an
+            // intervening workspace open/close cycle between iterations).
+            Nd4j.getMemoryManager().setCurrentWorkspace(this);
             tagScope.incrementAndGet();
             this.lastEntered = Thread.currentThread().getStackTrace();
             return this;
         }
+        MemoryWorkspace prev = Nd4j.getMemoryManager().getCurrentWorkspace();
 
         // we'll need this in close() call, to restore previous workspace (if any)
         previousWorkspace = prev;

@@ -96,7 +96,7 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
         /*
             To avoid division by zero when the std deviation is zero, replace zeros by one
          */
-        INDArray stdCopy = stats.getStd();
+        INDArray stdCopy = stats.getStd().dup();
         BooleanIndexing.replaceWhere(stdCopy, 1.0, Conditions.equals(0));
         return stdCopy;
     }

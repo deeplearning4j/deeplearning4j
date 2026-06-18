@@ -20,9 +20,9 @@
 
 package org.nd4j.autodiff.listeners.records;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import lombok.Getter;
 import org.nd4j.autodiff.listeners.Listener;
@@ -108,11 +108,9 @@ public class History {
      * Only works if there is only one evaluation with the given metric for param
      */
     public List<Double> trainingEval(String param, IMetric metric) {
-        List<Double> data = new ArrayList<>();
-        for(EvaluationRecord er : trainingHistory)
-            data.add(er.getValue(param, metric));
-
-        return data;
+        return trainingHistory.stream()
+                .map(er -> er.getValue(param, metric))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -131,11 +129,9 @@ public class History {
      * Index determines the evaluation used not the epoch's results to return.
      */
     public List<Double> trainingEval(String param, int index, IMetric metric) {
-        List<Double> data = new ArrayList<>();
-        for(EvaluationRecord er : trainingHistory)
-            data.add(er.getValue(param, index, metric));
-
-        return data;
+        return trainingHistory.stream()
+                .map(er -> er.getValue(param, index, metric))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -154,11 +150,9 @@ public class History {
      * Only works if there is only one evaluation with the given metric
      */
     public List<Double> trainingEval(IMetric metric) {
-        List<Double> data = new ArrayList<>();
-        for(EvaluationRecord er : trainingHistory)
-            data.add(er.getValue(metric));
-
-        return data;
+        return trainingHistory.stream()
+                .map(er -> er.getValue(metric))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -167,11 +161,9 @@ public class History {
      * Only works if there is only one evaluation for param.
      */
     public List<IEvaluation> trainingEval(String param) {
-        List<IEvaluation> data = new ArrayList<>();
-        for(EvaluationRecord er : trainingHistory)
-            data.add(er.evaluation(param));
-
-        return data;
+        return trainingHistory.stream()
+                .map(er -> (IEvaluation) er.evaluation(param))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -190,11 +182,9 @@ public class History {
      * Index determines the evaluation used not the epoch's results to return.
      */
     public List<IEvaluation> trainingEval(String param, int index) {
-        List<IEvaluation> data = new ArrayList<>();
-        for(EvaluationRecord er : trainingHistory)
-            data.add(er.evaluation(param, index));
-
-        return data;
+        return trainingHistory.stream()
+                .map(er -> er.evaluation(param, index))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -213,11 +203,9 @@ public class History {
      * Only works if there is only one evaluation with the given metric for param
      */
     public List<Double> validationEval(String param, IMetric metric) {
-        List<Double> data = new ArrayList<>();
-        for(EvaluationRecord er : validationHistory)
-            data.add(er.getValue(param, metric));
-
-        return data;
+        return validationHistory.stream()
+                .map(er -> er.getValue(param, metric))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -236,11 +224,9 @@ public class History {
      * Index determines the evaluation used not the epoch's results to return.
      */
     public List<Double> validationEval(String param, int index, IMetric metric) {
-        List<Double> data = new ArrayList<>();
-        for(EvaluationRecord er : validationHistory)
-            data.add(er.getValue(param, index, metric));
-
-        return data;
+        return validationHistory.stream()
+                .map(er -> er.getValue(param, index, metric))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -259,11 +245,9 @@ public class History {
      * Only works if there is only one evaluation with the given metric
      */
     public List<Double> validationEval(IMetric metric) {
-        List<Double> data = new ArrayList<>();
-        for(EvaluationRecord er : validationHistory)
-            data.add(er.getValue(metric));
-
-        return data;
+        return validationHistory.stream()
+                .map(er -> er.getValue(metric))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -272,11 +256,9 @@ public class History {
      * Only works if there is only one evaluation for param.
      */
     public List<IEvaluation> validationEval(String param) {
-        List<IEvaluation> data = new ArrayList<>();
-        for(EvaluationRecord er : validationHistory)
-            data.add(er.evaluation(param));
-
-        return data;
+        return validationHistory.stream()
+                .map(er -> (IEvaluation) er.evaluation(param))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -295,11 +277,9 @@ public class History {
      * Index determines the evaluation used not the epoch's results to return.
      */
     public List<IEvaluation> validationEval(String param, int index) {
-        List<IEvaluation> data = new ArrayList<>();
-        for(EvaluationRecord er : validationHistory)
-            data.add(er.evaluation(param, index));
-
-        return data;
+        return validationHistory.stream()
+                .map(er -> er.evaluation(param, index))
+                .collect(Collectors.toList());
     }
 
     /**

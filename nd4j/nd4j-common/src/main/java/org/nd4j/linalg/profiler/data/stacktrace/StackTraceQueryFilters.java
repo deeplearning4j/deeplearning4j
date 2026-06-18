@@ -32,6 +32,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StackTraceQueryFilters implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private List<StackTraceQuery> include;
     private List<StackTraceQuery> exclude;

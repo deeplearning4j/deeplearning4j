@@ -23,8 +23,7 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.image.CropAndResize;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -91,11 +90,8 @@ public class CropAndResizeDataSetPreProcessor implements DataSetPreProcessor {
         INDArray input = dataSet.getFeatures();
         INDArray output = Nd4j.create(LongShapeDescriptor.fromShape(resizedShape, input.dataType()), false);
 
-        CustomOp op = DynamicCustomOp.builder("crop_and_resize")
-                .addInputs(input, boxes, indices, resize)
-                .addIntegerArguments(method)
-                .addOutputs(output)
-                .build();
+        CropAndResize.Method cropMethod = method == 0 ? CropAndResize.Method.BILINEAR : CropAndResize.Method.NEAREST;
+        CropAndResize op = new CropAndResize(input, boxes, indices, resize, cropMethod, 0.0, output);
         Nd4j.getExecutioner().exec(op);
 
         dataSet.setFeatures(output);

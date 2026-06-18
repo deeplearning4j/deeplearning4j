@@ -1,0 +1,6 @@
+[
+  {
+    "name": "org.nd4j.common.primitives.Pair",
+    "customTargetConstructorClass": "java.lang.Object"
+  }
+]

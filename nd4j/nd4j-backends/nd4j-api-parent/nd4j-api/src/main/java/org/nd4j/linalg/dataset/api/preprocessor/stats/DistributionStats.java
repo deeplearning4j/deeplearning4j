@@ -48,10 +48,6 @@ public class DistributionStats implements NormalizerStats {
      */
     public DistributionStats(@NonNull INDArray mean, @NonNull INDArray std) {
         Transforms.max(std, Nd4j.EPS_THRESHOLD, false);
-        // FIXME: obvious bug here
-//        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) {
-//            logger.info("API_INFO: Std deviation found to be zero. Transform will round up to epsilon to avoid nans.");
-//        }
 
         this.mean = mean;
         this.std = std;
@@ -122,16 +118,11 @@ public class DistributionStats implements NormalizerStats {
 
             if (runningMean == null) {
                 // First batch
-                runningMean = mean;
-                runningVariance = variance;
+                // Always dup to ensure runningMean/runningVariance own their data and cannot be
+                // invalidated by subsequent reduction ops or workspace reuse on the CUDA backend.
+                runningMean = mean.dup();
+                runningVariance = variance.dup();
                 runningCount = count;
-
-                if (data.size(0) == 1) {
-                    //Handle edge case: currently, reduction ops may return the same array
-                    //But we don't want to modify this array in-place later
-                    runningMean = runningMean.dup();
-                    runningVariance = runningVariance.dup();
-                }
             } else {
                 // Update running variance
                 INDArray deltaSquared = Transforms.pow(mean.subRowVector(runningMean), 2);

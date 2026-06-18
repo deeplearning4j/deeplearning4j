@@ -7232,6 +7232,22 @@ opList {
   }
 }
 opList {
+  name: "einsum"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "equation"
+    argType: STRING
+  }
+  argDescriptor {
+    name: "inputs"
+    argType: INPUT_TENSOR
+  }
+  opDeclarationType: CUSTOM_OP_IMPL
+}
+opList {
   name: "elu"
   argDescriptor {
     name: "outputs"
@@ -20756,7 +20772,7 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
-    name: "numOfClasses"
+    name: "numSegments"
     argType: INT64
   }
   argDescriptor {
@@ -20930,7 +20946,7 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
-    name: "numOfClasses"
+    name: "numSegments"
     argType: INT64
   }
   argDescriptor {
@@ -21462,6 +21478,81 @@ opList {
   }
 }
 opList {
+  name: "xdivy"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "dataType"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  opDeclarationType: BROADCASTABLE_OP_IMPL
+}
+opList {
+  name: "xlog1py"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "dataType"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  opDeclarationType: BROADCASTABLE_OP_IMPL
+}
+opList {
+  name: "xlogy"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "dataType"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  opDeclarationType: BROADCASTABLE_OP_IMPL
+}
+opList {
   name: "yiq_to_rgb"
   argDescriptor {
     name: "outputs"
@@ -21573,4 +21664,3658 @@ opList {
 opList {
   name: "placeholder"
   opDeclarationType: LOGIC_OP_IMPL
+}
+
+opList {
+  name: "OpScope"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  opDeclarationType: LOGIC_OP_IMPL
+}
+opList {
+  name: "adaptive_avgpool2d"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "outputH"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "outputW"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "adaptive_avgpool2d_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradIn"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "outputH"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "outputW"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "adaptive_avgpool3d"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "isNCDHW"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "outputD"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "outputH"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "outputW"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "isNCDHW"
+    argType: INT64
+    argIndex: 3
+  }
+}
+opList {
+  name: "adaptive_maxpool2d"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "outputH"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "outputW"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "extraParam0"
+    argType: INT64
+    argIndex: 9
+  }
+}
+opList {
+  name: "adaptive_maxpool2d_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradIn"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "outputH"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "outputW"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "extraParam0"
+    argType: INT64
+    argIndex: 9
+  }
+}
+opList {
+  name: "affine_grid"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "alignCorners"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "alignCorners"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "theta"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "size"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "apply_alibi"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "scores"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "attention_distillation_loss"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "studentAttn"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "teacherAttn"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "attention_distillation_loss_grad"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dLdStudent"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dLdTeacher"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "studentAttn"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "teacherAttn"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "awq_matmul"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "groupSize"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numBits"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weightPacked"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "scales"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "zeros"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+}
+opList {
+  name: "blackman_window"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "periodic"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "sizeInput"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "periodic"
+    argType: INT64
+  }
+}
+opList {
+  name: "cast_and_scale"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "scale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "center_and_sharpen"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "temperature"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "center"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "center_and_sharpen_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dLdInput"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dLdCenter"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "temperature"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "center"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gradOutput"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "column_parallel_linear"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gatherOutput"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "tpSize"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "tpRank"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gatherOutput"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weightShard"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "biasShard"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "contrastive_loss"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "temperature"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "imageEmbeddings"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "textEmbeddings"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "contrastive_loss_grad"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dLdImage"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dLdText"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "temperature"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "imageEmbeddings"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "textEmbeddings"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "ctc_greedy_decoder"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "decoded"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "logProb"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "mergeRepeated"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "blankIndex"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "logits"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "sequenceLength"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "decoder_masked_mha"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "maskFilterValue"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numKvHeads"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "headDim"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "useRoPE"
+    argType: INT64
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "ropeBase"
+    argType: INT64
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "hiddenStates"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "qkvWeight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "outWeight"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "pastKey"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "pastValue"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "presentKey"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "presentValue"
+    argType: INPUT_TENSOR
+    argIndex: 6
+  }
+}
+opList {
+  name: "deformable_conv2d"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "kH"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "kW"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "sH"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "sW"
+    argType: INT64
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "pH"
+    argType: INT64
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "pW"
+    argType: INT64
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "dH"
+    argType: INT64
+    argIndex: 6
+  }
+  argDescriptor {
+    name: "dW"
+    argType: INT64
+    argIndex: 7
+  }
+  argDescriptor {
+    name: "groups"
+    argType: INT64
+    argIndex: 8
+  }
+  argDescriptor {
+    name: "offsetGroups"
+    argType: INT64
+    argIndex: 9
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "offset"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "mask"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+}
+opList {
+  name: "dft"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inverse"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "onesided"
+    argType: BOOL
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "inverse"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "onesided"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "distillation_kl_loss"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "temperature"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "alpha"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "studentLogits"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "teacherLogits"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "hardLabels"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "distillation_kl_loss_grad"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dLdStudent"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dLdTeacher"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "temperature"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "alpha"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "studentLogits"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "teacherLogits"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "hardLabels"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "dora_matmul"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "transposeWeight"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scaling"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dropout"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "eps"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "loraA"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "loraB"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "magnitude"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+}
+opList {
+  name: "dora_matmul_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dLdInput"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dLdWeight"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dLdLoraA"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "dLdLoraB"
+    argType: OUTPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "dLdMagnitude"
+    argType: OUTPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "scaling"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "eps"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "loraA"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "loraB"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "magnitude"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "dLdOut"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+}
+opList {
+  name: "ema_update"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "decay"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "model"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "shadow"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "ema_update_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dLdModel"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dLdShadow"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "decay"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "model"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "shadow"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gradOutput"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "feature_distillation_loss"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "studentFeatures"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "teacherFeatures"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "projectionWeight"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "feature_distillation_loss_grad"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dLdStudent"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dLdTeacher"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dLdProjection"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "studentFeatures"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "teacherFeatures"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "projectionWeight"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "flash_attention"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "config.isCausal"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numKvHeads"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "query"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "key"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "value"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "flash_attention_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradQ"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradK"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gradV"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "config.isCausal"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "config.numHeads"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "config.numKvHeads"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "query"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "key"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "value"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "gradOutput"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "softmaxLse"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+}
+opList {
+  name: "fp8_matmul"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "transposeA"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "transposeB"
+    argType: BOOL
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "fp8Format"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "a"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "b"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "scaleA"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "scaleB"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+}
+opList {
+  name: "fused_bias_dropout_residual"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "training"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "dropoutProb"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "seed"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "residual"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "fused_elementwise_chain"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "clipMinVal"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "clipMaxVal"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "ops"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "secondaryInputs"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "fused_gelu"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  opDeclarationType: CONFIGURABLE_OP_IMPL
+}
+opList {
+  name: "fused_gelu_bp"
+  argDescriptor {
+    name: "gradIn"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gradIn"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  opDeclarationType: CONFIGURABLE_OP_IMPL
+}
+opList {
+  name: "fused_gemm_swiglu"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "wGate"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "wUp"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "fused_layer_norm"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gain"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "fused_layer_norm_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradInput"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradGain"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gradBias"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gain"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "gradInput"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "gradGain"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "gradBias"
+    argType: INPUT_TENSOR
+    argIndex: 6
+  }
+}
+opList {
+  name: "fused_norm_quantize"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "normType"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "quantType"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "quantized"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "scale"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+}
+opList {
+  name: "fused_rms_norm_swiglu"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gamma"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "wGate"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "wUp"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+}
+opList {
+  name: "fused_rms_norm_swiglu_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradInput"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradGamma"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gradWGate"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "gradWUp"
+    argType: OUTPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gamma"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "wGate"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "wUp"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "gradInput"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "gradGamma"
+    argType: INPUT_TENSOR
+    argIndex: 6
+  }
+  argDescriptor {
+    name: "gradWGate"
+    argType: INPUT_TENSOR
+    argIndex: 7
+  }
+  argDescriptor {
+    name: "gradWUp"
+    argType: INPUT_TENSOR
+    argIndex: 8
+  }
+}
+opList {
+  name: "fused_rope"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "freqBase"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "freqScale"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "ropeType"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "positionOffset"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "fused_rope_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradIn"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "freqBase"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "freqScale"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "ropeType"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "positionOffset"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gradIn"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "gpu_top_k_sample"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "temperature"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "logits"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "k"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "seed"
+    argType: INT64
+    argIndex: 1
+  }
+}
+opList {
+  name: "gpu_top_p_sample"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "p"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "temperature"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "repetitionPenalty"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "frequencyPenalty"
+    argType: DOUBLE
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "presencePenalty"
+    argType: DOUBLE
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "seed"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "logits"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "grid_sample"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "alignCorners"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "mode"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "paddingMode"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "alignCorners"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "grid"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "grouped_query_attention"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "config.isCausal"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numKvHeads"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "query"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "key"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "value"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "mask"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+}
+opList {
+  name: "grouped_query_attention_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradQ"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradK"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gradV"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "config.isCausal"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numKvHeads"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "query"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "key"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "value"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "gradOutput"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+}
+opList {
+  name: "hamming_window"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "periodic"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "sizeInput"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "periodic"
+    argType: INT64
+  }
+}
+opList {
+  name: "hann_window"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "periodic"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "sizeInput"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "periodic"
+    argType: INT64
+  }
+}
+opList {
+  name: "kv_cache_dequantize"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "quantFormat"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "quantized"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "scales"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "kv_cache_quantize"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "quantFormat"
+    argType: INT64
+  }
+}
+opList {
+  name: "kv_cache_update"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputKeyCache"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "outputValueCache"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "startPosition"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "keyCache"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "valueCache"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "newKeys"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "newValues"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+}
+opList {
+  name: "kv_scatter"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "cachePos"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numPairs"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "present"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "linear_copy"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "loha_matmul"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "transposeWeight"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scaling"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dropout"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "lohaA1"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "lohaB1"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "lohaA2"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "lohaB2"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+}
+opList {
+  name: "loha_matmul_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dLdInput"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dLdWeight"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dLdLohaA1"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "dLdLohaB1"
+    argType: OUTPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "dLdLohaA2"
+    argType: OUTPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "dLdLohaB2"
+    argType: OUTPUT_TENSOR
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "transposeWeight"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scaling"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "lohaA1"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "lohaB1"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "lohaA2"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "lohaB2"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "dLdOut"
+    argType: INPUT_TENSOR
+    argIndex: 6
+  }
+}
+opList {
+  name: "lokr_matmul"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "transposeWeight"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scaling"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dropout"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "factor1"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "factor2"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "lokrC"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "lokrA"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "lokrB"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+}
+opList {
+  name: "lokr_matmul_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dLdInput"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dLdWeight"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dLdLokrC"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "dLdLokrA"
+    argType: OUTPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "dLdLokrB"
+    argType: OUTPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "transposeWeight"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scaling"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "factor1"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "factor2"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "lokrC"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "lokrA"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "lokrB"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "dLdOut"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+}
+opList {
+  name: "lora_matmul"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "transposeWeight"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scaling"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dropout"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "loraA"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "loraB"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+}
+opList {
+  name: "lora_matmul_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dLdInput"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dLdWeight"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dLdLoraA"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "dLdLoraB"
+    argType: OUTPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "transposeWeight"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scaling"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "loraA"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "loraB"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "dLdOut"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+}
+opList {
+  name: "mean_square"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "keepDims"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "keepDims"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "mean_square_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradIn"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "keepDims"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "keepDims"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "mixture_of_experts"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "routerLogits"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "useSoftmaxGating"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "returnRouterLogits"
+    argType: BOOL
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "capacityFactor"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gatingWeights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "expertWeights"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "expertBias"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "numExperts"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "topK"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "expertCapacity"
+    argType: INT64
+    argIndex: 2
+  }
+}
+opList {
+  name: "mla_attention"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "attScale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numKvHeads"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "headDim"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "latentDim"
+    argType: INT64
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "ropeHeadDim"
+    argType: INT64
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "seqLen"
+    argType: INT64
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "query"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "latentKVCache"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "kvDownProj"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "ropeCache"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+}
+opList {
+  name: "moe_gate"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "auxLossCoeff"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "topK"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numExperts"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "hiddenStates"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gateWeight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "expertIndices"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "gateWeights"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "auxLoss"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+}
+opList {
+  name: "multi_lora_matmul"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "alpha"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "baseWeight"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "loraAWeights"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "loraBWeights"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "adapterIds"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+}
+opList {
+  name: "onnx_multi_head_attention"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "presentKey"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "presentValue"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "useCausalMask"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numOutputs"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "query"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "key"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "value"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "attnBias"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "pastKey"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "pastValue"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "cachePosInput"
+    argType: INPUT_TENSOR
+    argIndex: 6
+  }
+}
+opList {
+  name: "quantized_matmul"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "c"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "a"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "b"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "relative_position_bias"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "useAlibi"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "windowSize"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "biasTable"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "relativePositionIndex"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "reshape_no_copy"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "shape"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "rms_norm"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gamma"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "rms_norm_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradIn"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "rope"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "freqBase"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "freqScale"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "mode"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "nPast"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "nDims"
+    argType: INT64
+    argIndex: 2
+  }
+}
+opList {
+  name: "rope_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradIn"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "freqBase"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "freqScale"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "nPast"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "nDims"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "row_parallel_linear"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "reduceOutput"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "tpSize"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "tpRank"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "reduceOutput"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "inputShard"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weightShard"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "selective_scan"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "A"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "B"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "C"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "D"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "h0"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+}
+opList {
+  name: "silu"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  opDeclarationType: CONFIGURABLE_OP_IMPL
+}
+opList {
+  name: "silu_bp"
+  argDescriptor {
+    name: "gradIn"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  opDeclarationType: CONFIGURABLE_OP_IMPL
+}
+opList {
+  name: "sliding_window_attention"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "scale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "windowSize"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "numKvHeads"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "query"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "key"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "value"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "smooth_quant"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "transposeWeight"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weightQuant"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "smoothScale"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "weightScale"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "actScale"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+}
+opList {
+  name: "stft"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "onesided"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "onesided"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "signal"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "frameStep"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "window"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "frameLengthTensor"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+}
+opList {
+  name: "swish_mul"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  opDeclarationType: CONFIGURABLE_OP_IMPL
+}
+opList {
+  name: "swish_mul_bp"
+  argDescriptor {
+    name: "gradX"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradY"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "gradX"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "gradY"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  opDeclarationType: CONFIGURABLE_OP_IMPL
+}
+opList {
+  name: "token_sample"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "temperature"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "topP"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "logits"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "topK"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "seed"
+    argType: INT64
+    argIndex: 1
+  }
+}
+opList {
+  name: "two_way_cross_attention"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "tokenOutput"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "imageOutput"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "scale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "tokenQuery"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "tokenKey"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "tokenValue"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "imageQuery"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "imageKey"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "imageValue"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+}
+opList {
+  name: "two_way_cross_attention_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "dTokenQ"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dTokenK"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dTokenV"
+    argType: OUTPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "dImageQ"
+    argType: OUTPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "dImageK"
+    argType: OUTPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "dImageV"
+    argType: OUTPUT_TENSOR
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "scale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "tokenQuery"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "tokenKey"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "tokenValue"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "imageQuery"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "imageKey"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "imageValue"
+    argType: INPUT_TENSOR
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "gradTokenOut"
+    argType: INPUT_TENSOR
+    argIndex: 6
+  }
+  argDescriptor {
+    name: "gradImageOut"
+    argType: INPUT_TENSOR
+    argIndex: 7
+  }
+}
+opList {
+  name: "vlm_2d_position_encode"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "temperature"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "height"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "width"
+    argType: INT64
+    argIndex: 1
+  }
+}
+opList {
+  name: "vlm_cross_attention"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "isCausal"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "query"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "key"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "value"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+}
+opList {
+  name: "vlm_image_embed"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "patchSize"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "embeddingDim"
+    argType: INT64
+    argIndex: 1
+  }
+}
+opList {
+  name: "vlm_image_preprocess"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "meanR"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "meanG"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "meanB"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "stdR"
+    argType: DOUBLE
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "stdG"
+    argType: DOUBLE
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "stdB"
+    argType: DOUBLE
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "vlm_multimodal_fusion"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "fusionType"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "vision"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "language"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "vlm_patch_embed"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "patchSize"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "stride"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "includeCls"
+    argType: INT64
+    argIndex: 2
+  }
+}
+opList {
+  name: "vlm_vision_encode"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "eps"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "vlm_vision_projection"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+}
+opList {
+  name: "windowed_attention"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "attentionWeights"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "returnWeights"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "scale"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "windowSize"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numHeads"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "shiftSize"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "query"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "key"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "value"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "relativePositionBias"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "attentionMask"
+    argType: INPUT_TENSOR
+    argIndex: 4
+  }
 }

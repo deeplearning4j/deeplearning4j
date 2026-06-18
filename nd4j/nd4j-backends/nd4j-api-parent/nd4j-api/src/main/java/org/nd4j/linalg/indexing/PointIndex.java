@@ -49,7 +49,8 @@ public class  PointIndex implements INDArrayIndex {
      */
     public PointIndex(long point) {
         this.point = point;
-        initialized = point > 0;
+        // Negative indices need runtime resolution, but 0 and positive are valid indices
+        initialized = point >= 0;
     }
 
     @Override

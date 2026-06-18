@@ -175,8 +175,9 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     public MemoryWorkspace notifyScopeEntered(@NonNull T arrayType) {
         validateConfig(arrayType);
         if(isScopedOut(arrayType)) {
-            recordWorkspaceOpen(Nd4j.getWorkspaceManager().scopeOutOfWorkspaces(), arrayType);
-            return Nd4j.getWorkspaceManager().scopeOutOfWorkspaces();
+            MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces();
+            recordWorkspaceOpen(ws, arrayType);
+            return ws;
         } else {
             lastWorkspaceEntered.set(Thread.currentThread().getStackTrace());
             MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
@@ -204,8 +205,9 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
         enforceExistsAndActive(arrayType);
 
         if(scopeOutOfWs.contains(arrayType)) {
-            recordWorkspaceBorrow(Nd4j.getWorkspaceManager().scopeOutOfWorkspaces(), arrayType);
-            return Nd4j.getWorkspaceManager().scopeOutOfWorkspaces();
+            MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces();
+            recordWorkspaceBorrow(ws, arrayType);
+            return ws;
         } else {
             MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                     getConfiguration(arrayType), getWorkspaceName(arrayType));
@@ -292,15 +294,18 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
 
     @Override
     public INDArray leverageTo(@NonNull T arrayType, @NonNull INDArray array) {
+        validateConfig(arrayType);
+
         if(array == null || !array.isAttached()) {
-
-
             if(!DISABLE_LEVERAGE) {
                 if(scopeOutOfWs.contains(arrayType)) {
-                    return array.detach();
+                    return array;
+                }
+                if(!isWorkspaceOpen(arrayType)) {
+                    return array;
                 }
                 String workspaceName = getWorkspaceName(arrayType);
-                INDArray ret =  array.leverageTo(workspaceName, true);
+                INDArray ret = array.leverageTo(workspaceName, true);
                 if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
                     Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(array.getId(),
                             NDArrayEvent.builder()
@@ -310,10 +315,12 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
                                     .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_LEVERAGE)
                                     .build());
                 }
+                return ret;
+            } else {
+                return array;
             }
         }
 
-        validateConfig(arrayType);
         enforceExistsAndActive(arrayType);
 
         if(!DISABLE_LEVERAGE) {

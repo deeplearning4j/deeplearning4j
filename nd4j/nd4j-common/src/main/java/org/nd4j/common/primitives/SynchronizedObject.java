@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class SynchronizedObject<T> implements Serializable {
+    private static final long serialVersionUID = 1L;
     protected T value;
     protected transient ReentrantReadWriteLock lock;
 

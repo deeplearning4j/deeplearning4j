@@ -20,11 +20,11 @@
 
 package org.nd4j.serde.base64;
 
-import org.apache.commons.net.util.Base64;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
+import java.util.Base64;
 
 /**
  * NDArray as base 64
@@ -46,7 +46,7 @@ public class Nd4jBase64 {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         Nd4j.write(arr, dos);
-        return Base64.encodeBase64String(bos.toByteArray());
+        return Base64.getEncoder().encodeToString(bos.toByteArray());
     }
 
     /**
@@ -56,7 +56,7 @@ public class Nd4jBase64 {
      * @return the ndarray from base 64
      */
     public static INDArray fromBase64(String base64) {
-        byte[] arr = Base64.decodeBase64(base64);
+        byte[] arr = Base64.getDecoder().decode(base64);
         ByteArrayInputStream bis = new ByteArrayInputStream(arr);
         DataInputStream dis = new DataInputStream(bis);
         return Nd4j.read(dis);

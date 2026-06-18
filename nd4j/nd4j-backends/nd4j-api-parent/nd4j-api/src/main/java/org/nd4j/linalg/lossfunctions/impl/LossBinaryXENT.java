@@ -28,7 +28,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.same.TimesOneMinus;
 import org.nd4j.linalg.factory.Nd4j;
@@ -124,11 +124,8 @@ public class LossBinaryXENT implements ILossFunction {
         } else {
             INDArray output = activationFn.getActivation(preOutput.dup(), true);
             if (clipEps > 0.0) {
-                CustomOp op = DynamicCustomOp.builder("clipbyvalue")
-                        .addInputs(output)
-                        .callInplace(true)
-                        .addFloatingPointArguments(clipEps, 1.0-clipEps)
-                        .build();
+                ClipByValue op = new ClipByValue(output, clipEps, 1.0 - clipEps);
+                op.addOutputArgument(output);
                 Nd4j.getExecutioner().execAndReturn(op);
             }
 
@@ -187,11 +184,8 @@ public class LossBinaryXENT implements ILossFunction {
 
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
         if (clipEps > 0.0) {
-            CustomOp op = DynamicCustomOp.builder("clipbyvalue")
-                    .addInputs(output)
-                    .callInplace(true)
-                    .addFloatingPointArguments(clipEps, 1.0-clipEps)
-                    .build();
+            ClipByValue op = new ClipByValue(output, clipEps, 1.0 - clipEps);
+            op.addOutputArgument(output);
             Nd4j.getExecutioner().execAndReturn(op);
         }
 

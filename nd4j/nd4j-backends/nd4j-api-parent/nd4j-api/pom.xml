@@ -36,11 +36,12 @@
     <name>nd4j-api</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <byteunits.version>0.9.1</byteunits.version>
         <neoitertools.version>1.0.0</neoitertools.version>
         <module.name>nd4j.api</module.name>
-        <cuda.version>12.3</cuda.version>
-        <cudnn.version>8.9</cudnn.version>
+        <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
         <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
         <libnd4j.extension></libnd4j.extension>
         <libnd4j.chip></libnd4j.chip>
@@ -117,11 +118,6 @@
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>jackson</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-net</groupId>
-            <artifactId>commons-net</artifactId>
-            <version>${commons-net.version}</version>
         </dependency>
         <dependency>
             <groupId>net.ericaro</groupId>
@@ -225,7 +221,7 @@
                         <executions>
                             <execution>
                                 <id>tensorflow</id>
-                                <phase>generate-sources</phase>
+                                <phase>initialize</phase>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
@@ -250,30 +246,7 @@
                         </executions>
                     </plugin>
 
-                    <plugin>
-                        <groupId>com.google.code.maven-replacer-plugin</groupId>
-                        <artifactId>replacer</artifactId>
-                        <version>${maven-replacer-plugin.version}</version>
-                        <configuration>
-                            <includes>
-                                <include>${project.build.sourceDirectory}/org/tensorflow/**</include>
-                                <include>${project.build.sourceDirectory}/tensorflow/**</include>
-                                <include>${project.build.sourceDirectory}/onnx/**</include>
-                                <include>${project.build.sourceDirectory}/org/nd4j/ir/**</include>
-                            </includes>
-                            <token>com.google.protobuf.</token>
-                            <value>org.nd4j.shade.protobuf.</value>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>replace-imports</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>replace</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
+
 
                 </plugins>
             </build>
@@ -295,7 +268,7 @@
                         <executions>
                             <execution>
                                 <id>tensorflow</id>
-                                <phase>generate-sources</phase>
+                                <phase>initialize</phase>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
@@ -322,30 +295,7 @@
                         </executions>
                     </plugin>
 
-                    <plugin>
-                        <groupId>com.google.code.maven-replacer-plugin</groupId>
-                        <artifactId>replacer</artifactId>
-                        <version>${maven-replacer-plugin.version}</version>
-                        <configuration>
-                            <includes>
-                                <include>${project.build.sourceDirectory}/org/tensorflow/**</include>
-                                <include>${project.build.sourceDirectory}/tensorflow/**</include>
-                                <include>${project.build.sourceDirectory}/onnx/**</include>
-                                <include>${project.build.sourceDirectory}/org/nd4j/ir/**</include>
-                            </includes>
-                            <token>com.google.protobuf.</token>
-                            <value>org.nd4j.shade.protobuf.</value>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>replace-imports</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>replace</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
+
 
                 </plugins>
             </build>
@@ -372,45 +322,30 @@
                 <version>${maven-antrun-plugin.version}</version>
                 <executions>
                     <execution>
+                        <id>process-sources</id>
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>
                         <configuration>
                             <target>
+                                <echo message="Source directory: ${project.build.sourceDirectory}"/>
                                 <delete
-                                        file="${project.build.sourceDirectory}/onnx/OnnxMlProto3.java"/>
+                                        file="${project.build.sourceDirectory}/onnx/OnnxMlProto3.java" quiet="true"/>
                                 <delete
-                                        file="${project.build.sourceDirectory}/onnx/OnnxOperatorsProto3.java"/>
+                                        file="${project.build.sourceDirectory}/onnx/OnnxOperatorsProto3.java" quiet="true"/>
                                 <delete
-                                        file="${project.build.sourceDirectory}/onnx/OnnxProto3.java"/>
+                                        file="${project.build.sourceDirectory}/onnx/OnnxProto3.java" quiet="true"/>
+                                <replace token="com.google.protobuf." value="org.nd4j.shade.protobuf.">
+                                    <fileset dir="${project.build.sourceDirectory}">
+                                        <include name="org/tensorflow/**/*.java"/>
+                                        <include name="tensorflow/**/*.java"/>
+                                        <include name="onnx/**/*.java"/>
+                                        <include name="org/nd4j/ir/**/*.java"/>
+                                    </fileset>
+                                </replace>
                             </target>
                         </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>com.google.code.maven-replacer-plugin</groupId>
-                <artifactId>replacer</artifactId>
-                <version>${maven-replacer-plugin.version}</version>
-                <configuration>
-                    <includes>
-                        <include>${project.build.sourceDirectory}/org/tensorflow/**</include>
-                        <include>${project.build.sourceDirectory}/tensorflow/**</include>
-                        <include>${project.build.sourceDirectory}/onnx/**</include>
-                        <include>${project.build.sourceDirectory}/org/nd4j/ir/**</include>
-                    </includes>
-                    <token>com.google.protobuf.</token>
-                    <value>org.nd4j.shade.protobuf.</value>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>replace-imports</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>replace</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>

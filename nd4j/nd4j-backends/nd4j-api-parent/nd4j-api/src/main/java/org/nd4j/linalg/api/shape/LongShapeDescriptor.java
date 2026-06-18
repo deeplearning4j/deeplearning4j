@@ -20,13 +20,8 @@
 
 package org.nd4j.linalg.api.shape;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.Setter;
-
+import lombok.*;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
@@ -149,17 +144,29 @@ public class LongShapeDescriptor {
     }
 
     public static LongShapeDescriptor fromShape(long[] shape, @NonNull DataType dataType) {
-        return fromShape(shape, Nd4j.getStrides(shape, Nd4j.order()), 1, Nd4j.order(), dataType, false);
+        boolean empty = false;
+        if (shape != null) {
+            for (long dim : shape) {
+                if (dim == 0) {
+                    empty = true;
+                    break;
+                }
+            }
+        }
+        return fromShape(shape, Nd4j.getStrides(shape, Nd4j.order()), 1, Nd4j.order(), dataType, empty);
     }
 
     public static LongShapeDescriptor emptyWithShape(long[] shape,@NonNull DataType dataType) {
-        long[] l = new long[0];
-        return fromShape(l, l, 1, 'c', dataType, true);
+        if (shape == null || shape.length == 0) {
+            long[] l = new long[]{0};
+            return fromShape(l, new long[]{1}, 1, 'c', dataType, true);
+        }
+        return fromShape(shape, Nd4j.getStrides(shape, Nd4j.order()), 1, Nd4j.order(), dataType, true);
     }
 
     public static LongShapeDescriptor empty(@NonNull DataType dataType) {
-        long[] l = new long[0];
-        return fromShape(l, l, 1, 'c', dataType, true);
+        long[] l = new long[]{0};
+        return fromShape(l, new long[]{1}, 1, 'c', dataType, true);
     }
 
     public static LongShapeDescriptor fromShape(@NonNull long[] shape, @NonNull long[] strides, long ews, char order, @NonNull DataType dataType, boolean empty) {
@@ -196,6 +203,8 @@ public class LongShapeDescriptor {
     public boolean isScalar() {
         return !isEmpty() && rank() < 1;
     }
+
+
 
 
     /**

@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -33,6 +34,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class Permute extends Transpose {
 
     private long[] reverseDims;
@@ -78,8 +80,20 @@ public class Permute extends Transpose {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret;
+        log.debug("[Permute.doDiff] args().length={}, permuteDims={}, reverseDims={}", args().length, java.util.Arrays.toString(permuteDims), java.util.Arrays.toString(reverseDims));
         if(args().length == 1) {
             //Static dimensions
+            if(reverseDims == null) {
+                log.debug("[Permute.doDiff] ERROR: reverseDims is null! Recomputing from iArguments...");
+                if(!iArguments.isEmpty()) {
+                    long[] dims = Longs.toArray(iArguments);
+                    this.reverseDims = new long[dims.length];
+                    for (int i = 0; i < reverseDims.length; i++) {
+                        reverseDims[i] = ArrayUtils.indexOf(dims, i);
+                    }
+                    log.debug("[Permute.doDiff] Recomputed reverseDims={}", java.util.Arrays.toString(reverseDims));
+                }
+            }
             ret = sameDiff.permute(i_v.get(0), reverseDims);
         } else {
             //Dynamic dimensions

@@ -28,6 +28,7 @@ import java.io.Serializable;
 @Data
 @Builder
 public class PropertyMapping implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private String[] propertyNames;
     private Integer tfInputPosition;

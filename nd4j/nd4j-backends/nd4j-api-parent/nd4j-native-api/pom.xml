@@ -36,6 +36,7 @@
     <name>nd4j-native-api</name>
 
     <properties>
+        <skipPublishing>false</skipPublishing>
         <!-- Java 9 module name does not allow native-->
         <module.name>nd4j.cpu.api</module.name>
     </properties>

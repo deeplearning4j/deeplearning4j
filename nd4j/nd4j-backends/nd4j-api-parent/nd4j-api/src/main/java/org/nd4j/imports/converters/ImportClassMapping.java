@@ -432,6 +432,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.custom.MirrorPad.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttentionBp.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.ParallelConcat.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.Pow.class,

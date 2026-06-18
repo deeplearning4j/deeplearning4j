@@ -24,16 +24,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.nd4j.linalg.api.memory.enums.*;
 
 import java.io.Serializable;
 
-@Builder
+@SuperBuilder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 // TODO: add json mapping here
 public class WorkspaceConfiguration implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Builder.Default protected AllocationPolicy policyAllocation = AllocationPolicy.OVERALLOCATE;
     @Builder.Default protected SpillPolicy policySpill = SpillPolicy.EXTERNAL;
     @Builder.Default protected MirroringPolicy policyMirroring = MirroringPolicy.FULL;

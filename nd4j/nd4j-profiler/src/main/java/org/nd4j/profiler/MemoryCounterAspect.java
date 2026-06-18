@@ -19,6 +19,7 @@
  */
 package org.nd4j.profiler;
 
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -34,6 +35,7 @@ import java.util.Set;
  *
  * @author Adam Gibson
  */
+@Slf4j
 @Aspect
 public class MemoryCounterAspect {
 
@@ -104,7 +106,7 @@ public class MemoryCounterAspect {
             Object ret = joinPoint.proceed();
             long after = Pointer.physicalBytes();
             MemoryCounter.decrement(className, currMemory - after);
-            System.out.println("Deallocating : " + joinPoint.getTarget().getClass().getName());
+            log.debug("Deallocating : {}", joinPoint.getTarget().getClass().getName());
             return ret;
         }
 

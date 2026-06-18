@@ -26,25 +26,35 @@ package org.nd4j.enums;
  * Activations
  */
 public enum CellAct {
-  TANH,
+  TANH(0),
 
-  RELU,
+  RELU(1),
 
-  SIGMOID,
+  SIGMOID(2),
 
-  AFFINE,
+  AFFINE(3),
 
-  LEAKY_RELU,
+  LEAKY_RELU(4),
 
-  THRESHHOLD_RELU,
+  THRESHHOLD_RELU(5),
 
-  SCALED_TAHN,
+  SCALED_TAHN(6),
 
-  HARD_SIGMOID,
+  HARD_SIGMOID(7),
 
-  ELU,
+  ELU(8),
 
-  SOFTSIGN,
+  SOFTSIGN(9),
 
-  SOFTPLUS
+  SOFTPLUS(10);
+
+  private final int methodIndex;
+
+  CellAct(int index) {
+    this.methodIndex = index;
+  }
+
+  public int methodIndex() {
+    return methodIndex;
+  }
 }

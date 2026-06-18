@@ -196,4 +196,37 @@ public interface MemoryManager {
      * This method releases Context (if current backend has one, sure)
      */
     void releaseCurrentContext();
+
+    /**
+     * Get the deallocator service.
+     * @return deallocator service
+     */
+    org.nd4j.linalg.api.memory.deallocation.DeallocatorService getDeallocatorService();
+
+    /**
+     * Calls GC if heap memory is pressured (above threshold).
+     */
+    void gcIfHeapPressured();
+
+    /**
+     * Get the periodic GC frequency.
+     * @return frequency value
+     */
+    int getFrequency();
+
+    /**
+     * Set the periodic GC frequency.
+     * @param frequency the frequency value
+     */
+    void setFrequency(int frequency);
+
+    /**
+     * Start periodic GC.
+     */
+    void startPeriodicGc();
+
+    /**
+     * Stop periodic GC.
+     */
+    void stopPeriodicGc();
 }

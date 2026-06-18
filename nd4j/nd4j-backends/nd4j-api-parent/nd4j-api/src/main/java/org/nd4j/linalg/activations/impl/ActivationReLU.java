@@ -23,7 +23,7 @@ package org.nd4j.linalg.activations.impl;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUBp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,7 +52,9 @@ public class ActivationReLU extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        if(negativeSlope != null || threshold != null){
+        boolean hasNonZeroSlope = negativeSlope != null && negativeSlope != 0.0;
+        boolean hasNonZeroThreshold = threshold != null && threshold != 0.0;
+        if(hasNonZeroSlope || hasNonZeroThreshold){
             double t = threshold == null ? 0.0 : threshold;
             double ns = negativeSlope == null ? 0.0 : negativeSlope;
             if(t == 0.0) {
@@ -79,13 +81,26 @@ public class ActivationReLU extends BaseActivationFunction {
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
 
+        if (in.dataType() != epsilon.dataType()) {
+            epsilon = epsilon.castTo(in.dataType());
+        }
+        if (in.ordering() != epsilon.ordering()) {
+            epsilon = epsilon.dup(in.ordering());
+        }
+
         INDArray dLdz;
         INDArray maxMask = (max == null || max == 0.0 ? null : in.lt(max));
-        if(negativeSlope != null || threshold != null){
+        boolean hasNonZeroSlope = negativeSlope != null && negativeSlope != 0.0;
+        boolean hasNonZeroThreshold = threshold != null && threshold != 0.0;
+        if(hasNonZeroSlope || hasNonZeroThreshold){
             double t = threshold == null ? 0.0 : threshold;
             double ns = negativeSlope == null ? 0.0 : negativeSlope;
             if(t == 0.0) {
-                dLdz = Nd4j.getExecutioner().exec(new LeakyReLUBp(in, epsilon, in.ulike(), ns))[0];
+                // Compute derivative mask using scalar op (works reliably across backends)
+                // LeakyReLUDerivative: x >= 0 ? 1 : alpha
+                INDArray mask = in.ulike();
+                Nd4j.getExecutioner().exec(new LeakyReLUDerivative(in, mask, ns));
+                dLdz = mask.muli(epsilon);
             } else {
                 //Non-zero threshold, and non-zero slope
                 //TODO optimize this... but, extremely rare case in practice?
@@ -96,7 +111,9 @@ public class ActivationReLU extends BaseActivationFunction {
                 dLdz = in.assign(lower.addi(upper)).muli(epsilon);
             }
         } else {
-            dLdz = Nd4j.getExecutioner().exec(new RectifiedLinearDerivative(in, epsilon, in.ulike(), threshold == null ? 0.0 : threshold))[0];
+            // Standard ReLU derivative: x >= 0 ? 1 : 0, then multiply by epsilon
+            INDArray mask = in.gte(0).castTo(in.dataType());
+            dLdz = mask.muli(epsilon);
         }
 
         if(maxMask != null){

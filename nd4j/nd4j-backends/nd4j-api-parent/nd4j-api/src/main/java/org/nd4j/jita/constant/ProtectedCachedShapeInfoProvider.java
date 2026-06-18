@@ -23,12 +23,15 @@ package org.nd4j.jita.constant;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
 import org.nd4j.linalg.factory.Nd4j;
+
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
@@ -72,9 +75,23 @@ public class ProtectedCachedShapeInfoProvider extends BaseShapeInfoProvider {
 
 
     @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shapeInfo) {
+        // Route through the cached path to avoid duplicate shape info allocations
+        long[] shape = Shape.shape(shapeInfo);
+        long[] stride = Shape.stride(shapeInfo);
+        long ews = Shape.elementWiseStride(shapeInfo);
+        char order = Shape.order(shapeInfo);
+        long extras = Shape.extras(shapeInfo);
+        if (shape.length == 0) {
+            extras = extras & ~ArrayOptionsHelper.ATYPE_EMPTY_BIT;
+        }
+        return createShapeInformation(shape, stride, ews, order, extras);
+    }
+
+    @Override
     public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType type, boolean empty) {
         long extras = ArrayOptionsHelper.setOptionBit(0L, type);
-        if (empty)
+        if (empty && shape.length > 0)
             extras = ArrayOptionsHelper.setOptionBit(extras, ArrayType.EMPTY);
 
         extras = ArrayOptionsHelper.setDataType(extras, type);
@@ -96,9 +113,21 @@ public class ProtectedCachedShapeInfoProvider extends BaseShapeInfoProvider {
             Pair<DataBuffer, long[]> buffer = null;
             synchronized (this) {
                 if (!protector.containsDataBuffer(deviceId, descriptor)) {
-                    buffer = super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
-                    buffer.getFirst().setConstant(true);
+                    // Scope out of any active workspace so the cached shape info buffer
+                    // is allocated from regular memory, not from workspace memory that gets recycled
+                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        buffer = super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
+                    }
 
+                    DataBuffer dataBuffer = buffer.getFirst();
+                    Nd4j.getDeallocatorService().registerPendingConstant(dataBuffer);
+                    try {
+                        dataBuffer.setConstant(true);
+                    } finally {
+                        // Release the protection - now that it's marked constant,
+                        // DeallocatorService won't deallocate it anyway
+                        Nd4j.getDeallocatorService().releasePendingConstant(dataBuffer);
+                    }
 
                     protector.persistDataBuffer(deviceId, descriptor, buffer);
 

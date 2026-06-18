@@ -34,6 +34,9 @@ import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 /**
  * @author Adam Gibson
@@ -155,94 +158,65 @@ public class ArrayUtil {
      * Converts a byte array to a boolean array.
      * @param input the input byte array
      * @return a boolean array with true values for nonzero bytes and false values for zero bytes
+     * @deprecated Use {@link ArrayTypeConverters#toBooleanArray(byte[])} instead.
      */
-    public static boolean[] toBooleanArray(byte[] input) {
-        boolean[] output = new boolean[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i] != 0;
-        }
-        return output;
-    }
+    @Deprecated
+    public static boolean[] toBooleanArray(byte[] input) { return ArrayTypeConverters.toBooleanArray(input); }
 
     /**
      * Converts a short array to a boolean array.
      * @param input the input short array
      * @return a boolean array with true values for nonzero shorts and false values for zero shorts
+     * @deprecated Use {@link ArrayTypeConverters#toBooleanArray(short[])} instead.
      */
-    public static boolean[] toBooleanArray(short[] input) {
-        boolean[] output = new boolean[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i] != 0;
-        }
-        return output;
-    }
+    @Deprecated
+    public static boolean[] toBooleanArray(short[] input) { return ArrayTypeConverters.toBooleanArray(input); }
 
     /**
      * Converts an int array to a boolean array.
      * @param input the input int array
      * @return a boolean array with true values for nonzero integers and false values for zero integers
+     * @deprecated Use {@link ArrayTypeConverters#toBooleanArray(int[])} instead.
      */
-    public static boolean[] toBooleanArray(int[] input) {
-        boolean[] output = new boolean[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i] != 0;
-        }
-        return output;
-    }
+    @Deprecated
+    public static boolean[] toBooleanArray(int[] input) { return ArrayTypeConverters.toBooleanArray(input); }
 
     /**
      * Converts a long array to a boolean array.
      * @param input the input long array
      * @return a boolean array with true values for nonzero longs and false values for zero longs
+     * @deprecated Use {@link ArrayTypeConverters#toBooleanArray(long[])} instead.
      */
-    public static boolean[] toBooleanArray(long[] input) {
-        boolean[] output = new boolean[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i] != 0L;
-        }
-        return output;
-    }
+    @Deprecated
+    public static boolean[] toBooleanArray(long[] input) { return ArrayTypeConverters.toBooleanArray(input); }
 
     /**
      * Converts a float array to a boolean array.
      * @param input the input float array
      * @return a boolean array with true values for nonzero floats and false values for zero floats
+     * @deprecated Use {@link ArrayTypeConverters#toBooleanArray(float[])} instead.
      */
-    public static boolean[] toBooleanArray(float[] input) {
-        boolean[] output = new boolean[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i] != 0.0f;
-        }
-        return output;
-    }
+    @Deprecated
+    public static boolean[] toBooleanArray(float[] input) { return ArrayTypeConverters.toBooleanArray(input); }
 
     /**
      * Converts a double array to a boolean array.
      * @param input the input double array
      * @return a boolean array with true values for nonzero doubles and false values for zero doubles
+     * @deprecated Use {@link ArrayTypeConverters#toBooleanArray(double[])} instead.
      */
-    public static boolean[] toBooleanArray(double[] input) {
-        boolean[] output = new boolean[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i] != 0.0;
-        }
-        return output;
-    }
+    @Deprecated
+    public static boolean[] toBooleanArray(double[] input) { return ArrayTypeConverters.toBooleanArray(input); }
 
 
     /**
      * Create a boolean array from a float array.
      * @param elements the elements to create
      * @return the returned float array
+     * @deprecated Use {@link ArrayTypeConverters#fromFloat(float[])} instead.
      */
-    public static boolean[] fromFloat(float[] elements) {
-        boolean[] ret = new boolean[elements.length];
-        for(int i = 0; i < elements.length; i++) {
-            ret[i] = elements[i] == 0.0f ? false : true;
-        }
-
-        return ret;
-    }
+    @Deprecated
+    public static boolean[] fromFloat(float[] elements) { return ArrayTypeConverters.fromFloat(elements); }
 
     /**
      * Generate an array with n elements of the same specified value.
@@ -268,27 +242,19 @@ public class ArrayUtil {
      * Converts a short array to an int array.
      * @param input the input short array
      * @return an int array with each element equal to the corresponding short value
+     * @deprecated Use {@link ArrayTypeConverters#toIntArray(short[])} instead.
      */
-    public static int[] toIntArray(short[] input) {
-        int[] output = new int[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static int[] toIntArray(short[] input) { return ArrayTypeConverters.toIntArray(input); }
 
     /**
-     * Converts a short array to an int array.
-     * @param input the input short array
+     * Converts a boolean array to an int array.
+     * @param input the input boolean array
      * @return an int array with each element equal to the corresponding int value
+     * @deprecated Use {@link ArrayTypeConverters#toIntArray(boolean[])} instead.
      */
-    public static int[] toIntArray(boolean[] input) {
-        int[] output = new int[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i] ? 1 : 0;
-        }
-        return output;
-    }
+    @Deprecated
+    public static int[] toIntArray(boolean[] input) { return ArrayTypeConverters.toIntArray(input); }
 
 
 
@@ -296,348 +262,203 @@ public class ArrayUtil {
      * Converts a char array to an int array.
      * @param input the input char array
      * @return an int array with each element equal to the corresponding char value
+     * @deprecated Use {@link ArrayTypeConverters#toIntArray(char[])} instead.
      */
-    public static int[] toIntArray(char[] input) {
-        int[] output = new int[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static int[] toIntArray(char[] input) { return ArrayTypeConverters.toIntArray(input); }
 
     /**
-     * Converts an int array to an int array (i.e., returns a copy of the input array).
+     * Converts an int array to an int array (returns a copy).
      * @param input the input int array
      * @return a new int array with the same values as the input array
+     * @deprecated Use {@link ArrayTypeConverters#toIntArray(int[])} instead.
      */
-    public static int[] toIntArray(int[] input) {
-        int[] output = new int[input.length];
-        System.arraycopy(input, 0, output, 0, input.length);
-        return output;
-    }
+    @Deprecated
+    public static int[] toIntArray(int[] input) { return ArrayTypeConverters.toIntArray(input); }
 
     /**
      * Converts a long array to an int array.
      * @param input the input long array
      * @return an int array with each element equal to the corresponding long value cast to an int
+     * @deprecated Use {@link ArrayTypeConverters#toIntArray(long[])} instead.
      */
-    public static int[] toIntArray(long[] input) {
-        int[] output = new int[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = (int) input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static int[] toIntArray(long[] input) { return ArrayTypeConverters.toIntArray(input); }
 
     /**
      * Converts a float array to an int array.
      * @param input the input float array
      * @return an int array with each element equal to the corresponding float value cast to an int
+     * @deprecated Use {@link ArrayTypeConverters#toIntArray(float[])} instead.
      */
-    public static int[] toIntArray(float[] input) {
-        int[] output = new int[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = (int) input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static int[] toIntArray(float[] input) { return ArrayTypeConverters.toIntArray(input); }
 
     /**
      * Converts a double array to an int array.
      * @param input the input double array
      * @return an int array with each element equal to the corresponding double value cast to an int
+     * @deprecated Use {@link ArrayTypeConverters#toIntArray(double[])} instead.
      */
-    public static int[] toIntArray(double[] input) {
-        int[] output = new int[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = (int) input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static int[] toIntArray(double[] input) { return ArrayTypeConverters.toIntArray(input); }
 
 
 
     /**
      * Converts a short array to a double array.
-     * @param input the input short array
-     * @return a double array with each element equal to the corresponding short value
+     * @deprecated Use {@link ArrayTypeConverters#toDoubleArray(short[])} instead.
      */
-    public static double[] toDoubleArray(short[] input) {
-        double[] output = new double[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static double[] toDoubleArray(short[] input) { return ArrayTypeConverters.toDoubleArray(input); }
 
     /**
      * Converts a char array to a double array.
-     * @param input the input char array
-     * @return a double array with each element equal to the corresponding char value
+     * @deprecated Use {@link ArrayTypeConverters#toDoubleArray(char[])} instead.
      */
-    public static double[] toDoubleArray(char[] input) {
-        double[] output = new double[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static double[] toDoubleArray(char[] input) { return ArrayTypeConverters.toDoubleArray(input); }
 
     /**
      * Converts a boolean array to a double array.
-     * @param input the input boolean array
-     * @return a double array with each element equal to the corresponding double value
+     * @deprecated Use {@link ArrayTypeConverters#toDoubleArray(boolean[])} instead.
      */
-    public static double[] toDoubleArray(boolean[] input) {
-        double[] output = new double[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i] ? 1.0 : 0.0;
-        }
-        return output;
-    }
-
+    @Deprecated
+    public static double[] toDoubleArray(boolean[] input) { return ArrayTypeConverters.toDoubleArray(input); }
 
     /**
      * Converts an int array to a double array.
-     * @param input the input int array
-     * @return a double array with each element equal to the corresponding int value
+     * @deprecated Use {@link ArrayTypeConverters#toDoubleArray(int[])} instead.
      */
-    public static double[] toDoubleArray(int[] input) {
-        double[] output = new double[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static double[] toDoubleArray(int[] input) { return ArrayTypeConverters.toDoubleArray(input); }
 
     /**
      * Converts a long array to a double array.
-     * @param input the input long array
-     * @return a double array with each element equal to the corresponding long value
+     * @deprecated Use {@link ArrayTypeConverters#toDoubleArray(long[])} instead.
      */
-    public static double[] toDoubleArray(long[] input) {
-        double[] output = new double[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static double[] toDoubleArray(long[] input) { return ArrayTypeConverters.toDoubleArray(input); }
 
     /**
      * Converts a float array to a double array.
-     * @param input the input float array
-     * @return a double array with each element equal to the corresponding float value
+     * @deprecated Use {@link ArrayTypeConverters#toDoubleArray(float[])} instead.
      */
-    public static double[] toDoubleArray(float[] input) {
-        double[] output = new double[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static double[] toDoubleArray(float[] input) { return ArrayTypeConverters.toDoubleArray(input); }
 
     /**
-     * Converts a double array to a double array (i.e., returns a copy of the input array).
-     * @param input the input double array
-     * @return a new double array with the same values as the input array
+     * Converts a double array to a double array (returns a copy).
+     * @deprecated Use {@link ArrayTypeConverters#toDoubleArray(double[])} instead.
      */
-    public static double[] toDoubleArray(double[] input) {
-        double[] output = new double[input.length];
-        System.arraycopy(input, 0, output, 0, input.length);
-        return output;
-    }
+    @Deprecated
+    public static double[] toDoubleArray(double[] input) { return ArrayTypeConverters.toDoubleArray(input); }
 
     /**
      * Converts a byte array to a long array.
-     * @param input the input byte array
-     * @return a long array with each element equal to the corresponding byte value
+     * @deprecated Use {@link ArrayTypeConverters#toLongArray(byte[])} instead.
      */
-    public static long[] toLongArray(byte[] input) {
-        long[] output = new long[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static long[] toLongArray(byte[] input) { return ArrayTypeConverters.toLongArray(input); }
 
     /**
-     * Converts a byte array to a long array.
-     * @param input the input boolean array
-     * @return a long array with each element equal to the corresponding long value
+     * Converts a boolean array to a long array.
+     * @deprecated Use {@link ArrayTypeConverters#toLongArray(boolean[])} instead.
      */
-    public static long[] toLongArray(boolean[] input) {
-        long[] output = new long[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i] ? 1 : 0;
-        }
-        return output;
-    }
+    @Deprecated
+    public static long[] toLongArray(boolean[] input) { return ArrayTypeConverters.toLongArray(input); }
 
     /**
      * Converts a short array to a long array.
-     * @param input the input short array
-     * @return a long array with each element equal to the corresponding short value
+     * @deprecated Use {@link ArrayTypeConverters#toLongArray(short[])} instead.
      */
-    public static long[] toLongArray(short[] input) {
-        long[] output = new long[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static long[] toLongArray(short[] input) { return ArrayTypeConverters.toLongArray(input); }
 
     /**
      * Converts a char array to a long array.
-     * @param input the input char array
-     * @return a long array with each element equal to the corresponding char value
+     * @deprecated Use {@link ArrayTypeConverters#toLongArray(char[])} instead.
      */
-    public static long[] toLongArray(char[] input) {
-        long[] output = new long[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static long[] toLongArray(char[] input) { return ArrayTypeConverters.toLongArray(input); }
 
     /**
      * Converts an int array to a long array.
-     * @param input the input int array
-     * @return a long array with each element equal to the corresponding int value
+     * @deprecated Use {@link ArrayTypeConverters#toLongArrayInt(int[])} instead.
      */
-    public static long[] toLongArrayInt(int[] input) {
-        long[] output = new long[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static long[] toLongArrayInt(int[] input) { return ArrayTypeConverters.toLongArrayInt(input); }
 
     /**
      * Converts a float array to a long array.
-     * @param input the input float array
-     * @return a long array with each element equal to the corresponding float value
+     * @deprecated Use {@link ArrayTypeConverters#toLongArrayFloat(float[])} instead.
      */
-    public static long[] toLongArrayFloat(float[] input) {
-        long[] output = new long[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = (long) input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static long[] toLongArrayFloat(float[] input) { return ArrayTypeConverters.toLongArrayFloat(input); }
 
     /**
      * Converts a double array to a long array.
-     * @param input the input double array
-     * @return a long array with each element equal to the corresponding double value
+     * @deprecated Use {@link ArrayTypeConverters#toLongArray(double[])} instead.
      */
-    public static long[] toLongArray(double[] input) {
-        long[] output = new long[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = (long) input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static long[] toLongArray(double[] input) { return ArrayTypeConverters.toLongArray(input); }
 
     /**
-     * Converts a long array to a long array (i.e., returns a copy of the input array).
-     * @param input the input long array
-     * @return a new long array with the same values as the input array
+     * Converts a long array to a long array (returns a copy).
+     * @deprecated Use {@link ArrayTypeConverters#toLongArray(long[])} instead.
      */
-    public static long[] toLongArray(long[] input) {
-        long[] output = new long[input.length];
-        System.arraycopy(input, 0, output, 0, input.length);
-        return output;
-    }
+    @Deprecated
+    public static long[] toLongArray(long[] input) { return ArrayTypeConverters.toLongArray(input); }
 
 
     /**
      * Converts a short array to a float array.
-     * @param input the input short array
-     * @return a float array with each element equal to the corresponding short value
+     * @deprecated Use {@link ArrayTypeConverters#toFloatArray(short[])} instead.
      */
-    public static float[] toFloatArray(short[] input) {
-        float[] output = new float[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static float[] toFloatArray(short[] input) { return ArrayTypeConverters.toFloatArray(input); }
 
     /**
      * Converts a boolean array to a float array.
-     * @param input the input boolean array
-     * @return a float array with each element equal to the corresponding boolean value
+     * @deprecated Use {@link ArrayTypeConverters#toFloatArray(boolean[])} instead.
      */
-    public static float[] toFloatArray(boolean[] input) {
-        float[] output = new float[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i] ? 1.0f : 0.0f;
-        }
-        return output;
-    }
+    @Deprecated
+    public static float[] toFloatArray(boolean[] input) { return ArrayTypeConverters.toFloatArray(input); }
 
     /**
      * Converts a char array to a float array.
-     * @param input the input char array
-     * @return a float array with each element equal to the corresponding char value
+     * @deprecated Use {@link ArrayTypeConverters#toFloatArray(char[])} instead.
      */
-    public static float[] toFloatArray(char[] input) {
-        float[] output = new float[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static float[] toFloatArray(char[] input) { return ArrayTypeConverters.toFloatArray(input); }
 
     /**
      * Converts an int array to a float array.
-     * @param input the input int array
-     * @return a float array with each element equal to the corresponding int value
+     * @deprecated Use {@link ArrayTypeConverters#toFloatArray(int[])} instead.
      */
-    public static float[] toFloatArray(int[] input) {
-        float[] output = new float[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static float[] toFloatArray(int[] input) { return ArrayTypeConverters.toFloatArray(input); }
 
     /**
      * Converts a long array to a float array.
-     * @param input the input long array
-     * @return a float array with each element equal to the corresponding long value
+     * @deprecated Use {@link ArrayTypeConverters#toFloatArray(long[])} instead.
      */
-    public static float[] toFloatArray(long[] input) {
-        float[] output = new float[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static float[] toFloatArray(long[] input) { return ArrayTypeConverters.toFloatArray(input); }
 
     /**
      * Converts a double array to a float array.
-     * @param input the input double array
-     * @return a float array with each element equal to the corresponding double value
+     * @deprecated Use {@link ArrayTypeConverters#toFloatArray(double[])} instead.
      */
-    public static float[] toFloatArray(double[] input) {
-        float[] output = new float[input.length];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = (float) input[i];
-        }
-        return output;
-    }
+    @Deprecated
+    public static float[] toFloatArray(double[] input) { return ArrayTypeConverters.toFloatArray(input); }
 
     /**
-     * Converts a float array to a float array (i.e., returns a copy of the input array).
-     * @param input the input float array
-     * @return a new float array with the same values as the input array
+     * Converts a float array to a float array (returns a copy).
+     * @deprecated Use {@link ArrayTypeConverters#toFloatArray(float[])} instead.
      */
-    public static float[] toFloatArray(float[] input) {
-        float[] output = new float[input.length];
-        System.arraycopy(input, 0, output, 0, input.length);
-        return output;
-    }
+    @Deprecated
+    public static float[] toFloatArray(float[] input) { return ArrayTypeConverters.toFloatArray(input); }
 
     /**
      * Concat all the elements
@@ -714,30 +535,13 @@ public class ArrayUtil {
      * @param check
      * @return
      */
-    public static boolean anyLargerThan(int[] arrs, int check) {
-        for(int i = 0; i < arrs.length; i++) {
-            if(arrs[i] > check)
-                return true;
-        }
+    /** @deprecated Use {@link ArrayMathUtils#anyLargerThan(int[], int)} instead. */
+    @Deprecated
+    public static boolean anyLargerThan(int[] arrs, int check) { return ArrayMathUtils.anyLargerThan(arrs, check); }
 
-        return false;
-    }
-
-
-    /**
-     *
-     * @param arrs
-     * @param check
-     * @return
-     */
-    public static boolean anyLessThan(int[] arrs, int check) {
-        for(int i = 0; i < arrs.length; i++) {
-            if(arrs[i] < check)
-                return true;
-        }
-
-        return false;
-    }
+    /** @deprecated Use {@link ArrayMathUtils#anyLessThan(int[], int)} instead. */
+    @Deprecated
+    public static boolean anyLessThan(int[] arrs, int check) { return ArrayMathUtils.anyLessThan(arrs, check); }
 
 
     /**
@@ -765,10 +569,7 @@ public class ArrayUtil {
      * array is contained in the list
      */
     public static boolean listOfIntsContains(List<int[]> list,int[] target) {
-        for(int[] arr : list)
-            if(Arrays.equals(target,arr))
-                return true;
-        return false;
+        return list.stream().anyMatch(arr -> Arrays.equals(target, arr));
     }
 
     /**
@@ -845,539 +646,262 @@ public class ArrayUtil {
         return result;
     }
 
-    public static short toBFloat16(short data) {
-        // Assume the short is already a float in 16-bit half-precision format
-        int sign = data >>> 15;
-        int exp = (data >>> 10) & 0x1F;
-        int fraction = data & 0x3FF;
+    /** @deprecated Use {@link ArrayTypeConverters#toBFloat16(short)} instead. */
+    @Deprecated
+    public static short toBFloat16(short data) { return ArrayTypeConverters.toBFloat16(data); }
 
-        // Adjust exponent from half-precision bias (15) to bfloat16 bias (127)
-        exp = exp - 15 + 127;
+    /** @deprecated Use {@link ArrayTypeConverters#bfloat16ToFloat(short)} instead. */
+    @Deprecated
+    public static float bfloat16ToFloat(short b) { return ArrayTypeConverters.bfloat16ToFloat(b); }
 
-        // Check for underflow and overflow
-        if (exp < 0) {  // Underflow
-            exp = 0;
-            fraction = 0;
-        } else if (exp > 255) {  // Overflow
-            exp = 255;
-            fraction = 0;
-        }
+    /** @deprecated Use {@link ArrayTypeConverters#bfloat16ToDouble(short)} instead. */
+    @Deprecated
+    public static double bfloat16ToDouble(short b) { return ArrayTypeConverters.bfloat16ToDouble(b); }
 
-        // Truncate fraction to fit into 7 bits
-        fraction >>>= 3;
+    /** @deprecated Use {@link ArrayTypeConverters#longToBFloat16(long)} instead. */
+    @Deprecated
+    public static short longToBFloat16(long l) { return ArrayTypeConverters.longToBFloat16(l); }
 
-        // Recombine bits
-        short bfloat16 = (short) ((sign << 15) | (exp << 7) | fraction);
+    /** @deprecated Use {@link ArrayTypeConverters#bfloat16ToLong(short)} instead. */
+    @Deprecated
+    public static long bfloat16ToLong(short b) { return ArrayTypeConverters.bfloat16ToLong(b); }
 
-        return bfloat16;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#bfloat16ToInt(short)} instead. */
+    @Deprecated
+    public static int bfloat16ToInt(short b) { return ArrayTypeConverters.bfloat16ToInt(b); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#bfloat16ToShort(short)} instead. */
+    @Deprecated
+    public static short bfloat16ToShort(short b) { return ArrayTypeConverters.bfloat16ToShort(b); }
 
-    public static float bfloat16ToFloat(short b) {
-        int sign = b >>> 15;
-        int exp = (b >>> 7) & 0xFF;
-        int fraction = b & 0x7F;
+    /** @deprecated Use {@link ArrayTypeConverters#toBFloat16(float)} instead. */
+    @Deprecated
+    public static short toBFloat16(float data) { return ArrayTypeConverters.toBFloat16(data); }
 
-        // Extend fraction part to 23 bits
-        fraction <<= 16;
+    /** @deprecated Use {@link ArrayTypeConverters#toBFloat16(double)} instead. */
+    @Deprecated
+    public static short toBFloat16(double data) { return ArrayTypeConverters.toBFloat16(data); }
 
-        // Recombine bits
-        int floatBits = (sign << 31) | (exp << 23) | fraction;
+    /** @deprecated Use {@link ArrayTypeConverters#toHalf(float)} instead. */
+    @Deprecated
+    public static short toHalf(float data) { return ArrayTypeConverters.toHalf(data); }
 
-        return Float.intBitsToFloat(floatBits);
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toHalf(double)} instead. */
+    @Deprecated
+    public static short toHalf(double data) { return ArrayTypeConverters.toHalf(data); }
 
-    public static double bfloat16ToDouble(short b) {
-        // Convert bfloat16 to float then to double
-        return (double) bfloat16ToFloat(b);
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toHalfs(boolean[])} instead. */
+    @Deprecated
+    public static short[] toHalfs(boolean[] data) { return ArrayTypeConverters.toHalfs(data); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#toHalfs(byte[])} instead. */
+    @Deprecated
+    public static short[] toHalfs(byte[] data) { return ArrayTypeConverters.toHalfs(data); }
 
-    public static short longToBFloat16(long l) {
-        // Convert long to float then to bfloat16
-        return toBFloat16((double) l);
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toHalfs(short[])} instead. */
+    @Deprecated
+    public static short[] toHalfs(short[] data) { return ArrayTypeConverters.toHalfs(data); }
 
-    // Reverse conversions from bfloat16 to types
+    /** @deprecated Use {@link ArrayTypeConverters#toHalfs(float[])} instead. */
+    @Deprecated
+    public static short[] toHalfs(float[] data) { return ArrayTypeConverters.toHalfs(data); }
 
-    public static long bfloat16ToLong(short b) {
-        // Convert bfloat16 to float then to long
-        return (long) bfloat16ToFloat(b);
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toHalfs(int[])} instead. */
+    @Deprecated
+    public static short[] toHalfs(int[] data) { return ArrayTypeConverters.toHalfs(data); }
 
-    public static int bfloat16ToInt(short b) {
-        // Convert bfloat16 to float then to int
-        return (int) bfloat16ToFloat(b);
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toHalfs(long[])} instead. */
+    @Deprecated
+    public static short[] toHalfs(long[] data) { return ArrayTypeConverters.toHalfs(data); }
 
-    public static short bfloat16ToShort(short b) {
-        // Convert the bfloat16 to a half-precision float
-        int sign = b >>> 15;
-        int exp = (b >>> 7) & 0xFF;
-        int fraction = b & 0x7F;
+    /** @deprecated Use {@link ArrayTypeConverters#toBfloats(double[])} instead. */
+    @Deprecated
+    public static short[] toBfloats(double[] data) { return ArrayTypeConverters.toBfloats(data); }
 
-        // Truncate the exponent and extend fraction to fit half-precision
-        exp >>>= 3;
-        fraction <<= 3;
+    /** @deprecated Use {@link ArrayTypeConverters#toBfloats(boolean[])} instead. */
+    @Deprecated
+    public static short[] toBfloats(boolean[] data) { return ArrayTypeConverters.toBfloats(data); }
 
-        // Recombine bits
-        return (short) ((sign << 15) | (exp << 10) | fraction);
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBfloats(byte[])} instead. */
+    @Deprecated
+    public static short[] toBfloats(byte[] data) { return ArrayTypeConverters.toBfloats(data); }
 
-    public static short toBFloat16(float data) {
-        int floatBits = Float.floatToRawIntBits(data);
-        int sign = floatBits >>> 31;
-        int exp = (floatBits >>> 23) & 0xFF;
-        int fraction = floatBits & 0x7FFFFF;
+    /** @deprecated Use {@link ArrayTypeConverters#toBfloats(short[])} instead. */
+    @Deprecated
+    public static short[] toBfloats(short[] data) { return ArrayTypeConverters.toBfloats(data); }
 
-        // Truncate fraction part to 7 bits
-        fraction >>>= 16;
+    /** @deprecated Use {@link ArrayTypeConverters#toBfloats(float[])} instead. */
+    @Deprecated
+    public static short[] toBfloats(float[] data) { return ArrayTypeConverters.toBfloats(data); }
 
-        // Recombine bits
-        short bfloat16 = (short) ((sign << 15) | (exp << 7) | fraction);
+    /** @deprecated Use {@link ArrayTypeConverters#toBfloats(int[])} instead. */
+    @Deprecated
+    public static short[] toBfloats(int[] data) { return ArrayTypeConverters.toBfloats(data); }
 
-        return bfloat16;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBfloats(long[])} instead. */
+    @Deprecated
+    public static short[] toBfloats(long[] data) { return ArrayTypeConverters.toBfloats(data); }
 
-    public static short toBFloat16(double data) {
-        return toBFloat16((float) data);
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toLongs(byte[])} instead. */
+    @Deprecated
+    public static long[] toLongs(byte[] data) { return ArrayTypeConverters.toLongs(data); }
 
-    public static short toHalf(float data) {
-        return fromFloat(data);
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toLongs(boolean[])} instead. */
+    @Deprecated
+    public static long[] toLongs(boolean[] data) { return ArrayTypeConverters.toLongs(data); }
 
-    public static short toHalf(double data) {
-        return fromFloat((float) data);
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toLongs(short[])} instead. */
+    @Deprecated
+    public static long[] toLongs(short[] data) { return ArrayTypeConverters.toLongs(data); }
 
-    public static short[] toHalfs(boolean[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = fromFloat(data[i] ? 1 : 0);
-        }
-        return ret;
-    }
-    public static short[] toHalfs(byte[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = fromFloat(data[i]);
-        }
-        return ret;
-    }
-    public static short[] toHalfs(short[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = fromFloat(data[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toLongs(int[])} instead. */
+    @Deprecated
+    public static long[] toLongs(int[] data) { return ArrayTypeConverters.toLongs(data); }
 
-    public static short[] toHalfs(float[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = fromFloat(data[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toLongs(float[])} instead. */
+    @Deprecated
+    public static long[] toLongs(float[] data) { return ArrayTypeConverters.toLongs(data); }
 
-    public static short[] toHalfs(int[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = fromFloat((float) data[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toLongs(double[])} instead. */
+    @Deprecated
+    public static long[] toLongs(double[] data) { return ArrayTypeConverters.toLongs(data); }
 
-    public static short[] toHalfs(long[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = fromFloat((float) data[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toHalfs(double[])} instead. */
+    @Deprecated
+    public static short[] toHalfs(double[] data) { return ArrayTypeConverters.toHalfs(data); }
 
-    public static short[] toBfloats(double[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = toBFloat16(data[i]);
-        }
-        return ret;
-    }
-    public static short[] toBfloats(boolean[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = toBFloat16(data[i] ? 1.0 : 0.0);
-        }
-        return ret;
-    }
-    public static short[] toBfloats(byte[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = toBFloat16(data[i]);
-        }
-        return ret;
-    }
-    public static short[] toBfloats(short[] data) {
-        float[] ret = new float[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = toBFloat16((float) data[i]);
-        }
-        return ArrayUtil.toShorts(ret);
-    }
+    /**
+     * Convert a float to its FP16 bit pattern as a short.
+     * @deprecated Use {@link ArrayTypeConverters#fromFloat(float)} instead.
+     */
+    @Deprecated
+    public static short fromFloat(float v) { return ArrayTypeConverters.fromFloat(v); }
 
-    public static short[] toBfloats(float[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = toBFloat16(data[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toInts(boolean[])} instead. */
+    @Deprecated
+    public static int[] toInts(boolean[] data) { return ArrayTypeConverters.toInts(data); }
 
-    public static short[] toBfloats(int[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = toBFloat16(data[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toInts(byte[])} instead. */
+    @Deprecated
+    public static int[] toInts(byte[] data) { return ArrayTypeConverters.toInts(data); }
 
-    public static short[] toBfloats(long[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = toBFloat16((float) data[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toInts(short[])} instead. */
+    @Deprecated
+    public static int[] toInts(short[] data) { return ArrayTypeConverters.toInts(data); }
 
-    public static long[] toLongs(byte[] data) {
-        val ret = new long[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = data[i];
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toInts(float[])} instead. */
+    @Deprecated
+    public static int[] toInts(float[] data) { return ArrayTypeConverters.toInts(data); }
 
-    public static long[] toLongs(boolean[] data) {
-        val ret = new long[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = data[i] ? 1 : 0;
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toInts(double[])} instead. */
+    @Deprecated
+    public static int[] toInts(double[] data) { return ArrayTypeConverters.toInts(data); }
 
-    public static long[] toLongs(short[] data) {
-        val ret = new long[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = data[i];
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBytes(int[])} instead. */
+    @Deprecated
+    public static byte[] toBytes(int[] array) { return ArrayTypeConverters.toBytes(array); }
 
-    public static long[] toLongs(int[] data) {
-        val ret = new long[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = data[i];
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBytes(short[])} instead. */
+    @Deprecated
+    public static byte[] toBytes(short[] array) { return ArrayTypeConverters.toBytes(array); }
 
-    public static long[] toLongs(float[] data) {
-        val ret = new long[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = (long) data[i];
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBytes(boolean[])} instead. */
+    @Deprecated
+    public static byte[] toBytes(boolean[] array) { return ArrayTypeConverters.toBytes(array); }
 
-    public static long[] toLongs(double[] data) {
-        val ret = new long[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = (long) data[i];
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBytes(float[])} instead. */
+    @Deprecated
+    public static byte[] toBytes(float[] array) { return ArrayTypeConverters.toBytes(array); }
 
-    public static short[] toHalfs(double[] data) {
-        short[] ret = new short[data.length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = fromFloat((float) data[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBytes(double[])} instead. */
+    @Deprecated
+    public static byte[] toBytes(double[] array) { return ArrayTypeConverters.toBytes(array); }
 
-    public static short fromFloat(float v) {
-        if (Float.isNaN(v))
-            return (short) 0x7fff;
-        if (v == Float.POSITIVE_INFINITY)
-            return (short) 0x7c00;
-        if (v == Float.NEGATIVE_INFINITY)
-            return (short) 0xfc00;
-        if (v == 0.0f)
-            return (short) 0x0000;
-        if (v == -0.0f)
-            return (short) 0x8000;
-        if (v > 65504.0f)
-            return 0x7bff; // max value supported by half float
-        if (v < -65504.0f)
-            return (short) (0x7bff | 0x8000);
-        if (v > 0.0f && v < 5.96046E-8f)
-            return 0x0001;
-        if (v < 0.0f && v > -5.96046E-8f)
-            return (short) 0x8001;
+    /** @deprecated Use {@link ArrayTypeConverters#toBytes(long[])} instead. */
+    @Deprecated
+    public static byte[] toBytes(long[] array) { return ArrayTypeConverters.toBytes(array); }
 
-        final int f = Float.floatToIntBits(v);
-
-        return (short) (((f >> 16) & 0x8000) | ((((f & 0x7f800000) - 0x38000000) >> 13) & 0x7c00)
-                | ((f >> 13) & 0x03ff));
-    }
-
-
-    public static int[] toInts(boolean[] data) {
-        int[] ret = new int[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = (int) (data[i] ? 1 : 0);
-        return ret;
-    }
-
-    public static int[] toInts(byte[] data) {
-        int[] ret = new int[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = (int) data[i];
-        return ret;
-    }
-
-    public static int[] toInts(short[] data) {
-        int[] ret = new int[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = (int) data[i];
-        return ret;
-    }
-
-    public static int[] toInts(float[] data) {
-        int[] ret = new int[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = (int) data[i];
-        return ret;
-    }
-
-    public static int[] toInts(double[] data) {
-        int[] ret = new int[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = (int) data[i];
-        return ret;
-    }
-
-    public static byte[] toBytes(int[] array) {
-        val retVal = new byte[array.length];
-        for (int i = 0; i < array.length; i++) {
-            retVal[i] = (byte) array[i];
-        }
-        return retVal;
-    }
-
-    public static byte[] toBytes(short[] array) {
-        val retVal = new byte[array.length];
-        for (int i = 0; i < array.length; i++) {
-            retVal[i] = (byte) array[i];
-        }
-        return retVal;
-    }
-
-    public static byte[] toBytes(boolean[] array) {
-        val retVal = new byte[array.length];
-        for (int i = 0; i < array.length; i++) {
-            retVal[i] = (byte)  (array[i] ? 1 : 0);
-        }
-        return retVal;
-    }
-
-    public static byte[] toBytes(float[] array) {
-        val retVal = new byte[array.length];
-        for (int i = 0; i < array.length; i++) {
-            retVal[i] = (byte) array[i];
-        }
-        return retVal;
-    }
-
-    public static byte[] toBytes(double[] array) {
-        val retVal = new byte[array.length];
-        for (int i = 0; i < array.length; i++) {
-            retVal[i] = (byte) array[i];
-        }
-        return retVal;
-    }
-
-    public static byte[] toBytes(long[] array) {
-        val retVal = new byte[array.length];
-        for (int i = 0; i < array.length; i++) {
-            retVal[i] = (byte) array[i];
-        }
-        return retVal;
-    }
-
+    /** @deprecated Use {@link ArrayTypeConverters#toInts(long[])} instead. */
+    @Deprecated
     public static int[] toInts(long[] array) {
-        int[] retVal = new int[array.length];
-
-        for (int i = 0; i < array.length; i++) {
-            retVal[i] = (int) array[i];
-        }
-
-        return retVal;
+        return ArrayTypeConverters.toInts(array);
     }
 
 
-    public static int[] mod(int[] input,int mod) {
-        int[] ret = new int[input.length];
-        for(int i = 0; i < ret.length; i++) {
-            ret[i]  = input[i] % mod;
-        }
-
-        return ret;
-    }
-
+    /**
+     * @deprecated Use {@link ArrayMathUtils#mod(int[], int)} instead.
+     */
+    @Deprecated
+    public static int[] mod(int[] input, int mod) { return ArrayMathUtils.mod(input, mod); }
 
     /**
      * Calculate the offset for a given stride array
-     * @param stride the stride to use
-     * @param i the offset to calculate for
-     * @return the offset for the given
-     * stride
+     * @deprecated Use {@link ArrayMathUtils#offsetFor(int[], int)} instead.
      */
-    public static int offsetFor(int[] stride, int i) {
-        int ret = 0;
-        for (int j = 0; j < stride.length; j++)
-            ret += (i * stride[j]);
-        return ret;
-
-    }
+    @Deprecated
+    public static int offsetFor(int[] stride, int i) { return ArrayMathUtils.offsetFor(stride, i); }
 
     /**
      * Sum of an int array
-     * @param add the elements
-     *            to calculate the sum for
-     * @return the sum of this array
+     * @deprecated Use {@link ArrayMathUtils#sum(List)} instead.
      */
-    public static int sum(List<Integer> add) {
-        if (add.isEmpty())
-            return 0;
-        int ret = 0;
-        for (int i = 0; i < add.size(); i++)
-            ret += add.get(i);
-        return ret;
-    }
+    @Deprecated
+    public static int sum(List<Integer> add) { return ArrayMathUtils.sum(add); }
 
     /**
      * Sum of an int array
-     * @param add the elements
-     *            to calculate the sum for
-     * @return the sum of this array
+     * @deprecated Use {@link ArrayMathUtils#sum(int[])} instead.
      */
-    public static int sum(int[] add) {
-        if (add.length < 1)
-            return 0;
-        int ret = 0;
-        for (int i = 0; i < add.length; i++)
-            ret += add[i];
-        return ret;
-    }
-
-    public static long sumLong(long... add) {
-        if (add.length < 1)
-            return 0;
-        int ret = 0;
-        for (int i = 0; i < add.length; i++)
-            ret += add[i];
-        return ret;
-    }
+    @Deprecated
+    public static int sum(int[] add) { return ArrayMathUtils.sum(add); }
 
     /**
-     * Product of an int array
-     * @param mult the elements
-     *            to calculate the sum for
-     * @return the product of this array
+     * @deprecated Use {@link ArrayMathUtils#sumLong(long...)} instead.
      */
-    public static int prod(List<Integer> mult) {
-        if (mult.isEmpty())
-            return 0;
-        int ret = 1;
-        for (int i = 0; i < mult.size(); i++)
-            ret *= mult.get(i);
-        return ret;
-    }
-
-
+    @Deprecated
+    public static long sumLong(long... add) { return ArrayMathUtils.sumLong(add); }
 
     /**
-     * Product of an int array
-     * @param mult the elements
-     *            to calculate the sum for
-     * @return the product of this array
+     * Product of a list of integers.
+     * @deprecated Use {@link ArrayMathUtils#prod(List)} instead.
      */
-    public static int prod(long... mult) {
-        if (mult.length < 1)
-            return 0;
-        int ret = 1;
-        for (int i = 0; i < mult.length; i++)
-            ret *= mult[i];
-        return ret;
-    }
-
+    @Deprecated
+    public static int prod(List<Integer> mult) { return ArrayMathUtils.prod(mult); }
 
     /**
-     * Product of an int array
-     * @param mult the elements
-     *            to calculate the sum for
-     * @return the product of this array
+     * Product of a long varargs.
+     * @deprecated Use {@link ArrayMathUtils#prod(long...)} instead.
      */
-    public static int prod(int... mult) {
-        if (mult.length < 1)
-            return 0;
-        int ret = 1;
-        for (int i = 0; i < mult.length; i++)
-            ret *= mult[i];
-        return ret;
-    }
+    @Deprecated
+    public static int prod(long... mult) { return ArrayMathUtils.prod(mult); }
 
     /**
-     * Product of an int array
-     * @param mult the elements
-     *            to calculate the sum for
-     * @return the product of this array
+     * Product of an int varargs.
+     * @deprecated Use {@link ArrayMathUtils#prod(int...)} instead.
      */
-    public static long prodLong(List<? extends Number> mult) {
-        if (mult.isEmpty())
-            return 0;
-        long ret = 1;
-        for (int i = 0; i < mult.size(); i++)
-            ret *= mult.get(i).longValue();
-        return ret;
-    }
-
+    @Deprecated
+    public static int prod(int... mult) { return ArrayMathUtils.prod(mult); }
 
     /**
-     * Product of an int array
-     * @param mult the elements
-     *            to calculate the sum for
-     * @return the product of this array
+     * Long product of a list, skipping negative sentinels.
+     * @deprecated Use {@link ArrayMathUtils#prodLong(List)} instead.
      */
-    public static long prodLong(int... mult) {
-        if (mult.length < 1)
-            return 0;
-        long ret = 1;
-        for (int i = 0; i < mult.length; i++)
-            ret *= mult[i];
-        return ret;
-    }
+    @Deprecated
+    public static long prodLong(List<? extends Number> mult) { return ArrayMathUtils.prodLong(mult); }
 
-    public static long prodLong(long... mult) {
-        if (mult.length < 1)
-            return 0;
-        long ret = 1;
-        for (int i = 0; i < mult.length; i++)
-            ret *= mult[i];
-        return ret;
-    }
+    /**
+     * Long product of an int varargs, skipping negative sentinels.
+     * @deprecated Use {@link ArrayMathUtils#prodLong(int...)} instead.
+     */
+    @Deprecated
+    public static long prodLong(int... mult) { return ArrayMathUtils.prodLong(mult); }
+
+    /**
+     * Long product of a long varargs, skipping negative sentinels.
+     * @deprecated Use {@link ArrayMathUtils#prodLong(long...)} instead.
+     */
+    @Deprecated
+    public static long prodLong(long... mult) { return ArrayMathUtils.prodLong(mult); }
 
     public static boolean equals(float[] data, double[] data2) {
         if (data.length != data2.length)
@@ -1401,294 +925,100 @@ public class ArrayUtil {
 
 
     /**
-     * Returns true if any of the elements are zero
-     * @param as
-     * @return
+     * Returns true if any of the elements are zero.
+     * @deprecated Use {@link ArrayMathUtils#isZero(int[])} instead.
      */
-    public static boolean isZero(int[] as) {
-        for (int i = 0; i < as.length; i++) {
-            if (as[i] == 0)
-                return true;
-        }
-        return false;
-    }
+    @Deprecated
+    public static boolean isZero(int[] as) { return ArrayMathUtils.isZero(as); }
 
-    public static boolean isZero(long[] as) {
-        for (int i = 0; i < as.length; i++) {
-            if (as[i] == 0L)
-                return true;
-        }
-        return false;
-    }
+    /** @deprecated Use {@link ArrayMathUtils#isZero(long[])} instead. */
+    @Deprecated
+    public static boolean isZero(long[] as) { return ArrayMathUtils.isZero(as); }
 
-    public static boolean anyMore(int[] target, int[] test) {
-        Preconditions.checkArgument(target.length == test.length, "Unable to compare: different sizes: length %s vs. %s", target.length, test.length);
-        for (int i = 0; i < target.length; i++) {
-            if (target[i] > test[i])
-                return true;
-        }
-        return false;
-    }
+    /** @deprecated Use {@link ArrayMathUtils#anyMore(int[], int[])} instead. */
+    @Deprecated
+    public static boolean anyMore(int[] target, int[] test) { return ArrayMathUtils.anyMore(target, test); }
 
+    /** @deprecated Use {@link ArrayMathUtils#anyLess(int[], int[])} instead. */
+    @Deprecated
+    public static boolean anyLess(int[] target, int[] test) { return ArrayMathUtils.anyLess(target, test); }
 
-    public static boolean anyLess(int[] target, int[] test) {
-        Preconditions.checkArgument(target.length == test.length, "Unable to compare: different sizes: length %s vs. %s", target.length, test.length);
-        for (int i = 0; i < target.length; i++) {
-            if (target[i] < test[i])
-                return true;
-        }
-        return false;
-    }
+    /** @deprecated Use {@link ArrayMathUtils#lessThan(int[], int[])} instead. */
+    @Deprecated
+    public static boolean lessThan(int[] target, int[] test) { return ArrayMathUtils.lessThan(target, test); }
 
-    public static boolean lessThan(int[] target, int[] test) {
-        Preconditions.checkArgument(target.length == test.length, "Unable to compare: different sizes: length %s vs. %s", target.length, test.length);
-        for (int i = 0; i < target.length; i++) {
-            if (target[i] < test[i])
-                return true;
-            if (target[i] > test[i])
-                return false;
-        }
-        return false;
-    }
-
-    public static boolean greaterThan(int[] target, int[] test) {
-        Preconditions.checkArgument(target.length == test.length, "Unable to compare: different sizes: length %s vs. %s", target.length, test.length);
-        for (int i = 0; i < target.length; i++) {
-            if (target[i] > test[i])
-                return true;
-            if (target[i] < test[i])
-                return false;
-        }
-        return false;
-    }
+    /** @deprecated Use {@link ArrayMathUtils#greaterThan(int[], int[])} instead. */
+    @Deprecated
+    public static boolean greaterThan(int[] target, int[] test) { return ArrayMathUtils.greaterThan(target, test); }
 
 
     /**
-     * Compute the offset
-     * based on teh shape strides and offsets
-     * @param shape the shape to compute
-     * @param offsets the offsets to compute
-     * @param strides the strides to compute
-     * @return the offset for the given shape,offset,and strides
+     * Compute linear offset from shape, offsets, and strides.
+     * @deprecated Use {@link ArrayMathUtils#calcOffset(List, List, List)} instead.
      */
+    @Deprecated
     public static int calcOffset(List<Integer> shape, List<Integer> offsets, List<Integer> strides) {
-        if (shape.size() != offsets.size() || shape.size() != strides.size())
-            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
-        int ret = 0;
-        for (int i = 0; i < offsets.size(); i++) {
-            //we should only do this in the general case, not on vectors
-            //the reason for this is we force everything including scalars
-            //to be 2d
-            if (shape.get(i) == 1 && offsets.size() > 2 && i > 0)
-                continue;
-            ret += offsets.get(i) * strides.get(i);
-        }
-
-        return ret;
+        return ArrayMathUtils.calcOffset(shape, offsets, strides);
     }
 
-
-    /**
-     * Compute the offset
-     * based on teh shape strides and offsets
-     * @param shape the shape to compute
-     * @param offsets the offsets to compute
-     * @param strides the strides to compute
-     * @return the offset for the given shape,offset,and strides
-     */
+    /** @deprecated Use {@link ArrayMathUtils#calcOffset(int[], int[], int[])} instead. */
+    @Deprecated
     public static int calcOffset(int[] shape, int[] offsets, int[] strides) {
-        if (shape.length != offsets.length || shape.length != strides.length)
-            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
-
-        int ret = 0;
-        for (int i = 0; i < offsets.length; i++) {
-            if (shape[i] == 1)
-                continue;
-            ret += offsets[i] * strides[i];
-        }
-
-        return ret;
+        return ArrayMathUtils.calcOffset(shape, offsets, strides);
     }
 
-    /**
-     * Compute the offset
-     * based on teh shape strides and offsets
-     * @param shape the shape to compute
-     * @param offsets the offsets to compute
-     * @param strides the strides to compute
-     * @return the offset for the given shape,offset,and strides
-     */
+    /** @deprecated Use {@link ArrayMathUtils#calcOffset(long[], long[], long[])} instead. */
+    @Deprecated
     public static long calcOffset(long[] shape, long[] offsets, long[] strides) {
-        if (shape.length != offsets.length || shape.length != strides.length)
-            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
-
-        long ret = 0;
-        for (int i = 0; i < offsets.length; i++) {
-            if (shape[i] == 1)
-                continue;
-            ret += offsets[i] * strides[i];
-        }
-
-        return ret;
+        return ArrayMathUtils.calcOffset(shape, offsets, strides);
     }
 
-    /**
-     * Compute the offset
-     * based on teh shape strides and offsets
-     * @param shape the shape to compute
-     * @param offsets the offsets to compute
-     * @param strides the strides to compute
-     * @return the offset for the given shape,offset,and strides
-     */
+    /** @deprecated Use {@link ArrayMathUtils#calcOffsetLong(List, List, List)} instead. */
+    @Deprecated
     public static long calcOffsetLong(List<Integer> shape, List<Integer> offsets, List<Integer> strides) {
-        if (shape.size() != offsets.size() || shape.size() != strides.size())
-            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
-        long ret = 0;
-        for (int i = 0; i < offsets.size(); i++) {
-            //we should only do this in the general case, not on vectors
-            //the reason for this is we force everything including scalars
-            //to be 2d
-            if (shape.get(i) == 1 && offsets.size() > 2 && i > 0)
-                continue;
-            ret += (long) offsets.get(i) * strides.get(i);
-        }
-
-        return ret;
+        return ArrayMathUtils.calcOffsetLong(shape, offsets, strides);
     }
 
-
+    /** @deprecated Use {@link ArrayMathUtils#calcOffsetLong2(List, List, List)} instead. */
+    @Deprecated
     public static long calcOffsetLong2(List<Long> shape, List<Long> offsets, List<Long> strides) {
-        if (shape.size() != offsets.size() || shape.size() != strides.size())
-            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
-        long ret = 0;
-        for (int i = 0; i < offsets.size(); i++) {
-            //we should only do this in the general case, not on vectors
-            //the reason for this is we force everything including scalars
-            //to be 2d
-            if (shape.get(i) == 1 && offsets.size() > 2 && i > 0)
-                continue;
-            ret += (long) offsets.get(i) * strides.get(i);
-        }
-
-        return ret;
+        return ArrayMathUtils.calcOffsetLong2(shape, offsets, strides);
     }
 
-
-    /**
-     * Compute the offset
-     * based on teh shape strides and offsets
-     * @param shape the shape to compute
-     * @param offsets the offsets to compute
-     * @param strides the strides to compute
-     * @return the offset for the given shape,offset,and strides
-     */
+    /** @deprecated Use {@link ArrayMathUtils#calcOffsetLong(int[], int[], int[])} instead. */
+    @Deprecated
     public static long calcOffsetLong(int[] shape, int[] offsets, int[] strides) {
-        if (shape.length != offsets.length || shape.length != strides.length)
-            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
-
-        long ret = 0;
-        for (int i = 0; i < offsets.length; i++) {
-            if (shape[i] == 1)
-                continue;
-            ret += (long) offsets[i] * strides[i];
-        }
-
-        return ret;
+        return ArrayMathUtils.calcOffsetLong(shape, offsets, strides);
     }
 
-    /**
-     *
-     * @param xs
-     * @param ys
-     * @return
-     */
+    /** @deprecated Use {@link ArrayMathUtils#dotProduct(List, List)} instead. */
+    @Deprecated
     public static int dotProduct(List<Integer> xs, List<Integer> ys) {
-        int result = 0;
-        int n = xs.size();
-
-        if (ys.size() != n)
-            throw new IllegalArgumentException("Different array sizes");
-
-        for (int i = 0; i < n; i++) {
-            result += xs.get(i) * ys.get(i);
-        }
-        return result;
+        return ArrayMathUtils.dotProduct(xs, ys);
     }
 
-    /**
-     *
-     * @param xs
-     * @param ys
-     * @return
-     */
+    /** @deprecated Use {@link ArrayMathUtils#dotProduct(int[], int[])} instead. */
+    @Deprecated
     public static int dotProduct(int[] xs, int[] ys) {
-        int result = 0;
-        int n = xs.length;
-
-        if (ys.length != n)
-            throw new IllegalArgumentException("Different array sizes");
-
-        for (int i = 0; i < n; i++) {
-            result += xs[i] * ys[i];
-        }
-        return result;
+        return ArrayMathUtils.dotProduct(xs, ys);
     }
 
-    /**
-     *
-     * @param xs
-     * @param ys
-     * @return
-     */
+    /** @deprecated Use {@link ArrayMathUtils#dotProductLong(List, List)} instead. */
+    @Deprecated
     public static long dotProductLong(List<Integer> xs, List<Integer> ys) {
-        long result = 0;
-        int n = xs.size();
-
-        if (ys.size() != n)
-            throw new IllegalArgumentException("Different array sizes");
-
-        for (int i = 0; i < n; i++) {
-            result += (long) xs.get(i) * ys.get(i);
-        }
-        return result;
+        return ArrayMathUtils.dotProductLong(xs, ys);
     }
 
-    /**
-     *
-     * @param xs
-     * @param ys
-     * @return
-     */
+    /** @deprecated Use {@link ArrayMathUtils#dotProductLong2(List, List)} instead. */
+    @Deprecated
     public static long dotProductLong2(List<Long> xs, List<Long> ys) {
-        long result = 0;
-        int n = xs.size();
-
-        if (ys.size() != n)
-            throw new IllegalArgumentException("Different array sizes");
-
-        for (int i = 0; i < n; i++) {
-            result += (long) xs.get(i) * ys.get(i);
-        }
-        return result;
+        return ArrayMathUtils.dotProductLong2(xs, ys);
     }
 
-    /**
-     *
-     * @param xs
-     * @param ys
-     * @return
-     */
+    /** @deprecated Use {@link ArrayMathUtils#dotProductLong(int[], int[])} instead. */
+    @Deprecated
     public static long dotProductLong(int[] xs, int[] ys) {
-        long result = 0;
-        int n = xs.length;
-
-        if (ys.length != n)
-            throw new IllegalArgumentException("Different array sizes");
-
-        for (int i = 0; i < n; i++) {
-            result += (long) xs[i] * ys[i];
-        }
-        return result;
+        return ArrayMathUtils.dotProductLong(xs, ys);
     }
 
 
@@ -1732,64 +1062,33 @@ public class ArrayUtil {
 
 
     /**
-     * Returns a subset of an array from 0 to "to" (exclusive)
-     *
-     * @param data the data to getFromOrigin a subset of
-     * @param to   the end point of the data
-     * @return the subset of the data specified
+     * Returns a subset of an array from 0 to "to" (exclusive).
+     * @deprecated Use {@link ArrayMathUtils#range(double[], int)} instead.
      */
-    public static double[] range(double[] data, int to) {
-        return range(data, to, 1);
-    }
-
+    @Deprecated
+    public static double[] range(double[] data, int to) { return ArrayMathUtils.range(data, to); }
 
     /**
-     * Returns a subset of an array from 0 to "to" (exclusive) using the specified stride
-     *
-     * @param data   the data to getFromOrigin a subset of
-     * @param to     the end point of the data
-     * @param stride the stride to go through the array
-     * @return the subset of the data specified
+     * Returns a subset of an array from 0 to "to" (exclusive) with stride.
+     * @deprecated Use {@link ArrayMathUtils#range(double[], int, int)} instead.
      */
-    public static double[] range(double[] data, int to, int stride) {
-        return range(data, to, stride, 1);
-    }
-
+    @Deprecated
+    public static double[] range(double[] data, int to, int stride) { return ArrayMathUtils.range(data, to, stride); }
 
     /**
-     * Returns a subset of an array from 0 to "to"
-     * using the specified stride
-     *
-     * @param data                  the data to getFromOrigin a subset of
-     * @param to                    the end point of the data
-     * @param stride                the stride to go through the array
-     * @param numElementsEachStride the number of elements to collect at each stride
-     * @return the subset of the data specified
+     * Returns a strided subset of an array.
+     * @deprecated Use {@link ArrayMathUtils#range(double[], int, int, int)} instead.
      */
+    @Deprecated
     public static double[] range(double[] data, int to, int stride, int numElementsEachStride) {
-        double[] ret = new double[to / stride];
-        if (ret.length < 1)
-            ret = new double[1];
-        int count = 0;
-        for (int i = 0; i < data.length; i += stride) {
-            for (int j = 0; j < numElementsEachStride; j++) {
-                if (i + j >= data.length || count >= ret.length)
-                    break;
-                ret[count++] = data[i + j];
-            }
-        }
-        return ret;
+        return ArrayMathUtils.range(data, to, stride, numElementsEachStride);
     }
 
     public static List<Long> toList(long... ints) {
         if(ints == null){
             return null;
         }
-        List<Long> ret = new ArrayList<>();
-        for (long anInt : ints) {
-            ret.add(anInt);
-        }
-        return ret;
+        return LongStream.of(ints).boxed().collect(Collectors.toList());
     }
 
 
@@ -1797,11 +1096,7 @@ public class ArrayUtil {
         if(ints == null){
             return null;
         }
-        List<Integer> ret = new ArrayList<>();
-        for (int anInt : ints) {
-            ret.add(anInt);
-        }
-        return ret;
+        return IntStream.of(ints).boxed().collect(Collectors.toList());
     }
 
     public static int[] toArray(List<Integer> list) {
@@ -1829,206 +1124,97 @@ public class ArrayUtil {
 
 
     /**
-     * Generate an int array ranging from "from" to "to".
-     * The total number of elements is (from-to)/increment - i.e., range(0,2,1) returns [0,1]
-     * If from is > to this method will count backwards
-     *
-     * @param from      the from
-     * @param to        the end point of the data
-     * @param increment the amount to increment by
-     * @return the int array with a length equal to absoluteValue(from - to)
+     * Generate an int array from to (with increment).
+     * @deprecated Use {@link ArrayMathUtils#range(int, int, int)} instead.
      */
-    public static int[] range(int from, int to, int increment) {
-        int diff = Math.abs(from - to);
-        int[] ret = new int[diff / increment];
-        if (ret.length < 1)
-            ret = new int[1];
+    @Deprecated
+    public static int[] range(int from, int to, int increment) { return ArrayMathUtils.range(from, to, increment); }
 
-        if (from < to) {
-            int count = 0;
-            for (int i = from; i < to; i += increment) {
-                if (count >= ret.length)
-                    break;
-                ret[count++] = i;
-            }
-        } else if (from > to) {
-            int count = 0;
-            for (int i = from - 1; i >= to; i -= increment) {
-                if (count >= ret.length)
-                    break;
-                ret[count++] = i;
-            }
-        }
-
-        return ret;
-    }
-
-
-    public static long[] range(long from, long to, long increment) {
-        long diff = Math.abs(from - to);
-        long[] ret = new long[(int) (diff / increment)];
-        if (ret.length < 1)
-            ret = new long[1];
-
-        if (from < to) {
-            int count = 0;
-            for (long i = from; i < to; i += increment) {
-                if (count >= ret.length)
-                    break;
-                ret[count++] = i;
-            }
-        } else if (from > to) {
-            int count = 0;
-            for (int i = (int) from - 1; i >= to; i -= increment) {
-                if (count >= ret.length)
-                    break;
-                ret[count++] = i;
-            }
-        }
-
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayMathUtils#range(long, long, long)} instead. */
+    @Deprecated
+    public static long[] range(long from, long to, long increment) { return ArrayMathUtils.range(from, to, increment); }
 
     /**
-     * Generate an int array ranging from "from" to "to".
-     * The total number of elements is (from-to) - i.e., range(0,2) returns [0,1]
-     * If from is > to this method will count backwards
-     *
-     * @param from the from
-     * @param to   the end point of the data
-     * @return the int array with a length equal to absoluteValue(from - to)
+     * Generate an int array ranging from "from" to "to" (increment=1).
+     * @deprecated Use {@link ArrayMathUtils#range(int, int)} instead.
      */
-    public static int[] range(int from, int to) {
-        if (from == to)
-            return new int[0];
-        return range(from, to, 1);
-    }
+    @Deprecated
+    public static int[] range(int from, int to) { return ArrayMathUtils.range(from, to); }
 
-    public static long[] range(long from, long to) {
-        if (from == to)
-            return new long[0];
-        return range(from, to, 1);
-    }
+    /** @deprecated Use {@link ArrayMathUtils#range(long, long)} instead. */
+    @Deprecated
+    public static long[] range(long from, long to) { return ArrayMathUtils.range(from, to); }
 
-    public static double[] toDoubles(int[] ints) {
-        double[] ret = new double[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (double) ints[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDoubles(int[])} instead. */
+    @Deprecated
+    public static double[] toDoubles(int[] ints) { return ArrayTypeConverters.toDoubles(ints); }
 
-    public static double[] toDoubles(long[] ints) {
-        double[] ret = new double[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (double) ints[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDoubles(long[])} instead. */
+    @Deprecated
+    public static double[] toDoubles(long[] ints) { return ArrayTypeConverters.toDoubles(ints); }
 
-    public static double[] toDoubles(float[] ints) {
-        double[] ret = new double[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (double) ints[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDoubles(float[])} instead. */
+    @Deprecated
+    public static double[] toDoubles(float[] ints) { return ArrayTypeConverters.toDoubles(ints); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#toFloats(int[][])} instead. */
+    @Deprecated
+    public static float[] toFloats(int[][] ints) { return ArrayTypeConverters.toFloats(ints); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#toFloats(boolean[])} instead. */
+    @Deprecated
+    public static float[] toFloats(boolean[] ints) { return ArrayTypeConverters.toFloats(ints); }
 
-    public static float[] toFloats(int[][] ints) {
-        return toFloats(Ints.concat(ints));
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toFloats(byte[])} instead. */
+    @Deprecated
+    public static float[] toFloats(byte[] ints) { return ArrayTypeConverters.toFloats(ints); }
 
-
-    public static float[] toFloats(boolean[] ints) {
-        float[] ret = new float[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (float) (ints[i] ? 1 : 0);
-        return ret;
-    }
-
-
-    public static float[] toFloats(byte[] ints) {
-        float[] ret = new float[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (float) ints[i];
-        return ret;
-    }
-
+    /** @deprecated Use {@link ArrayTypeConverters#toDoubles(int[][])} instead. */
+    @Deprecated
     public static double[] toDoubles(int[][] ints) {
-        return toDoubles(Ints.concat(ints));
+        return ArrayTypeConverters.toDoubles(ints);
     }
 
 
-    public static short[] toShorts(long[] ints) {
-        val ret = new short[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (short) ints[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toShorts(long[])} instead. */
+    @Deprecated
+    public static short[] toShorts(long[] ints) { return ArrayTypeConverters.toShorts(ints); }
 
-    public static short[] toShorts(byte[] ints) {
-        val ret = new short[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (short) ints[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toShorts(byte[])} instead. */
+    @Deprecated
+    public static short[] toShorts(byte[] ints) { return ArrayTypeConverters.toShorts(ints); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#toShorts(boolean[])} instead. */
+    @Deprecated
+    public static short[] toShorts(boolean[] ints) { return ArrayTypeConverters.toShorts(ints); }
 
-    public static short[] toShorts(boolean[] ints) {
-        val ret = new short[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (short) (ints[i] ? 1 : 0);
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toShorts(int[])} instead. */
+    @Deprecated
+    public static short[] toShorts(int[] ints) { return ArrayTypeConverters.toShorts(ints); }
 
-    public static short[] toShorts(int[] ints) {
-        val ret = new short[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (short) ints[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toShorts(float[])} instead. */
+    @Deprecated
+    public static short[] toShorts(float[] ints) { return ArrayTypeConverters.toShorts(ints); }
 
-    public static short[] toShorts(float[] ints) {
-        val ret = new short[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (short) ints[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toShorts(double[])} instead. */
+    @Deprecated
+    public static short[] toShorts(double[] ints) { return ArrayTypeConverters.toShorts(ints); }
 
-    public static short[] toShorts(double[] ints) {
-        val ret = new short[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (short) ints[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toFloats(short[])} instead. */
+    @Deprecated
+    public static float[] toFloats(short[] ints) { return ArrayTypeConverters.toFloats(ints); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#toFloats(int[])} instead. */
+    @Deprecated
+    public static float[] toFloats(int[] ints) { return ArrayTypeConverters.toFloats(ints); }
 
-    public static float[] toFloats(short[] ints) {
-        float[] ret = new float[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (float) ints[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toFloats(long[])} instead. */
+    @Deprecated
+    public static float[] toFloats(long[] ints) { return ArrayTypeConverters.toFloats(ints); }
 
-    public static float[] toFloats(int[] ints) {
-        float[] ret = new float[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (float) ints[i];
-        return ret;
-    }
-
-    public static float[] toFloats(long[] ints) {
-        float[] ret = new float[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (float) ints[i];
-        return ret;
-    }
-
-    public static float[] toFloats(double[] ints) {
-        float[] ret = new float[ints.length];
-        for (int i = 0; i < ints.length; i++)
-            ret[i] = (float) ints[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toFloats(double[])} instead. */
+    @Deprecated
+    public static float[] toFloats(double[] ints) { return ArrayTypeConverters.toFloats(ints); }
 
 
 
@@ -2278,19 +1464,15 @@ public class ArrayUtil {
 
         }
 
-        List<Integer> listA = new ArrayList<>();
-        for (int i = 0; i < aShape.length; i++) {
-            if (!Ints.contains(axes[0], i))
-                listA.add(i);
-        }
+        List<Integer> listA = IntStream.range(0, aShape.length)
+                .filter(i -> !Ints.contains(axes[0], i))
+                .boxed()
+                .collect(Collectors.toList());
 
-
-
-        List<Integer> listB = new ArrayList<>();
-        for (int i = 0; i < bShape.length; i++) {
-            if (!Ints.contains(axes[1], i))
-                listB.add(i);
-        }
+        List<Integer> listB = IntStream.range(0, bShape.length)
+                .filter(i -> !Ints.contains(axes[1], i))
+                .boxed()
+                .collect(Collectors.toList());
 
 
         int n2 = 1;
@@ -2440,177 +1622,60 @@ public class ArrayUtil {
 
     //Credit: https://stackoverflow.com/questions/15533854/converting-byte-array-to-double-array
 
-    /**
-     *
-     * @param doubleArray
-     * @return
-     */
-    public static byte[] toByteArray(double[] doubleArray) {
-        int times = Double.SIZE / Byte.SIZE;
-        byte[] bytes = new byte[doubleArray.length * times];
-        for (int i = 0; i < doubleArray.length; i++) {
-            ByteBuffer.wrap(bytes, i * times, times).putDouble(doubleArray[i]);
-        }
-        return bytes;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toByteArray(double[])} instead. */
+    @Deprecated
+    public static byte[] toByteArray(double[] doubleArray) { return ArrayTypeConverters.toByteArray(doubleArray); }
 
     /**
-     * Note this byte array conversion is a simple cast and not a true
-     * cast. Use {@link #toByteArraySimple(long[])} for a true cast.
-     * @param longArray
-     * @return
+     * Simple element-wise long to byte cast.
+     * @deprecated Use {@link ArrayTypeConverters#toByteArraySimple(long[])} instead.
      */
-    public static byte[] toByteArraySimple(long[] longArray) {
-        byte[] bytes = new byte[longArray.length];
-        for (int i = 0; i < longArray.length; i++) {
-            bytes[i] = (byte) longArray[i];
-        }
-        return bytes;
-    }
-    /**
-     *
-     * @param longArray
-     * @return
-     */
-    public static byte[] toByteArray(long[] longArray) {
-        int times = Long.SIZE / Byte.SIZE;
-        byte[] bytes = new byte[longArray.length * times];
-        for (int i = 0; i < longArray.length; i++) {
-            ByteBuffer.wrap(bytes, i * times, times).putLong(longArray[i]);
-        }
-        return bytes;
-    }
+    @Deprecated
+    public static byte[] toByteArraySimple(long[] longArray) { return ArrayTypeConverters.toByteArraySimple(longArray); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#toByteArray(long[])} instead. */
+    @Deprecated
+    public static byte[] toByteArray(long[] longArray) { return ArrayTypeConverters.toByteArray(longArray); }
 
-    /**
-     *
-     * @param byteArray
-     * @return
-     */
-    public static double[] toDoubleArraySimple(byte[] byteArray) {
-        double[] doubles = new double[byteArray.length];
-        for (int i = 0; i < doubles.length; i++) {
-            doubles[i] = (double) byteArray[i];
-        }
-        return doubles;
-    }
-    /**
-     *
-     * @param byteArray
-     * @return
-     */
-    public static double[] toDoubleArray(byte[] byteArray) {
-        int times = Double.SIZE / Byte.SIZE;
-        double[] doubles = new double[byteArray.length / times];
-        for (int i = 0; i < doubles.length; i++) {
-            doubles[i] = ByteBuffer.wrap(byteArray, i * times, times).getDouble();
-        }
-        return doubles;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDoubleArraySimple(byte[])} instead. */
+    @Deprecated
+    public static double[] toDoubleArraySimple(byte[] byteArray) { return ArrayTypeConverters.toDoubleArraySimple(byteArray); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#toDoubleArray(byte[])} instead. */
+    @Deprecated
+    public static double[] toDoubleArray(byte[] byteArray) { return ArrayTypeConverters.toDoubleArray(byteArray); }
 
-    /**
-     *
-     * @param doubleArray
-     * @return
-     */
-    public static byte[] toByteArray(float[] doubleArray) {
-        int times = Float.SIZE / Byte.SIZE;
-        byte[] bytes = new byte[doubleArray.length * times];
-        for (int i = 0; i < doubleArray.length; i++) {
-            ByteBuffer.wrap(bytes, i * times, times).putFloat(doubleArray[i]);
-        }
-        return bytes;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toByteArray(float[])} instead. */
+    @Deprecated
+    public static byte[] toByteArray(float[] doubleArray) { return ArrayTypeConverters.toByteArray(doubleArray); }
 
-    public static long[] toLongArray(int[] intArray) {
-        if(intArray == null)
-            return null;
-        long[] ret = new long[intArray.length];
-        for (int i = 0; i < intArray.length; i++) {
-            ret[i] = intArray[i];
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toLongArray(int[])} instead. */
+    @Deprecated
+    public static long[] toLongArray(int[] intArray) { return ArrayTypeConverters.toLongArray(intArray); }
 
-    public static long[] toLongArray(float[] array) {
-        val ret = new long[array.length];
-        for (int i = 0; i < array.length; i++) {
-            ret[i] = (long) array[i];
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toLongArray(float[])} instead. */
+    @Deprecated
+    public static long[] toLongArray(float[] array) { return ArrayTypeConverters.toLongArray(array); }
 
-    /**
-     *
-     * @param byteArray
-     * @return
-     */
-    public static float[] toFloatArray(byte[] byteArray) {
-        int times = Float.SIZE / Byte.SIZE;
-        float[] doubles = new float[byteArray.length / times];
-        for (int i = 0; i < doubles.length; i++) {
-            doubles[i] = ByteBuffer.wrap(byteArray, i * times, times).getFloat();
-        }
-        return doubles;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toFloatArray(byte[])} instead. */
+    @Deprecated
+    public static float[] toFloatArray(byte[] byteArray) { return ArrayTypeConverters.toFloatArray(byteArray); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#toFloatArraySimple(byte[])} instead. */
+    @Deprecated
+    public static float[] toFloatArraySimple(byte[] byteArray) { return ArrayTypeConverters.toFloatArraySimple(byteArray); }
 
-    /**
-     *
-     * @param byteArray
-     * @return
-     */
-    public static float[] toFloatArraySimple(byte[] byteArray) {
-        float[] doubles = new float[byteArray.length];
-        for (int i = 0; i < doubles.length; i++) {
-            doubles[i] = byteArray[i];
-        }
-        return doubles;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toByteArray(int[])} instead. */
+    @Deprecated
+    public static byte[] toByteArray(int[] intArray) { return ArrayTypeConverters.toByteArray(intArray); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#toIntArraySimple(byte[])} instead. */
+    @Deprecated
+    public static int[] toIntArraySimple(byte[] byteArray) { return ArrayTypeConverters.toIntArraySimple(byteArray); }
 
-    /**
-     *
-     * @param intArray
-     * @return
-     */
-    public static byte[] toByteArray(int[] intArray) {
-        int times = Integer.SIZE / Byte.SIZE;
-        byte[] bytes = new byte[intArray.length * times];
-        for (int i = 0; i < intArray.length; i++) {
-            ByteBuffer.wrap(bytes, i * times, times).putInt(intArray[i]);
-        }
-        return bytes;
-    }
-
-
-    /**
-     *
-     * @param byteArray
-     * @return
-     */
-    public static int[] toIntArraySimple(byte[] byteArray) {
-        int[] ints = new int[byteArray.length];
-        for (int i = 0; i < ints.length; i++) {
-            ints[i] =   byteArray[i];
-        }
-        return ints;
-    }
-
-    /**
-     *
-     * @param byteArray
-     * @return
-     */
-    public static int[] toIntArray(byte[] byteArray) {
-        int times = Integer.SIZE / Byte.SIZE;
-        int[] ints = new int[byteArray.length / times];
-        for (int i = 0; i < ints.length; i++) {
-            ints[i] = ByteBuffer.wrap(byteArray, i * times, times).getInt();
-        }
-        return ints;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toIntArray(byte[])} instead. */
+    @Deprecated
+    public static int[] toIntArray(byte[] byteArray) { return ArrayTypeConverters.toIntArray(byteArray); }
 
 
 
@@ -2699,60 +1764,33 @@ public class ArrayUtil {
         return ret;
     }
 
-    public static BigInteger[] toBigInteger(byte[] input) {
-        BigInteger[] ret = new BigInteger[input.length];
-        for (int i = 0; i < input.length; i++) {
-            ret[i] = BigInteger.valueOf(input[i]);
-        }
-        return ret;
-    }
-    public static BigInteger[] toBigInteger(short[] input) {
-        BigInteger[] ret = new BigInteger[input.length];
-        for (int i = 0; i < input.length; i++) {
-            ret[i] = BigInteger.valueOf(input[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBigInteger(byte[])} instead. */
+    @Deprecated
+    public static BigInteger[] toBigInteger(byte[] input) { return ArrayTypeConverters.toBigInteger(input); }
 
-    public static BigInteger[] toBigInteger(long[] input) {
-        BigInteger[] ret = new BigInteger[input.length];
-        for (int i = 0; i < input.length; i++) {
-            ret[i] = BigInteger.valueOf(input[i]);
-        }
-        return ret;
-    }
-    public static BigInteger[] toBigInteger(boolean[] input) {
-        BigInteger[] ret = new BigInteger[input.length];
-        for (int i = 0; i < input.length; i++) {
-            ret[i] = BigInteger.valueOf(BigInteger.valueOf(input[i] ? 1 : 0).longValue());
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBigInteger(short[])} instead. */
+    @Deprecated
+    public static BigInteger[] toBigInteger(short[] input) { return ArrayTypeConverters.toBigInteger(input); }
 
+    /** @deprecated Use {@link ArrayTypeConverters#toBigInteger(long[])} instead. */
+    @Deprecated
+    public static BigInteger[] toBigInteger(long[] input) { return ArrayTypeConverters.toBigInteger(input); }
 
-    public static BigInteger[] toBigInteger(float[] input) {
-        BigInteger[] ret = new BigInteger[input.length];
-        for (int i = 0; i < input.length; i++) {
-            ret[i] = BigInteger.valueOf((long) input[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBigInteger(boolean[])} instead. */
+    @Deprecated
+    public static BigInteger[] toBigInteger(boolean[] input) { return ArrayTypeConverters.toBigInteger(input); }
 
-    public static BigInteger[] toBigInteger(double[] input) {
-        BigInteger[] ret = new BigInteger[input.length];
-        for (int i = 0; i < input.length; i++) {
-            ret[i] = BigInteger.valueOf((long) input[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBigInteger(float[])} instead. */
+    @Deprecated
+    public static BigInteger[] toBigInteger(float[] input) { return ArrayTypeConverters.toBigInteger(input); }
 
-    public static BigInteger[] toBigInteger(int[] input) {
-        BigInteger[] ret = new BigInteger[input.length];
-        for (int i = 0; i < input.length; i++) {
-            ret[i] = BigInteger.valueOf(input[i]);
-        }
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toBigInteger(double[])} instead. */
+    @Deprecated
+    public static BigInteger[] toBigInteger(double[] input) { return ArrayTypeConverters.toBigInteger(input); }
+
+    /** @deprecated Use {@link ArrayTypeConverters#toBigInteger(int[])} instead. */
+    @Deprecated
+    public static BigInteger[] toBigInteger(int[] input) { return ArrayTypeConverters.toBigInteger(input); }
 
 
     /**
@@ -2785,6 +1823,11 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStridesFortran(int[] shape, int startNum) {
+        if(shape.length <= 1) {
+            return new int[]{1};
+        }
+
+
         if (shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
             int[] ret = new int[2];
             Arrays.fill(ret, startNum);
@@ -2900,20 +1943,11 @@ public class ArrayUtil {
 
 
     /**
-     * Returns true if the given
-     * two arrays are reverse copies of each other
-     * @param first
-     * @param second
-     * @return
+     * Returns true if the two arrays are reverse copies of each other.
+     * @deprecated Use {@link ArrayMathUtils#isInverse(int[], int[])} instead.
      */
-    public static boolean isInverse(int[] first, int[] second) {
-        int backWardCount = second.length - 1;
-        for (int i = 0; i < first.length; i++) {
-            if (first[i] != second[backWardCount--])
-                return false;
-        }
-        return true;
-    }
+    @Deprecated
+    public static boolean isInverse(int[] first, int[] second) { return ArrayMathUtils.isInverse(first, second); }
 
     public static int[] plus(int[] ints, int mult) {
         int[] ret = new int[ints.length];
@@ -2975,6 +2009,9 @@ public class ArrayUtil {
     }
 
     public static long[] calcStrides(long[] shape) {
+        if(shape.length <= 1) {
+            return new long[]{1};
+        }
         return calcStrides(shape, 1);
     }
 
@@ -3047,31 +2084,18 @@ public class ArrayUtil {
     }
 
 
-    public static void assertSquare(double[]... d) {
-        if (d.length > 2) {
-            for (int i = 0; i < d.length; i++) {
-                assertSquare(d[i]);
-            }
-        } else {
-            int firstLength = d[0].length;
-            for (int i = 1; i < d.length; i++) {
-                Preconditions.checkState(d[i].length == firstLength);
-            }
-        }
-    }
-
+    /**
+     * @deprecated Use {@link ArrayMathUtils#assertSquare(double[]...)} instead.
+     */
+    @Deprecated
+    public static void assertSquare(double[]... d) { ArrayMathUtils.assertSquare(d); }
 
     /**
-     * Multiply the given array
-     * by the given scalar
-     * @param arr the array to multily
-     * @param mult the scalar to multiply by
+     * Multiply the given array by the given scalar in-place.
+     * @deprecated Use {@link ArrayMathUtils#multiplyBy(int[], int)} instead.
      */
-    public static void multiplyBy(int[] arr, int mult) {
-        for (int i = 0; i < arr.length; i++)
-            arr[i] *= mult;
-
-    }
+    @Deprecated
+    public static void multiplyBy(int[] arr, int mult) { ArrayMathUtils.multiplyBy(arr, mult); }
 
     /**
      * Reverse the passed in array in place
@@ -3812,32 +2836,21 @@ public class ArrayUtil {
         return nums;
     }
 
-    public static double[] toDouble(boolean[] data) {
-        double[] ret = new double[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = data[i] ? 1.0 : 0.0;
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDouble(boolean[])} instead. */
+    @Deprecated
+    public static double[] toDouble(boolean[] data) { return ArrayTypeConverters.toDouble(data); }
 
-    public static double[] toDouble(byte[] data) {
-        double[] ret = new double[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = data[i];
-        return ret;
-    }
-    public static double[] toDouble(int[] data) {
-        double[] ret = new double[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = data[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDouble(byte[])} instead. */
+    @Deprecated
+    public static double[] toDouble(byte[] data) { return ArrayTypeConverters.toDouble(data); }
 
-    public static double[] toDouble(long[] data) {
-        double[] ret = new double[data.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = data[i];
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDouble(int[])} instead. */
+    @Deprecated
+    public static double[] toDouble(int[] data) { return ArrayTypeConverters.toDouble(data); }
+
+    /** @deprecated Use {@link ArrayTypeConverters#toDouble(long[])} instead. */
+    @Deprecated
+    public static double[] toDouble(long[] data) { return ArrayTypeConverters.toDouble(data); }
 
     public static float[] copy(float[] data) {
         float[] result = new float[data.length];
@@ -3982,63 +2995,47 @@ public class ArrayUtil {
     }
 
 
-    /** Returns the maximum value in the array */
-    public static int max(int[] in) {
-        int max = Integer.MIN_VALUE;
-        for (int i = 0; i < in.length; i++)
-            if (in[i] > max)
-                max = in[i];
-        return max;
-    }
+    /**
+     * Returns the maximum value in the array.
+     * @deprecated Use {@link ArrayMathUtils#max(int[])} instead.
+     */
+    @Deprecated
+    public static int max(int[] in) { return ArrayMathUtils.max(in); }
 
-    /** Returns the minimum value in the array */
-    public static int min(int[] in) {
-        int min = Integer.MAX_VALUE;
-        for (int i = 0; i < in.length; i++)
-            if (in[i] < min)
-                min = in[i];
-        return min;
-    }
+    /**
+     * Returns the minimum value in the array.
+     * @deprecated Use {@link ArrayMathUtils#min(int[])} instead.
+     */
+    @Deprecated
+    public static int min(int[] in) { return ArrayMathUtils.min(in); }
 
-    /** Returns the index of the maximum value in the array.
-     * If two entries have same maximum value, index of the first one is returned. */
-    public static int argMax(int[] in) {
-        int maxIdx = 0;
-        for (int i = 1; i < in.length; i++)
-            if (in[i] > in[maxIdx])
-                maxIdx = i;
-        return maxIdx;
-    }
+    /**
+     * Returns the index of the maximum value. Ties broken by first occurrence.
+     * @deprecated Use {@link ArrayMathUtils#argMax(int[])} instead.
+     */
+    @Deprecated
+    public static int argMax(int[] in) { return ArrayMathUtils.argMax(in); }
 
-    /** Returns the index of the minimum value in the array.
-     * If two entries have same minimum value, index of the first one is returned. */
-    public static int argMin(int[] in) {
-        int minIdx = 0;
-        for (int i = 1; i < in.length; i++)
-            if (in[i] < in[minIdx])
-                minIdx = i;
-        return minIdx;
-    }
+    /**
+     * Returns the index of the minimum value. Ties broken by first occurrence.
+     * @deprecated Use {@link ArrayMathUtils#argMin(int[])} instead.
+     */
+    @Deprecated
+    public static int argMin(int[] in) { return ArrayMathUtils.argMin(in); }
 
-    /** Returns the index of the maximum value in the array.
-     * If two entries have same maximum value, index of the first one is returned. */
-    public static int argMax(long[] in) {
-        int maxIdx = 0;
-        for (int i = 1; i < in.length; i++)
-            if (in[i] > in[maxIdx])
-                maxIdx = i;
-        return maxIdx;
-    }
+    /**
+     * Returns the index of the maximum value (long[]). Ties broken by first occurrence.
+     * @deprecated Use {@link ArrayMathUtils#argMax(long[])} instead.
+     */
+    @Deprecated
+    public static int argMax(long[] in) { return ArrayMathUtils.argMax(in); }
 
-    /** Returns the index of the minimum value in the array.
-     * If two entries have same minimum value, index of the first one is returned. */
-    public static int argMin(long[] in) {
-        int minIdx = 0;
-        for (int i = 1; i < in.length; i++)
-            if (in[i] < in[minIdx])
-                minIdx = i;
-        return minIdx;
-    }
+    /**
+     * Returns the index of the minimum value (long[]). Ties broken by first occurrence.
+     * @deprecated Use {@link ArrayMathUtils#argMin(long[])} instead.
+     */
+    @Deprecated
+    public static int argMin(long[] in) { return ArrayMathUtils.argMin(in); }
 
     /**
      *
@@ -4259,297 +3256,122 @@ public class ArrayUtil {
      * Convert an int
      * @param bool
      * @return
+     * @deprecated Use {@link ArrayTypeConverters#fromBoolean(boolean)} instead.
      */
-    public static int fromBoolean(boolean bool) {
-        return bool ? 1 : 0;
-    }
+    @Deprecated
+    public static int fromBoolean(boolean bool) { return ArrayTypeConverters.fromBoolean(bool); }
 
-    public static long[] toPrimitives(Long[] array) {
-        val res = new long[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Long[])} instead. */
+    @Deprecated
+    public static long[] toPrimitives(Long[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Integer[])} instead. */
+    @Deprecated
+    public static int[] toPrimitives(Integer[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static int[] toPrimitives(Integer[] array) {
-        val res = new int[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Short[])} instead. */
+    @Deprecated
+    public static short[] toPrimitives(Short[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Byte[])} instead. */
+    @Deprecated
+    public static byte[] toPrimitives(Byte[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static short[] toPrimitives(Short[] array) {
-        val res = new short[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Float[])} instead. */
+    @Deprecated
+    public static float[] toPrimitives(Float[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Double[])} instead. */
+    @Deprecated
+    public static double[] toPrimitives(Double[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static byte[] toPrimitives(Byte[] array) {
-        val res = new byte[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Boolean[])} instead. */
+    @Deprecated
+    public static boolean[] toPrimitives(Boolean[] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Long[][])} instead. */
+    @Deprecated
+    public static long[][] toPrimitives(Long[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static float[] toPrimitives(Float[] array) {
-        val res = new float[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Integer[][])} instead. */
+    @Deprecated
+    public static int[][] toPrimitives(Integer[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Short[][])} instead. */
+    @Deprecated
+    public static short[][] toPrimitives(Short[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static double[] toPrimitives(Double[] array) {
-        val res = new double[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Byte[][])} instead. */
+    @Deprecated
+    public static byte[][] toPrimitives(Byte[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Double[][])} instead. */
+    @Deprecated
+    public static double[][] toPrimitives(Double[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static boolean[] toPrimitives(Boolean[] array) {
-        val res = new boolean[array.length];
-        for (int e = 0; e < array.length; e++)
-            res[e] = array[e];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Float[][])} instead. */
+    @Deprecated
+    public static float[][] toPrimitives(Float[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Boolean[][])} instead. */
+    @Deprecated
+    public static boolean[][] toPrimitives(Boolean[][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static long[][] toPrimitives(Long[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new long[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Long[][][])} instead. */
+    @Deprecated
+    public static long[][][] toPrimitives(Long[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Integer[][][])} instead. */
+    @Deprecated
+    public static int[][][] toPrimitives(Integer[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static int[][] toPrimitives(Integer[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new int[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Short[][][])} instead. */
+    @Deprecated
+    public static short[][][] toPrimitives(Short[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Byte[][][])} instead. */
+    @Deprecated
+    public static byte[][][] toPrimitives(Byte[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static short[][] toPrimitives(Short[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new short[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Double[][][])} instead. */
+    @Deprecated
+    public static double[][][] toPrimitives(Double[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Float[][][])} instead. */
+    @Deprecated
+    public static float[][][] toPrimitives(Float[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static byte[][] toPrimitives(Byte[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new byte[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Boolean[][][])} instead. */
+    @Deprecated
+    public static boolean[][][] toPrimitives(Boolean[][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Long[][][][])} instead. */
+    @Deprecated
+    public static long[][][][] toPrimitives(Long[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static double[][] toPrimitives(Double[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new double[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Integer[][][][])} instead. */
+    @Deprecated
+    public static int[][][][] toPrimitives(Integer[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Short[][][][])} instead. */
+    @Deprecated
+    public static short[][][][] toPrimitives(Short[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static float[][] toPrimitives(Float[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new float[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Byte[][][][])} instead. */
+    @Deprecated
+    public static byte[][][][] toPrimitives(Byte[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Double[][][][])} instead. */
+    @Deprecated
+    public static double[][][][] toPrimitives(Double[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-    public static boolean [][] toPrimitives(Boolean[][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new boolean[array.length][array[0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                res[i][j] = array[i][j];
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Float[][][][])} instead. */
+    @Deprecated
+    public static float[][][][] toPrimitives(Float[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
-        return res;
-    }
-
-    public static long[][][] toPrimitives(Long[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new long[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static int[][][] toPrimitives(Integer[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new int[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static short[][][] toPrimitives(Short[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new short[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static byte[][][] toPrimitives(Byte[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new byte[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static double[][][] toPrimitives(Double[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new double[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static float[][][] toPrimitives(Float[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new float[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static boolean[][][] toPrimitives(Boolean[][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new boolean[array.length][array[0].length][array[0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    res[i][j][k] = array[i][j][k];
-
-        return res;
-    }
-
-    public static long[][][][] toPrimitives(Long[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new long[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static int[][][][] toPrimitives(Integer[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new int[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static short[][][][] toPrimitives(Short[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new short[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static byte[][][][] toPrimitives(Byte[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new byte[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static double[][][][] toPrimitives(Double[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new double[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static float[][][][] toPrimitives(Float[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new float[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
-
-    public static boolean[][][][] toPrimitives(Boolean[][][][] array) {
-        ArrayUtil.assertNotRagged(array);
-        val res = new boolean[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
-        for (int i = 0; i < array.length; i++)
-            for (int j = 0; j < array[0].length; j++)
-                for (int k = 0; j < array[0][0].length; k++)
-                    for (int l = 0; l < array[0][0][0].length; l++)
-                        res[i][j][k][l] = array[i][j][k][l];
-
-        return res;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toPrimitives(Boolean[][][][])} instead. */
+    @Deprecated
+    public static boolean[][][][] toPrimitives(Boolean[][][][] array) { return ArrayTypeConverters.toPrimitives(array); }
 
 
     /**
@@ -4723,39 +3545,19 @@ public class ArrayUtil {
         return ret;
     }
 
-    public static int[] toInt(short[] v) {
-        int[] ret = new int[v.length];
-        for(int i = 0; i < v.length; i++) {
-            ret[i] = v[i];
-        }
+    /** @deprecated Use {@link ArrayTypeConverters#toInt(short[])} instead. */
+    @Deprecated
+    public static int[] toInt(short[] v) { return ArrayTypeConverters.toInt(v); }
 
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toInt(byte[])} instead. */
+    @Deprecated
+    public static int[] toInt(byte[] v) { return ArrayTypeConverters.toInt(v); }
 
-    public static int[] toInt(byte[] v) {
-        int[] ret = new int[v.length];
-        for(int i = 0; i < v.length; i++) {
-            ret[i] = v[i];
-        }
+    /** @deprecated Use {@link ArrayTypeConverters#toInt(char[])} instead. */
+    @Deprecated
+    public static int[] toInt(char[] v) { return ArrayTypeConverters.toInt(v); }
 
-        return ret;
-    }
-
-    public static int[] toInt(char[] v) {
-        int[] ret = new int[v.length];
-        for(int i = 0; i < v.length; i++) {
-            ret[i] = v[i];
-        }
-
-        return ret;
-    }
-
-    public static double[] toDouble(float[] v) {
-        double[] ret = new double[v.length];
-        for(int i = 0; i < v.length; i++) {
-            ret[i] = v[i];
-        }
-
-        return ret;
-    }
+    /** @deprecated Use {@link ArrayTypeConverters#toDouble(float[])} instead. */
+    @Deprecated
+    public static double[] toDouble(float[] v) { return ArrayTypeConverters.toDouble(v); }
 }

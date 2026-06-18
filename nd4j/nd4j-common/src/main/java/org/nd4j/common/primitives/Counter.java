@@ -24,6 +24,7 @@ package org.nd4j.common.primitives;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class Counter<T> implements Serializable {
     private static final long serialVersionUID = 119L;
@@ -42,6 +43,15 @@ public class Counter<T> implements Serializable {
             return 0.0;
 
         return t.get();
+    }
+
+    /**
+     * Alias for getCount() - returns the count for the given element.
+     * @param element the element to get count for
+     * @return the count, or 0.0 if not present
+     */
+    public double get(T element) {
+        return getCount(element);
     }
 
     public void incrementCount(T element, double inc) {
@@ -291,22 +301,16 @@ public class Counter<T> implements Serializable {
 
 
     public PriorityQueue<Pair<T, Double>> asPriorityQueue() {
-        PriorityQueue<Pair<T, Double>> pq = new PriorityQueue<>(Math.max(1,map.size()), new PairComparator());
-        for (Map.Entry<T, AtomicDouble> entry : map.entrySet()) {
-            pq.add(Pair.create(entry.getKey(), entry.getValue().get()));
-        }
-
-        return pq;
+        return map.entrySet().stream()
+                .map(entry -> Pair.create(entry.getKey(), entry.getValue().get()))
+                .collect(Collectors.toCollection(() -> new PriorityQueue<>(Math.max(1, map.size()), new PairComparator())));
     }
 
 
     public PriorityQueue<Pair<T, Double>> asReversedPriorityQueue() {
-        PriorityQueue<Pair<T, Double>> pq = new PriorityQueue<>(Math.max(1,map.size()), new ReversedPairComparator());
-        for (Map.Entry<T, AtomicDouble> entry : map.entrySet()) {
-            pq.add(Pair.create(entry.getKey(), entry.getValue().get()));
-        }
-
-        return pq;
+        return map.entrySet().stream()
+                .map(entry -> Pair.create(entry.getKey(), entry.getValue().get()))
+                .collect(Collectors.toCollection(() -> new PriorityQueue<>(Math.max(1, map.size()), new ReversedPairComparator())));
     }
 
     public  class PairComparator implements Comparator<Pair<T, Double>> {

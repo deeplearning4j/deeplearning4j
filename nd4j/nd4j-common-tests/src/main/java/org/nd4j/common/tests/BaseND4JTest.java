@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -145,8 +146,6 @@ public abstract class BaseND4JTest {
             //Not really safe to continue testing under this situation... other tests will likely fail with obscure
             // errors that are hard to track back to this
             log.error("Open workspace leaked from test! Exiting - {}, isOpen = {} - {}", currWS.getId(), currWS.isScopeActive(), currWS);
-            System.out.println("Open workspace leaked from test! Exiting - " + currWS.getId() + ", isOpen = " + currWS.isScopeActive() + " - " + currWS);
-            System.out.flush();
             //Try to flush logs also:
             try{ Thread.sleep(1000); } catch (InterruptedException e){ }
             ILoggerFactory lf = LoggerFactory.getILoggerFactory();
@@ -213,5 +212,59 @@ public abstract class BaseND4JTest {
             }
         }
         log.info(sb.toString());
+
+        // Reclaim GPU memory after every test to prevent pool exhaustion
+        // in suites with many ops (e.g., gradient checking creates many standalone arrays)
+        reclaimGpuMemory();
+    }
+
+    /**
+     * Force GPU memory reclamation. Triggers GC to collect unreachable DataBuffers,
+     * lets the DeallocatorService process them (cudaFreeAsync), then trims the pool.
+     * Called automatically after every test via @AfterEach.
+     */
+    protected static void reclaimGpuMemory() {
+        // Commit pending CUDA operations, then trim the memory pool so that
+        // memory released via cudaFreeAsync is returned to the driver.
+        try {
+            Nd4j.getExecutioner().commit();
+        } catch (Exception e) {
+            // ignore — may fail on CPU backend
+        }
+        try {
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            for (int d = 0; d < numDevices; d++) {
+                Nd4j.getNativeOps().trimMemoryPool(d);
+            }
+        } catch (Exception e) {
+            // ignore — may fail on CPU backend or if no pool configured
+        }
+    }
+
+    /**
+     * Close a SameDiff instance and reclaim GPU memory.
+     *
+     * SameDiff.close() frees arrays it owns (constants, variables, eager) and trims the
+     * CUDA memory pool. However, intermediate arrays created outside the graph (e.g. by
+     * gradient checking in OpValidation.validate()) are standalone INDArrays on the Java
+     * heap. Their GPU memory is only released when:
+     *   1. Java GC collects the unreachable INDArray/DataBuffer objects
+     *   2. DeallocatorService processes the reference queue (calls cudaFreeAsync)
+     *   3. The CUDA memory pool is trimmed (syncs dirty streams, calls cudaMemPoolTrimTo)
+     *
+     * Without all three steps, freed GPU memory stays in the pool as "reserved" and
+     * cudaMemGetInfo reports it as consumed. In test suites with many SameDiff instances
+     * (e.g. gradient checks in loops), this causes GPU OOM after ~20 tests even though
+     * each test closes its SameDiff.
+     *
+     * This method performs all three steps. Use it in test loops instead of bare sd.close().
+     *
+     * @param sd the SameDiff instance to close (may be null)
+     */
+    protected static void closeAndReclaimGpuMemory(SameDiff sd) {
+        if (sd != null) {
+            sd.close();
+        }
+        reclaimGpuMemory();
     }
 }

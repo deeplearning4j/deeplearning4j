@@ -194,7 +194,7 @@ public class RandomProjection {
      * @param targetDimension a desired dimension
      * @return the shape of the projection matrix to use
      */
-    protected static long[] targetShape(INDArray X, int targetDimension) {
+    public static long[] targetShape(INDArray X, int targetDimension) {
         return targetShape(X.shape(), -1, targetDimension, false);
     }
 

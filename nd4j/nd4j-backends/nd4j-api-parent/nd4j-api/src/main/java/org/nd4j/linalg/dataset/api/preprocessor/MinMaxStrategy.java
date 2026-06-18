@@ -37,6 +37,7 @@ import java.io.Serializable;
 @Getter
 @EqualsAndHashCode
 public class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
+    private static final long serialVersionUID = 1L;
     private double minRange;
     private double maxRange;
 

@@ -5,6 +5,7 @@ import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.memory.deallocation.OpaqueNDArrayDeallocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -49,8 +50,20 @@ import org.nd4j.linalg.factory.Nd4j;
 @Slf4j
 public class OpaqueNDArray extends Pointer {
 
+    /**
+     * Flag to enable/disable Java stack trace capture for debugging.
+     * Stack trace capture is expensive and should only be enabled for debugging.
+     * Set via system property "nd4j.opaque.stacktrace" (default: false).
+     */
+    private static final boolean CAPTURE_STACK_TRACE =
+            Boolean.parseBoolean(System.getProperty("nd4j.opaque.stacktrace", "false"));
+
     // Track the deallocator for this instance
     private OpaqueNDArrayDeallocator deallocator;
+
+    private OpaqueDataBuffer shapeInfoBufferRef;
+    private OpaqueDataBuffer dataBufferRef;
+    private OpaqueDataBuffer specialBufferRef;
 
     /**
      * Constructs an OpaqueNDArray from a given Pointer.
@@ -69,6 +82,10 @@ public class OpaqueNDArray extends Pointer {
      * with {@link DeallocatorService} for cleanup. You can also explicitly call {@link #close()}
      * for immediate cleanup.</p>
      *
+     * <p><b>Multi-GPU Support:</b> This method automatically switches to the correct device
+     * context based on the buffer's device before calling native code, then restores the
+     * original device context afterward.</p>
+     *
      * @param shapeInfo The shape information buffer.
      * @param buffer The primary data buffer.
      * @param specialBuffer The special buffer (e.g., for GPU data).
@@ -82,15 +99,88 @@ public class OpaqueNDArray extends Pointer {
             long offset) {
 
         // Capture Java stack trace BEFORE calling native - this gives us the full call path
-        String javaStackTrace = captureJavaStackTrace();
+        // Only capture if debugging is enabled (expensive operation)
+        String javaStackTrace = CAPTURE_STACK_TRACE ? captureJavaStackTrace() : null;
 
-        OpaqueNDArray array = Nd4j.getNativeOps().create(shapeInfo, buffer, specialBuffer, offset)
-                .retainReference();
+        int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        int targetDevice = currentDevice;
+
+        // Prefer buffer's device, fall back to specialBuffer's device, then shapeInfo's device
+        if (buffer != null && !buffer.isNull()) {
+            try {
+                int bufferDevice = buffer.deviceId();
+                if (bufferDevice >= 0) {
+                    targetDevice = bufferDevice;
+                }
+            } catch (Exception e) {
+                // Ignore - use current device
+            }
+        } else if (specialBuffer != null && !specialBuffer.isNull()) {
+            try {
+                int specialDevice = specialBuffer.deviceId();
+                if (specialDevice >= 0) {
+                    targetDevice = specialDevice;
+                }
+            } catch (Exception e) {
+                // Ignore - use current device
+            }
+        }
+
+        // Validate target device is in range
+        int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
+        if (deviceCount > 0 && (targetDevice < 0 || targetDevice >= deviceCount)) {
+            targetDevice = currentDevice;
+        }
+
+        boolean switchedDevice = false;
+        if (currentDevice != targetDevice && deviceCount > 1) {
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice, "OpaqueNDArray.create", "target-device");
+            switchedDevice = true;
+        }
+
+        OpaqueNDArray array;
+        try {
+            array = Nd4j.getNativeOps().create(shapeInfo, buffer, specialBuffer, offset)
+                    .retainReference();
+        } finally {
+            // Restore original device context
+            if (switchedDevice) {
+                DeviceMemoryManager.getInstance().switchDevice(currentDevice, "OpaqueNDArray.create", "restore-device");
+            }
+        }
 
         // Register with DeallocatorService for reliable cleanup
         if (array != null && !array.isNull()) {
             try {
+                array.shapeInfoBufferRef = shapeInfo;
+                array.dataBufferRef = buffer;
+                array.specialBufferRef = specialBuffer;
+
                 registerWithDeallocatorService(array);
+
+                // Mark the OpaqueNDArray as constant if either data buffer or shape info is constant.
+                // This protects the OpaqueNDArray wrapper from premature GC/deallocation.
+                // IMPORTANT: setConstant on OpaqueNDArray must NOT propagate the constant flag
+                // to the data buffer if the data buffer isn't actually constant - otherwise
+                // intermediate output arrays can never be freed, causing GPU memory leaks.
+                boolean dataIsConstant = buffer != null && buffer.getDeallocator() != null && buffer.getDeallocator().isConstant();
+                boolean shapeIsConstant = shapeInfo != null && shapeInfo.getDeallocator() != null && shapeInfo.getDeallocator().isConstant();
+                if (dataIsConstant || shapeIsConstant) {
+                    // Only mark the deallocator constant (prevents GC from freeing native NDArray wrapper).
+                    // Do NOT call array.setConstant(true) which would propagate to data buffers.
+                    if (array.deallocator != null) {
+                        array.deallocator.setConstant(true);
+                    }
+                    // Only propagate constant to data buffer if it's actually constant
+                    if (dataIsConstant && buffer != null) {
+                        buffer.setConstant(true);
+                    }
+                    // Shape info is already constant, just ensure it stays that way
+                    if (shapeIsConstant && shapeInfo != null) {
+                        shapeInfo.setConstant(true);
+                    }
+                }
+
                 // Update the allocation record with the full Java stack trace captured from Java side
                 if (javaStackTrace != null && !javaStackTrace.isEmpty()) {
                     Nd4j.getNativeOps().updateAllocationJavaStackTrace(array, javaStackTrace);
@@ -130,17 +220,22 @@ public class OpaqueNDArray extends Pointer {
         try {
             DeallocatorService service = Nd4j.getDeallocatorService();
             long uniqueId = service.nextValue();
-            int targetDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            
+
+            int targetDevice = array.deviceId();
+            if (targetDevice < 0) {
+                // Fall back to current thread's device if buffer device is unknown
+                targetDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            }
+
             OpaqueNDArrayDeallocator deallocator = new OpaqueNDArrayDeallocator(
                 array, uniqueId, targetDevice
             );
-            
+
             array.deallocator = deallocator;
             service.pickObject(deallocator);
-            
+
             if (log.isTraceEnabled()) {
-                log.trace("Registered OpaqueNDArray {} with DeallocatorService", uniqueId);
+                log.trace("Registered OpaqueNDArray {} with DeallocatorService on device {}", uniqueId, targetDevice);
             }
         } catch (Exception e) {
             // LEAK FIX: If registration fails, caller must clean up the array
@@ -188,8 +283,10 @@ public class OpaqueNDArray extends Pointer {
      * @return An array of long values representing the shape information.
      */
     public static long[] getOpaqueNDArrayShapeInfo(OpaqueNDArray array) {
-        LongPointer ret =  Nd4j.getNativeOps().getOpaqueNDArrayShapeInfo(array);
+        LongPointer ret = Nd4j.getNativeOps().getOpaqueNDArrayShapeInfo(array);
+        if (ret == null || ret.isNull()) return null;
         long len = Nd4j.getNativeOps().getShapeInfoLength(array);
+        if (len <= 0) return null;
         ret.capacity(len);
         long[] retArr = new long[(int) len];
         ret.get(retArr);
@@ -215,7 +312,8 @@ public class OpaqueNDArray extends Pointer {
      * @return A Pointer to the special buffer.
      */
     public static Pointer getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
-        return Nd4j.getNativeOps().getOpaqueNDArraySpecialBuffer(array).retainReference();
+        Pointer ptr = Nd4j.getNativeOps().getOpaqueNDArraySpecialBuffer(array);
+        return ptr != null ? ptr.retainReference() : null;
     }
 
     /**
@@ -261,6 +359,12 @@ public class OpaqueNDArray extends Pointer {
      */
     @Override
     public void close() {
+        // During JVM shutdown, skip native deallocation to avoid calling free()
+        // on potentially corrupted heap metadata. The OS reclaims all process memory on exit.
+        if (DeallocatorService.getShutdownInProgress().get()) {
+            return;
+        }
+
         if (deallocator != null) {
             // Only deallocate if not already done - prevents double-free
             if (!deallocator.isDeallocated()) {
@@ -272,6 +376,13 @@ public class OpaqueNDArray extends Pointer {
             // This should only happen for OpaqueNDArrays created without registration
             delete(this);
         }
+
+        // Clear buffer references to allow them to be freed by DeallocatorService
+        // The native NDArray is already deleted at this point, so we no longer need
+        // to keep these buffers alive.
+        shapeInfoBufferRef = null;
+        dataBufferRef = null;
+        specialBufferRef = null;
     }
 
     /**
@@ -292,12 +403,26 @@ public class OpaqueNDArray extends Pointer {
         DataBuffer buffer = array.data();
         DataBuffer shapeInfo = array.shapeInfoDataBuffer();
 
-        return create(
+        boolean bufferIsEmpty = buffer == null || buffer.length() < 1;
+
+        OpaqueNDArray opaque = create(
                 shapeInfo.opaqueBuffer(),
-                array.isEmpty() ? null : buffer.opaqueBuffer(),
-                array.isEmpty() ? null : buffer.opaqueBuffer(),
+                bufferIsEmpty ? null : buffer.opaqueBuffer(),
+                bufferIsEmpty ? null : buffer.opaqueBuffer(),
                 array.offset()
         );
+
+        if (opaque != null && !array.closeable()) {
+            // Only mark the OpaqueNDArray deallocator as constant to prevent GC
+            // from freeing the native wrapper during op execution. Do NOT propagate
+            // to the data buffer — views share their parent's DataBuffer, and marking
+            // it constant would poison all D2H sync for the parent and all other views.
+            if (opaque.deallocator != null) {
+                opaque.deallocator.setConstant(true);
+            }
+        }
+
+        return opaque;
     }
 
     /**
@@ -311,10 +436,116 @@ public class OpaqueNDArray extends Pointer {
      * @return The corresponding OpaqueNDArray (may be cached).
      */
     public static OpaqueNDArray fromINDArray(INDArray array) {
+        return fromINDArray(array, true);
+    }
+
+    /**
+     * Converts an INDArray to an OpaqueNDArray without forcing host-to-device
+     * synchronization. Callers that use this path must prepare inputs through
+     * native execution ownership, for example NDArray::prepareSpecialUse.
+     *
+     * @param array The INDArray to convert.
+     * @return The corresponding OpaqueNDArray (may be cached).
+     */
+    public static OpaqueNDArray fromINDArrayNoSync(INDArray array) {
+        return fromINDArray(array, false);
+    }
+
+    private static OpaqueNDArray fromINDArray(INDArray array, boolean syncHostToDevice) {
         if(array == null) {
             return null;
         }
-        return array.getOrCreateOpaqueNDArray();
+
+        // Guard against arrays with closed/null data buffers.
+        // Control flow dead branches (Switch/Merge) may produce arrays whose
+        // DataBuffers have been freed by session cleanup, or never allocated.
+        // Wrapping such arrays creates OpaqueNDArrays with null PointerWrapper
+        // internals, causing SIGSEGV in native code.
+        if (array.wasClosed()) {
+            throw new IllegalStateException(
+                "Cannot create OpaqueNDArray from closed INDArray (id=" + array.getId() + ").");
+        }
+        if (array.data() == null || array.data().wasClosed()) {
+            // Array has no live data — either never allocated (control flow intermediates)
+            // or DataBuffer was freed (dead branch cleanup).
+            DataBuffer shapeInfo = array.shapeInfoDataBuffer();
+            if (shapeInfo == null || shapeInfo.wasClosed()) {
+                // Can't even read shape — create a minimal scalar placeholder
+                return fromINDArrayUncached(Nd4j.scalar(0.0f));
+            }
+            // Check if the array is genuinely empty (not just a dead control-flow branch).
+            // We must check BOTH the Java-side isEmpty() AND the native shape info EMPTY bit,
+            // because Nd4j.empty(DataType) singletons store the EMPTY bit in javaShapeInformation
+            // but the native shape DataBuffer may only have the dtype bit (no EMPTY bit).
+            // In that case array.isEmpty() (which uses javaShapeInformation) returns true but
+            // Shape.isEmpty(shapeInfo.asLong()) returns false. Both must be checked.
+            boolean shapeInfoEmpty = Shape.isEmpty(shapeInfo.asLong());
+            // Also check Java-side isEmpty() which uses javaShapeInformation (has EMPTY bit for Nd4j.empty() singletons).
+            boolean javaEmpty = array.isEmpty();
+            if (shapeInfoEmpty) {
+                // Native shape info has EMPTY bit set — safe to pass null buffer to C++.
+                return fromINDArrayUncached(array);
+            }
+            if (javaEmpty) {
+                // Java says empty but native shape info does NOT have EMPTY bit.
+                // C++ createOpaqueNDArray checks: rank==0 && buffer==nullptr for "javaStyleEmpty".
+                // If native shape has rank > 0 or non-zero length, C++ throws
+                // "not empty but null buffer". Only pass through when native shape is rank-0.
+                long rank = shapeInfo.asLong()[0];
+                long nativeLength = Shape.length(shapeInfo.asLong());
+                if (rank == 0 || nativeLength == 0) {
+                    // Rank-0 or zero-length: C++ javaStyleEmpty path handles this safely.
+                    return fromINDArrayUncached(array);
+                }
+                // Java EMPTY bit is set but native shape has rank>0 and non-zero length.
+                // This is a mismatch — treat as non-empty and create zero-filled replacement.
+                INDArray replacement = Nd4j.zeros(array.dataType(), array.shape());
+                return fromINDArrayUncached(replacement);
+            }
+            // Non-empty shape but null data (dead control flow branches, freed buffers).
+            // Create a zero-filled replacement to avoid native "not empty but null buffer" error.
+            INDArray replacement = Nd4j.zeros(array.dataType(), array.shape());
+            return fromINDArrayUncached(replacement);
+        }
+
+        // Sync host→device before passing to native ops.
+        // Java-side operations like putScalar() write to the HOST buffer and mark it as
+        // authoritative. Native CUDA ops read from the DEVICE buffer. Without this sync,
+        // the device buffer may contain stale data, causing operations like maxNumber()
+        // to return incorrect results after putScalar() or put() modifications.
+        // On CPU backend, dbSyncToSpecial is a no-op.
+        if (syncHostToDevice && !array.isEmpty() && array.data() != null && !array.data().wasClosed()) {
+            OpaqueDataBuffer opaqueBuffer = array.data().opaqueBuffer();
+            if (opaqueBuffer != null && !opaqueBuffer.isNull()) {
+                // Sync host→device for arrays where Java-side writes may have modified host data.
+                // Use non-force sync so actuality counters are respected: if a CUDA kernel already
+                // wrote to the device buffer (device is authoritative), the sync is skipped.
+                // Previously, INT/LONG arrays used forced sync which overwrote correct device data
+                // (e.g., shape_of kernel output) with stale host zeros.
+                opaqueBuffer.syncToSpecial();
+            }
+        }
+
+        OpaqueNDArray opaque = array.getOrCreateOpaqueNDArray();
+        if (opaque == null || opaque.isNull()) {
+            throw new IllegalStateException(
+                "Failed to create OpaqueNDArray from INDArray (id=" + array.getId() +
+                ", closed=" + array.wasClosed() +
+                "). The native pointer is null. This indicates premature deallocation.");
+        }
+
+        if (!array.closeable() && !opaque.isConstant()) {
+            // Only mark the OpaqueNDArray deallocator as constant to prevent GC
+            // from freeing the native wrapper during op execution. Do NOT propagate
+            // to the data buffer — views share their parent's DataBuffer, and marking
+            // it constant would poison all D2H sync for the parent and all other views.
+            // See OpaqueNDArray.create() for the careful constant-propagation logic.
+            if (opaque.deallocator != null) {
+                opaque.deallocator.setConstant(true);
+            }
+        }
+
+        return opaque;
     }
 
     /**
@@ -364,6 +595,25 @@ public class OpaqueNDArray extends Pointer {
     // Convenience methods
 
     /**
+     * Returns the device id based on the retained OpaqueDataBuffer references.
+     * Falls back to -1 if no buffer references are available.
+     *
+     * @return device id for this array, or -1 if unknown
+     */
+    public int deviceId() {
+        if (dataBufferRef != null && !dataBufferRef.isNull()) {
+            return dataBufferRef.deviceId();
+        }
+        if (specialBufferRef != null && !specialBufferRef.isNull()) {
+            return specialBufferRef.deviceId();
+        }
+        if (shapeInfoBufferRef != null && !shapeInfoBufferRef.isNull()) {
+            return shapeInfoBufferRef.deviceId();
+        }
+        return -1;
+    }
+
+    /**
      * Gets the offset of the current OpaqueNDArray.
      *
      * @return The offset of the array.
@@ -410,10 +660,77 @@ public class OpaqueNDArray extends Pointer {
 
     /**
      * Gets the deallocator associated with this OpaqueNDArray.
-     * 
+     *
      * @return The deallocator or null if not registered
      */
     public OpaqueNDArrayDeallocator getDeallocator() {
         return deallocator;
+    }
+
+    /**
+     * Gets the data buffer reference held by this OpaqueNDArray.
+     * Used by the deallocator to check if underlying buffers are constant.
+     *
+     * @return The data buffer reference or null
+     */
+    public OpaqueDataBuffer getDataBufferRef() {
+        return dataBufferRef;
+    }
+
+    /**
+     * Gets the shape info buffer reference held by this OpaqueNDArray.
+     * Used by the deallocator to check if underlying buffers are constant.
+     *
+     * @return The shape info buffer reference or null
+     */
+    public OpaqueDataBuffer getShapeInfoBufferRef() {
+        return shapeInfoBufferRef;
+    }
+
+    /**
+     * Gets the special buffer reference held by this OpaqueNDArray.
+     * Used by the deallocator to keep the buffer alive during NDArray cleanup.
+     *
+     * @return The special buffer reference or null
+     */
+    public OpaqueDataBuffer getSpecialBufferRef() {
+        return specialBufferRef;
+    }
+
+    /**
+     * Marks this OpaqueNDArray as constant (immutable).
+     * Constant arrays are never freed by the DeallocatorService because they
+     * wrap cached/shared data that has a different lifecycle.
+     *
+     * This should be called for arrays created from constant INDArrays
+     * (e.g., model weights, constants in SameDiff).
+     *
+     * @param isConstant true to mark as constant, false otherwise
+     */
+    public void setConstant(boolean isConstant) {
+        if (deallocator != null) {
+            deallocator.setConstant(isConstant);
+        }
+
+        if (isConstant) {
+            if (dataBufferRef != null) {
+                dataBufferRef.setConstant(true);
+            }
+            if (shapeInfoBufferRef != null) {
+                shapeInfoBufferRef.setConstant(true);
+            }
+            if (specialBufferRef != null) {
+                specialBufferRef.setConstant(true);
+            }
+        }
+    }
+
+    /**
+     * Returns whether this OpaqueNDArray is marked as constant.
+     *
+     * @return true if constant, false otherwise
+     */
+    public boolean isConstant() {
+        return deallocator != null && deallocator.isConstant();
     }
 }

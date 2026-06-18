@@ -22,10 +22,8 @@ package org.nd4j.linalg.util;
 
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.FlatGraph;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,7 +31,6 @@ import org.nd4j.common.validation.Nd4jCommonValidator;
 import org.nd4j.common.validation.ValidationResult;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Map;
@@ -130,7 +127,7 @@ public class Nd4jValidator {
 
         //TODO let's do this without reading the whole thing into memory - check header + length...
         try (INDArray arr = Nd4j.readTxt(f.getPath())) {   //Using the fact that INDArray.close() exists -> deallocate memory as soon as reading is done
-            System.out.println();
+            // read succeeded; arr will be closed automatically
         } catch (Throwable t) {
             if (t instanceof OutOfMemoryError || t.getMessage().toLowerCase().contains("failed to allocate")) {
                 //This is a memory exception during reading... result is indeterminant (might be valid, might not be, can't tell here)
@@ -317,16 +314,7 @@ public class Nd4jValidator {
             return vr;
 
         try {
-            byte[] bytes;
-            try (InputStream is = new BufferedInputStream(new FileInputStream(f))) {
-                bytes = IOUtils.toByteArray(is);
-            }
-
-            ByteBuffer bbIn = ByteBuffer.wrap(bytes);
-            FlatGraph fg = FlatGraph.getRootAsFlatGraph(bbIn);
-            int vl = fg.variablesLength();
-            int ol = fg.nodesLength();
-            System.out.println();
+            SameDiff.fromFlatFile(f);
         } catch (Throwable t) {
             return ValidationResult.builder()
                     .valid(false)

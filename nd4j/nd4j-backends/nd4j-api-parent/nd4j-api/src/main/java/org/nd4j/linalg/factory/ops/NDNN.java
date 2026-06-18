@@ -42,7 +42,69 @@ public class NDNN {
    */
   public INDArray cReLU(INDArray x) {
     NDValidation.validateNumerical("CReLU", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(x))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Applies Attention with Linear Biases (ALiBi) position encoding to attention scores.<br>
+   *
+   * @param scores Attention scores [batch, num_heads, seq_len, kv_len] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @return output Scores with ALiBi position bias applied (NUMERIC type)
+   */
+  public INDArray applyAlibi(INDArray scores, int numHeads) {
+    NDValidation.validateNumerical("applyAlibi", "scores", scores);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ApplyAlibi(scores, numHeads));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Activation-aware Weight Quantization (AWQ) matrix multiplication.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param weightPacked AWQ-packed weight (NUMERIC type)
+   * @param weightScale Weight quantization scales (NUMERIC type)
+   * @param groupSize Quantization group size
+   * @return output Dequantized matmul result (NUMERIC type)
+   */
+  public INDArray awqMatmul(INDArray input, INDArray weightPacked, INDArray weightScale,
+      int groupSize) {
+    NDValidation.validateNumerical("awqMatmul", "input", input);
+    NDValidation.validateNumerical("awqMatmul", "weightPacked", weightPacked);
+    NDValidation.validateNumerical("awqMatmul", "weightScale", weightScale);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul(input, weightPacked, weightScale, groupSize));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -68,7 +130,18 @@ public class NDNN {
     NDValidation.validateNumerical("batchNorm", "gamma", gamma);
     NDValidation.validateNumerical("batchNorm", "beta", beta);
     Preconditions.checkArgument(axis.length >= 1, "axis has incorrect size/length. Expected: axis.length >= 1, got %s", axis.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm(input, mean, variance, gamma, beta, epsilon, axis))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm(input, mean, variance, gamma, beta, epsilon, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -83,7 +156,346 @@ public class NDNN {
   public INDArray biasAdd(INDArray input, INDArray bias, boolean nchw) {
     NDValidation.validateNumerical("biasAdd", "input", input);
     NDValidation.validateNumerical("biasAdd", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd(input, bias, nchw))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd(input, bias, nchw));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param activation Activation function (0=none, 1=silu)
+   * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn,
+      int activation, int wFormat) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    if (bias != null) {
+      NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    }
+    if (convStateIn != null) {
+      NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, activation, wFormat));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, null, null, 0, 0));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    if (bias != null) {
+      NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, null, 0, 0));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    if (bias != null) {
+      NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    }
+    if (convStateIn != null) {
+      NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, 0, 0));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param activation Activation function (0=none, 1=silu)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn,
+      int activation) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    if (bias != null) {
+      NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    }
+    if (convStateIn != null) {
+      NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, activation, 0));
+  }
+
+  /**
+   * DINOv2 centering and sharpening operation.<br>
+   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
+   * and applying temperature-based sharpening:<br>
+   *   output = softmax((input - center) / temperature)<br>
+   *
+   * @param input Teacher output logits [batch, features] (NUMERIC type)
+   * @param center Running center vector [features] (NUMERIC type)
+   * @param temperature Sharpening temperature (typically 0.04-0.07)
+   * @return output Sharpened probabilities [batch, features] (NUMERIC type)
+   */
+  public INDArray centerAndSharpen(INDArray input, INDArray center, double temperature) {
+    NDValidation.validateNumerical("centerAndSharpen", "input", input);
+    NDValidation.validateNumerical("centerAndSharpen", "center", center);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen(input, center, temperature));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * DINOv2 centering and sharpening operation.<br>
+   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
+   * and applying temperature-based sharpening:<br>
+   *   output = softmax((input - center) / temperature)<br>
+   *
+   * @param input Teacher output logits [batch, features] (NUMERIC type)
+   * @param center Running center vector [features] (NUMERIC type)
+   * @return output Sharpened probabilities [batch, features] (NUMERIC type)
+   */
+  public INDArray centerAndSharpen(INDArray input, INDArray center) {
+    NDValidation.validateNumerical("centerAndSharpen", "input", input);
+    NDValidation.validateNumerical("centerAndSharpen", "center", center);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen(input, center, 0.07));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Column-parallel linear layer for tensor parallelism.<br>
+   * Splits weight columns across tensor parallel ranks.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param weight Weight matrix (NUMERIC type)
+   * @param tpRank Tensor parallel rank
+   * @param tpSize Tensor parallel world size
+   * @param gatherOutput Whether to all-gather output
+   * @return output Column-parallel linear output (NUMERIC type)
+   */
+  public INDArray columnParallelLinear(INDArray input, INDArray weight, int tpRank, int tpSize,
+      boolean gatherOutput) {
+    NDValidation.validateNumerical("columnParallelLinear", "input", input);
+    NDValidation.validateNumerical("columnParallelLinear", "weight", weight);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear(input, weight, tpRank, tpSize, gatherOutput));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
+   * <br>
+   * Performs greedy (best path) decoding on CTC output. Used in:<br>
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
+   * - Speech recognition - DeepSpeech, Wav2Vec<br>
+   * - Handwriting recognition<br>
+   * <br>
+   * Algorithm:<br>
+   * 1. At each timestep, select the class with highest probability<br>
+   * 2. Optionally merge consecutive repeated characters<br>
+   * 3. Remove blank labels from the output<br>
+   * <br>
+   * For example, with mergeRepeated=true and blankIndex=0:<br>
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
+   * Output: [1, 2] -> "ab"<br>
+   * <br>
+   * Note: This is greedy decoding. For better accuracy with language models,<br>
+   * use beam search decoding instead.<br>
+   *
+   * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
+   * @param mergeRepeated Whether to merge repeated characters in output
+   * @param blankIndex Index of the blank label in the vocabulary
+   */
+  public INDArray[] ctcGreedyDecoder(INDArray logits, boolean mergeRepeated, int blankIndex) {
+    NDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(logits, null, mergeRepeated, blankIndex));
+  }
+
+  /**
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
+   * <br>
+   * Performs greedy (best path) decoding on CTC output. Used in:<br>
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
+   * - Speech recognition - DeepSpeech, Wav2Vec<br>
+   * - Handwriting recognition<br>
+   * <br>
+   * Algorithm:<br>
+   * 1. At each timestep, select the class with highest probability<br>
+   * 2. Optionally merge consecutive repeated characters<br>
+   * 3. Remove blank labels from the output<br>
+   * <br>
+   * For example, with mergeRepeated=true and blankIndex=0:<br>
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
+   * Output: [1, 2] -> "ab"<br>
+   * <br>
+   * Note: This is greedy decoding. For better accuracy with language models,<br>
+   * use beam search decoding instead.<br>
+   *
+   * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
+   * @param sequenceLength Optional actual sequence lengths. Shape: [batch] (NUMERIC type)
+   * @param mergeRepeated Whether to merge repeated characters in output
+   * @param blankIndex Index of the blank label in the vocabulary
+   */
+  public INDArray[] ctcGreedyDecoder(INDArray logits, INDArray sequenceLength,
+      boolean mergeRepeated, int blankIndex) {
+    NDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
+    if (sequenceLength != null) {
+      NDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(logits, sequenceLength, mergeRepeated, blankIndex));
+  }
+
+  /**
+   * Decoder-optimized masked multi-head attention.<br>
+   * Optimized for autoregressive decoding with incremental KV cache.<br>
+   *
+   * @param query Query tensor (NUMERIC type)
+   * @param key Key tensor (NUMERIC type)
+   * @param value Value tensor (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param isCausal Whether to apply causal mask
+   * @return output Attention output (NUMERIC type)
+   */
+  public INDArray decoderMaskedMha(INDArray query, INDArray key, INDArray value, int numHeads,
+      boolean isCausal) {
+    NDValidation.validateNumerical("decoderMaskedMha", "query", query);
+    NDValidation.validateNumerical("decoderMaskedMha", "key", key);
+    NDValidation.validateNumerical("decoderMaskedMha", "value", value);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha(query, key, value, numHeads, isCausal));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Weight-Decomposed Low-Rank Adaptation (DoRA) fused matrix multiplication.<br>
+   * Decomposes weight into magnitude and direction, applies LoRA to direction only.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param loraA LoRA down-projection [r, in_features] (NUMERIC type)
+   * @param loraB LoRA up-projection [out_features, r] (NUMERIC type)
+   * @param magnitude Per-output magnitude [out_features] (NUMERIC type)
+   * @param scaling LoRA scaling factor (default 1.0)
+   * @return output DoRA result with weight-decomposed adaptation (NUMERIC type)
+   */
+  public INDArray doraMatMul(INDArray input, INDArray weight, INDArray loraA, INDArray loraB,
+      INDArray magnitude, double scaling) {
+    NDValidation.validateNumerical("doraMatMul", "input", input);
+    NDValidation.validateNumerical("doraMatMul", "weight", weight);
+    NDValidation.validateNumerical("doraMatMul", "loraA", loraA);
+    NDValidation.validateNumerical("doraMatMul", "loraB", loraB);
+    NDValidation.validateNumerical("doraMatMul", "magnitude", magnitude);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul(input, weight, loraA, loraB, magnitude, scaling));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -123,39 +535,53 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttention", "keys", keys);
     NDValidation.validateNumerical("dotProductAttention", "values", values);
     NDValidation.validateNumerical("dotProductAttention", "mask", mask);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention(queries, keys, values, mask, scaled, false))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention(queries, keys, values, mask, scaled, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
-   * This operation performs dot product attention on the given timeseries input with the given queries<br>
-   * out = sum(similarity(k_i, q) * v_i)<br>
+   * Dot product attention operation with flash attention and KV cache support.<br>
    * <br>
-   * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q<br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
    * <br>
-   * Optionally with normalization step:<br>
-   * similarity(k, q) = softmax(k * q / sqrt(size(q))<br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
    * <br>
-   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)<br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
    * <br>
-   * Note: This supports multiple queries at once, if only one query is available the queries vector still has to<br>
-   * be 3D but can have queryCount = 1<br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors with cachePosition<br>
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
    * <br>
-   * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for<br>
-   * both.<br>
-   * <br>
-   * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The<br>
-   * output rank will depend on the input rank.<br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
    *
-   * @param queries A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim] (NUMERIC type)
-   * @param values A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim] (NUMERIC type)
-   * @param keys A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim] (NUMERIC type)
-   * @param queryMask A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries] (NUMERIC type)
-   * @param valueMask @param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues] (NUMERIC type)
-   * @param scaleFactor @param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys.
-   * @param dropoutProbability A {@code double} specifying the dropout probability to be applied to attention weights.
-   * @param useCausalMask  A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks.
-   * @param training  A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout.
-   * @return output  A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim] (NUMERIC type)
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
    */
   public INDArray dotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
       INDArray queryMask, INDArray valueMask, double scaleFactor, double dropoutProbability,
@@ -163,9 +589,165 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     NDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
-    NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
-    NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training))[0];
+    if (queryMask != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    }
+    if (valueMask != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, null, null, null, null, scaleFactor, dropoutProbability, useCausalMask, training));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dot product attention operation with flash attention and KV cache support.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
+   * <br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
+   * <br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
+   * <br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors with cachePosition<br>
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
+   * <br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. When KV cache is active, placed at input[8] to mask zero-padded cache positions. (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
+      INDArray queryMask, INDArray valueMask, INDArray attentionBias, double scaleFactor,
+      double dropoutProbability, boolean useCausalMask, boolean training) {
+    NDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    NDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    if (queryMask != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    }
+    if (valueMask != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    }
+    if (attentionBias != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, null, null, null, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dot product attention operation with flash attention and KV cache support.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
+   * <br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
+   * <br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
+   * <br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors with cachePosition<br>
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
+   * <br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param keyCache Key cache tensor (optional). Shape: [batchSize, maxSeqLen, numKvHeads, headDim]. For in-place KV cache during autoregressive decoding. (NUMERIC type)
+   * @param valueCache Value cache tensor (optional). Shape: [batchSize, maxSeqLen, numKvHeads, headDim]. For in-place KV cache during autoregressive decoding. (NUMERIC type)
+   * @param cachePosition Cache write position (optional). Scalar INT64 tensor indicating where to write current K/V in the cache. Enables DSP replay with fixed graph shapes. (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. When KV cache is active, placed at input[8] to mask zero-padded cache positions. (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
+      INDArray queryMask, INDArray valueMask, INDArray keyCache, INDArray valueCache,
+      INDArray cachePosition, INDArray attentionBias, double scaleFactor, double dropoutProbability,
+      boolean useCausalMask, boolean training) {
+    NDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    NDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    if (queryMask != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    }
+    if (valueMask != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    }
+    if (keyCache != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "keyCache", keyCache);
+    }
+    if (valueCache != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "valueCache", valueCache);
+    }
+    if (cachePosition != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "cachePosition", cachePosition);
+    }
+    if (attentionBias != null) {
+      NDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -179,7 +761,18 @@ public class NDNN {
    */
   public INDArray dropout(INDArray input, boolean inverted, int seed, double probabilityValue) {
     NDValidation.validateNumerical("dropout", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, seed, probabilityValue))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, seed, probabilityValue));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -192,7 +785,156 @@ public class NDNN {
    */
   public INDArray dropout(INDArray input, boolean inverted, double probabilityValue) {
     NDValidation.validateNumerical("dropout", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, 0, probabilityValue))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, 0, probabilityValue));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).<br>
+   * <br>
+   * Applies two different RoPE configurations depending on attention type:<br>
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
+   * <br>
+   * This enables longer context windows by using different position encoding<br>
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @param positionOffset Position offset for KV cache continuation
+   * @param localFreqBase RoPE frequency base for local/sliding-window layers
+   * @param globalFreqBase RoPE frequency base for global/full-context layers
+   * @param localFreqScale RoPE frequency scale for local layers
+   * @param globalFreqScale RoPE frequency scale for global layers
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dualRoPE(INDArray input, int attentionType, int positionOffset,
+      double localFreqBase, double globalFreqBase, double localFreqScale, double globalFreqScale) {
+    NDValidation.validateNumerical("dualRoPE", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, attentionType, positionOffset, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).<br>
+   * <br>
+   * Applies two different RoPE configurations depending on attention type:<br>
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
+   * <br>
+   * This enables longer context windows by using different position encoding<br>
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dualRoPE(INDArray input) {
+    NDValidation.validateNumerical("dualRoPE", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, 0, 0, 10000.0, 1000000.0, 1.0, 1.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).<br>
+   * <br>
+   * Applies two different RoPE configurations depending on attention type:<br>
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
+   * <br>
+   * This enables longer context windows by using different position encoding<br>
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dualRoPE(INDArray input, int attentionType) {
+    NDValidation.validateNumerical("dualRoPE", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, attentionType, 0, 10000.0, 1000000.0, 1.0, 1.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).<br>
+   * <br>
+   * Applies two different RoPE configurations depending on attention type:<br>
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
+   * <br>
+   * This enables longer context windows by using different position encoding<br>
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @param positionOffset Position offset for KV cache continuation
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dualRoPE(INDArray input, int attentionType, int positionOffset) {
+    NDValidation.validateNumerical("dualRoPE", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, attentionType, positionOffset, 10000.0, 1000000.0, 1.0, 1.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -208,7 +950,580 @@ public class NDNN {
    */
   public INDArray elu(INDArray x) {
     NDValidation.validateNumerical("elu", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.ELU(x))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.ELU(x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
+   * Computes: output = decay * shadow + (1 - decay) * model<br>
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   *
+   * @param model Current model parameters (student) (NUMERIC type)
+   * @param shadow EMA shadow parameters (teacher) (NUMERIC type)
+   * @param decay EMA decay factor (typically 0.996-0.9999)
+   * @return output Updated shadow parameters (NUMERIC type)
+   */
+  public INDArray emaUpdate(INDArray model, INDArray shadow, double decay) {
+    NDValidation.validateNumerical("emaUpdate", "model", model);
+    NDValidation.validateNumerical("emaUpdate", "shadow", shadow);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate(model, shadow, decay));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
+   * Computes: output = decay * shadow + (1 - decay) * model<br>
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   *
+   * @param model Current model parameters (student) (NUMERIC type)
+   * @param shadow EMA shadow parameters (teacher) (NUMERIC type)
+   * @return output Updated shadow parameters (NUMERIC type)
+   */
+  public INDArray emaUpdate(INDArray model, INDArray shadow) {
+    NDValidation.validateNumerical("emaUpdate", "model", model);
+    NDValidation.validateNumerical("emaUpdate", "shadow", shadow);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate(model, shadow, 0.999));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Flash Attention - Memory-efficient attention computation.<br>
+   * <br>
+   * Uses tiled computation with online softmax to achieve O(N) memory complexity<br>
+   * instead of O(N^2) for standard attention.<br>
+   * <br>
+   * Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,<br>
+   * allowing multiple query heads to share the same KV heads.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale) * V<br>
+   * <br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @param isCausal Whether to apply causal masking
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (0 = same as numHeads, for GQA use smaller value)
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray flashAttention(INDArray query, INDArray key, INDArray value, double scale,
+      boolean isCausal, int numHeads, int numKvHeads) {
+    NDValidation.validateNumerical("flashAttention", "query", query);
+    NDValidation.validateNumerical("flashAttention", "key", key);
+    NDValidation.validateNumerical("flashAttention", "value", value);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttention(query, key, value, scale, isCausal, numHeads, numKvHeads));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * FP8 matrix multiplication with per-tensor scaling.<br>
+   *
+   * @param a First matrix (NUMERIC type)
+   * @param b Second matrix (NUMERIC type)
+   * @param scaleA Scale for matrix A (NUMERIC type)
+   * @param scaleB Scale for matrix B (NUMERIC type)
+   * @return output Scaled FP8 matmul result (NUMERIC type)
+   */
+  public INDArray fp8Matmul(INDArray a, INDArray b, INDArray scaleA, INDArray scaleB) {
+    NDValidation.validateNumerical("fp8Matmul", "a", a);
+    NDValidation.validateNumerical("fp8Matmul", "b", b);
+    NDValidation.validateNumerical("fp8Matmul", "scaleA", scaleA);
+    NDValidation.validateNumerical("fp8Matmul", "scaleB", scaleB);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul(a, b, scaleA, scaleB));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused bias addition, dropout, and residual connection in a single kernel.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param bias Bias tensor (NUMERIC type)
+   * @param residual Residual connection tensor (NUMERIC type)
+   * @param dropoutProb Dropout probability
+   * @param training Whether in training mode
+   * @return output dropout(input + bias) + residual (NUMERIC type)
+   */
+  public INDArray fusedBiasDropoutResidual(INDArray input, INDArray bias, INDArray residual,
+      double dropoutProb, boolean training) {
+    NDValidation.validateNumerical("fusedBiasDropoutResidual", "input", input);
+    NDValidation.validateNumerical("fusedBiasDropoutResidual", "bias", bias);
+    NDValidation.validateNumerical("fusedBiasDropoutResidual", "residual", residual);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedBiasDropoutResidual(input, bias, residual, dropoutProb, training));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Executes a fused chain of element-wise operations in a single kernel pass.<br>
+   * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.<br>
+   *
+   * @param input Primary input array (NUMERIC type)
+   * @param secondaryInputs Optional secondary input arrays for binary ops (add, sub, mul, div) (NUMERIC type)
+   * @param opCodes Op codes: 0=add, 1=sub, 2=mul, 3=div, 10=relu, 11=sigmoid, 12=tanh, 13=gelu, 14=exp, 15=log, 16=abs, 17=neg, 18=square, 19=sqrt, 20=swish, 21=silu, 22=mish, 30=clip, 31=leaky_relu (Size: AtLeast(min=1))
+   * @return output Result of applying the fused element-wise chain (NUMERIC type)
+   */
+  public INDArray fusedElementwiseChain(INDArray input, INDArray[] secondaryInputs, int[] opCodes) {
+    NDValidation.validateNumerical("fusedElementwiseChain", "input", input);
+    NDValidation.validateNumerical("fusedElementwiseChain", "secondaryInputs", secondaryInputs);
+    Preconditions.checkArgument(secondaryInputs.length >= 0, "secondaryInputs has incorrect size/length. Expected: secondaryInputs.length >= 0, got %s", secondaryInputs.length);
+    Preconditions.checkArgument(opCodes.length >= 1, "opCodes has incorrect size/length. Expected: opCodes.length >= 1, got %s", opCodes.length);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain(input, secondaryInputs, opCodes));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused Gaussian Error Linear Unit (GELU) activation function.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output GELU(x) (NUMERIC type)
+   */
+  public INDArray fusedGelu(INDArray input) {
+    NDValidation.validateNumerical("fusedGelu", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused GEMM + SwiGLU: combines two matrix multiplications with gated activation.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param wGate Gate projection weight (NUMERIC type)
+   * @param wUp Up projection weight (NUMERIC type)
+   * @return output SwiGLU(input @ wGate, input @ wUp) (NUMERIC type)
+   */
+  public INDArray fusedGemmSwiglu(INDArray input, INDArray wGate, INDArray wUp) {
+    NDValidation.validateNumerical("fusedGemmSwiglu", "input", input);
+    NDValidation.validateNumerical("fusedGemmSwiglu", "wGate", wGate);
+    NDValidation.validateNumerical("fusedGemmSwiglu", "wUp", wUp);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwiglu(input, wGate, wUp));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused layer normalization. Computes mean, variance, normalize, scale and shift in one pass.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma Scale parameter (NUMERIC type)
+   * @param beta Bias parameter (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Layer-normalized output (NUMERIC type)
+   */
+  public INDArray fusedLayerNorm(INDArray input, INDArray gamma, INDArray beta, double epsilon) {
+    NDValidation.validateNumerical("fusedLayerNorm", "input", input);
+    NDValidation.validateNumerical("fusedLayerNorm", "gamma", gamma);
+    NDValidation.validateNumerical("fusedLayerNorm", "beta", beta);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNorm(input, gamma, beta, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused Multimodal Rotary Position Embedding (M-RoPE).<br>
+   * <br>
+   * Applies rotary embeddings with separate temporal/height/width position<br>
+   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head<br>
+   * dimension is split into 3 frequency band sections, each rotated using<br>
+   * its own position vector.<br>
+   * <br>
+   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:<br>
+   *   Temporal band: dims [0..24) rotated by temporal positions<br>
+   *   Height band: dims [24..44) rotated by spatial height positions<br>
+   *   Width band: dims [44..64) rotated by spatial width positions<br>
+   *
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param posT Temporal position IDs [batch, seq_len] (INT type)
+   * @param posH Height position IDs [batch, seq_len] (INT type)
+   * @param posW Width position IDs [batch, seq_len] (INT type)
+   * @param sectionT Temporal frequency band size
+   * @param sectionH Height frequency band size
+   * @param sectionW Width frequency band size
+   * @param interleaved Whether to interleave frequency bands (true for Qwen3-VL)
+   * @param freqBase Base frequency for RoPE computation
+   * @return output Input with M-RoPE applied [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   */
+  public INDArray fusedMRoPE(INDArray input, INDArray posT, INDArray posH, INDArray posW,
+      int sectionT, int sectionH, int sectionW, boolean interleaved, double freqBase) {
+    NDValidation.validateNumerical("fusedMRoPE", "input", input);
+    NDValidation.validateInteger("fusedMRoPE", "posT", posT);
+    NDValidation.validateInteger("fusedMRoPE", "posH", posH);
+    NDValidation.validateInteger("fusedMRoPE", "posW", posW);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE(input, posT, posH, posW, sectionT, sectionH, sectionW, interleaved, freqBase));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused normalization + quantization in a single kernel.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma Norm scale parameter (NUMERIC type)
+   * @param epsilon Epsilon for normalization
+   * @param quantType Quantization type
+   * @return output Normalized and quantized output (NUMERIC type)
+   */
+  public INDArray fusedNormQuantize(INDArray input, INDArray gamma, double epsilon, int quantType) {
+    NDValidation.validateNumerical("fusedNormQuantize", "input", input);
+    NDValidation.validateNumerical("fusedNormQuantize", "gamma", gamma);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize(input, gamma, epsilon, quantType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused RMSNorm + SwiGLU activation. Combines normalization and gated activation<br>
+   * into a single kernel for better memory efficiency.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma RMS norm scale (NUMERIC type)
+   * @param wGate Gate projection weight (NUMERIC type)
+   * @param wUp Up projection weight (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Result of fused RMSNorm + SwiGLU (NUMERIC type)
+   */
+  public INDArray fusedRmsNormSwiglu(INDArray input, INDArray gamma, INDArray wGate, INDArray wUp,
+      double epsilon) {
+    NDValidation.validateNumerical("fusedRmsNormSwiglu", "input", input);
+    NDValidation.validateNumerical("fusedRmsNormSwiglu", "gamma", gamma);
+    NDValidation.validateNumerical("fusedRmsNormSwiglu", "wGate", wGate);
+    NDValidation.validateNumerical("fusedRmsNormSwiglu", "wUp", wUp);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU(input, gamma, wGate, wUp, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused Rotary Position Embedding (RoPE).<br>
+   * <br>
+   * Two modes:<br>
+   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition<br>
+   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode<br>
+   *    (enables DSP replay with fixed graph shapes)<br>
+   * <br>
+   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.<br>
+   *
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param ropeCache Precomputed RoPE cache (cos/sin) (NUMERIC type)
+   * @param startPosition Start position for RoPE application
+   * @return output Input with RoPE applied (NUMERIC type)
+   */
+  public INDArray fusedRoPE(INDArray input, INDArray ropeCache, int startPosition) {
+    NDValidation.validateNumerical("fusedRoPE", "input", input);
+    if (ropeCache != null) {
+      NDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(input, ropeCache, null, startPosition, 0, 10000.0, 1.0, 0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused Rotary Position Embedding (RoPE).<br>
+   * <br>
+   * Two modes:<br>
+   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition<br>
+   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode<br>
+   *    (enables DSP replay with fixed graph shapes)<br>
+   * <br>
+   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.<br>
+   *
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param positionOffset Scalar INT64 tensor with dynamic position offset for KV cache decode (NUMERIC type)
+   * @param ropeType RoPE variant: 0=standard (LLaMA), 1=NeoX, 2=GPT-J
+   * @param freqBase Base frequency for RoPE computation
+   * @param freqScale Frequency scale factor
+   * @param rotaryDims Number of dimensions to rotate (0 = all head dims)
+   * @return output Input with RoPE applied (NUMERIC type)
+   */
+  public INDArray fusedRoPE(INDArray input, INDArray positionOffset, int ropeType, double freqBase,
+      double freqScale, int rotaryDims) {
+    NDValidation.validateNumerical("fusedRoPE", "input", input);
+    if (positionOffset != null) {
+      NDValidation.validateNumerical("fusedRoPE", "positionOffset", positionOffset);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(input, null, positionOffset, 0, ropeType, freqBase, freqScale, rotaryDims));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Full Gated Delta Network (GDN) layer block.<br>
+   * <br>
+   * Fuses the complete GDN layer pipeline:<br>
+   *   1. Linear projection (QKV + beta + gate)<br>
+   *   2. Causal depthwise conv1d with SiLU activation<br>
+   *   3. Gated delta rule recurrent state update<br>
+   *   4. RMSNorm + Swish gate<br>
+   *   5. Output linear projection<br>
+   * <br>
+   * This is the building block for Gated Delta Network architectures<br>
+   * (arXiv:2412.06464, ICLR 2025).<br>
+   *
+   * @param x Input tensor [batch, seqLen, modelDim] (NUMERIC type)
+   * @param wqkv QKV projection weights [modelDim, qkvDim] (NUMERIC type)
+   * @param wbeta Beta projection weights [modelDim, numHeads] (NUMERIC type)
+   * @param wgate Gate projection weights [modelDim, numHeads] (NUMERIC type)
+   * @param wout Output projection weights [numHeads*headDimV, modelDim] (NUMERIC type)
+   * @param convWeight Causal conv1d weights [modelDim, kernelSize] (NUMERIC type)
+   * @param convBias Causal conv1d bias [modelDim] (NUMERIC type)
+   * @param recurrentStateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @param numHeads Number of attention heads (H)
+   * @param headDimK Key head dimension (D_k)
+   * @param headDimV Value head dimension (D_v)
+   * @param rmsNormEpsilon RMSNorm epsilon
+   */
+  public INDArray[] gatedDeltaNetBlock(INDArray x, INDArray wqkv, INDArray wbeta, INDArray wgate,
+      INDArray wout, INDArray convWeight, INDArray convBias, INDArray recurrentStateIn,
+      int numHeads, int headDimK, int headDimV, double rmsNormEpsilon) {
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "x", x);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wqkv", wqkv);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wbeta", wbeta);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wgate", wgate);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wout", wout);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "convWeight", convWeight);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "convBias", convBias);
+    if (recurrentStateIn != null) {
+      NDValidation.validateNumerical("gatedDeltaNetBlock", "recurrentStateIn", recurrentStateIn);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock(x, wqkv, wbeta, wgate, wout, convWeight, convBias, recurrentStateIn, numHeads, headDimK, headDimV, rmsNormEpsilon));
+  }
+
+  /**
+   * Full Gated Delta Network (GDN) layer block.<br>
+   * <br>
+   * Fuses the complete GDN layer pipeline:<br>
+   *   1. Linear projection (QKV + beta + gate)<br>
+   *   2. Causal depthwise conv1d with SiLU activation<br>
+   *   3. Gated delta rule recurrent state update<br>
+   *   4. RMSNorm + Swish gate<br>
+   *   5. Output linear projection<br>
+   * <br>
+   * This is the building block for Gated Delta Network architectures<br>
+   * (arXiv:2412.06464, ICLR 2025).<br>
+   *
+   * @param x Input tensor [batch, seqLen, modelDim] (NUMERIC type)
+   * @param wqkv QKV projection weights [modelDim, qkvDim] (NUMERIC type)
+   * @param wbeta Beta projection weights [modelDim, numHeads] (NUMERIC type)
+   * @param wgate Gate projection weights [modelDim, numHeads] (NUMERIC type)
+   * @param wout Output projection weights [numHeads*headDimV, modelDim] (NUMERIC type)
+   * @param convWeight Causal conv1d weights [modelDim, kernelSize] (NUMERIC type)
+   * @param convBias Causal conv1d bias [modelDim] (NUMERIC type)
+   * @param numHeads Number of attention heads (H)
+   * @param headDimK Key head dimension (D_k)
+   * @param headDimV Value head dimension (D_v)
+   */
+  public INDArray[] gatedDeltaNetBlock(INDArray x, INDArray wqkv, INDArray wbeta, INDArray wgate,
+      INDArray wout, INDArray convWeight, INDArray convBias, int numHeads, int headDimK,
+      int headDimV) {
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "x", x);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wqkv", wqkv);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wbeta", wbeta);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wgate", wgate);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wout", wout);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "convWeight", convWeight);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "convBias", convBias);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock(x, wqkv, wbeta, wgate, wout, convWeight, convBias, null, numHeads, headDimK, headDimV, 1.0E-5));
+  }
+
+  /**
+   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).<br>
+   * <br>
+   * Recurrent linear attention with gated exponential decay and delta update rule:<br>
+   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)<br>
+   *   output_t = S_t^T * q_t<br>
+   * <br>
+   * State shape: [batch, numHeads, headDimK, headDimV].<br>
+   * Used in Gated Delta Networks (Qwen3.5 and other production models).<br>
+   *
+   * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
+   * @param k Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized) (NUMERIC type)
+   * @param v Value tensor [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
+   * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
+   * @param stateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   */
+  public INDArray[] gatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate,
+      INDArray stateIn) {
+    NDValidation.validateNumerical("gatedDeltaRule", "q", q);
+    NDValidation.validateNumerical("gatedDeltaRule", "k", k);
+    NDValidation.validateNumerical("gatedDeltaRule", "v", v);
+    NDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
+    NDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
+    if (stateIn != null) {
+      NDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(q, k, v, beta, gate, stateIn));
+  }
+
+  /**
+   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).<br>
+   * <br>
+   * Recurrent linear attention with gated exponential decay and delta update rule:<br>
+   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)<br>
+   *   output_t = S_t^T * q_t<br>
+   * <br>
+   * State shape: [batch, numHeads, headDimK, headDimV].<br>
+   * Used in Gated Delta Networks (Qwen3.5 and other production models).<br>
+   *
+   * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
+   * @param k Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized) (NUMERIC type)
+   * @param v Value tensor [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
+   * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
+   */
+  public INDArray[] gatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta,
+      INDArray gate) {
+    NDValidation.validateNumerical("gatedDeltaRule", "q", q);
+    NDValidation.validateNumerical("gatedDeltaRule", "k", k);
+    NDValidation.validateNumerical("gatedDeltaRule", "v", v);
+    NDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
+    NDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(q, k, v, beta, gate, null));
   }
 
   /**
@@ -222,6 +1537,97 @@ public class NDNN {
   public INDArray gelu(INDArray x) {
     NDValidation.validateNumerical("gelu", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.GELU(x));
+  }
+
+  /**
+   * GPU-accelerated top-K sampling for autoregressive text generation.<br>
+   *
+   * @param logits Logit scores (NUMERIC type)
+   * @param k Number of top candidates
+   * @param temperature Sampling temperature
+   * @return output Sampled token indices (NUMERIC type)
+   */
+  public INDArray gpuTopKSample(INDArray logits, int k, double temperature) {
+    NDValidation.validateNumerical("gpuTopKSample", "logits", logits);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample(logits, k, temperature));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * GPU-accelerated nucleus (top-P) sampling for autoregressive text generation.<br>
+   *
+   * @param logits Logit scores (NUMERIC type)
+   * @param p Cumulative probability threshold (nucleus)
+   * @param temperature Sampling temperature
+   * @return output Sampled token indices (NUMERIC type)
+   */
+  public INDArray gpuTopPSample(INDArray logits, double p, double temperature) {
+    NDValidation.validateNumerical("gpuTopPSample", "logits", logits);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample(logits, p, temperature));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Grouped Query Attention (GQA) - Efficient attention with shared KV heads.<br>
+   * <br>
+   * Multiple query heads share the same key-value heads, reducing memory and<br>
+   * computation while maintaining model quality. Used in LLaMA 2, Mistral, etc.<br>
+   * <br>
+   * numHeads must be divisible by numKvHeads. Each KV head is repeated<br>
+   * (numHeads / numKvHeads) times to match query heads.<br>
+   * <br>
+   * Special cases:<br>
+   * - numKvHeads == numHeads: Standard Multi-Head Attention (MHA)<br>
+   * - numKvHeads == 1: Multi-Query Attention (MQA)<br>
+   * <br>
+   * See "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints"<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @param isCausal Whether to apply causal masking
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (must divide numHeads evenly)
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray groupedQueryAttention(INDArray query, INDArray key, INDArray value, double scale,
+      boolean isCausal, int numHeads, int numKvHeads) {
+    NDValidation.validateNumerical("groupedQueryAttention", "query", query);
+    NDValidation.validateNumerical("groupedQueryAttention", "key", key);
+    NDValidation.validateNumerical("groupedQueryAttention", "value", value);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttention(query, key, value, scale, isCausal, numHeads, numKvHeads));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -264,6 +1670,157 @@ public class NDNN {
   }
 
   /**
+   * Dequantizes quantized KV cache tensors back to floating point.<br>
+   *
+   * @param input Quantized key or value tensor (NUMERIC type)
+   * @param scale Quantization scales (NUMERIC type)
+   * @param quantType Quantization type
+   * @return output Dequantized tensor (NUMERIC type)
+   */
+  public INDArray kvCacheDequantize(INDArray input, INDArray scale, int quantType) {
+    NDValidation.validateNumerical("kvCacheDequantize", "input", input);
+    NDValidation.validateNumerical("kvCacheDequantize", "scale", scale);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize(input, scale, quantType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Quantizes KV cache tensors for memory-efficient inference.<br>
+   *
+   * @param input Key or value tensor to quantize (NUMERIC type)
+   * @param quantType Quantization type
+   * @param groupSize Group size for quantization
+   * @return output Quantized tensor (NUMERIC type)
+   */
+  public INDArray kvCacheQuantize(INDArray input, int quantType, int groupSize) {
+    NDValidation.validateNumerical("kvCacheQuantize", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize(input, quantType, groupSize));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * KV Cache Update - Updates key-value cache for autoregressive generation.<br>
+   * <br>
+   * During LLM inference, past key-value pairs are cached to avoid redundant<br>
+   * computation during token-by-token generation. This operation efficiently<br>
+   * inserts new keys/values at the specified position.<br>
+   * <br>
+   * Usage pattern:<br>
+   * 1. Initialize cache with zeros: [batch, maxSeqLen, numKvHeads, headDim]<br>
+   * 2. For each new token, compute new K/V and update cache<br>
+   * 3. Use full cached K/V for attention computation<br>
+   * <br>
+   * Returns updated keyCache and valueCache tensors.<br>
+   *
+   * @param keyCache Existing key cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param valueCache Existing value cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param newKeys New keys to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param newValues New values to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param startPosition Position in cache where new keys/values should be inserted
+   */
+  public INDArray[] kvCacheUpdate(INDArray keyCache, INDArray valueCache, INDArray newKeys,
+      INDArray newValues, int startPosition) {
+    NDValidation.validateNumerical("kvCacheUpdate", "keyCache", keyCache);
+    NDValidation.validateNumerical("kvCacheUpdate", "valueCache", valueCache);
+    NDValidation.validateNumerical("kvCacheUpdate", "newKeys", newKeys);
+    NDValidation.validateNumerical("kvCacheUpdate", "newValues", newValues);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate(keyCache, valueCache, newKeys, newValues, startPosition));
+  }
+
+  /**
+   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
+   * <br>
+   * Copies a single time-step slice from each present KV tensor into the<br>
+   * corresponding static KV buffer at a given cache position. Replaces N<br>
+   * individual Java view+assign calls with a single native kernel launch.<br>
+   * <br>
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
+   * token's KV entry is at the last sequence position. This entry is extracted<br>
+   * and written into the static buffer at cachePos.<br>
+   * <br>
+   * For multiple pairs, inputs are ordered as:<br>
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   *
+   * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
+   * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
+   * @param cachePos Position in static buffer to write the new entry
+   * @return output Scalar 0 on success (LONG type)
+   */
+  public INDArray kvScatter(INDArray present, INDArray staticBuffer, long cachePos) {
+    NDValidation.validateNumerical("kvScatter", "present", present);
+    NDValidation.validateNumerical("kvScatter", "staticBuffer", staticBuffer);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(present, staticBuffer, cachePos, 1));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
+   * <br>
+   * Copies a single time-step slice from each present KV tensor into the<br>
+   * corresponding static KV buffer at a given cache position. Replaces N<br>
+   * individual Java view+assign calls with a single native kernel launch.<br>
+   * <br>
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
+   * token's KV entry is at the last sequence position. This entry is extracted<br>
+   * and written into the static buffer at cachePos.<br>
+   * <br>
+   * For multiple pairs, inputs are ordered as:<br>
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   *
+   * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
+   * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
+   * @param cachePos Position in static buffer to write the new entry
+   * @param numPairs Number of present/static KV pairs. When > 1, inputs are [present_0..N-1, static_0..N-1]
+   * @return output Scalar 0 on success (LONG type)
+   */
+  public INDArray kvScatter(INDArray present, INDArray staticBuffer, long cachePos, int numPairs) {
+    NDValidation.validateNumerical("kvScatter", "present", present);
+    NDValidation.validateNumerical("kvScatter", "staticBuffer", staticBuffer);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(present, staticBuffer, cachePos, numPairs));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Apply Layer Normalization<br>
    * <br>
    * y = gain * standardize(x) + bias<br>
@@ -279,9 +1836,22 @@ public class NDNN {
       long... dimensions) {
     NDValidation.validateNumerical("layerNorm", "input", input);
     NDValidation.validateNumerical("layerNorm", "gain", gain);
-    NDValidation.validateNumerical("layerNorm", "bias", bias);
+    if (bias != null) {
+      NDValidation.validateNumerical("layerNorm", "bias", bias);
+    }
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, bias, channelsFirst, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, bias, channelsFirst, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -300,7 +1870,18 @@ public class NDNN {
     NDValidation.validateNumerical("layerNorm", "input", input);
     NDValidation.validateNumerical("layerNorm", "gain", gain);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, null, channelsFirst, dimensions))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, null, channelsFirst, dimensions));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -331,6 +1912,91 @@ public class NDNN {
   }
 
   /**
+   * Lightning Attention — O(N) linear attention with per-head exponential decay<br>
+   * via intra/inter-chunk decomposition.<br>
+   * <br>
+   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).<br>
+   * <br>
+   * The algorithm decomposes each chunk into:<br>
+   *   Inter-chunk: O_inter = Q_i @ S_{i-1}<br>
+   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i<br>
+   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i<br>
+   *   Combined:     O_i = O_inter + O_intra<br>
+   * <br>
+   * State shape: [batch, numHeads, headDim, headDim].<br>
+   *
+   * @param query Query tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param value Value tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param decayRates Per-head scalar decay rate [numHeads] float32 (NUMERIC type)
+   * @param state Recurrent state [batch, numHeads, headDim, headDim] (in-place update) (NUMERIC type)
+   * @param isCausal Whether to apply causal masking (0=no, 1=yes)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray lightningAttention(INDArray query, INDArray key, INDArray value,
+      INDArray decayRates, INDArray state, int isCausal) {
+    NDValidation.validateNumerical("lightningAttention", "query", query);
+    NDValidation.validateNumerical("lightningAttention", "key", key);
+    NDValidation.validateNumerical("lightningAttention", "value", value);
+    NDValidation.validateNumerical("lightningAttention", "decayRates", decayRates);
+    NDValidation.validateNumerical("lightningAttention", "state", state);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention(query, key, value, decayRates, state, isCausal));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Lightning Attention — O(N) linear attention with per-head exponential decay<br>
+   * via intra/inter-chunk decomposition.<br>
+   * <br>
+   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).<br>
+   * <br>
+   * The algorithm decomposes each chunk into:<br>
+   *   Inter-chunk: O_inter = Q_i @ S_{i-1}<br>
+   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i<br>
+   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i<br>
+   *   Combined:     O_i = O_inter + O_intra<br>
+   * <br>
+   * State shape: [batch, numHeads, headDim, headDim].<br>
+   *
+   * @param query Query tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param value Value tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param decayRates Per-head scalar decay rate [numHeads] float32 (NUMERIC type)
+   * @param state Recurrent state [batch, numHeads, headDim, headDim] (in-place update) (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray lightningAttention(INDArray query, INDArray key, INDArray value,
+      INDArray decayRates, INDArray state) {
+    NDValidation.validateNumerical("lightningAttention", "query", query);
+    NDValidation.validateNumerical("lightningAttention", "key", key);
+    NDValidation.validateNumerical("lightningAttention", "value", value);
+    NDValidation.validateNumerical("lightningAttention", "decayRates", decayRates);
+    NDValidation.validateNumerical("lightningAttention", "state", state);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention(query, key, value, decayRates, state, 1));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Linear layer operation: out = mmul(in,w) + bias<br>
    * Note that bias array is optional<br>
    *
@@ -347,7 +2013,18 @@ public class NDNN {
     NDValidation.validateNumerical("linear", "input", input);
     NDValidation.validateNumerical("linear", "weights", weights);
     NDValidation.validateNumerical("linear", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, transposeA, transposeB, transposeC))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, transposeA, transposeB, transposeC));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -363,7 +2040,78 @@ public class NDNN {
     NDValidation.validateNumerical("linear", "input", input);
     NDValidation.validateNumerical("linear", "weights", weights);
     NDValidation.validateNumerical("linear", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, false, false, false))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, false, false, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Linear Attention Decode — single-token decode step for linear attention.<br>
+   * <br>
+   * Implements the recurrent form of linear attention:<br>
+   *   state_new = exp(-decay[h]) * state_old + k (x) v   (rank-1 outer-product update)<br>
+   *   output    = q @ state_new                            (matrix-vector product)<br>
+   * <br>
+   * State is always stored and computed as float32 regardless of input dtype.<br>
+   * State shape: [batch, numHeads, headDimV, headDimK].<br>
+   *
+   * @param query Query tensor [batch, 1, numHeads, headDimK] (NUMERIC type)
+   * @param key Key tensor [batch, 1, numHeads, headDimK] (NUMERIC type)
+   * @param value Value tensor [batch, 1, numHeads, headDimV] (NUMERIC type)
+   * @param decayRates Per-head log-decay magnitude [numHeads] float32 (NUMERIC type)
+   * @param state Recurrent state [batch, numHeads, headDimV, headDimK] float32 (in-place update) (NUMERIC type)
+   * @return output Decode output [batch, 1, numHeads, headDimV] (NUMERIC type)
+   */
+  public INDArray linearAttentionDecode(INDArray query, INDArray key, INDArray value,
+      INDArray decayRates, INDArray state) {
+    NDValidation.validateNumerical("linearAttentionDecode", "query", query);
+    NDValidation.validateNumerical("linearAttentionDecode", "key", key);
+    NDValidation.validateNumerical("linearAttentionDecode", "value", value);
+    NDValidation.validateNumerical("linearAttentionDecode", "decayRates", decayRates);
+    NDValidation.validateNumerical("linearAttentionDecode", "state", state);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LinearAttentionDecode(query, key, value, decayRates, state));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Creates a contiguous copy of the input tensor with linear (row-major) memory layout.<br>
+   *
+   * @param input Source tensor (NUMERIC type)
+   * @return output Contiguous copy of input (NUMERIC type)
+   */
+  public INDArray linearCopy(INDArray input) {
+    NDValidation.validateNumerical("linearCopy", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.LinearCopy(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -385,7 +2133,18 @@ public class NDNN {
    */
   public INDArray logSoftmax(INDArray x) {
     NDValidation.validateNumerical("logSoftmax", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -397,7 +2156,591 @@ public class NDNN {
    */
   public INDArray logSoftmax(INDArray x, int dimension) {
     NDValidation.validateNumerical("logSoftmax", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x, dimension))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x, dimension));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Low-Rank Hadamard Product (LoHa) fused matrix multiplication.<br>
+   * Uses Hadamard product of two low-rank matrices as the adapter.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param lohaA1 First Hadamard factor A [dim, in_features] (NUMERIC type)
+   * @param lohaB1 First Hadamard factor B [out_features, dim] (NUMERIC type)
+   * @param lohaA2 Second Hadamard factor A [dim, in_features] (NUMERIC type)
+   * @param lohaB2 Second Hadamard factor B [out_features, dim] (NUMERIC type)
+   * @param scaling Scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output LoHa result (NUMERIC type)
+   */
+  public INDArray lohaMatMul(INDArray input, INDArray weight, INDArray lohaA1, INDArray lohaB1,
+      INDArray lohaA2, INDArray lohaB2, double scaling, boolean transposeWeight) {
+    NDValidation.validateNumerical("lohaMatMul", "input", input);
+    NDValidation.validateNumerical("lohaMatMul", "weight", weight);
+    NDValidation.validateNumerical("lohaMatMul", "lohaA1", lohaA1);
+    NDValidation.validateNumerical("lohaMatMul", "lohaB1", lohaB1);
+    NDValidation.validateNumerical("lohaMatMul", "lohaA2", lohaA2);
+    NDValidation.validateNumerical("lohaMatMul", "lohaB2", lohaB2);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMul(input, weight, lohaA1, lohaB1, lohaA2, lohaB2, scaling, transposeWeight));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Low-Rank Kronecker Product (LoKr) fused matrix multiplication.<br>
+   * Uses Kronecker product of matrices as the adapter.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param lokrC Kronecker factor C [f1, f2] (NUMERIC type)
+   * @param lokrA Kronecker factor A [dim, d2] (NUMERIC type)
+   * @param lokrB Kronecker factor B [d1, dim] (NUMERIC type)
+   * @param factor1 First Kronecker factor dimension
+   * @param factor2 Second Kronecker factor dimension
+   * @param scaling Scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output LoKr result (NUMERIC type)
+   */
+  public INDArray lokrMatMul(INDArray input, INDArray weight, INDArray lokrC, INDArray lokrA,
+      INDArray lokrB, int factor1, int factor2, double scaling, boolean transposeWeight) {
+    NDValidation.validateNumerical("lokrMatMul", "input", input);
+    NDValidation.validateNumerical("lokrMatMul", "weight", weight);
+    NDValidation.validateNumerical("lokrMatMul", "lokrC", lokrC);
+    NDValidation.validateNumerical("lokrMatMul", "lokrA", lokrA);
+    NDValidation.validateNumerical("lokrMatMul", "lokrB", lokrB);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMul(input, weight, lokrC, lokrA, lokrB, factor1, factor2, scaling, transposeWeight));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Low-Rank Adaptation (LoRA) fused matrix multiplication.<br>
+   * Computes base weight matmul + low-rank adapter in a single operation.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param loraA LoRA down-projection [r, in_features] (NUMERIC type)
+   * @param loraB LoRA up-projection [out_features, r] (NUMERIC type)
+   * @param scaling LoRA scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output Result: input @ weight^T + scaling * input @ loraA^T @ loraB^T (NUMERIC type)
+   */
+  public INDArray loraMatMul(INDArray input, INDArray weight, INDArray loraA, INDArray loraB,
+      double scaling, boolean transposeWeight) {
+    NDValidation.validateNumerical("loraMatMul", "input", input);
+    NDValidation.validateNumerical("loraMatMul", "weight", weight);
+    NDValidation.validateNumerical("loraMatMul", "loraA", loraA);
+    NDValidation.validateNumerical("loraMatMul", "loraB", loraB);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMul(input, weight, loraA, loraB, scaling, transposeWeight));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Mamba-2 State Space Model (SSD) - head-structured recurrence.<br>
+   * <br>
+   * Implements the Mamba-2 SSD recurrence with scalar per-head decay:<br>
+   *   h_t = exp(A * dt) * h_{t-1} + (B * dt) outer x_t<br>
+   *   y_t = C * h_t + D * x_t<br>
+   * <br>
+   * Unlike Mamba-1 (selective_scan) which uses per-element diagonal state,<br>
+   * Mamba-2 uses head-structured state for improved hardware utilization.<br>
+   * <br>
+   * See "Transformers are SSMs: Generalized Models and Efficient Algorithms Through<br>
+   * Structured State Space Duality" (https://arxiv.org/abs/2405.21060)<br>
+   *
+   * @param x Input tensor [batch, seqLen, D] where D = numHeads * headDim (NUMERIC type)
+   * @param A Per-head scalar decay in log-space [numHeads] (NUMERIC type)
+   * @param B Input-dependent state expansion [batch, seqLen, stateDim] (NUMERIC type)
+   * @param C Input-dependent state contraction [batch, seqLen, stateDim] (NUMERIC type)
+   * @param dt Discretization timestep (post-softplus) [batch, seqLen, numHeads] (NUMERIC type)
+   * @param numHeads Number of SSM heads (H)
+   * @param headDim Dimension per head (P = D/H)
+   * @param stateDim State dimension (N)
+   */
+  public INDArray[] mamba2Ssm(INDArray x, INDArray A, INDArray B, INDArray C, INDArray dt,
+      int numHeads, int headDim, int stateDim) {
+    NDValidation.validateNumerical("mamba2Ssm", "x", x);
+    NDValidation.validateNumerical("mamba2Ssm", "A", A);
+    NDValidation.validateNumerical("mamba2Ssm", "B", B);
+    NDValidation.validateNumerical("mamba2Ssm", "C", C);
+    NDValidation.validateNumerical("mamba2Ssm", "dt", dt);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Mamba2SSM(x, A, B, C, dt, numHeads, headDim, stateDim));
+  }
+
+  /**
+   * Computes the mean of squared values. Used in RMSNorm and similar operations.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output Mean of squared values (NUMERIC type)
+   */
+  public INDArray meanSquare(INDArray input) {
+    NDValidation.validateNumerical("meanSquare", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Mixture of Experts (MoE) Layer.<br>
+   * <br>
+   * Implements sparse MoE routing where each token is processed by only the top-k<br>
+   * selected experts out of a larger pool. This enables scaling model capacity<br>
+   * without proportionally increasing computation.<br>
+   * <br>
+   * Used in large language models like:<br>
+   * - DeepSeek (DeepSeekMoE)<br>
+   * - Mixtral (Mistral AI)<br>
+   * - Switch Transformer (Google)<br>
+   * - GShard (Google)<br>
+   * <br>
+   * The router computes expert selection probabilities:<br>
+   * router_probs = softmax(input @ routerWeights)<br>
+   * <br>
+   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
+   * <br>
+   * Benefits:<br>
+   * - Scales model capacity with sublinear compute increase<br>
+   * - Enables very large models with efficient inference<br>
+   * - Supports expert parallelism across devices<br>
+   *
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numExperts] (NUMERIC type)
+   * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
+   * @param numExperts Total number of experts
+   * @param topK Number of experts to route to per token
+   */
+  public INDArray[] mixtureOfExperts(INDArray input, INDArray routerWeights, INDArray expertWeights,
+      int numExperts, int topK) {
+    NDValidation.validateNumerical("mixtureOfExperts", "input", input);
+    NDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
+    NDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(input, routerWeights, expertWeights, null, numExperts, topK, true, 1.0));
+  }
+
+  /**
+   * Mixture of Experts (MoE) Layer.<br>
+   * <br>
+   * Implements sparse MoE routing where each token is processed by only the top-k<br>
+   * selected experts out of a larger pool. This enables scaling model capacity<br>
+   * without proportionally increasing computation.<br>
+   * <br>
+   * Used in large language models like:<br>
+   * - DeepSeek (DeepSeekMoE)<br>
+   * - Mixtral (Mistral AI)<br>
+   * - Switch Transformer (Google)<br>
+   * - GShard (Google)<br>
+   * <br>
+   * The router computes expert selection probabilities:<br>
+   * router_probs = softmax(input @ routerWeights)<br>
+   * <br>
+   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
+   * <br>
+   * Benefits:<br>
+   * - Scales model capacity with sublinear compute increase<br>
+   * - Enables very large models with efficient inference<br>
+   * - Supports expert parallelism across devices<br>
+   *
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numExperts] (NUMERIC type)
+   * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
+   * @param expertBias Optional expert biases. Shape: [numExperts, expertHiddenSize] (NUMERIC type)
+   * @param numExperts Total number of experts
+   * @param topK Number of experts to route to per token
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param capacityFactor Expert capacity factor for load balancing
+   */
+  public INDArray[] mixtureOfExperts(INDArray input, INDArray routerWeights, INDArray expertWeights,
+      INDArray expertBias, int numExperts, int topK, boolean normalizeProbs,
+      double capacityFactor) {
+    NDValidation.validateNumerical("mixtureOfExperts", "input", input);
+    NDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
+    NDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
+    if (expertBias != null) {
+      NDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor));
+  }
+
+  /**
+   * Multi-head Latent Attention (MLA) from DeepSeek-V2.<br>
+   * Uses low-rank KV compression for efficient long-context inference.<br>
+   *
+   * @param input Input hidden states (NUMERIC type)
+   * @param kvDownProj KV down-projection weight (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param latentDim Latent dimension for compressed KV
+   * @return output Attention output (NUMERIC type)
+   */
+  public INDArray mlaAttention(INDArray input, INDArray kvDownProj, int numHeads, int latentDim) {
+    NDValidation.validateNumerical("mlaAttention", "input", input);
+    NDValidation.validateNumerical("mlaAttention", "kvDownProj", kvDownProj);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MLAAttention(input, kvDownProj, numHeads, latentDim));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Mixture of Experts (MoE) gating/routing function.<br>
+   * Selects top-K experts and computes routing weights.<br>
+   *
+   * @param input Input hidden states (NUMERIC type)
+   * @param gateWeights Router gate weights (NUMERIC type)
+   * @param numExperts Number of experts
+   * @param topK Top-K experts to select
+   * @return output Gating weights and expert indices (NUMERIC type)
+   */
+  public INDArray moeGate(INDArray input, INDArray gateWeights, int numExperts, int topK) {
+    NDValidation.validateNumerical("moeGate", "input", input);
+    NDValidation.validateNumerical("moeGate", "gateWeights", gateWeights);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeGate(input, gateWeights, numExperts, topK));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).<br>
+   * <br>
+   * Extends MoE with an always-on shared expert pathway. The shared expert<br>
+   * processes every token unconditionally using SwiGLU activation, while<br>
+   * routed experts are selected via top-K gating.<br>
+   * <br>
+   * output = shared_expert(input) + weighted_sum(routed_experts(input))<br>
+   * <br>
+   * where shared_expert uses SwiGLU:<br>
+   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))<br>
+   * <br>
+   * Used in:<br>
+   * - IBM Granite 4.0 (granitemoeshared architecture)<br>
+   * - DeepSeek V2/V3 (shared expert variant)<br>
+   *
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numRoutedExperts] (NUMERIC type)
+   * @param routedExpertWeights Routed expert weight matrices. Shape: [numRoutedExperts, hiddenSize, expertHidden] (NUMERIC type)
+   * @param sharedGateProj Shared expert gate projection. Shape: [hiddenSize, sharedIntermediateSize] (NUMERIC type)
+   * @param sharedUpProj Shared expert up projection. Shape: [hiddenSize, sharedIntermediateSize] (NUMERIC type)
+   * @param sharedDownProj Shared expert down projection. Shape: [sharedIntermediateSize, hiddenSize] (NUMERIC type)
+   * @param numRoutedExperts Number of routed experts
+   * @param topK Number of experts to route to per token
+   */
+  public INDArray[] moeSharedExperts(INDArray input, INDArray routerWeights,
+      INDArray routedExpertWeights, INDArray sharedGateProj, INDArray sharedUpProj,
+      INDArray sharedDownProj, int numRoutedExperts, int topK) {
+    NDValidation.validateNumerical("moeSharedExperts", "input", input);
+    NDValidation.validateNumerical("moeSharedExperts", "routerWeights", routerWeights);
+    NDValidation.validateNumerical("moeSharedExperts", "routedExpertWeights", routedExpertWeights);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, null, numRoutedExperts, topK, true, 1.0));
+  }
+
+  /**
+   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).<br>
+   * <br>
+   * Extends MoE with an always-on shared expert pathway. The shared expert<br>
+   * processes every token unconditionally using SwiGLU activation, while<br>
+   * routed experts are selected via top-K gating.<br>
+   * <br>
+   * output = shared_expert(input) + weighted_sum(routed_experts(input))<br>
+   * <br>
+   * where shared_expert uses SwiGLU:<br>
+   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))<br>
+   * <br>
+   * Used in:<br>
+   * - IBM Granite 4.0 (granitemoeshared architecture)<br>
+   * - DeepSeek V2/V3 (shared expert variant)<br>
+   *
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numRoutedExperts] (NUMERIC type)
+   * @param routedExpertWeights Routed expert weight matrices. Shape: [numRoutedExperts, hiddenSize, expertHidden] (NUMERIC type)
+   * @param sharedGateProj Shared expert gate projection. Shape: [hiddenSize, sharedIntermediateSize] (NUMERIC type)
+   * @param sharedUpProj Shared expert up projection. Shape: [hiddenSize, sharedIntermediateSize] (NUMERIC type)
+   * @param sharedDownProj Shared expert down projection. Shape: [sharedIntermediateSize, hiddenSize] (NUMERIC type)
+   * @param routedExpertBias Optional routed expert biases (NUMERIC type)
+   * @param numRoutedExperts Number of routed experts
+   * @param topK Number of experts to route to per token
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param capacityFactor Expert capacity factor for load balancing
+   */
+  public INDArray[] moeSharedExperts(INDArray input, INDArray routerWeights,
+      INDArray routedExpertWeights, INDArray sharedGateProj, INDArray sharedUpProj,
+      INDArray sharedDownProj, INDArray routedExpertBias, int numRoutedExperts, int topK,
+      boolean normalizeProbs, double capacityFactor) {
+    NDValidation.validateNumerical("moeSharedExperts", "input", input);
+    NDValidation.validateNumerical("moeSharedExperts", "routerWeights", routerWeights);
+    NDValidation.validateNumerical("moeSharedExperts", "routedExpertWeights", routedExpertWeights);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
+    NDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
+    if (routedExpertBias != null) {
+      NDValidation.validateNumerical("moeSharedExperts", "routedExpertBias", routedExpertBias);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, routedExpertBias, numRoutedExperts, topK, normalizeProbs, capacityFactor));
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public INDArray[] multiHeadAttention(INDArray query, INDArray key, INDArray value, int numHeads,
+      double scale, boolean useCausalMask) {
+    NDValidation.validateNumerical("multiHeadAttention", "query", query);
+    NDValidation.validateNumerical("multiHeadAttention", "key", key);
+    NDValidation.validateNumerical("multiHeadAttention", "value", value);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(query, key, value, null, null, null, null, numHeads, scale, useCausalMask));
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param attnBias Optional attention bias [batch, numHeads, seqQ, seqKV] or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public INDArray[] multiHeadAttention(INDArray query, INDArray key, INDArray value,
+      INDArray attnBias, int numHeads, double scale, boolean useCausalMask) {
+    NDValidation.validateNumerical("multiHeadAttention", "query", query);
+    NDValidation.validateNumerical("multiHeadAttention", "key", key);
+    NDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (attnBias != null) {
+      NDValidation.validateNumerical("multiHeadAttention", "attnBias", attnBias);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(query, key, value, attnBias, null, null, null, numHeads, scale, useCausalMask));
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param pastKey Optional past key [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param pastValue Optional past value [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public INDArray[] multiHeadAttention(INDArray query, INDArray key, INDArray value,
+      INDArray pastKey, INDArray pastValue, int numHeads, double scale, boolean useCausalMask) {
+    NDValidation.validateNumerical("multiHeadAttention", "query", query);
+    NDValidation.validateNumerical("multiHeadAttention", "key", key);
+    NDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (pastKey != null) {
+      NDValidation.validateNumerical("multiHeadAttention", "pastKey", pastKey);
+    }
+    if (pastValue != null) {
+      NDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(query, key, value, null, pastKey, pastValue, null, numHeads, scale, useCausalMask));
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param attnBias Optional attention bias [batch, numHeads, seqQ, seqKV] or null (NUMERIC type)
+   * @param pastKey Optional past key [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param pastValue Optional past value [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public INDArray[] multiHeadAttention(INDArray query, INDArray key, INDArray value,
+      INDArray attnBias, INDArray pastKey, INDArray pastValue, int numHeads, double scale,
+      boolean useCausalMask) {
+    NDValidation.validateNumerical("multiHeadAttention", "query", query);
+    NDValidation.validateNumerical("multiHeadAttention", "key", key);
+    NDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (attnBias != null) {
+      NDValidation.validateNumerical("multiHeadAttention", "attnBias", attnBias);
+    }
+    if (pastKey != null) {
+      NDValidation.validateNumerical("multiHeadAttention", "pastKey", pastKey);
+    }
+    if (pastValue != null) {
+      NDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(query, key, value, attnBias, pastKey, pastValue, null, numHeads, scale, useCausalMask));
+  }
+
+  /**
+   * Multi-head attention (ONNX-compatible).<br>
+   * <br>
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
+   *   output = concat(head_1, ..., head_h)<br>
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
+   * <br>
+   * Supports:<br>
+   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
+   * - KV cache concatenation (past + current → present)<br>
+   * - In-place KV cache write via cachePosition<br>
+   * - Causal masking for autoregressive decoding<br>
+   * - Fused GQA decode kernel for seqQ=1<br>
+   * <br>
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   *
+   * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
+   * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param value Value tensor [batch, seqKV, hidden] (NUMERIC type)
+   * @param attnBias Optional attention bias [batch, numHeads, seqQ, seqKV] or null (NUMERIC type)
+   * @param pastKey Optional past key [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param pastValue Optional past value [batch, numHeads, pastSeq, headDim] or null (NUMERIC type)
+   * @param cachePosition Optional cache position [1] INT64 scalar for in-place KV write mode, or null (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
+   * @param useCausalMask Whether to apply causal masking
+   */
+  public INDArray[] multiHeadAttention(INDArray query, INDArray key, INDArray value,
+      INDArray attnBias, INDArray pastKey, INDArray pastValue, INDArray cachePosition, int numHeads,
+      double scale, boolean useCausalMask) {
+    NDValidation.validateNumerical("multiHeadAttention", "query", query);
+    NDValidation.validateNumerical("multiHeadAttention", "key", key);
+    NDValidation.validateNumerical("multiHeadAttention", "value", value);
+    if (attnBias != null) {
+      NDValidation.validateNumerical("multiHeadAttention", "attnBias", attnBias);
+    }
+    if (pastKey != null) {
+      NDValidation.validateNumerical("multiHeadAttention", "pastKey", pastKey);
+    }
+    if (pastValue != null) {
+      NDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
+    }
+    if (cachePosition != null) {
+      NDValidation.validateNumerical("multiHeadAttention", "cachePosition", cachePosition);
+    }
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(query, key, value, attnBias, pastKey, pastValue, cachePosition, numHeads, scale, useCausalMask));
   }
 
   /**
@@ -434,11 +2777,54 @@ public class NDNN {
     NDValidation.validateNumerical("multiHeadDotProductAttention", "Wv", Wv);
     NDValidation.validateNumerical("multiHeadDotProductAttention", "Wo", Wo);
     NDValidation.validateNumerical("multiHeadDotProductAttention", "mask", mask);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
-   * Padding operation <br>
+   * Multi-adapter LoRA matrix multiplication. Selects different LoRA adapters per batch element.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param baseWeight Base weight matrix (NUMERIC type)
+   * @param loraAWeights Stacked LoRA A weights (NUMERIC type)
+   * @param loraBWeights Stacked LoRA B weights (NUMERIC type)
+   * @param adapterIds Adapter selection indices (NUMERIC type)
+   * @param scaling LoRA scaling factor
+   * @return output Result with per-sample adapter selection (NUMERIC type)
+   */
+  public INDArray multiLoraMatmul(INDArray input, INDArray baseWeight, INDArray loraAWeights,
+      INDArray loraBWeights, INDArray adapterIds, double scaling) {
+    NDValidation.validateNumerical("multiLoraMatmul", "input", input);
+    NDValidation.validateNumerical("multiLoraMatmul", "baseWeight", baseWeight);
+    NDValidation.validateNumerical("multiLoraMatmul", "loraAWeights", loraAWeights);
+    NDValidation.validateNumerical("multiLoraMatmul", "loraBWeights", loraBWeights);
+    NDValidation.validateNumerical("multiLoraMatmul", "adapterIds", adapterIds);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul(input, baseWeight, loraAWeights, loraBWeights, adapterIds, scaling));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Padding operation<br>
    *
    * @param input Input tensor (NUMERIC type)
    * @param padding Padding value (NUMERIC type)
@@ -449,11 +2835,22 @@ public class NDNN {
   public INDArray pad(INDArray input, INDArray padding, PadMode PadMode, double constant) {
     NDValidation.validateNumerical("pad", "input", input);
     NDValidation.validateNumerical("pad", "padding", padding);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode, constant))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode, constant));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
-   * Padding operation <br>
+   * Padding operation<br>
    *
    * @param input Input tensor (NUMERIC type)
    * @param padding Padding value (NUMERIC type)
@@ -463,7 +2860,88 @@ public class NDNN {
   public INDArray pad(INDArray input, INDArray padding, double constant) {
     NDValidation.validateNumerical("pad", "input", input);
     NDValidation.validateNumerical("pad", "padding", padding);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode.CONSTANT, constant))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode.CONSTANT, constant));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Per-Layer Embedding (Gemma 4).<br>
+   * <br>
+   * Adds a per-layer residual from a second embedding table to the hidden states:<br>
+   *   output = hiddenStates + pleWeight[tokenIds] * scale<br>
+   * <br>
+   * Each decoder layer receives a small additive signal from a dedicated<br>
+   * embedding table indexed by the original token IDs. This is computed once<br>
+   * before multimodal features merge into the embedding sequence, since PLE<br>
+   * relies on token IDs that are lost once multimodal features replace placeholders.<br>
+   *
+   * @param hiddenStates Hidden states [batch, seqLen, hiddenDim] (NUMERIC type)
+   * @param pleWeight Per-layer embedding table [vocabSize, hiddenDim] (NUMERIC type)
+   * @param tokenIds Token IDs [batch, seqLen] (INT type)
+   * @param scale Scale factor for the embedding addition
+   * @return output Output [batch, seqLen, hiddenDim] (NUMERIC type)
+   */
+  public INDArray perLayerEmbedding(INDArray hiddenStates, INDArray pleWeight, INDArray tokenIds,
+      double scale) {
+    NDValidation.validateNumerical("perLayerEmbedding", "hiddenStates", hiddenStates);
+    NDValidation.validateNumerical("perLayerEmbedding", "pleWeight", pleWeight);
+    NDValidation.validateInteger("perLayerEmbedding", "tokenIds", tokenIds);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding(hiddenStates, pleWeight, tokenIds, scale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Per-Layer Embedding (Gemma 4).<br>
+   * <br>
+   * Adds a per-layer residual from a second embedding table to the hidden states:<br>
+   *   output = hiddenStates + pleWeight[tokenIds] * scale<br>
+   * <br>
+   * Each decoder layer receives a small additive signal from a dedicated<br>
+   * embedding table indexed by the original token IDs. This is computed once<br>
+   * before multimodal features merge into the embedding sequence, since PLE<br>
+   * relies on token IDs that are lost once multimodal features replace placeholders.<br>
+   *
+   * @param hiddenStates Hidden states [batch, seqLen, hiddenDim] (NUMERIC type)
+   * @param pleWeight Per-layer embedding table [vocabSize, hiddenDim] (NUMERIC type)
+   * @param tokenIds Token IDs [batch, seqLen] (INT type)
+   * @return output Output [batch, seqLen, hiddenDim] (NUMERIC type)
+   */
+  public INDArray perLayerEmbedding(INDArray hiddenStates, INDArray pleWeight, INDArray tokenIds) {
+    NDValidation.validateNumerical("perLayerEmbedding", "hiddenStates", hiddenStates);
+    NDValidation.validateNumerical("perLayerEmbedding", "pleWeight", pleWeight);
+    NDValidation.validateInteger("perLayerEmbedding", "tokenIds", tokenIds);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding(hiddenStates, pleWeight, tokenIds, 1.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -498,7 +2976,131 @@ public class NDNN {
     NDValidation.validateNumerical("prelu", "input", input);
     NDValidation.validateNumerical("prelu", "alpha", alpha);
     Preconditions.checkArgument(sharedAxes.length >= 1, "sharedAxes has incorrect size/length. Expected: sharedAxes.length >= 1, got %s", sharedAxes.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.PRelu(input, alpha, sharedAxes))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.PRelu(input, alpha, sharedAxes));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Quantized matrix multiplication. Supports mixed precision (float/int) inputs.<br>
+   *
+   * @param a First matrix (NUMERIC type)
+   * @param b Second matrix (NUMERIC type)
+   * @return output Matrix product (NUMERIC type)
+   */
+  public INDArray quantizedMatmul(INDArray a, INDArray b) {
+    NDValidation.validateNumerical("quantizedMatmul", "a", a);
+    NDValidation.validateNumerical("quantizedMatmul", "b", b);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul(a, b));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Relative Position Bias - Compute relative position bias for attention.<br>
+   * <br>
+   * Supports two modes:<br>
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
+   *    based on relative positions between query and key positions.<br>
+   * <br>
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
+   *    without learned parameters. More efficient for very long sequences.<br>
+   * <br>
+   * For learned bias mode:<br>
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
+   * - Output is gathered based on relative position indices<br>
+   * <br>
+   * For ALiBi mode:<br>
+   * - biasTable can be sequence length (scalar) or input tensor<br>
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
+   * <br>
+   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   *
+   * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param windowSize Window size for 2D position encoding (used if generating index)
+   * @return output Position bias. Shape: [numHeads, windowSize^2, windowSize^2] or [numHeads, seqLen, seqLen] (NUMERIC type)
+   */
+  public INDArray relativePositionBias(INDArray biasTable, int numHeads, int windowSize) {
+    NDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(biasTable, null, numHeads, windowSize, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Relative Position Bias - Compute relative position bias for attention.<br>
+   * <br>
+   * Supports two modes:<br>
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
+   *    based on relative positions between query and key positions.<br>
+   * <br>
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
+   *    without learned parameters. More efficient for very long sequences.<br>
+   * <br>
+   * For learned bias mode:<br>
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
+   * - Output is gathered based on relative position indices<br>
+   * <br>
+   * For ALiBi mode:<br>
+   * - biasTable can be sequence length (scalar) or input tensor<br>
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
+   * <br>
+   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   *
+   * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
+   * @param relativePositionIndex Optional precomputed relative position index. Shape: [windowSize^2, windowSize^2] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param windowSize Window size for 2D position encoding (used if generating index)
+   * @return output Position bias. Shape: [numHeads, windowSize^2, windowSize^2] or [numHeads, seqLen, seqLen] (NUMERIC type)
+   */
+  public INDArray relativePositionBias(INDArray biasTable, INDArray relativePositionIndex,
+      int numHeads, int windowSize) {
+    NDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
+    if (relativePositionIndex != null) {
+      NDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(biasTable, relativePositionIndex, numHeads, windowSize, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -540,7 +3142,296 @@ public class NDNN {
     NDValidation.validateNumerical("reluLayer", "input", input);
     NDValidation.validateNumerical("reluLayer", "weights", weights);
     NDValidation.validateNumerical("reluLayer", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.ReluLayer(input, weights, bias))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.ReluLayer(input, weights, bias));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Reshapes a tensor without copying data. Returns a view if possible.<br>
+   * If the reshape cannot be done without copying, this op will fail.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param shape Target shape (NUMERIC type)
+   * @return output Reshaped view (no data copy) (NUMERIC type)
+   */
+  public INDArray reshapeNoCopy(INDArray input, INDArray shape) {
+    NDValidation.validateNumerical("reshapeNoCopy", "input", input);
+    NDValidation.validateNumerical("reshapeNoCopy", "shape", shape);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(input, shape));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public INDArray rmsNorm(INDArray input, INDArray gamma, double epsilon) {
+    NDValidation.validateNumerical("rmsNorm", "input", input);
+    if (gamma != null) {
+      NDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, gamma, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public INDArray rmsNorm(INDArray input, INDArray gamma) {
+    NDValidation.validateNumerical("rmsNorm", "input", input);
+    if (gamma != null) {
+      NDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, gamma, 1.0E-5));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public INDArray rmsNorm(INDArray input, double epsilon) {
+    NDValidation.validateNumerical("rmsNorm", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, null, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public INDArray rmsNorm(INDArray input) {
+    NDValidation.validateNumerical("rmsNorm", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, null, 1.0E-5));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused RMSNorm + Linear (MatMul) operation:<br>
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>
+   * Q/K/V projections or FFN layers.<br>
+   *
+   * @param input Input variable [batch, ..., features] (NUMERIC type)
+   * @param gamma RMSNorm scale weights [features] (NUMERIC type)
+   * @param weights Weight matrix [features, outFeatures] (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Result of rms_norm(input, gamma, eps) @ weights (NUMERIC type)
+   */
+  public INDArray rmsNormLinear(INDArray input, INDArray gamma, INDArray weights, double epsilon) {
+    NDValidation.validateNumerical("rmsNormLinear", "input", input);
+    NDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
+    NDValidation.validateNumerical("rmsNormLinear", "weights", weights);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(input, gamma, weights, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused RMSNorm + Linear (MatMul) operation:<br>
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>
+   * Q/K/V projections or FFN layers.<br>
+   *
+   * @param input Input variable [batch, ..., features] (NUMERIC type)
+   * @param gamma RMSNorm scale weights [features] (NUMERIC type)
+   * @param weights Weight matrix [features, outFeatures] (NUMERIC type)
+   * @return output Result of rms_norm(input, gamma, eps) @ weights (NUMERIC type)
+   */
+  public INDArray rmsNormLinear(INDArray input, INDArray gamma, INDArray weights) {
+    NDValidation.validateNumerical("rmsNormLinear", "input", input);
+    NDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
+    NDValidation.validateNumerical("rmsNormLinear", "weights", weights);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(input, gamma, weights, 1.0E-6));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Applies Rotary Position Embedding (RoPE) to the input tensor.<br>
+   * Encodes position information by rotating pairs of dimensions in the input.<br>
+   *
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param mode RoPE mode (default 0)
+   * @param nPast Number of past tokens (default 0)
+   * @param nDims Dimension subset for rotation (default last dim)
+   * @param freqBase Frequency base (default 10000.0)
+   * @param freqScale Frequency scale (default 1.0)
+   * @return output Output with rotary position embeddings applied (NUMERIC type)
+   */
+  public INDArray rope(INDArray input, int mode, int nPast, int nDims, double freqBase,
+      double freqScale) {
+    NDValidation.validateNumerical("rope", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE(input, mode, nPast, nDims, freqBase, freqScale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Row-parallel linear layer for tensor parallelism.<br>
+   * Splits weight rows across tensor parallel ranks.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param weight Weight matrix (NUMERIC type)
+   * @param tpRank Tensor parallel rank
+   * @param tpSize Tensor parallel world size
+   * @param reduceOutput Whether to all-reduce output
+   * @return output Row-parallel linear output (NUMERIC type)
+   */
+  public INDArray rowParallelLinear(INDArray input, INDArray weight, int tpRank, int tpSize,
+      boolean reduceOutput) {
+    NDValidation.validateNumerical("rowParallelLinear", "input", input);
+    NDValidation.validateNumerical("rowParallelLinear", "weight", weight);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RowParallelLinear(input, weight, tpRank, tpSize, reduceOutput));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Selective scan operation for state space models (Mamba architecture).<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output Selective scan output (NUMERIC type)
+   */
+  public INDArray selectiveScan(INDArray input) {
+    NDValidation.validateNumerical("selectiveScan", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -555,6 +3446,172 @@ public class NDNN {
   public INDArray selu(INDArray x) {
     NDValidation.validateNumerical("selu", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.SELU(x));
+  }
+
+  /**
+   * Shared KV Attention (Gemma 4).<br>
+   * <br>
+   * Grouped-query attention where K/V come from a donor layer rather than<br>
+   * being projected from the current hidden state. The last N layers reuse<br>
+   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
+   * the same attention type: sliding or full). This reduces memory and<br>
+   * compute with minimal quality impact.<br>
+   * <br>
+   * Supports causal masking and optional sliding window for local attention.<br>
+   *
+   * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param sharedValue Value from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param mask Attention mask [batch, 1, seqLen, kvSeqLen] (NUMERIC type)
+   * @param numHeads Number of query heads
+   * @param numKvHeads Number of key-value heads (for GQA)
+   * @param causal Causal masking (0=bidirectional, 1=causal)
+   * @param slidingWindowSize Sliding window size (0=disabled)
+   * @param scale Attention scale (0=auto: 1/sqrt(headDim))
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray sharedKvAttention(INDArray query, INDArray sharedKey, INDArray sharedValue,
+      INDArray mask, int numHeads, int numKvHeads, int causal, int slidingWindowSize,
+      double scale) {
+    NDValidation.validateNumerical("sharedKvAttention", "query", query);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
+    if (mask != null) {
+      NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, scale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Shared KV Attention (Gemma 4).<br>
+   * <br>
+   * Grouped-query attention where K/V come from a donor layer rather than<br>
+   * being projected from the current hidden state. The last N layers reuse<br>
+   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
+   * the same attention type: sliding or full). This reduces memory and<br>
+   * compute with minimal quality impact.<br>
+   * <br>
+   * Supports causal masking and optional sliding window for local attention.<br>
+   *
+   * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param sharedValue Value from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param numHeads Number of query heads
+   * @param numKvHeads Number of key-value heads (for GQA)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray sharedKvAttention(INDArray query, INDArray sharedKey, INDArray sharedValue,
+      int numHeads, int numKvHeads) {
+    NDValidation.validateNumerical("sharedKvAttention", "query", query);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, null, numHeads, numKvHeads, 1, 0, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Shared KV Attention (Gemma 4).<br>
+   * <br>
+   * Grouped-query attention where K/V come from a donor layer rather than<br>
+   * being projected from the current hidden state. The last N layers reuse<br>
+   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
+   * the same attention type: sliding or full). This reduces memory and<br>
+   * compute with minimal quality impact.<br>
+   * <br>
+   * Supports causal masking and optional sliding window for local attention.<br>
+   *
+   * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param sharedValue Value from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param mask Attention mask [batch, 1, seqLen, kvSeqLen] (NUMERIC type)
+   * @param numHeads Number of query heads
+   * @param numKvHeads Number of key-value heads (for GQA)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray sharedKvAttention(INDArray query, INDArray sharedKey, INDArray sharedValue,
+      INDArray mask, int numHeads, int numKvHeads) {
+    NDValidation.validateNumerical("sharedKvAttention", "query", query);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
+    if (mask != null) {
+      NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, 1, 0, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Shared KV Attention (Gemma 4).<br>
+   * <br>
+   * Grouped-query attention where K/V come from a donor layer rather than<br>
+   * being projected from the current hidden state. The last N layers reuse<br>
+   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
+   * the same attention type: sliding or full). This reduces memory and<br>
+   * compute with minimal quality impact.<br>
+   * <br>
+   * Supports causal masking and optional sliding window for local attention.<br>
+   *
+   * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param sharedValue Value from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param mask Attention mask [batch, 1, seqLen, kvSeqLen] (NUMERIC type)
+   * @param numHeads Number of query heads
+   * @param numKvHeads Number of key-value heads (for GQA)
+   * @param causal Causal masking (0=bidirectional, 1=causal)
+   * @param slidingWindowSize Sliding window size (0=disabled)
+   * @return output Attention output [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray sharedKvAttention(INDArray query, INDArray sharedKey, INDArray sharedValue,
+      INDArray mask, int numHeads, int numKvHeads, int causal, int slidingWindowSize) {
+    NDValidation.validateNumerical("sharedKvAttention", "query", query);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
+    NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
+    if (mask != null) {
+      NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -578,7 +3635,171 @@ public class NDNN {
   public INDArray sigmoidDerivative(INDArray x, INDArray wrt) {
     NDValidation.validateNumerical("sigmoidDerivative", "x", x);
     NDValidation.validateNumerical("sigmoidDerivative", "wrt", wrt);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(x, wrt))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(x, wrt));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * SiLU (Sigmoid Linear Unit) activation function, also known as Swish.<br>
+   * Computes f(x) = x * sigmoid(x).<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output SiLU(x) = x * sigmoid(x) (NUMERIC type)
+   */
+  public INDArray silu(INDArray input) {
+    NDValidation.validateNumerical("silu", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused Skip (Residual Add) + RMS Normalization:<br>
+   *   hidden = input + skip [+ bias]<br>
+   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
+   *
+   * @param input Input variable [batch, ..., features] (NUMERIC type)
+   * @param skip Residual/skip connection variable [batch, ..., features] (NUMERIC type)
+   * @param gamma Scale/gain vector [features] (NUMERIC type)
+   * @param bias Bias vector [features] (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Fused skip + RMS normalized output (NUMERIC type)
+   */
+  public INDArray skipRmsNorm(INDArray input, INDArray skip, INDArray gamma, INDArray bias,
+      double epsilon) {
+    NDValidation.validateNumerical("skipRmsNorm", "input", input);
+    NDValidation.validateNumerical("skipRmsNorm", "skip", skip);
+    NDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
+    if (bias != null) {
+      NDValidation.validateNumerical("skipRmsNorm", "bias", bias);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(input, skip, gamma, bias, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused Skip (Residual Add) + RMS Normalization:<br>
+   *   hidden = input + skip [+ bias]<br>
+   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
+   *
+   * @param input Input variable [batch, ..., features] (NUMERIC type)
+   * @param skip Residual/skip connection variable [batch, ..., features] (NUMERIC type)
+   * @param gamma Scale/gain vector [features] (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Fused skip + RMS normalized output (NUMERIC type)
+   */
+  public INDArray skipRmsNorm(INDArray input, INDArray skip, INDArray gamma, double epsilon) {
+    NDValidation.validateNumerical("skipRmsNorm", "input", input);
+    NDValidation.validateNumerical("skipRmsNorm", "skip", skip);
+    NDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(input, skip, gamma, null, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Sliding Window Attention - Efficient attention for long sequences.<br>
+   * <br>
+   * Each token only attends to a fixed window of previous tokens, enabling<br>
+   * efficient processing of very long sequences. Used in Mistral and other<br>
+   * modern LLMs for handling long contexts.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Memory efficient for long sequences<br>
+   * - Supports very long context lengths (e.g., 32K with 4K window)<br>
+   * <br>
+   * The attention mask is automatically applied to restrict each position<br>
+   * to only attend to positions within [pos - windowSize, pos].<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param windowSize Sliding window size - tokens can only attend to this many previous positions
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (0 = same as numHeads)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray slidingWindowAttention(INDArray query, INDArray key, INDArray value,
+      int windowSize, int numHeads, int numKvHeads, double scale) {
+    NDValidation.validateNumerical("slidingWindowAttention", "query", query);
+    NDValidation.validateNumerical("slidingWindowAttention", "key", key);
+    NDValidation.validateNumerical("slidingWindowAttention", "value", value);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention(query, key, value, windowSize, numHeads, numKvHeads, scale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * SmoothQuant: migrates quantization difficulty from activations to weights.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param smoothScale Smooth quantization scale (NUMERIC type)
+   * @return output Smoothly quantized output (NUMERIC type)
+   */
+  public INDArray smoothQuant(INDArray input, INDArray smoothScale) {
+    NDValidation.validateNumerical("smoothQuant", "input", input);
+    NDValidation.validateNumerical("smoothQuant", "smoothScale", smoothScale);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant(input, smoothScale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -590,7 +3811,18 @@ public class NDNN {
    */
   public INDArray softmax(INDArray x, int dimension) {
     NDValidation.validateNumerical("softmax", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, dimension))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, dimension));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -601,7 +3833,18 @@ public class NDNN {
    */
   public INDArray softmax(INDArray x) {
     NDValidation.validateNumerical("softmax", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, -1))[0];
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, -1));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -638,6 +3881,29 @@ public class NDNN {
   }
 
   /**
+   * Squared ReLU activation function: out = max(0, x)^2.<br>
+   * Used in Nemotron and other NVIDIA model architectures.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray squaredRelu(INDArray x) {
+    NDValidation.validateNumerical("squaredRelu", "x", x);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SquaredReLU(x));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Element-wise "swish" function: out = x * sigmoid(b*x) with b=1.0<br>
    * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a><br>
    *
@@ -647,6 +3913,31 @@ public class NDNN {
   public INDArray swish(INDArray x) {
     NDValidation.validateNumerical("swish", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.Swish(x));
+  }
+
+  /**
+   * Fused Swish-Mul: computes swish(input) * gate in a single kernel.<br>
+   * Used in SwiGLU and similar gated architectures.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gate Gate tensor (NUMERIC type)
+   * @return output swish(input) * gate (NUMERIC type)
+   */
+  public INDArray swishMul(INDArray input, INDArray gate) {
+    NDValidation.validateNumerical("swishMul", "input", input);
+    NDValidation.validateNumerical("swishMul", "gate", gate);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul(input, gate));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -661,6 +3952,75 @@ public class NDNN {
   }
 
   /**
+   * Token sampling for LLM inference.<br>
+   * <br>
+   * Full sampling pipeline in a single native GPU call:<br>
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
+   * <br>
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
+   * <br>
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
+   * is automatically extracted for sampling.<br>
+   *
+   * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
+   * @return output Sampled token indices. Shape: [batch] or scalar (LONG type)
+   */
+  public INDArray tokenSample(INDArray logits) {
+    NDValidation.validateNumerical("tokenSample", "logits", logits);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample(logits, 0.0, 0, 0.0, 0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Token sampling for LLM inference.<br>
+   * <br>
+   * Full sampling pipeline in a single native GPU call:<br>
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
+   * <br>
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
+   * <br>
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
+   * is automatically extracted for sampling.<br>
+   *
+   * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
+   * @param temperature Temperature for sampling. 0 = greedy (argmax)
+   * @param topK Top-K filtering: keep only top K logits. 0 = disabled
+   * @param topP Top-P (nucleus) filtering threshold. 0 = disabled
+   * @param seed Random seed for sampling. 0 = random
+   * @return output Sampled token indices. Shape: [batch] or scalar (LONG type)
+   */
+  public INDArray tokenSample(INDArray logits, double temperature, int topK, double topP,
+      long seed) {
+    NDValidation.validateNumerical("tokenSample", "logits", logits);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample(logits, temperature, topK, topP, seed));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Find values and indices for the largest k entries along the last dimension.<br>
    *
    * @param input Input data (NUMERIC type)
@@ -670,5 +4030,288 @@ public class NDNN {
   public INDArray[] topK(INDArray input, double k, boolean sorted) {
     NDValidation.validateNumerical("topK", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TopK(input, k, sorted));
+  }
+
+  /**
+   * TurboQuant asymmetric attention with compressed keys.<br>
+   * <br>
+   * Computes scaled dot-product attention using compressed key representations<br>
+   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner<br>
+   * product estimator combines MSE reconstruction with QJL correction:<br>
+   * <br>
+   *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs><br>
+   * <br>
+   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.<br>
+   * Values use MSE-only decompression (error averages out in softmax-weighted sum).<br>
+   *
+   * @param query Query tensor [B, H, Sq, D] (NUMERIC type)
+   * @param kMse MSE-reconstructed keys [B, H, Sk, D] (NUMERIC type)
+   * @param qjlSigns QJL sign bits [B, H, Sk, D] INT8 (INT type)
+   * @param residualNorms Residual L2 norms [B, H, Sk] (NUMERIC type)
+   * @param qjlMatrix QJL projection matrix [D, D] (NUMERIC type)
+   * @param values Dequantized values [B, H, Sk, D] (NUMERIC type)
+   * @param attentionMask Attention mask [B, 1, 1, Sk] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param headDim Dimension per head
+   * @param scale Attention scale (0 = auto: 1/sqrt(headDim))
+   * @return output Attention output [B, H, Sq, D] (NUMERIC type)
+   */
+  public INDArray turboQuantAttention(INDArray query, INDArray kMse, INDArray qjlSigns,
+      INDArray residualNorms, INDArray qjlMatrix, INDArray values, INDArray attentionMask,
+      int numHeads, int headDim, double scale) {
+    NDValidation.validateNumerical("turboQuantAttention", "query", query);
+    NDValidation.validateNumerical("turboQuantAttention", "kMse", kMse);
+    NDValidation.validateInteger("turboQuantAttention", "qjlSigns", qjlSigns);
+    NDValidation.validateNumerical("turboQuantAttention", "residualNorms", residualNorms);
+    NDValidation.validateNumerical("turboQuantAttention", "qjlMatrix", qjlMatrix);
+    NDValidation.validateNumerical("turboQuantAttention", "values", values);
+    NDValidation.validateNumerical("turboQuantAttention", "attentionMask", attentionMask);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention(query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim, scale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * TurboQuant asymmetric attention with compressed keys.<br>
+   * <br>
+   * Computes scaled dot-product attention using compressed key representations<br>
+   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner<br>
+   * product estimator combines MSE reconstruction with QJL correction:<br>
+   * <br>
+   *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs><br>
+   * <br>
+   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.<br>
+   * Values use MSE-only decompression (error averages out in softmax-weighted sum).<br>
+   *
+   * @param query Query tensor [B, H, Sq, D] (NUMERIC type)
+   * @param kMse MSE-reconstructed keys [B, H, Sk, D] (NUMERIC type)
+   * @param qjlSigns QJL sign bits [B, H, Sk, D] INT8 (INT type)
+   * @param residualNorms Residual L2 norms [B, H, Sk] (NUMERIC type)
+   * @param qjlMatrix QJL projection matrix [D, D] (NUMERIC type)
+   * @param values Dequantized values [B, H, Sk, D] (NUMERIC type)
+   * @param attentionMask Attention mask [B, 1, 1, Sk] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param headDim Dimension per head
+   * @return output Attention output [B, H, Sq, D] (NUMERIC type)
+   */
+  public INDArray turboQuantAttention(INDArray query, INDArray kMse, INDArray qjlSigns,
+      INDArray residualNorms, INDArray qjlMatrix, INDArray values, INDArray attentionMask,
+      int numHeads, int headDim) {
+    NDValidation.validateNumerical("turboQuantAttention", "query", query);
+    NDValidation.validateNumerical("turboQuantAttention", "kMse", kMse);
+    NDValidation.validateInteger("turboQuantAttention", "qjlSigns", qjlSigns);
+    NDValidation.validateNumerical("turboQuantAttention", "residualNorms", residualNorms);
+    NDValidation.validateNumerical("turboQuantAttention", "qjlMatrix", qjlMatrix);
+    NDValidation.validateNumerical("turboQuantAttention", "values", values);
+    NDValidation.validateNumerical("turboQuantAttention", "attentionMask", attentionMask);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention(query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim, 0.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * SAM-style Two-Way Cross Attention.<br>
+   * Bidirectional cross-attention where tokens attend to image features and<br>
+   * image features attend to tokens simultaneously:<br>
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   *
+   * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenKey Token keys [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenValue Token values [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param scale Attention scale factor (default: 1/sqrt(embedDim))
+   */
+  public INDArray[] twoWayCrossAttention(INDArray tokenQuery, INDArray tokenKey,
+      INDArray tokenValue, INDArray imageQuery, INDArray imageKey, INDArray imageValue,
+      double scale) {
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenQuery", tokenQuery);
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenKey", tokenKey);
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenValue", tokenValue);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageQuery", imageQuery);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, scale));
+  }
+
+  /**
+   * SAM-style Two-Way Cross Attention.<br>
+   * Bidirectional cross-attention where tokens attend to image features and<br>
+   * image features attend to tokens simultaneously:<br>
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   *
+   * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenKey Token keys [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenValue Token values [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   */
+  public INDArray[] twoWayCrossAttention(INDArray tokenQuery, INDArray tokenKey,
+      INDArray tokenValue, INDArray imageQuery, INDArray imageKey, INDArray imageValue) {
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenQuery", tokenQuery);
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenKey", tokenKey);
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenValue", tokenValue);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageQuery", imageQuery);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, 0.0));
+  }
+
+  /**
+   * Scatter vision embeddings into text embeddings at target token positions.<br>
+   * <br>
+   * Replaces positions in the text embedding sequence where the token ID<br>
+   * matches targetTokenId with sequential vision embeddings. Uses a two-pass<br>
+   * approach on CUDA (prefix sum + scatter) that runs entirely on device<br>
+   * with no host round-trips.<br>
+   * <br>
+   * Used by VLMs (SmolVLM2, Qwen3-VL, MiniCPM-V, LLaVA) to merge vision<br>
+   * encoder output into the language model's input embedding sequence.<br>
+   *
+   * @param textEmbeddings Text token embeddings [batch, seqLen, hiddenDim] (NUMERIC type)
+   * @param visionEmbeddings Vision token embeddings [batch, visionTokens, hiddenDim] (NUMERIC type)
+   * @param tokenIds Token ID array [batch, seqLen] (INT type)
+   * @param targetTokenId The token ID to replace with vision embeddings
+   * @return output Merged embeddings [batch, seqLen, hiddenDim] (NUMERIC type)
+   */
+  public INDArray visionEmbeddingMerge(INDArray textEmbeddings, INDArray visionEmbeddings,
+      INDArray tokenIds, long targetTokenId) {
+    NDValidation.validateNumerical("visionEmbeddingMerge", "textEmbeddings", textEmbeddings);
+    NDValidation.validateNumerical("visionEmbeddingMerge", "visionEmbeddings", visionEmbeddings);
+    NDValidation.validateInteger("visionEmbeddingMerge", "tokenIds", tokenIds);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge(textEmbeddings, visionEmbeddings, tokenIds, targetTokenId));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Windowed Attention - Local/Sliding Window Attention.<br>
+   * <br>
+   * Implements windowed attention mechanisms used in efficient transformers like<br>
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
+   * <br>
+   * Supports both:<br>
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
+   * <br>
+   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
+   * as used in Swin Transformer.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Efficient for long sequences and high-resolution images<br>
+   * - Supports relative position bias for position-aware attention<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
+   * @param key Key tensor. Same shape as query (NUMERIC type)
+   * @param value Value tensor. Same shape as query (NUMERIC type)
+   * @param windowSize Size of attention window
+   * @param numHeads Number of attention heads
+   * @return output Attention output. Same shape as query (NUMERIC type)
+   */
+  public INDArray windowedAttention(INDArray query, INDArray key, INDArray value, int windowSize,
+      int numHeads) {
+    NDValidation.validateNumerical("windowedAttention", "query", query);
+    NDValidation.validateNumerical("windowedAttention", "key", key);
+    NDValidation.validateNumerical("windowedAttention", "value", value);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(query, key, value, null, null, windowSize, numHeads, 0, 0.0, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Windowed Attention - Local/Sliding Window Attention.<br>
+   * <br>
+   * Implements windowed attention mechanisms used in efficient transformers like<br>
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
+   * <br>
+   * Supports both:<br>
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
+   * <br>
+   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
+   * as used in Swin Transformer.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Efficient for long sequences and high-resolution images<br>
+   * - Supports relative position bias for position-aware attention<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
+   * @param key Key tensor. Same shape as query (NUMERIC type)
+   * @param value Value tensor. Same shape as query (NUMERIC type)
+   * @param relativePositionBias Optional relative position bias. Shape: [numHeads, windowSize, windowSize] (NUMERIC type)
+   * @param attentionMask Optional attention mask (NUMERIC type)
+   * @param windowSize Size of attention window
+   * @param numHeads Number of attention heads
+   * @param shiftSize Shift size for shifted window attention (Swin style). 0 = no shift
+   * @param scale Attention scale factor. 0 = auto (1/sqrt(headDim))
+   * @param returnWeights Whether to return attention weights
+   * @return output Attention output. Same shape as query (NUMERIC type)
+   */
+  public INDArray windowedAttention(INDArray query, INDArray key, INDArray value,
+      INDArray relativePositionBias, INDArray attentionMask, int windowSize, int numHeads,
+      int shiftSize, double scale, boolean returnWeights) {
+    NDValidation.validateNumerical("windowedAttention", "query", query);
+    NDValidation.validateNumerical("windowedAttention", "key", key);
+    NDValidation.validateNumerical("windowedAttention", "value", value);
+    if (relativePositionBias != null) {
+      NDValidation.validateNumerical("windowedAttention", "relativePositionBias", relativePositionBias);
+    }
+    if (attentionMask != null) {
+      NDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
+    }
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 }

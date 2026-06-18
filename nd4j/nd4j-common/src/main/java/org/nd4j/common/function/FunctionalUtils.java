@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class FunctionalUtils {
 
@@ -99,18 +100,11 @@ public class FunctionalUtils {
      * in the grouping.
      */
     public static <K,V> Map<K,List<V>> groupByKey(List<Pair<K,V>> listInput) {
-        Map<K,List<V>> ret = new HashMap<>();
-        for(Pair<K,V> pair : listInput) {
-            List<V> currList = ret.get(pair.getFirst());
-            if(currList == null) {
-                currList = new ArrayList<>();
-                ret.put(pair.getFirst(),currList);
-            }
-
-            currList.add(pair.getSecond());
-        }
-
-        return ret;
+        return listInput.stream()
+                .collect(Collectors.groupingBy(
+                        Pair::getFirst,
+                        Collectors.mapping(Pair::getSecond, Collectors.toList())
+                ));
     }
 
     /**
@@ -122,12 +116,9 @@ public class FunctionalUtils {
      * @return the collapsed map as a {@link List}
      */
     public static <K,V> List<Pair<K,V>> mapToPair(Map<K,V> map) {
-        List<Pair<K,V>> ret = new ArrayList<>(map.size());
-        for(Map.Entry<K,V> entry : map.entrySet()) {
-            ret.add(Pair.of(entry.getKey(),entry.getValue()));
-        }
-
-        return ret;
+        return map.entrySet().stream()
+                .map(entry -> Pair.of(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
     }
 
 }

@@ -32,6 +32,7 @@ import java.lang.ref.ReferenceQueue;
 public class DeallocatableReference extends PhantomReference<Deallocatable> {
     private long id;
     private Deallocator deallocator;
+    private final long timestamp = System.currentTimeMillis();
 
     public DeallocatableReference(Deallocatable referent, ReferenceQueue<? super Deallocatable> q) {
         super(referent, q);
@@ -43,9 +44,40 @@ public class DeallocatableReference extends PhantomReference<Deallocatable> {
         }
     }
 
+    /**
+     * Get the timestamp when this reference was created.
+     * @return timestamp in milliseconds
+     */
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    /**
+     * Get the number of bytes associated with this reference.
+     * @return byte count
+     */
+    public long getBytes() {
+        return deallocator != null ? deallocator.getBytes() : 0;
+    }
+
     public void deallocate() {
+        if (deallocator == null) {
+            return;
+        }
+
+        // Constant buffers (like shape info) should never be deallocated.
+        // Instead of throwing an exception which could crash the deallocator thread,
+        // silently return. The buffer will remain in memory, which is the intended
+        // behavior for constant/cached buffers.
         if(deallocator.isConstant()) {
-            throw new IllegalStateException("Unable to deallocate reference. Not ready yet.");
+            return;
+        }
+
+        // During JVM shutdown, skip native deallocation to avoid calling free()
+        // on potentially corrupted heap metadata. The OS reclaims all process
+        // memory on exit.
+        if (DeallocatorService.getShutdownInProgress().get()) {
+            return;
         }
 
         if(!Nd4j.getDeallocatorService().getListeners().isEmpty()) {

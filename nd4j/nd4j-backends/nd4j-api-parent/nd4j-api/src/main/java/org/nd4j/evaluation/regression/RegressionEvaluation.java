@@ -27,6 +27,7 @@ import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
 import org.nd4j.linalg.factory.Nd4j;
@@ -44,6 +45,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
+    private static final long serialVersionUID = 1L;
 
     public enum Metric implements IMetric { MSE, MAE, RMSE, RSE, PC, R2;
 
@@ -247,9 +249,10 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         }
 
         if (maskArray != null) {
-            //Handle per-output masking. We are assuming *binary* masks here
-            labels = labels.mul(maskArray);
-            predictions = predictions.mul(maskArray);
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                labels = labels.mul(maskArray).detach();
+                predictions = predictions.mul(maskArray).detach();
+            }
         }
 
         labelsSumPerColumn.addi(labels.sum(0).castTo(labelsSumPerColumn.dataType()));

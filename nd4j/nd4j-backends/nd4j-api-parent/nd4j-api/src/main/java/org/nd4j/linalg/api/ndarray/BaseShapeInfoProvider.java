@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ndarray;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -37,7 +38,16 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
 
     @Override
     public Pair<DataBuffer, long[]> createShapeInformation(long[] shapeInfo) {
-        return Pair.of(Nd4j.createBuffer(shapeInfo),shapeInfo);
+        // Shape info buffers must not be allocated from workspace memory.
+        // They are stored on the NDArray and reused across workspace cycles,
+        // so allocating them from workspace would cause use-after-free when
+        // the workspace resets.
+        DataBuffer buffer;
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            buffer = Nd4j.createBuffer(shapeInfo);
+        }
+        buffer.setConstant(true);
+        return Pair.of(buffer, shapeInfo);
     }
 
     /**

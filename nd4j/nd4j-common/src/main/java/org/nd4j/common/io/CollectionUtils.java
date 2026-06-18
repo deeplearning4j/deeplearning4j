@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 
 
 public abstract class CollectionUtils {
+    private static final long serialVersionUID = 1L;
     public CollectionUtils() {}
 
     public static boolean isEmpty(Collection collection) {
@@ -242,7 +243,7 @@ public abstract class CollectionUtils {
     }
 
     public static <A, E extends A> A[] toArray(Enumeration<E> enumeration, A[] array) {
-        ArrayList elements = new ArrayList();
+        ArrayList<E> elements = new ArrayList<>();
 
         while (enumeration.hasMoreElements()) {
             elements.add(enumeration.nextElement());
@@ -298,7 +299,7 @@ public abstract class CollectionUtils {
         }
 
         public void set(K key, V value) {
-            LinkedList values = new LinkedList();
+            LinkedList<V> values = new LinkedList<>();
             values.add(value);
             this.map.put(key, values);
         }

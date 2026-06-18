@@ -95,17 +95,30 @@ public class OpaqueNDArrayArrDeallocator implements Deallocatable, Deallocator {
                                 uniqueId, parentArrays != null ? parentArrays.length : 0);
                     }
 
-                    // Deallocate the PointerPointer's native memory
-                    // NOTE: We do NOT close the individual OpaqueNDArrays because they are CACHED
-                    // instances managed by their parent INDArrays. The parent INDArrays are kept
-                    // alive by parentArrays field, and their cached OpaqueNDArrays will be cleaned
-                    // up when the INDArrays themselves are closed/garbage collected.
+                    OpaqueNDArray[] opaqueArrays = arrayArr.getOpaqueArrays();
+                    if (opaqueArrays != null) {
+                        for (OpaqueNDArray opaque : opaqueArrays) {
+                            if (opaque != null) {
+                                try {
+                                    opaque.releaseReference(); // Release the reference added in createFrom
+                                    opaque.close(); // Close to free native sd::NDArray* and release shape buffer
+                                } catch (Exception e) {
+                                    log.warn("Error closing OpaqueNDArray during deallocation", e);
+                                }
+                            }
+                        }
+                    }
+
+                    // Deallocate the PointerPointer's native memory (the array of pointers itself)
+                    // Note: setNull() is called immediately after deallocate() to prevent
+                    // JavaCPP's NativeDeallocator from trying to double-free. The retainReference()
+                    // called during creation should prevent automatic deallocation.
                     if (!arrayArr.isNull()) {
                         arrayArr.deallocate();
                         arrayArr.setNull();
                     }
 
-                    // Clear the opaqueArrays reference to allow GC (but don't close them!)
+                    // Clear the opaqueArrays reference to allow GC
                     arrayArr.clearOpaqueArrays();
                 }
             } catch (Exception e) {

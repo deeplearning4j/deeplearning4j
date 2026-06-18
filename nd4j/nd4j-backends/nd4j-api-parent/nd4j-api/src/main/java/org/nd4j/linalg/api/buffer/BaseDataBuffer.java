@@ -33,6 +33,7 @@ import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
@@ -42,6 +43,7 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.*;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1736,6 +1738,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             if(d.dataType() != dataType())
                 return false;
+
+            // For integer and boolean types, use exact element-by-element comparison.
+            // Epsilon-based float comparison is semantically wrong for integer types:
+            // e.g., -1L as INT64 is 0xFFFFFFFFFFFFFFFF, which loses precision when
+            // reinterpreted as a float, causing identical integer buffers to compare unequal.
+            DataType dt = dataType();
+            if (dt == DataType.BOOL) {
+                return Arrays.equals(asBoolean(), d.asBoolean());
+            } else if (dt.isIntType()) {
+                return Arrays.equals(asLong(), d.asLong());
+            }
+
+            // For floating-point types (FLOAT, DOUBLE, HALF, BFLOAT16, etc.),
+            // keep the existing epsilon-based comparison via the Eps op.
             try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
                 INDArray arr1 = Nd4j.create(d);
                 INDArray arr2 = Nd4j.create(this);
@@ -1763,6 +1779,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void doReadObject(ObjectInputStream s) {
         try {
             s.defaultReadObject();
+            // Initialize transient fields that are not restored by deserialization
+            if (released == null) released = new AtomicBoolean(false);
+            if (referenced == null) referenced = new AtomicBoolean(false);
             val header = BaseDataBuffer.readHeader(s);
             read(s, header.getLeft(), header.getMiddle(), header.getRight());
         } catch (Exception e) {
@@ -2132,10 +2151,24 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param reallyConstant
      */
     public void setConstant(boolean reallyConstant) {
-        deallocator().setConstant(reallyConstant);
-        this.constant = reallyConstant;
-        Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+        if (ptrDataBuffer != null && !ptrDataBuffer.isNull()) {
+            ptrDataBuffer.setConstant(reallyConstant);
+        }
 
+        if (ptrDataBuffer != null && ptrDataBuffer.getDeallocator() != null) {
+            ptrDataBuffer.getDeallocator().setConstant(reallyConstant);
+        }
+
+        Deallocator dealloc = deallocator();
+        if (dealloc != null) {
+            dealloc.setConstant(reallyConstant);
+        }
+
+        // Now safe to set Java-side flags
+        this.constant = reallyConstant;
+        if (reallyConstant) {
+            Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+        }
     }
 
     @Override
@@ -2214,10 +2247,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     protected void release() {
+        boolean shutdown = DeallocatorService.getShutdownInProgress().get();
+        Deallocator dealloc = deallocator();
         this.released.set(true);
+
+        if (!shutdown && dealloc != null && !dealloc.isConstant()) {
+            try {
+                dealloc.deallocate();
+            } catch (Exception e) {
+                log.debug("Error during deallocation: {}", e.getMessage());
+            }
+        }
+
         this.indexer = null;
         this.pointer = null;
-        this.ptrDataBuffer = null;  // Clear opaque buffer to prevent stale pointer access
+        this.ptrDataBuffer = null;
         Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
     }
 

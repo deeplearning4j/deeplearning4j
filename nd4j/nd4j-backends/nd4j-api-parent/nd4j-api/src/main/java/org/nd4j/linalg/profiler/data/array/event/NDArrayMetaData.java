@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 @AllArgsConstructor
 public class NDArrayMetaData implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String data;
     private DataType dataType;
     private long[] jvmShapeInfo;

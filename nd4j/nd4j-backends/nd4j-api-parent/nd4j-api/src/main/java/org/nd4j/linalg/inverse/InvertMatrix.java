@@ -51,8 +51,13 @@ public class InvertMatrix {
             throw new IllegalArgumentException("invalid array: must be square matrix");
         }
 
+        RealMatrix rm = CheckUtil.convertToApacheMatrix(arr);
+        RealMatrix rmInverse = new LUDecomposition(rm).getSolver().getInverse();
 
-        return Nd4j.linalg().matrixInverse(arr);
+        INDArray inverse = CheckUtil.convertFromApacheMatrix(rmInverse, arr.dataType());
+        if (inPlace)
+            arr.assign(inverse);
+        return inverse;
 
     }
 

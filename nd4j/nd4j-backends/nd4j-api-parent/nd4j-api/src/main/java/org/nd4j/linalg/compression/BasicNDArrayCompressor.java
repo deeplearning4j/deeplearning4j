@@ -77,7 +77,7 @@ public class BasicNDArrayCompressor {
     }
 
     /**
-     * Prints available compressors to standard out
+     * Logs available compressors
      */
     public void printAvailableCompressors() {
         StringBuilder builder = new StringBuilder();
@@ -86,7 +86,7 @@ public class BasicNDArrayCompressor {
             builder.append("[").append(comp).append("] ");
         }
 
-        System.out.println(builder.toString());
+        log.info("{}", builder);
     }
 
     /**

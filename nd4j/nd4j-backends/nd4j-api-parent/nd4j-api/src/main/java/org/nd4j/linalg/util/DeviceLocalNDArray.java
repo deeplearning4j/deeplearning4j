@@ -24,6 +24,10 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -31,6 +35,9 @@ import java.util.Arrays;
 
 @Slf4j
 public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
+
+    // Track if the source array was marked as constant
+    private volatile boolean sourceWasConstant = false;
 
     public DeviceLocalNDArray() {
         this(false);
@@ -51,6 +58,65 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
     }
 
     /**
+     * Check if the source array's data buffer is marked as constant.
+     * This is used to propagate constant flag to device-local copies.
+     */
+    private boolean isSourceConstant(INDArray array) {
+        if (array == null) return false;
+        DataBuffer data = array.data();
+        if (data != null && data.isConstant()) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Propagate constant flag from source to target array.
+     * This ensures that device-local copies of constant arrays remain protected from deallocation.
+     *
+     * This method uses the already-captured sourceWasConstant field instead of
+     * re-checking source.data().isConstant(). This prevents a race condition where the source
+     * buffer might be in an inconsistent state (GC'd, deallocated) by the time we check.
+     * The sourceWasConstant field is set at the START of broadcast() before any dup/detach
+     * operations that might affect the source buffer.
+     */
+    private void propagateConstantFlag(INDArray source, INDArray target) {
+        if (target == null) return;
+
+        // Use the already-captured sourceWasConstant field instead of re-checking source
+        // This prevents race conditions where source buffer may have been freed
+        if (sourceWasConstant) {
+            DataBuffer targetData = target.data();
+            if (targetData != null) {
+                targetData.setConstant(true);
+            }
+            DataBuffer targetShapeInfo = target.shapeInfoDataBuffer();
+            if (targetShapeInfo != null) {
+                targetShapeInfo.setConstant(true);
+            }
+            target.setCloseable(false);
+        }
+    }
+
+    /**
+     * Apply the tracked constant flag to a target array.
+     * Used when creating new arrays from delayedArray.
+     */
+    private void applyConstantFlag(INDArray target) {
+        if (!sourceWasConstant || target == null) return;
+
+        DataBuffer targetData = target.data();
+        if (targetData != null) {
+            targetData.setConstant(true);
+        }
+        DataBuffer targetShapeInfo = target.shapeInfoDataBuffer();
+        if (targetShapeInfo != null) {
+            targetShapeInfo.setConstant(true);
+        }
+        target.setCloseable(false);
+    }
+
+    /**
      * This method returns object local to current deviceId
      *
      * @return
@@ -58,12 +124,40 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
     @Override
     public synchronized INDArray get() {
         val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        if (deviceId >= locksMap.size()) {
+            ensureCapacity(deviceId);
+        }
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         val sourceId = updatesMap.get(deviceId).get();
         if (sourceId >= 0 && sourceId != deviceId) {
+            if (delayedArray == null || delayedArray.data() == null) {
+                log.warn("DeviceLocalNDArray.get(): delayedArray is null or has null data for device {}. " +
+                        "Clearing stale update flag. This may indicate the array was empty or a race condition occurred.",
+                        deviceId);
+                updatesMap.get(deviceId).set(deviceId);
+                return get(deviceId);
+            }
+
             // if updates map contains some deviceId - we should take updated array from there
-            val newArray = Nd4j.create(delayedArray.dataType(), delayedArray.shape(), delayedArray.stride(), delayedArray.ordering());
+            INDArray newArray;
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                newArray = sourceWasConstant ?
+                    Nd4j.getDeallocatorService().registerPendingConstant(
+                        Nd4j.create(delayedArray.dataType(), delayedArray.shape(), delayedArray.stride(), delayedArray.ordering())) :
+                    Nd4j.create(delayedArray.dataType(), delayedArray.shape(), delayedArray.stride(), delayedArray.ordering());
+            }
+            // Bidirectional sync delayedArray so HOST has current data for cross-device memcpy.
+            // ensureHostAccess does H→D then force D→H, handling both:
+            //   - device-only data (compact copies from assign ops)
+            //   - host-only data (deserialized from FlatBuffers)
+            DeviceMemoryManager.getInstance().ensureHostAccess(delayedArray);
             Nd4j.getMemoryManager().memcpy(newArray.data(), delayedArray.data());
+
+            applyConstantFlag(newArray);
+            if (sourceWasConstant) {
+                Nd4j.getDeallocatorService().releasePendingConstant(newArray);
+            }
+
             backingMap.put(deviceId, newArray);
 
             // reset updates flag
@@ -82,7 +176,21 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
             if (allUpdated)
                 delayedArray = null;
         }
-        return get(deviceId);
+        INDArray result = get(deviceId);
+        if (result == null) {
+            // Fallback: check other devices for an empty array that wasn't replicated.
+            // Empty arrays are device-agnostic (no data buffer), so any copy is valid.
+            for (int i = 0; i < numDevices; i++) {
+                if (i != deviceId) {
+                    INDArray other = get(i);
+                    if (other != null && other.isEmpty()) {
+                        set(deviceId, other);
+                        return other;
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -99,6 +207,9 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
 
         Nd4j.getExecutioner().commit();
 
+        // Track if the source array is constant - this will be used to propagate
+        // the constant flag to all device-local copies
+        sourceWasConstant = isSourceConstant(array);
 
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -109,23 +220,69 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
             for (int i = 0; i < numDevices; i++) {
                 // if current thread equal to this device - we just save it, without duplication
                 if (deviceId == i) {
-                    set(i, array.detach());
+                    INDArray detached;
+                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        detached = sourceWasConstant ?
+                            Nd4j.getDeallocatorService().registerPendingConstant(array.detach()) :
+                            array.detach();
+                    }
+                    // Propagate constant flag to detached array
+                    propagateConstantFlag(array, detached);
+                    if (sourceWasConstant) {
+                        Nd4j.getDeallocatorService().releasePendingConstant(detached);
+                    }
+                    set(i, detached);
                 } else {
-                    set(i, Nd4j.getAffinityManager().replicateToDevice(i, array));
+                    INDArray replicated;
+                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        replicated = sourceWasConstant ?
+                            Nd4j.getDeallocatorService().registerPendingConstant(
+                                Nd4j.getAffinityManager().replicateToDevice(i, array)) :
+                            Nd4j.getAffinityManager().replicateToDevice(i, array);
+                    }
+                    // Propagate constant flag to replicated array
+                    propagateConstantFlag(array, replicated);
+                    if (sourceWasConstant) {
+                        Nd4j.getDeallocatorService().releasePendingConstant(replicated);
+                    }
+                    set(i, replicated);
                 }
 
             }
         } else {
             // we're only updating this device
-            set(Nd4j.getAffinityManager().getDeviceForCurrentThread(), array);
-            delayedArray = array.dup(array.ordering()).detach();
-
-            // and marking all other devices as stale, and provide id of device with the most recent array
-            for (int i = 0; i < numDevices; i++) {
-                if (i != deviceId) {
-                    updatesMap.get(i).set(deviceId);
-                }
+            INDArray detachedForCurrentDevice;
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                detachedForCurrentDevice = sourceWasConstant ?
+                    Nd4j.getDeallocatorService().registerPendingConstant(array.detach()) :
+                    array.detach();
             }
+            propagateConstantFlag(array, detachedForCurrentDevice);
+            if (sourceWasConstant) {
+                Nd4j.getDeallocatorService().releasePendingConstant(detachedForCurrentDevice);
+            }
+            set(deviceId, detachedForCurrentDevice);
+           if(!array.isEmpty() && array.data() != null && numDevices > 1) {
+               // Bidirectional sync so HOST has current data for cross-device copies.
+               // ensureHostAccess does H→D then force D→H, handling both device-only
+               // data (compact copies) and host-only data (deserialized arrays).
+               DeviceMemoryManager.getInstance().ensureHostAccess(detachedForCurrentDevice);
+               delayedArray = detachedForCurrentDevice;
+
+               for (int i = 0; i < numDevices; i++) {
+                   if (i != deviceId) {
+                       updatesMap.get(i).set(deviceId);
+                   }
+               }
+           } else if (array.isEmpty() && numDevices > 1) {
+               // Empty arrays have no data buffer — they are device-agnostic.
+               // Store the same empty array for all devices so get() never returns null.
+               for (int i = 0; i < numDevices; i++) {
+                   if (i != deviceId) {
+                       set(i, detachedForCurrentDevice);
+                   }
+               }
+           }
         }
 
     }
@@ -138,6 +295,11 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
      */
     public synchronized void update(@NonNull INDArray array) {
         Preconditions.checkArgument(!array.isView() || array.elementWiseStride() != 1, "View can't be used in DeviceLocalNDArray");
+
+        // Update the constant flag tracking
+        if (isSourceConstant(array)) {
+            sourceWasConstant = true;
+        }
 
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         val device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -153,7 +315,19 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
                     val v = backingMap.get(k);
                     if (v == null) {
                         if (!wasDelayed) {
-                            delayedArray = array.dup(array.ordering()).detach();
+                            boolean isConstant = isSourceConstant(array);
+                            INDArray delayed;
+                            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                delayed = isConstant ?
+                                    Nd4j.getDeallocatorService().registerPendingConstant(array.dup(array.ordering()).detach()) :
+                                    array.dup(array.ordering()).detach();
+                            }
+                            // Propagate constant flag to delayed array
+                            propagateConstantFlag(array, delayed);
+                            if (isConstant) {
+                                Nd4j.getDeallocatorService().releasePendingConstant(delayed);
+                            }
+                            delayedArray = delayed;
                             wasDelayed = true;
                         }
                         updatesMap.get(k).set(device);
