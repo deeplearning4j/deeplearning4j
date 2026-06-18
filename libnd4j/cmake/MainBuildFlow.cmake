@@ -284,6 +284,28 @@ function(collect_all_sources out_source_list)
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/impl/*.cpp)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu ./include/legacy/cuda/*.cu)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA ./include/loops/*.cu ./include/loops/cuda/**/*.cu)
+        # Split the heaviest monolithic BUILD_SINGLE/DOUBLE_TEMPLATE ops (full
+        # SD_COMMON_TYPES matrix in one TU -> 7-15 MB objects, 100-200 s serial
+        # long-poles) into one generated per-type TU each: small, parallel, low-RAM.
+        # Type set unchanged (split on SD_COMMON_TYPES = 13 types -> indices 0..12).
+        include(SplitHeavyInstantiations)
+        split_heavy_op(LOOPS_SOURCES_CUDA transform_strict.cu  loops/cuda/transform/transform_strict.cu  12)
+        split_heavy_op(LOOPS_SOURCES_CUDA transform_same.cu    loops/cuda/transform/transform_same.cu    12)
+        split_heavy_op(LOOPS_SOURCES_CUDA transform_float.cu   loops/cuda/transform/transform_float.cu   12)
+        split_heavy_op(LOOPS_SOURCES_CUDA transform_any.cu     loops/cuda/transform/transform_any.cu     12)
+        split_heavy_op(LOOPS_SOURCES_CUDA broadcasting_bool.cu loops/cuda/broadcasting_bool.cu           12)
+        split_heavy_op(LOOPS_SOURCES_CUDA scalar_bool.cu       loops/cuda/scalar_bool.cu                 12)
+        split_heavy_op(LOOPS_SOURCES_CUDA pairwise_bool.cu     loops/cuda/pairwise_bool.cu               12)
+        split_heavy_op(LOOPS_SOURCES_CUDA reduce_bool.cu       loops/cuda/reduce/reduce_bool.cu          12)
+        split_heavy_op(LOOPS_SOURCES_CUDA reduce_long.cu       loops/cuda/reduce/reduce_long.cu          12)
+        split_heavy_op(LOOPS_SOURCES_CUDA reduce_same.cu       loops/cuda/reduce/reduce_same.cu          12)
+        split_heavy_op(LOOPS_SOURCES_CUDA bitonicSortStep.cu   loops/cuda/specials/bitonicSortStep.cu    12)
+        split_heavy_op(LOOPS_SOURCES_CUDA bitonicArbitraryStep.cu loops/cuda/specials/bitonicArbitraryStep.cu 12)
+        split_heavy_op(LOOPS_SOURCES_CUDA oesTad.cu            loops/cuda/specials/oesTad.cu             12)
+        # NOTE: where.cu intentionally NOT split — its object weight is the shared
+        # device-kernel impl (compiled into every TU), not the type instantiations
+        # (a split TU is ~7 MB = the monolith), so splitting multiplies work for no
+        # benefit. Only instantiation-dominated ops belong here.
         file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
         file(GLOB_RECURSE GRAPH_CUDA_SOURCES ./include/graph/*.cu)
         # Exclude Triton .cu files when Triton is not available (they require MLIR headers)
@@ -296,7 +318,14 @@ function(collect_all_sources out_source_list)
             endif()
         endif()
         file(GLOB_RECURSE VALIDATION_SOURCES ./include/array/DataTypeValidation.cpp)
-        file(GLOB CPU_HELPERS_TO_EXCLUDE ./include/legacy/cpu/*.cpp ./include/helpers/cpu/*.cpp ./include/array/cpu/*.cpp)
+        file(GLOB CPU_HELPERS_TO_EXCLUDE
+                ./include/legacy/cpu/*.cpp
+                ./include/helpers/cpu/*.cpp
+                ./include/array/cpu/*.cpp
+                ./include/execution/cpu/*.cpp
+                ./include/graph/cpu/*.cpp
+                ./include/ops/declarable/helpers/cpu/*.cpp
+        )
 
         list(APPEND ALL_SOURCES_LIST
                 ${EXEC_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES}
