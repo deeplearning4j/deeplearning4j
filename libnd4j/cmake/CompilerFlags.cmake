@@ -23,8 +23,15 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     # - global-dynamic: Uses __tls_get_addr() for dynamic TLS allocation at runtime
     # - Works with dlopen() because TLS is allocated dynamically, not from static block
     # - Slightly slower than initial-exec, but required for dlopen() compatibility
-    # Also disable thread-safe static initialization guards which use TLS internally
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftls-model=global-dynamic -fno-threadsafe-statics")
+    #
+    # NOTE: Do NOT add -fno-threadsafe-statics here. GCC's __cxa_guard_acquire uses
+    # futex, not TLS — it is unrelated to the dlopen TLS exhaustion issue. Adding it
+    # causes TypeID ODR violations with MLIR: our .o files get BSS-local (b) static
+    # locals while the MLIR .a files (compiled without -fno-threadsafe-statics) get
+    # unique-global (u) symbols. Both coexist in libnd4jcuda.so at different addresses,
+    # breaking MLIR's hasTrait<IsIsolatedFromAbove>() pointer comparison and causing
+    # 100% Triton kernel compilation failure.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftls-model=global-dynamic")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ftls-model=global-dynamic")
 
     # ADDITIONAL FIX: Use GNU2 TLS dialect (TLSDESC) for better dlopen() support
@@ -34,11 +41,23 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     # - More efficient for libraries loaded at runtime
     # - Better handles libraries with many TLS variables
     # This is a DIFFERENT approach from session #310's global-dynamic alone
-    # Supported on x86-64 by both GCC and Clang (requires glibc 2.10+, widely available)
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mtls-dialect=gnu2")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mtls-dialect=gnu2")
-        message(STATUS "Applied GNU2 TLS dialect (TLSDESC) for improved dlopen() compatibility")
+    # Supported on x86-64 by GCC and Clang 15+ (requires glibc 2.10+, widely available)
+    # Note: -mtls-dialect=gnu2 is NOT supported by Clang < 15
+    if(NOT ANDROID AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
+        # Check if compiler supports -mtls-dialect=gnu2
+        # GCC supports it, Clang only from version 15+
+        set(_supports_gnu2_tls TRUE)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15.0")
+                set(_supports_gnu2_tls FALSE)
+                message(STATUS "Skipping -mtls-dialect=gnu2 (Clang ${CMAKE_CXX_COMPILER_VERSION} < 15 does not support it)")
+            endif()
+        endif()
+        if(_supports_gnu2_tls)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mtls-dialect=gnu2")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mtls-dialect=gnu2")
+            message(STATUS "Applied GNU2 TLS dialect (TLSDESC) for improved dlopen() compatibility")
+        endif()
     endif()
 
     message(STATUS "Applied global-dynamic TLS model for dlopen() compatibility (JavaCPP requirement)")
@@ -111,7 +130,7 @@ if(SD_USE_LTO)
 endif()
 
 # --- Memory Model for large binaries ---
-# CRITICAL: -mcmodel=large is INCOMPATIBLE with system CRT libraries (crtbeginS.o, crti.o)
+# -mcmodel=large is INCOMPATIBLE with system CRT libraries (crtbeginS.o, crti.o)
 # System libraries are compiled with -mcmodel=small and cannot be linked into -mcmodel=large binaries
 # This causes "relocation truncated to fit: R_X86_64_PC32" errors (see session #959, #1008)
 # SOLUTION: Use -mcmodel=medium for both sanitizers AND functrace builds
@@ -178,10 +197,19 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # --- MSVC-specific optimizations ---
+# Guard with COMPILE_LANGUAGE to prevent these flags from leaking into CUDA
+# compilation. NVCC uses cl.exe as the host compiler, and sccache misparses
+# slash-prefixed flags (e.g. /bigobj -> D:\bigobj) as drive-relative file paths.
+# CudaConfiguration.cmake already handles these via -Xcompiler=-bigobj etc.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(/Gy)  # Function-level linking
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /OPT:REF /OPT:ICF")
-    add_compile_options(/bigobj /EHsc /Zc:preprocessor)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Gy>)  # Function-level linking
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -OPT:REF -OPT:ICF")
+    add_compile_options(
+        $<$<COMPILE_LANGUAGE:C,CXX>:-bigobj>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-EHsc>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Zc:preprocessor>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-MP>
+    )
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
@@ -200,9 +228,15 @@ endif()
 
 # --- GCC/Clang Specific Flags ---
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
-    message(STATUS "Adding GCC memory optimization flags: --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072 ${INFORMATIVE_FLAGS} -std=c++17 -fPIC")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072 -fPIC")
+    # GCC garbage collection tuning - use defaults which work well for template-heavy code
+    # ggc-min-expand=100: GC when heap grows 100% (default, less overhead than aggressive GC)
+    # ggc-min-heapsize=131072: 128MB minimum before GC params apply (default)
+    # NOTE: Previous attempt with ggc-min-expand=20, finline-limit=50 INCREASED memory usage
+    #       because preventing inlining keeps more function bodies in memory
+    set(GCC_MEMORY_FLAGS "--param ggc-min-expand=100 --param ggc-min-heapsize=131072")
+    message(STATUS "Adding GCC flags: ${GCC_MEMORY_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_MEMORY_FLAGS} ${INFORMATIVE_FLAGS} -std=c++17 -fPIC")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_MEMORY_FLAGS} -fPIC")
     if(UNIX)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/,--no-undefined,--verbose")
     else()
@@ -263,9 +297,8 @@ if(SD_SANITIZE)
         # - global-dynamic: Uses __tls_get_addr() for dynamic TLS allocation
         # - Works with libraries loaded via dlopen() (JavaCPP's method)
         # - Avoids static TLS block exhaustion
-        # ALSO disable thread-safe statics to prevent __tls_guard from using initial-exec TLS
-        # Thread-safe static initialization uses internal TLS that doesn't respect -ftls-model flag
-        set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -ftls-model=global-dynamic -fno-threadsafe-statics")
+        # NOTE: Do NOT add -fno-threadsafe-statics here — it breaks MLIR TypeID ODR across TUs
+        set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -ftls-model=global-dynamic")
 
         # Additional memory optimizations for template-heavy instantiation files
         set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -fmerge-all-constants")
@@ -489,6 +522,36 @@ if(SD_SANITIZE)
     endif()
 endif()
 
+# --- MEMORY-BASED PARALLEL JOB LIMITING FOR ALL BUILDS ---
+# Template instantiation files consume 2-4GB per compiler process even WITHOUT sanitizers
+# This dynamically limits parallelism based on available system memory
+if(NOT SD_SANITIZE AND NOT DEFINED CMAKE_JOB_POOL_COMPILE)
+    cmake_host_system_information(RESULT TOTAL_MEMORY_MB QUERY TOTAL_PHYSICAL_MEMORY)
+    # Conservative estimate: each template instantiation compilation uses ~3GB peak
+    # Reserve 4GB for system + linker, rest divided by 3GB per compiler
+    math(EXPR AVAILABLE_FOR_COMPILE "(${TOTAL_MEMORY_MB} - 4000) / 3000")
+    if(AVAILABLE_FOR_COMPILE LESS 2)
+        set(AVAILABLE_FOR_COMPILE 2)
+    endif()
+    # Cap at 12 to avoid diminishing returns and I/O bottlenecks
+    if(AVAILABLE_FOR_COMPILE GREATER 12)
+        set(AVAILABLE_FOR_COMPILE 12)
+    endif()
+
+    # Only apply pool if we're limiting below what user might expect
+    cmake_host_system_information(RESULT NPROC QUERY NUMBER_OF_LOGICAL_CORES)
+    if(AVAILABLE_FOR_COMPILE LESS NPROC)
+        set_property(GLOBAL PROPERTY JOB_POOLS
+            heavy_compile=${AVAILABLE_FOR_COMPILE}
+            light_compile=${NPROC}
+        )
+        # Default pool for template-heavy files
+        set(CMAKE_JOB_POOL_COMPILE heavy_compile CACHE STRING "Job pool for compilation" FORCE)
+        message(STATUS "💾 Memory-based parallel limiting: ${AVAILABLE_FOR_COMPILE} jobs (${TOTAL_MEMORY_MB}MB RAM, ${NPROC} cores)")
+        message(STATUS "   Template instantiation files limited to prevent OOM (estimated ~3GB each)")
+    endif()
+endif()
+
 # --- Strict Linker Flags to Catch Undefined Symbols Early ---
 # This helps catch missing template specializations at link time instead of runtime
 # EXCEPTION: Do NOT use --no-undefined with sanitizers, as they require runtime symbol resolution
@@ -518,19 +581,65 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND SD_GCC_FUNCTRACE AND NOT SD_SANITI
     # Aggressive size reduction for functrace builds
     add_compile_options(-ffunction-sections -fdata-sections)
     add_compile_options(-fvisibility=hidden -fvisibility-inlines-hidden)
+    # -fno-common: Place uninitialized globals in .bss instead of COMMON
+    # This helps with linker section ordering and reduces relocation distance
+    add_compile_options(-fno-common)
+
+    # FOR >2GB BINARIES: Disable async unwind tables to reduce .eh_frame size
+    # -fno-asynchronous-unwind-tables: Only generates synchronous unwind info (for C++ exceptions)
+    #   Removes async signal handler unwind info which dramatically reduces .eh_frame
+    #   C++ exceptions and debugger backtraces still work normally
+    # -fno-omit-frame-pointer: Keep frame pointers for allocation stack trace tracking
+    #   This is the fallback mechanism when .eh_frame is reduced
+    #
+    # Without this, individual CUDA object files have 175KB+ of .eh_frame that causes
+    # PC32 relocation overflow when placed in a 3GB binary.
+    if(SD_CUDA)
+        add_compile_options(-fno-asynchronous-unwind-tables)
+        add_compile_options(-fno-omit-frame-pointer)
+        message(STATUS "   Using -fno-asynchronous-unwind-tables to reduce .eh_frame for >2GB binary")
+    endif()
+
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections,--as-needed")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections,--as-needed")
 
+    # Exception table relocation overflow mitigation for >2GB binaries
+    # Problem: .gcc_except_table sections use PC32 relocations to typeinfo symbols
+    #          When binary exceeds 2GB, these relocations overflow (R_X86_64_PC32 limit)
+    # Solution: Disable relaxable relocations and reduce exception table overhead
+    #
+    # -Wa,-mrelax-relocations=no: Prevents assembler from generating relaxable relocations
+    #   that the linker might convert to PC32 when they need to stay as GOT-indirect
+    #
+    # NOTE: For CUDA builds, this flag is handled separately in CudaConfiguration.cmake
+    # via -Xcompiler with escaped comma. We CANNOT use add_compile_options here because
+    # nvcc inherits host compiler flags and mangles comma-containing flags, splitting
+    # "-Wa,-mrelax-relocations=no" into "-Wa" and "-mrelax-relocations=no" which GCC
+    # doesn't recognize.
+    if(NOT SD_CUDA)
+        # Non-CUDA builds: safe to use add_compile_options with generator expressions
+        add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wa,-mrelax-relocations=no>)
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wa,-mrelax-relocations=no>)
+        message(STATUS "   -Wa,-mrelax-relocations=no: Prevent PC32 relocation generation (C/C++ only)")
+    else()
+        # CUDA builds: the flag is added via -Xcompiler in CudaConfiguration.cmake
+        message(STATUS "   -Wa,-mrelax-relocations=no: Handled via -Xcompiler in CudaConfiguration.cmake")
+    endif()
+
     # Memory optimizations for linking large binaries
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-keep-memory")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--reduce-memory-overheads")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--hash-size=31")
+    # NOTE: SD_GCC_FUNCTRACE now uses Gold linker (configured in CudaConfiguration.cmake)
+    # Gold supports --no-keep-memory, so we can apply it here.
+    # These flags are applied via LINKER_EXTRA_FLAGS in CudaConfiguration.cmake for CUDA builds.
+    if(NOT SD_CUDA)
+        # For non-CUDA functrace builds, apply Gold-compatible flags here
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-keep-memory")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=safe")
+    endif()
 
     # NOTE: We use compiler-rt for runtime builtins but NOT libunwind for exception handling
     # (Session #1045 fix: libunwind conflicts with JVM's libgcc_s, causing _Unwind_SetGR crashes)
     # The system's libgcc_s handles exception unwinding, which is compatible with JVM
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        # CRITICAL FIX: Do NOT use --unwindlib=libunwind for JNI libraries!
         #
         # Problem (discovered in session #1045):
         # - When --unwindlib=libunwind is used, Clang generates code assuming LLVM's libunwind ABI
@@ -560,7 +669,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND SD_GCC_FUNCTRACE AND NOT SD_SANITI
         message(STATUS "✅ Using GCC with functrace (no special profiling symbols needed)")
     endif()
 
-    # Apply medium code model to match compiler (CRITICAL: large model incompatible with system CRT)
+    # Apply medium code model to match compiler (large model incompatible with system CRT)
     if(SD_X86_BUILD AND NOT WIN32)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mcmodel=medium")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mcmodel=medium")
@@ -603,28 +712,29 @@ if(SD_GCC_FUNCTRACE)
 
     # Add comprehensive debug flags
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        # Debug flags with function instrumentation
+        # Debug flags WITHOUT function instrumentation (reduces binary size significantly)
+        # Keep frame pointers for stack traces
         # MEMORY OPTIMIZATION: Use -g1 (minimal debug info) instead of -ggdb3
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g1 -finstrument-functions -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g1 -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -ftls-model=global-dynamic")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g1 -fno-omit-frame-pointer -ftls-model=global-dynamic")
-        message(STATUS "Applied memory-optimized debug flags for GCC (instrumentation enabled):")
+        message(STATUS "Applied memory-optimized debug flags for GCC:")
         message(STATUS "  - g1 (minimal debug info) for 40-60% memory reduction vs ggdb3")
-        message(STATUS "  - disabled thread-safe static guards")
-        message(STATUS "  - enabled function instrumentation")
+        message(STATUS "  - frame pointers enabled for stack traces")
+        message(STATUS "  - thread-safe static guards preserved (required for MLIR TypeID)")
 
         # Override any conflicting optimization
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        # Debug flags with function instrumentation
+        # Debug flags WITHOUT function instrumentation (reduces binary size significantly)
+        # Keep frame pointers for stack traces
         # MEMORY OPTIMIZATION: Use -gline-tables-only instead of -ggdb3 (Clang-specific flag)
-        # AGGRESSIVE MEMORY: Disable inline tracking and macro debug info
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -finstrument-functions -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -fno-threadsafe-statics -ftls-model=global-dynamic -fno-standalone-debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gline-tables-only -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -ftls-model=global-dynamic -fno-standalone-debug")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gline-tables-only -fno-omit-frame-pointer -ftls-model=global-dynamic -fno-standalone-debug")
-        message(STATUS "Applied memory-optimized debug flags for Clang (instrumentation enabled):")
+        message(STATUS "Applied memory-optimized debug flags for Clang:")
         message(STATUS "  - gline-tables-only (Clang-specific) for 40-60% memory reduction vs ggdb3")
-        message(STATUS "  - disabled thread-safe static guards")
-        message(STATUS "  - enabled function instrumentation")
+        message(STATUS "  - frame pointers enabled for stack traces")
+        message(STATUS "  - thread-safe static guards preserved (required for MLIR TypeID)")
 
         # Override any conflicting optimization
         string(REGEX REPLACE "-O[0-9s]" "-O0" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -641,8 +751,8 @@ if(SD_GCC_FUNCTRACE)
     # Add the compiler definition
     add_compile_definitions(SD_GCC_FUNCTRACE=ON)
 
-    # Enable function instrumentation
-    message(STATUS "ℹ️  Function instrumentation enabled. This will significantly increase binary size.")
+    # Frame pointers enabled for stack traces (function instrumentation disabled to reduce binary size)
+    message(STATUS "ℹ️  SD_GCC_FUNCTRACE enabled with frame pointers for debugging.")
 endif()
 
 # --- Flag Deduplication ---

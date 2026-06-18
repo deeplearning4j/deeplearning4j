@@ -3,11 +3,8 @@
 # Functions for CUDA-specific build configuration and optimization
 ################################################################################
 
-# Enhanced CUDA toolkit detection with proper include path setup
+# CUDA toolkit detection with proper include path setup
 function(setup_cuda_toolkit_paths)
-    message(STATUS "🔍 Setting up CUDA toolkit paths...")
-
-    # Find CUDA toolkit first
     find_package(CUDAToolkit REQUIRED)
 
     if(NOT CUDAToolkit_FOUND)
@@ -17,7 +14,6 @@ function(setup_cuda_toolkit_paths)
     # Get CUDA include directories
     get_target_property(CUDA_INCLUDE_DIRS CUDA::toolkit INTERFACE_INCLUDE_DIRECTORIES)
 
-    # If the above doesn't work, try alternative methods
     if(NOT CUDA_INCLUDE_DIRS)
         set(CUDA_INCLUDE_DIRS "${CUDAToolkit_INCLUDE_DIRS}")
     endif()
@@ -54,15 +50,13 @@ function(setup_cuda_toolkit_paths)
         foreach(search_path ${CUDA_SEARCH_PATHS})
             if(EXISTS "${search_path}/include/cuda.h")
                 set(CUDA_INCLUDE_DIRS "${search_path}/include")
-                message(STATUS "✅ Found CUDA include directory: ${CUDA_INCLUDE_DIRS}")
                 break()
             endif()
         endforeach()
     endif()
 
-    # Verify we found CUDA headers
     if(NOT CUDA_INCLUDE_DIRS)
-        message(FATAL_ERROR "❌ CUDA include directories not found. Please ensure CUDA toolkit is properly installed.")
+        message(FATAL_ERROR "CUDA include directories not found. Please ensure CUDA toolkit is properly installed.")
     endif()
 
     # Verify cuda.h exists
@@ -70,55 +64,39 @@ function(setup_cuda_toolkit_paths)
     foreach(include_dir ${CUDA_INCLUDE_DIRS})
         if(EXISTS "${include_dir}/cuda.h")
             set(CUDA_H_FOUND TRUE)
-            message(STATUS "✅ Found cuda.h in: ${include_dir}")
             break()
         endif()
     endforeach()
 
     if(NOT CUDA_H_FOUND)
-        message(FATAL_ERROR "❌ cuda.h not found in CUDA include directories: ${CUDA_INCLUDE_DIRS}")
+        message(FATAL_ERROR "cuda.h not found in CUDA include directories: ${CUDA_INCLUDE_DIRS}")
     endif()
 
-    # Set variables for parent scope
     set(CUDA_INCLUDE_DIRS "${CUDA_INCLUDE_DIRS}" PARENT_SCOPE)
     set(CUDA_TOOLKIT_ROOT_DIR "${CUDAToolkit_ROOT}" PARENT_SCOPE)
-
-    message(STATUS "✅ CUDA toolkit paths configured:")
-    message(STATUS "   Root: ${CUDAToolkit_ROOT}")
-    message(STATUS "   Include: ${CUDA_INCLUDE_DIRS}")
-    message(STATUS "   Version: ${CUDAToolkit_VERSION}")
 endfunction()
 
-# Modern cuDNN detection using updated FindCUDNN.cmake practices
+# cuDNN detection
 function(setup_modern_cudnn)
     set(HAVE_CUDNN FALSE PARENT_SCOPE)
 
     if(NOT (HELPERS_cudnn AND SD_CUDA))
-        message(STATUS "🔍 cuDNN: Skipped (HELPERS_cudnn=${HELPERS_cudnn}, SD_CUDA=${SD_CUDA})")
         return()
     endif()
 
-    message(STATUS "🔍 Searching for cuDNN...")
-
-    # Find the CUDA toolkit first to get the proper paths
     find_package(CUDAToolkit REQUIRED)
 
-    # Enhanced search paths for CI environments and common installations
+    # Search paths for cuDNN
     set(CUDNN_SEARCH_PATHS
-            # Environment variables
             $ENV{CUDNN_ROOT_DIR}
             $ENV{CUDNN_ROOT}
             $ENV{CUDA_PATH}
             $ENV{CUDA_HOME}
-
-            # CMake variables
             ${CUDNN_ROOT_DIR}
             ${CUDAToolkit_ROOT}
     )
 
-    # Add platform-specific paths
     if(WIN32)
-        # Windows-specific paths
         list(APPEND CUDNN_SEARCH_PATHS
                 "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.6"
                 "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.5"
@@ -128,122 +106,51 @@ function(setup_modern_cudnn)
                 "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.1"
                 "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v12.0"
                 "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v11.8"
-                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v11.7"
-                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v11.6"
-                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v11.5"
-                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v11.4"
-                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
-                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v11.2"
-                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v11.1"
-                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA/v11.0"
-                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA"
-                "C:/tools/cuda" # Common CI path on Windows
+                "C:/tools/cuda"
         )
     else()
-        # Linux/Unix-specific paths
         list(APPEND CUDNN_SEARCH_PATHS
-                # CI-specific paths (GitHub Actions, etc.)
                 /usr/local/cuda-12.6
                 /usr/local/cuda-12.5
                 /usr/local/cuda-12.4
-                /usr/local/cuda-12.3
-                /usr/local/cuda-12.2
-                /usr/local/cuda-12.1
-                /usr/local/cuda-12.0
-                /usr/local/cuda-11.8
-                /usr/local/cuda-11.7
-                /usr/local/cuda-11.6
-                /usr/local/cuda-11.5
-                /usr/local/cuda-11.4
-                /usr/local/cuda-11.3
-                /usr/local/cuda-11.2
-                /usr/local/cuda-11.1
-                /usr/local/cuda-11.0
                 /usr/local/cuda
-
-                # Package manager paths
                 /usr/include/cudnn
                 /usr/local/include/cudnn
                 /opt/cuda
                 /opt/cudnn
-
-                # System paths
                 /usr
                 /usr/local
         )
     endif()
 
-    message(STATUS "🔍 Searching for cuDNN headers...")
-
-    # Search for cuDNN headers with comprehensive path coverage
     find_path(CUDNN_INCLUDE_DIR
             NAMES cudnn.h
             HINTS ${CUDNN_SEARCH_PATHS}
             PATHS ${CUDNN_SEARCH_PATHS}
-            PATH_SUFFIXES
-            include
-            targets/x86_64-linux/include
-            targets/aarch64-linux/include
-            include/cudnn
-            cudnn/include
-            x86_64-linux/include
-            aarch64-linux/include
+            PATH_SUFFIXES include targets/x86_64-linux/include targets/aarch64-linux/include
             NO_DEFAULT_PATH
     )
 
-    # If not found, try system paths
     if(NOT CUDNN_INCLUDE_DIR)
-        find_path(CUDNN_INCLUDE_DIR
-                NAMES cudnn.h
-                PATHS /usr/include /usr/local/include /opt/include
-                PATH_SUFFIXES cudnn
-        )
+        find_path(CUDNN_INCLUDE_DIR NAMES cudnn.h PATHS /usr/include /usr/local/include PATH_SUFFIXES cudnn)
     endif()
 
-    message(STATUS "🔍 Searching for cuDNN libraries...")
-
-    # Search for cuDNN libraries
     find_library(CUDNN_LIBRARY
             NAMES cudnn libcudnn cudnn8 libcudnn8
             HINTS ${CUDNN_SEARCH_PATHS}
             PATHS ${CUDNN_SEARCH_PATHS}
-            PATH_SUFFIXES
-            lib64
-            lib
-            lib/x64
-            targets/x86_64-linux/lib
-            targets/aarch64-linux/lib
-            lib64/cudnn
-            lib/cudnn
-            cudnn/lib64
-            cudnn/lib
-            x86_64-linux/lib
-            aarch64-linux/lib
+            PATH_SUFFIXES lib64 lib lib/x64 targets/x86_64-linux/lib
             NO_DEFAULT_PATH
     )
 
-    # If not found, try system paths
     if(NOT CUDNN_LIBRARY)
-        find_library(CUDNN_LIBRARY
-                NAMES cudnn libcudnn cudnn8 libcudnn8
-                PATHS /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib /opt/lib64 /opt/lib
-                PATH_SUFFIXES cudnn
-        )
+        find_library(CUDNN_LIBRARY NAMES cudnn libcudnn PATHS /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
     endif()
 
-    message(STATUS "🔍 cuDNN search results:")
-    message(STATUS "   CUDNN_INCLUDE_DIR: ${CUDNN_INCLUDE_DIR}")
-    message(STATUS "   CUDNN_LIBRARY: ${CUDNN_LIBRARY}")
-
-    # Check if we found both header and library
     if(CUDNN_INCLUDE_DIR AND CUDNN_LIBRARY)
-        message(STATUS "✅ cuDNN found!")
-
-        # Extract version information from cudnn.h
+        # Extract version
         if(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn.h")
             file(READ "${CUDNN_INCLUDE_DIR}/cudnn.h" CUDNN_HEADER_CONTENTS)
-
-            # Try different version detection methods
             string(REGEX MATCH "define CUDNN_MAJOR[ \t]+([0-9]+)" CUDNN_VERSION_MAJOR_MATCH "${CUDNN_HEADER_CONTENTS}")
             string(REGEX MATCH "define CUDNN_MINOR[ \t]+([0-9]+)" CUDNN_VERSION_MINOR_MATCH "${CUDNN_HEADER_CONTENTS}")
             string(REGEX MATCH "define CUDNN_PATCHLEVEL[ \t]+([0-9]+)" CUDNN_VERSION_PATCH_MATCH "${CUDNN_HEADER_CONTENTS}")
@@ -252,28 +159,14 @@ function(setup_modern_cudnn)
                 string(REGEX REPLACE "define CUDNN_MAJOR[ \t]+([0-9]+)" "\\1" CUDNN_VERSION_MAJOR "${CUDNN_VERSION_MAJOR_MATCH}")
                 string(REGEX REPLACE "define CUDNN_MINOR[ \t]+([0-9]+)" "\\1" CUDNN_VERSION_MINOR "${CUDNN_VERSION_MINOR_MATCH}")
                 string(REGEX REPLACE "define CUDNN_PATCHLEVEL[ \t]+([0-9]+)" "\\1" CUDNN_VERSION_PATCH "${CUDNN_VERSION_PATCH_MATCH}")
-
                 set(CUDNN_VERSION_STRING "${CUDNN_VERSION_MAJOR}.${CUDNN_VERSION_MINOR}.${CUDNN_VERSION_PATCH}")
             else()
-                # Try alternative version detection
-                string(REGEX MATCH "#define CUDNN_MAJOR ([0-9]+)" CUDNN_VERSION_MAJOR_MATCH2 "${CUDNN_HEADER_CONTENTS}")
-                if(CUDNN_VERSION_MAJOR_MATCH2)
-                    string(REGEX REPLACE "#define CUDNN_MAJOR ([0-9]+)" "\\1" CUDNN_VERSION_MAJOR "${CUDNN_VERSION_MAJOR_MATCH2}")
-                    string(REGEX MATCH "#define CUDNN_MINOR ([0-9]+)" CUDNN_VERSION_MINOR_MATCH2 "${CUDNN_HEADER_CONTENTS}")
-                    string(REGEX MATCH "#define CUDNN_PATCHLEVEL ([0-9]+)" CUDNN_VERSION_PATCH_MATCH2 "${CUDNN_HEADER_CONTENTS}")
-                    string(REGEX REPLACE "#define CUDNN_MINOR ([0-9]+)" "\\1" CUDNN_VERSION_MINOR "${CUDNN_VERSION_MINOR_MATCH2}")
-                    string(REGEX REPLACE "#define CUDNN_PATCHLEVEL ([0-9]+)" "\\1" CUDNN_VERSION_PATCH "${CUDNN_VERSION_PATCH_MATCH2}")
-                    set(CUDNN_VERSION_STRING "${CUDNN_VERSION_MAJOR}.${CUDNN_VERSION_MINOR}.${CUDNN_VERSION_PATCH}")
-                else()
-                    set(CUDNN_VERSION_STRING "Unknown")
-                endif()
+                set(CUDNN_VERSION_STRING "Unknown")
             endif()
         else()
-            message(WARNING "⚠️  cuDNN header found but cannot read version")
             set(CUDNN_VERSION_STRING "Unknown")
         endif()
 
-        # Create imported target if it doesn't exist
         if(NOT TARGET CUDNN::cudnn)
             add_library(CUDNN::cudnn UNKNOWN IMPORTED)
             set_target_properties(CUDNN::cudnn PROPERTIES
@@ -282,28 +175,22 @@ function(setup_modern_cudnn)
             )
         endif()
 
-        message(STATUS "✅ cuDNN configuration:")
-        message(STATUS "   Include: ${CUDNN_INCLUDE_DIR}")
-        message(STATUS "   Library: ${CUDNN_LIBRARY}")
-        message(STATUS "   Version: ${CUDNN_VERSION_STRING}")
+        message(STATUS "cuDNN: ${CUDNN_VERSION_STRING} (${CUDNN_LIBRARY})")
 
-        # Set all the variables that might be needed
         set(HAVE_CUDNN TRUE PARENT_SCOPE)
         set(CUDNN_FOUND TRUE PARENT_SCOPE)
         set(CUDNN_INCLUDE_DIR "${CUDNN_INCLUDE_DIR}" PARENT_SCOPE)
         set(CUDNN_LIBRARIES "${CUDNN_LIBRARY}" PARENT_SCOPE)
         set(CUDNN_LIBRARY "${CUDNN_LIBRARY}" PARENT_SCOPE)
         set(CUDNN_VERSION_STRING "${CUDNN_VERSION_STRING}" PARENT_SCOPE)
-
         return()
     endif()
 
-    # Try package manager detection as fallback
+    # Try pkg-config fallback
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
         pkg_check_modules(PC_CUDNN QUIET cudnn)
         if(PC_CUDNN_FOUND)
-            message(STATUS "✅ Found cuDNN via pkg-config")
             set(HAVE_CUDNN TRUE PARENT_SCOPE)
             set(CUDNN_INCLUDE_DIR "${PC_CUDNN_INCLUDE_DIRS}" PARENT_SCOPE)
             set(CUDNN_LIBRARIES "${PC_CUDNN_LIBRARIES}" PARENT_SCOPE)
@@ -312,96 +199,129 @@ function(setup_modern_cudnn)
         endif()
     endif()
 
-    # Final attempt: check if cuDNN is embedded in CUDA installation
+    # Check if cuDNN is embedded in CUDA
     if(CUDAToolkit_FOUND AND CUDAToolkit_INCLUDE_DIRS)
         foreach(cuda_include_dir ${CUDAToolkit_INCLUDE_DIRS})
             if(EXISTS "${cuda_include_dir}/cudnn.h")
-                message(STATUS "✅ Found cuDNN embedded in CUDA installation")
                 set(HAVE_CUDNN TRUE PARENT_SCOPE)
                 set(CUDNN_INCLUDE_DIR "${cuda_include_dir}" PARENT_SCOPE)
-                set(CUDNN_LIBRARIES "" PARENT_SCOPE)  # May be linked with CUDA
+                set(CUDNN_LIBRARIES "" PARENT_SCOPE)
                 set(CUDNN_VERSION_STRING "Embedded" PARENT_SCOPE)
                 return()
             endif()
         endforeach()
     endif()
 
-    message(STATUS "❌ cuDNN not found. Searched extensively in:")
-    message(STATUS "   Environment variables: CUDNN_ROOT_DIR, CUDNN_ROOT, CUDA_PATH, CUDA_HOME")
-    message(STATUS "   CUDA installation: ${CUDAToolkit_ROOT}")
-    if(WIN32)
-        message(STATUS "   System paths: $ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit")
-    else()
-        message(STATUS "   System paths: /usr, /usr/local, /opt")
-    endif()
-    message(STATUS "   Package manager: pkg-config")
-    message(STATUS "")
-    message(STATUS "💡 To fix this issue:")
-    message(STATUS "   1. Install cuDNN development libraries")
-    message(STATUS "   2. Set CUDNN_ROOT_DIR to your cuDNN installation")
-    message(STATUS "   3. Ensure cuDNN headers are in CUDA_PATH/include")
-    message(STATUS "   4. Or disable cuDNN with -DHELPERS_cudnn=OFF")
-
-    # Debug information
-    message(STATUS "")
-    message(STATUS "🔍 Debug information:")
-    message(STATUS "   CUDAToolkit_ROOT: ${CUDAToolkit_ROOT}")
-    message(STATUS "   CUDAToolkit_INCLUDE_DIRS: ${CUDAToolkit_INCLUDE_DIRS}")
-    message(STATUS "   ENV CUDNN_ROOT_DIR: $ENV{CUDNN_ROOT_DIR}")
-    message(STATUS "   ENV CUDA_PATH: $ENV{CUDA_PATH}")
-    message(STATUS "   ENV CUDA_HOME: $ENV{CUDA_HOME}")
+    message(STATUS "cuDNN: Not found (disable with -DHELPERS_cudnn=OFF)")
 endfunction()
 
 function(configure_cuda_linking main_target_name)
-    # Setup CUDA toolkit paths first
     setup_cuda_toolkit_paths()
-
-    # Find the CUDAToolkit to define the CUDA::toolkit target
     find_package(CUDAToolkit REQUIRED)
-
-    # Setup modern cuDNN detection
     setup_modern_cudnn()
 
-    # This ensures cuda.h and other CUDA headers are found
     if(CUDA_INCLUDE_DIRS)
         target_include_directories(${main_target_name} PUBLIC ${CUDA_INCLUDE_DIRS})
-        message(STATUS "✅ Added CUDA include directories to ${main_target_name}: ${CUDA_INCLUDE_DIRS}")
     endif()
 
-    # Apply GNU-specific CUDA compiler flags for duplicate instantiation handling
-    # ONLY for non-Windows builds
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT WIN32)
-        message(STATUS "🔧 Applying GNU-specific CUDA flags for duplicate instantiation handling")
-        target_compile_options(${main_target_name} PRIVATE
-                $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fno-implicit-templates>
+    # RPATH Configuration
+    if(NOT WIN32 AND NOT APPLE)
+        set_target_properties(${main_target_name} PROPERTIES
+            BUILD_WITH_INSTALL_RPATH FALSE
+            BUILD_RPATH_USE_ORIGIN TRUE
+            INSTALL_RPATH_USE_LINK_PATH TRUE
+        )
+    elseif(APPLE)
+        set_target_properties(${main_target_name} PROPERTIES
+            BUILD_WITH_INSTALL_RPATH FALSE
+            INSTALL_RPATH_USE_LINK_PATH TRUE
+            MACOSX_RPATH TRUE
         )
     endif()
 
-    # Modern CMake uses imported targets which handle all necessary dependencies.
-    # Linking against CUDA::toolkit automatically adds include directories,
-    # runtime libraries, and all other required flags.
-    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit)
+    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart CUDA::cublas CUDA::cusolver)
 
-    # If cuDNN was found, link against its imported target
+    # NVRTC and CUDA driver API are required for NVRTC JIT and PTX GPU backends.
+    # Use CMake's imported targets for cross-platform compatibility (handles .so/.lib/.dylib).
+    target_link_libraries(${main_target_name} PUBLIC CUDA::nvrtc CUDA::cuda_driver)
+
+    # SD_GCC_FUNCTRACE: Link libdw for stack traces
+    if(SD_GCC_FUNCTRACE AND NOT WIN32)
+        find_library(LIBDW_LIBRARY NAMES dw)
+        find_library(LIBELF_LIBRARY NAMES elf)
+        find_path(LIBDW_INCLUDE_DIR NAMES elfutils/libdw.h)
+
+        if(LIBDW_LIBRARY AND LIBELF_LIBRARY)
+            target_link_libraries(${main_target_name} PUBLIC ${LIBDW_LIBRARY} ${LIBELF_LIBRARY})
+            if(LIBDW_INCLUDE_DIR)
+                target_include_directories(${main_target_name} PUBLIC ${LIBDW_INCLUDE_DIR})
+            endif()
+            target_compile_definitions(${main_target_name} PUBLIC BACKWARD_HAS_DW=1)
+        else()
+            message(WARNING "SD_GCC_FUNCTRACE enabled but libdw/libelf not found. Install elfutils-devel.")
+        endif()
+    endif()
+
+    # Link cuDNN if found
     if(HAVE_CUDNN AND TARGET CUDNN::cudnn)
-        message(STATUS "✅ Linking with modern CUDNN::cudnn target")
         target_link_libraries(${main_target_name} PUBLIC CUDNN::cudnn)
         target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
     elseif(HAVE_CUDNN AND CUDNN_LIBRARIES)
-        message(STATUS "✅ Linking with cuDNN libraries: ${CUDNN_LIBRARIES}")
         target_link_libraries(${main_target_name} PUBLIC ${CUDNN_LIBRARIES})
         target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
         target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
     elseif(HAVE_CUDNN AND CUDNN_INCLUDE_DIR)
-        message(STATUS "✅ Linking with cuDNN include-only (embedded in CUDA)")
         target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
         target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
     else()
-        message(STATUS "ℹ️  Building without cuDNN support")
         target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=0)
     endif()
 
     target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
+
+    # Link OpenBLAS for CUDA builds (needed by BlasHelper.cpp for openblas_set_num_threads)
+    if(OPENBLAS_LIBRARIES)
+        target_link_libraries(${main_target_name} PUBLIC ${OPENBLAS_LIBRARIES})
+        message(STATUS "✅ Linking CUDA build with OpenBLAS: ${OPENBLAS_LIBRARIES}")
+    endif()
+
+    # Triton GPU Compiler linking (for CUDA builds)
+    if(HAVE_TRITON AND TARGET triton_interface)
+        target_link_libraries(${main_target_name} PUBLIC triton_interface)
+        # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
+        message(STATUS "🔗 Linking Triton GPU compiler backend to ${main_target_name}")
+    elseif(HAVE_TRITON)
+        message(STATUS "⚠️ Triton NOT linked: HAVE_TRITON=${HAVE_TRITON} but triton_interface target missing")
+    endif()
+
+    # JVM library
+    if(JVM_LIBRARY)
+        target_link_libraries(${main_target_name} PUBLIC ${JVM_LIBRARY})
+    endif()
+
+    # OpenMP
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
+    else()
+        target_link_libraries(${main_target_name} PUBLIC "-fopenmp")
+    endif()
+
+    # SDZ SameDiff archives are ZIP/DEFLATE by default, so link zlib when available.
+    find_package(ZLIB QUIET)
+    if(ZLIB_FOUND)
+        set(_sdx_object_target "${main_target_name}_object")
+        if(TARGET ${_sdx_object_target})
+            target_compile_definitions(${_sdx_object_target} PUBLIC HAVE_ZLIB=1)
+            target_link_libraries(${_sdx_object_target} PUBLIC ZLIB::ZLIB)
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC ZLIB::ZLIB)
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_ZLIB=1)
+        message(STATUS "🔗 Linking zlib for SDZ DEFLATE support")
+    else()
+        message(WARNING "⚠️ zlib not found - SDZ reader supports STORED ZIP entries only")
+    endif()
+
     install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
@@ -410,9 +330,8 @@ function(setup_cuda_architectures_early)
         return()
     endif()
 
-    # Fix missing _CMAKE_CUDA_WHOLE_FLAG (note the underscore prefix)
+    # Fix missing _CMAKE_CUDA_WHOLE_FLAG
     if(NOT DEFINED _CMAKE_CUDA_WHOLE_FLAG)
-        message(STATUS "Setting _CMAKE_CUDA_WHOLE_FLAG (was missing)")
         if(WIN32)
             set(_CMAKE_CUDA_WHOLE_FLAG "/WHOLEARCHIVE:" CACHE INTERNAL "CUDA whole archive flag")
         else()
@@ -428,16 +347,17 @@ function(setup_cuda_architectures_early)
         endif()
     endif()
 
-    message(STATUS "🔧 Early CUDA: Configuring architectures before project() call")
+    # ZLUDA mode: Force sm_50
+    if(SD_ZLUDA)
+        set(CUDA_ARCHITECTURES "50" PARENT_SCOPE)
+        set(CMAKE_CUDA_ARCHITECTURES "50" PARENT_SCOPE)
+        return()
+    endif()
 
     if(DEFINED COMPUTE)
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
-        if(COMPUTE_CMP STREQUAL "all")
-            set(CUDA_ARCHITECTURES "75;80;86;89" PARENT_SCOPE)
-            message(STATUS "   CUDA architectures (all): 75;80;86;89")
-        elseif(COMPUTE_CMP STREQUAL "auto")
-            set(CMAKE_CUDA_ARCHITECTURES "86" PARENT_SCOPE)
-            message(STATUS "   CUDA architectures (auto): 86")
+        if(COMPUTE_CMP STREQUAL "all" OR COMPUTE_CMP STREQUAL "auto")
+            set(CUDA_ARCHITECTURES "86" PARENT_SCOPE)
         else()
             string(REPLACE "," ";" ARCH_LIST "${COMPUTE}")
             set(PARSED_ARCHS "")
@@ -449,21 +369,17 @@ function(setup_cuda_architectures_early)
             endforeach()
             if(PARSED_ARCHS)
                 set(CUDA_ARCHITECTURES "${PARSED_ARCHS}" PARENT_SCOPE)
-                message(STATUS "   CUDA architectures (custom): ${PARSED_ARCHS}")
             else()
                 set(CUDA_ARCHITECTURES "86" PARENT_SCOPE)
-                message(STATUS "   CUDA architectures (default): 86")
             endif()
         endif()
     else()
         set(CUDA_ARCHITECTURES "86" PARENT_SCOPE)
-        message(STATUS "   CUDA architectures (no COMPUTE): 86")
     endif()
 endfunction()
 
 function(setup_cuda_language)
     if(NOT DEFINED _CMAKE_CUDA_WHOLE_FLAG)
-        message(STATUS "Setting _CMAKE_CUDA_WHOLE_FLAG (was missing)")
         if(WIN32)
             set(_CMAKE_CUDA_WHOLE_FLAG "/WHOLEARCHIVE:" CACHE INTERNAL "CUDA whole archive flag")
         else()
@@ -478,13 +394,10 @@ function(setup_cuda_language)
         find_program(NVCC_EXECUTABLE nvcc)
         if(NVCC_EXECUTABLE)
             set(CMAKE_CUDA_COMPILER ${NVCC_EXECUTABLE} PARENT_SCOPE)
-            message(STATUS "CUDA compiler found: ${CMAKE_CUDA_COMPILER}")
         else()
             message(FATAL_ERROR "CUDA compiler not found. Please ensure CUDA toolkit is installed and nvcc is in PATH.")
         endif()
     endif()
-
-    message(STATUS "CUDA language enabled successfully with compiler: ${CMAKE_CUDA_COMPILER}")
 endfunction()
 
 function(configure_windows_cuda_build)
@@ -492,45 +405,45 @@ function(configure_windows_cuda_build)
         return()
     endif()
 
-    message(STATUS "Configuring Windows CUDA build with verbose mode...")
-
-    # Enable verbose output for the build system
     set(CMAKE_VERBOSE_MAKEFILE ON PARENT_SCOPE)
     set(CMAKE_CUDA_VERBOSE_FLAG ON PARENT_SCOPE)
 
-    # Completely disable response files to prevent command line issues
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF PARENT_SCOPE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF PARENT_SCOPE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF PARENT_SCOPE)
     set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS OFF PARENT_SCOPE)
 
-    # Remove problematic dependency generation that causes NVCC failures
     set(CMAKE_CUDA_DEPFILE_FORMAT "" PARENT_SCOPE)
     set(CMAKE_CUDA_DEPENDS_USE_COMPILER OFF PARENT_SCOPE)
 
-    # Clean MSVC runtime library settings
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "" PARENT_SCOPE)
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "" PARENT_SCOPE)
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "" PARENT_SCOPE)
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "" PARENT_SCOPE)
 
-    # Force clean CXX flags to prevent contamination
     set(CMAKE_CXX_FLAGS "" PARENT_SCOPE)
-
-    # Enable verbose rule and target messages
     set_property(GLOBAL PROPERTY RULE_MESSAGES ON)
     set_property(GLOBAL PROPERTY TARGET_MESSAGES ON)
-
-    message(STATUS "Windows CUDA: Verbose mode enabled with clean flags")
 endfunction()
+
 function(configure_cuda_architecture_flags COMPUTE)
-    string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
-    if(COMPUTE_CMP STREQUAL "all")
-        set(CUDA_ARCH_FLAGS "-gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89" PARENT_SCOPE)
-        message(STATUS "Building for all CUDA architectures (gencode flags)")
-    elseif(COMPUTE_CMP STREQUAL "auto")
+    # ZLUDA: sm_50 baseline
+    if(SD_ZLUDA)
+        set(CUDA_ARCH_FLAGS "-arch=sm_50" PARENT_SCOPE)
+        set(CMAKE_CUDA_ARCHITECTURES "50" PARENT_SCOPE)
+        return()
+    endif()
+
+    # SD_GCC_FUNCTRACE: sm_86
+    if(SD_GCC_FUNCTRACE)
         set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86" PARENT_SCOPE)
-        message(STATUS "Auto-detecting CUDA architectures (gencode flags)")
+        set(CMAKE_CUDA_ARCHITECTURES "86" PARENT_SCOPE)
+        return()
+    endif()
+
+    string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
+    if(COMPUTE_CMP STREQUAL "all" OR COMPUTE_CMP STREQUAL "auto")
+        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86" PARENT_SCOPE)
     else()
         string(REPLACE "," ";" ARCH_LIST "${COMPUTE}")
         set(ARCH_FLAGS "")
@@ -543,10 +456,8 @@ function(configure_cuda_architecture_flags COMPUTE)
         string(STRIP "${ARCH_FLAGS}" ARCH_FLAGS)
         if(ARCH_FLAGS)
             set(CUDA_ARCH_FLAGS "${ARCH_FLAGS}" PARENT_SCOPE)
-            message(STATUS "Using custom CUDA architectures (gencode flags): ${ARCH_FLAGS}")
         else()
             set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86" PARENT_SCOPE)
-            message(STATUS "Using default CUDA architecture (gencode flags)")
         endif()
     endif()
 endfunction()
@@ -554,49 +465,46 @@ endfunction()
 function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     set(LOCAL_CUDA_FLAGS "")
 
+    # ZLUDA compatibility
+    set(ZLUDA_MODE OFF)
+    if(SD_ZLUDA)
+        set(ZLUDA_MODE ON)
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --relocatable-device-code=false")
+    endif()
+
     if(WIN32 AND MSVC)
-        message(STATUS "Configuring CUDA for Windows MSVC with verbose mode...")
         set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} PARENT_SCOPE)
         set(LOCAL_CUDA_FLAGS "-maxrregcount=128")
 
-        # Enable verbose mode for Windows CUDA compilation
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --verbose")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --ptxas-options=-v")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --resource-usage")
+        # Verbose flags only when requested
+        if(SD_VERBOSE_CUDA)
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --verbose --ptxas-options=-v --resource-usage")
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-showIncludes -Xcompiler=-verbose")
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=-VERBOSE -Xlinker=-TIME")
+        endif()
 
-        # Host compiler verbose flags
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/showIncludes")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/verbose")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/diagnostics:caret")
-
-        # Linker verbose flags
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=/VERBOSE")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=/TIME")
-
-        # Explicitly enable C++17 for the host compiler
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17")
+        # Use hyphen prefix (-std:c++17) not slash (/std:c++17) for all MSVC flags
+        # passed via -Xcompiler. sccache wraps nvcc and misparses slash-prefixed flags
+        # as drive-relative paths on Windows (e.g. /bigobj → D:\bigobj).
+        # MSVC cl.exe accepts both / and - as option prefixes.
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-std:c++17")
 
         if(WIN32 AND NOT CMAKE_CUDA_HOST_COMPILER)
             find_program(CL_IN_PATH cl.exe)
             if(CL_IN_PATH)
-                # Check if this cl.exe is 64-bit by examining its path
                 get_filename_component(CL_DIR ${CL_IN_PATH} DIRECTORY)
                 if(CL_DIR MATCHES "x64")
                     set(CMAKE_CUDA_HOST_COMPILER ${CL_IN_PATH})
-                    message(STATUS "Found x64 cl.exe in PATH: ${CMAKE_CUDA_HOST_COMPILER}")
                 else()
-                    # Try to find x64 version relative to this cl.exe
                     get_filename_component(CL_PARENT ${CL_DIR} DIRECTORY)
                     if(EXISTS "${CL_PARENT}/x64/cl.exe")
                         set(CMAKE_CUDA_HOST_COMPILER "${CL_PARENT}/x64/cl.exe")
-                        message(STATUS "Found x64 cl.exe relative to PATH cl.exe: ${CMAKE_CUDA_HOST_COMPILER}")
                     endif()
                 endif()
             endif()
         endif()
 
         if(WIN32 AND NOT CMAKE_CUDA_HOST_COMPILER)
-            # Only check the most common paths that exist in barebones installs
             set(COMMON_PATHS
                     "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC"
                     "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC"
@@ -607,15 +515,12 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 if(EXISTS ${BASE_PATH})
                     file(GLOB MSVC_VERSIONS "${BASE_PATH}/*")
                     if(MSVC_VERSIONS)
-                        # Get the lexicographically last version (should be newest)
                         list(SORT MSVC_VERSIONS)
                         list(REVERSE MSVC_VERSIONS)
                         list(GET MSVC_VERSIONS 0 LATEST_MSVC)
-
                         set(CANDIDATE_COMPILER "${LATEST_MSVC}/bin/Hostx64/x64/cl.exe")
                         if(EXISTS ${CANDIDATE_COMPILER})
                             set(CMAKE_CUDA_HOST_COMPILER ${CANDIDATE_COMPILER})
-                            message(STATUS "Found CUDA host compiler in standard path: ${CMAKE_CUDA_HOST_COMPILER}")
                             break()
                         endif()
                     endif()
@@ -623,63 +528,68 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
             endforeach()
         endif()
 
-        # Validation and warning
-        if(WIN32)
-            if(CMAKE_CUDA_HOST_COMPILER)
-                if(NOT EXISTS ${CMAKE_CUDA_HOST_COMPILER})
-                    message(WARNING "CUDA host compiler path does not exist: ${CMAKE_CUDA_HOST_COMPILER}")
-                    unset(CMAKE_CUDA_HOST_COMPILER)
-                else()
-                    message(STATUS "Final CUDA host compiler: ${CMAKE_CUDA_HOST_COMPILER}")
-                endif()
-            else()
-                message(WARNING "Could not auto-detect x64 CUDA host compiler.")
-                message(STATUS "Manual options:")
-                message(STATUS "  1. Use x64 Native Tools Command Prompt")
-                message(STATUS "  2. Set manually: -DCMAKE_CUDA_HOST_COMPILER=\"path/to/x64/cl.exe\"")
-                message(STATUS "  3. Ensure x64 cl.exe is in your PATH")
-            endif()
+        if(WIN32 AND CMAKE_CUDA_HOST_COMPILER AND NOT EXISTS ${CMAKE_CUDA_HOST_COMPILER})
+            message(WARNING "CUDA host compiler path does not exist: ${CMAKE_CUDA_HOST_COMPILER}")
+            unset(CMAKE_CUDA_HOST_COMPILER)
         endif()
 
-        # Windows/MSVC flags: bigobj, EHsc, *and* disable the new preprocessor
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}
-         -Xcompiler=/std:c++17
-        -Xcompiler=/bigobj
-        -Xcompiler=/EHsc
-        -Xcompiler=/Zc:preprocessor-")
-
-        # Force clean host compiler flags
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-std:c++17 -Xcompiler=-bigobj -Xcompiler=-EHsc -Xcompiler=-Zc:preprocessor")
         set(CMAKE_CXX_FLAGS "" PARENT_SCOPE)
-
-        message(STATUS "CUDA Windows verbose flags configured")
     else()
-        message(STATUS "Configuring CUDA for Unix/Linux with verbose mode...")
+        # Unix/Linux
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -maxrregcount=128")
 
-        # Enable verbose mode for Unix/Linux CUDA compilation
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --verbose")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --ptxas-options=-v")
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --resource-usage")
-
-        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-            # Host compiler verbose flags for GCC
-            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-v")
-            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-H")
-
-            # Linker verbose flags
-            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=-v")
-            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=--verbose")
-
-            if(SD_GCC_FUNCTRACE)
-                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
-            else()
-                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC -Xcompiler=-fpermissive")
-                # Add flags to handle duplicate instantiations for GNU compiler
-                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-implicit-templates")
-            endif()
+        # Verbose flags only when requested
+        if(SD_VERBOSE_CUDA)
+            set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --verbose --ptxas-options=-v --resource-usage")
         endif()
 
-        message(STATUS "CUDA Unix/Linux verbose flags configured")
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            if(SD_VERBOSE_CUDA)
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-v -Xcompiler=-H -Xlinker=-v -Xlinker=--verbose")
+            endif()
+
+            if(SD_GCC_FUNCTRACE)
+                # Large binary support flags
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC")
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-mcmodel=medium")
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-plt")
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-asynchronous-unwind-tables")
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-omit-frame-pointer")
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-gsplit-dwarf")
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=-Bsymbolic-functions")
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -lineinfo")
+
+                # Linker selection for large binaries
+                find_program(GOLD_LINKER ld.gold)
+                find_program(LLD_LINKER ld.lld)
+                find_program(MOLD_LINKER mold)
+
+                set(LINKER_FLAG "")
+                set(LINKER_EXTRA_FLAGS "")
+                if(GOLD_LINKER)
+                    set(LINKER_FLAG "-fuse-ld=gold")
+                    set(LINKER_EXTRA_FLAGS "-Wl,--icf=safe -Wl,--no-keep-memory -Wl,-z,notext -Wl,--no-relax -Wl,--sort-section=name")
+                elseif(LLD_LINKER)
+                    set(LINKER_FLAG "-fuse-ld=lld")
+                    set(LINKER_EXTRA_FLAGS "-Wl,--icf=all")
+                elseif(MOLD_LINKER)
+                    set(LINKER_FLAG "-fuse-ld=mold")
+                endif()
+
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -mcmodel=medium -fno-plt -gsplit-dwarf ${LINKER_FLAG}" CACHE STRING "C++ compiler flags" FORCE)
+                add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wa,-mrelax-relocations=no>)
+                add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wa,-mrelax-relocations=no>)
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic-functions ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}" CACHE STRING "Shared library linker flags" FORCE)
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}" CACHE STRING "Executable linker flags" FORCE)
+
+                if(LINKER_FLAG)
+                    set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=${LINKER_FLAG}")
+                endif()
+            else()
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC -Xcompiler=-fpermissive")
+            endif()
+        endif()
     endif()
 
     if("${SD_PTXAS}" STREQUAL "ON")
@@ -697,12 +607,60 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
 
     if(CMAKE_CUDA_COMPILER_VERSION)
         string(REGEX MATCH "^([0-9]+)" CUDA_VERSION_MAJOR "${CMAKE_CUDA_COMPILER_VERSION}")
+        string(REGEX MATCH "^([0-9]+)\\.([0-9]+)" CUDA_VERSION_MATCH "${CMAKE_CUDA_COMPILER_VERSION}")
+        string(REGEX REPLACE "^([0-9]+)\\.([0-9]+).*" "\\2" CUDA_VERSION_MINOR "${CMAKE_CUDA_COMPILER_VERSION}")
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR}")
+
+        # CUDA 11.2+ parallel compilation (not for ZLUDA or functrace)
+        if(NOT ZLUDA_MODE AND NOT SD_GCC_FUNCTRACE)
+            if(CUDA_VERSION_MAJOR GREATER_EQUAL 11 AND (CUDA_VERSION_MAJOR GREATER 11 OR CUDA_VERSION_MINOR GREATER_EQUAL 2))
+                if(DEFINED SD_CUDA_THREADS AND NOT SD_CUDA_THREADS STREQUAL "0")
+                    set(NVCC_THREADS ${SD_CUDA_THREADS})
+                else()
+                    cmake_host_system_information(RESULT NVCC_THREADS QUERY NUMBER_OF_LOGICAL_CORES)
+                    cmake_host_system_information(RESULT TOTAL_MEM_MB QUERY TOTAL_PHYSICAL_MEMORY)
+                    math(EXPR MEM_BASED_CAP "${TOTAL_MEM_MB} / 4000")
+                    if(MEM_BASED_CAP LESS 2)
+                        set(MEM_BASED_CAP 2)
+                    endif()
+                    if(NVCC_THREADS GREATER MEM_BASED_CAP)
+                        set(NVCC_THREADS ${MEM_BASED_CAP})
+                    endif()
+                    if(NVCC_THREADS GREATER 4)
+                        set(NVCC_THREADS 4)
+                    endif()
+                endif()
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --threads ${NVCC_THREADS}")
+
+                if(DEFINED SD_CUDA_SPLIT_COMPILE AND NOT SD_CUDA_SPLIT_COMPILE STREQUAL "0")
+                    set(SPLIT_THREADS ${SD_CUDA_SPLIT_COMPILE})
+                else()
+                    math(EXPR SPLIT_THREADS "${NVCC_THREADS} / 2")
+                    if(SPLIT_THREADS LESS 2)
+                        set(SPLIT_THREADS 2)
+                    endif()
+                endif()
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --split-compile ${SPLIT_THREADS}")
+
+                if(SD_CUDA_DEVICE_LTO)
+                    set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -dlto")
+                    if(CUDA_VERSION_MAJOR GREATER_EQUAL 12)
+                        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --split-compile-extended ${SPLIT_THREADS}")
+                    endif()
+                endif()
+            endif()
+        endif()
+
+        # CUDA 12.8+ time trace
+        if(NOT ZLUDA_MODE AND SD_CUDA_TIME_TRACE)
+            if(CUDA_VERSION_MAJOR GREATER_EQUAL 13 OR (CUDA_VERSION_MAJOR EQUAL 12 AND CUDA_VERSION_MINOR GREATER_EQUAL 8))
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} --fdevice-time-trace")
+            endif()
+        endif()
     endif()
 
-    # Clean up any problematic flags for Windows
+    # Clean up Windows flags
     if(WIN32)
-        # Remove any GCC-style flags that might have been added
         string(REGEX REPLACE "-MD[^a-zA-Z]" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
         string(REGEX REPLACE "-MT[^a-zA-Z]" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
         string(REGEX REPLACE "-MF[^a-zA-Z]" "" LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
@@ -718,57 +676,47 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     string(REGEX REPLACE "  +" " " LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}")
     string(STRIP "${LOCAL_CUDA_FLAGS}" LOCAL_CUDA_FLAGS)
 
-    set(CMAKE_CUDA_SEPARABLE_COMPILATION ON PARENT_SCOPE)
-    set(CMAKE_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}" PARENT_SCOPE)
-
-    message(STATUS "Final CMAKE_CUDA_FLAGS (with verbose): ${LOCAL_CUDA_FLAGS}")
+    set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF PARENT_SCOPE)
+    set(CMAKE_CUDA_FLAGS "${LOCAL_CUDA_FLAGS}" CACHE STRING "CUDA compiler flags" FORCE)
 endfunction()
 
-# Debug configuration function
+# Debug configuration (only called when needed)
 function(debug_cuda_configuration)
-    message(STATUS "=== CUDA Configuration Debug Info ===")
-    message(STATUS "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}")
-    message(STATUS "CMAKE_CUDA_COMPILER_VERSION: ${CMAKE_CUDA_COMPILER_VERSION}")
-    message(STATUS "CMAKE_CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
-    message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
-    message(STATUS "CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES: ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
-    message(STATUS "CMAKE_CUDA_COMPILE_OBJECT: ${CMAKE_CUDA_COMPILE_OBJECT}")
-    message(STATUS "CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
-    message(STATUS "CUDAToolkit_ROOT: ${CUDAToolkit_ROOT}")
-    message(STATUS "CUDAToolkit_INCLUDE_DIRS: ${CUDAToolkit_INCLUDE_DIRS}")
+    message(STATUS "=== CUDA Configuration ===")
+    message(STATUS "  Compiler: ${CMAKE_CUDA_COMPILER}")
+    message(STATUS "  Version: ${CMAKE_CUDA_COMPILER_VERSION}")
+    message(STATUS "  Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
+    message(STATUS "  Flags: ${CMAKE_CUDA_FLAGS}")
     if(HAVE_CUDNN)
-        message(STATUS "CUDNN_INCLUDE_DIR: ${CUDNN_INCLUDE_DIR}")
-        message(STATUS "CUDNN_LIBRARIES: ${CUDNN_LIBRARIES}")
-        message(STATUS "CUDNN_VERSION: ${CUDNN_VERSION_STRING}")
+        message(STATUS "  cuDNN: ${CUDNN_VERSION_STRING}")
     endif()
-    message(STATUS "=== End CUDA Debug Info ===")
+    if(SD_ZLUDA)
+        message(STATUS "  ZLUDA: ${SD_ZLUDA_TARGET}")
+    endif()
+    message(STATUS "==========================")
 endfunction()
 
-# Enhanced CUDA include directory setup for global configuration
 function(setup_cuda_include_directories)
     setup_cuda_toolkit_paths()
 
-    # Set global include directories that will be inherited by all targets
     if(CUDA_INCLUDE_DIRS)
         include_directories(${CUDA_INCLUDE_DIRS})
-        message(STATUS "✅ Added global CUDA include directories: ${CUDA_INCLUDE_DIRS}")
     endif()
 
-    # Also set the CMAKE variable for compatibility
     if(CUDAToolkit_INCLUDE_DIRS)
         set(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES ${CUDAToolkit_INCLUDE_DIRS} PARENT_SCOPE)
     endif()
 endfunction()
 
 function(setup_cuda_build)
-    message(STATUS "=== CUDA BUILD CONFIGURATION (VERBOSE MODE) ===")
-
-    # Enable verbose output for the build system
-    set(CMAKE_VERBOSE_MAKEFILE ON PARENT_SCOPE)
-    set(CMAKE_CUDA_VERBOSE_FLAG ON PARENT_SCOPE)
+    # TMPDIR: Use build directory instead of /tmp
+    set(CUDA_TMPDIR "${CMAKE_BINARY_DIR}/nvcc_tmp")
+    file(MAKE_DIRECTORY "${CUDA_TMPDIR}")
+    set(ENV{TMPDIR} "${CUDA_TMPDIR}")
+    set(ENV{TMP} "${CUDA_TMPDIR}")
+    set(ENV{TEMP} "${CUDA_TMPDIR}")
 
     if(NOT DEFINED _CMAKE_CUDA_WHOLE_FLAG)
-        message(STATUS "Setting _CMAKE_CUDA_WHOLE_FLAG (was missing)")
         if(WIN32)
             set(_CMAKE_CUDA_WHOLE_FLAG "/WHOLEARCHIVE:" CACHE INTERNAL "CUDA whole archive flag")
         else()
@@ -776,7 +724,10 @@ function(setup_cuda_build)
         endif()
     endif()
 
-    # Setup CUDA toolkit paths and include directories early
+    if(SD_GCC_FUNCTRACE)
+        add_compile_definitions(SD_GCC_FUNCTRACE=ON)
+    endif()
+
     setup_cuda_include_directories()
 
     if(NOT DEFINED COMPUTE)
@@ -791,57 +742,38 @@ function(setup_cuda_build)
         message(FATAL_ERROR "CUDA compiler not found after enabling CUDA language")
     endif()
 
-    message(STATUS "CUDA Compiler: ${CMAKE_CUDA_COMPILER}")
-    message(STATUS "CUDA Include Dirs: ${CUDA_INCLUDE_DIRS}")
-    message(STATUS "CUDAToolkit Include Dirs: ${CUDAToolkit_INCLUDE_DIRS}")
-    message(STATUS "Host CXX Compiler: ${CMAKE_CXX_COMPILER_ID}")
-
     configure_windows_cuda_build()
     build_cuda_compiler_flags("${CUDA_ARCH_FLAGS}")
 
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}" PARENT_SCOPE)
-
-    # Also set the toolkit include directories for global access
     set(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES "${CUDA_INCLUDE_DIRS}" PARENT_SCOPE)
 
-    # Enable verbose rule and target messages
-    set_property(GLOBAL PROPERTY RULE_MESSAGES ON)
-    set_property(GLOBAL PROPERTY TARGET_MESSAGES ON)
-
-    debug_cuda_configuration()
+    # Print summary
+    message(STATUS "CUDA: ${CMAKE_CUDA_COMPILER_VERSION}, arch=${CMAKE_CUDA_ARCHITECTURES}")
+    if(SD_ZLUDA)
+        message(STATUS "ZLUDA: ${SD_ZLUDA_TARGET}")
+    endif()
 
     add_compile_definitions(SD_CUDA=true)
     set(DEFAULT_ENGINE "samediff::ENGINE_CUDA" PARENT_SCOPE)
-
-    message(STATUS "=== CUDA BUILD CONFIGURATION (VERBOSE MODE) COMPLETE ===")
 endfunction()
 
-# Enhanced function to ensure CUDA paths are available at configure time
 function(ensure_cuda_paths_available)
     if(NOT SD_CUDA)
         return()
     endif()
 
-    message(STATUS "🔍 Ensuring CUDA paths are available...")
-
-    # Find CUDA early
     find_package(CUDAToolkit REQUIRED)
-
-    # Set up paths immediately
     setup_cuda_toolkit_paths()
 
-    # Export to parent scope for immediate use
     set(CUDA_INCLUDE_DIRS "${CUDA_INCLUDE_DIRS}" PARENT_SCOPE)
     set(CUDA_TOOLKIT_ROOT_DIR "${CUDAToolkit_ROOT}" PARENT_SCOPE)
-
-    message(STATUS "✅ CUDA paths configured and available")
 endfunction()
 
-# Legacy function for backward compatibility - now calls modern version
+# Legacy function
 function(setup_cudnn)
     setup_modern_cudnn()
 
-    # Set legacy variables for backward compatibility
     set(HAVE_CUDNN ${HAVE_CUDNN} PARENT_SCOPE)
     if(HAVE_CUDNN)
         set(CUDNN_INCLUDE_DIR ${CUDNN_INCLUDE_DIR} PARENT_SCOPE)

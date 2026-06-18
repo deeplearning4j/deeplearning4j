@@ -1,5 +1,18 @@
 .DS_Store
-pom.xml.releaseBackup 
+.claude/
+.codex
+.kompile/
+.cursorrules
+.mcp.json
+.windsurfrules
+AGENTS.md
+AGENTS.md.kompile-backup
+AGENTS.md.kompile-skills-backup
+CLAUDE.md
+opencode.json
+pr-plans/
+PR_SPLIT_PLAN.md
+pom.xml.releaseBackup
 target/
 dependency-reduced-pom.xml
 *.ser
@@ -83,6 +96,8 @@ venv2/
 # Ignore the nd4j files that are created by javacpp at build to stop merge conflicts
 nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java/org/nd4j/nativeblas/Nd4jCpu.java
 nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda/src/main/java/org/nd4j/nativeblas/Nd4jCuda.java
+nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java/org/nd4j/linalg/cpu/nativecpu/bindings/Nd4jCpu.java
+nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda/src/main/java/org/nd4j/linalg/jcublas/bindings/Nd4jCuda.java
 
 # Ignore meld temp files
 *.orig
@@ -95,3 +110,44 @@ nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda/src/main/java/org/nd4j/nativebla
 *.dll
 *.tmp
 libnd4j/include/generated/include_ops.h
+
+# Large binary files - models, datasets, core dumps
+*.onnx
+!codegen/op-codegen/src/test/resources/lenet.onnx
+!contrib/codegen-tools/onnx-def-gen/lenet.onnx
+!nd4j/nd4j-onnxruntime/src/test/resources/add.onnx
+!nd4j/samediff-import/samediff-import-onnx/src/test/resources/mobilenet.onnx
+!platform-tests/src/test/resources/lenet.onnx
+!platform-tests/src/test/resources/mnist.onnx
+!platform-tests/src/test/resources/mobilenet.onnx
+*.sdz
+*.pdf
+*.gguf
+*.safetensors
+*.pb
+*.pt
+*.pth
+*.weights
+*.model
+vgcore*
+valgrind-*
+core.*
+
+# Node.js
+node_modules/
+nd4j/nd4j-web/nd4j-webjar/node/
+
+# Dev journal / scratch files
+dev-journal.md
+heap-corruption-analysis.md
+optimized-pipeline.md
+profiling-prompt.md
+vision-encoder-expand-investigation.md
+native-executor-kv-cache-investigation.md
+native-executor-not-equals-type-mismatch.md
+cpp-dispatch-rewrite.md
+model-loading-optimization.md
+
+# Large model shard files (too big for GitHub)
+platform-tests/large-samediff-model.shard*.sdnb
+platform-tests/tmp-bert-input.fb

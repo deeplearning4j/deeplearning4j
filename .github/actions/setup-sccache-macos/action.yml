@@ -1,0 +1,184 @@
+name: Setup sccache for macOS
+description: 'Install and configure sccache with GitHub Actions cache backend for distributed per-object caching'
+
+inputs:
+  cache-suffix:
+    description: 'Suffix for sccache GHA version key (e.g., arm64). Used to partition cache namespaces.'
+    required: false
+    default: ''
+
+outputs:
+  sccache-available:
+    description: 'Whether sccache was successfully set up'
+    value: ${{ steps.verify-sccache.outputs.available }}
+
+runs:
+  using: composite
+  steps:
+    # ---------------------------------------------------------------
+    # 1. Hash the patch file for cache key.
+    # ---------------------------------------------------------------
+    - name: Hash sccache patch
+      id: patch-hash
+      shell: bash
+      run: |
+        PATCH_FILE="${GITHUB_WORKSPACE}/.github/patches/sccache-retry.patch"
+        if [ -f "$PATCH_FILE" ]; then
+          HASH=$(shasum -a 256 "$PATCH_FILE" | cut -c1-16)
+        else
+          HASH="no-patch"
+        fi
+        echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+
+    # ---------------------------------------------------------------
+    # 2. Check GHA cache for a previously-built patched binary.
+    # ---------------------------------------------------------------
+    - name: Cache patched sccache binary
+      id: cache-sccache
+      uses: actions/cache@v4
+      with:
+        path: /tmp/sccache-patched-bin
+        key: sccache-patched-v0.15.0-macos-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
+
+    # ---------------------------------------------------------------
+    # 3. On cache miss: clone, patch, and build from source.
+    # ---------------------------------------------------------------
+    - name: Build patched sccache from source
+      if: steps.cache-sccache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      shell: bash
+      run: |
+        set -euo pipefail
+        SCCACHE_VERSION="v0.15.0"
+        PATCH_FILE="${GITHUB_WORKSPACE}/.github/patches/sccache-retry.patch"
+
+        # Ensure Rust is available (pre-installed on GHA macOS runners)
+        if ! command -v cargo &>/dev/null; then
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          source "$HOME/.cargo/env"
+        fi
+
+        # Clone sccache source at the target version
+        git clone --depth 1 --branch "$SCCACHE_VERSION" \
+          https://github.com/mozilla/sccache.git /tmp/sccache-src
+
+        # Apply the RetryLayer patch
+        if [ -f "$PATCH_FILE" ]; then
+          cd /tmp/sccache-src
+          patch -p1 < "$PATCH_FILE"
+          echo "Applied RetryLayer patch to gha.rs"
+        else
+          echo "WARNING: Patch file not found at $PATCH_FILE — building unpatched"
+        fi
+
+        # Build with only the GHA cache feature
+        cd /tmp/sccache-src
+        cargo build --release --features gha --no-default-features
+
+        # Stage the binary for GHA cache storage
+        mkdir -p /tmp/sccache-patched-bin
+        cp target/release/sccache /tmp/sccache-patched-bin/sccache
+        chmod +x /tmp/sccache-patched-bin/sccache
+        echo "Built patched sccache (with RetryLayer):"
+        /tmp/sccache-patched-bin/sccache --version
+
+    # ---------------------------------------------------------------
+    # 4. Install the binary — patched if available, Homebrew fallback.
+    # ---------------------------------------------------------------
+    - name: Install sccache
+      shell: bash
+      run: |
+        if [ -f "/tmp/sccache-patched-bin/sccache" ]; then
+          sudo cp /tmp/sccache-patched-bin/sccache /usr/local/bin/sccache
+          sudo chmod +x /usr/local/bin/sccache
+          echo "Installed patched sccache (with RetryLayer):"
+          sccache --version
+        else
+          # Fallback to Homebrew if patched build not available
+          echo "Patched build not available — falling back to Homebrew sccache."
+          NEED_INSTALL=false
+          if ! command -v sccache &>/dev/null; then
+            NEED_INSTALL=true
+          else
+            INSTALLED_VER=$(sccache --version | grep -oE '[0-9]+\.[0-9]+' | head -1)
+            MAJOR=$(echo "$INSTALLED_VER" | cut -d. -f1)
+            MINOR=$(echo "$INSTALLED_VER" | cut -d. -f2)
+            if [ "$MAJOR" -eq 0 ] && [ "$MINOR" -lt 11 ]; then
+              echo "sccache $INSTALLED_VER is too old (need >=0.11), upgrading..."
+              NEED_INSTALL=true
+            fi
+          fi
+          if [ "$NEED_INSTALL" = true ]; then
+            echo "Installing sccache via Homebrew..."
+            brew install sccache
+          else
+            echo "sccache is already installed at acceptable version"
+          fi
+          echo "Installed sccache (unpatched fallback):"
+          sccache --version
+        fi
+        echo "sccache location: $(which sccache)"
+
+    # ---------------------------------------------------------------
+    # 5. Configure the GHA cache backend (V2 API).
+    # ---------------------------------------------------------------
+    - name: Configure sccache GHA backend
+      uses: actions/github-script@v7
+      with:
+        script: |
+          // Force V2 cache service — required for OpenDAL ghac writes.
+          // Without this, OpenDAL falls back to the dead V1 protocol and writes fail
+          // with "Cannot write to read-only storage".
+          core.exportVariable('ACTIONS_CACHE_SERVICE_V2', 'on');
+          core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
+          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+    # ---------------------------------------------------------------
+    # 6. Start the sccache server with GHA backend enabled.
+    # ---------------------------------------------------------------
+    - name: Set sccache environment
+      shell: bash
+      run: |
+        # Export in current shell so sccache --start-server sees them immediately.
+        # Also write to GITHUB_ENV for subsequent steps.
+        export SCCACHE_GHA_ENABLED=true
+        echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+
+        SUFFIX=$(echo "${{ inputs.cache-suffix }}" | sed 's/-*$//')
+        if [ -n "$SUFFIX" ]; then
+          export SCCACHE_GHA_VERSION="${SUFFIX}"
+          echo "SCCACHE_GHA_VERSION=${SUFFIX}" >> $GITHUB_ENV
+        fi
+
+        export ACTIONS_CACHE_SERVICE_V2="${ACTIONS_CACHE_SERVICE_V2}"
+        export ACTIONS_RESULTS_URL="${ACTIONS_RESULTS_URL}"
+        export ACTIONS_RUNTIME_TOKEN="${ACTIONS_RUNTIME_TOKEN}"
+
+        echo "SD_DISABLE_PCH=1" >> $GITHUB_ENV
+
+        # Start sccache server — only set compiler launcher if server starts successfully
+        if sccache --start-server 2>&1; then
+          echo "sccache server started successfully"
+          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "SD_USE_SCCACHE=1" >> $GITHUB_ENV
+        else
+          echo "WARNING: sccache server failed to start — building without distributed cache"
+        fi
+        echo "=== sccache configuration ==="
+        sccache --show-stats || true
+
+    # ---------------------------------------------------------------
+    # 7. Final verification.
+    # ---------------------------------------------------------------
+    - name: Verify sccache
+      id: verify-sccache
+      shell: bash
+      run: |
+        if command -v sccache &>/dev/null && sccache --show-stats &>/dev/null; then
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "sccache is ready"
+        else
+          echo "available=false" >> "$GITHUB_OUTPUT"
+          echo "WARNING: sccache not available"
+        fi

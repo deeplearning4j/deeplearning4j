@@ -21,16 +21,17 @@ file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*
 file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp ./include/helpers/*.h)
 file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp ./include/legacy/*.h)
 file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp ./include/loops/*.h)
+file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
 
 set(ALL_SOURCES "")
-set(STATIC_SOURCES_TO_CHECK ${BLAS_SOURCES} ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES} ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES})
+set(STATIC_SOURCES_TO_CHECK ${BLAS_SOURCES} ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES} ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES} ${SYSTEM_CONFIG_SOURCES})
 
-# Add PLT wrapper functions for functrace builds (GCC and Clang)
-# Required for --wrap=atexit and --wrap=at_quick_exit linker flags
-# These wrappers avoid PLT relocations in >2GB binaries
+# Add no-PLT stub functions for functrace builds (GCC and Clang)
+# These stubs provide atexit/at_quick_exit implementations using __cxa_atexit
+# which avoids PLT relocations that fail in >2GB binaries
 if(SD_GCC_FUNCTRACE)
     list(APPEND STATIC_SOURCES_TO_CHECK ./include/platform/noplt_libc_stubs.c)
-    message(STATUS "✅ Added noplt_libc_stubs.c for functrace build (provides __wrap_atexit and __wrap_at_quick_exit)")
+    message(STATUS "✅ Added noplt_libc_stubs.c for functrace build (provides atexit/at_quick_exit via __cxa_atexit)")
 endif()
 
 if(HAVE_ONEDNN)
@@ -60,12 +61,61 @@ endforeach()
 set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
 add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
 add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
+
+# Force external dependencies to build BEFORE any object files compile
+# Must depend on the ExternalProject targets directly to block compilation
+
+# OneDNN helper
+if(HELPERS_onednn STREQUAL "ON" AND TARGET onednn_external)
+    message(STATUS "🔒 BLOCKING: ${OBJECT_LIB_NAME} will wait for onednn_external to complete")
+    add_dependencies(${OBJECT_LIB_NAME} onednn_external)
+    if(TARGET onednn_interface)
+        target_link_libraries(${OBJECT_LIB_NAME} PUBLIC onednn_interface)
+    endif()
+endif()
+
+# ARM Compute helper
+if(HELPERS_armcompute STREQUAL "ON" AND TARGET armcompute_external)
+    message(STATUS "🔒 BLOCKING: ${OBJECT_LIB_NAME} will wait for armcompute_external to complete")
+    add_dependencies(${OBJECT_LIB_NAME} armcompute_external)
+    if(TARGET armcompute_interface)
+        target_link_libraries(${OBJECT_LIB_NAME} PUBLIC armcompute_interface)
+    endif()
+endif()
+
+# ZLUDA helper (for AMD/Intel GPU via CUDA translation)
+if(SD_ZLUDA AND TARGET zluda_external)
+    message(STATUS "🔒 BLOCKING: ${OBJECT_LIB_NAME} will wait for zluda_external to complete")
+    add_dependencies(${OBJECT_LIB_NAME} zluda_external)
+    if(TARGET zluda_interface)
+        target_link_libraries(${OBJECT_LIB_NAME} PUBLIC zluda_interface)
+    endif()
+endif()
+
+# MIOpen helper (for AMD GPU DNN)
+if(HELPERS_miopen STREQUAL "ON" AND TARGET miopen_external)
+    message(STATUS "🔒 BLOCKING: ${OBJECT_LIB_NAME} will wait for miopen_external to complete")
+    add_dependencies(${OBJECT_LIB_NAME} miopen_external)
+    if(TARGET miopen_interface)
+        target_link_libraries(${OBJECT_LIB_NAME} PUBLIC miopen_interface)
+    endif()
+endif()
+
 target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
 set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
 add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
 set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
 set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+
+# --- RPATH Configuration for OpenMP runtime ---
+# Use $ORIGIN so library finds dependencies in same directory
+if(NOT WIN32)
+    set_target_properties(${SD_LIBRARY_NAME} PROPERTIES
+        BUILD_RPATH "$ORIGIN"
+        INSTALL_RPATH "$ORIGIN"
+    )
+endif()
 
 # --- Link Dependencies ---
 target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
@@ -78,15 +128,6 @@ target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
 )
 
 # --- OpenMP Configuration ---
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    find_package(OpenMP)
-    if(OpenMP_CXX_FOUND)
-        message(STATUS "OpenMP found, linking OpenMP::OpenMP_CXX")
-        target_link_libraries(${SD_LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
-    else()
-        message(WARNING "OpenMP not found, falling back to manual configuration")
-        target_compile_options(${SD_LIBRARY_NAME} INTERFACE "-fopenmp")
-        target_link_libraries(${SD_LIBRARY_NAME} PUBLIC "-fopenmp")
-    endif()
-endif()
+# Note: OpenMP linking and libomp.so bundling is handled in MainBuildFlow.cmake's
+# configure_cpu_linking() function for proper cross-platform deployment
 

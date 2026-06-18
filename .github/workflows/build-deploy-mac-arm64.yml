@@ -57,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [""]
+        helper: [compile, mps, mps-compile, ""]
         extension: [""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
@@ -107,11 +107,21 @@ jobs:
 
     runs-on: ${{ matrix.runs_on }}
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+
+      - name: Setup sccache (distributed per-object cache)
+        id: setup-sccache
+        uses: ./.github/actions/setup-sccache-macos
+        with:
+          cache-suffix: mac-arm64
+
+      - name: Show sccache stats before build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== sccache stats before build ==="
+          sccache --show-stats || true
+
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
@@ -121,8 +131,17 @@ jobs:
                  echo "Building libnd4j from source"
                  modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
               fi
-              command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl  $modules  -Dlibnd4j.arch=armv8-a  -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-arm64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
-              if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+              # Determine helper/extension flags first so they apply to both phases.
+              if [ "${{ matrix.helper }}" == 'compile' ]; then
+                  # DSP compile helper: MLIR + Triton JIT backend
+                  mvn_ext=" -Dlibnd4j.triton=ON -Posx-aarch64-protoc -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=macosx-arm64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
+              elif [ "${{ matrix.helper }}" == 'mps' ]; then
+                  # MPS helper: Metal Performance Shaders GPU acceleration
+                  mvn_ext=" -Dlibnd4j.triton=ON -Posx-aarch64-protoc -Djavacpp.platform.extension=-mps -Dlibnd4j.classifier=macosx-arm64-mps -Dlibnd4j.helper=mps"
+              elif [ "${{ matrix.helper }}" == 'mps-compile' ]; then
+                  # MPS + DSP compile: Metal GPU + MLIR JIT (DSP framework uses Metal ICB replay)
+                  mvn_ext=" -Dlibnd4j.triton=ON -Posx-aarch64-protoc -Djavacpp.platform.extension=-mps-compile -Dlibnd4j.classifier=macosx-arm64-mps-compile -Dlibnd4j.helper=mps -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
+              elif [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext="-Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-arm64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
               elif [ "${{ matrix.helper }}" != '' ]; then
                   mvn_ext=" -Posx-aarch64-protoc -Dlibnd4j.classifier=${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
@@ -135,7 +154,7 @@ jobs:
                 echo "Adding libnd4j download"
                 echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
               fi
-              command="${command} ${mvn_ext}"
+              command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -Dlibnd4j.arch=armv8-a -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Pcpu --batch-mode -DskipTests ${mvn_ext} -pl $modules --also-make deploy"
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
               sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/MacOSX10*
@@ -150,29 +169,26 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
-        
-        
+
+
 
 
       - name: Update path for gnu sed
         shell: bash
         run: |
-             brew install  gnu-sed unzip  ccache gcc swig autoconf-archive automake  libomp libtool libusb ant maven nasm xz pkg-config sdl  bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+             brew install gnu-sed unzip gcc swig autoconf-archive automake libomp libtool libusb ant maven nasm xz pkg-config sdl bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python openblas llvm
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
-      - name: Setup libnd4j home if a download url is specified
+      - name: Setup OpenBLAS for macOS ARM64
         shell: bash
         run: |
-            mkdir "${GITHUB_WORKSPACE}/openblas_home"
+            mkdir -p "${GITHUB_WORKSPACE}/openblas_home"
             cd "${GITHUB_WORKSPACE}/openblas_home"
-            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-macosx-arm64.jar
-            unzip openblas-0.3.28-1.5.11-macosx-arm64.jar
+            wget -q https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-macosx-arm64.jar
+            unzip -q -o openblas-0.3.28-1.5.11-macosx-arm64.jar
             cd ..
             cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/libopenblas.0.dylib  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/libopenblas.dylib
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/" >> "$GITHUB_ENV"
-
-        if: ${{ matrix.libnd4j_file_download != '' }}
 
       - name: Build and install
         shell: bash
@@ -216,7 +232,42 @@ jobs:
 
           else
                   echo "Running build and deploying to snapshots"
-                  eval "${COMMAND}"
+                  BACKOFF=(0 60 180 300 420)
+                  for attempt in 1 2 3 4 5; do
+                    eval "${COMMAND}" && break
+                    DELAY=${BACKOFF[$attempt]:-420}
+                    echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in ${DELAY}s..."
+                    sleep $DELAY
+                  done
           fi
 
+      - name: Show sccache stats after build
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "=== sccache stats after build ==="
+          sccache --show-stats || true
+          sccache --stop-server || true
+          echo "=== sccache server log (last 100 lines) ==="
+          tail -100 /tmp/sccache-server.log 2>/dev/null || echo "no server log found"
 
+      - name: Publish SDX runtime SDK artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdx-runtime-sdk
+        with:
+          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
+          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
+
+      - name: Publish SDK JAR artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdk-jars
+        with:
+          artifact-name: sdk-jars-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          backend: cpu
+          platform: macosx-arm64
+          platform-extension: ${{ matrix.helper != '' && matrix.extension != '' && format('-{0}-{1}', matrix.helper, matrix.extension) || matrix.helper != '' && format('-{0}', matrix.helper) || matrix.extension != '' && format('-{0}', matrix.extension) || '' }}
+          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}

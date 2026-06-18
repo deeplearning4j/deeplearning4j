@@ -18,7 +18,7 @@ elseif(SD_ARCH MATCHES "armv7")
     set(ARCH_TUNE "-march=${SD_ARCH} -mfpu=neon")
 elseif(SD_EXTENSION MATCHES "avx2")
     message("Building AVX2 binary...")
-    set(ARCH_TUNE "-mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mprefetchwt1 -DSD_F16C=true -DF_AVX2=true")
+    set(ARCH_TUNE "-mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -DSD_F16C=true -DF_AVX2=true")
     if(NO_AVX256_SPLIT)
         set(ARCH_TUNE "${ARCH_TUNE} -mno-avx256-split-unaligned-load -mno-avx256-split-unaligned-store")
     endif()
@@ -32,8 +32,14 @@ else()
     endif()
 
     if(SD_EXTENSION MATCHES "avx512")
-        message("Building AVX512 binary...")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mavx512f -mavx512vl -mavx512bw -mavx512dq -mavx512cd -mbmi -mbmi2 -mprefetchwt1 -mclflushopt -mxsavec -mxsaves -DSD_F16C=true -DF_AVX512=true")
+        message("Building AVX512-capable binary with runtime feature detection...")
+        # IMPORTANT: Do NOT add -mavx512* flags globally - they cause SIGILL on CPUs without AVX-512
+        # Instead, compile base library with AVX2 (safe for all modern x86-64) and define F_AVX512
+        # so that code can use runtime CPU feature detection before executing AVX-512 paths.
+        # AVX-512 intrinsics should be in separate compilation units with target attributes.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mbmi -mbmi2 -DSD_F16C=true -DF_AVX512=true")
+        # Store AVX-512 flags for use with specific optimized kernel files only
+        set(SD_AVX512_FLAGS "-mavx512f -mavx512vl -mavx512bw -mavx512dq -mavx512cd -mclflushopt -mxsavec -mxsaves" CACHE STRING "AVX-512 flags for optimized kernels")
     endif()
 
     # FIXED: Only set architecture flags if we have valid values
@@ -52,8 +58,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SD_X86_BUILD)
     message(STATUS "Configuring linker for large template library with PLT overflow prevention")
 
     # Clear any existing conflicting linker flags
-    string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-    string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+    # BUT preserve -fuse-ld=mold for SD_GCC_FUNCTRACE builds - mold is required for >2GB binaries
+    if(NOT SD_GCC_FUNCTRACE)
+        string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+        string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+    endif()
 
     # Test if linker supports --plt-align before using it
     execute_process(
@@ -63,11 +72,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SD_X86_BUILD)
     )
 endif()
 
-# Use large memory model (required for your template scale) - FIXED: Only for x86-64, not ARM
+# Memory model is now configured in CompilerFlags.cmake to avoid conflicts
+# (Sanitizer builds use -mcmodel=large, non-sanitizer builds use -mcmodel=medium)
 if(SD_X86_BUILD AND NOT WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium")
-    message(STATUS "Applied large memory model for x86-64 architecture")
+    # Removed: -mcmodel setting now in CompilerFlags.cmake only
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC")
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium")
+    message(STATUS "Memory model configuration deferred to CompilerFlags.cmake")
 else()
     if(SD_ARM_BUILD OR SD_ANDROID_BUILD)
         message(STATUS "Skipping large memory model for ARM/Android architecture (not supported)")
@@ -77,8 +88,13 @@ else()
 endif()
 
 # Memory optimization during compilation - FIXED: Only apply to GCC
+# Note: Main memory flags are set in CompilerFlags.cmake; this is a fallback
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
+    # Only add if not already present (avoid duplicates with CompilerFlags.cmake)
+    # Use GCC defaults - aggressive settings (finline-limit=50) actually INCREASED memory
+    if(NOT CMAKE_CXX_FLAGS MATCHES "ggc-min-expand")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
+    endif()
 endif()
 
 # Section splitting for better linker handling - FIXED: Only apply to GCC/Clang
@@ -90,9 +106,9 @@ endif()
 # MSVC-specific optimizations
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # MSVC equivalent optimizations
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")  # Function-level linking
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")      # Function-level linking
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /OPT:REF /OPT:ICF")  # Remove unreferenced code
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Gy")  # Function-level linking
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Gy")      # Function-level linking
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -OPT:REF -OPT:ICF")  # Remove unreferenced code
 endif()
 
 message(STATUS "Applied PLT overflow prevention for large template library")

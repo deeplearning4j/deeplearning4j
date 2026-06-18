@@ -68,8 +68,10 @@ if(NOT EXISTS "${CMAKE_CXX_COMPILER}")
 endif()
 
 # Set cross-compilation flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -march=armv8-a")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -march=armv8-a -std=c++14")
+# Use armv8.2-a for dotprod support (required for MLIR ARM optimized kernels)
+# C++17 required for MLIR/LLVM headers
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -march=armv8.2-a+dotprod")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -march=armv8.2-a+dotprod -std=c++17")
 
 # Set NDK library paths for linking
 set(NDK_SYSROOT_LIB_PATH "${CMAKE_SYSROOT}/usr/lib/aarch64-linux-android/${ANDROID_NATIVE_API_LEVEL}")
@@ -143,5 +145,51 @@ add_definitions(-DANDROID -D__ANDROID__ -D__ANDROID_API__=${ANDROID_NATIVE_API_L
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
 
+
+# --- MLIR Cross-Compilation Support ---
+# When HELPERS_mlir=ON for Android builds, MLIR AOT compilation is used:
+# - Kernels are compiled on the host x86_64 machine targeting aarch64-linux-android
+# - Pre-compiled .o files are linked into the final .so (no LLVM JIT on device)
+# - The MLIR AArch64 backend is auto-enabled for cross-compilation
+#
+# To build with MLIR support for Android:
+#   cmake -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake \
+#         -DHELPERS_mlir=ON \
+#         -DMLIR_ENABLE_VULKAN=ON \  # Optional: enable Vulkan GPU offload
+#         -DLLVM_DIR=/path/to/host/llvm \
+#         ..
+#
+# Note: LLVM_DIR should point to the HOST LLVM installation (not cross-compiled).
+# The host LLVM/MLIR is used for AOT compilation, producing ARM64 object code.
+if(HELPERS_mlir)
+    message(STATUS "MLIR: Cross-compilation mode for Android ARM64")
+    message(STATUS "  Kernels will be AOT-compiled on host targeting aarch64-linux-android")
+    message(STATUS "  ARM features: NEON, dotprod (ARMv8.2-A)")
+endif()
+
+# --- NNAPI Support ---
+# Auto-enable NNAPI for Android API 27+ (NNAPI 1.0)
+# NNAPI routes DSP segments to hardware accelerators (Hexagon DSP, GPU, NPU)
+if(ANDROID_NATIVE_API_LEVEL GREATER_EQUAL 27)
+    set(HELPERS_nnapi ON CACHE BOOL "Auto-enabled for Android API 27+" FORCE)
+    set(HAVE_NNAPI ON CACHE BOOL "NNAPI available" FORCE)
+    add_definitions(-DHAVE_NNAPI=1)
+
+    # Link against NNAPI shared library (libneuralnetworks.so)
+    # Available in the NDK sysroot from API 27+
+    set(NNAPI_LINK_FLAGS "-lneuralnetworks")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${NNAPI_LINK_FLAGS}")
+
+    message(STATUS "NNAPI: Enabled for Android API ${ANDROID_NATIVE_API_LEVEL}")
+    if(ANDROID_NATIVE_API_LEVEL GREATER_EQUAL 30)
+        message(STATUS "  NNAPI 1.3: batch_matmul, quantized ops, control flow")
+    elseif(ANDROID_NATIVE_API_LEVEL GREATER_EQUAL 29)
+        message(STATUS "  NNAPI 1.2: comparison ops, logical ops, reduce ops")
+    else()
+        message(STATUS "  NNAPI 1.0: basic elementwise, conv, pooling, softmax")
+    endif()
+else()
+    message(STATUS "NNAPI: Disabled (API ${ANDROID_NATIVE_API_LEVEL} < 27)")
+endif()
 
 message(STATUS "Android ARM64 cross-compilation toolchain configured successfully")

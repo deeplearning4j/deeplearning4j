@@ -10,4 +10,4 @@ mvn -Pcuda -Dlibnd4j.chip=cuda clean install -DskipTests \
     -Dlibnd4j.sanitize=ON \
     -Dlibnd4j.keepnvcc=ON \
     -Dlibnd4j.sanitizers="address,undefined,float-divide-by-zero,float-cast-overflow" \
-    -pl :libnd4j,:nd4j-cuda-12.1-preset,:nd4j-cuda-12.1
+    -pl :libnd4j,:nd4j-cuda-12.9-preset,:nd4j-cuda-12.9
