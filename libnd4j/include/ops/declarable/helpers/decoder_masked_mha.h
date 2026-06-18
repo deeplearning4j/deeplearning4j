@@ -19,6 +19,7 @@
 #define LIBND4J_DECODER_MASKED_MHA_H
 
 #include <ops/declarable/helpers/helpers.h>
+#include <execution/LaunchContext.h>
 
 namespace sd {
 namespace ops {
@@ -34,7 +35,8 @@ struct DecoderMhaConfig {
     float ropeFreqBase; // RoPE frequency base
 };
 
-SD_LIB_HIDDEN void decoderMaskedMhaCpu(
+// Single unified declaration — CPU impl in helpers/cpu/, CUDA impl in helpers/cuda/
+SD_LIB_HIDDEN void decoderMaskedMha(
     NDArray* hiddenStates,   // [B, 1, H]
     NDArray* qkvWeight,      // [H, 3*H]
     NDArray* oWeight,        // [H, H]
@@ -46,24 +48,8 @@ SD_LIB_HIDDEN void decoderMaskedMhaCpu(
     NDArray* output,         // [B, 1, H]
     NDArray* updatedKeyCache,
     NDArray* updatedValueCache,
-    const DecoderMhaConfig& config);
-
-#if defined(SD_CUDA)
-SD_LIB_HIDDEN void decoderMaskedMhaCuda(
-    NDArray* hiddenStates,
-    NDArray* qkvWeight,
-    NDArray* oWeight,
-    NDArray* keyCache,
-    NDArray* valueCache,
-    NDArray* mask,
-    NDArray* cosCache,
-    NDArray* sinCache,
-    NDArray* output,
-    NDArray* updatedKeyCache,
-    NDArray* updatedValueCache,
     const DecoderMhaConfig& config,
-    LaunchContext* context);
-#endif
+    LaunchContext* context = nullptr);
 
 }  // namespace helpers
 }  // namespace ops

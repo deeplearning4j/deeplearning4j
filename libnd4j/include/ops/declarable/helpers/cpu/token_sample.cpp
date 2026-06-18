@@ -20,8 +20,9 @@
 
 #include <ops/declarable/helpers/token_sample.h>
 #include <ops/declarable/helpers/sampling_penalties.h>
+#include <math/templatemath.h>
+#include <system/op_boilerplate.h>
 #include <algorithm>
-#include <cmath>
 #include <numeric>
 #include <random>
 #include <vector>
@@ -30,9 +31,10 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-void tokenSampleCpu(NDArray* logits, NDArray* output,
-                    double temperature, int topK, double topP,
-                    LongType seed, LaunchContext* context) {
+template <typename T>
+static void tokenSample_(NDArray* logits, NDArray* output,
+                             double temperature, int topK, double topP,
+                             LongType seed, LaunchContext* context) {
   auto rank = logits->rankOf();
   LongType batch = 1;
   LongType vocabSize;
@@ -52,6 +54,7 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
 
   bool greedy = (temperature <= 0.0 && topK <= 0 && topP <= 0.0);
 
+  PRAGMA_OMP_PARALLEL_FOR
   for (LongType b = 0; b < batch; b++) {
     // Find the start of the logits row for this batch
     // For rank 3, use the last sequence position
@@ -64,11 +67,11 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
       for (LongType v = 0; v < vocabSize; v++) {
         float val;
         if (rank == 1) {
-          val = logits->e<float>(v);
+          val = static_cast<float>(logits->e<T>(v));
         } else if (rank == 2) {
-          val = logits->e<float>(b, v);
+          val = static_cast<float>(logits->e<T>(b, v));
         } else {
-          val = logits->e<float>(b, seqPos, v);
+          val = static_cast<float>(logits->e<T>(b, seqPos, v));
         }
         if (val > maxVal) {
           maxVal = val;
@@ -83,19 +86,21 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
     } else {
       // Full sampling pipeline: temperature -> topK -> softmax -> topP -> sample
       std::vector<float> logitsVec(vocabSize);
+      PRAGMA_OMP_PARALLEL_FOR_SIMD
       for (LongType v = 0; v < vocabSize; v++) {
         if (rank == 1) {
-          logitsVec[v] = logits->e<float>(v);
+          logitsVec[v] = static_cast<float>(logits->e<T>(v));
         } else if (rank == 2) {
-          logitsVec[v] = logits->e<float>(b, v);
+          logitsVec[v] = static_cast<float>(logits->e<T>(b, v));
         } else {
-          logitsVec[v] = logits->e<float>(b, seqPos, v);
+          logitsVec[v] = static_cast<float>(logits->e<T>(b, seqPos, v));
         }
       }
 
       // Temperature scaling
       if (temperature > 0.0) {
-        for (auto& l : logitsVec) l /= static_cast<float>(temperature);
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (LongType v = 0; v < vocabSize; v++) logitsVec[v] /= static_cast<float>(temperature);
       }
 
       // TopK filtering
@@ -106,6 +111,7 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
         std::partial_sort(indices.begin(), indices.begin() + topK, indices.end(),
                          [&](int a, int b2) { return logitsVec[a] > logitsVec[b2]; });
         float threshold = logitsVec[indices[topK - 1]];
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (LongType v = 0; v < vocabSize; v++) {
           if (logitsVec[v] < threshold) logitsVec[v] = -std::numeric_limits<float>::infinity();
         }
@@ -114,11 +120,12 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
       // Softmax
       float maxLogit = *std::max_element(logitsVec.begin(), logitsVec.end());
       float sumExp = 0.0f;
-      for (auto& l : logitsVec) {
-        l = std::exp(l - maxLogit);
-        sumExp += l;
+      for (LongType v = 0; v < vocabSize; v++) {
+        logitsVec[v] = sd::math::sd_exp<float, float>(logitsVec[v] - maxLogit);
+        sumExp += logitsVec[v];
       }
-      for (auto& l : logitsVec) l /= sumExp;
+      PRAGMA_OMP_PARALLEL_FOR_SIMD
+      for (LongType v = 0; v < vocabSize; v++) logitsVec[v] /= sumExp;
 
       // TopP (nucleus) filtering
       if (topP > 0.0 && topP < 1.0) {
@@ -133,13 +140,15 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
             break;
           }
         }
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int k = cutoff; k < vocabSize; k++) {
           logitsVec[indices[k]] = 0.0f;
         }
         // Re-normalize
         sumExp = 0.0f;
-        for (auto& l : logitsVec) sumExp += l;
-        for (auto& l : logitsVec) l /= sumExp;
+        for (LongType v = 0; v < vocabSize; v++) sumExp += logitsVec[v];
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (LongType v = 0; v < vocabSize; v++) logitsVec[v] /= sumExp;
       }
 
       // Sample from distribution
@@ -156,7 +165,15 @@ void tokenSampleCpu(NDArray* logits, NDArray* output,
   }
 }
 
-void tokenSampleWithPenaltiesCpu(NDArray* logits, NDArray* output,
+void tokenSample(NDArray* logits, NDArray* output,
+                    double temperature, int topK, double topP,
+                    LongType seed, LaunchContext* context) {
+  BUILD_SINGLE_SELECTOR(logits->dataType(), tokenSample_,
+                        (logits, output, temperature, topK, topP, seed, context),
+                        SD_FLOAT_TYPES);
+}
+
+void tokenSampleWithPenalties(NDArray* logits, NDArray* output,
                                  NDArray* inputIds,
                                  double temperature, int topK,
                                  double topP, double minP,
@@ -165,16 +182,16 @@ void tokenSampleWithPenaltiesCpu(NDArray* logits, NDArray* output,
                                  LongType seed, LaunchContext* context) {
     // Step 1: Apply penalties to logits (in-place)
     if (inputIds != nullptr && (repPenalty != 1.0 || freqPenalty != 0.0 || presPenalty != 0.0)) {
-        applyLogitPenaltiesCpu(logits, inputIds, repPenalty, freqPenalty, presPenalty, context);
+        applyLogitPenalties(logits, inputIds, repPenalty, freqPenalty, presPenalty, context);
     }
 
     // Step 2: Apply min-p filtering (in-place)
     if (minP > 0.0) {
-        applyMinPFilterCpu(logits, minP, context);
+        applyMinPFilter(logits, minP, context);
     }
 
     // Step 3: Standard sampling (temperature, topK, topP)
-    tokenSampleCpu(logits, output, temperature, topK, topP, seed, context);
+    tokenSample(logits, output, temperature, topK, topP, seed, context);
 }
 
 }  // namespace helpers

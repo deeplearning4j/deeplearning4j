@@ -52,17 +52,10 @@ namespace helpers {
  * @param segmentSizes    [numExperts] INT64 — token counts per expert
  * @param output          [totalTokens, outDim] — output embeddings
  */
-SD_LIB_HIDDEN void segmentGemmCpu(LaunchContext* context,
-                                   NDArray* input, NDArray* weights,
-                                   NDArray* segmentOffsets, NDArray* segmentSizes,
-                                   NDArray* output);
-
-#if defined(SD_CUDA)
-SD_LIB_HIDDEN void segmentGemmCuda(LaunchContext* context,
-                                    NDArray* input, NDArray* weights,
-                                    NDArray* segmentOffsets, NDArray* segmentSizes,
-                                    NDArray* output);
-#endif
+SD_LIB_HIDDEN void segmentGemm(LaunchContext* context,
+                                NDArray* input, NDArray* weights,
+                                NDArray* segmentOffsets, NDArray* segmentSizes,
+                                NDArray* output);
 
 }  // namespace helpers
 }  // namespace ops

@@ -123,7 +123,7 @@ static void linearAttentionDecodeCpuImpl_(LaunchContext* context,
     samediff::Threads::parallel_tad(func, 0, batch * numHeads);
 }
 
-void linearAttentionDecodeCpu(LaunchContext* context,
+void linearAttentionDecode(LaunchContext* context,
                               NDArray* query,
                               NDArray* key,
                               NDArray* value,

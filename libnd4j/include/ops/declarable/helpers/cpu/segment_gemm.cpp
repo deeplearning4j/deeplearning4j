@@ -19,21 +19,23 @@
  */
 
 #include <ops/declarable/helpers/segment_gemm.h>
-#include <cmath>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-void segmentGemmCpu(LaunchContext* context,
-                     NDArray* input, NDArray* weights,
-                     NDArray* segmentOffsets, NDArray* segmentSizes,
-                     NDArray* output) {
+template <typename T>
+static void segmentGemmCpu_(LaunchContext* context,
+                             NDArray* input, NDArray* weights,
+                             NDArray* segmentOffsets, NDArray* segmentSizes,
+                             NDArray* output) {
     auto numExperts = weights->sizeAt(0);
     auto inDim = weights->sizeAt(1);
     auto outDim = weights->sizeAt(2);
 
     // For each expert, perform matmul on its token segment
+    PRAGMA_OMP_PARALLEL_FOR
     for (LongType e = 0; e < numExperts; e++) {
         LongType offset = segmentOffsets->e<LongType>(e);
         LongType size = segmentSizes->e<LongType>(e);
@@ -42,15 +44,25 @@ void segmentGemmCpu(LaunchContext* context,
 
         // output[offset:offset+size, :] = input[offset:offset+size, :] @ weights[e, :, :]
         for (LongType t = 0; t < size; t++) {
+            PRAGMA_OMP_PARALLEL_FOR
             for (LongType j = 0; j < outDim; j++) {
-                float sum = 0.0f;
+                T sum = static_cast<T>(0);
                 for (LongType k = 0; k < inDim; k++) {
-                    sum += input->e<float>(offset + t, k) * weights->e<float>(e, k, j);
+                    sum += input->e<T>(offset + t, k) * weights->e<T>(e, k, j);
                 }
-                output->p(offset + t, j, sum);
+                output->p<T>(offset + t, j, sum);
             }
         }
     }
+}
+
+void segmentGemm(LaunchContext* context,
+                     NDArray* input, NDArray* weights,
+                     NDArray* segmentOffsets, NDArray* segmentSizes,
+                     NDArray* output) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), segmentGemmCpu_,
+                          (context, input, weights, segmentOffsets, segmentSizes, output),
+                          SD_FLOAT_TYPES);
 }
 
 }  // namespace helpers

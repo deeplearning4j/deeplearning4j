@@ -32,7 +32,7 @@ namespace ops {
 namespace helpers {
 
 /**
- * Lightning Attention forward pass (CPU fallback).
+ * Lightning Attention forward pass.
  *
  * Implements linear attention with per-head exponential decay via
  * intra/inter-chunk decomposition:
@@ -51,52 +51,14 @@ namespace helpers {
  * @param output      Output [batch, seqLen, numHeads, headDim], same dtype as Q/K/V
  * @param isCausal    Whether to apply causal (lower-triangular) masking within a chunk
  */
-SD_LIB_HIDDEN void lightningAttentionCpu(LaunchContext* context,
-                                          NDArray* query,
-                                          NDArray* key,
-                                          NDArray* value,
-                                          NDArray* decayRates,
-                                          NDArray* state,
-                                          NDArray* output,
-                                          bool isCausal);
-
-#if defined(SD_CUDA)
-/**
- * Lightning Attention forward pass (CUDA).
- *
- * Implements linear attention with per-head exponential decay via
- * intra/inter-chunk decomposition:
- *   O(n) complexity vs O(n²) for standard softmax attention.
- *
- * The algorithm decomposes each chunk into:
- *   - Inter-chunk: O_inter = Q_i @ S_{i-1}           (recurrent state contribution)
- *   - Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask
- *                  O_intra = A @ V_i                  (local chunk attention)
- *   - State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i
- *   - Combined:     O_i = O_inter + O_intra
- *
- * Input/output layout: [batch, seqLen, numHeads, headDim]  (BSHD)
- * State layout:  [batch, numHeads, headDim, headDim] (float32, in/out)
- * Decay layout:  [numHeads]  (per-head scalar decay rate, float32)
- *
- * @param context     Launch context (CUDA stream etc.)
- * @param query       Q tensor [batch, seqLen, numHeads, headDim]
- * @param key         K tensor [batch, seqLen, numHeads, headDim]
- * @param value       V tensor [batch, seqLen, numHeads, headDim]
- * @param decayRates  Per-head decay scalars [numHeads], float32
- * @param state       Recurrent state [batch, numHeads, headDim, headDim], float32
- * @param output      Output [batch, seqLen, numHeads, headDim], same dtype as Q/K/V
- * @param isCausal    Whether to apply causal (lower-triangular) masking
- */
-SD_LIB_HIDDEN void lightningAttentionCuda(LaunchContext* context,
-                                           NDArray* query,
-                                           NDArray* key,
-                                           NDArray* value,
-                                           NDArray* decayRates,
-                                           NDArray* state,
-                                           NDArray* output,
-                                           bool isCausal);
-#endif  // SD_CUDA
+SD_LIB_HIDDEN void lightningAttention(LaunchContext* context,
+                                       NDArray* query,
+                                       NDArray* key,
+                                       NDArray* value,
+                                       NDArray* decayRates,
+                                       NDArray* state,
+                                       NDArray* output,
+                                       bool isCausal);
 
 }  // namespace helpers
 }  // namespace ops

@@ -55,15 +55,9 @@ namespace helpers {
  * @param chunkSize  KV chunk size (default: 512)
  * @param scale      attention scale (typically 1/sqrt(headDim))
  */
-SD_LIB_HIDDEN void cascadeAttentionCpu(LaunchContext* context,
-                                        NDArray* query, NDArray* key, NDArray* value,
-                                        NDArray* output, int chunkSize, double scale);
-
-#if defined(SD_CUDA)
-SD_LIB_HIDDEN void cascadeAttentionCuda(LaunchContext* context,
-                                         NDArray* query, NDArray* key, NDArray* value,
-                                         NDArray* output, int chunkSize, double scale);
-#endif
+SD_LIB_HIDDEN void cascadeAttention(LaunchContext* context,
+                                     NDArray* query, NDArray* key, NDArray* value,
+                                     NDArray* output, int chunkSize, double scale);
 
 }  // namespace helpers
 }  // namespace ops

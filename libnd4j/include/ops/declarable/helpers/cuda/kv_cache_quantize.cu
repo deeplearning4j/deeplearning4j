@@ -246,10 +246,10 @@ static size_t sharedMemSize(int threads) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Public interface: kvCacheQuantizeCuda
+// Public interface: kvCacheQuantize
 //////////////////////////////////////////////////////////////////////////////
-void kvCacheQuantizeCuda(NDArray* input, NDArray* quantized, NDArray* scales,
-                         int quantFormat, LaunchContext* context) {
+void kvCacheQuantize(NDArray* input, NDArray* quantized, NDArray* scales,
+                     int quantFormat, LaunchContext* context) {
     const LongType numRows = input->lengthOf() / input->sizeAt(-1);
     const LongType rowLen = input->sizeAt(-1);
 
@@ -283,7 +283,7 @@ void kvCacheQuantizeCuda(NDArray* input, NDArray* quantized, NDArray* scales,
                 reinterpret_cast<uint8_t*>(quantized->specialBuffer()),
                 scalesBuf, numRows, rowLen);
         } else {
-            THROW_EXCEPTION("kvCacheQuantizeCuda: unsupported data type");
+            THROW_EXCEPTION("kvCacheQuantize: unsupported data type");
         }
     } else {
         // INT8, FP8_E4M3, FP8_E5M2 all use INT8 kernel on GPU
@@ -303,19 +303,19 @@ void kvCacheQuantizeCuda(NDArray* input, NDArray* quantized, NDArray* scales,
                 reinterpret_cast<int8_t*>(quantized->specialBuffer()),
                 scalesBuf, numRows, rowLen);
         } else {
-            THROW_EXCEPTION("kvCacheQuantizeCuda: unsupported data type");
+            THROW_EXCEPTION("kvCacheQuantize: unsupported data type");
         }
     }
 
-    DebugHelper::checkGlobalErrorCode("kvCacheQuantizeCuda failed");
+    DebugHelper::checkGlobalErrorCode("kvCacheQuantize failed");
     NDArray::registerSpecialUse({quantized, scales}, {input});
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Public interface: kvCacheDequantizeCuda
+// Public interface: kvCacheDequantize
 //////////////////////////////////////////////////////////////////////////////
-void kvCacheDequantizeCuda(NDArray* quantized, NDArray* scales, NDArray* output,
-                           int quantFormat, LaunchContext* context) {
+void kvCacheDequantize(NDArray* quantized, NDArray* scales, NDArray* output,
+                       int quantFormat, LaunchContext* context) {
     const LongType numRows = output->lengthOf() / output->sizeAt(-1);
     const LongType rowLen = output->sizeAt(-1);
 
@@ -347,7 +347,7 @@ void kvCacheDequantizeCuda(NDArray* quantized, NDArray* scales, NDArray* output,
                 scalesBuf, reinterpret_cast<float16*>(output->specialBuffer()),
                 numRows, rowLen);
         } else {
-            THROW_EXCEPTION("kvCacheDequantizeCuda: unsupported data type");
+            THROW_EXCEPTION("kvCacheDequantize: unsupported data type");
         }
     } else {
         // INT8, FP8_E4M3, FP8_E5M2
@@ -367,11 +367,11 @@ void kvCacheDequantizeCuda(NDArray* quantized, NDArray* scales, NDArray* output,
                 scalesBuf, reinterpret_cast<float16*>(output->specialBuffer()),
                 numRows, rowLen);
         } else {
-            THROW_EXCEPTION("kvCacheDequantizeCuda: unsupported data type");
+            THROW_EXCEPTION("kvCacheDequantize: unsupported data type");
         }
     }
 
-    DebugHelper::checkGlobalErrorCode("kvCacheDequantizeCuda failed");
+    DebugHelper::checkGlobalErrorCode("kvCacheDequantize failed");
     NDArray::registerSpecialUse({output}, {quantized, scales});
 }
 

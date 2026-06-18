@@ -247,7 +247,7 @@ static void argmaxLauncher(const cudaStream_t* stream, const void* logitsPtr,
 
 // ─── Main Implementation ─────────────────────────────────────────────────────
 
-void autoregressiveDecodeCuda(
+void autoregressiveDecode(
     NDArray* prefillEmbeddings,
     NDArray* embeddingTable,
     NDArray* inputIds,
@@ -752,21 +752,21 @@ void autoregressiveDecodeCuda(
                                   (stream, logitsPtr, sampledToken->specialBuffer(), logitsVocab),
                                   SD_COMMON_TYPES);
         } else {
-            // Sampling with repetition penalty: use tokenSampleWithPenaltiesCuda
+            // Sampling with repetition penalty: use tokenSampleWithPenalties
             // Build a view of generated tokens so far for repetition penalty.
             // generatedTokenIds is [maxNewTokens] but only indices 0..step-1 are valid.
             // Pass a view so the penalty kernel only reads valid tokens.
             if (step > 0) {
                 std::vector<LongType> range = {0, static_cast<LongType>(step)};
                 NDArray* tokensSoFar = (*generatedTokenIds)(range, true);
-                tokenSampleWithPenaltiesCuda(logitsOutput, sampledToken, tokensSoFar,
+                tokenSampleWithPenalties(logitsOutput, sampledToken, tokensSoFar,
                                              temperature, topK, topP, 0.0 /*minP*/,
                                              repPenalty, 0.0 /*freqPenalty*/, 0.0 /*presPenalty*/,
                                              static_cast<LongType>(step), context);
                 delete tokensSoFar;
             } else {
                 // No tokens generated yet — sample without penalty
-                tokenSampleCuda(logitsOutput, sampledToken, temperature, topK, topP,
+                tokenSample(logitsOutput, sampledToken, temperature, topK, topP,
                                 static_cast<LongType>(step), context);
             }
         }

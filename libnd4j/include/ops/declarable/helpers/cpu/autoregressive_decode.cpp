@@ -110,10 +110,10 @@ static void argmaxCpu(const void* vLogits, void* vOutput, LongType vocabSize) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Main CPU Implementation — equivalent logic to autoregressiveDecodeCuda
+// Main CPU Implementation — equivalent logic to autoregressiveDecode (CUDA impl)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-void autoregressiveDecodeCpu(
+void autoregressiveDecode(
     NDArray* prefillEmbeddings,
     NDArray* embeddingTable,
     NDArray* inputIds,
@@ -504,13 +504,13 @@ void autoregressiveDecodeCpu(
             // generatedTokenIds is [maxNewTokens] but only 0..step-1 are valid.
             if (step > 0) {
                 NDArray* tokensSoFar = (*generatedTokenIds)({0, step}, true);
-                tokenSampleWithPenaltiesCpu(logitsOutput, sampledToken, tokensSoFar,
+                tokenSampleWithPenalties(logitsOutput, sampledToken, tokensSoFar,
                                             temperature, topK, topP, 0.0 /*minP*/,
                                             repPenalty, 0.0 /*freqPenalty*/, 0.0 /*presPenalty*/,
                                             static_cast<LongType>(step), context);
                 delete tokensSoFar;
             } else {
-                tokenSampleCpu(logitsOutput, sampledToken, temperature, topK, topP,
+                tokenSample(logitsOutput, sampledToken, temperature, topK, topP,
                                static_cast<LongType>(step), context);
             }
         }

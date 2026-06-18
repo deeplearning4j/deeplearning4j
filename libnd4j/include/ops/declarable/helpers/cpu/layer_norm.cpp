@@ -15,39 +15,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#ifndef LIBND4J_LAYER_NORM_H
-#define LIBND4J_LAYER_NORM_H
-
-#include <ops/declarable/helpers/helpers.h>
+#include <ops/declarable/helpers/layer_norm.h>
+#include <system/common.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-/**
- * Fused layer normalization kernel.
- * CUDA: single fused kernel for optimal GPU performance.
- * CPU: stub (callers gate this behind dspIsCudaBuild()).
- *
- * @param input Input tensor
- * @param gain Scale parameter (gamma)
- * @param bias Shift parameter (beta), can be nullptr
- * @param output Output tensor
- * @param axis Dimensions to normalize over (must be last dimension for CUDA path)
- * @param epsilon Small constant for numerical stability
- * @param context Launch context
- */
-SD_LIB_HIDDEN void layerNorm(
+// CPU stub — the fused layerNorm kernel is CUDA-only.
+// Callers gate this behind dspIsCudaBuild(), so this should never be reached.
+// If it is, throw to catch the logic error.
+void layerNorm(
     NDArray* input,
     NDArray* gain,
     NDArray* bias,
     NDArray* output,
     const std::vector<LongType>& axis,
     float epsilon,
-    LaunchContext* context);
+    LaunchContext* context) {
+  THROW_EXCEPTION("layerNorm: fused kernel not available on CPU — caller should use decomposed path");
+}
 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
-
-#endif  // LIBND4J_LAYER_NORM_H

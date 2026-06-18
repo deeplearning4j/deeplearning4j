@@ -20,6 +20,7 @@
 #define LIBND4J_KV_CACHE_QUANTIZE_H
 
 #include <array/NDArray.h>
+#include <execution/LaunchContext.h>
 #include <system/common.h>
 
 namespace sd {
@@ -34,27 +35,19 @@ enum class KVQuantFormat : int {
     INT4 = 3
 };
 
-SD_LIB_HIDDEN void kvCacheQuantizeCpu(
+SD_LIB_HIDDEN void kvCacheQuantize(
     NDArray* input,       // float KV data [...]
     NDArray* quantized,   // output quantized data [...]
     NDArray* scales,      // output per-channel scales [...]
-    int quantFormat);     // KVQuantFormat
+    int quantFormat,      // KVQuantFormat
+    LaunchContext* context = nullptr);
 
-SD_LIB_HIDDEN void kvCacheDequantizeCpu(
+SD_LIB_HIDDEN void kvCacheDequantize(
     NDArray* quantized,   // quantized data [...]
     NDArray* scales,      // per-channel scales [...]
     NDArray* output,      // float output [...]
-    int quantFormat);
-
-#if defined(SD_CUDA)
-SD_LIB_HIDDEN void kvCacheQuantizeCuda(
-    NDArray* input, NDArray* quantized, NDArray* scales,
-    int quantFormat, LaunchContext* context);
-
-SD_LIB_HIDDEN void kvCacheDequantizeCuda(
-    NDArray* quantized, NDArray* scales, NDArray* output,
-    int quantFormat, LaunchContext* context);
-#endif
+    int quantFormat,
+    LaunchContext* context = nullptr);
 
 }  // namespace helpers
 }  // namespace ops

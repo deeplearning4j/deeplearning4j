@@ -20,6 +20,7 @@
 
 #include <array/NDArray.h>
 #include <system/common.h>
+#include <execution/LaunchContext.h>
 
 namespace sd {
 namespace ops {
@@ -44,15 +45,9 @@ struct MLAConfig {
 };
 
 /**
- * MLA forward pass on CPU.
- *
- * Query attends to a compressed latent KV cache that is decompressed
- * per-layer via kvDownProj.
- *
- * Algorithm:
- *   1. Decompress: latentKVCache @ kvDownProj -> K, V
- *   2. Attention:  softmax(Q @ K^T * scale) @ V
- *   3. GQA head mapping if numHeads != numKvHeads
+ * MLA forward pass — single unified declaration.
+ * CPU impl in helpers/cpu/mla_attention.cpp
+ * CUDA impl in helpers/cuda/mla_attention.cu
  *
  * @param query          [B, 1, numHeads, headDim]
  * @param latentKVCache  [B, maxSeqLen, latentDim] - shared across layers
@@ -61,35 +56,9 @@ struct MLAConfig {
  * @param output         [B, 1, numHeads, headDim]
  * @param seqLen         current valid sequence length in the cache
  * @param config         MLA configuration parameters
+ * @param context        launch context (nullptr for CPU default)
  */
-SD_LIB_HIDDEN void mlaAttentionCpu(
-    NDArray* query,
-    NDArray* latentKVCache,
-    NDArray* kvDownProj,
-    NDArray* ropeCache,
-    NDArray* output,
-    int seqLen,
-    const MLAConfig& config);
-
-#if defined(SD_CUDA)
-/**
- * MLA forward pass on CUDA.
- *
- * Same algorithm as CPU but with GPU-optimized kernels:
- * - One block per (batch, head) pair
- * - Shared memory for decompressed K slice
- * - Warp-level reductions for softmax and attention output
- *
- * @param query          [B, 1, numHeads, headDim]
- * @param latentKVCache  [B, maxSeqLen, latentDim] - shared across layers
- * @param kvDownProj     [latentDim, 2 * numKvHeads * headDim] - per-layer decompression
- * @param ropeCache      [B, maxSeqLen, ropeHeadDim] optional separate RoPE portion
- * @param output         [B, 1, numHeads, headDim]
- * @param seqLen         current valid sequence length in the cache
- * @param config         MLA configuration parameters
- * @param context        CUDA launch context
- */
-SD_LIB_HIDDEN void mlaAttentionCuda(
+SD_LIB_HIDDEN void mlaAttention(
     NDArray* query,
     NDArray* latentKVCache,
     NDArray* kvDownProj,
@@ -97,8 +66,7 @@ SD_LIB_HIDDEN void mlaAttentionCuda(
     NDArray* output,
     int seqLen,
     const MLAConfig& config,
-    LaunchContext* context);
-#endif
+    LaunchContext* context = nullptr);
 
 }  // namespace helpers
 }  // namespace ops

@@ -136,7 +136,7 @@ static void applyLogitPenalties_(NDArray* logits, NDArray* inputIds,
     samediff::Threads::parallel_tad(func, 0, batch);
 }
 
-void applyLogitPenaltiesCpu(NDArray* logits, NDArray* inputIds,
+void applyLogitPenalties(NDArray* logits, NDArray* inputIds,
                             double repPenalty, double freqPenalty,
                             double presPenalty, LaunchContext* context) {
     if (repPenalty == 1.0 && freqPenalty == 0.0 && presPenalty == 0.0) return;
@@ -226,7 +226,7 @@ static void applyMinPFilter_(NDArray* logits, float minPF) {
     samediff::Threads::parallel_tad(func, 0, batch);
 }
 
-void applyMinPFilterCpu(NDArray* logits, double minP, LaunchContext* context) {
+void applyMinPFilter(NDArray* logits, double minP, LaunchContext* context) {
     if (minP <= 0.0) return;
 
     BUILD_SINGLE_SELECTOR(logits->dataType(), applyMinPFilter_,

@@ -28,6 +28,7 @@
 #include <math/templatemath.h>
 #include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/reverse.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <helpers/AttentionHelper.h>
 #include <helpers/FlashAttentionHelper.h>
@@ -203,11 +204,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     // time; only the VALUE changes between replays (updated via D2D staging).
     // The old code used cachePosInput->e<LongType>(0) which bakes the HOST VALUE
     // into the graph — broken on replay (every step writes to the same position).
-#if defined(SD_CUDA)
-    const void* cachePosPtr = cachePosInput->specialBuffer();
-#else
-    const void* cachePosPtr = cachePosInput->buffer();
-#endif
+    const void* cachePosPtr = sd::graph::dspBufferConst(cachePosInput);
 
     // Write current K/V at cache_position in the buffers (in-place).
     // kvInPlaceWriteBSHD handles both rank-4 BSHD and rank-3 BSF layouts.

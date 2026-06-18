@@ -70,11 +70,7 @@ CUSTOM_OP_IMPL(lightning_attention, 5, 1, false, 0, 0) {
 
     bool isCausal = block.getIArguments()->size() > 0 ? (I_ARG(0) != 0) : true;
 
-#if defined(SD_CUDA)
-    helpers::lightningAttentionCuda(block.launchContext(), query, key, value, decayRates, state, output, isCausal);
-#else
-    helpers::lightningAttentionCpu(block.launchContext(), query, key, value, decayRates, state, output, isCausal);
-#endif
+    helpers::lightningAttention(block.launchContext(), query, key, value, decayRates, state, output, isCausal);
 
     return sd::Status::OK;
 }

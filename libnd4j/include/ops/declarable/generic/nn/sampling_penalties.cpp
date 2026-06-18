@@ -70,22 +70,13 @@ CUSTOM_OP_IMPL(sampling_penalties, 2, 1, false, 0, 0) {
 
     // Apply penalties
     if (repPenalty != 1.0 || freqPenalty != 0.0 || presPenalty != 0.0) {
-#if defined(SD_CUDA)
-        helpers::applyLogitPenaltiesCuda(output, inputIds, repPenalty, freqPenalty, presPenalty,
-                                          block.launchContext());
-#else
-        helpers::applyLogitPenaltiesCpu(output, inputIds, repPenalty, freqPenalty, presPenalty,
-                                         block.launchContext());
-#endif
+        helpers::applyLogitPenalties(output, inputIds, repPenalty, freqPenalty, presPenalty,
+                                     block.launchContext());
     }
 
     // Apply min-P filtering
     if (minP > 0.0) {
-#if defined(SD_CUDA)
-        helpers::applyMinPFilterCuda(output, minP, block.launchContext());
-#else
-        helpers::applyMinPFilterCpu(output, minP, block.launchContext());
-#endif
+        helpers::applyMinPFilter(output, minP, block.launchContext());
     }
 
     return sd::Status::OK;

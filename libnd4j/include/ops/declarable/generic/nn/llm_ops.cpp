@@ -996,8 +996,8 @@ CUSTOM_OP_IMPL(fused_gemm_swiglu_bp, 4, 3, false, 0, 0) {
             M *= x->sizeAt(d);
         std::vector<sd::LongType> flatX = {M, K};
         std::vector<sd::LongType> flatG = {M, N};
-        xFlat = new NDArray(x->reshape('c', flatX));
-        gradFlat = new NDArray(gradOut->reshape('c', flatG));
+        xFlat = x->reshape('c', flatX);
+        gradFlat = gradOut->reshape('c', flatG);
     } else {
         xFlat = x;
         gradFlat = gradOut;
@@ -1461,11 +1461,7 @@ CUSTOM_OP_IMPL(kv_cache_quantize, 1, 2, false, 0, 1) {
 
     int quantFormat = INT_ARG(0);
 
-#if defined(SD_CUDA)
-    helpers::kvCacheQuantizeCuda(input, quantized, scales, quantFormat, block.launchContext());
-#else
-    helpers::kvCacheQuantizeCpu(input, quantized, scales, quantFormat);
-#endif
+    helpers::kvCacheQuantize(input, quantized, scales, quantFormat, block.launchContext());
 
     return Status::OK;
 }
@@ -1511,11 +1507,7 @@ CUSTOM_OP_IMPL(kv_cache_dequantize, 2, 1, false, 0, 1) {
 
     int quantFormat = INT_ARG(0);
 
-#if defined(SD_CUDA)
-    helpers::kvCacheDequantizeCuda(quantized, scales, output, quantFormat, block.launchContext());
-#else
-    helpers::kvCacheDequantizeCpu(quantized, scales, output, quantFormat);
-#endif
+    helpers::kvCacheDequantize(quantized, scales, output, quantFormat, block.launchContext());
 
     return Status::OK;
 }

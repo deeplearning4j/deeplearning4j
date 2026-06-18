@@ -62,11 +62,7 @@ CUSTOM_OP_IMPL(linear_attention_decode, 5, 1, false, 0, 0) {
                  "linear_attention_decode: seqLen dimension must be 1 for decode, got %lld",
                  (long long)query->sizeAt(1));
 
-#if defined(SD_CUDA)
-    helpers::linearAttentionDecodeCuda(block.launchContext(), query, key, value, decayRates, state, output);
-#else
-    helpers::linearAttentionDecodeCpu(block.launchContext(), query, key, value, decayRates, state, output);
-#endif
+    helpers::linearAttentionDecode(block.launchContext(), query, key, value, decayRates, state, output);
 
     return sd::Status::OK;
 }

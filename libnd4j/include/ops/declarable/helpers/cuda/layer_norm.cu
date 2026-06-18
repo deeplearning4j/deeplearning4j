@@ -216,7 +216,7 @@ template void launchLayerNormKernel<float16>(
 //////////////////////////////////////////////////////////////////////////////
 // Public interface called from layer_norm op
 //////////////////////////////////////////////////////////////////////////////
-void layerNormCuda(
+void layerNorm(
     NDArray* input,
     NDArray* gain,
     NDArray* bias,
@@ -232,7 +232,7 @@ void layerNormCuda(
 
   if (!lastDimNorm) {
     // Fall back to general implementation for non-last-dimension normalization
-    THROW_EXCEPTION("layerNormCuda: Only last dimension normalization is supported");
+    THROW_EXCEPTION("layerNorm (CUDA): Only last dimension normalization is supported");
   }
 
   const LongType numRows = input->lengthOf() / input->sizeAt(-1);
@@ -267,7 +267,7 @@ void layerNormCuda(
         reinterpret_cast<float16*>(output->specialBuffer()),
         numRows, rowLen, static_cast<int>(gainDtype), static_cast<int>(biasDtype), epsilon, *stream);
   } else {
-    THROW_EXCEPTION("layerNormCuda: Unsupported data type");
+    THROW_EXCEPTION("layerNorm (CUDA): Unsupported data type");
   }
 
   NDArray::registerSpecialUse({output}, {input, gain, bias});

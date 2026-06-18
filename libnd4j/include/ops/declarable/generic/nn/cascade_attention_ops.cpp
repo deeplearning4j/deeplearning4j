@@ -69,11 +69,7 @@ CUSTOM_OP_IMPL(cascade_attention, 3, 1, false, 0, 0) {
     auto headDim = query->sizeAt(3);
     double scale = block.getTArguments()->size() > 0 ? T_ARG(0) : (1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(headDim)));
 
-#if defined(SD_CUDA)
-    helpers::cascadeAttentionCuda(block.launchContext(), query, key, value, output, chunkSize, scale);
-#else
-    helpers::cascadeAttentionCpu(block.launchContext(), query, key, value, output, chunkSize, scale);
-#endif
+    helpers::cascadeAttention(block.launchContext(), query, key, value, output, chunkSize, scale);
 
     return sd::Status::OK;
 }

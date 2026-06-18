@@ -59,11 +59,7 @@ CUSTOM_OP_IMPL(segment_gemm, 4, 1, false, 0, 0) {
                  "segment_gemm: segmentSizes must be rank 1, got %lld",
                  (long long)segmentSizes->rankOf());
 
-#if defined(SD_CUDA)
-    helpers::segmentGemmCuda(block.launchContext(), input, weights, segmentOffsets, segmentSizes, output);
-#else
-    helpers::segmentGemmCpu(block.launchContext(), input, weights, segmentOffsets, segmentSizes, output);
-#endif
+    helpers::segmentGemm(block.launchContext(), input, weights, segmentOffsets, segmentSizes, output);
 
     return sd::Status::OK;
 }

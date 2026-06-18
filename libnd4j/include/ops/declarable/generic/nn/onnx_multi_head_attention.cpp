@@ -31,6 +31,7 @@
 #include <helpers/AttentionWorkspace.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <ops/declarable/headers/nn.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <cmath>
 
 namespace sd {
@@ -218,11 +219,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     // cachePosPtr: device pointer (CUDA) / host pointer (CPU) to int64 position
 
     // Use specialBuffer on CUDA (device pointer), buffer on CPU (host pointer)
-#if defined(SD_CUDA)
-    const void* cachePosPtr = cachePosInput->specialBuffer();
-#else
-    const void* cachePosPtr = cachePosInput->buffer();
-#endif
+    const void* cachePosPtr = sd::graph::dspBufferConst(cachePosInput);
 
     // Write into the ORIGINAL persistent KV cache buffers, not cast temporaries.
     // If pastKey was cast to a different dtype, origPastKey points to the real cache.

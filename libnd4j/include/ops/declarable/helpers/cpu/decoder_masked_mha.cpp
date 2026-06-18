@@ -251,7 +251,7 @@ static void decoderMaskedMhaCpu_(
     samediff::Threads::parallel_tad(func, 0, batch);
 }
 
-void decoderMaskedMhaCpu(
+void decoderMaskedMha(
     NDArray* hiddenStates,
     NDArray* qkvWeight,
     NDArray* oWeight,
@@ -263,7 +263,8 @@ void decoderMaskedMhaCpu(
     NDArray* output,
     NDArray* updatedKeyCache,
     NDArray* updatedValueCache,
-    const DecoderMhaConfig& config) {
+    const DecoderMhaConfig& config,
+    LaunchContext* /*context*/) {
 
     BUILD_SINGLE_SELECTOR(hiddenStates->dataType(), decoderMaskedMhaCpu_,
                           (hiddenStates, qkvWeight, oWeight, keyCache, valueCache,
