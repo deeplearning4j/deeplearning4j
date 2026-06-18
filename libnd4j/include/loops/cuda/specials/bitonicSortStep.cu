@@ -380,17 +380,27 @@ SD_HOST void bitonicSortStepGenericValue(
   sd::DebugHelper::checkErrorCode(stream, "bitonicSortStepGenericValue failed");
 }
 
+#ifdef SD_SPLIT_TYPE_INDEX
+#define SD_COMMON_TYPES_FIRST SD_SPLIT_TYPE_LIST
+#else
+#define SD_COMMON_TYPES_FIRST SD_COMMON_TYPES
+#endif
+#if !defined(SD_SPLIT_TYPE_INDEX) || (COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX)
 BUILD_SINGLE_TEMPLATE( void bitonicSortStepGeneric,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
      int j, int k, int length, bool descending),
-    SD_COMMON_TYPES);
+    SD_COMMON_TYPES_FIRST);
 
 BUILD_DOUBLE_TEMPLATE( void bitonicSortStepGenericKey,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
      void *vy, sd::LongType const *yShapeInfo, int j, int k, int length, bool descending),
-    SD_COMMON_TYPES, SD_COMMON_TYPES);
+    SD_COMMON_TYPES_FIRST, SD_COMMON_TYPES);
 
 BUILD_DOUBLE_TEMPLATE( void bitonicSortStepGenericValue,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
      void *vy, sd::LongType const *yShapeInfo, int j, int k, int length, bool descending),
-    SD_COMMON_TYPES, SD_COMMON_TYPES);
+    SD_COMMON_TYPES_FIRST, SD_COMMON_TYPES);
+#endif
+#ifdef SD_COMMON_TYPES_FIRST
+#undef SD_COMMON_TYPES_FIRST
+#endif

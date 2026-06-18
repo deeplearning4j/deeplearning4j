@@ -551,6 +551,11 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
         void* reductionBuffer, \
         const sd::LongType* tadOnlyShapeInfo);
 
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+INSTANT_PROCESS_SINGLE(SD_SPLIT_TYPE_LIST)
+#endif
+#else
 // ITERATE_LIST((SD_COMMON_TYPES), INSTANT_PROCESS_SINGLE)
 INSTANT_PROCESS_SINGLE((BOOL, bool))
 INSTANT_PROCESS_SINGLE((FLOAT16, float16))
@@ -565,6 +570,7 @@ INSTANT_PROCESS_SINGLE((INT64, sd::LongType))
 INSTANT_PROCESS_SINGLE((UINT16, uint16_t))
 INSTANT_PROCESS_SINGLE((UINT32, uint32_t))
 INSTANT_PROCESS_SINGLE((UINT64, uint64_t))
+#endif
 
 }  // namespace reduce
 }  // namespace functions

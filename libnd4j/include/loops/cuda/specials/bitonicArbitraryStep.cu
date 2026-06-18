@@ -426,20 +426,30 @@ SD_HOST void bitonicArbitraryStepGenericValue(
   sd::DebugHelper::checkErrorCode(stream, "bitonicArbitraryStepKernelValue failed");
 }
 
+#ifdef SD_SPLIT_TYPE_INDEX
+#define SD_COMMON_TYPES_FIRST SD_SPLIT_TYPE_LIST
+#else
+#define SD_COMMON_TYPES_FIRST SD_COMMON_TYPES
+#endif
+#if !defined(SD_SPLIT_TYPE_INDEX) || (COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX)
 BUILD_SINGLE_TEMPLATE(
      void bitonicArbitraryStepGeneric,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, int window,
      int length, int reverse, bool descending),
-    SD_COMMON_TYPES);
+    SD_COMMON_TYPES_FIRST);
 
 BUILD_DOUBLE_TEMPLATE(
      void bitonicArbitraryStepGenericKey,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, void *vy,
      sd::LongType const *yShapeInfo, int window, int length, int reverse, bool descending),
-    SD_COMMON_TYPES, SD_COMMON_TYPES);
+    SD_COMMON_TYPES_FIRST, SD_COMMON_TYPES);
 
 BUILD_DOUBLE_TEMPLATE(
      void bitonicArbitraryStepGenericValue,
     (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, void *vy,
      sd::LongType const *yShapeInfo, int window, int length, int reverse, bool descending),
-    SD_COMMON_TYPES, SD_COMMON_TYPES);
+    SD_COMMON_TYPES_FIRST, SD_COMMON_TYPES);
+#endif
+#ifdef SD_COMMON_TYPES_FIRST
+#undef SD_COMMON_TYPES_FIRST
+#endif

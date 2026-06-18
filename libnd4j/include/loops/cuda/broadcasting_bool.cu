@@ -564,7 +564,13 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(
 }
 
 // build the class
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+BUILD_DOUBLE_TEMPLATE( class BroadcastBool, , SD_SPLIT_TYPE_LIST, SD_BOOL_TYPES);
+#endif
+#else
 BUILD_DOUBLE_TEMPLATE( class BroadcastBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+#endif
 
 }  // namespace broadcast
 }  // namespace functions

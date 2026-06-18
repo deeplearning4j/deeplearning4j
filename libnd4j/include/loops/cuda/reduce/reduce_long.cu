@@ -509,7 +509,13 @@ SD_DEVICE void initializeShared(X* extraParams, X** sPartials, int sMemSize) {
 }
 
 // Explicit template instantiations for ReduceLongFunction
+#ifdef SD_SPLIT_TYPE_INDEX
+#if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
+BUILD_DOUBLE_TEMPLATE(class ReduceLongFunction, , SD_SPLIT_TYPE_LIST, SD_LONG_TYPES)
+#endif
+#else
 BUILD_DOUBLE_TEMPLATE(class ReduceLongFunction, , SD_COMMON_TYPES, SD_LONG_TYPES)
+#endif
 
 }  // namespace reduce
 }  // namespace functions
