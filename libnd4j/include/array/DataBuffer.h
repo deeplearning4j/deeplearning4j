@@ -57,14 +57,12 @@ struct DataBufferThreadState {
   int dspAllocCount = 0;
   int dspFreeCount = 0;
   int dspFreeSkipCount = 0;
-#ifdef SD_CUDA
   bool dspReplayActive = false;
   bool cublasLtDisabled = false;
-  cudaStream_t graphCaptureStream = nullptr;
-  cudaStream_t dspExecutionStream = nullptr;
+  void* graphCaptureStream = nullptr;   // cudaStream_t on CUDA, unused on CPU
+  void* dspExecutionStream = nullptr;   // cudaStream_t on CUDA, unused on CPU
   int islandSlotMin = INT_MAX;
   int islandSlotMax = INT_MIN;
-#endif
 };
 
 extern SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
@@ -85,14 +83,12 @@ extern SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
 #define tl_dspAllocCount          tl_dataBufferState.dspAllocCount
 #define tl_dspFreeCount           tl_dataBufferState.dspFreeCount
 #define tl_dspFreeSkipCount       tl_dataBufferState.dspFreeSkipCount
-#ifdef SD_CUDA
 #define tl_dspReplayActive        tl_dataBufferState.dspReplayActive
 #define tl_cublasLtDisabled       tl_dataBufferState.cublasLtDisabled
 #define tl_graphCaptureStream     tl_dataBufferState.graphCaptureStream
 #define tl_dspExecutionStream     tl_dataBufferState.dspExecutionStream
 #define tl_islandSlotMin          tl_dataBufferState.islandSlotMin
 #define tl_islandSlotMax          tl_dataBufferState.islandSlotMax
-#endif
 #endif  // __JAVACPP_HACK__
 
 class SD_LIB_EXPORT DataBuffer {
@@ -121,21 +117,18 @@ class SD_LIB_EXPORT DataBuffer {
   std::atomic<int> _deviceId;
   std::mutex _deleteMutex;
 #ifndef __JAVACPP_HACK__
-#if defined(SD_CUDA)
   mutable std::atomic<LongType> _counter;
   mutable std::atomic<LongType> _writePrimary;
   mutable std::atomic<LongType> _writeSpecial;
   mutable std::atomic<LongType> _readPrimary;
   mutable std::atomic<LongType> _readSpecial;
 
-  // CUDA event to track the last write to special (device) buffer.
-  // This enables stream-ordered consumers to wait on async D2D/H2D writes without
-  // draining the device. The event is created lazily and stores the cudaEvent_t
-  // value directly (no heap allocation in the hot path).
-  mutable void* _writeEvent = nullptr;  // cudaEvent_t handle, void* to avoid cuda_runtime.h in header
+  // Event to track the last write to special (device) buffer.
+  // On CUDA: stores cudaEvent_t as void* to avoid cuda_runtime.h in header.
+  // On CPU: unused but present so .cpp code compiles unconditionally.
+  mutable void* _writeEvent = nullptr;
   mutable std::atomic<int> _writeEventDeviceId{-1};
   mutable std::atomic<bool> _writeEventRecorded{false};
-#endif
 
 #if defined(SD_GCC_FUNCTRACE)
   StackTrace *allocationStackTracePrimary = nullptr;
@@ -278,19 +271,11 @@ class SD_LIB_EXPORT DataBuffer {
    */
   bool isValid() const { return _magicNumber == MAGIC_NUMBER && !closed; }
 
-#if defined(SD_CUDA)
   void* writeEvent() const { return _writeEvent; }
   bool writeEventRecorded() const { return _writeEventRecorded.load(std::memory_order_acquire); }
   void waitForSpecialWriteEvent(void* stream) const;
   void recordSpecialWriteEvent(void* stream) const;
   void clearSpecialWriteEvent() const;
-#else
-  void* writeEvent() const { return nullptr; }
-  bool writeEventRecorded() const { return false; }
-  void waitForSpecialWriteEvent(void* stream) const {}
-  void recordSpecialWriteEvent(void* stream) const {}
-  void clearSpecialWriteEvent() const {}
-#endif
 
   void allocatePrimary();
   void allocateSpecial();

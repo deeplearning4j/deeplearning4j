@@ -564,15 +564,13 @@ void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
       gem = sd::graph::GraphExecutionMode::GEM_AUTO;
     }
 
-#ifndef SD_CUDA
-    // On non-CUDA builds, map CUDA-specific JIT modes to the closest equivalent.
+    // On CPU builds, map CUDA-specific JIT modes to the closest equivalent.
     // Keep GEM_CUDA_GRAPHS as a distinct "graph replay" request so the plan
     // can route to CPU graph backends (oneDNN/ACL) without forcing AUTO mode.
     if (gem == sd::graph::GraphExecutionMode::GEM_NVRTC_JIT ||
         gem == sd::graph::GraphExecutionMode::GEM_PTX_JIT) {
       gem = sd::graph::GraphExecutionMode::GEM_TRITON;
     }
-#endif
 
     reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setGraphExecutionMode(gem);
 

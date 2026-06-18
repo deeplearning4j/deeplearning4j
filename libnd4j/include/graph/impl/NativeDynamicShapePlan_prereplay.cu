@@ -247,10 +247,11 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
     if (defaultStreamPtr != nullptr) {
       defaultStream = *defaultStreamPtr;
     }
+    cudaEvent_t crossEvt = reinterpret_cast<cudaEvent_t>(execCtx->crossStreamEvent);
     if (defaultStream != nullptr && defaultStream != cudaStr &&
-        execCtx->crossStreamEvent != nullptr) {
-      cudaEventRecord(execCtx->crossStreamEvent, defaultStream);
-      cudaStreamWaitEvent(cudaStr, execCtx->crossStreamEvent, 0);
+        crossEvt != nullptr) {
+      cudaEventRecord(crossEvt, defaultStream);
+      cudaStreamWaitEvent(cudaStr, crossEvt, 0);
       DSP_DIAG(STREAM_SYNC,
                "%s cross-stream sync: recordedOn=defaultStream=%p waitedOn=dspStream=%p",
                diagTag, (void*)defaultStream, (void*)cudaStr);
@@ -384,10 +385,11 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
         if (target == ExecTarget::GRAPH_REPLAY) {
           auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
           cudaStream_t lcStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
+          cudaEvent_t stageEvt = reinterpret_cast<cudaEvent_t>(execCtx->crossStreamEvent);
           if (lcStream != nullptr && lcStream != cudaStr && cudaStr != nullptr) {
-            if (execCtx->crossStreamEvent != nullptr) {
-              cudaEventRecord(execCtx->crossStreamEvent, cudaStr);
-              cudaStreamWaitEvent(lcStream, execCtx->crossStreamEvent, 0);
+            if (stageEvt != nullptr) {
+              cudaEventRecord(stageEvt, cudaStr);
+              cudaStreamWaitEvent(lcStream, stageEvt, 0);
 	      DSP_DIAG(STREAM_SYNC,
 	               "%s: D2D→slot ordering: event on dspStream=%p, wait on lcStream=%p",
 	               diagTag, (void*)cudaStr, (void*)lcStream);

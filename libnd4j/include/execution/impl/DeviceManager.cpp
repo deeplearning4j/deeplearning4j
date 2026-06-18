@@ -136,11 +136,7 @@ void DeviceManager::discoverCpuDevices() {
 }
 
 // CUDA implementation in execution/cuda/DeviceManager_cuda.cu
-#ifndef SD_CUDA
-void DeviceManager::discoverCudaDevices() {
-    // No CUDA devices to discover in CPU build
-}
-#endif
+// CPU implementation in execution/cpu/DeviceManager.cpp
 
 void DeviceManager::discoverMetalDevices() {
 #ifdef SD_APPLE_MPS
@@ -159,17 +155,6 @@ void DeviceManager::discoverOpenClDevices() {
     // For now, this is a placeholder
 }
 
-#ifndef SD_CUDA
-void DeviceManager::initializeP2PConnections() {
-    // No P2P connections in CPU build
-}
-#endif
-
-#ifndef SD_CUDA
-void DeviceManager::probeP2PCapabilities(int device1, int device2) {
-    // No P2P probing in CPU build
-}
-#endif
 
 int DeviceManager::getTotalDeviceCount() const {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -340,17 +325,7 @@ std::vector<P2PConnection> DeviceManager::getAllP2PConnections() const {
 }
 
 // CUDA implementation in execution/cuda/DeviceManager_cuda.cu
-#ifndef SD_CUDA
-bool DeviceManager::enableP2P(int device1, int device2) {
-    return false;
-}
-#endif
-
-#ifndef SD_CUDA
-void DeviceManager::disableP2P(int device1, int device2) {
-    // No P2P in CPU build
-}
-#endif
+// CPU implementation in execution/cpu/DeviceManager.cpp
 
 void DeviceManager::enableAllP2P() {
     for (const auto& conn : _p2pConnections) {
@@ -495,11 +470,6 @@ size_t DeviceManager::getDeviceFreeMemory(int globalIndex) const {
     return 0;
 }
 
-#ifndef SD_CUDA
-void DeviceManager::updateMemoryStats(int globalIndex) {
-    // CPU build: no GPU memory stats to update
-}
-#endif
 
 void DeviceManager::updateAllMemoryStats() {
     for (size_t i = 0; i < _devices.size(); ++i) {
@@ -664,11 +634,6 @@ void DeviceManager::setCurrentDevice(int globalIndex) {
     currentDeviceRef() = globalIndex;
 }
 
-#ifndef SD_CUDA
-void DeviceManager::setCurrentDeviceCuda(const DeviceInfo& device) {
-    // No CUDA device switching in CPU build
-}
-#endif
 
 int DeviceManager::getCurrentDevice() const {
     return currentDeviceRef();
@@ -703,15 +668,6 @@ int DeviceManager::getGlobalIndex(samediff::Engine engine, int localIndex) const
     return findGlobalIndex(type, localIndex);
 }
 
-#ifndef SD_CUDA
-void DeviceManager::synchronizeAll() {
-    // No GPU synchronization in CPU build
-}
-
-void DeviceManager::synchronize(int globalIndex) {
-    // No GPU synchronization in CPU build
-}
-#endif
 
 std::string DeviceManager::deviceToString(const DeviceInfo& device) const {
     std::ostringstream ss;

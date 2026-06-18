@@ -17,13 +17,10 @@
 
 #include <system/config/CudaDeviceConfig.h>
 #include <system/config/EnvHelper.h>
-#include <helpers/logger.h>
-
-#ifdef SD_CUDA
 #include <system/CudaLimitType.h>
+#include <helpers/logger.h>
 #include <legacy/cuda/Environment_cuda.h>
 #include <legacy/cuda/Environment_CudaConfig_cuda.h>
-#endif
 
 namespace sd {
 namespace config {
@@ -33,11 +30,9 @@ CudaDeviceConfig::CudaDeviceConfig() {
 }
 
 void CudaDeviceConfig::setCudaCurrentDevice(int device) {
-#ifdef SD_CUDA
-  if (sd::Environment_setCudaCurrentDevice_cuda(device, _cudaDeviceCount.load())) {
+  if (Environment_setCudaCurrentDevice_cuda(device, _cudaDeviceCount.load())) {
     _cudaCurrentDevice.store(device);
   }
-#endif
 }
 
 void CudaDeviceConfig::setCudaMemoryPoolSize(int sizeInMB) {
@@ -79,100 +74,73 @@ void CudaDeviceConfig::setCudaEventLimit(int limit) {
 }
 
 bool CudaDeviceConfig::setCudaDeviceLimit(int limitType, size_t value) {
-#ifdef SD_CUDA
-  return sd::Environment_setCudaDeviceLimit_cuda(limitType, value);
-#else
-  return false;
-#endif
+  return Environment_setCudaDeviceLimit_cuda(limitType, value);
 }
 
 void CudaDeviceConfig::setCudaStackSize(size_t size) {
-#ifdef SD_CUDA
   if (setCudaDeviceLimit(CUDA_LIMIT_STACK_SIZE, size)) _cudaStackSize.store(size);
-#endif
 }
 
 void CudaDeviceConfig::setCudaMallocHeapSize(size_t size) {
-#ifdef SD_CUDA
   if (setCudaDeviceLimit(CUDA_LIMIT_MALLOC_HEAP_SIZE, size)) _cudaMallocHeapSize.store(size);
-#endif
 }
 
 void CudaDeviceConfig::setCudaPrintfFifoSize(size_t size) {
-#ifdef SD_CUDA
   if (setCudaDeviceLimit(CUDA_LIMIT_PRINTF_FIFO_SIZE, size)) _cudaPrintfFifoSize.store(size);
-#endif
 }
 
 void CudaDeviceConfig::setCudaDevRuntimeSyncDepth(size_t depth) {
-#ifdef SD_CUDA
   if (setCudaDeviceLimit(CUDA_LIMIT_DEV_RUNTIME_SYNC_DEPTH, depth)) _cudaDevRuntimeSyncDepth.store(depth);
-#endif
 }
 
 void CudaDeviceConfig::setCudaDevRuntimePendingLaunchCount(size_t count) {
-#ifdef SD_CUDA
   if (setCudaDeviceLimit(CUDA_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT, count)) _cudaDevRuntimePendingLaunchCount.store(count);
-#endif
 }
 
 void CudaDeviceConfig::setCudaMaxL2FetchGranularity(size_t size) {
-#ifdef SD_CUDA
   if (setCudaDeviceLimit(CUDA_LIMIT_MAX_L2_FETCH_GRANULARITY, size)) _cudaMaxL2FetchGranularity.store(size);
-#endif
 }
 
 void CudaDeviceConfig::setCudaPersistingL2CacheSize(size_t size) {
-#ifdef SD_CUDA
   if (setCudaDeviceLimit(CUDA_LIMIT_PERSISTING_L2_CACHE_SIZE, size)) _cudaPersistingL2CacheSize.store(size);
-#endif
 }
 
 void CudaDeviceConfig::setCudaTensorCoreEnabled(bool enabled) {
-#ifdef SD_CUDA
   _cudaTensorCoreEnabled.store(enabled);
   int deviceId = _cudaCurrentDevice.load();
   int deviceCount = _cudaDeviceCount.load();
   int computeMajor = (deviceId >= 0 && deviceId < deviceCount) ? _capabilities[deviceId].first() : 0;
-  sd::Environment_setCudaTensorCoreEnabled_cuda(enabled, deviceId, deviceCount, computeMajor);
-#endif
+  Environment_setCudaTensorCoreEnabled_cuda(enabled, deviceId, deviceCount, computeMajor);
 }
 
 void CudaDeviceConfig::setCudaBlockingSync(int mode) {
-#ifdef SD_CUDA
   if (mode >= 0 && mode <= 1) {
     _cudaBlockingSync.store(mode);
-    sd::Environment_setCudaBlockingSync_cuda(mode);
+    Environment_setCudaBlockingSync_cuda(mode);
   }
-#endif
 }
 
 void CudaDeviceConfig::setCudaDeviceSchedule(int schedule) {
-#ifdef SD_CUDA
   if (schedule >= 0 && schedule <= 3) {
     _cudaDeviceSchedule.store(schedule);
-    sd::Environment_setCudaDeviceSchedule_cuda(schedule);
+    Environment_setCudaDeviceSchedule_cuda(schedule);
   }
-#endif
 }
 
 void CudaDeviceConfig::initCudaDeviceLimits() {
-#ifdef SD_CUDA
-  {
-    size_t stackSize = 0, mallocHeapSize = 0, printfFifoSize = 0;
-    size_t devRuntimeSyncDepth = 0, devRuntimePendingLaunchCount = 0;
-    size_t maxL2FetchGranularity = 0, persistingL2CacheSize = 0;
-    sd::Environment_queryCudaDeviceLimits(stackSize, mallocHeapSize, printfFifoSize,
-                                      devRuntimeSyncDepth, devRuntimePendingLaunchCount,
-                                      maxL2FetchGranularity, persistingL2CacheSize);
-    _cudaStackSize.store(stackSize);
-    _cudaMallocHeapSize.store(mallocHeapSize);
-    _cudaPrintfFifoSize.store(printfFifoSize);
-    _cudaDevRuntimeSyncDepth.store(devRuntimeSyncDepth);
-    _cudaDevRuntimePendingLaunchCount.store(devRuntimePendingLaunchCount);
-    _cudaMaxL2FetchGranularity.store(maxL2FetchGranularity);
-    _cudaPersistingL2CacheSize.store(persistingL2CacheSize);
-  }
+  size_t stackSize = 0, mallocHeapSize = 0, printfFifoSize = 0;
+  size_t devRuntimeSyncDepth = 0, devRuntimePendingLaunchCount = 0;
+  size_t maxL2FetchGranularity = 0, persistingL2CacheSize = 0;
+  Environment_queryCudaDeviceLimits(stackSize, mallocHeapSize, printfFifoSize,
+                                    devRuntimeSyncDepth, devRuntimePendingLaunchCount,
+                                    maxL2FetchGranularity, persistingL2CacheSize);
+  _cudaStackSize.store(stackSize);
+  _cudaMallocHeapSize.store(mallocHeapSize);
+  _cudaPrintfFifoSize.store(printfFifoSize);
+  _cudaDevRuntimeSyncDepth.store(devRuntimeSyncDepth);
+  _cudaDevRuntimePendingLaunchCount.store(devRuntimePendingLaunchCount);
+  _cudaMaxL2FetchGranularity.store(maxL2FetchGranularity);
+  _cudaPersistingL2CacheSize.store(persistingL2CacheSize);
 
   // Load custom limits from environment variables
   {
@@ -203,15 +171,13 @@ void CudaDeviceConfig::initCudaDeviceLimits() {
     int64_t v = readInt64Env("SD_CUDA_PERSISTING_L2_CACHE_SIZE", -1);
     if (v > 0) setCudaPersistingL2CacheSize(static_cast<size_t>(v));
   }
-#endif
 }
 
 void CudaDeviceConfig::initFromEnvironment() {
-#ifdef SD_CUDA
   // CUDA device init (query device count, capabilities, BLAS version)
   {
     int devCnt = 0;
-    sd::Environment_initCuda(devCnt, _capabilities,
+    Environment_initCuda(devCnt, _capabilities,
                          _blasMajorVersion, _blasMinorVersion, _blasPatchVersion);
     _cudaDeviceCount.store(devCnt);
   }
@@ -305,7 +271,6 @@ void CudaDeviceConfig::initFromEnvironment() {
   initCudaDeviceLimits();
 
   _cudaCurrentDevice.store(0);
-#endif
 }
 
 }  // namespace config

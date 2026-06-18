@@ -278,7 +278,7 @@ static void cascadeAttentionLauncher(LaunchContext* context,
     DebugHelper::checkGlobalErrorCode("cascadeAttentionKernel failed");
 }
 
-void cascadeAttentionCuda(LaunchContext* context,
+void cascadeAttention(LaunchContext* context,
                            NDArray* query, NDArray* key, NDArray* value,
                            NDArray* output, int chunkSize, double scale) {
     NDArray::prepareSpecialUse({output}, {query, key, value});

@@ -125,7 +125,7 @@ static void cascadeAttentionCpu_(LaunchContext* context,
     }
 }
 
-void cascadeAttentionCpu(LaunchContext* context,
+void cascadeAttention(LaunchContext* context,
                           NDArray* query, NDArray* key, NDArray* value,
                           NDArray* output, int chunkSize, double scale) {
     BUILD_SINGLE_SELECTOR(query->dataType(), cascadeAttentionCpu_,

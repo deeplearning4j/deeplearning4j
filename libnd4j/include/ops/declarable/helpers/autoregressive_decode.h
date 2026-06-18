@@ -90,9 +90,15 @@ struct AutoregressiveDecodeConfig {
 };
 
 /**
- * CPU implementation of the autoregressive decode loop.
+ * Autoregressive decode loop (CPU and CUDA — platform selected at link time).
+ *
+ * When config->planHandle is non-null, executes the full native decode loop:
+ *   plan.execute() → token_sample → kv_scatter → embed_lookup → input update → repeat
+ *
+ * When config is null or planHandle is null, falls back to the legacy path
+ * (mask/pos update only — plan execution done by Java caller).
  */
-SD_LIB_HIDDEN void autoregressiveDecodeCpu(
+SD_LIB_HIDDEN void autoregressiveDecode(
     NDArray* prefillEmbeddings,    // [1, seqLen, hidden]
     NDArray* embeddingTable,       // [vocabSize, hidden]
     NDArray* inputIds,             // [1, seqLen] INT64
@@ -112,38 +118,6 @@ SD_LIB_HIDDEN void autoregressiveDecodeCpu(
     double repPenalty,
     LaunchContext* context,
     AutoregressiveDecodeConfig* config = nullptr);
-
-#if defined(SD_CUDA)
-/**
- * CUDA implementation of the autoregressive decode loop.
- *
- * When config->planHandle is non-null, executes the full native decode loop:
- *   plan.execute() → token_sample → kv_scatter → embed_lookup → input update → repeat
- *
- * When config is null or planHandle is null, falls back to the legacy path
- * (mask/pos update only — plan execution done by Java caller).
- */
-SD_LIB_HIDDEN void autoregressiveDecodeCuda(
-    NDArray* prefillEmbeddings,
-    NDArray* embeddingTable,
-    NDArray* inputIds,
-    NDArray* attentionMask,
-    NDArray* positionIds,
-    NDArray** staticKvBuffers,
-    int numKvPairs,
-    NDArray* generatedTokenIds,
-    NDArray* tokenCount,
-    NDArray* timingInfo,
-    int maxNewTokens,
-    int prefillSeqLen,
-    const std::vector<int>& stopTokenIds,
-    double temperature,
-    int topK,
-    double topP,
-    double repPenalty,
-    LaunchContext* context,
-    AutoregressiveDecodeConfig* config = nullptr);
-#endif
 
 }  // namespace helpers
 }  // namespace ops

@@ -52,7 +52,7 @@ class DspStreamGuard {
    * @param deviceId   If >= 0, also save/restore cudaSetDevice context
    */
   explicit DspStreamGuard(cudaStream_t stream, int deviceId = -1)
-      : previousStream_(tl_dspExecutionStream),
+      : previousStream_(reinterpret_cast<cudaStream_t>(tl_dspExecutionStream)),
         previousDevice_(-1),
         restoreDevice_(deviceId >= 0) {
     if (restoreDevice_) {

@@ -146,13 +146,9 @@ int lastErrorCode() { return sd::LaunchContext::defaultContext()->errorReference
 
 const char *lastErrorMessage() { return sd::LaunchContext::defaultContext()->errorReference()->errorMessage(); }
 
-// For CUDA builds, clearLastError is defined in NativeOps.cu with CUDA-specific error clearing
-#ifndef SD_CUDA
-void clearLastError() {
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
-}
-#endif
+// clearLastError: platform-specific implementations in
+//   legacy/cpu/NativeOpsHelpers_DataBuffers_platform.cpp  (CPU build)
+//   NativeOps.cu                                          (CUDA build)
 
 sd::LaunchContext *defaultLaunchContext() { return sd::LaunchContext::defaultContext(); }
 
@@ -612,18 +608,9 @@ void dbForceSyncToSpecial(OpaqueDataBuffer *dataBuffer) {
     dataBuffer->dataBuffer()->syncToSpecial(true);
 }
 
-#ifndef SD_CUDA
-// CPU implementation - simple sequential fallback
-void batchSyncToSpecialAsync(OpaqueDataBuffer **buffers, int bufferCount, int streamCount) {
-  // On CPU, just iterate through and sync each buffer sequentially
-  // The 'async' and 'streamCount' parameters are ignored as CPU doesn't have streams
-  for (int i = 0; i < bufferCount; i++) {
-    if (buffers[i] != nullptr) {
-      dbSyncToSpecial(buffers[i]);
-    }
-  }
-}
-#endif
+// batchSyncToSpecialAsync: platform-specific implementations in
+//   legacy/cpu/NativeOpsHelpers_DataBuffers_platform.cpp  (CPU build)
+//   legacy/cuda/ or NativeOps.cu                          (CUDA build)
 
 void dbMigrate(OpaqueDataBuffer *dataBuffer) {
   if (dataBuffer == nullptr)
@@ -632,25 +619,9 @@ void dbMigrate(OpaqueDataBuffer *dataBuffer) {
     dataBuffer->dataBuffer()->migrate();
 }
 
-#ifndef SD_CUDA
-// CPU fallback: cross-device copy is GPU-only. On CPU there's only one "device"
-// so this is a simple memcpy between DataBuffer primary buffers.
-void dbAsyncCrossDeviceCopy(OpaqueDataBuffer *dstBuffer, OpaqueDataBuffer *srcBuffer, void *dstStream) {
-  if (dstBuffer == nullptr || srcBuffer == nullptr)
-    THROW_EXCEPTION("dbAsyncCrossDeviceCopy: null buffer");
-  auto* dst = dstBuffer->dataBuffer();
-  auto* src = srcBuffer->dataBuffer();
-  if (dst == nullptr || src == nullptr)
-    THROW_EXCEPTION("dbAsyncCrossDeviceCopy: null inner DataBuffer");
-  size_t bytes = std::min(dst->getLenInBytes(), src->getLenInBytes());
-  if (bytes == 0) return;
-  // On CPU, just memcpy between primary buffers
-  if (dst->primary() != nullptr && src->primary() != nullptr) {
-    std::memcpy(dst->primary(), src->primary(), bytes);
-    dst->writePrimary();
-  }
-}
-#endif
+// dbAsyncCrossDeviceCopy: platform-specific implementations in
+//   legacy/cpu/NativeOpsHelpers_DataBuffers_platform.cpp  (CPU build)
+//   legacy/cuda/ or NativeOps.cu                          (CUDA build)
 
 
 

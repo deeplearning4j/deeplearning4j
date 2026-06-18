@@ -291,7 +291,7 @@ SD_KERNEL void laFloat32ToStateKernel(
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
-void linearAttentionDecodeCuda(
+void linearAttentionDecode(
     LaunchContext* context,
     NDArray* query,
     NDArray* key,
@@ -392,7 +392,7 @@ void linearAttentionDecodeCuda(
             output->strideAt(0), output->strideAt(1), output->strideAt(2), output->strideAt(3),
             *stream);
     } else {
-        THROW_EXCEPTION("linearAttentionDecodeCuda: unsupported data type");
+        THROW_EXCEPTION("linearAttentionDecode: unsupported data type");
     }
 
     // If state was not float32, copy the updated float32 working buffer back.

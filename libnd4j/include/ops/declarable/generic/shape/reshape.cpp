@@ -85,26 +85,7 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
                  len, zLen);
   }
 
-  // Fast path: contiguous arrays can use direct memcpy (CPU only)
-  const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
-  const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
-
-#if defined(SD_CUDA)
-  // GPU path: use assign which handles device buffers properly
   z->assign(x);
-#else
-  if (xContiguous && zContiguous) {
-    // CPU path: sync to host and use memcpy
-    x->syncToHost();
-    std::memcpy(z->buffer(), x->buffer(), len * x->sizeOfT());
-    // Mark HOST as modified and sync to DEVICE
-    z->tickWriteHost();
-    z->syncToDevice();
-  } else {
-    // Non-contiguous: use assign
-    z->assign(x);
-  }
-#endif
 
   return Status::OK;
 }

@@ -124,7 +124,7 @@ static void segmentGemmLauncher(LaunchContext* context,
     DebugHelper::checkGlobalErrorCode("segmentGemmKernel failed");
 }
 
-void segmentGemmCuda(LaunchContext* context,
+void segmentGemm(LaunchContext* context,
                       NDArray* input, NDArray* weights,
                       NDArray* segmentOffsets, NDArray* segmentSizes,
                       NDArray* output) {

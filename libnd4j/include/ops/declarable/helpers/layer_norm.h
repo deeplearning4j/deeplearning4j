@@ -24,11 +24,10 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-#if defined(SD_CUDA)
 /**
- * Fused CUDA layer normalization kernel
- * Computes: output = (input - mean) / sqrt(variance + epsilon) * gain + bias
- * in a single fused kernel for optimal GPU performance
+ * Fused layer normalization kernel.
+ * CUDA: single fused kernel for optimal GPU performance.
+ * CPU: stub (callers gate this behind dspIsCudaBuild()).
  *
  * @param input Input tensor
  * @param gain Scale parameter (gamma)
@@ -38,7 +37,7 @@ namespace helpers {
  * @param epsilon Small constant for numerical stability
  * @param context Launch context
  */
-SD_LIB_HIDDEN void layerNormCuda(
+SD_LIB_HIDDEN void layerNorm(
     NDArray* input,
     NDArray* gain,
     NDArray* bias,
@@ -46,7 +45,6 @@ SD_LIB_HIDDEN void layerNormCuda(
     const std::vector<LongType>& axis,
     float epsilon,
     LaunchContext* context);
-#endif
 
 }  // namespace helpers
 }  // namespace ops

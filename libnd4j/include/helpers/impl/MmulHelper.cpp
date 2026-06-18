@@ -50,9 +50,10 @@
 #include <ops/declarable/platform/mkldnn/mkldnnUtils.h>
 #endif
 
-#if defined(HAVE_MKL) && !defined(SD_CUDA)
+#if defined(HAVE_MKL)
 #include <helpers/MklBlasHelper.h>
 #endif
+#include <graph/gpu/DspCudaDispatch.h>
 
 namespace sd {
 
@@ -212,117 +213,13 @@ bool MmulHelper::tryOneDnnBatched(NDArray* A, NDArray* B, NDArray* C,
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-// Strided batch GEMM - most efficient for contiguous batched data
-// Uses cblas_sgemm_batch_strided/cblas_dgemm_batch_strided (MKL on CPU)
-// Only handles simple row-major contiguous case for reliability
-// Non-standard layouts fall through to tryBlasBatched/tryBlasPerBatch
-//////////////////////////////////////////////////////////////////////////
-#if !defined(SD_CUDA)
-bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
-                                        double alpha, double beta) {
-#if defined(HAVE_MKL)
-  if (!Environment::getInstance().isEnableBlas()) {
-    return false;
-  }
-
-  // Check if strided batch GEMM is available
-  if (!BlasHelper::getInstance().hasStridedBatchGEMM()) {
-    return false;
-  }
-
-  const int aRank = A->rankOf();
-  const int bRank = B->rankOf();
-  const int cRank = C->rankOf();
-
-  // Only handle 3D tensors for simplicity (most common case)
-  if (aRank != 3 || bRank != 3 || cRank != 3) {
-    return false;
-  }
-
-  const auto xType = A->dataType();
-  const auto yType = B->dataType();
-  const auto zType = C->dataType();
-
-  // Types must match
-  if (xType != yType || yType != zType) {
-    return false;
-  }
-
-  // Only float and double supported for strided batch
-  if (xType != DataType::FLOAT32 && xType != DataType::DOUBLE) {
-    return false;
-  }
-
-  // Validate buffers
-  if (A->buffer() == nullptr || B->buffer() == nullptr || C->buffer() == nullptr) {
-    return false;
-  }
-
-  // Get dimensions: A[bS,M,K] @ B[bS,K,N] = C[bS,M,N]
-  const int batchSize = static_cast<int>(A->sizeAt(0));
-  const int M = static_cast<int>(A->sizeAt(1));
-  const int K = static_cast<int>(A->sizeAt(2));
-  const int K2 = static_cast<int>(B->sizeAt(1));
-  const int N = static_cast<int>(B->sizeAt(2));
-
-  // Validate dimensions
-  if (M <= 0 || K <= 0 || N <= 0 || batchSize <= 0 || K != K2) {
-    return false;
-  }
-
-  // Require strict row-major contiguous layout for all matrices
-  // A: stride[2]=1, stride[1]=K, stride[0]=M*K
-  // B: stride[2]=1, stride[1]=N, stride[0]=K*N
-  // C: stride[2]=1, stride[1]=N, stride[0]=M*N
-  const LongType expectedStrideA = static_cast<LongType>(M) * K;
-  const LongType expectedStrideB = static_cast<LongType>(K) * N;
-  const LongType expectedStrideC = static_cast<LongType>(M) * N;
-
-  const bool aValid = (A->strideAt(2) == 1) && (A->strideAt(1) == K) && (A->strideAt(0) == expectedStrideA);
-  const bool bValid = (B->strideAt(2) == 1) && (B->strideAt(1) == N) && (B->strideAt(0) == expectedStrideB);
-  const bool cValid = (C->strideAt(2) == 1) && (C->strideAt(1) == N) && (C->strideAt(0) == expectedStrideC);
-
-  if (!aValid || !bValid || !cValid) {
-    return false;  // Non-contiguous or non-row-major - let other backends handle it
-  }
-
-  // Use MKL's strided batch GEMM
-  auto blasLock = BlasHelper::getInstance().lockBlas();
-
-  if (xType == DataType::FLOAT32) {
-    sd::mkl::sgemmBatchStrided(
-        CblasRowMajor, CblasNoTrans, CblasNoTrans,
-        M, N, K,
-        static_cast<float>(alpha),
-        A->bufferAsT<float>(), K, static_cast<MKL_INT>(expectedStrideA),
-        B->bufferAsT<float>(), N, static_cast<MKL_INT>(expectedStrideB),
-        static_cast<float>(beta),
-        C->bufferAsT<float>(), N, static_cast<MKL_INT>(expectedStrideC),
-        batchSize);
-  } else {
-    sd::mkl::dgemmBatchStrided(
-        CblasRowMajor, CblasNoTrans, CblasNoTrans,
-        M, N, K,
-        alpha,
-        A->bufferAsT<double>(), K, static_cast<MKL_INT>(expectedStrideA),
-        B->bufferAsT<double>(), N, static_cast<MKL_INT>(expectedStrideB),
-        beta,
-        C->bufferAsT<double>(), N, static_cast<MKL_INT>(expectedStrideC),
-        batchSize);
-  }
-
-  return true;
-#else
-  // MKL not available - strided batch not supported here
-  return false;
-#endif
-}
-#endif  // !SD_CUDA
+// tryBlasStridedBatched is defined in cpu/MmulHelper.cpp (CPU/MKL)
+// and cuda/MmulHelper.cu (CUDA/cuBLAS) — platform build selects the right one.
 
 //////////////////////////////////////////////////////////////////////////
-#if !defined(SD_CUDA)
 bool MmulHelper::tryBlasBatched(NDArray* A, NDArray* B, NDArray* C,
                                  double alpha, double beta) {
+  if (sd::graph::dspIsCudaBuild()) return false;
   if (!Environment::getInstance().isEnableBlas()) {
     return false;
   }
@@ -467,6 +364,7 @@ bool MmulHelper::tryBlasBatched(NDArray* A, NDArray* B, NDArray* C,
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::tryBlasPerBatch(NDArray* A, NDArray* B, NDArray* C,
                                   double alpha, double beta) {
+  if (sd::graph::dspIsCudaBuild()) return false;
   if (!Environment::getInstance().isEnableBlas()) {
     return false;
   }
@@ -556,18 +454,6 @@ bool MmulHelper::tryBlasPerBatch(NDArray* A, NDArray* B, NDArray* C,
 
   return true;
 }
-#else
-// CUDA stubs - batched BLAS not available on CUDA through this path
-bool MmulHelper::tryBlasBatched(NDArray* A, NDArray* B, NDArray* C,
-                                 double alpha, double beta) {
-  return false;
-}
-
-bool MmulHelper::tryBlasPerBatch(NDArray* A, NDArray* B, NDArray* C,
-                                  double alpha, double beta) {
-  return false;
-}
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 void MmulHelper::manualBatchedGemm(NDArray* A, NDArray* B, NDArray* C,
@@ -1175,9 +1061,8 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
 
   if (z->isEmpty()) return;
 
-#if !defined(SD_CUDA)
   // Fast path for 2D with BLAS transpose flags (CPU only)
-  if (xRank == 2 && yRank == 2 && Environment::getInstance().isEnableBlas()) {
+  if (!sd::graph::dspIsCudaBuild() && xRank == 2 && yRank == 2 && Environment::getInstance().isEnableBlas()) {
     const auto xType = x->dataType();
     const bool sameTypes = (xType == y->dataType()) && (xType == z->dataType());
     const bool isFloat = (xType == DataType::FLOAT32);
@@ -1235,7 +1120,6 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
       return;
     }
   }
-#endif
 
   // Handle transpose via permute + dup
   NDArray *xT = const_cast<NDArray*>(x);
@@ -1299,42 +1183,35 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     const int yRankT = yT->rankOf();
     const int zRankT = zT->rankOf();
 
-#if !defined(SD_CUDA)
-    // CPU: use mmulBatched for 3D/4D with matching ranks (uses OneDNN/BLAS)
     if ((xRankT == 3 || xRankT == 4) && xRankT == yRankT && yRankT == zRankT) {
-      mmulBatched(xT, yT, zT, alpha, beta);
+      if (sd::graph::dspIsCudaBuild()) {
+        // CUDA: try cuBLAS strided batched GEMM first (most efficient for 3D/4D)
+        if (!tryBlasStridedBatched(xT, yT, zT, alpha, beta)) {
+          // cuBLAS couldn't handle it (non-contiguous strides, etc.)
+          // Create contiguous copies and retry cuBLAS before falling back to custom kernel.
+          NDArray* xDup = xT->dup();
+          NDArray* yDup = yT->dup();
+          if (!tryBlasStridedBatched(xDup, yDup, zT, alpha, beta)) {
+            // Still failed (unsupported type, etc.) — fall back to custom CUDA kernel
+            mmulNxN(xDup, yDup, zT, alpha, beta, z->ordering());
+          }
+          // Sync stream before freeing temporary arrays to ensure async GEMM completes.
+          // During CUDA graph capture, stream sync is illegal (poisons the capture).
+          // The dup'd arrays live until end of capture; graph replay uses fixed addresses.
+          if (!tl_graphExecutionActive && !tl_dspReplayActive) {
+            sd::graph::dspSyncDefaultStream();
+          }
+          delete xDup;
+          delete yDup;
+        }
+      } else {
+        // CPU: use mmulBatched for 3D/4D with matching ranks (uses OneDNN/BLAS)
+        mmulBatched(xT, yT, zT, alpha, beta);
+      }
     } else {
       // Fall back to mmulNxN for other cases
       mmulNxN(xT, yT, zT, alpha, beta, z->ordering());
     }
-#else
-    // CUDA: try cuBLAS strided batched GEMM first (most efficient for 3D/4D)
-    if ((xRankT == 3 || xRankT == 4) && xRankT == yRankT && yRankT == zRankT) {
-      if (!tryBlasStridedBatched(xT, yT, zT, alpha, beta)) {
-        // cuBLAS couldn't handle it (non-contiguous strides, etc.)
-        // Create contiguous copies and retry cuBLAS before falling back to custom kernel.
-        NDArray* xDup = xT->dup();
-        NDArray* yDup = yT->dup();
-        if (!tryBlasStridedBatched(xDup, yDup, zT, alpha, beta)) {
-          // Still failed (unsupported type, etc.) — fall back to custom CUDA kernel
-          mmulNxN(xDup, yDup, zT, alpha, beta, z->ordering());
-        }
-        // Sync stream before freeing temporary arrays to ensure async GEMM completes.
-        // During CUDA graph capture, stream sync is illegal (poisons the capture).
-        // The dup'd arrays live until end of capture; graph replay uses fixed addresses.
-        if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-          auto* lc = LaunchContext::defaultContext();
-          if (lc->getCudaStream() != nullptr) {
-            cudaStreamSynchronize(*lc->getCudaStream());
-          }
-        }
-        delete xDup;
-        delete yDup;
-      }
-    } else {
-      mmulNxN(xT, yT, zT, alpha, beta, z->ordering());
-    }
-#endif
   }
 
   // Cleanup

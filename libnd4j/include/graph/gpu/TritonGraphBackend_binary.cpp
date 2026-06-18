@@ -25,6 +25,8 @@
 #include <graph/gpu/TritonGraphBackend_internal.h>
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/gpu/TritonTargetDispatch.h>
+#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/gpu/TritonCudaDriverDispatch.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspConstants.h>
 #include <system/Environment.h>
@@ -164,9 +166,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   };
 
   if (!irModule.valid) {
-#ifdef SD_CUDA
-    cudaGetLastError();  // Clear sticky CUDA errors from failed IR build
-#endif
+    dspClearLastCudaError();  // Clear sticky CUDA errors from failed IR build
     // Build op list for the failed range
     std::string failedOps;
     for (int s = startSlot; s <= endSlot; s++) {
@@ -242,7 +242,6 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     }
   }
 
-#ifdef SD_CUDA
   // ── Early cooperative launch capacity check ──
   // Reject BEFORE the expensive TTIR→PTX compilation (which can take 30+ minutes
   // for large fused kernels) if the required grid clearly exceeds what the GPU
@@ -251,7 +250,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   // (maxSharedPerSM / estimatedSharedMemBytes). The estimate is conservative
   // (may allow some cases that will fail post-compile) but catches the common
   // case of 400+ blocks on 128 SMs with large shared memory per block.
-  if (irModule.useCooperativeLaunch) {
+  if (dspIsCudaBuild() && irModule.useCooperativeLaunch) {
     unsigned long long requiredBlocks =
         static_cast<unsigned long long>(std::max(1u, irModule.gridX)) *
         static_cast<unsigned long long>(std::max(1u, irModule.gridY)) *
@@ -261,57 +260,50 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
                                 static_cast<unsigned long long>(std::max(1, irModule.requiredGrid)));
     }
 
-    int currentDevice = 0;
-    cudaError_t devErr = cudaGetDevice(&currentDevice);
-    if (devErr == cudaSuccess) {
-      CUdevice cuDevice = 0;
-      CUresult cuDevErr = cuDeviceGet(&cuDevice, currentDevice);
-      if (cuDevErr == CUDA_SUCCESS) {
-        int smCount = 0;
-        int maxThreadsPerSM = 0;
-        int maxSharedPerSM = 0;
-        cuDeviceGetAttribute(&smCount, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, cuDevice);
-        cuDeviceGetAttribute(&maxThreadsPerSM, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR, cuDevice);
-        cuDeviceGetAttribute(&maxSharedPerSM,
-            CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR, cuDevice);
+    int currentDevice = tritonGetCurrentDevice();
+    if (currentDevice >= 0) {
+      int smCount = 0;
+      int maxThreadsPerSM = 0;
+      int maxSharedPerSM = 0;
+      tritonDriverDeviceGetAttribute(&smCount,        TRITON_CU_DEV_ATTR_MULTIPROCESSOR_COUNT, currentDevice);
+      tritonDriverDeviceGetAttribute(&maxThreadsPerSM, TRITON_CU_DEV_ATTR_MAX_THREADS_PER_MULTIPROCESSOR, currentDevice);
+      tritonDriverDeviceGetAttribute(&maxSharedPerSM,  TRITON_CU_DEV_ATTR_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR, currentDevice);
 
-        // Compute blocks/SM upper bound from BOTH thread and shared memory occupancy.
-        // The actual occupancy is min(thread limit, shared memory limit).
-        int threadsPerBlock = std::max(1, irModule.numWarps) * 32;
-        int blocksPerSmByThreads = (maxThreadsPerSM > 0 && threadsPerBlock > 0)
-            ? (maxThreadsPerSM / threadsPerBlock)
-            : 16;
+      // Compute blocks/SM upper bound from BOTH thread and shared memory occupancy.
+      // The actual occupancy is min(thread limit, shared memory limit).
+      int threadsPerBlock = std::max(1, irModule.numWarps) * 32;
+      int blocksPerSmByThreads = (maxThreadsPerSM > 0 && threadsPerBlock > 0)
+          ? (maxThreadsPerSM / threadsPerBlock)
+          : 16;
 
-        int blocksPerSmBySmem = 16;  // default if no estimate
-        if (irModule.estimatedSharedMemBytes > 0 && maxSharedPerSM > 0) {
-          blocksPerSmBySmem = maxSharedPerSM / irModule.estimatedSharedMemBytes;
-        }
-
-        int blocksPerSmEstimate = std::max(1, std::min(blocksPerSmByThreads, blocksPerSmBySmem));
-
-        unsigned long long maxPossibleBlocks =
-            static_cast<unsigned long long>(smCount) * blocksPerSmEstimate;
-        if (smCount > 0 && requiredBlocks > maxPossibleBlocks) {
-          DSP_DIAG(COMPILE, "TritonGraphBackend: EARLY REJECT cooperative launch for [%d-%d]: "
-                   "requiredBlocks=%llu exceeds max=%llu "
-                   "(smCount=%d, blocksPerSm<=%d [threads: %d/%d=%d, smem: %d/%d=%d]). "
-                   "Skipping expensive compilation.",
-                   startSlot, endSlot,
-                   requiredBlocks, maxPossibleBlocks,
-                   smCount, blocksPerSmEstimate,
-                   maxThreadsPerSM, threadsPerBlock, blocksPerSmByThreads,
-                   maxSharedPerSM, irModule.estimatedSharedMemBytes, blocksPerSmBySmem);
-          cleanupModule();
-          return result;
-        }
-        DSP_DIAG(COMPILE, "TritonGraphBackend: cooperative launch pre-check OK for [%d-%d]: "
-                 "requiredBlocks=%llu, maxPossible=%llu (smCount=%d, blocksPerSm<=%d)",
-                 startSlot, endSlot, requiredBlocks, maxPossibleBlocks,
-                 smCount, blocksPerSmEstimate);
+      int blocksPerSmBySmem = 16;  // default if no estimate
+      if (irModule.estimatedSharedMemBytes > 0 && maxSharedPerSM > 0) {
+        blocksPerSmBySmem = maxSharedPerSM / irModule.estimatedSharedMemBytes;
       }
+
+      int blocksPerSmEstimate = std::max(1, std::min(blocksPerSmByThreads, blocksPerSmBySmem));
+
+      unsigned long long maxPossibleBlocks =
+          static_cast<unsigned long long>(smCount) * blocksPerSmEstimate;
+      if (smCount > 0 && requiredBlocks > maxPossibleBlocks) {
+        DSP_DIAG(COMPILE, "TritonGraphBackend: EARLY REJECT cooperative launch for [%d-%d]: "
+                 "requiredBlocks=%llu exceeds max=%llu "
+                 "(smCount=%d, blocksPerSm<=%d [threads: %d/%d=%d, smem: %d/%d=%d]). "
+                 "Skipping expensive compilation.",
+                 startSlot, endSlot,
+                 requiredBlocks, maxPossibleBlocks,
+                 smCount, blocksPerSmEstimate,
+                 maxThreadsPerSM, threadsPerBlock, blocksPerSmByThreads,
+                 maxSharedPerSM, irModule.estimatedSharedMemBytes, blocksPerSmBySmem);
+        cleanupModule();
+        return result;
+      }
+      DSP_DIAG(COMPILE, "TritonGraphBackend: cooperative launch pre-check OK for [%d-%d]: "
+               "requiredBlocks=%llu, maxPossible=%llu (smCount=%d, blocksPerSm<=%d)",
+               startSlot, endSlot, requiredBlocks, maxPossibleBlocks,
+               smCount, blocksPerSmEstimate);
     }
   }
-#endif
 
   // Build compilation audit
   for (int i = startSlot; i <= endSlot; i++) {
@@ -508,9 +500,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   dumpKernelArtifacts(binary);
 
   if (!binary.data) {
-#ifdef SD_CUDA
-    cudaGetLastError();  // Clear sticky CUDA errors from failed compilation
-#endif
+    dspClearLastCudaError();  // Clear sticky CUDA errors from failed compilation
     DSP_DIAG(COMPILE, "TritonGraphBackend: Triton compilation FAILED for segment [%d-%d] "
              "(totalElapsed=%lld ms)",
              startSlot, endSlot, elapsedMs(tCompileStart));
@@ -521,9 +511,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   // Load binary into driver module
   result.gpuModule = TritonTargetDispatch::loadModule(binary);
   if (!result.gpuModule) {
-#ifdef SD_CUDA
-    cudaGetLastError();  // Clear sticky CUDA errors from failed module load
-#endif
+    dspClearLastCudaError();  // Clear sticky CUDA errors from failed module load
     DSP_DIAG(COMPILE, "TritonGraphBackend: module load failed for segment [%d-%d]", startSlot, endSlot);
     delete[] static_cast<char*>(binary.data);
     cleanupModule();
@@ -539,10 +527,8 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   result.diskCacheHash = cacheHash;
   result.kernelName = irModule.kernelName;
   {
-    int currentDevice = 0;
-#ifdef SD_CUDA
-    cudaGetDevice(&currentDevice);
-#endif
+    int currentDevice = tritonGetCurrentDevice();
+    if (currentDevice < 0) currentDevice = 0;
     recordModuleAlloc(currentDevice, binary.size);
     result.loadedDeviceId = currentDevice;
   }
@@ -560,9 +546,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   // Get kernel function
   result.kernelFunction = TritonTargetDispatch::getKernelFunction(result.gpuModule, irModule.kernelName);
   if (!result.kernelFunction) {
-#ifdef SD_CUDA
-    cudaGetLastError();  // Clear sticky CUDA errors
-#endif
+    dspClearLastCudaError();  // Clear sticky CUDA errors
     DSP_DIAG(COMPILE, "TritonGraphBackend: kernel function '%s' not found in module", irModule.kernelName.c_str());
     unloadTrackedModule();
     delete[] static_cast<char*>(binary.data);
@@ -570,75 +554,75 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     return result;
   }
 
-#ifdef SD_CUDA
-  unsigned int requestedSharedMem =
-      binary.sharedMemBytes > 0 ? static_cast<unsigned int>(binary.sharedMemBytes) : 0u;
+  if (dspIsCudaBuild()) {
+    unsigned int requestedSharedMem =
+        binary.sharedMemBytes > 0 ? static_cast<unsigned int>(binary.sharedMemBytes) : 0u;
 
-  if (binary.target == TritonGpuTarget::NVIDIA) {
-    if (!configureCudaKernelSharedMemory(result.kernelFunction, requestedSharedMem)) {
-      DSP_DIAG(COMPILE, "TritonGraphBackend: shared memory setup failed for segment [%d-%d] "
-                "(requested=%u bytes)",
-                startSlot, endSlot, requestedSharedMem);
-      unloadTrackedModule();
-      delete[] static_cast<char*>(binary.data);
-      cleanupModule();
-      return result;
+    if (binary.target == TritonGpuTarget::NVIDIA) {
+      if (!configureCudaKernelSharedMemory(result.kernelFunction, requestedSharedMem)) {
+        DSP_DIAG(COMPILE, "TritonGraphBackend: shared memory setup failed for segment [%d-%d] "
+                  "(requested=%u bytes)",
+                  startSlot, endSlot, requestedSharedMem);
+        unloadTrackedModule();
+        delete[] static_cast<char*>(binary.data);
+        cleanupModule();
+        return result;
+      }
+    }
+
+    if (binary.target == TritonGpuTarget::NVIDIA && irModule.useCooperativeLaunch) {
+      const unsigned int launchBlockX = static_cast<unsigned int>(std::max(1, binary.numWarps) * 32);
+      const unsigned int launchBlockY = std::max(1u, irModule.blockY);
+      const unsigned int launchBlockZ = std::max(1u, irModule.blockZ);
+      unsigned long long requiredBlocks = static_cast<unsigned long long>(std::max(1u, irModule.gridX)) *
+                                          static_cast<unsigned long long>(std::max(1u, irModule.gridY)) *
+                                          static_cast<unsigned long long>(std::max(1u, irModule.gridZ));
+      if (irModule.requiredGrid > 0) {
+        requiredBlocks = std::max(requiredBlocks,
+                                  static_cast<unsigned long long>(std::max(1, irModule.requiredGrid)));
+      }
+
+      bool coopSupported = false;
+      long long maxCoopBlocks = 0;
+      int blocksPerSm = 0;
+      int smCount = 0;
+      const bool capacityKnown = queryCudaCooperativeLaunchCapacity(
+          result.kernelFunction,
+          launchBlockX, launchBlockY, launchBlockZ,
+          requestedSharedMem,
+          &coopSupported, &maxCoopBlocks, &blocksPerSm, &smCount);
+
+      if (!capacityKnown) {
+        DSP_DIAG(COMPILE, "TritonGraphBackend: cooperative launch capacity check unavailable for [%d-%d]; "
+                 "continuing with runtime launch validation",
+                 startSlot, endSlot);
+      } else if (!coopSupported) {
+        DSP_DIAG(COMPILE, "TritonGraphBackend: cooperative launch required for [%d-%d], "
+                 "but current CUDA device does not support cooperative launch",
+                 startSlot, endSlot);
+        unloadTrackedModule();
+        delete[] static_cast<char*>(binary.data);
+        cleanupModule();
+        return result;
+      } else if (maxCoopBlocks <= 0 ||
+                 requiredBlocks > static_cast<unsigned long long>(maxCoopBlocks)) {
+        DSP_DIAG(COMPILE, "TritonGraphBackend: cooperative launch capacity exceeded for [%d-%d] "
+                 "(requiredBlocks=%llu, maxBlocks=%lld, smCount=%d, blocksPerSm=%d, "
+                 "grid=%ux%ux%u, block=%ux%ux%u, sharedMem=%u). "
+                 "Rejecting this fused range so adaptive splitting can retry.",
+                 startSlot, endSlot,
+                 static_cast<unsigned long long>(requiredBlocks), maxCoopBlocks,
+                 smCount, blocksPerSm,
+                 irModule.gridX, irModule.gridY, irModule.gridZ,
+                 launchBlockX, launchBlockY, launchBlockZ,
+                 requestedSharedMem);
+        unloadTrackedModule();
+        delete[] static_cast<char*>(binary.data);
+        cleanupModule();
+        return result;
+      }
     }
   }
-
-  if (binary.target == TritonGpuTarget::NVIDIA && irModule.useCooperativeLaunch) {
-    const unsigned int launchBlockX = static_cast<unsigned int>(std::max(1, binary.numWarps) * 32);
-    const unsigned int launchBlockY = std::max(1u, irModule.blockY);
-    const unsigned int launchBlockZ = std::max(1u, irModule.blockZ);
-    unsigned long long requiredBlocks = static_cast<unsigned long long>(std::max(1u, irModule.gridX)) *
-                                        static_cast<unsigned long long>(std::max(1u, irModule.gridY)) *
-                                        static_cast<unsigned long long>(std::max(1u, irModule.gridZ));
-    if (irModule.requiredGrid > 0) {
-      requiredBlocks = std::max(requiredBlocks,
-                                static_cast<unsigned long long>(std::max(1, irModule.requiredGrid)));
-    }
-
-    bool coopSupported = false;
-    long long maxCoopBlocks = 0;
-    int blocksPerSm = 0;
-    int smCount = 0;
-    const bool capacityKnown = queryCudaCooperativeLaunchCapacity(
-        result.kernelFunction,
-        launchBlockX, launchBlockY, launchBlockZ,
-        requestedSharedMem,
-        &coopSupported, &maxCoopBlocks, &blocksPerSm, &smCount);
-
-    if (!capacityKnown) {
-      DSP_DIAG(COMPILE, "TritonGraphBackend: cooperative launch capacity check unavailable for [%d-%d]; "
-               "continuing with runtime launch validation",
-               startSlot, endSlot);
-    } else if (!coopSupported) {
-      DSP_DIAG(COMPILE, "TritonGraphBackend: cooperative launch required for [%d-%d], "
-               "but current CUDA device does not support cooperative launch",
-               startSlot, endSlot);
-      unloadTrackedModule();
-      delete[] static_cast<char*>(binary.data);
-      cleanupModule();
-      return result;
-    } else if (maxCoopBlocks <= 0 ||
-               requiredBlocks > static_cast<unsigned long long>(maxCoopBlocks)) {
-      DSP_DIAG(COMPILE, "TritonGraphBackend: cooperative launch capacity exceeded for [%d-%d] "
-               "(requiredBlocks=%llu, maxBlocks=%lld, smCount=%d, blocksPerSm=%d, "
-               "grid=%ux%ux%u, block=%ux%ux%u, sharedMem=%u). "
-               "Rejecting this fused range so adaptive splitting can retry.",
-               startSlot, endSlot,
-               static_cast<unsigned long long>(requiredBlocks), maxCoopBlocks,
-               smCount, blocksPerSm,
-               irModule.gridX, irModule.gridY, irModule.gridZ,
-               launchBlockX, launchBlockY, launchBlockZ,
-               requestedSharedMem);
-      unloadTrackedModule();
-      delete[] static_cast<char*>(binary.data);
-      cleanupModule();
-      return result;
-    }
-  }
-#endif
 
   // Set launch config
   result.gridX = irModule.gridX;

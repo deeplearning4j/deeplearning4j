@@ -42,9 +42,9 @@ namespace helpers {
  * @param freqPenalty  Frequency penalty (0.0 = off, positive penalizes by count)
  * @param presPenalty  Presence penalty (0.0 = off, positive penalizes any presence)
  */
-SD_LIB_HIDDEN void applyLogitPenaltiesCpu(NDArray* logits, NDArray* inputIds,
-                                           double repPenalty, double freqPenalty,
-                                           double presPenalty, LaunchContext* context);
+SD_LIB_HIDDEN void applyLogitPenalties(NDArray* logits, NDArray* inputIds,
+                                        double repPenalty, double freqPenalty,
+                                        double presPenalty, LaunchContext* context);
 
 /**
  * Apply min-p filtering to logits in-place.
@@ -56,17 +56,7 @@ SD_LIB_HIDDEN void applyLogitPenaltiesCpu(NDArray* logits, NDArray* inputIds,
  * @param logits  [batch, seqLen, vocabSize] or [batch, vocabSize] or [vocabSize] — modified in-place (last seq position)
  * @param minP    Minimum probability threshold relative to the top token (0.0 = off, 0.1 typical)
  */
-SD_LIB_HIDDEN void applyMinPFilterCpu(NDArray* logits, double minP, LaunchContext* context);
-
-#if defined(SD_CUDA)
-
-SD_LIB_HIDDEN void applyLogitPenaltiesCuda(NDArray* logits, NDArray* inputIds,
-                                            double repPenalty, double freqPenalty,
-                                            double presPenalty, LaunchContext* context);
-
-SD_LIB_HIDDEN void applyMinPFilterCuda(NDArray* logits, double minP, LaunchContext* context);
-
-#endif
+SD_LIB_HIDDEN void applyMinPFilter(NDArray* logits, double minP, LaunchContext* context);
 
 }  // namespace helpers
 }  // namespace ops

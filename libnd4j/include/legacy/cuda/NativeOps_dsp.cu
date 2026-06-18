@@ -2425,7 +2425,7 @@ void dbAsyncCrossDeviceCopy(OpaqueDataBuffer *dstBuffer, OpaqueDataBuffer *srcBu
   } else {
     // Fall back to the DSP execution stream or default LaunchContext stream
     if (sd::tl_dspExecutionStream != nullptr) {
-      stream = sd::tl_dspExecutionStream;
+      stream = reinterpret_cast<cudaStream_t>(sd::tl_dspExecutionStream);
     } else {
       auto* lc = sd::LaunchContext::defaultContext();
       if (lc != nullptr && lc->getCudaStream() != nullptr) {

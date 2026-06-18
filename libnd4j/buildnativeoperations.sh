@@ -523,11 +523,14 @@ if which cmake3 &> /dev/null; then
     export CMAKE_COMMAND="cmake3"
 fi
 
-[[ -z ${MAKEJ:-} ]] && MAKEJ=4
+if [[ -z ${MAKEJ:-} ]]; then MAKEJ=4; SD_MAKEJ_AUTO=1; else SD_MAKEJ_AUTO=0; fi
 
 # Add load average limiting to prevent memory exhaustion
 # -l flag: only start new job if load average < limit
 # Load limit = 75% of available cores (24 for 32 cores)
+# NOTE: this is PROVISIONAL -- MAKEJ is not final until args are parsed. The
+# authoritative MAKEJ/LOAD_LIMIT/nvcc values are recomputed after parsing; see
+# the "RESOURCE-AWARE BUILD PARALLELISM" block below. Do not rely on the value here.
 CPU_COUNT=1
 if command -v nproc >/dev/null 2>&1; then
     CPU_COUNT="$(nproc)"
@@ -1626,6 +1629,7 @@ do
             ;;
         -j)
             MAKEJ="$value"
+            SD_MAKEJ_AUTO=0
             shift # past argument
             ;;
         clean)
@@ -1754,8 +1758,91 @@ done
 # POST-ARGUMENT PROCESSING AND TYPE VALIDATION
 # =============================================================================
 
-# Re-export MAKE_COMMAND with the parsed MAKEJ value (was set before arg parsing)
+# =============================================================================
+# RESOURCE-AWARE BUILD PARALLELISM (authoritative -- MAKEJ / CUDA flags are final)
+# -----------------------------------------------------------------------------
+# LOAD_LIMIT was first computed during VARIABLE INITIALIZATION, BEFORE argument
+# parsing, while MAKEJ still held its default (4) -- so an explicit `-j 12` left
+# LOAD_LIMIT stuck at 5, throttling make to a near-serial crawl on big machines.
+# Recompute the whole parallelism set now that -j / --cuda-threads /
+# --cuda-split-compile / --chip are known, scaling to the host's CPU and RAM so
+# we saturate cores WITHOUT oversubscribing them (oversubscription drives swap
+# thrash and multi-hour header rebuilds).
+# Overrides: -j, --cuda-threads, --cuda-split-compile, LIBND4J_LOAD_LIMIT.
+# =============================================================================
+
+# Total physical RAM in GB (Linux /proc, macOS sysctl); 0 if undetectable.
+SD_TOTAL_RAM_GB=0
+if [[ -r /proc/meminfo ]]; then
+    SD_TOTAL_RAM_GB=$(awk '/^MemTotal:/ {printf "%d", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
+elif command -v sysctl >/dev/null 2>&1; then
+    SD_TOTAL_RAM_GB=$(( $(sysctl -n hw.memsize 2>/dev/null || echo 0) / 1073741824 ))
+fi
+[[ "${SD_TOTAL_RAM_GB}" =~ ^[0-9]+$ ]] || SD_TOTAL_RAM_GB=0
+
+SD_CHIP_LC=$(printf '%s' "${CHIP:-}" | tr '[:upper:]' '[:lower:]')
+
+# Number of target GPU arches. COMPUTE empty/all/auto/native => single native
+# arch (CudaConfiguration.cmake resolves "all"/"auto" to the detected arch, e.g.
+# sm_86). nvcc --threads only parallelizes ACROSS gencodes, so it is wasted on a
+# single arch -- there ALL parallelism must come from -j and --threads stays 1.
+SD_ARCH_COUNT=1
+if [[ "${SD_CHIP_LC}" == "cuda" ]]; then
+    case "$(printf '%s' "${COMPUTE:-}" | tr '[:upper:]' '[:lower:]')" in
+        ""|all|auto|native) SD_ARCH_COUNT=1 ;;
+        *) SD_ARCH_COUNT=$(( $(printf '%s' "${COMPUTE:-}" | tr -cd ',' | wc -c) + 1 )) ;;
+    esac
+fi
+# Effective nvcc --threads: 1 for single arch, else one per arch capped at 4.
+if [[ "${SD_ARCH_COUNT}" -le 1 ]]; then
+    SD_USED_THREADS=1
+else
+    SD_USED_THREADS="${SD_ARCH_COUNT}"
+    [[ "${SD_USED_THREADS}" -gt 4 ]] && SD_USED_THREADS=4
+fi
+
+# Auto-select MAKEJ only when the user did not pass -j (or pre-set $MAKEJ). Keep
+# MAKEJ x nvcc-threads near the core count (single arch => threads=1 => MAKEJ≈cores
+# so -j carries the parallelism), then cap by RAM. CUDA TUs are memory-hungry, so
+# a larger per-job RAM estimate is used for cuda than for cpu.
+if [[ "${SD_MAKEJ_AUTO:-1}" == "1" ]]; then
+    MAKEJ=$(( CPU_COUNT / SD_USED_THREADS ))
+    [[ "${MAKEJ}" -lt 1 ]] && MAKEJ=1
+    if [[ "${SD_TOTAL_RAM_GB}" -gt 0 ]]; then
+        if [[ "${SD_CHIP_LC}" == "cuda" ]]; then SD_RAM_PER_JOB=5; else SD_RAM_PER_JOB=2; fi
+        SD_RAM_JOBS=$(( SD_TOTAL_RAM_GB / SD_RAM_PER_JOB ))
+        [[ "${SD_RAM_JOBS}" -lt 1 ]] && SD_RAM_JOBS=1
+        [[ "${MAKEJ}" -gt "${SD_RAM_JOBS}" ]] && MAKEJ="${SD_RAM_JOBS}"
+    fi
+    [[ "${MAKEJ}" -lt 1 ]] && MAKEJ=1
+fi
+
+# Apply the coordinated nvcc fan-out (only when left on auto = 0). --threads is
+# the arch count (1 for single arch); --split-compile stays 1 because the cicc
+# device front-end -- not ptxas -- is the bottleneck on misses and cicc does not
+# parallelize.
+if [[ "${SD_CHIP_LC}" == "cuda" ]]; then
+    [[ "${CUDA_THREADS:-0}" == "0" ]] && CUDA_THREADS="${SD_USED_THREADS}"
+    [[ "${CUDA_SPLIT_COMPILE:-0}" == "0" ]] && CUDA_SPLIT_COMPILE=1
+fi
+
+# Load limit: a LOOSE backstop only. The 1-min load average is unreliable on a
+# host that is paging (swap D-state inflates it well above real CPU use), so a
+# tight gate (= cores) throttles make even with idle cores. RAM is already
+# bounded by the MAKEJ cap above, so set the gate to 2x cores -- it trips only on
+# genuine heavy oversubscription, never on swap-inflated load. Honor override.
+if [[ -n "${LIBND4J_LOAD_LIMIT:-}" ]]; then
+    LOAD_LIMIT="${LIBND4J_LOAD_LIMIT}"
+else
+    LOAD_LIMIT=$(( CPU_COUNT * 2 ))
+    [[ "${MAKEJ}" -gt "${LOAD_LIMIT}" ]] && LOAD_LIMIT="${MAKEJ}"
+fi
+[[ "${LOAD_LIMIT}" -lt 1 ]] && LOAD_LIMIT=1
+export LOAD_LIMIT
+
+# Re-export MAKE_COMMAND with the final, resource-aware values.
 export MAKE_COMMAND="make -j${MAKEJ} -l${LOAD_LIMIT}"
+print_colored "blue" "🔧 Build parallelism: make -j${MAKEJ} -l${LOAD_LIMIT}  (cores=${CPU_COUNT}, ram=${SD_TOTAL_RAM_GB}GB, arches=${SD_ARCH_COUNT}, nvcc --threads=${CUDA_THREADS:-0} --split-compile=${CUDA_SPLIT_COMPILE:-0})"
 
 print_colored "blue" "\n🔍 PROCESSING TYPE CONFIGURATION"
 

@@ -185,7 +185,7 @@ static void lightningAttentionCpuImpl_(LaunchContext* context,
     samediff::Threads::parallel_tad(func, 0, B * H);
 }
 
-void lightningAttentionCpu(LaunchContext* context,
+void lightningAttention(LaunchContext* context,
                            NDArray* query,
                            NDArray* key,
                            NDArray* value,

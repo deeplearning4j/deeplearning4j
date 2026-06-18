@@ -76,7 +76,7 @@ void NDArray::syncShape() {
   // Using legacy stream 0 here can invalidate capture when the graph is being
   // recorded on a different stream.
   if (tl_graphExecutionActive) {
-    cudaStream_t stream = tl_graphCaptureStream;
+    cudaStream_t stream = reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
     if (stream == nullptr && getContext() != nullptr && getContext()->getCudaStream() != nullptr) {
       stream = *(getContext()->getCudaStream());
     }

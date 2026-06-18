@@ -31,9 +31,6 @@
 #include <sstream>
 #include <vector>
 
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
 
 namespace sd {
 namespace graph {

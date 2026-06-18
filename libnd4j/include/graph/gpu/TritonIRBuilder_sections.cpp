@@ -49,10 +49,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
-
 // MLIR core
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinTypes.h>

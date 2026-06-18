@@ -297,7 +297,7 @@ static void popPrimaryCtxIfPushed(bool didPush, int deviceId) {
 }
 
 // ── Capture TLS cleanup helper ──────────────────────────────────────────
-static void cleanupCaptureTlsState(bool freeHostPtrs, cudaStream_t prevCaptureStream) {
+static void cleanupCaptureTlsState(bool freeHostPtrs, void* prevCaptureStream) {
   tl_graphExecutionActive = false;
   tl_captureWorkspace = nullptr;
   tl_captureWorkspaceSize = 0;
@@ -352,7 +352,7 @@ void NativeDynamicShapePlan::abortCapture(GraphSegment& seg,
            seg.def.startSlot, seg.def.endSlot, (int)freeHostPtrs, (int)didPushCtx, captureDevice,
            (int)tl_graphExecutionActive,
            (void*)tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
-  cleanupCaptureTlsState(freeHostPtrs, prevCaptureStream);
+  cleanupCaptureTlsState(freeHostPtrs, static_cast<void*>(prevCaptureStream));
   popPrimaryCtxIfPushed(didPushCtx, captureDevice);
   restoreCublasWorkspaceAfterCapture(stream);
   if (!savedSlotPhases.empty()) {
@@ -1464,7 +1464,7 @@ Status NativeDynamicShapePlan::compositeReplay(
     auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
     cudaStream_t gapStream = lcStream ? *lcStream : nullptr;
     if (gapStream != nullptr && gapStream != cudaStr) {
-      cudaEvent_t evt = execCtx->crossStreamEvent;
+      cudaEvent_t evt = reinterpret_cast<cudaEvent_t>(execCtx->crossStreamEvent);
       cudaEventRecord(evt, cudaStr);
       cudaStreamWaitEvent(gapStream, evt, 0);
     }
@@ -1749,8 +1749,7 @@ Status NativeDynamicShapePlan::compositeReplay(
               break;
             }
             case ActiveSlotAction::BATCHED_GEMM: {
-              cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
-              Status batchStatus = executeBatchedGemmGroup(active.batchedGemmGroupIdx, effectiveExternals, numExt, execStream);
+              Status batchStatus = executeBatchedGemmGroup(active.batchedGemmGroupIdx, effectiveExternals, numExt, stream);
               if (batchStatus != Status::OK) {
                 return batchStatus;  // replayGuard restores tl_dspReplayActive
               }
@@ -1850,8 +1849,7 @@ Status NativeDynamicShapePlan::compositeReplay(
           if (bgIdx >= 0 && bgIdx < (int)batchedGemmGroups_.size()) {
             auto& bgGroup = batchedGemmGroups_[bgIdx];
             if (s == bgGroup.triggerSlot) {
-              cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
-              Status batchStatus = executeBatchedGemmGroup(bgIdx, effectiveExternals, numExt, execStream);
+              Status batchStatus = executeBatchedGemmGroup(bgIdx, effectiveExternals, numExt, stream);
               if (batchStatus != Status::OK) {
                 DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: batched GEMM group %d FAILED at slot %d status=%d",
                          bgIdx, s, static_cast<int>(batchStatus));
@@ -1968,7 +1966,7 @@ Status NativeDynamicShapePlan::compositeReplay(
         auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
         cudaStream_t gapStream = lcStream ? *lcStream : nullptr;
         if (gapStream != nullptr && gapStream != cudaStr) {
-          cudaEvent_t evt = execCtx->crossStreamEvent;
+          cudaEvent_t evt = reinterpret_cast<cudaEvent_t>(execCtx->crossStreamEvent);
           cudaEventRecord(evt, gapStream);
           cudaStreamWaitEvent(cudaStr, evt, 0);
         }
@@ -2066,7 +2064,7 @@ Status NativeDynamicShapePlan::compositeReplay(
         auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
         cudaStream_t gapStream = lcStream ? *lcStream : nullptr;
         if (gapStream != nullptr && gapStream != cudaStr) {
-          cudaEvent_t evt = execCtx->crossStreamEvent;
+          cudaEvent_t evt = reinterpret_cast<cudaEvent_t>(execCtx->crossStreamEvent);
           cudaEventRecord(evt, cudaStr);
           cudaStreamWaitEvent(gapStream, evt, 0);
         }
@@ -2890,14 +2888,14 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // Resolve null ctx.cudaStr to LaunchContext default to match the actual capture stream
       // (beginCapture passes ctx.cudaStr to cudaStreamBeginCapture; if null, CUDA uses the
       // default stream which is what LaunchContext::defaultContext()->getCudaStream() returns).
-      cudaStream_t prevCaptureStream = tl_graphCaptureStream;
+      cudaStream_t prevCaptureStream = reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
       {
         cudaStream_t resolvedCaptureStream = ctx.cudaStr;
         if (resolvedCaptureStream == nullptr) {
           auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
           if (defaultStreamPtr != nullptr) resolvedCaptureStream = *defaultStreamPtr;
         }
-        tl_graphCaptureStream = resolvedCaptureStream;
+        tl_graphCaptureStream = static_cast<void*>(resolvedCaptureStream);
       }
       // Pre-allocate cuBLAS workspace to prevent internal cudaMalloc during capture.
       // cuBLAS internally allocates workspace on stream 0 for GEMM operations. During
@@ -3533,7 +3531,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                cudaStream_t gapStream = lcStream ? *lcStream : nullptr;
                if (gapStream != nullptr && gapStream != ctx.cudaStr) {
                  auto* execCtxMergeCap = static_cast<PlanExecutionContext*>(activeExecutionContext());
-                 cudaEvent_t evt = execCtxMergeCap ? execCtxMergeCap->crossStreamEvent : nullptr;
+                 cudaEvent_t evt = execCtxMergeCap ? reinterpret_cast<cudaEvent_t>(execCtxMergeCap->crossStreamEvent) : nullptr;
                  if (evt != nullptr) {
                    cudaEventRecord(evt, gapStream);
                    cudaStreamWaitEvent(ctx.cudaStr, evt, 0);
@@ -3609,7 +3607,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                      auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
                      if (defaultStreamPtr != nullptr) resolvedMergedCaptureStream = *defaultStreamPtr;
                    }
-                   tl_graphCaptureStream = resolvedMergedCaptureStream;
+                   tl_graphCaptureStream = static_cast<void*>(resolvedMergedCaptureStream);
                  }
                  DSP_DIAG(EXECUTE, "MERGED_CAPTURE_TLS_STATE: after beginCapture+activate island=%d "
                           "tl_graphExecutionActive=%d tl_mergedCaptureActive=%d "
@@ -3885,7 +3883,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              DSP_DIAG(MEMORY, "MERGED_CAPTURE: preserved %zu pinned host ptrs on mergedGroup[0]",
                       sched.mergedReplayHandles[0]->getCapturedHostPtrs().size());
            }
-           cleanupCaptureTlsState(false, prevCaptureStream);  // false = do NOT free host ptrs
+           cleanupCaptureTlsState(false, static_cast<void*>(prevCaptureStream));  // false = do NOT free host ptrs
            popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
            restoreCublasWorkspaceAfterCapture(stream);
            restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
@@ -4008,7 +4006,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  seg.def.startSlot, seg.def.endSlot);
         popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
         restoreCublasWorkspaceAfterCapture(stream);
-        cleanupCaptureTlsState(true, prevCaptureStream);
+        cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));
         restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
         // NOTE: Do NOT clear orderedRangeExecutor_ here. The MONOLITHIC_CAPTURE_SKIP
         // path falls through to the direct exec path (line ~4184), which calls
@@ -4029,7 +4027,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  seg.def.startSlot, seg.def.endSlot);
         popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
         restoreCublasWorkspaceAfterCapture(stream);
-        cleanupCaptureTlsState(true, prevCaptureStream);
+        cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));
         restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
       } else {
       // Allocate pinned host workspace for H2D source copies during capture.
@@ -4064,12 +4062,12 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           // after the op completes. The CUDA graph's H2D memcpy nodes bake the source
           // address — reading freed memory on replay causes error 700.
           capGuard.activate();
-          tl_graphCaptureStream = ctx.cudaStr;
+          tl_graphCaptureStream = static_cast<void*>(ctx.cudaStr);
         } else {
           DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "Triton graph capture started for seg[%d-%d] execCount=%d",
                        seg.def.startSlot, seg.def.endSlot, seg.exec.executionCount);
           capGuard.activate();
-          tl_graphCaptureStream = ctx.cudaStr;
+          tl_graphCaptureStream = static_cast<void*>(ctx.cudaStr);
         }
 
         // ── Set up capture workspace for monolithic path ─────────────────────
@@ -4267,7 +4265,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             captureStatus = Status::KERNEL_FAILURE;
           } else {
             capGuard.activate();
-            tl_graphCaptureStream = ctx.cudaStr;
+            tl_graphCaptureStream = static_cast<void*>(ctx.cudaStr);
 
           // Exception-safe gap-stream routing during native-only capture slots.
           ScopedGapStreamOverride gapStreamOverride(ctx.cudaStr);
@@ -4426,7 +4424,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             SegmentLifecycle::markZeroKernel(seg.exec, "zero_node_graph", seg.def.startSlot, seg.def.endSlot);
             popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
             restoreCublasWorkspaceAfterCapture(stream);
-            cleanupCaptureTlsState(true, prevCaptureStream);
+            cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));
             restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
 #if HAVE_TRITON
             tritonOrderedRangeGuard.active = false;
@@ -4946,9 +4944,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         }
         DSP_DIAG(MEMORY, "preserved %zu pinned host ptrs for Triton graph replay",
                  seg.exec.replayHandle->getCapturedHostPtrs().size());
-        cleanupCaptureTlsState(false, prevCaptureStream);  // false = ptrs moved
+        cleanupCaptureTlsState(false, static_cast<void*>(prevCaptureStream));  // false = ptrs moved
       } else {
-        cleanupCaptureTlsState(true, prevCaptureStream);   // true = free ptrs
+        cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));   // true = free ptrs
       }
 
       restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);

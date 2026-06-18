@@ -387,8 +387,8 @@ class SD_LIB_EXPORT FlashAttentionHelper {
                               const Config& config);
 };
 
-// Forward declaration for CUDA fused attention (implemented in cuda/FlashAttentionHelper.cu)
-// Uses online softmax algorithm for memory efficiency - no cuDNN required
+// Forward declarations for CUDA fused attention (implemented in cuda/FlashAttentionHelper.cu).
+// CPU builds get inline no-op stubs so callers need no #ifdef SD_CUDA guards.
 #if defined(__CUDACC__) || defined(SD_CUDA)
 extern void fusedAttentionCuda(NDArray* query, NDArray* key, NDArray* value,
                                NDArray* output, float scale, bool isCausal,
@@ -416,6 +416,16 @@ extern void fusedGQADecodeCuda(NDArray* query, NDArray* key, NDArray* value,
                                 NDArray* output, float scale,
                                 LaunchContext* context,
                                 NDArray* attentionBias = nullptr);
+#else  // CPU build — provide no-op stubs so impl/*.cpp files need no #ifdef SD_CUDA
+static inline void fusedAttentionCuda(NDArray*, NDArray*, NDArray*, NDArray*,
+                                      float, bool, LaunchContext*, NDArray* = nullptr) {}
+static inline void fusedAttentionCudaWithScores(NDArray*, NDArray*, NDArray*, NDArray*,
+                                                NDArray*, NDArray*, float, bool, LaunchContext*) {}
+static inline void applyCausalMaskCuda(NDArray*, LaunchContext*) {}
+static inline void fusedCausalMaskSoftmaxCuda(NDArray*, NDArray*, NDArray*,
+                                               bool, LaunchContext*) {}
+static inline void fusedGQADecodeCuda(NDArray*, NDArray*, NDArray*, NDArray*,
+                                       float, LaunchContext*, NDArray* = nullptr) {}
 #endif
 
 }  // namespace sd

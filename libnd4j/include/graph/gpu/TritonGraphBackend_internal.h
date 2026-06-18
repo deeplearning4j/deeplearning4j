@@ -166,6 +166,14 @@ inline cudaError_t freeDeviceBufferAsync(void* ptr, cudaStream_t stream) {
   return cudaFreeAsync(ptr, stream);
 }
 
+#endif  // SD_CUDA
+
+// configureCudaKernelSharedMemory and queryCudaCooperativeLaunchCapacity are
+// always declared so they compile on CPU (the caller guards with dspIsCudaBuild()).
+// On CPU builds the bodies are no-op stubs.  On CUDA builds the bodies use the
+// real CUDA Driver + Runtime APIs.
+
+#ifdef SD_CUDA
 inline bool configureCudaKernelSharedMemory(void* kernelFunc, unsigned int sharedMemBytes) {
   if (kernelFunc == nullptr || sharedMemBytes == 0) return true;
 
@@ -349,6 +357,32 @@ inline void* getDummyDevicePtrForDevice(int currentDevice, bool streamIsCapturin
   }
   cache.byDevice[currentDevice] = ptr;
   return ptr;
+}
+
+#else  // !SD_CUDA — CPU stubs so callers compile without CUDA
+
+inline bool configureCudaKernelSharedMemory(void* /*kernelFunc*/, unsigned int /*sharedMemBytes*/) {
+  return false;
+}
+
+inline bool queryCudaCooperativeLaunchCapacity(void* /*kernelFunc*/,
+                                               unsigned int /*blockX*/,
+                                               unsigned int /*blockY*/,
+                                               unsigned int /*blockZ*/,
+                                               unsigned int /*sharedMemBytes*/,
+                                               bool* cooperativeSupported,
+                                               long long* maxBlocks,
+                                               int* blocksPerSm,
+                                               int* smCount) {
+  if (cooperativeSupported) *cooperativeSupported = false;
+  if (maxBlocks) *maxBlocks = 0;
+  if (blocksPerSm) *blocksPerSm = 0;
+  if (smCount) *smCount = 0;
+  return false;
+}
+
+inline void* getDummyDevicePtrForDevice(int /*currentDevice*/, bool /*streamIsCapturing*/) {
+  return nullptr;
 }
 
 #endif  // SD_CUDA

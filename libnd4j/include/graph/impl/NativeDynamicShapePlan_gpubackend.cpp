@@ -32,17 +32,11 @@
 #include <graph/ModeContract.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspSegmentLifecycle.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <system/op_boilerplate.h>
 #include <system/Environment.h>
 #include <config.h>
 
-#if HAVE_TRITON && defined(SD_CUDA)
-#include <graph/gpu/TritonGraphBackend.h>
-#endif
-#ifdef SD_CUDA
-#include <graph/gpu/NvrtcGraphBackend.h>
-#include <graph/gpu/PtxGraphBackend.h>
-#endif
 #ifdef SD_TPU
 #include <graph/tpu/TpuGraphBackend.h>
 #endif
@@ -175,9 +169,7 @@ static const char* sourceTypeName(int8_t st) {
 }
 
 void NativeDynamicShapePlan::clearGpuBackendFailedCache() {
-#if HAVE_TRITON && defined(SD_CUDA)
-  TritonGraphBackend::getInstance().clearFailedSegmentCache();
-#endif
+  dspTritonClearFailedCache();
 }
 
 GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
@@ -190,64 +182,53 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
     return nullptr;
   }
 
-#if HAVE_TRITON && defined(SD_CUDA)
   if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON ||
-     graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-   auto& triton = TritonGraphBackend::getInstance();
-   if (triton.isAvailable()) {
-     gpuGraphBackend_ = &triton;
-     DSP_DIAG(BACKEND, "using Triton GPU compiler backend");
-     return gpuGraphBackend_;
-   }
-   if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON) {
-     DSP_DIAG(BACKEND, "Triton backend requested but not available");
-     gpuGraphBackend_ = nullptr;
-     return nullptr;
-   }
-   DSP_DIAG(BACKEND, "Triton unavailable in AUTO mode, trying NVRTC/PTX backends");
- }
-#else
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON) {
-    DSP_DIAG(BACKEND, "Triton backend requested but not compiled (HAVE_TRITON=0)");
-    gpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-    DSP_DIAG(BACKEND, "Triton not compiled (HAVE_TRITON=0); AUTO mode will try NVRTC/PTX/CUDA graphs");
-  }
-#endif
-
-#ifdef SD_CUDA
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT ||
       graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-    auto& nvrtc = NvrtcGraphBackend::getInstance();
-    if (nvrtc.isAvailable()) {
-      gpuGraphBackend_ = &nvrtc;
-      DSP_DIAG(BACKEND, "using NVRTC GPU compiler backend");
+    auto* triton = dspTritonGetBackendIfAvailable();
+    if (triton != nullptr) {
+      gpuGraphBackend_ = triton;
+      DSP_DIAG(BACKEND, "using Triton GPU compiler backend");
       return gpuGraphBackend_;
     }
-    if (graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT) {
-      DSP_DIAG(BACKEND, "NVRTC backend requested but not available");
+    if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON) {
+      DSP_DIAG(BACKEND, "Triton backend requested but not available");
       gpuGraphBackend_ = nullptr;
       return nullptr;
     }
+    DSP_DIAG(BACKEND, "Triton unavailable in AUTO mode, trying NVRTC/PTX backends");
   }
 
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-    auto& ptx = PtxGraphBackend::getInstance();
-    if (ptx.isAvailable()) {
-      gpuGraphBackend_ = &ptx;
-      DSP_DIAG(BACKEND, "using PTX template GPU compiler backend");
-      return gpuGraphBackend_;
+  if (dspIsCudaBuild()) {
+    if (graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT ||
+        graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+      auto* nvrtc = dspGetNvrtcBackend();
+      if (nvrtc != nullptr && nvrtc->isAvailable()) {
+        gpuGraphBackend_ = nvrtc;
+        DSP_DIAG(BACKEND, "using NVRTC GPU compiler backend");
+        return gpuGraphBackend_;
+      }
+      if (graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT) {
+        DSP_DIAG(BACKEND, "NVRTC backend requested but not available");
+        gpuGraphBackend_ = nullptr;
+        return nullptr;
+      }
     }
-    if (graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT) {
-      DSP_DIAG(BACKEND, "PTX backend requested but not available");
-      gpuGraphBackend_ = nullptr;
-      return nullptr;
+
+    if (graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT ||
+        graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+      auto* ptx = dspGetPtxBackend();
+      if (ptx != nullptr && ptx->isAvailable()) {
+        gpuGraphBackend_ = ptx;
+        DSP_DIAG(BACKEND, "using PTX template GPU compiler backend");
+        return gpuGraphBackend_;
+      }
+      if (graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT) {
+        DSP_DIAG(BACKEND, "PTX backend requested but not available");
+        gpuGraphBackend_ = nullptr;
+        return nullptr;
+      }
     }
   }
-#endif
 
 #ifdef SD_TPU
   if (graphExecutionMode_ == GraphExecutionMode::GEM_TPU ||
@@ -468,9 +449,7 @@ Status NativeDynamicShapePlan::segDispatchCompile(
                     "refresh outputSlots_ before recompilation.");
       // Invalidate cached graph
       SegmentLifecycle::invalidateForRebuild(this, seg, "shape_change");
-#ifdef SD_CUDA
-      batchD2DCount_ = 0;
-#endif
+      platformResetBatchD2D();
       Status warmupStatus;
       {
         ShapeChangeWarmupGuard warmupGuard(*this, seg.def.startSlot, seg.def.endSlot);

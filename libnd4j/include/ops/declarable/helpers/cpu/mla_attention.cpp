@@ -140,9 +140,10 @@ static void mlaAttentionCpu_(NDArray* query, NDArray* latentKVCache, NDArray* kv
     samediff::Threads::parallel_tad(func, 0, totalWork);
 }
 
-void mlaAttentionCpu(NDArray* query, NDArray* latentKVCache, NDArray* kvDownProj,
-                      NDArray* ropeCache, NDArray* output, int seqLen,
-                      const MLAConfig& config) {
+void mlaAttention(NDArray* query, NDArray* latentKVCache, NDArray* kvDownProj,
+                   NDArray* ropeCache, NDArray* output, int seqLen,
+                   const MLAConfig& config,
+                   LaunchContext* /*context*/) {
     BUILD_SINGLE_SELECTOR(query->dataType(), mlaAttentionCpu_,
                            (query, latentKVCache, kvDownProj, ropeCache, output, seqLen, config),
                            SD_FLOAT_TYPES);

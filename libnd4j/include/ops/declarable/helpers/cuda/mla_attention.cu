@@ -278,7 +278,7 @@ template void launchMlaAttentionKernel<float16>(
 //////////////////////////////////////////////////////////////////////////////
 // Public interface
 //////////////////////////////////////////////////////////////////////////////
-void mlaAttentionCuda(
+void mlaAttention(
     NDArray* query,
     NDArray* latentKVCache,
     NDArray* kvDownProj,
@@ -324,7 +324,7 @@ void mlaAttentionCuda(
             batchSize, config.numHeads, config.numKvHeads, config.headDim,
             config.latentDim, maxSeqLen, seqLen, scale, *stream);
     } else {
-        THROW_EXCEPTION("mlaAttentionCuda: Unsupported data type");
+        THROW_EXCEPTION("mlaAttention: Unsupported data type");
     }
 
     NDArray::registerSpecialUse({output}, {query, latentKVCache, kvDownProj, ropeCache});

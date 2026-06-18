@@ -312,23 +312,13 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
 
   helpers::AutoregressiveDecodeConfig* configPtr = hasPlanConfig ? &decodeConfig : nullptr;
 
-#if defined(SD_CUDA)
-  helpers::autoregressiveDecodeCuda(
+  helpers::autoregressiveDecode(
       prefillEmbeddings, embeddingTable, inputIds, attentionMask, positionIds,
       staticKvBuffers.empty() ? nullptr : staticKvBuffers.data(), numKvPairs,
       generatedTokenIds, tokenCount, timingInfo,
       maxNewTokens, prefillSeqLen, stopTokenIds,
       temperature, topK, topP, repPenalty,
       block.launchContext(), configPtr);
-#else
-  helpers::autoregressiveDecodeCpu(
-      prefillEmbeddings, embeddingTable, inputIds, attentionMask, positionIds,
-      staticKvBuffers.empty() ? nullptr : staticKvBuffers.data(), numKvPairs,
-      generatedTokenIds, tokenCount, timingInfo,
-      maxNewTokens, prefillSeqLen, stopTokenIds,
-      temperature, topK, topP, repPenalty,
-      block.launchContext(), configPtr);
-#endif
 
   return sd::Status::OK;
 }

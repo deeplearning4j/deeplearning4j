@@ -21,6 +21,7 @@
 //
 #include <helpers/BlasHelper.h>
 #include <system/env_functions.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <cstdlib>
 #include <mutex>
 #include <string>
@@ -135,18 +136,18 @@ void BlasHelper::initializeFunctions(Pointer *functions) {
 
   _hasSgemmBatch = functions[4] != nullptr;
   _hasDgemmBatch = functions[5] != nullptr;
-#if !defined(SD_CUDA)
-  this->cblasSgemv = (CblasSgemv)functions[0];
-  this->cblasDgemv = (CblasDgemv)functions[1];
-  this->cblasSgemm = (CblasSgemm)functions[2];
-  this->cblasDgemm = (CblasDgemm)functions[3];
-  this->cblasSgemmBatch = (CblasSgemmBatch)functions[4];
-  this->cblasDgemmBatch = (CblasDgemmBatch)functions[5];
-  this->lapackeSgesvd = (LapackeSgesvd)functions[6];
-  this->lapackeDgesvd = (LapackeDgesvd)functions[7];
-  this->lapackeSgesdd = (LapackeSgesdd)functions[8];
-  this->lapackeDgesdd = (LapackeDgesdd)functions[9];
-#endif
+  if (!sd::graph::dspIsCudaBuild()) {
+    this->cblasSgemv = (CblasSgemv)functions[0];
+    this->cblasDgemv = (CblasDgemv)functions[1];
+    this->cblasSgemm = (CblasSgemm)functions[2];
+    this->cblasDgemm = (CblasDgemm)functions[3];
+    this->cblasSgemmBatch = (CblasSgemmBatch)functions[4];
+    this->cblasDgemmBatch = (CblasDgemmBatch)functions[5];
+    this->lapackeSgesvd = (LapackeSgesvd)functions[6];
+    this->lapackeDgesvd = (LapackeDgesvd)functions[7];
+    this->lapackeSgesdd = (LapackeSgesdd)functions[8];
+    this->lapackeDgesdd = (LapackeDgesdd)functions[9];
+  }
 }
 
 void BlasHelper::initializeDeviceFunctions(Pointer *functions) {
@@ -496,7 +497,6 @@ bool BlasHelper::hasBatchedGEMM<bool>() {
 }
 #endif
 
-#if !defined(SD_CUDA)
 #if defined(HAS_FLOAT32)
 CblasSgemv BlasHelper::sgemv() {
 #if __EXTERNAL_BLAS__ || HAVE_OPENBLAS
@@ -565,7 +565,6 @@ CblasDgemmBatch BlasHelper::dgemmBatched() {
 LapackeDgesvd BlasHelper::dgesvd() { return this->lapackeDgesvd; }
 
 LapackeDgesdd BlasHelper::dgesdd() { return this->lapackeDgesdd; }
-#endif
 #endif
 
 // BLAS call serialization implementation

@@ -40,7 +40,7 @@ void DeviceExecutionContext::applyToThreadLocals() const {
     cudaSetDevice(deviceId);
   }
   if (stream != nullptr) {
-    tl_dspExecutionStream = *static_cast<cudaStream_t*>(stream);
+    tl_dspExecutionStream = static_cast<void*>(*static_cast<cudaStream_t*>(stream));
   }
 }
 

@@ -214,7 +214,8 @@ static void kvCacheDequantizeFp8Cpu_(NDArray* quantized, NDArray* scales, NDArra
 //////////////////////////////////////////////////////////////////////////////
 // Public interface
 //////////////////////////////////////////////////////////////////////////////
-void kvCacheQuantizeCpu(NDArray* input, NDArray* quantized, NDArray* scales, int quantFormat) {
+void kvCacheQuantize(NDArray* input, NDArray* quantized, NDArray* scales, int quantFormat,
+                     LaunchContext* /*context*/) {
     auto format = static_cast<KVQuantFormat>(quantFormat);
 
     switch (format) {
@@ -229,7 +230,7 @@ void kvCacheQuantizeCpu(NDArray* input, NDArray* quantized, NDArray* scales, int
             BUILD_SINGLE_SELECTOR(input->dataType(), kvCacheQuantizeInt4Cpu_, (input, quantized, scales), SD_FLOAT_TYPES);
             break;
         default:
-            THROW_EXCEPTION("kvCacheQuantizeCpu: unsupported quantization format");
+            THROW_EXCEPTION("kvCacheQuantize: unsupported quantization format");
     }
 
     quantized->tickWriteHost();
@@ -238,7 +239,8 @@ void kvCacheQuantizeCpu(NDArray* input, NDArray* quantized, NDArray* scales, int
     scales->syncToDevice();
 }
 
-void kvCacheDequantizeCpu(NDArray* quantized, NDArray* scales, NDArray* output, int quantFormat) {
+void kvCacheDequantize(NDArray* quantized, NDArray* scales, NDArray* output, int quantFormat,
+                       LaunchContext* /*context*/) {
     auto format = static_cast<KVQuantFormat>(quantFormat);
 
     switch (format) {
@@ -253,7 +255,7 @@ void kvCacheDequantizeCpu(NDArray* quantized, NDArray* scales, NDArray* output, 
             BUILD_SINGLE_SELECTOR(output->dataType(), kvCacheDequantizeInt4Cpu_, (quantized, scales, output), SD_FLOAT_TYPES);
             break;
         default:
-            THROW_EXCEPTION("kvCacheDequantizeCpu: unsupported quantization format");
+            THROW_EXCEPTION("kvCacheDequantize: unsupported quantization format");
     }
 
     output->tickWriteHost();

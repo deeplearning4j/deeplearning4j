@@ -22,24 +22,10 @@
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
 #include <array/ExtraArguments.h>
+#include <array/ExtraArguments_cuda.h>
 #include <types/types.h>
 
 #include <stdexcept>
-
-#ifdef SD_CUDA
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <execution/AffinityManager.h>
-#include <memory/cuda/CudaMemoryPool.h>
-
-// Capture-safe helpers defined in ExtraArgumentsCuda.cu (compiled by NVCC).
-// GCC and NVCC have incompatible TLS models, so we access tl_graphExecutionActive
-// indirectly through these wrapper functions.
-namespace sd {
-bool extraArgsCaptureActive();
-void extraArgsCaptureH2D(void* dst, const void* src, size_t bytes);
-}  // namespace sd
-#endif
 
 namespace sd {
 ExtraArguments::ExtraArguments(std::initializer_list<double> arguments) { _fpArgs = arguments; }
@@ -60,62 +46,39 @@ ExtraArguments::ExtraArguments() {
 
 ExtraArguments::~ExtraArguments() {
   for (auto p : _pointers) {
-#ifdef SD_CUDA
-    int deviceId = sd::AffinityManager::currentDeviceId();
-    sd::memory::CudaMemoryPool::getInstance().free(p, deviceId);
-#else  // CPU branch
-    delete[] reinterpret_cast<int8_t *>(p);
-#endif
+    extra_args_detail::extraArgsFreeDevice(p);
   }
 }
 
 template <typename T>
 void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
   auto length = this->length();
-  auto target = reinterpret_cast<T *>(pointer);
-#ifdef SD_CUDA
-  target = new T[length];
-#endif
+
+  // Fill a local host buffer then copy to the device pointer.
+  // On CPU the "device pointer" IS host memory, so extraArgsCopyH2DDispatch is a plain memcpy.
+  // On CUDA it uses the capture-aware async path or cudaMemcpyAsync + sync.
+  auto hostBuf = new T[length];
 
   if (!_fpArgs.empty()) {
     for (size_t e = offset; e < _fpArgs.size(); e++) {
-      target[e] = static_cast<T>(_fpArgs[e]);
+      hostBuf[e] = static_cast<T>(_fpArgs[e]);
     }
   } else if (_intArgs.empty()) {
     for (size_t e = offset; e < _intArgs.size(); e++) {
-      target[e] = static_cast<T>(_intArgs[e]);
+      hostBuf[e] = static_cast<T>(_intArgs[e]);
     }
   }
 
-#ifdef SD_CUDA
   auto bytes = length * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>());
-  if (extraArgsCaptureActive()) {
-    // During CUDA graph capture, synchronous cudaMemcpy on the legacy stream
-    // poisons the capture stream with error 901. Use the async capture path.
-    extraArgsCaptureH2D(pointer, target, bytes);
-  } else {
-    // Outside capture: use cudaMemcpyAsync on cudaStreamPerThread instead of
-    // synchronous cudaMemcpy on the legacy stream (stream 0). Stream 0 causes
-    // error 906 when another thread on the same device is mid-capture.
-    cudaMemcpyAsync(pointer, target, bytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
-    cudaStreamSynchronize(cudaStreamPerThread);
-  }
-  delete[] target;
-#endif
+  extra_args_detail::extraArgsCopyH2DDispatch(pointer, hostBuf, bytes);
+  delete[] hostBuf;
 }
 BUILD_SINGLE_TEMPLATE(void ExtraArguments::convertAndCopy,
                       (sd::Pointer pointer, sd::LongType offset), SD_COMMON_TYPES);
 
 void *ExtraArguments::allocate(size_t length, size_t elementSize) {
-#ifdef SD_CUDA
-  int deviceId = sd::AffinityManager::currentDeviceId();
-  auto ptr = sd::memory::CudaMemoryPool::getInstance().allocate(length * elementSize, deviceId);
-  if (!ptr) THROW_EXCEPTION("Can't allocate CUDA memory");
-#else  // CPU branch
-  auto ptr = new int8_t[length * elementSize];
+  auto ptr = extra_args_detail::extraArgsAllocDevice(length * elementSize);
   if (!ptr) THROW_EXCEPTION("Can't allocate memory");
-#endif
-
   return ptr;
 }
 

@@ -40,11 +40,7 @@ CUSTOM_OP_IMPL(token_sample, 1, 1, false, 0, 0) {
   int topK = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
   LongType seed = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
 
-#if defined(SD_CUDA)
-  helpers::tokenSampleCuda(logits, output, temperature, topK, topP, seed, block.launchContext());
-#else
-  helpers::tokenSampleCpu(logits, output, temperature, topK, topP, seed, block.launchContext());
-#endif
+  helpers::tokenSample(logits, output, temperature, topK, topP, seed, block.launchContext());
 
   return sd::Status::OK;
 }

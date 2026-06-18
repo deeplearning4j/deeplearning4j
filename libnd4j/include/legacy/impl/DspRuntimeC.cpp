@@ -18,6 +18,7 @@
 
 #include <dsp/runtime/dsp_runtime_c.h>
 #include <dsp/NativeOpsDsp.h>
+#include <graph/gpu/DspCudaDispatch.h>
 
 #include <array/DataTypeUtils.h>
 #include <array/NDArray.h>
@@ -562,17 +563,17 @@ sdx_status_t validateTensor(const sdx_tensor_view_t& tensor, std::string* errorO
     return SDX_STATUS_UNSUPPORTED;
   }
 
-#ifndef SD_CUDA
-  if (isCudaLikeDeviceType(tensor.device_type)) {
-    *errorOut = "CUDA/AMD tensors require a CUDA-enabled runtime build";
-    return SDX_STATUS_UNSUPPORTED;
+  if (!sd::graph::dspIsCudaBuild()) {
+    if (isCudaLikeDeviceType(tensor.device_type)) {
+      *errorOut = "CUDA/AMD tensors require a CUDA-enabled runtime build";
+      return SDX_STATUS_UNSUPPORTED;
+    }
+  } else {
+    if (isCudaLikeDeviceType(tensor.device_type) && tensor.device_id < 0) {
+      *errorOut = "CUDA/AMD tensors require device_id >= 0";
+      return SDX_STATUS_INVALID_ARGUMENT;
+    }
   }
-#else
-  if (isCudaLikeDeviceType(tensor.device_type) && tensor.device_id < 0) {
-    *errorOut = "CUDA/AMD tensors require device_id >= 0";
-    return SDX_STATUS_INVALID_ARGUMENT;
-  }
-#endif
 
   sd::DataType dtype;
   try {
@@ -1086,8 +1087,7 @@ SDX_API sdx_status_t sdxRun(
   // scenarios, the thread stays on the execution device until a different
   // election result changes it.
   // ══════════════════════════════════════════════════════════════════════
-#ifdef SD_CUDA
-  if (electedDeviceId >= 0) {
+  if (sd::graph::dspIsCudaBuild() && electedDeviceId >= 0) {
     int currentDevice = sd::AffinityManager::currentDeviceId();
     if (currentDevice != electedDeviceId) {
       try {
@@ -1109,14 +1109,13 @@ SDX_API sdx_status_t sdxRun(
 
   // Cache election result after device switch succeeds.
   // Only cache when frozen — before freeze, tensors may shift devices.
-  if (!context->device_election_done) {
+  if (sd::graph::dspIsCudaBuild() && !context->device_election_done) {
     int planPhase = getPlanPhase(context->plan_handle);
     if (planPhase >= 2) {  // FROZEN or REPLAYING
       context->elected_device_id = electedDeviceId;
       context->device_election_done = true;
     }
   }
-#endif
 
   // Only call setPlanGraphExecutionMode/setPlanJitMode when values change.
   // These involve string formatting + DSP_DIAG calls that cost ~1-2us each.
@@ -1151,86 +1150,86 @@ SDX_API sdx_status_t sdxRun(
     anyInputChanged = true;
   }
 
-#ifndef SD_CUDA
-  if (hasCudaLikeTensors) {
-    setContextError(context, "CUDA/AMD tensors require a CUDA-enabled runtime build");
-    return SDX_STATUS_UNSUPPORTED;
+  if (!sd::graph::dspIsCudaBuild()) {
+    if (hasCudaLikeTensors) {
+      setContextError(context, "CUDA/AMD tensors require a CUDA-enabled runtime build");
+      return SDX_STATUS_UNSUPPORTED;
+    }
   }
-#endif
 
-#ifdef SD_CUDA
-  // ══════════════════════════════════════════════════════════════════════
-  // CROSS-DEVICE DATA MIGRATION
-  // ══════════════════════════════════════════════════════════════════════
-  // For multi-GPU: migrate off-device inputs to the elected execution
-  // device. Cache constant/variable replicas to avoid re-copying model
-  // weights every step. Only placeholders are migrated every call.
-  //
-  // This mirrors Java's DynamicShapePlanExecutor cross-device migration
-  // at lines 2525-2687, using dbAsyncCrossDeviceCopy for async peer copy.
-  //
-  // Strategy: the device is already switched to electedDeviceId above,
-  // so dup() allocates on the correct device. We then use
-  // dbAsyncCrossDeviceCopy for the actual data transfer (async on the
-  // execution stream, so CUDA ordering guarantees visibility).
-  // ══════════════════════════════════════════════════════════════════════
-  if (hasCudaLikeTensors && electedDeviceId >= 0) {
-    for (int i = 0; i < context->num_inputs; i++) {
-      const size_t idx = static_cast<size_t>(i);
-      auto& wrapper = context->input_wrappers[idx];
-      if (wrapper == nullptr) continue;
+  if (sd::graph::dspIsCudaBuild()) {
+    // ══════════════════════════════════════════════════════════════════════
+    // CROSS-DEVICE DATA MIGRATION
+    // ══════════════════════════════════════════════════════════════════════
+    // For multi-GPU: migrate off-device inputs to the elected execution
+    // device. Cache constant/variable replicas to avoid re-copying model
+    // weights every step. Only placeholders are migrated every call.
+    //
+    // This mirrors Java's DynamicShapePlanExecutor cross-device migration
+    // at lines 2525-2687, using dbAsyncCrossDeviceCopy for async peer copy.
+    //
+    // Strategy: the device is already switched to electedDeviceId above,
+    // so dup() allocates on the correct device. We then use
+    // dbAsyncCrossDeviceCopy for the actual data transfer (async on the
+    // execution stream, so CUDA ordering guarantees visibility).
+    // ══════════════════════════════════════════════════════════════════════
+    if (hasCudaLikeTensors && electedDeviceId >= 0) {
+      for (int i = 0; i < context->num_inputs; i++) {
+        const size_t idx = static_cast<size_t>(i);
+        auto& wrapper = context->input_wrappers[idx];
+        if (wrapper == nullptr) continue;
 
-      int inputDeviceId = inputs[i].device_id;
-      bool inputIsCudaLike = isCudaLikeDeviceType(inputs[i].device_type);
+        int inputDeviceId = inputs[i].device_id;
+        bool inputIsCudaLike = isCudaLikeDeviceType(inputs[i].device_type);
 
-      if (inputIsCudaLike && inputDeviceId != electedDeviceId) {
-        // This input lives on a different device — needs migration.
-        bool isPlaceholder = context->is_placeholder_input[idx];
+        if (inputIsCudaLike && inputDeviceId != electedDeviceId) {
+          // This input lives on a different device — needs migration.
+          bool isPlaceholder = context->is_placeholder_input[idx];
 
-        // Check constant replica cache for non-placeholder inputs
-        if (!isPlaceholder && context->constant_replicas[idx] != nullptr) {
-          // Reuse cached replica — model weights don't change
-          context->input_wrappers[idx] = std::make_unique<sd::NDArray>(
-              *context->constant_replicas[idx]);
-          anyInputChanged = true;
-          continue;
-        }
-
-        // Migrate via dup() — since we already switched to electedDeviceId,
-        // dup() allocates on the correct device. This handles the data copy
-        // internally through the DataBuffer allocation + memcpy path.
-        try {
-          auto migrated = std::make_unique<sd::NDArray>(wrapper->dup());
-          if (migrated->dataBuffer() != nullptr) {
-            migrated->dataBuffer()->setDeviceId(electedDeviceId);
+          // Check constant replica cache for non-placeholder inputs
+          if (!isPlaceholder && context->constant_replicas[idx] != nullptr) {
+            // Reuse cached replica — model weights don't change
+            context->input_wrappers[idx] = std::make_unique<sd::NDArray>(
+                *context->constant_replicas[idx]);
+            anyInputChanged = true;
+            continue;
           }
 
-          // Cache non-placeholder replicas for reuse across decode steps
-          if (!isPlaceholder) {
-            context->constant_replicas[idx] = std::make_unique<sd::NDArray>(*migrated);
-          }
+          // Migrate via dup() — since we already switched to electedDeviceId,
+          // dup() allocates on the correct device. This handles the data copy
+          // internally through the DataBuffer allocation + memcpy path.
+          try {
+            auto migrated = std::make_unique<sd::NDArray>(wrapper->dup());
+            if (migrated->dataBuffer() != nullptr) {
+              migrated->dataBuffer()->setDeviceId(electedDeviceId);
+            }
 
-          context->input_wrappers[idx] = std::move(migrated);
-          anyInputChanged = true;
-        } catch (const std::exception& e) {
-          setContextError(context, "Cross-device migration failed for input[" +
-                          std::to_string(i) + "]: " + e.what());
-          return SDX_STATUS_EXECUTION_FAILED;
-        } catch (...) {
-          setContextError(context, "Cross-device migration failed for input[" + std::to_string(i) + "]");
-          return SDX_STATUS_EXECUTION_FAILED;
-        }
-      } else {
-        // Same device or host — normal sync
-        if (inputs[i].device_type == static_cast<int32_t>(SDX_DEVICE_HOST)) {
-          wrapper->syncToDevice();
-        } else if (inputIsCudaLike) {
-          wrapper->syncToDevice();
+            // Cache non-placeholder replicas for reuse across decode steps
+            if (!isPlaceholder) {
+              context->constant_replicas[idx] = std::make_unique<sd::NDArray>(*migrated);
+            }
+
+            context->input_wrappers[idx] = std::move(migrated);
+            anyInputChanged = true;
+          } catch (const std::exception& e) {
+            setContextError(context, "Cross-device migration failed for input[" +
+                            std::to_string(i) + "]: " + e.what());
+            return SDX_STATUS_EXECUTION_FAILED;
+          } catch (...) {
+            setContextError(context, "Cross-device migration failed for input[" + std::to_string(i) + "]");
+            return SDX_STATUS_EXECUTION_FAILED;
+          }
+        } else {
+          // Same device or host — normal sync
+          if (inputs[i].device_type == static_cast<int32_t>(SDX_DEVICE_HOST)) {
+            wrapper->syncToDevice();
+          } else if (inputIsCudaLike) {
+            wrapper->syncToDevice();
+          }
         }
       }
     }
   }
-#endif
 
   bool anyOutputChanged = false;
   for (int i = 0; i < context->num_outputs; i++) {
@@ -1270,21 +1269,16 @@ SDX_API sdx_status_t sdxRun(
 
   auto start = std::chrono::steady_clock::now();
   sd::Pointer execStream = nullptr;
-#ifdef SD_CUDA
-  if (hasCudaLikeTensors) {
+  if (sd::graph::dspIsCudaBuild() && hasCudaLikeTensors) {
     // Cache execution stream — avoids LaunchContext lookup every call
     if (context->exec_stream_cached) {
       execStream = context->cached_exec_stream;
     } else {
-      auto* launchContext = sd::LaunchContext::defaultContext();
-      if (launchContext != nullptr) {
-        execStream = reinterpret_cast<sd::Pointer>(launchContext->getCudaStream());
-      }
+      execStream = sd::graph::dspGetExecutionStream();
       context->cached_exec_stream = execStream;
       context->exec_stream_cached = true;
     }
   }
-#endif
   int execCode = executeDynamicShapePlan(context->plan_handle, context->graph_context, execStream);
   auto end = std::chrono::steady_clock::now();
   uint64_t durationNs = static_cast<uint64_t>(

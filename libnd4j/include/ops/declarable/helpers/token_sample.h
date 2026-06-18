@@ -28,9 +28,9 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void tokenSampleCpu(NDArray* logits, NDArray* output,
-                                   double temperature, int topK, double topP,
-                                   LongType seed, LaunchContext* context);
+SD_LIB_HIDDEN void tokenSample(NDArray* logits, NDArray* output,
+                                double temperature, int topK, double topP,
+                                LongType seed, LaunchContext* context);
 
 /**
  * Extended token sampling with penalty and min-p support.
@@ -49,27 +49,13 @@ SD_LIB_HIDDEN void tokenSampleCpu(NDArray* logits, NDArray* output,
  * @param presPenalty  Presence penalty (0.0 = off)
  * @param seed         RNG seed (0 = random)
  */
-SD_LIB_HIDDEN void tokenSampleWithPenaltiesCpu(NDArray* logits, NDArray* output,
-                                                NDArray* inputIds,
-                                                double temperature, int topK,
-                                                double topP, double minP,
-                                                double repPenalty, double freqPenalty,
-                                                double presPenalty,
-                                                LongType seed, LaunchContext* context);
-
-#if defined(SD_CUDA)
-SD_LIB_HIDDEN void tokenSampleCuda(NDArray* logits, NDArray* output,
-                                    double temperature, int topK, double topP,
-                                    LongType seed, LaunchContext* context);
-
-SD_LIB_HIDDEN void tokenSampleWithPenaltiesCuda(NDArray* logits, NDArray* output,
-                                                 NDArray* inputIds,
-                                                 double temperature, int topK,
-                                                 double topP, double minP,
-                                                 double repPenalty, double freqPenalty,
-                                                 double presPenalty,
-                                                 LongType seed, LaunchContext* context);
-#endif
+SD_LIB_HIDDEN void tokenSampleWithPenalties(NDArray* logits, NDArray* output,
+                                             NDArray* inputIds,
+                                             double temperature, int topK,
+                                             double topP, double minP,
+                                             double repPenalty, double freqPenalty,
+                                             double presPenalty,
+                                             LongType seed, LaunchContext* context);
 
 }  // namespace helpers
 }  // namespace ops

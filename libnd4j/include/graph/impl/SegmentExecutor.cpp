@@ -21,6 +21,7 @@
 #include <graph/ResourceBinder.h>
 #include <graph/SlotArray.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <graph/NativeDynamicShapePlan.h>
 
 #include <cassert>
@@ -221,11 +222,7 @@ LongType SegmentExecutor::computeInputAddrKey(NDArray** inputs, int numInputs) {
   for (int i = 0; i < numInputs; i++) {
     uint64_t addr = 0;
     if (inputs[i] != nullptr) {
-#ifdef SD_CUDA
-      addr = reinterpret_cast<uint64_t>(inputs[i]->specialBuffer());
-#else
-      addr = reinterpret_cast<uint64_t>(inputs[i]->buffer());
-#endif
+      addr = reinterpret_cast<uint64_t>(sd::graph::dspBuffer(inputs[i]));
     }
     hash ^= addr;
     hash *= 1099511628211ULL;  // FNV prime

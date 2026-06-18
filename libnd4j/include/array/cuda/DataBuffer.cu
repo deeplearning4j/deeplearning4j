@@ -50,7 +50,7 @@ SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
   if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
-    return tl_graphCaptureStream;
+    return reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
   }
   auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
   return (streamPtr != nullptr) ? *streamPtr : nullptr;
@@ -64,7 +64,7 @@ SD_INLINE cudaStream_t asyncTransferStream(bool switchedDevice) {
 
   if (!switchedDevice) {
     if (tl_dspExecutionStream != nullptr) {
-      return tl_dspExecutionStream;
+      return reinterpret_cast<cudaStream_t>(tl_dspExecutionStream);
     }
     auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
     if (streamPtr != nullptr && *streamPtr != nullptr) {
@@ -232,7 +232,7 @@ void dspPublishThreadCompletionEvent(void* streamPtr) {
     return;
   }
 
-  cudaStream_t stream = static_cast<cudaStream_t>(streamPtr);
+  cudaStream_t stream = reinterpret_cast<cudaStream_t>(streamPtr);
   if (!tl_dspCompletionEvent.ensureForCurrentDevice()) {
     // CUDA context is broken — ensureForCurrentDevice already logged why.
     return;
@@ -825,7 +825,7 @@ alloc_done:  // Target for capture-workspace goto (skips pool alloc + counters a
 
 void DataBuffer::waitForSpecialWriteEvent(void* streamPtr) const {
   if (!_writeEventRecorded.load(std::memory_order_acquire) || _writeEvent == nullptr) return;
-  cudaStream_t stream = static_cast<cudaStream_t>(streamPtr);
+  cudaStream_t stream = reinterpret_cast<cudaStream_t>(streamPtr);
   auto err = cudaStreamWaitEvent(stream, reinterpret_cast<cudaEvent_t>(_writeEvent), 0);
   if (err != cudaSuccess) {
     throwCudaStatus("DataBuffer::waitForSpecialWriteEvent: cudaStreamWaitEvent failed", err);
@@ -850,7 +850,7 @@ void DataBuffer::recordSpecialWriteEvent(void* streamPtr) const {
     return;
   }
 
-  cudaStream_t stream = static_cast<cudaStream_t>(streamPtr);
+  cudaStream_t stream = reinterpret_cast<cudaStream_t>(streamPtr);
 
   int targetDevice = -1;
   auto devErr = cudaGetDevice(&targetDevice);
@@ -1755,7 +1755,7 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
       writeSpecial();
       return;
     }
-    stream = tl_graphCaptureStream;
+    stream = reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
   } else {
     // Cache the stream reference - must obtain AFTER device switch so we get the correct device's stream
     stream = captureSafeStreamOrDefault();
@@ -1797,6 +1797,64 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     if (attrRes != cudaSuccess) cudaGetLastError();  // Clear attribute query error
     if (isHostPtr) {
       memset(special(), 0, getLenInBytes());
+    } else if (static_cast<int>(res) == 201 || static_cast<int>(res) == 200 ||
+               res == cudaErrorInvalidResourceHandle) {
+      // Error 201 = cudaErrorDeviceUninitialized (invalid device context)
+      // Error 200 = cudaErrorInvalidDevice
+      // cudaErrorInvalidResourceHandle = stale stream handle
+      //
+      // The CUDA primary context on this device has become invalid. This happens
+      // when a stale async error corrupts the context, or when thread-local state
+      // loses its CUDA context association. CudaMemoryPool::allocate handles this
+      // via allocateFailover(), but cudaMemsetAsync had no equivalent recovery.
+      //
+      // Recovery: re-establish the context via cudaSetDevice, get a fresh stream,
+      // and retry. If that still fails, fall back to synchronous cudaMemset.
+      sd_printf("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed with %s (%d) on device %d — "
+                "attempting context recovery\n",
+                cudaGetErrorString(res), static_cast<int>(res), bufferDeviceId);
+      cudaGetLastError();  // Clear sticky error
+
+      // Re-establish CUDA primary context
+      cudaError_t setDevErr = cudaSetDevice(bufferDeviceId);
+      if (setDevErr != cudaSuccess) {
+        cudaGetLastError();
+      }
+
+      // Get a fresh stream after context recovery
+      cudaStream_t freshStream = captureSafeStreamOrDefault();
+      if (freshStream == nullptr) {
+        freshStream = cudaStreamPerThread;
+      }
+
+      // Retry cudaMemsetAsync with recovered context
+      cudaError_t retryRes = cudaMemsetAsync(special(), 0, getLenInBytes(), freshStream);
+      if (retryRes == cudaSuccess) {
+        sd_debug("DataBuffer::setToZeroBuffers: context recovery succeeded on device %d\n",
+                 bufferDeviceId);
+        stream = freshStream;
+        res = cudaSuccess;
+      } else {
+        cudaGetLastError();  // Clear retry error
+        // Last resort: synchronous cudaMemset (uses default stream, no explicit stream needed)
+        cudaError_t syncRes = cudaMemset(special(), 0, getLenInBytes());
+        if (syncRes == cudaSuccess) {
+          sd_debug("DataBuffer::setToZeroBuffers: synchronous cudaMemset fallback succeeded "
+                   "on device %d\n", bufferDeviceId);
+          res = cudaSuccess;
+        } else {
+          cudaGetLastError();  // Clear sync error
+          sd_printf("DataBuffer::setToZeroBuffers: all recovery attempts failed on device %d "
+                    "(async=%s(%d), sync=%s(%d))\n",
+                    bufferDeviceId,
+                    cudaGetErrorString(retryRes), static_cast<int>(retryRes),
+                    cudaGetErrorString(syncRes), static_cast<int>(syncRes));
+          if (switchedDevice) {
+            cudaSetDevice(currentDeviceId);
+          }
+          throwCudaStatus("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed", res);
+        }
+      }
     } else {
       if (switchedDevice) {
         cudaSetDevice(currentDeviceId);

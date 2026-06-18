@@ -16,40 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#include <graph/DeviceExecutionContext.h>
-
-// CPU-build implementation of DeviceExecutionContext.
-// CUDA-specific version is in DeviceExecutionContext_cuda.cu.
-
-namespace sd {
-namespace graph {
-
-#ifndef SD_CUDA
-
-DeviceExecutionContext DeviceExecutionContext::fromThreadLocals() {
-  DeviceExecutionContext ctx;
-  ctx.deviceId = 0;
-  ctx.stream = nullptr;
-  return ctx;
-}
-
-void DeviceExecutionContext::applyToThreadLocals() const {
-  // No-op on CPU — there are no thread-local device/stream to set
-}
-
-void* DeviceExecutionContext::workspaceAlloc(size_t bytes, size_t align) {
-  if (captureWorkspace == nullptr || workspaceSize == 0) return nullptr;
-
-  // Align the offset
-  size_t alignedOffset = (workspaceOffset + align - 1) & ~(align - 1);
-  if (alignedOffset + bytes > workspaceSize) return nullptr;
-
-  void* ptr = static_cast<char*>(captureWorkspace) + alignedOffset;
-  workspaceOffset = alignedOffset + bytes;
-  return ptr;
-}
-
-#endif  // !SD_CUDA
-
-}  // namespace graph
-}  // namespace sd
+// Platform-specific implementations:
+//   graph/cpu/DeviceExecutionContext.cpp    (CPU build)
+//   graph/cuda/DeviceExecutionContext.cu    (CUDA build)
+// This file is intentionally empty.

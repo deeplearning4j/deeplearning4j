@@ -31,6 +31,7 @@
 #include <ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/reverse.h>
 #include <ops/declarable/helpers/layer_norm.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <helpers/ShapeUtils.h>
 #include <execution/Threads.h>
 #include <cmath>
@@ -90,11 +91,11 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
                                  bias->dataType() == DataType::DOUBLE ||
                                  bias->dataType() == DataType::HALF;
 
-#if defined(SD_CUDA)
   // CUDA fast path: fused kernel for last-dimension normalization
   // If input is non-contiguous (e.g. from permute view), dup to contiguous first —
   // one cudaMemcpy is far cheaper than 8 separate decomposed kernel launches
-  if (lastDimNorm && (isFloat || isDouble || isHalf) && gainContiguous && biasContiguous &&
+  if (sd::graph::dspIsCudaBuild() &&
+      lastDimNorm && (isFloat || isDouble || isHalf) && gainContiguous && biasContiguous &&
       gainTypeSupported && biasTypeSupported) {
     NDArray* inputToUse = input;
     NDArray* contiguousInput = nullptr;
@@ -110,7 +111,7 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
       outputToUse = contiguousOutput;
     }
 
-    helpers::layerNormCuda(inputToUse, gain, bias, outputToUse, longAxis, 1e-5f, block.launchContext());
+    helpers::layerNorm(inputToUse, gain, bias, outputToUse, longAxis, 1e-5f, block.launchContext());
 
     if (contiguousOutput != nullptr) {
       output->assign(outputToUse);
@@ -122,7 +123,6 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
 
     return sd::Status::OK;
   }
-#endif
 
   const bool sameParamTypes = gain->dataType() == input->dataType() &&
                               (bias == nullptr || bias->dataType() == input->dataType());

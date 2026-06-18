@@ -109,9 +109,7 @@ void ExecutionState::freeSlotMemory(int slotIdx, void* stream) {
   if (db != nullptr && !db->isConstant && !db->isClosed() &&
       db->special() != nullptr && db->_isOwnerSpecial &&
       !isProtectedWeight(db)) {
-#ifdef SD_CUDA
     db->freeGpuOnStream(stream);
-#endif
   }
 
   // Decrement viewRefCount on parent if this was a VIEW_OF_SLOT
@@ -123,11 +121,9 @@ void ExecutionState::freeSlotMemory(int slotIdx, void* stream) {
 }
 
 void ExecutionState::trimPoolIfNeeded() {
-#ifdef SD_CUDA
   // Pool trimming is only needed after OOM or significant free activity.
   // Steady-state (frozen shapes) should have zero churn.
   // This is called from allocateFailover() in CudaMemoryPool, not from here.
-#endif
 }
 
 // ── Capture workspace ─────────────────────────────────────────────────
@@ -162,21 +158,9 @@ void ExecutionState::initSegmentStates(int numSegments) {
   DSP_DIAG(MEMORY, "ExecutionState: initialized %d segment states", numSegments);
 }
 
-// ── Stream/device management (CPU stubs) ──────────────────────────────
-// GPU implementations are in ExecutionState_cuda.cu (requires nvcc for
-// CUDA headers and tl_dspExecutionStream access).
-
-#ifndef SD_CUDA
-void* ExecutionState::bindSegmentDevice(int segIdx) {
-  (void)segIdx;
-  return nullptr;  // No streams on CPU
-}
-
-void ExecutionState::restoreSegmentContext(void* previousStream, int previousDevice) {
-  (void)previousStream;
-  (void)previousDevice;
-}
-#endif
+// Stream/device management: platform-specific implementations in
+//   graph/cpu/ExecutionState.cpp     (CPU build)
+//   graph/cuda/ExecutionState_cuda.cu (CUDA build)
 
 }  // namespace graph
 }  // namespace sd

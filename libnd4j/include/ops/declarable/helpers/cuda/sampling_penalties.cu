@@ -219,7 +219,7 @@ static void applyPenaltiesLauncher(NDArray* logits, NDArray* inputIds,
     DebugHelper::checkGlobalErrorCode("applyPenaltiesKernel failed");
 }
 
-void applyLogitPenaltiesCuda(NDArray* logits, NDArray* inputIds,
+void applyLogitPenalties(NDArray* logits, NDArray* inputIds,
                               double repPenalty, double freqPenalty,
                               double presPenalty, LaunchContext* context) {
     if (repPenalty == 1.0 && freqPenalty == 0.0 && presPenalty == 0.0) return;
@@ -360,7 +360,7 @@ static void minPFilterLauncher(NDArray* logits, double minP, LaunchContext* cont
     DebugHelper::checkGlobalErrorCode("minPFilterKernel failed");
 }
 
-void applyMinPFilterCuda(NDArray* logits, double minP, LaunchContext* context) {
+void applyMinPFilter(NDArray* logits, double minP, LaunchContext* context) {
     if (minP <= 0.0) return;
 
     NDArray::prepareSpecialUse({logits}, {logits});

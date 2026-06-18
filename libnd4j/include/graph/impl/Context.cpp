@@ -25,10 +25,7 @@
 #include <helpers/shape.h>
 #include <system/env_functions.h>
 #include <system/PointerValidation.h>
-
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
+#include <graph/gpu/DspCudaDispatch.h>
 
 #if defined(SD_GCC_FUNCTRACE)
 #include <graph/OpContextLifecycleTracker.h>
@@ -867,16 +864,16 @@ void Context::setBArguments(bool *arguments, int numberOfArguments) {
 }
 
 void Context::setCudaContext(Pointer cudaStream, Pointer reductionPointer, Pointer allocationPointer) {
-#ifdef SD_CUDA
+  if (!sd::graph::dspIsCudaBuild()) return;
+
   _context = new LaunchContext(cudaStream, reductionPointer, allocationPointer);
 
   // Reuse the default context's cuBLAS handle so all contexts share the same handle.
-  _context->setCublasHandle(LaunchContext::defaultContext()->getCublasHandle());
+  sd::graph::dspCopyCublasHandle(_context, LaunchContext::defaultContext());
 
   for (auto v : _fastpath_out) v->setContext(_context);
 
   for (auto v : _fastpath_in) v->setContext(_context);
-#endif
 }
 
 void Context::allowHelpers(bool reallyAllow) { _helpersAllowed = reallyAllow; }

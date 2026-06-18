@@ -28,9 +28,6 @@
 #include <mutex>
 #include <string>
 
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
 
 namespace sd {
 

@@ -27,6 +27,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/ModeContract.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/DspAnalysisUtils.h>
@@ -2036,9 +2037,7 @@ Status NativeDynamicShapePlan::executeSlot(
     // variable inputs. tl_dspReplayActive is set by compositeReplay for gap units.
     // Triton islands handle this correctly via re-executed compiled kernels.
     if (!(!planLifecycle_.isSlotBySlot() && !frozenSlotBySlot && executeCount_ >= 4 &&
-#ifdef SD_CUDA
-        !tl_dspReplayActive &&
-#endif
+        !dspGetReplayActive() &&
         contextPool_[stepIdx] != nullptr && slot.frozenContextReady() &&
         !slot.isIdentityOp() &&
         !slot.frozenConstantSlot() &&
@@ -2047,7 +2046,6 @@ Status NativeDynamicShapePlan::executeSlot(
         !slot.flags.isDynamicShape)) {
       // Diagnostic: log why the frozen fast-path was not taken on first eligible execution
       if (DSP_DIAG_ENABLED(EXECUTE) && executeCount_ >= 4 && executeCount_ <= 5) {
-#ifdef SD_CUDA
         DSP_DIAG_SLOT(EXECUTE, stepIdx,
             "FF_FAST_PATH_SKIP: slot=%d op=%s frozenContextReady=%d "
             "frozenConst=%d isDynamic=%d isSlotBySlot=%d frozenSlotBySlot=%d "
@@ -2063,24 +2061,7 @@ Status NativeDynamicShapePlan::executeSlot(
             slot.fusedChain.isFusedChainTail ? 1 : 0,
             slot.isIdentityOp() ? 1 : 0,
             executeCount_, syncOverrideDepth_,
-            tl_dspReplayActive ? 1 : 0);
-#else
-        DSP_DIAG_SLOT(EXECUTE, stepIdx,
-            "FF_FAST_PATH_SKIP: slot=%d op=%s frozenContextReady=%d "
-            "frozenConst=%d isDynamic=%d isSlotBySlot=%d frozenSlotBySlot=%d "
-            "isFusedHead=%d isFusedTail=%d isIdentity=%d executeCount=%d "
-            "syncOverrideDepth=%d",
-            stepIdx, slot.ident.opName.c_str(),
-            slot.frozenContextReady() ? 1 : 0,
-            slot.frozenConstantSlot() ? 1 : 0,
-            slot.flags.isDynamicShape ? 1 : 0,
-            planLifecycle_.isSlotBySlot() ? 1 : 0,
-            frozenSlotBySlot ? 1 : 0,
-            slot.fusedChain.isFusedChainHead ? 1 : 0,
-            slot.fusedChain.isFusedChainTail ? 1 : 0,
-            slot.isIdentityOp() ? 1 : 0,
-            executeCount_, syncOverrideDepth_);
-#endif
+            dspGetReplayActive() ? 1 : 0);
       }
       break;
     }
@@ -3324,11 +3305,11 @@ Status NativeDynamicShapePlan::executeSlot(
     SlotSyncGuard frozenSyncGuard(syncNeeded, ctx.fastpath_out(), ctx.fastpath_in(),
                                    stepIdx, slot.ident.opName.c_str(), executeCount_);
     if (!syncNeeded) {
-#if defined(SD_CUDA)
       // Assertion 4: Actuality flag consistency when sync is skipped.
-      // Only run during early executions (< 5) to validate that all buffers
-      // are device-actual. After 5 successful passes, trust the system.
-      if (executeCount_ < 5) {
+      // Only meaningful on CUDA where device-actuality is tracked separately
+      // from host data. On CPU, isSpecialActual() always returns false, so
+      // this check must be gated on dspIsCudaBuild() to avoid false failures.
+      if (dspIsCudaBuild() && executeCount_ < 5) {
         auto& fpin_assert = ctx.fastpath_in();
         for (size_t ii = 0; ii < fpin_assert.size(); ii++) {
           NDArray* a = fpin_assert[ii];
@@ -3350,7 +3331,6 @@ Status NativeDynamicShapePlan::executeSlot(
           }
         }
       }
-#endif  // SD_CUDA
     }
 
     // Skip shape inference in frozen steady-state for the frozen context path.
@@ -3727,15 +3707,13 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // ── Capture probe: after Step 1 (gather inputs) ──────────────────────────
-#if defined(SD_CUDA)
   {
     bool _capInvalid = false;
-    cudaStream_t* _capStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    DSP_CAPTURE_PROBE(_capStreamPtr ? *_capStreamPtr : nullptr,
+    void* _capStream = dspGetExecutionStream();
+    DSP_CAPTURE_PROBE(_capStream,
                       stepIdx, "AFTER_GATHER_INPUTS",
                       slot.ident.opName.c_str(), _capInvalid);
   }
-#endif
 
   // ── Step 2: Shape inference ──────────────────────────────────────────────
   LongType shapeKey = 0;
@@ -4269,15 +4247,13 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // ── Capture probe: after Step 2 (shape inference) ────────────────────────
-#if defined(SD_CUDA)
   {
     bool _capInvalid = false;
-    cudaStream_t* _capStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    DSP_CAPTURE_PROBE(_capStreamPtr ? *_capStreamPtr : nullptr,
+    void* _capStream = dspGetExecutionStream();
+    DSP_CAPTURE_PROBE(_capStream,
                       stepIdx, "AFTER_SHAPE_INFERENCE",
                       slot.ident.opName.c_str(), _capInvalid);
   }
-#endif
 
   // ── Step 3: Allocate/reuse outputs ───────────────────────────────────────
   // Use the shape function's output count (not the graph wiring count) so the
@@ -4834,15 +4810,13 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // ── Capture probe: after Step 3 (output allocation) ──────────────────────
-#if defined(SD_CUDA)
   {
     bool _capInvalid = false;
-    cudaStream_t* _capStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    DSP_CAPTURE_PROBE(_capStreamPtr ? *_capStreamPtr : nullptr,
+    void* _capStream = dspGetExecutionStream();
+    DSP_CAPTURE_PROBE(_capStream,
                       stepIdx, "AFTER_OUTPUT_ALLOC",
                       slot.ident.opName.c_str(), _capInvalid);
   }
-#endif
 
   // ── Step 4: Execute ──
 
@@ -5059,15 +5033,13 @@ Status NativeDynamicShapePlan::executeSlot(
   prezeroThisSlot();
 
   // ── Capture probe: immediately before op->execute() ──────────────────────
-#if defined(SD_CUDA)
   {
     bool _capInvalid = false;
-    cudaStream_t* _capStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    DSP_CAPTURE_PROBE(_capStreamPtr ? *_capStreamPtr : nullptr,
+    void* _capStream = dspGetExecutionStream();
+    DSP_CAPTURE_PROBE(_capStream,
                       stepIdx, "BEFORE_OP_EXECUTE",
                       slot.ident.opName.c_str(), _capInvalid);
   }
-#endif
 
   // PRE-EXEC input metadata for variable-input slots (exec 2-4 only to limit noise).
   if (DSP_DIAG_ENABLED(VERIFY) && executeCount_ >= 2 && executeCount_ <= 4 && !tl_graphExecutionActive) {
@@ -5130,15 +5102,13 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // ── Capture probe: after Step 4 (op execution) ──────────────────────────
-#if defined(SD_CUDA)
   {
     bool _capInvalid = false;
-    cudaStream_t* _capStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    DSP_CAPTURE_PROBE(_capStreamPtr ? *_capStreamPtr : nullptr,
+    void* _capStream = dspGetExecutionStream();
+    DSP_CAPTURE_PROBE(_capStream,
                       stepIdx, "AFTER_OP_EXECUTE",
                       slot.ident.opName.c_str(), _capInvalid);
   }
-#endif
 
   // Post-execute corruption scan (warmup path)
   for (int i = 0; i < numActualOutputs; i++) {

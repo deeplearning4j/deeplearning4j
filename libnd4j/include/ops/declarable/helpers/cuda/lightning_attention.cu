@@ -433,7 +433,7 @@ BUILD_SINGLE_TEMPLATE(void lightningAttentionLauncher,
 // ---------------------------------------------------------------------------
 // Public CUDA entry point
 // ---------------------------------------------------------------------------
-void lightningAttentionCuda(LaunchContext* context,
+void lightningAttention(LaunchContext* context,
                              NDArray* query,
                              NDArray* key,
                              NDArray* value,

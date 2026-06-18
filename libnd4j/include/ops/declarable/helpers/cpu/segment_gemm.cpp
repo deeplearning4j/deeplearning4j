@@ -56,7 +56,7 @@ static void segmentGemmCpu_(LaunchContext* context,
     }
 }
 
-void segmentGemmCpu(LaunchContext* context,
+void segmentGemm(LaunchContext* context,
                      NDArray* input, NDArray* weights,
                      NDArray* segmentOffsets, NDArray* segmentSizes,
                      NDArray* output) {

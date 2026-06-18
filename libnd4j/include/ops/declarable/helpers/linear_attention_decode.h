@@ -37,8 +37,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-// CPU implementation.
-SD_LIB_HIDDEN void linearAttentionDecodeCpu(
+SD_LIB_HIDDEN void linearAttentionDecode(
     LaunchContext* context,
     NDArray* query,       // [batch, 1, numHeads, headDimK]
     NDArray* key,         // [batch, 1, numHeads, headDimK]
@@ -46,18 +45,6 @@ SD_LIB_HIDDEN void linearAttentionDecodeCpu(
     NDArray* decayRates,  // [numHeads] float32 — per-head log-decay magnitude
     NDArray* state,       // [batch, numHeads, headDimV, headDimK] float32, in-place update
     NDArray* output);     // [batch, 1, numHeads, headDimV]
-
-// CUDA implementation — available when compiled with nvcc.
-#if defined(SD_CUDA)
-SD_LIB_HIDDEN void linearAttentionDecodeCuda(
-    LaunchContext* context,
-    NDArray* query,       // [batch, 1, numHeads, headDimK]
-    NDArray* key,         // [batch, 1, numHeads, headDimK]
-    NDArray* value,       // [batch, 1, numHeads, headDimV]
-    NDArray* decayRates,  // [numHeads] float32 — per-head log-decay magnitude
-    NDArray* state,       // [batch, numHeads, headDimV, headDimK] float32, in-place update
-    NDArray* output);     // [batch, 1, numHeads, headDimV]
-#endif
 
 }  // namespace helpers
 }  // namespace ops

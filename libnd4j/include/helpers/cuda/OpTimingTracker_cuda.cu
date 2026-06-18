@@ -16,26 +16,26 @@ CudaEventTimer::CudaEventTimer() {
 }
 
 CudaEventTimer::~CudaEventTimer() {
-  cudaEventDestroy(static_cast<cudaEvent_t>(_startEvent));
-  cudaEventDestroy(static_cast<cudaEvent_t>(_stopEvent));
+  cudaEventDestroy(reinterpret_cast<cudaEvent_t>(_startEvent));
+  cudaEventDestroy(reinterpret_cast<cudaEvent_t>(_stopEvent));
 }
 
 void CudaEventTimer::start() {
-  cudaEventRecord(static_cast<cudaEvent_t>(_startEvent));
+  cudaEventRecord(reinterpret_cast<cudaEvent_t>(_startEvent));
   _started = true;
 }
 
 void CudaEventTimer::stop() {
   if (_started) {
-    cudaEventRecord(static_cast<cudaEvent_t>(_stopEvent));
-    cudaEventSynchronize(static_cast<cudaEvent_t>(_stopEvent));
+    cudaEventRecord(reinterpret_cast<cudaEvent_t>(_stopEvent));
+    cudaEventSynchronize(reinterpret_cast<cudaEvent_t>(_stopEvent));
   }
 }
 
 float CudaEventTimer::elapsedMillis() {
   if (!_started) return -1.0f;
   float ms = 0.0f;
-  cudaEventElapsedTime(&ms, static_cast<cudaEvent_t>(_startEvent), static_cast<cudaEvent_t>(_stopEvent));
+  cudaEventElapsedTime(&ms, reinterpret_cast<cudaEvent_t>(_startEvent), reinterpret_cast<cudaEvent_t>(_stopEvent));
   return ms;
 }
 

@@ -455,7 +455,7 @@ template void launchDecoderMaskedMhaKernel<float16>(
 //////////////////////////////////////////////////////////////////////////////
 // Public interface
 //////////////////////////////////////////////////////////////////////////////
-void decoderMaskedMhaCuda(
+void decoderMaskedMha(
     NDArray* hiddenStates,
     NDArray* qkvWeight,
     NDArray* oWeight,
@@ -536,7 +536,7 @@ void decoderMaskedMhaCuda(
             config.cachePosition, kvCacheMaxSeq, config.ropeType, attScale,
             batch, kvCacheSize, outputSize, *stream);
     } else {
-        THROW_EXCEPTION("decoderMaskedMhaCuda: Unsupported data type");
+        THROW_EXCEPTION("decoderMaskedMha: Unsupported data type");
     }
 
     NDArray::registerSpecialUse({output, updatedKeyCache, updatedValueCache},

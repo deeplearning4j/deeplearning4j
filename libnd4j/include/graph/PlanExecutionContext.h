@@ -55,11 +55,6 @@
 #include <cstdint>
 #include <unordered_map>
 
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#include <graph/DspStreamGuard.h>
-#endif
-
 namespace sd {
 namespace graph {
 
@@ -134,15 +129,14 @@ enum class ExecTarget : uint8_t {
 
 struct PlanExecutionContext {
   // ══════════════════════════════════════════════════════════════════════
-  // CUDA stream state
+  // Stream/event state (void* on all platforms; cast to cudaStream_t /
+  // cudaEvent_t in CUDA implementation files).
   // Set by platformBeginExecution. Available to all subsequent phases.
-  // On CPU builds, none of these fields exist.
   // ══════════════════════════════════════════════════════════════════════
-#ifdef SD_CUDA
-  cudaStream_t dspStream = nullptr;        // The DSP execution stream (from caller)
-  cudaStream_t lcDefaultStream = nullptr;  // LaunchContext default exec stream
-  DspStreamGuard* streamGuard = nullptr;  // Owned, explicit delete in platformEndExecution
-  int deviceId = 0;                        // CUDA device captured at platformBeginExecution
+  void* dspStream = nullptr;        // The DSP execution stream (from caller)
+  void* lcDefaultStream = nullptr;  // LaunchContext default exec stream
+  void* streamGuard = nullptr;      // Owned, explicit delete in platformEndExecution
+  int deviceId = 0;                 // CUDA device captured at platformBeginExecution
 
   /**
    * Cross-stream sync event for this execution.
@@ -150,8 +144,9 @@ struct PlanExecutionContext {
    * Used by performPreReplaySync() to record on the default stream and wait
    * on the DSP stream, establishing ordering between Java-side .assign()
    * ops and DSP graph replay. Lifetime tied to execution context, not thread.
+   * void* on all platforms; cast to cudaEvent_t in CUDA implementation files.
    */
-  cudaEvent_t crossStreamEvent = nullptr;
+  void* crossStreamEvent = nullptr;
 
   /**
    * FNV-1a fingerprints of variable external inputs from the previous
@@ -161,7 +156,6 @@ struct PlanExecutionContext {
    * Keyed by external-input index.
    */
   std::unordered_map<int, uint64_t> prevVariableFingerprints;
-#endif
 
   // ══════════════════════════════════════════════════════════════════════
   // Execution identity (snapshot at entry)

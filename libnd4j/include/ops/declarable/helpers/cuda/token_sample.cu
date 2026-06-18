@@ -213,7 +213,7 @@ static void tokenSampleLauncher(NDArray* logits, NDArray* output,
     }
 }
 
-void tokenSampleCuda(NDArray* logits, NDArray* output,
+void tokenSample(NDArray* logits, NDArray* output,
                      double temperature, int topK, double topP,
                      LongType seed, LaunchContext* context) {
     NDArray::prepareSpecialUse({output}, {logits});
@@ -223,7 +223,7 @@ void tokenSampleCuda(NDArray* logits, NDArray* output,
     NDArray::registerSpecialUse({output}, {logits});
 }
 
-void tokenSampleWithPenaltiesCuda(NDArray* logits, NDArray* output,
+void tokenSampleWithPenalties(NDArray* logits, NDArray* output,
                                    NDArray* inputIds,
                                    double temperature, int topK,
                                    double topP, double minP,
@@ -232,16 +232,16 @@ void tokenSampleWithPenaltiesCuda(NDArray* logits, NDArray* output,
                                    LongType seed, LaunchContext* context) {
     // Step 1: Apply penalties (in-place on device)
     if (inputIds != nullptr && (repPenalty != 1.0 || freqPenalty != 0.0 || presPenalty != 0.0)) {
-        applyLogitPenaltiesCuda(logits, inputIds, repPenalty, freqPenalty, presPenalty, context);
+        applyLogitPenalties(logits, inputIds, repPenalty, freqPenalty, presPenalty, context);
     }
 
     // Step 2: Apply min-p filtering (in-place on device)
     if (minP > 0.0) {
-        applyMinPFilterCuda(logits, minP, context);
+        applyMinPFilter(logits, minP, context);
     }
 
     // Step 3: Standard sampling (temperature, topK, topP)
-    tokenSampleCuda(logits, output, temperature, topK, topP, seed, context);
+    tokenSample(logits, output, temperature, topK, topP, seed, context);
 }
 
 }  // namespace helpers

@@ -16,23 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#include <helpers/CutlassGemmHelper.h>
-
-#ifndef SD_CUDA
-namespace sd {
-
-// CPU stubs — CUTLASS requires CUDA, always fall back.
-
-bool CutlassGemmHelper::shouldUseCutlass(LongType M, LongType N, LongType K,
-                                         DataType aType, DataType bType,
-                                         int smVersion) {
-  return false;
-}
-
-bool CutlassGemmHelper::gemm(NDArray* A, NDArray* B, NDArray* C,
-                              double alpha, double beta) {
-  return false;
-}
-
-}  // namespace sd
-#endif  // !SD_CUDA
+// Platform-specific implementations:
+//   helpers/cpu/CutlassGemmHelper.cpp  (CPU build)
+//   helpers/cuda/CutlassGemmHelper.cu  (CUDA build)
+// This file is intentionally empty.

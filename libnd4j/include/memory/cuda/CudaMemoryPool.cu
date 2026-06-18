@@ -37,7 +37,7 @@ namespace memory {
 
 SD_INLINE cudaStream_t resolveCaptureStream(cudaStream_t stream) {
   if (tl_graphExecutionActive && stream == nullptr && tl_graphCaptureStream != nullptr) {
-    return tl_graphCaptureStream;
+    return reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
   }
   return stream;
 }
@@ -53,7 +53,7 @@ static thread_local bool tl_resolvingContextStream = false;
 // 3. nullptr (stream 0) as last resort
 SD_INLINE cudaStream_t resolveNullStream(cudaStream_t stream) {
   if (stream != nullptr) return stream;
-  if (tl_dspExecutionStream != nullptr) return tl_dspExecutionStream;
+  if (tl_dspExecutionStream != nullptr) return reinterpret_cast<cudaStream_t>(tl_dspExecutionStream);
   if (!tl_resolvingContextStream) {
     tl_resolvingContextStream = true;
     auto* ctxStream = sd::LaunchContext::defaultContext()->getCudaStream();
