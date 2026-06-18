@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: tokenizers
+Description: HuggingFace tokenizers library with C++ wrapper
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -ltokenizers_wrapper -ltokenizers_c
+Cflags: -I${includedir}/tokenizers

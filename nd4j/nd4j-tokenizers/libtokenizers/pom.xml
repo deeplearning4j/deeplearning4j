@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.eclipse.deeplearning4j</groupId>
+        <artifactId>nd4j-tokenizers</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>libtokenizers</artifactId>
+    <packaging>jar</packaging>
+
+    <name>libtokenizers</name>
+    <description>Native tokenizers library build (Rust FFI)</description>
+
+    <properties>
+        <libtokenizers.build>Release</libtokenizers.build>
+        <libtokenizers.buildprogram>bash</libtokenizers.buildprogram>
+        <libtokenizers.cpu.compile.skip>false</libtokenizers.cpu.compile.skip>
+        <libtokenizers.classifier>${javacpp.platform}</libtokenizers.classifier>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>build-native-tokenizers</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${libtokenizers.buildprogram}</executable>
+                            <arguments>
+                                <argument>buildnativetokenizers.sh</argument>
+                            </arguments>
+                            <skip>${libtokenizers.cpu.compile.skip}</skip>
+                            <environmentVariables>
+                                <JAVACPP_PLATFORM>${javacpp.platform}</JAVACPP_PLATFORM>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-native-libs</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- Create the JavaCPP directory structure -->
+                                <mkdir dir="${project.build.outputDirectory}/org/eclipse/deeplearning4j/tokenizers/${javacpp.platform}"/>
+                                <mkdir dir="${project.build.outputDirectory}/org/eclipse/deeplearning4j/tokenizers/include"/>
+
+                                <!-- Copy from JavaCPP structure if it exists -->
+                                <copy todir="${project.build.outputDirectory}" failonerror="false" quiet="true">
+                                    <fileset dir="target/native">
+                                        <include name="org/eclipse/deeplearning4j/tokenizers/**"/>
+                                    </fileset>
+                                </copy>
+
+                                <!-- Copy essential libraries from legacy location -->
+                                <copy todir="${project.build.outputDirectory}/org/eclipse/deeplearning4j/tokenizers/${javacpp.platform}" failonerror="false" quiet="true">
+                                    <fileset dir="target/native/${javacpp.platform}">
+                                        <include name="**/libtokenizers_wrapper.so*"/>
+                                        <include name="**/libtokenizers_wrapper.dll*"/>
+                                        <include name="**/libtokenizers_wrapper.dylib*"/>
+                                        <include name="**/libtokenizers_wrapper.jnilib*"/>
+                                        <include name="**/libtokenizers_ffi.so*"/>
+                                        <include name="**/libtokenizers_ffi.dll*"/>
+                                        <include name="**/libtokenizers_ffi.dylib*"/>
+                                        <include name="manifest.properties"/>
+                                        <!-- Exclude proc-macro libraries -->
+                                        <exclude name="**/libdarling_macro-*.so"/>
+                                        <exclude name="**/libderive_builder_macro-*.so"/>
+                                        <exclude name="**/libmacro_rules_attribute_proc_macro-*.so"/>
+                                        <exclude name="**/libmonostate_impl-*.so"/>
+                                        <exclude name="**/libpaste-*.so"/>
+                                        <exclude name="**/librustversion-*.so"/>
+                                        <exclude name="**/libserde_derive-*.so"/>
+                                        <exclude name="**/libthiserror_impl-*.so"/>
+                                    </fileset>
+                                </copy>
+
+                                <!-- Copy headers -->
+                                <copy todir="${project.build.outputDirectory}/org/eclipse/deeplearning4j/tokenizers/include" failonerror="false" quiet="true">
+                                    <fileset dir="include">
+                                        <include name="**/*.h"/>
+                                        <include name="**/*.hpp"/>
+                                    </fileset>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>*.so</exclude>
+                                <exclude>*.dll</exclude>
+                                <exclude>*.dylib</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>platform-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${libtokenizers.classifier}</classifier>
+                            <includes>
+                                <include>org/eclipse/deeplearning4j/tokenizers/${javacpp.platform}/**</include>
+                                <include>org/eclipse/deeplearning4j/tokenizers/include/**</include>
+                                <include>META-INF/**</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>build</directory>
+                        </fileset>
+                        <fileset>
+                            <directory>target/native</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>skip-native</id>
+            <properties>
+                <libtokenizers.cpu.compile.skip>true</libtokenizers.cpu.compile.skip>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>linux-x86_64-default</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>linux</name>
+                    <arch>amd64</arch>
+                </os>
+                <property>
+                    <name>!javacpp.platform</name>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform>linux-x86_64</javacpp.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>windows-x86_64-default</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                    <arch>amd64</arch>
+                </os>
+                <property>
+                    <name>!javacpp.platform</name>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform>windows-x86_64</javacpp.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>macosx-x86_64-default</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>x86_64</arch>
+                </os>
+                <property>
+                    <name>!javacpp.platform</name>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform>macosx-x86_64</javacpp.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>macosx-arm64-default</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>aarch64</arch>
+                </os>
+                <property>
+                    <name>!javacpp.platform</name>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform>macosx-arm64</javacpp.platform>
+            </properties>
+        </profile>
+    </profiles>
+</project>

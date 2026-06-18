@@ -20,12 +20,14 @@
 package org.eclipse.deeplearning4j.omnihub;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.omnihub.OmnihubConfig;
+import org.eclipse.deeplearning4j.pipeline.AutoModel;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
@@ -40,6 +42,7 @@ import java.util.Collections;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class BootstrapFromLocal {
 
     public static void main(String...args) {
@@ -55,8 +58,7 @@ public class BootstrapFromLocal {
                     try {
                         extracted(localOmnihubHome, onnxFrameworkImporter, tensorflowFrameworkImporter, framework, inputFile);
                     } catch (Exception e) {
-                        System.err.println("Failed to import model at path " + inputFile.getAbsolutePath());
-                        e.printStackTrace();
+                        log.error("Failed to import model at path {}", inputFile.getAbsolutePath(), e);
                     }
                 }
 
@@ -78,7 +80,11 @@ public class BootstrapFromLocal {
         }
         switch(outputFramework) {
             case SAMEDIFF:
-                importTfOnnxSameDiff(onnxFrameworkImporter, tensorflowFrameworkImporter, framework, inputFile, inputFileNameMinusFormat, format, saveModelDir);
+                if (framework == Framework.GGUF || framework == Framework.SAFETENSORS) {
+                    importPipelineSameDiff(inputFile, inputFileNameMinusFormat, format, saveModelDir);
+                } else {
+                    importTfOnnxSameDiff(onnxFrameworkImporter, tensorflowFrameworkImporter, framework, inputFile, inputFileNameMinusFormat, format, saveModelDir);
+                }
                 break;
             case DL4J:
                 File saveModel2 = new File(saveModelDir,inputFileNameMinusFormat + ".zip");
@@ -117,6 +123,18 @@ public class BootstrapFromLocal {
         }
     }
 
+    private static void importPipelineSameDiff(File inputFile, String inputFileNameMinusFormat, String format, File saveModelDir) throws Exception {
+        if (format.equals("gguf") || format.equals("safetensors")) {
+            SameDiff sameDiff = AutoModel.fromPretrained(inputFile.getParentFile());
+            if (sameDiff != null) {
+                File saveModel = new File(saveModelDir, inputFileNameMinusFormat + ".fb");
+                sameDiff.asFlatFile(saveModel, true);
+            } else {
+                System.err.println("Skipping pipeline model " + inputFile.getAbsolutePath());
+            }
+        }
+    }
+
     @SneakyThrows
     private static void importKerasDl4j(File inputFile, File saveModel2) {
         try {
@@ -124,7 +142,7 @@ public class BootstrapFromLocal {
             computationGraph.save(saveModel2,true);
         }catch(Exception e) {
             if(e instanceof InvalidKerasConfigurationException) {
-                e.printStackTrace();
+                log.error("Invalid Keras configuration while importing model from {}", inputFile.getAbsolutePath(), e);
             } else {
                 MultiLayerNetwork multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(inputFile.getAbsolutePath(), true);
                 multiLayerNetwork.save(saveModel2,true);
