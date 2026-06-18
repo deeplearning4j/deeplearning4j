@@ -20,6 +20,7 @@
 
 package org.nd4j.autodiff.samediff.execution;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -122,6 +123,7 @@ public class DynamicShapePlanExecutor implements Closeable {
     private final SessionMemMgr mmgr;
 
     /** The plan this executor is currently configured for. */
+    @Getter
     private DynamicShapePlan currentPlan;
 
     /** Flat output array slots: stores op outputs by slot index. */
@@ -167,6 +169,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  execution attempt. Freed on close(). null means not yet compiled or compilation failed.
      *  Can be swapped across executeNative() calls by redispatchForCurrentShapes() when
      *  placeholder shapes change — the C++ NativePlanCache returns the shape-matched plan. */
+    @Getter
     private Pointer nativePlanHandle;
 
     /** Track which plan the native handle was compiled from. If the plan changes,
@@ -218,6 +221,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /** Cached OpaqueContext for native execution. Reused across executeNative() calls
      *  to avoid JNI create/delete overhead (~1-2ms). Freed on close(). */
+    @Getter
     private OpaqueContext cachedOpContext;
     private int cachedOpContextInputCount;
     private int cachedOpContextOutputCount;
@@ -255,6 +259,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  multiple plans (e.g., vision encoder + decoder). These references ensure
      *  the DataBuffers remain alive for the lifetime of this executor.
      *  Populated at compile time, nulled on close(). */
+    @Getter
     private IdentityHashMap<DataBuffer, Boolean> protectedConstantBuffers;
 
     /** Cached indices of placeholder inputs. Built on first frozen call to avoid
@@ -595,15 +600,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         return odb != null && !odb.isNull();
     }
 
-    /**
-     * Returns the set of constant DataBuffers protected by this executor.
-     * Used by session cleanup code to avoid closing constants that are still
-     * referenced by an active plan.
-     */
-    public IdentityHashMap<DataBuffer, Boolean> getProtectedConstantBuffers() {
-        return protectedConstantBuffers;
-    }
-
     private int closeReplicaCache(Map<Integer, INDArray> cache) {
         if (cache == null || cache.isEmpty()) {
             return 0;
@@ -785,22 +781,6 @@ public class DynamicShapePlanExecutor implements Closeable {
     // (input_ids, position_ids, attention_mask) are plain ext input NDArrays that
     // Java writes via normal assign/putScalar. The C++ DSP plan is a pure graph
     // executor with no decode-specific lifecycle.
-
-    /**
-     * Get the native plan handle for direct JNI calls.
-     */
-    public Pointer getNativePlanHandle() {
-        return nativePlanHandle;
-    }
-
-    /**
-     * Get the cached OpaqueContext that holds all external inputs for plan execution.
-     * This context is persistent across calls and can be passed to native decode ops.
-     * Returns null if no context has been created yet.
-     */
-    public OpaqueContext getCachedOpContext() {
-        return cachedOpContext;
-    }
 
     /**
      * Find the index of an external input by name.
@@ -1167,13 +1147,6 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     public int getMaxKvCacheLength() {
         return maxKvCacheLength;
-    }
-
-    /**
-     * Get the currently compiled DynamicShapePlan (if any).
-     */
-    public DynamicShapePlan getCurrentPlan() {
-        return currentPlan;
     }
 
     /**
@@ -3325,35 +3298,31 @@ public class DynamicShapePlanExecutor implements Closeable {
                 nativeOps.setGraphContextOutputArray(opContext, i, opaqueOut);
             }
 
-            // Get execution stream — use the plan's own CUDA stream to avoid
-            // cross-thread capture poisoning (each plan creates its own stream
-            // in platformBeginExecution so captures don't conflict with other
-            // threads' syncToDevice on the shared default stream).
-            Pointer execStream;
-            if (execStreamCached) {
-                execStream = cachedExecStream;
-            } else {
-                execStream = null;
-                try {
-                    // Prefer plan-owned stream (created after first execution)
-                    if (nativePlanHandle != null) {
-                        execStream = nativeOps.dspGetExecutionStream(nativePlanHandle);
-                    }
-                    // Fallback to LaunchContext default before plan has executed
-                    if (execStream == null) {
-                        OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-                        if (lc != null) {
-                            execStream = nativeOps.lcExecutionStream(lc);
-                        }
-                    }
-                    if (execStream != null) execStream.retainReference();
-                } catch (Exception e) {
-                    // CPU backend
+            // Get execution stream — resolve it FRESH every execution; never reuse a
+            // cached raw CUDA stream pointer. The plan-owned stream (dspGetExecutionStream)
+            // is destroyed+recreated across recompiles (platformFreePlanResources deletes
+            // it), and the LaunchContext fallback stream is thread-local — a cached pointer
+            // to either can dangle. When that stale pointer is later handed to
+            // dbFreeBuffersOnStream, cudaFreeAsync fails with CUDA 201 (invalid device
+            // context). Re-resolving is a trivial JNI getter relative to a decode step.
+            // (Native platformBeginExecution also no longer trusts this pointer for the
+            // execution path — it uses its own ownedStream_ / live thread-local stream.)
+            Pointer execStream = null;
+            try {
+                // Prefer plan-owned stream (created after first execution)
+                if (nativePlanHandle != null) {
+                    execStream = nativeOps.dspGetExecutionStream(nativePlanHandle);
                 }
-                if (shapesFrozen) {
-                    cachedExecStream = execStream;
-                    execStreamCached = true;
+                // Fallback to LaunchContext default before plan has executed
+                if (execStream == null) {
+                    OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
+                    if (lc != null) {
+                        execStream = nativeOps.lcExecutionStream(lc);
+                    }
                 }
+                if (execStream != null) execStream.retainReference();
+            } catch (Exception e) {
+                // CPU backend
             }
 
             // Clear native shape caches before each execution — unless shapes are frozen.
