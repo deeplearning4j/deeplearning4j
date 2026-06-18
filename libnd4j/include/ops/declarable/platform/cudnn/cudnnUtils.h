@@ -228,7 +228,7 @@ DECLARE_PLATFORM(leakyrelu, ENGINE_CUDA);
 SD_INLINE cudaStream_t cudnnCaptureAwareStream(cudaStream_t* contextStream) {
   cudaStream_t stream = *contextStream;
   if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
-    stream = tl_graphCaptureStream;
+    stream = reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
   }
   return stream;
 }
