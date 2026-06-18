@@ -59,10 +59,8 @@
 // The switch is on binary.target / detectTarget() result, not on build flags.
 // Build flags only gate which headers and APIs are available.
 
-#ifdef SD_CUDA
-#include <cuda.h>
-#include <cuda_runtime.h>
-#endif
+#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/gpu/TritonCudaDriverDispatch.h>
 
 // HIP headers: available in native ROCm builds AND ZLUDA+AMD builds.
 // ZLUDA+AMD sets HAVE_MIOPEN=1 and includes ROCm in the build.
@@ -564,16 +562,16 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
   }
 #endif
 
-#ifdef SD_CUDA
+  if (dspIsCudaBuild()) {
   // CUDA detection — for native NVIDIA GPUs (or ZLUDA fallback)
   {
-    int deviceCount = 0;
-    auto err = cudaGetDeviceCount(&deviceCount);
-    if (err == cudaSuccess && deviceCount > 0) {
-      cudaDeviceProp props;
-      cudaGetDeviceProperties(&props, 0);
+    int deviceCount = tritonGetDeviceCount();
+    if (deviceCount > 0) {
+      char devName[256] = {0};
+      int smMajor = 0, smMinor = 0;
+      tritonGetDeviceProperties(0, devName, sizeof(devName), &smMajor, &smMinor);
 
-      std::string deviceName(props.name);
+      std::string deviceName(devName);
 
       // If we get here under ZLUDA, the HIP/Level Zero detection above
       // didn't match (unusual). Check the device name as a fallback.
@@ -583,10 +581,10 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
           deviceName.find("Radeon") != std::string::npos ||
           deviceName.find("gfx") != std::string::npos) {
         // Best-effort arch from compute capability (imprecise)
-        cachedArch_ = "gfx" + std::to_string(props.major * 100 + props.minor * 10);
+        cachedArch_ = "gfx" + std::to_string(smMajor * 100 + smMinor * 10);
         cachedTarget_ = TritonGpuTarget::AMD;
         DSP_DIAG(BACKEND, "TritonTargetDispatch: detected AMD GPU '%s' via CUDA (ZLUDA fallback), arch=%s",
-                  props.name, cachedArch_.c_str());
+                  devName, cachedArch_.c_str());
         return cachedTarget_;
       }
 
@@ -598,20 +596,20 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
         if (deviceName.find("Max") != std::string::npos) cachedArch_ = "pvc";
         cachedTarget_ = TritonGpuTarget::INTEL;
         DSP_DIAG(BACKEND, "TritonTargetDispatch: detected Intel GPU '%s' via CUDA (ZLUDA fallback), arch=%s",
-                  props.name, cachedArch_.c_str());
+                  devName, cachedArch_.c_str());
         return cachedTarget_;
       }
 #endif
 
       // Native NVIDIA GPU
-      cachedArch_ = "sm_" + std::to_string(props.major * 10 + props.minor);
+      cachedArch_ = "sm_" + std::to_string(smMajor * 10 + smMinor);
       cachedTarget_ = TritonGpuTarget::NVIDIA;
       DSP_DIAG(BACKEND, "TritonTargetDispatch: detected NVIDIA GPU '%s', arch=%s",
-                props.name, cachedArch_.c_str());
+                devName, cachedArch_.c_str());
       return cachedTarget_;
     }
   }
-#endif
+  }  // end dspIsCudaBuild() block
 
   DSP_DIAG(BACKEND, "TritonTargetDispatch: no supported GPU target detected");
   cachedTarget_ = TritonGpuTarget::UNKNOWN;
@@ -620,19 +618,19 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
 
 std::string TritonTargetDispatch::getTargetArch() {
   detectTarget();
-#ifdef SD_CUDA
   // Return the arch for the CURRENT device, not just device 0.
   // Multi-GPU systems may have different SM versions (e.g., sm_89 + sm_75).
   // cachedArch_ is always set from device 0; using it for device 1 causes
   // PTX JIT failures ("SM version specified by .target is higher than default").
-  if (cachedTarget_ == TritonGpuTarget::NVIDIA) {
-    int currentDevice = 0;
-    cudaGetDevice(&currentDevice);
-    cudaDeviceProp props;
-    cudaGetDeviceProperties(&props, currentDevice);
-    return "sm_" + std::to_string(props.major * 10 + props.minor);
+  if (cachedTarget_ == TritonGpuTarget::NVIDIA && dspIsCudaBuild()) {
+    int currentDevice = tritonGetCurrentDevice();
+    if (currentDevice < 0) currentDevice = 0;
+    int smMajor = 0, smMinor = 0;
+    tritonGetDeviceProperties(currentDevice, nullptr, 0, &smMajor, &smMinor);
+    if (smMajor > 0) {
+      return "sm_" + std::to_string(smMajor * 10 + smMinor);
+    }
   }
-#endif
   return cachedArch_;
 }
 
@@ -799,9 +797,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     tritonInProtectedRegion = false;
     // Clear any sticky CUDA errors that may have been set during the failed compilation.
     // Without this, ALL subsequent CUDA runtime calls fail (e.g., cudaMemGetInfo returns total=0).
-#ifdef SD_CUDA
-    cudaGetLastError();
-#endif
+    dspClearLastCudaError();
     DSP_DIAG(FALLBACK, "TritonTargetDispatch::compile[%lld]: compilation hit assertion failure "
               "(recovered via SIGABRT handler). TTIR before passes:\n%.2000s",
               compileId, preDump.c_str());
@@ -1017,9 +1013,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
           });
       if (mlir::failed(pm.run(*moduleOp))) {
         tritonInProtectedRegion = false;
-#ifdef SD_CUDA
-        cudaGetLastError();  // Clear sticky CUDA errors from failed pass pipeline
-#endif
+        dspClearLastCudaError();  // Clear sticky CUDA errors from failed pass pipeline
         // Dump full TTIR to file for diagnosis
         std::string ttirDumpPath = getTritonDiagDir() + "triton_ttir_dump.txt";
         FILE* diagFile = fopen(ttirDumpPath.c_str(), "w");
@@ -1155,9 +1149,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
     if (!hasBackendLowering) {
       tritonInProtectedRegion = false;
-#ifdef SD_CUDA
-      cudaGetLastError();
-#endif
+      dspClearLastCudaError();
       DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: no backend lowering passes available for target");
       return result;
     }
@@ -1177,9 +1169,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
           });
       if (mlir::failed(pm.run(*moduleOp))) {
         tritonInProtectedRegion = false;
-#ifdef SD_CUDA
-        cudaGetLastError();  // Clear sticky CUDA errors from failed TTGIR->LLVM lowering
-#endif
+        dspClearLastCudaError();  // Clear sticky CUDA errors from failed TTGIR->LLVM lowering
         std::string mlirDump;
         llvm::raw_string_ostream mlirOS(mlirDump);
         moduleOp->print(mlirOS);
@@ -1224,9 +1214,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     verifyFailed = mlir::failed(mlir::verify(*moduleOp));
     if (verifyFailed) {
       tritonInProtectedRegion = false;
-#ifdef SD_CUDA
-      cudaGetLastError();
-#endif
+      dspClearLastCudaError();
       DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: MLIR module verification FAILED "
                 "after lowering. Verifier diagnostics:\n%.4000s",
                 compileId, capturedDiags.empty() ? "(none)" : capturedDiags.c_str());
@@ -1253,9 +1241,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     llvmModule = mlir::translateModuleToLLVMIR(*moduleOp, llvmCtx);
     tritonInProtectedRegion = false;
     if (!llvmModule) {
-#ifdef SD_CUDA
-      cudaGetLastError();  // Clear sticky CUDA errors from failed translation
-#endif
+      dspClearLastCudaError();  // Clear sticky CUDA errors from failed translation
       std::string postLowerDump;
       llvm::raw_string_ostream postOS(postLowerDump);
       moduleOp->print(postOS);
@@ -1453,59 +1439,44 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
   switch (binary.target) {
 
     case TritonGpuTarget::NVIDIA: {
-#ifdef SD_CUDA
       // cuModuleLoadDataEx requires a current CUDA context on this thread.
       // Worker threads used by TritonGraphBackend may not have bound one yet.
       // We must use the Driver API to ensure the primary context is pushed.
-      int currentDevice = 0;
-      cudaError_t getDeviceErr = cudaGetDevice(&currentDevice);
-      if (getDeviceErr != cudaSuccess) {
-        DSP_DIAG(COMPILE, "TritonTargetDispatch::loadModule: cudaGetDevice failed before "
-                  "cuModuleLoadDataEx: %s",
-                  cudaGetErrorString(getDeviceErr));
-        cudaGetLastError();
+      int currentDevice = tritonGetCurrentDevice();
+      if (currentDevice < 0) {
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::loadModule: tritonGetCurrentDevice() failed before "
+                  "cuModuleLoadDataEx");
+        dspClearLastCudaError();
         return nullptr;
       }
       // Ensure a CUDA driver context is active on this thread.
       // cudaSetDevice alone may not push a driver context visible to cuModuleLoadDataEx.
-      CUcontext currentCtx = nullptr;
-      cuCtxGetCurrent(&currentCtx);
-      CUcontext pushedCtx = nullptr;
+      void* currentCtx = nullptr;
+      tritonCtxGetCurrent(&currentCtx);
+      void* pushedCtx = nullptr;
       bool didPushCtx = false;
       if (!currentCtx) {
         // No driver context — retain and push the primary context for this device
-        CUdevice cuDev;
-        cuDeviceGet(&cuDev, currentDevice);
-        cuDevicePrimaryCtxRetain(&pushedCtx, cuDev);
-        cuCtxPushCurrent(pushedCtx);
+        void* cuDev = nullptr;
+        tritonDeviceGet(&cuDev, currentDevice);
+        tritonDevicePrimaryCtxRetain(&pushedCtx, cuDev);
+        tritonCtxPushCurrent(pushedCtx);
         didPushCtx = true;
       }
 
       // NVIDIA: CUDA Driver API for PTX loading with JIT error logging.
-      CUmodule module = nullptr;
+      void* module = nullptr;
       char jitErrorLog[4096] = {0};
       char jitInfoLog[4096] = {0};
       int generateLineInfo =
           sd::Environment::getInstance().tritonDisableLineInfo() ? 0 : 1;
-      CUjit_option jitOptions[] = {
-        CU_JIT_ERROR_LOG_BUFFER,
-        CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES,
-        CU_JIT_INFO_LOG_BUFFER,
-        CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES,
-        CU_JIT_GENERATE_LINE_INFO
-      };
-      void* jitOptionValues[] = {
-        jitErrorLog,
-        reinterpret_cast<void*>(sizeof(jitErrorLog)),
-        jitInfoLog,
-        reinterpret_cast<void*>(sizeof(jitInfoLog)),
-        reinterpret_cast<void*>(static_cast<uintptr_t>(generateLineInfo))
-      };
-      CUresult res = cuModuleLoadDataEx(&module, binary.data,
-                                         5, jitOptions, jitOptionValues);
-      if (res != CUDA_SUCCESS) {
+      int res = tritonModuleLoadDataEx(&module, binary.data,
+                                       jitErrorLog, static_cast<int>(sizeof(jitErrorLog)),
+                                       jitInfoLog,
+                                       generateLineInfo);
+      if (res != TRITON_CUDA_SUCCESS) {
         const char* errStr = nullptr;
-        cuGetErrorString(res, &errStr);
+        tritonGetDriverErrorString(res, &errStr);
         sd_printf("TritonTargetDispatch::loadModule: cuModuleLoadDataEx failed: %s\n"
                   "  JIT error: %s\n  JIT info: %s\n  PTX (first 2000 chars): %.2000s\n",
                   errStr ? errStr : "unknown", jitErrorLog, jitInfoLog,
@@ -1515,7 +1486,7 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
           FILE* df = fopen((diagDir + "triton_launch_diag.txt").c_str(), "a");
           if (df) {
             fprintf(df, "cuModuleLoadDataEx_FAIL: res=%d err=%s jitErr=%s jitInfo=%s binarySize=%zu\n",
-                    (int)res, errStr ? errStr : "unknown", jitErrorLog, jitInfoLog, binary.size);
+                    res, errStr ? errStr : "unknown", jitErrorLog, jitInfoLog, binary.size);
             fflush(df);
             fclose(df);
           }
@@ -1526,15 +1497,11 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
             fclose(ptxDump);
           }
         }
-        if (didPushCtx) { CUcontext dummy; cuCtxPopCurrent(&dummy); }
+        if (didPushCtx) { void* dummy = nullptr; tritonCtxPopCurrent(&dummy); }
         return nullptr;
       }
-      if (didPushCtx) { CUcontext dummy; cuCtxPopCurrent(&dummy); }
-      return static_cast<void*>(module);
-#else
-      DSP_DIAG(COMPILE, "TritonTargetDispatch::loadModule: NVIDIA target requires SD_CUDA");
-      return nullptr;
-#endif
+      if (didPushCtx) { void* dummy = nullptr; tritonCtxPopCurrent(&dummy); }
+      return module;
     }
 
     case TritonGpuTarget::AMD: {
@@ -1624,20 +1591,16 @@ void* TritonTargetDispatch::getKernelFunction(void* gpuModule, const std::string
   switch (target) {
 
     case TritonGpuTarget::NVIDIA: {
-#ifdef SD_CUDA
-      CUfunction func = nullptr;
-      CUresult res = cuModuleGetFunction(&func, static_cast<CUmodule>(gpuModule), kernelName.c_str());
-      if (res != CUDA_SUCCESS) {
+      void* func = nullptr;
+      int res = tritonModuleGetFunction(&func, gpuModule, kernelName.c_str());
+      if (res != TRITON_CUDA_SUCCESS) {
         const char* errStr = nullptr;
-        cuGetErrorString(res, &errStr);
+        tritonGetDriverErrorString(res, &errStr);
         DSP_DIAG(EXECUTE, "TritonTargetDispatch::getKernelFunction: cuModuleGetFunction failed: %s",
                   errStr ? errStr : "unknown");
         return nullptr;
       }
-      return static_cast<void*>(func);
-#else
-      return nullptr;
-#endif
+      return func;
     }
 
     case TritonGpuTarget::AMD: {
@@ -1693,27 +1656,25 @@ bool TritonTargetDispatch::launchKernel(void* kernelFunc,
   switch (target) {
 
     case TritonGpuTarget::NVIDIA: {
-#ifdef SD_CUDA
-      CUresult res = cuLaunchKernel(
-          static_cast<CUfunction>(kernelFunc),
-          gridX, gridY, gridZ,
-          blockX, blockY, blockZ,
-          sharedMemBytes,
-          static_cast<CUstream>(stream),
-          args, nullptr);
-      if (res != CUDA_SUCCESS) {
+      int res = tritonLaunchKernel(kernelFunc,
+                                   gridX, gridY, gridZ,
+                                   blockX, blockY, blockZ,
+                                   sharedMemBytes,
+                                   stream,
+                                   args);
+      if (res != TRITON_CUDA_SUCCESS) {
         const char* errStr = nullptr;
-        cuGetErrorString(res, &errStr);
+        tritonGetDriverErrorString(res, &errStr);
         sd_printf("TritonTargetDispatch::launchKernel: cuLaunchKernel failed: %s (code=%d) "
                   "grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
-                  errStr ? errStr : "unknown", (int)res,
+                  errStr ? errStr : "unknown", res,
                   gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
         {
           std::string launchDiagPath = getTritonDiagDir() + "triton_launch_diag.txt";
           FILE* df = fopen(launchDiagPath.c_str(), "a");
           if (df) {
             fprintf(df, "STD_LAUNCH_FAIL: %s (code=%d) grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
-                    errStr ? errStr : "unknown", (int)res,
+                    errStr ? errStr : "unknown", res,
                     gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
             fflush(df); fclose(df);
           }
@@ -1721,9 +1682,6 @@ bool TritonTargetDispatch::launchKernel(void* kernelFunc,
         return false;
       }
       return true;
-#else
-      return false;
-#endif
     }
 
     case TritonGpuTarget::AMD: {
@@ -1796,30 +1754,27 @@ bool TritonTargetDispatch::launchCooperativeKernel(void* kernelFunc,
   switch (target) {
 
     case TritonGpuTarget::NVIDIA: {
-#ifdef SD_CUDA
-      // cudaLaunchCooperativeKernel requires a void* function pointer (host symbol).
-      // We have a CUfunction (driver API handle). Use the driver API equivalent:
-      // cuLaunchCooperativeKernel (CUDA 9.0+).
-      CUresult res = cuLaunchCooperativeKernel(
-          static_cast<CUfunction>(kernelFunc),
-          gridX, gridY, gridZ,
-          blockX, blockY, blockZ,
-          sharedMemBytes,
-          static_cast<CUstream>(stream),
-          args);
-      if (res != CUDA_SUCCESS) {
+      // We have a void* function handle (opaque driver function handle).
+      // Use tritonLaunchCooperativeKernel which calls cuLaunchCooperativeKernel (CUDA 9.0+).
+      int res = tritonLaunchCooperativeKernel(kernelFunc,
+                                              gridX, gridY, gridZ,
+                                              blockX, blockY, blockZ,
+                                              sharedMemBytes,
+                                              stream,
+                                              args);
+      if (res != TRITON_CUDA_SUCCESS) {
         const char* errStr = nullptr;
-        cuGetErrorString(res, &errStr);
+        tritonGetDriverErrorString(res, &errStr);
         sd_printf("TritonTargetDispatch::launchCooperativeKernel: cuLaunchCooperativeKernel failed: %s (code=%d) "
                   "grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
-                  errStr ? errStr : "unknown", (int)res,
+                  errStr ? errStr : "unknown", res,
                   gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
         {
           std::string coopDiagPath = getTritonDiagDir() + "triton_launch_diag.txt";
           FILE* df = fopen(coopDiagPath.c_str(), "a");
           if (df) {
             fprintf(df, "COOP_LAUNCH_FAIL: %s (code=%d) grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
-                    errStr ? errStr : "unknown", (int)res,
+                    errStr ? errStr : "unknown", res,
                     gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
             fflush(df); fclose(df);
           }
@@ -1827,9 +1782,6 @@ bool TritonTargetDispatch::launchCooperativeKernel(void* kernelFunc,
         return false;
       }
       return true;
-#else
-      return false;
-#endif
     }
 
     case TritonGpuTarget::AMD:
@@ -1857,9 +1809,7 @@ void TritonTargetDispatch::unloadModule(void* gpuModule) {
   switch (target) {
 
     case TritonGpuTarget::NVIDIA: {
-#ifdef SD_CUDA
-      cuModuleUnload(static_cast<CUmodule>(gpuModule));
-#endif
+      tritonModuleUnload(gpuModule);
       break;
     }
 

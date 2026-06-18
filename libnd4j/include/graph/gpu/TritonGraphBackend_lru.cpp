@@ -36,12 +36,10 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/gpu/TritonGraphBackend.h>
 #include <graph/gpu/TritonTargetDispatch.h>
+#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/gpu/TritonCudaDriverDispatch.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
-
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
 
 #include <algorithm>
 #include <limits>
@@ -221,10 +219,8 @@ Status TritonGraphBackend::reloadModuleIfEvicted(CompiledKernel* k) {
     return Status::KERNEL_FAILURE;
   }
 
-  int currentDevice = 0;
-#ifdef SD_CUDA
-  cudaGetDevice(&currentDevice);
-#endif
+  int currentDevice = tritonGetCurrentDevice();
+  if (currentDevice < 0) currentDevice = 0;
 
   TritonCompiledBinary binary = {nullptr, 0, TritonGpuTarget::UNKNOWN, "", 0, 0};
   if (!loadBinaryFromDiskCacheByHash(k->diskCacheHash, k->kernelName, binary)) {

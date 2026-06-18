@@ -33,6 +33,7 @@
 #include <array/ArrayOptions.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
+#include <math/templatemath.h>
 #include <system/Environment.h>
 #include <system/common.h>
 
@@ -43,10 +44,6 @@
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
-
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
 
 // MLIR core
 #include <mlir/IR/Builders.h>
@@ -1249,7 +1246,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       int outIdx = slots[slotIdx].wiring.outputSlotIndices[o];
       if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots[outIdx]) {
         auto nativeDtype = outputSlots[outIdx]->dataType();
-        if (nativeDtype == HALF || nativeDtype == BFLOAT16) {
+        if (nativeDtype == DataType::HALF || nativeDtype == DataType::BFLOAT16) {
           // Round-trip: FP32 → FP16/BF16 (truncation) → FP32 (re-promote)
           auto narrowType = getMLIRType(builder, nativeDtype);
           val = castTo(builder, loc, val, narrowType);   // truncate
@@ -2675,7 +2672,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               return result;
             }
 
-            float scale = 1.0f / std::sqrt(static_cast<float>(headDim));
+            float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
             auto bpTile = chooseFusedAttentionTileConfig(batchSize, numQHeads, seqQ, seqK, headDim);
             if (!bpTile.fitsSharedMem) {
               std::string msg = "TritonIRBuilder: fused attention backward '" + slot.ident.opName +
@@ -2971,7 +2968,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           }
         }
 
-        float scale = 1.0f / std::sqrt(static_cast<float>(headDim));
+        float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
         auto attnTile = chooseFusedAttentionTileConfig(
             batchSize, numQHeads, seqQ, seqK, headDim);
         if (!attnTile.fitsSharedMem) {
@@ -4066,7 +4063,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   }
 
   // Dump TTIR module for diagnostics (before Triton pipeline)
-  {
+  if (sd::Environment::getInstance().isDebug()) {
     std::string ttirDump;
     llvm::raw_string_ostream os(ttirDump);
     moduleOp.print(os);
@@ -4076,7 +4073,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               static_cast<int>(inputArgs.size()), static_cast<int>(outputArgs.size()),
               blockSize);
     // Write TTIR to file per sub-kernel range
-    if (sd::Environment::getInstance().isDebug()) {
+    {
       char fname[512];
       // Use configurable dump dir (ND4J_TRITON_DUMP_DIR), falling back to the
       // platform temp directory.  Never hardcode /tmp/ — it is not portable and
@@ -6635,7 +6632,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   result.valid = false;
                   return result;
                 }
-                float scaleBp = 1.0f / std::sqrt(static_cast<float>(headDimBp));
+                float scaleBp = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDimBp));
                 auto bpTileSec = chooseFusedAttentionTileConfig(
                     batchSizeBp, numQHeadsBp, seqQBp, seqKBp, headDimBp);
                 if (!bpTileSec.fitsSharedMem) {
@@ -7035,7 +7032,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
           }
 
-          float scale = 1.0f / std::sqrt(static_cast<float>(std::max(headDim, 1)));
+          float scale = 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(std::max(headDim, 1)));
           auto attnTile = chooseFusedAttentionTileConfig(
               batchSize, numQHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes);
           if (!attnTile.fitsSharedMem) {
@@ -7803,11 +7800,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   result.valid = true;
 
   // Dump TTIR module for diagnostics
-  {
+  if (sd::Environment::getInstance().isDebug()) {
     std::string ttirDump;
     llvm::raw_string_ostream os(ttirDump);
     moduleOp.print(os);
-    sd_debug("TritonIRBuilder: built sectioned module '%s' with %d sections, %d ops, "
+    DSP_DIAG(COMPILE, "TritonIRBuilder: built sectioned module '%s' with %d sections, %d ops, "
               "%d input args, %d output args, maxGrid=%d, cooperative=%s, multiPhase=%s(%d phases)\nTTIR:\n%s\n",
               result.kernelName.c_str(), static_cast<int>(sections.size()),
               segSize, static_cast<int>(inputArgs.size()),
@@ -7816,7 +7813,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               useMultiPhaseLaunch ? "YES" : "NO",
               static_cast<int>(launchPhases.size()), ttirDump.c_str());
     // Write TTIR to file for indirect-args kernels
-    if (sd::Environment::getInstance().isDebug() && useIndirectArgs) {
+    if (useIndirectArgs) {
       std::string dumpDir = sd::Environment::getInstance().tritonDumpDir();
       if (dumpDir.empty()) {
         const char* tmpEnv = std::getenv("TMPDIR");

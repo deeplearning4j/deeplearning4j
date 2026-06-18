@@ -72,7 +72,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     bool earlyStreamIsCapturing = false;
     if (actualStream != nullptr) {
       cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
-      if (cudaStreamIsCapturing(static_cast<cudaStream_t>(actualStream), &capStat) == cudaSuccess &&
+      if (cudaStreamIsCapturing(reinterpret_cast<cudaStream_t>(actualStream), &capStat) == cudaSuccess &&
           capStat != cudaStreamCaptureStatusNone) {
         earlyStreamIsCapturing = true;
       }
@@ -106,7 +106,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     }
   }
 
-  cudaStream_t cudaExecStream = static_cast<cudaStream_t>(actualStream);
+  cudaStream_t cudaExecStream = reinterpret_cast<cudaStream_t>(actualStream);
   int currentDevice = -1;
   auto devErr = cudaGetDevice(&currentDevice);
   if (devErr != cudaSuccess) {
@@ -118,7 +118,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
   bool streamIsCapturing = false;
   if (actualStream != nullptr) {
     cudaStreamCaptureStatus captureStatus = cudaStreamCaptureStatusNone;
-    auto capErr = cudaStreamIsCapturing(static_cast<cudaStream_t>(actualStream), &captureStatus);
+    auto capErr = cudaStreamIsCapturing(reinterpret_cast<cudaStream_t>(actualStream), &captureStatus);
     if (capErr == cudaSuccess && captureStatus != cudaStreamCaptureStatusNone) {
       streamIsCapturing = true;
     }
