@@ -78,8 +78,13 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
         long[] xShape = x.shape();
         long[] yShape = y.shape();
 
-        // If either input is empty, the output is empty (TF broadcast semantics)
+        // If either input is empty, the output is empty (TF broadcast semantics).
+        // We must preserve the actual broadcast output shape (not collapse to rank-0 scalar).
         if (x.isEmpty() || y.isEmpty()) {
+            if (xShape.length != yShape.length) {
+                // Different ranks with empty — fall back to C++ for correct shape
+                return null;
+            }
             // Use calculateOutputDataTypes to get the correct output dtype
             List<DataType> inputDtypes = java.util.Arrays.asList(x.dataType(), y.dataType());
             List<DataType> outputDtypes;
@@ -91,8 +96,17 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
             DataType outputDtype = outputDtypes != null && !outputDtypes.isEmpty()
                     ? outputDtypes.get(0)
                     : Shape.pickPairwiseDataType(x.dataType(), y.dataType());
-            // Create a rank-0 scalar empty shape info
-            DataBuffer shapeInfo = Shape.createShapeInformation(new long[0], new long[0], 0, 'c', outputDtype, true);
+            // Compute broadcast output shape so we preserve dims like [5,0] instead of []
+            long[] outputShape;
+            try {
+                outputShape = Shape.broadcastOutputShape(xShape, yShape);
+            } catch (Exception e) {
+                return null; // non-broadcastable — fall back to C++
+            }
+            if (outputShape == null) return null;
+            long[] strides = Nd4j.getStrides(outputShape, 'c');
+            LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', outputDtype, true);
+            DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
             return Collections.singletonList(shapeInfo);
         }
 

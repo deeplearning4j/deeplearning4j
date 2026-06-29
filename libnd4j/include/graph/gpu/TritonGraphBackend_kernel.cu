@@ -1171,9 +1171,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
              seg.def.startSlot, seg.def.endSlot, refreshedCount,
              totalChangedPtrs - totalChangedInternalPtrs, totalChangedInternalPtrs);
   } else {
-    seg.exec.bumpArgGeneration();
-    seg.exec.addrKeyStableCount = 0;
-    seg.exec.slotAddrStableCount = 0;
+    seg.exec.markArgsStale();
     if (totalChangedPtrs > 0) {
       DSP_DIAG(EXECUTE, "ARG_TABLE_UNSTABLE: seg[%d-%d] %d ptrs changed (ext=%d internal=%d)",
                seg.def.startSlot, seg.def.endSlot, totalChangedPtrs,

@@ -500,6 +500,19 @@ void TritonIRBuilder::emitRmsNormLinearKernel(
   auto splatNOffset = builder.create<mlir::triton::SplatOp>(loc, i32BnType, nOffset);
   auto nIndices = builder.create<mlir::arith::AddIOp>(loc, splatNOffset, rangeN);
 
+  // ── Row boundary mask: prevent OOB reads/writes when M < blockM ──
+  // When M=1 (decode) with blockM=128, rows 1..127 are out-of-bounds.
+  // Without masking, the kernel reads arbitrary GPU memory for those rows
+  // which can contain NaN (e.g. from a prior seqLen=16 plan's buffers),
+  // causing rsqrt(sqAcc+eps) = rsqrt(NaN+eps) = NaN in the output.
+  // The mask zeros OOB contributions to sqAcc and the matmul accumulator.
+  auto mBoundConst = builder.create<mlir::arith::ConstantIntOp>(loc, M, 32);
+  auto mBoundSplat = builder.create<mlir::triton::SplatOp>(loc, i32BmType, mBoundConst);
+  auto i1BmType = mlir::RankedTensorType::get({blockM}, i1Type);
+  // mRowMask[i] = (mIndices[i] < M) — true for in-bounds rows
+  auto mRowMask = builder.create<mlir::arith::CmpIOp>(
+      loc, mlir::arith::CmpIPredicate::slt, mIndices.getResult(), mBoundSplat.getResult());
+
   // Two accumulators:
   // 1. matmulAcc[blockM, blockN] — accumulates (x*gamma) @ W
   // 2. sqAcc[blockM] — accumulates Σ x² per row (for RMS denominator)
@@ -543,8 +556,16 @@ void TritonIRBuilder::emitRmsNormLinearKernel(
       mlir::triton::PointerType::get(xElemType, 1));
   auto xSplat = builder.create<mlir::triton::SplatOp>(loc, xPtrTensorType, xPtr);
   auto xPtrs = builder.create<mlir::triton::AddPtrOp>(loc, xPtrTensorType, xSplat, xOffsets);
+  // Expand row mask [blockM] → [blockM, 1] → [blockM, blockK] for masked x load.
+  // OOB rows (mIndices >= M) load zeros so they don't corrupt sqAcc or matmulAcc.
+  auto i1BmBkType = mlir::RankedTensorType::get({blockM, blockK}, i1Type);
+  auto mRowMaskExpX = builder.create<mlir::triton::ExpandDimsOp>(loc, mRowMask, 1);
+  auto mRowMask2DX = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBkType, mRowMaskExpX);
+  auto xZeroScalar = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(xElemType, 0.0));
+  auto xZeroTile = builder.create<mlir::triton::SplatOp>(
+      loc, mlir::RankedTensorType::get({blockM, blockK}, xElemType), xZeroScalar);
   auto xLoaded = builder.create<mlir::triton::LoadOp>(loc,
-      xPtrs.getResult(), /*mask=*/mlir::Value(), /*other=*/mlir::Value(),
+      xPtrs.getResult(), mRowMask2DX.getResult(), xZeroTile.getResult(),
       mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
 
   // ── Load gamma tile [blockK] and broadcast to [blockM, blockK] ──
@@ -686,7 +707,13 @@ void TritonIRBuilder::emitRmsNormLinearKernel(
   auto outSplat = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outPtr);
   auto outPtrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, outSplat, outOffsets);
 
-  builder.create<mlir::triton::StoreOp>(loc, outPtrs, storeVal, /*mask=*/mlir::Value(),
+  // Masked output store: only write rows where mIndices[i] < M.
+  // Without the mask, rows blockM-1..M+1 write beyond the output allocation,
+  // corrupting adjacent GPU allocations and causing NaN on subsequent executes.
+  auto i1BmBnType = mlir::RankedTensorType::get({blockM, blockN}, i1Type);
+  auto mRowMaskExpOut = builder.create<mlir::triton::ExpandDimsOp>(loc, mRowMask, 1);
+  auto mRowMask2DOut = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBnType, mRowMaskExpOut);
+  builder.create<mlir::triton::StoreOp>(loc, outPtrs, storeVal, mRowMask2DOut.getResult(),
                                          mlir::triton::CacheModifier::NONE,
                                          mlir::triton::EvictionPolicy::NORMAL);
 

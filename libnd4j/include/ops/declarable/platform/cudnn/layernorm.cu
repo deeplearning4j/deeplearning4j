@@ -223,16 +223,14 @@ PLATFORM_IMPL(layer_norm, ENGINE_CUDA) {
 }
 
 PLATFORM_CHECK(layer_norm, ENGINE_CUDA) {
-  auto input = INPUT_VARIABLE(0);
-  auto gamma = INPUT_VARIABLE(1);
-  auto beta = INPUT_VARIABLE(2);
-
+  // The cuDNN implementation uses cudnnBatchNormalizationForwardTraining with
+  // CUDNN_BATCHNORM_PER_ACTIVATION, which computes statistics across the batch
+  // dimension rather than per-sample over the normalization axes.  This is batch
+  // normalization semantics, not layer normalization semantics, so the forward
+  // output and gradients are wrong for all inputs.  The generic implementation
+  // (layer_norm.cpp) is correct and handles all cases; disable this path.
   Requirements req("CUDNN LAYER_NORM OP");
-  req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), {HALF, FLOAT32, DOUBLE}) &&
-      req.expectEq(makeInfoVariable(input->ordering(), ORDERING_MSG_INPUT0), 'c') &&
-      req.expectLessEq(makeInfoVariable(input->rankOf(), RANK_MSG_INPUT0), 5);
-
-  req.logTheSuccess();
+  req.expectEq(makeInfoVariable(true, "disabled"), makeInfoVariable(false, "disabled"));
   return req;
 }
 
@@ -273,14 +271,15 @@ PLATFORM_IMPL(layer_norm_bp, ENGINE_CUDA) {
 }
 
 PLATFORM_CHECK(layer_norm_bp, ENGINE_CUDA) {
-  auto input = INPUT_VARIABLE(0);
-
+  // The cuDNN backward uses cudnnBatchNormalizationBackward with CUDNN_BATCHNORM_PER_ACTIVATION,
+  // which computes gradients using batch normalization semantics (statistics across the batch
+  // dimension) rather than layer normalization semantics (per-sample statistics over the
+  // normalization axes).  Additionally the mean/variance buffers are allocated with the wrong
+  // shape (gamma shape vs. the normSize the cuDNN forward actually writes), causing a device
+  // buffer overflow that corrupts adjacent allocations and produces explosive output values.
+  // The generic implementation (layer_norm.cpp) is correct; disable this cuDNN path.
   Requirements req("CUDNN LAYER_NORM_BP OP");
-  req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), {HALF, FLOAT32, DOUBLE}) &&
-      req.expectEq(makeInfoVariable(input->ordering(), ORDERING_MSG_INPUT0), 'c') &&
-      req.expectLessEq(makeInfoVariable(input->rankOf(), RANK_MSG_INPUT0), 5);
-
-  req.logTheSuccess();
+  req.expectEq(makeInfoVariable(true, "disabled"), makeInfoVariable(false, "disabled"));
   return req;
 }
 

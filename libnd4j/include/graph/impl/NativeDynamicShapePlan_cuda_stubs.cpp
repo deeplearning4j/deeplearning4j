@@ -16,7 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-// Platform-specific implementations:
-//   graph/cpu/NativeDynamicShapePlan_cuda_stubs.cpp  (CPU build)
-//   graph/cuda/NativeDynamicShapePlan_cuda.cu        (CUDA build)
-// This file is intentionally empty.
+// INTENTIONALLY NO DEFINITIONS.
+//
+// The graph-baked-address-pinning CPU stubs (platformPinGraphBakedAddress /
+// platformFlushGraphBakedPins) were originally placed here, but this file lives
+// under graph/impl/ and is therefore compiled in BOTH the CPU and CUDA builds.
+// In the CUDA build that collided (multiple definition at link time) with the
+// real implementations in graph/impl/NativeDynamicShapePlan_cuda.cu, which nvcc
+// also compiles. The CPU stubs now live in their canonical home alongside the
+// other platform-dispatch CPU stubs:
+//     graph/cpu/NativeDynamicShapePlan_cuda_stubs.cpp   (CPU-only build)
+//     graph/impl/NativeDynamicShapePlan_cuda.cu         (CUDA-only build)
+//
+// This file is left without definitions (a valid empty translation unit) so the
+// existing CMake source glob need not be refreshed; it can be removed entirely
+// on the next full CMake re-configure.

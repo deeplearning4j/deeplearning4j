@@ -1629,6 +1629,7 @@
                         <ND4J_DSP_DIAGNOSTICS>${nd4j.dsp.diagnostics}</ND4J_DSP_DIAGNOSTICS>
                         <ND4J_DSP_DIAGNOSTICS_LEVEL>${nd4j.dsp.diagnostics.level}</ND4J_DSP_DIAGNOSTICS_LEVEL>
                         <ND4J_DSP_DIAGNOSTICS_FILE>${nd4j.dsp.diagnostics.file}</ND4J_DSP_DIAGNOSTICS_FILE>
+                        <BUF_FP_RING>${buf.fp.ring}</BUF_FP_RING>
                         <ND4J_DSP_PLAN_CACHE_DIR>${nd4j.dsp.planCache.diskDir}</ND4J_DSP_PLAN_CACHE_DIR>
                         <ND4J_DSP_PLAN_CACHE_DISK_ENABLED>${nd4j.dsp.planCache.diskEnabled}</ND4J_DSP_PLAN_CACHE_DISK_ENABLED>
                         <ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE>${nd4j.dsp.planCache.forceRecompile}</ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE>

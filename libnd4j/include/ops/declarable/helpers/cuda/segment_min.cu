@@ -270,7 +270,6 @@ static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* 
 }
 // -------------------------------------------------------------------------------------------------------------- //
 void segmentMinFunctor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
- output->nullify();
  auto indicesDType = indices->dataType();
  auto outputDType = output->dataType();
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentMinFunctor_, (context, input, indices, output),
@@ -330,13 +329,10 @@ static void unsortedSegmentMinFunctor_(LaunchContext* context, NDArray* input, N
 // -------------------------------------------------------------------------------------------------------------- //
 void unsortedSegmentMinFunctor(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses,
                               NDArray* output) {
- NDArray::prepareSpecialUse({output}, {input, indices});
- output->nullify();
  auto indicesDType = indices->dataType();
  auto outputDType = output->dataType();
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMinFunctor_,
                        (context, input, indices, numOfClasses, output), SD_NUMERIC_TYPES, SD_INDEXING_TYPES);
- NDArray::registerSpecialUse({output}, {input, indices});
 }
 
 template <typename T, typename I>
@@ -541,9 +537,10 @@ Status segmentMinFunctorBP(LaunchContext* context, NDArray* input, NDArray* indi
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto indicesDType = indices->dataType();
  auto outputDType = output->dataType();
- BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMinFunctorBP_,
+ BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMinFunctorBP_,
                        (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
+ return Status::OK;
 }
 
 template <typename T, typename I>
@@ -600,9 +597,10 @@ Status unsortedSegmentMinFunctorBP(LaunchContext* context, NDArray* input, NDArr
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto indicesDType = indices->dataType();
  auto outputDType = output->dataType();
- BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMinFunctorBP_,
+ BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), unsortedSegmentMinFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
+ return Status::OK;
 }
 }  // namespace helpers
 }  // namespace ops

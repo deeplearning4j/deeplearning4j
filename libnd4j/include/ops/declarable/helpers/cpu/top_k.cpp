@@ -43,21 +43,37 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
   if (k == 1) {
     for (sd::LongType e = 0; e < numOfSubArrs; ++e) {
       auto trial = (*input)(e, dimsToExclude);
+      // Sync host buffer once, then access directly via pointer to avoid the
+      // double-offset bug in trial->e<T>(i): buffer() already applies _offset,
+      // and getOffset(i) adds _offset a second time for TAD views with offset>0.
+      trial->syncToHost();
+      const T* trialBuf = trial->bufferAsT<T>();
+      const sd::LongType trialStride = trial->stridesOf()[0];
       sd::LongType maxPos = 0;
-      T maxVal = trial->e<T>(0);
+      T maxVal = trialBuf[0];
       for (sd::LongType pos = 1; pos < trial->lengthOf(); pos++)
-        if (maxVal < trial->e<T>(pos)) {
+        if (maxVal < trialBuf[pos * trialStride]) {
           maxPos = pos;
-          maxVal = trial->e<T>(pos);
+          maxVal = trialBuf[pos * trialStride];
         }
       if (indices) indices->p(e, maxPos);  // topIndex;
       if (values) values->p(e, maxVal);
+      delete trial;
     }
   } else {
     int nextPos = 0;
 
     for (sd::LongType e = 0; e < numOfSubArrs; ++e) {
       auto trial = (*input)(e, dimsToExclude);
+      // Sync host buffer once, then use direct pointer access.
+      // trial->t<T>(i) / trial->e<T>(i) both call bufferWithOffset(getOffset(i))
+      // which expands to buffer()[_offset + stride*i], but buffer() already
+      // starts at _offset — so they double-count _offset for any TAD whose
+      // base is not at element 0.  Using bufferAsT<T>() (== buffer() already
+      // positioned at the TAD start) and indexing by [i * stride] is correct.
+      trial->syncToHost();
+      const T* trialBuf = trial->bufferAsT<T>();
+      const sd::LongType trialStride = trial->stridesOf()[0];
 
       // fill up the first k elements
       NDArray *topValues = NDArrayFactory::create<T>('c', {k}, input->getContext());
@@ -65,12 +81,12 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
       NDArray *topIndices = NDArrayFactory::create<sd::LongType>('c', {k}, input->getContext());
       for (sd::LongType pos = 0; pos < k; ++pos) {
         topIndices->r<sd::LongType>(pos) = pos;
-        topValues->r<T>(pos) = trial->t<T>(pos);
+        topValues->r<T>(pos) = trialBuf[pos * trialStride];
       }
       sortedVals->assign(topValues);
       SpecialMethods<T>::sortGeneric(sortedVals, false);
       for (sd::LongType i = static_cast<sd::LongType>(k); i < width; ++i) {
-        T val = trial->e<T>(i);
+        T val = trialBuf[i * trialStride];
         T minTopVal = sortedVals->t<T>(0);
         if (minTopVal < val) {  // value should be inserted to top k
           // only if it is not contained in
@@ -96,7 +112,7 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
 
         for (sd::LongType j = 0; j < width; j++)
           for (sd::LongType pos = 0; pos < k; ++pos)
-            if (topValues->t<T>(pos) == trial->t<T>(j)) topIndices->r<sd::LongType>(pos) = j;
+            if (topValues->t<T>(pos) == trialBuf[j * trialStride]) topIndices->r<sd::LongType>(pos) = j;
       } else {  // else sort by indices
         std::map<sd::LongType, T> sortValsMap;
         for (sd::LongType e = 0; e < topValues->lengthOf(); ++e) {

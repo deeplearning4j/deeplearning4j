@@ -96,8 +96,6 @@ public class TestDspPipelineFacets {
 
         // Also test with DSP disabled for comparison
         SameDiff sdNoDsp = SameDiff.create();
-        sdNoDsp.setDspAutoCompileEnabled(false);
-        sdNoDsp.setDspNativeAutoCompileEnabled(false);
         SDVariable x2 = sdNoDsp.placeHolder("x", DataType.FLOAT, -1, D);
         SDVariable W2 = sdNoDsp.constant("W", wArr);
         SDVariable b2 = sdNoDsp.constant("b", bArr);

@@ -239,7 +239,7 @@ function(configure_cuda_linking main_target_name)
         )
     endif()
 
-    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart CUDA::cublas CUDA::cusolver)
+    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart CUDA::cublas CUDA::cusolver CUDA::cusparse)
 
     # NVRTC and CUDA driver API are required for NVRTC JIT and PTX GPU backends.
     # Use CMake's imported targets for cross-platform compatibility (handles .so/.lib/.dylib).

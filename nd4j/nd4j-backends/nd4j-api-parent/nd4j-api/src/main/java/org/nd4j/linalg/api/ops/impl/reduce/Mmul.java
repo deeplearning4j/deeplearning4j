@@ -345,7 +345,24 @@ public class Mmul extends DynamicCustomOp {
         Preconditions.checkState(dataTypes != null && dataTypes.size() >= 2, "Expected at least 2 inputs to mmul op, got %s", dataTypes);
         Preconditions.checkState(dataTypes.get(0).isFPType() && dataTypes.get(1).isFPType(), "Inputs to mmul op must both be a floating" +
                 "point type: got %s", dataTypes);
-        return Collections.singletonList(dataTypes.get(0));
+        // Promote to the wider input dtype (by byte width) so a mixed-dtype matmul (e.g. HALF
+        // activation × FLOAT32 weight) computes and outputs at the higher precision instead of
+        // truncating to the first input's dtype — the latter bypasses MmulHelper::mmulMxM's
+        // mixed-dtype normalization (gated on cType==FLOAT32/DOUBLE) and yields NaN/garbage.
+        return Collections.singletonList(promoteMatmulOutputDataType(dataTypes.get(0), dataTypes.get(1)));
+    }
+
+    /**
+     * Promote a mixed-dtype matmul output to the wider (higher-precision) input dtype, compared by
+     * byte width (HALF 2 &lt; FLOAT 4 &lt; DOUBLE 8). This mirrors the C++ matmul DECLARE_SHAPE_FN
+     * (whose dtypeZ is the wider input) and the FLOAT32/DOUBLE mixed-dtype normalization in
+     * MmulHelper::mmulMxM. It is matmul-specific and deliberately does NOT use
+     * Shape.pickPairwiseDataType, whose Number overload applies weak-scalar promotion rules
+     * (a double literal must not upcast a float array) that are wrong for array×array matmul.
+     * Both inputs are floating-point (validated by the callers).
+     */
+    private static DataType promoteMatmulOutputDataType(DataType a, DataType b) {
+        return a.width() >= b.width() ? a : b;
     }
 
     /**
@@ -421,7 +438,12 @@ public class Mmul extends DynamicCustomOp {
             outputShape[maxBatchRank + 1] = temp;
         }
 
-        DataType dtype = a.dataType();
+        // Promote to the wider input dtype (by byte width) so this Java output-shape shortcut
+        // matches calculateOutputDataTypes and the C++ matmul DECLARE_SHAPE_FN. Using the first
+        // input's dtype would allocate a HALF output for a HALF×FLOAT32 matmul, which bypasses
+        // MmulHelper::mmulMxM's FLOAT32 mixed-dtype normalization (gated on cType==FLOAT32) and
+        // yields NaN. All three dtype-inference sites must agree on the promoted output dtype.
+        DataType dtype = promoteMatmulOutputDataType(a.dataType(), b.dataType());
         long[] strides = Nd4j.getStrides(outputShape, 'c');
         boolean isEmpty = false;
         for (long dim : outputShape) {

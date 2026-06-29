@@ -31,9 +31,8 @@ public class SDValidation {
     }
 
     /**
-     * Validate that the operation is being applied on a numerical SDVariable (not utf8).
-     * Some operations (such as sum, norm2, add(Number) etc don't make sense when applied to utf8 arrays.
-     * BOOL is allowed as it can be treated as 0/1 integers and is supported by the native backend.
+     * Validate that the operation is being applied on a numerical SDVariable (not boolean or utf8).
+     * Some operations (such as sum, norm2, add(Number) etc don't make sense when applied to boolean/utf8 arrays
      *
      * @param opName Operation name to print in the exception
      * @param v      Variable to perform operation on
@@ -41,14 +40,13 @@ public class SDValidation {
     protected static void validateNumerical(String opName, SDVariable v) {
         if (v == null)
             return;
-        if (v.dataType() == DataType.UTF8)
+        if (v.dataType() == DataType.BOOL || v.dataType() == DataType.UTF8)
             throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.name() + "\" with non-numerical data type " + v.dataType());
     }
 
     /**
-     * Validate that the operation is being applied on a numerical SDVariable (not utf8).
-     * Some operations (such as sum, norm2, add(Number) etc don't make sense when applied to utf8 arrays.
-     * BOOL is allowed as it can be treated as 0/1 integers and is supported by the native backend.
+     * Validate that the operation is being applied on a numerical SDVariable (not boolean or utf8).
+     * Some operations (such as sum, norm2, add(Number) etc don't make sense when applied to boolean/utf8 arrays
      *
      * @param opName Operation name to print in the exception
      * @param v      Variable to validate datatype for (input to operation)
@@ -56,31 +54,30 @@ public class SDValidation {
     protected static void validateNumerical(String opName, String inputName, SDVariable v) {
         if (v == null)
             return;
-        if (v.dataType() == DataType.UTF8)
-            throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be a numerical type; got variable \"" +
-                    v.name() + "\" with non-numerical data type " + v.dataType());
+        if (v.dataType() == DataType.BOOL || v.dataType() == DataType.UTF8)
+            throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an numerical type type; got variable \"" +
+                    v.name() + "\" with non-integer data type " + v.dataType());
     }
 
     protected static void validateNumerical(String opName, String inputName, SDVariable[] vars) {
         for (SDVariable v : vars) {
             if (v == null) continue;
-            if (v.dataType() == DataType.UTF8)
-                throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be a numerical type; got variable \"" +
-                        v.name() + "\" with non-numerical data type " + v.dataType());
+            if (v.dataType() == DataType.BOOL || v.dataType() == DataType.UTF8)
+                throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an numerical type type; got variable \"" +
+                        v.name() + "\" with non-integer data type " + v.dataType());
         }
     }
 
     /**
-     * Validate that the operation is being applied on numerical SDVariables (not utf8).
-     * Some operations (such as sum, norm2, add(Number) etc don't make sense when applied to utf8 arrays.
-     * BOOL is allowed as it can be treated as 0/1 integers and is supported by the native backend.
+     * Validate that the operation is being applied on numerical SDVariables (not boolean or utf8).
+     * Some operations (such as sum, norm2, add(Number) etc don't make sense when applied to boolean/utf8 arrays
      *
      * @param opName Operation name to print in the exception
      * @param v1     Variable to validate datatype for (input to operation)
      * @param v2     Variable to validate datatype for (input to operation)
      */
     protected static void validateNumerical(String opName, SDVariable v1, SDVariable v2) {
-        if (v1.dataType() == DataType.UTF8 || v2.dataType() == DataType.UTF8)
+        if (v1.dataType() == DataType.BOOL || v1.dataType() == DataType.UTF8 || v2.dataType() == DataType.BOOL || v2.dataType() == DataType.UTF8)
             throw new IllegalStateException("Cannot perform operation \"" + opName + "\" on variables  \"" + v1.name() + "\" and \"" +
                     v2.name() + "\" if one or both variables are non-numerical: " + v1.dataType() + " and " + v2.dataType());
     }
@@ -149,6 +146,15 @@ public class SDValidation {
         if (!v.dataType().isFPType())
             throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an floating point type; got variable \"" +
                     v.name() + "\" with non-floating point data type " + v.dataType());
+    }
+
+    protected static void validateFloatingPoint(String opName, String inputName, SDVariable[] vars) {
+        for (SDVariable v : vars) {
+            if (v == null) continue;
+            if (!v.dataType().isFPType())
+                throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be a floating point type; got variable \"" +
+                        v.name() + "\" with non-floating point data type " + v.dataType());
+        }
     }
 
     /**

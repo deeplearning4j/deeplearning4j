@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx.OnnxOpTestHelper.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 /**
  * Parameterized ONNX op-level tests.
@@ -3046,10 +3047,22 @@ public class OnnxOpTests {
     /**
      * Assert an op test result passed.
      * Provides detailed failure information.
+     *
+     * When ONNX Runtime cannot load the model because a vendor-domain op (e.g.
+     * com.microsoft.*) is not registered — typically because ort-extensions is
+     * not installed — the test is skipped rather than failed.  The SameDiff
+     * import path may still be tested independently; this only gates the
+     * ORT-vs-SameDiff comparison step.
      */
     private void assertOpResult(OpTestResult result) {
         if (result.onnxRuntimeError != null) {
-            fail("ONNX Runtime failed for " + result.opType + ": " + result.onnxRuntimeError.getMessage(),
+            String ortMsg = result.onnxRuntimeError.getMessage();
+            if (ortMsg != null && (ortMsg.contains("is not a registered function/op")
+                    || ortMsg.contains("is not a registered op"))) {
+                assumeTrue(false,
+                        "Skipping " + result.opType + ": ORT extension op not available — " + ortMsg);
+            }
+            fail("ONNX Runtime failed for " + result.opType + ": " + ortMsg,
                     result.onnxRuntimeError);
         }
         if (result.sameDiffError != null) {

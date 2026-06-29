@@ -248,53 +248,92 @@ SD_DEVICE void BroadcastInt<X>::transformCuda(
  auto y = reinterpret_cast<const X*>(vy);
  auto z = reinterpret_cast<X*>(vz);
 
- // Shared memory for caching shape information
- __shared__ sd::LongType tadLength;
- __shared__ int numTads;
- __shared__ int xRank;
- __shared__ int yRank;
- __shared__ int zRank;
+ // All shared variables declared at function scope (CUDA requirement).
+ // The first set is used for the element-wise fallback path (tadOnlyShapeInfo==null).
+ // The second set is used for the TAD path.
+ __shared__ sd::LongType sharedLen;         // zLen (EW) or tadLength (TAD)
+ __shared__ int sharedNumTadsOrXRank;        // numTads (TAD) or xRank (EW)
+ __shared__ int sharedYRank;
+ __shared__ int sharedZRank;
+ __shared__ const sd::LongType* sharedPtr0; // tadShape (TAD) or xShape (EW)
+ __shared__ const sd::LongType* sharedPtr1; // tadStride (TAD) or yShape (EW)
+ __shared__ const sd::LongType* sharedPtr2; // tadShapeZ (TAD) or zShape (EW)
+ __shared__ const sd::LongType* sharedPtr3; // tadStrideZ (TAD) or xStride (EW)
+ __shared__ const sd::LongType* sharedPtr4; // yStride (EW only)
+ __shared__ const sd::LongType* sharedPtr5; // zStride (EW only)
 
- __shared__ const sd::LongType* tadShape;
- __shared__ const sd::LongType* tadStride;
- __shared__ const sd::LongType* tadShapeZ;
- __shared__ const sd::LongType* tadStrideZ;
+ // When tadOnlyShapeInfo is null (no-dimension element-wise broadcast path),
+ // fall back to a simple element-wise loop over z using full shape info.
+ // This avoids a NULL-pointer dereference in the TAD path.
+ if (tadOnlyShapeInfo == nullptr) {
+   if (threadIdx.x == 0) {
+     sharedLen             = shape::length(zShapeInfo);
+     sharedNumTadsOrXRank  = shape::rank(xShapeInfo);
+     sharedYRank           = shape::rank(yShapeInfo);
+     sharedZRank           = shape::rank(zShapeInfo);
+     sharedPtr0            = shape::shapeOf(xShapeInfo);
+     sharedPtr1            = shape::shapeOf(yShapeInfo);
+     sharedPtr2            = shape::shapeOf(zShapeInfo);
+     sharedPtr3            = shape::stride(xShapeInfo);
+     sharedPtr4            = shape::stride(yShapeInfo);
+     sharedPtr5            = shape::stride(zShapeInfo);
+   }
+   __syncthreads();
+
+   const auto tid          = blockIdx.x * blockDim.x + threadIdx.x;
+   const auto totalThreads = gridDim.x * blockDim.x;
+
+   for (sd::LongType i = tid; i < sharedLen; i += totalThreads) {
+     sd::LongType coords[SD_MAX_RANK];
+     INDEX2COORDS(i, sharedZRank, sharedPtr2, coords);
+
+     sd::LongType zOffset;
+     COORDS2INDEX(sharedZRank, sharedPtr5, coords, zOffset);
+
+     sd::LongType xOffset;
+     COORDS2INDEX(sharedNumTadsOrXRank, sharedPtr3, coords, xOffset);
+
+     sd::LongType yOffset;
+     COORDS2INDEX(sharedYRank, sharedPtr4, coords, yOffset);
+
+     z[zOffset] = OpClass::op(x[xOffset], y[yOffset]);
+   }
+   return;
+ }
 
  if (threadIdx.x == 0) {
-   // Cache essential shape information
-   tadLength = shape::length(tadOnlyShapeInfo);
-   numTads   = shape::length(xShapeInfo) / tadLength;
-
-   xRank = shape::rank(xShapeInfo);
-   yRank = shape::rank(yShapeInfo);
-   zRank = shape::rank(zShapeInfo);
-
-   tadShape  = shape::shapeOf(tadOnlyShapeInfo);
-   tadStride = shape::stride(tadOnlyShapeInfo);
-
-   tadShapeZ  = shape::shapeOf(tadOnlyShapeInfoZ);
-   tadStrideZ = shape::stride(tadOnlyShapeInfoZ);
+   // Cache essential shape information for TAD path
+   sharedLen            = shape::length(tadOnlyShapeInfo);
+   sharedNumTadsOrXRank = (int)(shape::length(xShapeInfo) / sharedLen);
+   sharedYRank          = shape::rank(yShapeInfo);
+   sharedZRank          = shape::rank(zShapeInfo);
+   sharedPtr0           = shape::shapeOf(tadOnlyShapeInfo);
+   sharedPtr1           = shape::stride(tadOnlyShapeInfo);
+   sharedPtr2           = shape::shapeOf(tadOnlyShapeInfoZ);
+   sharedPtr3           = shape::stride(tadOnlyShapeInfoZ);
  }
  __syncthreads();
 
+ const int xRank = shape::rank(xShapeInfo);
+
  // Each block handles a subset of TADs
- for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
+ for (sd::LongType r = blockIdx.x; r < sharedNumTadsOrXRank; r += gridDim.x) {
    auto xTad = x + tadOffsets[r];
    auto zTad = z + tadOffsetsZ[r];
 
    // Loop over TAD elements
-   for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+   for (sd::LongType i = threadIdx.x; i < sharedLen; i += blockDim.x) {
      sd::LongType coords[SD_MAX_RANK];
      sd::LongType xOffset, yOffset, zOffset;
 
      // Convert index to coordinates using cached shape info
-     INDEX2COORDS(i, xRank, tadShape, coords);
-     COORDS2INDEX(xRank, tadStride, coords, xOffset);
+     INDEX2COORDS(i, xRank, sharedPtr0, coords);
+     COORDS2INDEX(xRank, sharedPtr1, coords, xOffset);
 
-     COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
+     COORDS2INDEX(sharedYRank, shape::stride(yShapeInfo), coords, yOffset);
 
-     INDEX2COORDS(i, zRank, tadShapeZ, coords);
-     COORDS2INDEX(zRank, tadStrideZ, coords, zOffset);
+     INDEX2COORDS(i, sharedZRank, sharedPtr2, coords);
+     COORDS2INDEX(sharedZRank, sharedPtr3, coords, zOffset);
 
      // Apply the operation
      zTad[zOffset] = OpClass::op(x[xOffset], y[yOffset]);
@@ -331,54 +370,90 @@ SD_DEVICE void BroadcastInt<X>::transformInverseCuda(
  auto y = reinterpret_cast<const X*>(vy);
  auto z = reinterpret_cast<X*>(vz);
 
- // Shared memory for caching shape information
- __shared__ sd::LongType tadLength;
- __shared__ int numTads;
- __shared__ int xRank;
- __shared__ int yRank;
- __shared__ int zRank;
+ // All shared variables at function scope (CUDA requirement).
+ __shared__ sd::LongType sharedLen;
+ __shared__ int sharedNumTadsOrXRank;
+ __shared__ int sharedYRank;
+ __shared__ int sharedZRank;
+ __shared__ const sd::LongType* sharedPtr0;
+ __shared__ const sd::LongType* sharedPtr1;
+ __shared__ const sd::LongType* sharedPtr2;
+ __shared__ const sd::LongType* sharedPtr3;
+ __shared__ const sd::LongType* sharedPtr4;
+ __shared__ const sd::LongType* sharedPtr5;
 
- __shared__ const sd::LongType* tadShape;
- __shared__ const sd::LongType* tadStride;
- __shared__ const sd::LongType* tadShapeZ;
- __shared__ const sd::LongType* tadStrideZ;
+ // When tadOnlyShapeInfo is null, use element-wise fallback to avoid NULL dereference.
+ if (tadOnlyShapeInfo == nullptr) {
+   if (threadIdx.x == 0) {
+     sharedLen             = shape::length(zShapeInfo);
+     sharedNumTadsOrXRank  = shape::rank(xShapeInfo);
+     sharedYRank           = shape::rank(yShapeInfo);
+     sharedZRank           = shape::rank(zShapeInfo);
+     sharedPtr0            = shape::shapeOf(xShapeInfo);
+     sharedPtr1            = shape::shapeOf(yShapeInfo);
+     sharedPtr2            = shape::shapeOf(zShapeInfo);
+     sharedPtr3            = shape::stride(xShapeInfo);
+     sharedPtr4            = shape::stride(yShapeInfo);
+     sharedPtr5            = shape::stride(zShapeInfo);
+   }
+   __syncthreads();
+
+   const auto tid          = blockIdx.x * blockDim.x + threadIdx.x;
+   const auto totalThreads = gridDim.x * blockDim.x;
+
+   for (sd::LongType i = tid; i < sharedLen; i += totalThreads) {
+     sd::LongType coords[SD_MAX_RANK];
+     INDEX2COORDS(i, sharedZRank, sharedPtr2, coords);
+
+     sd::LongType zOffset;
+     COORDS2INDEX(sharedZRank, sharedPtr5, coords, zOffset);
+
+     sd::LongType xOffset;
+     COORDS2INDEX(sharedNumTadsOrXRank, sharedPtr3, coords, xOffset);
+
+     sd::LongType yOffset;
+     COORDS2INDEX(sharedYRank, sharedPtr4, coords, yOffset);
+
+     // Inverse op: x is the "small" arg, y is the "large" arg
+     z[zOffset] = OpClass::op(x[xOffset], y[yOffset]);
+   }
+   return;
+ }
 
  if (threadIdx.x == 0) {
-   // Cache essential shape information
-   tadLength = shape::length(tadOnlyShapeInfo);
-   numTads   = shape::length(yShapeInfo) / tadLength;
-
-   xRank = shape::rank(xShapeInfo);
-   yRank = shape::rank(yShapeInfo);
-   zRank = shape::rank(zShapeInfo);
-
-   tadShape  = shape::shapeOf(tadOnlyShapeInfo);
-   tadStride = shape::stride(tadOnlyShapeInfo);
-
-   tadShapeZ  = shape::shapeOf(tadOnlyShapeInfoZ);
-   tadStrideZ = shape::stride(tadOnlyShapeInfoZ);
+   // Cache essential shape information for TAD path
+   sharedLen            = shape::length(tadOnlyShapeInfo);
+   sharedNumTadsOrXRank = (int)(shape::length(yShapeInfo) / sharedLen);
+   sharedYRank          = shape::rank(yShapeInfo);
+   sharedZRank          = shape::rank(zShapeInfo);
+   sharedPtr0           = shape::shapeOf(tadOnlyShapeInfo);
+   sharedPtr1           = shape::stride(tadOnlyShapeInfo);
+   sharedPtr2           = shape::shapeOf(tadOnlyShapeInfoZ);
+   sharedPtr3           = shape::stride(tadOnlyShapeInfoZ);
  }
  __syncthreads();
 
+ const int xRank = shape::rank(xShapeInfo);
+
  // Each block handles a subset of TADs
- for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+ for (int r = blockIdx.x; r < sharedNumTadsOrXRank; r += gridDim.x) {
    auto zTad = z + tadOffsetsZ[r];
    auto yTad = y + tadOffsets[r];
 
    // Loop over TAD elements
-   for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+   for (sd::LongType i = threadIdx.x; i < sharedLen; i += blockDim.x) {
      // Derive coordinates and offsets
      sd::LongType coords[SD_MAX_RANK];
      sd::LongType xOffset, yOffset, zOffset;
 
      // Convert index to coordinates using cached shape info
-     INDEX2COORDS(i, xRank, tadShape, coords);
-     COORDS2INDEX(xRank, tadStride, coords, xOffset);
+     INDEX2COORDS(i, xRank, sharedPtr0, coords);
+     COORDS2INDEX(xRank, sharedPtr1, coords, xOffset);
 
-     COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
+     COORDS2INDEX(sharedYRank, shape::stride(yShapeInfo), coords, yOffset);
 
-     INDEX2COORDS(i, zRank, tadShapeZ, coords);
-     COORDS2INDEX(zRank, tadStrideZ, coords, zOffset);
+     INDEX2COORDS(i, sharedZRank, sharedPtr2, coords);
+     COORDS2INDEX(sharedZRank, sharedPtr3, coords, zOffset);
 
      // Apply the inverse operation
      zTad[zOffset] = OpClass::op(x[xOffset], yTad[yOffset]);

@@ -626,9 +626,10 @@ Status segmentMaxFunctorBP(LaunchContext* context, NDArray* input, NDArray* indi
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto indicesDType = indices->dataType();
  auto outputDType = output->dataType();
- BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMaxFunctorBP_,
+ BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMaxFunctorBP_,
                        (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
+ return Status::OK;
 }
 
 // -------------------------------------------------------------------------------------------------------------- //
@@ -690,9 +691,10 @@ Status unsortedSegmentMaxFunctorBP(LaunchContext* context, NDArray* input, NDArr
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto indicesDType = indices->dataType();
  auto outputDType = output->dataType();
- BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMaxFunctorBP_,
+ BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), unsortedSegmentMaxFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
+ return Status::OK;
 }
 }  // namespace helpers
 }  // namespace ops

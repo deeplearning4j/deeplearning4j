@@ -1694,3 +1694,7 @@ sd::LongType getBufferPoolTotalAcquired(int deviceId) {
 sd::LongType getBufferPoolTotalReused(int deviceId) {
   return static_cast<sd::LongType>(DspBufferPool::forDevice(deviceId).totalReused());
 }
+
+// ── Sync-free buffer fingerprint ring (CPU stubs — CUDA only) ───────────────
+void drainPlanFingerprintRing(sd::Pointer planHandle) { /* CPU: no-op */ }
+const char* getPlanFingerprintJson(sd::Pointer planHandle) { return "null"; }

@@ -57,6 +57,15 @@ void shuffle(sd::Pointer *extras,
     sd::LongType* dimensions = reinterpret_cast<sd::LongType*>(dimension->buffer());
     sd::LongType dimLength = shape::length(dimension->shapeInfo());
 
+    // Keep all TadPacks alive until after the kernel launches.
+    // CUDA TadPack::~TadPack() calls delete _tadShape which frees the GPU shape
+    // info buffer (non-cached CudaShapeBufferCreator output). If tadPackX goes
+    // out of scope at the END of each loop body, the raw GPU pointer stored in
+    // tadShapeInfoBuffers[i] becomes dangling before the kernel reads it →
+    // CUDA error 700 (illegal memory access). Holding all shared_ptr refs here
+    // keeps the CUDA device memory alive through the kernel launch.
+    std::vector<std::shared_ptr<sd::TadPack>> tadPacks(N);
+
     for (int i = 0; i < N; ++i) {
       xBuffers[i] = x[i]->specialBuffer();
       xShapeInfos[i] = const_cast<sd::LongType*>(x[i]->specialShapeInfo());
@@ -64,10 +73,12 @@ void shuffle(sd::Pointer *extras,
       zBuffers[i] = z[i]->specialBuffer();
       zShapeInfos[i] = const_cast<sd::LongType*>(z[i]->specialShapeInfo());
 
-      // Calculate TADs for each x
-      auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(x[i]->shapeInfo(), dimensions, dimLength);
-      tadShapeInfoBuffers[i] = const_cast<sd::LongType*>(tadPackX->specialShapeInfo());
-      tadOffsetsBuffers[i] = const_cast<sd::LongType*>(tadPackX->specialOffsets());
+      // Calculate TADs for each x — keep the shared_ptr alive in tadPacks[i]
+      // so that _tadShape (and its GPU device buffer) is not freed until we
+      // are done with the kernel launch below.
+      tadPacks[i] = sd::ConstantTadHelper::getInstance().tadForDimensions(x[i]->shapeInfo(), dimensions, dimLength);
+      tadShapeInfoBuffers[i] = const_cast<sd::LongType*>(tadPacks[i]->specialShapeInfo());
+      tadOffsetsBuffers[i] = const_cast<sd::LongType*>(tadPacks[i]->specialOffsets());
     }
 
     // Ensure shuffleMap data is on device - use specialBuffer for CUDA kernel access

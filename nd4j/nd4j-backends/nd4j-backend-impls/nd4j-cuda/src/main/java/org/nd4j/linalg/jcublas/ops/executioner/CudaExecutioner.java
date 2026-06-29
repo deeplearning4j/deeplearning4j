@@ -734,6 +734,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
         val hostZShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
 
+        // Empty-input guard: if x has a 0-dimension TAD creation will throw.
+        // The output z was already allocated by exec(ReduceOp) with the correct shape
+        // (e.g. [2,1,3] for keepDims or [2,3] without keepDims) and is zero-initialized.
+        if (op.x().isEmpty()) {
+            profilingConfigurableHookOut(op, null, st);
+            return op.z();
+        }
+
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
         Pointer hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
@@ -1517,10 +1525,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
 
-        val yTadBuffers = y == null ? null : tadManager.getTADOnlyShapeInfo(y, dimension);
+        // Only compute y-TAD for REDUCE3 ops (e.g., euclidean, dot) where y is a data array.
+        // For REDUCE_BOOL ops (All, Any), y is the axis array — computing its TAD using the
+        // reduction dimensions causes "Dimension index OOB" when axis rank < dimension.length.
+        val yTadBuffers = (y == null || op.getOpType() != Op.Type.REDUCE3) ? null
+                : tadManager.getTADOnlyShapeInfo(y, dimension);
 
-        val yDevTadShapeInfo = y == null ? null : AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
-        val yOffsets = y == null ? null : yTadBuffers.getSecond();
+        val yDevTadShapeInfo = yTadBuffers == null ? null : AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
+        val yOffsets = yTadBuffers == null ? null : yTadBuffers.getSecond();
         val yDevTadOffsets = yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
 
         if (y != null) {

@@ -23,6 +23,7 @@
 #include <array/NDArrayFactory.h>
 #include <array/ResultSet.h>
 #include <helpers/ConstantTadHelper.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
 
@@ -37,9 +38,69 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-// Use the same host-side TAD logic as the CPU implementation.
-// This is called only from reduce_min_bp / reduce_max_bp / reduce_norm_max_bp
-// where the scatter size equals the number of TADs (typically small).
+///////////////////////////////////////////////////////////////////
+// One thread per TAD: read indices[t], compute offset within the TAD
+// using the TAD shape/stride, then scatter updates[t] into input.
+template <typename T>
+SD_KERNEL static void scatterSimpleCopyCuda(
+    void* vInput,            // device buffer of input  (write target)
+    const void* vUpdates,    // device buffer of updates (read source)
+    const LongType* indicesBuffer,   // device buffer of indices (1-D, length = numTads)
+    const LongType* tadShapeInfo,    // device TAD shape info (shape + stride embedded)
+    const LongType* tadOffsets,      // device TAD offsets into input
+    const LongType numTads,
+    const LongType tadLen) {
+
+  __shared__ LongType tadRank;
+  __shared__ const LongType* tadShape;
+  __shared__ const LongType* tadStride;
+
+  if (threadIdx.x == 0) {
+    tadRank   = shape::rank(tadShapeInfo);
+    tadShape  = shape::shapeOf(tadShapeInfo);
+    tadStride = shape::stride(tadShapeInfo);
+  }
+  __syncthreads();
+
+  auto* inputBuffer   = reinterpret_cast<T*>(vInput);
+  const auto* updatesBuffer = reinterpret_cast<const T*>(vUpdates);
+
+  for (LongType t = blockIdx.x * blockDim.x + threadIdx.x; t < numTads; t += gridDim.x * blockDim.x) {
+    const LongType localIndex = indicesBuffer[t];
+
+    // Bounds check — skip invalid indices rather than hard-fault on device
+    if (localIndex < 0 || localIndex >= tadLen) continue;
+
+    // Replicate the host-side INDEX2COORDS / COORDS2INDEX math on device
+    LongType coords[SD_MAX_RANK];
+    INDEX2COORDS(localIndex, tadRank, tadShape, coords);
+
+    LongType localOffset = 0;
+    COORDS2INDEX(tadRank, tadStride, coords, localOffset);
+
+    inputBuffer[tadOffsets[t] + localOffset] = updatesBuffer[t];
+  }
+}
+
+///////////////////////////////////////////////////////////////////
+template <typename T>
+SD_HOST static void scatterSimpleCopyCudaLauncher(
+    const cudaStream_t* stream,
+    void* vInput,
+    const void* vUpdates,
+    const LongType* indicesBuffer,
+    const LongType* tadShapeInfo,
+    const LongType* tadOffsets,
+    const LongType numTads,
+    const LongType tadLen) {
+
+  dim3 launchDims = getLaunchDims("scatter_simple");
+  scatterSimpleCopyCuda<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+      vInput, vUpdates, indicesBuffer, tadShapeInfo, tadOffsets, numTads, tadLen);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "scatterSimpleCopy");
+}
+
+///////////////////////////////////////////////////////////////////
 template <typename T>
 static void scatterSimpleCopy(LaunchContext* context, NDArray& input, NDArray& updates,
                               NDArray& indices, const std::vector<LongType>& tadDimensions) {
@@ -49,13 +110,9 @@ static void scatterSimpleCopy(LaunchContext* context, NDArray& input, NDArray& u
 
   auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(
       input.shapeInfo(), const_cast<LongType*>(tadDimensions.data()), tadDimensions.size());
-  auto* tadShapeInfo = tadPack->primaryShapeInfo();
-  auto* tadOffsets = tadPack->primaryOffsets();
-  const auto numTads = tadPack->numberOfTads();
-  const auto tadLen = shape::length(tadShapeInfo);
-  const auto tadRank = shape::rank(tadShapeInfo);
-  const auto* tadShape = shape::shapeOf(tadShapeInfo);
-  const auto* tadStride = shape::stride(tadShapeInfo);
+
+  const LongType numTads = tadPack->numberOfTads();
+  const LongType tadLen  = shape::length(tadPack->primaryShapeInfo());
 
   if (indices.lengthOf() != updates.lengthOf()) {
     THROW_EXCEPTION("helpers::scatterSimple: indices and updates must have the same length");
@@ -73,33 +130,24 @@ static void scatterSimpleCopy(LaunchContext* context, NDArray& input, NDArray& u
     THROW_EXCEPTION(msg.c_str());
   }
 
-  // Sync to host for element access — same pattern as CPU implementation
-  input.syncToHost();
-  updates.syncToHost();
-  indices.syncToHost();
+  // Ensure device buffers of updates and indices are up-to-date;
+  // input is write-only so it goes in the write list.
+  NDArray::prepareSpecialUse({&input}, {&updates, &indices});
 
-  auto* inputBuffer = input.bufferAsT<T>();
+  scatterSimpleCopyCudaLauncher<T>(
+      context->getCudaStream(),
+      input.specialBuffer(),
+      updates.specialBuffer(),
+      reinterpret_cast<const LongType*>(indices.specialBuffer()),
+      tadPack->platformShapeInfo(),
+      tadPack->platformOffsets(),
+      numTads,
+      tadLen);
 
-  for (LongType t = 0; t < numTads; t++) {
-    const auto localIndex = indices.t<LongType>(t);
-    if (localIndex < 0 || localIndex >= tadLen) {
-      std::string msg = "scatterSimple: index " + std::to_string(localIndex) +
-          " out of bounds for TAD length " + std::to_string(tadLen);
-      THROW_EXCEPTION(msg.c_str());
-    }
-
-    LongType coords[SD_MAX_RANK];
-    LongType localOffset = 0;
-    INDEX2COORDS(localIndex, tadRank, tadShape, coords);
-    COORDS2INDEX(tadRank, tadStride, coords, localOffset);
-
-    inputBuffer[tadOffsets[t] + localOffset] = updates.e<T>(t);
-  }
-
-  // Mark host as written so next device access triggers H2D sync
-  input.tickWriteHost();
+  NDArray::registerSpecialUse({&input}, {&updates, &indices});
 }
 
+///////////////////////////////////////////////////////////////////
 void scatterSimple(LaunchContext* context, const int opId, NDArray& input, NDArray& updates,
                    NDArray& indices, const std::vector<LongType>& dimensions) {
   if (opId != 6) THROW_EXCEPTION("scatterSimple: only copy op is supported");

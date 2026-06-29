@@ -27,6 +27,9 @@ namespace ops {
 namespace helpers {
 
 void adjustAxis(LongType rank, NDArray* axisVector, std::vector<LongType>& output) {
+  // Guard: axisVector may be null during the DSP shape pre-pass when _fastpath_in
+  // is null-padded to slot.wiring.numInputs. Dereferencing null causes SIGSEGV.
+  if (axisVector == nullptr) return;
   if(axisVector->isScalar()) {
     output.resize(1);
     auto ca = axisVector->e<LongType>(0);

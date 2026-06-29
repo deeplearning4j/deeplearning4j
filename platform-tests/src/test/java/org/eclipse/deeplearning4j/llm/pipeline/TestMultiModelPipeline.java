@@ -483,7 +483,6 @@ public class TestMultiModelPipeline {
             MultiModelPipelineConfig config = MultiModelPipelineConfig.builder()
                     .tokenizer(tokenizer)
                     .maxTokensPerModel(64)
-                    .dspEnabled(false) // Disable DSP for mock testing
                     .trimMemoryBetweenStages(false)
                     .build();
             

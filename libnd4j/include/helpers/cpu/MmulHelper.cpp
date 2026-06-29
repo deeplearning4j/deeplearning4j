@@ -948,7 +948,8 @@ NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double 
 // Non-standard layouts fall through to tryBlasBatched/tryBlasPerBatch
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
-                                        double alpha, double beta) {
+                                        double alpha, double beta,
+                                        bool transA, bool transB) {
 #if defined(HAVE_MKL)
   if (!Environment::getInstance().isEnableBlas()) {
     return false;

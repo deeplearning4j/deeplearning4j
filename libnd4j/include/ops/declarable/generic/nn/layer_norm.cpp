@@ -129,7 +129,7 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   if (lastDimNorm && isContiguous && (isFloat || isDouble) && gainContiguous && biasContiguous &&
       sameParamTypes) {
     // Fused layer norm: 2 passes instead of 7-8
-    // This is a CPU implementation, so we need to sync data from device to host first
+    // This is a CPU implementation, so we need to sync data from device to host first.
     input->syncToHost();
     gain->syncToHost();
     if (bias != nullptr) {
@@ -227,7 +227,8 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
     return sd::Status::OK;
   }
 
-  // General path for non-contiguous or non-last-dimension normalization
+  // General path for non-contiguous or non-last-dimension normalization.
+
   // Pre-compute shape for mean/stdev with keepDims=true for broadcasting
   auto reducedShapeInfo = ShapeUtils::evalReduceShapeInfo('c', &longAxis, input->shapeInfo(), true, false, block.getWorkspace());
 
@@ -245,9 +246,11 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   stdev.applyScalar(scalar::Add, 1e-5, &stdev);
   stdev.applyTransform(transform::Sqrt, &stdev);
 
-  // output = (input - mean) / stdev
-  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, output, false);
-  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, output, false);
+  // output = (input - mean) / stdev.
+  // Use a temporary for (input - mean) to avoid read/write aliasing in the Divide broadcast.
+  NDArray inputMinusMean(input->shapeInfo(), false, block.launchContext());
+  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, &inputMinusMean, false);
+  inputMinusMean.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, output, false);
 
   // Apply gain and bias
   std::vector<sd::LongType> dimcVec = {dimC};
@@ -303,7 +306,10 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
 
   const double epsilon = 1e-5;
 
-  // Compute mean and inverse standard deviation with epsilon (matching forward pass)
+  // Compute mean and inverse standard deviation WITH epsilon — must match the forward pass exactly.
+  // The forward computes: output = (input - mean) / sqrt(var + eps) * gain + bias
+  // Using standardize_bp (which divides by sqrt(var), no epsilon) produces systematically
+  // wrong gradients, especially when variance is near zero (testLayerNormNoDeviation).
   auto reducedShapeInfo = ShapeUtils::evalReduceShapeInfo('c', &longAxis, input->shapeInfo(), true, false, block.getWorkspace());
   NDArray means(reducedShapeInfo, true, block.launchContext());
   NDArray invStd(reducedShapeInfo, true, block.launchContext());
@@ -313,12 +319,15 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
   invStd.applyScalar(scalar::Add, epsilon, &invStd);
   invStd.applyTransform(transform::Sqrt, &invStd);
 
-  // standardized = (input - mean) / sqrt(var + eps), matching forward exactly
+  // standardized = (input - mean) / sqrt(var + eps), matching forward exactly.
+  // Compute in two steps using a separate temporary to avoid read/write aliasing
+  // in the Divide broadcast (source == target on CUDA can produce wrong results).
+  NDArray inputMinusMean(input->shapeInfo(), false, block.launchContext());
+  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, &inputMinusMean, false);
   NDArray standardized(input->shapeInfo(), false, block.launchContext());
-  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, &standardized, false);
-  standardized.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &invStd, &standardized, false);
+  inputMinusMean.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &invStd, &standardized, false);
 
-  // dLdg = sum(eps * standardized, excluding dimC)
+  // dLdg = sum(eps_upstream * standardized, over all dims except dimC)
   NDArray epsTimesStd(input->shapeInfo(), false, block.launchContext());
   standardized.applyPairwiseTransform(sd::pairwise::Multiply, eps, &epsTimesStd);
   std::vector<sd::LongType> dimCVector = {dimC};
@@ -326,32 +335,50 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
   epsTimesStd.reduceAlongDimension(sd::reduce::Sum, dLdg, vec);
   delete vec;
 
-  // dLdx: backprop through layer_norm with epsilon
-  // dLdx_hat = eps * gain (broadcast gain along dimC)
+  // dLdx: analytical gradient of layer_norm w.r.t. input
+  //
+  // layer_norm(x) = (x - mean) / sqrt(var + eps) * g + b
+  // Let xhat = (x - mean) / sqrt(var + eps),  dL/d(xhat) = eps_upstream * g
+  //
+  // dL/dx = (1/sqrt(var+eps)) * (dLdxhat - mean(dLdxhat) - xhat * mean(dLdxhat * xhat))
+  //
+  // where mean(...) is the mean over the normalization axes.
+  //
+  // Implementation note: all intermediate results are written to DISTINCT output arrays
+  // (no read-write aliasing) to ensure correctness on CUDA where the same device
+  // buffer appearing in both dX and dZ of a broadcast kernel can produce wrong results
+  // when the broadcast shape info is non-trivial.
+
+  // Step 1: dLdxHat = eps_upstream * gain (broadcast gain along dimC)
+  //         Use a separate array; dLdx is written last to avoid read/write aliasing.
+  NDArray dLdxHat(input->shapeInfo(), false, block.launchContext());
   std::vector<sd::LongType> dimvC = {dimC};
-  eps->applyBroadcast(sd::broadcast::Multiply, &dimvC, gain, dLdx);
+  eps->applyBroadcast(sd::broadcast::Multiply, &dimvC, gain, &dLdxHat);
 
-  // N = number of elements per normalization group
-  sd::LongType N = 1;
-  for (auto d : longAxis) {
-    N *= input->sizeAt(d);
-  }
-
-  // standardize_bp with epsilon: dLdx = (1/sqrt(var+eps)) * (dLdx_hat - mean(dLdx_hat) - standardized * mean(dLdx_hat * standardized))
+  // Step 2: mean(dLdxHat) over normalization axes, keepDims=true for broadcasting
   NDArray dLdxHatMean(reducedShapeInfo, true, block.launchContext());
-  dLdx->reduceAlongDimension(reduce::Mean, &dLdxHatMean, &longAxis, true, false);
+  dLdxHat.reduceAlongDimension(reduce::Mean, &dLdxHatMean, &longAxis, true, false);
 
-  NDArray dLdxHatTimesStd(input->shapeInfo(), false, block.launchContext());
-  dLdx->applyPairwiseTransform(sd::pairwise::Multiply, &standardized, &dLdxHatTimesStd);
-  NDArray dLdxHatTimesStdMean(reducedShapeInfo, true, block.launchContext());
-  dLdxHatTimesStd.reduceAlongDimension(reduce::Mean, &dLdxHatTimesStdMean, &longAxis, true, false);
+  // Step 3: mean(dLdxHat * xhat) over normalization axes, keepDims=true
+  NDArray dLdxHatTimesXhat(input->shapeInfo(), false, block.launchContext());
+  dLdxHat.applyPairwiseTransform(sd::pairwise::Multiply, &standardized, &dLdxHatTimesXhat);
+  NDArray dLdxHatTimesXhatMean(reducedShapeInfo, true, block.launchContext());
+  dLdxHatTimesXhat.reduceAlongDimension(reduce::Mean, &dLdxHatTimesXhatMean, &longAxis, true, false);
 
-  // dLdx = (dLdx_hat - mean(dLdx_hat) - standardized * mean(dLdx_hat * standardized)) / sqrt(var + eps)
+  // Step 4: term = xhat * mean(dLdxHat * xhat)  [broadcast reducedShape → inputShape]
   NDArray term(input->shapeInfo(), false, block.launchContext());
-  standardized.applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), &dLdxHatTimesStdMean, &term, false);
-  dLdx->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &dLdxHatMean, dLdx, false);
-  dLdx->applyPairwiseTransform(sd::pairwise::Subtract, &term, dLdx);
-  dLdx->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &invStd, dLdx, false);
+  standardized.applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), &dLdxHatTimesXhatMean, &term, false);
+
+  // Step 5: numerator = dLdxHat - mean(dLdxHat)  [broadcast subtract, distinct source/target]
+  NDArray numerator(input->shapeInfo(), false, block.launchContext());
+  dLdxHat.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &dLdxHatMean, &numerator, false);
+
+  // Step 6: numerator2 = numerator - term  [elementwise subtract, distinct target]
+  NDArray numerator2(input->shapeInfo(), false, block.launchContext());
+  numerator.applyPairwiseTransform(sd::pairwise::Subtract, &term, &numerator2);
+
+  // Step 7: dLdx = numerator2 / invStd  [broadcast divide; writes to output, no aliasing]
+  numerator2.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &invStd, dLdx, false);
 
   return sd::Status::OK;
 }

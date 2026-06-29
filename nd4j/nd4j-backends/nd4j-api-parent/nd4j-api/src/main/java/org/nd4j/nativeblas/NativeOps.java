@@ -2856,4 +2856,23 @@ public interface NativeOps {
 
   /** Lifetime reuse count (acquires satisfied from pool) on the given device. */
   default long getBufferPoolTotalReused(int deviceId) { return 0; }
+
+  // ── Buffer fingerprint ring (BUF_FP_RING=1) ───────────────────────────────
+
+  /**
+   * Drain the device fingerprint ring to host after the decode loop ends.
+   * No-op if BUF_FP_RING was not set or plan is null.
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   */
+  default void drainPlanFingerprintRing(Pointer planHandle) {}
+
+  /**
+   * Return per-step XOR fingerprints as a JSON string.
+   * Call after drainPlanFingerprintRing(). Returns "null" if not enabled.
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   * @return JSON string or "null"
+   */
+  default String getPlanFingerprintJson(Pointer planHandle) { return "null"; }
 }

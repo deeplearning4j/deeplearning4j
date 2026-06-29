@@ -92,15 +92,16 @@ void ResourceBinder_destroyStream(void* stream, int deviceId) {
 
 // ── Device memory (workspaces, arg tables) ───────────────────────────────
 
-void* ResourceBinder_deviceAlloc(size_t bytes) {
-  void* ptr = nullptr;
-  cudaMalloc(&ptr, bytes);
-  return ptr;
+void* ResourceBinder_deviceAlloc(size_t bytes, int deviceId) {
+  // allocateDirect: these buffers (capture workspaces + arg tables) are baked
+  // as pointer args into CUDA graphs and must persist across capture/replay
+  // cycles without routing through the async pool.
+  return memory::CudaMemoryPool::getInstance().allocateDirect(bytes, deviceId);
 }
 
-void ResourceBinder_deviceFree(void* ptr) {
+void ResourceBinder_deviceFree(void* ptr, int deviceId) {
   if (ptr != nullptr) {
-    cudaFree(ptr);
+    memory::CudaMemoryPool::getInstance().free(ptr, deviceId);
   }
 }
 

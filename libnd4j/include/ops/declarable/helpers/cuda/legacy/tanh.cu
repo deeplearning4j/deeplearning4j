@@ -31,12 +31,12 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 void tanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) {
-    T th = math::sd_tanh<T, T>(x);
-    return y * ((T)1.0f - (th * th));
-  });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // Compute output = 1 - tanh²(input) using the native CUDA transform op (device-side),
+  // then multiply by epsilon.  applyPairwiseLambda with std::function cannot invoke the
+  // lambda inside a CUDA kernel (the kernel is a no-op placeholder), so we use the
+  // correct native-op path that works on both CPU and CUDA.
+  input->applyTransform(transform::TanhDerivative, output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void tanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -45,12 +45,9 @@ void tanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecon
 
 template <typename T>
 void hardTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) {
-    T th = math::sd_tanh<T, T>(x);
-    return y * simdOps::HardTanhDerivative<T>::op(x, nullptr);
-  });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // Native CUDA transform + pairwise multiply (applyPairwiseLambda is broken on CUDA).
+  input->applyTransform(transform::HardTanhDerivative, output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void hardTanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -59,9 +56,9 @@ void hardTanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theS
 
 template <typename T>
 void rationalTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr); });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // Native CUDA transform + pairwise multiply (applyPairwiseLambda is broken on CUDA).
+  input->applyTransform(transform::RationalTanhDerivative, output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void rationalTanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -71,9 +68,10 @@ void rationalTanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* 
 
 template <typename T>
 void rectifiedTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return x > (T)0.0f ? y * (math::sd_tanhderivative<T, T>(x)) : (T)0.0f; });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // Native CUDA transform + pairwise multiply (applyPairwiseLambda is broken on CUDA).
+  // transform::RectifiedTanhDerivative computes: x > 0 ? (1 - tanh²(x)) : 0
+  input->applyTransform(transform::RectifiedTanhDerivative, output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void rectifiedTanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {

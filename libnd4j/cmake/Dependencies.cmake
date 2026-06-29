@@ -1686,7 +1686,10 @@ function(setup_triton)
         # Check Triton cache
         set(_triton_ver "${TRITON_VERSION}")
         string(REPLACE ";" "_" _triton_backends_str "${TRITON_CODEGEN_BACKENDS}")
-        sd_dep_cache_key("triton" "${_triton_ver}" "BACKENDS=${_triton_backends_str}" _triton_cache_key)
+        # vis=default: cache-busting marker for the patch_triton.cmake visibility fix
+        # (libtriton.a rebuilt with -fvisibility=default to keep the MLIR
+        # IsIsolatedFromAbove TypeID a single STB_GNU_UNIQUE symbol; see patch_triton.cmake Part 7).
+        sd_dep_cache_key("triton" "${_triton_ver}" "BACKENDS=${_triton_backends_str};vis=default" _triton_cache_key)
         sd_dep_cache_check("triton" "${_triton_cache_key}" _triton_hit _triton_cache_path)
         if(_triton_hit)
             set(_need_triton_restore TRUE)
@@ -2545,6 +2548,44 @@ function(setup_nccl)
     endif()
 
     message(STATUS "✅ NCCL setup complete (HAVE_NCCL=${HAVE_NCCL})")
+endfunction()
+
+# =============================================================================
+# cuSPARSE — per-device sparse BLAS handles (CUDA only)
+# cuSPARSE ships as part of the CUDA Toolkit; no ExternalProject needed.
+# CMake's FindCUDAToolkit (already called for cuBLAS/cuSolver) exposes the
+# CUDA::cusparse imported target automatically.  We just set the compile
+# definition so C++ code can guard on HAVE_CUSPARSE.
+# =============================================================================
+function(setup_cusparse)
+    set(HAVE_CUSPARSE FALSE PARENT_SCOPE)
+
+    if(NOT SD_CUDA)
+        message(STATUS "cuSPARSE helper requires CUDA build (SD_CUDA=ON) — skipping")
+        return()
+    endif()
+
+    # FindCUDAToolkit exposes CUDA::cusparse when the library is present.
+    # find_package may have already run; re-running is idempotent.
+    find_package(CUDAToolkit QUIET)
+
+    if(CUDAToolkit_FOUND AND TARGET CUDA::cusparse)
+        add_compile_definitions(HAVE_CUSPARSE=1)
+        set(HAVE_CUSPARSE TRUE PARENT_SCOPE)
+        # CUSPARSE_LIBRARIES is provided for callers that link manually
+        # (e.g. PartialLinking.cmake).  Modern targets use CUDA::cusparse directly.
+        get_target_property(_cusparse_loc CUDA::cusparse IMPORTED_LOCATION)
+        if(_cusparse_loc)
+            set(CUSPARSE_LIBRARIES "${_cusparse_loc}" PARENT_SCOPE)
+        else()
+            set(CUSPARSE_LIBRARIES "cusparse" PARENT_SCOPE)
+        endif()
+        message(STATUS "✅ cuSPARSE found (CUDA::cusparse available) — HAVE_CUSPARSE=1")
+    else()
+        message(WARNING "cuSPARSE not found in CUDA Toolkit — sparse BLAS ops will be unavailable")
+    endif()
+
+    message(STATUS "✅ cuSPARSE setup complete (HAVE_CUSPARSE=${HAVE_CUSPARSE})")
 endfunction()
 
 # =============================================================================

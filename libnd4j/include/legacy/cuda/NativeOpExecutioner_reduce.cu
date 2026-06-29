@@ -21,6 +21,7 @@
 
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/DebugHelper.h>
+#include <helpers/logger.h>
 #include <helpers/PointersManager.h>
 #include <legacy/NativeOpExecutioner.h>
 #include <loops/broadcasting.h>

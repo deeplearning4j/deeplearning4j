@@ -583,20 +583,39 @@ struct PlanExecutionContext {
     frozen = shapesFrozen;
 
     // Derived booleans — computed once, read everywhere.
-    // anySegmentInWarmup comes from NativeDynamicShapePlan::anySegmentNeedsWarmup()
-    // which is the SINGLE source of truth. After invalidateSegmentCaptures,
-    // plan-level executeCount stays high but per-segment executionCount resets to 0.
+    // isFirstFrozenWarmup fires phaseWarmup on the FIRST frozen execution ONLY, and
+    // that is deliberate, not a bug: phaseWarmup RESETS every segment's executionCount
+    // to 0 (it rebuilds slot/shape state), so it must run exactly once. CUDA-graph
+    // capture does NOT complete during warmup — it accumulates across the subsequent
+    // phaseReplay executions: each executeSegmentSlotBySlot bumps segment executionCount,
+    // and a segment captures+seals when it reaches captureMinExec (=2). Lifecycle:
+    //   exec0 -> WARMUP (reset+compile)   exec1 -> REPLAY (executionCount->2, capture)
+    //   exec2+ -> REPLAY (graph replay).
+    // A "persistent" warmup keyed on anySegmentNeedsWarmup() would re-reset executionCount
+    // every step, so capture could NEVER reach captureMinExec — do not do that.
+    // anySegmentInWarmup (== anySegmentNeedsWarmup(), the capture window) is the SINGLE
+    // source of truth for the SYNC booleans below; it must NOT gate the warmup trigger.
     isFirstFrozenWarmup = shapesFrozen && executeCount == 0;
     isFrozenSteadyState = shapesFrozen && executeCount > 1 && !anySegmentInWarmup;
     needsFullSync = !shapesFrozen || executeCount <= 1 || anySegmentInWarmup;
 
+    // Mode contract — computed once, read by the slot-by-slot override and capture gate.
+    const ModeContract modeContract = ModeContract::forMode(gemMode);
+
     // tritonSkipKernels override
-    forcedSlotBySlot = tritonSkipKernels && !ModeContract::forMode(gemMode).isSlotBySlot;
+    forcedSlotBySlot = tritonSkipKernels && !modeContract.isSlotBySlot;
     graphExecutionMode = forcedSlotBySlot
         ? static_cast<int>(GraphExecutionMode::GEM_SLOT_BY_SLOT) : gemMode;
 
-    // Graph capture/replay gate
-    allowGraphCaptureReplay = tritonGraphCapture && shapesFrozen && !tritonSkipKernels;
+    // Graph capture/replay gate. ModeContract.isSlotBySlot is the PERMANENT mode guard:
+    // GEM_SLOT_BY_SLOT never captures regardless of phase (mirrors the gpubackend gate —
+    // without it SLOT_BY_SLOT composite-captured the prefill and OOM-crashed once shapes
+    // froze). usesGraphCapture lets an explicit graph mode (CUDA_GRAPHS/NVRTC_JIT/PTX_JIT/
+    // TRITON/AUTO) capture even when tritonGraphCapture is false (BenchmarkConfigApplier
+    // resets it for non-Triton configs).
+    allowGraphCaptureReplay = (tritonGraphCapture || modeContract.usesGraphCapture)
+                              && !modeContract.isSlotBySlot
+                              && shapesFrozen && !tritonSkipKernels;
 
     // Variable/weight filter for performPreReplaySync H2D
     useVariableFilter = shapesFrozen && hasVariableList;
@@ -624,13 +643,47 @@ struct PlanExecutionContext {
   }
 
   /**
+   * The resolved execution phase for one execute() call. ONE enum, ONE resolver
+   * (resolveExecPhase) — replaces the boolean ternaries that were duplicated in
+   * NativeDynamicShapePlan::execute() and here in dispatchModeName().
+   */
+  enum class ExecPhase { SLOT_BY_SLOT, WARMUP, REPLAY };
+
+  /**
+   * Resolve which phase this execution runs in. THE single source of truth for
+   * phase dispatch — derived from the booleans populateDerivedState() already
+   * computed, in priority order:
+   *   1. slot-by-slot MODE (forced via skipKernels, or explicit GEM_SLOT_BY_SLOT)
+   *      never captures                                               -> SLOT_BY_SLOT
+   *   2. first frozen execution (isFirstFrozenWarmup) — phaseWarmup rebuilds
+   *      slot/shape state exactly once                                -> WARMUP
+   *   3. frozen, past warmup, a graph-replay mode (isReplay) — capture
+   *      accumulates and replays here across executions               -> REPLAY
+   *   4. otherwise (not yet frozen): run slot-by-slot to build shape
+   *      caches and let AUTO_SEAL fire                                -> SLOT_BY_SLOT
+   * graphExecutionMode is already normalized to GEM_SLOT_BY_SLOT when forcedSlotBySlot,
+   * so step 1 covers both the forced and the explicit slot-by-slot cases.
+   */
+  SD_INLINE ExecPhase resolveExecPhase() const {
+    if (ModeContract::forMode(graphExecutionMode).isSlotBySlot) return ExecPhase::SLOT_BY_SLOT;
+    if (isFirstFrozenWarmup) return ExecPhase::WARMUP;
+    if (isReplay)      return ExecPhase::REPLAY;
+    return ExecPhase::SLOT_BY_SLOT;
+  }
+
+  SD_INLINE static const char* execPhaseName(ExecPhase p) {
+    switch (p) {
+      case ExecPhase::WARMUP: return "WARMUP";
+      case ExecPhase::REPLAY: return "REPLAY";
+      default:                return "SLOT_BY_SLOT";
+    }
+  }
+
+  /**
    * Return a human-readable name for the resolved dispatch mode.
-   * Derived from the three dispatch booleans — no enum required.
    */
   SD_INLINE const char* dispatchModeName() const {
-    return isFirstFrozenWarmup ? "WARMUP"
-         : !isReplay ? "SLOT_BY_SLOT"
-         : "REPLAY";
+    return execPhaseName(resolveExecPhase());
   }
 
   /**

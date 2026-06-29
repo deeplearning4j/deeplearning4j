@@ -1068,8 +1068,6 @@ public class TestGraphOptimizerAccuracy {
 
         // XwPlusB (the fused op) is not supported by DSP native plan serialization.
         // Disable DSP so the standard execution path is used for validation.
-        optimized.setDspAutoCompileEnabled(false);
-        optimized.setDspNativeAutoCompileEnabled(false);
 
         // After fusion the graph output name may have changed to the fused op's output
         String optOutName = optimized.outputs().get(0);
@@ -1434,8 +1432,6 @@ public class TestGraphOptimizerAccuracy {
 
         SameDiff optimized = GraphOptimizer.optimize(sd, Collections.singletonList("final_output"));
         // LinearFusion produces XwPlusB which DSP native plan can't serialize
-        optimized.setDspAutoCompileEnabled(false);
-        optimized.setDspNativeAutoCompileEnabled(false);
 
         // Verify an output variable exists (fusion may rename it to the fused op's output)
         assertNotNull(optimized.outputs(), "Optimized graph has null outputs");
@@ -1638,8 +1634,6 @@ public class TestGraphOptimizerAccuracy {
         // Run full optimizer — all 3 outputs must survive
         SameDiff optimized = GraphOptimizer.optimize(sd, outputNames);
         // Disable DSP to isolate optimizer correctness from DSP execution issues
-        optimized.setDspAutoCompileEnabled(false);
-        optimized.setDspNativeAutoCompileEnabled(false);
 
         List<String> optOutputNames = optimized.outputs();
         assertNotNull(optOutputNames, "Optimized graph has null outputs");

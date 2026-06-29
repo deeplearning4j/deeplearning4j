@@ -40,6 +40,57 @@ namespace ops {
 namespace helpers {
 
 
+// ------------------------------------------------------------------------------------------------------------------ //
+// Kernel: write 1.0 on the diagonal of each [n x n] batch slice stored in a TAD-described layout.
+// For unbatched (2D) use: batchSize=1, tads=array's own specialShapeInfo(), offsets=single zero offset.
+template <typename T>
+static SD_KERNEL void setDiagonalOneKernel(T* buf, LongType const* tads, LongType const* offsets,
+                                           LongType batchSize, LongType n) {
+  for (auto b = blockIdx.x; b < batchSize; b += gridDim.x) {
+    const LongType base = (offsets != nullptr) ? offsets[b] : 0;
+    auto slice = buf + base;
+    for (auto r = threadIdx.x; r < n; r += blockDim.x) {
+      LongType pos[] = {r, r};
+      LongType idx;
+      COORDS2INDEX(shape::rank(tads), shape::stride(tads), pos, idx);
+      slice[idx] = T(1.f);
+    }
+  }
+}
+
+// ------------------------------------------------------------------------------------------------------------------ //
+// Kernel: build permutation matrix P on device.
+// Each (batch, row) thread reads col = permBuf[permOffset + row_idx] and writes P[pOffset + idx] = T(1).
+// pTadShape/pTadOffsets     — {-2,-1} TADs of P (rank-2 slices, shape [rows x rows]).
+// permTadShape/permTadOffsets — {-1} TADs of permutations (rank-1 slices, shape [rows]).
+// For unbatched 2D: batchSize=1, pTadOffsets=nullptr, pTadShape=P->specialShapeInfo(),
+//                               permTadOffsets=nullptr, permTadShape=permutations->specialShapeInfo().
+template <typename T>
+static SD_KERNEL void setPermutationOnesKernel(T* pBuf,
+                                               LongType const* pTadShape, LongType const* pTadOffsets,
+                                               LongType const* permBuf,
+                                               LongType const* permTadShape, LongType const* permTadOffsets,
+                                               LongType batchSize, LongType rows) {
+  for (auto b = blockIdx.x; b < batchSize; b += gridDim.x) {
+    const LongType pBase    = (pTadOffsets    != nullptr) ? pTadOffsets[b]    : 0;
+    const LongType permBase = (permTadOffsets != nullptr) ? permTadOffsets[b] : 0;
+    auto pSlice    = pBuf    + pBase;
+    auto permSlice = permBuf + permBase;
+    for (auto r = threadIdx.x; r < rows; r += blockDim.x) {
+      // read column index from permutation vector
+      LongType permPos[] = {r};
+      LongType permIdx;
+      COORDS2INDEX(shape::rank(permTadShape), shape::stride(permTadShape), permPos, permIdx);
+      LongType col = permSlice[permIdx];
+
+      // write the 1 into P at (row=r, col=col)
+      LongType pPos[] = {r, col};
+      LongType pIdx;
+      COORDS2INDEX(shape::rank(pTadShape), shape::stride(pTadShape), pPos, pIdx);
+      pSlice[pIdx] = T(1.f);
+    }
+  }
+}
 
 
 template <typename T>
@@ -50,16 +101,20 @@ static Status solveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray*
   // stage 1: LU decomposition batched
   auto leftOutput = leftInput->ulike();
 
+  bool unbatched = (leftInput->rankOf() == 2);
+
   auto permuShapePtr = rightInput->getShapeAsVector();
   std::vector<LongType> permuShape(*permuShapePtr);
   delete permuShapePtr;
   permuShape.pop_back();
 
-  // For non-batched (2D) inputs, pop_back() leaves a 1D shape (e.g., [3]).
-  // allTensorsAlongDimension({-1}) on a 1D array doesn't properly decompose
-  // into individual vectors. Ensure the shape is at least 2D by prepending a 1
-  // so that the batch decomposition works correctly (e.g., [3] -> [1, 3]).
-  if (permuShape.size() == 1) {
+  // For batched inputs (rank > 2), pop_back() leaves a multi-D shape (e.g., [batch, 3]).
+  // For non-batched (2D) inputs, pop_back() leaves a 1D shape (e.g., [3]) — keep it 1D.
+  // The kernel setPermutationOnesKernel uses COORDS2INDEX with permPos={r} (1 element);
+  // if permTadShape were rank-2 ([1,3]), COORDS2INDEX would read coords[1] (uninitialized)
+  // giving r*stride[0] = r*3 instead of r*1, causing wrong permutation reads.
+  // Only force 2D for batched inputs where allTensorsAlongDimension({-1}) is needed.
+  if (permuShape.size() == 1 && !unbatched) {
     permuShape.insert(permuShape.begin(), 1);
   }
 
@@ -74,40 +129,77 @@ static Status solveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray*
   auto P = leftInput->ulike();
   P->nullify();
 
-  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs
-  // which breaks coordinate-based indexing. Use the arrays directly instead.
-  bool unbatched = (leftInput->rankOf() == 2);
-  if (unbatched) {
-    for (LongType row = 0; row < P->rows(); row++) {
-      P->r<T>(row, permutations->t<LongType>(row)) = T(1.f);
+  // Build permutation matrix P entirely on the device — no host element access.
+  {
+    NDArray::prepareSpecialUse({P}, {permutations});
+    auto stream  = context->getCudaStream();
+    auto pBuf    = reinterpret_cast<T*>(P->specialBuffer());
+    auto permBuf = reinterpret_cast<LongType*>(permutations->specialBuffer());
+    LongType rows = P->sizeAt(-2);
+    dim3 solveDims = getLaunchDims("solve");
+    if (unbatched) {
+      // 2D: single batch — offsets=nullptr means kernel uses base=0.
+      setPermutationOnesKernel<T><<<1, solveDims.y, 0, *stream>>>(
+          pBuf,
+          P->specialShapeInfo(), nullptr,
+          permBuf,
+          permutations->specialShapeInfo(), nullptr,
+          1, rows);
+      sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "setPermutationOnesKernel (unbatched) failed");
+    } else {
+      // Batched: get {-2,-1} TADs for P and {-1} TADs for permutations.
+      const std::vector<LongType> p2d    = {-2, -1};
+      const std::vector<LongType> perm1d = {-1};
+      auto pTads    = ConstantTadHelper::getInstance().tadForDimensions(
+          P->shapeInfo(),            const_cast<LongType*>(p2d.data()),    p2d.size());
+      auto permTads = ConstantTadHelper::getInstance().tadForDimensions(
+          permutations->shapeInfo(), const_cast<LongType*>(perm1d.data()), perm1d.size());
+      LongType batchSize = pTads->numberOfTads();
+      setPermutationOnesKernel<T><<<(int)batchSize, solveDims.y, 0, *stream>>>(
+          pBuf,
+          pTads->specialShapeInfo(),    pTads->specialOffsets(),
+          permBuf,
+          permTads->specialShapeInfo(), permTads->specialOffsets(),
+          batchSize, rows);
+      sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "setPermutationOnesKernel (batched) failed");
     }
-  } else {
-    auto PPart = P->allTensorsAlongDimension({-2, -1});
-    auto permutationsPart = permutations->allTensorsAlongDimension({-1});
-    for (auto batch = 0; batch < permutationsPart.size(); batch++) {
-      for (LongType row = 0; row < PPart[batch]->rows(); row++) {
-        PPart[batch]->r<T>(row, permutationsPart[batch]->t<LongType>(row)) = T(1.f);
-      }
-    }
+    NDArray::registerSpecialUse({P}, {permutations});
   }
-
-  P->tickWriteHost();
-  P->syncToDevice();
 
   auto rightPart = rightInput->ulike();
 
   MmulHelper::matmul(P, rightInput, rightPart, false, false, 1.0, 0.0, rightPart);
 
-  // Set diagonal of lower triangular part to 1
-  if (unbatched) {
-    for (LongType r = 0; r < leftLower->rows(); r++) leftLower->r<T>(r, r) = (T)1.f;
-  } else {
-    ResultSet leftLowerPart = leftLower->allTensorsAlongDimension({-2, -1});
-    for (auto i = 0; i < leftLowerPart.size(); i++) {
-      for (LongType r = 0; r < leftLowerPart[i]->rows(); r++) leftLowerPart[i]->r<T>(r, r) = (T)1.f;
+  // Set diagonal of lower triangular part to 1 directly on the device buffer.
+  // leftLower was produced by dup() which copies via D2D; its host buffer is NOT populated
+  // with LU data, so writing via r<T>() + syncToDevice() would overwrite the valid device
+  // LU data with uninitialized host memory. Use a kernel on specialBuffer() instead.
+  {
+    // leftLower's device buffer holds valid LU data (from dup, D2D) and is modified in place by
+    // the kernel; prepare/register handle coherence (its host buffer is intentionally untouched).
+    NDArray::prepareSpecialUse({leftLower}, {});
+    auto stream = context->getCudaStream();
+    auto buf = reinterpret_cast<T*>(leftLower->specialBuffer());
+    LongType n = leftLower->sizeAt(-2);
+    dim3 solveDims = getLaunchDims("solve");
+
+    if (unbatched) {
+      // 2D: single batch — offsets=nullptr means kernel uses base=0.
+      setDiagonalOneKernel<T><<<1, solveDims.y, 0, *stream>>>(
+          buf, leftLower->specialShapeInfo(), nullptr, 1, n);
+      sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "setDiagonalOneKernel failed");
+    } else {
+      const std::vector<LongType> dimdims = {-2, -1};
+      auto tads = ConstantTadHelper::getInstance().tadForDimensions(
+          leftLower->shapeInfo(), const_cast<LongType*>(dimdims.data()), dimdims.size());
+      LongType batchSize = tads->numberOfTads();
+      setDiagonalOneKernel<T><<<(int)batchSize, solveDims.y, 0, *stream>>>(
+          buf, tads->specialShapeInfo(), tads->specialOffsets(), batchSize, n);
+      sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "setDiagonalOneKernel failed");
     }
+    NDArray::registerSpecialUse({leftLower}, {});
   }
-  leftLower->syncToDevice();
+
   triangularSolveFunctor(context, leftLower, rightPart, true, false, rightOutput);
   triangularSolveFunctor(context, leftOutput, rightOutput, false, false, output);
   NDArray::registerPrimaryUse({output}, {leftInput, rightInput});

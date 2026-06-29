@@ -1009,31 +1009,33 @@ int detectStaleOwnership(
 int detectClosedBuffers(
     const SlotBufferInfo* ownership, int totalSlots,
     NDArray** outputSlots,
-    NDArray** externalInputs, int numExternalInputs) {
+    NDArray** externalInputs, int numExternalInputs,
+    const std::unordered_set<DataBuffer*>& protectedWeightBuffers) {
 
   int closedCount = 0;
 
-  // Check output slots — skip view slots (VIEW_OF_WEIGHT, VIEW_OF_SLOT)
-  // because their buffers are stale from the prior execution and will be
-  // recreated by the view-creating op (reshape_no_copy, permute, etc.)
-  // on the current execution. Only persistent slots (SLOT_OWNED, WEIGHT,
-  // UNSET) represent state that should remain valid between executions.
+  // Check output slots. A closed buffer is a true use-after-free ONLY when it is a
+  // protected weight/constant. A closed NON-protected buffer is a stale view or a
+  // transient wrapper over a placeholder external input — including a view-op slot
+  // whose ownership oscillated to SLOT_OWNED when its ext input was swapped+closed
+  // between executions — and it is refreshed by the imminent slot-exec re-execution
+  // of its producing op. Using protection (not ownership) keeps this consistent with
+  // validateLifecycleForPhase's SHAPES_FROZEN rule and avoids false-positive UAFs on
+  // stale ext-input views (e.g. squeeze/reshape of a placeholder in REPLAY_BLOCKED).
   if (outputSlots != nullptr) {
     for (int i = 0; i < totalSlots; i++) {
       if (outputSlots[i] == nullptr) continue;
-      if (ownership != nullptr &&
-          (ownership[i].ownership == BufferOwnership::VIEW_OF_WEIGHT ||
-           ownership[i].ownership == BufferOwnership::VIEW_OF_SLOT)) {
-        continue;
-      }
       DataBuffer* db = outputSlots[i]->dataBuffer();
       if (db != nullptr && db->isClosed()) {
+        if (protectedWeightBuffers.count(db) == 0) {
+          continue;
+        }
         const char* ownershipStr = (ownership != nullptr)
             ? bufferOwnershipName(ownership[i].ownership)
             : "unknown";
         DSP_DIAG(MEMORY,
                  "CLOSED_BUFFER: slot %d DataBuffer %p is CLOSED "
-                 "(ownership=%s, len=%lld) — use-after-free risk",
+                 "(ownership=%s, len=%lld) — protected weight freed (use-after-free)",
                  i, (void*)db, ownershipStr,
                  (long long)db->getLenInBytes());
         closedCount++;

@@ -415,9 +415,11 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       restoreDevice();
       return ptr;
     }
-    cudaError_t err = cudaMalloc(&ptr, size);
+    // Pools disabled/unsupported: use cudaMallocAsync on the resolved stream (the
+    // device's default mempool). No raw cudaMalloc — all allocation stays pool-routed.
+    cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
     if (err != cudaSuccess) {
-      sd_debug("cudaMalloc failed: %s\n", cudaGetErrorString(err), "");
+      sd_debug("cudaMallocAsync (pools-off path) failed: %s\n", cudaGetErrorString(err), "");
       auto result = allocateFailover(size, deviceId, actualDeviceId);
       restoreDevice();
       return result;
@@ -442,9 +444,11 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
         restoreDevice();
         return ptr;
       }
-      cudaError_t err = cudaMalloc(&ptr, size);
+      // initializeForDevice failed: use cudaMallocAsync on the resolved stream
+      // (device default mempool) rather than a raw cudaMalloc.
+      cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
       if (err != cudaSuccess) {
-        sd_debug("cudaMalloc fallback failed: %s\n", cudaGetErrorString(err), "");
+        sd_debug("cudaMallocAsync (uninit-device path) failed: %s\n", cudaGetErrorString(err), "");
         auto result = allocateFailover(size, deviceId, actualDeviceId);
         restoreDevice();
         return result;
@@ -640,18 +644,10 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     }
     cudaGetLastError();  // clear error
 
-    // Also try cudaMalloc (uses driver-level free memory released by trim)
-    err = cudaMalloc(&ptr, size);
-    if (err == cudaSuccess && ptr != nullptr) {
-      sd_debug("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc after trim on device %d\n", currentDeviceId);
-      // Track as direct allocation so free() uses cudaFree instead of cudaFreeAsync.
-      // Without this, cudaFreeAsync feeds non-pool memory into the pool, corrupting
-      // pool state and causing the pool to stagnate (stuck at fixed used/reserved).
-      registerDirectAllocation(ptr, size);
-      if (actualDeviceId) *actualDeviceId = currentDeviceId;
-      if (retryNeedRestore) cudaSetDevice(retryPrevDev);
-      return ptr;
-    }
+    // No raw cudaMalloc fallback here: the cudaMallocAsync above already reuses the
+    // driver memory released by trimPool(). If it still failed, fall through to other
+    // devices rather than introducing a non-pool (cudaMalloc) allocation that bypasses
+    // pool stats and needs special cudaFree routing.
     if (retryNeedRestore) cudaSetDevice(retryPrevDev);
     cudaGetLastError();  // clear error
   }
@@ -746,24 +742,14 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     }
 
     if (isPeer) {
-      // Peer device: use pool or direct allocation (fastest path)
+      // Peer device: allocate from the async pool. cudaMallocAsync uses device d's
+      // default memory pool even when our wrapper pool isn't explicitly initialized
+      // for d, so no raw cudaMalloc fallback is needed. If it fails, fall through to
+      // the next device.
       void* ptr = nullptr;
-      if (supported_ && poolInitialized_[d]) {
-        cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
-        if (err == cudaSuccess && ptr != nullptr) {
-          sd_debug("CudaMemoryPool::allocateFailover: Succeeded via pool on peer device %d for %zu bytes\n", d, size);
-          if (actualDeviceId) *actualDeviceId = d;
-          cudaSetDevice(prevDev);
-          return ptr;
-        }
-        cudaGetLastError();
-        ptr = nullptr;
-      }
-
-      cudaError_t err = cudaMalloc(&ptr, size);
+      cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
       if (err == cudaSuccess && ptr != nullptr) {
-        sd_debug("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc on peer device %d for %zu bytes\n", d, size);
-        registerDirectAllocation(ptr, size);
+        sd_debug("CudaMemoryPool::allocateFailover: Succeeded via pool on peer device %d for %zu bytes\n", d, size);
         if (actualDeviceId) *actualDeviceId = d;
         cudaSetDevice(prevDev);
         return ptr;
@@ -887,6 +873,14 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     return;  // No-op — managed by workspace lifecycle
   }
 
+  // Capture-constant arena interior pointer: a process-lifetime shape/TAD constant
+  // bump-allocated by allocateFromCaptureArena(). It is never freed individually —
+  // the whole arena is released as a block in releaseAll(). A cudaFree(Async) on an
+  // arena-interior pointer would return "invalid argument" and leak/corrupt.
+  if (isInCaptureArena(ptr)) {
+    return;  // No-op — arena freed as a block at releaseAll()
+  }
+
   // During CUDA graph capture, skip ALL frees to avoid recording MemFree graph nodes.
   // Workspace addresses: managed by the workspace buffer lifecycle (bump allocator).
   // Non-workspace (graph-external) addresses: cudaFreeAsync records a MemFree graph node
@@ -981,6 +975,32 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   cudaStream_t freeStream = resolveCaptureStream(stream);
   freeStream = resolveNullStream(freeStream);
 
+  // Persistent capture-safe allocations from allocateDirect() are pool memory
+  // (cudaMallocAsync) bound to a dedicated non-capturing allocation stream. Free
+  // them with cudaFreeAsync on THAT stream so the alloc/free ordering stays on the
+  // same stream and no graph mem-node is recorded. Checked before the direct/cudaFree
+  // path below.
+  {
+    std::lock_guard<std::mutex> lock(directAllocMutex_);
+    auto asyncIt = directAsyncAllocations_.find(ptr);
+    if (asyncIt != directAsyncAllocations_.end()) {
+      int dev = asyncIt->second.deviceId;
+      directAsyncAllocations_.erase(asyncIt);
+      cudaStream_t s = (dev >= 0 && dev < MAX_DEVICES) ? directAllocStreams_[dev] : nullptr;
+      cudaError_t err = cudaFreeAsync(ptr, s);
+      if (err != cudaSuccess) {
+        // Clear and leak rather than risk a context-corrupting cudaFree on pool memory.
+        cudaGetLastError();
+        if (sd::Environment::getInstance().isDebug()) {
+          sd_printf("CudaMemoryPool::free: cudaFreeAsync failed for allocateDirect ptr=%p dev=%d: %s (leaked)\n",
+                    ptr, dev, cudaGetErrorString(err));
+        }
+      }
+      if (needDeviceRestore) cudaSetDevice(savedDev);
+      return;
+    }
+  }
+
   // Check if this is a direct (cudaMalloc) allocation — these MUST use cudaFree,
   // NOT cudaFreeAsync. Direct allocations are weight buffers migrated out of the
   // async pool to prevent pool fragmentation. Using cudaFreeAsync on a cudaMalloc
@@ -1002,9 +1022,54 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     }
   }
 
+  // Graph-baked address protection: this pointer is still referenced by a live
+  // segment (baked into a CUDA graph's captured nodes, or cached in a frozen
+  // slot-by-slot slot). Freeing it now would allow pool reuse at the same address
+  // while the segment is live — causing data corruption or CUDA err700 on the next
+  // replay/re-exec. DEFER the free and RECORD that the owner requested it; the free
+  // is issued by unpinGraphBakedAddress() at refCount==0 ONLY because freeRequested
+  // is set here. A pinned buffer that is never free()'d (a SameDiff weight/constant
+  // that outlives the plan) is thus NOT freed at unpin — it is externally owned.
+  {
+    std::lock_guard<std::mutex> lock(graphBakedMutex_);
+    auto it = graphBakedPins_.find(ptr);
+    if (it != graphBakedPins_.end()) {
+      it->second.freeRequested = true;
+      if (sd::Environment::getInstance().isDebug()) {
+        sd_printf("CudaMemoryPool::free: SKIP graph-baked ptr=%p dev=%d — deferred (freeRequested) until unpin\n",
+                  ptr, deviceId);
+      }
+      if (needDeviceRestore) cudaSetDevice(savedDev);
+      return;
+    }
+  }
+
   // Device memory: use cudaFreeAsync for stream-ordered deallocation.
   // Works for both pool and non-pool allocations since CUDA 11.2.
   if (enabled_.load() && supported_) {
+    // CAPTURE-SAFE DEFER: if a CUDA graph capture is ACTIVELY in progress on freeStream,
+    // issuing cudaFreeAsync now corrupts it. For a capture-time (workspace-interior) buffer
+    // the call fails "invalid argument", and any cudaFreeAsync that references a pointer not
+    // owned by this capture's mempool poisons the capture — so the subsequent
+    // cudaStreamEndCapture fails ("operation failed due to a previous error during capture")
+    // and the segment reports KERNEL_FAILURE (status=50). The tl_captureWorkspace skip above
+    // misses the window after unregisterCaptureWorkspace() while the capture is still open, so
+    // detect the live capture state directly here (cudaStreamIsCapturing is a pure query — no
+    // sync, capture-safe). The buffer is owned by the capture workspace and released as a unit
+    // after the capture completes, so deferring its individual free is correct and mirrors the
+    // tl_captureWorkspace skip above.
+    cudaStreamCaptureStatus capStatus = cudaStreamCaptureStatusNone;
+    cudaError_t capErr = cudaStreamIsCapturing(freeStream, &capStatus);
+    if (capErr == cudaSuccess && capStatus != cudaStreamCaptureStatusNone) {
+      if (sd::Environment::getInstance().isDebug()) {
+        sd_printf("CudaMemoryPool::free: DEFER ptr=%p dev=%d stream=%p — CUDA capture active "
+                  "(status=%d); individual free owned by capture workspace, released after capture\n",
+                  ptr, deviceId, (void*)freeStream, (int)capStatus);
+      }
+      if (needDeviceRestore) cudaSetDevice(savedDev);
+      return;
+    }
+    if (capErr != cudaSuccess) cudaGetLastError();  // clear benign capture-query error
     cudaError_t err = cudaFreeAsync(ptr, freeStream);
     if (err == cudaSuccess) {
       // Track which stream this free was issued on so trimPool() can sync
@@ -1324,6 +1389,55 @@ void CudaMemoryPool::unregisterCaptureWorkspace(void* basePtr) {
   }
 }
 
+// ─── Graph-Baked Address Protection ────────────────────────────────────────
+
+void CudaMemoryPool::pinGraphBakedAddress(void* ptr, int deviceId) {
+  if (ptr == nullptr) return;
+  std::lock_guard<std::mutex> lock(graphBakedMutex_);
+  auto& info = graphBakedPins_[ptr];
+  info.refCount++;
+  info.deviceId = deviceId;
+  if (sd::Environment::getInstance().isDebug()) {
+    sd_printf("CudaMemoryPool::pinGraphBakedAddress: ptr=%p dev=%d refCount=%d\n",
+              ptr, deviceId, info.refCount);
+  }
+}
+
+void CudaMemoryPool::unpinGraphBakedAddress(void* ptr, int deviceId, cudaStream_t stream) {
+  if (ptr == nullptr) return;
+  bool shouldFree = false;
+  {
+    std::lock_guard<std::mutex> lock(graphBakedMutex_);
+    auto it = graphBakedPins_.find(ptr);
+    if (it == graphBakedPins_.end()) return;  // Not pinned — ignore
+    it->second.refCount--;
+    if (it->second.refCount <= 0) {
+      // Free ONLY if the owner actually requested a free() while the buffer was pinned.
+      // A buffer that was pinned for protection but never free()'d (a SameDiff weight/
+      // constant that outlives the plan) must NOT be freed here — it is externally owned;
+      // freeing it would double-free a live weight (→ err700) or fail for a non-pool
+      // constant (cudaFreeAsync "invalid argument" → leak).
+      shouldFree = it->second.freeRequested;
+      graphBakedPins_.erase(it);
+    }
+  }
+  if (shouldFree) {
+    // Deferred-free path: free() was skipped while pinned (freeRequested); now that no
+    // live segment holds the address, release it to the pool on the provided stream.
+    if (sd::Environment::getInstance().isDebug()) {
+      sd_printf("CudaMemoryPool::unpinGraphBakedAddress: ptr=%p dev=%d stream=%p — deferred free (requested)\n",
+                ptr, deviceId, (void*)stream);
+    }
+    free(ptr, deviceId, stream);
+  }
+}
+
+bool CudaMemoryPool::isGraphBakedPinned(void* ptr) const {
+  if (ptr == nullptr) return false;
+  std::lock_guard<std::mutex> lock(graphBakedMutex_);
+  return graphBakedPins_.count(ptr) > 0;
+}
+
 bool CudaMemoryPool::isInCaptureWorkspace(void* ptr) const {
   if (ptr == nullptr) return false;
   std::lock_guard<std::mutex> lock(captureWorkspaceMutex_);
@@ -1333,6 +1447,283 @@ bool CudaMemoryPool::isInCaptureWorkspace(void* ptr) const {
     size_t wsSize = entry.second;
     if (p >= wsStart && p < wsStart + wsSize) {
       return true;
+    }
+  }
+  return false;
+}
+
+cudaStream_t CudaMemoryPool::ensureDirectAllocStream(int deviceId) {
+  if (deviceId < 0 || deviceId >= MAX_DEVICES) return nullptr;
+  std::lock_guard<std::mutex> lock(directAllocStreamMutex_);
+  if (directAllocStreams_[deviceId] == nullptr) {
+    int prevDev = -1;
+    cudaGetDevice(&prevDev);
+    bool restore = (prevDev != deviceId && cudaSetDevice(deviceId) == cudaSuccess);
+    cudaStream_t s = nullptr;
+    cudaError_t err = cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking);
+    if (err == cudaSuccess && s != nullptr) {
+      directAllocStreams_[deviceId] = s;
+    } else {
+      cudaGetLastError();
+    }
+    if (restore) cudaSetDevice(prevDev);
+  }
+  return directAllocStreams_[deviceId];
+}
+
+void* CudaMemoryPool::allocateDirect(size_t size, int deviceId) {
+  if (released_.load(std::memory_order_acquire) || size == 0) return nullptr;
+  if (deviceId < 0) {
+    cudaGetDevice(&deviceId);
+  }
+
+  // Dedicated non-capturing stream → cudaMallocAsync produces a standalone pool
+  // allocation with NO cudaGraphMemAllocNode, safe to bake as a captured-graph kernel
+  // arg and persistent across capture-workspace release / graph teardown.
+  cudaStream_t s = ensureDirectAllocStream(deviceId);
+  if (s == nullptr) {
+    // Cannot guarantee a capture-safe standalone allocation without a dedicated
+    // stream — fail rather than risk a workspace-interior or graph-node allocation.
+    static int noStreamFailCount = 0;
+    if (noStreamFailCount < 15) {
+      noStreamFailCount++;
+      sd_printf("CudaMemoryPool::allocateDirect: NO dedicated alloc stream for dev=%d size=%zu "
+                "graphExecActive=%d (ensureDirectAllocStream returned null)\n",
+                deviceId, size, (int)tl_graphExecutionActive);
+    }
+    return nullptr;
+  }
+
+  int prevDev = -1;
+  cudaGetDevice(&prevDev);
+  bool restore = (prevDev != deviceId && cudaSetDevice(deviceId) == cudaSuccess);
+
+  void* ptr = nullptr;
+  cudaError_t err = cudaMallocAsync(&ptr, size, s);
+  if (err == cudaSuccess && ptr != nullptr) {
+    // Materialize the allocation so the buffer is valid for cross-stream reads by the
+    // captured graph at replay. cudaStreamSynchronize is a HOST-side wait — and under a
+    // CUDA-graph capture (all beginCapture() calls use cudaStreamCaptureModeThreadLocal)
+    // ANY host sync issued ON THE CAPTURING THREAD is illegal, regardless of which stream
+    // it targets. allocateDirect is reached on the capturing thread during capture (e.g.
+    // ConstantHelper::replicatePointer materializing a TAD-offset/constant for a slice
+    // strided-copy segment), so syncing here invalidates the capture → CudaGraphHandle::
+    // endCapture reports "previous error during capture" → seg KERNEL_FAILURE/status=50.
+    // During the DSP capture/replay region we MUST skip the host sync: the dedicated
+    // NON-capturing stream's tiny allocation completes long before the first
+    // cudaGraphLaunch, and replicatePointer's H2D fill is already an async cudaMemcpyAsync
+    // node on the captured stream (ordered before the reader kernel), so the buffer is
+    // valid at replay without a host sync. Outside capture, keep the sync so eager
+    // cross-stream callers see an immediately-materialized buffer.
+    if (!tl_graphExecutionActive) {
+      cudaStreamSynchronize(s);
+      cudaGetLastError();
+    }
+    {
+      std::lock_guard<std::mutex> lock(directAllocMutex_);
+      directAsyncAllocations_[ptr] = DirectAsyncInfo{size, deviceId};
+    }
+    if (sd::Environment::getInstance().isDebug()) {
+      sd_printf("CudaMemoryPool::allocateDirect: persistent capture-safe alloc ptr=%p size=%zu dev=%d "
+                "(non-capturing stream, survives workspace/graph teardown)\n",
+                ptr, size, deviceId);
+    }
+  } else {
+    // DIAGNOSTIC (bounded, failure-only): allocateDirect failing mid-capture is the
+    // status=50 root for ops that replicate a constant during capture (e.g. slice's output
+    // shape buffer via CudaShapeBufferCreator → replicatePointer). Surface the cudaError +
+    // capture state so the reason (capture-illegal alloc vs real OOM) is visible WITHOUT
+    // global setDebug (which corrupts the capture). Bounded like the cudaFreeAsync-LEAKED log.
+    static int allocDirectFailCount = 0;
+    if (allocDirectFailCount < 15) {
+      allocDirectFailCount++;
+      sd_printf("CudaMemoryPool::allocateDirect: cudaMallocAsync FAILED dev=%d size=%zu "
+                "graphExecActive=%d err=%d (%s)\n",
+                deviceId, size, (int)tl_graphExecutionActive, (int)err, cudaGetErrorString(err));
+    }
+    cudaGetLastError();
+    ptr = nullptr;
+  }
+
+  if (restore) cudaSetDevice(prevDev);
+  return ptr;
+}
+
+void CudaMemoryPool::ensureCaptureArena(int deviceId) {
+  if (released_.load(std::memory_order_acquire)) return;
+  if (deviceId < 0) cudaGetDevice(&deviceId);
+  if (deviceId < 0 || deviceId >= MAX_DEVICES) return;
+
+  const size_t ARENA_BYTES = 64ull * 1024ull * 1024ull;  // 64MB per block ≈ 1800 padded shape buffers
+
+  std::lock_guard<std::mutex> lock(captureArenaMutex_);
+  // Headroom check: if the last existing block still has a full ARENA_BYTES of free space,
+  // there is sufficient headroom for the upcoming capture — no new block needed.
+  // (A single allocation is capped by ARENA_BYTES in allocateFromCaptureArena, so this
+  // guarantees at least one arena-sized alloc will succeed without growing mid-capture.)
+  if (!captureArenaBlocks_[deviceId].empty()) {
+    const ArenaBlock& last = captureArenaBlocks_[deviceId].back();
+    size_t freeBytes = last.capacity - last.offset;
+    if (freeBytes >= ARENA_BYTES) return;  // last block has sufficient headroom
+    // Otherwise fall through to append a fresh block below.
+  }
+
+  // A new block can only be allocated when NO capture is ACTIVELY in progress on this
+  // thread (cudaMallocAsync on the capturing thread = err900 cudaErrorStreamCaptureUnsupported).
+  // tl_graphExecutionActive spans the whole DSP region incl. warmup AND the pre-beginCapture
+  // window (CaptureStateGuard sets it before beginCapture) — where no capture is yet active and
+  // alloc is legal — so we MUST check the REAL capture state, not the flag. Both call sites
+  // (_gpubackend.cu:2745 + _cudagraph.cu:904) are BEFORE beginCapture, so the alloc is legal.
+  bool captureActive = false;
+  if (tl_graphCaptureStream != nullptr) {
+    cudaStreamCaptureStatus cs = cudaStreamCaptureStatusNone;
+    if (cudaStreamIsCapturing(reinterpret_cast<cudaStream_t>(tl_graphCaptureStream), &cs) == cudaSuccess) {
+      captureActive = (cs != cudaStreamCaptureStatusNone);
+    }
+    cudaGetLastError();
+  }
+  if (captureActive) return;  // cannot materialize mid-capture; allocateFromCaptureArena reports
+
+  int prevDev = -1; cudaGetDevice(&prevDev);
+  bool restore = (prevDev != deviceId && cudaSetDevice(deviceId) == cudaSuccess);
+  cudaStream_t s = ensureDirectAllocStream(deviceId);  // dedicated NON-capturing stream
+  void* base = nullptr;
+  cudaError_t err = (s != nullptr) ? cudaMallocAsync(&base, ARENA_BYTES, s) : cudaErrorMemoryAllocation;
+  if (err == cudaSuccess && base != nullptr) {
+    cudaStreamSynchronize(s);  // materialize — legal here (not capturing)
+    cudaGetLastError();
+    size_t blockIdx = captureArenaBlocks_[deviceId].size();
+    ArenaBlock blk;
+    blk.base     = base;
+    blk.capacity = ARENA_BYTES;
+    blk.offset   = 0;
+    captureArenaBlocks_[deviceId].push_back(blk);
+    if (sd::Environment::getInstance().isDebug()) {
+      sd_printf("CudaMemoryPool::ensureCaptureArena: materialized block[%zu] %zuMB capture-constant arena "
+                "for dev=%d base=%p\n", blockIdx, ARENA_BYTES >> 20, deviceId, base);
+    }
+  } else {
+    cudaGetLastError();
+  }
+  if (restore) cudaSetDevice(prevDev);
+}
+
+void* CudaMemoryPool::allocateFromCaptureArena(size_t size, int deviceId) {
+  if (released_.load(std::memory_order_acquire) || size == 0) return nullptr;
+  if (deviceId < 0) cudaGetDevice(&deviceId);
+  if (deviceId < 0 || deviceId >= MAX_DEVICES) return nullptr;
+
+  // 256B-align: shape buffers (+ canary padding) are read as LongType arrays.
+  const size_t ALIGN = 256;
+  const size_t alignedSize = (size + (ALIGN - 1)) & ~static_cast<size_t>(ALIGN - 1);
+
+  // Materialize the first block if not present — no-op if it already exists, or if a capture
+  // is active (then the bump below falls through to the growth path, which also checks capture
+  // state and returns nullptr if active). The pre-capture ensureCaptureArena() call normally
+  // allocates block[0] before any capture-time bump.
+  ensureCaptureArena(deviceId);
+
+  std::lock_guard<std::mutex> lock(captureArenaMutex_);
+
+  if (captureArenaBlocks_[deviceId].empty()) {
+    // No block at all: either capture is active (ensureCaptureArena bailed) or alloc failed.
+    return nullptr;
+  }
+
+  // Try to bump from the last block (common path).
+  ArenaBlock& last = captureArenaBlocks_[deviceId].back();
+  if (last.offset + alignedSize <= last.capacity) {
+    void* ptr = static_cast<char*>(last.base) + last.offset;
+    last.offset += alignedSize;
+    return ptr;
+  }
+
+  // Last block is full. Attempt to grow by appending a new block — BUT only when no CUDA
+  // graph capture is currently active on this thread. Mid-capture cudaMallocAsync is illegal
+  // (err900). In that very rare case (capture started before pre-warm finished, or an
+  // unusually large single plan) we return nullptr so the caller falls back gracefully.
+  bool captureActive = false;
+  if (tl_graphCaptureStream != nullptr) {
+    cudaStreamCaptureStatus cs = cudaStreamCaptureStatusNone;
+    if (cudaStreamIsCapturing(reinterpret_cast<cudaStream_t>(tl_graphCaptureStream), &cs) == cudaSuccess) {
+      captureActive = (cs != cudaStreamCaptureStatusNone);
+    }
+    cudaGetLastError();
+  }
+  if (captureActive) {
+    // Cannot grow mid-capture. Log once and return nullptr (caller falls back, same as
+    // the old "arena FULL" path — i.e. slot-by-slot for this particular constant).
+    static int growBlockCount = 0;
+    if (growBlockCount < 15) {
+      growBlockCount++;
+      size_t totalBlocks = captureArenaBlocks_[deviceId].size();
+      size_t totalCapacity = 0;
+      size_t totalUsed = 0;
+      for (const auto& blk : captureArenaBlocks_[deviceId]) {
+        totalCapacity += blk.capacity;
+        totalUsed += blk.offset;
+      }
+      if (sd::Environment::getInstance().isDebug()) {
+        sd_printf("CudaMemoryPool::allocateFromCaptureArena: capture ACTIVE, cannot grow dev=%d "
+                  "need=%zu blocks=%zu cap=%zuMB used=%zuMB\n",
+                  deviceId, alignedSize, totalBlocks, totalCapacity >> 20, totalUsed >> 20);
+      }
+    }
+    return nullptr;
+  }
+
+  // Not capturing: allocate a new block on the dedicated non-capturing stream and push it.
+  // Block size: at least ARENA_BYTES, or larger if a single request exceeds it.
+  const size_t ARENA_BYTES = 64ull * 1024ull * 1024ull;
+  size_t newBlockSize = (alignedSize > ARENA_BYTES) ? alignedSize : ARENA_BYTES;
+
+  int prevDev = -1; cudaGetDevice(&prevDev);
+  bool restore = (prevDev != deviceId && cudaSetDevice(deviceId) == cudaSuccess);
+  cudaStream_t s = ensureDirectAllocStream(deviceId);  // must NOT be holding captureArenaMutex_ when calling ...
+  // NOTE: ensureDirectAllocStream acquires directAllocStreamMutex_, not captureArenaMutex_,
+  // so calling it under captureArenaMutex_ is deadlock-free (distinct mutexes, consistent order).
+  void* newBase = nullptr;
+  cudaError_t err = (s != nullptr) ? cudaMallocAsync(&newBase, newBlockSize, s) : cudaErrorMemoryAllocation;
+  if (err == cudaSuccess && newBase != nullptr) {
+    cudaStreamSynchronize(s);   // materialize — legal here (not capturing)
+    cudaGetLastError();
+    size_t blockIdx = captureArenaBlocks_[deviceId].size();
+    ArenaBlock blk;
+    blk.base     = newBase;
+    blk.capacity = newBlockSize;
+    blk.offset   = alignedSize;  // immediately consume the request
+    captureArenaBlocks_[deviceId].push_back(blk);
+    if (sd::Environment::getInstance().isDebug()) {
+      sd_printf("CudaMemoryPool::allocateFromCaptureArena: GREW arena dev=%d block[%zu] "
+                "%zuMB base=%p (total blocks=%zu)\n",
+                deviceId, blockIdx, newBlockSize >> 20, newBase,
+                captureArenaBlocks_[deviceId].size());
+    }
+    if (restore) cudaSetDevice(prevDev);
+    return newBase;  // ptr = base of new block (offset was 0, now alignedSize)
+  }
+
+  // Growth failed (unlikely OOM). Log and return nullptr.
+  cudaGetLastError();
+  if (restore) cudaSetDevice(prevDev);
+  static int growFailCount = 0;
+  if (growFailCount < 15) {
+    growFailCount++;
+    sd_printf("CudaMemoryPool::allocateFromCaptureArena: failed to grow arena dev=%d "
+              "need=%zu err=%d (arena exhausted and alloc failed)\n",
+              deviceId, newBlockSize, (int)err);
+  }
+  return nullptr;
+}
+
+bool CudaMemoryPool::isInCaptureArena(void* ptr) const {
+  if (ptr == nullptr) return false;
+  std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(captureArenaMutex_));
+  char* p = static_cast<char*>(ptr);
+  for (int d = 0; d < MAX_DEVICES; d++) {
+    for (const auto& blk : captureArenaBlocks_[d]) {
+      char* base = static_cast<char*>(blk.base);
+      if (base != nullptr && p >= base && p < base + blk.capacity) return true;
     }
   }
   return false;
@@ -1410,6 +1801,41 @@ void CudaMemoryPool::releaseAll() {
         }
       }
       directAllocations_.clear();
+
+      // Free persistent capture-safe allocations from allocateDirect() on their
+      // dedicated streams (pool memory → cudaFreeAsync), then destroy the streams.
+      for (const auto& entry : directAsyncAllocations_) {
+        if (entry.first != nullptr) {
+          int dev = entry.second.deviceId;
+          cudaStream_t s = (dev >= 0 && dev < MAX_DEVICES) ? directAllocStreams_[dev] : nullptr;
+          cudaFreeAsync(entry.first, s);
+        }
+      }
+      directAsyncAllocations_.clear();
+    }
+    {
+      std::lock_guard<std::mutex> lock(directAllocStreamMutex_);
+      // Free all per-device capture-constant arena blocks (allocateFromCaptureArena backing)
+      // on their dedicated streams BEFORE the streams are destroyed below.
+      {
+        std::lock_guard<std::mutex> alock(captureArenaMutex_);
+        for (int d = 0; d < MAX_DEVICES; d++) {
+          for (auto& blk : captureArenaBlocks_[d]) {
+            if (blk.base != nullptr) {
+              cudaFreeAsync(blk.base, directAllocStreams_[d]);
+              blk.base = nullptr;
+            }
+          }
+          captureArenaBlocks_[d].clear();
+        }
+      }
+      for (int d = 0; d < MAX_DEVICES; d++) {
+        if (directAllocStreams_[d] != nullptr) {
+          cudaStreamSynchronize(directAllocStreams_[d]);
+          cudaStreamDestroy(directAllocStreams_[d]);
+          directAllocStreams_[d] = nullptr;
+        }
+      }
     }
   } catch (...) {
     if (sd::Environment::getInstance().isDebug() || sd::Environment::getInstance().isVerbose()) {

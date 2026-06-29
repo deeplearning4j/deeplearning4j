@@ -356,18 +356,11 @@ public class Nd4jNamespaceGenerator {
                         else
                             c.addParameter(INDArray[].class, inputName).varargs(isLast);
                     }
-                    // Check for parameter types — skip validation for optional inputs (defaultValue = null)
+                    // Check for parameter types
                     final DataType paramType = i.getType();
                     String validationName = validationMapping.get(paramType);
                     if(validationName != null) {
-                        boolean isOptional = i.hasDefaultValue() && i.defaultValue() == null;
-                        if (isOptional) {
-                            c.beginControlFlow("if ($L != null)", inputName);
-                            c.addStatement(CodeBlock.of("$T.$L($S, $S, $L)", isSameDiff ? SDValidation.class : NDValidation.class, validationName, op.getOpName(), inputName, inputName));
-                            c.endControlFlow();
-                        } else {
-                            c.addStatement(CodeBlock.of("$T.$L($S, $S, $L)", isSameDiff ? SDValidation.class : NDValidation.class, validationName, op.getOpName(), inputName, inputName));
-                        }
+                        c.addStatement(CodeBlock.of("$T.$L($S, $S, $L)", isSameDiff ? SDValidation.class : NDValidation.class, validationName, op.getOpName(), inputName, inputName));
                     }
                     checkParameterCount(c, count, inputName);
                 } else if(p instanceof Arg){
@@ -452,6 +445,64 @@ public class Nd4jNamespaceGenerator {
                 c.returns(INDArray[].class);
         }
 
+        // Pure-composition ops: emit the authored SameDiff body directly into the SD class method, and
+        // for the eager ND class wrap the same body in a one-shot SameDiff (lifting INDArray inputs to
+        // constants) and return out.eval(). No single native op is involved.
+        if (op.getCompositionBody() != null) {
+            String body = op.getCompositionBody();
+            // For default-value overloads, inject local variable declarations for any arg with a
+            // default that was omitted from this signature. This lets composition bodies reference
+            // the arg name even when the caller did not supply it (e.g. boolean layerNorm = false).
+            StringBuilder localDefaults = new StringBuilder();
+            for (Arg arg : op.getArgs()) {
+                if (!inNames.contains(arg.getName()) && arg.hasDefaultValue() && arg.defaultValue() != null) {
+                    TypeName t = getArgType(arg);
+                    if (t != null) {
+                        String defaultCode = anyToCode(arg, arg.defaultValue());
+                        localDefaults.append(t.toString()).append(" ").append(arg.getName())
+                                     .append(" = ").append(defaultCode).append(";\n");
+                    }
+                }
+            }
+            String defaults = localDefaults.toString();
+            if (isSameDiff) {
+                if (!defaults.isEmpty()) c.addCode("$L", defaults);
+                c.addCode("$L\n", body);
+                if (withName)
+                    c.addStatement("return sd.updateVariableNameAndReference(out, name)");
+                else
+                    c.addStatement("return out");
+            } else {
+                // Eager: translate the one authored SameDiff composition to DIRECT INDArray execution
+                // (Nd4j.base()/math()/nn()/cnn()/sparse() + INDArray ops). No SameDiff, no eval, no re-run.
+                String ndBody = body
+                        .replace("SDVariable[]", "INDArray[]")
+                        .replace("SDVariable ", "INDArray ")
+                        .replace("sd.math()", "org.nd4j.linalg.factory.Nd4j.math()")
+                        .replace("sd.nn()", "org.nd4j.linalg.factory.Nd4j.nn()")
+                        .replace("sd.cnn()", "org.nd4j.linalg.factory.Nd4j.cnn()")
+                        .replace("sd.sparse()", "org.nd4j.linalg.factory.Nd4j.sparse()")
+                        .replace("sd.signal()", "org.nd4j.linalg.factory.Nd4j.signal()")
+                        .replace("sd.sum(", "org.nd4j.linalg.factory.Nd4j.base().sum(")
+                        .replace("sd.mmul(", "org.nd4j.linalg.factory.Nd4j.base().mmul(")
+                        .replace("sd.reshape(", "org.nd4j.linalg.factory.Nd4j.base().reshape(")
+                        .replace("sd.concat(", "org.nd4j.linalg.factory.Nd4j.base().concat(")
+                        .replace("sd.expandDims(", "org.nd4j.linalg.factory.Nd4j.base().expandDims(")
+                        .replace("sd.onesLike(", "org.nd4j.linalg.factory.Nd4j.base().onesLike(")
+                        .replace("sd.zerosLike(", "org.nd4j.linalg.factory.Nd4j.base().zerosLike(")
+                        .replace("sd.oneHot(", "org.nd4j.linalg.factory.Nd4j.base().oneHot(")
+                        .replace("sd.mean(", "org.nd4j.linalg.factory.Nd4j.base().mean(")
+                        .replace("sd.gather(", "org.nd4j.linalg.factory.Nd4j.base().gather(")
+                        .replace("sd.transpose(", "org.nd4j.linalg.factory.Nd4j.base().transpose(")
+                        .replace("sd.gnn()", "org.nd4j.linalg.factory.Nd4j.gnn()")
+                        .replace("new SDVariable[", "new INDArray[");
+                if (!defaults.isEmpty()) c.addCode("$L", defaults);
+                c.addCode("$L\n", ndBody);
+                c.addStatement("return out");
+            }
+            return;
+        }
+
         // We have to pass all parameters, always. But not all signatures will be taking all parameters.
         // inNames tells us which parameters this signatures has. For all others we want to pass default values
         List<String> parameters = op.allParameters().stream().sorted(
@@ -533,39 +584,17 @@ public class Nd4jNamespaceGenerator {
             }
         }
          else{
-            if (!op.getLegacy() && singleOut) {
-                // Generate code with proper cleanup for single output from CustomOp (returns INDArray[])
-                sb.append("INDArray[] __tmp = $T.exec(new ")
-                        .append(op.getJavaPackage())
-                        .append(".")
-                        .append(op.getJavaOpClass() == null ? GenUtil.ensureFirstIsCap(op.getOpName()) : op.getJavaOpClass())
-                        .append("(")
-                        .append(String.join(", ", parameters))
-                        .append("))");
-                c.addStatement(sb.toString(), Nd4j.class);
-                // Clean up non-returned arrays
-                c.beginControlFlow("try");
-                c.addStatement("return __tmp[0]");
-                c.nextControlFlow("finally");
-                c.beginControlFlow("if(__tmp != null)");
-                c.beginControlFlow("for(int __i = 1; __i < __tmp.length; __i++)");
-                c.beginControlFlow("if(__tmp[__i] != null)");
-                c.addStatement("__tmp[__i].close()");
-                c.endControlFlow();
-                c.endControlFlow();
-                c.endControlFlow();
-                c.endControlFlow();
-            } else {
-                // Legacy ops or multi-output: return directly (no cleanup needed)
-                sb.append("return $T.exec(new ")
-                        .append(op.getJavaPackage())
-                        .append(".")
-                        .append(op.getJavaOpClass() == null ? GenUtil.ensureFirstIsCap(op.getOpName()) : op.getJavaOpClass())
-                        .append("(")
-                        .append(String.join(", ", parameters))
-                        .append("))");
-                c.addStatement(sb.toString(), Nd4j.class);
-            }
+            sb.append("return $T.exec(new ")
+                    .append(op.getJavaPackage())
+                    .append(".")
+                    .append(op.getJavaOpClass() == null ? GenUtil.ensureFirstIsCap(op.getOpName()) : op.getJavaOpClass())
+                    .append("(")
+                    .append(String.join(", ", parameters))
+                    .append("))");
+            if (!op.getLegacy() && singleOut)        //Note: legacy ops Nd4j.exec(Op) returns INDArray; Nd4j.exec(CustomOp) returns INDArray[]
+                sb.append("[0]");
+
+            c.addStatement(sb.toString(), Nd4j.class);
         }
     }
 
@@ -764,28 +793,9 @@ public class Nd4jNamespaceGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .addJavadoc(CodeBlock.of(arg.getDescription()));
 
-        // Add enum constants with index values
-        int index = 0;
         for (String possibleValue : arg.getPossibleValues()) {
-            builder.addEnumConstant(possibleValue, TypeSpec.anonymousClassBuilder("$L", index).build());
-            index++;
+            builder.addEnumConstant(possibleValue);
         }
-
-        // Add private field for methodIndex
-        builder.addField(FieldSpec.builder(int.class, "methodIndex", Modifier.PRIVATE, Modifier.FINAL).build());
-
-        // Add constructor
-        builder.addMethod(MethodSpec.constructorBuilder()
-                .addParameter(int.class, "index")
-                .addStatement("this.methodIndex = index")
-                .build());
-
-        // Add methodIndex() getter
-        builder.addMethod(MethodSpec.methodBuilder("methodIndex")
-                .addModifiers(Modifier.PUBLIC)
-                .returns(int.class)
-                .addStatement("return methodIndex")
-                .build());
 
         TypeSpec ts = builder.build();
 

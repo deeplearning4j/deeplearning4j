@@ -140,6 +140,7 @@ DIAG_REPLAY=false
 DIAG_STREAM=false
 DIAG_DEVICE=false
 DIAG_ALL=false
+DIAG_DETAILED=false
 DIAG_JSON=""
 DIAG_STEP=false
 DIAG_D2D=false
@@ -267,6 +268,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --diag-replay)
             DIAG_REPLAY=true
+            shift
+            ;;
+        --diag-detailed)
+            DIAG_DETAILED=true
             shift
             ;;
         --disable-view-fastpath)
@@ -449,8 +454,13 @@ if $NO_OPTIMIZER; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.optimizer.enabled=false"
 fi
 
-# FP16 is ON by default in QuantizationOptimizations; only pass when disabling
-if ! $FP16; then
+# QuantizationOptimizations' FP16 default is OFF (since fd89cb724f), so the old
+# "only pass when disabling" relied on a default that no longer exists and silently
+# ran the benchmark with FP16 OFF. Pass the flag EXPLICITLY so the benchmark's FP16
+# setting (default ON) is honored regardless of the code default.
+if $FP16; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.optimizer.fp16=true"
+else
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.optimizer.fp16=false"
 fi
 
@@ -468,7 +478,7 @@ if $NO_CUBLAS_WORKSPACE; then
 fi
 
 if $NO_FREEZE; then
-    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.nofreeze=true"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.noFreeze=true"
 fi
 
 if $NO_ATTN_OVERRIDE; then
@@ -554,6 +564,18 @@ else
     if [ -n "$DIAG_CATS" ]; then
         EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=$DIAG_CATS"
         EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.level=full"
+    fi
+fi
+# Detailed sync-free DSP_DIAG: EXECUTE+LIFECYCLE+MEMORY at level=detailed. The ring
+# captures WITHOUT syncToHost, so it does NOT force slot-by-slot (unlike level=full),
+# and is dumped to a JSON ring file post-run. Use to OBSERVE the consolidated
+# GraphSegmentExec transitions (markArgsStale/resetCaptureKeys/resetForWarmup/
+# slotAddrDrifted) during decode without corrupting what's being measured.
+if $DIAG_DETAILED; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=EXECUTE,LIFECYCLE,MEMORY"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.level=detailed"
+    if [ -z "$DIAG_JSON" ]; then
+        DIAG_JSON="$SCRIPT_DIR/dsp-ring-detailed.json"
     fi
 fi
 if [ -n "$DIAG_JSON" ]; then

@@ -7,6 +7,7 @@
 #include <array/NDArrayFactory.h>
 
 #include <helpers/PointersManager.h>
+#include <helpers/DebugHelper.h>
 #include <execution/AffinityManager.h>
 #include <system/Environment.h>
 #include <loops/special_kernels.h>
@@ -57,39 +58,57 @@ void NDArray::makeBothBuffersActual() {
 }
 
 void NDArray::synchronize(const char* msg) {
-  // During CUDA graph capture, stream synchronization is illegal and breaks
-  // capture. Captured kernels are ordered by stream semantics, so explicit
-  // sync is not required inside the captured region.
-  if (tl_graphExecutionActive) {
-    return;
-  }
+  // During CUDA graph capture a host cudaStreamSynchronize is illegal and breaks capture;
+  // captured kernels are ordered by stream semantics, so the sync is unnecessary there.
+  // One source of truth (per-group + composite-region capture + CUDA ground truth) — the
+  // bare tl_graphExecutionActive flag missed the composite inter-group windows.
+  cudaStream_t* streamPtr = getContext() != nullptr ? getContext()->getCudaStream() : nullptr;
+  if (streamPtr == nullptr || *streamPtr == nullptr) return;
+  if (DebugHelper::inGraphCapture(streamPtr)) return;
 
-  auto res = cudaStreamSynchronize(*(getContext()->getCudaStream()));
+  auto res = cudaStreamSynchronize(*streamPtr);
   if (res != 0) {
     std::string message = msg + std::string(": synchronization failed !");
     THROW_EXCEPTION(message.c_str());
   }
 }
 
+void NDArray::synchronizeExecStream(const char* msg) {
+  // Synchronize the device execution stream so in-flight kernel reads complete before the
+  // caller frees intermediates: reduce_stdev_bp / standardize free intermediates via
+  // cudaFreeAsync on the DSP free-stream, which can otherwise race kernel reads on the exec
+  // stream. Capture-aware via the SAME single source of truth as synchronize(): during
+  // CUDA-graph capture a host sync is illegal (error 900) and unnecessary (recorded work
+  // runs at replay). CPU build is a no-op (array/cpu/NDArray.cpp).
+  cudaStream_t* streamPtr = getContext() != nullptr ? getContext()->getCudaStream() : nullptr;
+  if (streamPtr == nullptr || *streamPtr == nullptr) return;
+  if (DebugHelper::inGraphCapture(streamPtr)) return;
+
+  auto res = cudaStreamSynchronize(*streamPtr);
+  if (res != 0) {
+    std::string message = (msg != nullptr ? std::string(msg) : std::string("synchronizeExecStream")) +
+                          std::string(": synchronization failed !");
+    THROW_EXCEPTION(message.c_str());
+  }
+}
+
 void NDArray::syncShape() {
-  // During CUDA graph capture, use async copy on the active capture stream.
-  // Using legacy stream 0 here can invalidate capture when the graph is being
-  // recorded on a different stream.
-  if (tl_graphExecutionActive) {
-    cudaStream_t stream = reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
-    if (stream == nullptr && getContext() != nullptr && getContext()->getCudaStream() != nullptr) {
-      stream = *(getContext()->getCudaStream());
-    }
-    if (stream == nullptr) {
-      stream = cudaStreamPerThread;
-    }
+  // During any CUDA-graph capture context, record the shape H2D onto the ACTIVE capture
+  // stream (async, no host sync) so it joins the graph; a memcpy on the legacy/per-thread
+  // stream would not be recorded → stale specialShapeInfo at replay. inGraphCapture ("are we
+  // capturing") and captureSafeStream ("which stream") are the single authorities — see
+  // DebugHelper.h; do NOT re-derive the tl_* conditions here (that drift caused the freeze).
+  cudaStream_t* ctxSp = getContext() != nullptr ? getContext()->getCudaStream() : nullptr;
+  cudaStream_t ctxStream = ctxSp != nullptr ? *ctxSp : nullptr;
+  if (DebugHelper::inGraphCapture(ctxSp)) {
+    cudaStream_t stream = DebugHelper::captureSafeStream(ctxStream);
+    if (stream == nullptr) stream = cudaStreamPerThread;  // last resort, off legacy stream 0
     cudaMemcpyAsync(const_cast<LongType*>(specialShapeInfo()), shapeInfo(),
                     shape::shapeInfoByteLength(shapeInfo()), cudaMemcpyHostToDevice, stream);
     return;
   }
-  // Use cudaStreamPerThread instead of synchronous cudaMemcpy on the legacy
-  // stream (stream 0). Stream 0 causes error 906 when another thread on the
-  // same device is mid-CUDA-graph-capture.
+  // Outside capture: synchronous copy on cudaStreamPerThread (legacy stream 0 causes error
+  // 906 when another thread on the same device is mid-CUDA-graph-capture).
   cudaMemcpyAsync(const_cast<LongType*>(specialShapeInfo()), shapeInfo(),
                   shape::shapeInfoByteLength(shapeInfo()), cudaMemcpyHostToDevice, cudaStreamPerThread);
   cudaStreamSynchronize(cudaStreamPerThread);

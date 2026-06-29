@@ -19,10 +19,9 @@
 //
 //  @author sgazeos@gmail.com
 //
-#ifndef __MIN_I_MAX_H_HELPERS__
-#define __MIN_I_MAX_H_HELPERS__
 #include <array/NDArray.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/declarable/helpers/minimax.h>
 #include <system/op_boilerplate.h>
 
 
@@ -31,13 +30,13 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
+void minimumBPFunctor_(LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
   auto lambdaX = LAMBDA_TTT(_e, _x, _y) { return _x <= _y ? _e : (T)0.; });
 
   auto lambdaY = LAMBDA_TTT(_e, _x, _y) { return _x >= _y ? _e : (T)0.; });
 
   if (x->isSameShape(y)) {
-    // PWT case case
+    // pairwise case
 
     // X gradient
     epsNext->applyTriplewiseLambda<T>(x, y, lambdaX, gradX);
@@ -52,7 +51,7 @@ void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     float zero = 0.0f;
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
-    if (x <= y)
+    if (x->e<T>(0) <= s)
       gradY->assign(tmp);
     else
       gradY->assign(zero);
@@ -72,38 +71,44 @@ void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     preX->tileToShape(*targetShape, *preX);
     preY->tileToShape(*targetShape, *preY);
 
-    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaX, preX);
-    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaY, preY);
+    // Use separate output buffers so the tiled x/y are not clobbered before both lambdas run
+    auto gradXFull = new NDArray(epsNext->shapeInfo(), false, context);
+    auto gradYFull = new NDArray(epsNext->shapeInfo(), false, context);
+
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaX, gradXFull);
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaY, gradYFull);
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
+      auto sum = gradXFull->reduceAlongDimension(reduce::Sum, &axisX);
       gradX->assign(sum);
       delete sum;
     } else
-      gradX->assign(preX);
+      gradX->assign(gradXFull);
 
     if (axisY.size() > 0) {
-      auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
+      auto sum = gradYFull->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
       delete sum;
     } else
-      gradY->assign(preY);
+      gradY->assign(gradYFull);
 
     delete targetShape;
     delete preX;
     delete preY;
+    delete gradXFull;
+    delete gradYFull;
   }
 }
-BUILD_SINGLE_TEMPLATE(void minimumBPFunctor_, (NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
+BUILD_SINGLE_TEMPLATE(void minimumBPFunctor_, (LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
 
 void minimumBPFunctor(LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
                       NDArray* gradY) {
   NDArray::prepareSpecialUse({gradX, gradY}, {x, y, epsNext});
 
-  BUILD_SINGLE_SELECTOR(x->dataType(), minimumBPFunctor_, (x, y, epsNext, gradX, gradY), SD_NUMERIC_TYPES);
+  BUILD_SINGLE_SELECTOR(x->dataType(), minimumBPFunctor_, (context, x, y, epsNext, gradX, gradY), SD_NUMERIC_TYPES);
 
   NDArray::registerSpecialUse({gradX, gradY}, {x, y, epsNext});
 }
@@ -111,4 +116,3 @@ void minimumBPFunctor(LaunchContext* context, NDArray* x, NDArray* y, NDArray* e
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
-#endif

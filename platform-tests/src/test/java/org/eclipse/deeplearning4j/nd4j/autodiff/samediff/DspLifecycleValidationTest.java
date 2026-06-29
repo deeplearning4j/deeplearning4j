@@ -547,8 +547,6 @@ public class DspLifecycleValidationTest {
             sd.setDspAutoCompileEnabled(true);
             sd.setDspNativeAutoCompileEnabled(true);
         } else {
-            sd.setDspAutoCompileEnabled(false);
-            sd.setDspNativeAutoCompileEnabled(false);
         }
         Map<String, INDArray> raw = sd.output(inputs, outputNames);
         Map<String, INDArray> dup = new LinkedHashMap<>();

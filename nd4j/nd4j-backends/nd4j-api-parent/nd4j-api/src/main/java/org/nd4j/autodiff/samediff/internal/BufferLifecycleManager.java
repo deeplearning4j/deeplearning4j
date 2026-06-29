@@ -46,30 +46,50 @@ public class BufferLifecycleManager {
         this.session = session;
     }
 
-    /** Increment live reference count for the DataBuffer of the given array. */
-    public void trackLiveBuffer(INDArray array, IdentityHashMap<DataBuffer, Integer> liveDataBufferRefs) {
-        if (array == null || array.data() == null) return;
+    /**
+     * Stable identity for an array's UNDERLYING NATIVE buffer.
+     * Keyed by native address() so that two distinct Java DataBuffer wrappers over the SAME
+     * native memory (in-place/no-op ops like broadcast_to, view-producers like reshape_no_copy)
+     * ref-count together. Falls back to a per-object key (negative, never collides with a real
+     * address) when no native address is available, preserving the old per-object behaviour.
+     */
+    private static Long bufferKey(INDArray array) {
+        if (array == null || array.data() == null) return null;
         DataBuffer buf = array.data();
-        liveDataBufferRefs.merge(buf, 1, Integer::sum);
+        try {
+            long addr = buf.address();
+            if (addr != 0L) return addr;
+        } catch (Throwable t) {
+            // address unavailable for this buffer type — fall through to object-identity key
+        }
+        return -((long) System.identityHashCode(buf)) - 1L;
+    }
+
+    /** Increment live reference count for the underlying native buffer of the given array. */
+    public void trackLiveBuffer(INDArray array, Map<Long, Integer> liveDataBufferRefs) {
+        Long key = bufferKey(array);
+        if (key == null) return;
+        liveDataBufferRefs.merge(key, 1, Integer::sum);
     }
 
     /** Decrement live reference count and remove entry when it reaches zero. */
-    public void untrackLiveBuffer(INDArray array, IdentityHashMap<DataBuffer, Integer> liveDataBufferRefs) {
-        if (array == null || array.data() == null) return;
-        DataBuffer buf = array.data();
-        Integer count = liveDataBufferRefs.get(buf);
+    public void untrackLiveBuffer(INDArray array, Map<Long, Integer> liveDataBufferRefs) {
+        Long key = bufferKey(array);
+        if (key == null) return;
+        Integer count = liveDataBufferRefs.get(key);
         if (count == null) return;
         if (count <= 1) {
-            liveDataBufferRefs.remove(buf);
+            liveDataBufferRefs.remove(key);
         } else {
-            liveDataBufferRefs.put(buf, count - 1);
+            liveDataBufferRefs.put(key, count - 1);
         }
     }
 
-    /** Return true if the DataBuffer is exclusively owned (ref count == 1 or not tracked). */
-    public boolean isBufferExclusivelyOwned(INDArray array, IdentityHashMap<DataBuffer, Integer> liveDataBufferRefs) {
-        if (array == null || array.data() == null) return true;
-        Integer count = liveDataBufferRefs.get(array.data());
+    /** Return true if the underlying native buffer is exclusively owned (ref count == 1 or not tracked). */
+    public boolean isBufferExclusivelyOwned(INDArray array, Map<Long, Integer> liveDataBufferRefs) {
+        Long key = bufferKey(array);
+        if (key == null) return true;
+        Integer count = liveDataBufferRefs.get(key);
         return count == null || count <= 1;
     }
 
@@ -150,7 +170,7 @@ public class BufferLifecycleManager {
                                       java.util.Deque<OpContext> pool,
                                       java.util.Set<Long> freedArrays,
                                       AbstractDependencyTracker<SDValue, Dep> arrayUseTracker,
-                                      IdentityHashMap<DataBuffer, Integer> liveDataBufferRefs,
+                                      Map<Long, Integer> liveDataBufferRefs,
                                       Map<Long, List<DataBuffer>> outputShapeCache,
                                       Map<String, INDArray> outputArrayCache) {
         int activeClosed = 0;

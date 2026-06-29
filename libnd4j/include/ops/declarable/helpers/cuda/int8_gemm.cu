@@ -27,6 +27,7 @@
 #include <helpers/DebugHelper.h>
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/int8_gemm.h>
 #include <helpers/cublasHelper.h>
@@ -140,8 +141,10 @@ void int8ScaledGemm(LaunchContext* context,
                                     &heurResult, &returnedResults);
 
     void* workspace = nullptr;
+    int int8GemmDeviceId = context->getDeviceID();
     if (heurResult.workspaceSize > 0) {
-        cudaMalloc(&workspace, heurResult.workspaceSize);
+        workspace = memory::CudaMemoryPool::getInstance().allocate(
+            heurResult.workspaceSize, int8GemmDeviceId, *stream);
     }
 
     // Execute INT8 GEMM: swap A/B for row-major
@@ -157,7 +160,7 @@ void int8ScaledGemm(LaunchContext* context,
                                   *stream);
 
     // Cleanup cublasLt objects
-    if (workspace) cudaFree(workspace);
+    if (workspace) memory::CudaMemoryPool::getInstance().free(workspace, int8GemmDeviceId, *stream);
     cublasLtMatmulPreferenceDestroy(preference);
     cublasLtMatrixLayoutDestroy(layoutA);
     cublasLtMatrixLayoutDestroy(layoutB);

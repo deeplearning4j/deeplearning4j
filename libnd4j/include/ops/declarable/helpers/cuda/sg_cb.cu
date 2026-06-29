@@ -20,7 +20,7 @@
 // @author raver119@gmail.com
 //
 #include <array/NDArrayFactory.h>
-#include <memory/cuda/CudaMemoryPool.h>
+#include <execution/cuda/LaunchDims.h>
 #include <ops/declarable/helpers/sg_cb.h>
 
 #include "helpers/DebugHelper.h"
@@ -181,17 +181,18 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
   const int vectorLength = s0.sizeAt(1);
   const int expLength = expTableV.lengthOf();
   const int negLength = negTableV.lengthOf();
-  indices.tickReadDevice();
-  indices.syncToHost();
-  codes.tickReadDevice();
-  codes.syncToHost();
   auto stream = s0.getContext()->getCudaStream();
+  // Prepare device coherence: kernels write syn0/syn1/syn1Neg/infV, read expTableV/negTableV.
+  // neu1eArr is a local temporary, not an NDArray input — no prepare needed.
+  NDArray::prepareSpecialUse({&s0, &s1, &s1n, &infV}, {&expTableV});
+  // indices/codes (t<int>/t<int8_t>) and negTableV (e<int>) are read on the host; bring to primary.
+  NDArray::preparePrimaryUse({}, {&indices, &codes, &negTableV});
 
-  T *neu1e;
-  int sgDevId1 = 0; cudaGetDevice(&sgDevId1);
-  neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(T) * vectorLength, sgDevId1, nullptr));
-  if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for skipgram neu1e");
-  auto err = cudaMemset(neu1e, 0, sizeof(T) * vectorLength);
+  std::vector<sd::LongType> neuShape = {vectorLength};
+  NDArray neu1eArr('c', neuShape, DataTypeUtils::fromT<T>(), s0.getContext());
+  neu1eArr.nullify();
+  T *neu1e = reinterpret_cast<T*>(neu1eArr.specialBuffer());
+  auto err = cudaError_t(0);
   // hierarchic softmax goes first (if enabled)
 
   auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
@@ -227,19 +228,22 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
     }
   }
 
-  if (infVector == nullptr) {
-    addInfVectorKernel<T><<<128, 256, 256, *stream>>>(syn0row, neu1e, vectorLength);
-  } else {
-    addInfVectorKernel<T><<<128, 256, 256, *stream>>>(infVector, neu1e, vectorLength);
+  {
+    dim3 w2vDims = getLaunchDims("word2vec");
+    if (infVector == nullptr) {
+      addInfVectorKernel<T><<<w2vDims.y, w2vDims.x, w2vDims.z, *stream>>>(syn0row, neu1e, vectorLength);
+    } else {
+      addInfVectorKernel<T><<<w2vDims.y, w2vDims.x, w2vDims.z, *stream>>>(infVector, neu1e, vectorLength);
+    }
     sd::DebugHelper::checkErrorCode(stream, "addInfVectorKernel failed");
-
   }
   err = cudaStreamSynchronize(*stream);
   if (0 != err) {
     { std::string msg = "helpers::skipgram_: Cannot synchronize stream after addInfVectorKernel; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
-  sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId1, nullptr);
+  NDArray::registerPrimaryUse({}, {&indices, &codes, &negTableV});
+  NDArray::registerSpecialUse({&s0, &s1, &s1n, &infV}, {&expTableV});
 }
 BUILD_SINGLE_TEMPLATE( void skipgram_,
                       (NDArray & syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
@@ -255,8 +259,10 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
                         NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
                         NDArray &nextRandom, const int nsRounds, const bool preciseMode, const int numThreads) {
   auto stream = s0.getContext()->getCudaStream();
-  negTableV.tickReadDevice();
-  negTableV.syncToHost();
+  // Device kernels write s0/s1/s1n; read expTableV.
+  NDArray::prepareSpecialUse({&s0, &s1, &s1n}, {&expTableV});
+  // negTableV, targets, indices, codes, lr, nextRandom, negStarters are all read on the host.
+  NDArray::preparePrimaryUse({}, {&negTableV, &targets, &indices, &codes, &lr, &nextRandom, &negStarters});
   const auto expTable = reinterpret_cast<T *>(expTableV.specialBuffer());
   const auto negTable = reinterpret_cast<T *>(negTableV.buffer());
   const auto infVector = (T *) nullptr;
@@ -272,23 +278,16 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
 
   // regular mode provides 0 guarantees for reproducibility
   auto numTargets = targets.lengthOf();
-  targets.syncToHost();
-  indices.syncToHost();
-  codes.syncToHost();
-  lr.syncToHost();
-  nextRandom.syncToHost();
-  negStarters.tickReadDevice();
-  negStarters.syncToHost();
   auto bTarget = reinterpret_cast<int *>(targets.buffer());
   auto bIndices = reinterpret_cast<int *>(indices.buffer());
   auto bCodes = reinterpret_cast<int8_t *>(codes.buffer());
 
   for (int t = 0; t < numTargets; t++) {
-    T *neu1e;
-    int sgDevId2 = 0; cudaGetDevice(&sgDevId2);
-    neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(vectorLength * sizeof(T), sgDevId2, nullptr));
-    if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for skipgramBatch neu1e");
-    auto err = cudaMemset(neu1e, 0, vectorLength * sizeof(T));
+    std::vector<sd::LongType> neuShape = {vectorLength};
+    NDArray neu1eArr('c', neuShape, DataTypeUtils::fromT<T>(), s0.getContext());
+    neu1eArr.nullify();
+    T *neu1e = reinterpret_cast<T*>(neu1eArr.specialBuffer());
+    auto err = cudaError_t(0);
 
     auto target = bTarget[t];
     auto alpha = lr.e<double>(t);
@@ -331,17 +330,19 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
         nSampling_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, false, stream);
       }
     }
-    addInfVectorKernel<T><<<128, 256, 256, *stream>>>(syn0row, neu1e, vectorLength);
-    sd::DebugHelper::checkErrorCode(stream, "addInfVectorKernel failed");
-
+    {
+      dim3 w2vDims = getLaunchDims("word2vec");
+      addInfVectorKernel<T><<<w2vDims.y, w2vDims.x, w2vDims.z, *stream>>>(syn0row, neu1e, vectorLength);
+      sd::DebugHelper::checkErrorCode(stream, "addInfVectorKernel failed");
+    }
     err = cudaStreamSynchronize(*stream);
     if (0 != err) {
       { std::string msg = "helpers::skipgramBatchExec_: Cannot synchronize stream after addInfVectorKernel; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
     }
 
-    // release temp arrays
-    sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId2, nullptr);
   }
+  NDArray::registerPrimaryUse({}, {&negTableV, &targets, &indices, &codes, &lr, &nextRandom, &negStarters});
+  NDArray::registerSpecialUse({&s0, &s1, &s1n}, {&expTableV});
 }
 BUILD_SINGLE_TEMPLATE( void skipgramBatchExec_,
                       (NDArray & s0, NDArray &s1, NDArray &s1n, NDArray &expTable, NDArray &negTable, NDArray &targets,
@@ -357,15 +358,12 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
   // single round case
   if ((ngStarter.isScalar() && !ngStarter.isEmpty()) || (target.isScalar() && !target.isEmpty())) {
     auto hsRounds = codes.lengthOf();
-    target.syncToHost();
-    ngStarter.syncToHost();
-    alpha.syncToHost();
-    randomValue.syncToHost();
-
+    NDArray::preparePrimaryUse({}, {&target, &ngStarter, &alpha, &randomValue});
     auto targetV = target.isEmpty() ? -1 : target.e<int>(0);
     auto starterV = ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0);
     auto alphaV = alpha.e<double>(0);
     auto randomV = randomValue.e<LongType>(0);
+    NDArray::registerPrimaryUse({}, {&target, &ngStarter, &alpha, &randomValue});
     BUILD_SINGLE_SELECTOR(xType, skipgram_,
                           (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, targetV, starterV, indices, codes,
                            alphaV, randomV, hsRounds, nsRounds),
@@ -472,16 +470,14 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
   auto infVector = reinterpret_cast<T *>(vinfVector);
   auto stream = lc->getCudaStream();
 
-  T *neu1;   // = new T[vectorLength];
-  T *neu1e;  // = new T[vectorLength];
-  size_t buffSize = sizeof(T) * vectorLength;
-  int sgDevId3 = 0; cudaGetDevice(&sgDevId3);
-  neu1 = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(buffSize, sgDevId3, nullptr));
-  if (neu1 == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for cbow neu1");
-  neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(buffSize, sgDevId3, nullptr));
-  if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for cbow neu1e");
-  auto err = cudaMemset(neu1, 0, buffSize);
-  err = cudaMemset(neu1e, 0, buffSize);
+  std::vector<sd::LongType> neuShape = {vectorLength};
+  NDArray neu1Arr('c', neuShape, DataTypeUtils::fromT<T>(), lc);
+  NDArray neu1eArr('c', neuShape, DataTypeUtils::fromT<T>(), lc);
+  neu1Arr.nullify();
+  neu1eArr.nullify();
+  T *neu1  = reinterpret_cast<T*>(neu1Arr.specialBuffer());
+  T *neu1e = reinterpret_cast<T*>(neu1eArr.specialBuffer());
+  auto err = cudaError_t(0);
 
   // building neu1 for current window
   checkContextKernel<T><<<1, 1, 128, *stream>>>(context, syn0, neu1, contextWidth, vectorLength, vocabSize);
@@ -492,7 +488,8 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
   if (DataTypeUtils::infOrMax<T>() == checkVal) THROW_EXCEPTION("Bad context 4");
   // for inference we add additional inference vector
   if (infVector != nullptr) {
-    addInfVectorKernel<T><<<128, 256, 128, *stream>>>(neu1, infVector, vectorLength);
+    dim3 w2vDims = getLaunchDims("word2vec");
+    addInfVectorKernel<T><<<w2vDims.y, w2vDims.x, w2vDims.z, *stream>>>(neu1, infVector, vectorLength);
     sd::DebugHelper::checkErrorCode(stream, "addInfVectorKernel failed");
 
   }
@@ -544,16 +541,15 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
     sd::DebugHelper::checkErrorCode(stream, "fillUpSynonymsKernel failed");
 
   } else {
-    for (int i = 0; i < vectorLength; i++) {
-      infVector[i] += neu1e[i];
-    }
+    // infVector and neu1e are both device pointers — must use a kernel, not a host loop
+    dim3 w2vDims = getLaunchDims("word2vec");
+    addInfVectorKernel<T><<<w2vDims.y, w2vDims.x, w2vDims.z, *stream>>>(infVector, neu1e, vectorLength);
+    sd::DebugHelper::checkErrorCode(stream, "addInfVectorKernel (cbow infVector) failed");
   }
   err = cudaStreamSynchronize(*stream);
   if (0 != err) {
     { std::string msg = "helpers::cbow_: Cannot synchronize stream after kernel executing; Error code: [" + std::to_string(err) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
-  sd::memory::CudaMemoryPool::getInstance().free(neu1, sgDevId3, nullptr);
-  sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId3, nullptr);
 }
 BUILD_SINGLE_TEMPLATE( void cbow_,
                       (LaunchContext * lc, void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable,
@@ -642,11 +638,10 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
   const auto infVector = reinterpret_cast<T *>(vinfVector);
 
   auto stream = lc->getCudaStream();
-
-  indices.syncToHost();
-  codes.syncToHost();
-  negStarters.syncToHost();
-  context.syncToHost();
+  // Device kernels write s0/s1/s1n; read context and lockedWords (via device pointers).
+  NDArray::prepareSpecialUse({&s0, &s1, &s1n}, {&context, &lockedWords});
+  // indices, codes, negStarters, lr, nLabels, nextRandom are read on the host.
+  NDArray::preparePrimaryUse({}, {&indices, &codes, &negStarters, &context, &lr, &nLabels, &nextRandom});
 
   // const auto numThreads = omp_get_max_threads();
   const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
@@ -662,28 +657,27 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
   const auto bStarters =
       negStarters.dataBuffer()->primaryAsT<int>();
   const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
-  lr.syncToHost();
-  nLabels.syncToHost();
   // PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(numThreads) private(sneu1, sneu1e))
   // NDArray neuVector('c', {vectorLength}, DataTypeUtils::fromT<T>());
   // auto neuEVector = neuVector; //NDArrayFactory::create<T>('c', {vectorLength});
-  T *neu1;  // = reinterpret_cast<T*>(neuVector.specialBuffer());// = vectorLength <= 600 ? sneu1 : new T[vectorLength];
-  T *neu1e;  // = reinterpret_cast<T*>(neuVector.specialBuffer()); // = vectorLength <= 600 ? sneu1e : new
-             // T[vectorLength];
-  int sgDevId4 = 0; cudaGetDevice(&sgDevId4);
-  neu1 = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(T) * vectorLength, sgDevId4, nullptr));
-  if (neu1 == nullptr) THROW_EXCEPTION("Cannot allocate temp vector buffer neu1");
-  neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(T) * vectorLength, sgDevId4, nullptr));
-  if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp vector buffer neu1e");
-  int *actualContext;
-  actualContext = reinterpret_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), sgDevId4, nullptr));
-  if (actualContext == nullptr) THROW_EXCEPTION("Cannot allocate counter buffer");
+  std::vector<sd::LongType> neuShape = {vectorLength};
+  std::vector<sd::LongType> oneShape = {1};
+  NDArray neu1Arr('c', neuShape, DataTypeUtils::fromT<T>(), lc);
+  NDArray neu1eArr('c', neuShape, DataTypeUtils::fromT<T>(), lc);
+  NDArray actualContextArr('c', oneShape, DataTypeUtils::fromT<int>(), lc);
+  neu1Arr.nullify();
+  neu1eArr.nullify();
+  actualContextArr.nullify();
+  T   *neu1          = reinterpret_cast<T*>(neu1Arr.specialBuffer());
+  T   *neu1e         = reinterpret_cast<T*>(neu1eArr.specialBuffer());
+  int *actualContext = reinterpret_cast<int*>(actualContextArr.specialBuffer());
   cudaError_t cerr;
 
   for (int e = 0; e < numTargets; e++) {
     auto alpha = lr.e<double>(e);
     auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<LongType>(e);
 
+    cudaMemsetAsync(actualContext, 0, sizeof(int), *stream);
     buildCurrentWindowKernel<T>
         <<<1, 1, 128, *stream>>>(vocabSize, contextWidth, vectorLength, dContext, syn0, neu1, actualContext, e);
     sd::DebugHelper::checkErrorCode(stream, "buildCurrentWindowKernel failed");
@@ -723,10 +717,10 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
           if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
           if (irow == nsStarter) continue;
 
-          nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
+          nSampling_<T>(neu1, syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength,
                         r == 0 ? 1 : 0, expLength, infVector != nullptr, stream);
         } else {
-          nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
+          nSampling_<T>(neu1, syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength,
                         r == 0 ? 1 : 0, expLength, infVector != nullptr, stream);
         }
 
@@ -747,9 +741,8 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
     { std::string msg = "Cannot syncronize stream before memory deallocation; Error code: [" + std::to_string(cerr) + "]"; THROW_EXCEPTION(msg.c_str()); }
   }
 
-  sd::memory::CudaMemoryPool::getInstance().free(neu1, sgDevId4, nullptr);
-  sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId4, nullptr);
-  sd::memory::CudaMemoryPool::getInstance().free(actualContext, sgDevId4, nullptr);
+  NDArray::registerPrimaryUse({}, {&indices, &codes, &negStarters, &context, &lr, &nLabels, &nextRandom});
+  NDArray::registerSpecialUse({&s0, &s1, &s1n}, {&context, &lockedWords});
 }
 BUILD_SINGLE_TEMPLATE( void cbowBatchExec_,
                       (LaunchContext * lc, NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable,
@@ -765,20 +758,15 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
           int numWorkers,double minLearningRate,const int iterations) {
   auto xType = syn0.dataType();
   auto lc = context.getContext();
-  indices.syncToHost();
+  // Device kernels write syn0/syn1/syn1Neg; read expTable/negTable/context/lockedWords/inferenceVector.
   NDArray::prepareSpecialUse(
-      {&syn0, &syn1, &syn1Neg, &expTable, &negTable, &target, &ngStarter},
-      {&context, &lockedWords, &indices, &codes, &alpha, &randomValue, &numLabels, &inferenceVector});
+      {&syn0, &syn1, &syn1Neg},
+      {&expTable, &negTable, &context, &lockedWords, &inferenceVector});
+  // target, ngStarter, alpha, randomValue, numLabels, indices, codes are read on the host.
+  NDArray::preparePrimaryUse({}, {&target, &ngStarter, &alpha, &randomValue, &numLabels, &indices, &codes, &negTable});
   if ((context.rankOf() == 0 || context.rankOf() == 1) && (indices.rankOf() == 1 || indices.rankOf() == 0)) {
     // single round case
     auto hsRounds = codes.lengthOf();
-    target.syncToHost();
-    numLabels.syncToHost();
-    target.syncToHost();
-    alpha.syncToHost();
-    numLabels.syncToHost();
-    codes.syncToHost();
-    negTable.syncToHost();
     BUILD_SINGLE_SELECTOR(
         xType, cbow_,
         (lc, syn0.specialBuffer(), syn1.specialBuffer(), syn1Neg.specialBuffer(), expTable.specialBuffer(),
@@ -801,9 +789,10 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
   } else
     THROW_EXCEPTION("CBOW: context must have rank 0/1 or 2");
 
+  NDArray::registerPrimaryUse({}, {&target, &ngStarter, &alpha, &randomValue, &numLabels, &indices, &codes, &negTable});
   NDArray::registerSpecialUse(
-      {&syn0, &syn1, &syn1Neg, &expTable, &negTable, &target, &ngStarter},
-      {&context, &lockedWords, &indices, &codes, &alpha, &randomValue, &numLabels, &inferenceVector});
+      {&syn0, &syn1, &syn1Neg},
+      {&expTable, &negTable, &context, &lockedWords, &inferenceVector});
 }
 
 }  // namespace helpers

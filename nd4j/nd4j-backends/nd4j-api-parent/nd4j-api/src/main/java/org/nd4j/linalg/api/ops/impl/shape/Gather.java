@@ -40,8 +40,6 @@ import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 
-import static org.nd4j.linalg.api.buffer.DataType.INT32;
-
 /**
  * Gather op
  */
@@ -176,100 +174,28 @@ public class Gather extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //2 args: input and indices. Plus integer dimension arg
-        //Gather backprop is just scatter add
-        //credit for fixes to @paratsu
-        SDVariable indicesGrad = sameDiff.zerosLike(arg(1));
-        var gradAtOut = i_v.get(0);
-        try (var ignore = sameDiff.withNameScope(gradAtOut.name())) {
-            //Gather backprop is just scatter add
-            SDVariable inputArray = arg(0);
-            SDVariable indices = args().length > 1 ? arg(1) : sameDiff.constant(Nd4j.createFromArray(this.indices));
-            SDVariable inputGrad = sameDiff.zerosLike(inputArray);
+        // Gradient of gather w.r.t. the input:
+        //   dInput[i] = sum of gradOut[j] for all j where indices[j] == i (along axis).
+        // Duplicate indices accumulate — this is handled by GatherBp using atomicAdd on CUDA.
+        SDVariable gradAtOut = i_v.get(0);
+        SDVariable inputArg  = arg(0);
+        // indices may be an SDVariable arg OR stored as int[] when constructed with int[] indices
+        SDVariable indicesArg = args().length > 1
+                ? arg(1)
+                : sameDiff.constant(Nd4j.createFromArray(this.indices));
+        SDVariable indicesGrad = sameDiff.zerosLike(indicesArg);
 
-            // Use static shape information instead of dynamic ops for shape inference
-            // During gradient computation, the forward pass has already executed, so shapes are known
-            long[] inputShape = inputArray.getShape();
-            int inputRank = inputShape != null ? inputShape.length : -1;
+        // Obtain the forward input's shape as a runtime 1D int64 SDVariable.
+        // SDVariable.shape() delegates to sameDiff.shape(this), which emits a Shape op
+        // whose output values are the runtime shape dims — works for any shape, static or dynamic.
+        SDVariable inputShapeVec = inputArg.shape();
 
-            // If inputShape is unknown (dynamic), fall back to simple scatter add on axis 0.
-            // For axis 0, no permutation is needed: gradient is scatterAdd(zerosLike(input), indices, gradAtOut).
-            if (inputRank <= 0) {
-                // Dynamic-shape fallback: use scatterAdd directly on axis 0.
-                // This is correct when jaxis == 0 (the common case for batch-dimension gather).
-                // For other axes we still use the same approach since we cannot know the rank statically.
-                SDVariable inputGradScattered = sameDiff.scatterAdd(inputGrad, indices, gradAtOut);
-                return Arrays.asList(inputGradScattered, indicesGrad);
-            }
+        // Delegate the entire axis-aware scatter-add to the native gather_bp op.
+        // inputShapeVec drives the value-dependent output shape in DECLARE_SHAPE_FN.
+        SDVariable dInput = new GatherBp(sameDiff, inputShapeVec, indicesArg, gradAtOut, (long) jaxis)
+                .outputVariable();
 
-            int outputRank = gradAtOut.getShape() != null ? gradAtOut.getShape().length : inputRank;
-
-            // Normalize axis
-            int normalizedAxis = jaxis < 0 ? inputRank + jaxis : jaxis;
-
-            // Create constant arrays for permutation dimensions
-            // gatherAxis = [normalizedAxis] as shape [1]
-            SDVariable gatherAxis = sameDiff.constant(Nd4j.createFromArray(normalizedAxis).castTo(INT32));
-
-            // inputArrayDimensions = [0, 1, 2, ..., inputRank-1]
-            int[] allDims = new int[inputRank];
-            for (int i = 0; i < inputRank; i++) {
-                allDims[i] = i;
-            }
-
-            // inputArrayDimensionsRectified = all dimensions except the gather axis
-            // e.g., if inputRank=2 and axis=0, this is [1]
-            int[] rectifiedDims = new int[inputRank - 1];
-            int idx = 0;
-            for (int i = 0; i < inputRank; i++) {
-                if (i != normalizedAxis) {
-                    rectifiedDims[idx++] = i;
-                }
-            }
-            SDVariable inputArrayDimensionsRectified = sameDiff.constant(Nd4j.createFromArray(rectifiedDims).castTo(INT32));
-
-            // inputPermuteDims = [axis, other dims...] e.g., [0, 1] or [1, 0]
-            int[] permuteDims = new int[inputRank];
-            permuteDims[0] = normalizedAxis;
-            for (int i = 0; i < rectifiedDims.length; i++) {
-                permuteDims[i + 1] = rectifiedDims[i];
-            }
-            SDVariable inputPermuteDims = sameDiff.constant(Nd4j.createFromArray(permuteDims).castTo(INT32));
-
-            // gradAtOutAdditionalDimensions = dimensions in output gradient beyond input rank
-            // e.g., if input is [2,3] and indices is [4], output is [4,3], gradient is [4,3]
-            // Additional dims would be empty in this case
-            int additionalDims = outputRank - inputRank;
-            int[] outGradPermuteDimsArr;
-            if (additionalDims > 0) {
-                outGradPermuteDimsArr = new int[outputRank];
-                System.arraycopy(permuteDims, 0, outGradPermuteDimsArr, 0, inputRank);
-                for (int i = 0; i < additionalDims; i++) {
-                    outGradPermuteDimsArr[inputRank + i] = inputRank + i;
-                }
-            } else {
-                outGradPermuteDimsArr = permuteDims;
-            }
-            SDVariable outGradPermuteDims = sameDiff.constant(Nd4j.createFromArray(outGradPermuteDimsArr).castTo(INT32));
-
-            // inputInvertDims = inverse permutation
-            int[] invertDims = new int[inputRank];
-            for (int i = 0; i < inputRank; i++) {
-                invertDims[permuteDims[i]] = i;
-            }
-            SDVariable inputInvertDims = sameDiff.constant(Nd4j.createFromArray(invertDims).castTo(INT32));
-
-            //Permute gradients so original axis is at position 0... then scatter add, and reverse
-            SDVariable permutedOutGrad = gradAtOut.permute(outGradPermuteDims);
-            SDVariable inputGradPermuted = inputGrad.permute(inputPermuteDims);
-            SDVariable inputGradPermutedScatterSum = sameDiff.scatterAdd(inputGradPermuted, indices, permutedOutGrad);
-
-            //Now, invert the permutation so axis is back where it was
-            SDVariable finalInputGrad = inputGradPermutedScatterSum.permute(inputInvertDims);
-            return Arrays.asList(finalInputGrad, indicesGrad);
-        }
-
-
+        return Arrays.asList(dInput, indicesGrad);
     }
 
     @Override

@@ -151,7 +151,11 @@ public class NativeOpsHolder {
                     e);
         }
 
-
+        // Fail-fast: a GPU/accelerator backend committed as the active backend with ZERO usable
+        // devices (e.g. CUDA_VISIBLE_DEVICES=-1, or a backend forced via -Dnative.ops that bypasses
+        // JCublasBackend.canRun()) would otherwise SIGSEGV on the first native op (getShape/exec)
+        // with no Java stack. Turn that into a clear, actionable startup error instead.
+        verifyUsableDeviceOrFail();
     }
 
     public void initOps() {
@@ -303,21 +307,7 @@ public class NativeOpsHolder {
      */
     private void registerWithMultiBackendHolder(String className) {
         try {
-            DeviceType deviceType = null;
-
-            // Determine device type from class name
-            if (className.contains("Nd4jCpu") || className.contains("cpu")) {
-                deviceType = DeviceType.CPU;
-            } else if (className.contains("Nd4jCuda") || className.contains("cuda") || className.contains("jcublas")) {
-                deviceType = DeviceType.CUDA_GPU;
-            } else if (className.contains("Nd4jZluda") || className.contains("zluda")) {
-                deviceType = DeviceType.ROCM_GPU;
-            } else if (className.contains("Nd4jTpu") || className.contains("tpu")) {
-                deviceType = DeviceType.TPU;
-            } else if (className.contains("Nd4jMetal") || className.contains("metal")) {
-                deviceType = DeviceType.METAL_GPU;
-            }
-
+            DeviceType deviceType = deviceTypeFromClassName(className);
             if (deviceType != null && deviceNativeOps != null) {
                 MultiBackendNativeOpsHolder.getInstance().registerPreloadedBackend(deviceType, deviceNativeOps);
                 log.debug("Registered primary backend {} with MultiBackendNativeOpsHolder", deviceType);
@@ -325,6 +315,73 @@ public class NativeOpsHolder {
         } catch (Exception e) {
             // Non-fatal - multi-backend mode may still work by loading backends fresh
             log.debug("Could not register with MultiBackendNativeOpsHolder: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Best-effort mapping from a NativeOps implementation class name to its {@link DeviceType}.
+     *
+     * @param className fully-qualified NativeOps class name
+     * @return the device type, or null if it cannot be classified
+     */
+    private static DeviceType deviceTypeFromClassName(String className) {
+        if (className == null) {
+            return null;
+        }
+        if (className.contains("Nd4jCpu") || className.contains("cpu")) {
+            return DeviceType.CPU;
+        } else if (className.contains("Nd4jCuda") || className.contains("cuda") || className.contains("jcublas")) {
+            return DeviceType.CUDA_GPU;
+        } else if (className.contains("Nd4jZluda") || className.contains("zluda")) {
+            return DeviceType.ROCM_GPU;
+        } else if (className.contains("Nd4jTpu") || className.contains("tpu")) {
+            return DeviceType.TPU;
+        } else if (className.contains("Nd4jMetal") || className.contains("metal")) {
+            return DeviceType.METAL_GPU;
+        }
+        return null;
+    }
+
+    /**
+     * Verify that a GPU/accelerator backend committed as the active backend actually exposes at
+     * least one usable device. If it does not (e.g. CUDA_VISIBLE_DEVICES=-1), throw an
+     * {@link IllegalStateException} with an actionable message — turning an otherwise
+     * unrecoverable native SIGSEGV (on the first getShape/exec call) into a clear startup error.
+     *
+     * <p>This sits at the single point where the selected NativeOps is instantiated, so it covers
+     * every selection path (ServiceLoader load, {@code -Dnative.ops} override, forced backend).
+     * The CPU backend is always exempt: it has a logical device and may report 0.</p>
+     */
+    private void verifyUsableDeviceOrFail() {
+        NativeOps ops = deviceNativeOps;
+        if (ops == null) {
+            return; // initialization skipped (INIT_NATIVEOPS_HOLDER=false) or externally provided
+        }
+
+        DeviceType deviceType = deviceTypeFromClassName(ops.getClass().getName());
+        // Generic gate: any classified non-CPU (accelerator) backend — CUDA, ROCm/ZLUDA, Metal,
+        // TPU, or any future backend — needs at least one usable device. CPU is exempt (it has a
+        // logical device and may report 0); an unclassifiable backend (null) is left alone.
+        boolean acceleratorBackend = deviceType != null && deviceType != DeviceType.CPU;
+        if (!acceleratorBackend) {
+            return;
+        }
+
+        int devices;
+        try {
+            devices = ops.getAvailableDevices();
+        } catch (Throwable t) {
+            // A throw from the device probe means the runtime itself is unusable.
+            devices = 0;
+        }
+
+        if (devices <= 0) {
+            throw new IllegalStateException(
+                    "The " + deviceType + " backend (" + ops.getClass().getName() + ") was selected as the "
+                    + "active ND4J backend, but no usable device was found (getAvailableDevices()=" + devices
+                    + "). For CUDA this usually means CUDA_VISIBLE_DEVICES=-1, or no device was visible when "
+                    + "the JVM started. Make the device visible before launching the JVM, or remove this "
+                    + "backend from the classpath so ND4J runs on the CPU backend.");
         }
     }
 }

@@ -545,6 +545,13 @@ inline std::string dspDumpHostDeviceValues(NDArray* arr, int maxVals = 8) {
   return std::string(header) + " host=" + hostStr;
 }
 
+// CPU stub for dspDumpSlotValues — no device pointer on CPU; returns placeholder.
+// Keeps platform-neutral diagnostic code (e.g. _segments.cpp DSP_DIAG calls)
+// compilable without SD_CUDA.
+inline std::string dspDumpSlotValues(void* /*devicePtr*/, DataType /*dtype*/, LongType /*length*/, int /*maxVals*/ = 4) {
+  return "[cpu-path]";
+}
+
 inline void dspDumpSlotInputs(int stepIdx, const char* opName,
                               int numInputs, const int* inputSourceIndices,
                               const int8_t* inputSourceTypes,

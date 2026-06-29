@@ -61,6 +61,13 @@ struct DataBufferThreadState {
   bool cublasLtDisabled = false;
   void* graphCaptureStream = nullptr;   // cudaStream_t on CUDA, unused on CPU
   void* dspExecutionStream = nullptr;   // cudaStream_t on CUDA, unused on CPU
+  // Outer composite-capture scope stream: set at the START of the composite capture
+  // region (before the merged-island loop) and cleared only AFTER the entire region
+  // ends.  Unlike graphCaptureStream / graphExecutionActive (which are cleared and
+  // re-set between consecutive merged groups), this persists across the whole
+  // composite-capture block, so native-gap slots running BETWEEN merged groups can
+  // route async operations to the main execution stream instead of cudaStreamPerThread.
+  void* compositeCaptureStream = nullptr;
   int islandSlotMin = INT_MAX;
   int islandSlotMax = INT_MIN;
 };
@@ -87,6 +94,7 @@ extern SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
 #define tl_cublasLtDisabled       tl_dataBufferState.cublasLtDisabled
 #define tl_graphCaptureStream     tl_dataBufferState.graphCaptureStream
 #define tl_dspExecutionStream     tl_dataBufferState.dspExecutionStream
+#define tl_compositeCaptureStream tl_dataBufferState.compositeCaptureStream
 #define tl_islandSlotMin          tl_dataBufferState.islandSlotMin
 #define tl_islandSlotMax          tl_dataBufferState.islandSlotMax
 #endif  // __JAVACPP_HACK__

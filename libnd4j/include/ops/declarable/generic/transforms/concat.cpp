@@ -276,6 +276,11 @@ DECLARE_TYPES(concat) {
   getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_CONCAT);
 }
 
+// concat(x, empty) == x, so the op must run on empty inputs. The default EMPTY_SKIP would make
+// DeclarableOp skip execution whenever any input is empty (DeclarableOp.cpp ~1029), leaving the output
+// at its zero-init allocation; the op body already filters empty inputs, so executing is correct.
+samediff::EmptyHandling concat::emptyHandling() { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(concat) {
   REQUIRE_TRUE(block.width() > 0, 0, "CONCAT op: No input arrays were provided");

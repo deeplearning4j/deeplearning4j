@@ -84,8 +84,6 @@ public class TestLLMOpCorrectness {
 
         // Via SameDiff
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable sdInput = sd.placeHolder("input", DataType.FLOAT, batch, seq, features);
         SDVariable sdSkip = sd.placeHolder("skip", DataType.FLOAT, batch, seq, features);
         SDVariable sdGamma = sd.constant("gamma", gamma);
@@ -110,8 +108,6 @@ public class TestLLMOpCorrectness {
 
         // DSP off
         SameDiff sdOff = SameDiff.create();
-        sdOff.setDspAutoCompileEnabled(false);
-        sdOff.setDspNativeAutoCompileEnabled(false);
         SDVariable in1 = sdOff.placeHolder("input", DataType.FLOAT, batch, seq, features);
         SDVariable sk1 = sdOff.placeHolder("skip", DataType.FLOAT, batch, seq, features);
         sdOff.nn.skipRmsNorm("output", in1, sk1, sdOff.constant("gamma", gamma), null, eps);
@@ -164,8 +160,6 @@ public class TestLLMOpCorrectness {
 
         // Execute via SameDiff (DSP off)
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable qVar = sd.placeHolder("Q", Q.dataType(), Q.shape());
         SDVariable vVar = sd.placeHolder("V", V.dataType(), V.shape());
         SDVariable kVar = sd.placeHolder("K", K.dataType(), K.shape());
@@ -200,8 +194,6 @@ public class TestLLMOpCorrectness {
 
         // DSP off
         SameDiff sdOff = SameDiff.create();
-        sdOff.setDspAutoCompileEnabled(false);
-        sdOff.setDspNativeAutoCompileEnabled(false);
         sdOff.nn.dotProductAttentionV2("attn",
                 sdOff.placeHolder("Q", Q.dataType(), Q.shape()),
                 sdOff.placeHolder("V", V.dataType(), V.shape()),

@@ -162,9 +162,17 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
 
   sd::ops::divide_no_nan divideNoNan;
   auto* inputMinusMean = (*input) - (*mean);
-  delete mean;
   auto* varianceTimesNMinusOne = variance * NminusOne;
   divideNoNan.execute({inputMinusMean, varianceTimesNMinusOne}, {gradI});
+
+  // Sync the default stream before freeing intermediate NDArrays.
+  // During DSP REPLAY (gap op), CudaMemoryPool::free calls cudaFreeAsync on
+  // tl_dspExecutionStream — a different stream from the default context stream
+  // where the kernels above were enqueued. Without this sync, the cudaFreeAsync
+  // for mean/inputMinusMean/varianceTimesNMinusOne can race with kernel reads.
+  gradI->synchronizeExecStream("reduce_stdev_bp: sync before intermediate NDArray frees");
+
+  delete mean;
   delete inputMinusMean;
   delete varianceTimesNMinusOne;
 

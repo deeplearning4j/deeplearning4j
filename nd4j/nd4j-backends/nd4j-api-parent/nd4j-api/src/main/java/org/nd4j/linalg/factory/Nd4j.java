@@ -158,6 +158,23 @@ public class Nd4j {
      */
     public static final NDMath math = new NDMath();
     /**
+     * Graph namespace - KGE scorers + graph construction / learning operations
+     */
+    public static final NDGraph graph = new NDGraph();
+    /**
+     * Sparse namespace - sparse matrix (CSR/COO/CSC/BSR) operations
+     */
+    public static final NDSparse sparse = new NDSparse();
+
+    /**
+     * GNN message-passing namespace - differentiable graph neural network layers.
+     */
+    public static final NDGNN gnn = new NDGNN();
+    /**
+     * Signal namespace - signal-processing operations (DFT, windows, STFT)
+     */
+    public static final NDSignal signal = new NDSignal();
+    /**
      * Random namespace - (pseudo) random number generation methods
      */
     public static final NDRandom random = new NDRandom();
@@ -300,6 +317,34 @@ public class Nd4j {
         return math;
     }
 
+    /**
+     * Graph namespace - KGE scorers + graph construction / learning operations
+     */
+    public static NDGraph graph() {
+        return graph;
+    }
+
+    /**
+     * Sparse namespace - sparse matrix (CSR/COO/CSC/BSR) operations
+     */
+    public static NDSparse sparse() {
+        return sparse;
+    }
+
+    /**
+     * GNN message-passing namespace - differentiable graph neural network layers.
+     */
+    public static NDGNN gnn() {
+        return gnn;
+    }
+
+    /**
+     * Signal namespace - signal-processing operations (DFT, windows, STFT)
+     */
+    public static NDSignal signal() {
+        return signal;
+    }
+
 
     /**
      * Linalg namespace - operations related to linear algebra (lapack operations)
@@ -437,6 +482,96 @@ public class Nd4j {
         Pad op = new Pad(toPad, padWidth, out, padMode, padValue);
 
         return Nd4j.getExecutioner().exec(op)[0];
+    }
+
+    /**
+     * Convert a dense matrix to a {@link org.nd4j.linalg.api.ndarray.SparseNDArray} in the
+     * specified sparse format.
+     *
+     * <p>Supported formats: {@link org.nd4j.linalg.api.ndarray.SparseFormat#CSR},
+     * {@link org.nd4j.linalg.api.ndarray.SparseFormat#COO}, and
+     * {@link org.nd4j.linalg.api.ndarray.SparseFormat#CSC}.
+     *
+     * @param dense  a 2D dense matrix [rows, cols]
+     * @param format the desired sparse storage format (CSR, COO, or CSC)
+     * @return a SparseNDArray wrapping the sparse component arrays
+     * @throws IllegalArgumentException if the format is unsupported or the input is not 2D
+     */
+    public static org.nd4j.linalg.api.ndarray.SparseNDArray toSparse(
+            INDArray dense,
+            org.nd4j.linalg.api.ndarray.SparseFormat format) {
+        org.nd4j.common.base.Preconditions.checkArgument(dense.rank() == 2,
+                "toSparse: input must be a 2D matrix, got rank %d", dense.rank());
+
+        long[] shape = new long[]{dense.rows(), dense.columns()};
+
+        if (format == org.nd4j.linalg.api.ndarray.SparseFormat.CSR) {
+            org.nd4j.linalg.api.ops.impl.sparse.DenseToCsr op =
+                    new org.nd4j.linalg.api.ops.impl.sparse.DenseToCsr(dense, 0.0);
+            INDArray[] results = Nd4j.exec(op);
+            return new org.nd4j.linalg.api.ndarray.SparseNDArray(
+                    results[0], results[1], results[2], shape, format);
+        } else if (format == org.nd4j.linalg.api.ndarray.SparseFormat.COO) {
+            org.nd4j.linalg.api.ops.impl.sparse.DenseToCoo op =
+                    new org.nd4j.linalg.api.ops.impl.sparse.DenseToCoo(dense, 0.0);
+            INDArray[] results = Nd4j.exec(op);
+            // results[0] = indices [nnz, 2] INT64, results[1] = values [nnz]
+            return new org.nd4j.linalg.api.ndarray.SparseNDArray(
+                    results[0], results[1], shape, format);
+        } else if (format == org.nd4j.linalg.api.ndarray.SparseFormat.CSC) {
+            org.nd4j.linalg.api.ops.impl.sparse.DenseToCsc op =
+                    new org.nd4j.linalg.api.ops.impl.sparse.DenseToCsc(dense, 0.0);
+            INDArray[] results = Nd4j.exec(op);
+            // results[0] = cscValues [nnz], results[1] = cscRowIdx [nnz], results[2] = cscColPtr [cols+1]
+            return new org.nd4j.linalg.api.ndarray.SparseNDArray(
+                    results[0], results[1], results[2], shape, format);
+        } else {
+            throw new IllegalArgumentException(
+                    "toSparse: unsupported SparseFormat " + format + ". Supported: CSR, COO, CSC.");
+        }
+    }
+
+    /**
+     * Build a COO {@link org.nd4j.linalg.api.ndarray.SparseNDArray} from parallel edge-list arrays.
+     *
+     * <p>The three arrays {@code src}, {@code dst}, and {@code weights} must all have the
+     * same length {@code nnz} (one entry per edge).  The resulting COO matrix has shape
+     * {@code [rows, cols]}.
+     *
+     * <p><b>Duplicate edges</b>: if the same {@code (src[k], dst[k])} pair appears more than
+     * once, the COO representation stores them independently.  Calling
+     * {@link org.nd4j.linalg.api.ndarray.SparseNDArray#toCsr()} on the result will
+     * <em>sum</em> the duplicate entries (coalescing), because the {@code coo_to_csr} native op
+     * accumulates values at the same position.  This is the standard graph-to-adjacency
+     * coalescing behaviour.
+     *
+     * @param src     1D [nnz] source node indices (any integer or floating dtype; cast to INT64)
+     * @param dst     1D [nnz] destination node indices (cast to INT64)
+     * @param weights 1D [nnz] edge weights (floating dtype)
+     * @param rows    number of rows in the logical output matrix (number of source nodes)
+     * @param cols    number of columns in the logical output matrix (number of destination nodes)
+     * @return a COO SparseNDArray of shape [rows, cols] with indices = [nnz, 2] and
+     *         values = weights; call {@code toCsr()} to obtain CSR (with duplicate coalescing)
+     * @throws IllegalArgumentException if src, dst, and weights do not all have the same length
+     */
+    public static org.nd4j.linalg.api.ndarray.SparseNDArray sparseFromEdges(
+            INDArray src, INDArray dst, INDArray weights,
+            long rows, long cols) {
+        long nnz = src.length();
+        org.nd4j.common.base.Preconditions.checkArgument(dst.length() == nnz,
+                "sparseFromEdges: src and dst must have the same length; got %d vs %d",
+                nnz, dst.length());
+        org.nd4j.common.base.Preconditions.checkArgument(weights.length() == nnz,
+                "sparseFromEdges: src and weights must have the same length; got %d vs %d",
+                nnz, weights.length());
+        // Build [nnz, 2] INT64 index array: column 0 = src, column 1 = dst
+        INDArray srcCol = src.reshape(nnz, 1L).castTo(org.nd4j.linalg.api.buffer.DataType.INT64);
+        INDArray dstCol = dst.reshape(nnz, 1L).castTo(org.nd4j.linalg.api.buffer.DataType.INT64);
+        INDArray indices = Nd4j.concat(1, srcCol, dstCol);  // [nnz, 2] INT64
+        return new org.nd4j.linalg.api.ndarray.SparseNDArray(
+                indices, weights,
+                new long[]{rows, cols},
+                org.nd4j.linalg.api.ndarray.SparseFormat.COO);
     }
 
     /**
@@ -5925,6 +6060,13 @@ public class Nd4j {
             case BYTE:
             case BOOL:
             case UBYTE:
+            case UTF8:
+                // UTF8 string buffers are byte-addressable (Cuda/CpuUtf8Buffer set elementSize=1 and
+                // use the buffer length as the byte count), so the element size is 1 byte. Returning 1
+                // instead of throwing keeps length*sizeOfDataType equal to the real byte capacity, so
+                // CUDA buffer dup/memcpy of a UTF8 array (e.g. a string constant fed to check_numerics)
+                // works instead of failing with "Unsupported data type: [UTF8]". CPU already handles
+                // this; this aligns the size lookup with the buffer model so UTF8 is not rejected.
                 return 1;
             case UINT16:
             case SHORT:

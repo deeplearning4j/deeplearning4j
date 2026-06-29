@@ -394,6 +394,9 @@ public class OpaqueDataBuffer extends Pointer {
             }
         }
 
+        // Tracks whether this allocation has already failed an OOM over to another GPU.
+        boolean failedOver = false;
+
         try {
             for (int t = 0; t < MAX_TRIES; t++) {
                 try {
@@ -442,6 +445,27 @@ public class OpaqueDataBuffer extends Pointer {
 
                         // sleeping for 50ms to let any pending async frees complete
                         Thread.sleep(50);
+
+                        // FAILOVER: the current GPU is out of memory. Instead of spinning on the
+                        // same full device for MAX_TRIES and then throwing, ask DeviceMemoryManager
+                        // (live, pool-aware) for the GPU with the most reclaimable free memory and
+                        // retry there. This is the automatic "one GPU full -> use the other"
+                        // failover; it fires only on the slow OOM path, so the common case is
+                        // unaffected. Cross-device data is handled by DeviceAwareOpExecutioner.
+                        if (!failedOver) {
+                            int failedDevice = (selectedDevice != null && selectedDevice.getDeviceType().isGpu())
+                                    ? selectedDevice.getDeviceIndex()
+                                    : memoryManager.getCurrentDeviceId();
+                            DeviceDescriptor failoverTarget = memoryManager.selectFailoverDevice(bytes, failedDevice);
+                            if (failoverTarget != null && failoverTarget.getDeviceType().isGpu()
+                                    && failoverTarget.getDeviceIndex() != failedDevice) {
+                                if (savedDevice < 0) savedDevice = failedDevice; // restore original in finally
+                                if (!DeviceAwareOpExecutioner.isInstalled()) DeviceAwareOpExecutioner.install();
+                                memoryManager.switchDevice(failoverTarget.getDeviceIndex(), "OpaqueDataBuffer", "oom-failover");
+                                selectedDevice = failoverTarget;
+                                failedOver = true;
+                            }
+                        }
                     } else {
                         // Buffer is null but no error - shouldn't happen, but break to avoid infinite loop
                         break;
@@ -501,6 +525,9 @@ public class OpaqueDataBuffer extends Pointer {
             }
         }
 
+        // Tracks whether this allocation has already failed an OOM over to another GPU.
+        boolean failedOver = false;
+
         try {
             for (int t = 0; t < MAX_TRIES; t++) {
                 try {
@@ -550,6 +577,27 @@ public class OpaqueDataBuffer extends Pointer {
 
                         // sleeping for 50ms to let any pending async frees complete
                         Thread.sleep(50);
+
+                        // FAILOVER: the current GPU is out of memory. Instead of spinning on the
+                        // same full device for MAX_TRIES and then throwing, ask DeviceMemoryManager
+                        // (live, pool-aware) for the GPU with the most reclaimable free memory and
+                        // retry there. This is the automatic "one GPU full -> use the other"
+                        // failover; it fires only on the slow OOM path, so the common case is
+                        // unaffected. Cross-device data is handled by DeviceAwareOpExecutioner.
+                        if (!failedOver) {
+                            int failedDevice = (selectedDevice != null && selectedDevice.getDeviceType().isGpu())
+                                    ? selectedDevice.getDeviceIndex()
+                                    : memoryManager.getCurrentDeviceId();
+                            DeviceDescriptor failoverTarget = memoryManager.selectFailoverDevice(bytes, failedDevice);
+                            if (failoverTarget != null && failoverTarget.getDeviceType().isGpu()
+                                    && failoverTarget.getDeviceIndex() != failedDevice) {
+                                if (savedDevice < 0) savedDevice = failedDevice; // restore original in finally
+                                if (!DeviceAwareOpExecutioner.isInstalled()) DeviceAwareOpExecutioner.install();
+                                memoryManager.switchDevice(failoverTarget.getDeviceIndex(), "OpaqueDataBuffer", "oom-failover");
+                                selectedDevice = failoverTarget;
+                                failedOver = true;
+                            }
+                        }
                     } else {
                         // Buffer is null but no error - shouldn't happen, but break to avoid infinite loop
                         break;

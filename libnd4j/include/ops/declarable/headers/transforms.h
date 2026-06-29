@@ -62,7 +62,19 @@ DECLARE_CONFIGURABLE_OP(invert_permutation, 1, 1, false, 0, 0);
 #endif
 
 #if NOT_EXCLUDED(OP_concat)
-DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, 0);
+// Hand-expanded DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, 0) so concat can override emptyHandling()
+// (defined in concat.cpp) -> EMPTY_EXECUTE, since concat(x, empty) == x and must run on empty inputs.
+class SD_LIB_EXPORT concat : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  sd::Status validateAndExecute(sd::graph::Context& block);
+
+ public:
+  concat();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override;
+};
+REGISTER_H(concat)
 DECLARE_CUSTOM_OP(concat_bp, -1, -1, false, 0, 0);
 #endif
 
@@ -110,6 +122,10 @@ DECLARE_CUSTOM_OP(reverse_bp, 2, 1, false, 0, -2);
 
 #if NOT_EXCLUDED(OP_gather)
 DECLARE_CUSTOM_OP(gather, 1, 1, false, 0, -2);
+#endif
+
+#if NOT_EXCLUDED(OP_gather_bp)
+DECLARE_CUSTOM_OP(gather_bp, 3, 1, false, 0, 1);
 #endif
 
 #if NOT_EXCLUDED(OP_pad)

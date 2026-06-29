@@ -94,7 +94,7 @@ val add = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry)
 val reciprocal = OnnxMappingProcess(
         inputFrameworkOpName = "Reciprocal",
-        opName = "reciprocal",
+        opName = "Reciprocal",
         tensorMappingRules = listOf(NDArrayMappingRule(mappingNamesToPerform = mutableMapOf("input" to "X"))),
         attributeMappingRules = booleanConstant(inputName = "inPlace", constantValue = false, argumentIndex = 0),
         opMappingRegistry = onnxOpRegistry)

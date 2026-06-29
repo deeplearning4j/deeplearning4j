@@ -122,10 +122,10 @@ ResourceBinder::WorkspaceHandle ResourceBinder::captureWorkspace(int segIdx, siz
       // Free old workspace if exists
       if (captureWorkspaces_[segIdx] != nullptr) {
         totalAllocated_ -= captureWorkspaceSizes_[segIdx];
-        ResourceBinder_deviceFree(captureWorkspaces_[segIdx]);
+        ResourceBinder_deviceFree(captureWorkspaces_[segIdx], deviceId_);
       }
       // Allocate new
-      captureWorkspaces_[segIdx] = ResourceBinder_deviceAlloc(minBytes);
+      captureWorkspaces_[segIdx] = ResourceBinder_deviceAlloc(minBytes, deviceId_);
       captureWorkspaceSizes_[segIdx] = minBytes;
       totalAllocated_ += minBytes;
     }
@@ -141,7 +141,7 @@ void ResourceBinder::releaseCaptureWorkspace(int segIdx) {
 
   if (captureWorkspaces_[segIdx] != nullptr) {
     totalAllocated_ -= captureWorkspaceSizes_[segIdx];
-    ResourceBinder_deviceFree(captureWorkspaces_[segIdx]);
+    ResourceBinder_deviceFree(captureWorkspaces_[segIdx], deviceId_);
     captureWorkspaces_[segIdx] = nullptr;
     captureWorkspaceSizes_[segIdx] = 0;
   }
@@ -158,10 +158,10 @@ ArgTableHandle ResourceBinder::argTable(int segIdx, size_t requiredSize) {
       // Free old
       if (table.devicePtr != nullptr) {
         totalAllocated_ -= table.sizeBytes;
-        ResourceBinder_deviceFree(table.devicePtr);
+        ResourceBinder_deviceFree(table.devicePtr, deviceId_);
       }
       // Allocate new
-      table.devicePtr = ResourceBinder_deviceAlloc(requiredSize);
+      table.devicePtr = ResourceBinder_deviceAlloc(requiredSize, deviceId_);
       table.sizeBytes = requiredSize;
       table.segmentIdx = segIdx;
       totalAllocated_ += requiredSize;
@@ -242,13 +242,13 @@ int ResourceBinder::releaseAll() {
       freed++;
     }
     if (captureWorkspaces_[i] != nullptr) {
-      ResourceBinder_deviceFree(captureWorkspaces_[i]);
+      ResourceBinder_deviceFree(captureWorkspaces_[i], deviceId_);
       captureWorkspaces_[i] = nullptr;
       captureWorkspaceSizes_[i] = 0;
       freed++;
     }
     if (argTables_[i].devicePtr != nullptr) {
-      ResourceBinder_deviceFree(argTables_[i].devicePtr);
+      ResourceBinder_deviceFree(argTables_[i].devicePtr, deviceId_);
       argTables_[i].devicePtr = nullptr;
       argTables_[i].sizeBytes = 0;
       freed++;
@@ -281,7 +281,7 @@ void ResourceBinder::releaseSegment(int segIdx) {
   releaseCaptureWorkspace(segIdx);
   if (argTables_[segIdx].devicePtr != nullptr) {
     totalAllocated_ -= argTables_[segIdx].sizeBytes;
-    ResourceBinder_deviceFree(argTables_[segIdx].devicePtr);
+    ResourceBinder_deviceFree(argTables_[segIdx].devicePtr, deviceId_);
     argTables_[segIdx].devicePtr = nullptr;
     argTables_[segIdx].sizeBytes = 0;
   }

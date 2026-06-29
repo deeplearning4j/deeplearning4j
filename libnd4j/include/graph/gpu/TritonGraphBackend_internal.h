@@ -37,6 +37,7 @@
 #ifdef SD_CUDA
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #endif
 
 #include <algorithm>
@@ -348,11 +349,10 @@ inline void* getDummyDevicePtrForDevice(int currentDevice, bool streamIsCapturin
 
   if (streamIsCapturing) return nullptr;
 
-  void* ptr = nullptr;
-  auto err = cudaMalloc(&ptr, 8);
-  if (err != cudaSuccess) {
-    DSP_DIAG(MEMORY, "TritonGraphBackend: failed to allocate dummy device pointer on device %d: %s",
-             currentDevice, cudaGetErrorString(err));
+  void* ptr = sd::memory::CudaMemoryPool::getInstance().allocateDirect(8, currentDevice);
+  if (ptr == nullptr) {
+    DSP_DIAG(MEMORY, "TritonGraphBackend: failed to allocate dummy device pointer on device %d",
+             currentDevice);
     return nullptr;
   }
   cache.byDevice[currentDevice] = ptr;

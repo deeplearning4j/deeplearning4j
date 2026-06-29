@@ -36,7 +36,10 @@ public enum Namespace {
     LINALG,
     SIGNAL,
     AUDIO,
-    TRAINING;
+    TRAINING,
+    SPARSE,
+    GRAPH,
+    GNN;
 
 
     public static Namespace fromString(String in){
@@ -68,6 +71,12 @@ public enum Namespace {
                 return AUDIO;
             case "training":
                 return TRAINING;
+            case "sparse":
+                return SPARSE;
+            case "graph":
+                return GRAPH;
+            case "gnn":
+                return GNN;
             default:
                 return null;
         }
@@ -101,6 +110,12 @@ public enum Namespace {
                 return "NDAudio";
             case TRAINING:
                 return "NDTraining";
+            case SPARSE:
+                return "NDSparse";
+            case GRAPH:
+                return "NDGraph";
+            case GNN:
+                return "NDGNN";
         }
         throw new IllegalStateException("No java class name defined for: " + this);
     }
@@ -135,6 +150,12 @@ public enum Namespace {
                 return "SDAudio";
             case TRAINING:
                 return "SDTraining";
+            case SPARSE:
+                return "SDSparse";
+            case GRAPH:
+                return "SDGraph";
+            case GNN:
+                return "SDGNN";
         }
         throw new IllegalStateException("No java SameDiff class name defined for: " + this);
     }
@@ -167,6 +188,12 @@ public enum Namespace {
                 return AudioKt.SDAudio();
             case TRAINING:
                 return TrainingKt.Training();
+            case SPARSE:
+                return SparseKt.Sparse();
+            case GRAPH:
+                return GraphKt.Graph();
+            case GNN:
+                return GNNKt.GNN();
         }
         throw new IllegalStateException("No namespace definition available for: " + this);
     }

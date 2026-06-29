@@ -128,11 +128,21 @@ static void _extractPatches(LaunchContext* context, NDArray* images, NDArray* ou
   auto func = PRAGMA_THREADS_FOR {
     for (auto batch = 0; batch < stop; batch++) {
       auto patch = listOfMatricies.at(batch);
-      std::vector<sd::LongType> inShape = {patch->sizeAt(1), patch->sizeAt(2), patch->sizeAt(3)};
-      auto inPatch = patch->rankOf() > 3 && patch->sizeAt(0) == 1 ? patch->reshape('c', inShape, false) : patch;
+      // allTensorsAlongDimension({1,2,3}) yields rank-3 [rows,cols,channels] patches; only a rank-4
+      // patch (leading batch dim == 1) needs reshaping down to rank-3. Reading sizeAt(3)
+      // unconditionally threw "bad size index 3 for rank 3" on the rank-3 patches, breaking
+      // extract_image_patches on CUDA for every rank-4 input. Read sizeAt(3) only when rank > 3.
+      auto inPatch = patch;
+      if (patch->rankOf() > 3 && patch->sizeAt(0) == 1) {
+        std::vector<sd::LongType> inShape = {patch->sizeAt(1), patch->sizeAt(2), patch->sizeAt(3)};
+        inPatch = patch->reshape('c', inShape, false);
+      }
       auto outMatrix = listOfOutputs.at(batch);
-      std::vector<sd::LongType> outShape = {outMatrix->sizeAt(1), outMatrix->sizeAt(2), outMatrix->sizeAt(3)};
-      auto outReshape = outMatrix->rankOf() > 3 && outMatrix->sizeAt(0) == 1 ? outMatrix->reshape('c', outShape, false) : outMatrix;
+      auto outReshape = outMatrix;
+      if (outMatrix->rankOf() > 3 && outMatrix->sizeAt(0) == 1) {
+        std::vector<sd::LongType> outShape = {outMatrix->sizeAt(1), outMatrix->sizeAt(2), outMatrix->sizeAt(3)};
+        outReshape = outMatrix->reshape('c', outShape, false);
+      }
       for (LongType i = 0; i < outRowDim; i++) {
         for (LongType j = 0; j < outColDim; j++) {
           LongType pos = 0;

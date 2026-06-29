@@ -211,8 +211,14 @@ public class CudaUtf8Buffer extends BaseCudaDataBuffer {
 
     @Override
     public DataBuffer dup() {
-        CudaUtf8Buffer ret  = (CudaUtf8Buffer) super.dup();
-        ret.numWords = numWords;
-        return ret;
+        // UTF8 buffers hold host-resident, variable-length string bytes (an (numWords+1)*8 offset
+        // header followed by packed char data), not fixed-size numeric elements. The generic
+        // BaseCudaDataBuffer.dup() does a device-side H2D copy sized length*elementSize, which fails
+        // for UTF8 ("cudaMemset failed; Error code: 1" / cudaErrorInvalidValue) because the payload
+        // is host-resident. Copy the raw host bytes into a fresh UTF8 buffer of the same byte length.
+        lazyAllocateHostPointer();
+        byte[] bytes = new byte[(int) length()];
+        new BytePointer(pointer).get(bytes);
+        return new CudaUtf8Buffer(bytes, numWords);
     }
 }

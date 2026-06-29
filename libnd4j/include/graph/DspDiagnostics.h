@@ -606,8 +606,13 @@ inline DspLifecycleTracker& tl_lifecycleTracker() {
     if (tl_graphExecutionActive && \
         sd::graph::DspDiagnostics::getInstance().isEnabled(sd::graph::DSP_DIAG_GRAPH_REPLAY)) { \
       cudaStreamCaptureStatus _dsp_cap_stat = cudaStreamCaptureStatusNone; \
+      /* STREAM is a stream-VALUE (cudaStream_t bits stored as void*, e.g. from \
+         dspGetExecutionStream()). Cast explicitly — never rely on -fpermissive \
+         void*->cudaStream_t: a stream-POINTER (host address) handed here SIGSEGVs \
+         inside libcuda (see NativeDynamicShapePlan.cpp:2128). Identity cast when \
+         STREAM is already cudaStream_t. */ \
       cudaError_t _dsp_cap_err = cudaStreamGetCaptureInfo_v2( \
-          (STREAM), &_dsp_cap_stat, nullptr, nullptr, nullptr, nullptr); \
+          reinterpret_cast<cudaStream_t>(STREAM), &_dsp_cap_stat, nullptr, nullptr, nullptr, nullptr); \
       if (_dsp_cap_err != cudaSuccess || \
           _dsp_cap_stat == cudaStreamCaptureStatusInvalidated) { \
         sd::graph::DspDiagnostics::getInstance().recordEvent( \

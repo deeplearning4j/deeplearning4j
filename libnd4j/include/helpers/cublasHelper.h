@@ -36,6 +36,7 @@ class SD_LIB_EXPORT CublasHelper {
   std::vector<void*> _cache;
   std::vector<void*> _solvers;
   std::vector<void*> _cudnn;
+  std::vector<void*> _sparse;
 
   CublasHelper();
 
@@ -45,6 +46,8 @@ class SD_LIB_EXPORT CublasHelper {
 
   void* cudnn();
   void* solver();
+  void* sparseHandle();
+  void* sparseHandle(int deviceId);
 
   void* handle();
   void* handle(int deviceId);

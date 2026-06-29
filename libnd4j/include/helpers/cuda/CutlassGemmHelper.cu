@@ -196,6 +196,19 @@ bool CutlassGemmHelper::gemm(NDArray* A, NDArray* B, NDArray* C,
   // producing incorrect results (e.g., 7x attenuated matmul output).
   if (A->strideAt(1) != 1 || B->strideAt(1) != 1 || C->strideAt(1) != 1) return false;
 
+  // CUTLASS RowMajor also requires the LEADING (row) stride to equal the column count — i.e.
+  // fully contiguous, no row padding and not a window/slice of a larger tensor. runCutlassGemm
+  // takes lda/ldb/ldc = strideAt(0) and only clamps them UP (if (lda < K) lda = K), never down.
+  // A view whose strideAt(0) > sizeAt(1) (e.g. a reshape/slice view over a weight that lives in
+  // a larger allocation) makes CUTLASS read M*strideAt(0) elements and overrun the operand's
+  // actual extent → CUDA err700 (the close-weight-between-replays root: a view over the rebound
+  // weight read ~9.7MB past its buffer). Reject such operands; cuBLAS handles a non-unit leading
+  // dimension correctly via its explicit lda.
+  if (A->strideAt(0) != A->sizeAt(1) || B->strideAt(0) != B->sizeAt(1) ||
+      C->strideAt(0) != C->sizeAt(1)) {
+    return false;
+  }
+
   // Ensure data is on device
   NDArray::prepareSpecialUse({C}, {A, B});
 

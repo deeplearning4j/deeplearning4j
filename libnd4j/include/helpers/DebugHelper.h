@@ -40,11 +40,71 @@ class SD_LIB_EXPORT DebugHelper {
  public:
   // cuda-specific debug functions
 #ifdef __CUDACC__
+  // Ground-truth CUDA-graph capture detection from the stream itself. During capture a host
+  // cudaStreamSynchronize is illegal (error 900 "operation not permitted when stream is
+  // capturing") and unnecessary — kernels are recorded into the graph, not executed, and any
+  // error surfaces at replay. tl_graphExecutionActive is a fast thread-local hint, but it is
+  // FRAGILE: every capture path must remember to set it, and composite merged-capture does
+  // not cover every captured slot — so the flag-only guard let a captured op (reshape,
+  // equals, ...) reach cudaStreamSynchronize and abort the whole capture. Querying the stream
+  // is always correct regardless of which capture path we are in, so it is the real guard;
+  // the flag is kept only as a cheap short-circuit.
+  static SD_INLINE bool streamIsCapturing(cudaStream_t* stream) {
+    if (stream == nullptr) return false;
+    cudaStreamCaptureStatus capStatus = cudaStreamCaptureStatusNone;
+    if (cudaStreamIsCapturing(*stream, &capStatus) != cudaSuccess) {
+      cudaGetLastError();  // clear benign query error (e.g. non-capturing legacy stream)
+      return false;
+    }
+    return capStatus != cudaStreamCaptureStatusNone;
+  }
+
+  // Single source of truth for the active CUDA-graph capture stream. Reads ALL capture
+  // thread-locals in ONE place so no consumer re-derives the condition:
+  //   - tl_graphExecutionActive + tl_graphCaptureStream : per-merged-group (inner) capture
+  //   - tl_compositeCaptureStream : the whole composite-capture region (outer scope, set once)
+  //   - streamIsCapturing(candidate) : CUDA ground-truth backstop if a flag was missed
+  // Returns the stream to route async work onto during capture, or nullptr when not
+  // capturing. Consumers route transfers onto it and skip host syncs when it is non-null,
+  // instead of each re-deriving the three conditions inline.
+  static SD_INLINE cudaStream_t currentCaptureStream(cudaStream_t candidate = nullptr) {
+    if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr)
+      return reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
+    if (tl_compositeCaptureStream != nullptr)
+      return reinterpret_cast<cudaStream_t>(tl_compositeCaptureStream);
+    if (candidate != nullptr && streamIsCapturing(&candidate)) return candidate;
+    return nullptr;
+  }
+
+  // Bool authority: is a host stream sync / D2H illegal right now (i.e. are we capturing)?
+  // True for ANY capture context — the per-group capture flag, the composite-capture outer
+  // region, or the stream itself reporting capture. Checks tl_graphExecutionActive DIRECTLY
+  // (not via currentCaptureStream) so a set flag with no recorded stream still suppresses the
+  // illegal sync. currentCaptureStream() is the matching STREAM authority (which stream to
+  // route async work onto); captureSafeStream() wraps it with a fallback. Consumers MUST call
+  // one of these three — never re-derive the tl_* conditions inline (drift = days of debugging).
+  static SD_INLINE bool inGraphCapture(cudaStream_t* stream) {
+    if (tl_graphExecutionActive) return true;
+    if (tl_compositeCaptureStream != nullptr) return true;
+    if (stream != nullptr && streamIsCapturing(stream)) return true;
+    return false;
+  }
+
+  // Stream authority for async transfers: the stream work must run on so it is recorded into
+  // the active CUDA graph — the capture stream while capturing, else the provided `fallback`
+  // (the op's own LaunchContext stream). Single replacement for the per-file
+  // captureSafeStreamOrDefault() copies that used to live in DataBuffer.cu / ConstantHelper.cu
+  // / PointersManager.cu, each independently re-deriving this same three-tier priority.
+  static SD_INLINE cudaStream_t captureSafeStream(cudaStream_t fallback) {
+    cudaStream_t cap = currentCaptureStream(fallback);
+    return cap != nullptr ? cap : fallback;
+  }
+
   static SD_INLINE void checkErrorCode(cudaStream_t* stream, int opType = 0) {
-    // During CUDA graph capture, cudaStreamSynchronize is illegal (error 900).
-    // Kernels aren't actually launched during capture — they're recorded into the graph.
-    // Skip the sync entirely when graph capture is active.
-    if (tl_graphExecutionActive) return;
+    // Skip the host sync during CUDA graph capture — illegal (error 900) + unnecessary.
+    // One source of truth: inGraphCapture() (the capture thread-locals + the stream as
+    // ground truth), not a fragile inline flag check. See currentCaptureStream().
+    if (inGraphCapture(stream)) return;
 
     cudaError_t res = cudaStreamSynchronize(*stream);
 
@@ -70,7 +130,9 @@ class SD_LIB_EXPORT DebugHelper {
     // During CUDA graph capture, kernels are recorded but not executed.
     // cudaGetLastError() may return stale errors from Triton compilation or other
     // non-stream CUDA API calls, causing false failures and heap corruption.
-    if (tl_graphExecutionActive) return;
+    // Skip during capture: cudaGetLastError may return stale errors from recorded-but-not-
+    // executed kernels. One source of truth: inGraphCapture() (no stream available here).
+    if (inGraphCapture(nullptr)) return;
 
     cudaError_t res2 = cudaGetLastError();
     if (res2 != 0) {
@@ -87,8 +149,9 @@ class SD_LIB_EXPORT DebugHelper {
   }
 
   static SD_INLINE void checkErrorCode(cudaStream_t* stream, const char* failMessage = nullptr) {
-    // During CUDA graph capture, cudaStreamSynchronize is illegal (error 900).
-    if (tl_graphExecutionActive) return;
+    // Skip the host sync during CUDA graph capture — illegal (error 900) + unnecessary.
+    // One source of truth: inGraphCapture(). See currentCaptureStream().
+    if (inGraphCapture(stream)) return;
 
     cudaError_t res = cudaStreamSynchronize(*stream);
     if (res != 0) {

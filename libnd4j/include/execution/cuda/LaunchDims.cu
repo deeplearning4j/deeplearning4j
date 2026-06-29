@@ -186,6 +186,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"rms_norm_linear", {dim3(GRID_SIZE_RMS_NORM_LINEAR, BLOCK_SIZE_RMS_NORM_LINEAR, SHARED_MEM_SIZE_RMS_NORM_LINEAR)}},
     {"fused_mrope", {dim3(GRID_SIZE_FUSED_MROPE, BLOCK_SIZE_FUSED_MROPE, SHARED_MEM_SIZE_FUSED_MROPE)}},
     {"vision_embedding_merge", {dim3(GRID_SIZE_VISION_EMBEDDING_MERGE, BLOCK_SIZE_VISION_EMBEDDING_MERGE, SHARED_MEM_SIZE_VISION_EMBEDDING_MERGE)}},
+    {"audio", {dim3(GRID_SIZE_AUDIO, BLOCK_SIZE_AUDIO, SHARED_MEM_SIZE_AUDIO)}},
 
 };
 
@@ -371,6 +372,9 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"rms_norm_linear", {"GRID_SIZE_RMS_NORM_LINEAR", "BLOCK_SIZE_RMS_NORM_LINEAR", "SHARED_MEM_SIZE_RMS_NORM_LINEAR"}},
     {"fused_mrope", {"GRID_SIZE_FUSED_MROPE", "BLOCK_SIZE_FUSED_MROPE", "SHARED_MEM_SIZE_FUSED_MROPE"}},
     {"vision_embedding_merge", {"GRID_SIZE_VISION_EMBEDDING_MERGE", "BLOCK_SIZE_VISION_EMBEDDING_MERGE", "SHARED_MEM_SIZE_VISION_EMBEDDING_MERGE"}},
+    {"audio", {"GRID_SIZE_AUDIO", "BLOCK_SIZE_AUDIO", "SHARED_MEM_SIZE_AUDIO"}},
+    {"barnesGains", {"GRID_SIZE_BARNES_GAINS", "BLOCK_SIZE_BARNES_GAINS", "SHARED_MEM_SIZE_BARNES_GAINS"}},
+    {"word2vec", {"GRID_SIZE_WORD2VEC", "BLOCK_SIZE_WORD2VEC", "SHARED_MEM_SIZE_WORD2VEC"}},
 
 };
 
@@ -1208,7 +1212,9 @@ dim3 updaterDims(int length) {
 dim3 zetaDims(int length) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
-  int sharedMemory = 1024;
+  // Kernel uses stack-allocated coords (no shared memory for coordinates).
+  // Shared scalars (len, ranks, shape/stride ptrs) fit in 256 bytes.
+  int sharedMemory = 256;
   threadsPerBlock = getEnvVariable("GRID_SIZE_ZETA", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_ZETA", blocksPerGrid);
   sharedMemory = getEnvVariable("SHARED_MEM_SIZE_ZETA", sharedMemory);

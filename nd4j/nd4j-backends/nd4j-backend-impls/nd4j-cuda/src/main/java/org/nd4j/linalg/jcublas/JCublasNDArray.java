@@ -591,10 +591,6 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray leverageTo(String id) {
-        if (!isAttached()) {
-            return this;
-        }
-
         if (!Nd4j.getWorkspaceManager().checkIfWorkspaceExists(id)) {
             return this;
         }
@@ -605,10 +601,10 @@ public class JCublasNDArray extends BaseNDArray {
 
         MemoryWorkspace target = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(id);
 
-        if (current == target) {
-            return this;
-        }
-
+        // Only skip if this array's data is already owned by the target workspace.
+        // Do NOT skip based on isAttached() or current==target: a heap array (isAttached()==false)
+        // must still be copied INTO the target workspace so leverageTo contracts hold
+        // (the returned array must be workspace-backed and isAttached()==true).
         if (this.data.getParentWorkspace() == target) {
             return this;
         }

@@ -279,6 +279,8 @@ bool LaunchContext::isInitialized() { return contextBuffers.isInitialized(); }
 
 void* LaunchContext::getCuDnnHandle() const { return CublasHelper::getInstance().cudnn(); }
 
+void* LaunchContext::getCusparseHandle() const { return CublasHelper::getInstance().sparseHandle(); }
+
 ErrorReference* LaunchContext::errorReference() { return contextBuffers.errorReference(); }
 
 void* LaunchContext::engine() { return _engine; }

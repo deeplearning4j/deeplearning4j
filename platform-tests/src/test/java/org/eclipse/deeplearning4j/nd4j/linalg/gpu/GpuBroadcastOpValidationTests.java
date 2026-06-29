@@ -26,6 +26,7 @@ import org.eclipse.deeplearning4j.tests.extensions.MultiBackendTestConfiguration
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -456,5 +457,99 @@ public class GpuBroadcastOpValidationTests {
 
         // (1+10)+(2+20)+(3+30)+(4+10)+(5+20)+(6+30) = 11+22+33+14+25+36 = 141
         assertEquals(141.0, sumResult.getDouble(0), 1e-6);
+    }
+
+    /**
+     * Regression test for broadcast_to producing all-zeros when the input is a VIEW
+     * created by expand_dims on a non-contiguous tensor.
+     *
+     * SmolDocling GQA KV-head broadcast scenario:
+     *   KV:  [1, 3, 8, 64]  →  expand_dims(dim=2)  →  VIEW [1, 3, 1, 8, 64]
+     *        →  broadcast_to  →  [1, 3, 3, 8, 64]
+     *
+     * Green commit 5f3f34b2a4 produced correct output.
+     * HEAD produced all-zeros in all 30 attention layers → garbage decode.
+     */
+    @Test
+    public void testBroadcastToFromExpandDimsView() {
+        // 1. Create a contiguous source tensor with distinct non-zero values
+        int batch = 1, kvHeads = 3, seqLen = 8, headDim = 64;
+        INDArray src = Nd4j.linspace(1.0, batch * kvHeads * seqLen * headDim,
+                batch * kvHeads * seqLen * headDim, DataType.FLOAT)
+                .reshape(batch, kvHeads, seqLen, headDim);
+
+        // Verify source is not zero
+        assertTrue(src.maxNumber().floatValue() > 0,
+                "Source tensor must be non-zero");
+
+        // 2. Create a VIEW via expand_dims at dim=2: [1,3,8,64] -> [1,3,1,8,64]
+        INDArray viewInput = Nd4j.expandDims(src, 2);
+        assertArrayEquals(new long[]{batch, kvHeads, 1, seqLen, headDim}, viewInput.shape(),
+                "expand_dims shape mismatch");
+        assertTrue(viewInput.maxNumber().floatValue() > 0,
+                "VIEW input must be non-zero before broadcast");
+
+        // 3. Run broadcast_to: [1,3,1,8,64] -> [1,3,3,8,64]  (GQA: 3 Q-heads per KV-head)
+        int qHeads = kvHeads; // 3:1 ratio
+        INDArray targetShapeArr = Nd4j.createFromArray(
+                (long) batch, (long) kvHeads, (long) qHeads, (long) seqLen, (long) headDim);
+        INDArray viewResult = Nd4j.create(DataType.FLOAT,
+                batch, kvHeads, qHeads, seqLen, headDim);
+
+        DynamicCustomOp broadcastOp = DynamicCustomOp.builder("broadcast_to")
+                .addInputs(viewInput, targetShapeArr)
+                .addOutputs(viewResult)
+                .build();
+        Nd4j.getExecutioner().exec(broadcastOp);
+        Nd4j.getExecutioner().commit();
+
+        // 4. Assert output is non-zero
+        float maxViewResult = viewResult.maxNumber().floatValue();
+        assertFalse(maxViewResult == 0.0f,
+                "broadcast_to from VIEW input must produce non-zero output; got all-zeros (GQA regression)");
+
+        // 5. Also run broadcast_to with a CONTIGUOUS (dup'd) input and compare
+        INDArray contiguousInput = viewInput.dup();
+        assertArrayEquals(viewInput.shape(), contiguousInput.shape());
+        INDArray contiguousResult = Nd4j.create(DataType.FLOAT,
+                batch, kvHeads, qHeads, seqLen, headDim);
+
+        DynamicCustomOp broadcastOpContiguous = DynamicCustomOp.builder("broadcast_to")
+                .addInputs(contiguousInput, targetShapeArr)
+                .addOutputs(contiguousResult)
+                .build();
+        Nd4j.getExecutioner().exec(broadcastOpContiguous);
+        Nd4j.getExecutioner().commit();
+
+        float maxContiguousResult = contiguousResult.maxNumber().floatValue();
+        assertFalse(maxContiguousResult == 0.0f,
+                "broadcast_to from CONTIGUOUS input must produce non-zero output");
+
+        // 6. Both results should match (view vs contiguous)
+        assertEquals(maxContiguousResult, maxViewResult, 1e-4f,
+                "broadcast_to VIEW result should match CONTIGUOUS result");
+
+        // 7. Verify first element: src[0,0,0,0] = 1.0, so result[0,0,k,0,0] = 1.0 for all k
+        float expectedFirst = src.getFloat(0, 0, 0, 0);
+        for (int k = 0; k < qHeads; k++) {
+            float actualView = viewResult.getFloat(0, 0, k, 0, 0);
+            float actualContiguous = contiguousResult.getFloat(0, 0, k, 0, 0);
+            assertEquals(expectedFirst, actualView, 1e-4f,
+                    "VIEW broadcast_to mismatch at head=" + k);
+            assertEquals(expectedFirst, actualContiguous, 1e-4f,
+                    "CONTIGUOUS broadcast_to mismatch at head=" + k);
+        }
+
+        // 8. Verify the tiled values match expected: result[0, kv, q, s, d] == src[0, kv, s, d]
+        for (int kv = 0; kv < kvHeads; kv++) {
+            for (int q = 0; q < qHeads; q++) {
+                for (int s = 0; s < seqLen; s++) {
+                    float srcVal = src.getFloat(0, kv, s, 0);
+                    float viewVal = viewResult.getFloat(0, kv, q, s, 0);
+                    assertEquals(srcVal, viewVal, 1e-4f,
+                            "Mismatch at kv=" + kv + " q=" + q + " s=" + s);
+                }
+            }
+        }
     }
 }

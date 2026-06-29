@@ -111,6 +111,7 @@ static void _hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &z)
 
 void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output) {
   NDArray::prepareSpecialUse({&output}, {&x, &y});
+  output.nullify();
   BUILD_DOUBLE_SELECTOR(x.dataType(), output.dataType(), _hamming, (context, x, y, output), SD_INTEGER_TYPES,
                         SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({&output}, {&x, &y});

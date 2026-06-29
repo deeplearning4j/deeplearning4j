@@ -94,8 +94,13 @@ CUSTOM_OP_IMPL(resize_nearest_neighbor, 1, 1, false, 0, -2) {
 
   auto ret =  resizeNeighborFunctor(block.launchContext(), inRank == 4 ? image : source, width, height, coorMode,
                                         nearestMode, alignCorners, inRank == 4 ? output : target);
-  delete source;
-  delete target;
+  // Only free the reshape TEMPORARIES. In the rank-4 path source==image (INPUT_VARIABLE(0))
+  // and target==output (OUTPUT_VARIABLE(0)) — deleting them frees the op's OWN input/output
+  // (use-after-free). Under DSP that destructs the plan-tracked external-input alias and faults
+  // the next consumer with "ConstantShapeBuffer::primary(): invalid magic". Only the rank-3
+  // path allocates fresh reshape arrays that must be freed.
+  if (source != image) delete source;
+  if (target != output) delete target;
   return ret;
 
 }

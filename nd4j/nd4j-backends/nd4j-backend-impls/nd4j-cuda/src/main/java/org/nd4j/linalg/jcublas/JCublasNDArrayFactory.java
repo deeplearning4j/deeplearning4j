@@ -38,6 +38,9 @@ import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.jita.concurrency.CudaAffinityManager;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -93,12 +96,59 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         functions.put(10, Loader.addressof("cusolverDnDgesvd_bufferSize"));
         functions.put(11, Loader.addressof("cusolverDnSgesvd"));
         functions.put(12, Loader.addressof("cusolverDnDgesvd"));
-        nativeOps.clearLastError();
-        nativeOps.initializeFunctions(functions);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
+        // Retry loop: CUDA context creation (streams, cuBLAS handle) may fail with
+        // error 2 (cudaErrorMemoryAllocation) even after cudaSetDevice succeeds —
+        // e.g. a display GPU with ~350MB used by Xorg, or a GPU saturated by another
+        // process. When that happens we must ban the failing device and fail over to
+        // the next viable one, rather than propagating a fatal RuntimeException.
+        //
+        // clearLastError() calls LaunchContext::defaultContext() which triggers
+        // ContextBuffers::initialize() on the first call for a device. If stream
+        // creation fails it throws, leaving errorReference uncleared. The subsequent
+        // lastErrorCode() call then also throws.  Both errors must be caught here.
+        int numDevices = Math.max(1,
+                CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
+        RuntimeException lastException = null;
+        for (int attempt = 0; attempt < numDevices; attempt++) {
+            int currentDevice = DeviceMemoryManager.getInstance().getCurrentDeviceId();
+            try {
+                nativeOps.clearLastError();
+                nativeOps.initializeFunctions(functions);
+                int errorCode = nativeOps.lastErrorCode();
+                if (errorCode != 0) {
+                    String msg = nativeOps.lastErrorMessage();
+                    throw new RuntimeException(msg != null ? msg :
+                            "CUDA BLAS init failed; Error code: [" + errorCode + "]");
+                }
+                // Success — BLAS is initialised on the current device.
+                return;
+            } catch (RuntimeException e) {
+                lastException = e;
+                log.warn("createBlas: CUDA init failed on device [{}] (attempt {}/{}): {}",
+                        currentDevice, attempt + 1, numDevices, e.getMessage());
+                // Ban the device that just failed so the affinity manager won't try it again.
+                if (currentDevice >= 0) {
+                    CudaEnvironment.getInstance().getConfiguration().banDevice(currentDevice);
+                }
+                // Ask the affinity manager to select and switch to the next viable device.
+                // refreshDeviceForCurrentThread() clears this thread's cached device ID and
+                // calls getDeviceForCurrentThread() which picks the best remaining GPU via
+                // DeviceMemoryManager.selectBestGpu() among the (now reduced) available list.
+                // It will throw only when NO more devices remain.
+                if (attempt + 1 < numDevices) {
+                    try {
+                        ((CudaAffinityManager) Nd4j.getAffinityManager()).refreshDeviceForCurrentThread();
+                    } catch (RuntimeException refreshEx) {
+                        // No more devices — surface the original failure.
+                        break;
+                    }
+                }
+            }
+        }
+        throw new RuntimeException(
+                "No usable CUDA device could be initialised for BLAS after " + numDevices + " attempt(s)",
+                lastException);
     }
 
     @Override
@@ -574,14 +624,15 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     point.tickDeviceWrite();
                 }
 
-                OpaqueNDArrayArr singleArr = new OpaqueNDArrayArr(
-                        new OpaqueNDArray[]{OpaqueNDArray.fromINDArray(array)});
+                // Use createFrom() to avoid the cached-OpaqueNDArray null-address race.
+                OpaqueNDArrayArr singleArr = OpaqueNDArrayArr.createFrom(false, array);
                 INDArray dimsINDArray = Nd4j.createFromArray(dimensions.get(i));
                 OpaqueNDArray dimsOpaque = OpaqueNDArray.fromINDArray(dimsINDArray);
 
                 nativeOps.shuffle(extras, singleArr, singleArr, 1, dimsOpaque, shuffleMap);
 
                 Reference.reachabilityFence(dimsINDArray);
+                Reference.reachabilityFence(singleArr);
                 if (nativeOps.lastErrorCode() != 0)
                     throw new RuntimeException(nativeOps.lastErrorMessage());
             }
@@ -595,26 +646,35 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             INDArray dimINDArray = Nd4j.createFromArray(dimArray);
             OpaqueNDArray dimensionArr = OpaqueNDArray.fromINDArray(dimINDArray);
 
-            OpaqueNDArray[] xOpaqueArray = new OpaqueNDArray[arrays.size()];
+            // Sync host→device for all arrays before building the OpaqueNDArrayArr.
+            // Do this in a separate pass so that all arrays are ready on device before
+            // any OpaqueNDArray wrapper is created.
             for (int i = 0; i < arrays.size(); i++) {
                 val array = arrays.get(i);
-
                 AllocationPoint point = allocator.getAllocationPoint(array);
                 if (point != null && point.isActualOnHostSide()) {
                     AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
                     point.tickDeviceWrite();
                 }
-
-                xOpaqueArray[i] = OpaqueNDArray.fromINDArray(array);
             }
 
-            OpaqueNDArrayArr xArr = new OpaqueNDArrayArr(xOpaqueArray);
+            // Use createFrom() with uncached OpaqueNDArrays so that each wrapper is
+            // independent of the INDArray's cached opaqueNDArray field.  The cached path
+            // (fromINDArray) is vulnerable: if clearOpaqueNDArray() is called on any
+            // array between wrapper creation and the native shuffle() call, the cached
+            // OpaqueNDArray's address field is zeroed and the PointerPointer slot becomes
+            // null, causing a SIGSEGV inside shuffle() when x[i]->specialBuffer() is called.
+            // createFrom(false, ...) creates fresh, independently-managed wrappers that are
+            // not affected by changes to the INDArray's internal opaqueNDArray cache, and
+            // explicitly validates that no wrapper has a null address before returning.
+            INDArray[] arraysArray = arrays.toArray(new INDArray[0]);
+            OpaqueNDArrayArr xArr = OpaqueNDArrayArr.createFrom(false, arraysArray);
 
             nativeOps.shuffle(extras, xArr, xArr, arrays.size(), dimensionArr, shuffleMap);
 
             Reference.reachabilityFence(dimINDArray);
             Reference.reachabilityFence(dimensionArr);
-            Reference.reachabilityFence(xOpaqueArray);
+            Reference.reachabilityFence(arraysArray);
             Reference.reachabilityFence(xArr);
         }
 

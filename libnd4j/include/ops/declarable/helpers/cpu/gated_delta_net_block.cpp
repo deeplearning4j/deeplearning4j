@@ -22,6 +22,7 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/gated_delta_net_block.h>
 #include <ops/declarable/helpers/gated_delta_rule.h>
+#include <ops/declarable/helpers/causal_conv1d.h>
 
 namespace sd {
 namespace ops {
@@ -39,9 +40,14 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     const auto D = x->sizeAt(2);
     const LongType BL = B * L;
 
-    // Linear projections: x[BL,D] @ W -> projected
+    // Causal conv1d + SiLU on x before linear projections
+    std::vector<LongType> xConvShape = {B, L, D};
+    auto xConv = new NDArray('c', xConvShape, x->dataType());
+    causalConv1d(context, x, convWeight, convBias, nullptr, xConv, convStateOut, /*activation=SiLU*/1, /*wFormat=*/0);
+
+    // Linear projections: xConv[BL,D] @ W -> projected
     std::vector<LongType> xReshapeVec = {BL, D};
-    auto xReshaped = x->reshape('c', xReshapeVec);
+    auto xReshaped = xConv->reshape('c', xReshapeVec);
     auto qkvProjected = MmulHelper::mmul(xReshaped, Wqkv);
     auto betaProjected = MmulHelper::mmul(xReshaped, Wbeta);
     auto gateProjected = MmulHelper::mmul(xReshaped, Wgate);
@@ -143,8 +149,7 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     auto finalReshaped = finalOutput->reshape('c', finalReshapeVec);
     output->assign(finalReshaped);
 
-    convStateOut->nullify();
-
+    delete xConv;
     delete xReshaped;
     delete qkvProjected;
     delete betaProjected;

@@ -117,6 +117,9 @@ public class CudaMemoryAllocationFailoverTest extends BaseNd4jTestWithBackends {
             memoryManager.clearAllMemorySimulation();
         }
         System.gc();
+        // Reclaim GPU memory so that high-allocation neighbors (e.g. testManySequentialAllocations
+        // with 1GB simulated) don't contaminate the next test's free-memory baseline.
+        reclaimGpuMemory();
     }
 
     // =========================================================================
@@ -577,10 +580,34 @@ public class CudaMemoryAllocationFailoverTest extends BaseNd4jTestWithBackends {
         int numDevices = getNumDevices();
         assumeTrue(numDevices > 0, "Test requires at least 1 CUDA device");
 
-        long initialFree = getActualFreeMemory(0);
-        log.info("Initial free: {} MB", initialFree / (1024 * 1024));
+        log.info("Pre-warmup free: {} MB", getActualFreeMemory(0) / (1024 * 1024));
 
-        // Simulate repeated gradient checking pattern: create SameDiff, execute many times, close
+        // Warm-up round: the first SameDiff mmul round triggers one-time CUDA library
+        // initialization (cuBLAS handles, JIT kernel compilation for the actual batch shapes
+        // used in the test, DSP NativeDynamicShapePlan setup, cuBLAS workspace sizing).
+        // This permanently consumes hundreds of MB that cannot be reclaimed by pool trim.
+        // The warm-up must mirror the actual test workload (50 execs at the same shapes)
+        // so that all one-time init costs are accounted for before we measure the baseline.
+        {
+            org.nd4j.autodiff.samediff.SameDiff warmup = org.nd4j.autodiff.samediff.SameDiff.create();
+            org.nd4j.autodiff.samediff.SDVariable wInput = warmup.placeHolder("input", DataType.FLOAT, -1, 10);
+            warmup.var("weights", Nd4j.randn(DataType.FLOAT, 10, 5));
+            warmup.mmul(wInput, warmup.getVariable("weights")).rename("output");
+            for (int w = 0; w < 50; w++) {
+                INDArray warmData = Nd4j.randn(DataType.FLOAT, 4, 10);
+                warmup.output(java.util.Collections.singletonMap("input", warmData), "output");
+            }
+            closeAndReclaimGpuMemory(warmup);
+        }
+
+        // Baseline: measured AFTER the full warm-up round so that all one-time CUDA init costs
+        // (cuBLAS workspace, JIT caches, DSP plan infrastructure) are excluded from the measurement.
+        long initialFree = getActualFreeMemory(0);
+        log.info("Post-warmup baseline (initialFree): {} MB", initialFree / (1024 * 1024));
+
+        // Repeated gradient checking pattern: create SameDiff, execute many times, close.
+        // If the pool stagnates (cudaFreeAsync issued but not counted as free before trim),
+        // each round will lose memory and the test will fail.
         for (int round = 0; round < 5; round++) {
             org.nd4j.autodiff.samediff.SameDiff sd = org.nd4j.autodiff.samediff.SameDiff.create();
             org.nd4j.autodiff.samediff.SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 10);
@@ -598,17 +625,19 @@ public class CudaMemoryAllocationFailoverTest extends BaseNd4jTestWithBackends {
             closeAndReclaimGpuMemory(sd);
 
             long freeAfterRound = getActualFreeMemory(0);
-            log.info("After round {}: {} MB free (delta from initial: {} MB)",
+            log.info("After round {}: {} MB free (delta from post-warmup baseline: {} MB)",
                     round, freeAfterRound / (1024 * 1024),
                     (initialFree - freeAfterRound) / (1024 * 1024));
         }
 
         long finalFree = getActualFreeMemory(0);
-        // Memory should not continuously decrease across rounds (pool stagnation)
+        // Pool stagnation check: memory should not continuously decrease across rounds AFTER
+        // one-time CUDA library init. The tolerance covers residual pool overhead (chunk
+        // alignment waste, stream-ordered free granularity, etc.).
         long memoryLoss = initialFree - finalFree;
-        long maxAcceptableLoss = 512L * 1024 * 1024; // 512MB tolerance (CUDA context, JIT cache, pool overhead)
+        long maxAcceptableLoss = 512L * 1024 * 1024; // 512MB tolerance (pool overhead, etc.)
 
-        log.info("Total memory delta after 5 rounds: {} MB (limit: {} MB)",
+        log.info("Total memory delta over 5 rounds (post-warmup): {} MB (limit: {} MB)",
                 memoryLoss / (1024 * 1024), maxAcceptableLoss / (1024 * 1024));
         assertTrue(memoryLoss < maxAcceptableLoss,
                 String.format("Pool should not stagnate. Lost %d MB over 5 rounds (limit: %d MB). "

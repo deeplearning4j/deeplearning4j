@@ -46,8 +46,8 @@ void* ResourceBinder_createStream();
 void  ResourceBinder_destroyStream(void* stream, int deviceId);
 
 // ── Device memory (workspaces, arg tables) ───────────────────────────────
-void* ResourceBinder_deviceAlloc(size_t bytes);
-void  ResourceBinder_deviceFree(void* ptr);
+void* ResourceBinder_deviceAlloc(size_t bytes, int deviceId);
+void  ResourceBinder_deviceFree(void* ptr, int deviceId);
 
 // ── Pinned host memory (staging buffers) ─────────────────────────────────
 void* ResourceBinder_pinnedAlloc(size_t bytes);
@@ -69,8 +69,8 @@ static inline void  ResourceBinder_streamWaitEvent(void*, void*) {}
 static inline void* ResourceBinder_createStream() { return nullptr; }
 static inline void  ResourceBinder_destroyStream(void*, int) {}
 
-static inline void* ResourceBinder_deviceAlloc(size_t) { return nullptr; }
-static inline void  ResourceBinder_deviceFree(void*) {}
+static inline void* ResourceBinder_deviceAlloc(size_t, int) { return nullptr; }
+static inline void  ResourceBinder_deviceFree(void*, int) {}
 
 static inline void* ResourceBinder_pinnedAlloc(size_t) { return nullptr; }
 static inline void  ResourceBinder_pinnedFree(void*) {}

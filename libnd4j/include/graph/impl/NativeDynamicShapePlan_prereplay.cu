@@ -334,7 +334,32 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
                  static_cast<int>(externalInputIsVariable_.size()));
       }
 
-      if (!variableExternalInputIndices_.empty()) {
+      // On the FIRST frozen execution of an externally-frozen plan (executeCount_==0,
+      // meaning setPlanShapesFrozen was called before this plan ever ran), CONSTANT-type
+      // external inputs have externalInputIsVariable_[i]=false and would be SKIPPED by
+      // the variable-filter path below. But this is the plan's FIRST execution — its
+      // CUDA graph hasn't been captured yet (phaseWarmup runs here). All inputs,
+      // including CONSTANT/SOURCE_CONSTANT weight buffers (e.g. HALF proj_weight), must
+      // be H2D-synced so that CUDA graph capture bakes valid device pointers and the
+      // warmup slot-by-slot execution reads correct data.
+      //
+      // Broadcast to all inputs when executeCount_==0 (first frozen exec). The
+      // broadPrepare gate in buildExternalReadList (execute.cpp ~line 2421) already
+      // handles the execute()-level ExternalInputSpecialUseGuard with broadPrepare=true
+      // when executeCount_<=1. This fallback ensures the defensive prereplay path is
+      // consistent with that gate when reached independently (e.g. from phaseWarmup
+      // dispatch before the execute-level guard has marked extInputsSynced).
+      const bool firstFrozenExec = !planLifecycle_.isSlotBySlot() && (executeCount_ == 0);
+      if (firstFrozenExec) {
+        DSP_DIAG(EXECUTE,
+                 "%s H2D prepare: first frozen exec (executeCount_=0) — "
+                 "preparing ALL %d ext inputs (not just variable-filter) to "
+                 "ensure CONSTANT weight buffers are device-synced before capture",
+                 diagTag, numExt);
+        for (int ei = 0; ei < numExt; ei++) {
+          queueRead(ei, "first-frozen-all");
+        }
+      } else if (!variableExternalInputIndices_.empty()) {
         for (int idx : variableExternalInputIndices_) {
           queueRead(idx, "variable-filter");
         }

@@ -243,12 +243,17 @@ public class OpTraitTableEnumerationTest {
         m.put("non_max_suppression", DATADEP);
         m.put("non_max_suppression_v3", DATADEP);
 
-        // Shape-only
+        // Shape-only: shape_of/size_at/rank are host-metadata ops (SHAPE_ONLY | CONST_GEN).
+        for (String op : new String[]{"shape_of", "size_at", "rank"}) {
+            m.put(op, SHAPE_ONLY | CONST_GEN);
+        }
+        // Fill ops: CONST_GEN only — SHAPE_ONLY was removed so they execute inside
+        // the captured CUDA graph and _writeSpecial is recorded (preventing spurious
+        // H2D zeroing on replay).
         for (String op : new String[]{
-                "shape_of", "size_at", "rank",
                 "zeros_like", "zeros_as", "zeroslike",
                 "ones_like", "ones_as", "oneslike"}) {
-            m.put(op, SHAPE_ONLY | CONST_GEN);
+            m.put(op, CONST_GEN);
         }
 
         // LLM attention forward + backprop

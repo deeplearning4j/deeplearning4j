@@ -1780,6 +1780,18 @@ elif command -v sysctl >/dev/null 2>&1; then
 fi
 [[ "${SD_TOTAL_RAM_GB}" =~ ^[0-9]+$ ]] || SD_TOTAL_RAM_GB=0
 
+# AVAILABLE RAM in GB (MemAvailable on Linux) -- what is actually free for the build
+# RIGHT NOW, after other resident processes. The job cap below uses this rather than
+# total RAM so parallelism shrinks when the box is already loaded (e.g. long-running
+# services) and grows back when it frees -- avoiding the OOM-kills that a total-RAM
+# cap walks into when other processes hold tens of GB. Falls back to total if unknown.
+SD_AVAIL_RAM_GB=0
+if [[ -r /proc/meminfo ]]; then
+    SD_AVAIL_RAM_GB=$(awk '/^MemAvailable:/ {printf "%d", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
+fi
+[[ "${SD_AVAIL_RAM_GB}" =~ ^[0-9]+$ ]] || SD_AVAIL_RAM_GB=0
+[[ "${SD_AVAIL_RAM_GB}" -lt 1 ]] && SD_AVAIL_RAM_GB="${SD_TOTAL_RAM_GB}"
+
 SD_CHIP_LC=$(printf '%s' "${CHIP:-}" | tr '[:upper:]' '[:lower:]')
 
 # Number of target GPU arches. COMPUTE empty/all/auto/native => single native
@@ -1808,9 +1820,15 @@ fi
 if [[ "${SD_MAKEJ_AUTO:-1}" == "1" ]]; then
     MAKEJ=$(( CPU_COUNT / SD_USED_THREADS ))
     [[ "${MAKEJ}" -lt 1 ]] && MAKEJ=1
-    if [[ "${SD_TOTAL_RAM_GB}" -gt 0 ]]; then
-        if [[ "${SD_CHIP_LC}" == "cuda" ]]; then SD_RAM_PER_JOB=5; else SD_RAM_PER_JOB=2; fi
-        SD_RAM_JOBS=$(( SD_TOTAL_RAM_GB / SD_RAM_PER_JOB ))
+    # Cap by AVAILABLE RAM (not total): a heavy CUDA TU's cicc/ptxas front-end peaks
+    # ~13-15 GB on a miss (measured -- 4 parallel heavy TUs OOM-killed a 125 GB box once
+    # other processes held ~57 GB). The old estimate of 5 GB/job for cuda was a ~3x
+    # underestimate that over-subscribed RAM and got make SIGKILLed; 14 GB/job matches the
+    # real heavy-TU footprint. Light TUs and ccache hits cost far less, but sizing for the
+    # heavy misses is what prevents the OOM. cpu TUs stay light.
+    if [[ "${SD_AVAIL_RAM_GB}" -gt 0 ]]; then
+        if [[ "${SD_CHIP_LC}" == "cuda" ]]; then SD_RAM_PER_JOB=14; else SD_RAM_PER_JOB=2; fi
+        SD_RAM_JOBS=$(( SD_AVAIL_RAM_GB / SD_RAM_PER_JOB ))
         [[ "${SD_RAM_JOBS}" -lt 1 ]] && SD_RAM_JOBS=1
         [[ "${MAKEJ}" -gt "${SD_RAM_JOBS}" ]] && MAKEJ="${SD_RAM_JOBS}"
     fi

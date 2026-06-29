@@ -237,10 +237,6 @@ public class MultiBackendNativeOpsHolder {
             try {
                 NativeOps ops = loadBackend(info.className);
                 if (ops != null) {
-                    loadedBackends.put(deviceType, ops);
-                    loadedCount++;
-                    log.info("Successfully loaded {} backend: {}", info.displayName, info.className);
-
                     // Initialize the backend
                     try {
                         ops.initializeDevicesAndFunctions();
@@ -248,6 +244,32 @@ public class MultiBackendNativeOpsHolder {
                         log.warn("Backend {} loaded but initialization failed: {}",
                                 info.displayName, e.getMessage());
                     }
+
+                    // Device-aware gate: a GPU/accelerator backend whose native runtime is
+                    // present on disk (so isNativeRuntimeLikelyAvailable() passed) may still
+                    // expose ZERO usable devices — e.g. when CUDA_VISIBLE_DEVICES=-1 hides all
+                    // GPUs. Such a backend must NOT be registered, given a fabricated device, or
+                    // made primary: doing so routes ops to a CUDA context that has no device and
+                    // SIGSEGVs in native code (Nd4jCuda.getShape). This mirrors the device-count
+                    // check in JCublasBackend.canRun(), which the class-name load path bypasses.
+                    if (deviceType != DeviceType.CPU) {
+                        int visibleDevices = 0;
+                        try {
+                            visibleDevices = ops.getAvailableDevices();
+                        } catch (Throwable t) {
+                            log.debug("{} backend device probe failed, treating as unavailable: {}",
+                                    info.displayName, t.getMessage());
+                        }
+                        if (visibleDevices <= 0) {
+                            log.info("Skipping {} backend: native runtime present but 0 usable "
+                                    + "devices (e.g. CUDA_VISIBLE_DEVICES=-1)", info.displayName);
+                            continue;
+                        }
+                    }
+
+                    loadedBackends.put(deviceType, ops);
+                    loadedCount++;
+                    log.info("Successfully loaded {} backend: {}", info.displayName, info.className);
 
                     // Register devices for this backend
                     registerDevicesForBackend(deviceType, ops);
@@ -296,7 +318,16 @@ public class MultiBackendNativeOpsHolder {
         try {
             int deviceCount = ops.getAvailableDevices();
             if (deviceCount <= 0) {
-                deviceCount = 1; // At least one device (e.g., CPU)
+                // Only the CPU backend is allowed a synthetic single device. A GPU/accelerator
+                // backend reporting 0 devices (e.g. CUDA_VISIBLE_DEVICES=-1) has none to
+                // register; fabricating a phantom device here would route ops to a deviceless
+                // CUDA context and SIGSEGV in native code. Callers already gate on this, but
+                // guard here too so the invariant holds regardless of entry point.
+                if (deviceType != DeviceType.CPU) {
+                    log.debug("No devices to register for {} backend (0 available)", deviceType);
+                    return;
+                }
+                deviceCount = 1; // CPU always has at least one logical device
             }
 
             for (int i = 0; i < deviceCount; i++) {

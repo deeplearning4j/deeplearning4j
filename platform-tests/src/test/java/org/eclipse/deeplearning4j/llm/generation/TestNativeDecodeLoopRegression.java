@@ -490,6 +490,40 @@ public class TestNativeDecodeLoopRegression {
                     if (handleValid) {
                         NativeOps ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
                         lastRunPlanReplays = ops.getPlanTotalGraphReplays(postGenHandle);
+                        // Per-segment capture state (Java-side, post-decode). This is the
+                        // RELIABLE way to see why capture failed — the native autoregressive_decode
+                        // op runs with C++ DSP_DIAG silent, so these JNI getters are the only
+                        // window into each segment's phase / execCount / replay / backend.
+                        log.info("[runNativeDecodeLoop] captureStats: {}", ops.getPlanCaptureStats(postGenHandle));
+                        try {
+                            log.info("[runNativeDecodeLoop] PLAN getPlanPhase={} getPlanPointersStable={}",
+                                    ops.getPlanPhase(postGenHandle), ops.getPlanPointersStable(postGenHandle));
+                        } catch (Throwable t) { log.info("[runNativeDecodeLoop] PLAN phase/pointers UNAVAILABLE: {}", t.toString()); }
+                        int segCount = ops.getPlanSegmentCount(postGenHandle);
+                        for (int s = 0; s < segCount; s++) {
+                            log.info("[runNativeDecodeLoop]   seg[{}] phase={} execCount={} replayCount={} replayState={} backend='{}'",
+                                    s, ops.getPlanSegmentExecutionPhase(postGenHandle, s),
+                                    ops.getPlanSegmentExecutionCount(postGenHandle, s),
+                                    ops.getPlanSegmentReplayCount(postGenHandle, s),
+                                    ops.getPlanSegmentReplayState(postGenHandle, s),
+                                    ops.getPlanSegmentBackendName(postGenHandle, s));
+                            log.info("[runNativeDecodeLoop]   seg[{}] statsJson: {}", s,
+                                    ops.getPlanSegmentStatisticsJson(postGenHandle, s));
+                            try {
+                                log.info("[runNativeDecodeLoop]   seg[{}] needsArgRefresh={}", s,
+                                        ops.getPlanSegmentNeedsArgRefresh(postGenHandle, s));
+                            } catch (Throwable t) { log.info("[runNativeDecodeLoop]   seg[{}] needsArgRefresh UNAVAILABLE: {}", s, t.toString()); }
+                        }
+                        // ── Sync-free buffer fingerprint ring dump ──────────────────
+                        // Activated by BUF_FP_RING=1 env var.
+                        // drainPlanFingerprintRing() does one D2H after the loop ends.
+                        try {
+                            ops.drainPlanFingerprintRing(postGenHandle);
+                            String fpJson = ops.getPlanFingerprintJson(postGenHandle);
+                            log.info("[runNativeDecodeLoop] BUF_FP_RING fingerprints: {}", fpJson);
+                        } catch (Throwable t) {
+                            log.info("[runNativeDecodeLoop] BUF_FP_RING unavailable: {}", t.toString());
+                        }
                     }
                     log.info("[runNativeDecodeLoop] Captured: replays={} ctxNonNull={} handle={}",
                             lastRunPlanReplays, lastRunCachedOpContextNonNull,
@@ -562,6 +596,21 @@ public class TestNativeDecodeLoopRegression {
         if (firstDivergent >= 0) {
             log.info("First divergence at step {}: java={} native={}",
                     firstDivergent, javaTokens[firstDivergent], nativeTokens[firstDivergent]);
+
+            // [DIVDIAG temp] reference logit margin at the divergence: numerical (tiny margin) vs structural (large).
+            // allLogits[k] produced allTokens[k+1], so token index i maps to logitsPerStep[i-1].
+            int li = firstDivergent - 1;
+            if (li >= 0 && javaResult.logitsPerStep != null && li < javaResult.logitsPerStep.length) {
+                INDArray vocab = javaResult.logitsPerStep[li]
+                        .get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all()).dup();
+                int jt = javaTokens[firstDivergent], nt = nativeTokens[firstDivergent];
+                double jL = vocab.getDouble(jt), nL = vocab.getDouble(nt);
+                int refArg = Nd4j.argMax(vocab, -1).getInt(0);
+                double maxL = vocab.getDouble(refArg);
+                log.info("[DIVDIAG] ref-logits@divstep: javaTok={} L={} | nativeTok={} L={} | margin(j-n)={} | refArgmax={} maxL={} | vocabLen={}",
+                        jt, String.format("%.5f", jL), nt, String.format("%.5f", nL),
+                        String.format("%.5f", jL - nL), refArg, String.format("%.5f", maxL), vocab.length());
+            }
         }
 
         // The first 2 tokens (prefill sample + warmup decode) are done in Java for both paths.

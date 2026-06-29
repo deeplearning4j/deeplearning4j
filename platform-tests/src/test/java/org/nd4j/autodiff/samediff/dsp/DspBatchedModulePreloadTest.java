@@ -176,8 +176,6 @@ public class DspBatchedModulePreloadTest {
      */
     private INDArray referenceOutput(SameDiff fixture, Map<String, INDArray> inputs) {
         fixture.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
-        fixture.setDspAutoCompileEnabled(false);
-        fixture.setDspNativeAutoCompileEnabled(false);
         Map<String, INDArray> raw = fixture.output(inputs, "y");
         INDArray dup = raw.get("y").dup();
         fixture.setGraphExecutionMode(GraphExecutionMode.AUTO);

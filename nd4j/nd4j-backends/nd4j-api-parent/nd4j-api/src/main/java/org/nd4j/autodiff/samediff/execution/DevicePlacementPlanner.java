@@ -233,8 +233,10 @@ public class DevicePlacementPlanner {
         int numSlots = slots.length;
         int[] slotDevices = new int[numSlots];
 
-        // Query available devices and their free memory
-        Map<Integer, Long> deviceFreeMemory = queryDeviceMemory();
+        // Query available devices and their free memory — restricted to devices whose
+        // compute architecture is compatible with the default device, so we never spread
+        // arch-specific compiled kernels onto an incompatible GPU.
+        Map<Integer, Long> deviceFreeMemory = queryCompatibleDeviceMemory(defaultDevice);
         if (deviceFreeMemory.isEmpty()) {
             // No device info available — fall back to single device
             return planSingleDevice(plan, sd, defaultDevice, logDecisions);
@@ -312,7 +314,10 @@ public class DevicePlacementPlanner {
         DynamicShapeSlot[] slots = plan.getSlots();
         int numSlots = slots.length;
 
-        Map<Integer, Long> deviceFreeMemory = queryDeviceMemory();
+        int referenceDevice = Integer.getInteger(ND4JSystemProperties.PLACEMENT_DEFAULT_DEVICE, 0);
+        // Only pipeline across devices that share the reference device's architecture —
+        // a contiguous segment compiled for one sm_XX cannot run on a different one.
+        Map<Integer, Long> deviceFreeMemory = queryCompatibleDeviceMemory(referenceDevice);
         int numDevices = Math.max(1, deviceFreeMemory.size());
         if (numDevices <= 1) {
             int defaultDevice = Integer.getInteger(ND4JSystemProperties.PLACEMENT_DEFAULT_DEVICE, 0);
@@ -431,6 +436,33 @@ public class DevicePlacementPlanner {
             // CPU backend or unavailable — return empty
         }
         return result;
+    }
+
+    /**
+     * Like {@link #queryDeviceMemory()} but restricted to devices whose compute
+     * architecture is compatible with {@code referenceDevice} (see
+     * {@link DeviceKey#isCompatibleWith}). Keeps the multi-device strategies from
+     * spreading arch-specific compiled kernels onto a GPU of a different architecture
+     * (e.g. an sm_86 device and an sm_89 device in the same box). The reference device
+     * is always retained; if device archs cannot be determined (all unknown) no
+     * filtering occurs, so behavior is unchanged on uniform-arch or CPU systems.
+     */
+    private static Map<Integer, Long> queryCompatibleDeviceMemory(int referenceDevice) {
+        Map<Integer, Long> all = queryDeviceMemory();
+        if (all.size() <= 1) return all;
+        DeviceKey ref = DeviceKey.cuda(referenceDevice);
+        Map<Integer, Long> compatible = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Long> e : all.entrySet()) {
+            int dev = e.getKey();
+            DeviceKey dk = DeviceKey.cuda(dev);
+            if (dev == referenceDevice || dk.isCompatibleWith(ref)) {
+                compatible.put(dev, e.getValue());
+            } else {
+                log.info("DevicePlacement: excluding device {} (sm_{}) — arch-incompatible with reference device {} (sm_{})",
+                        dev, dk.arch, referenceDevice, ref.arch);
+            }
+        }
+        return compatible;
     }
 
     private static Map<String, Integer> buildConstantDeviceMap(SameDiff sd,

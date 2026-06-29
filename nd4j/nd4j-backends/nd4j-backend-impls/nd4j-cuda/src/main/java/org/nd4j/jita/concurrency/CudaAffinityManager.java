@@ -199,8 +199,11 @@ public class CudaAffinityManager extends BasicAffinityManager {
             return device;
         }
 
-        // Delegate to DeviceMemoryManager - single mechanism for all device selection
-        int device = DeviceMemoryManager.getInstance().selectBestGpu();
+        // Delegate to DeviceMemoryManager - single mechanism for all device selection.
+        // Pass the available (non-banned) device set so a device banned after a failed context
+        // creation is never re-selected here — the failover contract createBlas() depends on.
+        int device = DeviceMemoryManager.getInstance().selectBestGpu(
+                CudaEnvironment.getInstance().getConfiguration().getAvailableDevices());
 
         val t = Thread.currentThread();
         val n = t.getId() == threadId ? t.getName() : "N/A";

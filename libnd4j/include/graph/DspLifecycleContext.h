@@ -142,6 +142,21 @@ class DspLifecycleContext {
   }
 
   /**
+   * True ONLY while DSP is genuinely REPLAYING a captured graph (the tl_dspReplayActive flag) —
+   * unlike isReplayActive() which is also true when tl_dspExecutionStream is merely set (incl. a
+   * stale leak from a prior plan's execution). This mirrors DataBuffer::syncToPrimary's actual D2H
+   * guard (inGraphCapture || tl_dspReplayActive), so a host D2H is safe whenever this AND capture
+   * are both false — even if the stale execution stream is still pinned.
+   */
+  static SD_INLINE bool isDspReplaying() {
+#ifdef SD_CUDA
+    return tl_dspReplayActive;
+#else
+    return false;
+#endif
+  }
+
+  /**
    * True when DSP owns the current thread's execution — either capture or
    * replay. Slot-by-slot mutations must defer while this is true.
    */

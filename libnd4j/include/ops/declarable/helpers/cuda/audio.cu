@@ -24,6 +24,7 @@
 #include <helpers/PointersManager.h>
 #include <math/templatemath.h>
 #include <system/op_boilerplate.h>
+#include <execution/cuda/LaunchDims.h>
 #include <cuda_runtime.h>
 
 #ifndef M_PI
@@ -81,12 +82,12 @@ static void melFilterbank_(LaunchContext* context, int numMelBins, int fftSize,
     double upperMel = 2595.0 * std::log10(1.0 + upperEdgeHz / 700.0);
 
     const auto total = numMelBins * numFreqBins;
-    const int blockSize = 256;
-    const int numBlocks = (total + blockSize - 1) / blockSize;
+    dim3 launchDims = getLaunchDims("audio");
+    const int numBlocks = (total + launchDims.y - 1) / launchDims.y;
 
     PointersManager manager(context, "melFilterbank");
 
-    melFilterbankKernel<T><<<numBlocks, blockSize, 0, *context->getCudaStream()>>>(
+    melFilterbankKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         reinterpret_cast<T*>(output->specialBuffer()),
         numMelBins, numFreqBins, fftSize, sampleRate, lowerMel, upperMel);
 
@@ -132,12 +133,12 @@ static void preEmphasis_(LaunchContext* context, NDArray* input,
     const auto numSamples = hasBatch ? input->sizeAt(1) : input->sizeAt(0);
 
     const auto total = batchSize * numSamples;
-    const int blockSize = 256;
-    const int numBlocks = (total + blockSize - 1) / blockSize;
+    dim3 launchDims = getLaunchDims("audio");
+    const int numBlocks = (total + launchDims.y - 1) / launchDims.y;
 
     PointersManager manager(context, "preEmphasis");
 
-    preEmphasisKernel<T><<<numBlocks, blockSize, 0, *context->getCudaStream()>>>(
+    preEmphasisKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         reinterpret_cast<const T*>(input->specialBuffer()),
         reinterpret_cast<T*>(output->specialBuffer()),
         batchSize, numSamples, static_cast<T>(coefficient));
@@ -218,12 +219,13 @@ static void audioNormalize_(LaunchContext* context, NDArray* input,
     const auto batchSize = hasBatch ? input->sizeAt(0) : 1;
     const auto numSamples = hasBatch ? input->sizeAt(1) : input->sizeAt(0);
 
-    const int blockSize = 256;
-    const int sharedMemSize = blockSize * sizeof(T);
+    dim3 launchDims = getLaunchDims("audio");
+    const int sharedMemSize = launchDims.y * sizeof(T);
 
     PointersManager manager(context, "audioNormalize");
 
-    audioNormalizeKernel<T><<<batchSize, blockSize, sharedMemSize, *context->getCudaStream()>>>(
+    // grid = batchSize (one block per batch element, data-driven), block+shmem from launchDims
+    audioNormalizeKernel<T><<<batchSize, launchDims.y, sharedMemSize, *context->getCudaStream()>>>(
         reinterpret_cast<const T*>(input->specialBuffer()),
         reinterpret_cast<T*>(output->specialBuffer()),
         batchSize, numSamples, static_cast<T>(targetLevel), useRms);
@@ -266,12 +268,12 @@ template <typename T>
 static void aWeighting_(LaunchContext* context, NDArray* frequencies,
                          NDArray* output) {
     const auto length = frequencies->lengthOf();
-    const int blockSize = 256;
-    const int numBlocks = (length + blockSize - 1) / blockSize;
+    dim3 launchDims = getLaunchDims("audio");
+    const int numBlocks = (length + launchDims.y - 1) / launchDims.y;
 
     PointersManager manager(context, "aWeighting");
 
-    aWeightingKernel<T><<<numBlocks, blockSize, 0, *context->getCudaStream()>>>(
+    aWeightingKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         reinterpret_cast<const T*>(frequencies->specialBuffer()),
         reinterpret_cast<T*>(output->specialBuffer()),
         length);
@@ -325,12 +327,12 @@ static void zeroCrossingRate_(LaunchContext* context, NDArray* input,
     const auto numFrames = (numSamples - frameLength) / hopLength + 1;
 
     const auto total = batchSize * numFrames;
-    const int blockSize = 256;
-    const int numBlocks = (total + blockSize - 1) / blockSize;
+    dim3 launchDims = getLaunchDims("audio");
+    const int numBlocks = (total + launchDims.y - 1) / launchDims.y;
 
     PointersManager manager(context, "zeroCrossingRate");
 
-    zeroCrossingRateKernel<T><<<numBlocks, blockSize, 0, *context->getCudaStream()>>>(
+    zeroCrossingRateKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         reinterpret_cast<const T*>(input->specialBuffer()),
         reinterpret_cast<T*>(output->specialBuffer()),
         batchSize, numSamples, frameLength, hopLength, numFrames);
@@ -384,12 +386,12 @@ static void spectralCentroid_(LaunchContext* context, NDArray* input,
     const T freqScale = static_cast<T>(sampleRate) / static_cast<T>(fftSize);
 
     const auto total = batchSize * numFrames;
-    const int blockSize = 256;
-    const int numBlocks = (total + blockSize - 1) / blockSize;
+    dim3 launchDims = getLaunchDims("audio");
+    const int numBlocks = (total + launchDims.y - 1) / launchDims.y;
 
     PointersManager manager(context, "spectralCentroid");
 
-    spectralCentroidKernel<T><<<numBlocks, blockSize, 0, *context->getCudaStream()>>>(
+    spectralCentroidKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         reinterpret_cast<const T*>(input->specialBuffer()),
         reinterpret_cast<T*>(output->specialBuffer()),
         batchSize, numFreqBins, numFrames, freqScale);
@@ -448,12 +450,12 @@ static void spectralRolloff_(LaunchContext* context, NDArray* input,
     const T freqScale = static_cast<T>(sampleRate) / static_cast<T>(fftSize);
 
     const auto total = batchSize * numFrames;
-    const int blockSize = 256;
-    const int numBlocks = (total + blockSize - 1) / blockSize;
+    dim3 launchDims = getLaunchDims("audio");
+    const int numBlocks = (total + launchDims.y - 1) / launchDims.y;
 
     PointersManager manager(context, "spectralRolloff");
 
-    spectralRolloffKernel<T><<<numBlocks, blockSize, 0, *context->getCudaStream()>>>(
+    spectralRolloffKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         reinterpret_cast<const T*>(input->specialBuffer()),
         reinterpret_cast<T*>(output->specialBuffer()),
         batchSize, numFreqBins, numFrames, freqScale, static_cast<T>(rolloffPercent));
@@ -512,12 +514,12 @@ static void chromaFeatures_(LaunchContext* context, NDArray* input,
     const auto numFrames = input->sizeAt(2);
 
     const auto total = batchSize * numChroma * numFrames;
-    const int blockSize = 256;
-    const int numBlocks = (total + blockSize - 1) / blockSize;
+    dim3 launchDims = getLaunchDims("audio");
+    const int numBlocks = (total + launchDims.y - 1) / launchDims.y;
 
     PointersManager manager(context, "chromaFeatures");
 
-    chromaFeaturesKernel<T><<<numBlocks, blockSize, 0, *context->getCudaStream()>>>(
+    chromaFeaturesKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         reinterpret_cast<const T*>(input->specialBuffer()),
         reinterpret_cast<T*>(output->specialBuffer()),
         batchSize, numFreqBins, numFrames, numChroma, sampleRate, fftSize);
@@ -535,19 +537,65 @@ void chromaFeatures(LaunchContext* context, NDArray* input,
     NDArray::registerSpecialUse({output}, {input});
 }
 
-// ======================== Mel Spectrogram (delegates to CPU for now) ========================
-// Complex ops like mel_spectrogram, mfcc, griffin_lim, pitch_detection, audio_resample
-// use the CPU implementation path for correctness. They can be optimized with dedicated
-// CUDA kernels later.
+// ======================== Mel Spectrogram ========================
+// Fused CUDA kernel: each thread computes one output element (b, m, f).
+// DFT power spectrum with Hann window + mel filterbank dot product, all on device.
+
+template <typename T>
+SD_KERNEL void melSpectrogramKernelFull(const T* input, T* output,
+                                         sd::LongType batchSize, sd::LongType numSamples,
+                                         int fftSize, int hopLength,
+                                         int numMelBins, int numFreqBins,
+                                         sd::LongType numFrames, int sampleRate,
+                                         double lowerMel, double upperMel,
+                                         double power) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto total = batchSize * numMelBins * numFrames;
+    if (idx >= total) return;
+
+    const auto b = idx / (numMelBins * numFrames);
+    const auto mf = idx % (numMelBins * numFrames);
+    const auto m = mf / numFrames;
+    const auto f = mf % numFrames;
+
+    const sd::LongType frameStart = f * hopLength;
+
+    double melStep = (upperMel - lowerMel) / (numMelBins + 1);
+    double fLeft   = d_melToHz(lowerMel + m * melStep) * fftSize / sampleRate;
+    double fCenter = d_melToHz(lowerMel + (m + 1) * melStep) * fftSize / sampleRate;
+    double fRight  = d_melToHz(lowerMel + (m + 2) * melStep) * fftSize / sampleRate;
+
+    T melSum = 0;
+    for (int k = 0; k < numFreqBins; k++) {
+        T sumReal = 0, sumImag = 0;
+        for (int n = 0; n < fftSize; n++) {
+            T hann = static_cast<T>(0.5 * (1.0 - cos(2.0 * M_PI * n / fftSize)));
+            T val = input[b * numSamples + frameStart + n] * hann;
+            double angle = -2.0 * M_PI * k * n / fftSize;
+            sumReal += val * static_cast<T>(cos(angle));
+            sumImag += val * static_cast<T>(sin(angle));
+        }
+        T mag = sd::math::sd_sqrt<T, T>(sumReal * sumReal + sumImag * sumImag);
+        T powerVal = (power == 2.0) ? mag * mag : static_cast<T>(::pow(static_cast<double>(mag), power));
+
+        double freq = static_cast<double>(k);
+        T weight = 0;
+        if (freq >= fLeft && freq <= fCenter && fCenter > fLeft)
+            weight = static_cast<T>((freq - fLeft) / (fCenter - fLeft));
+        else if (freq > fCenter && freq <= fRight && fRight > fCenter)
+            weight = static_cast<T>((fRight - freq) / (fRight - fCenter));
+
+        melSum += weight * powerVal;
+    }
+
+    output[b * numMelBins * numFrames + m * numFrames + f] = melSum;
+}
 
 template <typename T>
 static void melSpectrogram_(LaunchContext* context, NDArray* input,
                              int sampleRate, int fftSize, int hopLength, int numMelBins,
                              double lowerEdgeHz, double upperEdgeHz, double power,
                              NDArray* output) {
-    // Sync input to host for CPU-path computation
-    input->syncToHost();
-
     const auto inputRank = input->rankOf();
     const bool hasBatch = inputRank == 2;
     const auto batchSize = hasBatch ? input->sizeAt(0) : 1;
@@ -555,71 +603,110 @@ static void melSpectrogram_(LaunchContext* context, NDArray* input,
     const int numFreqBins = fftSize / 2 + 1;
     const auto numFrames = (numSamples - fftSize) / hopLength + 1;
 
-    auto inputPtr = input->bufferAsT<T>();
-    auto outputPtr = output->bufferAsT<T>();
+    double lowerMel = 2595.0 * ::log10(1.0 + lowerEdgeHz / 700.0);
+    double upperMel = 2595.0 * ::log10(1.0 + upperEdgeHz / 700.0);
 
-    // Build mel filterbank
-    double lowerMel = 2595.0 * std::log10(1.0 + lowerEdgeHz / 700.0);
-    double upperMel = 2595.0 * std::log10(1.0 + upperEdgeHz / 700.0);
-    std::vector<double> binPoints(numMelBins + 2);
-    for (int i = 0; i < numMelBins + 2; i++) {
-        double mel = lowerMel + (upperMel - lowerMel) * i / (numMelBins + 1);
-        binPoints[i] = 700.0 * (std::pow(10.0, mel / 2595.0) - 1.0) * fftSize / sampleRate;
-    }
-    std::vector<T> melFb(numMelBins * numFreqBins, 0);
-    for (int m = 0; m < numMelBins; m++) {
-        double fLeft = binPoints[m], fCenter = binPoints[m + 1], fRight = binPoints[m + 2];
-        for (int k = 0; k < numFreqBins; k++) {
-            double freq = static_cast<double>(k);
-            if (freq >= fLeft && freq <= fCenter && fCenter > fLeft)
-                melFb[m * numFreqBins + k] = static_cast<T>((freq - fLeft) / (fCenter - fLeft));
-            else if (freq > fCenter && freq <= fRight && fRight > fCenter)
-                melFb[m * numFreqBins + k] = static_cast<T>((fRight - freq) / (fRight - fCenter));
-        }
-    }
+    const auto total = batchSize * numMelBins * numFrames;
+    dim3 launchDims = getLaunchDims("audio");
+    const int numBlocks = (total + launchDims.y - 1) / launchDims.y;
 
-    // Hann window
-    std::vector<T> window(fftSize);
-    for (int i = 0; i < fftSize; i++)
-        window[i] = static_cast<T>(0.5 * (1.0 - std::cos(2.0 * M_PI * i / fftSize)));
+    PointersManager manager(context, "melSpectrogram");
 
-    for (sd::LongType b = 0; b < batchSize; b++) {
-        for (sd::LongType f = 0; f < numFrames; f++) {
-            sd::LongType frameStart = f * hopLength;
-            std::vector<T> powerSpec(numFreqBins);
+    melSpectrogramKernelFull<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+        reinterpret_cast<const T*>(input->specialBuffer()),
+        reinterpret_cast<T*>(output->specialBuffer()),
+        batchSize, numSamples, fftSize, hopLength,
+        numMelBins, numFreqBins, numFrames, sampleRate,
+        lowerMel, upperMel, power);
 
-            for (int k = 0; k < numFreqBins; k++) {
-                T sumReal = 0, sumImag = 0;
-                for (int n = 0; n < fftSize; n++) {
-                    T val = inputPtr[b * numSamples + frameStart + n] * window[n];
-                    T angle = static_cast<T>(-2.0 * M_PI * k * n / fftSize);
-                    sumReal += val * std::cos(angle);
-                    sumImag += val * std::sin(angle);
-                }
-                T mag = sd::math::sd_sqrt<T, T>(sumReal * sumReal + sumImag * sumImag);
-                powerSpec[k] = (power == 2.0) ? mag * mag : static_cast<T>(std::pow(static_cast<float>(mag), static_cast<float>(power)));
-            }
-
-            for (int m = 0; m < numMelBins; m++) {
-                T sum = 0;
-                for (int k = 0; k < numFreqBins; k++)
-                    sum += melFb[m * numFreqBins + k] * powerSpec[k];
-                outputPtr[b * numMelBins * numFrames + m * numFrames + f] = sum;
-            }
-        }
-    }
-
-    output->syncToDevice();
+    manager.synchronize();
 }
 
 void melSpectrogram(LaunchContext* context, NDArray* input,
                      int sampleRate, int fftSize, int hopLength, int numMelBins,
                      double lowerEdgeHz, double upperEdgeHz, double power,
                      NDArray* output) {
+    NDArray::prepareSpecialUse({output}, {input});
     BUILD_SINGLE_SELECTOR(input->dataType(), melSpectrogram_,
                           (context, input, sampleRate, fftSize, hopLength, numMelBins,
                            lowerEdgeHz, upperEdgeHz, power, output),
                           SD_FLOAT_TYPES);
+    NDArray::registerSpecialUse({output}, {input});
+}
+
+// ======================== Log-Mel kernel (shared by mfcc and whisperMelSpectrogram) ========================
+
+template <typename T>
+SD_KERNEL void logMelSpectrogramKernel(const T* input, T* melOut,
+                                        sd::LongType batchSize, sd::LongType numSamples,
+                                        int fftSize, int hopLength,
+                                        int numMelBins, int numFreqBins,
+                                        sd::LongType numFrames, int sampleRate,
+                                        double lowerMel, double upperMel) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto total = batchSize * numMelBins * numFrames;
+    if (idx >= total) return;
+
+    const auto b = idx / (numMelBins * numFrames);
+    const auto mf = idx % (numMelBins * numFrames);
+    const auto m = mf / numFrames;
+    const auto f = mf % numFrames;
+
+    const sd::LongType frameStart = f * hopLength;
+
+    double melStep = (upperMel - lowerMel) / (numMelBins + 1);
+    double fLeft   = d_melToHz(lowerMel + m * melStep) * fftSize / sampleRate;
+    double fCenter = d_melToHz(lowerMel + (m + 1) * melStep) * fftSize / sampleRate;
+    double fRight  = d_melToHz(lowerMel + (m + 2) * melStep) * fftSize / sampleRate;
+
+    T melSum = 0;
+    for (int k = 0; k < numFreqBins; k++) {
+        T sumReal = 0, sumImag = 0;
+        for (int n = 0; n < fftSize; n++) {
+            T hann = static_cast<T>(0.5 * (1.0 - cos(2.0 * M_PI * n / fftSize)));
+            T val = input[b * numSamples + frameStart + n] * hann;
+            double angle = -2.0 * M_PI * k * n / fftSize;
+            sumReal += val * static_cast<T>(cos(angle));
+            sumImag += val * static_cast<T>(sin(angle));
+        }
+        T power = sumReal * sumReal + sumImag * sumImag;  // power=2
+
+        double freq = static_cast<double>(k);
+        T weight = 0;
+        if (freq >= fLeft && freq <= fCenter && fCenter > fLeft)
+            weight = static_cast<T>((freq - fLeft) / (fCenter - fLeft));
+        else if (freq > fCenter && freq <= fRight && fRight > fCenter)
+            weight = static_cast<T>((fRight - freq) / (fRight - fCenter));
+
+        melSum += weight * power;
+    }
+
+    T logMel = sd::math::sd_log<T, T>(sd::math::sd_max<T>(melSum, static_cast<T>(1e-10)));
+    melOut[b * numMelBins * numFrames + m * numFrames + f] = logMel;
+}
+
+// ======================== MFCC ========================
+// Two kernels: kernel 1 → log-mel temp buffer, kernel 2 → DCT-II
+
+template <typename T>
+SD_KERNEL void dctKernel(const T* logMel, T* mfccOut,
+                          sd::LongType batchSize, int numMelBins, int numMfcc,
+                          sd::LongType numFrames) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto total = batchSize * numMfcc * numFrames;
+    if (idx >= total) return;
+
+    const auto b = idx / (numMfcc * numFrames);
+    const auto cf = idx % (numMfcc * numFrames);
+    const auto c = cf / numFrames;
+    const auto f = cf % numFrames;
+
+    T sum = 0;
+    for (int mm = 0; mm < numMelBins; mm++) {
+        T lm = logMel[b * numMelBins * numFrames + mm * numFrames + f];
+        sum += lm * static_cast<T>(cos(M_PI * c * (mm + 0.5) / numMelBins));
+    }
+    mfccOut[b * numMfcc * numFrames + c * numFrames + f] = sum;
 }
 
 template <typename T>
@@ -628,8 +715,6 @@ static void mfcc_(LaunchContext* context, NDArray* input,
                    int numMelBins, int numMfcc,
                    double lowerEdgeHz, double upperEdgeHz,
                    NDArray* output) {
-    input->syncToHost();
-
     const auto inputRank = input->rankOf();
     const bool hasBatch = inputRank == 2;
     const auto batchSize = hasBatch ? input->sizeAt(0) : 1;
@@ -637,66 +722,48 @@ static void mfcc_(LaunchContext* context, NDArray* input,
     const int numFreqBins = fftSize / 2 + 1;
     const auto numFrames = (numSamples - fftSize) / hopLength + 1;
 
-    auto inputPtr = input->bufferAsT<T>();
-    auto outputPtr = output->bufferAsT<T>();
+    double lowerMel = 2595.0 * ::log10(1.0 + lowerEdgeHz / 700.0);
+    double upperMel = 2595.0 * ::log10(1.0 + upperEdgeHz / 700.0);
 
-    double lowerMel = 2595.0 * std::log10(1.0 + lowerEdgeHz / 700.0);
-    double upperMel = 2595.0 * std::log10(1.0 + upperEdgeHz / 700.0);
-    std::vector<double> binPoints(numMelBins + 2);
-    for (int i = 0; i < numMelBins + 2; i++) {
-        double mel = lowerMel + (upperMel - lowerMel) * i / (numMelBins + 1);
-        binPoints[i] = 700.0 * (std::pow(10.0, mel / 2595.0) - 1.0) * fftSize / sampleRate;
-    }
-    std::vector<T> melFb(numMelBins * numFreqBins, 0);
-    for (int m = 0; m < numMelBins; m++) {
-        double fLeft = binPoints[m], fCenter = binPoints[m + 1], fRight = binPoints[m + 2];
-        for (int k = 0; k < numFreqBins; k++) {
-            double freq = static_cast<double>(k);
-            if (freq >= fLeft && freq <= fCenter && fCenter > fLeft)
-                melFb[m * numFreqBins + k] = static_cast<T>((freq - fLeft) / (fCenter - fLeft));
-            else if (freq > fCenter && freq <= fRight && fRight > fCenter)
-                melFb[m * numFreqBins + k] = static_cast<T>((fRight - freq) / (fRight - fCenter));
-        }
-    }
+    // Temp buffer for log-mel [batchSize, numMelBins, numFrames]
+    std::vector<sd::LongType> melShape = {batchSize, numMelBins, numFrames};
+    NDArray melTemp('c', melShape, input->dataType(), context);
 
-    std::vector<T> window(fftSize);
-    for (int i = 0; i < fftSize; i++)
-        window[i] = static_cast<T>(0.5 * (1.0 - std::cos(2.0 * M_PI * i / fftSize)));
+    // Kernel 1: DFT + mel filterbank + log → melTemp
+    // input is already prepared by the outer public wrapper; melTemp is a fresh device array.
+    NDArray::prepareSpecialUse({&melTemp}, {input});
 
-    for (sd::LongType b = 0; b < batchSize; b++) {
-        for (sd::LongType f = 0; f < numFrames; f++) {
-            sd::LongType frameStart = f * hopLength;
-            std::vector<T> powerSpec(numFreqBins);
-            std::vector<T> melEnergies(numMelBins);
+    const auto melTotal = batchSize * numMelBins * numFrames;
+    dim3 launchDims = getLaunchDims("audio");
+    int numBlocks = (melTotal + launchDims.y - 1) / launchDims.y;
 
-            for (int k = 0; k < numFreqBins; k++) {
-                T sumReal = 0, sumImag = 0;
-                for (int n = 0; n < fftSize; n++) {
-                    T val = inputPtr[b * numSamples + frameStart + n] * window[n];
-                    T angle = static_cast<T>(-2.0 * M_PI * k * n / fftSize);
-                    sumReal += val * std::cos(angle);
-                    sumImag += val * std::sin(angle);
-                }
-                powerSpec[k] = sumReal * sumReal + sumImag * sumImag;
-            }
+    PointersManager manager(context, "mfcc");
 
-            for (int m = 0; m < numMelBins; m++) {
-                T sum = 0;
-                for (int k = 0; k < numFreqBins; k++)
-                    sum += melFb[m * numFreqBins + k] * powerSpec[k];
-                melEnergies[m] = sd::math::sd_log<T, T>(sd::math::sd_max<T>(sum, static_cast<T>(1e-10)));
-            }
+    logMelSpectrogramKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+        reinterpret_cast<const T*>(input->specialBuffer()),
+        reinterpret_cast<T*>(melTemp.specialBuffer()),
+        batchSize, numSamples, fftSize, hopLength,
+        numMelBins, numFreqBins, numFrames, sampleRate,
+        lowerMel, upperMel);
 
-            for (int c = 0; c < numMfcc; c++) {
-                T sum = 0;
-                for (int m = 0; m < numMelBins; m++)
-                    sum += melEnergies[m] * std::cos(M_PI * c * (m + 0.5) / numMelBins);
-                outputPtr[b * numMfcc * numFrames + c * numFrames + f] = sum;
-            }
-        }
-    }
+    manager.synchronize();
+    NDArray::registerSpecialUse({&melTemp}, {input});
 
-    output->syncToDevice();
+    // Kernel 2: DCT-II → output
+    NDArray::prepareSpecialUse({output}, {&melTemp});
+
+    const auto mfccTotal = batchSize * numMfcc * numFrames;
+    numBlocks = (mfccTotal + launchDims.y - 1) / launchDims.y;
+
+    PointersManager manager2(context, "mfcc_dct");
+
+    dctKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+        reinterpret_cast<const T*>(melTemp.specialBuffer()),
+        reinterpret_cast<T*>(output->specialBuffer()),
+        batchSize, numMelBins, numMfcc, numFrames);
+
+    manager2.synchronize();
+    NDArray::registerSpecialUse({output}, {&melTemp});
 }
 
 void mfcc(LaunchContext* context, NDArray* input,
@@ -704,89 +771,268 @@ void mfcc(LaunchContext* context, NDArray* input,
            int numMelBins, int numMfcc,
            double lowerEdgeHz, double upperEdgeHz,
            NDArray* output) {
+    // Note: inner mfcc_ manages per-kernel prepare/register for its temp buffer.
+    // The outer prepare/register here covers the public NDArray tracking contract.
+    NDArray::prepareSpecialUse({output}, {input});
     BUILD_SINGLE_SELECTOR(input->dataType(), mfcc_,
                           (context, input, sampleRate, fftSize, hopLength, numMelBins, numMfcc,
                            lowerEdgeHz, upperEdgeHz, output),
                           SD_FLOAT_TYPES);
+    NDArray::registerSpecialUse({output}, {input});
+}
+
+// ======================== Griffin-Lim ========================
+// Iterative ISTFT on device.
+// Kernel 1: istftKernel — IDFT overlap-add for one iteration
+// Kernel 2: stftPhaseKernel — extract phase from DFT of reconstructed signal
+// Kernel 3: windowSumNormalizeKernel — divide signal by window sum
+// Kernel 4: copyOutputKernel — copy final signal to output
+
+template <typename T>
+SD_KERNEL void istftKernel(const T* magnitude, const T* phase,
+                            T* signal, T* windowSum,
+                            sd::LongType batchSize, sd::LongType numFreqBins,
+                            sd::LongType numFrames, sd::LongType numSamples,
+                            int fftSize, int hopLength) {
+    // Each thread handles one (b, frameStart+n) sample position contribution from one frame
+    // Grid: batchSize * numFrames * fftSize threads
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto total = batchSize * numFrames * fftSize;
+    if (idx >= total) return;
+
+    const auto b  = idx / (numFrames * fftSize);
+    const auto fn = idx % (numFrames * fftSize);
+    const auto f  = fn / fftSize;
+    const auto n  = fn % fftSize;
+
+    const sd::LongType sampleIdx = f * hopLength + n;
+    if (sampleIdx >= numSamples) return;
+
+    double hann = 0.5 * (1.0 - cos(2.0 * M_PI * n / fftSize));
+
+    double sampleVal = 0;
+    for (sd::LongType k = 0; k < numFreqBins; k++) {
+        double mag = static_cast<double>(magnitude[b * numFreqBins * numFrames + k * numFrames + f]);
+        double ph  = static_cast<double>(phase[b * numFreqBins * numFrames + k * numFrames + f]);
+        double angle = 2.0 * M_PI * k * n / fftSize;
+        sampleVal += mag * cos(angle + ph);
+    }
+    sampleVal = hann * sampleVal / fftSize;
+
+    // Atomic add because multiple frames overlap the same sample
+    sd::math::atomics::sd_atomicAdd<T>(&signal[b * numSamples + sampleIdx], static_cast<T>(sampleVal));
+    sd::math::atomics::sd_atomicAdd<T>(&windowSum[b * numSamples + sampleIdx], static_cast<T>(hann * hann));
+}
+
+template <typename T>
+SD_KERNEL void windowSumNormalizeKernel(T* signal, const T* windowSum,
+                                         sd::LongType batchSize, sd::LongType numSamples) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= batchSize * numSamples) return;
+    T ws = windowSum[idx];
+    if (ws > static_cast<T>(1e-8))
+        signal[idx] /= ws;
+}
+
+template <typename T>
+SD_KERNEL void stftPhaseKernel(const T* signal, T* phase,
+                                sd::LongType batchSize, sd::LongType numFreqBins,
+                                sd::LongType numFrames, sd::LongType numSamples,
+                                int fftSize, int hopLength) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto total = batchSize * numFreqBins * numFrames;
+    if (idx >= total) return;
+
+    const auto b  = idx / (numFreqBins * numFrames);
+    const auto kf = idx % (numFreqBins * numFrames);
+    const auto k  = kf / numFrames;
+    const auto f  = kf % numFrames;
+
+    const sd::LongType frameStart = f * hopLength;
+
+    double sumReal = 0, sumImag = 0;
+    for (int n = 0; n < fftSize; n++) {
+        sd::LongType si = frameStart + n;
+        if (si >= numSamples) continue;
+        double hann = 0.5 * (1.0 - cos(2.0 * M_PI * n / fftSize));
+        double val = static_cast<double>(signal[b * numSamples + si]) * hann;
+        double angle = -2.0 * M_PI * k * n / fftSize;
+        sumReal += val * cos(angle);
+        sumImag += val * sin(angle);
+    }
+
+    phase[b * numFreqBins * numFrames + k * numFrames + f] = static_cast<T>(::atan2(sumImag, sumReal));
+}
+
+template <typename T>
+SD_KERNEL void zeroBufferKernel(T* buf, sd::LongType n) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) buf[idx] = static_cast<T>(0);
+}
+
+template <typename T>
+SD_KERNEL void copySignalToOutputKernel(const T* signal, T* output,
+                                         sd::LongType batchSize, sd::LongType numSamples) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < batchSize * numSamples)
+        output[idx] = signal[idx];
 }
 
 template <typename T>
 static void griffinLim_(LaunchContext* context, NDArray* magnitudeSpectrogram,
                          int fftSize, int hopLength, int numIterations,
                          NDArray* output) {
-    magnitudeSpectrogram->syncToHost();
-
-    const auto batchSize = magnitudeSpectrogram->sizeAt(0);
+    const auto batchSize   = magnitudeSpectrogram->sizeAt(0);
     const auto numFreqBins = magnitudeSpectrogram->sizeAt(1);
-    const auto numFrames = magnitudeSpectrogram->sizeAt(2);
-    const auto numSamples = (numFrames - 1) * hopLength + fftSize;
+    const auto numFrames   = magnitudeSpectrogram->sizeAt(2);
+    const auto numSamples  = (numFrames - 1) * hopLength + fftSize;
 
-    auto magPtr = magnitudeSpectrogram->bufferAsT<T>();
-    auto outputPtr = output->bufferAsT<T>();
+    // Temp buffers: signal, windowSum, phase — all device-side NDArrays
+    std::vector<sd::LongType> sigShape   = {batchSize, numSamples};
+    std::vector<sd::LongType> phaseShape = {batchSize, numFreqBins, numFrames};
 
-    std::vector<T> window(fftSize);
-    for (int i = 0; i < fftSize; i++)
-        window[i] = static_cast<T>(0.5 * (1.0 - std::cos(2.0 * M_PI * i / fftSize)));
+    NDArray sigArr('c', sigShape,   magnitudeSpectrogram->dataType(), context);
+    NDArray winArr('c', sigShape,   magnitudeSpectrogram->dataType(), context);
+    NDArray phaseArr('c', phaseShape, magnitudeSpectrogram->dataType(), context);
 
-    for (sd::LongType b = 0; b < batchSize; b++) {
-        std::vector<T> phase(numFreqBins * numFrames, 0);
-        std::vector<T> signal(numSamples, 0);
-        std::vector<T> windowSum(numSamples, 0);
+    NDArray::prepareSpecialUse({&sigArr, &winArr, &phaseArr}, {});
+    NDArray::registerSpecialUse({&sigArr, &winArr, &phaseArr}, {});
 
-        for (int iter = 0; iter < numIterations; iter++) {
-            std::fill(signal.begin(), signal.end(), static_cast<T>(0));
-            std::fill(windowSum.begin(), windowSum.end(), static_cast<T>(0));
+    dim3 launchDims = getLaunchDims("audio");
 
-            for (sd::LongType f = 0; f < numFrames; f++) {
-                sd::LongType frameStart = f * hopLength;
-                for (int n = 0; n < fftSize; n++) {
-                    T sum = 0;
-                    for (int k = 0; k < numFreqBins; k++) {
-                        T mag = magPtr[b * numFreqBins * numFrames + k * numFrames + f];
-                        T ph = phase[k * numFrames + f];
-                        T angle = static_cast<T>(2.0 * M_PI * k * n / fftSize);
-                        sum += mag * std::cos(angle + ph);
-                    }
-                    signal[frameStart + n] += window[n] * sum / fftSize;
-                    windowSum[frameStart + n] += window[n] * window[n];
-                }
-            }
-
-            for (sd::LongType i = 0; i < numSamples; i++) {
-                if (windowSum[i] > static_cast<T>(1e-8))
-                    signal[i] /= windowSum[i];
-            }
-
-            if (iter < numIterations - 1) {
-                for (sd::LongType f = 0; f < numFrames; f++) {
-                    sd::LongType frameStart = f * hopLength;
-                    for (int k = 0; k < numFreqBins; k++) {
-                        T sumReal = 0, sumImag = 0;
-                        for (int n = 0; n < fftSize; n++) {
-                            T val = signal[frameStart + n] * window[n];
-                            T angle = static_cast<T>(-2.0 * M_PI * k * n / fftSize);
-                            sumReal += val * std::cos(angle);
-                            sumImag += val * std::sin(angle);
-                        }
-                        phase[k * numFrames + f] = std::atan2(sumImag, sumReal);
-                    }
-                }
-            }
-        }
-
-        for (sd::LongType i = 0; i < numSamples; i++)
-            outputPtr[b * numSamples + i] = signal[i];
+    // Zero-initialise phase buffer (already zero from NDArray ctor, but explicit is safe)
+    {
+        sd::LongType phaseN = batchSize * numFreqBins * numFrames;
+        int nb = (phaseN + launchDims.y - 1) / launchDims.y;
+        PointersManager mgr(context, "griffinLim_initPhase");
+        zeroBufferKernel<T><<<nb, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+            reinterpret_cast<T*>(phaseArr.specialBuffer()), phaseN);
+        mgr.synchronize();
     }
 
-    output->syncToDevice();
+    for (int iter = 0; iter < numIterations; iter++) {
+        // Zero signal and windowSum
+        {
+            sd::LongType sigN = batchSize * numSamples;
+            int nb = (sigN + launchDims.y - 1) / launchDims.y;
+            PointersManager mgr(context, "griffinLim_zeroSig");
+            zeroBufferKernel<T><<<nb, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+                reinterpret_cast<T*>(sigArr.specialBuffer()), sigN);
+            zeroBufferKernel<T><<<nb, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+                reinterpret_cast<T*>(winArr.specialBuffer()), sigN);
+            mgr.synchronize();
+        }
+
+        // ISTFT overlap-add
+        {
+            sd::LongType istftTotal = batchSize * numFrames * fftSize;
+            int nb = (istftTotal + launchDims.y - 1) / launchDims.y;
+            PointersManager mgr(context, "griffinLim_istft");
+            NDArray::prepareSpecialUse({&sigArr, &winArr}, {magnitudeSpectrogram, &phaseArr});
+            istftKernel<T><<<nb, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+                reinterpret_cast<const T*>(magnitudeSpectrogram->specialBuffer()),
+                reinterpret_cast<const T*>(phaseArr.specialBuffer()),
+                reinterpret_cast<T*>(sigArr.specialBuffer()),
+                reinterpret_cast<T*>(winArr.specialBuffer()),
+                batchSize, numFreqBins, numFrames, numSamples, fftSize, hopLength);
+            mgr.synchronize();
+            NDArray::registerSpecialUse({&sigArr, &winArr}, {magnitudeSpectrogram, &phaseArr});
+        }
+
+        // Normalize by window sum
+        {
+            sd::LongType sigN = batchSize * numSamples;
+            int nb = (sigN + launchDims.y - 1) / launchDims.y;
+            PointersManager mgr(context, "griffinLim_norm");
+            NDArray::prepareSpecialUse({&sigArr}, {&winArr});
+            windowSumNormalizeKernel<T><<<nb, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+                reinterpret_cast<T*>(sigArr.specialBuffer()),
+                reinterpret_cast<const T*>(winArr.specialBuffer()),
+                batchSize, numSamples);
+            mgr.synchronize();
+            NDArray::registerSpecialUse({&sigArr}, {&winArr});
+        }
+
+        // Update phase (skip on last iteration — output is signal)
+        if (iter < numIterations - 1) {
+            sd::LongType phaseTotal = batchSize * numFreqBins * numFrames;
+            int nb = (phaseTotal + launchDims.y - 1) / launchDims.y;
+            PointersManager mgr(context, "griffinLim_phase");
+            NDArray::prepareSpecialUse({&phaseArr}, {&sigArr});
+            stftPhaseKernel<T><<<nb, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+                reinterpret_cast<const T*>(sigArr.specialBuffer()),
+                reinterpret_cast<T*>(phaseArr.specialBuffer()),
+                batchSize, numFreqBins, numFrames, numSamples, fftSize, hopLength);
+            mgr.synchronize();
+            NDArray::registerSpecialUse({&phaseArr}, {&sigArr});
+        }
+    }
+
+    // Copy signal to output
+    {
+        sd::LongType sigN = batchSize * numSamples;
+        int nb = (sigN + launchDims.y - 1) / launchDims.y;
+        PointersManager mgr(context, "griffinLim_copy");
+        NDArray::prepareSpecialUse({output}, {&sigArr});
+        copySignalToOutputKernel<T><<<nb, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+            reinterpret_cast<const T*>(sigArr.specialBuffer()),
+            reinterpret_cast<T*>(output->specialBuffer()),
+            batchSize, numSamples);
+        mgr.synchronize();
+        NDArray::registerSpecialUse({output}, {&sigArr});
+    }
 }
 
 void griffinLim(LaunchContext* context, NDArray* magnitudeSpectrogram,
                  int fftSize, int hopLength, int numIterations,
                  NDArray* output) {
+    NDArray::prepareSpecialUse({output}, {magnitudeSpectrogram});
     BUILD_SINGLE_SELECTOR(magnitudeSpectrogram->dataType(), griffinLim_,
                           (context, magnitudeSpectrogram, fftSize, hopLength, numIterations, output),
                           SD_FLOAT_TYPES);
+    NDArray::registerSpecialUse({output}, {magnitudeSpectrogram});
+}
+
+// ======================== Pitch Detection ========================
+// One thread per (b, frame): autocorrelation over lag range
+
+template <typename T>
+SD_KERNEL void pitchDetectionKernel(const T* input, T* output,
+                                     sd::LongType batchSize, sd::LongType numSamples,
+                                     sd::LongType numFrames, int frameLength,
+                                     int hopLength, int minLag, int maxLag,
+                                     int sampleRate) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto total = batchSize * numFrames;
+    if (idx >= total) return;
+
+    const auto b = idx / numFrames;
+    const auto f = idx % numFrames;
+    const sd::LongType frameStart = f * hopLength;
+
+    T maxCorr = 0;
+    int bestLag = 0;
+
+    for (int lag = minLag; lag <= maxLag && lag < frameLength; lag++) {
+        T corr = 0, normA = 0, normB = 0;
+        for (int n = 0; n < frameLength - lag; n++) {
+            T a  = input[b * numSamples + frameStart + n];
+            T bv = input[b * numSamples + frameStart + n + lag];
+            corr  += a * bv;
+            normA += a * a;
+            normB += bv * bv;
+        }
+        T norm = sd::math::sd_sqrt<T, T>(normA * normB);
+        T normalizedCorr = (norm > static_cast<T>(1e-10)) ? corr / norm : static_cast<T>(0);
+        if (normalizedCorr > maxCorr) {
+            maxCorr = normalizedCorr;
+            bestLag = lag;
+        }
+    }
+
+    output[idx] = (bestLag > 0 && maxCorr > static_cast<T>(0.2))
+        ? static_cast<T>(sampleRate) / static_cast<T>(bestLag)
+        : static_cast<T>(0);
 }
 
 template <typename T>
@@ -794,8 +1040,6 @@ static void pitchDetection_(LaunchContext* context, NDArray* input,
                              int sampleRate, int frameLength, int hopLength,
                              double minFreq, double maxFreq,
                              NDArray* output) {
-    input->syncToHost();
-
     const auto inputRank = input->rankOf();
     const bool hasBatch = inputRank == 2;
     const auto batchSize = hasBatch ? input->sizeAt(0) : 1;
@@ -805,106 +1049,170 @@ static void pitchDetection_(LaunchContext* context, NDArray* input,
     const int minLag = static_cast<int>(sampleRate / maxFreq);
     const int maxLag = static_cast<int>(sampleRate / minFreq);
 
-    auto inputPtr = input->bufferAsT<T>();
-    auto outputPtr = output->bufferAsT<T>();
+    const auto total = batchSize * numFrames;
+    dim3 launchDims = getLaunchDims("audio");
+    const int numBlocks = (total + launchDims.y - 1) / launchDims.y;
 
-    for (sd::LongType b = 0; b < batchSize; b++) {
-        for (sd::LongType f = 0; f < numFrames; f++) {
-            sd::LongType frameStart = f * hopLength;
-            T maxCorr = 0;
-            int bestLag = 0;
+    PointersManager manager(context, "pitchDetection");
 
-            for (int lag = minLag; lag <= maxLag && lag < frameLength; lag++) {
-                T corr = 0, normA = 0, normB = 0;
-                for (int n = 0; n < frameLength - lag; n++) {
-                    T a = inputPtr[b * numSamples + frameStart + n];
-                    T bv = inputPtr[b * numSamples + frameStart + n + lag];
-                    corr += a * bv;
-                    normA += a * a;
-                    normB += bv * bv;
-                }
-                T norm = sd::math::sd_sqrt<T, T>(normA * normB);
-                T normalizedCorr = (norm > static_cast<T>(1e-10)) ? corr / norm : static_cast<T>(0);
-                if (normalizedCorr > maxCorr) {
-                    maxCorr = normalizedCorr;
-                    bestLag = lag;
-                }
-            }
+    pitchDetectionKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+        reinterpret_cast<const T*>(input->specialBuffer()),
+        reinterpret_cast<T*>(output->specialBuffer()),
+        batchSize, numSamples, numFrames, frameLength, hopLength,
+        minLag, maxLag, sampleRate);
 
-            outputPtr[b * numFrames + f] = (bestLag > 0 && maxCorr > static_cast<T>(0.2))
-                ? static_cast<T>(sampleRate) / static_cast<T>(bestLag) : static_cast<T>(0);
-        }
-    }
-
-    output->syncToDevice();
+    manager.synchronize();
 }
 
 void pitchDetection(LaunchContext* context, NDArray* input,
                      int sampleRate, int frameLength, int hopLength,
                      double minFreq, double maxFreq,
                      NDArray* output) {
+    NDArray::prepareSpecialUse({output}, {input});
     BUILD_SINGLE_SELECTOR(input->dataType(), pitchDetection_,
                           (context, input, sampleRate, frameLength, hopLength, minFreq, maxFreq, output),
                           SD_FLOAT_TYPES);
+    NDArray::registerSpecialUse({output}, {input});
+}
+
+// ======================== Audio Resample ========================
+// One thread per (b, output_sample): sinc interpolation with Blackman-like window
+
+template <typename T>
+SD_KERNEL void resampleKernel(const T* input, T* output,
+                               sd::LongType batchSize,
+                               sd::LongType origSamples, sd::LongType targetSamples,
+                               double ratio, int sincRadius) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto total = batchSize * targetSamples;
+    if (idx >= total) return;
+
+    const auto b = idx / targetSamples;
+    const auto i = idx % targetSamples;
+
+    double srcPos = i * ratio;
+    int srcCenter = static_cast<int>(srcPos);
+    double sum       = 0;
+    double weightSum = 0;
+
+    for (int j = srcCenter - sincRadius + 1; j <= srcCenter + sincRadius; j++) {
+        if (j >= 0 && j < origSamples) {
+            double x = srcPos - j;
+            double weight;
+            if (x < 1e-10 && x > -1e-10) {
+                weight = 1.0;
+            } else if (x < sincRadius && x > -sincRadius) {
+                double pix     = M_PI * x;
+                double pixOverA = M_PI * x / sincRadius;
+                weight = (sin(pix) / pix) * (sin(pixOverA) / pixOverA);
+            } else {
+                weight = 0.0;
+            }
+            sum       += static_cast<double>(input[b * origSamples + j]) * weight;
+            weightSum += weight;
+        }
+    }
+
+    output[idx] = (weightSum > 1e-10)
+        ? static_cast<T>(sum / weightSum)
+        : static_cast<T>(0);
 }
 
 template <typename T>
 static void audioResample_(LaunchContext* context, NDArray* input,
                             int origSampleRate, int targetSampleRate,
                             NDArray* output) {
-    input->syncToHost();
-
     const auto inputRank = input->rankOf();
     const bool hasBatch = inputRank == 2;
-    const auto batchSize = hasBatch ? input->sizeAt(0) : 1;
-    const auto origSamples = hasBatch ? input->sizeAt(1) : input->sizeAt(0);
+    const auto batchSize    = hasBatch ? input->sizeAt(0)  : 1;
+    const auto origSamples  = hasBatch ? input->sizeAt(1)  : input->sizeAt(0);
     const auto targetSamples = hasBatch ? output->sizeAt(1) : output->sizeAt(0);
-
-    auto inputPtr = input->bufferAsT<T>();
-    auto outputPtr = output->bufferAsT<T>();
 
     const double ratio = static_cast<double>(origSampleRate) / static_cast<double>(targetSampleRate);
     const int sincRadius = 8;
 
-    for (sd::LongType b = 0; b < batchSize; b++) {
-        for (sd::LongType i = 0; i < targetSamples; i++) {
-            double srcPos = i * ratio;
-            int srcCenter = static_cast<int>(srcPos);
-            T sum = 0;
-            T weightSum = 0;
+    const auto total = batchSize * targetSamples;
+    dim3 launchDims = getLaunchDims("audio");
+    const int numBlocks = (total + launchDims.y - 1) / launchDims.y;
 
-            for (int j = srcCenter - sincRadius + 1; j <= srcCenter + sincRadius; j++) {
-                if (j >= 0 && j < origSamples) {
-                    double x = srcPos - j;
-                    double weight;
-                    if (std::abs(x) < 1e-10) {
-                        weight = 1.0;
-                    } else if (std::abs(x) < sincRadius) {
-                        double pix = M_PI * x;
-                        double pixOverA = M_PI * x / sincRadius;
-                        weight = (std::sin(pix) / pix) * (std::sin(pixOverA) / pixOverA);
-                    } else {
-                        weight = 0.0;
-                    }
-                    sum += inputPtr[b * origSamples + j] * static_cast<T>(weight);
-                    weightSum += static_cast<T>(weight);
-                }
-            }
+    PointersManager manager(context, "audioResample");
 
-            outputPtr[b * targetSamples + i] = (weightSum > static_cast<T>(1e-10))
-                ? sum / weightSum : static_cast<T>(0);
-        }
-    }
+    resampleKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+        reinterpret_cast<const T*>(input->specialBuffer()),
+        reinterpret_cast<T*>(output->specialBuffer()),
+        batchSize, origSamples, targetSamples, ratio, sincRadius);
 
-    output->syncToDevice();
+    manager.synchronize();
 }
 
 void audioResample(LaunchContext* context, NDArray* input,
                     int origSampleRate, int targetSampleRate,
                     NDArray* output) {
+    NDArray::prepareSpecialUse({output}, {input});
     BUILD_SINGLE_SELECTOR(input->dataType(), audioResample_,
                           (context, input, origSampleRate, targetSampleRate, output),
                           SD_FLOAT_TYPES);
+    NDArray::registerSpecialUse({output}, {input});
+}
+
+// ======================== Whisper Mel Spectrogram ========================
+// Two kernels:
+//   Kernel 1: compute mel spectrogram (power=2) with pad/trim to targetFrames → device temp
+//             (reuses melSpectrogramKernelFull; we write directly into output and zero padding)
+//   Kernel 2: per-batch log10 normalization (global-max reduction → clamp → scale)
+
+// Kernel: apply log10(max(x,1e-10)) in-place
+template <typename T>
+SD_KERNEL void log10InPlaceKernel(T* buf, sd::LongType n) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= n) return;
+    T v = buf[idx];
+    if (v < static_cast<T>(1e-10)) v = static_cast<T>(1e-10);
+    buf[idx] = static_cast<T>(::log10(static_cast<double>(v)));
+}
+
+// Kernel: per-batch global-max reduction (one block per batch element, shared mem)
+template <typename T>
+SD_KERNEL void batchMaxKernel(const T* buf, T* batchMax,
+                               sd::LongType batchSize, sd::LongType elemsPerBatch) {
+    extern __shared__ char shmem[];
+    T* shMax = reinterpret_cast<T*>(shmem);
+
+    const auto b = blockIdx.x;
+    if (b >= batchSize) return;
+
+    const T* bPtr = buf + b * elemsPerBatch;
+    T localMax = static_cast<T>(-1e30);
+    for (sd::LongType i = threadIdx.x; i < elemsPerBatch; i += blockDim.x) {
+        T v = bPtr[i];
+        if (v > localMax) localMax = v;
+    }
+    shMax[threadIdx.x] = localMax;
+    __syncthreads();
+
+    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+        if (threadIdx.x < stride) {
+            if (shMax[threadIdx.x + stride] > shMax[threadIdx.x])
+                shMax[threadIdx.x] = shMax[threadIdx.x + stride];
+        }
+        __syncthreads();
+    }
+    if (threadIdx.x == 0) batchMax[b] = shMax[0];
+}
+
+// Kernel: clamp to (globalMax - 8) then (x+4)/4 in-place
+template <typename T>
+SD_KERNEL void whisperNormalizeKernel(T* buf, const T* batchMax,
+                                       sd::LongType batchSize, sd::LongType elemsPerBatch) {
+    const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto total = batchSize * elemsPerBatch;
+    if (idx >= total) return;
+
+    const auto b = idx / elemsPerBatch;
+    T clampMin = batchMax[b] - static_cast<T>(8.0);
+    T v = buf[idx];
+    if (v < clampMin) v = clampMin;
+    buf[idx] = (v + static_cast<T>(4.0)) / static_cast<T>(4.0);
 }
 
 template <typename T>
@@ -913,9 +1221,6 @@ static void whisperMelSpectrogram_(LaunchContext* context, NDArray* input,
                                     int numMelBins, int targetFrames,
                                     double lowerEdgeHz, double upperEdgeHz,
                                     NDArray* output) {
-    // Sync input to host for CPU-path computation (same pattern as melSpectrogram_)
-    input->syncToHost();
-
     const auto inputRank = input->rankOf();
     const bool hasBatch = inputRank == 2;
     const auto batchSize = hasBatch ? input->sizeAt(0) : 1;
@@ -923,98 +1228,96 @@ static void whisperMelSpectrogram_(LaunchContext* context, NDArray* input,
     const int numFreqBins = fftSize / 2 + 1;
     const auto rawNumFrames = (numSamples - fftSize) / hopLength + 1;
 
-    // Build mel filterbank
-    double lowerMel = 2595.0 * std::log10(1.0 + lowerEdgeHz / 700.0);
-    double upperMel = 2595.0 * std::log10(1.0 + upperEdgeHz / 700.0);
-    std::vector<double> binPoints(numMelBins + 2);
-    for (int i = 0; i < numMelBins + 2; i++) {
-        double mel = lowerMel + (upperMel - lowerMel) * i / (numMelBins + 1);
-        binPoints[i] = 700.0 * (std::pow(10.0, mel / 2595.0) - 1.0) * fftSize / sampleRate;
-    }
-    std::vector<T> melFb(numMelBins * numFreqBins, 0);
-    for (int m = 0; m < numMelBins; m++) {
-        double fLeft = binPoints[m], fCenter = binPoints[m + 1], fRight = binPoints[m + 2];
-        for (int k = 0; k < numFreqBins; k++) {
-            double freq = static_cast<double>(k);
-            if (freq >= fLeft && freq <= fCenter && fCenter > fLeft)
-                melFb[m * numFreqBins + k] = static_cast<T>((freq - fLeft) / (fCenter - fLeft));
-            else if (freq > fCenter && freq <= fRight && fRight > fCenter)
-                melFb[m * numFreqBins + k] = static_cast<T>((fRight - freq) / (fRight - fCenter));
-        }
-    }
+    double lowerMel = 2595.0 * ::log10(1.0 + lowerEdgeHz / 700.0);
+    double upperMel = 2595.0 * ::log10(1.0 + upperEdgeHz / 700.0);
 
-    // Hann window
-    std::vector<T> window(fftSize);
-    for (int i = 0; i < fftSize; i++)
-        window[i] = static_cast<T>(0.5 * (1.0 - std::cos(2.0 * M_PI * i / fftSize)));
+    dim3 launchDims = getLaunchDims("audio");
 
-    auto inputPtr = input->bufferAsT<T>();
-    auto outputPtr = output->bufferAsT<T>();
+    // Kernel 1: compute mel spectrogram (power=2) into a temp buffer [batchSize, numMelBins, rawNumFrames],
+    // then D2D copy with pad/trim into output [batchSize, numMelBins, targetFrames].
+    {
+        const auto rawTotal = batchSize * numMelBins * rawNumFrames;
+        int numBlocks = (rawTotal + launchDims.y - 1) / launchDims.y;
 
-    // Compute mel spectrogram per batch, pad/trim to targetFrames, apply log normalization
-    for (sd::LongType b = 0; b < batchSize; b++) {
-        // Temporary buffer for raw mel spectrogram
-        std::vector<T> rawMel(numMelBins * rawNumFrames, 0);
+        std::vector<sd::LongType> tmpShape = {batchSize, numMelBins, rawNumFrames};
+        NDArray tmpMel('c', tmpShape, input->dataType(), context);
+        NDArray::prepareSpecialUse({&tmpMel}, {input});
 
-        for (sd::LongType f = 0; f < rawNumFrames; f++) {
-            sd::LongType frameStart = f * hopLength;
-            std::vector<T> powerSpec(numFreqBins);
+        PointersManager mgr(context, "whisperMel_spec");
+        melSpectrogramKernelFull<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+            reinterpret_cast<const T*>(input->specialBuffer()),
+            reinterpret_cast<T*>(tmpMel.specialBuffer()),
+            batchSize, numSamples, fftSize, hopLength,
+            numMelBins, numFreqBins, rawNumFrames, sampleRate,
+            lowerMel, upperMel, 2.0);
+        mgr.synchronize();
+        NDArray::registerSpecialUse({&tmpMel}, {input});
 
-            for (int k = 0; k < numFreqBins; k++) {
-                T sumReal = 0, sumImag = 0;
-                for (int n = 0; n < fftSize; n++) {
-                    T val = inputPtr[b * numSamples + frameStart + n] * window[n];
-                    T angle = static_cast<T>(-2.0 * M_PI * k * n / fftSize);
-                    sumReal += val * std::cos(angle);
-                    sumImag += val * std::sin(angle);
-                }
-                T mag = sd::math::sd_sqrt<T, T>(sumReal * sumReal + sumImag * sumImag);
-                powerSpec[k] = mag * mag;  // power=2.0
-            }
-
+        // Pad/trim: copy each (b, m) stripe via D2D cudaMemcpyAsync on context stream
+        NDArray::prepareSpecialUse({output}, {&tmpMel});
+        const sd::LongType framesToCopy = (rawNumFrames < targetFrames) ? rawNumFrames : targetFrames;
+        const size_t elemSz = sizeof(T);
+        T* tmpPtr = reinterpret_cast<T*>(tmpMel.specialBuffer());
+        T* outPtr = reinterpret_cast<T*>(output->specialBuffer());
+        for (sd::LongType b = 0; b < batchSize; b++) {
             for (int m = 0; m < numMelBins; m++) {
-                T sum = 0;
-                for (int k = 0; k < numFreqBins; k++)
-                    sum += melFb[m * numFreqBins + k] * powerSpec[k];
-                rawMel[m * rawNumFrames + f] = sum;
+                T* src = tmpPtr + b * numMelBins * rawNumFrames + m * rawNumFrames;
+                T* dst = outPtr + b * numMelBins * targetFrames + m * targetFrames;
+                cudaMemcpyAsync(dst, src, framesToCopy * elemSz,
+                                cudaMemcpyDeviceToDevice, *context->getCudaStream());
+                if (framesToCopy < targetFrames)
+                    cudaMemsetAsync(dst + framesToCopy, 0,
+                                   (targetFrames - framesToCopy) * elemSz,
+                                   *context->getCudaStream());
             }
         }
-
-        T* dstBatch = outputPtr + b * numMelBins * targetFrames;
-        sd::LongType framesToCopy = std::min(rawNumFrames, static_cast<sd::LongType>(targetFrames));
-
-        // Pad/trim to targetFrames
-        for (int m = 0; m < numMelBins; m++) {
-            for (sd::LongType f = 0; f < framesToCopy; f++) {
-                dstBatch[m * targetFrames + f] = rawMel[m * rawNumFrames + f];
-            }
-            for (sd::LongType f = framesToCopy; f < targetFrames; f++) {
-                dstBatch[m * targetFrames + f] = static_cast<T>(0);
-            }
-        }
-
-        // Whisper log normalization: log10(max(x, 1e-10)), clamp to max-8, (x+4)/4
-        sd::LongType totalElements = numMelBins * targetFrames;
-        T globalMax = static_cast<T>(-1e30);
-        for (sd::LongType i = 0; i < totalElements; i++) {
-            T val = dstBatch[i];
-            val = val > static_cast<T>(1e-10) ? val : static_cast<T>(1e-10);
-            val = static_cast<T>(std::log10(static_cast<double>(val)));
-            dstBatch[i] = val;
-            if (val > globalMax) globalMax = val;
-        }
-
-        T clampMin = globalMax - static_cast<T>(8.0);
-        for (sd::LongType i = 0; i < totalElements; i++) {
-            if (dstBatch[i] < clampMin) dstBatch[i] = clampMin;
-        }
-
-        for (sd::LongType i = 0; i < totalElements; i++) {
-            dstBatch[i] = (dstBatch[i] + static_cast<T>(4.0)) / static_cast<T>(4.0);
-        }
+        PointersManager syncMgr(context, "whisperMel_padtrim");
+        syncMgr.synchronize();
+        NDArray::registerSpecialUse({output}, {&tmpMel});
     }
 
-    output->syncToDevice();
+    // Kernel 2: log10 in-place on output
+    {
+        const sd::LongType outTotal = batchSize * numMelBins * targetFrames;
+        int numBlocks = (outTotal + launchDims.y - 1) / launchDims.y;
+        PointersManager mgr(context, "whisperMel_log10");
+        NDArray::prepareSpecialUse({output}, {});
+        log10InPlaceKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+            reinterpret_cast<T*>(output->specialBuffer()), outTotal);
+        mgr.synchronize();
+        NDArray::registerSpecialUse({output}, {});
+    }
+
+    // Kernel 3: per-batch global max reduction
+    const sd::LongType elemsPerBatch = numMelBins * targetFrames;
+    std::vector<sd::LongType> maxShape = {batchSize};
+    NDArray batchMaxArr('c', maxShape, input->dataType(), context);
+    {
+        NDArray::prepareSpecialUse({&batchMaxArr}, {output});
+        int sharedSz = launchDims.y * sizeof(T);
+        PointersManager mgr(context, "whisperMel_max");
+        // grid = batchSize (one block per batch element, data-driven), block+shmem from launchDims
+        batchMaxKernel<T><<<batchSize, launchDims.y, sharedSz, *context->getCudaStream()>>>(
+            reinterpret_cast<const T*>(output->specialBuffer()),
+            reinterpret_cast<T*>(batchMaxArr.specialBuffer()),
+            batchSize, elemsPerBatch);
+        mgr.synchronize();
+        NDArray::registerSpecialUse({&batchMaxArr}, {output});
+    }
+
+    // Kernel 4: clamp + scale in-place
+    {
+        const sd::LongType outTotal = batchSize * elemsPerBatch;
+        int numBlocks = (outTotal + launchDims.y - 1) / launchDims.y;
+        PointersManager mgr(context, "whisperMel_normalize");
+        NDArray::prepareSpecialUse({output}, {&batchMaxArr});
+        whisperNormalizeKernel<T><<<numBlocks, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+            reinterpret_cast<T*>(output->specialBuffer()),
+            reinterpret_cast<const T*>(batchMaxArr.specialBuffer()),
+            batchSize, elemsPerBatch);
+        mgr.synchronize();
+        NDArray::registerSpecialUse({output}, {&batchMaxArr});
+    }
 }
 
 void whisperMelSpectrogram(LaunchContext* context, NDArray* input,
@@ -1022,10 +1325,12 @@ void whisperMelSpectrogram(LaunchContext* context, NDArray* input,
                             int numMelBins, int targetFrames,
                             double lowerEdgeHz, double upperEdgeHz,
                             NDArray* output) {
+    NDArray::prepareSpecialUse({output}, {input});
     BUILD_SINGLE_SELECTOR(input->dataType(), whisperMelSpectrogram_,
                           (context, input, sampleRate, fftSize, hopLength,
                            numMelBins, targetFrames, lowerEdgeHz, upperEdgeHz, output),
                           SD_FLOAT_TYPES);
+    NDArray::registerSpecialUse({output}, {input});
 }
 
 }  // namespace helpers

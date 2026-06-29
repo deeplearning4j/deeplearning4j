@@ -30,12 +30,15 @@ import org.nd4j.autodiff.samediff.optimize.Optimizer;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.RandomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -89,6 +92,33 @@ public class ConstantFunctionOptimizations extends BaseOptimizerSet {
                         ((Op) df).setX(arr);
                     else
                         ((Op) df).setY(arr);
+                }
+            }
+
+            // Degenerate-reduce guard: an upstream constant fold can collapse a reduce op's
+            // input to a lower rank (e.g. a scalar 0), leaving reduction axes that exceed the
+            // input rank. Reducing over an out-of-range axis is a no-op for that axis (a scalar
+            // reduced over any axis is itself), but the op's shape-fn THROWS — which is caught
+            // below and silently aborts folding, leaving a degenerate op in the executable graph
+            // that later fails at runtime. Clamp the dimensions to the actual input rank so the
+            // all-constant op folds and is removed. Type-based over every reduce op — never
+            // op-name specific.
+            if (df instanceof BaseReduceOp) {
+                BaseReduceOp red = (BaseReduceOp) df;
+                INDArray x0 = sd.getVariable(in.get(0)).getArr();
+                long[] axes = red.getDimensions();
+                if (x0 != null && axes != null && axes.length > 0) {
+                    int rank = x0.rank();
+                    List<Long> kept = new ArrayList<>();
+                    for (long ax : axes) {
+                        long norm = ax < 0 ? ax + rank : ax;
+                        if (norm >= 0 && norm < rank) kept.add(norm);
+                    }
+                    if (kept.size() != axes.length) {
+                        log.debug("Constant-fold: clamping out-of-range reduce axes {} to input rank {} for op {} ({})",
+                                Arrays.toString(axes), rank, df.getOwnName(), df.opName());
+                        red.setDimensions(kept.stream().mapToLong(Long::longValue).toArray());
+                    }
                 }
             }
 

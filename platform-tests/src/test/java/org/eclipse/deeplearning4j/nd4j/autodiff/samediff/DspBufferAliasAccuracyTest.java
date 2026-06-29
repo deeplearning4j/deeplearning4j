@@ -845,13 +845,11 @@ public class DspBufferAliasAccuracyTest {
 
     private static void configureDsp(SameDiff target, GraphExecutionMode mode) {
         if (mode == GraphExecutionMode.SLOT_BY_SLOT) {
-            target.setDspAutoCompileEnabled(false);
         }
         target.setGraphExecutionMode(mode);
     }
 
     private static void disableDsp(SameDiff target) {
-        target.setDspAutoCompileEnabled(false);
         target.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
     }
 

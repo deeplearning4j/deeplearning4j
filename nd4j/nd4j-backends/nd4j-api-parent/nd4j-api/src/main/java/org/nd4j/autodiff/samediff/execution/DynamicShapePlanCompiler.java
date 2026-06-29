@@ -23,6 +23,7 @@ package org.nd4j.autodiff.samediff.execution;
 import java.util.Arrays;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -1132,6 +1133,14 @@ public class DynamicShapePlanCompiler {
         }
         log.info("EXT_INPUT_DISCOVER: {} total ({} constants, {} variables, {} placeholders)",
                 externalInputKeys.size(), constantCount, variableCount, placeholderCount);
+        // Log all external input names (always at info level for diagnostics)
+        for (int i = 0; i < externalInputKeys.size(); i++) {
+            byte srcType = externalInputSourceTypes.get(i);
+            String typeStr = srcType == DynamicShapeSlot.SOURCE_CONSTANT ? "CONSTANT" :
+                    srcType == DynamicShapeSlot.SOURCE_VARIABLE ? "VARIABLE" :
+                    srcType == DynamicShapeSlot.SOURCE_PLACEHOLDER ? "PLACEHOLDER" : "UNKNOWN";
+            log.info("EXT_INPUT_DISCOVER: {} idx={} name=\"{}\"", typeStr, i, externalInputKeys.get(i));
+        }
         // Log placeholder names (these are the dynamic inputs that change per step)
         for (int i = 0; i < externalInputKeys.size(); i++) {
             if (externalInputSourceTypes.get(i) == DynamicShapeSlot.SOURCE_PLACEHOLDER) {

@@ -76,6 +76,18 @@ SD_KERNEL void scalarSimpleShaped(
   __shared__ const sd::LongType* zShapePtr;
   __shared__ const sd::LongType* zStridePtr;
 
+  // Scalar fast path: strides may not be set for scalars, and the scalar grid spans many blocks
+  // (GRID_SIZE_SCALAR_SCAN). If every block's thread 0 wrote zVals[0], an in-place op (z == x)
+  // would be re-applied once per block-wave and compound (e.g. divide-by-2 becomes divide-by-4).
+  // Restrict the write to the single global thread (block 0, thread 0) so it runs exactly once.
+  // All threads return uniformly here, so the __syncthreads below is never reached divergently.
+  if (shape::length(xShapeInfo) <= 1 && shape::length(zShapeInfo) <= 1) {
+    if (blockIdx.x == 0 && threadIdx.x == 0) {
+      zVals[0] = OpType::op(xVals[0], scalar, pVals);
+    }
+    return;
+  }
+
   if (threadIdx.x == 0) {
     length     = shape::length(xShapeInfo);
     xRank      = shape::rank(xShapeInfo);
@@ -85,21 +97,9 @@ SD_KERNEL void scalarSimpleShaped(
     zRank      = shape::rank(zShapeInfo);
     zShapePtr  = shape::shapeOf(zShapeInfo);
     zStridePtr = shape::stride(zShapeInfo);
-
-    //need special handling for scalars as strides may not be set for scalars
-    if(shape::length(xShapeInfo) <= 1 && shape::length(zShapeInfo) <= 1) {
-      zVals[0] = OpType::op(xVals[0], scalar, pVals);
-      return;
-
-    }
   }
   __syncthreads();
 
-  //need special handling for scalars as strides may not be set for scalars
-  if(shape::length(xShapeInfo) <= 1 && shape::length(zShapeInfo) <= 1) {
-    return;
-
-  }
   for (sd::LongType i = tid; i < length; i += totalThreads) {
     sd::LongType xCoords[SD_MAX_RANK];
     sd::LongType zCoords[SD_MAX_RANK];

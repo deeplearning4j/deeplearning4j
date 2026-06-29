@@ -536,14 +536,15 @@ DECLARE_TYPES(dot_product_attention_v2) {
 
 DECLARE_SHAPE_FN(dot_product_attention_v2) {
   auto queriesType = ArrayOptions::dataType(inputShape->at(0));
-  auto valuesType = ArrayOptions::dataType(inputShape->at(1));
-  auto keysType = block.width() > 2 ? ArrayOptions::dataType(inputShape->at(2)) : valuesType;
-  // Promote to widest FP type among Q/K/V (mirrors runtime auto-cast in CUSTOM_OP_IMPL)
+  // Output/scores dtype MUST equal the QUERIES dtype. The runtime (CUSTOM_OP_IMPL) auto-casts
+  // K and V to the queries dtype — NOT to the widest of Q/K/V — so the fused CUDA kernels and
+  // the cuBLAS/matmul fallback both compute in and write queries-typed results. Allocating the
+  // output as the widest type (e.g. DOUBLE when Q=FLOAT but K/V default to DOUBLE) made a FLOAT
+  // kernel write into a DOUBLE buffer: the 4-byte writes land in the first half of each 8-byte
+  // slot, so the result reads back as reinterpreted garbage/denormals for the first half of the
+  // elements and untouched zeros for the rest (manifested as an all-near-zero attention output).
+  // Keep this in lockstep with the K/V auto-cast in CUSTOM_OP_IMPL.
   auto firstInputType = queriesType;
-  if (DataTypeUtils::sizeOfElement(valuesType) > DataTypeUtils::sizeOfElement(firstInputType))
-    firstInputType = valuesType;
-  if (DataTypeUtils::sizeOfElement(keysType) > DataTypeUtils::sizeOfElement(firstInputType))
-    firstInputType = keysType;
   auto queriesShape = inputShape->at(0);
   auto valuesShape = inputShape->at(1);
   auto keysShape = block.width() > 2 ? inputShape->at(2) : valuesShape;

@@ -117,6 +117,45 @@ class SD_LIB_EXPORT CudaMemoryPool {
   void* allocate(size_t size, int deviceId, cudaStream_t stream = nullptr, int* actualDeviceId = nullptr);
 
   /**
+   * Allocate a PERSISTENT device buffer whose lifetime is independent of the async
+   * pool's per-stream ordering, the CUDA graph capture workspace, and any CUDA graph.
+   *
+   * Motivation: during CUDA graph capture, allocate() bump-allocates from the capture
+   * workspace (tl_captureWorkspace) — an interior pointer of a single block that is
+   * freed by releaseWorkspace() whenever a segment is invalidated for rebuild. Buffers
+   * that are baked as kernel arguments into the captured graph (e.g. TAD-offset buffers
+   * read by softMaxCuda) MUST outlive the workspace, or replay reads freed memory →
+   * CUDA err700. This method gives such buffers a standalone lifetime.
+   *
+   * Implementation: cudaMallocAsync on a dedicated, per-device, NON-capturing allocation
+   * stream (never passed into a capture), then a one-time materializing sync. This
+   * produces a real pool-backed allocation with NO cudaGraphMemAllocNode (which would
+   * fail cudaGraphLaunch with "invalid argument" if issued on the capturing stream),
+   * and NO synchronous cudaMalloc (which is illegal during capture). The buffer is
+   * tracked so free() routes to cudaFreeAsync on the same allocation stream. It is freed
+   * only when the owner releases it (e.g. TAD cache eviction), never by workspace or
+   * graph teardown.
+   *
+   * @param size     bytes to allocate
+   * @param deviceId device to allocate on
+   * @return pointer, or nullptr on failure
+   */
+  void* allocateDirect(size_t size, int deviceId);
+
+  // ── Capture-constant arena (state is private; see captureArenaBlocks_ in the private section) ──
+  // Materialize the per-device capture-constant arena backing if not present. MUST be called
+  // PRE-capture (no capture yet active) — it cudaMallocAsync's the 64MB backing, illegal once the
+  // thread is capturing. Idempotent / no-op if already materialized or if a capture is active.
+  void ensureCaptureArena(int deviceId);
+  // Bump-allocate `size` bytes of capture-safe persistent constant memory from the per-device
+  // arena (ensures backing, then pointer-arithmetic bump). Returns nullptr if exhausted or not
+  // pre-materialized while capturing, so the caller can fall back/throw. Used by
+  // ConstantHelper::replicatePointer's capture branch.
+  void* allocateFromCaptureArena(size_t size, int deviceId);
+  // True if ptr lies within any device's capture arena (so free() must NOT cudaFree it).
+  bool isInCaptureArena(void* ptr) const;
+
+  /**
    * Free memory back to the pool
    * Falls back to cudaFree if pools are not supported
    *
@@ -303,6 +342,44 @@ class SD_LIB_EXPORT CudaMemoryPool {
   void unregisterCaptureWorkspace(void* basePtr);
 
   // =========================================================================
+  // Graph-Baked Address Protection
+  // =========================================================================
+
+  /**
+   * Pin a GPU address that is baked into a live CUDA graph's captured nodes.
+   * While pinned, CudaMemoryPool::free() will skip cudaFreeAsync on this address,
+   * preventing pool reuse while the CUDA graph that baked it is still live.
+   * Safe to call multiple times for the same address (reference-counted).
+   *
+   * Background: when a slot's old buffer is freed via tl_deferredSlotDeletes and
+   * the pool re-hands that address to a subsequent allocation (e.g., ref-SD weights),
+   * and the CUDA graph replays using the baked-in address, the graph reads the new
+   * allocation's data — causing data corruption or CUDA err700 if re-freed.
+   *
+   * @param ptr      GPU pointer baked into the CUDA graph
+   * @param deviceId Device the pointer was allocated on
+   */
+  void pinGraphBakedAddress(void* ptr, int deviceId);
+
+  /**
+   * Unpin a GPU address previously pinned via pinGraphBakedAddress().
+   * When the reference count reaches zero, immediately issues cudaFreeAsync
+   * on the saved stream (or stream 0 if not recorded) to release the memory
+   * back to the pool. This is the deferred-free path for graph-baked buffers.
+   *
+   * @param ptr      GPU pointer to unpin
+   * @param deviceId Device the pointer was allocated on (used for cudaFreeAsync)
+   * @param stream   CUDA stream for the deferred cudaFreeAsync (nullptr = stream 0)
+   */
+  void unpinGraphBakedAddress(void* ptr, int deviceId, cudaStream_t stream = nullptr);
+
+  /**
+   * Check if a pointer is currently pinned as graph-baked.
+   * Called from CudaMemoryPool::free() to skip freeing pinned addresses.
+   */
+  bool isGraphBakedPinned(void* ptr) const;
+
+  // =========================================================================
   // Direct (non-pool) Allocation Tracking
   // =========================================================================
 
@@ -445,12 +522,74 @@ class SD_LIB_EXPORT CudaMemoryPool {
   mutable std::mutex directAllocMutex_;
   std::unordered_map<void*, size_t> directAllocations_;
 
+  // Persistent capture-safe allocations from allocateDirect(): ptr → {size, deviceId}.
+  // Allocated via cudaMallocAsync on a dedicated non-capturing stream so they survive
+  // capture-workspace release and CUDA-graph teardown (e.g. TAD-offset buffers baked
+  // as kernel args). free() routes these to cudaFreeAsync on directAllocStreams_[dev].
+  // Shares directAllocMutex_ with directAllocations_.
+  struct DirectAsyncInfo { size_t size; int deviceId; };
+  std::unordered_map<void*, DirectAsyncInfo> directAsyncAllocations_;
+
+  // Dedicated per-device allocation streams used ONLY by allocateDirect()/its frees.
+  // Created lazily, NEVER passed into a CUDA graph capture, so cudaMallocAsync on them
+  // produces standalone pool allocations with no graph mem-nodes. Guarded by
+  // directAllocStreamMutex_.
+  cudaStream_t directAllocStreams_[MAX_DEVICES]{};
+  std::mutex directAllocStreamMutex_;
+  // Lazily create (once) and return the dedicated non-capturing allocation stream for a device.
+  cudaStream_t ensureDirectAllocStream(int deviceId);
+
+  // ── Capture-constant arena ──────────────────────────────────────────────
+  // Persistent per-device device-memory arena for CONSTANTS replicated DURING a CUDA-graph
+  // capture (shape buffers / TAD offsets via ConstantHelper::replicatePointer). On the
+  // capturing thread cudaMallocAsync is illegal (err900 cudaErrorStreamCaptureUnsupported)
+  // and the capture workspace is released after capture (→ err700 dangling) — so neither a
+  // fresh async alloc nor the workspace works. The arena backing is allocated/grown ONLY
+  // when NOT capturing (pre-capture or between plans); during capture we BUMP-allocate (pure
+  // pointer arithmetic, no CUDA call). Replicated constants are process-lifetime (cached
+  // forever in ConstantShapeHelper), so the arena only grows — blocks are NEVER freed or
+  // reset individually because their device addresses are baked into live captured CUDA graphs
+  // (resetting = err700). free() recognizes arena-interior pointers and skips them; all blocks
+  // are freed at releaseAll(). Guarded by captureArenaMutex_.
+  //
+  // Multi-block growable design: a single 64 MB block holds ~1800 padded shape buffers, but
+  // across many plan create/destroy cycles the cumulative distinct constants can exceed that.
+  // We therefore keep a per-device VECTOR of blocks. allocateFromCaptureArena bumps from the
+  // LAST block; if it is full and no capture is active, a NEW block is pushed (growth).
+  // ensureCaptureArena is called PRE-CAPTURE (before beginCapture) to guarantee at least one
+  // full ARENA_BYTES of free headroom in the last block: if the last block has < ARENA_BYTES
+  // free (or no blocks exist), it appends a fresh 64 MB block so capture-time bump-allocs
+  // never need to grow. This prevents the status=50 failure where block[0] fills across
+  // decode steps and mid-capture growth is illegal (cudaMallocAsync err900 during capture).
+  // Blocks are raw pointers (no smart pointers per repo rule) and freed as a batch in releaseAll.
+  struct ArenaBlock {
+    void*  base;      // device pointer (nullptr = unused sentinel)
+    size_t capacity;  // bytes allocated
+    size_t offset;    // bytes consumed (bump cursor)
+  };
+  std::vector<ArenaBlock> captureArenaBlocks_[MAX_DEVICES];  // per-device block list
+  std::mutex captureArenaMutex_;
+  // (ensureCaptureArena / allocateFromCaptureArena / isInCaptureArena are declared PUBLIC near
+  //  allocateDirect — ConstantHelper::replicatePointer and the DSP backends call them.)
+
   // Device exclusion list for failover — prevents allocateFailover() from
   // placing memory on these devices. Used to isolate subprocess memory:
   // the staging process excludes device 1 so it never displaces the
   // embedding subprocess's resident pages.
   std::unordered_set<int> excludedFailoverDevices_;
   mutable std::mutex exclusionMutex_;
+
+  // Graph-baked address pins: ptr → {refCount, deviceId, freeRequested}.
+  // A pin is PURE PROTECTION: addresses a live segment references (baked into a CUDA
+  // graph OR cached in a frozen slot-by-slot slot) must not be returned to the pool
+  // while the segment is live. free() on a pinned ptr is DEFERRED and records
+  // freeRequested=true; unpinGraphBakedAddress() executes the free at refCount==0 ONLY
+  // if it was requested. A pinned buffer that is never free()'d (a SameDiff weight/
+  // constant that outlives the plan) is therefore released by unpin WITHOUT a free —
+  // it is externally owned and must not be freed by the plan.
+  struct GraphBakedInfo { int refCount; int deviceId; bool freeRequested; };
+  mutable std::mutex graphBakedMutex_;
+  std::unordered_map<void*, GraphBakedInfo> graphBakedPins_;
 };
 
 }  // namespace memory

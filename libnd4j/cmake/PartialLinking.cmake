@@ -147,6 +147,7 @@ function(sd_create_library_with_partial_linking LIB_NAME OBJECT_LIB_NAME)
         list(APPEND LINK_LIBS "-lcudart")
         list(APPEND LINK_LIBS "-lcublas")
         list(APPEND LINK_LIBS "-lcusolver")
+        list(APPEND LINK_LIBS "-lcusparse")
         list(APPEND LINK_LIBS "-lcurand")
         # Add cuDNN if available
         if(HAVE_CUDNN)

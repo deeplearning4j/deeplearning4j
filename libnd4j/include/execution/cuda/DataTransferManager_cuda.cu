@@ -25,6 +25,7 @@
 #include <execution/DataTransferManager.h>
 #include <execution/DeviceManager.h>
 #include <execution/LaunchContext.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <cuda_runtime.h>
 #include <chrono>
 #include <cstring>
@@ -313,16 +314,14 @@ void DataTransferManager::freePinnedMemory(void* ptr) {
 }
 
 void* DataTransferManager::allocateDeviceMemory(int deviceId, size_t bytes) {
-    void* ptr = nullptr;
     cudaSetDevice(deviceId);
-    cudaMalloc(&ptr, bytes);
-    return ptr;
+    return memory::CudaMemoryPool::getInstance().allocate(bytes, deviceId);
 }
 
 void DataTransferManager::freeDeviceMemory(int deviceId, void* ptr) {
     if (ptr) {
         cudaSetDevice(deviceId);
-        cudaFree(ptr);
+        memory::CudaMemoryPool::getInstance().free(ptr, deviceId);
     }
 }
 
@@ -331,23 +330,24 @@ float DataTransferManager::benchmarkBandwidth(int srcDevice, int dstDevice, size
     void* srcPtr = nullptr;
     void* dstPtr = nullptr;
 
+    auto& pool = memory::CudaMemoryPool::getInstance();
     if (srcDevice >= 0) {
         cudaSetDevice(srcDevice);
-        cudaMalloc(&srcPtr, bytes);
+        srcPtr = pool.allocate(bytes, srcDevice);
     } else {
         cudaMallocHost(&srcPtr, bytes);
     }
 
     if (dstDevice >= 0) {
         cudaSetDevice(dstDevice);
-        cudaMalloc(&dstPtr, bytes);
+        dstPtr = pool.allocate(bytes, dstDevice);
     } else {
         cudaMallocHost(&dstPtr, bytes);
     }
 
     if (!srcPtr || !dstPtr) {
-        if (srcPtr) srcDevice >= 0 ? cudaFree(srcPtr) : cudaFreeHost(srcPtr);
-        if (dstPtr) dstDevice >= 0 ? cudaFree(dstPtr) : cudaFreeHost(dstPtr);
+        if (srcPtr) { if (srcDevice >= 0) pool.free(srcPtr, srcDevice); else cudaFreeHost(srcPtr); }
+        if (dstPtr) { if (dstDevice >= 0) pool.free(dstPtr, dstDevice); else cudaFreeHost(dstPtr); }
         return 0.0f;
     }
 
@@ -366,8 +366,8 @@ float DataTransferManager::benchmarkBandwidth(int srcDevice, int dstDevice, size
     double totalMs = std::chrono::duration<double, std::milli>(endTime - startTime).count();
 
     // Cleanup
-    if (srcDevice >= 0) cudaFree(srcPtr); else cudaFreeHost(srcPtr);
-    if (dstDevice >= 0) cudaFree(dstPtr); else cudaFreeHost(dstPtr);
+    if (srcDevice >= 0) pool.free(srcPtr, srcDevice); else cudaFreeHost(srcPtr);
+    if (dstDevice >= 0) pool.free(dstPtr, dstDevice); else cudaFreeHost(dstPtr);
 
     // Calculate bandwidth
     float bandwidth = static_cast<float>((bytes * numIterations) / 1e9) /

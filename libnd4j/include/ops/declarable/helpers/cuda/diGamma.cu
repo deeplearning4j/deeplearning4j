@@ -90,9 +90,18 @@ static void diGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 void diGamma(LaunchContext *context, NDArray&x, NDArray &z) {
   dim3 digammaDims2 = digammaDims(z.lengthOf());
   NDArray::prepareSpecialUse({&z}, {&x});
+  // Pin device shape pointers in named locals before the async kernel launch.
+  // specialShapeInfo() returns _shapeInfoD whose backing ConstantShapeBuffer is
+  // reference-counted and can be freed if evaluated lazily inside the
+  // BUILD_SINGLE_SELECTOR argument list (C++ argument evaluation order is
+  // unspecified).  Storing in locals keeps the device pointer valid through
+  // the launcher call and the cudaStreamSynchronize inside checkErrorCode.
+  // Pattern mirrors the TadPack keep-alive fix in NativeOps_shuffle.cu.
+  const LongType* xShapeInfoD = x.specialShapeInfo();
+  const LongType* zShapeInfoD = z.specialShapeInfo();
   BUILD_SINGLE_SELECTOR(x.dataType(), diGammaCudaLauncher,
                         (digammaDims2.y, digammaDims2.x, digammaDims2.z, context->getCudaStream(), x.specialBuffer(),
-                         x.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()),
+                         xShapeInfoD, z.specialBuffer(), zShapeInfoD),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&z}, {&x});
 }

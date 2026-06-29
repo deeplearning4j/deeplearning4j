@@ -86,7 +86,7 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* input
     const auto tadId = e / div;
     if (tadId >= numTads) continue;
 
-    const auto idx = e % div;
+    const auto elemIdx = e % div;
 
     const auto tadInput = input + inputTadOffsets[tadId];
     const auto tadOutput = output + outputTadOffsets[tadId];
@@ -95,10 +95,10 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* input
     LongType fOffset, lOffset;
 
     // Input coordinates and offsets
-    INDEX2COORDS(idx, tadRankInput, tadShapeInput, fCoords);
+    INDEX2COORDS(elemIdx, tadRankInput, tadShapeInput, fCoords);
     COORDS2INDEX(tadRankInput, strideInput, fCoords, fOffset);
 
-    INDEX2COORDS(numOfElemsToReverse - idx - 1, tadRankInput, tadShapeInput, lCoords);
+    INDEX2COORDS(numOfElemsToReverse - elemIdx - 1, tadRankInput, tadShapeInput, lCoords);
     COORDS2INDEX(tadRankInput, strideInput, lCoords, lOffset);
 
     auto v1 = tadInput[fOffset];
@@ -108,10 +108,10 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* input
     LongType zfOffset, zlOffset;
 
     // Output coordinates and offsets
-    INDEX2COORDS(idx, tadRankOutput, tadShapeOutput, zfCoords);
+    INDEX2COORDS(elemIdx, tadRankOutput, tadShapeOutput, zfCoords);
     COORDS2INDEX(tadRankOutput, strideOutput, zfCoords, zfOffset);
 
-    INDEX2COORDS(numOfElemsToReverse - idx - 1, tadRankOutput, tadShapeOutput, zlCoords);
+    INDEX2COORDS(numOfElemsToReverse - elemIdx - 1, tadRankOutput, tadShapeOutput, zlCoords);
     COORDS2INDEX(tadRankOutput, strideOutput, zlCoords, zlOffset);
 
     // Store swapped values

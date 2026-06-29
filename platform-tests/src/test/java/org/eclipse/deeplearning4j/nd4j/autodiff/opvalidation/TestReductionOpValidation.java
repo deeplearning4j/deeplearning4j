@@ -839,12 +839,14 @@ public class TestReductionOpValidation extends BaseOpValidation {
         for (long[] axes : new long[][]{{0}, {1}, {0, 1}}) {
             INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
+            // Compute expected values BEFORE registering in SameDiff.
+            INDArray expMean = input.mean(axes);
+            INDArray expVar = input.var(false, axes);
+
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", input);
 
             SDVariable[] moments = sd.math().moments(in, axes,false);
-            INDArray expMean = input.mean(axes);
-            INDArray expVar = input.var(false, axes);
 
             SDVariable loss;
             if (axes.length < 2) {
@@ -852,7 +854,6 @@ public class TestReductionOpValidation extends BaseOpValidation {
             } else {
                 loss = moments[0].add(moments[1]).mean();
             }
-
 
             String msg = Arrays.toString(axes);
 
@@ -1280,13 +1281,9 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable out = sd.linalg().matmul(sdV,softmax);
         SDVariable loss = out.norm1("out");
         loss.markAsLoss();
-        // Disable DSP auto-compile so gradient check uses op-by-op execution.
-        // DSP CUDA graph replay bakes variable arrays in as constants (via setConstant(true)
-        // in OpaqueNDArray.fromINDArray for non-closeable arrays). GradCheckUtil modifies
-        // variable host buffers between calls, but the CUDA graph ignores those changes,
-        // producing wildly wrong numerical gradients (~1e8 instead of ~1.0).
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
+        // DSP is kept enabled: GradCheckUtil calls sd.invalidateAllPlanCaches() after each
+        // putScalar perturbation, so the plan is rebuilt from scratch on every sd.output() call
+        // and sees the perturbed host values. No workaround needed.
         String err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
         assertNull(err);
@@ -1364,11 +1361,10 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable out = sd.linalg().matmul("weightsTimesValue",softmaxDroppedOut,sdV);
         SDVariable loss = out.norm1("out");
         loss.markAsLoss();
-        // Disable DSP for gradient checking — DSP bakes arrays as constants during
-        // graph capture, so GradCheckUtil's perturbations are ignored by the graph.
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
-        // Use higher tolerance for stochastic dropout op
+        // DSP is kept enabled: GradCheckUtil calls sd.invalidateAllPlanCaches() after each
+        // putScalar perturbation, so the plan rebuilds on every sd.output() call.
+        // Use higher tolerance for the stochastic dropout op (fixed seed 12345 makes it
+        // deterministic per call, but numerical gradients are inherently noisy for dropout).
         String err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true)
                 .gradCheckMaxRelativeError(1.0)  // Allow up to 100% relative error for stochastic ops

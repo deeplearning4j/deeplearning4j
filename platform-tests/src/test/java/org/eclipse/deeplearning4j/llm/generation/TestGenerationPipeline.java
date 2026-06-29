@@ -44,6 +44,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -93,7 +94,7 @@ public class TestGenerationPipeline {
         log.info("Import complete: {}ms (decoder={} ops, embed={} ops, vision={} ops)",
                 importMs, decoder.ops().length, embedTokens.ops().length, visionEncoder.ops().length);
 
-        Tokenizer tokenizer = HuggingFaceTokenizer.fromDirectory(tokenizerDir);
+        Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerDir);
 
         // --- 2. Process a synthetic test image ---
         long t2 = System.currentTimeMillis();
@@ -101,21 +102,32 @@ public class TestGenerationPipeline {
         PreprocessorConfig ppConfig = PreprocessorConfig.fromFile(VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_PREPROCESSOR_CONFIG).getModelFile());
         VLMImagePreprocessor preprocessor = VLMImagePreprocessor.fromConfig(ppConfig);
 
-        ImageTiler.SplitImageResult tileResult = ImageTiler.splitImageForVLM(testImage, ppConfig.getTargetHeight());
+        int targetSize = ppConfig.getTargetHeight();
+        ImageTiler.SplitImageResult tileResult = ImageTiler.splitImageForVLM(testImage, targetSize);
         List<INDArray> frames = new ArrayList<>();
-        for (BufferedImage frame : tileResult.frames) {
-            frames.add(preprocessor.preprocess(frame));
+        List<INDArray> masks = new ArrayList<>();
+        for (int i = 0; i < tileResult.frames.size(); i++) {
+            INDArray tensor = preprocessor.preprocess(tileResult.frames.get(i));
+            // Reshape to 5D [1, 1, 3, H, W] as expected by the vision encoder
+            frames.add(tensor.reshape(1, 1, 3, targetSize, targetSize));
+            ImageTiler.ContentRegion region = tileResult.contentRegions.get(i);
+            masks.add(ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize));
         }
         log.info("Preprocessed {} frames from test image", frames.size());
 
         // Vision encode - run each frame through the vision encoder
-        String visionInput = visionEncoder.inputs().get(0);
+        // Use hardcoded placeholder names and check for optional pixel_attention_mask.
+        boolean hasMaskInput = visionEncoder.getVariable("pixel_attention_mask") != null;
         String visionOutput = visionEncoder.outputs().get(0);
         List<INDArray> encodedFrames = new ArrayList<>();
-        for (INDArray frame : frames) {
-            Map<String, INDArray> visionResult = visionEncoder.output(
-                    Map.of(visionInput, frame), visionOutput);
-            encodedFrames.add(visionResult.get(visionOutput));
+        for (int i = 0; i < frames.size(); i++) {
+            Map<String, INDArray> visionInputMap = new HashMap<>();
+            visionInputMap.put("pixel_values", frames.get(i));
+            if (hasMaskInput) {
+                visionInputMap.put("pixel_attention_mask", masks.get(i));
+            }
+            Map<String, INDArray> visionResult = visionEncoder.output(visionInputMap, visionOutput);
+            encodedFrames.add(visionResult.get(visionOutput).dup());
         }
         INDArray visionEmbeddings = Nd4j.concat(1, encodedFrames.toArray(new INDArray[0]));
         long visionMs = System.currentTimeMillis() - t2;

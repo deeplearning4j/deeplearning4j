@@ -31,10 +31,12 @@ CublasHelper::CublasHelper() {
   _cache.resize(numDevices);
   _solvers.resize(numDevices);
   _cudnn.resize(numDevices);
+  _sparse.resize(numDevices, nullptr);
   for (int e = 0; e < numDevices; e++) {
     _cache[e] = handle_();
     _solvers[e] = handle_();
     _cudnn[e] = nullptr;
+    _sparse[e] = nullptr;
   }
 }
 
@@ -56,4 +58,8 @@ void* CublasHelper::ltHandle(int deviceId) { return nullptr; }
 void* CublasHelper::solver() { return nullptr; }
 
 void* CublasHelper::cudnn() { return nullptr; }
+
+void* CublasHelper::sparseHandle() { return nullptr; }
+
+void* CublasHelper::sparseHandle(int deviceId) { return nullptr; }
 }  // namespace sd

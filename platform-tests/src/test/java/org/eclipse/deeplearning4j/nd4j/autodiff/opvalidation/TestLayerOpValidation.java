@@ -76,6 +76,38 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLayerNormBpDiag(Nd4jBackend backend) {
+        // Diagnostic: check dLdg for a known 2x3 input to isolate variance bug
+        // input[0] = [1,2,3], input[1] = [4,5,6], axis={1}
+        // mean[0]=2, var[0]=2/3, mean[1]=5, var[1]=2/3
+        // xhat[i,j] = (input[i,j]-mean[i]) / sqrt(var[i]+eps)
+        // xhat[0] = [-1.2247, 0, 1.2247], xhat[1] = [-1.2247, 0, 1.2247]
+        // dLdg[j] = sum_i(eps[i,j] * xhat[i,j]) with eps=all-ones
+        // dLdg = [-2.449, 0, 2.449]
+        INDArray input = Nd4j.create(new double[][]{{1,2,3},{4,5,6}}).castTo(DataType.DOUBLE);
+        INDArray gain = Nd4j.ones(DataType.DOUBLE, 3);
+        INDArray bias = Nd4j.zeros(DataType.DOUBLE, 3);
+        INDArray eps = Nd4j.ones(DataType.DOUBLE, 2, 3);
+        INDArray dLdx = Nd4j.create(DataType.DOUBLE, 2, 3);
+        INDArray dLdg = Nd4j.create(DataType.DOUBLE, 3);
+        INDArray dLdb = Nd4j.create(DataType.DOUBLE, 3);
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNormBp(
+                input, gain, bias, eps, dLdx, dLdg, dLdb, true, 1L));
+        log.info("testLayerNormBpDiag: dLdg={}", dLdg);
+        log.info("testLayerNormBpDiag: dLdb={}", dLdb);
+        log.info("testLayerNormBpDiag: dLdx={}", dLdx);
+        // dLdg[0] should be ≈ -2.449, dLdg[1] ≈ 0, dLdg[2] ≈ 2.449
+        assertEquals(-2.449, dLdg.getDouble(0), 0.01, "dLdg[0]");
+        assertEquals(0.0, dLdg.getDouble(1), 0.01, "dLdg[1]");
+        assertEquals(2.449, dLdg.getDouble(2), 0.01, "dLdg[2]");
+        // dLdb[j] = sum_i(eps[i,j]) = 2 for each j
+        assertEquals(2.0, dLdb.getDouble(0), 0.01, "dLdb[0]");
+        assertEquals(2.0, dLdb.getDouble(1), 0.01, "dLdb[1]");
+        assertEquals(2.0, dLdb.getDouble(2), 0.01, "dLdb[2]");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testXwPlusB(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1183,6 +1215,86 @@ public class TestLayerOpValidation extends BaseOpValidation {
                 .gradientCheck(true);
         String err = OpValidation.validate(tc);
         assertNull(err);
+    }
+
+    /**
+     * Direct eager test for layer_norm_bp: calls the op without going through DSP.
+     * Compares analytic gradient (from layer_norm_bp eager) vs numerical gradient
+     * (finite difference on eager layer_norm). If this PASSES, the bug is in DSP execution.
+     * If this FAILS, the bug is in the C++ layer_norm_bp op itself.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLayerNormBpEager(Nd4jBackend backend) {
+        final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
+        final INDArray standardized = random.ulike();
+        Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
+
+        final INDArray gain = Nd4j.rand(DataType.DOUBLE, 4);
+        final INDArray bias = Nd4j.rand(DataType.DOUBLE, 4);
+
+        // Compute layer_norm forward eagerly to get the output we differentiate through
+        INDArray layerNormOut = Nd4j.create(DataType.DOUBLE, 10, 4);
+        Nd4j.exec(new LayerNorm(standardized, gain, bias, layerNormOut, true, 1L));
+
+        // Upstream gradient for norm1 loss = sign(out)
+        INDArray eps = Transforms.sign(layerNormOut);
+
+        // Compute layer_norm_bp analytically (eager, bypassing DSP)
+        INDArray dLdx = standardized.ulike();
+        INDArray dLdg = gain.ulike();
+        INDArray dLdb = bias.ulike();
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNormBp(
+                standardized, gain, bias, eps, dLdx, dLdg, dLdb, true, 1L));
+
+
+        // Compute numerical gradients via finite differences on eager layer_norm
+        double h = 1e-5;
+        for (int c = 0; c < 4; c++) {
+            double orig = gain.getDouble(c);
+            INDArray gainPlus = gain.dup(); gainPlus.putScalar(c, orig + h);
+            INDArray outPlus = Nd4j.create(DataType.DOUBLE, 10, 4);
+            Nd4j.exec(new LayerNorm(standardized, gainPlus, bias, outPlus, true, 1L));
+            double scorePlus = outPlus.norm1Number().doubleValue();
+
+            INDArray gainMinus = gain.dup(); gainMinus.putScalar(c, orig - h);
+            INDArray outMinus = Nd4j.create(DataType.DOUBLE, 10, 4);
+            Nd4j.exec(new LayerNorm(standardized, gainMinus, bias, outMinus, true, 1L));
+            double scoreMinus = outMinus.norm1Number().doubleValue();
+
+            double numericalGrad = (scorePlus - scoreMinus) / (2 * h);
+            double analyticGrad = dLdg.getDouble(c);
+            double relErr = Math.abs(analyticGrad - numericalGrad) /
+                    (Math.abs(analyticGrad) + Math.abs(numericalGrad) + 1e-8);
+            log.info("gain[{}]: analytic={}, numerical={}, relErr={}", c, analyticGrad, numericalGrad, relErr);
+            assertTrue(relErr < 0.01,
+                    "gain[" + c + "]: analytic=" + analyticGrad + " numerical=" + numericalGrad + " relErr=" + relErr);
+        }
+
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 4; j++) {
+                double orig = standardized.getDouble(i, j);
+                INDArray stdPlus = standardized.dup(); stdPlus.putScalar(i, j, orig + h);
+                INDArray outPlus = Nd4j.create(DataType.DOUBLE, 10, 4);
+                Nd4j.exec(new LayerNorm(stdPlus, gain, bias, outPlus, true, 1L));
+                double scorePlus = outPlus.norm1Number().doubleValue();
+
+                INDArray stdMinus = standardized.dup(); stdMinus.putScalar(i, j, orig - h);
+                INDArray outMinus = Nd4j.create(DataType.DOUBLE, 10, 4);
+                Nd4j.exec(new LayerNorm(stdMinus, gain, bias, outMinus, true, 1L));
+                double scoreMinus = outMinus.norm1Number().doubleValue();
+
+                double numericalGrad = (scorePlus - scoreMinus) / (2 * h);
+                double analyticGrad = dLdx.getDouble(i, j);
+                double relErr = Math.abs(analyticGrad - numericalGrad) /
+                        (Math.abs(analyticGrad) + Math.abs(numericalGrad) + 1e-8);
+                if (relErr > 0.01 || Double.isNaN(relErr)) {
+                    log.info("input[{},{}]: analytic={}, numerical={}, relErr={}", i, j, analyticGrad, numericalGrad, relErr);
+                }
+                assertTrue(relErr < 0.01,
+                        "input[" + i + "," + j + "]: analytic=" + analyticGrad + " numerical=" + numericalGrad + " relErr=" + relErr);
+            }
+        }
     }
 
     @ParameterizedTest

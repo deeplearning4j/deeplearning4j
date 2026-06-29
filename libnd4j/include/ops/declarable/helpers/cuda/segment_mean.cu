@@ -284,6 +284,7 @@ static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray*
 // -------------------------------------------------------------------------------------------------------------- //
 void segmentMeanFunctor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices});
+ output->nullify();
  auto indicesDType = indices->dataType();
  auto outputDType = output->dataType();
  BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMeanFunctor_, (context, input, indices, output),
@@ -340,6 +341,7 @@ static void unsortedSegmentMeanFunctor_(LaunchContext* context, NDArray* input, 
 void unsortedSegmentMeanFunctor(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses,
                                NDArray* output) {
  NDArray::prepareSpecialUse({output}, {input, indices});
+ output->nullify();
  auto indicesDType = indices->dataType();
  auto inputDType = input->dataType();
  BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMeanFunctor_,
@@ -543,9 +545,10 @@ Status segmentMeanFunctorBP(LaunchContext* context, NDArray* input, NDArray* ind
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto indicesDType = indices->dataType();
  auto outputDType = output->dataType();
- BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMeanFunctorBP_,
+ BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMeanFunctorBP_,
                        (context, input, indices, gradOut, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
+ return Status::OK;
 }
 // -------------------------------------------------------------------------------------------------------------- //
 
@@ -610,9 +613,10 @@ Status unsortedSegmentMeanFunctorBP(LaunchContext* context, NDArray* input, NDAr
  NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
  auto indicesDType = indices->dataType();
  auto outputDType = output->dataType();
- BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMeanFunctorBP_,
+ BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), unsortedSegmentMeanFunctorBP_,
                        (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
  NDArray::registerSpecialUse({output}, {input, indices, gradOut});
+ return Status::OK;
 }
 
 }  // namespace helpers

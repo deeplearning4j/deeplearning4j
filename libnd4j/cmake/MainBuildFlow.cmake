@@ -1251,6 +1251,7 @@ setup_triton()
 setup_mlx()
 setup_cutlass()
 setup_nccl()
+setup_cusparse()
 setup_openvino()
 message(STATUS "🔍 DEBUG: After setup_blas() - OPENBLAS_PATH='${OPENBLAS_PATH}', HAVE_OPENBLAS='${HAVE_OPENBLAS}'")
 message(STATUS "Dependencies initialization complete.")
@@ -1263,6 +1264,7 @@ message(STATUS "   MKL_VML:     ${HAVE_MKL_VML}")
 message(STATUS "   MKL_BLAS:    ${HAVE_MKL}")
 message(STATUS "   ARMCOMPUTE:  ${HAVE_ARMCOMPUTE}")
 message(STATUS "   CUDNN:       ${HAVE_CUDNN}")
+message(STATUS "   CUSPARSE:    ${HAVE_CUSPARSE}")
 message(STATUS "   MLIR:        ${HAVE_MLIR}")
 message(STATUS "   MPS:         ${HAVE_MPS}")
 message(STATUS "   ACCELERATE:  ${HAVE_ACCELERATE}")
@@ -1796,5 +1798,51 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
 endif()
 
 include(PostBuild)
+
+# =============================================================================
+# BUILD STAMP - per-build unique fingerprint for DSP plan disk cache
+# Generates include/build_stamp.h with a timestamp that changes every rebuild
+# so the Java DspPlanDiskCache invalidates stale .bin/.meta entries.
+#
+# Strategy: write once at configure time (for the very first compilation), then
+# add an ALL custom target that regenerates it unconditionally every build via a
+# small inline CMake script.  The generated file lives in
+# ${CMAKE_CURRENT_BINARY_DIR}/include/ which PostBuild.cmake already adds to
+# the include path via include_directories(${CMAKE_CURRENT_BINARY_DIR}/include).
+# build_info.cpp then #includes it and appends LIBND4J_BUILD_STAMP to the
+# buildInfo() string.
+# =============================================================================
+
+# Ensure the output directory exists
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include")
+
+# Write a placeholder at configure time so build_info.cpp can always find the
+# header even if the ALL target hasn't run yet in this CMake invocation.
+# The real per-build timestamp is written by the custom target below.
+set(_build_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/include/build_stamp.h")
+if(NOT EXISTS "${_build_stamp_file}")
+    file(WRITE "${_build_stamp_file}"
+        "/* Auto-generated -- regenerated every build. Do NOT edit. */\n"
+        "#ifndef LIBND4J_BUILD_STAMP_H\n"
+        "#define LIBND4J_BUILD_STAMP_H\n"
+        "#define LIBND4J_BUILD_STAMP \"configure-time-placeholder\"\n"
+        "#endif /* LIBND4J_BUILD_STAMP_H */\n"
+    )
+endif()
+
+# Custom target that runs on every build and rewrites build_stamp.h with the
+# current wall-clock timestamp.  It depends on nothing so CMake always runs it.
+add_custom_target(generate_build_stamp ALL
+    COMMAND ${CMAKE_COMMAND}
+        "-DOUT_FILE=${_build_stamp_file}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateBuildStamp.cmake"
+    COMMENT "Regenerating build_stamp.h (per-build fingerprint)"
+    VERBATIM
+)
+
+# Make the object library wait for build_stamp.h before any TU compiles.
+if(TARGET ${SD_LIBRARY_NAME}_object)
+    add_dependencies(${SD_LIBRARY_NAME}_object generate_build_stamp)
+endif()
 
 print_status_colored("SUCCESS" "=== ENHANCED TEMPLATE SYSTEM VERIFICATION COMPLETE ===")

@@ -277,6 +277,90 @@ public class DeviceRoutingTest {
     }
 
     // ========================================================================
+    // OOM Failover Tests (one GPU full -> use the other, else CPU)
+    // ========================================================================
+
+    @Test
+    @DisplayName("Should fail an allocation over from a full GPU to the other GPU")
+    void testFailoverToOtherGpuWhenOneFull() {
+        DeviceDescriptor cpu = DeviceDescriptor.cpu();
+        DeviceDescriptor cuda0 = DeviceDescriptor.cuda(0);
+        DeviceDescriptor cuda1 = DeviceDescriptor.cuda(1);
+        memoryManager.registerDevice(cpu);
+        memoryManager.registerDevice(cuda0);
+        memoryManager.registerDevice(cuda1);
+
+        // GPU0 nearly full (10MB free), GPU1 has 8GB, CPU has 32GB.
+        memoryManager.setSimulatedFreeMemory(0, 10L * 1024 * 1024);
+        memoryManager.setSimulatedFreeMemory(1, 8L * 1024 * 1024 * 1024);
+        memoryManager.setSimulatedFreeMemory(DeviceMemoryManager.CPU_DEVICE_ID, 32L * 1024 * 1024 * 1024);
+        memoryManager.setMemorySimulationEnabled(true);
+        try {
+            // A 100MB allocation cannot fit on GPU0 -> must fail over to GPU1.
+            DeviceDescriptor target = memoryManager.selectFailoverDevice(100L * 1024 * 1024, 0);
+            assertNotNull(target, "Failover must find a device when another GPU has room");
+            assertEquals(DeviceType.CUDA_GPU, target.getDeviceType());
+            assertEquals(1, target.getDeviceIndex(),
+                "Should fail over from full GPU0 to GPU1, not pin to the full device");
+        } finally {
+            memoryManager.clearAllMemorySimulation();
+        }
+    }
+
+    @Test
+    @DisplayName("Should fall back to CPU when every GPU is full")
+    void testFailoverToCpuWhenAllGpusFull() {
+        DeviceDescriptor cpu = DeviceDescriptor.cpu();
+        DeviceDescriptor cuda0 = DeviceDescriptor.cuda(0);
+        DeviceDescriptor cuda1 = DeviceDescriptor.cuda(1);
+        memoryManager.registerDevice(cpu);
+        memoryManager.registerDevice(cuda0);
+        memoryManager.registerDevice(cuda1);
+        memoryManager.setFallbackDevice(cpu);
+        memoryManager.setAutoFallbackEnabled(true);
+
+        // Both GPUs full (10MB each), CPU has 32GB.
+        memoryManager.setSimulatedFreeMemory(0, 10L * 1024 * 1024);
+        memoryManager.setSimulatedFreeMemory(1, 10L * 1024 * 1024);
+        memoryManager.setSimulatedFreeMemory(DeviceMemoryManager.CPU_DEVICE_ID, 32L * 1024 * 1024 * 1024);
+        memoryManager.setMemorySimulationEnabled(true);
+        try {
+            DeviceDescriptor target = memoryManager.selectFailoverDevice(100L * 1024 * 1024, 0);
+            assertNotNull(target, "Failover must reach the CPU fallback when no GPU fits");
+            assertEquals(DeviceType.CPU, target.getDeviceType(),
+                "Should fall back to CPU when every GPU is full");
+        } finally {
+            memoryManager.clearAllMemorySimulation();
+        }
+    }
+
+    @Test
+    @DisplayName("Should return null when no device — not even the fallback — can fit")
+    void testFailoverReturnsNullWhenNothingFits() {
+        DeviceDescriptor cpu = DeviceDescriptor.cpu();
+        DeviceDescriptor cuda0 = DeviceDescriptor.cuda(0);
+        DeviceDescriptor cuda1 = DeviceDescriptor.cuda(1);
+        memoryManager.registerDevice(cpu);
+        memoryManager.registerDevice(cuda0);
+        memoryManager.registerDevice(cuda1);
+        memoryManager.setFallbackDevice(cpu);
+        memoryManager.setAutoFallbackEnabled(true);
+
+        // Everything tiny — a 100MB allocation fits nowhere.
+        memoryManager.setSimulatedFreeMemory(0, 1024 * 1024);
+        memoryManager.setSimulatedFreeMemory(1, 1024 * 1024);
+        memoryManager.setSimulatedFreeMemory(DeviceMemoryManager.CPU_DEVICE_ID, 1024 * 1024);
+        memoryManager.setMemorySimulationEnabled(true);
+        try {
+            DeviceDescriptor target = memoryManager.selectFailoverDevice(100L * 1024 * 1024, 0);
+            assertNull(target,
+                "When nothing can fit, failover returns null so the caller surfaces a real OOM");
+        } finally {
+            memoryManager.clearAllMemorySimulation();
+        }
+    }
+
+    // ========================================================================
     // Device Priority Tests
     // ========================================================================
 

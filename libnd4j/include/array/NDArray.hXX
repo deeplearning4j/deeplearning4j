@@ -3371,7 +3371,28 @@ static bool isContiguousLayout(const sd::LongType* shapeInfo) {
 void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism) {
   if (other->lengthOf() <= 1) {
     // Simple fix for length <= 1 cases - just use p() which handles offsets correctly
-    if (thisArray->lengthOf() <= 1 && other->lengthOf() <= 1) {;
+    if (thisArray->lengthOf() <= 1 && other->lengthOf() <= 1) {
+#if defined(SD_CUDA)
+      // During CUDA graph capture, p() takes the host path: D2H is guarded (skipped),
+      // so scalar->buffer() contains zeros, which are then baked into an H2D graph node.
+      // On every replay that H2D node writes 0.0 to the output, overwriting the actual
+      // computed value (e.g. the SUM loss result written by reduceNumber).
+      // Fix: use the device scalar-copy path instead so the captured node reads the
+      // device value at replay time rather than a baked-in pinned-workspace zero.
+      if (tl_graphExecutionActive) {
+        NDArray::prepareSpecialUse({other}, {thisArray});
+        NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws,
+                                        other->buffer(), other->shapeInfo(),
+                                        other->specialBuffer(), other->specialShapeInfo(),
+                                        other->buffer(), other->shapeInfo(),
+                                        other->specialBuffer(), other->specialShapeInfo(),
+                                        thisArray->buffer(), thisArray->shapeInfo(),
+                                        thisArray->specialBuffer(), thisArray->specialShapeInfo(),
+                                        nullptr, allowParallelism);
+        NDArray::registerSpecialUse({other}, {thisArray});
+        return;
+      }
+#endif
       other->p(0, thisArray);
       return;
     }
@@ -4919,8 +4940,17 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
 
   sd::LongType *shapeInfoNew;
   ALLOCATE(shapeInfoNew, getContext()->getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
+  memset(shapeInfoNew, 0, sizeof(sd::LongType) * shape::shapeInfoLength(rank));
+  shapeInfoNew[0] = rank;
+  for (size_t i = 0; i < shape.size(); i++) shapeInfoNew[i + 1] = shape[i];
 
-  bool canReshape = shape::reshapeC(shapeInfo(), order, shape.size(), shape.data(), shapeInfoNew);
+  // Determine the reshape using the SAME contiguity-aware algorithm NDArray::reshape() uses,
+  // NOT shape::reshapeC. shape::reshapeC blindly writes canonical C/F strides and ALWAYS
+  // returns true, so reshaping a non-contiguous source in place (a permuted/sliced view)
+  // silently yields strides that misread memory — the root cause of the depthwise (and
+  // tensorDot-class) "wrong gradient" bugs. reshapeNoAlloc returns the CORRECT strides for a
+  // legitimate view, or false when the data must be copied.
+  bool canReshape = ops::helpers::reshapeNoAlloc(shapeInfo(), shape, order, shapeInfoNew);
 
   if(!ArrayOptions::hasPropertyBitSet(shapeInfoNew,sd::ArrayOptions::flagForDataType(ArrayOptions::dataType(_shapeInfo)))) {
     std::string errorMessage;
@@ -4962,10 +4992,15 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
     _shapeInfo = newShape->primary();
     _shapeInfoD = newShape->special();
   } else {
-    //we'll sometimes delete in bufferForShapeInfo either way this should be handled in there.
-    //it should be safe to delete otherwise
     RELEASE(shapeInfoNew, getContext()->getWorkspace());
-
+    // Source is non-contiguous: an in-place stride rewrite would misread the data. Materialize
+    // a contiguous copy in `order` (logical-order Assign — exactly NDArray::reshape's copy path)
+    // and adopt it in place via move-assignment (the same buffer swap tilei() uses). reshapei is
+    // therefore always correct for every caller: a view when possible, a copy when necessary.
+    NDArray* materialized = this->reshape(order, shape, true);
+    *this = std::move(*materialized);
+    delete materialized;
+    return true;
   }
 
 
@@ -5101,9 +5136,25 @@ void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, cons
     std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
     auto pDims = sd::Environment::getInstance().isCPU() ? copy->data() : nullptr;
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), copy);
+
+    // Strip keepDims unity dims from target shapeInfo before passing to the kernel,
+    // mirroring the logic in reduceAlongDimension (which uses createShapeInfoWithNoUnitiesForReduce).
+    // Without this, a target created with keepDims=true (e.g. shape [2,1]) passes a rank-2 shapeInfo
+    // to a kernel that expects a rank-1 output ([2]), causing wrong TAD-to-output indexing on CUDA.
+    // execSummaryStats takes NON-const LongType* for the z shapeInfo (unlike execReduceFloat),
+    // so declare these non-const and const_cast the cached shape buffers.
+    sd::LongType *zShapeInfoH = const_cast<sd::LongType *>(target.shapeInfo());
+    sd::LongType *zShapeInfoD = const_cast<sd::LongType *>(target.specialShapeInfo());
+    if (static_cast<size_t>(rankOf()) - dimensions->size() != static_cast<size_t>(target.rankOf())) {
+      auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
+          target.shapeInfo(), copy, target.getContext()->getWorkspace());
+      zShapeInfoH = const_cast<sd::LongType *>(reinterpret_cast<const sd::LongType *>(zPack->primary()));
+      zShapeInfoD = const_cast<sd::LongType *>(reinterpret_cast<const sd::LongType *>(zPack->special()));
+    }
+
     NativeOpExecutioner::execSummaryStats(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                          nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(),
-                                          target.specialShapeInfo(), pDims, dimensions->size(),
+                                          nullptr, target.buffer(), zShapeInfoH, target.specialBuffer(),
+                                          zShapeInfoD, pDims, dimensions->size(),
                                           packX->platformShapeInfo(), packX->platformOffsets(), biasCorrected);
     delete copy;
     synchronize("NDArray::varianceAlongDimension");
@@ -5843,6 +5894,18 @@ template SD_LIB_EXPORT void NDArray::applyScalar<uint8_t>(sd::scalar::IntOps op,
 #ifdef HAS_BOOL
 template SD_LIB_EXPORT void NDArray::applyScalar<bool>(sd::scalar::IntOps op,  bool scalar, NDArray *target,
                                                        ExtraArguments *extraParams);
+#endif
+#ifdef HAS_UINT16
+template SD_LIB_EXPORT void NDArray::applyScalar<uint16_t>(sd::scalar::IntOps op, uint16_t scalar, NDArray *target,
+                                                            ExtraArguments *extraParams);
+#endif
+#ifdef HAS_UINT32
+template SD_LIB_EXPORT void NDArray::applyScalar<uint32_t>(sd::scalar::IntOps op, uint32_t scalar, NDArray *target,
+                                                            ExtraArguments *extraParams);
+#endif
+#ifdef HAS_UINT64
+template SD_LIB_EXPORT void NDArray::applyScalar<uint64_t>(sd::scalar::IntOps op, uint64_t scalar, NDArray *target,
+                                                            ExtraArguments *extraParams);
 #endif
 
 ////////////////////////////////////////////////////////////////////////
@@ -7296,14 +7359,24 @@ LongType* NDArray::validateAndGetPrimary(ConstantShapeBuffer* buffer, const char
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
-  if (_shapeInfoBuffer != nullptr) {
-    _shapeInfoBuffer->release();
-  }
-
   if (shapeInfo != nullptr) {
+    // CRITICAL: Acquire the NEW buffer BEFORE releasing the old one.
+    // When called from syncToDevice() as setShapeInfo(this->shapeInfo()),
+    // the shapeInfo parameter IS _shapeInfo — a raw pointer into
+    // _shapeInfoBuffer->primary(). If the old CSB is a fallback buffer
+    // with refCount=1, releasing it first frees the CSB and makes
+    // the shapeInfo parameter a dangling pointer before bufferForShapeInfo()
+    // can copy/look up the shape data. Acquiring first keeps the shape
+    // data alive regardless of the old CSB's refcount.
     auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
     // bufferForShapeInfo()->getOrCreate() already called addRef() for the caller.
     // We take ownership of that reference - this is our reference now.
+
+    // NOW release old _shapeInfoBuffer (safe: we already hold new buffer reference).
+    if (_shapeInfoBuffer != nullptr) {
+      _shapeInfoBuffer->release();
+    }
+
     _shapeInfoBuffer = shapeBuffer;
     // SESSION #233 FIX: Use helper to validate and get primary pointer
     _shapeInfo = validateAndGetPrimary(shapeBuffer, "setShapeInfo(LongType*)");
@@ -7326,6 +7399,9 @@ void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
       _length = shape::length(_shapeInfo);
   } else {
     // Setting to nullptr - clear all shape-related pointers
+    if (_shapeInfoBuffer != nullptr) {
+      _shapeInfoBuffer->release();
+    }
     _shapeInfoBuffer = nullptr;
     _shapeInfoD = _shapeInfo = nullptr;
     _length = 0;
@@ -7338,14 +7414,22 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
     THROW_EXCEPTION("NDArray:setShapeInfo Passed in descriptor can't be null!");
   }
 
-  if (_shapeInfoBuffer != nullptr) {
-    _shapeInfoBuffer->release();
-  }
-
+  // ACQUIRE-THEN-RELEASE: descriptor->toShapeInfo() may alias the OLD _shapeInfoBuffer's primary()
+  // memory. Releasing the old buffer FIRST can drop its refCount to 0 → freed → bufferForShapeInfo
+  // reads freed memory, and ptmalloc clobbers the freed ConstantShapeBuffer's _magic field
+  // (= the 0xa00006a0 static-init SIGABRT in ShufflesTests/SpecialTests). Acquire the new buffer
+  // (which keeps the old alive until after toShapeInfo() is consumed), then release the old.
   auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor->toShapeInfo());
   // bufferForShapeInfo()->getOrCreate() already called addRef() for the caller.
   // We take ownership of that reference - this is our reference now.
+  ConstantShapeBuffer* oldShapeBuf = _shapeInfoBuffer;
   _shapeInfoBuffer = shapeBuffer;
+  // Always release old: bufferForShapeInfo already addRef'd the new buffer (which may == old), so
+  // this is safe even when old == new (net 0, slot keeps exactly one ref). Guarding on old != new
+  // would LEAK one ref on every same-shape reassignment.
+  if (oldShapeBuf != nullptr) {
+    oldShapeBuf->release();
+  }
   // SESSION #233 FIX: Use helper to validate and get primary pointer
   _shapeInfo = validateAndGetPrimary(shapeBuffer, "setShapeInfo(ShapeDescriptor*)");
 
@@ -7367,14 +7451,20 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
+  // ACQUIRE-THEN-RELEASE: addRef the new buffer BEFORE releasing the old. If shapeBuffer ==
+  // _shapeInfoBuffer (same CSB), releasing first drops refCount→0 → freed → use-after-free on the
+  // validate below and a corrupted _magic (the 0xa00006a0 static-init SIGABRT family).
+  ConstantShapeBuffer* newShapeBuf = const_cast<ConstantShapeBuffer *>(shapeBuffer);
+  if (newShapeBuf != nullptr) {
+    newShapeBuf->addRef();
+  }
+  // Always release old: we addRef'd newShapeBuf above (which may == old), so this is safe even when
+  // old == new (net 0). Guarding on old != new would LEAK one ref per same-buffer reassignment.
   if (_shapeInfoBuffer != nullptr) {
     _shapeInfoBuffer->release();
   }
-
-  // Take new buffer and increment its refcount
-  _shapeInfoBuffer = const_cast<ConstantShapeBuffer *>(shapeBuffer);
+  _shapeInfoBuffer = newShapeBuf;
   if (_shapeInfoBuffer != nullptr) {
-    _shapeInfoBuffer->addRef();
     _shapeInfo = validateAndGetPrimary(_shapeInfoBuffer, "setShapeInfo(ConstantShapeBuffer*)");
 
 #ifdef SD_CUDA

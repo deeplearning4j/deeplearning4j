@@ -886,39 +886,55 @@ sd::Status segmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDAr
 template <typename T>
 static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDArray* indices,
                                                NDArray* gradOut, sd::LongType numOfClasses, NDArray* output) {
-  //        int numOfClasses = gradOut->sizeAt(0);
-  // if input is a vector: (as if in doc sample)
-  auto tempRes = gradOut->dup();
+  // Compute per-segment max into tempRes (same shape as gradOut).
+  // Use ulike() — we only need the shape; unsortedSegmentMaxFunctor will fill the values.
+  auto tempRes = gradOut->ulike();
   unsortedSegmentMaxFunctor(context, input, indices, numOfClasses, tempRes);
   auto indicesBufUMaxBP = prefetchIndices(indices);
+
+  // Zero output: non-winning rows must be zero (winning rows will be written below).
+  output->nullify();
+
   if (input->isVector() || input->isScalar()) {
+    // 1D: all arrays are contiguous with _offset==0 — e<T>()/p() are safe.
+    auto tempBuf = tempRes->bufferAsT<T>();
+    auto inBuf   = input->bufferAsT<T>();
+    auto goBuf   = gradOut->bufferAsT<T>();
+    auto outBuf  = output->bufferAsT<T>();
     for (sd::LongType e = 0; e < input->lengthOf(); ++e) {
       sd::LongType classNum = indicesBufUMaxBP[e];
-      if (sd::math::sd_abs<double,double>(tempRes->e<double>(classNum) - input->e<double>(e)) < 1.e-5)
-        output->p(e, gradOut->e<T>(classNum));
+      if (sd::math::sd_abs<T,T>(tempBuf[classNum] - inBuf[e]) < static_cast<T>(1.e-5))
+        outBuf[e] = goBuf[classNum];
     }
   } else {
+    // 2D: allTensorsAlongDimension() creates TAD views whose _offset is non-zero.
+    // e<T>(i) / p(i,v) call bufferWithOffset(getOffset(i)) which double-counts _offset
+    // (buffer() already adds _offset, then getOffset adds it again).  Use bufferAsT<T>()[e]
+    // instead — it calls bufferWithOffset(0) == buffer() (offset added once) then indexes
+    // from there, which is correct for both root arrays and TAD views.
     std::vector<sd::LongType> zeroVec = {0};
-    std::vector<sd::LongType> *restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,zeroVec.data());
+    std::vector<sd::LongType> *restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), 1, zeroVec.data());
     ResultSet listOfBPTensors = tempRes->allTensorsAlongDimension(*restDims);
-    ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(*restDims);
-    ResultSet listOfTensors = input->allTensorsAlongDimension(*restDims);
+    ResultSet listOfGradOuts  = gradOut->allTensorsAlongDimension(*restDims);
+    ResultSet listOfTensors   = input->allTensorsAlongDimension(*restDims);
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(*restDims);
 
     for (sd::LongType i = 0; i < indices->lengthOf(); i++) {
       sd::LongType classNum = indicesBufUMaxBP[i];
-      NDArray* current = listOfTensors.at(i);
-      NDArray* currentOut = listOfOutTensors.at(i);
-      NDArray* currentGradOut = listOfGradOuts.at(classNum);
-      for (int e = 0; e < current->lengthOf(); e++) {
-        if (sd::math::sd_abs<double,double>(listOfBPTensors.at(classNum)->e<double>(e) - current->e<double>(e)) < 1.e-5)
-          currentOut->p(e, currentGradOut->e<T>(e));
+      auto bpBuf  = listOfBPTensors.at(classNum)->bufferAsT<T>();
+      auto inBuf  = listOfTensors.at(i)->bufferAsT<T>();
+      auto goBuf  = listOfGradOuts.at(classNum)->bufferAsT<T>();
+      auto outBuf = listOfOutTensors.at(i)->bufferAsT<T>();
+      sd::LongType len = listOfTensors.at(i)->lengthOf();
+      for (sd::LongType e = 0; e < len; e++) {
+        if (sd::math::sd_abs<T,T>(bpBuf[e] - inBuf[e]) < static_cast<T>(1.e-5))
+          outBuf[e] = goBuf[e];
       }
     }
 
     delete restDims;
   }
-  delete tempRes;  // Clean up duped array
+  delete tempRes;
 
   return sd::Status::OK;
 }

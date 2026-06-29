@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -80,7 +81,7 @@ public class TestShapeFunctionOptimization extends BaseNd4jTestWithBackends {
         SDVariable out = sd.nn.softmax("out", p2, -1);
 
         Map<String, INDArray> ph = Collections.singletonMap("x", Nd4j.rand(DataType.FLOAT, 2, 3, 4));
-        INDArray expected = sd.outputSingle(ph, "out");
+        INDArray expected = sd.outputSingle(ph, "out");  // DSP enabled (default)
 
         SameDiff optimized = GraphOptimizer.optimize(sd, Collections.singletonList("out"),
                 GraphOptimizer.defaultCorrectnessOptimizations());
@@ -94,29 +95,27 @@ public class TestShapeFunctionOptimization extends BaseNd4jTestWithBackends {
         }
         assertEquals("Should have 1 permute after fusion", 1, permuteCount);
 
-        // Reproduce DSP permute bug: a manually-constructed single-permute graph
-        SameDiff manual = SameDiff.create();
-        SDVariable mx = manual.placeHolder("x", DataType.FLOAT, 2, 3, 4);
-        SDVariable mp = mx.permute(2, 0, 1);
-        SDVariable mout = manual.nn.softmax("out", mp, -1);
+        // The fused graph must produce the same output as the unfused graph under DSP.
+        INDArray actual = optimized.outputSingle(ph, "out");  // DSP enabled (default)
+        assertEquals("Fused DSP output must match unfused DSP output", expected, actual);
 
-        manual.setDspAutoCompileEnabled(false);
-        INDArray noDspResult = manual.outputSingle(ph, "out");
-
-        SameDiff manual2 = SameDiff.create();
-        SDVariable mx2 = manual2.placeHolder("x", DataType.FLOAT, 2, 3, 4);
-        SDVariable mp2 = mx2.permute(2, 0, 1);
-        SDVariable mout2 = manual2.nn.softmax("out", mp2, -1);
-
-        INDArray dspResult = manual2.outputSingle(ph, "out");
-
-        double manualDiff = noDspResult.sub(dspResult).amaxNumber().doubleValue();
-        System.out.println("[TEST] Manual single-permute DSP vs non-DSP diff: " + manualDiff);
-
-        // Test the optimized graph
-        optimized.setDspAutoCompileEnabled(false);
-        INDArray actual = optimized.outputSingle(ph, "out");
-        assertEquals("Output should match after optimization", expected, actual);
+        // DSP permute correctness: the DSP result must equal a non-DSP reference. (This test
+        // originally documented a DSP permute bug; it is now fixed, so we assert parity instead
+        // of disabling DSP.) setDynamicShapePlanEnabled is the legitimate parity toggle — it is
+        // global, so we snapshot and restore it in finally so it never leaks into other tests.
+        boolean prevDspPlan = InferenceSession.isDynamicShapePlanEnabled();
+        InferenceSession.setDynamicShapePlanEnabled(false);
+        INDArray reference;
+        try {
+            SameDiff ref = SameDiff.create();
+            SDVariable rx = ref.placeHolder("x", DataType.FLOAT, 2, 3, 4);
+            SDVariable rp = rx.permute(1, 0, 2).permute(2, 1, 0);
+            ref.nn.softmax("out", rp, -1);
+            reference = ref.outputSingle(ph, "out");
+        } finally {
+            InferenceSession.setDynamicShapePlanEnabled(prevDspPlan);
+        }
+        assertEquals("DSP output must match non-DSP reference", reference, actual);
     }
 
     /**

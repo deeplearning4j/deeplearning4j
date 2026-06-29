@@ -34,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * Fuses: linear projection -> causal_conv1d + SiLU -> gated_delta_rule
  *        -> RMSNorm + Swish gate -> output projection
  */
-@org.junit.jupiter.api.Disabled("gated_delta_net_block helper not yet implemented - op wrapper exists but helpers::gatedDeltaNetBlock() is missing")
 public class TestGatedDeltaNetBlock {
 
     private static final int NUM_HEADS = 2;
@@ -44,11 +43,10 @@ public class TestGatedDeltaNetBlock {
     private static final int CONV_K = 4;  // causal conv kernel size
     private static final double RMS_EPS = 1e-5;
 
-    // qkv_dim = H * (D_k + D_v) + H * D_v (for gate projection within block)
-    // Actually: Wqkv projects to Q, K, V: [D, H*(Dk + Dv + Dv)] but the block handles it
-    // The block projects x -> [Q, K, V] via Wqkv, so qkv_dim = H * (Dk + Dv)
-    // But looking at the C++ code, it's just [D, qkv_dim] where the block splits internally
-    private static final int QKV_DIM = NUM_HEADS * (HEAD_DIM_K + HEAD_DIM_V);
+    // Wqkv projects x -> [Q, K, V] concatenated per head.
+    // Each head contributes: headDimK (Q) + headDimK (K) + headDimV (V)
+    // So qkv_dim = H * (2 * Dk + Dv)
+    private static final int QKV_DIM = NUM_HEADS * (2 * HEAD_DIM_K + HEAD_DIM_V);
 
     @Test
     public void testBasicShapes() {

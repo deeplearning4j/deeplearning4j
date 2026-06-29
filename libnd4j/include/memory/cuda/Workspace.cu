@@ -69,18 +69,28 @@ Workspace::Workspace(ExternalWorkspace *external) {
   }
 }
 
-Workspace::Workspace(LongType primarySize, LongType secondarySize) {
+Workspace::Workspace(LongType primarySize, LongType secondarySize, bool secondaryUsePlainMalloc) {
+  _secondaryUsePlainMalloc = secondaryUsePlainMalloc;
   if (secondarySize > 0) {
     // Over-allocate by CANARY_SIZE so enableCanary() can write a sentinel region
     // after the usable host buffer.  The canary is only checked in debug mode.
-    auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost),
-                             secondarySize + CANARY_SIZE, cudaHostAllocDefault);
-    if (res != 0) {
-      std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
-      THROW_EXCEPTION(msg.c_str());
+    if (_secondaryUsePlainMalloc) {
+      // CPU-device workspace: use plain malloc, no CUDA context required.
+      _ptrHost = reinterpret_cast<char*>(malloc(secondarySize + CANARY_SIZE));
+      if (_ptrHost == nullptr) {
+        std::string msg = "Can't allocate [HOST] memory via malloc; size: [" + std::to_string(secondarySize) + "]";
+        THROW_EXCEPTION(msg.c_str());
+      }
+    } else {
+      auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost),
+                               secondarySize + CANARY_SIZE, cudaHostAllocDefault);
+      if (res != 0) {
+        std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
+        THROW_EXCEPTION(msg.c_str());
+      }
     }
 
-    // Host memory from cudaHostAlloc is CPU-accessible, use memset directly
+    // Host memory is CPU-accessible, use memset directly
     std::memset(this->_ptrHost, 0, secondarySize);
     // Pre-fill canary region and enable by default (only checked in debug+verbose)
     std::memset(this->_ptrHost + secondarySize, CANARY_BYTE, CANARY_SIZE);
@@ -120,6 +130,7 @@ Workspace::Workspace(LongType primarySize, LongType secondarySize) {
   this->_offset = 0;
   this->_offsetSecondary = 0;
   this->_cycleAllocations = 0;
+  this->_cycleAllocationsSecondary = 0;
   this->_spillsSize = 0;
   this->_spillsSizeSecondary = 0;
 }
@@ -151,16 +162,29 @@ void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
   }
 
   if (this->_currentSizeSecondary < secondaryBytes) {
-    if (this->_allocatedHost && !_externalized) cudaFreeHost((void *)this->_ptrHost);
-
-    auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost),
-                             secondaryBytes + CANARY_SIZE, cudaHostAllocDefault);
-    if (res != 0) {
-      std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
-      THROW_EXCEPTION(msg.c_str());
+    if (this->_allocatedHost && !_externalized) {
+      if (_secondaryUsePlainMalloc)
+        free((void *)this->_ptrHost);
+      else
+        cudaFreeHost((void *)this->_ptrHost);
     }
 
-    // Host memory from cudaHostAlloc is CPU-accessible, use memset directly
+    if (_secondaryUsePlainMalloc) {
+      _ptrHost = reinterpret_cast<char*>(malloc(secondaryBytes + CANARY_SIZE));
+      if (_ptrHost == nullptr) {
+        std::string msg = "Can't allocate [HOST] memory via malloc; size: [" + std::to_string(secondaryBytes) + "]";
+        THROW_EXCEPTION(msg.c_str());
+      }
+    } else {
+      auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost),
+                               secondaryBytes + CANARY_SIZE, cudaHostAllocDefault);
+      if (res != 0) {
+        std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
+        THROW_EXCEPTION(msg.c_str());
+      }
+    }
+
+    // Host memory is CPU-accessible, use memset directly
     std::memset(this->_ptrHost, 0, secondaryBytes);
     // Re-fill canary after the new buffer
     std::memset(this->_ptrHost + secondaryBytes, CANARY_BYTE, CANARY_SIZE);
@@ -198,13 +222,23 @@ void Workspace::freeSpills() {
   }
 
   if (!_spillsSecondary.empty()) {
-    for (auto v : _spillsSecondary) cudaFreeHost(v);
+    for (auto v : _spillsSecondary) {
+      if (_secondaryUsePlainMalloc)
+        free(v);
+      else
+        cudaFreeHost(v);
+    }
     _spillsSecondary.clear();
   }
 }
 
 Workspace::~Workspace() {
-  if (this->_allocatedHost && !_externalized) cudaFreeHost((void *)this->_ptrHost);
+  if (this->_allocatedHost && !_externalized) {
+    if (_secondaryUsePlainMalloc)
+      free((void *)this->_ptrHost);
+    else
+      cudaFreeHost((void *)this->_ptrHost);
+  }
 
   if (this->_allocatedDevice && !_externalized) {
     // Use stored device ID if available, otherwise fall back to current device
@@ -292,13 +326,21 @@ void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
         // Add padding to spill allocations — C++ ops can overrun temporary buffers
         // by a few bytes, corrupting adjacent heap metadata → SIGABRT on free().
         // Within the workspace buffer, overruns are harmless (bump allocator).
-        // Spills go to separate cudaHostAlloc allocations where overruns hit
-        // adjacent glibc/pinned memory metadata.
-        Pointer p;
-        auto res = cudaHostAlloc(reinterpret_cast<void **>(&p), numBytes + SD_ALLOC_PADDING, cudaHostAllocDefault);
-        if (res != 0) {
-          std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
-          THROW_EXCEPTION(msg.c_str());
+        // Spills go to separate allocations; use plain malloc for CPU-only workspaces
+        // (no CUDA context needed) or cudaHostAlloc for pinned GPU-accessible spills.
+        void* p;
+        if (_secondaryUsePlainMalloc) {
+          p = malloc(numBytes + SD_ALLOC_PADDING);
+          if (p == nullptr) {
+            std::string msg = "Can't allocate [HOST] memory via malloc; size: [" + std::to_string(numBytes) + "]";
+            THROW_EXCEPTION(msg.c_str());
+          }
+        } else {
+          auto res = cudaHostAlloc(reinterpret_cast<void **>(&p), numBytes + SD_ALLOC_PADDING, cudaHostAllocDefault);
+          if (res != 0) {
+            std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
+            THROW_EXCEPTION(msg.c_str());
+          }
         }
 
         _mutexSpills.lock();

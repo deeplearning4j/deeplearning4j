@@ -22,6 +22,7 @@ package org.nd4j.autodiff.samediff.execution;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -57,6 +58,34 @@ public class DspPlanDiskCache {
 
     // Current DSP serialization version — must match DynamicShapePlan.DSP_VERSION
     private static final int CURRENT_DSP_VERSION = 5;
+
+    /**
+     * Per-build native library fingerprint, computed once from buildInfo().
+     * Changes on every .so rebuild (LIBND4J_BUILD_STAMP injected at compile time)
+     * so plans cached by an older .so are automatically invalidated.
+     * Stored as a volatile to allow lazy initialisation under the class lock.
+     */
+    private static volatile String NATIVE_BUILD_FINGERPRINT = null;
+
+    /** Return the cached native build fingerprint, initialising it on first call. */
+    static String getNativeBuildFingerprint() {
+        if (NATIVE_BUILD_FINGERPRINT == null) {
+            synchronized (DspPlanDiskCache.class) {
+                if (NATIVE_BUILD_FINGERPRINT == null) {
+                    try {
+                        String info = NativeOpsHolder.getInstance()
+                                .getDeviceNativeOps().buildInfo();
+                        NATIVE_BUILD_FINGERPRINT = (info != null) ? info : "unavailable";
+                    } catch (Exception e) {
+                        log.warn("DspPlanDiskCache: could not read native buildInfo(), " +
+                                "disk cache will use fallback fingerprint: {}", e.getMessage());
+                        NATIVE_BUILD_FINGERPRINT = "unavailable";
+                    }
+                }
+            }
+        }
+        return NATIVE_BUILD_FINGERPRINT;
+    }
 
     private DspPlanDiskCache() {}
 
@@ -169,6 +198,24 @@ public class DspPlanDiskCache {
                         source, hashToHex(structureHash), metaVersion, CURRENT_DSP_VERSION);
                 return null;
             }
+            // Validate native .so fingerprint: reject plans compiled by an older .so.
+            // A missing fingerprint (legacy .meta without the field) is also treated as
+            // stale — it means the entry was written before this fix, so we can't know
+            // which .so produced it.
+            String cachedFingerprint = readMetaFingerprint(metaFile);
+            if (cachedFingerprint == null || cachedFingerprint.isEmpty()) {
+                log.debug("DSP disk cache {}: stale entry dsp_{} (no native build fingerprint in .meta — " +
+                                "legacy entry, invalidating)",
+                        source, hashToHex(structureHash));
+                return null;
+            }
+            String currentFingerprint = getNativeBuildFingerprint();
+            if (!currentFingerprint.equals(cachedFingerprint)) {
+                log.debug("DSP disk cache {}: stale entry dsp_{} (native build fingerprint mismatch; " +
+                                "cached .so != current .so — invalidating)",
+                        source, hashToHex(structureHash));
+                return null;
+            }
         }
 
         // Read .bin file
@@ -204,6 +251,24 @@ public class DspPlanDiskCache {
             // Corrupt or unreadable meta — treat as stale
         }
         return -1;
+    }
+
+    /**
+     * Read the nativeBuildFingerprint field from a .meta file.
+     * Returns {@code null} if the field is absent (legacy cache entry without fingerprint).
+     */
+    private static String readMetaFingerprint(File metaFile) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(metaFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("nativeBuildFingerprint=")) {
+                    return line.substring("nativeBuildFingerprint=".length()).trim();
+                }
+            }
+        } catch (IOException e) {
+            // Corrupt or unreadable meta — treat as stale
+        }
+        return null;
     }
 
     // ── Write path ─────────────────────────────────────────────────────────
@@ -289,6 +354,9 @@ public class DspPlanDiskCache {
         sb.append("outputSet=").append(outputSet != null ? outputSet : "").append('\n');
         sb.append("planBytes=").append(planBytesLen).append('\n');
         sb.append("structureHash=").append(hexHash).append('\n');
+        // Per-build native library fingerprint (contains LIBND4J_BUILD_STAMP from
+        // build_stamp.h — changes on every rebuild so stale cached plans are rejected).
+        sb.append("nativeBuildFingerprint=").append(getNativeBuildFingerprint()).append('\n');
         sb.append("createdAt=").append(Instant.now().toString()).append('\n');
         return sb.toString();
     }
@@ -346,6 +414,13 @@ public class DspPlanDiskCache {
         // Mix in DSP version so serialization format changes auto-invalidate the index.
         hash ^= (CURRENT_DSP_VERSION & 0xFFL);
         hash *= 0x100000001b3L;
+        // Mix in per-build native fingerprint so index entries created by an older .so
+        // never collide with (or shadow) entries for the current .so build.
+        String fingerprint = getNativeBuildFingerprint();
+        for (int i = 0; i < fingerprint.length(); i++) {
+            hash ^= (fingerprint.charAt(i) & 0xFFL);
+            hash *= 0x100000001b3L;
+        }
         return hash;
     }
 

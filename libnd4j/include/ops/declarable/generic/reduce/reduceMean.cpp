@@ -178,8 +178,14 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
   auto rank = shape::rank(in);
 
   if (block.width() > 2) {
+    // Guard: INPUT_VARIABLE(2) can be null during the DSP shape pre-pass when
+    // _fastpath_in is null-padded to slot.wiring.numInputs. Passing null to
+    // adjustAxis causes SIGSEGV (NDArray::shapeInfo with this=0x0, si_addr=0x10).
+    // adjustAxis already handles null (cpu/axis.cpp), but guard here too for clarity.
     auto axesVector = INPUT_VARIABLE(2);
-    helpers::adjustAxis(rank, axesVector, dimensions);
+    if (axesVector != nullptr) {
+      helpers::adjustAxis(rank, axesVector, dimensions);
+    }
   }
   REQUIRE_TRUE(
       dimensions.size() <= static_cast<size_t>(rank), 0,

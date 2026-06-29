@@ -348,66 +348,13 @@ public class PipelineCoreTest {
         assertEquals("epsilon", config.getEffectivePredictionType());
     }
 
-    // ==================== ChatTemplate Tests ====================
-
-    @Test
-    public void testChatTemplateSimpleFormat() {
-        ChatTemplate template = ChatTemplate.builder()
-                .addGenerationPrompt(true)
-                .build();
-
-        List<ChatTemplate.Message> messages = Arrays.asList(
-                ChatTemplate.Message.system("You are a helpful assistant."),
-                ChatTemplate.Message.user("Hello!"),
-                ChatTemplate.Message.assistant("Hi there!")
-        );
-
-        String result = template.apply(messages);
-        assertNotNull(result);
-        assertTrue(result.contains("You are a helpful assistant."));
-        assertTrue(result.contains("Hello!"));
-        assertTrue(result.contains("Hi there!"));
-    }
-
-    @Test
-    public void testChatTemplateChatML() {
-        ChatTemplate template = ChatTemplate.chatMl();
-
-        List<ChatTemplate.Message> messages = Arrays.asList(
-                ChatTemplate.Message.user("What is 2+2?")
-        );
-
-        String result = template.apply(messages);
-        assertNotNull(result);
-        // ChatML format should include the im_start/im_end tokens
-        assertTrue(result.contains("<|im_start|>") || result.contains("user"));
-    }
-
-    @Test
-    public void testChatTemplateLlama() {
-        ChatTemplate template = ChatTemplate.llama();
-
-        List<ChatTemplate.Message> messages = Arrays.asList(
-                ChatTemplate.Message.user("Hello")
-        );
-
-        String result = template.apply(messages);
-        assertNotNull(result);
-    }
-
-    @Test
-    public void testChatTemplateFromTokenizerConfig() {
-        TokenizerConfig tokenizerConfig = TokenizerConfig.builder()
-                .bosToken("<s>")
-                .eosToken("</s>")
-                .chatTemplate("{% for message in messages %}{{ message['content'] }}{% endfor %}")
-                .build();
-
-        ChatTemplate template = ChatTemplate.fromTokenizerConfig(tokenizerConfig);
-        assertEquals("<s>", template.getBosToken());
-        assertEquals("</s>", template.getEosToken());
-        assertNotNull(template.getTemplate());
-    }
+    // ChatTemplate tests removed: they exercised org.eclipse.deeplearning4j.pipeline.ChatTemplate,
+    // a dead duplicate intentionally deleted in commit 844b211038 ("remove dead pipeline
+    // ChatTemplate copy"). The canonical ChatTemplate now lives only in samediff-llm
+    // (org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate, covered by
+    // TestArchitectureOutputDegeneracy). The removed copy's API
+    // (chatMl()/llama()/fromTokenizerConfig(pipeline.TokenizerConfig)) no longer exists and
+    // does not map 1:1 onto the canonical class (chatML()/llama2()/fromConfig(llm.TokenizerConfig)).
 
     // ==================== ModelManifest Tests ====================
 

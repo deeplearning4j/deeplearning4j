@@ -169,6 +169,6 @@ public class LayerNorm extends DynamicCustomOp {
 
     @Override
     public int numOutputArguments() {
-        return noBias ? 2 : 3;
+        return 1;
     }
 }

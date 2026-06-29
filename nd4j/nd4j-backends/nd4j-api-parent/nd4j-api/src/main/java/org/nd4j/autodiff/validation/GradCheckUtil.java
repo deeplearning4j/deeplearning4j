@@ -176,6 +176,18 @@ public class GradCheckUtil {
         }
         gm.clear();
 
+        // After computing analytic gradients, the grad-function sub-SameDiff instance
+        // (sd.getFunction("grad")) may have accumulated enough SLOT_BY_SLOT warmup passes
+        // to reach SHAPES_FROZEN, adding addFrozenRef() counts on DataBuffers that are
+        // SHARED with the parent sd's weight arrays. If those frozen refs remain, the
+        // allocateSpecial() migration guard (DataBuffer.cu:658) silently skips device
+        // migration for those buffers when the numerical perturbation loop calls
+        // syncToDevice() — the device buffer stays stale and numerical scores are wrong.
+        // Invalidating all plan caches here releases those frozen refs before any
+        // perturbation starts. The per-iteration invalidateAllPlanCaches() calls in the
+        // loop below (lines ~266, ~281, ~304) maintain the invariant on every step.
+        sd.invalidateAllPlanCaches();
+
         //Validate gradients for each variable:
         int totalNFailures = 0;
         int totalCount = 0;
@@ -302,7 +314,7 @@ public class GradCheckUtil {
                 double analyticGrad = aGrad.getDouble(idx);
 
                 if (Double.isInfinite(numericalGrad) || Double.isNaN(numericalGrad)) {
-                    throw new IllegalStateException("Numerical gradient was " + numericalGrad + " for variable \"" + name
+                    throw new IllegalStateException("Numerical gradient was " + numericalGrad + " (scorePlus=" + scorePlus + ", scoreMinus=" + scoreMinus + ") for variable \"" + name
                             + "\", parameter " + i + " of " + n + " (position: " + strIdx + ")");
                 }
                 if (Double.isInfinite(analyticGrad) || Double.isNaN(analyticGrad)) {

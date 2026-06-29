@@ -281,6 +281,21 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     public final SDLinalg linalg = new SDLinalg(this);
 
     /**
+     * Op creator object for graph neural network operations
+     */
+    public final SDGNN gnn = new SDGNN(this);
+
+    /**
+     * Op creator object for sparse matrix / graph operations
+     */
+    public final SDSparse sparse = new SDSparse(this);
+
+    /**
+     * Op creator object for graph-analysis operations (KGE scorers + graph construction / learning)
+     */
+    public final SDGraph graph = new SDGraph(this);
+
+    /**
      * Op creator object for signal processing operations
      */
     public final SDSignal signal = new SDSignal(this);
@@ -453,6 +468,27 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public SDLinalg linalg(){
         return linalg;
+    }
+
+    /**
+     * Op creator object for graph neural network operations
+     */
+    public SDGNN gnn(){
+        return gnn;
+    }
+
+    /**
+     * Op creator object for sparse matrix / graph operations
+     */
+    public SDSparse sparse(){
+        return sparse;
+    }
+
+    /**
+     * Op creator object for graph-analysis operations (KGE scorers + graph construction / learning)
+     */
+    public SDGraph graph(){
+        return graph;
     }
 
     /**
@@ -4453,7 +4489,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             try {
                 Nd4j.getNativeOps().clearNativePlanCacheHandle(nativePlanCache);
             } catch (Exception e) {
-                log.debug("Error clearing native plan cache: {}", e.getMessage());
+                // Swallowing this leaves a REPLAYING CUDA-graph plan in the native cache whose
+                // baked device addresses can be freed/reallocated before the next replay, yielding
+                // silently-wrong gradients (the appnp/rgcn full-suite flake). Replace the cache so
+                // the next dispatch builds a fresh SLOT_BY_SLOT plan with no stale baked addresses.
+                log.warn("clearNativePlanCacheHandle failed — replacing native plan cache to avoid " +
+                        "stale REPLAYING-plan reuse: {}", e.getMessage());
+                try {
+                    nativePlanCache = Nd4j.getNativeOps().createNativePlanCache();
+                } catch (Exception e2) {
+                    log.warn("createNativePlanCache also failed; nulling native plan cache: {}", e2.getMessage());
+                    nativePlanCache = null;
+                }
             }
         }
     }
@@ -4638,6 +4685,24 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         clearDynamicShapePlanCache();
         for (InferenceSession session : sessions.values()) {
             session.clearAllCaches();
+        }
+        // Also invalidate all sub-function instances (e.g., the grad function built by
+        // createGradFunction). The grad function is a separate SameDiff instance that holds
+        // its own native plan cache and InferenceSession state. Its C++ plan may hold
+        // addFrozenRef() counts on DataBuffers that are SHARED with the parent sd's weight
+        // arrays (same INDArray/DataBuffer identity). If the grad plan remains frozen while
+        // GradCheckUtil perturbs a weight and calls syncToDevice(), allocateSpecial()'s
+        // frozen-guard (DataBuffer.cu:658) silently skips migration for any buffer whose
+        // _frozenRefCount > 0 — the device buffer stays on the wrong device and the forward
+        // plan reads stale data, producing wrong numerical gradients.
+        // Making invalidateAllPlanCaches() transitive ensures every sub-function's frozen
+        // refs are released before each perturbation step.
+        if (sameDiffFunctionInstances != null) {
+            for (SameDiff subFn : sameDiffFunctionInstances.values()) {
+                if (subFn != null && subFn != this) {
+                    subFn.invalidateAllPlanCaches();
+                }
+            }
         }
     }
 
@@ -4999,7 +5064,15 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
     private void trimSessionMemory() {
         try {
-            Nd4j.clearTADCache();
+            // TAD cache clearing REMOVED intentionally: ConstantTadHelper device pointers
+            // are baked into CUDA graph kernel-argument tables during native-only capture.
+            // Clearing the global TAD cache here (on any SameDiff.close() call) destroys
+            // those device allocations via CudaPointerDeallocator, making every captured
+            // plan's xOffsets/zOffsets kernel args point to freed/recycled GPU memory.
+            // The next cudaGraphLaunch then reads garbage → CUDA error 700 (illegal access).
+            // The TAD cache is process-global and must survive for the lifetime of any
+            // captured CUDA graph that baked a TAD device pointer as a kernel argument.
+            // Only trim the memory pool and commit pending work here.
             org.nd4j.nativeblas.NativeOps nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
             Nd4j.getExecutioner().commit();
             int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
@@ -5007,7 +5080,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 nativeOps.trimMemoryPool(d);
             }
         } catch (Exception e) {
-            log.debug("Pool/TAD trim after session cleanup: {}", e.getMessage());
+            log.debug("Pool trim after session cleanup: {}", e.getMessage());
         }
     }
 

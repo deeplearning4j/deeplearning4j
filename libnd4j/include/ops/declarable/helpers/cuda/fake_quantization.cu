@@ -57,29 +57,9 @@ static SD_HOST_DEVICE void nudge(T min, T max, int quantMin, int quantMax, T* sc
   *nudgedMin = (quantMinF - static_cast<T>(nudgedZeroPoint)) * (*scale);
 }
 
-template <typename T>
-void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
-  int lowIntBound = narrowed ? 1 : 0;
-  int upperIntBound = (1 << numBits) - 1;
-  min->syncToHost();  // these are scalars, so nothing much happened
-  max->syncToHost();
-  T scale, nudgedMin, nudgedMax;
-  nudge(min->t<T>(0), max->t<T>(0), lowIntBound, upperIntBound, &scale, &nudgedMin, &nudgedMax);
-
-  auto wiseMinMaxAndSoOn = LAMBDA_T(x, nudgedMin, nudgedMax, scale) {
-    T val = x;
-    if (x < nudgedMin) {
-      val = nudgedMin;
-    } else if (x > nudgedMax) {
-      val = nudgedMax;
-    } else
-      val = x;
-    return (math::sd_floor<T, T>((val - nudgedMin) / scale + T(0.5)) * scale + nudgedMin);
-  });
-
-  input->applyLambda(wiseMinMaxAndSoOn, output);
-}
-
+// Shared kernel used by both scalar (channels=1) and per-channel paths.
+// For the scalar path: channels=1, min[0]/max[0] are the single scalar bounds.
+// For the per-channel path: channels=C, min[i]/max[i] are per-channel bounds.
 template <typename T>
 static SD_KERNEL void fakeQuantWithMinMaxKernel(const T* input, const LongType* inputShape, T* min, T* max,
                                                 int lowIntBound, int upperIntBound, LongType channels, T* output,
@@ -142,6 +122,31 @@ static SD_KERNEL void fakeQuantWithMinMaxKernel(const T* input, const LongType* 
   }
 }
 
+// Scalar min/max path: reuses fakeQuantWithMinMaxKernel with channels=1.
+// The per-element linear index (b * 1 + 0 = b) covers every element via
+// INDEX2COORDS/COORDS2INDEX, so arbitrary input shapes are handled correctly.
+template <typename T>
+void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
+  int lowIntBound = narrowed ? 1 : 0;
+  int upperIntBound = (1 << numBits) - 1;
+  auto length = input->lengthOf();
+  // scalar min/max: treat as a single channel so we can reuse fakeQuantWithMinMaxKernel unchanged
+  LongType channels = 1;
+  LaunchContext* context = input->getContext();
+  NDArray::prepareSpecialUse({output}, {min, max, input});
+  auto stream = context->getCudaStream();
+  T* inputBuf  = input->dataBuffer()->template specialAsT<T>();
+  T* outputBuf = output->dataBuffer()->template specialAsT<T>();
+  T* minBuf    = min->dataBuffer()->template specialAsT<T>();
+  T* maxBuf    = max->dataBuffer()->template specialAsT<T>();
+  dim3 launchDims = getLaunchDims("fake_quantization");
+  fakeQuantWithMinMaxKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+      inputBuf, input->specialShapeInfo(), minBuf, maxBuf,
+      lowIntBound, upperIntBound, channels, outputBuf,
+      output->specialShapeInfo(), length);
+  DebugHelper::checkErrorCode(context->getCudaStream(), "fakeQuantWithMinMaxVars_ scalar kernel failed");
+  NDArray::registerSpecialUse({output}, {min, max, input});
+}
 
 template <typename T>
 void fakeQuantWithMinMaxVarsPerChannel_(LaunchContext* context, NDArray* input, NDArray* min, NDArray* max, int numBits,

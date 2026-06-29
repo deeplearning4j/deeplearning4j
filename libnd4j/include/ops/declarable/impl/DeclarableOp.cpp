@@ -25,6 +25,7 @@
 #include <graph/profiling/GraphProfile.h>
 #include <graph/profiling/NodeProfile.h>
 #include <graph/profiling/OpTimingTracker.h>
+#include <graph/DspLifecycleContext.h>
 #include <helpers/KernelSelectionEnvironment.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/StringUtils.h>
@@ -1222,17 +1223,45 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       auto shape = ShapeUtils::shapeAsString(array);
       auto type = DataTypeUtils::asString(array->dataType());
 
-      // SAFETY: Do NOT read buffer values here (no asString / e<T> / syncToHost).
-      // asString() → e<float>() → preparePrimaryUse() → cudaMemcpy on CUDA.
-      // If the device buffer was freed (view of a replaced constant, DSP slot
-      // whose GPU allocation was reclaimed, or offset past valid allocation),
-      // cudaMemcpy triggers SIGSEGV which kills the JVM. SIGSEGV is a signal —
-      // C++ try-catch cannot intercept it. Shape and dtype are always safe to
-      // read (stored in CPU-side metadata). Value preview requires explicit
-      // opt-in via printIndexedBuffer() at call sites that guarantee buffer validity.
-      sd_debug("node_%i:%i input  shape: %s; dtype: %s; length: %lld%s\n",
-                block->nodeId(), e, shape.c_str(), type.c_str(),
-                (long long)array->lengthOf(), array->isEmpty() ? " (empty)" : "");
+      // Crash-safe value preview. The guards above already reject null shapeInfo,
+      // unallocated, and closed buffers; isValid() additionally rejects a freed/corrupted
+      // DataBuffer via its magic-number before asString() triggers syncToHost()/cudaMemcpy.
+      // The D2H path (syncToPrimary) itself validates the device pointer/device-id, so a
+      // valid buffer reads safely. Bounded preview to limit cost.
+      if (array->isEmpty()) {
+        sd_debug("node_%i:%i input  shape: %s; dtype: %s; values: (empty)\n",
+                  block->nodeId(), e, shape.c_str(), type.c_str());
+      } else if (dataBuffer->isValid()) {
+        // Device-only buffers (view-producer outputs: expand_dims/broadcast/permute) have a null host
+        // buffer, so asString() bails out with "nullptr". Allocate host + sync D2H so the values show.
+        // DSP-AWARE: only when DSP does NOT own the thread — isOwned() is true for capture OR replay,
+        // and a D2H is illegal during capture (err 900) and reads baked addresses during replay. So this
+        // is strictly SLOT-BY-SLOT. (The whole dump is also gated by isDebugAndVerbose = debug runs.)
+        // Capture coherence flags BEFORE any sync mutates them — pa==true here is exactly the
+        // condition under which a non-forced syncToHost would have skipped the D2H and the dump
+        // would have shown the zero allocatePrimary host instead of the real device data.
+        const int __saIn = (int)dataBuffer->isSpecialActual();
+        const int __paIn = (int)dataBuffer->isPrimaryActual();
+        if (dataBuffer->primary() == nullptr && dataBuffer->special() != nullptr &&
+            !sd::graph::DspLifecycleContext::isCaptureActive() &&
+            !sd::graph::DspLifecycleContext::isDspReplaying()) {
+          dataBuffer->allocatePrimary();
+          // forceSync=true bypasses syncToPrimary's isPrimaryActual early-return (~line 990) so the
+          // device-only view's REAL device data reaches host; a non-forced sync would leave the
+          // freshly-allocated host at zeros and the dump would falsely report a zero buffer.
+          dataBuffer->syncToPrimary(sd::LaunchContext::defaultContext(), true);
+        }
+        auto* preview = array->asString(32);
+        sd_debug("node_%i:%i input  shape: %s; dtype: %s; length: %lld; sa=%d pa=%d off=%lld sp=%p; first values: %s\n",
+                  block->nodeId(), e, shape.c_str(), type.c_str(),
+                  (long long)array->lengthOf(), __saIn, __paIn, (long long)array->offset(),
+                  dataBuffer->special(),
+                  preview ? preview->c_str() : "<null>");
+        delete preview;
+      } else {
+        sd_debug("node_%i:%i input  shape: %s; dtype: %s; length: %lld; values: INVALID BUFFER\n",
+                  block->nodeId(), e, shape.c_str(), type.c_str(), (long long)array->lengthOf());
+      }
     }
 
     for (size_t e = 0; e < static_cast<size_t>(numOutputs); e++) {
@@ -1272,10 +1301,38 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       auto shape = ShapeUtils::shapeAsString(array);
       auto type = DataTypeUtils::asString(array->dataType());
 
-      // SAFETY: Same as input logging — no value reads. See comment above.
-      sd_debug("node_%i:%i result shape: %s; dtype: %s; length: %lld%s\n",
-                block->nodeId(), (int)e, shape.c_str(), type.c_str(),
-                (long long)array->lengthOf(), array->isEmpty() ? " (empty)" : "");
+      // Crash-safe value preview — see input-dump comment above. isValid() (magic + !closed)
+      // gates the asString() read so a freed/corrupted buffer can't SIGSEGV the JVM.
+      if (array->isEmpty()) {
+        sd_debug("node_%i:%i result shape: %s; dtype: %s; values: (empty)\n",
+                  block->nodeId(), (int)e, shape.c_str(), type.c_str());
+      } else if (dataBuffer->isValid()) {
+        // Device-only buffers (view-producer outputs: expand_dims/broadcast/permute) have a null host
+        // buffer, so asString() bails out with "nullptr". Allocate host + sync D2H so the values show.
+        // DSP-AWARE: only when DSP does NOT own the thread — isOwned() is true for capture OR replay,
+        // and a D2H is illegal during capture (err 900) and reads baked addresses during replay. So this
+        // is strictly SLOT-BY-SLOT. (The whole dump is also gated by isDebugAndVerbose = debug runs.)
+        const int __saR = (int)dataBuffer->isSpecialActual();
+        const int __paR = (int)dataBuffer->isPrimaryActual();
+        if (dataBuffer->primary() == nullptr && dataBuffer->special() != nullptr &&
+            !sd::graph::DspLifecycleContext::isCaptureActive() &&
+            !sd::graph::DspLifecycleContext::isDspReplaying()) {
+          dataBuffer->allocatePrimary();
+          // forceSync=true: see input-dump comment — bypass the isPrimaryActual skip so the dump
+          // reflects real DEVICE data, not the zero allocatePrimary host.
+          dataBuffer->syncToPrimary(sd::LaunchContext::defaultContext(), true);
+        }
+        auto* preview = array->asString(32);
+        sd_debug("node_%i:%i result shape: %s; dtype: %s; length: %lld; sa=%d pa=%d off=%lld sp=%p; first values: %s\n",
+                  block->nodeId(), (int)e, shape.c_str(), type.c_str(),
+                  (long long)array->lengthOf(), __saR, __paR, (long long)array->offset(),
+                  dataBuffer->special(),
+                  preview ? preview->c_str() : "<null>");
+        delete preview;
+      } else {
+        sd_debug("node_%i:%i result shape: %s; dtype: %s; length: %lld; values: INVALID BUFFER\n",
+                  block->nodeId(), (int)e, shape.c_str(), type.c_str(), (long long)array->lengthOf());
+      }
     }
   }
 

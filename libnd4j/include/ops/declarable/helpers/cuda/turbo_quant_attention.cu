@@ -210,14 +210,11 @@ void turboQuantAttentionForward(
 
   float qjlCorrectionScale = sd::math::sd_sqrt<float, float>(static_cast<float>(M_PI / 2.0)) / static_cast<float>(headDim);
 
-  // Ensure GPU buffers are current
-  query->syncToDevice();
-  kMse->syncToDevice();
-  qjlSigns->syncToDevice();
-  residualNorms->syncToDevice();
-  qjlMatrix->syncToDevice();
-  values->syncToDevice();
-  if (attentionMask != nullptr) attentionMask->syncToDevice();
+  // Prepare device buffers via standard coherence API
+  std::vector<NDArray*> reads = {query, kMse, qjlSigns, residualNorms, qjlMatrix, values};
+  if (attentionMask != nullptr) reads.push_back(attentionMask);
+  std::vector<NDArray*> writes = {output};
+  NDArray::prepareSpecialUse(writes, reads);
 
   // Grid/block configuration
   dim3 grid(batch * numHeads, seqQ, 1);
@@ -285,8 +282,8 @@ void turboQuantAttentionForward(
         maskRank, maskDim1, maskDim2, maskDim3);
   }
 
-  // Mark output as device-authoritative
-  output->tickWriteDevice();
+  // Register device writes/reads via standard coherence API
+  NDArray::registerSpecialUse(writes, reads);
 }
 
 }  // namespace helpers

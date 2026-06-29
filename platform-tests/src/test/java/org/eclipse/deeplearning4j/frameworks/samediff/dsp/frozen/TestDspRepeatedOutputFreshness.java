@@ -400,8 +400,6 @@ public class TestDspRepeatedOutputFreshness {
         Environment env = Nd4j.getEnvironment();
         switch (mode) {
             case NO_DSP:
-                sd.setDspAutoCompileEnabled(false);
-                sd.setDspNativeAutoCompileEnabled(false);
                 sd.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
                 env.setTritonGraphCapture(false);
                 break;

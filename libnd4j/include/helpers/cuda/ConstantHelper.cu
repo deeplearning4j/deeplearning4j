@@ -29,6 +29,7 @@
 #include <string>
 #include <execution/LaunchContext.h>
 #include <helpers/ConstantHelper.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
 #include <memory/cuda/CudaMemoryPool.h>
@@ -44,11 +45,11 @@ namespace sd {
 
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
-  if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
-    return reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
-  }
+  // Thin no-arg adapter over the authority — see DebugHelper::captureSafeStream. The three-tier
+  // priority lives ONCE there; never re-derive the tl_* checks here.
   auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
-  return (streamPtr != nullptr) ? *streamPtr : nullptr;
+  cudaStream_t lcStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+  return DebugHelper::captureSafeStream(lcStream);
 }
 }  // namespace
 
@@ -276,18 +277,21 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
         THROW_EXCEPTION(errorMessage.c_str());
       }
     } else {
-      // Use cudaMemcpyAsync on cudaStreamPerThread instead of synchronous cudaMemcpy
-      // on the legacy stream (stream 0). Synchronous cudaMemcpy on stream 0 causes
-      // error 906 when another thread on the same device is mid-CUDA-graph-capture,
-      // because stream 0 implicitly depends on the capturing stream.
-      // cudaStreamPerThread is a per-thread default stream that avoids this conflict.
-      auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
+      // Route through captureSafeStreamOrDefault() rather than cudaStreamPerThread:
+      // - When inside the outer composite-capture scope (tl_compositeCaptureStream set),
+      //   this returns the main execution stream, keeping H2D copies on the right stream.
+      // - When completely outside capture, it falls back to the LaunchContext default
+      //   stream, which is safe and avoids error 906 from stream 0.
+      // cudaStreamSynchronize ensures the copy is complete before the caller reads ptr.
+      cudaStream_t copyStream = captureSafeStreamOrDefault();
+      if (copyStream == nullptr) copyStream = cudaStreamPerThread;
+      auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, copyStream);
       if (res != 0) {
         cudaGetLastError();
-        std::string errorMessage = "cudaMemcpyAsync (per-thread stream) failed with error code " + std::to_string(res);
+        std::string errorMessage = "cudaMemcpyAsync (constant helper) failed with error code " + std::to_string(res);
         THROW_EXCEPTION(errorMessage.c_str());
       }
-      cudaStreamSynchronize(cudaStreamPerThread);
+      cudaStreamSynchronize(copyStream);
     }
   }
 

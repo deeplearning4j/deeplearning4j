@@ -909,19 +909,32 @@ public class CudaZeroHandler implements MemoryHandler {
         try {
             lock.writeLock().lock();
 
-            if (cublasHandles.get(deviceId) == null) {
-                // Get native handle and validate before creating wrapper
-                Pointer nativeHandle = nativeOps.lcBlasHandle(lc);
-                if (nativeHandle == null || nativeHandle.isNull()) {
-                    throw new ND4JIllegalStateException("cuBLAS handle is null for device " + deviceId +
-                        ". This may indicate cuBLAS initialization failure.");
-                }
-                cublasHandles.remove(deviceId);
-                cublasHandles.add(deviceId, new cublasHandle_t(nativeHandle));
+            // ALWAYS re-fetch the handle from C++ native rather than returning the cached pointer.
+            //
+            // Root of CrossDeviceTransferTest SIGSEGV in cublasSetStream_v2:
+            // CublasHelper::handle() (cublasHelper.cu) is thread-local: on a device switch it
+            // calls cublasDestroy_v2(*tl_handle) then creates a new handle at a new address and
+            // updates tl_handle.  The Java cublasHandles List caches the OLD raw pointer obtained
+            // before the device switch.  When the thread returns to the original device, Java's
+            // cached pointer now points to freed C++ memory; passing it to cublasSetStream_v2
+            // dereferences freed memory → SIGSEGV.
+            //
+            // CublasHelper::handle(deviceId) is itself safe to call on every use:
+            //  - If tl_deviceId == deviceId (common case), it returns the existing tl_handle
+            //    unchanged — no reallocation, no overhead beyond a comparison.
+            //  - If tl_deviceId != deviceId (first call after a device switch), it creates a
+            //    fresh handle for the new device — which is exactly what we need.
+            // Always re-fetching here means the Java wrapper always reflects the current C++
+            // thread-local handle and can never become stale across a device switch.
+            Pointer nativeHandle = nativeOps.lcBlasHandle(lc);
+            if (nativeHandle == null || nativeHandle.isNull()) {
+                throw new ND4JIllegalStateException("cuBLAS handle is null for device " + deviceId +
+                    ". This may indicate cuBLAS initialization failure.");
             }
+            cublasHandles.remove(deviceId);
+            cublasHandles.add(deviceId, new cublasHandle_t(nativeHandle));
 
             cublasHandle_t handle = cublasHandles.get(deviceId);
-            // Double-check the cached handle is still valid
             if (handle == null || handle.isNull()) {
                 throw new ND4JIllegalStateException("Cached cuBLAS handle became invalid for device " + deviceId +
                     ". This may indicate CUDA context corruption.");
@@ -1080,6 +1093,27 @@ public class CudaZeroHandler implements MemoryHandler {
     public void resetCachedContext() {
         tlContext.remove();
         tlContextDeviceId.remove();
+
+        // Invalidate the cached cuBLAS handle for the current device.
+        //
+        // CublasHelper::handle() (cublasHelper.cu) stores a thread_local cublasHandle_t*.
+        // On a device switch it destroys the old handle and creates a new one, so the raw
+        // pointer that Java has cached in cublasHandles becomes a dangling pointer to freed
+        // C++ memory.  Clearing it here forces getCudaCublasHandle() to re-fetch the current
+        // (valid) handle from C++ on the next cuBLAS operation instead of passing the stale
+        // pointer to cublasSetStream_v2, which would SIGSEGV.
+        //
+        // getCudaCublasHandle() already performs an unconditional re-fetch, but clearing here
+        // also protects code paths that read cublasHandles directly (e.g. getCudaCublasHandleForDevice).
+        try {
+            lock.writeLock().lock();
+            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if (deviceId >= 0 && deviceId < cublasHandles.size()) {
+                cublasHandles.set(deviceId, null);
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**

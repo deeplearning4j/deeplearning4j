@@ -77,12 +77,18 @@ class SD_LIB_EXPORT Workspace {
 
   int _deviceId = -1;  // Device where device memory was allocated (-1 = not set)
 
+  // When true, the secondary (host) buffer is allocated via plain malloc/free rather
+  // than cudaHostAlloc/cudaFreeHost.  Set by the CUDA MultiBackendWorkspace for
+  // CPU-device workspaces so that no CUDA context is required for the allocation.
+  bool _secondaryUsePlainMalloc = false;
+
   void init(sd::LongType primaryBytes, sd::LongType secondaryBytes = 0L);
   void freeSpills();
 
  public:
   explicit Workspace(ExternalWorkspace* external);
-  Workspace(sd::LongType initialSize = 0L, sd::LongType secondaryBytes = 0L);
+  Workspace(sd::LongType initialSize = 0L, sd::LongType secondaryBytes = 0L,
+            bool secondaryUsePlainMalloc = false);
   ~Workspace();
 
   sd::LongType getAllocatedSize();

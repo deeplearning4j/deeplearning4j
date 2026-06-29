@@ -653,4 +653,149 @@ public class TestGraphOptimizerOnSmolDocling {
                 .limit(topN)
                 .forEach(e -> log.info("  {} x {}", String.format("%6d", e.getValue()), e.getKey()));
     }
+
+    private static long prod(long[] a) { long p = 1; for (long x : a) p *= x; return p; }
+
+    /**
+     * HEAD ISOLATION via the REAL decoder graph (resolved orders → no order=-1 artifact).
+     * Inspects placeholders + the first onnx_multi_head_attention / broadcast_to var names, then
+     * feeds SYNTHETIC non-zero inputs_embeds and requests the MHA's Q/K/V inputs. If K/V come back
+     * ZERO with non-zero Q → the decode K/V=0 bug is reproduced in the real graph in pure execute()
+     * (independent of the real vision embeddings) → pinpoints it's the graph/execute() context.
+     */
+    @Test
+    @DisplayName("HEAD isolation: real decoder graph, synthetic embeds — is first onnx_mha K/V zero?")
+    void testRealDecoderGqaKVZero() throws Exception {
+        File sdz = new File(System.getProperty("user.home") + "/.cache/dl4j-vlm-models/smoldocling-decoder.sdz");
+        if (!sdz.exists()) { log.warn("[REAL_GQA] decoder sdz missing — skipping"); return; }
+        SameDiff sd = SameDiff.load(sdz, false);
+        log.info("[REAL_GQA] loaded decoder: {} ops, {} vars", sd.getOps().size(), sd.getVariables().size());
+
+        List<SDVariable> phs = new ArrayList<>();
+        for (SDVariable v : sd.variables()) if (v.getVariableType() == VariableType.PLACEHOLDER) phs.add(v);
+        log.info("[REAL_GQA] {} placeholders:", phs.size());
+        for (SDVariable v : phs)
+            log.info("[REAL_GQA] PH {} shape={} dtype={}", v.name(), Arrays.toString(v.getShape()), v.dataType());
+
+        List<String> mhaInputs = null; String mhaName = null, mhaOut = null;
+        for (SameDiffOp op : sd.getOps().values()) {
+            String on = op.getOp() == null ? null : op.getOp().opName();
+            if (on != null && (on.contains("multi_head") || on.contains("dot_product_attention"))) {
+                log.info("[REAL_GQA] MHA op={} type={} inputs={} outputs={}", op.getName(), on, op.getInputsToOp(), op.getOutputsOfOp());
+                if (mhaName == null) { mhaName = op.getName(); mhaInputs = op.getInputsToOp();
+                    mhaOut = (op.getOutputsOfOp() != null && !op.getOutputsOfOp().isEmpty()) ? op.getOutputsOfOp().get(0) : null; }
+            }
+        }
+        int bc = 0;
+        for (SameDiffOp op : sd.getOps().values()) {
+            String on = op.getOp() == null ? null : op.getOp().opName();
+            if (on != null && on.contains("broadcast")) {
+                log.info("[REAL_GQA] BCAST op={} inputs={} outputs={}", op.getName(), op.getInputsToOp(), op.getOutputsOfOp());
+                if (++bc >= 3) break;
+            }
+        }
+
+        try {
+            // PIPELINE CONTEXT: optionally run the real vision encoder FIRST (synthetic image) to replicate
+            // the benchmark's GPU-pool/memory state before the decoder — the key difference from the
+            // (passing) isolated decoder run. Enable with -Dreal.gqa.vision=true.
+            if (Boolean.getBoolean("real.gqa.vision")) {
+                try {
+                    File vsdz = new File(System.getProperty("user.home") + "/.cache/dl4j-vlm-models/smoldocling-vision-encoder.sdz");
+                    if (vsdz.exists()) {
+                        SameDiff vsd = SameDiff.load(vsdz, false);
+                        vsd.setGraphExecutionMode(org.nd4j.autodiff.samediff.execution.GraphExecutionMode.SLOT_BY_SLOT);
+                        vsd.setDspAutoCompileEnabled(false); vsd.setDspNativeAutoCompileEnabled(false);
+                        Map<String, org.nd4j.linalg.api.ndarray.INDArray> vfeed = new LinkedHashMap<>();
+                        for (SDVariable v : vsd.variables()) if (v.getVariableType() == VariableType.PLACEHOLDER) {
+                            log.info("[REAL_GQA] VISION_PH {} shape={} dtype={}", v.name(), Arrays.toString(v.getShape()), v.dataType());
+                            long[] vr = (v.getShape() == null || v.getShape().length == 0) ? new long[]{1, 1, 3, 512, 512} : v.getShape().clone();
+                            for (int i = 0; i < vr.length; i++) if (vr[i] < 0) vr[i] = 1;  // batch=num_images=1
+                            org.nd4j.linalg.api.ndarray.INDArray va;
+                            if (v.dataType() == DataType.BOOL) {
+                                va = org.nd4j.linalg.factory.Nd4j.ones(vr).castTo(DataType.BOOL);  // all-true attention mask
+                            } else {
+                                try { va = org.nd4j.linalg.factory.Nd4j.rand(v.dataType(), vr).addi(0.1); }
+                                catch (Exception ex) { va = org.nd4j.linalg.factory.Nd4j.zeros(v.dataType(), vr); }
+                            }
+                            vfeed.put(v.name(), va);
+                        }
+                        if (!vsd.outputs().isEmpty()) { vsd.output(vfeed, vsd.outputs().get(0)); log.info("[REAL_GQA] ran vision encoder FIRST (pipeline context)"); }
+                    }
+                } catch (Throwable ve) { log.warn("[REAL_GQA] vision partial-run threw (DECODER STILL RUNS AFTER): {}", ve.toString()); }
+            }
+            // CROSS-GRAPH STATE TEST: run a SEPARATE DSP graph BEFORE the decoder. If the decoder then
+            // zeros K/V, a prior DSP execution leaves a stale thread-local (stream/device) that corrupts it
+            // — the only thing the benchmark does (vision encoder runs first) that the isolated test doesn't.
+            if (Boolean.getBoolean("real.gqa.priorDsp")) {
+                SameDiff prior = SameDiff.create();
+                SDVariable px = prior.placeHolder("px", DataType.FLOAT, 1, 64);
+                SDVariable pw = prior.var("pw", org.nd4j.linalg.factory.Nd4j.rand(DataType.FLOAT, 64, 64));
+                prior.mmul("pout", px, pw);
+                prior.setGraphExecutionMode(org.nd4j.autodiff.samediff.execution.GraphExecutionMode.CUDA_GRAPHS);
+                prior.setDspAutoCompileEnabled(true); prior.setDspNativeAutoCompileEnabled(true);
+                Map<String, org.nd4j.linalg.api.ndarray.INDArray> pf = new LinkedHashMap<>();
+                pf.put("px", org.nd4j.linalg.factory.Nd4j.rand(DataType.FLOAT, 1, 64));
+                for (int w = 0; w < 6; w++) prior.output(pf, "pout");
+                log.info("[REAL_GQA] ran a PRIOR DSP graph (cross-graph state-leak test)");
+            }
+            String modeStr = System.getProperty("real.gqa.mode", "SLOT_BY_SLOT");
+            boolean useDsp = Boolean.getBoolean("real.gqa.dsp");
+            int warmups = Integer.getInteger("real.gqa.warmups", 0);
+            sd.setGraphExecutionMode(org.nd4j.autodiff.samediff.execution.GraphExecutionMode.valueOf(modeStr));
+            sd.setDspAutoCompileEnabled(useDsp);
+            sd.setDspNativeAutoCompileEnabled(useDsp);
+            log.info("[REAL_GQA] decoder mode={} dsp={} warmups={}", modeStr, useDsp, warmups);
+            // PIPELINE-CONTEXT proxy: churn the GPU pool (alloc+free large buffers) before the decoder,
+            // simulating the vision-encoder's allocate/free footprint. -Dreal.gqa.pressureMB=128 to enable.
+            int pressureMB = Integer.getInteger("real.gqa.pressureMB", 0);
+            if (pressureMB > 0) {
+                long side = (long) Math.sqrt((double) pressureMB * 1024 * 1024 / 4);
+                for (int p = 0; p < 40; p++) {
+                    org.nd4j.linalg.api.ndarray.INDArray big = org.nd4j.linalg.factory.Nd4j.create(DataType.FLOAT, side, side);
+                    big.addi((p % 7) + 1.0);
+                    big.close();
+                }
+                log.info("[REAL_GQA] GPU-pool churn applied: 40 × ~{}MB alloc+free before decoder", pressureMB);
+            }
+            final int N = Integer.getInteger("real.gqa.N", 1142);
+            Map<String, org.nd4j.linalg.api.ndarray.INDArray> feed = new LinkedHashMap<>();
+            for (SDVariable v : phs) {
+                long[] shp = v.getShape();
+                long[] r = (shp == null || shp.length == 0) ? new long[]{1, N, 576} : shp.clone();
+                String ln = v.name().toLowerCase();
+                boolean isPast = ln.contains("past_key") || ln.contains("present");
+                for (int i = 0; i < r.length; i++) if (r[i] < 0) r[i] = (i == 0 ? 1 : (isPast ? 0 : N));  // past seq=0 (prefill)
+                org.nd4j.linalg.api.ndarray.INDArray arr;
+                if (ln.contains("mask")) {
+                    arr = org.nd4j.linalg.factory.Nd4j.ones(v.dataType(), r);  // all positions valid
+                } else if (ln.contains("embed") || ln.contains("hidden") || ln.contains("inputs_")) {
+                    arr = org.nd4j.linalg.factory.Nd4j.rand(v.dataType(), r).addi(0.1);
+                } else if (ln.contains("position") || ln.contains("pos_id")) {
+                    arr = org.nd4j.linalg.factory.Nd4j.arange(0, (double) Math.max(1, prod(r))).reshape(r).castTo(v.dataType());
+                } else {
+                    arr = org.nd4j.linalg.factory.Nd4j.zeros(v.dataType(), r);
+                }
+                feed.put(v.name(), arr);
+            }
+            log.info("[REAL_GQA] fed {} placeholders (N={}); MHA inputs={}", feed.size(), N, mhaInputs);
+            String logitsVar = (sd.outputs() != null && !sd.outputs().isEmpty()) ? sd.outputs().get(0) : mhaOut;
+            log.info("[REAL_GQA] final output var = {}", logitsVar);
+            if (logitsVar != null) {
+                // BENCHMARK CONDITION: request ONLY the final logits → K/V (repeat_kv) are pure INTERMEDIATES.
+                // If the buffer-lifecycle prematurely frees an intermediate view-chain buffer, reshape_no_copy
+                // reads <released> (execute() throws; native-plan reuses→zero).
+                try {
+                    org.nd4j.linalg.api.ndarray.INDArray out = sd.output(feed, logitsVar).get(logitsVar);
+                    log.info("[REAL_GQA] VERDICT: LOGITS-ONLY run SUCCEEDED amax={} → no premature-free in this path",
+                            out.amaxNumber().doubleValue());
+                } catch (Throwable t) {
+                    log.info("[REAL_GQA] VERDICT: REPRODUCED — logits-only (K/V intermediate) FAILS: {} → premature-free of a repeat_kv view-chain buffer (THE decode bug; prior tests masked it by requesting K/V)",
+                            t.toString().replaceAll("\\s+", " ").substring(0, Math.min(200, t.toString().length())));
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[REAL_GQA] synthetic run failed (inspection above still valuable): {}", e.toString());
+        }
+    }
 }

@@ -45,33 +45,35 @@ SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* thir
   auto s = second->bufferAsT<T>();
   auto t = third->bufferAsT<T>();
   auto z = target->bufferAsT<T>();
-  if (f == z) {
-    auto loop = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
-          auto tOffset = this->getOffset(e);
-          auto uOffset = second->getOffset(e);
-          auto vOffset = third->getOffset(e);
 
-          f[tOffset] = func(f[tOffset], s[uOffset], t[vOffset]);
-        }
-    };
+  // Shared canonical (C-order) index decomposition -- see applyPairwiseLambda for why per-array
+  // getOffset(e) mis-pairs operands of differing ordering. (Shapes verified equal above.)
+  const sd::LongType lambdaRank = this->rankOf();
+  auto lambdaShape   = this->shapeOf();
+  auto lambdaXStride = this->stridesOf();
+  auto lambdaYStride = second->stridesOf();
+  auto lambdaWStride = third->stridesOf();
+  auto lambdaZStride = target->stridesOf();
+  const sd::LongType lambdaXBase = this->offset();
+  const sd::LongType lambdaYBase = second->offset();
+  const sd::LongType lambdaWBase = third->offset();
+  const sd::LongType lambdaZBase = target->offset();
 
-    samediff::Threads::parallel_for(loop, 0, _length);
-  } else {
-    auto loop = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
-          auto tOffset = this->getOffset(e);
-          auto uOffset = second->getOffset(e);
-          auto vOffset = third->getOffset(e);
-          auto zOffset = target->getOffset(e);
+  auto loop = PRAGMA_THREADS_FOR {
+      for (auto e = start; e < stop; e++) {
+        sd::LongType lambdaCoords[SD_MAX_RANK];
+        INDEX2COORDS(e, lambdaRank, lambdaShape, lambdaCoords);
+        sd::LongType tOffset, uOffset, vOffset, zOffset;
+        COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, tOffset);
+        COORDS2INDEX(lambdaRank, lambdaYStride, lambdaCoords, uOffset);
+        COORDS2INDEX(lambdaRank, lambdaWStride, lambdaCoords, vOffset);
+        COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
+        z[lambdaZBase + zOffset] =
+            func(f[lambdaXBase + tOffset], s[lambdaYBase + uOffset], t[lambdaWBase + vOffset]);
+      }
+  };
 
-          z[zOffset] = func(f[tOffset], s[uOffset], t[vOffset]);
-        }
-    };
-
-    samediff::Threads::parallel_for(loop, 0, _length);
-  }
-
+  samediff::Threads::parallel_for(loop, 0, _length);
 }
 #if defined(HAS_DOUBLE)
 template SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third,
@@ -153,6 +155,21 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other, std::function<T(
   auto s = other->bufferAsT<T>();
   auto z = target->bufferAsT<T>();
   auto isTargetOrderEws = !isView() && !target->isView() && this->ordering() == target->ordering() && (shape::strideDescendingCAscendingF(this->shapeInfo()) && shape::strideDescendingCAscendingF(target->shapeInfo()));
+
+  // Shared canonical (C-order) index decomposition for all operands. NDArray::getOffset(e)
+  // decomposes the linear index using each array's OWN ordering ('c' vs 'f'), so pairing operands
+  // by getOffset(e) silently mis-pairs elements whenever the operands differ in ordering -- the
+  // root of corrupted gradients (e.g. relu_bp / thresholdedrelu_bp) when the upstream gradient is
+  // non-uniform. Decompose e once over the (this) shape and project onto each array's strides.
+  const sd::LongType lambdaRank = this->rankOf();
+  auto lambdaXShape  = this->shapeOf();
+  auto lambdaXStride = this->stridesOf();
+  auto lambdaYStride = other->stridesOf();
+  auto lambdaZStride = target->stridesOf();
+  const sd::LongType lambdaXBase = this->offset();
+  const sd::LongType lambdaYBase = other->offset();
+  const sd::LongType lambdaZBase = target->offset();
+
   if (other->isScalar()) {
     auto otherVal = s[other->getOffset(0)];
     if (isTargetOrderEws) {
@@ -161,50 +178,55 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(NDArray* other, std::function<T(
       };
 
       samediff::Threads::parallel_for(loop, 0, _length);
+    } else if (f == z) {
+      auto loop = PRAGMA_THREADS_FOR {
+          for (auto e = start; e < stop; e++) {
+            sd::LongType lambdaCoords[SD_MAX_RANK];
+            INDEX2COORDS(e, lambdaRank, lambdaXShape, lambdaCoords);
+            sd::LongType xOffset;
+            COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
+            f[lambdaXBase + xOffset] = func(f[lambdaXBase + xOffset], otherVal);
+          }
+      };
+
+      samediff::Threads::parallel_for(loop, 0, _length);
     } else {
-      if (f == z) {
-        auto loop = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e++) {
-              auto xOffset = this->getOffset(e);
-              f[xOffset] = func(f[xOffset], otherVal);
-            }
-        };
+      auto loop = PRAGMA_THREADS_FOR {
+          for (auto e = start; e < stop; e++) {
+            sd::LongType lambdaCoords[SD_MAX_RANK];
+            INDEX2COORDS(e, lambdaRank, lambdaXShape, lambdaCoords);
+            sd::LongType xOffset, zOffset;
+            COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
+            COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
+            z[lambdaZBase + zOffset] = func(f[lambdaXBase + xOffset], otherVal);
+          }
+      };
 
-        samediff::Threads::parallel_for(loop, 0, _length);
-      } else {
-        auto loop = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e++) {
-              auto xOffset = this->getOffset(e);
-              auto zOffset = target->getOffset(e);
-
-              z[zOffset] = func(f[xOffset], otherVal);
-            }
-        };
-
-        samediff::Threads::parallel_for(loop, 0, _length);
-      }
+      samediff::Threads::parallel_for(loop, 0, _length);
     }
+    return;
   }
 
-  if (f == z && !this->isView() && !other->isView() && this->ordering() == other->ordering()) {
+  bool lambdaAllContiguousSameOrder = isTargetOrderEws && this->ordering() == other->ordering() &&
+                                      !other->isView() && shape::strideDescendingCAscendingF(other->shapeInfo());
+  if (lambdaAllContiguousSameOrder) {
+    // All three arrays are contiguous in the same ordering: linear pairing is correct (handles the
+    // in-place f == z case too, since z[e] aliases f[e]).
     auto loop = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
-          auto xOffset = this->getOffset(e);
-          auto yOffset = other->getOffset(e);
-
-          f[xOffset] = func(f[xOffset], s[yOffset]);
-        }
+        for (auto e = start; e < stop; e++) z[e] = func(f[e], s[e]);
     };
 
     samediff::Threads::parallel_for(loop, 0, _length);
   } else {
     auto loop = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e++) {
-          auto xOffset = this->getOffset(e);
-          auto yOffset = other->getOffset(e);
-          auto zOffset = target->getOffset(e);
-
-          z[zOffset] = func(f[xOffset], s[yOffset]);
+          sd::LongType lambdaCoords[SD_MAX_RANK];
+          INDEX2COORDS(e, lambdaRank, lambdaXShape, lambdaCoords);
+          sd::LongType xOffset, yOffset, zOffset;
+          COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
+          COORDS2INDEX(lambdaRank, lambdaYStride, lambdaCoords, yOffset);
+          COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
+          z[lambdaZBase + zOffset] = func(f[lambdaXBase + xOffset], s[lambdaYBase + yOffset]);
         }
     };
 
@@ -303,11 +325,22 @@ SD_LIB_HIDDEN void NDArray::applyLambda(std::function<T(T)>& func, NDArray* targ
 
     samediff::Threads::parallel_for(loop, 0, _length,1);
   } else {
+    // Shared canonical (C-order) index decomposition: pairing this and target by their own
+    // getOffset(e) yields a transposed copy when the orderings differ. (See applyPairwiseLambda.)
+    const sd::LongType lambdaRank = this->rankOf();
+    auto lambdaXShape  = this->shapeOf();
+    auto lambdaXStride = this->stridesOf();
+    auto lambdaZStride = target->stridesOf();
+    const sd::LongType lambdaXBase = this->offset();
+    const sd::LongType lambdaZBase = target->offset();
     auto loop = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e+= increment) {
-          auto xOffset = this->getOffset(e);
-          auto zOffset = target->getOffset(e);
-          z[zOffset] = func(f[xOffset]);
+          sd::LongType lambdaCoords[SD_MAX_RANK];
+          INDEX2COORDS(e, lambdaRank, lambdaXShape, lambdaCoords);
+          sd::LongType xOffset, zOffset;
+          COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
+          COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
+          z[lambdaZBase + zOffset] = func(f[lambdaXBase + xOffset]);
         }
     };
 
@@ -376,28 +409,26 @@ SD_LIB_HIDDEN void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>
 
     samediff::Threads::parallel_for(loop, 0, _length);
   } else {
-    if (f == z) {
-      auto loop = PRAGMA_THREADS_FOR {
-          for (auto e = start; e < stop; e++) {
-            auto xOffset = this->getOffset(e);
+    // Shared canonical (C-order) index decomposition; keeps the func index argument consistent with
+    // the contiguous fast path above and avoids transposed pairing for differing orderings.
+    const sd::LongType lambdaRank = this->rankOf();
+    auto lambdaXShape  = this->shapeOf();
+    auto lambdaXStride = this->stridesOf();
+    auto lambdaZStride = target->stridesOf();
+    const sd::LongType lambdaXBase = this->offset();
+    const sd::LongType lambdaZBase = target->offset();
+    auto loop = PRAGMA_THREADS_FOR {
+        for (auto e = start; e < stop; e++) {
+          sd::LongType lambdaCoords[SD_MAX_RANK];
+          INDEX2COORDS(e, lambdaRank, lambdaXShape, lambdaCoords);
+          sd::LongType xOffset, zOffset;
+          COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
+          COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
+          z[lambdaZBase + zOffset] = func(e, f[lambdaXBase + xOffset]);
+        }
+    };
 
-            f[xOffset] = func(e, f[xOffset]);
-          }
-      };
-
-      samediff::Threads::parallel_for(loop, 0, _length);
-    } else {
-      auto loop = PRAGMA_THREADS_FOR {
-          for (auto e = start; e < stop; e++) {
-            auto xOffset = this->getOffset(e);
-            auto zOffset = target->getOffset(e);
-
-            z[zOffset] = func(e, f[xOffset]);
-          }
-      };
-
-      samediff::Threads::parallel_for(loop, 0, _length);
-    }
+    samediff::Threads::parallel_for(loop, 0, _length);
   }
 }
 #if defined(HAS_DOUBLE)
@@ -472,31 +503,32 @@ SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(NDArray* other, std::func
   auto f = this->bufferAsT<T>();
   auto s = other->bufferAsT<T>();
   auto z = target->bufferAsT<T>();
-  if (f == z) {
-    auto loop = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
-          auto xOffset = this->getOffset(e);
-          auto yOffset = other->getOffset(e);
 
-          f[xOffset] = func((sd::LongType)e, f[xOffset], s[yOffset]);
-        }
-    };
+  // Shared canonical (C-order) index decomposition -- see applyPairwiseLambda for why per-array
+  // getOffset(e) mis-pairs operands of differing ordering.
+  const sd::LongType lambdaRank = this->rankOf();
+  auto lambdaXShape  = this->shapeOf();
+  auto lambdaXStride = this->stridesOf();
+  auto lambdaYStride = other->stridesOf();
+  auto lambdaZStride = target->stridesOf();
+  const sd::LongType lambdaXBase = this->offset();
+  const sd::LongType lambdaYBase = other->offset();
+  const sd::LongType lambdaZBase = target->offset();
 
-    samediff::Threads::parallel_for(loop, 0, _length);
-  } else {
-    auto loop = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
-          auto xOffset = this->getOffset(e);
-          auto yOffset = other->getOffset(e);
-          auto zOffset = target->getOffset(e);
+  auto loop = PRAGMA_THREADS_FOR {
+      for (auto e = start; e < stop; e++) {
+        sd::LongType lambdaCoords[SD_MAX_RANK];
+        INDEX2COORDS(e, lambdaRank, lambdaXShape, lambdaCoords);
+        sd::LongType xOffset, yOffset, zOffset;
+        COORDS2INDEX(lambdaRank, lambdaXStride, lambdaCoords, xOffset);
+        COORDS2INDEX(lambdaRank, lambdaYStride, lambdaCoords, yOffset);
+        COORDS2INDEX(lambdaRank, lambdaZStride, lambdaCoords, zOffset);
+        z[lambdaZBase + zOffset] =
+            func((sd::LongType)e, f[lambdaXBase + xOffset], s[lambdaYBase + yOffset]);
+      }
+  };
 
-          z[zOffset] = func((sd::LongType)e, f[xOffset], s[yOffset]);
-        }
-    };
-
-    samediff::Threads::parallel_for(loop, 0, _length);
-  }
-
+  samediff::Threads::parallel_for(loop, 0, _length);
 }
 #if defined(HAS_DOUBLE)
 template SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(

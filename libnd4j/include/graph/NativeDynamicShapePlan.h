@@ -525,9 +525,17 @@ struct NativeSlot {
    *  slice, etc.) and the Java-serialized outputShapeDependsOnInputValues flag.
    *  DATA_DEPENDENT is NOT included — it means the op's result depends on data,
    *  not that the output SHAPE depends on data. argmax/argmin are data-dependent
-   *  but have shapes determined by input shapes + axis iArgs. */
+   *  but have shapes determined by input shapes + axis iArgs.
+   *
+   *  OP_TRAIT_DYNAMIC_OUTPUT_SIZE IS included: ops whose output SIZE is
+   *  determined at runtime (1-arg where/where_np, unique, NMS, listdiff, etc.)
+   *  have their output shape depend on input values by definition — counting
+   *  non-zero/matching elements is value-dependent.  The shape pre-pass cannot
+   *  compute a correct shape for these ops using zero-initialised arrays; skip
+   *  them and let the null propagate to all downstream slots. */
   bool hasValueDependentShape() const {
     return hasOpTrait(sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) ||
+           hasOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE) ||
            flags.outputShapeDependsOnInputValues;
   }
 
@@ -1001,6 +1009,101 @@ struct GraphSegmentExec {
   void markArgsCurrent() { capturedArgGeneration = argTableGeneration; }
   void bumpArgGeneration() { argTableGeneration++; }
 
+  // Inverse of markArgsCurrent(): an external input address, slot output address,
+  // refreshed view wrapper, or shape changed — so the cached arg table and any
+  // captured graph node arguments are stale. Forces needsArgRefresh()==true and
+  // resets the stability telemetry. SINGLE source of truth for the bump+reset
+  // triplet that was duplicated at ~18 call sites across
+  // segments/cuda/gpubackend/lifecycle (several of which forgot the resets, or
+  // the whole triplet, leaving stale telemetry or a stale graph on replay).
+  void markArgsStale() {
+    bumpArgGeneration();
+    addrKeyStableCount = 0;
+    slotAddrStableCount = 0;
+    DSP_DIAG(EXECUTE, "MARK_ARGS_STALE: argGen=%llu phase=%s exec=%d",
+             (unsigned long long)argTableGeneration, displayPhaseName(), executionCount);
+  }
+
+  // Clear the four captured-graph IDENTITY keys: shape, external-input addresses,
+  // create (ConstantOfShape) values, and slot-output addresses. Call when
+  // invalidating/evicting a capture so the next warmup re-establishes them from
+  // scratch. Leaving ANY of them stale lets a drift check (slotAddrDrifted /
+  // needsArgRefresh) compare against a dead capture. SINGLE source of truth for
+  // the captured-key reset duplicated at ~8 sites — five of which silently
+  // OMITTED capturedSlotAddrHash (evictSegmentCapture, the cuda.cu resource
+  // release, and the three NativeDynamicShapePlan.cpp warmup/freeze resets) →
+  // a stale slot-addr hash surviving into re-warmup → spurious drift.
+  void resetCaptureKeys() {
+    cachedShapeKey = 0;
+    capturedInputAddrKey = 0;
+    capturedCreateValueKey = 0;
+    capturedSlotAddrHash = 0;
+    DSP_DIAG(LIFECYCLE, "RESET_CAPTURE_KEYS: cleared shape/inputAddr/createValue/slotAddr phase=%s exec=%d",
+             displayPhaseName(), executionCount);
+  }
+
+  // Reset a segment to its WARMUP baseline for re-capture: zero the execution /
+  // OOM-retry counters and the capture-identity keys (resetCaptureKeys), and clear
+  // the graph-content flags. Does NOT touch lifecycle phase/outcome (the caller
+  // drives those) or the replay handle (the caller conditionally cleans that up).
+  // Consolidates the two identical per-segment warmup-reset loops (execute-warmup
+  // + phaseWarmup) in NativeDynamicShapePlan.cpp.
+  void resetForWarmup() {
+    executionCount = 0;
+    captureOomRetries = 0;
+    captureRetryAfterExec = 0;
+    resetCaptureKeys();
+    gapOpsCapturedInGraph = false;
+    createOpsExcludedFromGraph = false;
+    DSP_DIAG(LIFECYCLE, "RESET_FOR_WARMUP: counters+keys+graphflags reset phase=%s",
+             displayPhaseName());
+  }
+
+  // ── Replay-readiness decision (encapsulated, single source of truth) ──────────────
+  // "Are this segment's external addresses / baked values / shape stable enough to replay
+  // the captured graph this step?" Computed once per step by recordReplayStability(),
+  // recorded here, and consumed by the arg-generation tracking AND the plan-phase gate —
+  // instead of recomputing the answer independently in each path with a different address
+  // source (the desync that blocked REPLAYING). Also makes the decision OBSERVABLE
+  // post-decode via getPlanSegmentStatisticsJson (DSP_DIAG is silent in the native op).
+  struct ReplayStability {
+    // Populate the decision in ONE call (no external field poking). Inputs are the per-step
+    // stability sub-observations the caller already computed from the segment's captured keys
+    // and current inputs.
+    void record(bool extAddrsStable, bool createValuesStable, bool shapeKeyStable,
+                bool hasValueShapeInputs, int gapSlotCount) {
+      extAddrsStable_      = extAddrsStable;
+      createValuesStable_  = createValuesStable;
+      shapeKeyStable_      = shapeKeyStable;
+      hasValueShapeInputs_ = hasValueShapeInputs;
+      gapSlotCount_        = gapSlotCount;
+      valid_               = true;
+    }
+
+    // The verdict: a segment with no value-shape inputs can't go stale on value/addr churn;
+    // otherwise all three invariants must hold.
+    bool isStable() const {
+      return valid_ && (!hasValueShapeInputs_ ||
+                        (extAddrsStable_ && createValuesStable_ && shapeKeyStable_));
+    }
+
+    // Read-only accessors (diagnostics / getPlanSegmentStatisticsJson).
+    bool valid()               const { return valid_; }
+    bool extAddrsStable()      const { return extAddrsStable_; }
+    bool createValuesStable()  const { return createValuesStable_; }
+    bool shapeKeyStable()      const { return shapeKeyStable_; }
+    bool hasValueShapeInputs() const { return hasValueShapeInputs_; }
+    int  gapSlotCount()        const { return gapSlotCount_; }
+
+   private:
+    bool extAddrsStable_      = false;  // graph's external device addresses unchanged (staging-aware)
+    bool createValuesStable_  = false;  // baked ConstantOfShape values unchanged (or live as gaps)
+    bool shapeKeyStable_      = false;  // segment shape unchanged since capture
+    bool hasValueShapeInputs_ = false;  // has value-dependent-shape ops (gather, ...) with internal producers
+    int  gapSlotCount_        = 0;      // cuBLAS gap slots; >0 while monolithic ⇒ composite capture fell back
+    bool valid_               = false;  // computed at least once this run
+  } replayStability;
+
   // argTableStable removed — use needsArgRefresh() / markArgsCurrent() instead.
   // All callers migrated to the generation counter.
 
@@ -1013,6 +1116,15 @@ struct GraphSegmentExec {
   // in the CUDA graph. The frozen fast path checks this to know monolithic replay
   // covers ALL ops — no live gap execution needed.
   bool gapOpsCapturedInGraph = false;
+
+  // True when native-only monolithic capture EXCLUDED value-shape create ops
+  // (ops with CONSTANT_GENERATION + VALUE_DEPENDENT_SHAPE traits, e.g. range/create)
+  // because their inputs change per decode step (position IDs, sequence lengths).
+  // During monolithic replay, these ops are executed live BEFORE cudaGraphLaunch
+  // so they produce fresh outputs (correct step position) that the graph reads via
+  // stable slot pointers.  The createValuesStable invalidation path is bypassed
+  // when this flag is true — value changes are handled naturally by live execution.
+  bool createOpsExcludedFromGraph = false;
 
   // ── Capture seal: consolidated state update at capture completion ──────
   // Sets all capture-related fields atomically. Called from SegmentLifecycle::markCaptured.
@@ -1028,6 +1140,24 @@ struct GraphSegmentExec {
 
   // Query: does the monolithic graph include gap ops?
   bool hasGapsInGraph() const { return gapOpsCapturedInGraph; }
+
+  // Have this segment's slot-output device addresses drifted from capture?
+  // A captured monolithic/composite graph bakes slot specialBuffer() pointers
+  // into its nodes; if any slot's address changed since sealCapture(), replaying
+  // the graph would dereference stale device pointers (CUDA error 700).
+  // capturedSlotAddrHash==0 means "never captured" → no drift possible.
+  // SINGLE source of truth for the drift check duplicated in the frozen fast
+  // path and the normal cudagraph replay path. The caller computes the current
+  // hash (needs plan-level outputSlots_) and passes it here.
+  bool slotAddrDrifted(LongType currentSlotAddrHash) const {
+    bool drifted = capturedSlotAddrHash != 0 && currentSlotAddrHash != capturedSlotAddrHash;
+    if (drifted) {
+      DSP_DIAG(MEMORY, "SLOT_ADDR_DRIFTED: captured=0x%llx current=0x%llx phase=%s",
+               (unsigned long long)capturedSlotAddrHash,
+               (unsigned long long)currentSlotAddrHash, displayPhaseName());
+    }
+    return drifted;
+  }
 
   // ── Replay handle mutation tracker ──────────────────────────────────────────
   // Records every create/capture/replay/invalidate/destroy event on this
@@ -1085,10 +1215,7 @@ struct GraphSegmentExec {
     lastReplayExecCount = 0;
     replayHandle.reset();
     outcome = SegmentExecOutcome::PENDING;
-    cachedShapeKey = 0;
-    capturedInputAddrKey = 0;
-    capturedCreateValueKey = 0;
-    capturedSlotAddrHash = 0;
+    resetCaptureKeys();
 #ifdef SD_CUDA
     jitKernel = nullptr;
     jitShapeKey = 0;
@@ -1103,6 +1230,7 @@ struct GraphSegmentExec {
     addrKeyStableCount = 0;
     slotAddrStableCount = 0;
     gapOpsCapturedInGraph = false;
+    createOpsExcludedFromGraph = false;
     handleTracker.reset();
     viewRecipes = ViewRecipeChain();
     compositeReplaySchedule = ReplaySchedule();
@@ -2298,12 +2426,25 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // the outer segment is invalidated.
   void clearNativeRangeSegmentsForSlotRange(int startSlot, int endSlot);
 
-  // Reset plan-level execute count — public so invalidateForRebuild can
-  // re-enable warmup gates (input validation, shape reassignment, DSP diagnostics).
-  void resetExecuteCount() {
-    DSP_DIAG(EXECUTE, "resetExecuteCount: executeCount_ %d -> 0 (invalidation reset)", executeCount_);
+  // Plan-level execute count: single LOGGED authority. Every change routes through
+  // these so a stray per-step reset (the "re-warms every step / never captures" bug
+  // class) is traceable in DSP_DIAG, never silent. Do NOT write executeCount_ directly.
+  void resetExecuteCount(const char* reason = "invalidation") {
+    DSP_DIAG(EXECUTE, "executeCount: RESET %d -> 0 (%s) [phase=%s]",
+             executeCount_, reason, planLifecycle_.displayName());
     executeCount_ = 0;
   }
+  void incrementExecuteCount(const char* reason) {
+    executeCount_++;
+    DSP_DIAG(EXECUTE, "executeCount: %d -> %d (%s) [phase=%s]",
+             executeCount_ - 1, executeCount_, reason, planLifecycle_.displayName());
+  }
+
+  // One-shot DSP state dump: the COMPLETE plan + per-segment picture in a single
+  // DSP_DIAG block (per segment: phase/outcome/execCount/sealed/handleReady/composite/
+  // compiledBy), so an odd/stuck plan state is diagnosable from one place instead of
+  // correlated lines. Fired at the plan-phase decision points + the phase stall.
+  void dumpPlanPhaseState(const char* context) const;
 
   // Reset frozenConstantDetectionDone_ so detectFrozenConstants() re-runs
   // after the next warmup.  Without this, stale frozen classifications
@@ -2353,6 +2494,38 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Public so NativeOps_dsp.cpp diagnostics can query composite state.
   bool hasCompositeHandles(const GraphSegment& seg) const;
+
+  // ── Public fingerprint ring API (sync-free diagnostics, CUDA only) ─────────
+  // These are called from .cu TUs, so they are public.
+#ifdef SD_CUDA
+
+  /** Activate the fingerprint ring if env BUF_FP_RING=1. Call at execute() entry. */
+  void maybeInitFingerprintRing();
+
+  /**
+   * Fire XOR-fingerprint kernel asynchronously on `stream`.
+   * Writes one uint64 into d_fpRing_[step * BUF_FP_MAX_TRACKED + trackIdx].
+   * No-op when ring is disabled, pointer is null, or trackIdx is out of range.
+   * step is clamped to [0, BUF_FP_MAX_STEPS-1].
+   */
+  void recordBufFingerprintPublic(cudaStream_t stream, int step, int trackIdx,
+                                  const void* devPtr, size_t numBytes);
+
+#endif  // SD_CUDA
+
+  /**
+   * One-shot D2H drain: cudaMemcpy d_fpRing→h_fpRing (synchronous, call only
+   * AFTER decode loop, never during capture/replay).
+   * No-op if ring not enabled or already drained.
+   */
+  void drainFingerprintRingPublic();
+
+  /**
+   * Return a JSON string describing the per-step fingerprints for all tracked
+   * buffers. Returns "null" if ring not drained yet or disabled.
+   * The returned pointer is valid until the next call or plan destruction.
+   */
+  const char* getFingerprintJson();
 
   friend class NativePlanCompiler;
 
@@ -2455,6 +2628,20 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // DataBuffers must NEVER be freed during cleanup. Built on first execute().
   // Mirrors Java-side protectedWeightBuffers in DynamicShapePlanExecutor.
   std::unordered_set<DataBuffer*> protectedWeightBuffers_;
+
+  // GPU addresses pinned to prevent pool reuse while baked into live CUDA graphs.
+  // Each entry is {specialBuffer ptr, deviceId, segStartSlot}. Populated by writeOutputSlot
+  // when a sealed segment exists. segStartSlot identifies which sealed segment baked this
+  // address. Flushed segment-by-segment at platformCleanupSegmentForRebuild (only the
+  // invalidated segment's pins); flushed entirely at platformFreePlanResources and
+  // releaseGpuIntermediates. Raw structs, no smart pointers.
+  // externalOwned: the pinned buffer is owned OUTSIDE the plan (a SOURCE_VARIABLE weight, or a
+  // view whose base is one) — a later exec in the SAME execute() may still read it after a
+  // weight rebind, so its deferred free MUST wait until plan teardown (platformFreePlanResources,
+  // post stream-sync). Plan-owned intermediates (externalOwned=false) are released eagerly at
+  // segment-rebuild invalidation (platformCleanupSegmentForRebuild) — their dead graph won't read them.
+  struct GraphPinnedAddr { void* ptr; int deviceId; int segStartSlot; bool externalOwned; };
+  std::vector<GraphPinnedAddr> graphPinnedAddrs_;
 
   // DataBuffers whose frozen refs were added by this plan. Keep exact tracked
   // ownership instead of inferring from lifecycle state at teardown; AUTO_SEAL,
@@ -2573,6 +2760,44 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Staleness detection state (used by verifyStagingNotStale)
   std::unordered_map<int, uint64_t> prevStepFingerprints_;  // ext idx → FNV-1a of device data
   std::unordered_map<int, void*> prevStagingAddresses_;     // ext idx → staging specialBuffer ptr
+
+  // ── Sync-free buffer fingerprint ring ────────────────────────────────────
+  // Records per-step XOR fingerprints of key device buffers (staging inputs
+  // and gap-matmul inputs) without any host sync during the decode loop.
+  // One D2H after the loop drains the ring for post-mortem analysis.
+  // Activated by env BUF_FP_RING=1 at plan-first-execute time.
+  //
+  // Layout: d_fpRing_[step * BUF_FP_MAX_TRACKED + trackIdx] = XOR fingerprint.
+  // step = executeCount_ when fingerprint was recorded (clamped to BUF_FP_MAX_STEPS-1).
+  // trackIdx: first BUF_FP_MAX_STAGING slots = staging inputs (ext index order),
+  //           remaining = gap-matmul group inputs (groupIdx * 2 + 0/1 for A/B).
+  static constexpr int BUF_FP_MAX_STEPS   = 16;
+  static constexpr int BUF_FP_MAX_TRACKED = 64;
+  static constexpr int BUF_FP_MAX_STAGING = 32;  // first 32 track slots = staging
+
+  // Label table (host-side): describes what each trackIdx covers.
+  struct BufFpLabel {
+    char tag[24];  // e.g. "stg[5]" or "gemm[2].A"
+    int  extIdx;   // -1 for gemm entries
+    int  groupIdx; // -1 for staging entries
+    int  whichAB;  // 0=A,1=B; -1 for staging
+  };
+
+  bool         fpRingEnabled_       = false;  // activated at first execute if env set
+  bool         fpRingDrained_       = false;  // true after drainFingerprintRingPublic()
+  int          fpRingStagingCount_  = 0;      // how many staging track slots were filled
+  int          fpRingGemmCount_     = 0;      // how many gemm track slots were filled
+  BufFpLabel   fpLabels_[BUF_FP_MAX_TRACKED] = {};  // label for each trackIdx
+  std::string  fpJsonBuffer_;                 // backing storage for getFingerprintJson()
+
+#ifdef SD_CUDA
+  uint64_t*    d_fpRing_ = nullptr;  // device: [BUF_FP_MAX_STEPS * BUF_FP_MAX_TRACKED]
+  uint64_t*    h_fpRing_ = nullptr;  // host mirror, filled by one D2H drain
+
+  // Allocate ring buffers (called once at first execute if env set).
+  // No-op after first call.
+  void initFingerprintRing();
+#endif  // SD_CUDA
 
   // Per-execution timing breakdown (enabled by setExecutionTimingEnabled)
   bool executionTimingEnabled_;
@@ -2722,7 +2947,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
           return staging;
         }
       }
-      return externalArrays[extIdx];
+      NDArray* extArr = externalArrays[extIdx];
+      // Fallback: staging buffer unavailable → use the raw external input. If that array was
+      // closed/freed between replays, the captured graph can hold a stale address (close-weight err700 lead).
+      return extArr;
     }
     return nullptr;
   }
@@ -2848,8 +3076,41 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   SelectedBackend platformResolveBackend(bool isGraphCapture) const;
   bool platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const;
   size_t platformEstimateCaptureBudget() const;
+  /** Estimated capture-workspace bytes a segment needs: aligned sum of its slots' output
+   *  buffers (allocated from the workspace during cudaStreamCapture) plus a temporaries
+   *  margin. Used to size the capture workspace adaptively for large single-segment models. */
+  size_t platformEstimateSegmentCaptureBytes(int startSlot, int endSlot) const;
   void platformReleaseSegmentGpuResources();
   void platformMigrateWeightsAndClearCaches();
+
+  /**
+   * Pin a GPU address baked into a live CUDA graph segment to prevent pool reuse.
+   * CUDA build: delegates to CudaMemoryPool::pinGraphBakedAddress(ptr, deviceId).
+   * CPU build: no-op.
+   */
+  void platformPinGraphBakedAddress(void* ptr, int deviceId);
+
+  /**
+   * Flush all pending graph-baked address pins by calling unpinGraphBakedAddress
+   * for each entry in graphPinnedAddrs_, then clearing the vector.
+   * CUDA build: issues deferred cudaFreeAsync via CudaMemoryPool::unpinGraphBakedAddress.
+   * CPU build: no-op.
+   * @param stream CUDA stream to use for deferred free (nullptr = stream 0)
+   */
+  void platformFlushGraphBakedPins(void* stream);
+
+  /**
+   * Pin every device buffer a sealed segment will re-read on a later replay/re-exec, at SEAL
+   * time, so no free()/SDVariable.close()/rebind/pool-reuse can dangle it (→ err700). Covers two
+   * hazard classes: (a) VIEW slot outputs + SOURCE_VARIABLE weight inputs — externally-owned,
+   * pinned in EVERY mode including slot-by-slot (NOT_FUSIBLE); (b) OWNED intermediate outputs —
+   * pinned only when pinOwnedOutputs (a captured graph baked their raw address). externalArrays/
+   * numExt are the segment's external table (resolves external-encoded weight inputs, identical
+   * to the slot executor). Records into graphPinnedAddrs_ (released at teardown by
+   * platformFlushGraphBakedPins). Idempotent (dedup by address, plan-wide).
+   */
+  void pinSegmentGraphBakedSlots(GraphSegment& seg, NDArray** externalArrays,
+                                 int numExt, bool pinOwnedOutputs);
 
   // ── Slot execution platform dispatch (NativeDynamicShapePlan_slotexec_cuda.cu / _cuda_stubs.cpp) ──
   // These abstract CUDA-specific slot execution behavior (prezero, actuality,
@@ -2940,6 +3201,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Pre-allocated cuBLAS workspace for GPU graph capture.
   void* cublasWorkspaceBuffer_ = nullptr;
   size_t cublasWorkspaceSize_ = 0;
+  int cublasWorkspaceDevice_ = -1;  // device on which cublasWorkspaceBuffer_ was allocated
   void ensureCublasWorkspace(size_t minBytes);
   void setCublasWorkspaceForCapture(void* stream);
   void setCublasWorkspaceForWarmup();

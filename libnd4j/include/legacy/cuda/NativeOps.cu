@@ -680,6 +680,9 @@ sd::LongType getDeviceFreeMemoryDefault() {
   size_t memFree = 0;
   size_t memTotal = 0;
 
+  // Clear any sticky CUDA errors before querying to prevent false 0 returns.
+  cudaGetLastError();
+  cudaGetLastError();
   cudaMemGetInfo(&memFree, &memTotal);
 
   return (sd::LongType)memFree;
@@ -688,7 +691,10 @@ sd::LongType getDeviceFreeMemoryDefault() {
 sd::LongType getDeviceFreeMemory(int device) {
   int orig = -1;
 
-  // Clear any previous CUDA errors that might be lingering
+  // Clear any previous CUDA errors that might be lingering.
+  // Two rounds ensure sticky errors from a full-GPU OOM on another device don't
+  // poison this device's cudaMemGetInfo call.
+  cudaGetLastError();
   cudaError_t prevErr = cudaGetLastError();
   if (prevErr != cudaSuccess) {
     sd_debug("getDeviceFreeMemory: Cleared previous CUDA error: %s\n", cudaGetErrorString(prevErr));
@@ -697,14 +703,19 @@ sd::LongType getDeviceFreeMemory(int device) {
   cudaError_t err = cudaGetDevice(&orig);
   if (err != cudaSuccess) {
     sd_debug("getDeviceFreeMemory: cudaGetDevice failed: %s\n", cudaGetErrorString(err));
+    cudaGetLastError();
     return 0;
   }
 
-  if (device >= 0 && device != orig) {
+  // Always explicitly set the target device, even when device==orig.
+  // This forces the CUDA driver to re-associate the thread with the device
+  // and clears residual cross-device context state from failed init on other GPUs.
+  if (device >= 0) {
     err = cudaSetDevice(device);
     if (err != cudaSuccess) {
       sd_debug("getDeviceFreeMemory: cudaSetDevice(%d) failed: %s\n", device, cudaGetErrorString(err));
       cudaGetLastError();
+      if (orig >= 0 && orig != device) cudaSetDevice(orig);
       return 0;
     }
   }
@@ -712,20 +723,24 @@ sd::LongType getDeviceFreeMemory(int device) {
   size_t memFree = 0;
   size_t memTotal = 0;
 
+  // Clear again immediately before the query.
+  cudaGetLastError();
   err = cudaMemGetInfo(&memFree, &memTotal);
   if (err != cudaSuccess) {
-    sd_debug("getDeviceFreeMemory: cudaMemGetInfo failed for device %d: %s\n", device, cudaGetErrorString(err));
-    // Try to restore original device before returning
-    if (device >= 0 && device != orig) {
+    sd_debug("getDeviceFreeMemory: cudaMemGetInfo failed for device %d: %s (error %d)\n",
+             device, cudaGetErrorString(err), (int)err);
+    cudaGetLastError();
+    if (orig >= 0 && orig != device) {
       cudaSetDevice(orig);
     }
     return 0;
   }
 
-  if (device >= 0 && device != orig) {
+  if (orig >= 0 && orig != device) {
     err = cudaSetDevice(orig);
     if (err != cudaSuccess) {
       sd_debug("getDeviceFreeMemory: Failed to restore device to %d: %s\n", orig, cudaGetErrorString(err));
+      cudaGetLastError();
     }
   }
 
@@ -735,7 +750,11 @@ sd::LongType getDeviceFreeMemory(int device) {
 sd::LongType getDeviceTotalMemory(int device) {
   int orig = -1;
 
-  // Clear any previous CUDA errors that might be lingering
+  // Clear any previous CUDA errors that might be lingering.
+  // A failed CUDA op on a full GPU (e.g. OOM during context init on another device)
+  // can leave a sticky error that causes subsequent cudaMemGetInfo to return 0 for
+  // an otherwise healthy GPU.  Two rounds of cudaGetLastError ensure we start clean.
+  cudaGetLastError();
   cudaError_t prevErr = cudaGetLastError();
   if (prevErr != cudaSuccess) {
     sd_debug("getDeviceTotalMemory: Cleared previous CUDA error: %s\n", cudaGetErrorString(prevErr));
@@ -744,14 +763,37 @@ sd::LongType getDeviceTotalMemory(int device) {
   cudaError_t err = cudaGetDevice(&orig);
   if (err != cudaSuccess) {
     sd_debug("getDeviceTotalMemory: cudaGetDevice failed: %s\n", cudaGetErrorString(err));
+    cudaGetLastError();
+    // Fall back to device properties (populated by initializeDevicesAndFunctions without a context).
+    if (deviceProperties != nullptr && device >= 0) {
+      size_t propTotal = deviceProperties[device].totalGlobalMem;
+      if (propTotal > 0) {
+        sd_debug("getDeviceTotalMemory: using deviceProperties fallback for device %d: %zu bytes\n", device, propTotal);
+        return (sd::LongType)propTotal;
+      }
+    }
     return 0;
   }
 
-  if (device >= 0 && device != orig) {
+  // Always explicitly set the target device, even when device==orig.
+  // This forces the CUDA driver to associate the current thread with the target
+  // device and clears any residual "wrong-device" context state that can silently
+  // cause cudaMemGetInfo to return 0 after an OOM failure on another GPU.
+  if (device >= 0) {
     err = cudaSetDevice(device);
     if (err != cudaSuccess) {
       sd_debug("getDeviceTotalMemory: cudaSetDevice(%d) failed: %s\n", device, cudaGetErrorString(err));
       cudaGetLastError();
+      // Fall back to device properties when cudaSetDevice itself fails.
+      if (deviceProperties != nullptr) {
+        size_t propTotal = deviceProperties[device].totalGlobalMem;
+        if (propTotal > 0) {
+          sd_debug("getDeviceTotalMemory: using deviceProperties fallback after cudaSetDevice failure for device %d\n", device);
+          if (orig >= 0) cudaSetDevice(orig);
+          return (sd::LongType)propTotal;
+        }
+      }
+      if (orig >= 0 && orig != device) cudaSetDevice(orig);
       return 0;
     }
   }
@@ -759,19 +801,32 @@ sd::LongType getDeviceTotalMemory(int device) {
   size_t memFree = 0;
   size_t memTotal = 0;
 
+  // Clear again immediately before the query — a full neighbour GPU can leave a
+  // sticky cudaErrorMemoryAllocation in the CUDA error stack that poisons this call.
+  cudaGetLastError();
   err = cudaMemGetInfo(&memFree, &memTotal);
   if (err != cudaSuccess) {
-    sd_debug("getDeviceTotalMemory: cudaMemGetInfo failed for device %d: %s\n", device, cudaGetErrorString(err));
-    if (device >= 0 && device != orig) {
+    sd_debug("getDeviceTotalMemory: cudaMemGetInfo failed for device %d: %s (error %d)\n",
+             device, cudaGetErrorString(err), (int)err);
+    cudaGetLastError();  // clear the error from the failed cudaMemGetInfo
+    // Fall back to device properties total (no context required).
+    if (deviceProperties != nullptr && device >= 0) {
+      size_t propTotal = deviceProperties[device].totalGlobalMem;
+      sd_debug("getDeviceTotalMemory: using deviceProperties fallback total=%zu for device %d\n", propTotal, device);
+      if (orig >= 0 && orig != device) cudaSetDevice(orig);
+      return (sd::LongType)propTotal;  // may be 0 if properties were never populated
+    }
+    if (orig >= 0 && orig != device) {
       cudaSetDevice(orig);
     }
     return 0;
   }
 
-  if (device >= 0 && device != orig) {
+  if (orig >= 0 && orig != device) {
     err = cudaSetDevice(orig);
     if (err != cudaSuccess) {
       sd_debug("getDeviceTotalMemory: Failed to restore device to %d: %s\n", orig, cudaGetErrorString(err));
+      cudaGetLastError();
     }
   }
 

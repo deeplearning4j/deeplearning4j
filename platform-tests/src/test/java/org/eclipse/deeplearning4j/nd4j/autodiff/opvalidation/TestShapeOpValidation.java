@@ -2337,6 +2337,89 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcatEmptyWithNonContiguousView(Nd4jBackend backend) {
+        // Regression for the SmolDocling prefill KV-cache concat that produced dead K/V (firstTokenId=11126):
+        // concat(empty_past[1,3,0,64], current_K[1,3,1142,64], axis=2) returned ALL ZEROS on CUDA, zeroing the
+        // attention K. The trigger is the EMPTY (length-0) input; it is independent of contiguity or input count
+        // (proven via a variant sweep: any empty member zeroed the whole output; non-empty-only concats worked).
+        Nd4j.getRandom().setSeed(12345);
+        INDArray kContig = Nd4j.rand(DataType.FLOAT, 1, 1142, 3, 64);
+        INDArray kView = kContig.permute(0, 2, 1, 3);   // [1,3,1142,64], non-contiguous view (as the GQA K path produces)
+        INDArray kContiguous = kView.dup('c');          // identical values, contiguous reference
+        INDArray emptyPast = Nd4j.create(DataType.FLOAT, 1, 3, 0, 64);
+        INDArray small = Nd4j.rand(DataType.FLOAT, 1, 3, 5, 64);
+
+        // concat(empty, X) must equal X — the empty past contributes nothing.
+        assertEquals(kContiguous, Nd4j.concat(2, emptyPast, kView),
+                "concat(empty, non-contiguous view) must pass the view through unchanged");
+        assertEquals(kContiguous, Nd4j.concat(2, emptyPast, kContiguous),
+                "concat(empty, contiguous) must pass the input through unchanged");
+        assertEquals(kContiguous, Nd4j.concat(2, kView, emptyPast),
+                "concat(non-contiguous view, empty) must pass the view through unchanged");
+
+        // A leading empty must not change a genuine multi-array concat.
+        assertEquals(Nd4j.concat(2, small, kView), Nd4j.concat(2, emptyPast, small, kView),
+                "a leading empty array must not alter a multi-array concat");
+
+        // Minimal 2D case.
+        INDArray empty2d = Nd4j.create(DataType.FLOAT, 0, 4);
+        INDArray small2d = Nd4j.rand(DataType.FLOAT, 3, 4);
+        assertEquals(small2d, Nd4j.concat(0, empty2d, small2d),
+                "concat(empty2d, real2d) must equal the real input");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcatDiagnose(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+        INDArray kContig = Nd4j.rand(DataType.FLOAT, 1, 1142, 3, 64);
+        INDArray kView = kContig.permute(0, 2, 1, 3);
+        INDArray kContiguous = kView.dup('c');
+        double expSum = kContiguous.sumNumber().doubleValue();
+
+        // H-A: assign() of the non-contiguous view into a FRESH contiguous array
+        INDArray dst = Nd4j.create(DataType.FLOAT, 1, 3, 1142, 64);
+        dst.assign(kView);
+        System.out.println("DIAG HA assign(view)->fresh sum=" + dst.sumNumber().doubleValue()
+                + " exp=" + expSum + " equal=" + dst.equals(kContiguous));
+
+        // H-B: 2-array concat (control — known to work)
+        INDArray small = Nd4j.rand(DataType.FLOAT, 1, 3, 5, 64);
+        System.out.println("DIAG HB concat(small,view) sum=" + Nd4j.concat(2, small, kView).sumNumber().doubleValue());
+
+        // H-C: concat(empty, view) — the failing case. Check sum + whether it aliases the input buffer.
+        INDArray empty = Nd4j.create(DataType.FLOAT, 1, 3, 0, 64);
+        INDArray cE = Nd4j.concat(2, empty, kView);
+        System.out.println("DIAG HC concat(empty,view) sum=" + cE.sumNumber().doubleValue() + " exp=" + expSum
+                + " aliasView=" + (cE.data() == kView.data())
+                + " aliasParent=" + (cE.data() == kContig.data())
+                + " outShape=" + java.util.Arrays.toString(cE.shape()));
+
+        // H-D: empty LAST
+        INDArray cS = Nd4j.concat(2, kView, Nd4j.create(DataType.FLOAT, 1, 3, 0, 64));
+        System.out.println("DIAG HD concat(view,empty) sum=" + cS.sumNumber().doubleValue());
+
+        // H-E: single real array, NO empty at all (tests the single-input concat path directly)
+        INDArray cOne = Nd4j.concat(2, kView);
+        System.out.println("DIAG HE concat(view ONLY) sum=" + cOne.sumNumber().doubleValue() + " exp=" + expSum);
+
+        // H-F: single CONTIGUOUS array, no empty
+        INDArray cOneC = Nd4j.concat(2, kContiguous);
+        System.out.println("DIAG HF concat(contig ONLY) sum=" + cOneC.sumNumber().doubleValue() + " exp=" + expSum);
+
+        // H-G: how is the empty actually represented?
+        System.out.println("DIAG HG empty isEmpty=" + empty.isEmpty() + " rank=" + empty.rank()
+                + " dtype=" + empty.dataType() + " len=" + empty.length()
+                + " shape=" + java.util.Arrays.toString(empty.shape()));
+        // H-H: force a re-read of the failing result (is it a coherence/stale-host issue?)
+        INDArray cE2 = Nd4j.concat(2, empty, kView);
+        System.out.println("DIAG HH concat(empty,view) sumNumber=" + cE2.sumNumber().doubleValue()
+                + " dup.sum=" + cE2.dup().sumNumber().doubleValue()
+                + " maxNumber=" + cE2.maxNumber().doubleValue());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyGather(Nd4jBackend backend) {
     /*
     tf.reset_default_graph()

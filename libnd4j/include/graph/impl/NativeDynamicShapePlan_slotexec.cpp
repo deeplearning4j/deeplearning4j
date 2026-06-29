@@ -288,6 +288,45 @@ static bool outputWrapperMatchesExpectedShape(NDArray* array, const LongType* ex
          shape::strideEquals(actualShape, expectedShape);
 }
 
+// View producers (permute, transpose, slice, cast-to-view...) legitimately emit an
+// output wrapper whose STRIDES differ from the canonical (contiguous) strides the op's
+// DECLARE_SHAPE_FN reports: e.g. permute's evalPermShapeInfo(setContigStrides=true)
+// returns C-contiguous strides, but the runtime op produces a permuted-strides VIEW.
+// For the view-producer install (Step 5) we must accept the op's actual output on
+// dtype+shape match WITHOUT requiring strideEquals — the permuted strides ARE the
+// correct result. Requiring strideEquals there rejected valid views and left the slot's
+// unwritten (zero) pre-allocated array installed, zeroing GQA K/V across all 30 layers
+// (decode garbage, firstToken=11126). The strideEquals gate is preserved for the
+// frozen / refresh / cache-validity checks, which detect a STALE cached wrapper.
+static bool outputWrapperShapeAndTypeMatch(NDArray* array, const LongType* expectedShape) {
+  if (array == nullptr || expectedShape == nullptr) {
+    return false;
+  }
+  bool validShapeInfo = false;
+  try {
+    validShapeInfo = array->hasValidShapeInfo();
+  } catch (const std::exception& e) {
+    DSP_DIAG(MEMORY,
+             "SAFE_SHAPE_CHECK_EXCEPTION: array=%p exception=%s",
+             (void*)array, e.what());
+    return false;
+  } catch (...) {
+    DSP_DIAG(MEMORY,
+             "SAFE_SHAPE_CHECK_EXCEPTION: array=%p unknown exception",
+             (void*)array);
+    return false;
+  }
+  if (!validShapeInfo) {
+    return false;
+  }
+  const LongType* actualShape = array->shapeInfo();
+  if (actualShape == nullptr) {
+    return false;
+  }
+  return ArrayOptions::dataType(actualShape) == ArrayOptions::dataType(expectedShape) &&
+         shape::shapeEquals(actualShape, expectedShape);
+}
+
 static bool safeHasValidShapeInfo(NDArray* array) {
   if (array == nullptr) return false;
   try {
@@ -1125,7 +1164,7 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
           &newView, &viewOffset);
 
       if (vcr != VIEW_CREATED || newView == nullptr) {
-        if (newView != nullptr) delete newView;
+        if (newView != nullptr) deferredDeletes.push_back(newView);  // Defer: inline delete during loop causes heap corruption
 
         // VIEW_NOT_POSSIBLE means the input is no longer contiguous enough for a
         // zero-copy view (e.g., a permute upstream changed strides).  Demote this
@@ -1154,7 +1193,7 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
           newView->dataType() == cached->dataType() &&
           shape::shapeEquals(newView->shapeInfo(), cached->shapeInfo()) &&
           shape::strideEquals(newView->shapeInfo(), cached->shapeInfo())) {
-        delete newView;
+        deferredDeletes.push_back(newView);  // Defer: inline delete during loop causes heap corruption (freed chunk reused by next iteration's tryCreateViewForSlot)
         continue;
       }
 
@@ -1167,11 +1206,19 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       // this interleaving.
       outputSlots_[outSi] = nullptr;
       planOwnedArrays_.erase(cached);
-      if (cachedValid) {
+      // Guard: only defer-delete if the DataBuffer is still live.
+      // cachedValid checks only _shapeInfo validity (safeHasValidShapeInfo).
+      // cachedDb->isValid() additionally checks the DataBuffer magic number and
+      // closed flag. A GC-destroyed DataBuffer has MAGIC_DESTROYED magic, so
+      // isValid()=false even when closed reads as false (garbage from freed memory).
+      // Without this guard, a view with a destroyed DataBuffer gets pushed to
+      // deferredDeletes and deleted at line 1259, producing heap corruption that
+      // manifests as Workspace::allocateBytes SIGSEGV with this=0xDEADBEEFCAFEBABE.
+      if (cachedValid && cachedDb != nullptr && cachedDb->isValid()) {
         deferredDeletes.push_back(cached);
       }
-      // If !cachedValid, cached is already corrupt — don't delete it
-      // (the destructor would SIGSEGV reading corrupt _shapeInfo).
+      // If !cachedValid or DataBuffer is invalid/destroyed, skip delete —
+      // the destructor would SIGSEGV reading corrupt _shapeInfo or DataBuffer.
 
       writeOutputSlot(outSi, newView, "ff-view-install");
       // writeOutputSlot already handles slot assignment and ownership tracking
@@ -1236,9 +1283,8 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
 
       slot.bumpGeneration();
       dirtySlotGenerations_[outSi] = currentDirtyGeneration_;
-      if (!seg.exec.needsArgRefresh()) {
-        seg.exec.bumpArgGeneration();
-      }
+      // arg-generation bump consolidated into the end-of-function markArgsStale()
+      // below (fires once when refreshedCount > 0, covering refresh AND demotion).
 
       DSP_DIAG_SLOT(MEMORY, stepIdx,
           "REFRESH_VIEW_OK: step %d (%s) outputSlot=%d view refreshed arr=%p db=%p offset=%lld",
@@ -1260,6 +1306,17 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
     delete old;
   }
   deferredDeletes.clear();
+
+  // SELF-CONTAINED arg invalidation (single source of truth): if we refreshed or
+  // demoted ANY view wrapper, the slot's device addresses changed, so the cached
+  // arg table and any captured graph node arguments are stale. Mark args stale
+  // HERE so EVERY caller re-refreshes correctly. Previously each of the four
+  // callers had to remember the bump+reset triplet on a >0 return; two of them
+  // (cuda.cu frozen fast path, NativeDynamicShapePlan.cpp execute path) silently
+  // ignored it, risking a stale-address graph replay (CUDA error 700).
+  if (refreshedCount > 0) {
+    seg.exec.markArgsStale();
+  }
 
   return refreshedCount;
 }
@@ -1320,7 +1377,19 @@ void NativeDynamicShapePlan::computeSlotVariableDependency() {
 // removing their kernels, memsets, and memcpys from the captured graph.
 
 void NativeDynamicShapePlan::detectFrozenConstants() {
-  if (planLifecycle_.isSlotBySlot() || executeCount_ != 1 || frozenConstantDetectionDone_) return;
+  // Allow re-detection at any executeCount_ >= 1 (not just == 1).
+  // markExternalInputVariable() clears frozenConstantDetectionDone_ when a new
+  // variable is registered (e.g. KV cache inputs from autoregressive_decode).
+  // With the old executeCount_ != 1 guard, re-detection was blocked after
+  // executeCount_ incremented past 1, leaving K/V-preprocessing slots (e.g.
+  // RoPE on K, layer-norm on K) incorrectly sealed as FROZEN_CONSTANT.
+  // On Triton composite replay, frozen-constant slots are skipped — so the
+  // attention island read stale warmup-time K/V outputs and produced wrong
+  // tokens starting at the first captured replay (decode step 2 / test step 4).
+  // Fix: allow re-detection whenever the done flag was explicitly cleared by
+  // markExternalInputVariable(), as long as at least one warmup execution has
+  // run (executeCount_ >= 1 guarantees slot outputs are populated).
+  if (planLifecycle_.isSlotBySlot() || executeCount_ < 1 || frozenConstantDetectionDone_) return;
   frozenConstantDetectionDone_ = true;
 
   // Ops whose output depends ONLY on input shapes, not input values.
@@ -2006,6 +2075,82 @@ Status NativeDynamicShapePlan::executeSlot(
     }
   }
 
+  // ── Closed-buffer guard for slot-sourced (variable) inputs ───────────────
+  // The full input validation above is skipped for executeCount_ >= 3 to
+  // avoid ~7500 pointer checks per decode step. However, a weight variable
+  // that is closed (freed) between replay calls produces a CLOSED DataBuffer
+  // in outputSlots_[] — the frozen fast-path would read it and trigger CUDA
+  // error 700 (illegal memory access) in the downstream kernel (e.g., CUTLASS
+  // GEMM). Detect this here, outside both the skip gate and the frozen path,
+  // so it fires on EVERY execution count for slot-sourced inputs only.
+  // Cost: one null/isClosed() check per slot input per execute — negligible.
+  for (int i = 0; i < slot.wiring.numInputs; i++) {
+    int srcIdx = slot.wiring.inputSourceIndices[i];
+    if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+      NDArray* slotArr = outputSlots_[srcIdx];
+      if (slotArr != nullptr) {
+        DataBuffer* db = slotArr->dataBuffer();
+        if (db != nullptr && db->isClosed()) {
+          const char* closedPhaseStr = "UNKNOWN";
+          if (planLifecycle_.isSlotBySlot()) {
+            closedPhaseStr = "SLOT_BY_SLOT";
+          } else if (planLifecycle_.isShapesFrozen()) {
+            closedPhaseStr = (executeCount_ == 0) ? "FROZEN_WARMUP" :
+                             (executeCount_ < 3)  ? "FROZEN_CAPTURE" : "FROZEN_REPLAY";
+          } else {
+            closedPhaseStr = "UNFROZEN_WARMUP";
+          }
+          DSP_THROW(EXECUTE,
+                   "NativeDynamicShapePlan: CLOSED_SLOT_BUFFER: slot %d (%s) input[%d] "
+                   "from outputSlots_[%d] has a CLOSED DataBuffer during %s phase "
+                   "(execCount=%d). The weight variable was freed between replay calls "
+                   "without invalidating/recapturing the plan. "
+                   "Use associateArrayWithVariable with a live replacement BEFORE closing "
+                   "the prior weight array, and ensure C++ slot is updated before replay.",
+                   stepIdx, slot.ident.opName.c_str(), i, srcIdx,
+                   closedPhaseStr, executeCount_);
+          return Status::BAD_INPUT;  // unreachable, but keeps return-type analysis clean
+        }
+      }
+    } else if (srcIdx < 0 && externalArrays != nullptr) {
+      // Also check external-input variable arrays for closed DataBuffers.
+      // Weight variables arrive as external inputs (srcIdx < 0), not via outputSlots_.
+      // Without this check, a weight closed between replay calls is silently forwarded
+      // to the CUDA graph as a stale/freed device pointer → err700 → context poison.
+      // The guard at srcIdx >= 0 above only covers slot-sourced inputs; this covers
+      // variable external inputs (externalInputIsVariable_[extIdx] == true).
+      int extIdx = -(srcIdx + 1);
+      if (extIdx < numExt && extIdx < (int)externalInputIsVariable_.size()
+          && externalInputIsVariable_[extIdx]) {
+        NDArray* extArr = externalArrays[extIdx];
+        if (extArr != nullptr) {
+          DataBuffer* db = extArr->dataBuffer();
+          if (db != nullptr && db->isClosed()) {
+            const char* closedPhaseStr = "UNKNOWN";
+            if (planLifecycle_.isSlotBySlot()) {
+              closedPhaseStr = "SLOT_BY_SLOT";
+            } else if (planLifecycle_.isShapesFrozen()) {
+              closedPhaseStr = (executeCount_ == 0) ? "FROZEN_WARMUP" :
+                               (executeCount_ < 3)  ? "FROZEN_CAPTURE" : "FROZEN_REPLAY";
+            } else {
+              closedPhaseStr = "UNFROZEN_WARMUP";
+            }
+            DSP_THROW(EXECUTE,
+                     "NativeDynamicShapePlan: CLOSED_EXT_VARIABLE_BUFFER: slot %d (%s) input[%d] "
+                     "from external variable extIdx=%d has a CLOSED DataBuffer during %s phase "
+                     "(execCount=%d). A weight variable DataBuffer was freed between replay calls "
+                     "while the frozen plan still references its GPU address. "
+                     "Call associateArrayWithVariable with a live replacement BEFORE closing "
+                     "the old weight array so the plan receives a valid pointer on next execute.",
+                     stepIdx, slot.ident.opName.c_str(), i, extIdx,
+                     closedPhaseStr, executeCount_);
+            return Status::BAD_INPUT;  // unreachable, but keeps return-type analysis clean
+          }
+        }
+      }
+    }
+  }
+
   // ── FAST FROZEN PATH ─────────────────────────────────────────────────────
   // Once shapes are frozen and we've executed at least twice (past warmup +
   // capture), the context pool entry has valid output arrays with correct shapes
@@ -2168,7 +2313,7 @@ Status NativeDynamicShapePlan::executeSlot(
               currentOut->dataType() == ffNewView->dataType() &&
               shape::shapeEquals(currentOut->shapeInfo(), ffNewView->shapeInfo()) &&
               shape::strideEquals(currentOut->shapeInfo(), ffNewView->shapeInfo())) {
-            delete ffNewView;
+            tl_slotExecDeferredDeletes.push_back(ffNewView);  // Defer: inline delete during slot execution causes heap corruption
             backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
             return Status::OK;
           }
@@ -2263,6 +2408,7 @@ Status NativeDynamicShapePlan::executeSlot(
         }
       }
 
+      bool ffClosedBuffer = false;
       for (int i = 0; i < slot.wiring.numInputs; i++) {
         int srcIdx = slot.wiring.inputSourceIndices[i];
         if (srcIdx < 0) {
@@ -2272,10 +2418,29 @@ Status NativeDynamicShapePlan::executeSlot(
           }
         } else if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
           if (outputSlots_[srcIdx] != nullptr) {
-            ffCtx.setInputArray(i, outputSlots_[srcIdx]);
+            NDArray* slotArr = outputSlots_[srcIdx];
+            DataBuffer* db = slotArr->dataBuffer();
+            // If this slot-sourced input's DataBuffer was closed (e.g., weight
+            // rebound + freed between calls via associateArrayWithVariable +
+            // close()), the frozen fast-path cannot be used safely — the cached
+            // NDArray pointer carries a freed GPU buffer, which causes CUDA
+            // error 700 (illegal memory access) in the downstream kernel.
+            // Break out of the do-while to fall through to the normal execution
+            // path, which will re-resolve inputs from fresh external arrays.
+            if (db != nullptr && db->isClosed()) {
+              DSP_DIAG_SLOT(EXECUTE, stepIdx,
+                  "FF_FAST_PATH_CLOSED_BUFFER: slot=%d op=%s input[%d] "
+                  "srcIdx=%d has CLOSED DataBuffer — weight freed between "
+                  "replays; falling through to normal path. execCount=%d",
+                  stepIdx, slot.ident.opName.c_str(), i, srcIdx, executeCount_);
+              ffClosedBuffer = true;
+              break;
+            }
+            ffCtx.setInputArray(i, slotArr);
           }
         }
       }
+      if (ffClosedBuffer) break;  // exit do-while → fall through to normal path
 
       // Composite replay gap ops: graph replay writes device memory directly
       // without updating actuality flags (no registerSpecialUse in CUDA graph
@@ -2358,6 +2523,34 @@ Status NativeDynamicShapePlan::executeSlot(
               "INPUT_DTYPE_FIX: slot %d (%s) input[%d] had UNKNOWN dtype — corrected to %s",
               stepIdx, slot.ident.opName.c_str(), ii,
               DataTypeUtils::asString(fixDt).c_str());
+        }
+      }
+
+      // Pre-execute INPUT corruption scan. The OUTPUT scan above only protects
+      // this slot's outputs; an op that reads a freed/corrupt INPUT shapeInfo
+      // (e.g. a prematurely-released external-input alias — see resize_nearest_neighbor)
+      // otherwise faults DEEP inside the op kernel with a cryptic
+      // "ConstantShapeBuffer::primary(): invalid magic" and no provenance.
+      // Validate inputs at this clean DSP boundary so the producer is named.
+      // Mirrors the output scan: gated on isDebug for steady-state perf, and uses
+      // the crash-safe shape check so a corrupt input cannot crash the guard itself.
+      if (sd::Environment::getInstance().isDebug()) {
+        for (int ii = 0; ii < slot.wiring.numInputs &&
+                         ii < static_cast<int>(ffCtx.fastpath_in().size()); ii++) {
+          NDArray* inArr = ffCtx.fastpath_in()[ii];
+          if (inArr != nullptr && !safeHasValidShapeInfo(inArr)) {
+            const int srcIdx = slot.wiring.inputSourceIndices[ii];
+            char msg[640];
+            snprintf(msg, sizeof(msg),
+                     "CORRUPTION_BEFORE_EXEC_INPUT: slot %d (%s) input[%d] has INVALID "
+                     "shapeInfo BEFORE op->execute — its producer's output was freed/"
+                     "corrupted before this consumer read it. arr=%p db=%s srcIdx=%d (%s) "
+                     "execCount=%d",
+                     stepIdx, slot.ident.opName.c_str(), ii, (void*)inArr,
+                     inArr->dataBuffer() == nullptr ? "null" : "present",
+                     srcIdx, srcIdx < 0 ? "EXTERNAL" : "slot-produced", executeCount_);
+            THROW_EXCEPTION(msg);
+          }
         }
       }
 
@@ -3125,7 +3318,7 @@ Status NativeDynamicShapePlan::executeSlot(
                                              tracedInputs, 1, tracedOutputs, 1,
                                              executeCount_, planLifecycle_.displayName());
               }
-              delete newView;  // Discard redundant view
+              tl_slotExecDeferredDeletes.push_back(newView);  // Defer: inline delete during slot execution causes heap corruption
               backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
               return Status::OK;
             }
@@ -3232,6 +3425,15 @@ Status NativeDynamicShapePlan::executeSlot(
       } else if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
         if (outputSlots_[srcIdx] != nullptr) {
           ctx.setInputArray(i, outputSlots_[srcIdx]);
+          // Device-buffer identity of the slot a consumer actually reads. Pairs with
+          // VIEW-INSTALL-DEV to confirm a view-producer's device buffer reaches its consumer.
+          if (outputSlots_[srcIdx]->dataBuffer() != nullptr) {
+            DSP_DIAG_SLOT(MEMORY, stepIdx,
+                "INPUT-BIND-DEV: op=%s in=%d srcSlot=%d srcDev=%p len=%lld exec=%d",
+                slot.ident.opName.c_str(), i, srcIdx,
+                (void*)outputSlots_[srcIdx]->dataBuffer()->special(),
+                (long long)outputSlots_[srcIdx]->lengthOf(), (int)executeCount_);
+          }
         }
       }
     }
@@ -4346,6 +4548,19 @@ Status NativeDynamicShapePlan::executeSlot(
   if (!outputsReady && slot.isViewCapableOp() && slot.wiring.numInputs >= 1 && numActualOutputs >= 1) {
     NDArray* input0 = inputs[0];
     if (input0 != nullptr) {
+      // VIEW-INPUT0-DEV: the device buffer this view op reads (input0) vs the current array at its
+      // source slot. slotMatch=0 means the resolved input diverged from the producer's slot install
+      // (the GQA K/V dead-attention signature: consumer reads a fresh/zero buffer, not the producer view).
+      if (input0->dataBuffer() != nullptr) {
+        int __src0 = slot.wiring.inputSourceIndices[0];
+        NDArray* __slotArr = (__src0 >= 0 && __src0 < totalOutputSlots_) ? outputSlots_[__src0] : nullptr;
+        DSP_DIAG_SLOT(MEMORY, stepIdx,
+            "VIEW-INPUT0-DEV: op=%s src0=%d input0Dev=%p slotArrDev=%p slotMatch=%d len=%lld",
+            slot.ident.opName.c_str(), __src0,
+            (void*)input0->dataBuffer()->special(),
+            (void*)(__slotArr != nullptr && __slotArr->dataBuffer() != nullptr ? __slotArr->dataBuffer()->special() : nullptr),
+            (input0 == __slotArr) ? 1 : 0, (long long)input0->lengthOf());
+      }
       NDArray* view = nullptr;
       LongType viewOffset = 0;
       ViewCreateResult vcr = tryCreateViewForSlot(
@@ -4426,6 +4641,36 @@ Status NativeDynamicShapePlan::executeSlot(
                     stepIdx, slot.ident.opName.c_str(), extIdx,
                     (void*)extDb, (void*)oldDb, (void*)newDb, executeCount_, planLifecycle_.displayName());
               }
+              // ── Stale-CUDA-graph guard ───────────────────────────────────
+              // A SEALED:VIEW slot's underlying DataBuffer changed between
+              // replays (e.g. external placeholder 'x' was replaced with a
+              // new NDArray). Any capturable segment that was graph-captured
+              // with this view's device address baked into its node arguments
+              // will silently read freed/garbage GPU memory on replay (→ err700).
+              //
+              // Bump argTableGeneration on every capturable segment so that
+              // needsArgRefresh() returns true. platformTryFrozenFastPath
+              // checks needsArgRefresh() before replayMonolithicGraph and
+              // returns MAYBE when it is set, causing the caller to fall back
+              // to the normal execute() path which invalidates and recaptures
+              // the segment with the correct (stable) device addresses.
+              //
+              // Performance: we only enter this branch when oldDb != newDb
+              // (i.e. the DataBuffer pointer actually changed), which is rare
+              // in steady-state execution with staging buffers in place.  In
+              // normal frozen replay, the staging buffer address is stable so
+              // oldDb == newDb and this block never executes.
+              for (size_t _bumpSi = 0; _bumpSi < segments_.size(); _bumpSi++) {
+                GraphSegment& _bumpSeg = segments_[_bumpSi];
+                if (_bumpSeg.def.isCapturable && !isTerminalOutcome(_bumpSeg.exec.outcome)) {
+                  if (!_bumpSeg.exec.needsArgRefresh()) {
+                    _bumpSeg.exec.bumpArgGeneration();
+                    DSP_DIAG_SLOT(MEMORY, stepIdx,
+                        "VIEW-BUF-CHANGE-BUMP: seg[%d-%d] argGen bumped (capturable, stale baked addr guard)",
+                        _bumpSeg.def.startSlot, _bumpSeg.def.endSlot);
+                  }
+                }
+              }
             }
           }
 
@@ -4455,7 +4700,7 @@ Status NativeDynamicShapePlan::executeSlot(
             // already living at this slot. Drop the new wrapper and reuse the
             // existing one — that keeps the slot pointer (and the snapshot
             // identity captured later in execute()) stable across replays.
-            delete view;
+            tl_slotExecDeferredDeletes.push_back(view);  // Defer: inline delete during slot execution causes heap corruption
             view = existing;
             outputs[0] = existing;
             // outputSlots_[slotIdx] already == existing; no write needed.
@@ -4479,7 +4724,15 @@ Status NativeDynamicShapePlan::executeSlot(
                                     : 0,
                                 stream, "view-op-install");
             markViewProducer(slotIdx, "view-op-install");
-
+            // Device-buffer identity of the installed view, keyed by output slot + its source
+            // slot. Pairs with INPUT-BIND-DEV below to trace whether a view-producer's device
+            // buffer actually reaches its downstream consumer's input slot (the GQA K/V chain).
+            if (view != nullptr && view->dataBuffer() != nullptr) {
+              DSP_DIAG_SLOT(MEMORY, stepIdx,
+                  "VIEW-INSTALL-DEV: outSlot=%d op=%s srcSlot0=%d viewDev=%p len=%lld exec=%d",
+                  slotIdx, slot.ident.opName.c_str(), slot.wiring.inputSourceIndices[0],
+                  (void*)view->dataBuffer()->special(), (long long)view->lengthOf(), (int)executeCount_);
+            }
           }
         }
 
@@ -4523,7 +4776,7 @@ Status NativeDynamicShapePlan::executeSlot(
             // cache as untracked so it can be reused across steps.
             int cacheIdx = stepIdx * MAX_OUTPUTS_PER_SLOT + i;
             if (cacheIdx < untrackedOutputCacheSize_) {
-              delete untrackedOutputCache_[cacheIdx];
+              tl_slotExecDeferredDeletes.push_back(untrackedOutputCache_[cacheIdx]);  // Defer: inline delete during slot execution causes heap corruption
               untrackedOutputCache_[cacheIdx] = outputs[i];
             }
           }
@@ -5092,11 +5345,14 @@ Status NativeDynamicShapePlan::executeSlot(
       if (out != nullptr && out->dataBuffer() != nullptr && out->specialBuffer() != nullptr) {
         size_t bytes = dspSafeByteCount(out);
         int si = i < slot.wiring.numOutputs ? slot.wiring.outputSlotIndices[i] : -1;
+        float __fv = -999.0f;
+        if (out->dataType() == DataType::FLOAT32 && !out->isEmpty() && out->lengthOf() > 0)
+          __fv = out->e<float>(0);
         DSP_DIAG(VERIFY, "POST_EXEC_OUTPUT: slot=%d op=%s output[%d] outSlot=%d "
-                 "specialBuf=%p bytes=%zu dtype=%s exec=%d",
+                 "specialBuf=%p bytes=%zu dtype=%s first=%.5f exec=%d",
                  stepIdx, slot.ident.opName.c_str(), i, si,
                  out->specialBuffer(), bytes,
-                 DataTypeUtils::asString(out->dataType()).c_str(), executeCount_);
+                 DataTypeUtils::asString(out->dataType()).c_str(), (double)__fv, executeCount_);
       }
     }
   }
@@ -5197,9 +5453,15 @@ Status NativeDynamicShapePlan::executeSlot(
       if (si < 0) continue;
       if (ctxOutputs[i] == nullptr) continue;
 
-      if (!outputWrapperMatchesExpectedShape(ctxOutputs[i], outputShapes[i])) {
+      // Accept the view-producer's actual output on dtype+shape match WITHOUT requiring
+      // strideEquals: permute/transpose/slice legitimately emit a VIEW whose strides
+      // differ from the contiguous strides reported by the op's shape-fn. Rejecting on a
+      // stride mismatch left this slot's unwritten (zero) array installed -> GQA K/V=0 ->
+      // dead attention -> decode garbage (firstToken=11126). Only a true dtype/shape
+      // mismatch is rejected here; the strideEquals gate stays on the frozen/refresh paths.
+      if (!outputWrapperShapeAndTypeMatch(ctxOutputs[i], outputShapes[i])) {
         DSP_DIAG(SHAPE,
-                 "CTX_OUTPUT_REJECT(view-producer): slot=%d op=%s outIdx=%d expected=%s actual=%s",
+                 "CTX_OUTPUT_REJECT(view-producer-shape/dtype): slot=%d op=%s outIdx=%d expected=%s actual=%s",
                  stepIdx, slot.ident.opName.c_str(), i,
                  ShapeUtils::shapeAsString(outputShapes[i]).c_str(),
                  ShapeUtils::shapeAsString(ctxOutputs[i]).c_str());
@@ -5226,6 +5488,21 @@ Status NativeDynamicShapePlan::executeSlot(
                                 ? ctxOutputs[i]->dataBuffer()->getLenInBytes()
                                 : 0,
                             stream, "view-producer-update");
+        outputSlots_[si] = ctxOutputs[i];
+      } else if (ctxOutputs[i] != outputs[i]) {
+        // Late-detection: slot is in a later segment (viewProducerDetectionDone_=true)
+        // and was never detected in segment 0, OR was demoted by refreshStaleViewWrappers
+        // (isViewProducer=false) but the op still produced a view this execution.
+        // Without this branch the view is ORPHANED: outputSlots_[si] keeps a stale/zero
+        // pre-allocated array while the actual view lives in ctxOutputs[i].
+        // This is the root of GQA K/V=0 → dead attention → firstToken=11126 garbage.
+        markViewProducer(si, "view-producer-detect-late");
+        writeOutputSlot(si, ctxOutputs[i], "view-producer-detect-late");
+        DSP_DIAG_SLOT_WRITE(si, slot.ident.opName.c_str(),
+                            ctxOutputs[i] != nullptr && ctxOutputs[i]->dataBuffer() != nullptr
+                                ? ctxOutputs[i]->dataBuffer()->getLenInBytes()
+                                : 0,
+                            stream, "view-producer-detect-late");
         outputSlots_[si] = ctxOutputs[i];
       }
     }

@@ -150,24 +150,20 @@ static void lrnBP_(graph::Context& block, NDArray& input, NDArray& gradO, NDArra
 
   dim3 launchDims = lrnDims(tadLength,packX->numberOfTads(),DataTypeUtils::sizeOf(input.dataType()),DataTypeUtils::sizeOf(gradI.dataType()));
 
+  NDArray::prepareSpecialUse({&gradI}, {&input});
   lrnBPKernel<X, Z><<<launchDims.y, launchDims.x, launchDims.z,
                       *block.launchContext()->getCudaStream()>>>(
       input.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), gradI.specialBuffer(),
       packZ->platformShapeInfo(), packZ->platformOffsets(), packX->numberOfTads(), tadLength, depth, bias, alpha, beta);
+  NDArray::registerSpecialUse({&gradI}, {&input});
 
-  gradI.tickWriteDevice();
   gradI *= gradO;
 }
 
 void lrnBP(graph::Context& block, NDArray& input, NDArray& gradO, NDArray& gradI, const int depth,
            const float bias, const float alpha, const float beta) {
-  input.syncToDevice();
-  gradO.syncToDevice();
-
   BUILD_DOUBLE_SELECTOR(input.dataType(), gradO.dataType(), lrnBP_,
                         (block, input, gradO, gradI, depth, bias, alpha, beta), SD_FLOAT_TYPES, SD_FLOAT_TYPES);
-
-  gradI.tickWriteDevice();
 }
 
 template <typename T>
@@ -192,12 +188,12 @@ static void lrnFunctor_(graph::Context& block, NDArray* input, NDArray* output, 
 
 Status lrnFunctor(graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha,
                       double beta) {
-  input->syncToDevice();
+  NDArray::prepareSpecialUse({output}, {input});
 
   BUILD_SINGLE_SELECTOR(input->dataType(), lrnFunctor_, (block, input, output, depth, bias, alpha, beta),
                         SD_FLOAT_TYPES);
 
-  output->tickWriteDevice();
+  NDArray::registerSpecialUse({output}, {input});
 
   return Status::OK;
 }

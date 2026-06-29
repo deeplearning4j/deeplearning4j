@@ -117,12 +117,13 @@ SD_HOST static void histogramFixedWidthCudaLauncher(const cudaStream_t* stream, 
 
 ////////////////////////////////////////////////////////////////////////
 void histogramFixedWidth(LaunchContext* context, NDArray& input, NDArray& range, NDArray& output) {
-  // firstly initialize output with zeros
-  output.nullify();
-
   PointersManager manager(context, "histogramFixedWidth");
 
+  // prepareSpecialUse must come first to allocate the device buffer before nullify()
+  // (nullify() is a no-op on device when special()==nullptr — device stays uninitialized)
   NDArray::prepareSpecialUse({&output}, {&input});
+  // firstly initialize output with zeros (kernel uses atomicAdd accumulation)
+  output.nullify();
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), histogramFixedWidthCudaLauncher,
                         (context->getCudaStream(), input, range, output), SD_COMMON_TYPES, SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({&output}, {&input});

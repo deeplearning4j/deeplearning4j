@@ -100,15 +100,21 @@ TadPack::~TadPack() {
   }
 
   // Handle _tadShape cleanup based on platform:
-  // - CUDA: TadCalculator creates NEW shape buffers via CudaShapeBufferCreator (not cached),
-  //   so TadPack owns and must delete them
-  // - CPU: Shape buffers come from ConstantShapeHelper cache, so TadPack must NOT delete them
-  // On CUDA, TadCalculator creates NEW shape buffers via CudaShapeBufferCreator (not cached),
-  // so TadPack owns and must delete them.
-  // On CPU, shape buffers come from ConstantShapeHelper cache, so TadPack must NOT delete them.
-  // dspIsCudaBuild() returns true/false at link time — no #ifdef needed.
-  if (sd::graph::dspIsCudaBuild() && _tadShape != nullptr) {
-    delete _tadShape;
+  // - CUDA: TadCalculator creates NEW (non-cached) shape buffers via CudaShapeBufferCreator;
+  //   TadPack owns them and must delete (not release()) them.
+  // - CPU: Shape buffers come from ConstantShapeHelper cache via bufferForShapeInfo(), which
+  //   calls addRef() for the TadCalculator caller. TadPack takes ownership of that caller-ref
+  //   (TadCalculator transfers it). The TadPack destructor must release() that ref so the
+  //   CSB refcount stays balanced; NOT deleting (since the trie also holds a ref and will
+  //   outlive this TadPack). Previously this release() was missing → permanent refcount leak.
+  if (_tadShape != nullptr) {
+    if (sd::graph::dspIsCudaBuild()) {
+      // CUDA: non-cached CSB, TadPack is sole owner — delete directly.
+      delete _tadShape;
+    } else {
+      // CPU: cached CSB from ConstantShapeHelper — release the TadCalculator's caller-ref.
+      _tadShape->release();
+    }
     _tadShape = nullptr;
   }
 }

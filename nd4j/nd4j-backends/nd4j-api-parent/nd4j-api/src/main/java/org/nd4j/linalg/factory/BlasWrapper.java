@@ -24,6 +24,8 @@ import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.Level3;
+import org.nd4j.linalg.api.blas.SparseLevel2;
+import org.nd4j.linalg.api.blas.SparseLevel3;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
@@ -63,6 +65,24 @@ public interface BlasWrapper {
      * @return
      */
     Lapack lapack();
+
+    /**
+     * Return the sparse BLAS Level-2 (sparse-matrix × dense-vector) interface.
+     * The implementation is backend-agnostic; both CPU and CUDA backends inherit
+     * a concrete implementation from {@link BaseBlasWrapper}.
+     *
+     * @return singleton {@link SparseLevel2} implementation
+     */
+    SparseLevel2 sparseLevel2();
+
+    /**
+     * Return the sparse BLAS Level-3 (sparse-matrix × dense-matrix) interface.
+     * The implementation is backend-agnostic; both CPU and CUDA backends inherit
+     * a concrete implementation from {@link BaseBlasWrapper}.
+     *
+     * @return singleton {@link SparseLevel3} implementation
+     */
+    SparseLevel3 sparseLevel3();
 
 
     @Deprecated

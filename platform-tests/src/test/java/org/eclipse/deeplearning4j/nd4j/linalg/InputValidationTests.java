@@ -93,6 +93,4 @@ public class InputValidationTests extends BaseNd4jTestWithBackends {
         }
     }
 
-
-
 }

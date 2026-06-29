@@ -24,6 +24,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/ModeContract.h>
 #include <graph/DspDiagnostics.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <system/Environment.h>
 #include <cublas_v2.h>
 #include <helpers/cublasHelper.h>
@@ -37,22 +38,30 @@ void NativeDynamicShapePlan::ensureCublasWorkspace(size_t minBytes) {
     return;  // Already have a large enough workspace
   }
 
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  auto& pool = memory::CudaMemoryPool::getInstance();
+
   // Free old workspace if it exists
   if (cublasWorkspaceBuffer_ != nullptr) {
-    cudaFree(cublasWorkspaceBuffer_);
+    pool.free(cublasWorkspaceBuffer_, deviceId);
     cublasWorkspaceBuffer_ = nullptr;
     cublasWorkspaceSize_ = 0;
+    cublasWorkspaceDevice_ = -1;
   }
 
-  // Allocate workspace on the current device
-  auto err = cudaMalloc(&cublasWorkspaceBuffer_, minBytes);
-  if (err != cudaSuccess) {
-    DSP_DIAG(MEMORY, "failed to allocate cuBLAS workspace (%zu bytes): %s",
-             minBytes, cudaGetErrorString(err));
-    cudaGetLastError();
+  // Allocate workspace on the current device.
+  // allocateDirect: this buffer is set on the cuBLAS handle before CUDA graph capture
+  // and baked as a workspace pointer into captured GEMM nodes — it must survive across
+  // capture/replay cycles without going through the async pool.
+  cublasWorkspaceBuffer_ = pool.allocateDirect(minBytes, deviceId);
+  if (cublasWorkspaceBuffer_ == nullptr) {
+    DSP_DIAG(MEMORY, "failed to allocate cuBLAS workspace (%zu bytes) on device %d",
+             minBytes, deviceId);
     return;
   }
   cublasWorkspaceSize_ = minBytes;
+  cublasWorkspaceDevice_ = deviceId;  // record alloc device for safe teardown free
   DSP_DIAG(MEMORY, "allocated cuBLAS workspace: %zu MB",
            minBytes / (1024 * 1024));
 }

@@ -313,7 +313,18 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   _deviceId.store(other._deviceId);
   _specialDeviceId.store(other._specialDeviceId.load());  // Also copy special device ID for multi-GPU
 
-  copyCounters(other);
+  // Move semantics: preserve counters exactly as-is from source.
+  // copyCounters() swaps read↔write (it encodes the dup/copy relationship and is
+  // only correct in DataBuffer::dup() where copyBufferFrom then calls writeSpecial()).
+  // Using copyCounters here zeroes _writeSpecial when moving a device-written buffer
+  // (_writeSpecial=N, _readPrimary=0 → dest._writeSpecial = src._readPrimary = 0),
+  // making isSpecialActual()=FALSE and causing syncToSpecial() to H2D-overwrite the
+  // valid device data with uninitialized host zeros.
+  _counter.store(other._counter.load());
+  _writePrimary.store(other._writePrimary.load());
+  _writeSpecial.store(other._writeSpecial.load());
+  _readPrimary.store(other._readPrimary.load());
+  _readSpecial.store(other._readSpecial.load());
   _writeEvent = other._writeEvent;
   _writeEventRecorded.store(other._writeEventRecorded.load(std::memory_order_acquire),
                             std::memory_order_release);
@@ -413,7 +424,12 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   _deviceId.store(other._deviceId);
   _specialDeviceId.store(other._specialDeviceId.load());  // Also copy special device ID for multi-GPU
 
-  copyCounters(other);
+  // Move semantics: preserve counters exactly as-is (see move constructor comment).
+  _counter.store(other._counter.load());
+  _writePrimary.store(other._writePrimary.load());
+  _writeSpecial.store(other._writeSpecial.load());
+  _readPrimary.store(other._readPrimary.load());
+  _readSpecial.store(other._readSpecial.load());
   _writeEvent = other._writeEvent;
   _writeEventRecorded.store(other._writeEventRecorded.load(std::memory_order_acquire),
                             std::memory_order_release);

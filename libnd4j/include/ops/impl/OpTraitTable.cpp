@@ -351,7 +351,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         // Ops whose output shape depends on k/depth/class-count tensor values
         {"top_k",       OP_TRAIT_FULLY_WRITING | DATADEP},  // shape fn reads k from INPUT_VARIABLE(1)
         {"onehot",      CONST_GEN_VALDEP | DATADEP},        // shape fn reads depth from INPUT_VARIABLE(1)
-        {"bincount",    REDUCE | DATADEP},                  // shape fn calls argMax() + reads min/max element values
+        {"bincount",    REDUCE | DATADEP | VALDEP},           // shape fn calls argMax() + reads min/max element values from INPUT_VARIABLE(1/2)
         // Unsorted segment ops: shape fn reads numOfClasses from INPUT_VARIABLE(2)
         {"unsorted_segment_max",    REDUCE | DATADEP},
         {"unsorted_segment_mean",   REDUCE | DATADEP},
@@ -367,12 +367,21 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"shape_of",       SHAPE_ONLY | CONST_GEN},
         {"size_at",        SHAPE_ONLY | CONST_GEN},
         {"rank",           SHAPE_ONLY | CONST_GEN},
-        {"zeros_like",     SHAPE_ONLY | CONST_GEN},
-        {"zeros_as",       SHAPE_ONLY | CONST_GEN},
-        {"zeroslike",      SHAPE_ONLY | CONST_GEN},
-        {"ones_like",      SHAPE_ONLY | CONST_GEN},
-        {"ones_as",        SHAPE_ONLY | CONST_GEN},
-        {"oneslike",       SHAPE_ONLY | CONST_GEN},
+        // zeros_as/ones_as fill the device buffer with data (0 or 1).
+        // Their output SHAPE depends only on input shapes (so CONST_GEN is correct
+        // and the dependency propagation in detectFrozenConstants will treat them as
+        // value-independent), but they are NOT host-only metadata ops — they write
+        // real device data and must run INSIDE the captured CUDA graph so that
+        // _writeSpecial is set and downstream prepareSpecialUse does not bake a
+        // zeroing H2D node that overrides the fill value on every replay.
+        // Removing SHAPE_ONLY prevents slotHasOnlyTransparentAliasOutputs from
+        // routing them pre-capture (where _writeSpecial would be missed).
+        {"zeros_like",     CONST_GEN},
+        {"zeros_as",       CONST_GEN},
+        {"zeroslike",      CONST_GEN},
+        {"ones_like",      CONST_GEN},
+        {"ones_as",        CONST_GEN},
+        {"oneslike",       CONST_GEN},
 
         // ── LLM attention ops (forward + backprop) ─────────────────────────
         {"dot_product_attention",               ATTN},
@@ -686,14 +695,19 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"sconv2d",             OP_TRAIT_FULLY_WRITING},
 
         // ── Pooling backward ───────────────────────────────────────────────
-        {"avgpool2d_bp",        OP_TRAIT_FULLY_WRITING | BP},
-        {"avgpool3dnew_bp",     OP_TRAIT_FULLY_WRITING | BP},
-        {"adaptive_avgpool2d_bp", OP_TRAIT_FULLY_WRITING | BP},
-        {"adaptive_maxpool2d_bp", OP_TRAIT_FULLY_WRITING | BP},
-        {"maxpool2d_bp",        OP_TRAIT_FULLY_WRITING | BP},
-        {"maxpool3dnew_bp",     OP_TRAIT_FULLY_WRITING | BP},
-        {"pnormpool2d_bp",      OP_TRAIT_FULLY_WRITING | BP},
-        {"sconv2d_bp",          OP_TRAIT_FULLY_WRITING | BP},
+        // NOTE: pooling bp ops use atomicAdd accumulation — they are NOT fully
+        // writing. DSP must prezero the output slot before running these ops
+        // so that accumulated values are correct. OP_TRAIT_FULLY_WRITING was
+        // previously wrong here; the op's own nullify() guards against this
+        // in non-DSP paths (now reordered after prepareSpecialUse).
+        {"avgpool2d_bp",        BP},
+        {"avgpool3dnew_bp",     BP},
+        {"adaptive_avgpool2d_bp", BP},
+        {"adaptive_maxpool2d_bp", BP},
+        {"maxpool2d_bp",        BP},
+        {"maxpool3dnew_bp",     BP},
+        {"pnormpool2d_bp",      BP},
+        {"sconv2d_bp",          BP},
         {"pointwise_conv2d",    OP_TRAIT_FULLY_WRITING},
 
         // ── Convolution additional ─────────────────────────────────────────

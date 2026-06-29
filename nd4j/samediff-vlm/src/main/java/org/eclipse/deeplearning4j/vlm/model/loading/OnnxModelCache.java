@@ -134,8 +134,13 @@ public class OnnxModelCache {
             return optimizedCache;
         }
 
-        // Use cached SDZ if it exists and is newer than the ONNX source
-        if (!cacheDisabled && sdzFile.exists() && sdzFile.lastModified() >= onnxFile.lastModified()) {
+        // Use cached SDZ only if it exists, is newer than the ONNX source, AND its native-build
+        // fingerprint matches THIS build. The ONNX import can constant-fold via native ops, so a
+        // .so rebuild can change the imported graph — a mtime-only check (the old behavior) served
+        // a stale base .sdz, and the .opt.sdz then re-optimized FROM it, so the stale import
+        // survived. One fingerprint (buildInfo()) now invalidates base .sdz + .opt.sdz together.
+        if (!cacheDisabled && sdzFile.exists() && sdzFile.lastModified() >= onnxFile.lastModified()
+                && SameDiffOptimizationCache.isBuildFingerprintCurrent(sdzFile)) {
             log.info("Loading cached SDZ model: {} ({} bytes)", sdzFile.getName(), sdzFile.length());
             long start = System.currentTimeMillis();
             SameDiff sd = loadSdzWithRetry(sdzFile);
@@ -165,6 +170,8 @@ public class OnnxModelCache {
                     "import_timestamp", String.valueOf(System.currentTimeMillis())
             ));
             long saveElapsed = System.currentTimeMillis() - saveStart;
+            // Fingerprint sidecar so the next run detects a stale import after a .so rebuild.
+            SameDiffOptimizationCache.writeBuildFingerprint(sdzFile);
             log.info("Cached SDZ model in {}ms: {} ({} bytes)", saveElapsed,
                     sdzFile.getName(), sdzFile.length());
         } catch (Exception e) {

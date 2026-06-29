@@ -248,20 +248,30 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     auto* inputPaired = node->inputPaired();
     int numInputs = inputPaired ? inputPaired->size() : 0;
 
-    // Set the trait bitmask from OpTraitTable (single source of truth).
+    // Set the trait bitmask — ALWAYS merge BOTH op descriptor AND OpTraitTable.
     // Query methods on NativeSlot derive isDataDependent, isIdentityOp,
     // isViewCapableOp, isFullyWriting, needsZeroedOutput from this mask.
+    //
+    // IMPORTANT: OP_TRAIT_DYNAMIC_OUTPUT_SIZE and similar DSP-specific traits
+    // live ONLY in OpTraitTable — they are never added via addTraits() in op
+    // .cpp DECLARE_TYPES blocks.  Using the table as a fallback when opTraits_==0
+    // silently drops those traits for any op that already has descriptor traits
+    // (e.g. 1-arg where has DATA_DEPENDENT → opTraits_ != 0 → fallback never
+    // fires → DYNAMIC_OUTPUT_SIZE lost → pre-pass runs where with zero-init
+    // inputs → wrong [0,1] shape → rank<2 for downstream reduce_sum).
     if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
       slot.opTraits_ = slot.ident.op->getOpDescriptor()->getTraits();
     }
-    if (slot.opTraits_ == 0 && !slot.ident.opName.empty()) {
-      slot.opTraits_ = sd::ops::getOpTraitsByName(slot.ident.opName);
+    // Always OR in table traits (complementary, not alternative).
+    if (!slot.ident.opName.empty()) {
+      slot.opTraits_ |= sd::ops::getOpTraitsByName(slot.ident.opName);
     }
-    // Where with 3 inputs (condition, x, y) is element-wise select with static output shape.
-    // Only Where with 1 input (coordinate extraction) has data-dependent variable-length output.
-    // Fix by clearing the DATA_DEPENDENT bit for the 3-input arity rather than a runtime hack.
-    if (slot.isDataDependent() && normalizeOpName(slot.ident.opName) == "where" && numInputs == 3) {
+    // A ternary-elementwise op with exactly 3 inputs (e.g. select cond?x:y) has a fixed
+    // broadcast output shape — not data-dependent / dynamic-output. Resolve by TRAIT + arity,
+    // NEVER by hardcoded op name (trait handling must stay general across all such ops).
+    if (slot.hasOpTrait(sd::ops::OP_TRAIT_TERNARY_ELEMENTWISE) && numInputs == 3) {
       slot.clearOpTrait(sd::ops::OP_TRAIT_DATA_DEPENDENT);
+      slot.clearOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
     }
     slot.wiring.numInputs = numInputs;
     slot.wiring.inputSourceIndices = new int[numInputs];

@@ -21,6 +21,7 @@
 package org.nd4j.linalg.factory;
 
 import org.nd4j.linalg.api.blas.*;
+import org.nd4j.linalg.api.blas.impl.SparseBlasImpl;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -58,6 +59,34 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     public Level3 level3() {
         return Nd4j.factory().level3();
 
+    }
+
+    /**
+     * Returns the backend-agnostic sparse BLAS Level-2 implementation.
+     *
+     * <p>Both CPU and CUDA backends inherit this method from {@link BaseBlasWrapper};
+     * no per-backend override is needed because {@link SparseBlasImpl} dispatches
+     * through the standard op-execution pipeline.
+     *
+     * @return singleton {@link SparseLevel2} backed by {@link SparseBlasImpl}
+     */
+    @Override
+    public SparseLevel2 sparseLevel2() {
+        return SparseBlasImpl.INSTANCE;
+    }
+
+    /**
+     * Returns the backend-agnostic sparse BLAS Level-3 implementation.
+     *
+     * <p>Both CPU and CUDA backends inherit this method from {@link BaseBlasWrapper};
+     * no per-backend override is needed because {@link SparseBlasImpl} dispatches
+     * through the standard op-execution pipeline.
+     *
+     * @return singleton {@link SparseLevel3} backed by {@link SparseBlasImpl}
+     */
+    @Override
+    public SparseLevel3 sparseLevel3() {
+        return SparseBlasImpl.INSTANCE;
     }
 
     @Override

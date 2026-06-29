@@ -49,21 +49,37 @@ SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
 
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
-  if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
-    return reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
-  }
+  // Thin no-arg adapter over the authority: route async ops onto the active capture stream
+  // (per-group / composite / ground-truth), else the LaunchContext stream. The three-tier
+  // logic lives ONCE in DebugHelper::captureSafeStream — never re-derive the tl_* checks here.
   auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
-  return (streamPtr != nullptr) ? *streamPtr : nullptr;
+  cudaStream_t lcStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+  return DebugHelper::captureSafeStream(lcStream);
 }
 
 SD_INLINE cudaStream_t asyncTransferStream(bool switchedDevice) {
-  if (tl_graphExecutionActive) {
+  // Any capture context (per-group flag OR composite outer region): route onto the recorded
+  // capture stream so the transfer joins the graph, never cudaStreamPerThread. inGraphCapture
+  // is the single authority (see DebugHelper.h); captureSafeStreamOrDefault resolves which.
+  if (DebugHelper::inGraphCapture(nullptr)) {
     cudaStream_t captureStream = captureSafeStreamOrDefault();
     return captureStream != nullptr ? captureStream : cudaStreamPerThread;
   }
 
   if (!switchedDevice) {
-    if (tl_dspExecutionStream != nullptr) {
+    // Route H2D copies to the DSP execution stream ONLY during actual DSP capture or replay.
+    // When tl_graphExecutionActive=true we are inside a CUDA-graph capture scope; when
+    // tl_dspReplayActive=true we are executing gap ops inside compositeReplay.  In both
+    // cases every kernel also runs on this stream, so H2D ordering is correct.
+    //
+    // Do NOT route here during plain slot-by-slot execution (both flags false) even though
+    // tl_dspExecutionStream may be non-null (platformBeginExecution pins it for the
+    // entire execute() call).  In slot-by-slot mode the kernels run on the LC default
+    // stream; routing H2D to the plan-owned stream creates a cross-stream race that
+    // leaves K/V weight device buffers zeroed → dead attention → garbage decode output.
+    // Regression introduced by commit 2cfdaeeeb5 (asyncTransferStream tl_dspExecutionStream
+    // priority added without the capture/replay gate).
+    if (tl_dspExecutionStream != nullptr && (tl_graphExecutionActive || tl_dspReplayActive)) {
       return reinterpret_cast<cudaStream_t>(tl_dspExecutionStream);
     }
     auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
@@ -146,7 +162,10 @@ struct ThreadDspCompletionEvent {
 thread_local ThreadDspCompletionEvent tl_dspCompletionEvent;
 
 SD_INLINE void waitForLastDspCompletionIfNeeded(cudaStream_t stream) {
-  if (tl_graphExecutionActive || tl_dspExecutionStream != nullptr) return;
+  // Skip the cross-step DSP completion wait during capture (the graph records the ordering;
+  // recording a wait on a prior step's event would bake a stale cross-replay dependency) or
+  // when already on a DSP execution stream. inGraphCapture is the capture authority.
+  if (DebugHelper::inGraphCapture(&stream) || tl_dspExecutionStream != nullptr) return;
   if (!tl_dspCompletionEvent.recorded || tl_dspCompletionEvent.event == nullptr) return;
   auto waitErr = cudaStreamWaitEvent(stream, tl_dspCompletionEvent.event, 0);
   if (waitErr != cudaSuccess) {
@@ -318,10 +337,21 @@ void DataBuffer::expand(const uint64_t size) {
 #endif
     }
 
-    // Cross-device copy — use cudaStreamPerThread to avoid error 906 when
-    // another thread is mid-CUDA-graph-capture on the same device.
-    cudaMemcpyAsync(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice, cudaStreamPerThread);
-    cudaStreamSynchronize(cudaStreamPerThread);
+    // Cross-device copy — route through asyncTransferStream() rather than
+    // cudaStreamPerThread so that (a) a stream that is currently being captured
+    // (error 901) is avoided, and (b) we stay on the main execution stream when
+    // inside the composite-capture region.
+    {
+      cudaStream_t copyStream = asyncTransferStream(/*switchedDevice=*/true);
+      if (copyStream == nullptr) copyStream = cudaStreamPerThread;
+      cudaMemcpyAsync(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice, copyStream);
+      // Skip the host sync during CUDA-graph capture — a cudaStreamSynchronize on a capturing
+      // stream is illegal (error 900/901). The copy is recorded into the graph and ordered by
+      // stream semantics; outside capture we sync so the cross-device source can be released.
+      if (DebugHelper::currentCaptureStream() == nullptr) {
+        cudaStreamSynchronize(copyStream);
+      }
+    }
 
     if (_isOwnerSpecial && _specialBuffer != nullptr) {
       // Switch to old device to release memory
@@ -940,7 +970,10 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   // CudaZeroHandler.memcpy) calls dbForceSyncToPrimary which sets forceSync=true.
   // Without this exception, migration during DSP execution sees zeros because the
   // D2H from the source device is skipped.
-  if (tl_graphExecutionActive && !forceSync) {
+  // Skip D2H in ANY capture context (per-group flag OR composite outer region): a D2H here
+  // would drain/sync the legacy stream (below) while another stream is mid-capture → error
+  // 906. inGraphCapture is the single authority (DebugHelper.h) — do not re-derive the tl_*.
+  if (DebugHelper::inGraphCapture(nullptr) && !forceSync) {
     return;
   }
 

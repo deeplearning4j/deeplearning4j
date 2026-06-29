@@ -45,20 +45,22 @@ SD_DEVICE SD_INLINE T warpReduceSum(T val) {
   return val;
 }
 
-SD_DEVICE SD_INLINE float loadParamAsFloat(const void* ptr, int dtype, LongType index) {
+// Load a parameter as AccT precision (double when AccT=double, float otherwise)
+template <typename AccT>
+SD_DEVICE SD_INLINE AccT loadParamAs(const void* ptr, int dtype, LongType index) {
   if (ptr == nullptr) {
-    return 0.0f;
+    return static_cast<AccT>(0);
   }
   if (dtype == static_cast<int>(DataType::FLOAT32)) {
-    return reinterpret_cast<const float*>(ptr)[index];
+    return static_cast<AccT>(reinterpret_cast<const float*>(ptr)[index]);
   }
   if (dtype == static_cast<int>(DataType::DOUBLE)) {
-    return static_cast<float>(reinterpret_cast<const double*>(ptr)[index]);
+    return static_cast<AccT>(reinterpret_cast<const double*>(ptr)[index]);
   }
   if (dtype == static_cast<int>(DataType::HALF)) {
-    return static_cast<float>(reinterpret_cast<const float16*>(ptr)[index]);
+    return static_cast<AccT>(static_cast<float>(reinterpret_cast<const float16*>(ptr)[index]));
   }
-  return 0.0f;
+  return static_cast<AccT>(0);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -91,6 +93,12 @@ SD_DEVICE T blockReduceSum(T val, T* sharedMem) {
 //////////////////////////////////////////////////////////////////////////////
 // Fused Layer Norm Kernel - handles one row per block
 // Each row is normalized independently
+// Accumulator type: use double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
+
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL void layerNormKernel(
@@ -104,58 +112,61 @@ SD_KERNEL void layerNormKernel(
     const int biasDtype,
     const float epsilon) {
 
+  using AccT = typename AccType<T>::type;
+
   // Each block handles one row
   const LongType row = blockIdx.x;
   if (row >= numRows) return;
 
   extern __shared__ char sharedMem[];
-  float* sdata = reinterpret_cast<float*>(sharedMem);
+  AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
 
   const T* inputRow = input + row * rowLen;
   T* outputRow = output + row * rowLen;
 
   // Pass 1: Compute sum and sum of squares in parallel
-  float threadSum = 0.0f;
-  float threadSumSq = 0.0f;
+  AccT threadSum = static_cast<AccT>(0);
+  AccT threadSumSq = static_cast<AccT>(0);
 
   for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-    float val = static_cast<float>(inputRow[i]);
+    AccT val = static_cast<AccT>(inputRow[i]);
     threadSum += val;
     threadSumSq += val * val;
   }
 
   // Block-level reduction for sum
-  float totalSum = blockReduceSum(threadSum, sdata);
+  AccT totalSum = blockReduceSum(threadSum, sdata);
   __syncthreads();
 
   // Block-level reduction for sum of squares
-  float totalSumSq = blockReduceSum(threadSumSq, sdata);
+  AccT totalSumSq = blockReduceSum(threadSumSq, sdata);
 
   // Compute mean and inverse standard deviation
-  __shared__ float mean;
-  __shared__ float invStd;
+  __shared__ AccT mean;
+  __shared__ AccT invStd;
 
   if (threadIdx.x == 0) {
-    mean = totalSum / static_cast<float>(rowLen);
-    float variance = (totalSumSq / static_cast<float>(rowLen)) - (mean * mean);
-    invStd = rsqrtf(variance + epsilon);
+    mean = totalSum / static_cast<AccT>(rowLen);
+    AccT variance = (totalSumSq / static_cast<AccT>(rowLen)) - (mean * mean);
+    // rsqrt: CUDA provides rsqrtf (float) and rsqrt (double)
+    invStd = rsqrt(variance + static_cast<AccT>(epsilon));
   }
   __syncthreads();
 
   // Pass 2: Normalize, scale, and shift
   if (bias != nullptr) {
     for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-      float val = static_cast<float>(inputRow[i]);
-      float normalized = (val - mean) * invStd;
-      float g = loadParamAsFloat(gain, gainDtype, i);
-      float b = loadParamAsFloat(bias, biasDtype, i);
+      AccT val = static_cast<AccT>(inputRow[i]);
+      AccT normalized = (val - mean) * invStd;
+      AccT g = loadParamAs<AccT>(gain, gainDtype, i);
+      AccT b = loadParamAs<AccT>(bias, biasDtype, i);
       outputRow[i] = static_cast<T>(normalized * g + b);
     }
   } else {
     for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-      float val = static_cast<float>(inputRow[i]);
-      float normalized = (val - mean) * invStd;
-      float g = loadParamAsFloat(gain, gainDtype, i);
+      AccT val = static_cast<AccT>(inputRow[i]);
+      AccT normalized = (val - mean) * invStd;
+      AccT g = loadParamAs<AccT>(gain, gainDtype, i);
       outputRow[i] = static_cast<T>(normalized * g);
     }
   }
@@ -190,9 +201,10 @@ void launchLayerNormKernel(
 
   int numBlocks = numRows;
 
-  // Shared memory for reductions (need space for warp results)
+  // Shared memory for reductions (need space for warp results).
+  // Use sizeof AccT: double when T=double, float otherwise.
   int numWarps = (threadsPerBlock + WARP_SIZE - 1) / WARP_SIZE;
-  size_t sharedMemSize = numWarps * sizeof(float);
+  size_t sharedMemSize = numWarps * sizeof(typename AccType<T>::type);
 
   layerNormKernel<T><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
       input, gain, bias, output, numRows, rowLen, gainDtype, biasDtype, epsilon);

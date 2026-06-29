@@ -91,8 +91,6 @@ public class DspOpenVinoAccuracyTest {
 
     /** Run the graph in EAGER mode (no DSP) to get the reference output. */
     private Map<String, INDArray> runEager(SameDiff sd, Map<String, INDArray> inputs, String... outputs) {
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         sd.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
         InferenceSession.setDynamicShapePlanEnabled(false);
         try {

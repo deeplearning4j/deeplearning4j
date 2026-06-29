@@ -24,6 +24,9 @@
 #define LIBND4J_HELPER_GENERATOR_H
 #include <array/DataTypeUtils.h>
 #include <system/op_boilerplate.h>
+#ifdef __CUDACC__
+#include <memory/cuda/CudaMemoryPool.h>
+#endif
 
 #ifdef _MSC_VER
 // include for uint64_t on MSVC
@@ -53,6 +56,7 @@ class SD_LIB_EXPORT CudaManaged {
  private:
  protected:
   void *devHolder;
+  int _devHolderDeviceId = 0;
 
  public:
   void *operator new(size_t len) {
@@ -103,14 +107,19 @@ class SD_LIB_EXPORT RandomBuffer {
     this->synchronizer = 0;
     this->devBuffer = devBuffer;
 
-    cudaMalloc(&devHolder, sizeof(sd::random::RandomBuffer));
+    cudaGetDevice(&_devHolderDeviceId);
+    devHolder = sd::memory::CudaMemoryPool::getInstance().allocateDirect(
+        sizeof(sd::random::RandomBuffer), _devHolderDeviceId);
   }
 
   SD_HOST
   sd::Pointer getDevicePointer() { return reinterpret_cast<sd::Pointer>(devHolder); }
 
   SD_HOST
-  ~RandomBuffer() { cudaFree(devHolder); }
+  ~RandomBuffer() {
+    if (devHolder != nullptr)
+      sd::memory::CudaMemoryPool::getInstance().free(devHolder, _devHolderDeviceId);
+  }
 
   SD_HOST
   void propagateToDevice(sd::random::RandomBuffer *buffer, cudaStream_t stream) {

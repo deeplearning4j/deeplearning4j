@@ -17,6 +17,15 @@
 ******************************************************************************/
 #include <build_info.h>
 #include <config.h>
+// Per-build timestamp written by cmake/GenerateBuildStamp.cmake.
+// Including it here forces this TU to recompile whenever the stamp changes,
+// which makes buildInfo() return a new string after every rebuild.
+#if __has_include("build_stamp.h")
+#include "build_stamp.h"
+#endif
+#ifndef LIBND4J_BUILD_STAMP
+#define LIBND4J_BUILD_STAMP "unknown"
+#endif
 
 #include <string>
 #include <vector>
@@ -619,6 +628,11 @@ const char *buildInfo() {
 #if defined(SD_PRINT_MATH)
   ret += "Use PRINT_MATH_FUNCTION_NAME to specify which math function you want to track.\n";
 #endif
+
+  // Per-build unique stamp so DspPlanDiskCache can detect stale cached plans
+  // after a .so rebuild.  LIBND4J_BUILD_STAMP is set by GenerateBuildStamp.cmake
+  // and changes on every build (ISO-8601 UTC timestamp injected at compile time).
+  ret += "BuildStamp: " LIBND4J_BUILD_STAMP "\n";
 
   // Risk of build information not being printed during debug settings
   if(isFuncTrace())

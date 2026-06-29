@@ -32,6 +32,9 @@ import org.nd4j.linalg.exception.ND4JUnknownDataTypeException;
 import org.nd4j.shade.guava.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 
+import org.bytedeco.javacpp.indexer.Bfloat16Indexer;
+import org.bytedeco.javacpp.indexer.HalfIndexer;
+
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -493,6 +496,19 @@ public class FlatBuffersMapper {
                             break;
                         case BOOL:
                             scalar = Nd4j.constantScalar(bb.get() != 0);
+                            break;
+                        case HALF:
+                            // FP16 is stored as a 2-byte IEEE 754 half-precision value (same as SHORT).
+                            // Use HalfIndexer.toFloat to decode the raw bits into a float, then
+                            // create a scalar of the original HALF dtype so downstream ops see the
+                            // correct element type.
+                            scalar = Nd4j.constantScalar(dataType,
+                                HalfIndexer.toFloat(bb.getShort() & 0xFFFF));
+                            break;
+                        case BFLOAT16:
+                            // BF16 is stored as a 2-byte value. Bfloat16Indexer.toFloat decodes it.
+                            scalar = Nd4j.constantScalar(dataType,
+                                Bfloat16Indexer.toFloat(bb.getShort() & 0xFFFF));
                             break;
                         default:
                             log.warn("Unhandled scalar data type: {}. Using zero value with constantScalar.", dataType);

@@ -144,9 +144,19 @@ public class BgeConcatReproTest extends BaseND4JTest {
                         inputIds.getLong(0, 2), inputIds.getLong(0, 3),
                         inputIds.getLong(0, 4)}));
 
-        // Step 3: Build placeholder map — ONLY input_ids, matching subprocess behavior
+        // Step 3: Build the full placeholder map. The BGE model declares attention_mask and
+        // token_type_ids as REQUIRED inputs (placeholders), so provide them with the standard
+        // BERT defaults — attention_mask = 1 for real tokens (0..14) and 0 for padding,
+        // token_type_ids = 0 (single segment). DSP correctly requires every external input.
+        long[] maskValues = new long[512];
+        for (int i = 0; i <= 14; i++) maskValues[i] = 1;
+        INDArray attentionMask = Nd4j.createFromArray(maskValues).reshape(1, 512).castTo(DataType.INT64);
+        INDArray tokenTypeIds = Nd4j.zeros(DataType.INT64, 1, 512);
+
         Map<String, INDArray> placeholders = new HashMap<>();
         placeholders.put("input_ids", inputIds);
+        placeholders.put("attention_mask", attentionMask);
+        placeholders.put("token_type_ids", tokenTypeIds);
 
         // Step 4: Run inference requesting "last_hidden_state" (first output)
         // This is where concat_9 fails in the subprocess
@@ -176,6 +186,8 @@ public class BgeConcatReproTest extends BaseND4JTest {
             fail("Inference failed with: " + e.getMessage());
         } finally {
             inputIds.close();
+            attentionMask.close();
+            tokenTypeIds.close();
         }
     }
 
@@ -239,6 +251,10 @@ public class BgeConcatReproTest extends BaseND4JTest {
             }
         }
 
+        // token_type_ids is also a required input — provide the single-segment default (all zeros).
+        INDArray tokenTypeIds = Nd4j.zeros(DataType.INT64, 1, 512);
+        placeholders.put("token_type_ids", tokenTypeIds);
+
         // If model doesn't declare attention_mask but it might be expected
         // as a graph variable (not placeholder), log that
         if (!hasAttentionMask) {
@@ -274,6 +290,7 @@ public class BgeConcatReproTest extends BaseND4JTest {
         } finally {
             inputIds.close();
             attentionMask.close();
+            tokenTypeIds.close();
         }
     }
 

@@ -52,6 +52,7 @@ import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
 import org.nd4j.linalg.api.ops.impl.shape.SequenceMask;
 import org.nd4j.linalg.api.ops.impl.transforms.Cholesky;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FakeQuantWithMinMaxVars;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Qr;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp;
@@ -1139,6 +1140,28 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
                 reshape(1,2,3,1);
 
         INDArray[] output = Nd4j.exec(new FakeQuantWithMinMaxVarsPerChannel(x,min,max));
+
+        assertEquals(expected, output[0]);
+    }
+
+    // Exercises the scalar (non-per-channel) fake-quant CUDA path.
+    // The nudge math for a single scalar min/max is identical to per-channel with channels=1:
+    //   scale=0.25, nudgedMin=-63.75, nudgedMax=0.0
+    // so expected values are the same as the per-channel test above.
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testFakeQuantWithMinMaxVarsScalar(Nd4jBackend backend) {
+
+        INDArray x = Nd4j.createFromArray(new float[]{-63.80f, -63.75f, -63.4f, -63.5f, 0.0f, 0.1f})
+                .reshape(2, 3);
+
+        INDArray min = Nd4j.createFromArray(new float[]{-63.65f});
+        INDArray max = Nd4j.createFromArray(new float[]{0.1f});
+
+        INDArray expected = Nd4j.createFromArray(new float[]{-63.75f, -63.75f, -63.5f, -63.5f, 0.f, 0.f})
+                .reshape(2, 3);
+
+        INDArray[] output = Nd4j.exec(new FakeQuantWithMinMaxVars(x, min, max, 8, false));
 
         assertEquals(expected, output[0]);
     }

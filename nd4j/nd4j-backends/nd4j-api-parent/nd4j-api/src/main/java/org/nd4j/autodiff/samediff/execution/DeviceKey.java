@@ -21,6 +21,7 @@
 package org.nd4j.autodiff.samediff.execution;
 
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
 
 /**
  * Identifies a specific compute device (e.g. a CUDA GPU or CPU backend) for
@@ -48,11 +49,28 @@ public final class DeviceKey {
     /** The zero-based device index within the device type. */
     public final int index;
 
+    /**
+     * Compute architecture of the device, encoded as {@code major*10 + minor}
+     * (e.g. {@code 86} for CUDA sm_86, {@code 89} for sm_89). {@code 0} when not
+     * applicable or unknown (CPU backend, or the arch could not be queried).
+     *
+     * <p>Arch is what makes two GPUs binary-incompatible for compiled kernels
+     * (a cubin built for sm_86 will not run on sm_89), so {@link #isCompatibleWith}
+     * uses it to keep {@link DevicePlacementPlanner} from spreading arch-specific
+     * compiled work onto an incompatible GPU.</p>
+     */
+    public final int arch;
+
     // ── Constructors ─────────────────────────────────────────────────────────
 
     public DeviceKey(DeviceType type, int index) {
+        this(type, index, 0);
+    }
+
+    public DeviceKey(DeviceType type, int index, int arch) {
         this.type  = type;
         this.index = index;
+        this.arch  = arch;
     }
 
     public DeviceKey(int typeOrdinal, int index) {
@@ -60,6 +78,7 @@ public final class DeviceKey {
         this.type  = (typeOrdinal >= 0 && typeOrdinal < values.length)
                 ? values[typeOrdinal] : DeviceType.UNKNOWN;
         this.index = index;
+        this.arch  = 0;
     }
 
     // ── Factory methods ───────────────────────────────────────────────────────
@@ -79,7 +98,8 @@ public final class DeviceKey {
             boolean hasCuda = Nd4j.getBackend().getClass().getName().contains("Cuda")
                     || Nd4j.getBackend().getClass().getName().contains("CUDA");
             DeviceType type = hasCuda ? DeviceType.CUDA : DeviceType.CPU;
-            return new DeviceKey(type, deviceId);
+            int arch = (type == DeviceType.CUDA) ? queryCudaArch(deviceId) : 0;
+            return new DeviceKey(type, deviceId, arch);
         } catch (Exception e) {
             return new DeviceKey(DeviceType.CPU, 0);
         }
@@ -93,10 +113,27 @@ public final class DeviceKey {
     }
 
     /**
-     * Return a CUDA {@code DeviceKey} for the given GPU index.
+     * Return a CUDA {@code DeviceKey} for the given GPU index, with its compute
+     * architecture queried from the backend so the key carries real sm_XX info.
      */
     public static DeviceKey cuda(int index) {
-        return new DeviceKey(DeviceType.CUDA, index);
+        return new DeviceKey(DeviceType.CUDA, index, queryCudaArch(index));
+    }
+
+    /**
+     * Query the CUDA compute architecture ({@code major*10 + minor}) for the given
+     * device index. Returns {@code 0} on CPU-only backends or if the query fails.
+     */
+    public static int queryCudaArch(int index) {
+        try {
+            NativeOps ops = Nd4j.getNativeOps();
+            int major = ops.getDeviceMajor(index);
+            int minor = ops.getDeviceMinor(index);
+            if (major <= 0) return 0;
+            return major * 10 + minor;
+        } catch (Throwable t) {
+            return 0;
+        }
     }
 
     // ── Accessors ─────────────────────────────────────────────────────────────
@@ -106,6 +143,22 @@ public final class DeviceKey {
      */
     public int typeOrdinal() {
         return type.ordinal();
+    }
+
+    /**
+     * Returns {@code true} if work compiled for this device can run on {@code other}.
+     *
+     * <p>Devices of different {@link DeviceType} are never compatible. Two CUDA
+     * devices are compatible only when they share the same compute architecture
+     * ({@link #arch}) — a cubin built for one sm_XX is not binary-compatible with a
+     * different one. CPU keys are compatible with any other CPU key. A key whose
+     * arch is unknown ({@code arch == 0}) is treated conservatively: it is only
+     * compatible with another key whose arch is also unknown.</p>
+     */
+    public boolean isCompatibleWith(DeviceKey other) {
+        if (other == null || type != other.type) return false;
+        if (type == DeviceType.CUDA) return arch == other.arch;
+        return true;
     }
 
     // ── Object overrides ──────────────────────────────────────────────────────
@@ -125,6 +178,7 @@ public final class DeviceKey {
 
     @Override
     public String toString() {
-        return type.name() + ":" + index;
+        return arch > 0 ? type.name() + ":" + index + ":sm_" + arch
+                        : type.name() + ":" + index;
     }
 }

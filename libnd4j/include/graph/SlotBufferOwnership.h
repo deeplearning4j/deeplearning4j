@@ -354,12 +354,16 @@ int detectStaleOwnership(
 
 /**
  * Detect closed DataBuffers in live slots. Returns count of closed buffers found.
- * Logs each via DSP_DIAG(MEMORY, ...) with slot index and ownership type.
+ * Only closed buffers in protectedWeightBuffers (true weights/constants) count as a
+ * use-after-free; a closed NON-protected buffer is a stale view/transient wrapper over
+ * a placeholder external input that the imminent slot-exec re-execution refreshes
+ * (consistent with validateLifecycleForPhase). Logs each via DSP_DIAG(MEMORY, ...).
  */
 int detectClosedBuffers(
     const SlotBufferInfo* ownership, int totalSlots,
     NDArray** outputSlots,
-    NDArray** externalInputs, int numExternalInputs);
+    NDArray** externalInputs, int numExternalInputs,
+    const std::unordered_set<DataBuffer*>& protectedWeightBuffers);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Always-On Array Validity Assertions

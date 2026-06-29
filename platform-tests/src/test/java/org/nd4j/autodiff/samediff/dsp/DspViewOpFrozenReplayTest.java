@@ -553,8 +553,6 @@ public class DspViewOpFrozenReplayTest {
 
     private static void configureDsp(SameDiff target, GraphExecutionMode mode) {
         if (mode == GraphExecutionMode.SLOT_BY_SLOT) {
-            target.setDspAutoCompileEnabled(false);
-            target.setDspNativeAutoCompileEnabled(false);
         } else {
             target.setDspAutoCompileEnabled(true);
             target.setDspNativeAutoCompileEnabled(true);
@@ -563,8 +561,6 @@ public class DspViewOpFrozenReplayTest {
     }
 
     private static void disableDsp(SameDiff target) {
-        target.setDspAutoCompileEnabled(false);
-        target.setDspNativeAutoCompileEnabled(false);
         target.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
     }
 

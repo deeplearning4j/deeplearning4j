@@ -780,7 +780,10 @@ public class GenerationPipeline implements AutoCloseable {
         if (prefillLogits == null) {
             throw new RuntimeException("[GGUF-KV] Prefill logits '" + logitsName + "' not found in outputs: " + prefillOutputs.keySet());
         }
-        int logitsSamplePos = actualPrefillLen - 1;
+        // Clamp to the actual logits seq dim (see generateNative): no-op for the padded
+        // [1, prefillSeqLen, vocab] case here, but guards an UNCHECKED OOB read if a model
+        // ever exports last-position-only [1, 1, vocab] logits on this path too.
+        int logitsSamplePos = Math.min(actualPrefillLen - 1, (int) prefillLogits.shape()[1] - 1);
         log.info("[GGUF-KV] Prefill logits shape: {} samplePos={} (actualPrefillLen={})",
                 java.util.Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen);
         {
@@ -1854,7 +1857,14 @@ public class GenerationPipeline implements AutoCloseable {
         // Sample first token from prefill logits — Java-side argmax.
         // When fixedBuffers is active, sample from actualPrefillLen-1, not the end.
         INDArray prefillLogits = prefillOutputs.get(ioConfig.getLogitsOutputName());
-        int logitsSamplePos = actualPrefillLen - 1;
+        // Sample the LAST-token logits. The decoder may export full/padded logits
+        // [1, N>=actualPrefillLen, vocab] (real last token at actualPrefillLen-1, before any
+        // fixedBuffers padding) OR last-position-only [1, 1, vocab] (optimized use_cache ONNX
+        // exports — the only valid index is 0). Clamp to the actual logits seq dim: without it,
+        // point(actualPrefillLen-1) on a size-1 dim is an UNCHECKED OOB read (BaseNDArray.get
+        // has no bounds check) → reads position-0-adjacent GPU memory → garbage first-token
+        // logits → argmax = token 11126 "User", making the model ignore the image.
+        int logitsSamplePos = Math.min(actualPrefillLen - 1, (int) prefillLogits.shape()[1] - 1);
         INDArray firstLogitsSlice = prefillLogits.get(NDArrayIndex.point(0),
                 NDArrayIndex.point(logitsSamplePos),
                 NDArrayIndex.all()).dup();
@@ -1868,11 +1878,9 @@ public class GenerationPipeline implements AutoCloseable {
             }
         }
         firstLogitsSlice.close();
-        if (log.isDebugEnabled()) {
-            log.debug("[DIAG] Prefill firstTokenId={} maxVal={} logitsShape={} samplePos={}",
-                    firstTokenId, firstMaxVal,
-                    java.util.Arrays.toString(prefillLogits.shape()), logitsSamplePos);
-        }
+        log.info("[Native] Prefill firstTokenId={} maxVal={} logitsShape={} samplePos={} (actualPrefillLen={})",
+                firstTokenId, firstMaxVal,
+                java.util.Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen);
         prefillLogits.close();
 
         // ══════════════════════════════════════════════════════════════════════

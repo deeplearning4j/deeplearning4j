@@ -26,6 +26,14 @@ namespace ops {
 namespace helpers {
 
 void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<LongType>& output) {
+  // Guard: axisVector may be null when called from DECLARE_SHAPE_FN during the
+  // DSP shape pre-pass (phaseShapeInferenceOnly), where _fastpath_in is null-padded
+  // to slot.wiring.numInputs so that block.width() reflects the full input count.
+  // INPUT_VARIABLE(2) returns _fastpath_in[2] which can be nullptr for an absent
+  // optional axes input.  Dereferencing null here causes SIGSEGV (NDArray::shapeInfo
+  // with this=0x0, si_addr=0x10).  When axisVector is absent, leave `output` empty;
+  // the caller (DECLARE_SHAPE_FN) already falls back to iArgs for the axis.
+  if (axisVector == nullptr) return;
   if(axisVector->isScalar()) {
     output.resize(1);
     auto ca = axisVector->e<sd::LongType>(0);

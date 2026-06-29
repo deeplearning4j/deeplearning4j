@@ -24,6 +24,7 @@
 #if NOT_EXCLUDED(OP_l2_loss)
 
 #include <ops/declarable/headers/loss.h>
+#include <helpers/logger.h>
 
 namespace sd {
 namespace ops {
@@ -35,8 +36,12 @@ CUSTOM_OP_IMPL(l2_loss, 1, 1, false, 0, 0) {
 
   // l2_loss = sum(x^2) / 2
   input->reduceNumber(reduce::SquaredNorm, output);
+  if (sd::env_isDebug())
+    sd_printf("[L2LOSS_DIAG] input.rank=%i input.len=%lld after reduceNumber output=%.8f\n",
+              input->rankOf(), (long long)input->lengthOf(), output->e<double>(0));
   double two = 2.0;
   output->applyScalar(scalar::Divide, two, output);
+  if (sd::env_isDebug()) sd_printf("[L2LOSS_DIAG] after divide-by-2 output=%.8f\n", output->e<double>(0));
 
   return Status::OK;
 }

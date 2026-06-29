@@ -671,9 +671,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
         INDArray dGradAssertion = Nd4j.ones(2, 2);
 
         SameDiff sameDiff = SameDiff.create();
-        // Disable DSP: reduce_sum with Integer.MAX_VALUE axis is not supported by the native executor.
-        sameDiff.setDspAutoCompileEnabled(false);
-        sameDiff.setDspNativeAutoCompileEnabled(false);
 
         SDVariable sdVariable = sameDiff.var("a", arr1);
         SDVariable sdVariable1 = sameDiff.var("w", arr2);
@@ -838,8 +835,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
         int seqLength = 8;
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
 
         SDVariable features = sd.placeHolder("features", DataType.DOUBLE, batchSize, seqLength);
         SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, batchSize, batchSize);
@@ -1747,7 +1742,15 @@ public class TestMiscOpValidation extends BaseOpValidation {
         op.setOutputArgument(0, out);
         Nd4j.exec(op);
 
-        assertEquals(outExp, out);
+        // The rank-4 matmul takes the cuBLAS strided-batched path (one call for all 384
+        // batch slices), while outExp is built via 384 separate per-slice cublasGemmEx
+        // calls.  Both use CUBLAS_GEMM_DEFAULT_TENSOR_OP / CUBLAS_COMPUTE_32F, but
+        // different kernel selections can produce accumulation-order differences of ~1e-5
+        // to ~1e-4 in FLOAT32.  The result is structurally correct (testMmulRank4_simple
+        // verifies exact integer arithmetic with all-ones inputs); the tolerance here
+        // accommodates legitimate inter-API floating-point drift.
+        assertTrue(outExp.equalsWithEps(out, 1e-4),
+                "Rank-4 batched matmul differs from per-slice reference by more than 1e-4");
     }
 
     @ParameterizedTest

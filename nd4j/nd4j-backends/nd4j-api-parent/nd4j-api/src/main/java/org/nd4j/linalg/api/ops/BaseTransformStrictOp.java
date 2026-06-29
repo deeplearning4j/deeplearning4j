@@ -113,6 +113,10 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
     public List<DataBuffer> calculateOutputShape() {
         if(x == null)
             return Collections.emptyList();
+        if (x.isEmpty()) {
+            return Collections.singletonList(Nd4j.createBuffer(
+                    LongShapeDescriptor.emptyWithShape(x.shape(), x.dataType()).toShapeInfo()));
+        }
         return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(x.shape(), x.dataType()).toShapeInfo()));
     }
 
@@ -121,9 +125,18 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
         List<DataBuffer> cached = getCachedOutputShapes(oc);
         if (cached != null) return cached;
 
-        if(oc.getInputArray(0) == null)
+        INDArray in0 = oc.getInputArray(0);
+        if(in0 == null)
             return Collections.emptyList();
-        List<DataBuffer> ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(oc.getInputArray(0).shape(), oc.getInputArray(0).dataType()).toShapeInfo()));
+        List<DataBuffer> ret;
+        if (in0.isEmpty()) {
+            // Preserve shape AND EMPTY bit (fromShape omits the EMPTY bit)
+            ret = Collections.singletonList(Nd4j.createBuffer(
+                    LongShapeDescriptor.emptyWithShape(in0.shape(), in0.dataType()).toShapeInfo()));
+        } else {
+            ret = Collections.singletonList(Nd4j.createBuffer(
+                    LongShapeDescriptor.fromShape(in0.shape(), in0.dataType()).toShapeInfo()));
+        }
         setCachedOutputShapes(oc, ret);
         return ret;
     }

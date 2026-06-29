@@ -89,6 +89,46 @@ public class DynamicShapePlanExecutor implements Closeable {
     private static final boolean NATIVE_EXECUTOR_ENABLED = !"false".equalsIgnoreCase(
             System.getProperty(ND4JSystemProperties.DSP_NATIVE_EXECUTOR_ENABLED, "true"));
 
+    /**
+     * Process-global count of DynamicShapePlanExecutor instances that have reached
+     * shapes-frozen state and may have CUDA graphs with baked TAD device pointers.
+     *
+     * <p>TAD offset device buffers are baked as kernel arguments into captured CUDA
+     * graphs during the SHAPES_FROZEN phase. The global TAD cache (ConstantTadHelper)
+     * holds the only strong reference to those device allocations. Calling
+     * {@code Nd4j.clearTADCache()} while any frozen executor exists frees those
+     * device buffers, making the baked CUDA-graph kernel args dangling → illegal
+     * access (CUDA error 700) on the next {@code cudaGraphLaunch}.
+     *
+     * <p>Rules:
+     * <ul>
+     *   <li>Incremented (with CAS) when this executor transitions from unfrozen → frozen.
+     *   <li>Decremented when the executor is reset ({@link #initialize(DynamicShapePlan)}
+     *       with same-plan reset) or closed ({@link #close()}).
+     * </ul>
+     *
+     * <p>InferenceSession queries {@link #hasFrozenExecutors()} before calling
+     * {@code clearTADCache()}: if any frozen executor exists, the call is suppressed.
+     */
+    private static final java.util.concurrent.atomic.AtomicInteger GLOBAL_FROZEN_EXECUTOR_COUNT =
+            new java.util.concurrent.atomic.AtomicInteger(0);
+
+    /**
+     * Returns true if at least one DynamicShapePlanExecutor process-wide has reached
+     * shapes-frozen state (and therefore may have baked TAD device pointers into a
+     * captured CUDA graph). When this returns true, {@code Nd4j.clearTADCache()} must
+     * NOT be called — doing so would free the baked device buffers and cause err700.
+     */
+    public static boolean hasFrozenExecutors() {
+        return GLOBAL_FROZEN_EXECUTOR_COUNT.get() > 0;
+    }
+
+    /**
+     * True when THIS executor has incremented {@link #GLOBAL_FROZEN_EXECUTOR_COUNT}.
+     * Prevents double-increment and ensures the decrement is paired correctly.
+     */
+    private boolean registeredAsFrozen;
+
     /** C++ error code returned when an input DataBuffer is closed/destroyed/invalid.
      *  Java can detect this and re-resolve the stale input from SameDiff variables. */
     private static final int NATIVE_STATUS_STALE_BUFFER = 5;
@@ -471,6 +511,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             freeNativePlanHandle("SESSION_RESET");
             nativeExecutorFailed = false;
             executionCount = 0;
+            // Decrement global frozen-executor count before clearing the flag.
+            // After SESSION_RESET the CUDA graphs are destroyed (releaseGpuIntermediates above)
+            // so the baked TAD pointers no longer exist; it is safe to allow clearTADCache again.
+            if (registeredAsFrozen) {
+                GLOBAL_FROZEN_EXECUTOR_COUNT.decrementAndGet();
+                registeredAsFrozen = false;
+            }
             shapesFrozen = false;
             wasEverFrozen = false;
             nativeExecutionDevice = -1;
@@ -486,12 +533,48 @@ public class DynamicShapePlanExecutor implements Closeable {
         externalInputs = new INDArray[plan.getExternalInputKeys().length];
         pendingClose = new ArrayList<>();
         slotArrayCache = new INDArray[totalSlots];
+        // Capture wasEverFrozen BEFORE freeNativePlanHandle clears Java state.
+        // This flag drives the frozen multi-plan switch gate in redispatchForCurrentShapes()
+        // (line ~1645: isShapeChange && (shapesFrozen || wasEverFrozen)).
+        boolean wasPreviouslyFrozen = wasEverFrozen;
         // Reset native executor state for new plan
         freeNativePlanHandle("PLAN_CHANGED");
-        shapesFrozen = false;
-        wasEverFrozen = false;
+        // Decrement global frozen-executor count if this executor was registered.
+        // A plan change destroys the old CUDA graphs (freeNativePlanHandle above),
+        // so the baked TAD pointers from the old plan no longer exist.
+        if (registeredAsFrozen) {
+            GLOBAL_FROZEN_EXECUTOR_COUNT.decrementAndGet();
+            registeredAsFrozen = false;
+        }
         executionCount = 0;
         nativeExecutorFailed = false;
+        // FROZEN→FROZEN MULTI-PLAN SWITCH: if the outgoing plan was ever frozen, preserve
+        // shapesFrozen/wasEverFrozen so that redispatchForCurrentShapes() takes the frozen
+        // multi-plan switch path (gate at ~line 1645). That path calls
+        // setPlanShapesFrozen(newHandle, true) on the incoming plan's C++ handle, which
+        // starts it in SHAPES_FROZEN phase — skipping SLOT_BY_SLOT warmup and therefore
+        // skipping platformClearCastCache(). Without this, platformClearCastCache() frees
+        // the FP32 cast buffers that the outgoing frozen plan's CUDA graph baked as device
+        // addresses; when the outgoing plan's composite-replay resumes, cuBLAS reads the
+        // freed address and produces NaN (test39_RmsNormLinearFp16AfterPlanSwap).
+        //
+        // FRESH PLAN PATH: if wasPreviouslyFrozen is false (first-ever compile, no prior
+        // freeze), shapesFrozen/wasEverFrozen reset to false normally, preserving the
+        // standard warmup path for genuinely new plans.
+        if (wasPreviouslyFrozen) {
+            // Preserve frozen flags: the incoming plan will be started frozen by
+            // redispatchForCurrentShapes(). Both shapesFrozen and wasEverFrozen stay true
+            // so the gate at ~1645 fires on the very next redispatch call.
+            shapesFrozen = true;
+            wasEverFrozen = true;
+            log.info("initialize: PLAN_CHANGED from frozen plan — preserving shapesFrozen=true " +
+                    "so redispatch takes the frozen multi-plan switch path (preserves cast cache)");
+        } else {
+            // Genuinely new plan (never frozen before): reset frozen flags so the incoming
+            // plan starts with a clean SLOT_BY_SLOT warmup, exactly as before.
+            shapesFrozen = false;
+            wasEverFrozen = false;
+        }
 
         // Cache device count once.
         try {
@@ -861,8 +944,16 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         this.shapesFrozen = true;
         this.wasEverFrozen = true;
-        log.info("FROZEN_TRANSITION: unfrozen → FROZEN (frozenCallCount reset, plan={})",
-                nativePlanHandle != null && !nativePlanHandle.isNull() ? "native" : "java");
+        // Register in the global frozen-executor counter (once per executor lifetime).
+        // This prevents clearTADCache() from running while this executor holds baked
+        // CUDA-graph kernel args that reference TAD device pointers.
+        if (!registeredAsFrozen) {
+            GLOBAL_FROZEN_EXECUTOR_COUNT.incrementAndGet();
+            registeredAsFrozen = true;
+        }
+        log.info("FROZEN_TRANSITION: unfrozen → FROZEN (frozenCallCount reset, plan={}, globalFrozenCount={})",
+                nativePlanHandle != null && !nativePlanHandle.isNull() ? "native" : "java",
+                GLOBAL_FROZEN_EXECUTOR_COUNT.get());
         DspDiagnostics.record(DspDiagnostics.SHAPE,
                 "Java: shapes FROZEN (executionCount=" + executionCount + ")");
         // Clear frozen-state caches when entering frozen mode. Stale caches from a previous
@@ -871,7 +962,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         closeZeroCopyOutputCache();
         cachedInputOpaques = null;
         cachedInputArrays = null;
-        contextInputRefs = null;
+        // Do NOT null contextInputRefs here. Unlike the index caches above, this is the
+        // strong-reference array that keeps the C++ OpaqueNDArray wrappers alive while the
+        // cachedOpContext still holds raw NDArray* pointers into them. setShapesFrozen() runs
+        // BEFORE the context is handed to autoregressive_decode, so clearing the refs here lets
+        // the DeallocatorService free those C++ objects → dangling context pointers (stale
+        // specialBuffer). It is only safe to replace contextInputRefs atomically in executeNative().
         inputIsPlaceholder = null;
         placeholderIndices = null;
         cachedVariableTypeIndices = null;
@@ -975,6 +1071,13 @@ public class DynamicShapePlanExecutor implements Closeable {
         // for whatever shape the next page uses. Plan phases are linear and immutable, so we
         // cannot reuse a frozen plan for a different shape.
         freeNativePlanHandle("PAGE_RESET");
+        // Decrement global frozen-executor count before resetting Java frozen state.
+        // releaseGpuIntermediates() above destroyed the CUDA graphs; the baked TAD pointers
+        // from the old plan no longer exist. It is safe to allow clearTADCache again.
+        if (registeredAsFrozen) {
+            GLOBAL_FROZEN_EXECUTOR_COUNT.decrementAndGet();
+            registeredAsFrozen = false;
+        }
         // Reset Java-side tracking that freeNativePlanHandle clears (shapesFrozen is on the
         // Java side only; the C++ plan is gone).
         shapesFrozen = false;
@@ -1590,6 +1693,26 @@ public class DynamicShapePlanExecutor implements Closeable {
                         frozenExtShapeSnapshot = null;
                         frozenOutputsInitialized = false;
                         closeZeroCopyOutputCache();
+                        // Reset frozen-call counter and variable-type index cache for the new plan.
+                        // After a frozen multi-plan switch, the new plan's C++ executeCount_ is 0
+                        // (reset by phaseFreeze). Java's frozenCallCount must also be 0 so the
+                        // first execution of the new plan takes the frozenCallCount==1 snapshot
+                        // path (line 3418) and the C++ broadPrepare=true gate (executeCount_<=1)
+                        // ensures ALL external inputs — including CONSTANT/SOURCE_CONSTANT weight
+                        // buffers — receive prepareSpecialUse() → host→device sync before the
+                        // first CUDA graph capture on the new plan.
+                        //
+                        // Without this reset: frozenCallCount is e.g. 250 from the old plan →
+                        // the snapshot is never taken for the new plan → no lifecycle validation.
+                        // More critically, cachedVariableTypeIndices (built for old plan's input
+                        // layout) may map wrong indices for the new plan, causing stale VARIABLE
+                        // data to be skipped on the frozen fast path.
+                        //
+                        // Risk: none. The new plan starts fresh (executeCount_=0) so resetting
+                        // frozenCallCount to 0 correctly reflects that. The snapshot will be
+                        // captured on the very next execute() call (frozenCallCount 0→1).
+                        frozenCallCount = 0;
+                        cachedVariableTypeIndices = null;
                         // Freeze the new plan handle too — it needs frozen C++ state for replay
                         NativeOps nOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                         nOps.setPlanShapesFrozen(nativePlanHandle, true);
@@ -3194,12 +3317,22 @@ public class DynamicShapePlanExecutor implements Closeable {
                     // null dereference in native code. Replace with a zero-filled placeholder
                     // of the same shape/dtype — the native plan's control flow routing will
                     // never actually read from the dead branch's slot.
-                    if (arr != null && (arr.data() == null || arr.data().wasClosed())) {
+                    //
+                    // IMPORTANT: empty arrays (e.g., Const with shape [0]) legitimately have
+                    // data() == null (BaseNDArray.createBufferForDescriptor returns null for
+                    // non-scalar empty arrays). They are NOT dead branches. OpaqueNDArray.fromINDArray
+                    // handles them correctly via the nativeLength==0 path. Skip the dead-branch
+                    // guard entirely for empty arrays — only apply it to non-empty arrays whose
+                    // data buffer is null or closed (genuinely dead control-flow branches).
+                    if (arr != null && !arr.isEmpty() && (arr.data() == null || arr.data().wasClosed())) {
                         // Try to resolve a fresh copy from the variable
                         SDVariable var = sd.getVariable(extKeys[i]);
                         if (var != null) {
                             INDArray fresh = var.getArr();
-                            if (fresh != null && fresh.data() != null && !fresh.data().wasClosed()) {
+                            if (fresh != null && !fresh.isEmpty() && fresh.data() != null && !fresh.data().wasClosed()) {
+                                arr = fresh;
+                            } else if (fresh != null && fresh.isEmpty()) {
+                                // Fresh copy is also empty — use it as-is
                                 arr = fresh;
                             } else {
                                 // Create zeros — guard against null shape/dtype from dead arrays
@@ -3218,7 +3351,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         }
                         extInputs[i] = arr;
                     }
-                    if (arr == null || arr.data() == null || arr.data().wasClosed()) {
+                    if (arr == null || (!arr.isEmpty() && (arr.data() == null || arr.data().wasClosed()))) {
                         log.error("DEAD_INPUT_AT_SET: ext[{}] '{}' still dead after guard (arr={}, data={})",
                                 i, extKeys[i], arr != null ? "id=" + arr.getId() : "null",
                                 arr != null ? (arr.data() == null ? "null" : "closed=" + arr.data().wasClosed()) : "N/A");
@@ -3331,6 +3464,27 @@ public class DynamicShapePlanExecutor implements Closeable {
             // (the C++ side also checks frozen state, but skipping the JNI call saves ~1-2ms).
             if (!shapesFrozen) {
                 nativeOps.clearDynamicShapePlanCaches(nativePlanHandle);
+                // Guard against a stale-frozen C++ plan fetched from the in-memory plan cache
+                // by a fresh Java executor (wasEverFrozen=false after invalidateAllPlanCaches).
+                // Scenario: test-A freezes the C++ plan with shapes [3,6] k=3; test-B (same op
+                // topology but different k or shape) fetches the SAME cached C++ plan which is
+                // already in SHAPES_FROZEN (phase=1) with stale cached output shapes. Without this
+                // reset the C++ plan uses the wrong cached shapes → wrong buffer offsets → NaN.
+                // clearDynamicShapePlanCaches() alone does not reset the C++ plan PHASE (only
+                // shape-inference results), so we must explicitly un-freeze the C++ side.
+                // This is safe: the C++ plan will re-seal to SHAPES_FROZEN after the next
+                // execution once shapes are verified stable, and Java syncs via DSP_PHASE_SYNC.
+                if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+                    int currentNativePhase = nativeOps.getPlanPhase(nativePlanHandle);
+                    log.info("SHAPE_RESET_CHECK: !shapesFrozen, C++ phase={}, handle={}", currentNativePhase,
+                            "0x" + Long.toHexString(nativePlanHandle.address()));
+                    if (currentNativePhase >= 1) {
+                        nativeOps.setPlanShapesFrozen(nativePlanHandle, false);
+                        log.info("SHAPE_RESET: C++ plan was in native phase={}, reset to SLOT_BY_SLOT " +
+                                "(fresh Java executor + stale-frozen C++ plan — will re-infer shapes from actual inputs)",
+                                currentNativePhase);
+                    }
+                }
             }
 
             // Track frozen call count for input re-set logic
@@ -3442,6 +3596,53 @@ public class DynamicShapePlanExecutor implements Closeable {
 
             executionCount++;
 
+            // Sync Java-side shapesFrozen/wasEverFrozen from the native plan phase after each execution.
+            // The C++ plan advances SLOT_BY_SLOT → SHAPES_FROZEN → REPLAYING autonomously via
+            // auto-seal (fires inside execute() on the first slot-by-slot pass). Java must mirror
+            // this state so redispatchForCurrentShapes() takes the frozen multi-plan switch path
+            // (line 1645) instead of the standard swap path (line 1683).
+            //
+            // Without this sync: plan swaps always take the else-branch which resets frozenCallCount=0
+            // and clears cachedInputArrays. More critically, on the next plan's FIRST execution
+            // (planLifecycle_.isSlotBySlot()=true), platformClearCastCache() is called, destroying
+            // the persistent HALF-weight FP32 cast entries that compositeReplay baked at capture time.
+            // When the original plan resumes compositeReplay, it finds an empty or stale cast cache,
+            // reuses a wrong entry (sourceChanged=false check skips assign), and cuBLAS reads
+            // partially-written garbage → NaN at index 2 of lm_logits output.
+            //
+            // With this sync: plan swaps use the frozen multi-plan switch path which:
+            //   (a) calls setPlanShapesFrozen(newHandle, true) so the new plan starts SHAPES_FROZEN,
+            //       skipping slot-by-slot warmup and therefore skipping platformClearCastCache()
+            //   (b) keeps both plan handles pinned, preserving cast cache across swaps
+            //   (c) does NOT reset frozenCallCount, preserving the frozen execution fast path
+            //
+            // CUDA graphs and TAD device pointers: when frozen or replaying, CUDA graphs may have
+            // TAD device pointers baked in as kernel args. Register in the global counter so
+            // InferenceSession suppresses clearTADCache() until this executor is closed/reset.
+            if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+                int nativePhaseCode = nativeOps.getPlanPhase(nativePlanHandle);
+                // PlanPhase native codes: SLOT_BY_SLOT=0, SHAPES_FROZEN=1, REPLAYING=2
+                if (nativePhaseCode >= 1) {
+                    if (!registeredAsFrozen) {
+                        GLOBAL_FROZEN_EXECUTOR_COUNT.incrementAndGet();
+                        registeredAsFrozen = true;
+                        log.info("DSP_TAD_GUARD: plan reached native phase {} — registered in global frozen count {}",
+                                nativePhaseCode, GLOBAL_FROZEN_EXECUTOR_COUNT.get());
+                    }
+                    // Sync Java frozen flags so subsequent plan swaps use the frozen multi-plan
+                    // switch path (preserves cast cache, avoids platformClearCastCache in new plan).
+                    // This is the fix for the HALF-weight FP16 NaN after plan swap
+                    // (VLM lm_logits NaN, test39_RmsNormLinearFp16AfterPlanSwap).
+                    if (!shapesFrozen) {
+                        shapesFrozen = true;
+                        wasEverFrozen = true;
+                        log.info("DSP_PHASE_SYNC: native plan phase={} — syncing Java shapesFrozen=true " +
+                                "(preserves cast cache across plan swaps, fixes FP16 NaN after swap)",
+                                nativePhaseCode);
+                    }
+                }
+            }
+
             DspDiagnostics.recordTimed(DspDiagnostics.EXECUTE, -1, -1, "executeNative",
                     execMs * 1000, "Java: native execution OK " + execMs + "ms" +
                     " frozen=" + shapesFrozen + " executionCount=" + executionCount);
@@ -3524,6 +3725,13 @@ public class DynamicShapePlanExecutor implements Closeable {
 
                     INDArray cached = zeroCopyOutputCache.get(outputName);
                     if (cached == null) continue;
+
+                    // Empty arrays have no data to copy — skip the buffer copy entirely.
+                    // The cached array already has ARRAY_EMPTY from first execution.
+                    if (cached.isEmpty()) {
+                        copiedOutputs++;
+                        continue;
+                    }
 
                     long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
 
@@ -3654,13 +3862,26 @@ public class DynamicShapePlanExecutor implements Closeable {
                 long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
                 char ordering = Shape.order(shapeInfo);
 
+                // Empty-tensor short-circuit: when the C++ output is empty (ARRAY_EMPTY bit set
+                // in shapeInfo, or zero-element shape), create a Java empty array with the
+                // ARRAY_EMPTY flag preserved. Nd4j.createUninitialized() always creates DENSE
+                // arrays, which would lose the ARRAY_EMPTY flag and cause equalShapes() to
+                // return false when comparing against TF reference arrays that DO have ARRAY_EMPTY.
+                boolean isEmptyOutput = Shape.isEmpty(shapeInfo) || length == 0;
+                INDArray result;
+                if (isEmptyOutput) {
+                    result = Nd4j.emptyWithShape(shape, dtype);
+                    results.put(outputName, result);
+                    continue;
+                }
+
                 // Create a Java-owned INDArray with the EXACT strides from the C++ output.
                 // The raw buffer copy below is a flat memcpy — the destination must have
                 // matching strides so elements are interpreted correctly. If the C++ output
                 // has non-contiguous strides (e.g., from a view-based permute op whose shape
                 // function inherited the input's strides), using contiguous strides here
                 // would mis-interpret the buffer layout and produce wrong results.
-                INDArray result = Nd4j.createUninitialized(dtype, shape, strides, ordering);
+                result = Nd4j.createUninitialized(dtype, shape, strides, ordering);
 
                 // Get raw pointers — prefer device buffer for D2D copy.
                 // On CUDA, getOpaqueNDArrayBuffer() calls buffer() which triggers
@@ -3933,6 +4154,14 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
 
         lastDispatchedShapeHash = 0;
+
+        // Decrement global frozen-executor count before freeing the native plan handle.
+        // Once close() runs, the CUDA graphs are destroyed so their baked TAD kernel args
+        // are gone; clearTADCache() may proceed safely when no other frozen executor remains.
+        if (registeredAsFrozen) {
+            GLOBAL_FROZEN_EXECUTOR_COUNT.decrementAndGet();
+            registeredAsFrozen = false;
+        }
 
         // Free native C++ plan handle reference. The plan is cache-owned and will
         // be cleaned up by the NativePlanCache destructor (or LRU eviction).

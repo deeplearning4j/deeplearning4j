@@ -30,6 +30,7 @@
 #include <array/DataBuffer.h>
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
+#include <helpers/DebugHelper.h>
 #include <memory/cuda/CudaMemoryPool.h>
 #include <system/op_boilerplate.h>
 
@@ -57,16 +58,24 @@ void extraArgsFreeDevice(void* ptr) {
 void extraArgsCopyH2DDispatch(void* dst, const void* src, size_t bytes) {
   // extraArgsCaptureActive and extraArgsCaptureH2D are defined in namespace sd
   // (below, in the same TU), not in extra_args_detail.
-  if (::sd::extraArgsCaptureActive()) {
-    // During CUDA graph capture, synchronous cudaMemcpy on the legacy stream
-    // poisons the capture stream with error 901. Use the async capture path.
+  if (tl_graphExecutionActive) {
+    // Inside per-group CUDA graph capture: synchronous cudaMemcpy on the legacy
+    // stream poisons the capture stream with error 901. Use the async capture path.
+    // Do NOT synchronize — the copy is recorded into the graph, not executed now.
     ::sd::extraArgsCaptureH2D(dst, src, bytes);
   } else {
-    // Outside capture: use cudaMemcpyAsync on cudaStreamPerThread instead of
-    // synchronous cudaMemcpy on the legacy stream (stream 0). Stream 0 causes
-    // error 906 when another thread on the same device is mid-capture.
-    cudaMemcpyAsync(dst, src, bytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
-    cudaStreamSynchronize(cudaStreamPerThread);
+    // Outside per-group capture: use a capture-safe stream (composite scope stream
+    // when set, otherwise LaunchContext default stream), then synchronize so callers
+    // can safely read dst.  Avoids error 906 from legacy stream 0 AND avoids
+    // cudaStreamPerThread which can cause ordering issues near capture boundaries.
+    ::sd::extraArgsCaptureH2D(dst, src, bytes);
+    // Sync on the SAME stream the copy used. captureSafeStream resolves it (here, outside
+    // per-group capture: the composite outer stream if set, else the LaunchContext default) —
+    // the authority, not an inline re-derivation. The tl_graphExecutionActive gating above
+    // keeps this off the per-group capture path; between groups this is the ordering barrier.
+    auto* sp = LaunchContext::defaultContext()->getCudaStream();
+    cudaStream_t fallback = (sp != nullptr) ? *sp : cudaStreamPerThread;
+    cudaStreamSynchronize(DebugHelper::captureSafeStream(fallback));
   }
 }
 
@@ -74,6 +83,10 @@ void extraArgsCopyH2DDispatch(void* dst, const void* src, size_t bytes) {
 
 
 bool extraArgsCaptureActive() {
+  // True during per-group CUDA graph capture.
+  // Note: we intentionally do NOT include tl_compositeCaptureStream here —
+  // that scope is for outer composite-capture routing of async ops only, not
+  // for suppressing host-side synchronization (which is needed between groups).
   return tl_graphExecutionActive;
 }
 
@@ -96,10 +109,16 @@ void* extraArgsCaptureHostAlloc(size_t bytes) {
 }
 
 void extraArgsCaptureH2D(void* dst, const void* src, size_t bytes) {
-  cudaStream_t stream = (tl_graphCaptureStream != nullptr)
-      ? reinterpret_cast<cudaStream_t>(tl_graphCaptureStream)
-      : *LaunchContext::defaultContext()->getCudaStream();
-  cudaMemcpyAsync(dst, src, bytes, cudaMemcpyHostToDevice, stream);
+  // Record onto the active capture stream (per-group / composite / ground-truth), else the
+  // LaunchContext default — never cudaStreamPerThread here. Authority: DebugHelper::
+  // captureSafeStream. Routing through it also avoids a STALE tl_graphCaptureStream between
+  // merged groups (per-group flag cleared but the pointer may linger).
+  auto* sp = LaunchContext::defaultContext()->getCudaStream();
+  cudaStream_t fallback = (sp != nullptr) ? *sp : nullptr;
+  cudaStream_t stream = DebugHelper::captureSafeStream(fallback);
+  if (stream != nullptr) {
+    cudaMemcpyAsync(dst, src, bytes, cudaMemcpyHostToDevice, stream);
+  }
 }
 
 }  // namespace sd

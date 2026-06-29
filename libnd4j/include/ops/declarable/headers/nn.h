@@ -249,8 +249,38 @@ DECLARE_CUSTOM_OP(dot_product_attention_bp, 4, 3, false, 0, 1);
  * timesteps, queryCount]
  */
 #if NOT_EXCLUDED(OP_dot_product_attention_v2)
-DECLARE_CUSTOM_OP(dot_product_attention_v2, -2, -1, false, -2, 2);
-DECLARE_CUSTOM_OP(dot_product_attention_v2_bp, -2, -3, false, -2, 1);
+// Expanded from DECLARE_CUSTOM_OP to override emptyHandling() = EMPTY_EXECUTE.
+// dot_product_attention_v2 accepts OPTIONAL inputs (queryMask/valueMask at slots 3/4,
+// and KV-cache placeholders) that are routinely passed as EMPTY arrays meaning "absent".
+// The op body already treats empty masks as no-mask (sets them to nullptr). But the
+// default EMPTY_SKIP makes DeclarableOp early-return Status::OK WITHOUT executing whenever
+// ANY input is empty (DeclarableOp.cpp ~1028, added in df8cee5d5f), leaving the output at
+// its zero-init allocation — i.e. an all-zero attention output / unwritten KV cache. Since
+// the op produces a NON-EMPTY result from non-empty Q/K/V regardless of the empty masks,
+// EMPTY_EXECUTE is the correct policy (mirrors onnx_multi_head_attention below).
+class SD_LIB_EXPORT dot_product_attention_v2 : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  sd::Status validateAndExecute(sd::graph::Context& block);
+
+ public:
+  dot_product_attention_v2();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+REGISTER_H(dot_product_attention_v2)
+
+class SD_LIB_EXPORT dot_product_attention_v2_bp : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  sd::Status validateAndExecute(sd::graph::Context& block);
+
+ public:
+  dot_product_attention_v2_bp();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+REGISTER_H(dot_product_attention_v2_bp)
 #endif
 
 
@@ -316,7 +346,24 @@ DECLARE_CUSTOM_OP(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1);
  *   2: present_value [batch, numHeads, totalSeq, headDim] (optional)
  */
 #if NOT_EXCLUDED(OP_onnx_multi_head_attention)
-DECLARE_CUSTOM_OP(onnx_multi_head_attention, 3, -1, false, -2, 2);
+// Expanded from DECLARE_CUSTOM_OP to override emptyHandling() = EMPTY_EXECUTE.
+// This op produces a NON-EMPTY attention output even when past_key/past_value are EMPTY
+// (the first decode step has an empty KV cache → shape [batch,heads,0,headDim]). The
+// default EMPTY_SKIP makes DeclarableOp early-return Status::OK WITHOUT executing whenever
+// ANY input is empty (DeclarableOp.cpp ~1028), leaving the output at its zero-init
+// allocation — i.e. an all-zero attention output. The CUSTOM_OP_IMPL already handles empty
+// past correctly (sets it to nullptr, no-past branch), so EMPTY_EXECUTE is the right policy.
+class SD_LIB_EXPORT onnx_multi_head_attention : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  sd::Status validateAndExecute(sd::graph::Context& block);
+
+ public:
+  onnx_multi_head_attention();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+REGISTER_H(onnx_multi_head_attention)
 #endif
 
 /**

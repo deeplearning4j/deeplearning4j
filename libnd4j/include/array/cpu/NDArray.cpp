@@ -270,6 +270,10 @@ void NDArray::synchronize(const char* msg)  {
   // no-op
 }
 
+void NDArray::synchronizeExecStream(const char* msg)  {
+  // no-op on CPU
+}
+
 void NDArray::syncToDevice()  {}
 void NDArray::syncToHost()  {}
 void NDArray::forceSyncToHost()  {}

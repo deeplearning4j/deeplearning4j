@@ -148,6 +148,19 @@ public class WorkspaceSessionMemMgr implements SessionMemMgr {
             }
         } catch (Exception e) {
             log.warn("Failed to create native workspace, C++ ops will use heap allocation: {}", e.getMessage());
+            // Drain any sticky CUDA error left by the failed allocation (e.g. cudaErrorMemoryAllocation
+            // error code 2 from cudaHostAlloc / cudaMallocHost inside createNativeWorkspace).
+            // The CUDA runtime stores the last error in thread-local state; if we don't clear it
+            // here, the next lastErrorCode() check in a completely unrelated allocation path will
+            // read the STALE error code and throw a spurious "Failed to allocate" exception even
+            // when ample device memory is available.  This is the same pattern used in
+            // JCublasNDArrayFactory.createBlas (clearLastError before lastErrorCode).
+            try {
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                nativeOps.clearLastError();
+            } catch (Exception clearEx) {
+                log.debug("clearLastError after workspace init failure: {}", clearEx.getMessage());
+            }
             nativeWorkspacePtr = null;
         }
     }

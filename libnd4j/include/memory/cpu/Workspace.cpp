@@ -51,7 +51,7 @@ Workspace::Workspace(ExternalWorkspace *external) {
   }
 };
 
-Workspace::Workspace(sd::LongType initialSize, sd::LongType secondaryBytes) {
+Workspace::Workspace(sd::LongType initialSize, sd::LongType secondaryBytes, bool secondaryUsePlainMalloc) {
   if (initialSize > 0) {
     this->_ptrHost = (char *)malloc(initialSize);
 

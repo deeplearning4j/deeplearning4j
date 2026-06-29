@@ -172,7 +172,7 @@ endfunction()
 function(configure_sdx_cuda_linking main_target_name)
     # CUDA toolkit
     target_link_libraries(${main_target_name} PUBLIC
-            CUDA::cudart CUDA::cublas CUDA::cusolver)
+            CUDA::cudart CUDA::cublas CUDA::cusolver CUDA::cusparse)
     if(TARGET CUDA::nvrtc)
         target_link_libraries(${main_target_name} PUBLIC CUDA::nvrtc)
     endif()

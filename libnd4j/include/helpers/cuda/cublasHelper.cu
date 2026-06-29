@@ -23,6 +23,7 @@
 #include <cublas_v2.h>
 #include <cublasLt.h>
 #include <cusolverDn.h>
+#include <cusparse_v2.h>
 #include <execution/AffinityManager.h>
 #include <string>
 #include <helpers/logger.h>
@@ -90,6 +91,17 @@ static void* cudnn_() {
 #endif
 }
 
+static void* sparse_() {
+  auto sparseH = new cusparseHandle_t();
+  auto status = cusparseCreate(sparseH);
+  if (status != CUSPARSE_STATUS_SUCCESS) {
+    std::string msg = "cuSPARSE handle creation failed !; Error code: [" + std::to_string(status) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
+
+  return sparseH;
+}
+
 static void destroyHandle_(void* handle) {
   auto ch = reinterpret_cast<cublasHandle_t*>(handle);
   auto status = cublasDestroy_v2(*ch);
@@ -107,12 +119,14 @@ CublasHelper::CublasHelper() {
   _cache.resize(numDevices);
   _solvers.resize(numDevices);
   _cudnn.resize(numDevices);
+  _sparse.resize(numDevices, nullptr);
   for (int e = 0; e < numDevices; e++) {
     AffinityManager::setCurrentNativeDevice(e);
 
     _cache[e] = handle_();
     _solvers[e] = solver_();
     _cudnn[e] = cudnn_();
+    // _sparse[e] is lazily created on first use via sparseHandle(int deviceId)
   }
 
   // don't forget to restore back original device
@@ -123,6 +137,16 @@ CublasHelper::~CublasHelper() {
   auto numDevices = AffinityManager::numberOfDevices();
 
   // for (int e = 0; e < numDevices; e++) destroyHandle_(_cache[e]);
+
+  // Destroy any lazily-created cuSPARSE handles
+  for (int e = 0; e < static_cast<int>(_sparse.size()); e++) {
+    if (_sparse[e] != nullptr) {
+      auto* sp = reinterpret_cast<cusparseHandle_t*>(_sparse[e]);
+      cusparseDestroy(*sp);
+      delete sp;
+      _sparse[e] = nullptr;
+    }
+  }
 }
 
 CublasHelper& CublasHelper::getInstance() {
@@ -162,6 +186,33 @@ void* CublasHelper::cudnn() {
     sd_printf("WARNING: cuDNN handle is null for device %d\n", deviceId);
   }
   return handle;
+}
+
+void* CublasHelper::sparseHandle() {
+  auto deviceId = AffinityManager::currentDeviceId();
+  return sparseHandle(deviceId);
+}
+
+void* CublasHelper::sparseHandle(int deviceId) {
+  if (deviceId < 0 || deviceId >= static_cast<int>(_sparse.size())) {
+    std::string msg = "requested deviceId doesn't look valid for cuSPARSE; Error code: [" + std::to_string(deviceId) + "]";
+    THROW_EXCEPTION(msg.c_str());
+  }
+
+  // Lazy creation under mutex: double-checked locking to avoid unnecessary lock
+  // on the hot path. cuSPARSE handles are NOT thread-safe so callers must
+  // serialize their own handle usage; here we only guard the one-time creation.
+  if (_sparse[deviceId] == nullptr) {
+    std::lock_guard<std::mutex> lock(_mutex);
+    if (_sparse[deviceId] == nullptr) {
+      auto savedDevice = AffinityManager::currentDeviceId();
+      AffinityManager::setCurrentNativeDevice(deviceId);
+      _sparse[deviceId] = sparse_();
+      AffinityManager::setCurrentNativeDevice(savedDevice);
+    }
+  }
+
+  return _sparse[deviceId];
 }
 
 void* CublasHelper::handle() {

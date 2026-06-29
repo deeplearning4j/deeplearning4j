@@ -150,6 +150,39 @@ void dspEventRecord(void* event, void* stream);
 void dspStreamWaitEvent(void* stream, void* event);
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Stream representation convention  (READ THIS before passing a `void* stream` around)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// There are TWO distinct void* stream representations in the DSP code. Mixing them is
+// the bug class behind CUDA error 201 (invalid device context) and SIGSEGVs inside
+// libcuda — keep them straight:
+//
+//   (1) STREAM-POINTER — the `void* stream` PARAMETER threaded through the execute /
+//       dispatch chain (executeDynamicShapePlan, execute, executeSteadyState,
+//       platformBeginExecution, platformSetupSteadyStateCuda, dispatchSegment,
+//       executeSegment*, prezero…). It is a cudaStream_t* — the ADDRESS of a stream
+//       handle. The JNI boundary (lcExecutionStream/dspGetExecutionStream JNI) and
+//       autoregressive_decode both hand in a cudaStream_t*. To get the handle you must
+//       DEREFERENCE: `*static_cast<cudaStream_t*>(stream)` — or dspStreamPtrToValue().
+//
+//   (2) STREAM-VALUE — the cudaStream_t handle itself, stored as void* in TLS
+//       (tl_dspExecutionStream/tl_dspGapStream) and in PlanExecutionContext
+//       (ctx->dspStream/ctx->lcDefaultStream). EVERY dspXxx helper here
+//       (dspStreamIsCapturing, dspStreamWaitEvent, dspEventRecord, dspSetExecutionStream,
+//       dspMemcpyH2DAsync…) and DspThreadState consume a STREAM-VALUE via
+//       reinterpret_cast<cudaStream_t>(stream).
+//
+// RULE: NEVER pass a STREAM-POINTER parameter directly to a STREAM-VALUE consumer.
+// Convert with dspStreamPtrToValue() first, or read the live value from
+// dspGetExecutionStream(). Passing a pointer where a value is expected makes the driver
+// treat a host address as a stream handle → CUDA 201 or a SIGSEGV.
+
+/** Convert a STREAM-POINTER (cudaStream_t*, the execute/dispatch `void* stream`
+ *  parameter) into a STREAM-VALUE (cudaStream_t as void*, what the dspXxx helpers and
+ *  TLS use). Returns nullptr for a null pointer. CPU build: identity passthrough. */
+void* dspStreamPtrToValue(void* streamPtr);
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // TLS stream access
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -254,6 +287,7 @@ static inline void  dspDestroyEvent(void*) {}
 static inline void  dspEventRecord(void*, void*) {}
 static inline void  dspStreamWaitEvent(void*, void*) {}
 
+static inline void* dspStreamPtrToValue(void* streamPtr) { return streamPtr; }
 static inline void* dspGetExecutionStream() { return nullptr; }
 static inline void  dspSetExecutionStream(void*) {}
 static inline void* dspGetGapStream() { return nullptr; }

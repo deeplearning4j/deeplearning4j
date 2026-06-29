@@ -229,6 +229,14 @@ void dspStreamWaitEvent(void* stream, void* event) {
 // TLS stream access
 // ═══════════════════════════════════════════════════════════════════════════════
 
+void* dspStreamPtrToValue(void* streamPtr) {
+  // STREAM-POINTER (cudaStream_t*) -> STREAM-VALUE (cudaStream_t as void*). See the
+  // convention block in DspCudaDispatch.h.
+  return (streamPtr != nullptr)
+             ? static_cast<void*>(*static_cast<cudaStream_t*>(streamPtr))
+             : nullptr;
+}
+
 void* dspGetExecutionStream() {
   return tl_dspExecutionStream;
 }

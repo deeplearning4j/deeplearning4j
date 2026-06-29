@@ -573,6 +573,9 @@ void NativeDynamicShapePlan::prepareBatchedGemmDevice(void* streamPtr) {
       const size_t perMemberBytes = castElem * elemSize;
       group.castScratchBytes = perMemberBytes * bs;
 
+      // cudaMalloc: plan-lifetime persistent buffer — must outlive CUDA-graph capture/replay.
+      // allocateDirect (pool) was attempted here but was recycled before replay → crash.
+      // Plain cudaMalloc guarantees the address is stable until cudaFree in freeBatchedGemmResources.
       auto err = cudaMalloc(&group.castScratch, group.castScratchBytes);
       if (err != cudaSuccess) {
         DSP_DIAG(MEMORY, "batched GEMM group: cast scratch alloc failed (%zu bytes): %s",
@@ -825,6 +828,8 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
       const size_t elemSize = (targetType == HALF) ? sizeof(__half) : sizeof(__nv_bfloat16);
       const size_t perMemberBytes = castElem * elemSize;
 
+      // (gemm fingerprinting removed — staging fingerprints in cudagraph.cu cover inputs)
+
       // Launch float→half cast kernel per batch member using persistent scratch
       void* h_castPtrs_host[64] = {};
       for (int b = 0; b < batchCount; b++) {
@@ -867,18 +872,20 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
 
       void* fallbackScratch = nullptr;
       void** fallbackPtrs = nullptr;
-      auto err = cudaMalloc(&fallbackScratch, totalCastBytes);
-      if (err != cudaSuccess) {
-        DSP_DIAG(EXECUTE, "batched GEMM group %d: fallback cast scratch alloc failed (%zu bytes): %s",
-                 groupIdx, totalCastBytes, cudaGetErrorString(err));
-        cudaGetLastError();
-        return Status::KERNEL_FAILURE;
-      }
-      err = cudaMalloc((void**)&fallbackPtrs, ptrArrayBytes);
-      if (err != cudaSuccess) {
-        cudaFree(fallbackScratch);
-        cudaGetLastError();
-        return Status::KERNEL_FAILURE;
+      {
+        auto& fbPool = memory::CudaMemoryPool::getInstance();
+        int fbDeviceId = sd::AffinityManager::currentDeviceId();
+        fallbackScratch = fbPool.allocate(totalCastBytes, fbDeviceId, stream);
+        if (fallbackScratch == nullptr) {
+          DSP_DIAG(EXECUTE, "batched GEMM group %d: fallback cast scratch alloc failed (%zu bytes)",
+                   groupIdx, totalCastBytes);
+          return Status::KERNEL_FAILURE;
+        }
+        fallbackPtrs = reinterpret_cast<void**>(fbPool.allocate(ptrArrayBytes, fbDeviceId, stream));
+        if (fallbackPtrs == nullptr) {
+          fbPool.free(fallbackScratch, fbDeviceId, stream);
+          return Status::KERNEL_FAILURE;
+        }
       }
 
       void* h_castPtrs_host[64] = {};
@@ -908,8 +915,12 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
                                     (void**)group.d_C_ptrs, cCudaUniform, ldc,
                                     batchCount,
                                     CUBLAS_COMPUTE_32F, algo);
-      cudaFreeAsync(fallbackScratch, stream);
-      cudaFreeAsync(fallbackPtrs, stream);
+      {
+        auto& fbPool = memory::CudaMemoryPool::getInstance();
+        int fbDeviceId = sd::AffinityManager::currentDeviceId();
+        fbPool.free(fallbackScratch, fbDeviceId, stream);
+        fbPool.free(reinterpret_cast<void*>(fallbackPtrs), fbDeviceId, stream);
+      }
     } else {
       status = cublasGemmBatchedEx(*handle, transAblas, transBblas,
                                     group.N, group.M, group.K,
@@ -956,6 +967,41 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
     }
   }
 
+  // ── Sync-free fingerprint: record GEMM output content AFTER cublas dispatch.
+  // The cublas kernel is async on stream; the XOR kernel queues after it.
+  // We read the FIRST output slot's specialBuffer() — a plan-owned device buffer,
+  // always valid for the plan lifetime.
+  if (fpRingEnabled_) {
+    int baseTrack = BUF_FP_MAX_STAGING + groupIdx;
+    if (baseTrack < BUF_FP_MAX_TRACKED) {
+      auto& lbC = fpLabels_[baseTrack];
+      if (lbC.tag[0] == '\0') {
+        snprintf(lbC.tag, sizeof(lbC.tag), "gemm[%d].out", groupIdx);
+        lbC.extIdx = -1; lbC.groupIdx = groupIdx; lbC.whichAB = 2;
+        int needed = baseTrack + 1;
+        if (needed - BUF_FP_MAX_STAGING > fpRingGemmCount_)
+          fpRingGemmCount_ = needed - BUF_FP_MAX_STAGING;
+      }
+      if (!group.slotIndices.empty()) {
+        int slotIdx = group.slotIndices[0];
+        if (slotIdx >= 0 && slotIdx < numSlots_ && slots_ != nullptr) {
+          NativeSlot* slot = &slots_[slotIdx];
+          if (slot->wiring.numOutputs >= 1) {
+            int outSlotIdx = slot->wiring.outputSlotIndices[0];
+            if (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots_ &&
+                outputSlots_[outSlotIdx] != nullptr) {
+              const void* outPtr = outputSlots_[outSlotIdx]->specialBuffer();
+              if (outPtr != nullptr) {
+                size_t bytesOut = outputSlots_[outSlotIdx]->dataBuffer()->getLenInBytes();
+                recordBufFingerprintPublic(stream, executeCount_, baseTrack, outPtr, bytesOut);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   return Status::OK;
 }
 
@@ -971,7 +1017,7 @@ void NativeDynamicShapePlan::freeBatchedGemmResources() {
     if (group.h_B_ptrs) { cudaFreeHost(group.h_B_ptrs); group.h_B_ptrs = nullptr; }
     if (group.h_C_ptrs) { cudaFreeHost(group.h_C_ptrs); group.h_C_ptrs = nullptr; }
     if (group.castScratch) { cudaFree(group.castScratch); group.castScratch = nullptr; group.castScratchBytes = 0; }
-    if (group.d_castPtrs) { cudaFree(group.d_castPtrs); group.d_castPtrs = nullptr; }
+    if (group.d_castPtrs) { cudaFree(reinterpret_cast<void*>(group.d_castPtrs)); group.d_castPtrs = nullptr; }
   }
   batchedGemmGroups_.clear();
   slotToBatchedGemmGroup_.clear();

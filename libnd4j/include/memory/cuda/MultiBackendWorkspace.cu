@@ -147,12 +147,16 @@ void MultiBackendWorkspace::initDeviceWorkspace(const DeviceDescriptor& device, 
     // Create new workspace
     // For CUDA devices, allocate both device (primary) and host (secondary) memory.
     // The Workspace constructor takes (primarySize, secondarySize) where on CUDA:
-    //   primary = device memory, secondary = host (pinned) memory.
-    // Host memory is needed for CPU↔GPU transfers and for ops that read results on host.
+    //   primary = device memory (CudaMemoryPool), secondary = host (pinned) memory.
+    // For CPU devices, allocate only secondary memory via plain malloc (no CUDA context
+    // required and no GPU device memory).  The secondaryUsePlainMalloc flag routes the
+    // secondary alloc through malloc/free instead of cudaHostAlloc/cudaFreeHost.
     DeviceAllocation allocation;
-    sd::LongType primarySize = (device.deviceType == DeviceType::CPU) ? 0 : size;
+    bool isCpu = (device.deviceType == DeviceType::CPU);
+    sd::LongType primarySize = isCpu ? 0 : size;
     sd::LongType secondarySize = size;
-    allocation.workspace = new Workspace(primarySize, secondarySize);
+    bool secondaryUsePlainMalloc = isCpu;
+    allocation.workspace = new Workspace(primarySize, secondarySize, secondaryUsePlainMalloc);
     allocation.coherenceState = CoherenceState::EXCLUSIVE;
     allocation.version = _globalVersion.load();
     allocation.isOwned = true;

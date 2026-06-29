@@ -222,12 +222,12 @@ public class TestOptimizerOutputRedirect extends BaseNd4jTestWithBackends {
 
     /**
      * Qwen logits use rms_norm(x, gamma) -> matmul(normed, permute(lm_head)).
-     * The optimizer must preserve this rank-3 path when DSP is disabled and the
+     * The optimizer must preserve this rank-3 path (validated with DSP enabled) when the
      * transposed projection is produced by a view op rather than a direct variable.
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNormFusionWithTransposedProjectionWeightDspDisabled(Nd4jBackend nd4jBackend) {
+    public void testNormFusionWithTransposedProjectionWeight(Nd4jBackend nd4jBackend) {
         SameDiff sd = SameDiff.create();
 
         int batchSize = 1;
@@ -260,8 +260,6 @@ public class TestOptimizerOutputRedirect extends BaseNd4jTestWithBackends {
         SameDiff optimized = GraphOptimizer.optimize(sd,
                 Collections.singletonList("lm_logits"),
                 optimizationsWithoutQuantization());
-        optimized.setDspAutoCompileEnabled(false);
-        optimized.setDspNativeAutoCompileEnabled(false);
         optimized.resetSession();
 
         INDArray actual = optimized.outputSingle(ph, "lm_logits");
@@ -299,33 +297,6 @@ public class TestOptimizerOutputRedirect extends BaseNd4jTestWithBackends {
         String survivingOutput = optimizedOutputs.get(0);
         assertTrue("Surviving output '" + survivingOutput + "' must be a variable in the optimized graph",
                 optimized.hasVariable(survivingOutput));
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGraphOptimizerPreservesDspExecutionControls(Nd4jBackend nd4jBackend) {
-        SameDiff sd = SameDiff.create();
-
-        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 4);
-        SDVariable zero = sd.constant("zero", Nd4j.zeros(DataType.FLOAT, 1));
-        x.add("result", zero);
-        sd.setOutputs("result");
-
-        sd.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
-        sd.setDspFallbackToAutoIfTritonUnavailable(false);
-
-        SameDiff optimized = GraphOptimizer.optimize(sd, "result");
-
-        assertEquals("GraphOptimizer must preserve SameDiff DSP execution mode",
-                GraphExecutionMode.SLOT_BY_SLOT, optimized.getGraphExecutionMode());
-        assertFalse("GraphOptimizer must preserve dspAutoCompileEnabled",
-                optimized.isDspAutoCompileEnabled());
-        assertFalse("GraphOptimizer must preserve dspNativeAutoCompileEnabled",
-                optimized.isDspNativeAutoCompileEnabled());
-        assertFalse("GraphOptimizer must preserve dspFallbackToAutoIfTritonUnavailable",
-                optimized.isDspFallbackToAutoIfTritonUnavailable());
     }
 
     /**

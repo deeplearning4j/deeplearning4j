@@ -38,27 +38,20 @@ SD_KERNEL static void zetaCuda(const void *vx, const LongType *xShapeInfo, const
 
   __shared__ LongType len;
   __shared__ LongType xRank, qRank, zRank;
-  __shared__ LongType *sharedMem;
   __shared__ const LongType *xShape, *qShape, *zShape;
   __shared__ const LongType *xStride, *qStride, *zStride;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType*>(shmem);
-
     len = shape::length(xShapeInfo);
 
-    // Cache ranks
     xRank = shape::rank(xShapeInfo);
     qRank = shape::rank(qShapeInfo);
     zRank = shape::rank(zShapeInfo);
 
-    // Cache shape pointers
     xShape = shape::shapeOf(xShapeInfo);
     qShape = shape::shapeOf(qShapeInfo);
     zShape = shape::shapeOf(zShapeInfo);
 
-    // Cache stride pointers
     xStride = shape::stride(xShapeInfo);
     qStride = shape::stride(qShapeInfo);
     zStride = shape::stride(zShapeInfo);
@@ -68,20 +61,20 @@ SD_KERNEL static void zetaCuda(const void *vx, const LongType *xShapeInfo, const
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto totalThreads = gridDim.x * blockDim.x;
 
-  // Use shared memory for coordinates
-  auto coords = sharedMem + threadIdx.x * SD_MAX_RANK;
+  // Stack-allocated coordinate arrays per thread (no shared memory needed for coords)
+  LongType xCoords[SD_MAX_RANK], qCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
 
   for (LongType i = tid; i < len; i += totalThreads) {
     LongType xOffset, qOffset, zOffset;
 
-    INDEX2COORDS(i, xRank, xShape, coords);
-    COORDS2INDEX(xRank, xStride, coords, xOffset);
+    INDEX2COORDS(i, xRank, xShape, xCoords);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
 
-    INDEX2COORDS(i, qRank, qShape, coords);
-    COORDS2INDEX(qRank, qStride, coords, qOffset);
+    INDEX2COORDS(i, qRank, qShape, qCoords);
+    COORDS2INDEX(qRank, qStride, qCoords, qOffset);
 
-    INDEX2COORDS(i, zRank, zShape, coords);
-    COORDS2INDEX(zRank, zStride, coords, zOffset);
+    INDEX2COORDS(i, zRank, zShape, zCoords);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
     z[zOffset] = zetaScalar<T>(x[xOffset], q[qOffset]);
   }
@@ -97,19 +90,25 @@ static void zetaCudaLauncher(const int blocksPerGrid, const int sharedMemory, co
 }
 
 void zeta(LaunchContext *context, NDArray&x, NDArray&q, NDArray &z) {
-  if (!x.isActualOnDeviceSide()) x.syncToDevice();
-  if (!q.isActualOnDeviceSide()) q.syncToDevice();
+  NDArray::prepareSpecialUse({&z}, {&x, &q});
 
   dim3 launchDims = zetaDims(x.lengthOf());
+  // Pin device shape pointers in named locals before the async kernel launch.
+  // specialShapeInfo() returns _shapeInfoD whose backing ConstantShapeBuffer is
+  // reference-counted and can be freed if evaluated lazily inside the
+  // BUILD_SINGLE_SELECTOR argument list (C++ argument evaluation order is
+  // unspecified).  Storing in locals keeps the device pointer valid through
+  // the launcher call and the cudaStreamSynchronize inside checkErrorCode.
+  const LongType* xShapeInfoD = x.specialShapeInfo();
+  const LongType* qShapeInfoD = q.specialShapeInfo();
+  const LongType* zShapeInfoD = z.specialShapeInfo();
   BUILD_SINGLE_SELECTOR(
       x.dataType(), zetaCudaLauncher,
-      (launchDims.x, launchDims.z, launchDims.y, context->getCudaStream(), x.specialBuffer(), x.specialShapeInfo(),
-       q.specialBuffer(), q.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()),
+      (launchDims.x, launchDims.z, launchDims.y, context->getCudaStream(), x.specialBuffer(), xShapeInfoD,
+       q.specialBuffer(), qShapeInfoD, z.specialBuffer(), zShapeInfoD),
       SD_FLOAT_TYPES);
 
-  x.tickReadHost();
-  q.tickReadHost();
-  z.tickWriteDevice();
+  NDArray::registerSpecialUse({&z}, {&x, &q});
 }
 
 BUILD_SINGLE_TEMPLATE( void zetaCudaLauncher,

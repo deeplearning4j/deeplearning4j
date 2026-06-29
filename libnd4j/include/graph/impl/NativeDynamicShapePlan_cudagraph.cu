@@ -39,6 +39,7 @@
 #include <graph/DspVerifyUtils.h>
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/DspSegmentHelpers.h>
+#include <helpers/DebugHelper.h>
 #include <ops/OpTraitTable.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <helpers/ConstantShapeHelper.h>
@@ -92,6 +93,148 @@ static size_t CAPTURE_HOST_WORKSPACE_SIZE = []() -> size_t {
   return mb * 1024ULL * 1024ULL;
 }();
 
+// ─── Sync-free buffer fingerprint ring — kernel + API ────────────────────────
+//
+// Runs entirely on the capture/replay stream; no host sync.
+// One uint64 per (step, trackIdx): XOR of all 64-bit words in the buffer.
+// Two-pass: all threads XOR into a per-warp partial (shared mem), then
+// atomicXOR into the ring slot.  Works on any buffer size including odd ones.
+//
+__global__ void bufXorFingerprintKernel(const uint64_t* __restrict__ src,
+                                        int numWords,
+                                        uint64_t* __restrict__ dst) {
+  __shared__ uint64_t smem[32];  // one per warp (max 1024 threads / 32)
+  int tid  = threadIdx.x;
+  int nWarp = (blockDim.x + 31) >> 5;
+  if (tid < nWarp) smem[tid] = 0;
+  __syncthreads();
+
+  uint64_t acc = 0;
+  for (int i = blockIdx.x * blockDim.x + tid; i < numWords;
+       i += gridDim.x * blockDim.x) {
+    acc ^= src[i];
+  }
+  // warp reduce
+  for (int mask = 16; mask > 0; mask >>= 1)
+    acc ^= __shfl_xor_sync(0xFFFFFFFFu, acc, mask);
+  // one thread per warp writes to smem
+  if ((tid & 31) == 0)
+    smem[tid >> 5] ^= acc;
+  __syncthreads();
+  // single thread reduces smem → dst via atomicXOR
+  if (tid == 0) {
+    uint64_t total = 0;
+    for (int w = 0; w < nWarp; w++) total ^= smem[w];
+    atomicXor(reinterpret_cast<unsigned long long*>(dst), (unsigned long long)total);
+  }
+}
+
+// ── NativeDynamicShapePlan fingerprint ring implementation ──────────────────
+
+void NativeDynamicShapePlan::initFingerprintRing() {
+  if (d_fpRing_ != nullptr) return;
+  size_t ringBytes = sizeof(uint64_t) * BUF_FP_MAX_STEPS * BUF_FP_MAX_TRACKED;
+  cudaError_t e = cudaMalloc(&d_fpRing_, ringBytes);
+  if (e != cudaSuccess) { d_fpRing_ = nullptr; fpRingEnabled_ = false; return; }
+  cudaMemset(d_fpRing_, 0, ringBytes);
+  h_fpRing_ = new uint64_t[BUF_FP_MAX_STEPS * BUF_FP_MAX_TRACKED]();
+}
+
+void NativeDynamicShapePlan::maybeInitFingerprintRing() {
+  if (fpRingEnabled_) return;
+  const char* env = std::getenv("BUF_FP_RING");
+  if (env == nullptr || env[0] != '1') return;
+  fpRingEnabled_ = true;
+  initFingerprintRing();
+}
+
+void NativeDynamicShapePlan::recordBufFingerprintPublic(cudaStream_t stream, int step,
+                                                        int trackIdx,
+                                                        const void* devPtr, size_t numBytes) {
+  if (!fpRingEnabled_ || d_fpRing_ == nullptr || devPtr == nullptr) return;
+  if (trackIdx < 0 || trackIdx >= BUF_FP_MAX_TRACKED) return;
+  if (numBytes == 0) return;
+  // Skip fingerprinting during CUDA graph capture — the kernel+memset would be
+  // baked into the graph and would corrupt the ring on every replay.
+  // We only want steady-state values (step >= 4), never capture-time values.
+  if (DebugHelper::inGraphCapture(stream != nullptr ? &stream : nullptr)) return;
+  // Only track steady-state steps (4+); warmup/capture steps don't show the freeze.
+  if (step < 4) return;
+  int clampedStep = (step >= BUF_FP_MAX_STEPS ? BUF_FP_MAX_STEPS - 1 : step);
+  // Zero the ring slot first (atomicXOR accumulates; we need a fresh start per step)
+  uint64_t* ringSlot = d_fpRing_ + clampedStep * BUF_FP_MAX_TRACKED + trackIdx;
+  cudaMemsetAsync(ringSlot, 0, sizeof(uint64_t), stream);
+  int numWords = static_cast<int>((numBytes + 7) / 8);
+  int threads  = 256;
+  int blocks   = std::min(256, (numWords + threads - 1) / threads);
+  bufXorFingerprintKernel<<<blocks, threads, 0, stream>>>(
+      reinterpret_cast<const uint64_t*>(devPtr), numWords, ringSlot);
+}
+
+// ── Platform dispatch: CUDA implementations ──────────────────────────────────
+
+void NativeDynamicShapePlan::drainFingerprintRingPublic() {
+  if (!fpRingEnabled_ || d_fpRing_ == nullptr || fpRingDrained_) return;
+  cudaDeviceSynchronize();
+  size_t ringBytes = sizeof(uint64_t) * BUF_FP_MAX_STEPS * BUF_FP_MAX_TRACKED;
+  cudaMemcpy(h_fpRing_, d_fpRing_, ringBytes, cudaMemcpyDeviceToHost);
+  fpRingDrained_ = true;
+}
+
+const char* NativeDynamicShapePlan::getFingerprintJson() {
+  if (!fpRingEnabled_ || !fpRingDrained_ || h_fpRing_ == nullptr) return "null";
+  // Collect all active track indices: staging [0..fpRingStagingCount_-1]
+  // + gemm [BUF_FP_MAX_STAGING..BUF_FP_MAX_STAGING+fpRingGemmCount_*2-1].
+  // Build two sorted lists so the JSON is ordered and trackIdx is explicit.
+  std::vector<int> activeTrackIdxs;
+  for (int t = 0; t < fpRingStagingCount_; t++) activeTrackIdxs.push_back(t);
+  for (int t = BUF_FP_MAX_STAGING; t < BUF_FP_MAX_STAGING + fpRingGemmCount_; t++)
+    activeTrackIdxs.push_back(t);
+
+  fpJsonBuffer_.clear();
+  fpJsonBuffer_ += "{\"labels\":[";
+  bool firstLabel = true;
+  for (int t : activeTrackIdxs) {
+    const auto& lb = fpLabels_[t];
+    if (lb.tag[0] == '\0') continue;
+    char tmp[128];
+    snprintf(tmp, sizeof(tmp),
+             "{\"trackIdx\":%d,\"tag\":\"%s\",\"extIdx\":%d,\"groupIdx\":%d,\"whichAB\":%d}",
+             t, lb.tag, lb.extIdx, lb.groupIdx, lb.whichAB);
+    if (!firstLabel) fpJsonBuffer_ += ',';
+    firstLabel = false;
+    fpJsonBuffer_ += tmp;
+  }
+  fpJsonBuffer_ += "],\"steps\":[";
+  bool firstStep = true;
+  for (int s = 0; s < BUF_FP_MAX_STEPS; s++) {
+    bool hasData = false;
+    for (int t : activeTrackIdxs) {
+      if (h_fpRing_[s * BUF_FP_MAX_TRACKED + t] != 0) { hasData = true; break; }
+    }
+    if (!hasData) continue;
+    if (!firstStep) fpJsonBuffer_ += ',';
+    firstStep = false;
+    char stmp[32];
+    snprintf(stmp, sizeof(stmp), "{\"step\":%d,\"fps\":{", s);
+    fpJsonBuffer_ += stmp;
+    bool firstFp = true;
+    for (int t : activeTrackIdxs) {
+      const auto& lb = fpLabels_[t];
+      if (lb.tag[0] == '\0') continue;
+      char ftmp[96];
+      snprintf(ftmp, sizeof(ftmp), "\"%s\":\"0x%016llx\"",
+               lb.tag, (unsigned long long)h_fpRing_[s * BUF_FP_MAX_TRACKED + t]);
+      if (!firstFp) fpJsonBuffer_ += ',';
+      firstFp = false;
+      fpJsonBuffer_ += ftmp;
+    }
+    fpJsonBuffer_ += "}}";
+  }
+  fpJsonBuffer_ += "]}";
+  return fpJsonBuffer_.c_str();
+}
+
 // ─── Slot output address fingerprinting ─────────────────────────────────────
 // FNV-1a hash of slot output specialBuffer() addresses for a segment.
 // Verified before replay — mismatch means output buffers were reallocated
@@ -111,9 +254,14 @@ static bool slotIsTransparentHostOnlyForGraphCoverage(
   // Replay-stable host-only classes: shape metadata, constants, fused tails,
   // and aliasing views/identity below. Constant-generation outputs are
   // covered by the trait-driven value key when their values affect replay.
+  //
+  // CONST_GEN restricted to VALUE_DEPENDENT_SHAPE: fill ops (zeros_as, ones_as)
+  // are CUDA-graph-safe and must run inside the graph (see _gpubackend.cu comment).
+  // Only CONST_GEN+VALDEP ops (range, linspace, create) need pre-capture / host-sync.
   if (slot.frozenConstantSlot() ||
       slot.hasOpTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT) ||
-      slot.hasOpTrait(sd::ops::OP_TRAIT_CONSTANT_GENERATION) ||
+      (slot.hasOpTrait(sd::ops::OP_TRAIT_CONSTANT_GENERATION) &&
+       slot.hasOpTrait(sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE)) ||
       slot.fusedChain.isFusedChainTail) {
     return true;
   }
@@ -418,7 +566,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       if (seg.exec.capturedSlotAddrHash != 0) {
         LongType currentAddrHash = computeSlotAddrHash(
             outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
-        if (currentAddrHash != seg.exec.capturedSlotAddrHash) {
+        if (seg.exec.slotAddrDrifted(currentAddrHash)) {
           seg.exec.handleTracker.record(ReplayHandleEvent::Kind::ADDRESS_DRIFT,
                                         seg.exec.executionCount, 0, 0, "slot_addr_drift");
           DSP_DIAG(MEMORY, "SLOT ADDRESS DRIFT for seg[%d-%d]: "
@@ -878,6 +1026,38 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // the same rule or generic elementwise/broadcast ops run on the LC default
   // stream and appear as false "host-only" holes in the capture audit.
   ScopedDspGapStream gapStreamCaptureGuard(cudaStr);
+
+  // PRE-MATERIALIZE output device shape buffers BEFORE beginCapture. Allocation is illegal
+  // once the thread is capturing (cudaMallocAsync → err900 cudaErrorStreamCaptureUnsupported,
+  // even on a dedicated stream). An op that looks up a not-yet-cached output shapeInfo during
+  // capture (e.g. slice's [4,8] ews=-1 view) hits ConstantShapeHelper cache-miss →
+  // CudaShapeBufferCreator::create → replicatePointer → allocateDirect err900 → the op throws →
+  // seg KERNEL_FAILURE/status=50. Touch each slot output's shapeInfo here, while alloc is still
+  // legal, so every capture-time lookup is a cache HIT (these are process-lifetime shape
+  // constants; warming them is off the replay hot path and idempotent).
+  //
+  // Also materialize the per-device capture-constant ARENA here, before beginCapture. Ops that
+  // replicate a not-yet-cached shape/TAD constant DURING capture (e.g. slice's [4,8] ews=-1
+  // internal view) bump-allocate it from this arena — cudaMallocAsync is illegal mid-capture
+  // (err900). No capture is active yet (CaptureStateGuard set the flag, but beginCapture is
+  // below), so the 64MB backing allocates legally; capture-time replicatePointer then only bumps.
+  {
+    int arenaDev = 0;
+    cudaGetDevice(&arenaDev);
+    memory::CudaMemoryPool::getInstance().ensureCaptureArena(arenaDev);
+  }
+
+  for (int preS = seg.def.startSlot; preS <= seg.def.endSlot; preS++) {
+    for (int preO = 0; preO < slots_[preS].wiring.numOutputs; preO++) {
+      int preSi = slots_[preS].wiring.outputSlotIndices[preO];
+      if (preSi >= 0 && preSi < totalOutputSlots_ && outputSlots_[preSi] != nullptr) {
+        LongType* preOutShape = const_cast<LongType*>(outputSlots_[preSi]->shapeInfo());
+        if (preOutShape != nullptr) {
+          ConstantShapeHelper::getInstance().bufferForShapeInfo(preOutShape);
+        }
+      }
+    }
+  }
 
   seg.exec.handleTracker.record(ReplayHandleEvent::Kind::CAPTURE_BEGIN,
                                 seg.exec.executionCount, 0, 0, "monolithic");
@@ -1418,6 +1598,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       "CUDA",
       /*gapsCaptured=*/false);
   snapshotExternalAddrs(seg, captureExternals, numExt);
+
+  // Pin every device address this captured graph baked in (weights/intermediates/outputs),
+  // at seal — so no later close()/rebind/pool-reuse can dangle a buffer a live replay reads.
+  // pinOwnedOutputs=true: a captured graph bakes raw intermediate addresses, which must outlive it.
+  pinSegmentGraphBakedSlots(seg, captureExternals, numExt, /*pinOwnedOutputs=*/true);
+
   dspSegIncrementExecCount(seg, "cuda-graph-capture-complete");
   totalGraphReplays_++;
 
@@ -1802,8 +1988,15 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
   // ── Step 1: Triton arg table refresh (generation-counter gated) ──
-#if HAVE_TRITON
+  // needsArgRefresh() is true when:
+  //   (a) Triton arg tables need refreshing for a new input shape/address, OR
+  //   (b) VIEW-BUF-CHANGE fired (view-of-ext-input address changed) and bumped
+  //       argTableGeneration to prevent the frozen fast path from replaying the
+  //       segment with stale baked device addresses (→ err700).
+  // markArgsCurrent() is called unconditionally so case (b) is always cleared
+  // after the segment is successfully replayed in the normal path.
   if (seg.exec.needsArgRefresh()) {
+#if HAVE_TRITON
     auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
     if (tritonBackend != nullptr) {
       tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
@@ -1811,12 +2004,78 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
                                                stream);
       tritonBackend->copyConsolidatedArgTableToDevice(seg, stream);
     }
+#endif
+
     seg.exec.markArgsCurrent();
   } else {
     DSP_DIAG(EXECUTE, "%s: args current — skip refresh seg[%d-%d]",
              diagTag, seg.def.startSlot, seg.def.endSlot);
   }
-#endif
+
+  // ── Step 1b: Slot address drift guard for monolithic CUDA graph ───────────
+  // The monolithic CUDA graph has cuBLAS (and other native op) kernel nodes with
+  // device pointers baked in at capture time. Unlike Triton kernels (whose arg
+  // tables are refreshed above), cuBLAS args are immutable after capture.
+  //
+  // If any output slot's specialBuffer() changed since capture — e.g., because
+  // refreshStaleViewWrappersInSegment installed a new view NDArray with a
+  // different offset into a different DataBuffer — the cuBLAS nodes have stale
+  // pointers. Launching the graph would read freed / garbage GPU memory → err700.
+  //
+  // Detection: re-compute the FNV1a hash of all slot specialBuffer() addresses
+  // in this segment and compare against capturedSlotAddrHash (set at sealCapture).
+  // Mismatch → invalidate + return KERNEL_FAILURE so the caller triggers recapture.
+  //
+  // This mirrors the SLOT_ADDR_DRIFT check in executeSegmentWithCudaGraph (the
+  // composite-replay path) but is placed here for the monolithic-replay path.
+  if (seg.exec.capturedSlotAddrHash != 0) {
+    LongType currentSlotHash = computeSlotAddrHash(
+        outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
+    if (seg.exec.slotAddrDrifted(currentSlotHash)) {
+      DSP_DIAG(EXECUTE,
+               "%s: MONOLITHIC_SLOT_ADDR_DRIFT seg[%d-%d] "
+               "captured=0x%llx current=0x%llx — cuBLAS args are stale, "
+               "invalidating for recapture",
+               diagTag, seg.def.startSlot, seg.def.endSlot,
+               (long long)seg.exec.capturedSlotAddrHash,
+               (long long)currentSlotHash);
+      SegmentLifecycle::invalidateForRebuild(this, seg, "monolithic_slot_addr_drift");
+      return Status::KERNEL_FAILURE;
+    }
+    DSP_DIAG(EXECUTE, "%s: slot addr hash stable seg[%d-%d] hash=0x%llx",
+             diagTag, seg.def.startSlot, seg.def.endSlot,
+             (long long)currentSlotHash);
+  }
+
+  // ── Step 1.5: Live execution of value-shape create ops ──
+  // When create ops (range, create, lin_space — CONSTANT_GENERATION +
+  // VALUE_DEPENDENT_SHAPE) were excluded from the CUDA graph during native-only
+  // capture (createOpsExcludedFromGraph=true), their output slots contain stable
+  // device buffers that the graph reads.  But the VALUES must be updated each step
+  // because their inputs change (position IDs, step count, sequence length).
+  // Execute them live here — outside the CUDA graph — before launching the graph,
+  // so the graph reads up-to-date values from the already-allocated slot buffers.
+  if (seg.exec.createOpsExcludedFromGraph) {
+    int liveCreateCount = 0;
+    SyncOverride liveCreateSync(*this, "live_create_ops");
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      const uint32_t slotTraits = slots_[s].opTraits();
+      if ((slotTraits & sd::ops::OP_TRAIT_CONSTANT_GENERATION) != 0 &&
+          (slotTraits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0) {
+        auto liveStatus = executeSlot(s, externalArrays, numExt, stream);
+        if (liveStatus != Status::OK) {
+          DSP_DIAG(EXECUTE, "%s: live create-op slot %d (%s) FAILED status=%d",
+                   diagTag, s, slots_[s].ident.opName.c_str(), static_cast<int>(liveStatus));
+          // Non-fatal: the graph will use stale values from a prior step (still
+          // better than invalidating the entire graph).  Do NOT return failure —
+          // the graph replay may still produce usable output.
+        }
+        liveCreateCount++;
+      }
+    }
+    DSP_DIAG(EXECUTE, "%s: executed %d value-shape create ops live before graph launch seg[%d-%d]",
+             diagTag, liveCreateCount, seg.def.startSlot, seg.def.endSlot);
+  }
 
   // ── Step 2: Prezero segment outputs ──
   // Slots that accumulate (e.g. scatter-add, reduce) need their output buffers
@@ -1880,6 +2139,9 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
   if (planLifecycle_.isSlotBySlot() || externalInputIsVariable_.empty() || numExt <= 0) {
     return externalArrays;
   }
+
+  // One-time activation of fingerprint ring (checks env BUF_FP_RING=1)
+  maybeInitFingerprintRing();
 
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
@@ -1951,7 +2213,20 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       if (dstBuf != nullptr && srcBuf != nullptr) {
         size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
         if (bytes > 0) {
-          cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+          // A non-contiguous VIEW source (e.g. a KV-cache slice past_key = staticKey[:,:,0:N,:])
+          // MUST NOT be staged with a raw contiguous cudaMemcpyAsync: that copies bytes by linear
+          // offset, pulling in data OUTSIDE the view (a scatter to staticKey[:,:,N,:]) and skipping
+          // the strided gaps — corrupting the staging buffer the captured CUDA graph replays from
+          // (this is the testViewAliasing MaxDiff bug). Only a contiguous source is safe for the
+          // raw byte copy. For a view, use a stride-aware assign that gathers by the source's
+          // actual strides, routed onto cudaStr (the staging/replay stream, which getCudaStream()
+          // honors via tl_dspGapStream) so it stays ordered with the graph replay.
+          if (shape::strideDescendingCAscendingF(ext->shapeInfo())) {
+            cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+          } else {
+            ScopedDspGapStream gapToCudaStr(cudaStr);
+            staging->assign(ext);
+          }
           DSP_LIFECYCLE_RAW(executeCount_, i, "STAGING_D2D_ISSUED",
                             (void*)ext, (void*)ext->dataBuffer(), srcBuf, ext->buffer(),
                             ext->dataBuffer()->isPrimaryActual(),
@@ -1984,6 +2259,32 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
                    (void*)staging, (void*)staging->shapeInfo(),
                    staging->specialBuffer(), staging->buffer(),
                    (long long)staging->dataBuffer()->getLenInBytes());
+        }
+      }
+
+      // ── Sync-free fingerprint (BUF_FP_RING=1) ─────────────────────
+      // Record XOR fingerprint of the staging buffer AFTER D2D, on the same
+      // stream — no host sync, ordered with the copy above.
+      if (fpRingEnabled_) {
+        // Assign a stable track slot: use position of i in cachedVariableExtIndices_
+        // (determined once; order is fixed after first entry into the fast path).
+        int trackSlot = fpRingStagingCount_;
+        // Walk cachedVariableExtIndices_ to find the slot for i
+        for (int ci = 0; ci < static_cast<int>(cachedVariableExtIndices_.size()); ci++) {
+          if (cachedVariableExtIndices_[ci] == i) { trackSlot = ci; break; }
+        }
+        if (trackSlot < BUF_FP_MAX_STAGING) {
+          // Register label on first step (executeCount_ == stable first step)
+          if (fpLabels_[trackSlot].tag[0] == '\0') {
+            snprintf(fpLabels_[trackSlot].tag, sizeof(fpLabels_[trackSlot].tag), "stg[%d]", i);
+            fpLabels_[trackSlot].extIdx   = i;
+            fpLabels_[trackSlot].groupIdx = -1;
+            fpLabels_[trackSlot].whichAB  = -1;
+            if (trackSlot + 1 > fpRingStagingCount_) fpRingStagingCount_ = trackSlot + 1;
+          }
+          size_t fpBytes = static_cast<size_t>(staging->dataBuffer()->getLenInBytes());
+          recordBufFingerprintPublic(cudaStr, executeCount_, trackSlot,
+                                     staging->specialBuffer(), fpBytes);
         }
       }
 
@@ -2105,7 +2406,18 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       if (dstBuf != nullptr && srcBuf != nullptr) {
         size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
         if (bytes > 0) {
-          cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+          // Stride-aware staging: a non-contiguous VIEW source (e.g. a KV-cache slice
+          // past_key = staticKey[:,:,0:N,:]) MUST NOT be raw-copied contiguously — that reads
+          // linear bytes OUTSIDE the view (a scatter to staticKey[:,:,N,:]) and skips strided
+          // gaps, corrupting the staging buffer the CUDA graph replays from (testViewAliasing
+          // MaxDiff bug). Contiguous → raw byte copy (fast); view → stride-aware assign routed
+          // onto cudaStr (getCudaStream honors tl_dspGapStream) so it is ordered with replay.
+          if (shape::strideDescendingCAscendingF(ext->shapeInfo())) {
+            cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+          } else {
+            ScopedDspGapStream gapToCudaStr(cudaStr);
+            staging->assign(ext);
+          }
           DSP_DIAG(MEMORY,
                    "STAGING_D2D_SLOW[%d]: name='%s' srcBuf=%p dstBuf=%p bytes=%zu "
                    "stream=%p — D2D copy issued",

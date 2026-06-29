@@ -35,9 +35,9 @@ namespace ops {
 template <typename T>
 SD_KERNEL static void upsampling3dBPCuda(const void* vx, const LongType* xShapeInfo, void* vz,
                                          const LongType* zShapeInfo, const bool isNCDHW) {
-  // x (gradO) has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC)
-  // z (gradI) has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH,
+  // x (gradO) has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW] (NCDHW) or [bS, factorD*iD, factorH*iH,
   // factorW*iW, iC] (NDHWC)
+  // z (gradI) has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC)
 
   const T* x = reinterpret_cast<const T*>(vx);
   T* z = reinterpret_cast<T*>(vz);
@@ -63,9 +63,9 @@ SD_KERNEL static void upsampling3dBPCuda(const void* vx, const LongType* xShapeI
     zLen = shape::length(zShapeInfo);
     rank = 5;
 
-    factorD = xShape[dimID + 1] / zShape[dimID + 1];
-    factorH = xShape[dimID + 2] / zShape[dimID + 2];
-    factorW = xShape[dimID + 3] / zShape[dimID + 3];
+    factorD = xShape[dimID]     / zShape[dimID];
+    factorH = xShape[dimID + 1] / zShape[dimID + 1];
+    factorW = xShape[dimID + 2] / zShape[dimID + 2];
   }
   __syncthreads();
 

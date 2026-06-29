@@ -319,6 +319,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     case REALLOCATE:
                     case EXTERNAL:
                         if (!trimmer) {
+                            spilledAllocationsSize.addAndGet(requiredMemory);
+                            AllocationsTracker.getInstance().getTracker(id).allocateSpilled(type,kind,numElements,requiredMemory);
+                            externalCount.incrementAndGet();
                             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
                             AllocationsTracker.getInstance()
                                     .getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);

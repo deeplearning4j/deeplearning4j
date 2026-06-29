@@ -58,8 +58,11 @@ public class OneHot extends DynamicCustomOp {
         this.jaxis = axis;
         this.on = on;
         this.off = off;
-        addArgs();
+        // outputType must be set BEFORE addArgs() so that addArgs() can include it in dArguments.
+        // The native onehot shape-fn reads D_ARG(0) for dtype; if dArguments is empty it defaults
+        // to FLOAT32, causing type mismatches in downstream backward ops (e.g. multiply_bp).
         this.outputType = dataType;
+        addArgs();
     }
 
     public OneHot(INDArray indices, INDArray output, int depth) {
@@ -153,7 +156,9 @@ public class OneHot extends DynamicCustomOp {
             this.off = tArguments.get(1);
         }
 
-
+        if(!dArguments.isEmpty()) {
+            this.outputType = dArguments.get(0);
+        }
     }
 
     @Override

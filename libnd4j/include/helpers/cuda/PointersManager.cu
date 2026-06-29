@@ -35,12 +35,12 @@ namespace sd {
 
 namespace {
 SD_INLINE cudaStream_t captureSafeStream(const LaunchContext* context) {
-  if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
-    return reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
-  }
+  // Thin adapter over the authority — see DebugHelper::captureSafeStream. The three-tier
+  // priority lives ONCE there; never re-derive the tl_* checks here.
   auto* streamPtr = (context != nullptr) ? context->getCudaStream()
                                           : LaunchContext::defaultContext()->getCudaStream();
-  return (streamPtr != nullptr) ? *streamPtr : nullptr;
+  cudaStream_t lcStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+  return DebugHelper::captureSafeStream(lcStream);
 }
 }  // namespace
 
@@ -167,11 +167,16 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
     } else if (_context != nullptr) {
       cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, *_context->getCudaStream());
     } else {
-      // Use cudaMemcpyAsync with per-thread stream instead of synchronous cudaMemcpy.
-      // Synchronous cudaMemcpy uses the legacy default stream which implicitly syncs with
-      // ALL streams — if any stream has capture state, this fails with error 906.
-      cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
-      cudaStreamSynchronize(cudaStreamPerThread);
+      // No context: route through captureSafeStream(nullptr) rather than cudaStreamPerThread.
+      // captureSafeStream() returns the composite-capture stream when inside the outer
+      // composite-capture scope (between merged groups), keeping H2D copies on the main
+      // execution stream.  Outside any capture it returns the LaunchContext default stream,
+      // which avoids error 906 from legacy stream 0.  cudaStreamSynchronize ensures the
+      // copy is complete before the caller reads dst.
+      cudaStream_t copyStream = captureSafeStream(nullptr);
+      if (copyStream == nullptr) copyStream = cudaStreamPerThread;
+      cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, copyStream);
+      cudaStreamSynchronize(copyStream);
     }
   }
   // NOTE: We don't add to _allocatedPointers here because allocateDevMem already did
@@ -183,11 +188,13 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
 void PointersManager::synchronize() const {
   // During CUDA graph capture, stream synchronization is illegal on the captured stream
   // (error 900) and would invalidate the capture. Skip sync entirely — kernels are only
-  // being recorded, not executed, so there's nothing to synchronize.
-  if (tl_graphExecutionActive) return;
+  // being recorded, not executed. inGraphCapture is the single authority (DebugHelper.h):
+  // it covers the per-group flag AND the composite outer region (which the bare
+  // tl_graphExecutionActive check missed), plus the stream's own ground-truth status.
+  if (DebugHelper::inGraphCapture(_context != nullptr ? _context->getCudaStream() : nullptr)) return;
 
-  // DSP composite replay is not CUDA graph capture, so synchronization is
-  // legal here. Callers also use PointersManager::synchronize() as the
+  // DSP composite REPLAY is not capture (inGraphCapture is false there), so synchronization is
+  // legal and happens below. Callers also use PointersManager::synchronize() as the
   // post-launch lifetime barrier before releasing temporary NDArrays and
   // pointer tables; skipping it lets later host cleanup race kernels already
   // enqueued on the unified gap stream.

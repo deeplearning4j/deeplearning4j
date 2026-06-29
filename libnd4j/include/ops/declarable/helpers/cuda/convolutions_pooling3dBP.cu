@@ -201,12 +201,13 @@ void ConvolutionUtils::pooling3dBP(graph::Context& block, NDArray& input, NDArra
                                   NDArray& gradI, const LongType kD, const LongType kH, const LongType kW, const LongType sD, const LongType sH,
                                   const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH,
                                   const LongType dW, const int poolingMode, const int extraParam0) {
- // initial zeroing of gradI
- gradI.nullify();
-
  PointersManager manager(block.launchContext(), "pooling3dBP");
  dim3 poolingDims = getPoolingDims(gradO.lengthOf(),gradO.rankOf());
+ // Allocate gradI device buffer before zeroing (same bug as pooling2dBP):
+ // nullify() is a no-op when special()==nullptr; prepareSpecialUse must run first.
  NDArray::prepareSpecialUse({&gradI}, {&input, &gradO});
+ // initial zeroing of gradI (must be after device buffer is allocated)
+ gradI.nullify();
  BUILD_SINGLE_SELECTOR(
      input.dataType(), pooling3dBPCudaLauncher,
      (poolingDims.y, poolingDims.x, poolingDims.z, block.launchContext()->getCudaStream(), input.specialBuffer(),

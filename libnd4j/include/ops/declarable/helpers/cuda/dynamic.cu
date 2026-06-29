@@ -307,10 +307,10 @@ static SD_KERNEL void dynamicStitchScalarKernel(void **vx, LongType **xShapeInfo
       COORDS2INDEX(iRank, iStridePtr, iCoords, iOffset);
     }
 
-    Y idx = indices[iOffset];
+    Y scatterIdx = indices[iOffset];
 
     // Bounds check: ensure index is valid for output array
-    if (idx >= 0 && idx < static_cast<Y>(zLength) && i < xLength) {
+    if (scatterIdx >= 0 && scatterIdx < static_cast<Y>(zLength) && i < xLength) {
       // Calculate x offset
       LongType xOffset;
       if (xRank == 0) {
@@ -328,10 +328,10 @@ static SD_KERNEL void dynamicStitchScalarKernel(void **vx, LongType **xShapeInfo
       if (zRank == 0) {
         zOffset = 0;  // Scalar output
       } else if (zRank == 1) {
-        zOffset = static_cast<LongType>(idx) * zStridePtr[0];
+        zOffset = static_cast<LongType>(scatterIdx) * zStridePtr[0];
       } else {
         LongType zCoords[SD_MAX_RANK];
-        INDEX2COORDS(static_cast<LongType>(idx), zRank, zShapePtr, zCoords);
+        INDEX2COORDS(static_cast<LongType>(scatterIdx), zRank, zShapePtr, zCoords);
         COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
       }
 
@@ -519,16 +519,12 @@ void dynamicPartitionFunctor(LaunchContext *context, NDArray *input, NDArray *in
   auto xType = input->dataType();
   auto yType = indices->dataType();
 
-  NDArray::prepareSpecialUse({}, {indices, input});
+  NDArray::prepareSpecialUse(outputList, {indices, input});
 
   BUILD_DOUBLE_SELECTOR(xType, yType, _dynamicPartitionFunctor, (context, input, indices, outputList), SD_NUMERIC_TYPES,
                         SD_INDEXING_TYPES);
 
-  NDArray::registerSpecialUse({}, {indices, input});
-
-  for (auto v : outputList) {
-    v->tickWriteDevice();
-  }
+  NDArray::registerSpecialUse(outputList, {indices, input});
 }
 
 template <typename T>
@@ -543,22 +539,19 @@ Status dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray *> const
   auto xType = inputs.at(0)->dataType();
   auto yType = indices.at(0)->dataType();
 
-  for (auto v : indices) {
-    v->syncToDevice();
-    v->tickReadDevice();
-  }
+  // Build combined read list: all inputs + all indices arrays
+  std::vector<NDArray *> readArrays;
+  readArrays.insert(readArrays.end(), inputs.begin(), inputs.end());
+  readArrays.insert(readArrays.end(), indices.begin(), indices.end());
 
-  for (auto v : inputs) {
-    v->syncToDevice();
-    v->tickReadDevice();
-  }
+  std::vector<NDArray *> writeArrays = {output};
 
-  NDArray::prepareSpecialUse({output}, {});
+  NDArray::prepareSpecialUse(writeArrays, readArrays);
 
   BUILD_DOUBLE_SELECTOR(xType, yType, _dynamicStitchFunctor, (context, inputs, indices, output), SD_NUMERIC_TYPES,
                         SD_INDEXING_TYPES);
 
-  NDArray::registerSpecialUse({output}, {});
+  NDArray::registerSpecialUse(writeArrays, readArrays);
 
   return Status::OK;
 }

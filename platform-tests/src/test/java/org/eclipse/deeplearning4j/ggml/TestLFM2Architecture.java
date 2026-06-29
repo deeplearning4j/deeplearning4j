@@ -30,6 +30,7 @@ import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -102,6 +103,32 @@ class TestLFM2Architecture {
             "short_conv", "short_conv", "attention",
             "short_conv"
     );
+
+    // Each @Test builds a SameDiff model + large (512MB) synthetic weight maps as
+    // LOCALS that are never explicitly closed. Their off-heap GPU memory lingers in
+    // the DeallocatorService refMap (System.gc alone won't reclaim it in time), so the
+    // 25-test suite accumulates device memory until later 512MB allocations OOM even
+    // though the GPU is otherwise near-empty. Force-flush dead references + trim the
+    // device pool between tests — the same robust lifecycle cleanup TestQwen35Pipeline
+    // applies between configs. Best-effort: teardown must never fail a test.
+    @AfterEach
+    void freeGpuBetweenTests() {
+        try {
+            System.gc();
+            Thread.sleep(50);  // let GC enqueue this test's dead locals' PhantomReferences
+            var nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            Nd4j.getDeallocatorService().forceFlushAll();
+            Nd4j.getMemoryManager().purgeCaches();
+            Nd4j.getExecutioner().commit();
+            int numDevices = org.nd4j.linalg.api.device.DeviceMemoryManager.getInstance()
+                    .getContextProvider().getDeviceCount();
+            for (int d = 0; d < numDevices; d++) {
+                nativeOps.trimMemoryPool(d);
+            }
+        } catch (Throwable ignored) {
+            // best-effort GPU reclaim; never fail a test on teardown
+        }
+    }
 
     // =========================================================================
     // Registration and variant detection

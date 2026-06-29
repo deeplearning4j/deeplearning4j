@@ -161,6 +161,29 @@ static void updateCausalMaskLauncher(const cudaStream_t* stream,
     updateCausalMaskKernel<T><<<1, 1, 0, *stream>>>(vMask, position, maskLen);
 }
 
+// [MASKTRACE temp] Scan kernel: records highest-0 causal index, highest-1 attn index,
+// currentPosition, and step into maskTrace[step*4..step*4+3].
+static SD_KERNEL void maskTraceKernel(
+        const float* causalBuf, int causalLen,
+        const float* attnBuf,   int attnLen,
+        int currentPos, int step,
+        int* maskTrace) {
+    if (threadIdx.x != 0 || blockIdx.x != 0) return;
+    int causalHi = -1;
+    for (int i = 0; i < causalLen; i++) {
+        if (causalBuf[i] == 0.0f) causalHi = i;
+    }
+    int attnHi = -1;
+    for (int i = 0; i < attnLen; i++) {
+        if (attnBuf[i] == 1.0f) attnHi = i;
+    }
+    int base = step * 4;
+    maskTrace[base + 0] = causalHi;
+    maskTrace[base + 1] = attnHi;
+    maskTrace[base + 2] = currentPos;
+    maskTrace[base + 3] = step;
+}
+
 /**
  * CUDA kernel: build initial attention mask from prefill length.
  *
@@ -446,15 +469,29 @@ void autoregressiveDecode(
     //
     // This MUST happen before the decode loop so the first execution allocates
     // staging buffers and subsequent executions refresh them.
-    // Placeholder inputs: host-written by Java each step → force H2D on DSP stream
-    if (config->embeddingsExtIdx >= 0) plan->markExternalInputPlaceholder(config->embeddingsExtIdx);
-    if (config->maskExtIdx >= 0) plan->markExternalInputPlaceholder(config->maskExtIdx);
-    if (config->posIdsExtIdx >= 0) plan->markExternalInputPlaceholder(config->posIdsExtIdx);
-    if (config->inputIdsExtIdx >= 0) plan->markExternalInputPlaceholder(config->inputIdsExtIdx);
-    if (config->causalMaskExtIdx >= 0) plan->markExternalInputPlaceholder(config->causalMaskExtIdx);
-    if (config->attnMaskReformatExtIdx >= 0) plan->markExternalInputPlaceholder(config->attnMaskReformatExtIdx);
-    if (config->positionOffsetExtIdx >= 0) plan->markExternalInputPlaceholder(config->positionOffsetExtIdx);
-    if (config->cachePositionExtIdx >= 0) plan->markExternalInputPlaceholder(config->cachePositionExtIdx);
+    // These ext inputs are DEVICE-written IN-PLACE by THIS op's own kernels every
+    // step (embedLookupKernel, updateAttentionMaskKernel, updatePositionIdsKernel,
+    // updateInputIdsKernel, updateCausalMaskLauncher) and committed device-authoritative
+    // via registerSpecialUse({...}). They are NOT host-fed — Java never writes them
+    // per step in the native decode loop. They must therefore be VARIABLE (protected +
+    // address-stable + staging D2D-refreshed each step), exactly like the GDN/conv/KV
+    // inputs below — NOT PLACEHOLDER.
+    //
+    // PLACEHOLDER means "host-written → force H2D" (externalInputIsPlaceholder_ ==
+    // force-H2D, NDArray.h). On replay, performPreReplaySync would H2D-copy the STALE
+    // host buffer over the fresh device value the kernel just wrote, the captured graph
+    // would then recompute the PREVIOUS step's forward pass, and the decode sticks on a
+    // single token (java/native match steps 0-4 then native repeats the step-4 token).
+    // Placeholder also leaves them unprotected (isProtectedExternalInput == !placeholder)
+    // so the captured graph can bake a stale Java-warmup address.
+    if (config->embeddingsExtIdx >= 0) plan->markExternalInputVariable(config->embeddingsExtIdx);
+    if (config->maskExtIdx >= 0) plan->markExternalInputVariable(config->maskExtIdx);
+    if (config->posIdsExtIdx >= 0) plan->markExternalInputVariable(config->posIdsExtIdx);
+    if (config->inputIdsExtIdx >= 0) plan->markExternalInputVariable(config->inputIdsExtIdx);
+    if (config->causalMaskExtIdx >= 0) plan->markExternalInputVariable(config->causalMaskExtIdx);
+    if (config->attnMaskReformatExtIdx >= 0) plan->markExternalInputVariable(config->attnMaskReformatExtIdx);
+    if (config->positionOffsetExtIdx >= 0) plan->markExternalInputVariable(config->positionOffsetExtIdx);
+    if (config->cachePositionExtIdx >= 0) plan->markExternalInputVariable(config->cachePositionExtIdx);
     // GDN/conv state: device-written via D2D copy on DSP stream each step.
     // Mark as variable (participates in dependency tracking) but NOT placeholder
     // (must NOT H2D — device buffer is authoritative, host buffer is stale).
@@ -477,6 +514,20 @@ void autoregressiveDecode(
             int kvIdx = config->kvInputExtIndices[kv];
             if (kvIdx >= 0) plan->markExternalInputVariable(kvIdx);
         }
+    }
+
+    // [MASKTRACE temp] Allocate device trace array: maxNewTokens * 4 ints, initialized to -1.
+    NDArray* maskTraceDev = nullptr;
+    {
+        std::vector<LongType> traceShape = {static_cast<LongType>(maxNewTokens * 4)};
+        maskTraceDev = NDArrayFactory::create('c', traceShape, DataType::INT32, context);
+        // Force device allocation by calling prepareSpecialUse, then memset to 0xFF (-1 sentinel).
+        NDArray::prepareSpecialUse({maskTraceDev}, {});
+        cudaMemsetAsync(maskTraceDev->specialBuffer(),
+                        0xFF,  // 0xFFFFFFFF = -1 as int32 sentinel
+                        static_cast<size_t>(maxNewTokens * 4) * sizeof(int),
+                        *stream);
+        NDArray::registerSpecialUse({maskTraceDev}, {});
     }
 
     for (int step = 0; step < maxNewTokens; step++) {
@@ -522,31 +573,47 @@ void autoregressiveDecode(
 
 
         // ── Step 1b: Pre-unmask the CURRENT position in causal mask ──
-        // The attention op writes KV at cache_position = currentPosition, then attends
-        // to the full buffer including that position. If the causal mask masks the current
-        // position, the token can't attend to its own KV entry → wrong attention output.
-        // The post-execution mask update (below) only unmasks for the NEXT step.
-        if (causalMask != nullptr && currentPosition >= 0 && currentPosition < causalMaskLen) {
-            NDArray::prepareSpecialUse({causalMask}, {});
-            BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskLauncher,
-                                  (stream, causalMask->specialBuffer(), currentPosition, causalMaskLen),
-                                  SD_FLOAT_TYPES);
-            NDArray::registerSpecialUse({causalMask}, {});
-        }
-        if (attnMaskReformat != nullptr && currentPosition >= 0 && currentPosition < attnMaskReformatLen) {
-            NDArray::prepareSpecialUse({attnMaskReformat}, {});
-            BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskLauncher,
-                                  (stream, attnMaskReformat->specialBuffer(), currentPosition, attnMaskReformatLen),
-                                  SD_FLOAT_TYPES);
-            NDArray::registerSpecialUse({attnMaskReformat}, {});
-        }
-        // Also unmask the attention mask (0/1 mask)
-        if (currentPosition >= 0 && currentPosition < maxKvLen) {
-            NDArray::prepareSpecialUse({attentionMask}, {});
-            BUILD_SINGLE_SELECTOR(attentionMask->dataType(), updateAttentionMaskLauncher,
-                                  (stream, attentionMask->specialBuffer(), currentPosition, maxKvLen),
-                                  SD_COMMON_TYPES);
-            NDArray::registerSpecialUse({attentionMask}, {});
+        // GGUF only (planOwnsKvScatter == true): the dotProductAttentionV2 op writes
+        // KV at cache_position = currentPosition in-place, then attends to the full
+        // buffer including that position. Pre-unmasking currentPosition is required so
+        // the token can attend to its own newly-written KV entry.
+        //
+        // ONNX/external-scatter path (planOwnsKvScatter == false): KV scatter happens
+        // AFTER execution via kvScatterBatched. Position currentPosition in the static
+        // KV buffer is EMPTY during plan execution — attending to it reads zeros, giving
+        // wrong logits. The post-execution mask update unmasks kvJustWritten (the PREVIOUS
+        // position that was just written) for the NEXT step; the current query position
+        // is always exposed via mask[totalSeqLen-1] (padded layout set by Java warmup).
+        // Step 1b pre-unmask of currentPosition — GATED on planOwnsKvScatter (verified correct
+        // by experiment: removing the gate gives step-7 native=87 vs java=2008). For the
+        // external-scatter path (planOwnsKvScatter==false, ONNX/SmolDocling) the current token's
+        // K/V is NOT in the cache at currentPosition during plan execution (scatter is post-exec)
+        // — it is provided at the PADDED query slot (mask[totalSeqLen-1]). Pre-unmasking
+        // currentPosition would attend an EMPTY cache slot → wrong logits. GGUF in-graph scatter
+        // DOES have the current K/V at currentPosition, so it pre-unmasks.
+        if (config->planOwnsKvScatter) {
+            if (causalMask != nullptr && currentPosition >= 0 && currentPosition < causalMaskLen) {
+                NDArray::prepareSpecialUse({causalMask}, {});
+                BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskLauncher,
+                                      (stream, causalMask->specialBuffer(), currentPosition, causalMaskLen),
+                                      SD_FLOAT_TYPES);
+                NDArray::registerSpecialUse({causalMask}, {});
+            }
+            if (attnMaskReformat != nullptr && currentPosition >= 0 && currentPosition < attnMaskReformatLen) {
+                NDArray::prepareSpecialUse({attnMaskReformat}, {});
+                BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskLauncher,
+                                      (stream, attnMaskReformat->specialBuffer(), currentPosition, attnMaskReformatLen),
+                                      SD_FLOAT_TYPES);
+                NDArray::registerSpecialUse({attnMaskReformat}, {});
+            }
+            // Also unmask the attention mask (0/1 mask) for GGUF in-graph KV
+            if (currentPosition >= 0 && currentPosition < maxKvLen) {
+                NDArray::prepareSpecialUse({attentionMask}, {});
+                BUILD_SINGLE_SELECTOR(attentionMask->dataType(), updateAttentionMaskLauncher,
+                                      (stream, attentionMask->specialBuffer(), currentPosition, maxKvLen),
+                                      SD_COMMON_TYPES);
+                NDArray::registerSpecialUse({attentionMask}, {});
+            }
         }
 
         auto tWireEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
@@ -557,12 +624,13 @@ void autoregressiveDecode(
         // scans, lifecycle checks, shape validation). For earlier steps or
         // pre-REPLAYING phase, it automatically falls back to full execute().
         //
-        // GDN/conv state ext inputs are marked variable (NOT placeholder) via
-        // markExternalInputVariable(). Placeholder inputs (input_ids etc.) are
-        // marked via markExternalInputPlaceholder(). performPreReplaySync() only
-        // forces H2D for placeholders; device-written variables (GDN/conv state)
-        // use isPrimaryActual() — the D2D copy above left device authoritative,
-        // so H2D is correctly skipped (would clobber with stale host data).
+        // ALL decode-loop-written ext inputs (embeddings, attn/causal/reformat masks,
+        // position_ids, input_ids, position_offset, GDN/conv state, KV cache) are marked
+        // VARIABLE — device-authoritative, never placeholder. This op's kernels write
+        // them in-place and registerSpecialUse leaves the device buffer authoritative,
+        // so performPreReplaySync respects actuality (isPrimaryActual) and skips H2D — a
+        // forced H2D (placeholder behavior) would clobber the fresh device value with
+        // stale host data. Staging D2D refreshes each into the captured graph every step.
         Status planStatus = plan->executeSteadyState(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
@@ -696,44 +764,6 @@ void autoregressiveDecode(
             logitsVocab = logitsOutput->sizeAt(1);
         }
 
-        // Diagnostic: print logits pointer, buffer identity, and first few values
-        if (step < 10 && env_isVerbose()) {
-            cudaStreamSynchronize(*stream);  // ensure plan outputs are ready
-            float topVals[4] = {0};
-            LongType lastPosOff = (logitsSeqLen - 1) * logitsVocab;
-            const void* logitsSrc = static_cast<const char*>(logitsOutput->specialBuffer())
-                                    + lastPosOff * logitsOutput->sizeOfT();
-            if (logitsOutput->dataType() == sd::DataType::FLOAT32) {
-                cudaMemcpy(topVals, logitsSrc, 4 * sizeof(float), cudaMemcpyDeviceToHost);
-            } else if (logitsOutput->dataType() == sd::DataType::HALF) {
-                half hvals[4];
-                cudaMemcpy(hvals, logitsSrc, 4 * sizeof(half), cudaMemcpyDeviceToHost);
-                for (int i = 0; i < 4; i++) topVals[i] = __half2float(hvals[i]);
-            }
-            // Also get the argmax on host for comparison
-            float maxVal = -1e30f;
-            LongType maxIdx = -1;
-            if (logitsVocab <= 262144) {  // only for reasonable vocab sizes
-                std::vector<float> hostLogits(logitsVocab);
-                if (logitsOutput->dataType() == sd::DataType::FLOAT32) {
-                    cudaMemcpy(hostLogits.data(), logitsSrc, logitsVocab * sizeof(float), cudaMemcpyDeviceToHost);
-                } else if (logitsOutput->dataType() == sd::DataType::HALF) {
-                    std::vector<half> hLogits(logitsVocab);
-                    cudaMemcpy(hLogits.data(), logitsSrc, logitsVocab * sizeof(half), cudaMemcpyDeviceToHost);
-                    for (LongType i = 0; i < logitsVocab; i++) hostLogits[i] = __half2float(hLogits[i]);
-                }
-                for (LongType i = 0; i < logitsVocab; i++) {
-                    if (hostLogits[i] > maxVal) { maxVal = hostLogits[i]; maxIdx = i; }
-                }
-            }
-            sd_printf("CUDA_LOGITS_DIAG[step=%d]: logitsOutput=%p specialBuf=%p dataType=%d seqLen=%lld vocab=%lld\n",
-                      step, logitsOutput, logitsOutput->specialBuffer(),
-                      (int)logitsOutput->dataType(), (long long)logitsSeqLen, (long long)logitsVocab);
-            sd_printf("CUDA_LOGITS_DIAG[step=%d]: firstVals=[%.4f, %.4f, %.4f, %.4f] hostArgmax=%lld (val=%.4f)\n",
-                      step, topVals[0], topVals[1], topVals[2], topVals[3],
-                      (long long)maxIdx, maxVal);
-        }
-
         // Get pointer to last-position logits (already on device)
         NDArray::prepareSpecialUse({sampledToken}, {logitsOutput});
 
@@ -772,15 +802,6 @@ void autoregressiveDecode(
         }
 
         NDArray::registerSpecialUse({sampledToken}, {logitsOutput});
-
-        // Diagnostic: verify GPU argmax result matches host argmax
-        if (step < 10 && env_isVerbose()) {
-            cudaStreamSynchronize(*stream);
-            LongType gpuArgmax = 0;
-            cudaMemcpy(&gpuArgmax, sampledToken->specialBuffer(), sizeof(LongType), cudaMemcpyDeviceToHost);
-            sd_printf("CUDA_ARGMAX_DIAG[step=%d]: gpuArgmax=%lld sampledTokenBuf=%p\n",
-                      step, (long long)gpuArgmax, sampledToken->specialBuffer());
-        }
 
         // ── Tier 1a: Store token via D2D copy (avoids p() hidden H2D + stream 0 sync) ──
         // generatedTokenIds->p() does host write → syncToDevice() → cudaMemcpyAsync
@@ -875,23 +896,59 @@ void autoregressiveDecode(
             NDArray::registerSpecialUse({attentionMask}, {});
         }
 
-        // Update causal mask: unmask the KV position that was JUST written (set to 0.0f)
-        if (causalMask != nullptr && kvJustWritten >= 0 && kvJustWritten < causalMaskLen) {
-            NDArray::prepareSpecialUse({causalMask}, {});
-            BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskLauncher,
-                                  (stream, causalMask->specialBuffer(), kvJustWritten, causalMaskLen),
-                                  SD_FLOAT_TYPES);
-            NDArray::registerSpecialUse({causalMask}, {});
+        // Update causal mask: for ONNX/external-scatter path (planOwnsKvScatter == false),
+        // unmask currentPosition (the NEXT write position), matching Java's advance-one-ahead
+        // pattern in runJavaDecodeLoop (causalMask[cachePos] where cachePos is already incremented).
+        // For GGUF (planOwnsKvScatter == true), unmask kvJustWritten (the just-written position)
+        // because the in-graph attention already unmasked currentPosition via the pre-unmask above.
+        {
+            LongType causalMaskUnmaskPos = config->planOwnsKvScatter ? kvJustWritten : currentPosition;
+            if (causalMask != nullptr && causalMaskUnmaskPos >= 0 && causalMaskUnmaskPos < causalMaskLen) {
+                NDArray::prepareSpecialUse({causalMask}, {});
+                BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskLauncher,
+                                      (stream, causalMask->specialBuffer(), causalMaskUnmaskPos, causalMaskLen),
+                                      SD_FLOAT_TYPES);
+                NDArray::registerSpecialUse({causalMask}, {});
+            }
         }
 
-        // Update attn_mask_reformat: unmask the just-written KV position (set to 0.0f)
-        if (attnMaskReformat != nullptr && kvJustWritten >= 0 && kvJustWritten < attnMaskReformatLen) {
-            NDArray::prepareSpecialUse({attnMaskReformat}, {});
-            BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskLauncher,
-                                  (stream, attnMaskReformat->specialBuffer(), kvJustWritten, attnMaskReformatLen),
-                                  SD_FLOAT_TYPES);
-            NDArray::registerSpecialUse({attnMaskReformat}, {});
+        // Update attn_mask_reformat: same convention as causal mask.
+        {
+            LongType attnReformatUnmaskPos = config->planOwnsKvScatter ? kvJustWritten : currentPosition;
+            if (attnMaskReformat != nullptr && attnReformatUnmaskPos >= 0 && attnReformatUnmaskPos < attnMaskReformatLen) {
+                NDArray::prepareSpecialUse({attnMaskReformat}, {});
+                BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskLauncher,
+                                      (stream, attnMaskReformat->specialBuffer(), attnReformatUnmaskPos, attnMaskReformatLen),
+                                      SD_FLOAT_TYPES);
+                NDArray::registerSpecialUse({attnMaskReformat}, {});
+            }
         }
+
+        // [MASKTRACE temp] Launch scan kernel to record mask state for this step.
+        // Use causalMask if present; fall back to attnMaskReformat (same additive-mask
+        // convention) when causalMask==nullptr (e.g. SmolLM / ONNX attnReformat-only models).
+        {
+            NDArray* traceFloatMask = (causalMask != nullptr) ? causalMask : attnMaskReformat;
+            int traceFloatLen = (causalMask != nullptr) ? static_cast<int>(causalMaskLen)
+                                                         : static_cast<int>(attnMaskReformatLen);
+            if (maskTraceDev != nullptr && traceFloatMask != nullptr) {
+                maskTraceKernel<<<1, 1, 0, *stream>>>(
+                    reinterpret_cast<const float*>(traceFloatMask->specialBuffer()),
+                    traceFloatLen,
+                    reinterpret_cast<const float*>(attentionMask->specialBuffer()),
+                    static_cast<int>(maxKvLen),
+                    static_cast<int>(currentPosition),
+                    step,
+                    reinterpret_cast<int*>(maskTraceDev->specialBuffer()));
+            }
+        }
+
+        // [MASKTRACE temp] host-side per-step trace (sd_printf IS captured in mvn log; no device sync)
+        sd_printf("[MASKTRACE-H] step=%d currentPos=%lld kvJustWritten=%lld extScatterUnmaskPos=%lld planOwnsKv=%d causalNull=%d attnReformatNull=%d attnMaskNull=%d\n",
+                  step, (long long)currentPosition, (long long)kvJustWritten,
+                  (long long)(config->planOwnsKvScatter ? kvJustWritten : currentPosition),
+                  (int)config->planOwnsKvScatter, (int)(causalMask == nullptr),
+                  (int)(attnMaskReformat == nullptr), (int)(attentionMask == nullptr));
 
         // Update position_ids: set to next step's position
         NDArray::prepareSpecialUse({positionIds}, {});
@@ -917,11 +974,6 @@ void autoregressiveDecode(
         cudaStreamSynchronize(*stream);
         auto tSyncEnd = stepTimingEnabled ? std::chrono::high_resolution_clock::now() : stepStart;
         LongType nextTokenId = *tokenDst;
-
-        if (step < 10 && env_isVerbose()) {
-            sd_printf("DECODE_STEP[%d]: nextTokenId=%lld currentPosition=%lld\n",
-                      step, (long long)nextTokenId, (long long)currentPosition);
-        }
 
         // ── Check stop condition ──
         bool shouldStop = false;
@@ -967,18 +1019,6 @@ void autoregressiveDecode(
             nextTokenId);
         NDArray::registerSpecialUse({inputIds}, {});
 
-        // Diagnostic: verify input_ids buffer address consistency
-        if (step < 5 && env_isVerbose()) {
-            void* extBuf = (config->inputIdsExtIdx >= 0 && config->inputIdsExtIdx < numExtInputs)
-                           ? extInputs[config->inputIdsExtIdx]->specialBuffer() : nullptr;
-            sd_printf("INPUT_IDS_ADDR[step=%d]: inputIds->specialBuffer()=%p "
-                      "extInputs[%d]->specialBuffer()=%p MATCH=%d nextToken=%lld\n",
-                      step, inputIds->specialBuffer(),
-                      config->inputIdsExtIdx, extBuf,
-                      (int)(inputIds->specialBuffer() == extBuf),
-                      (long long)nextTokenId);
-        }
-
         // ── Update in-graph KV cache scalars (GGUF pattern) ──
         // position_offset and cache_position are scalar ext inputs that the
         // attention op reads for RoPE position and KV write position.
@@ -1019,6 +1059,25 @@ void autoregressiveDecode(
                       "preSyncGpu=%lldus syncOnly=%lldus postSync=%lldus\n",
                       step, totalStepUs, wireUs, planUs,
                       preSyncGpuUs, syncOnlyUs, postSyncUs);
+        }
+    }
+
+    // [MASKTRACE temp] D2H readback of trace array (ONE sync after all steps).
+    if (maskTraceDev != nullptr && tokensGenerated > 0) {
+        int traceElems = tokensGenerated * 4;
+        std::vector<int> traceHost(traceElems, -1);
+        cudaMemcpyAsync(traceHost.data(),
+                        maskTraceDev->specialBuffer(),
+                        traceElems * sizeof(int),
+                        cudaMemcpyDeviceToHost, *stream);
+        cudaStreamSynchronize(*stream);
+        for (int s = 0; s < tokensGenerated; s++) {
+            int base = s * 4;
+            sd_printf("[MASKTRACE] step=%d causalHi=%d attnHi=%d pos=%d\n",
+                      traceHost[base + 3],
+                      traceHost[base + 0],
+                      traceHost[base + 1],
+                      traceHost[base + 2]);
         }
     }
 
@@ -1077,6 +1136,11 @@ void autoregressiveDecode(
 
     // ── Cleanup internal allocations ──
     // decodeEmbedding is NOT deleted — it's prefillEmbeddings, owned by the caller.
+    // [MASKTRACE temp] Free trace array.
+    if (maskTraceDev != nullptr) {
+        delete maskTraceDev;
+        maskTraceDev = nullptr;
+    }
     delete sampledToken;
     if (internalMask != nullptr) {
         delete internalMask;

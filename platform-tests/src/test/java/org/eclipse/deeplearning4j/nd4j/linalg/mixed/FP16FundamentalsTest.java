@@ -80,8 +80,6 @@ public class FP16FundamentalsTest {
 
         // SameDiff matmul (goes through C++ MmulHelper mixed-type path)
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable a = sd.placeHolder("a", DataType.FLOAT, M, K);
         SDVariable b = sd.constant("b", weights);
         sd.mmul("result", a, b);
@@ -110,8 +108,6 @@ public class FP16FundamentalsTest {
 
         // SameDiff matmul
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable a = sd.placeHolder("a", DataType.HALF, M, K);
         SDVariable b = sd.constant("b", weights);
         sd.mmul("result", a, b);
@@ -133,15 +129,13 @@ public class FP16FundamentalsTest {
     }
 
     @Test
-    @DisplayName("matmul: HALF activations × FLOAT32 weights → no NaN (mmulMxV path)")
+    @DisplayName("matmul: HALF activations × FLOAT32 weights → no NaN (mixed-dtype promotion, DSP enabled)")
     public void testMatmulHalfxFloat32() {
         int M = 1, K = 128, N = 256;
         INDArray activations = Nd4j.randn(DataType.FLOAT, M, K).muli(0.1).castTo(DataType.HALF);
         INDArray weights = Nd4j.randn(DataType.FLOAT, K, N).muli(0.05);
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable a = sd.placeHolder("a", DataType.HALF, M, K);
         SDVariable b = sd.constant("b", weights);
         sd.mmul("result", a, b);
@@ -226,8 +220,6 @@ public class FP16FundamentalsTest {
         INDArray gammaArr = Nd4j.ones(DataType.FLOAT, features);
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable input = sd.placeHolder("input", DataType.HALF, batch, seq, features);
         SDVariable gamma = sd.constant("gamma", gammaArr);
         sd.nn().rmsNorm("output", input, gamma, EPS);
@@ -258,8 +250,6 @@ public class FP16FundamentalsTest {
         INDArray indices = Nd4j.createFromArray(new int[]{42, 7, 99, 500});
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable table = sd.constant("embed_table", embedTable);
         SDVariable idx = sd.constant("indices", indices);
         sd.gather("gathered", table, idx, 0);
@@ -298,8 +288,6 @@ public class FP16FundamentalsTest {
         INDArray indices = Nd4j.createFromArray(new int[]{42, 7, 99, 500});
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable table = sd.constant("embed_table", embedTable);
         SDVariable idx = sd.constant("indices", indices);
         sd.gather("gathered", table, idx, 0);
@@ -334,8 +322,6 @@ public class FP16FundamentalsTest {
         INDArray tokenId = Nd4j.createFromArray(new int[]{42});
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
 
         // Step 1: gather (embed_tokens lookup) — HALF table → HALF output [1, embedDim]
         SDVariable table = sd.constant("embed_table", embedTable);
@@ -386,8 +372,6 @@ public class FP16FundamentalsTest {
         INDArray tokenId = Nd4j.createFromArray(new int[]{42});
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
 
         // Gather
         SDVariable table = sd.constant("embed_table", embedTable);
@@ -479,8 +463,6 @@ public class FP16FundamentalsTest {
         INDArray b = Nd4j.ones(DataType.HALF, K, N).muli(1.0);
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable va = sd.placeHolder("a", DataType.HALF, 1, K);
         SDVariable vb = sd.constant("b", b);
         sd.mmul("result", va, vb);
@@ -510,8 +492,6 @@ public class FP16FundamentalsTest {
         INDArray b = Nd4j.ones(DataType.HALF, K, N).muli(4.0);
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable va = sd.placeHolder("a", DataType.HALF, 1, K);
         SDVariable vb = sd.constant("b", b);
         sd.mmul("result", va, vb);
@@ -636,8 +616,6 @@ public class FP16FundamentalsTest {
 
         // DSP OFF
         SameDiff sdOff = SameDiff.create();
-        sdOff.setDspAutoCompileEnabled(false);
-        sdOff.setDspNativeAutoCompileEnabled(false);
         SDVariable table2 = sdOff.constant("embed_table", embedTable);
         SDVariable idx2 = sdOff.placeHolder("token_id", DataType.INT, 1);
         SDVariable emb2 = sdOff.gather("embedding", table2, idx2, 0);
@@ -818,8 +796,6 @@ public class FP16FundamentalsTest {
                 .castTo(DataType.HALF);
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
 
         SDVariable table = sd.constant("embed_table", embedTable);
         SDVariable idx = sd.placeHolder("token_id", DataType.INT, -1);

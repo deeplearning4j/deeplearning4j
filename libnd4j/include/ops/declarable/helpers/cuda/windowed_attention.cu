@@ -248,6 +248,13 @@ void windowedAttention(sd::LaunchContext* context,
                         double scale,
                         bool returnWeights) {
 
+    // The windowed attention kernel writes attentionWeights only for positions inside the
+    // window [windowStart..windowEnd) per query — positions outside the window are never
+    // touched.  Without pre-zeroing, stale device memory leaks into the output.
+    if (returnWeights && attentionWeights != nullptr) {
+        attentionWeights->nullify();
+    }
+
     BUILD_SINGLE_SELECTOR(query->dataType(), windowedAttentionCuda_,
                           (context, query, key, value, relativePositionBias, attentionMask,
                            output, attentionWeights, windowSize, numHeads, shiftSize, scale, returnWeights),

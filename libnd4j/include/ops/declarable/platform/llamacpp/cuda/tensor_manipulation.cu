@@ -66,6 +66,7 @@ static void concatCuda(std::vector<NDArray*>& inputs, NDArray* output, int axis)
 }
 
 PLATFORM_IMPL(concat, ENGINE_CUDA) {
+    printf("ZZ-LLAMACPP-CUDA-CONCAT RAN width=%d\n", (int)block.width()); fflush(stdout);
     std::vector<NDArray*> inputs;
     for (int i = 0; i < block.width(); i++) {
         inputs.push_back(INPUT_VARIABLE(i));

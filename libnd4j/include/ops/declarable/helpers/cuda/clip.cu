@@ -263,18 +263,24 @@ void clipByNormBp_(LaunchContext* context, NDArray* input, NDArray* gradO, NDArr
     auto clipVal = clipNorm->e<T>(0);
 
     if (norm > clipVal) {
-      auto sumArr = input->reduceNumber(reduce::Sum);
-      const T sum = sumArr->e<T>(0);  // reduce to scalar
-      delete sumArr;
+      // dot(input, gradO) = sum(input * gradO) — matches CPU clip.cpp reference
+      NDArray* prodArr = (*input) * (*gradO);
+      NDArray* dotArr = prodArr->reduceNumber(reduce::Sum);
+      const T dot = dotArr->e<T>(0);
+      delete dotArr;
+      delete prodArr;
+
       const T factor1 = clipVal / norm;
-      const T factor2 = static_cast<T>(1.f) / (norm * norm);  // 1 / (norm*norm*norm)
+      const T factor2 = static_cast<T>(1.f) / (norm * norm);
+      const T scale2 = factor1 * factor2 * dot;  // coefficient for input term
 
-      auto lambda = LAMBDA_TT(x, y, sum, factor1, factor2) {
-        return factor1 * y * (static_cast<T>(1.f) - factor2 * x * sum);
-      });
-
-      input->applyPairwiseLambda(gradO, lambda, gradI);
-      const_cast<NDArray*>(input)->applyPairwiseLambda(const_cast<NDArray*>(gradO), lambda, gradI);
+      // gradI = factor1 * gradO - scale2 * input
+      // matches CPU: factor1 * y - factor1 * factor2 * x * dot
+      gradI->assign(gradO);
+      gradI->applyScalar(scalar::Multiply, factor1, gradI);
+      NDArray* scaledInput = (*input) * scale2;
+      *gradI -= *scaledInput;
+      delete scaledInput;
     } else
       gradI->assign(gradO);
     delete actualNorms;
@@ -318,7 +324,7 @@ void clipByNormBp(LaunchContext* context, NDArray* input, NDArray* gradO, NDArra
                   const std::vector<LongType>& dimensions, NDArray* clipNorm, const bool useAverage) {
   NDArray* casted = clipNorm->cast(input->dataType());
   BUILD_SINGLE_SELECTOR(gradI->dataType(), clipByNormBp_,
-                        (context, casted, gradO, gradI, dimensions, clipNorm, useAverage), SD_FLOAT_TYPES);
+                        (context, input, gradO, gradI, dimensions, casted, useAverage), SD_FLOAT_TYPES);
   delete casted;
 }
 
@@ -347,8 +353,9 @@ void clipByGlobalNorm_(LaunchContext* context, std::vector<NDArray*>& inputs, do
     if (static_cast<double>(globalNorm) <= clipNorm) {
       output->assign(input);
     } else {
-      auto lambda = LAMBDA_T(_x, factor) { return _x * factor; });
-      input->applyLambda(lambda, output);
+      // applyLambda is a no-op CUDA stub; use native scalar multiply instead
+      output->assign(input);
+      output->applyScalar(scalar::Multiply, factor, output);
     }
   }
 }

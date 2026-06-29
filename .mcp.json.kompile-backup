@@ -1,0 +1,8 @@
+{
+  "mcpServers" : {
+    "kompile" : {
+      "command" : "/home/agibsonccc/.local/bin/kompile",
+      "args" : [ "mcp-stdio", "--work-dir", "/home/agibsonccc/Documents/GitHub/deeplearning4j" ]
+    }
+  }
+}

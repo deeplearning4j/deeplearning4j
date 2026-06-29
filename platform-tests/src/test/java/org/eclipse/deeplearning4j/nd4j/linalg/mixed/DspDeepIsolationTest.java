@@ -109,6 +109,39 @@ public class DspDeepIsolationTest {
         W_V = Nd4j.randn(DataType.FLOAT, HIDDEN, KV_DIM).muli(0.02);
     }
 
+    // ════════════════════════════════════════════════════════════════════════
+    //  Per-test graph lifecycle. Every SameDiff built during a test is registered
+    //  with track() and closed in closeTrackedGraphs(). close() frees the native
+    //  DSP plan cache (freeNativePlanCache), and each plan pins a ~512MB capture
+    //  workspace; without per-test close those workspaces accumulate across the
+    //  parameterized sub-tests until the device OOMs at the DSP 'post_alloc_gate'.
+    //  Mirrors the close() discipline DspLifecycleExhaustiveTest already uses.
+    // ════════════════════════════════════════════════════════════════════════
+    private final List<SameDiff> trackedGraphs = new ArrayList<>();
+
+    /** Register {@code graph} so {@link #closeTrackedGraphs()} closes it after the test. */
+    private SameDiff track(SameDiff graph) {
+        if (graph != null) {
+            trackedGraphs.add(graph);
+        }
+        return graph;
+    }
+
+    @AfterEach
+    void closeTrackedGraphs() {
+        for (SameDiff graph : trackedGraphs) {
+            try {
+                graph.close();
+            } catch (Exception e) {
+                log.debug("closeTrackedGraphs: close() threw for a tracked graph: {}", e.getMessage());
+            }
+        }
+        trackedGraphs.clear();
+        // Return the freed capture-workspace / pooled device memory to the allocator
+        // so each isolation sub-test starts from a clean device footprint.
+        Nd4j.getMemoryManager().purgeCaches();
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     //  1. BUFFER STALENESS — same graph, different inputs, outputs must differ
     // ═══════════════════════════════════════════════════════════════════════
@@ -136,7 +169,7 @@ public class DspDeepIsolationTest {
     @MethodSource("stalenessModesAndSteps")
     @Order(1)
     void test1_BufferStaleness(GraphExecutionMode mode, int steps) {
-        SameDiff sd = buildEmbedProjectGraph(DataType.FLOAT);
+        SameDiff sd = track(buildEmbedProjectGraph(DataType.FLOAT));
         sd.setGraphExecutionMode(mode);
 
         INDArray[] outputs = new INDArray[steps];
@@ -220,7 +253,7 @@ public class DspDeepIsolationTest {
             int currentSeqLen = step;  // grows each step
 
             // Build a graph that concatenates new_entry to past_state
-            SameDiff sd = SameDiff.create();
+            SameDiff sd = track(SameDiff.create());
             SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, stateWidth);
             SDVariable inputReshaped = sd.reshape("input_3d", input, 1, 1, stateWidth);
 
@@ -304,7 +337,7 @@ public class DspDeepIsolationTest {
     @MethodSource("decayModes")
     @Order(3)
     void test3_MultiStepDecay(GraphExecutionMode mode, int steps) {
-        SameDiff sd = buildEmbedProjectGraph(DataType.FLOAT);
+        SameDiff sd = track(buildEmbedProjectGraph(DataType.FLOAT));
         sd.setGraphExecutionMode(mode);
 
         int firstFailStep = -1;
@@ -380,7 +413,7 @@ public class DspDeepIsolationTest {
     @MethodSource("frozenTailModes")
     @Order(4)
     void test4_FrozenFastPathWithDataDependentTail(GraphExecutionMode mode) {
-        SameDiff sd = SameDiff.create();
+        SameDiff sd = track(SameDiff.create());
 
         // Weights are constants — will be frozen
         sd.constant("embed_table", W_EMBED.dup());
@@ -444,7 +477,7 @@ public class DspDeepIsolationTest {
             names = {"SLOT_BY_SLOT", "AUTO", "EMULATED_REPLAY"})
     @Order(5)
     void test5_ViewAliasing(GraphExecutionMode mode) {
-        SameDiff sd = SameDiff.create();
+        SameDiff sd = track(SameDiff.create());
         sd.constant("weight", Nd4j.randn(DataType.FLOAT, HIDDEN, HIDDEN).muli(0.02));
         SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, HIDDEN);
         sd.mmul("out", input, sd.getVariable("weight"));
@@ -499,7 +532,7 @@ public class DspDeepIsolationTest {
             names = {"SLOT_BY_SLOT", "AUTO", "TRITON", "EMULATED_REPLAY"})
     @Order(6)
     void test6_MixedPrecisionThroughPhases(GraphExecutionMode mode) {
-        SameDiff sd = buildEmbedProjectGraph(DataType.HALF);  // FP16 weights
+        SameDiff sd = track(buildEmbedProjectGraph(DataType.HALF));  // FP16 weights
         sd.setGraphExecutionMode(mode);
 
         int steps = 20;
@@ -542,7 +575,7 @@ public class DspDeepIsolationTest {
             names = {"SLOT_BY_SLOT", "AUTO", "TRITON", "EMULATED_REPLAY"})
     @Order(7)
     void test7_ShapeKeyStabilityWithValueChanges(GraphExecutionMode mode) {
-        SameDiff sd = SameDiff.create();
+        SameDiff sd = track(SameDiff.create());
         sd.constant("weight", Nd4j.randn(DataType.FLOAT, 16, 16).muli(0.1));
         SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 16);
         SDVariable matmul = sd.mmul("matmul", input, sd.getVariable("weight"));
@@ -597,7 +630,7 @@ public class DspDeepIsolationTest {
             names = {"SLOT_BY_SLOT", "AUTO", "TRITON", "EMULATED_REPLAY"})
     @Order(8)
     void test8_MultipleOutputsAllUpdate(GraphExecutionMode mode) {
-        SameDiff sd = SameDiff.create();
+        SameDiff sd = track(SameDiff.create());
         sd.constant("w1", Nd4j.randn(DataType.FLOAT, 16, 8).muli(0.1));
         sd.constant("w2", Nd4j.randn(DataType.FLOAT, 16, 4).muli(0.1));
         SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 16);
@@ -649,8 +682,8 @@ public class DspDeepIsolationTest {
             names = {"SLOT_BY_SLOT", "AUTO", "TRITON", "EMULATED_REPLAY"})
     @Order(9)
     void test9_OptimizerPlusMultiStepLifecycle(GraphExecutionMode mode) {
-        SameDiff sd = buildEmbedProjectGraph(DataType.FLOAT);
-        SameDiff opt = GraphOptimizer.optimize(sd);
+        SameDiff sd = track(buildEmbedProjectGraph(DataType.FLOAT));
+        SameDiff opt = track(GraphOptimizer.optimize(sd));
         opt.setGraphExecutionMode(mode);
 
         int steps = 20;
@@ -687,8 +720,8 @@ public class DspDeepIsolationTest {
             names = {"SLOT_BY_SLOT", "AUTO", "EMULATED_REPLAY"})
     @Order(10)
     void test10_InterleavedGraphReuse(GraphExecutionMode mode) {
-        SameDiff sdA = buildEmbedProjectGraph(DataType.FLOAT);
-        SameDiff sdB = buildEmbedProjectGraph(DataType.FLOAT);
+        SameDiff sdA = track(buildEmbedProjectGraph(DataType.FLOAT));
+        SameDiff sdB = track(buildEmbedProjectGraph(DataType.FLOAT));
         sdA.setGraphExecutionMode(mode);
         sdB.setGraphExecutionMode(mode);
 
@@ -735,7 +768,7 @@ public class DspDeepIsolationTest {
             names = {"SLOT_BY_SLOT", "AUTO", "EMULATED_REPLAY"})
     @Order(11)
     void test11_InPlaceMutationDetection(GraphExecutionMode mode) {
-        SameDiff sd = SameDiff.create();
+        SameDiff sd = track(SameDiff.create());
         sd.constant("weight", Nd4j.randn(DataType.FLOAT, 16, 8).muli(0.1));
         SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 16);
         sd.mmul("out", input, sd.getVariable("weight"));
@@ -791,7 +824,7 @@ public class DspDeepIsolationTest {
         }
 
         // Build test graph
-        SameDiff sd = SameDiff.create();
+        SameDiff sd = track(SameDiff.create());
         SDVariable current = sd.placeHolder("input", DataType.FLOAT, 1, dim);
         for (int l = 0; l < layers; l++) {
             sd.constant("w_" + l, weights[l].dup());
@@ -802,7 +835,7 @@ public class DspDeepIsolationTest {
         sd.identity("out", current);
 
         // Build reference graph BEFORE executing either — both get fresh weight copies
-        SameDiff sdRef = SameDiff.create();
+        SameDiff sdRef = track(SameDiff.create());
         SDVariable refCurrent = sdRef.placeHolder("input", DataType.FLOAT, 1, dim);
         for (int l = 0; l < layers; l++) {
             sdRef.constant("w_" + l, weights[l].dup());
@@ -869,7 +902,7 @@ public class DspDeepIsolationTest {
         INDArray weightA = Nd4j.randn(DataType.FLOAT, M, K).muli(0.1).castTo(aType);
         INDArray weightB = Nd4j.randn(DataType.FLOAT, K, N).muli(0.1).castTo(bType);
 
-        SameDiff sd = SameDiff.create();
+        SameDiff sd = track(SameDiff.create());
         sd.constant("a", weightA);
         sd.constant("b", weightB);
         sd.mmul("c", sd.getVariable("a"), sd.getVariable("b"));
@@ -912,8 +945,8 @@ public class DspDeepIsolationTest {
         try {
             System.setProperty("nd4j.optimizer.fp16", "true");
 
-            SameDiff sd = buildEmbedProjectGraph(DataType.FLOAT);
-            SameDiff opt = GraphOptimizer.optimize(sd);
+            SameDiff sd = track(buildEmbedProjectGraph(DataType.FLOAT));
+            SameDiff opt = track(GraphOptimizer.optimize(sd));
             opt.setGraphExecutionMode(mode);
 
             // Verify weights were cast to FP16
@@ -979,7 +1012,7 @@ public class DspDeepIsolationTest {
             names = {"SLOT_BY_SLOT", "AUTO", "TRITON", "EMULATED_REPLAY"})
     @Order(15)
     void test15_SlotGenerationCounterMonotonicity(GraphExecutionMode mode) {
-        SameDiff sd = SameDiff.create();
+        SameDiff sd = track(SameDiff.create());
         sd.constant("weight", Nd4j.randn(DataType.FLOAT, 16, 32).muli(0.1));
         SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 16);
         SDVariable matmul = sd.mmul("matmul", input, sd.getVariable("weight"));

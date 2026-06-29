@@ -435,7 +435,35 @@ public class Configuration implements Serializable {
             long total = nativeOps.getDeviceTotalMemory(i);
             long free = nativeOps.getDeviceFreeMemory(i);
             if (total <= 0 && free <= 0) {
-                log.warn("Skipping CUDA device [{}]: unable to query memory or initialize device", i);
+                // Memory query failed — possibly a sticky CUDA error from another GPU's OOM
+                // during runtime initialization.  The native getDeviceTotalMemory() already
+                // falls back to deviceProperties.totalGlobalMem when cudaMemGetInfo fails.
+                // If total is still 0 here, check the device's compute-capability major
+                // version as a last resort: getDeviceMajor() reads deviceProperties.major
+                // which was populated by initializeDevicesAndFunctions() without a CUDA
+                // context, so it is immune to cross-device poisoning.
+                int major = -1;
+                try {
+                    major = nativeOps.getDeviceMajor(i);
+                } catch (Exception e) {
+                    log.debug("CUDA device [{}]: getDeviceMajor() threw: {}", i, e.getMessage());
+                }
+
+                if (major <= 0) {
+                    log.warn("Skipping CUDA device [{}]: unable to query memory or initialize device"
+                            + " (total={}, free={}, deviceMajor={})", i, total, free, major);
+                    continue;
+                }
+
+                // Device is physically present (major>0) but memory query failed.
+                // Treat free as 0 (the device may be low on memory for context creation)
+                // but still include it so the selection logic can consider it.  If the
+                // device truly cannot be initialized the subsequent cudaSetDevice() in
+                // CudaAffinityManager.getDeviceForCurrentThread() will fail and ban it.
+                log.warn("CUDA device [{}]: memory query returned total={} free={} but device appears "
+                        + "valid (compute {}.x); including with free=0 to allow runtime failover",
+                        i, total, free, major);
+                devices.add(new DeviceMemoryInfo(i, Math.max(0, free), Math.max(0, total)));
                 continue;
             }
 

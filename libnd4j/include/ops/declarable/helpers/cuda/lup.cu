@@ -256,7 +256,7 @@ void invertUpperMatrix(LaunchContext *context, NDArray *inputMatrix, NDArray *in
   NDArray::prepareSpecialUse({invertedMatrix}, {inputMatrix});
   BUILD_SINGLE_SELECTOR(invertedMatrix->dataType(), invertUpperMatrix_, (context, inputMatrix, invertedMatrix),
                         SD_FLOAT_NATIVE);
-  NDArray::prepareSpecialUse({invertedMatrix}, {inputMatrix});
+  NDArray::registerSpecialUse({invertedMatrix}, {inputMatrix});
 }
 
 // ------------------------------------------------------------------------------------------------------------------ //
@@ -430,8 +430,9 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
           sd::DebugHelper::checkErrorCode(stream, "fillUpPermutation failed");
 
         } else {
-          permutVector.tickWriteDevice();
-          input->tickWriteDevice();
+          // cuSolver wrote permutVector and input on device; register them so assign's
+          // internal D2H sync sees the correct device data before copying.
+          NDArray::registerSpecialUse({&permutVector, input}, {});
           compound->assign(input);
           permutation->assign(&permutVector);
         }
@@ -462,9 +463,12 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
                                                        permutationBuf, n);
           sd::DebugHelper::checkErrorCode(stream, "fillUpPermutation failed");
 
-          permutation->tickWriteDevice();
+          // fillUpPermutation kernel wrote permutation on device; register it now.
+          NDArray::registerSpecialUse({permutation}, {});
         } else {
-          input->tickWriteDevice();
+          // cuSolver wrote permutVector and input on device; register them so assign's
+          // internal D2H sync sees the correct device data before copying.
+          NDArray::registerSpecialUse({&permutVector, input}, {});
           compound->assign(input);
           permutation->assign(&permutVector);
         }
@@ -477,7 +481,8 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
   }
   sd::memory::CudaMemoryPool::getInstance().free(d_info, lupDevId, nullptr);
 
-  input->tickWriteDevice();
+  // cuSolver getrf wrote input in-place on device; register it unconditionally.
+  NDArray::registerSpecialUse({input}, {});
 }
 // ------------------------------------------------------------------------------------------------------------------ //
 
@@ -611,9 +616,12 @@ static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShap
 
 template <typename T, typename I>
 static void luNN_(LaunchContext *context, NDArray *compound, NDArray *permutation, LongType rowNum) {
-  // compound is both read and written (Gaussian elimination reads existing values).
-  // It must be in the readList to sync device→host before bufferAsT<T>() reads it.
-  NDArray::preparePrimaryUse({compound}, {compound, permutation});
+  // compound is read+written (Gaussian elimination reads existing values, then overwrites);
+  // permutation is written (linspace + pivot swaps). BOTH go in the write list so the standard
+  // registerPrimaryUse call below ticks their host writes — coherence is handled by prepare/
+  // register ONLY, never manual ticks. compound is also in the read list so it syncs device→host
+  // before bufferAsT<T>() reads it.
+  NDArray::preparePrimaryUse({compound, permutation}, {compound});
 
   if (permutation) {  // LUP algorithm
     permutation->linspace(0);
@@ -652,12 +660,13 @@ static void luNN_(LaunchContext *context, NDArray *compound, NDArray *permutatio
       // Process the columns for LU decomposition
       processColumns(i, rowNum, compoundBuf, compoundShape);
     }
+    // permutation's host writes (linspace + pivot swaps) are registered by registerPrimaryUse
+    // below — coherence is handled by the standard prepare/register calls, never manual ticks.
   } else {  // Doolittle algorithm with LU decomposition
     doolitleLU<T>(context, compound, rowNum);
   }
 
-  NDArray::registerPrimaryUse({compound}, {permutation});
-  compound->syncToDevice();
+  NDArray::registerPrimaryUse({compound, permutation}, {});
 }
 
 
@@ -674,7 +683,9 @@ static void lu_(LaunchContext *context, NDArray *input, NDArray *output, NDArray
   if (input->rankOf() == 2) {
     luNN_<T, I>(context, output, permutationVectors, n);
     NDArray::registerPrimaryUse({output}, {input, permutationVectors});
-    output->syncToDevice();
+    // Host wrote output; push to device so callers using specialBuffer() see the result.
+    NDArray::prepareSpecialUse({output}, {output});
+    NDArray::registerSpecialUse({output}, {});
     return;
   }
 
@@ -688,7 +699,9 @@ static void lu_(LaunchContext *context, NDArray *input, NDArray *output, NDArray
   };
   samediff::Threads::parallel_for(loop, 0, outputs.size(), 1);
   NDArray::registerPrimaryUse({output}, {input, permutationVectors});
-  output->syncToDevice();
+  // Host wrote output; push to device so callers using specialBuffer() see the result.
+  NDArray::prepareSpecialUse({output}, {output});
+  NDArray::registerSpecialUse({output}, {});
 }
 
 void lu(LaunchContext *context, NDArray *input, NDArray *output, NDArray *permutations) {
@@ -879,25 +892,27 @@ static Status inverse_(LaunchContext *context, NDArray *input, NDArray *output) 
         inputBuf, packX->specialShapeInfo(), packX->specialOffsets(),
         reinterpret_cast<T*>(matrix->specialBuffer()), i, n);
     sd::DebugHelper::checkErrorCode(stream, "copyTadToMatrix failed");
-    matrix->tickWriteDevice();
+    // copyTadToMatrix kernel wrote matrix on device; register before lup_ reads specialBuffer().
+    std::vector<NDArray*> matrixOnly = {matrix};
+    std::vector<NDArray*> lowerUpper = {lower, upper};
+    NDArray::registerSpecialUse(matrixOnly, {});
     lup_<T, int>(context, matrix, nullptr, nullptr);
+    // lup_ already registers matrix as device-written; prepare lower+upper as device-read
+    // inputs for fillLowerUpperKernel which also writes them.
+    NDArray::prepareSpecialUse(lowerUpper, matrixOnly);
     fillLowerUpperKernel<T><<<n, n, 1024, *stream>>>(lower->specialBuffer(), lower->specialShapeInfo(),
                                                      upper->specialBuffer(), upper->specialShapeInfo(),
                                                      matrix->specialBuffer(), matrix->specialShapeInfo(), n);
     sd::DebugHelper::checkErrorCode(stream, "fillLowerUpperKernel failed");
+    NDArray::registerSpecialUse(lowerUpper, matrixOnly);
 
-    lower->tickWriteDevice();
-    upper->tickWriteDevice();
     int zero = 0;
     matrix->assign(zero);
-    invertUpperMatrix(context, upper, matrix);  // U^{-1}
-    matrix->tickWriteDevice();
+    invertUpperMatrix(context, upper, matrix);  // U^{-1} — wrapper handles prepare/register
     compound->assign(zero);
-    invertLowerMatrix(context, lower, compound);  // L{-1}
-    compound->tickWriteDevice();
+    invertLowerMatrix(context, lower, compound);  // L^{-1} — wrapper handles prepare/register
 
-    MmulHelper::mmul(matrix, compound, upper, 1.0, 0.0);
-    upper->tickWriteDevice();
+    MmulHelper::mmul(matrix, compound, upper, 1.0, 0.0);  // upper = matrix * compound; mmul handles prepare/register
     copyMatrixToTad<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         reinterpret_cast<const T*>(upper->specialBuffer()), outputBuf,
         packZ->specialShapeInfo(), packZ->specialOffsets(), i, n);
@@ -1197,7 +1212,6 @@ Status logdetFunctor_(LaunchContext *context, NDArray *input, NDArray *output) {
                                               output->specialShapeInfo());
   sd::DebugHelper::checkErrorCode(stream, "logDetKernel failed");
 
-  output->tickWriteDevice();
   NDArray::registerSpecialUse({output}, {input});
   return Status::OK;
 }
@@ -1211,8 +1225,11 @@ Status logdetFunctor(LaunchContext *context, NDArray *input, NDArray *output) {
  * lup - batched input, batched outputs
  * */
 Status lup(LaunchContext *context, NDArray *input, NDArray *compound, NDArray *permutation) {
+  // input is read+written in-place by cuSolver; compound+permutation are outputs.
+  NDArray::prepareSpecialUse({input, compound, permutation}, {input});
   BUILD_DOUBLE_SELECTOR(input->dataType(), permutation->dataType(), lup_, (context, input, compound, permutation),
                         SD_FLOAT_NATIVE, SD_INDEXING_TYPES);
+  NDArray::registerSpecialUse({input, compound, permutation}, {});
   return Status::OK;
 }
 

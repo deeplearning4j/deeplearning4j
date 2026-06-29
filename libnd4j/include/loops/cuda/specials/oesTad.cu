@@ -68,7 +68,7 @@ SD_KERNEL SD_INLINE void execOesTadKernelKey(void *vx, sd::LongType const *xShap
             INDEX2COORDS(top, tadRank, tadShape, t1Coords);
             COORDS2INDEX(tadRank, tadStride, t1Coords, t1Offset);
 
-            if (!descending == (dx[t0Offset] > dx[t1Offset])) {
+            if (descending ? (dx[t0Offset] < dx[t1Offset]) : (dx[t0Offset] > dx[t1Offset])) {
               X dt0 = dx[t0Offset];
               dx[t0Offset] = dx[t1Offset];
               dx[t1Offset] = dt0;
@@ -91,7 +91,7 @@ SD_KERNEL SD_INLINE void execOesTadKernelKey(void *vx, sd::LongType const *xShap
             INDEX2COORDS(top, tadRank, tadShape, t1Coords);
             COORDS2INDEX(tadRank, tadStride, t1Coords, t1Offset);
 
-            if (!descending == (dx[t0Offset] > dx[t1Offset])) {
+            if (descending ? (dx[t0Offset] < dx[t1Offset]) : (dx[t0Offset] > dx[t1Offset])) {
               X dt0 = dx[t0Offset];
               dx[t0Offset] = dx[t1Offset];
               dx[t1Offset] = dt0;
@@ -165,15 +165,20 @@ SD_KERNEL SD_INLINE void execOesTadKernel(void *vx, sd::LongType const *xShapeIn
         for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
           auto top = 2 * tid + 1;
           if (top < xTadLength) {
-            sd::LongType t0Coords[SD_MAX_RANK], t1Coords[SD_MAX_RANK];
             sd::LongType t0Offset, t1Offset;
+            if (cached) {
+              // shmem is loaded linearly [0..n-1]; use linear indices directly
+              t0Offset = top - 1;
+              t1Offset = top;
+            } else {
+              sd::LongType t0Coords[SD_MAX_RANK], t1Coords[SD_MAX_RANK];
+              INDEX2COORDS(top - 1, tadRank, tadShape, t0Coords);
+              COORDS2INDEX(tadRank, tadStride, t0Coords, t0Offset);
+              INDEX2COORDS(top, tadRank, tadShape, t1Coords);
+              COORDS2INDEX(tadRank, tadStride, t1Coords, t1Offset);
+            }
 
-            INDEX2COORDS(top - 1, tadRank, tadShape, t0Coords);
-            COORDS2INDEX(tadRank, tadStride, t0Coords, t0Offset);
-            INDEX2COORDS(top, tadRank, tadShape, t1Coords);
-            COORDS2INDEX(tadRank, tadStride, t1Coords, t1Offset);
-
-            if (!descending == (dx[t0Offset] > dx[t1Offset])) {
+            if (descending ? (dx[t0Offset] < dx[t1Offset]) : (dx[t0Offset] > dx[t1Offset])) {
               T dt0 = dx[t0Offset];
               dx[t0Offset] = dx[t1Offset];
               dx[t1Offset] = dt0;
@@ -184,15 +189,20 @@ SD_KERNEL SD_INLINE void execOesTadKernel(void *vx, sd::LongType const *xShapeIn
         for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
           auto top = 2 * tid + 2;
           if (top < xTadLength) {
-            sd::LongType t0Coords[SD_MAX_RANK], t1Coords[SD_MAX_RANK];
             sd::LongType t0Offset, t1Offset;
+            if (cached) {
+              // shmem is loaded linearly [0..n-1]; use linear indices directly
+              t0Offset = top - 1;
+              t1Offset = top;
+            } else {
+              sd::LongType t0Coords[SD_MAX_RANK], t1Coords[SD_MAX_RANK];
+              INDEX2COORDS(top - 1, tadRank, tadShape, t0Coords);
+              COORDS2INDEX(tadRank, tadStride, t0Coords, t0Offset);
+              INDEX2COORDS(top, tadRank, tadShape, t1Coords);
+              COORDS2INDEX(tadRank, tadStride, t1Coords, t1Offset);
+            }
 
-            INDEX2COORDS(top - 1, tadRank, tadShape, t0Coords);
-            COORDS2INDEX(tadRank, tadStride, t0Coords, t0Offset);
-            INDEX2COORDS(top, tadRank, tadShape, t1Coords);
-            COORDS2INDEX(tadRank, tadStride, t1Coords, t1Offset);
-
-            if (!descending == (dx[t0Offset] > dx[t1Offset])) {
+            if (descending ? (dx[t0Offset] < dx[t1Offset]) : (dx[t0Offset] > dx[t1Offset])) {
               T dt0 = dx[t0Offset];
               dx[t0Offset] = dx[t1Offset];
               dx[t1Offset] = dt0;

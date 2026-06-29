@@ -156,12 +156,19 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
   reduction.n = 0;
 
   if (threadIdx.x == 0) {
+    // MUST initialize to 0 before the conditional: __shared__ memory is
+    // NOT zero-initialized by CUDA, so without this every block that sees
+    // resultLength > 1 (the TAD path) leaves resultScalar as whatever
+    // garbage the SM shared-memory bank held from the previous kernel.
+    // When that garbage is 1 (true), all subsequent blocks take the
+    // scalar path and only block 0 ever writes to z[0], leaving z[1..N-1]
+    // as zeros from the uninitialized output buffer.
+    resultScalar = 0;
+
     if (zShapeInfo != nullptr)
       resultLength = shape::length(zShapeInfo);
     else
       resultLength = 1;
-
-
 
     if (resultLength <= 1)
       resultScalar = 1;

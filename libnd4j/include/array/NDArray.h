@@ -392,6 +392,13 @@ class SD_LIB_EXPORT NDArray {
   void synchronize(const char *msg);
 
   /**
+   * Like synchronize() but skips only during CUDA graph CAPTURE, not during REPLAY.
+   * Use this when a gap op must flush the default context stream before its
+   * stack NDArrays are destroyed and freed via cudaFreeAsync on the DSP stream.
+   */
+  void synchronizeExecStream(const char *msg);
+
+  /**
    * This method allows to set _isAttached flag
    * @param reallyAttached
    */
@@ -2199,15 +2206,30 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
   }
 
   if (needNewBuffer && _shapeInfo != nullptr) {
-    // Get device-specific shape buffer from cache
+    // Get device-specific shape buffer from cache.
+    // bufferForShapeInfo() calls addRef() for the caller — we take ownership of
+    // that reference. Release the OLD _shapeInfoBuffer reference first to keep
+    // the refcount balanced; without this release the old CSB leaks one ref.
     auto constBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(_shapeInfo);
     if (constBuffer != nullptr) {
       LongType* devicePtr = constBuffer->special();
       if (devicePtr != nullptr) {
         _shapeInfoD = devicePtr;
+        // Release old reference before overwriting the pointer.
+        // Do this AFTER we have a valid constBuffer so we never hold zero refs.
+        if (_shapeInfoBuffer != nullptr && _shapeInfoBuffer != constBuffer) {
+          _shapeInfoBuffer->release();
+        } else if (_shapeInfoBuffer == constBuffer) {
+          // Same buffer returned (same device, shape unchanged) — release the
+          // extra addRef we just obtained from bufferForShapeInfo() since we
+          // already hold one ref from before.
+          constBuffer->release();
+        }
         _shapeInfoBuffer = constBuffer;
         _deviceId = currentDeviceId;
       } else {
+        // bufferForShapeInfo() added a ref we can't use — release it.
+        constBuffer->release();
         THROW_EXCEPTION("NDArray::specialShapeInfo() - CUDA: ConstantShapeHelper returned buffer with nullptr special(). "
                        "This indicates CUDA memory allocation failure or initialization issue.");
       }

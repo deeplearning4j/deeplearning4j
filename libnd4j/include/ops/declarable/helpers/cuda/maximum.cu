@@ -20,6 +20,7 @@
 //  @author sgazeos@gmail.com
 //
 #include <array/NDArray.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/ShapeUtils.h>
 #include <system/op_boilerplate.h>
 
@@ -30,69 +31,119 @@ namespace helpers {
 
 template <typename T>
 void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
-  auto lambdaX = LAMBDA_TTT(_e, _x, _y) { return _x >= _y ? _e : (T)0.; });
-
-  auto lambdaY = LAMBDA_TTT(_e, _x, _y) { return _x <= _y ? _e : (T)0.; });
-
   if (x->isSameShape(y)) {
-    // PWT case case
+    // Same-shape pairwise case.
+    // gradX[i] = epsNext[i] where x[i] >= y[i], else 0  (ties go to both)
+    // gradY[i] = epsNext[i] where x[i] <= y[i], else 0  (ties go to both)
 
-    // X gradient
-    epsNext->applyTriplewiseLambda<T>(x, y, lambdaX, gradX);
+    // getShapeAsVector() returns heap std::vector<LongType>* — store and delete.
+    auto xShapeVec = x->getShapeAsVector();
 
-    // Y gradient
-    epsNext->applyTriplewiseLambda<T>(x, y, lambdaY, gradY);
+    // X gradient: bool mask = (x >= y), cast to numeric type, multiply with epsNext
+    auto maskBoolX = NDArrayFactory::create('c', *xShapeVec, DataType::BOOL, x->getContext());
+    x->applyPairwiseTransform(pairwise::GreaterThanOrEqual, y, maskBoolX, nullptr);
+    auto maskX = maskBoolX->cast(x->dataType());
+    epsNext->applyPairwiseTransform(pairwise::Multiply, maskX, gradX, nullptr);
+    delete maskX;
+    delete maskBoolX;
+
+    // Y gradient: bool mask = (x <= y), cast to numeric type, multiply with epsNext
+    auto maskBoolY = NDArrayFactory::create('c', *xShapeVec, DataType::BOOL, x->getContext());
+    x->applyPairwiseTransform(pairwise::LessThanOrEqual, y, maskBoolY, nullptr);
+    auto maskY = maskBoolY->cast(x->dataType());
+    epsNext->applyPairwiseTransform(pairwise::Multiply, maskY, gradY, nullptr);
+    delete maskY;
+    delete maskBoolY;
+
+    delete xShapeVec;
 
   } else if (y->isScalar()) {
+    // Scalar-y case.
+    // gradX[i] = epsNext[i] where x[i] >= s, else 0
+    // gradY   = sum of epsNext[i] where x[i] <= s
     T s = y->e<T>(0);
-    auto lambdaS = LAMBDA_TT(_e, _x, s) { return _x >= s ? _e : (T)0.; });
 
-    float zero = 0.0f;
-    // scalar case
-    auto tmp = epsNext->reduceNumber(reduce::Sum);
-    if (x <= y)
-      gradY->assign(tmp);
-    else
-      gradY->assign(zero);
+    auto xShapeVec = x->getShapeAsVector();
 
-    delete tmp;
-    epsNext->applyPairwiseLambda<T>(x, lambdaS, gradX);
+    // gradX: bool mask = (x >= s), cast, multiply
+    auto maskBoolX = NDArrayFactory::create('c', *xShapeVec, DataType::BOOL, x->getContext());
+    x->applyScalar<T>(scalar::GreaterThanOrEqual, s, maskBoolX, nullptr);
+    auto maskX = maskBoolX->cast(x->dataType());
+    epsNext->applyPairwiseTransform(pairwise::Multiply, maskX, gradX, nullptr);
+    delete maskX;
+    delete maskBoolX;
+
+    // gradY: sum(epsNext * mask(x <= s)) — reduces to scalar
+    auto maskBoolY = NDArrayFactory::create('c', *xShapeVec, DataType::BOOL, x->getContext());
+    x->applyScalar<T>(scalar::LessThanOrEqual, s, maskBoolY, nullptr);
+    auto maskY = maskBoolY->cast(x->dataType());
+    auto weighted = NDArrayFactory::create('c', *xShapeVec, x->dataType(), x->getContext());
+    epsNext->applyPairwiseTransform(pairwise::Multiply, maskY, weighted, nullptr);
+    weighted->reduceNumber(reduce::Sum, gradY);
+    delete weighted;
+    delete maskY;
+    delete maskBoolY;
+
+    delete xShapeVec;
+
   } else {
-    // broadcast case
+    // Broadcast case.
+    // Tile x and y to the shape of epsNext, compute masks separately into
+    // separate output arrays (gradXFull, gradYFull) to avoid the data-dependency
+    // bug where the original code overwrote preX then read it again.
 
-    // in this case we want to boost our X and Y shapes to the size of FF pass output (or epsNext, which has the same
-    // shape)
-    auto preX = x->dup();
-    auto preY = y->dup();
-
+    // getShapeAsVector() heap pointer — delete after use.
     auto targetShape = epsNext->getShapeAsVector();
 
-    preX->tileToShape(*targetShape, *preX);
-    preY->tileToShape(*targetShape, *preY);
+    auto tiledX = x->dup();
+    auto tiledY = y->dup();
+    tiledX->tileToShape(*targetShape, *tiledX);
+    tiledY->tileToShape(*targetShape, *tiledY);
 
-    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaX, preX);
-    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaY, preY);
+    // gradXFull = epsNext * (tiledX >= tiledY)
+    auto maskBoolX = NDArrayFactory::create('c', *targetShape, DataType::BOOL, x->getContext());
+    tiledX->applyPairwiseTransform(pairwise::GreaterThanOrEqual, tiledY, maskBoolX, nullptr);
+    auto maskX = maskBoolX->cast(x->dataType());
+    auto gradXFull = NDArrayFactory::create('c', *targetShape, x->dataType(), x->getContext());
+    epsNext->applyPairwiseTransform(pairwise::Multiply, maskX, gradXFull, nullptr);
+    delete maskX;
+    delete maskBoolX;
 
+    // gradYFull = epsNext * (tiledX <= tiledY)
+    auto maskBoolY = NDArrayFactory::create('c', *targetShape, DataType::BOOL, x->getContext());
+    tiledX->applyPairwiseTransform(pairwise::LessThanOrEqual, tiledY, maskBoolY, nullptr);
+    auto maskY = maskBoolY->cast(x->dataType());
+    auto gradYFull = NDArrayFactory::create('c', *targetShape, x->dataType(), x->getContext());
+    epsNext->applyPairwiseTransform(pairwise::Multiply, maskY, gradYFull, nullptr);
+    delete maskY;
+    delete maskBoolY;
+
+    delete tiledX;
+    delete tiledY;
+
+    // Reduce back to original x/y shapes via sum along broadcast axes
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX->reduceAlongDimension(reduce::Sum, &axisX);
+      auto sum = gradXFull->reduceAlongDimension(reduce::Sum, &axisX);
       gradX->assign(sum);
       delete sum;
-    } else
-      gradX->assign(preX);
+    } else {
+      gradX->assign(gradXFull);
+    }
 
     if (axisY.size() > 0) {
-      auto sum = preY->reduceAlongDimension(reduce::Sum, &axisY);
+      auto sum = gradYFull->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
       delete sum;
-    } else
-      gradY->assign(preY);
+    } else {
+      gradY->assign(gradYFull);
+    }
 
+    delete gradXFull;
+    delete gradYFull;
     delete targetShape;
-    delete preX;
-    delete preY;
   }
 }
 BUILD_SINGLE_TEMPLATE(void maximumBPFunctor_, (NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);

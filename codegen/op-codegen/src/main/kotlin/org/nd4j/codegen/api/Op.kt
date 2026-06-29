@@ -56,6 +56,7 @@ data class Op (
         var legacy: Boolean = false,
         var argsFirst: Boolean = false,
         var javaPackage: String? = null,
+        var compositionBody: String? = null,
         val inputs: MutableList<Input> = mutableListOf(),
         val outputs: MutableList<Output> = mutableListOf(),
         val args: MutableList<Arg> = mutableListOf(),

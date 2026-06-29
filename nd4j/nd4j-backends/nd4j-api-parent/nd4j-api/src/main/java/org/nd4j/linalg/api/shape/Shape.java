@@ -3545,6 +3545,14 @@ public class Shape {
     }
 
     private static DataType max(@NonNull DataType typeX, @NonNull DataType typeY) {
+        // NOTE: ordinal-based, intentionally NOT precision-based. The DataType enum ordinal is not
+        // ordered by precision, so this does not return the higher-precision type for array×array
+        // mixing (e.g. HALF×FLOAT → HALF). It is left as-is because pickPairwiseDataType's Number
+        // overload depends on this for weak-scalar semantics: a Java double literal must NOT upcast
+        // a float array (floatArray.add(1e-6) stays FLOAT, like numpy) — and that holds here only
+        // because the lower-precision float types happen to have higher ordinals than DOUBLE.
+        // Op-specific promotion that needs true precision-max (e.g. matmul, whose C++ DECLARE_SHAPE_FN
+        // promotes to the wider input) must compute it locally via DataType.width(), as Mmul does.
         return DataType.values()[Math.max(typeX.ordinal(), typeY.ordinal())];
     }
 

@@ -718,22 +718,38 @@ public class DeviceMemoryManager {
      * @return GPU device index with the most free memory, or 0 if query fails
      */
     public int selectBestGpu() {
+        return selectBestGpu(null);
+    }
+
+    /**
+     * Select the best GPU among the given candidate device indices, by pool-aware free memory.
+     * Callers that maintain a ban/exclusion list (e.g. CudaAffinityManager after banDevice() on a
+     * device whose CUDA context could not be created) pass the available (non-banned) device set so
+     * a banned device is never re-selected. When {@code candidateDevices} is null or empty, all
+     * physical GPUs are considered (identical to the historical no-arg behaviour).
+     *
+     * @param candidateDevices device indices eligible for selection, or null/empty for all
+     * @return the eligible GPU device index with the most free memory, or 0 if the query fails
+     */
+    public int selectBestGpu(java.util.Collection<Integer> candidateDevices) {
         try {
             var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             int numDevices = nativeOps.getAvailableDevices();
             if (numDevices <= 1) {
                 return 0;
             }
+            boolean restrict = candidateDevices != null && !candidateDevices.isEmpty();
 
-            // Pick the GPU with the most AVAILABLE memory (pool-aware).
-            // cudaMemGetInfo reports free memory MINUS pool reserved, but
-            // cudaMallocAsync can reuse reserved pool memory. Without pool-aware
-            // accounting, devices that previously ran a large graph (e.g., vision
-            // encoder) appear nearly full even though their pool has GB of reusable
-            // memory. available = cudaFree + max(0, poolReserved - poolUsed)
+            // Pick the GPU with the most AVAILABLE memory (pool-aware), skipping any device not in
+            // the candidate set (e.g. one banned because its context creation failed with error 2).
+            // cudaMemGetInfo reports free memory MINUS pool reserved, but cudaMallocAsync can reuse
+            // reserved pool memory. Without pool-aware accounting, devices that previously ran a
+            // large graph (e.g., vision encoder) appear nearly full even though their pool has GB of
+            // reusable memory. available = cudaFree + max(0, poolReserved - poolUsed)
             long bestAvailable = -1;
-            int bestDevice = 0;
+            int bestDevice = -1;
             for (int i = 0; i < numDevices; i++) {
+                if (restrict && !candidateDevices.contains(i)) continue; // skip banned / non-candidate
                 long cudaFree = nativeOps.getDeviceFreeMemory(i);
                 long poolReusable = 0;
                 try {
@@ -751,13 +767,100 @@ public class DeviceMemoryManager {
                 }
             }
 
-            log.debug("selectBestGpu: device [{}] selected with {} MB available (pool-aware) out of {} devices",
-                    bestDevice, bestAvailable / (1024 * 1024), numDevices);
+            if (bestDevice < 0) {
+                // Every candidate was filtered out (all banned, or empty intersection with physical
+                // devices). Fall back to unconstrained selection rather than crash.
+                log.warn("selectBestGpu: no eligible device among candidates {}, defaulting to device 0",
+                        candidateDevices);
+                return 0;
+            }
+
+            log.debug("selectBestGpu: device [{}] selected with {} MB available (pool-aware) out of {} devices{}",
+                    bestDevice, bestAvailable / (1024 * 1024), numDevices,
+                    restrict ? " (restricted to " + candidateDevices + ")" : "");
             return bestDevice;
         } catch (Exception e) {
             log.warn("Failed to query GPU free memory, defaulting to device 0: {}", e.getMessage());
             return 0;
         }
+    }
+
+    /**
+     * Pool-aware free memory for a single GPU device index: actual CUDA free memory plus the
+     * reclaimable portion of the cudaMallocAsync pool (reserved-but-unused), which the next
+     * allocation can reuse. This is the same accounting {@link #selectBestGpu()} uses, exposed
+     * per-device so the failover path can ask "can this specific GPU still fit the allocation?".
+     *
+     * <p>Honors memory-simulation mode for testing. Returns {@link Long#MAX_VALUE} when the
+     * native query itself fails, so a transient query error never triggers a false failover.
+     *
+     * @param deviceIndex GPU device index
+     * @return pool-aware free bytes on that GPU
+     */
+    public long getPoolAwareFreeMemory(int deviceIndex) {
+        if (memorySimulationEnabled && simulatedFreeMemory.containsKey(deviceIndex)) {
+            return getEffectiveFreeMemory(deviceIndex, 0);
+        }
+        try {
+            var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            long cudaFree = nativeOps.getDeviceFreeMemory(deviceIndex);
+            long poolReusable = 0;
+            try {
+                org.bytedeco.javacpp.LongPointer usedPtr = new org.bytedeco.javacpp.LongPointer(1);
+                org.bytedeco.javacpp.LongPointer reservedPtr = new org.bytedeco.javacpp.LongPointer(1);
+                nativeOps.getMemoryPoolStats(deviceIndex, usedPtr, reservedPtr);
+                poolReusable = Math.max(0, reservedPtr.get() - usedPtr.get());
+            } catch (Exception ignored) {}
+            return cudaFree + poolReusable;
+        } catch (Exception e) {
+            log.debug("getPoolAwareFreeMemory({}) failed: {}", deviceIndex, e.getMessage());
+            return Long.MAX_VALUE;
+        }
+    }
+
+    /**
+     * Select the device to fail an allocation over to when its current GPU is full.
+     *
+     * <p>This is the single failover entry point. It consults live, pool-aware device memory
+     * via {@link DeviceMemoryManager} — NOT sticky thread affinity — and picks the GPU with the
+     * most reclaimable free memory that (a) is not the device that just failed and (b) can fit
+     * {@code bytes}. When no other GPU has room it returns the CPU/fallback device (if auto
+     * fallback is enabled and it can fit). Returns {@code null} when nothing can accommodate the
+     * allocation, so the caller can surface a real OOM instead of looping forever.
+     *
+     * @param bytes              allocation size in bytes
+     * @param excludeDeviceIndex GPU index that just OOMed (excluded from the GPU search)
+     * @return target device to retry on, or {@code null} if none can fit
+     */
+    public DeviceDescriptor selectFailoverDevice(long bytes, int excludeDeviceIndex) {
+        ensureDevicesRegistered();
+
+        DeviceDescriptor best = null;
+        long bestFree = -1;
+        for (DeviceDescriptor device : registeredDevices.values()) {
+            if (!device.getDeviceType().isGpu()) continue;
+            int idx = device.getDeviceIndex();
+            if (idx == excludeDeviceIndex) continue;
+            long free = getPoolAwareFreeMemory(idx);
+            if (free >= bytes && free > bestFree) {
+                bestFree = free;
+                best = device;
+            }
+        }
+
+        if (best != null) {
+            log.warn("Allocation of {} bytes failing over from device [{}] to GPU [{}] ({} MB free, pool-aware)",
+                    bytes, excludeDeviceIndex, best.getDeviceIndex(), bestFree / (1024 * 1024));
+            return best;
+        }
+
+        // No other GPU has room — fall back to the CPU/fallback device if it can fit.
+        if (autoFallbackEnabled && fallbackDevice != null && canAllocate(fallbackDevice, bytes)) {
+            log.warn("Allocation of {} bytes failing over from device [{}] to fallback {}",
+                    bytes, excludeDeviceIndex, fallbackDevice.getDeviceId());
+            return fallbackDevice;
+        }
+        return null;
     }
 
     // =========================================================================

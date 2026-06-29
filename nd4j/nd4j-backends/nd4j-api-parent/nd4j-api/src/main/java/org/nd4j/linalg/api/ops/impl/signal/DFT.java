@@ -81,7 +81,26 @@ public class DFT extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        throw new UnsupportedOperationException("Gradient for DFT not implemented");
+        // The DFT is a linear (complex) transform, so its vector-Jacobian product is the adjoint
+        // transform. With this op's convention (forward: sign -1, scale 1; inverse: sign +1,
+        // scale 1/N) and N = the length along the transform axis, the adjoint is:
+        //     grad of a forward DFT  =  N   * IDFT(gradOut)
+        //     grad of an inverse DFT = (1/N) * DFT(gradOut)
+        // Both reuse the native dft op, so the gradient works on every backend the forward op does.
+        // onesided=true changes the output length (real-FFT half-spectrum); its adjoint needs the
+        // Hermitian-symmetry fold and is not handled here.
+        if (onesided) {
+            throw new UnsupportedOperationException("DFT gradient is not implemented for onesided=true");
+        }
+        SDVariable g = grad.get(0);
+        SDVariable n = sameDiff.sizeAt(arg(0), dftAxis).castTo(g.dataType());
+        SDVariable gradIn;
+        if (inverse) {
+            gradIn = new DFT(sameDiff, g, dftAxis, false, false).outputVariable().div(n);
+        } else {
+            gradIn = new DFT(sameDiff, g, dftAxis, true, false).outputVariable().mul(n);
+        }
+        return Collections.singletonList(gradIn);
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.nd4j.nativeblas;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
@@ -67,6 +68,31 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
     private int numArrays;
 
     /**
+     * Contiguous C-array of sd::NDArray* values (N longs).
+     *
+     * <p>WHY: The JNI thunk generated for {@code @ByVal OpaqueNDArrayArr} performs ONE
+     * pointer dereference: it reads slot[position] (default position=0) from the
+     * PointerPointer's native buffer and passes that VALUE as the {@code sd::NDArray**}
+     * argument to C++.  With the old N-slot layout each slot held one
+     * {@code sd::NDArray*}, so slot[0] was a single NDArray pointer — C++ then
+     * mis-indexed into NDArray's internal fields instead of treating it as an array
+     * of pointers, producing the {@code ConstantShapeBuffer::primary(): corrupted this}
+     * crash at {@code x[0]->shapeInfo()} and null-NDArray crashes at {@code x[1+]}.</p>
+     *
+     * <p>With the 1-slot layout:
+     * <ul>
+     *   <li>This {@code LongPointer} holds N contiguous 8-byte {@code sd::NDArray*} VALUES.</li>
+     *   <li>Each slot is populated via {@code new LongPointer(opaqueArr[i]).get(0)} which
+     *       dereferences the JavaCPP wrapper to extract the actual {@code sd::NDArray*} pointer
+     *       value (NOT {@code opaqueArr[i].address()}, which is the wrapper address, not the value).</li>
+     *   <li>The PointerPointer has exactly 1 slot: slot[0] = {@code ndPtrBuffer.address()}.</li>
+     *   <li>JNI dereferences once → C++ receives {@code x = ndPtrBuffer.address() = sd::NDArray**}.</li>
+     *   <li>C++ does {@code x[i]} → reads the i-th {@code sd::NDArray*} value from the buffer. Correct.</li>
+     * </ul></p>
+     */
+    private LongPointer ndPtrBuffer;
+
+    /**
      * Default constructor for internal use.
      * Creates an uninitialized OpaqueNDArrayArr that must be set up via direct field access.
      */
@@ -104,19 +130,33 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      * @param opaqueArrays Array of OpaqueNDArray objects
      */
     public OpaqueNDArrayArr(OpaqueNDArray[] opaqueArrays) {
-        // Use PointerPointer's native allocation - allocates sizeof(void*) * length bytes
-        super(opaqueArrays.length);
+        // 1-slot layout: slot[0] = address of the contiguous sd::NDArray* C-array.
+        // See ndPtrBuffer field javadoc for the detailed rationale.
+        super(1L);
         if (opaqueArrays == null || opaqueArrays.length == 0) {
             throw new IllegalArgumentException("Cannot create OpaqueNDArrayArr from null or empty array");
         }
 
-        // Use PointerPointer's put() method to properly store each pointer in native memory
         for (int i = 0; i < opaqueArrays.length; i++) {
             if (opaqueArrays[i] == null) {
                 throw new IllegalArgumentException("OpaqueNDArray at index " + i + " is null");
             }
-            this.put(i, opaqueArrays[i]);
         }
+
+        // Allocate a contiguous C-array of N sd::NDArray* values.
+        // CRITICAL: opaqueArrays[i].address() is the JavaCPP WRAPPER address (OpaqueNDArray* rptr
+        // from "new OpaqueNDArray(createOpaqueNDArray(...))").  The actual sd::NDArray* value is
+        // stored AT that wrapper address (the first 8 bytes of the wrapper struct).
+        // We must dereference once to get the sd::NDArray* value that C++ shuffle() expects.
+        LongPointer buf = new LongPointer(opaqueArrays.length);
+        for (int i = 0; i < opaqueArrays.length; i++) {
+            buf.put(i, new LongPointer(opaqueArrays[i]).get(0));
+        }
+        this.ndPtrBuffer = buf;  // keep alive
+
+        // slot[0] = address of the contiguous buffer.
+        // JNI dereferences once → C++ receives ndPtrBuffer.address() = sd::NDArray**.
+        this.put(0, buf);
 
         this.numArrays = opaqueArrays.length;
         this.opaqueArrays = opaqueArrays;
@@ -235,14 +275,22 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
             inputs[i] = opaque;
         }
 
-        // Allocate our own PointerPointer and write addresses directly to native memory
-        OpaqueNDArrayArr inputsOpaque = new OpaqueNDArrayArr(inputs.length);
-        inputsOpaque.retainReference();
-
-        // Write addresses directly using Pointer.put(long, Pointer) which writes to native memory
+        // 1-slot layout — see ndPtrBuffer field javadoc for full rationale.
+        // slot[0] = address of a contiguous sd::NDArray* C-array.
+        // JNI thunk dereferences once → C++ receives ndPtrBuffer.address() = sd::NDArray**.
+        // CRITICAL: inputs[i].address() is the JavaCPP WRAPPER address (OpaqueNDArray* rptr
+        // from "new OpaqueNDArray(createOpaqueNDArray(...))").  The actual sd::NDArray* value
+        // is stored AT that wrapper address (first 8 bytes).  We must dereference once to
+        // get the sd::NDArray* value that C++ shuffle()/setGraphContext*() expects as x[i].
+        LongPointer buf = new LongPointer(inputs.length);
         for (int i = 0; i < inputs.length; i++) {
-            inputsOpaque.put(i, inputs[i]);
+            buf.put(i, new LongPointer(inputs[i]).get(0));
         }
+
+        OpaqueNDArrayArr inputsOpaque = new OpaqueNDArrayArr(1L);
+        inputsOpaque.retainReference();
+        inputsOpaque.put(0, buf);
+        inputsOpaque.ndPtrBuffer = buf;  // keep alive
 
         // Store references to prevent GC from freeing memory while we're using it
         inputsOpaque.parentArrays = array;
@@ -276,16 +324,16 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
             DeallocatorService service = Nd4j.getDeallocatorService();
             long uniqueId = service.nextValue();
             int targetDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            
+
             OpaqueNDArrayArrDeallocator deallocator = new OpaqueNDArrayArrDeallocator(
                 arrayArr, parentArrays, uniqueId, targetDevice
             );
-            
+
             arrayArr.deallocator = deallocator;
             service.pickObject(deallocator);
-            
+
             if (log.isTraceEnabled()) {
-                log.trace("Registered OpaqueNDArrayArr {} with DeallocatorService (parent count: {})", 
+                log.trace("Registered OpaqueNDArrayArr {} with DeallocatorService (parent count: {})",
                         uniqueId, parentArrays.length);
             }
         } catch (Exception e) {
@@ -330,12 +378,13 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
             deallocate();
             parentArrays = null;
             opaqueArrays = null;
+            ndPtrBuffer = null;  // allow GC of the contiguous sd::NDArray* buffer
         }
     }
 
     /**
      * Gets the deallocator associated with this OpaqueNDArrayArr.
-     * 
+     *
      * @return The deallocator or null if not registered
      */
     public OpaqueNDArrayArrDeallocator getDeallocator() {

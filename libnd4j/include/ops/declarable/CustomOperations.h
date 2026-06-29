@@ -50,6 +50,7 @@
 #include <ops/declarable/headers/recurrent.h>
 #include <ops/declarable/headers/shape.h>
 #include <ops/declarable/headers/signal.h>
+#include <ops/declarable/headers/sparse.h>
 #include <ops/declarable/headers/strings.h>
 #include <ops/declarable/headers/tests.h>
 #include <ops/declarable/headers/third_party.h>

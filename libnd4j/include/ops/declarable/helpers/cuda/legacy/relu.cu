@@ -31,9 +31,11 @@ namespace helpers {
 
 template <typename T>
 void reluDerivative__(NDArray* theFirst, NDArray* theSecond) {
-  auto functor = LAMBDA_TT(x, y) { return x > (T)0.f ? y : T(0.f); });
-
-  theFirst->applyPairwiseLambda(theSecond, functor,theFirst);
+  // applyPairwiseLambda is a no-op stub on CUDA (std::function cannot run device-side).
+  // Use scalar::RELUDerivative(x, 0) → 1 where x>0, 0 elsewhere; then multiply by epsilon.
+  // reluDerivative__ is the in-place overload: output == theFirst, epsilon == theSecond.
+  theFirst->applyScalar(scalar::RELUDerivative, (T)0.f, theFirst);
+  theFirst->applyPairwiseTransform(pairwise::Multiply, theSecond, theFirst);
 }
 
 void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond) {
@@ -42,9 +44,10 @@ void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecon
 
 template <typename T>
 void reluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return x > (T)0.f ? y : T(0.f); });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // applyPairwiseLambda is a no-op stub on CUDA.
+  // scalar::RELUDerivative(x, 0) → 1 where x>0, 0 elsewhere; then multiply by epsilon.
+  input->applyScalar(scalar::RELUDerivative, (T)0.f, output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -53,9 +56,18 @@ void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecon
 
 template <typename T>
 void relu6Derivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return x > (T)0.f && x < (T)6.f ? y : T(0.f); });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // applyPairwiseLambda is a no-op stub on CUDA.
+  // Derivative is 1 if 0 < x < 6, else 0.
+  // Step 1: output = (x > 0) ? 1 : 0  via scalar::RELUDerivative(x, 0)
+  // Step 2: temp   = (x > 6) ? 1 : 0  via scalar::Step(x, 6)
+  // Step 3: output = output - temp     → 1 iff 0 < x <= 6  (x == 6 is measure-zero)
+  // Step 4: output *= epsilon
+  input->applyScalar(scalar::RELUDerivative, (T)0.f, output);
+  NDArray* temp = input->dup();
+  temp->applyScalar(scalar::Step, (T)6.f, temp);
+  output->applyPairwiseTransform(pairwise::Subtract, temp, output);
+  delete temp;
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void relu6Derivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -64,11 +76,10 @@ void relu6Derivative(LaunchContext* context, NDArray* theFirst, NDArray* theSeco
 
 template <typename T>
 void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, const float alpha) {
-  const T alphaT = static_cast<T>(alpha);
-
-  auto functor = LAMBDA_TT(x, y, alphaT) { return x < 0 ? alphaT * y : y; });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // applyPairwiseLambda is a no-op stub on CUDA.
+  // scalar::LeakyRELUDerivative(x, alpha) → 1 if x>=0, alpha if x<0; then multiply by epsilon.
+  input->applyScalar(scalar::LeakyRELUDerivative, static_cast<T>(alpha), output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void leakyReluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
@@ -79,11 +90,10 @@ void leakyReluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* the
 
 template <typename T>
 void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, const float alpha) {
-  const T alphaT = static_cast<T>(alpha);
-
-  auto functor = LAMBDA_TT(x, y, alphaT) { return y * math::sd_eluderivative<T, T>(x, alphaT); });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // applyPairwiseLambda is a no-op stub on CUDA.
+  // scalar::ELUDerivative(x, alpha) → sd_eluderivative(x, alpha); then multiply by epsilon.
+  input->applyScalar(scalar::ELUDerivative, static_cast<T>(alpha), output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void eluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
@@ -93,9 +103,10 @@ void eluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond
 
 template <typename T>
 void seluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * simdOps::SELUDerivative<T>::op(x, nullptr); });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // applyPairwiseLambda is a no-op stub on CUDA.
+  // transform::SELUDerivative: x>0 → SELU_LAMBDA; x<=0 → SELU_ALPHA*SELU_LAMBDA*exp(x).
+  input->applyTransform(transform::SELUDerivative, output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void seluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {

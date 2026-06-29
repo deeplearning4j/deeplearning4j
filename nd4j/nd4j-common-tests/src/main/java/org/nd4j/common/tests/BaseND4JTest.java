@@ -219,18 +219,52 @@ public abstract class BaseND4JTest {
     }
 
     /**
-     * Force GPU memory reclamation. Triggers GC to collect unreachable DataBuffers,
-     * lets the DeallocatorService process them (cudaFreeAsync), then trims the pool.
+     * Force GPU memory reclamation. Drains the DeallocatorService PhantomReference queue
+     * (ensuring every cudaFreeAsync is issued), commits pending CUDA operations, then trims
+     * the pool so released memory is returned to the driver.
+     *
+     * <p>Order matters: forceFlushAll() MUST precede trimMemoryPool(). Without the flush,
+     * PhantomReference-backed DataBuffers that are unreachable but not yet enqueued still
+     * appear in-use to the pool, so cudaMemPoolTrimTo cannot reclaim their memory. This
+     * was the root of 770-1948 MB stagnation across repeated test rounds.</p>
+     *
      * Called automatically after every test via @AfterEach.
      */
     protected static void reclaimGpuMemory() {
-        // Commit pending CUDA operations, then trim the memory pool so that
-        // memory released via cudaFreeAsync is returned to the driver.
+        // Step 1: request GC so that unreachable DataBuffer / INDArray objects get promoted to
+        // PhantomReference status. This is advisory, but makes it far more likely that
+        // the JVM promotes short-lived arrays (e.g., per-iteration SameDiff outputs that were
+        // never assigned to a variable) before we flush the reference map.
+        System.gc();
+
+        // Step 2: drain the DeallocatorService PhantomReference queue so that all pending
+        // cudaFreeAsync calls are issued before we ask the pool to trim. Without this,
+        // trimMemoryPool sees those allocations as "in-use" and cannot return them to the
+        // driver — the root of 770-1948 MB pool stagnation across test rounds.
+        try {
+            Nd4j.getDeallocatorService().forceFlushAll();
+        } catch (Exception e) {
+            // ignore — may fail if DeallocatorService not yet initialized
+        }
+        // Step 2b: forceFlushAll() above frees the NATIVE memory of every refMap buffer,
+        // including the ConstantHandler's strongly-cached constants (e.g. a random op's
+        // [mean, stddev] extra-args buffer). The cache keeps the Java DataBuffer wrappers,
+        // whose ptrDataBuffer is now null (but wasClosed() still reads false), so the next
+        // test that requests the same constant gets a buffer over freed memory and throws
+        // "Ptr data buffer was released!". Purge the cache so constants are re-created fresh.
+        try {
+            Nd4j.getConstantHandler().purgeConstants();
+        } catch (Exception e) {
+            // ignore — may fail if the backend/ConstantHandler is not yet initialized
+        }
+        // Step 3: commit any in-flight CUDA operations on the current stream.
         try {
             Nd4j.getExecutioner().commit();
         } catch (Exception e) {
             // ignore — may fail on CPU backend
         }
+        // Step 4: trim the memory pool; freed memory is now actually free from the pool's
+        // perspective because Steps 1-2 already issued the frees.
         try {
             int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             for (int d = 0; d < numDevices; d++) {

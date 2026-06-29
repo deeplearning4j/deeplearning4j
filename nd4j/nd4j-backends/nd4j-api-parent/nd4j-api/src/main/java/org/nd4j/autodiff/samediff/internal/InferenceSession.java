@@ -179,10 +179,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // corrupting views (reshape/permute outputs) that share the same DataBuffer.
     // Count > 1 means another live array shares the buffer — do NOT close.
     // Reset at start of each executeOperations() call.
-    private final ThreadLocal<IdentityHashMap<DataBuffer, Integer>>
-            liveDataBufferRefsTl = ThreadLocal.withInitial(IdentityHashMap::new);
+    //
+    // KEYED BY NATIVE BUFFER ADDRESS (not Java DataBuffer object identity): in-place/no-op
+    // ops (broadcast_to with input shape==output shape) and view-producers (reshape_no_copy)
+    // can produce an output that wraps the SAME native buffer in a DIFFERENT Java DataBuffer
+    // object. Object-identity keying counted those as 1 each, so freeing the upstream array
+    // (e.g. repeat_kv Unsqueeze_5) while its no-op consumer's output still aliased that memory
+    // dangled the buffer -> reshape_no_copy read <released> -> K/V=0 -> dead GQA attention.
+    private final ThreadLocal<HashMap<Long, Integer>>
+            liveDataBufferRefsTl = ThreadLocal.withInitial(HashMap::new);
 
-    private IdentityHashMap<DataBuffer, Integer> liveDataBufferRefs() {
+    private HashMap<Long, Integer> liveDataBufferRefs() {
         return liveDataBufferRefsTl.get();
     }
 
@@ -337,6 +344,23 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // This flag skips the loop on subsequent calls. Reset on session reset.
     protected volatile boolean variablesSyncedToDevice = false;
 
+    // CUDA-graph capture-time VARIABLE sync:
+    // When the DSP plan transitions to SHAPES_FROZEN, C++ calls cudaStreamBeginCapture on
+    // the FIRST frozen execution (the "capture call"). Any VARIABLE (model weight) whose
+    // device buffer has NOT been synced before that cudaStreamBeginCapture will have its
+    // uninitialised/stale device value baked permanently into the CUDA graph — causing
+    // every subsequent replay to read 0.0 and produce wrong outputs (e.g. score → 0.0).
+    //
+    // The variablesSyncedToDevice flag (above) is set to true on call 0 (the first
+    // SLOT_BY_SLOT warmup pass) and suppresses re-sync on calls 1-N, INCLUDING the
+    // capture call. The suppress is intentional for performance (weights do not change
+    // during inference), but it must not apply to the single capture call.
+    //
+    // This flag tracks whether we have performed the mandatory pre-capture sync.
+    // It is reset alongside variablesSyncedToDevice whenever the plan cache is cleared
+    // or the session is reset (any of which will trigger a new capture).
+    protected volatile boolean variablesSyncedBeforeCapture = false;
+
     private Set<Long> freedArrays() {
         return freedArraysTl.get();
     }
@@ -441,6 +465,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         int nodeOutputsClosed = closeNodeValueOutputBuffers();
         closePooledResources();
         flushArrayCache(protectedBuffers);
+
+        // When the plan cache is cleared (e.g. by GradCheckUtil.invalidateAllPlanCaches),
+        // variable arrays on the Java side may have been mutated via putScalar since the
+        // last sync. Reset the flag so the next DSP execution re-syncs all VARIABLE arrays
+        // to device, ensuring the new plan sees the correct (perturbed) values.
+        variablesSyncedToDevice = false;
+        // A plan-cache clear means the next plan will have a new capture call — reset
+        // the capture-sync guard so the pre-capture VARIABLE sync fires again.
+        variablesSyncedBeforeCapture = false;
 
         if (nodeOutputsClosed > 0) {
             log.debug("Session cache invalidation closed {} node output buffers", nodeOutputsClosed);
@@ -555,6 +588,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         dspStepCount = 0;
         // Reset variable sync flag — weights may have changed between sessions
         variablesSyncedToDevice = false;
+        // Reset capture-sync guard — a new session will have a new capture call
+        variablesSyncedBeforeCapture = false;
 
         // Session-local caches do not survive resetSession(): a new session instance will be
         // created on the next output() call and can retrieve any reusable DynamicShapePlan
@@ -901,7 +936,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         }
                     }
                     if (dynamicPlanResults != null) {
-                        log.debug("[EXEC-PATH] DSP path succeeded for {} outputs", dynamicPlanResults.size());
+                        log.info("[EXEC-PATH] DSP path succeeded for {} outputs", dynamicPlanResults.size());
                         filteredResults = dynamicPlanResults;
                         dspHandledExecution = true;
                         dspStepCount++;
@@ -1059,7 +1094,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Preprocess placeholders using existing logic (needed for standard path)
             Map<String, INDArray> processedPlaceholders = preprocessPlaceholders(placeholderValues, at);
 
-            log.debug("[EXEC-PATH] Falling through to standard executeOperations (DSP_ENABLED={})",
+            log.info("[EXEC-PATH] Falling through to standard executeOperations (DSP_ENABLED={})",
                     DYNAMIC_SHAPE_PLAN_ENABLED);
             // Reset growth factor to 1.0 but keep cache ENABLED.
             // The DSP side effect enables cache + growth factor 1.1x before checking if plan exists.
@@ -1206,7 +1241,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // TAD packs accumulate during operation execution and MUST be cleared after EVERY inference.
             // Skip when DSP handled execution: DSP manages its own memory lifecycle and the
             // synchronized JNI call adds ~10-50ms overhead per token.
-            if (!dspHandledExecution) {
+            //
+            // ALSO skip when ANY DynamicShapePlanExecutor process-wide has reached shapes-frozen
+            // state (DynamicShapePlanExecutor.hasFrozenExecutors() == true). In frozen/replaying
+            // mode the C++ kernel-arg tables bake raw TAD offset device pointers directly from
+            // ConstantTadHelper. Calling clearTADCache() here frees those device buffers via
+            // CudaPointerDeallocator, making the baked CUDA-graph kernel args dangling.
+            // The next cudaGraphLaunch then reads freed/recycled memory → CUDA error 700.
+            // This races even when the DSP session that did the capture is a DIFFERENT SameDiff
+            // instance from the one whose close() triggers this path (e.g. a reference SD in a
+            // test loop). The TAD cache is process-global; it must survive for the lifetime of
+            // any captured CUDA graph. The cache is bounded (one entry per unique TAD descriptor)
+            // so deferring the clear is not a leak.
+            if (!dspHandledExecution && !DynamicShapePlanExecutor.hasFrozenExecutors()) {
                 Nd4j.clearTADCache();
             }
 
@@ -1343,6 +1390,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                                                Map<String, INDArray> placeholderArrays,
                                                                Set<String> allRequired,
                                                                List<String> requestedOutputs) {
+        log.info("DSP_ENTRY: requestedOutputs={}", requestedOutputs);
         // DynamicShapePlan is allocation-heavy: force-enable the ArrayCacheMemoryMgr cache
         // to reduce cudaMalloc churn for growing shapes (KV cache).
         // NOTE: Cache must be enabled before the plan check — it also prevents premature
@@ -1374,7 +1422,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         DynamicShapePlan plan = getOrCompileDynamicShapePlan(
                 dag, planOutputs, sameDiff.isDspAutoCompileEnabled());
         if (plan == null) {
-            log.debug("DynamicShapePlan not available (auto-compile disabled or compilation unsupported), using standard path");
+            log.info("DynamicShapePlan not available (auto-compile disabled or compilation unsupported), using standard path. isDspAutoCompileEnabled={}", sameDiff.isDspAutoCompileEnabled());
             // Do NOT disable the cache here. The caller's executeOperations() path depends on
             // the cache being enabled to prevent premature DataBuffer close of intermediate
             // variables. The no-cache cleanup path (cacheEnabled=false) aggressively calls
@@ -1408,31 +1456,35 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     sameDiff.isDspFallbackToAutoIfTritonUnavailable());
         }
 
-        // Mark SOURCE_VARIABLE and SOURCE_PLACEHOLDER external inputs as mutable so
-        // the C++ plan allocates staging buffers for them.
+        // Mark SOURCE_PLACEHOLDER external inputs as mutable so the C++ plan allocates
+        // staging buffers for them.
         //
-        // VARIABLE: required for training correctness — weight updates change the array.
         // PLACEHOLDER: required for CUDA graph replay correctness — callers pass new
-        //   INDArray objects per call (e.g. VLM vision encoder per-frame inputs), which
-        //   may be allocated at different GPU addresses or closed between calls. Without
-        //   staging buffers, the CUDA graph has stale device pointers baked into graph
-        //   nodes, causing CUDA error 700 (illegal memory access) on replay.
+        //   INDArray objects per call (e.g. VLM vision encoder per-frame inputs, the
+        //   per-step autoregressive decode token), which may be allocated at different
+        //   GPU addresses or closed between calls. Without staging buffers, the CUDA graph
+        //   has stale device pointers baked into graph nodes, causing CUDA error 700
+        //   (illegal memory access) on replay. The staging buffer D2D-copies the caller's
+        //   array into a plan-owned buffer with a stable address, so closing the caller's
+        //   array is safe.
         //
-        // The staging buffer mechanism D2D-copies from the caller's array into a
-        // plan-owned buffer with a stable address. The CUDA graph captures against
-        // the stable staging address, so closing the caller's array is safe.
-        //
-        // For LLM inference with frozen weights, this is safe: detectFrozenConstants()
-        // will correctly identify the weights as frozen after observing they do not
-        // change, and the frozen-constant optimization will engage on subsequent steps.
+        // SOURCE_VARIABLE (model weights) are deliberately NOT marked here. During inference,
+        // weights are constants; marking them variable makes computeSlotVariableDependency()
+        // treat all dependent slots as variable-dependent, PREVENTING detectFrozenConstants()
+        // from freezing them and forcing D2D staging copies that corrupt the CUDA graph's
+        // baked-in addresses — the autoregressive decode then replays a stale token and
+        // repeats it (TestNativeDecodeLoopRegression freeze at step 4). See the matching note
+        // in NativePlanCompiler.cpp (it likewise only auto-marks SOURCE_PLACEHOLDER). The
+        // weights that genuinely change between calls — the optimizer-updated params in
+        // training — are marked via the polymorphic dspMutableExternalInputNames() above:
+        // TrainingSession returns gradVarToVarMap.values(); InferenceSession returns empty.
         {
             String[] extKeys = plan.getExternalInputKeys();
             byte[] extSourceTypes = plan.getExternalInputSourceTypes();
             if (extKeys != null && extSourceTypes != null && extKeys.length > 0) {
                 List<String> mutableInputNames = new ArrayList<>();
                 for (int i = 0; i < extKeys.length && i < extSourceTypes.length; i++) {
-                    if (extSourceTypes[i] == DynamicShapeSlot.SOURCE_VARIABLE ||
-                        extSourceTypes[i] == DynamicShapeSlot.SOURCE_PLACEHOLDER) {
+                    if (extSourceTypes[i] == DynamicShapeSlot.SOURCE_PLACEHOLDER) {
                         mutableInputNames.add(extKeys[i]);
                     }
                 }
@@ -1466,6 +1518,46 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             variablesSyncedToDevice = true;
         }
 
+        // CUDA-graph capture-time VARIABLE sync (capture-entry gate).
+        //
+        // When the DSP plan transitions SLOT_BY_SLOT → SHAPES_FROZEN, C++ calls
+        // cudaStreamBeginCapture on the FIRST frozen execution ("the capture call").
+        // Any VARIABLE (model weight) whose device buffer has not been synced before
+        // cudaStreamBeginCapture will have its stale/uninitialised device value baked
+        // permanently into the CUDA graph — every subsequent replay reads 0.0 and
+        // produces wrong outputs (e.g. sigmoid-cross-entropy score → 0.0).
+        //
+        // The variablesSyncedToDevice flag (above) is set true on the FIRST call (the
+        // first SLOT_BY_SLOT pass, call 0) and suppresses re-sync on all later calls —
+        // including call N+1, which is the capture call. This is correct for performance
+        // (weights don't change during inference), but WRONG for the capture call, which
+        // must see live device values before the graph is baked.
+        //
+        // Condition: executor.isShapesFrozen() becomes true AFTER the last SLOT_BY_SLOT
+        // execution returns (the C++ plan auto-seals when shapes are stable). On the
+        // VERY NEXT call (the capture call), isShapesFrozen() is already true and
+        // getFrozenExecutionCount() is still 0 (no frozen execution has completed yet).
+        // That combination uniquely identifies the capture call.
+        //
+        // We sync unconditionally here (ignoring variablesSyncedToDevice) to guarantee
+        // all VARIABLE device buffers hold live values before cudaStreamBeginCapture.
+        // variablesSyncedBeforeCapture is set true afterwards so this block fires exactly
+        // once per plan lifetime (not on every replay step, which would reintroduce the
+        // 5-15ms per-step overhead we optimised away).
+        if (executor.isShapesFrozen() && !variablesSyncedBeforeCapture) {
+            log.debug("DSP_CAPTURE_SYNC: plan entered SHAPES_FROZEN — force-syncing all VARIABLE " +
+                    "arrays to device before CUDA graph capture bakes their addresses");
+            for (SDVariable var : sameDiff.variables()) {
+                if (var.getVariableType() == VariableType.VARIABLE) {
+                    INDArray arr = var.getArr();
+                    if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                        arr.syncToDevice();
+                    }
+                }
+            }
+            variablesSyncedBeforeCapture = true;
+        }
+
         Map<String, INDArray> rawResults;
         try (AutoCloseable gfScope = ArrayCacheMemoryMgr.withGrowthFactor(1.0)) {
             rawResults = executor.execute(plan, placeholderArrays);
@@ -1473,6 +1565,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("DSP execution failed", e);
+        }
+
+        // Debug: log key output values for diagnosis
+        if (rawResults != null) {
+            for (Map.Entry<String, INDArray> e : rawResults.entrySet()) {
+                INDArray v = e.getValue();
+                if (v != null && v.length() <= 20) {
+                    log.info("DSP_RESULT: key={} shape={} dtype={} values={}", e.getKey(),
+                            java.util.Arrays.toString(v.shape()), v.dataType(), v.toStringFull());
+                }
+            }
         }
 
         // Wrap results as SDValues.

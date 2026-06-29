@@ -29,6 +29,7 @@
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/logger.h>
 #include <system/Environment.h>
 #include <ops/declarable/headers/shape.h>
 #include <ops/declarable/helpers/batched_gemm.h>
@@ -614,7 +615,13 @@ bool MmulHelper::mmulBatched(NDArray* A, NDArray* B, NDArray* C,
     return true;
   }
 
-  // 5. Manual parallel implementation (always works)
+  // 5. Manual parallel implementation (CPU only).
+  // On CUDA builds, manualBatchedGemm reads host buffers which are stale/uninitialised
+  // for GPU-resident arrays.  Return false so the caller (mmul()) falls through to
+  // mmulNxN which dispatches to the proper CUDA batched-GEMM kernel.
+  if (sd::graph::dspIsCudaBuild()) {
+    return false;
+  }
   manualBatchedGemm(A, B, C, alpha, beta);
   return true;
 }
@@ -1013,7 +1020,8 @@ NDArray* MmulHelper::mmul(NDArray* A, NDArray* B, NDArray* C, const double alpha
     if (mmulBatched(A, B, C, alpha, beta)) {
       return C;
     }
-    // If mmulBatched returned false (shouldn't happen), fall through to mmulNxN
+    // mmulBatched returns false on CUDA (to avoid manualBatchedGemm with CPU buffers),
+    // falling through to mmulNxN which dispatches to the proper CUDA kernel.
   }
 
   // Fallback: general N-dimensional batched multiplication
@@ -1185,19 +1193,27 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
 
     if ((xRankT == 3 || xRankT == 4) && xRankT == yRankT && yRankT == zRankT) {
       if (sd::graph::dspIsCudaBuild()) {
-        // CUDA: try cuBLAS strided batched GEMM first (most efficient for 3D/4D)
-        if (!tryBlasStridedBatched(xT, yT, zT, alpha, beta)) {
-          // cuBLAS couldn't handle it (non-contiguous strides, etc.)
+        // CUDA: First try passing transpose flags directly to tryBlasStridedBatched on the
+        // ORIGINAL arrays (x, y) — not the already-permuted xT/yT. This lets cuBLAS handle
+        // the transpose natively via CUBLAS_OP_T, producing accumulation order identical to
+        // the per-slice 2D path, avoiding floating-point divergence from permute+dup+CUBLAS_OP_N.
+        // The xT/yT permuted copies (from the block above) are only used when this fast path fails.
+        if (tryBlasStridedBatched(const_cast<NDArray*>(x), const_cast<NDArray*>(y), z, alpha, beta, transX, transY)) {
+          // Fast path succeeded; discard the permuted copies (they were allocated above but not needed).
+          if (xT != x && xT != nullptr) { delete xT; xT = const_cast<NDArray*>(x); }
+          if (yT != y && yT != nullptr) { delete yT; yT = const_cast<NDArray*>(y); }
+          // realFinalResult copy handled at end of function via cleanup path.
+        } else if (!tryBlasStridedBatched(xT, yT, zT, alpha, beta)) {
+          // Both paths failed (non-contiguous strides, unsupported type, etc.)
           // Create contiguous copies and retry cuBLAS before falling back to custom kernel.
           NDArray* xDup = xT->dup();
           NDArray* yDup = yT->dup();
           if (!tryBlasStridedBatched(xDup, yDup, zT, alpha, beta)) {
-            // Still failed (unsupported type, etc.) — fall back to custom CUDA kernel
+            // Still failed — fall back to custom CUDA kernel
             mmulNxN(xDup, yDup, zT, alpha, beta, z->ordering());
           }
           // Sync stream before freeing temporary arrays to ensure async GEMM completes.
           // During CUDA graph capture, stream sync is illegal (poisons the capture).
-          // The dup'd arrays live until end of capture; graph replay uses fixed addresses.
           if (!tl_graphExecutionActive && !tl_dspReplayActive) {
             sd::graph::dspSyncDefaultStream();
           }

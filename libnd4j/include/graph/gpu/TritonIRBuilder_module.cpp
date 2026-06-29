@@ -916,10 +916,35 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         if (slots[i].wiring.numInputs >= 1) {
           auto inputShape = resolveShapeLocal(slots[i].wiring.inputSourceIndices[0]);
           if (!inputShape.empty()) {
-            int64_t rowLen = inputShape.back();
             int64_t totalElements = 1;
             for (auto d : inputShape) totalElements *= static_cast<int64_t>(d);
-            int64_t nRows = totalElements / rowLen;
+
+            // For layer_norm / layer_norm_bp with explicit axis iArgs, the normalization
+            // may span multiple axes (e.g. {1,2,3} for NCHW 4D input).
+            // rowLen = product of inputShape[axis] for each axis in iArgs.
+            // For other norm ops (softmax, rms_norm, etc.), use the last dimension.
+            int64_t rowLen = inputShape.back();
+            {
+              std::string normSlotKey = normalizeOpToken(slots[i].ident.opName);
+              // Match both forward and backward layer_norm to get correct multi-axis rowLen.
+              // layer_norm_bp / fused_layer_norm_bp have the same iArgs axes as the forward op.
+              bool isLayerNormFwd = (normSlotKey == "layernorm"        || normSlotKey == "layernormalization" ||
+                                     normSlotKey == "layernormbp"       || normSlotKey == "layernormalizationbp" ||
+                                     normSlotKey == "fusedlayernormbp");
+              if (isLayerNormFwd && slots[i].args.numIArgs > 0 && slots[i].args.iArgs) {
+                int64_t axisRowLen = 1;
+                int inputRank = static_cast<int>(inputShape.size());
+                for (int a = 0; a < slots[i].args.numIArgs; a++) {
+                  int ax = static_cast<int>(slots[i].args.iArgs[a]);
+                  if (ax < 0) ax += inputRank;
+                  if (ax >= 0 && ax < inputRank) {
+                    axisRowLen *= static_cast<int64_t>(inputShape[ax]);
+                  }
+                }
+                if (axisRowLen > 1) rowLen = axisRowLen;
+              }
+            }
+            int64_t nRows = (rowLen > 0) ? totalElements / rowLen : 1;
             // Compute paddedRowLen for ALL normalization kernels (single-row AND multi-row).
             // The normalization emitter always creates paddedRowLen-wide tensors, so blockSize
             // must match to prevent shape mismatches in the generic output store
@@ -1980,9 +2005,12 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         actualNumElements *= static_cast<int64_t>(d);
       }
       
-      // For rms_norm, compute logical row length (last dimension) for correct reduction
-      int64_t logicalRowLen = actualShape64.back();
-      int64_t numRows = actualNumElements / logicalRowLen;
+      // For normalization, logical row length is the product of normalized axes.
+      // normLogicalRowLen is set at grid-computation time and reflects multi-axis
+      // layer_norm (e.g. axes {1,2,3} → rowLen = ch*H*W, not just last dim).
+      // Fall back to last dimension for single-axis ops like rms_norm/softmax.
+      int64_t logicalRowLen = (normLogicalRowLen > 0) ? normLogicalRowLen : actualShape64.back();
+      int64_t numRows = (logicalRowLen > 0) ? actualNumElements / logicalRowLen : 1;
       // Pad row length to next power of 2 for Triton make_range requirement
       int64_t paddedRowLen = 1;
       while (paddedRowLen < logicalRowLen) paddedRowLen *= 2;
@@ -2219,8 +2247,22 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           //   layer_norm_bp:       x=input[0], gamma=input[1], dy=last
           //   fused_layer_norm_bp: x=input[0], gamma=input[1], dy=input[2]
           bool isRmsBp = (normKey == "rmsnormbp");
+          bool isFusedLayerNormBp = (normKey == "fusedlayernormbp");
           mlir::Value bpX     = inputValue;                         // input[0] always = x
-          mlir::Value bpDy    = loadBpInput(isRmsBp ? 1 : 2, /*rowWise=*/true);
+          // dy (upstream gradient) position:
+          //   rms_norm_bp:         input[1]
+          //   fused_layer_norm_bp: input[2] (dy always at 2, bias at 3 if present)
+          //   layer_norm_bp:       last input (input[2] without bias, input[3] with bias)
+          int dyInputIdx;
+          if (isRmsBp) {
+            dyInputIdx = 1;
+          } else if (isFusedLayerNormBp) {
+            dyInputIdx = 2;
+          } else {
+            // layer_norm_bp: dy is the last input (numInputs - 1)
+            dyInputIdx = slot.wiring.numInputs - 1;
+          }
+          mlir::Value bpDy    = loadBpInput(dyInputIdx, /*rowWise=*/true);
           mlir::Value bpGamma = isRmsBp ? mlir::Value() : loadBpInput(1, /*rowWise=*/false);
 
           if (!bpX || !bpDy) {
@@ -5233,6 +5275,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               LongType inputElements = 1;
               for (auto d : argDesc.shape) inputElements *= d;
               mlir::Value loadOffsets = offsets;
+              mlir::Value effectiveMask = mask.getResult();
+              mlir::Value otherValue = mlir::Value();
               if (inputElements > 0 && inputElements < secMaxOutputElements) {
                 // Check if N-D broadcast indexing is needed.
                 // N-D broadcast is required when input and output shapes differ in
@@ -5241,6 +5285,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 // scalar broadcasting or last-dimension-only broadcasting.
                 const auto& inShapeRaw = argDesc.shape;
                 bool needsNdBroadcast = false;
+                // Partial-sequence: a dim is >1 in input but < the corresponding output dim
+                // (e.g. [1,1139,576] feeding [1,1142,576]).  These are NOT broadcast dims
+                // (inShape[d] != 1) so the N-D guard misses them; the flat modulo wraps
+                // them incorrectly.  Track separately so we can use direct+mask instead.
+                bool hasTruncatedDim = false;
                 if (!secMaxOutputShape.empty() && !inShapeRaw.empty() && secMaxOutputShape.size() >= 1) {
                   // Left-pad input shape with 1s if ranks differ
                   int outRank = static_cast<int>(secMaxOutputShape.size());
@@ -5255,6 +5304,16 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                     if (inShape[d] != secMaxOutputShape[d] && inShape[d] == 1) {
                       needsNdBroadcast = true;
                       break;
+                    }
+                  }
+
+                  // Partial-sequence detection (only relevant when not already N-D broadcast)
+                  if (!needsNdBroadcast) {
+                    for (int d = 0; d < outRank; d++) {
+                      if (inShape[d] != secMaxOutputShape[d] && inShape[d] > 1) {
+                        hasTruncatedDim = true;
+                        break;
+                      }
                     }
                   }
 
@@ -5294,18 +5353,49 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 }
 
                 if (!needsNdBroadcast) {
-                  // Flat modular indexing: works for scalar broadcast and last-dim-only broadcast
-                  auto inputSizeConst = builder.create<mlir::arith::ConstantIntOp>(
-                      loc, static_cast<int>(inputElements), 32);
-                  auto splatInputSize = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, inputSizeConst);
-                  loadOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatInputSize);
+                  if (hasTruncatedDim) {
+                    // Partial-sequence input: the input covers only a prefix of the output
+                    // range (e.g. [1,1139,576] → [1,1142,576]).  Use direct offsets (no
+                    // modulo) and mask out lanes beyond the input length so they read zero
+                    // instead of wrapping to an aliased position.
+                    // loadOffsets stays == offsets (already set above)
+                    auto inputSizeConst2 = builder.create<mlir::arith::ConstantIntOp>(
+                        loc, static_cast<int>(inputElements), 32);
+                    auto splatInputSize2 = builder.create<mlir::triton::SplatOp>(
+                        loc, i32TensorType, inputSizeConst2);
+                    auto inBoundsMask = builder.create<mlir::arith::CmpIOp>(
+                        loc, mlir::arith::CmpIPredicate::slt, offsets, splatInputSize2);
+                    effectiveMask = builder.create<mlir::arith::AndIOp>(
+                        loc, mask.getResult(), inBoundsMask.getResult());
+                    // Zero fill for out-of-range lanes (type-correct for f16/f32/int)
+                    mlir::Value zeroScalar;
+                    if (mlir::isa<mlir::FloatType>(elemType)) {
+                      zeroScalar = builder.create<mlir::arith::ConstantOp>(
+                          loc, builder.getFloatAttr(elemType, 0.0));
+                    } else {
+                      zeroScalar = builder.create<mlir::arith::ConstantOp>(
+                          loc, builder.getIntegerAttr(elemType, 0));
+                    }
+                    auto zeroTensorType = mlir::RankedTensorType::get({blockSize}, elemType);
+                    otherValue = builder.create<mlir::triton::SplatOp>(
+                        loc, zeroTensorType, zeroScalar);
+                    DSP_DIAG(COMPILE,
+                        "TritonIRBuilder: PARTIAL_SEQ_INPUT srcIdx=%d inElements=%lld outElements=%lld",
+                        srcIdx, (long long)inputElements, (long long)secMaxOutputElements);
+                  } else {
+                    // Flat modular indexing: works for scalar broadcast and last-dim-only broadcast
+                    auto inputSizeConst = builder.create<mlir::arith::ConstantIntOp>(
+                        loc, static_cast<int>(inputElements), 32);
+                    auto splatInputSize = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, inputSizeConst);
+                    loadOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatInputSize);
+                  }
                 }
               }
 
               auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, funcArg);
               auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, loadOffsets);
-              auto loaded = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), mask.getResult(),
-                  mlir::Value(), mlir::triton::CacheModifier::NONE,
+              auto loaded = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), effectiveMask,
+                  otherValue, mlir::triton::CacheModifier::NONE,
                   mlir::triton::EvictionPolicy::NORMAL, false);
               ssaValues[srcIdx] = loaded;
             }
@@ -5630,7 +5720,28 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             if (inputShape.empty()) continue;
 
             int64_t actualNumElements = shapeLength(inputShape);
+            // For layer_norm with multi-axis iArgs, compute rowLen from the product of
+            // normalized dimensions rather than just the last dimension.
             int64_t logicalRowLen = inputShape.back();
+            {
+              std::string normSlotKey2 = normalizeOpToken(slot.ident.opName);
+              // Match forward and backward layer_norm ops for multi-axis rowLen.
+              bool isLayerNormFwd2 = (normSlotKey2 == "layernorm"        || normSlotKey2 == "layernormalization" ||
+                                      normSlotKey2 == "layernormbp"       || normSlotKey2 == "layernormalizationbp" ||
+                                      normSlotKey2 == "fusedlayernormbp");
+              if (isLayerNormFwd2 && slot.args.numIArgs > 0 && slot.args.iArgs) {
+                int64_t axisRowLen2 = 1;
+                int inputRank2 = static_cast<int>(inputShape.size());
+                for (int a = 0; a < slot.args.numIArgs; a++) {
+                  int ax = static_cast<int>(slot.args.iArgs[a]);
+                  if (ax < 0) ax += inputRank2;
+                  if (ax >= 0 && ax < inputRank2) {
+                    axisRowLen2 *= static_cast<int64_t>(inputShape[ax]);
+                  }
+                }
+                if (axisRowLen2 > 1) logicalRowLen = axisRowLen2;
+              }
+            }
             if (actualNumElements <= 0 || logicalRowLen <= 0) continue;
 
             int64_t numRows = std::max<int64_t>(1, (actualNumElements + logicalRowLen - 1) / logicalRowLen);
@@ -5732,14 +5843,25 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                                normKey == "fusedlayernormbp");
               if (isNormBp) {
                 bool isRmsBp = (normKey == "rmsnormbp");
+                bool isFusedLayerNormBp2 = (normKey == "fusedlayernormbp");
 
                 // Load inputs using the existing loadNormInput helper:
                 //   rms_norm_bp:         x=input[0] (already in inputValue), dy=input[1]
-                //   layer/fused_norm_bp: x=input[0] (already in inputValue),
-                //                        gamma=input[1], dy=input[2]
+                //   fused_layer_norm_bp: x=input[0], gamma=input[1], dy=input[2]
+                //   layer_norm_bp:       x=input[0], gamma=input[1], dy=last input
+                //                        (input[2] without bias, input[3] with bias)
+                int dyIdx2;
+                if (isRmsBp) {
+                  dyIdx2 = 1;
+                } else if (isFusedLayerNormBp2) {
+                  dyIdx2 = 2;
+                } else {
+                  // layer_norm_bp: dy is the last input
+                  dyIdx2 = slot.wiring.numInputs - 1;
+                }
                 mlir::Value bpX     = inputValue;
                 mlir::Value bpDy    = loadNormInput(
-                    slot.wiring.inputSourceIndices[isRmsBp ? 1 : 2], /*rowWise=*/true);
+                    slot.wiring.inputSourceIndices[dyIdx2], /*rowWise=*/true);
                 mlir::Value bpGamma = isRmsBp ? mlir::Value()
                                               : loadNormInput(
                                                     slot.wiring.inputSourceIndices[1], /*rowWise=*/false);

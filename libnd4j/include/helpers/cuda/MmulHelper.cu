@@ -1660,7 +1660,19 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 // Supports both 3D [batch, M, K] and 4D [batch0, batch1, M, K] tensors
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
-                                        double alpha, double beta) {
+                                        double alpha, double beta,
+                                        bool transA, bool transB) {
+  // transA/transB native fast path (cuBLAS CUBLAS_OP_T on the un-permuted operands) is not
+  // reinstated in this routine yet. When a transpose is requested, decline so the caller
+  // (MmulHelper.cpp ~1201) takes its DOCUMENTED alternative: re-enter on the already-permuted
+  // xT/yT with transA=transB=false (the `else if (!tryBlasStridedBatched(xT, yT, zT, ...))`
+  // branch). That alternative is mathematically identical — it differs only in floating-point
+  // accumulation order — so this is path-selection, not a silent degrade. The 7-arg signature
+  // is required because MmulHelper.h declares it and MmulHelper.cpp calls it.
+  // TODO(restore-native-transpose): reinstate the CUBLAS_OP_T strided-batched path for
+  // bit-for-bit parity with the per-slice 2D accumulation order.
+  if (transA || transB) return false;
+
   const int aRank = A->rankOf();
   const int bRank = B->rankOf();
   const int cRank = C->rankOf();

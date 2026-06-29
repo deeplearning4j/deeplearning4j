@@ -97,7 +97,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   auto batch = input->lengthOf() / sizeChannels;
   std::vector<LongType> shape = {batch, size, channels};
   auto* input3D = input->reshape(input->ordering(), shape);
-  auto* output3D = input->reshape(input->ordering(), shape);
+  auto* output3D = output->reshape(output->ordering(), shape);
 
   if (block.width() > 1) {
     factor = INPUT_VARIABLE(1);
@@ -114,8 +114,20 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   }
 
   std::vector<LongType> axes({1});  // dim 1 of pseudoresult
-  // mean as reduction for last dimension set over size (dim 1) of result3D
-  auto* mean = input3D->reduceAlongDimension(reduce::Mean, &axes);
+  // Compute per-channel mean in double precision to match TF's higher-precision mean
+  // accumulation. SD's native float32 GPU parallel reduction accumulates in float32,
+  // while TF uses double internally; computing via a double target routes through
+  // ReduceFloatFunction<X,double> which accumulates in double (InterType = double).
+  NDArray* mean;
+  if (input3D->dataType() == DataType::DOUBLE) {
+    mean = input3D->reduceAlongDimension(reduce::Mean, &axes);
+  } else {
+    std::vector<LongType> meanShape = {batch, channels};
+    auto* meanDouble = new NDArray('c', meanShape, DataType::DOUBLE, block.launchContext());
+    input3D->reduceAlongDimension(reduce::Mean, meanDouble, &axes);
+    mean = meanDouble->cast(input3D->dataType());
+    delete meanDouble;
+  }
   // result as (x - mean) * factor + mean
   auto* temp = input3D->ulike();
   std::vector<LongType> zeroTwo = {0, 2};

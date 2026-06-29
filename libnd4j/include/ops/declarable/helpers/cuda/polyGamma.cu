@@ -107,10 +107,19 @@ void polyGamma(LaunchContext *context, NDArray&n, NDArray&x, NDArray &z) {
   NDArray::prepareSpecialUse({&z}, {&n, &x});
 
   dim3 launchDims = polygammaDims(z.lengthOf());
+  // Pin device shape pointers in named locals before the async kernel launch.
+  // specialShapeInfo() returns _shapeInfoD whose backing ConstantShapeBuffer is
+  // reference-counted and can be freed if evaluated lazily inside the
+  // BUILD_SINGLE_SELECTOR argument list (C++ argument evaluation order is
+  // unspecified).  Storing in locals keeps the device pointer valid through
+  // the launcher call and the cudaStreamSynchronize inside checkErrorCode.
+  const LongType* nShapeInfoD = n.specialShapeInfo();
+  const LongType* xShapeInfoD = x.specialShapeInfo();
+  const LongType* zShapeInfoD = z.specialShapeInfo();
   BUILD_SINGLE_SELECTOR(
       n.dataType(), polyGammaCudaLauncher,
-      (launchDims.y,launchDims.x,launchDims.z, context->getCudaStream(), n.specialBuffer(), n.specialShapeInfo(),
-       x.specialBuffer(), x.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()),
+      (launchDims.y,launchDims.x,launchDims.z, context->getCudaStream(), n.specialBuffer(), nShapeInfoD,
+       x.specialBuffer(), xShapeInfoD, z.specialBuffer(), zShapeInfoD),
       SD_FLOAT_TYPES);
 
   NDArray::registerSpecialUse({&z}, {&n, &x});

@@ -177,19 +177,30 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                                       externalInputs, numExternalInputs);
 
   if (sections.empty()) {
-    // Populate audit with all ops in the segment so the caller can report them
+    // All ops in this segment are natively-handled gap ops (cuBLAS/native CUDA).
+    // Triton has nothing to compile, but this is NOT an error — the CUDA graph
+    // capture will execute these ops natively via executeSlot() on the capture
+    // stream (forceNativeCapture / nativeOnlyGraphCapture path).
+    // Mark every op as isNativeHandled=true so segDispatchCompile's audit check
+    // at the "compiledCount==0 && failedCount==0" branch can return Status::OK
+    // and advance the lifecycle to CAPTURE_PENDING via markCompiled().
+    // Returning false here was the bug: it caused segDispatchCompile to return
+    // KERNEL_FAILURE, preventing capture from ever being reached for cuBLAS-only
+    // segments in GEM_AUTO mode after resetModelState() cleared the Triton cache.
     lastCompilationAudit_.clear();
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       CompilationAuditEntry entry;
       entry.slotIndex = s;
       entry.opName = slots[s].ident.opName;
       entry.wasCompiled = false;
-      entry.reason = "identifySections returned empty — no compilable sections found";
+      entry.isNativeHandled = true;
+      entry.reason = "all-gap segment: op is natively-executed (cuBLAS/CUDA native), no Triton kernel needed";
       lastCompilationAudit_.push_back(entry);
     }
-    DSP_DIAG(COMPILE, "TritonGraphBackend::compileSegment: no sections found for segment [%d-%d]",
-             seg.def.startSlot, seg.def.endSlot);
-    return false;
+    DSP_DIAG(COMPILE, "TritonGraphBackend::compileSegment: seg[%d-%d] is all-gap (native-only) — "
+             "marking %d ops as isNativeHandled, returning true for capture eligibility",
+             seg.def.startSlot, seg.def.endSlot, seg.def.endSlot - seg.def.startSlot + 1);
+    return true;
   }
 
   DSP_DIAG_SEG(COMPILE, seg.def.startSlot, "TritonGraphBackend: segment [%d-%d] has %d ops, %d sections (deviceId=%d)",
@@ -329,9 +340,17 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   auto slotLooksLikeShapeControl = [&](const NativeSlot& slot) -> bool {
     uint32_t traits = resolveSlotTraits(slot);
+    // SHAPE_ONLY and VIEW_PRODUCING are always host-only / shape-control.
     if ((traits & (sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT |
-                   sd::ops::OP_TRAIT_CONSTANT_GENERATION |
                    sd::ops::OP_TRAIT_VIEW_PRODUCING)) != 0) {
+      return true;
+    }
+    // CONST_GEN is only shape-control when it also carries VALUE_DEPENDENT_SHAPE
+    // (range, linspace, create — read host tensor values to determine output size).
+    // Plain fill ops (zeros_as, ones_as) have CONST_GEN but are CUDA-kernel-safe
+    // and should be placed inside Triton islands, not relegated to gap slots.
+    if ((traits & sd::ops::OP_TRAIT_CONSTANT_GENERATION) != 0 &&
+        (traits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0) {
       return true;
     }
 
@@ -1053,7 +1072,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
     std::vector<pthread_t> threads(numWorkers);
     std::vector<PthreadWorkerArg> args(numWorkers);
-    std::vector<std::thread> fallbackThreads;
+    int inlineFallbackCount = 0;  // workers that must run on calling thread
     auto workerFn = std::function<void()>(workerLoop);
 
     for (int i = 0; i < numWorkers; i++) {
@@ -1066,9 +1085,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           }, &args[i]);
       if (rc != 0) {
         DSP_DIAG(COMPILE, "TritonGraphBackend: pthread_create failed for worker %d (rc=%d), "
-                 "falling back to std::thread", i, rc);
-        fallbackThreads.emplace_back(workerLoop);
+                 "will run inline on calling thread", i, rc);
         threads[i] = 0;
+        inlineFallbackCount++;
       }
     }
     pthread_attr_destroy(&attr);
@@ -1078,8 +1097,11 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         pthread_join(threads[i], nullptr);
       }
     }
-    for (auto& ft : fallbackThreads) {
-      ft.join();
+    // Run inline fallback iterations on the calling thread instead of spawning
+    // std::thread (which throws std::system_error when resources are exhausted,
+    // crashing the process).  workerLoop drains the shared task queue.
+    for (int i = 0; i < inlineFallbackCount; i++) {
+      workerLoop();
     }
 #endif
   } else {

@@ -31,6 +31,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <system/common.h>
+#ifdef __CUDACC__
+#include <memory/cuda/CudaMemoryPool.h>
+#endif
 
 // Question: Should the indexes here really be int? Isn't size_t or sd::LongType more appropriate?
 namespace sd {
@@ -45,6 +48,7 @@ struct Buffer {
   int allocatedOnGpu = 0;
   T *data = nullptr;
   T *gData = nullptr;
+  int gDeviceId = 0;
   T one, two;
 
  public:
@@ -189,7 +193,9 @@ SD_HOST void allocBuffer(Buffer<T> **buffer, int length) {
 
   CHECK_ALLOC(bufferRef->data, "Failed to allocate new buffer", sizeof(T) * length);
 #ifdef __CUDACC__
-  checkCudaErrors(cudaMalloc(&bufferRef->gData, sizeof(T) * length));
+  cudaGetDevice(&bufferRef->gDeviceId);
+  bufferRef->gData = reinterpret_cast<T *>(
+      sd::memory::CudaMemoryPool::getInstance().allocateDirect(sizeof(T) * length, bufferRef->gDeviceId));
 #endif
 }
 
@@ -201,7 +207,8 @@ template <typename T>
 
 SD_HOST void freeBuffer(Buffer<T> *buffer) {
 #ifdef __CUDACC__
-  if (buffer->gData != nullptr) checkCudaErrors(cudaFree(buffer->gData));
+  if (buffer->gData != nullptr)
+    sd::memory::CudaMemoryPool::getInstance().free(buffer->gData, buffer->gDeviceId);
 #endif
 
   delete buffer;
@@ -228,10 +235,9 @@ template <typename T>
 SD_HOST Buffer<T> *createBuffer(T *data, int length, cudaStream_t stream) {
   Buffer<T> *ret = createBuffer(data, length);
 
-  T *gData;
-  T **gDataRef = &(gData);
-  checkCudaErrors(cudaMalloc(reinterpret_cast<void **>(gDataRef), sizeof(T) * length));
-  ret->gData = gData;
+  cudaGetDevice(&ret->gDeviceId);
+  ret->gData = reinterpret_cast<T *>(
+      sd::memory::CudaMemoryPool::getInstance().allocateDirect(sizeof(T) * length, ret->gDeviceId));
   checkCudaErrors(cudaMemcpyAsync(ret->gData, ret->data, sizeof(T) * length, cudaMemcpyHostToDevice, stream));
   return ret;
 }

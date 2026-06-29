@@ -166,7 +166,15 @@ DECLARE_SHAPE_FN(gather) {
   sd::LongType axis = 0;
 
   if (block.width() > 2) {
-    axis = INPUT_VARIABLE(2)->e<sd::LongType>(0);
+    // Guard: INPUT_VARIABLE(2) can be null during the DSP shape pre-pass when
+    // _fastpath_in is null-padded to slot.wiring.numInputs. Fall back to iArgs
+    // when the axis NDArray is absent to avoid null-ptr SIGSEGV (si_addr=0x10).
+    auto axisArr = INPUT_VARIABLE(2);
+    if (axisArr != nullptr) {
+      axis = axisArr->e<sd::LongType>(0);
+    } else {
+      axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
+    }
   } else
     axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
 

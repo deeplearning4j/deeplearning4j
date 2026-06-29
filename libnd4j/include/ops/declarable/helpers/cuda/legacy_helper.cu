@@ -32,9 +32,10 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 void cubeDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * (3 * x * x); });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // applyPairwiseLambda is a no-op stub on CUDA (std::function cannot run device-side).
+  // transform::CubeDerivative computes 3*x^2 element-wise; then multiply by epsilon.
+  input->applyTransform(transform::CubeDerivative, output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -92,12 +93,10 @@ void sigmCrossEntropyGrad(LaunchContext* context, NDArray* logits, NDArray* labe
 
 template <typename T>
 void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) {
-    T ss = (T)1.f + math::sd_abs<T,T>(x);
-    return y * ((T)1.0f / (ss * ss));
-  });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // applyPairwiseLambda is a no-op stub on CUDA (std::function cannot run device-side).
+  // transform::SoftSignDerivative computes 1/(1+|x|)^2 element-wise; then multiply by epsilon.
+  input->applyTransform(transform::SoftSignDerivative, output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -108,12 +107,10 @@ void softSignDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 void softPlusDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) {
-    T p = math::sd_pow<T, T, T>(static_cast<T>(M_E), x);
-    return y * (p / (p + 1.));
-  });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // applyPairwiseLambda is a no-op stub on CUDA (std::function cannot run device-side).
+  // softplus'(x) = e^x/(1+e^x) = sigmoid(x); use transform::Sigmoid then multiply by epsilon.
+  input->applyTransform(transform::Sigmoid, output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void softPlusDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -124,25 +121,21 @@ void softPlusDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theS
 /// \param input
 /// \param epsilon
 /// \param output
-template <typename T>
-void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) {
-    T s = math::sd_sigmoid<T, T>(x);
-    return y * (s * ((T)1.0f - s));
-  });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
-}
-
 void sigmoidDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
-  BUILD_SINGLE_SELECTOR(theFirst->dataType(), sigmoidDerivative_, (theFirst, theSecond, theOutput), SD_FLOAT_TYPES);
+  // applyPairwiseLambda is a no-op stub on CUDA (std::function cannot run device-side).
+  // Compute sigmoid'(x)*epsilon correctly using existing CUDA transform + pairwise ops:
+  //   1. SigmoidDerivative transform: theOutput = sigmoid(x)*(1-sigmoid(x))
+  //   2. Multiply theOutput * epsilon in-place
+  theFirst->applyTransform(transform::SigmoidDerivative, theOutput);
+  theOutput->applyPairwiseTransform(pairwise::Multiply, theSecond, theOutput);
 }
 
 template <typename T>
 void hardSigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr); });
-
-  input->applyPairwiseLambda(epsilon, functor, output);
+  // applyPairwiseLambda is a no-op stub on CUDA (std::function cannot run device-side).
+  // transform::HardSigmoidDerivative computes the conditional 0.2 gate; then multiply by epsilon.
+  input->applyTransform(transform::HardSigmoidDerivative, output);
+  output->applyPairwiseTransform(pairwise::Multiply, epsilon, output);
 }
 
 void hardSigmoidDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {

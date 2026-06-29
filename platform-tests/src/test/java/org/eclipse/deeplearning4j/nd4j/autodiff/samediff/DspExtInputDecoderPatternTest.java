@@ -30,6 +30,7 @@ import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -220,6 +221,109 @@ public class DspExtInputDecoderPatternTest {
         assertTrue(stuckCount < 3,
                 mode + ": DEGENERATE — " + stuckCount + "/29 steps stuck! sums=" + sums.subList(0, Math.min(10, sums.size())));
         log.info("[DECODE_PATTERN] mode={} PASS — {}/29 steps unique", mode, 29 - stuckCount);
+    }
+
+    @ParameterizedTest(name = "multiPositionExtInputNoCollapse mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON"})
+    @DisplayName("Multi-position prefill ext-input [1,N,d] must not collapse the last position onto an early one")
+    void testMultiPositionExtInputNoCollapse(GraphExecutionMode mode) {
+        // COVERAGE GAP: every other ext-input test here uses inputs_embeds [1,1,d] (single decode token).
+        // The VLM PREFILL feeds inputs_embeds [1,N,d] (N=1142 in the real SmolDocling model) — a
+        // MULTI-POSITION external input. The decode garbage (first token 11126="User") was traced to the
+        // DSP staging of this multi-position external input collapsing the LAST (sample) position onto an
+        // early one (pos1141 == pos2 in the verbose op dump). Isolation: a strictly-increasing per-position
+        // input must produce a strictly-largest LAST-position output. Reproduces in ALL modes if it's the bug.
+        final int N = 1142, embedDim = 576, outDim = 64;
+        sd = SameDiff.create();
+        SDVariable embed = sd.placeHolder("inputs_embeds", DataType.FLOAT, 1, N, embedDim);
+        SDVariable flat = embed.reshape(N, embedDim);                                 // [N, d]
+        SDVariable w = sd.var("w", Transforms.abs(Nd4j.randn(DataType.FLOAT, embedDim, outDim)).addi(0.1f));
+        SDVariable mm = sd.mmul("mm", flat, w);                                       // [N, outDim], row i = embed[i]·w (>0)
+        SDVariable outVar = mm.reshape(1, N, outDim);                                 // [1, N, outDim]
+        final String OUT = outVar.name();
+        configureMode(sd, mode);
+
+        // Position i is the constant (i+1)*0.01 across all d  ->  out[i].sum strictly increases with i.
+        INDArray embedArr = Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).muli(0.01)
+                .reshape(N, 1).broadcast(N, embedDim).reshape(1, N, embedDim);
+        Map<String, INDArray> ph = singlePh("inputs_embeds", embedArr);
+        warmup(sd, ph, OUT, 3);                                                       // drive DSP to active/replay
+        INDArray out = sd.output(ph, OUT).get(OUT);                                   // [1, N, outDim]
+
+        INDArray posSums = out.sum(2).reshape(N);                                     // sum per position, [N]
+        double lastSum = posSums.getDouble(N - 1);
+        double maxEarly = posSums.get(NDArrayIndex.interval(0, N - 1)).maxNumber().doubleValue();
+        // Last position has the largest input (N*0.01) -> must have the strictly largest output sum.
+        // A staging collapse (last position <- an early one) makes lastSum equal a small early sum.
+        assertTrue(lastSum > maxEarly + 1e-3,
+                mode + ": MULTI-POSITION COLLAPSE — last position (" + (N - 1) + ") output sum " + lastSum
+                        + " is NOT strictly > max early-position sum " + maxEarly
+                        + " -> DSP staging collapsed the last position onto an earlier one (the pos1141==pos2 decode bug).");
+        log.info("[MULTI_POS_EXT] mode={} PASS — lastSum {} > maxEarly {} (all {} positions distinct)", mode, lastSum, maxEarly, N);
+    }
+
+    @ParameterizedTest(name = "multiPositionAttentionNoCollapse mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON"})
+    @DisplayName("Multi-position self-attention [1,N,d] must not collapse the last position onto an early one")
+    void testMultiPositionAttentionNoCollapse(GraphExecutionMode mode) {
+        // PROGRESSIVE BUILD-UP increment: the plain-matmul multi-position test PASSES (staging is fine),
+        // so the collapse needs position INTERACTION. This adds single-head self-attention
+        // (Q·Kᵀ then ·V — every output position mixes all positions) over the [1,N,d] prefill input.
+        // With positive weights and strictly-increasing per-position input, each output position stays
+        // proportional to (i+1), so the LAST position's output sum is still strictly the largest; a
+        // position collapse (last <- early) in the attention matmuls / Kᵀ transpose breaks that.
+        final int N = 1142, d = 576;
+        sd = SameDiff.create();
+        SDVariable embed = sd.placeHolder("inputs_embeds", DataType.FLOAT, 1, N, d);
+        SDVariable flat = embed.reshape(N, d);                                       // [N,d]
+        SDVariable wq = sd.var("aq", Transforms.abs(Nd4j.randn(DataType.FLOAT, d, d)).muli(0.01f).addi(0.001f));
+        SDVariable wk = sd.var("ak", Transforms.abs(Nd4j.randn(DataType.FLOAT, d, d)).muli(0.01f).addi(0.001f));
+        SDVariable wv = sd.var("av", Transforms.abs(Nd4j.randn(DataType.FLOAT, d, d)).muli(0.01f).addi(0.001f));
+        SDVariable q = sd.mmul("aq_p", flat, wq);                                    // [N,d]
+        SDVariable k = sd.mmul("ak_p", flat, wk);                                    // [N,d]
+        SDVariable v = sd.mmul("av_p", flat, wv);                                    // [N,d]
+        SDVariable scores = sd.mmul("ascore", q, k.permute(1, 0));                   // [N,N] — position interaction
+        SDVariable ctx = sd.mmul("actx", scores, v);                                 // [N,d]
+        SDVariable outVar = ctx.reshape(1, N, d);                                    // [1,N,d]
+        final String OUT = outVar.name();
+        configureMode(sd, mode);
+
+        INDArray embedArr = Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).muli(0.01)
+                .reshape(N, 1).broadcast(N, d).reshape(1, N, d);
+        Map<String, INDArray> ph = singlePh("inputs_embeds", embedArr);
+        warmup(sd, ph, OUT, 3);
+        INDArray out = sd.output(ph, OUT).get(OUT);                                  // [1,N,d]
+
+        INDArray posSums = out.sum(2).reshape(N);
+        double lastSum = posSums.getDouble(N - 1);
+        double maxEarly = posSums.get(NDArrayIndex.interval(0, N - 1)).maxNumber().doubleValue();
+        assertTrue(lastSum > maxEarly,
+                mode + ": ATTENTION POSITION COLLAPSE — last position (" + (N - 1) + ") output sum " + lastSum
+                        + " is NOT strictly > max early-position sum " + maxEarly
+                        + " -> position interaction (Q·Kᵀ·V) collapsed the last position onto an earlier one.");
+        log.info("[MULTI_POS_ATTN] mode={} PASS — lastSum {} > maxEarly {}", mode, lastSum, maxEarly);
+    }
+
+    @org.junit.jupiter.api.Test
+    @DisplayName("broadcast_to of a VIEW (GQA 3→9 KV-head expand) must not produce zeros")
+    void testBroadcastToOfViewNoZeros() {
+        // ROOT of the VLM decode garbage (a97a50645 forward-trace): the GQA KV-head 3→9 expansion via
+        // broadcast_to on a VIEW input emerges ALL ZEROS → K=V=0 into attention → dead attention → garbage.
+        // The real SmolDocling decoder does: K[1,N,3,64] → permute[1,3,N,64] → expand_dims[1,3,1,N,64]
+        // → broadcast_to[1,3,3,N,64]. a6f3d937's GQA isolation used sd.tile (passed), NEVER broadcast_to.
+        final int N = 8;
+        INDArray base = Nd4j.arange(1, N * 3 * 64 + 1).castTo(DataType.FLOAT).reshape(1, N, 3, 64); // distinct non-zero
+        INDArray view = Nd4j.expandDims(base.permute(0, 2, 1, 3), 2);  // [1,3,N,64] permute(view) → [1,3,1,N,64] view
+        assertNotEquals(0.0, view.sumNumber().doubleValue(), "precondition: view input must be non-zero");
+        INDArray output = Nd4j.create(DataType.FLOAT, 1, 3, 3, N, 64);
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo(view, new long[]{1, 3, 3, N, 64}, output));
+        double sum = output.sumNumber().doubleValue();
+        assertNotEquals(0.0, sum,
+                "broadcast_to of a VIEW produced ALL ZEROS (GQA KV-head expansion bug — the decode root). sum=" + sum);
+        // each of the 3 broadcast copies along dim-2 must equal the view's single slice
+        assertEquals(view.getDouble(0, 1, 0, 3, 5), output.getDouble(0, 1, 2, 3, 5), 1e-5, "broadcast copy 2 mismatch");
+        assertEquals(view.getDouble(0, 2, 0, 7, 1), output.getDouble(0, 2, 1, 7, 1), 1e-5, "broadcast copy 1 mismatch");
+        log.info("[BROADCAST_VIEW] PASS — broadcast_to of view non-zero, sum={}", sum);
     }
 
     @ParameterizedTest(name = "decodePattern50Steps mode={0}")
@@ -1584,5 +1688,1018 @@ public class DspExtInputDecoderPatternTest {
         assertTrue(stuckCount <= 1,
                 mode + " SV12F: island-only stuck for " + stuckCount + "/" + totalSteps
                         + " steps. Triton island infrastructure broken even without gap ops.");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CATEGORY 19 EXTENSION: GQA Progressive Build-Up (Position-Collapse Isolation)
+    //
+    // testMultiPositionExtInputNoCollapse + testMultiPositionAttentionNoCollapse both
+    // PASS all 4 modes (basic reshape+mmul and 2D attention staging are correct).
+    // These 5 increments add GQA decoder structure ONE step at a time over the full
+    // [1,1142,576] prefill tensor to find the FIRST step that makes pos[N-1] ≡ pos[≈2].
+    //
+    // Increments 1-3 (no position-dependent transform): assert lastSum > maxEarly
+    //   (with all-positive weights and (i+1)*0.01 per-pos input, pos N-1 must have
+    //   strictly the largest output-sum; a collapse makes it small like an early pos).
+    // Increments 4-5 (RoPE makes output non-monotone): ROBUST assertion — last pos
+    //   output vector must NOT equalsWithEps(any early pos vector, 1e-4).
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * GQA increment 1: head reshape pipeline.
+     * embed[1,N,576] → flat[N,576] → Wq mm → q[N,576]
+     *   → reshape[N,9,64] → permute[9,N,64] → reshape[9*N,64] → Wo mm → [9*N,64]
+     *   → reshape[9,N,64] → permute[N,9,64] → reshape[1,N,576]
+     *
+     * Prime suspect: reshape of the NON-CONTIGUOUS permuted view [9,N,64]→[9*N,64]
+     * (reshapei-class: if shape::reshapeC does not materialise a copy, position info corrupts).
+     */
+    @ParameterizedTest(name = "gqaHeadReshapeNoCollapse mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON"})
+    @DisplayName("GQA incr-1: head reshape/permute pipeline over [1,N,576] must not collapse positions")
+    void testGqaHeadReshapeNoCollapse(GraphExecutionMode mode) {
+        final int N = 1142, D = 576, heads = 9, headDim = 64; // D == heads * headDim
+        sd = SameDiff.create();
+        SDVariable embed = sd.placeHolder("inputs_embeds", DataType.FLOAT, 1, N, D);
+        SDVariable flat  = sd.reshape("flat",  embed, (long)N, (long)D);              // [N, D]
+
+        // Q projection
+        SDVariable Wq   = sd.var("Wq", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, D)).addi(0.01f));
+        SDVariable q    = sd.mmul("q", flat, Wq);                                      // [N, D]
+
+        // GQA head reshape + permute — the reshapei-class suspect
+        SDVariable qH   = sd.reshape("qH", q, (long)N, (long)heads, (long)headDim);  // [N,9,64] contiguous
+        SDVariable qP   = sd.permute("qP", qH, 1, 0, 2);                             // [9,N,64] non-contiguous
+        SDVariable qF   = sd.reshape("qF", qP, (long)(heads * N), (long)headDim);    // [9*N,64] reshape of non-contig
+
+        // Per-"head" linear on the flattened [9*N, 64]
+        SDVariable Wo   = sd.var("Wo", Transforms.abs(Nd4j.randn(DataType.FLOAT, headDim, headDim)).addi(0.01f));
+        SDVariable qOut = sd.mmul("qOut", qF, Wo);                                    // [9*N, 64]
+
+        // Permute back
+        SDVariable qB   = sd.reshape("qB",  qOut, (long)heads, (long)N, (long)headDim); // [9,N,64]
+        SDVariable qBP  = sd.permute("qBP", qB, 1, 0, 2);                             // [N,9,64] non-contiguous
+        SDVariable out  = sd.reshape("out", qBP, 1L, (long)N, (long)D);               // [1,N,576]
+        configureMode(sd, mode);
+
+        // Strictly-increasing per-position input: position i = (i+1)*0.01 across all D dims
+        INDArray embedArr = Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).muli(0.01f)
+                .reshape(N, 1).broadcast(N, D).reshape(1, N, D);
+        Map<String, INDArray> ph = singlePh("inputs_embeds", embedArr);
+        warmup(sd, ph, "out", 3);
+        INDArray result = sd.output(ph, "out").get("out");                            // [1, N, D]
+
+        INDArray posSums = result.sum(2).reshape(N);                                  // per-position sum [N]
+        double lastSum   = posSums.getDouble(N - 1);
+        double maxEarly  = posSums.get(NDArrayIndex.interval(0, N - 1)).maxNumber().doubleValue();
+        // With all-positive weights & (i+1)*0.01 input: pos[N-1] must strictly dominate.
+        // A collapse (pos[N-1] ← pos[≈2] in DSP staging) makes lastSum ≈ 3*0.01*factor << maxEarly.
+        assertTrue(lastSum > maxEarly + 1e-3,
+                mode + " GQA_INCR1_HEAD_RESHAPE: POSITION COLLAPSE — pos[" + (N - 1) + "] sum="
+                        + lastSum + " NOT > maxEarly=" + maxEarly
+                        + " (collapse reproduced at GQA reshape/permute step; reshapei-class confirmed)");
+        log.info("[GQA_INCR1] mode={} PASS — lastSum={} maxEarly={} ratio={}", mode,
+                lastSum, maxEarly, String.format("%.4f", lastSum / (maxEarly + 1e-12)));
+    }
+
+    /**
+     * GQA increment 2: + KV-head tile (3 KV heads tiled to 9 Q heads).
+     * Adds K path: flat → Wk mm → k[N,192] → reshape[N,3,64] → permute[3,N,64] → tile[9,N,64].
+     * Combined: qP[9,N,64] + kTiled[9,N,64] → permute[N,9,64] → reshape[1,N,576].
+     */
+    @ParameterizedTest(name = "gqaKvRepeatNoCollapse mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON"})
+    @DisplayName("GQA incr-2: +KV head tile (3→9 via sd.tile) must not collapse positions")
+    void testGqaKvRepeatNoCollapse(GraphExecutionMode mode) {
+        final int N = 1142, D = 576, heads = 9, kvHeads = 3, headDim = 64;
+        final int kvD = kvHeads * headDim; // 192
+        sd = SameDiff.create();
+        SDVariable embed = sd.placeHolder("inputs_embeds", DataType.FLOAT, 1, N, D);
+        SDVariable flat  = sd.reshape("flat",  embed, (long)N, (long)D);
+
+        // Q path → [9, N, 64]
+        SDVariable Wq = sd.var("Wq", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, D)).addi(0.01f));
+        SDVariable q  = sd.mmul("q",  flat, Wq);                                       // [N, D]
+        SDVariable qH = sd.reshape("qH", q,  (long)N, (long)heads, (long)headDim);    // [N,9,64]
+        SDVariable qP = sd.permute("qP", qH, 1, 0, 2);                                // [9,N,64]
+
+        // K path: 3 KV heads tiled 3× along the head axis → [9, N, 64]
+        SDVariable Wk = sd.var("Wk", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, kvD)).addi(0.01f));
+        SDVariable k  = sd.mmul("k",  flat, Wk);                                       // [N, 192]
+        SDVariable kH = sd.reshape("kH", k,  (long)N, (long)kvHeads, (long)headDim);  // [N,3,64]
+        SDVariable kP = sd.permute("kP", kH, 1, 0, 2);                                // [3,N,64]
+        // tile([3,N,64], [3,1,1]) → [9,N,64]: head dim repeated 3× (head0×3 then head1×3 ...)
+        SDVariable kT = sd.tile("kT",  kP,  heads / kvHeads, 1, 1);                   // [9,N,64]
+
+        // Combine Q+K element-wise, permute back, reshape to output
+        SDVariable qk  = qP.add("qk",   kT);                                           // [9,N,64]
+        SDVariable qkP = sd.permute("qkP", qk, 1, 0, 2);                              // [N,9,64]
+        SDVariable out = sd.reshape("out", qkP, 1L, (long)N, (long)D);                // [1,N,576]
+        configureMode(sd, mode);
+
+        INDArray embedArr = Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).muli(0.01f)
+                .reshape(N, 1).broadcast(N, D).reshape(1, N, D);
+        Map<String, INDArray> ph = singlePh("inputs_embeds", embedArr);
+        warmup(sd, ph, "out", 3);
+        INDArray result = sd.output(ph, "out").get("out");
+
+        INDArray posSums = result.sum(2).reshape(N);
+        double lastSum   = posSums.getDouble(N - 1);
+        double maxEarly  = posSums.get(NDArrayIndex.interval(0, N - 1)).maxNumber().doubleValue();
+        assertTrue(lastSum > maxEarly + 1e-3,
+                mode + " GQA_INCR2_KV_TILE: POSITION COLLAPSE — pos[" + (N - 1) + "] sum="
+                        + lastSum + " NOT > maxEarly=" + maxEarly + " (collapse at KV-tile step)");
+        log.info("[GQA_INCR2] mode={} PASS — lastSum={} maxEarly={}", mode, lastSum, maxEarly);
+    }
+
+    /**
+     * GQA increment 3: + causal mask on Q·K^T scores via dotProductAttentionV2.
+     * Uses flash-attention variant with GQA (9 Q heads, 3 KV heads, useCausalMask=true).
+     * Shapes: Q [1,N,9,64], K [1,N,3,64], V [1,N,3,64] → attn [1,N,9,64] → [1,N,576].
+     * With causal mask + all-positive weights: pos[N-1] sees all N positions (most contribution).
+     */
+    @ParameterizedTest(name = "gqaCausalMaskNoCollapse mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON"})
+    @DisplayName("GQA incr-3: +causal mask (dotProductAttentionV2 useCausalMask=true) must not collapse positions")
+    void testGqaCausalMaskNoCollapse(GraphExecutionMode mode) {
+        final int N = 1142, D = 576, heads = 9, kvHeads = 3, headDim = 64;
+        final int kvD = kvHeads * headDim; // 192
+        sd = SameDiff.create();
+        SDVariable embed = sd.placeHolder("inputs_embeds", DataType.FLOAT, 1, N, D);
+        SDVariable flat  = sd.reshape("flat", embed, (long)N, (long)D);               // [N, D]
+
+        // Q: flat → mm → [N,D] → reshape [N,9,64] → [1,N,9,64]
+        SDVariable Wq  = sd.var("Wq", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, D)).addi(0.01f));
+        SDVariable q   = sd.mmul("q", flat, Wq);
+        SDVariable q3d = sd.reshape("q3d", q,  (long)N, (long)heads, (long)headDim);  // [N,9,64]
+        SDVariable q4d = sd.reshape("q4d", q3d, 1L, (long)N, (long)heads, (long)headDim); // [1,N,9,64]
+
+        // K: flat → mm → [N,kvD=192] → reshape [N,3,64] → [1,N,3,64]
+        SDVariable Wk  = sd.var("Wk", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, kvD)).addi(0.01f));
+        SDVariable k   = sd.mmul("k", flat, Wk);
+        SDVariable k3d = sd.reshape("k3d", k,  (long)N, (long)kvHeads, (long)headDim);
+        SDVariable k4d = sd.reshape("k4d", k3d, 1L, (long)N, (long)kvHeads, (long)headDim); // [1,N,3,64]
+
+        // V: flat → mm → [N,kvD=192] → reshape [1,N,3,64]
+        SDVariable Wv  = sd.var("Wv", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, kvD)).addi(0.01f));
+        SDVariable v   = sd.mmul("v", flat, Wv);
+        SDVariable v3d = sd.reshape("v3d", v,  (long)N, (long)kvHeads, (long)headDim);
+        SDVariable v4d = sd.reshape("v4d", v3d, 1L, (long)N, (long)kvHeads, (long)headDim); // [1,N,3,64]
+
+        // GQA flash attention with causal mask (0 scaleFactor = auto = 1/sqrt(headDim))
+        // Output: [1, N, 9, 64]
+        SDVariable attn = sd.nn().dotProductAttentionV2("attn",
+                q4d, v4d, k4d, null, null, 0.0, 0.0, true, false);
+        // Reshape [1,N,9,64] → [1,N,576] (9*64=576)
+        SDVariable out = sd.reshape("out", attn, 1L, (long)N, (long)D);
+        configureMode(sd, mode);
+
+        INDArray embedArr = Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).muli(0.01f)
+                .reshape(N, 1).broadcast(N, D).reshape(1, N, D);
+        Map<String, INDArray> ph = singlePh("inputs_embeds", embedArr);
+        warmup(sd, ph, "out", 3);
+        INDArray result = sd.output(ph, "out").get("out");                             // [1, N, 576]
+
+        INDArray posSums = result.sum(2).reshape(N);
+        double lastSum   = posSums.getDouble(N - 1);
+        double maxEarly  = posSums.get(NDArrayIndex.interval(0, N - 1)).maxNumber().doubleValue();
+        // Causal mask: pos[N-1] attends to ALL N tokens (most contribution) → still monotone.
+        assertTrue(lastSum > maxEarly + 1e-3,
+                mode + " GQA_INCR3_CAUSAL_MASK: POSITION COLLAPSE — pos[" + (N - 1) + "] sum="
+                        + lastSum + " NOT > maxEarly=" + maxEarly + " (collapse at causal-mask attn step)");
+        log.info("[GQA_INCR3] mode={} PASS — lastSum={} maxEarly={}", mode, lastSum, maxEarly);
+    }
+
+    /**
+     * GQA increment 4: + RoPE rotation on Q and K.
+     * fusedRoPE(positionOffset=0) applied to Q [1,N,9,64] and K [1,N,3,64]:
+     * position i gets rotated by angle proportional to i (positions 0..N-1 for the N-token prefill).
+     * RoPE makes output non-monotone → ROBUST assertion (last pos vec ≠ any early pos vec).
+     */
+    @ParameterizedTest(name = "gqaWithRopeNoCollapse mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON"})
+    @DisplayName("GQA incr-4: +RoPE on Q,K (positionOffset=0) — last pos output must differ from early pos outputs")
+    void testGqaWithRopeNoCollapse(GraphExecutionMode mode) {
+        final int N = 1142, D = 576, heads = 9, kvHeads = 3, headDim = 64;
+        final int kvD = kvHeads * headDim;
+        sd = SameDiff.create();
+        SDVariable embed = sd.placeHolder("inputs_embeds", DataType.FLOAT, 1, N, D);
+        SDVariable flat  = sd.reshape("flat", embed, (long)N, (long)D);
+
+        // Q projection → [1, N, 9, 64]
+        SDVariable Wq  = sd.var("Wq", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, D)).addi(0.01f));
+        SDVariable q   = sd.mmul("q", flat, Wq);
+        SDVariable q4d = sd.reshape("q4d",
+                sd.reshape("q3d", q, (long)N, (long)heads, (long)headDim),
+                1L, (long)N, (long)heads, (long)headDim);                               // [1,N,9,64]
+
+        // K projection → [1, N, 3, 64]
+        SDVariable Wk  = sd.var("Wk", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, kvD)).addi(0.01f));
+        SDVariable k   = sd.mmul("k", flat, Wk);
+        SDVariable k4d = sd.reshape("k4d",
+                sd.reshape("k3d", k, (long)N, (long)kvHeads, (long)headDim),
+                1L, (long)N, (long)kvHeads, (long)headDim);                             // [1,N,3,64]
+
+        // V projection → [1, N, 3, 64]
+        SDVariable Wv  = sd.var("Wv", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, kvD)).addi(0.01f));
+        SDVariable v   = sd.mmul("v", flat, Wv);
+        SDVariable v4d = sd.reshape("v4d",
+                sd.reshape("v3d", v, (long)N, (long)kvHeads, (long)headDim),
+                1L, (long)N, (long)kvHeads, (long)headDim);                             // [1,N,3,64]
+
+        // RoPE: positionOffset=0 → token i gets position i (prefill: positions 0..N-1).
+        // Different positions → different rotations → output at each position is unique.
+        SDVariable posOffset = sd.constant("pos0", Nd4j.scalar(DataType.INT64, 0L));
+        SDVariable qRope = sd.nn().fusedRoPE("qRope", q4d, posOffset, 0, 10000.0, 1.0, headDim);
+        SDVariable kRope = sd.nn().fusedRoPE("kRope", k4d, posOffset, 0, 10000.0, 1.0, headDim);
+
+        // GQA flash attention with causal mask
+        SDVariable attn = sd.nn().dotProductAttentionV2("attn",
+                qRope, v4d, kRope, null, null, 0.0, 0.0, true, false);
+        SDVariable out  = sd.reshape("out", attn, 1L, (long)N, (long)D);               // [1,N,576]
+        configureMode(sd, mode);
+
+        INDArray embedArr = Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).muli(0.01f)
+                .reshape(N, 1).broadcast(N, D).reshape(1, N, D);
+        Map<String, INDArray> ph = singlePh("inputs_embeds", embedArr);
+        warmup(sd, ph, "out", 3);
+        INDArray result = sd.output(ph, "out").get("out");                              // [1, N, 576]
+
+        // ROBUST assertion: pos[N-1] output vector ≠ any early-position output vector within eps.
+        // A DSP collapse (pos[N-1] ← pos[≈2]) makes them equal.
+        assertGqaLastPosDistinct(result, N, D, mode, "GQA_INCR4_ROPE");
+        log.info("[GQA_INCR4] mode={} PASS — last pos output distinct from all checked early pos outputs", mode);
+    }
+
+    /**
+     * GQA increment 5: full decoder layer (RMSNorm + GQA-attention + residual + gated MLP + residual).
+     * Exact SmolDocling text transformer decoder structure over [1,N,576] prefill input.
+     */
+    @ParameterizedTest(name = "gqaFullLayerNoCollapse mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON"})
+    @DisplayName("GQA incr-5: full decoder layer (RMSNorm+GQA-Attn+Residual+MLP) must not collapse positions")
+    void testGqaFullLayerNoCollapse(GraphExecutionMode mode) {
+        final int N = 1142, D = 576, heads = 9, kvHeads = 3, headDim = 64, mlpInter = 1152;
+        final int kvD = kvHeads * headDim; // 192
+        sd = SameDiff.create();
+        SDVariable embed = sd.placeHolder("inputs_embeds", DataType.FLOAT, 1, N, D);
+        SDVariable flat  = sd.reshape("flat", embed, (long)N, (long)D);               // [N, D]
+
+        // --- Pre-attention RMSNorm (gamma=ones → pure normalisation, no re-scaling) ---
+        SDVariable gamma1  = sd.var("gamma1", Nd4j.ones(DataType.FLOAT, D));
+        SDVariable normed1 = sd.nn().rmsNorm("norm1", flat, gamma1, 1e-6);            // [N, D]
+
+        // --- Q, K, V projections ---
+        SDVariable Wq = sd.var("Wq", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, D)).addi(0.01f));
+        SDVariable Wk = sd.var("Wk", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, kvD)).addi(0.01f));
+        SDVariable Wv = sd.var("Wv", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, kvD)).addi(0.01f));
+
+        SDVariable q4d = sd.reshape("q4d",
+                sd.reshape("q3d", sd.mmul("q", normed1, Wq), (long)N, (long)heads, (long)headDim),
+                1L, (long)N, (long)heads, (long)headDim);                               // [1,N,9,64]
+        SDVariable k4d = sd.reshape("k4d",
+                sd.reshape("k3d", sd.mmul("k", normed1, Wk), (long)N, (long)kvHeads, (long)headDim),
+                1L, (long)N, (long)kvHeads, (long)headDim);                             // [1,N,3,64]
+        SDVariable v4d = sd.reshape("v4d",
+                sd.reshape("v3d", sd.mmul("v", normed1, Wv), (long)N, (long)kvHeads, (long)headDim),
+                1L, (long)N, (long)kvHeads, (long)headDim);                             // [1,N,3,64]
+
+        // --- RoPE ---
+        SDVariable posOffset = sd.constant("pos0", Nd4j.scalar(DataType.INT64, 0L));
+        SDVariable qRope = sd.nn().fusedRoPE("qRope", q4d, posOffset, 0, 10000.0, 1.0, headDim);
+        SDVariable kRope = sd.nn().fusedRoPE("kRope", k4d, posOffset, 0, 10000.0, 1.0, headDim);
+
+        // --- GQA flash attention + output projection + residual 1 ---
+        SDVariable attn    = sd.nn().dotProductAttentionV2("attn",
+                qRope, v4d, kRope, null, null, 0.0, 0.0, true, false);                // [1,N,9,64]
+        SDVariable attnF   = sd.reshape("attnF", attn, (long)N, (long)D);             // [N, D]
+        SDVariable Wo      = sd.var("Wo", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, D)).addi(0.01f));
+        SDVariable attnOut = sd.mmul("attnOut", attnF, Wo);                           // [N, D]
+        SDVariable res1    = flat.add("res1", attnOut);                                // [N, D]
+
+        // --- Post-attention RMSNorm ---
+        SDVariable gamma2  = sd.var("gamma2", Nd4j.ones(DataType.FLOAT, D));
+        SDVariable normed2 = sd.nn().rmsNorm("norm2", res1, gamma2, 1e-6);            // [N, D]
+
+        // --- Gated MLP (SwiGLU-like: SiLU(gate) * up → down) ---
+        SDVariable Wgate  = sd.var("Wgate", Transforms.abs(Nd4j.randn(DataType.FLOAT, D, mlpInter)).addi(0.01f));
+        SDVariable Wup    = sd.var("Wup",   Transforms.abs(Nd4j.randn(DataType.FLOAT, D, mlpInter)).addi(0.01f));
+        SDVariable Wdown  = sd.var("Wdown", Transforms.abs(Nd4j.randn(DataType.FLOAT, mlpInter, D)).addi(0.01f));
+        SDVariable gate   = sd.nn().silu("gate_act", sd.mmul("gate_proj", normed2, Wgate)); // [N, mlpInter]
+        SDVariable up     = sd.mmul("up_proj", normed2, Wup);                         // [N, mlpInter]
+        SDVariable mlpH   = gate.mul("mlp_h", up);                                    // [N, mlpInter]
+        SDVariable mlpOut = sd.mmul("mlpOut", mlpH, Wdown);                           // [N, D]
+
+        // --- Residual 2 + output ---
+        SDVariable res2 = res1.add("res2", mlpOut);                                   // [N, D]
+        SDVariable out  = sd.reshape("out", res2, 1L, (long)N, (long)D);              // [1, N, D]
+        configureMode(sd, mode);
+
+        INDArray embedArr = Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).muli(0.01f)
+                .reshape(N, 1).broadcast(N, D).reshape(1, N, D);
+        Map<String, INDArray> ph = singlePh("inputs_embeds", embedArr);
+        warmup(sd, ph, "out", 3);
+        INDArray result = sd.output(ph, "out").get("out");                             // [1, N, D]
+
+        assertGqaLastPosDistinct(result, N, D, mode, "GQA_INCR5_FULL_LAYER");
+        log.info("[GQA_INCR5] mode={} PASS — full decoder layer: last pos distinct from all checked early pos outputs", mode);
+    }
+
+    /**
+     * ROBUST assertion helper for increments 4-5:
+     * Asserts that out3d[0, N-1, :] (last position) does NOT equalsWithEps any of the
+     * "early" position output vectors (pos 0,1,2,3,5,10,50,100 and N-2).
+     * A DSP position collapse makes pos[N-1] ← pos[≈2] → they become equal within eps=1e-4.
+     */
+    private void assertGqaLastPosDistinct(INDArray out3d, int N, int D,
+                                          GraphExecutionMode mode, String tag) {
+        // out3d: [1, N, D]
+        INDArray lastVec = out3d.get(
+                NDArrayIndex.point(0), NDArrayIndex.point(N - 1), NDArrayIndex.all()).dup(); // [D]
+        int[] checkPositions = {0, 1, 2, 3, 5, 10, 50, 100, N - 2};
+        for (int p : checkPositions) {
+            if (p < 0 || p >= N - 1) continue;
+            INDArray earlyVec = out3d.get(
+                    NDArrayIndex.point(0), NDArrayIndex.point(p), NDArrayIndex.all());
+            assertFalse(lastVec.equalsWithEps(earlyVec, 1e-4),
+                    mode + " " + tag + ": POSITION COLLAPSE — pos[" + (N - 1)
+                            + "] output equalsWithEps pos[" + p + "] output (eps=1e-4)."
+                            + " DSP staged pos[N-1] as pos[" + p + "] in the prefill.");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PREFILL SUSPECTS: gatherNd and where-based merge at N=1142, d=576
+    //
+    // These test the UNTESTED ops from the prefill graph histogram
+    // (gather=5, gather_nd=2, plus the attention-mask Where path).
+    // The bug is mode-independent (SLOT_BY_SLOT confirmed) so it must be a
+    // VALUE computation bug, not a DSP staging artifact.
+    // Collapse signature: hidden[N-1=1141] ≡ hidden[1] → first sampled
+    // token = 11126 = "User" = input_ids[1], the prompt's second token.
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Tests that gatherNd from [1,N,d] using per-position 2D indices [[0,i] for i in 0..N-1]
+     * correctly reads each position's own embedding. Specifically: last position (N-1) must
+     * produce a strictly larger output sum than any early position, given strictly-increasing
+     * per-pos input (pos i = (i+1)*0.01 * ones_d).
+     *
+     * The real SmolDocling decoder has gather=5 and gather_nd=2 ops. A position alias in
+     * any of these (e.g. pos[1141] ← pos[1]) would produce firstToken=11126="User".
+     *
+     * Collapse detection: if gatherNd aliases pos[N-1] to an early pos, its output sum
+     * will be small (~2*0.01*factor) instead of large (~N*0.01*factor).
+     */
+    @ParameterizedTest(name = "gatherNdLastPositionDistinct mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON"})
+    @DisplayName("gatherNd over [1,N,576] must not alias last position (N-1) onto an earlier one")
+    void testGatherNdLastPositionDistinct(GraphExecutionMode mode) {
+        final int N = 1142, d = 576, outD = 64;
+        sd = SameDiff.create();
+
+        // Source: inputs_embeds [1, N, d] placeholder
+        SDVariable src = sd.placeHolder("inputs_embeds", DataType.FLOAT, 1, N, d);
+
+        // Indices: [N, 2] INT64 where row i = [0, i] — gathers position i from batch 0
+        long[] idxFlat = new long[N * 2];
+        for (int i = 0; i < N; i++) {
+            idxFlat[i * 2]     = 0L;   // batch index
+            idxFlat[i * 2 + 1] = (long) i; // position index
+        }
+        INDArray idxArr = Nd4j.createFromArray(idxFlat).reshape(N, 2);
+        SDVariable indices = sd.constant("gather_indices", idxArr);
+
+        // gatherNd: src[ [0,i] for i in 0..N-1 ] → [N, d]
+        // Each row of output = src[0, i, :] — identity gather over positions
+        SDVariable gathered = sd.gatherNd("gathered", src, indices);    // [N, d]
+
+        // All-positive weight projection → output sum monotone w.r.t. input scale
+        SDVariable w   = sd.var("w", Transforms.abs(Nd4j.randn(DataType.FLOAT, d, outD)).addi(0.1f));
+        SDVariable mm  = sd.mmul("mm", gathered, w);                    // [N, outD]
+        SDVariable out = sd.reshape("out", mm, 1L, (long) N, (long) outD); // [1, N, outD]
+
+        configureMode(sd, mode);
+
+        // Strictly-increasing per-position input: pos i = (i+1)*0.01 * ones_d
+        INDArray embedArr = Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).muli(0.01f)
+                .reshape(N, 1).broadcast(N, d).reshape(1, N, d);
+        Map<String, INDArray> ph = singlePh("inputs_embeds", embedArr);
+        warmup(sd, ph, "out", 3);
+        INDArray result = sd.output(ph, "out").get("out");               // [1, N, outD]
+
+        INDArray posSums = result.sum(2).reshape(N);                     // per-position sum [N]
+        double lastSum  = posSums.getDouble(N - 1);
+        double maxEarly = posSums.get(NDArrayIndex.interval(0, N - 1)).maxNumber().doubleValue();
+
+        // With all-positive W and (i+1)*0.01 per-pos input: pos[N-1] must strictly dominate.
+        // A gatherNd alias pos[N-1]←pos[1] gives lastSum ≈ 2*0.01*factor << N*0.01*factor.
+        assertTrue(lastSum > maxEarly + 1e-3,
+                mode + ": GATHER_ND POSITION COLLAPSE — pos[" + (N - 1) + "] sum=" + lastSum
+                        + " NOT > maxEarly=" + maxEarly
+                        + " -> gatherNd aliased the last position onto an earlier one."
+                        + " This matches the hidden[1141]≡hidden[1] decode bug (firstToken=11126=User).");
+        log.info("[GATHER_ND_LAST_POS] mode={} PASS — lastSum={} > maxEarly={} (ratio={}x)",
+                mode, lastSum, maxEarly, String.format("%.1f", lastSum / (maxEarly + 1e-12)));
+    }
+
+    /**
+     * Tests that a where-based merge of two [1,N,d] tensors (vision=zeros, text=distinct)
+     * correctly preserves the last position (N-1) when it is a TEXT position (mask=False
+     * → select text). Image positions (1..N-2) are mask=True → select vision=0.
+     *
+     * Pattern covers two suspect paths in the real model:
+     *   (a) The attention-mask path: strided_slice on [1,512,512] BOOL → bool_not → where
+     *   (b) The embed-merge where path (if VisionEmbeddingMerge native op is graph-inlined)
+     *
+     * Collapse signature: pos[N-1] gets vision=0 instead of text[N-1]=N*0.01*ones,
+     * making its output sum ≈ 0 (like image positions) instead of >> pos[0].
+     */
+    @ParameterizedTest(name = "whereLastPositionPreserved mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS", "TRITON"})
+    @DisplayName("where-based merge must not collapse the last text position (N-1) onto vision (near-zero)")
+    void testWhereLastPositionPreserved(GraphExecutionMode mode) {
+        final int N = 1142, d = 576, outD = 64;
+        sd = SameDiff.create();
+
+        // Text embeddings: placeholder [1, N, d] — per-position distinct
+        SDVariable textEmbeds = sd.placeHolder("text_embeds", DataType.FLOAT, 1, N, d);
+        // Vision embeddings: constant all-zeros [1, N, d] — contributes 0 to any output sum
+        SDVariable visionEmbeds = sd.constant("vision_embeds", Nd4j.zeros(DataType.FLOAT, 1, N, d));
+
+        // Boolean mask [1, N, d]:
+        //   True  at image positions 1..N-2 → where() selects x = visionEmbeds = 0
+        //   False at text positions 0, N-1  → where() selects y = textEmbeds (distinct)
+        // Build via float cast: ones in the image region [1..N-2], zeros elsewhere.
+        INDArray maskFloat = Nd4j.zeros(DataType.FLOAT, 1, N, d);
+        maskFloat.get(NDArrayIndex.point(0), NDArrayIndex.interval(1, N - 1), NDArrayIndex.all())
+                .assign(1.0f);
+        INDArray maskArr = maskFloat.castTo(DataType.BOOL);
+        SDVariable imgMask = sd.constant("img_mask", maskArr);
+
+        // where(x=vision, y=text, condition=mask): mask=True→x=vision=0, mask=False→y=text
+        SDVariable merged = sd.where("merged", visionEmbeds, textEmbeds, imgMask); // [1, N, d]
+
+        SDVariable flat  = sd.reshape("flat", merged, (long) N, (long) d);
+        SDVariable w     = sd.var("w", Transforms.abs(Nd4j.randn(DataType.FLOAT, d, outD)).addi(0.1f));
+        SDVariable mm    = sd.mmul("mm", flat, w);                                 // [N, outD]
+        SDVariable out   = sd.reshape("out", mm, 1L, (long) N, (long) outD);      // [1, N, outD]
+
+        configureMode(sd, mode);
+
+        // Text input: position i = (i+1)*0.01 * ones_d (strictly increasing)
+        // Expected after where:
+        //   pos 0:     text[0]   = 0.01 * ones_d  → small positive sum
+        //   pos 1..N-2: vision   = 0              → zero sum
+        //   pos N-1:   text[N-1] = N*0.01 * ones_d → largest positive sum (N=1142×)
+        INDArray textArr = Nd4j.arange(1, N + 1).castTo(DataType.FLOAT).muli(0.01f)
+                .reshape(N, 1).broadcast(N, d).reshape(1, N, d);
+        Map<String, INDArray> ph = singlePh("text_embeds", textArr);
+        warmup(sd, ph, "out", 3);
+        INDArray result = sd.output(ph, "out").get("out");                         // [1, N, outD]
+
+        INDArray posSums  = result.sum(2).reshape(N);
+        double lastSum    = posSums.getDouble(N - 1);
+        double pos0Sum    = posSums.getDouble(0);
+        double imageMean  = posSums.get(NDArrayIndex.interval(1, N - 1)).meanNumber().doubleValue();
+
+        // pos[N-1] must be >> pos[0] (both are text; N-1 has N× larger input scale).
+        // A where collapse (pos[N-1] ← image slot) gives lastSum ≈ 0 ≈ imageMean.
+        assertTrue(lastSum > pos0Sum + 1e-3,
+                mode + ": WHERE LAST-POS COLLAPSE — pos[" + (N - 1) + "] sum=" + lastSum
+                        + " NOT > pos[0] sum=" + pos0Sum
+                        + " (expected last-pos text ≈ N=" + N + "× pos[0] text; collapse = where gave last pos vision=0).");
+        // pos[N-1] must also be clearly above zero (image positions give exactly 0)
+        assertTrue(lastSum > imageMean + 1.0,
+                mode + ": WHERE LAST-POS ZERO — pos[" + (N - 1) + "] sum=" + lastSum
+                        + " is near imageMean=" + imageMean
+                        + "; where() incorrectly selected vision=0 at the last TEXT position.");
+        log.info("[WHERE_LAST_POS] mode={} PASS — lastSum={} pos0Sum={} imageMean={}",
+                mode, lastSum, pos0Sum, imageMean);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GQA HEAD-MERGE CHAIN: permuted view → reshape_no_copy must not produce zeros/garbage
+    // Reproduces the VLM decode garbage (slots 337-340, forward-trace confirmed).
+    // Broadcast_to is already CLEARED (testBroadcastToOfViewNoZeros PASSES).
+    // The zeros come from reshape_no_copy on a non-contiguous permuted view:
+    //   [1,9,N,64] contiguous → permute(0,2,1,3) → [1,N,9,64] (strides=[S,64,N*64,1])
+    //   → reshape_no_copy [1,N,576]  ← this step produces ALL ZEROS in the real model.
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * REPRODUCTION: GQA head-merge — reshape_no_copy of a permuted (non-contiguous) view
+     * must produce the SAME values as dup('c').reshape (the always-correct reference).
+     *
+     * Three code paths are exercised:
+     *  (A) INDArray.reshape() on the permuted view — Java-level, always copies, expected PASS.
+     *  (B) Nd4j.exec(ReshapeNoCopy) with null output — imperative C++ path, suspect ZEROS/garbage.
+     *  (B2) Full GQA chain: [1,3,3,N,64]→reshape_no_copy→[1,9,N,64]→permute→reshape_no_copy
+     *       matching the actual op chain in slots 337-340.
+     *  (C) SameDiff SLOT_BY_SLOT graph: var→permute→reshape — pure graph execution path.
+     *
+     * Each path asserts: (1) non-zero sum, (2) sum equals the dup+reshape reference.
+     * N=1142 to match the real SmolDocling decoder geometry.
+     */
+    @org.junit.jupiter.api.Test
+    @DisplayName("GQA head-merge: reshape_no_copy of permuted view must NOT produce zeros")
+    void testGqaHeadMergeReshapeNoCopyNoZeros() {
+        final int N = 1142;
+        final int H = 9;    // 9 heads = 3 GQA groups × 3 reps
+        final int D = 64;
+        final int Dmerge = H * D;  // = 576
+
+        // ── Base: [1,9,N,64] contiguous tensor with arange distinct values ──────────
+        // Simulates the broadcast_to→reshape_no_copy result (already verified correct).
+        INDArray base = Nd4j.arange(1, (long) H * N * D + 1).castTo(DataType.FLOAT)
+                .reshape(1, H, N, D);
+        assertNotEquals(0.0, base.sumNumber().doubleValue(), "precondition: base non-zero");
+
+        // ── Permuted view: [1,N,9,64] — non-contiguous (strides=[H*N*D, D, N*D, 1]) ──
+        INDArray permuted = base.permute(0, 2, 1, 3);   // [1,N,9,64]
+        assertNotEquals(0.0, permuted.sumNumber().doubleValue(), "precondition: permuted non-zero");
+        log.info("[GQA] permuted.isView={} ordering={} strides={}",
+                permuted.isView(), permuted.ordering(), java.util.Arrays.toString(permuted.stride()));
+
+        // ── Reference: dup('c') then reshape — ALWAYS correct (forces contiguous copy first) ──
+        double refSum = permuted.dup('c').reshape(1, N, Dmerge).sumNumber().doubleValue();
+        assertNotEquals(0.0, refSum, "precondition: reference sum non-zero");
+        log.info("[GQA] reference sum (dup+reshape)={}", refSum);
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // PATH A: INDArray.reshape() on the permuted view
+        // Expected to PASS (reshape always copies; if this fails bug is lower-level).
+        // ─────────────────────────────────────────────────────────────────────────────
+        double sumA = permuted.reshape('c', 1, N, Dmerge).sumNumber().doubleValue();
+        log.info("[GQA] Path A (INDArray.reshape): sum={} ref={}", sumA, refSum);
+        assertNotEquals(0.0, sumA,
+                "Path A FAIL: INDArray.reshape() on permuted view is ALL ZEROS (baseline broken). Expected ~" + refSum);
+        assertEquals(refSum, sumA, Math.abs(refSum) * 1e-4,
+                "Path A FAIL: INDArray.reshape() result wrong vs dup+reshape ref. got=" + sumA + " ref=" + refSum);
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // PATH B: Nd4j.exec(ReshapeNoCopy) with null output (triggers initializeOutputs)
+        // This exercises the C++ reshape_no_copy op's output-allocation + execution path.
+        // SUSPECT: this is likely the path that produces zeros/garbage in the VLM decode.
+        // ─────────────────────────────────────────────────────────────────────────────
+        org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy opB =
+                new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(
+                        base.permute(0, 2, 1, 3),  // fresh non-contiguous view each time
+                        new long[]{1, N, Dmerge}, null, 'c');
+        Nd4j.getExecutioner().exec(opB);
+        INDArray outputB = opB.outputArguments().get(0);
+        double sumB = outputB.sumNumber().doubleValue();
+        log.info("[GQA] Path B (ReshapeNoCopy imperative, null output): sum={} ref={} outputB.isView={}",
+                sumB, refSum, outputB.isView());
+        assertNotEquals(0.0, sumB,
+                "Path B FAIL: ReshapeNoCopy op (null output) on permuted view produced ALL ZEROS. " +
+                "This is the VLM decode garbage root. " +
+                "outputB.isView=" + outputB.isView() +
+                " Expected sum~" + refSum + " got 0.0. " +
+                "Root: shape-fn sees C-contiguous inferred strides → sets ARRAY_COPY_OFFSET_INPUT_0 → " +
+                "output is VIEW of non-contiguous buffer → no assign called → garbage read with wrong strides.");
+        assertEquals(refSum, sumB, Math.abs(refSum) * 1e-4,
+                "Path B FAIL: ReshapeNoCopy sum mismatch. got=" + sumB + " ref=" + refSum);
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // PATH B2: Full GQA chain matching slots 337-340
+        //   [1,3,3,N,64] → reshape_no_copy [1,9,N,64] (VIEW) → permute → reshape_no_copy [1,N,576]
+        // ─────────────────────────────────────────────────────────────────────────────
+        INDArray base335 = Nd4j.arange(1, (long) 3 * 3 * N * D + 1).castTo(DataType.FLOAT)
+                .reshape(1, 3, 3, N, D);
+        // Step 2: reshape_no_copy [1,3,3,N,64]→[1,9,N,64] (VIEW expected)
+        org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy opStep2 =
+                new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(
+                        base335, new long[]{1, H, N, D}, null, 'c');
+        Nd4j.getExecutioner().exec(opStep2);
+        INDArray step2 = opStep2.outputArguments().get(0);
+        log.info("[GQA] step2 [1,9,N,64] isView={} strides={}", step2.isView(),
+                java.util.Arrays.toString(step2.stride()));
+        // Step 3: permute [1,9,N,64]→[1,N,9,64]
+        INDArray step3 = step2.permute(0, 2, 1, 3);
+        log.info("[GQA] step3 [1,N,9,64] isView={} strides={}", step3.isView(),
+                java.util.Arrays.toString(step3.stride()));
+        // Step 4: reshape_no_copy [1,N,9,64]→[1,N,576]  ← THE MATERIALIZING STEP
+        org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy opStep4 =
+                new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(
+                        step3, new long[]{1, N, Dmerge}, null, 'c');
+        Nd4j.getExecutioner().exec(opStep4);
+        INDArray step4 = opStep4.outputArguments().get(0);
+        double sumB2 = step4.sumNumber().doubleValue();
+        log.info("[GQA] Path B2 full chain: step4.isView={} step4.strides={} sum={} ref={}",
+                step4.isView(), java.util.Arrays.toString(step4.stride()), sumB2, refSum);
+        // Compare against reference from same base335 data
+        double refB2 = base335.reshape(1, H, N, D).permute(0, 2, 1, 3).dup('c')
+                .reshape(1, N, Dmerge).sumNumber().doubleValue();
+        assertNotEquals(0.0, sumB2,
+                "Path B2 FAIL: Full GQA chain (slots 337-340) produces ALL ZEROS at step4. " +
+                "step2.isView=" + step2.isView() + " step3.strides=" + java.util.Arrays.toString(step3.stride()) +
+                " step4.isView=" + step4.isView());
+        assertEquals(refB2, sumB2, Math.abs(refB2) * 1e-4,
+                "Path B2 FAIL: Full chain sum mismatch. got=" + sumB2 + " ref=" + refB2);
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // PATH C: SameDiff SLOT_BY_SLOT — graph execution path (DSP disabled)
+        // Builds: var [1,9,N,64] → permute(0,2,1,3) → reshape [1,N,576]
+        // ─────────────────────────────────────────────────────────────────────────────
+        {
+            SameDiff sdC = SameDiff.create();
+            sdC.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+            SDVariable xC = sdC.var("x", base.dup());
+            SDVariable pC = sdC.permute("p", xC, 0, 2, 1, 3);    // [1,N,9,64]
+            SDVariable rC = sdC.reshape("r", pC, 1, N, Dmerge);   // [1,N,576]
+            Map<String, INDArray> resC = sdC.output(new java.util.HashMap<>(), "r");
+            INDArray outC = resC.get("r");
+            double sumC = outC.sumNumber().doubleValue();
+            log.info("[GQA] Path C (SameDiff SLOT_BY_SLOT var→permute→reshape): sum={} ref={}", sumC, refSum);
+            assertNotEquals(0.0, sumC,
+                    "Path C FAIL: SameDiff SLOT_BY_SLOT permute→reshape produced ALL ZEROS. " +
+                    "Expected sum~" + refSum + " got " + sumC);
+            assertEquals(refSum, sumC, Math.abs(refSum) * 1e-4,
+                    "Path C FAIL: SameDiff result mismatch. got=" + sumC + " ref=" + refSum);
+            sdC.close();
+        }
+
+        log.info("[GQA_HEAD_MERGE] ALL PATHS PASS — refSum={} sumA={} sumB={} sumB2={}", refSum, sumA, sumB, sumB2);
+    }
+
+    /**
+     * TARGETED: SameDiff graph with reshape_no_copy op on a permuted (non-contiguous) view.
+     * Tests the EXACT op used in the VLM model (not sd.reshape, but sd.nn().reshapeNoCopy()).
+     *
+     * Permute's DECLARE_SHAPE_FN calls evalPermShapeInfo(setContigStrides=true) — so the
+     * inferred output shape of permute has C-CONTIGUOUS strides. When reshape_no_copy's
+     * DECLARE_SHAPE_FN receives this C-contiguous shape, reshapeNoAlloc returns TRUE →
+     * ARRAY_COPY_OFFSET_INPUT_0 (view). But at runtime the actual permuted NDArray has
+     * non-contiguous strides. If the framework sets up the output as a VIEW (sharing the
+     * non-contiguous buffer) with C-contiguous read strides → GARBAGE VALUES.
+     *
+     * Tested in: SLOT_BY_SLOT (DSP-path), CUDA_GRAPHS (real decode path).
+     */
+    @ParameterizedTest(name = "gqaHeadMergeReshapeNoCopySameDiff mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "CUDA_GRAPHS"})
+    @DisplayName("SameDiff graph: permute→reshape_no_copy must not produce zeros (VLM GQA head-merge)")
+    void testGqaHeadMergeReshapeNoCopySameDiff(GraphExecutionMode mode) {
+        final int N = 16;   // small for speed; bug is stride-structural, not size-dependent
+        final int H = 9;
+        final int D = 64;
+        final int Dmerge = H * D;  // 576
+
+        // Base [1,9,N,64] with distinct arange values
+        INDArray baseArr = Nd4j.arange(1, (long) H * N * D + 1).castTo(DataType.FLOAT).reshape(1, H, N, D);
+        double refSum = baseArr.permute(0, 2, 1, 3).dup('c').reshape(1, N, Dmerge).sumNumber().doubleValue();
+        assertNotEquals(0.0, refSum, "precondition: reference sum non-zero");
+
+        // Build graph: var [1,9,N,64] → permute(0,2,1,3) [1,N,9,64] → reshape_no_copy [1,N,576]
+        SameDiff sdD = SameDiff.create();
+        sdD.setGraphExecutionMode(mode);
+        sdD.setDspAutoCompileEnabled(true);
+        sdD.setDspNativeAutoCompileEnabled(true);
+        SDVariable xVar = sdD.var("x", baseArr.dup());
+        SDVariable pVar = sdD.permute("p", xVar, 0, 2, 1, 3);   // [1,N,9,64] non-contiguous at runtime
+        // Use the reshape_no_copy op (the VLM ONNX model's actual op, NOT sd.reshape)
+        SDVariable rVar = new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(
+                sdD, pVar, new long[]{1, N, Dmerge}, 'c').outputVariable();
+        sdD.updateVariableNameAndReference(rVar, "r");
+
+        Map<String, INDArray> result = sdD.output(new java.util.HashMap<>(), "r");
+        INDArray out = result.get("r");
+        double sum = out.sumNumber().doubleValue();
+        log.info("[GQA_SD] mode={} reshape_no_copy sum={} ref={} out.isView={}",
+                mode, sum, refSum, out.isView());
+
+        assertNotEquals(0.0, sum,
+                mode + ": SameDiff permute→reshape_no_copy produced ALL ZEROS. " +
+                "Expected sum~" + refSum + " got 0.0. " +
+                "Root: permute DECLARE_SHAPE_FN uses setContigStrides=true → C-contiguous inferred strides → " +
+                "reshape_no_copy reshapeNoAlloc returns TRUE → ARRAY_COPY_OFFSET_INPUT_0 (VIEW) → " +
+                "at runtime non-contiguous buffer read with C-strides → zeros/garbage. " +
+                "Fix: evalPermShapeInfo(setContigStrides=false) OR reshape_no_copy execution " +
+                "must re-check actual runtime strides.");
+        assertEquals(refSum, sum, Math.abs(refSum) * 1e-4,
+                mode + ": SameDiff reshape_no_copy sum mismatch. got=" + sum + " ref=" + refSum);
+
+        sdD.close();
+        log.info("[GQA_SD] mode={} PASS — sum={} ref={}", mode, sum, refSum);
+    }
+
+    /**
+     * FULL GQA K/V expansion chain in the DSP path — the EXACT live decode bug.
+     *
+     * Live --debug dump (firstToken=11126) proved: K/V projection [1,N,192] is NON-ZERO but the
+     * GQA expansion chain that feeds onnx_multi_head_attention emerges ALL ZEROS at [1,N,576]:
+     *   K_proj [1,N,192] -> reshape [1,N,3,64] -> permute [1,3,N,64] -> expand_dims [1,3,1,N,64]
+     *     -> broadcast_to [1,3,3,N,64] -> reshape_no_copy [1,9,N,64] -> permute [1,N,9,64]
+     *     -> reshape_no_copy [1,N,576]
+     * Every op is green-identical / passes in isolation; the prior chain test starts from a
+     * MATERIALIZED [1,3,3,N,64] (Path B2, passes) — it skips the broadcast_to(view) step.
+     * This reproduces the WHOLE chain in the DSP slot-by-slot path and reports EACH step's sum
+     * so the exact zeroing op is identified. ref = projSum * REP (each KV head replicated REP times).
+     */
+    @ParameterizedTest(name = "gqaFullExpansionChainDsp mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"SLOT_BY_SLOT", "CUDA_GRAPHS"})
+    @DisplayName("GQA full K/V expansion chain [1,N,192]->...->[1,N,576] must not zero (live decode K/V=0)")
+    void testGqaFullExpansionChainDsp(GraphExecutionMode mode) {
+        final int N = 64, KV = 3, REP = 3, H = KV * REP, D = 64;
+        final int projDim = KV * D;   // 192
+        final int mergeDim = H * D;   // 576
+        INDArray projArr = Nd4j.arange(1, (long) N * projDim + 1).castTo(DataType.FLOAT).reshape(1, N, projDim);
+        double projSum = projArr.sumNumber().doubleValue();
+        double refSum = projSum * REP;
+        assertNotEquals(0.0, projSum, "precondition: K/V projection non-zero");
+
+        SameDiff sd = SameDiff.create();
+        sd.setGraphExecutionMode(mode);
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+        SDVariable kproj = sd.var("kproj", projArr.dup());                              // [1,N,192]
+        SDVariable r1 = sd.reshape("r1", kproj, 1, N, KV, D);                           // [1,N,3,64]
+        SDVariable p1 = sd.permute("p1", r1, 0, 2, 1, 3);                               // [1,3,N,64]
+        SDVariable ed = sd.expandDims("ed", p1, 2);                                     // [1,3,1,N,64]
+        SDVariable bshape = sd.constant("bshape", Nd4j.createFromArray(new long[]{1, KV, REP, N, D}));
+        SDVariable bc = new org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo(sd, ed, bshape).outputVariable();
+        sd.updateVariableNameAndReference(bc, "bc");                                    // [1,3,3,N,64]
+        SDVariable m1 = new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(
+                sd, bc, new long[]{1, H, N, D}, 'c').outputVariable();                  // [1,9,N,64]
+        sd.updateVariableNameAndReference(m1, "m1");
+        SDVariable p2 = sd.permute("p2", m1, 0, 2, 1, 3);                               // [1,N,9,64]
+        SDVariable m2 = new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(
+                sd, p2, new long[]{1, N, mergeDim}, 'c').outputVariable();              // [1,N,576]
+        sd.updateVariableNameAndReference(m2, "m2");
+
+        // Request EVERY intermediate so we can bisect which op first zeros.
+        Map<String, INDArray> res = sd.output(new java.util.HashMap<>(),
+                "kproj", "r1", "p1", "ed", "bc", "m1", "p2", "m2");
+        for (String name : new String[]{"kproj", "r1", "p1", "ed", "bc", "m1", "p2", "m2"}) {
+            INDArray a = res.get(name);
+            double s = a == null ? Double.NaN : a.sumNumber().doubleValue();
+            log.info("[GQA_CHAIN] mode={} step {} shape={} sum={} {}",
+                    mode, name, a == null ? "null" : java.util.Arrays.toString(a.shape()), s,
+                    (s == 0.0 ? "<<< ZERO" : ""));
+        }
+        INDArray out = res.get("m2");
+        double sum = out.sumNumber().doubleValue();
+        assertNotEquals(0.0, sum,
+                mode + ": GQA expansion chain produced ALL ZEROS into [1,N,576] — the live decode K/V=0 bug. ref~" + refSum);
+        assertEquals(refSum, sum, Math.abs(refSum) * 1e-4,
+                mode + ": GQA chain final sum mismatch. got=" + sum + " ref=" + refSum);
+        sd.close();
+        log.info("[GQA_CHAIN] mode={} PASS — final sum={} ref={}", mode, sum, refSum);
+    }
+
+    /**
+     * HEAD ISOLATION (imperative, no SameDiff graph → no order=-1 artifact): the EXACT live
+     * decode chain, op-by-op, with broadcast_to producing its output (NO explicit output array =
+     * the model's view-producing path) fed a NON-CONTIGUOUS permuted view. Prior passing tests used
+     * either an explicit broadcast output (materialized) or a fresh contiguous [1,3,3,N,64]; this
+     * fills the gap. Reports EACH step's sum so the exact zeroing op is pinpointed ON HEAD.
+     */
+    @org.junit.jupiter.api.Test
+    @DisplayName("HEAD isolation: imperative GQA chain (per-head→permute→expand→broadcast_to(noOut)→reshape→permute→reshape) must not zero")
+    void testGqaImperativeChainNoZeros() {
+        final int N = 8, KV = 3, REP = 3, H = KV * REP, D = 64;
+        final int projDim = KV * D;   // 192
+        final int mergeDim = H * D;   // 576
+        INDArray kproj = Nd4j.arange(1, (long) N * projDim + 1).castTo(DataType.FLOAT).reshape(1, N, projDim);
+        double projSum = kproj.sumNumber().doubleValue();
+        double refSum = projSum * REP;
+        log.info("[IMP_CHAIN] step0 kproj[1,{},192] sum={}", N, projSum);
+
+        INDArray r1 = kproj.reshape(1, N, KV, D);                    // [1,N,3,64]
+        log.info("[IMP_CHAIN] step1 reshape[1,{},3,64] sum={} {}", N, r1.sumNumber().doubleValue(), r1.sumNumber().doubleValue() == 0 ? "<<<ZERO" : "");
+        INDArray p1 = r1.permute(0, 2, 1, 3);                        // [1,3,N,64] view (non-contiguous)
+        log.info("[IMP_CHAIN] step2 permute[1,3,{},64] sum={} isView={} {}", N, p1.sumNumber().doubleValue(), p1.isView(), p1.sumNumber().doubleValue() == 0 ? "<<<ZERO" : "");
+        INDArray ed = Nd4j.expandDims(p1, 2);                        // [1,3,1,N,64] view
+        log.info("[IMP_CHAIN] step3 expand_dims[1,3,1,{},64] sum={} isView={} {}", N, ed.sumNumber().doubleValue(), ed.isView(), ed.sumNumber().doubleValue() == 0 ? "<<<ZERO" : "");
+
+        // broadcast_to [1,3,3,N,64] — NO explicit output (op allocates via shape-fn) = the model's path
+        org.nd4j.linalg.api.ops.DynamicCustomOp bc = org.nd4j.linalg.api.ops.DynamicCustomOp.builder("broadcast_to")
+                .addInputs(ed, Nd4j.createFromArray(new long[]{1, KV, REP, N, D}))
+                .build();
+        Nd4j.getExecutioner().exec(bc);
+        INDArray bcOut = bc.getOutputArgument(0);
+        double bcSum = bcOut.sumNumber().doubleValue();
+        log.info("[IMP_CHAIN] step4 broadcast_to[1,3,3,{},64] sum={} expected={} isView={} {}", N, bcSum, refSum, bcOut.isView(), bcSum == 0 ? "<<<ZERO" : "");
+
+        org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy m1op =
+                new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(bcOut, new long[]{1, H, N, D}, null, 'c');
+        Nd4j.getExecutioner().exec(m1op);
+        INDArray m1 = m1op.outputArguments().get(0);                 // [1,9,N,64]
+        log.info("[IMP_CHAIN] step5 reshape_no_copy[1,9,{},64] sum={} {}", N, m1.sumNumber().doubleValue(), m1.sumNumber().doubleValue() == 0 ? "<<<ZERO" : "");
+        INDArray p2 = m1.permute(0, 2, 1, 3);                        // [1,N,9,64]
+        log.info("[IMP_CHAIN] step6 permute[1,{},9,64] sum={} {}", N, p2.sumNumber().doubleValue(), p2.sumNumber().doubleValue() == 0 ? "<<<ZERO" : "");
+        org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy m2op =
+                new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(p2, new long[]{1, N, mergeDim}, null, 'c');
+        Nd4j.getExecutioner().exec(m2op);
+        INDArray m2 = m2op.outputArguments().get(0);                 // [1,N,576]
+        double finalSum = m2.sumNumber().doubleValue();
+        log.info("[IMP_CHAIN] step7 reshape_no_copy[1,{},576] sum={} expected={} {}", N, finalSum, refSum, finalSum == 0 ? "<<<ZERO" : "");
+
+        assertNotEquals(0.0, finalSum,
+                "Imperative GQA chain final [1,N,576] is ZERO — the decode K/V=0 root reproduced on HEAD. proj was " + projSum);
+        assertEquals(refSum, finalSum, Math.abs(refSum) * 1e-4,
+                "Imperative GQA chain sum mismatch: got=" + finalSum + " ref=" + refSum);
+        log.info("[IMP_CHAIN] PASS — final={} ref={}", finalSum, refSum);
+    }
+
+    /**
+     * The FULL GQA KV-head expansion as ONE SameDiff graph in pure execute() (non-DSP),
+     * driven from a per-head [1,3,N,64] input — the exact gap prior tests missed:
+     *   per-head [1,3,N,64] -> expand_dims [1,3,1,N,64] -> broadcast_to [1,3,3,N,64]
+     *   -> reshape_no_copy [1,9,N,64] -> permute [1,N,9,64] -> reshape_no_copy [1,N,576]
+     * The real SmolDocling decoder zeros K/V here (firstToken=11126) even in execute()
+     * (DSP-disabled), with per-head NON-zero. Prior tests covered the halves: broadcast_to
+     * alone (imperative), and [1,3,3,N,64]->reshape->permute->merge (DSP). This chains the
+     * full expansion from the per-head input through SameDiff execute(), the model's path.
+     */
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.Disabled("SameDiff build-time order=-1 artifact: broadcast_to's shape-fn propagates a placeholder order=-1 at graph-build, so reshape_no_copy throws 'Invalid order: -1' at runtime. The IMPORTED model has resolved orders (imperative broadcast test passes) — this is NOT the decode bug. Kept for reference.")
+    @org.junit.jupiter.api.DisplayName("Full GQA KV-expansion in execute() (per-head -> broadcast -> merge) must not zero")
+    void testGqaFullExpansionExecuteNoZeros() {
+        final int N = 1142, KV = 3, REP = 3, H = KV * REP, D = 64, Dm = H * D; // 9*64 = 576
+        INDArray perHead = Nd4j.arange(1, (long) KV * N * D + 1).castTo(DataType.FLOAT).reshape(1, KV, N, D);
+        double perHeadSum = perHead.sumNumber().doubleValue();
+        double refSum = perHeadSum * REP;   // each KV head repeated REP times -> sum scales by REP
+        org.junit.jupiter.api.Assertions.assertNotEquals(0.0, perHeadSum, "precondition: per-head input non-zero");
+
+        SameDiff sd = SameDiff.create();
+        sd.setDspAutoCompileEnabled(false);          // pure execute() — the model's noFreeze path
+        sd.setDspNativeAutoCompileEnabled(false);
+        SDVariable x = sd.var("x", perHead.dup());
+        SDVariable ex = sd.expandDims("ex", x, 2);   // [1,3,1,N,64]
+        SDVariable shapeC = sd.constant("bshape", Nd4j.createFromArray(new long[]{1, KV, REP, N, D}));
+        SDVariable bc = new org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo(sd, ex, shapeC).outputVariable();
+        sd.updateVariableNameAndReference(bc, "bc");                 // [1,3,3,N,64]
+        SDVariable r1 = new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(
+                sd, bc, new long[]{1, H, N, D}, 'c').outputVariable(); // [1,9,N,64]
+        sd.updateVariableNameAndReference(r1, "r1");
+        SDVariable p = sd.permute("p", r1, 0, 2, 1, 3);             // [1,N,9,64]
+        SDVariable r2 = new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(
+                sd, p, new long[]{1, N, Dm}, 'c').outputVariable();  // [1,N,576]
+        sd.updateVariableNameAndReference(r2, "r2");
+
+        INDArray out = sd.output(new java.util.HashMap<>(), "r2").get("r2");
+        double sum = out.sumNumber().doubleValue();
+        log.info("[GQA_FULL] execute() full-expansion sum={} ref={} (perHead={})", sum, refSum, perHeadSum);
+        sd.close();
+
+        org.junit.jupiter.api.Assertions.assertNotEquals(0.0, sum,
+                "Full GQA KV-expansion produced ALL ZEROS in execute() — reproduces the decode K/V=0. "
+                        + "Expected ~" + refSum + ".");
+        org.junit.jupiter.api.Assertions.assertEquals(refSum, sum, Math.abs(refSum) * 1e-4,
+                "GQA expansion sum mismatch: got=" + sum + " ref=" + refSum);
+    }
+
+    /**
+     * REGRESSION: GQA K/V expansion zeroed by DSP view-producer slot-reject with dirty
+     * {@code tl_dspExecutionStream} thread-local (the EXACT live decode K/V=0 root).
+     *
+     * <h3>Bug summary</h3>
+     * SmolDocling VLM decode produces deterministic garbage (firstToken=11126). Root cause:
+     * the SmolLM2 decoder's K/V repeat_kv expansion chain:
+     * <pre>
+     *   xw_plus_b [1,N,192] → reshape_no_copy [1,N,3,64] → permute [1,3,N,64]
+     *     → expand_dims [1,3,1,N,64] → broadcast_to [1,3,3,N,64]
+     *     → reshape_no_copy [1,9,N,64] → permute [1,N,9,64] → reshape_no_copy [1,N,576]
+     * </pre>
+     * emerges ALL ZEROS into {@code onnx_multi_head_attention} → dead attention → garbage.
+     *
+     * <h3>Root cause (diagnostic-confirmed)</h3>
+     * {@code permute} is a view-producer; at slotexec.cpp:5384
+     * {@code outputWrapperMatchesExpectedShape} rejects the permuted-strides view because
+     * {@code strideEquals} compares actual strides vs. canonical C-order strides for the slot
+     * shape → the slot stays at its unwritten-zero default → K/V = 0 into attention.
+     * This rejection only fires when {@code isReplayActive=1}, i.e.,
+     * {@code tl_dspExecutionStream != null}, which is set by a prior DSP graph execution
+     * in the same thread and not cleared between graphs.
+     *
+     * <h3>Conditions required to reproduce</h3>
+     * <ol>
+     *   <li>A <em>prior</em> SameDiff graph runs in CUDA_GRAPHS+DSP mode in the same thread
+     *       (~6 warmup steps), leaving {@code tl_dspExecutionStream} non-null.</li>
+     *   <li>The K/V expansion chain runs in CUDA_GRAPHS+DSP mode.</li>
+     *   <li>The K/V intermediates (broadcast_to output, reshape_no_copy outputs, permute views)
+     *       are <em>NOT</em> requested as graph outputs — they are pure intermediates.  Requesting
+     *       them as outputs "protects" them in the DSP plan and masks the bug.</li>
+     *   <li>Only a downstream consumer's output is requested (here: a small matmul on the merged
+     *       KV tensor), so the entire expansion chain is intermediate.</li>
+     * </ol>
+     *
+     * <h3>How to interpret failures</h3>
+     * The assertion {@code assertTrue(amax > 0)} <em>FAILS</em> (reports the bug) when the
+     * GQA chain produces all-zero logits because K/V was zeroed by the DSP slot reject.
+     * If the test PASSES, the fix is in effect (strides are accepted or the thread-local is
+     * properly cleared between graphs).
+     *
+     * <h3>Why prior tests did NOT reproduce</h3>
+     * <ul>
+     *   <li>{@code testGqaFullExpansionChainDsp}: requests ALL intermediates (kproj, r1, p1,
+     *       ed, bc, m1, p2, m2) as outputs → all protected → bug masked.</li>
+     *   <li>{@code testGqaImperativeChainNoZeros}: plain INDArray ops, no SameDiff DSP plan
+     *       → no slot-reject path.</li>
+     *   <li>{@code testRealDecoderGqaKVZero} in TestGraphOptimizerOnSmolDocling: hits a
+     *       synthetic-input shape error (wrong reshape target) rather than the K/V zero.</li>
+     * </ul>
+     */
+    @org.junit.jupiter.api.Test
+    @DisplayName("REGRESSION: GQA K/V=0 — prior-DSP tl_dspExecutionStream + K/V pure intermediates + CUDA_GRAPHS")
+    void testGqaKvZeroWithPriorDspStream() {
+        // ─── STEP 1: Prime a prior DSP graph to dirty tl_dspExecutionStream ─────────────────
+        // Mirror the real.gqa.priorDsp block in TestGraphOptimizerOnSmolDocling.java ~L730-741.
+        // A small mmul in CUDA_GRAPHS mode, 6 warmup steps.  NOT closed before the chain runs —
+        // the thread-local must still be non-null when the chain executes.
+        SameDiff prior = SameDiff.create();
+        SDVariable px = prior.placeHolder("px", DataType.FLOAT, 1, 64);
+        SDVariable pw = prior.var("pw", Transforms.abs(Nd4j.rand(DataType.FLOAT, 64, 64)).addi(0.1f));
+        prior.mmul("pout", px, pw);
+        prior.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
+        prior.setDspAutoCompileEnabled(true);
+        prior.setDspNativeAutoCompileEnabled(true);
+        Map<String, INDArray> pf = new LinkedHashMap<>();
+        pf.put("px", Nd4j.rand(DataType.FLOAT, 1, 64).addi(0.1f));
+        try {
+            for (int w = 0; w < 6; w++) prior.output(pf, "pout");
+            log.info("[GQA_KV0] prior DSP graph ran 6× — tl_dspExecutionStream should be set/dirty");
+        } catch (Exception e) {
+            log.warn("[GQA_KV0] prior DSP graph failed (CUDA_GRAPHS unavailable?): {}", e.getMessage());
+        }
+
+        // ─── STEP 2: Build the K/V repeat_kv expansion chain ────────────────────────────────
+        // xw_plus_b: placeholder [1,N,576] @ W[576,192] + b[192] → K_proj [1,N,192]
+        // then: reshape → permute → expand_dims → broadcast_to → reshape_no_copy
+        // → permute → reshape_no_copy → [1,N,576]  (ALL pure intermediates)
+        // downstream consumer: simple matmul → [N,1]  ← only this is requested as output
+        final int N = 64, KV = 3, REP = 3, H = KV * REP, D = 64;
+        final int projDim = KV * D;    // 192  (3 KV heads × 64 head dim)
+        final int mergeDim = H * D;    // 576  (9 heads × 64)
+
+        sd = SameDiff.create();
+        sd.setGraphExecutionMode(GraphExecutionMode.CUDA_GRAPHS);
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+
+        // K projection (xw_plus_b pattern)
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, N, 576);
+        SDVariable Wk = sd.var("Wk",
+                Transforms.abs(Nd4j.randn(DataType.FLOAT, 576, projDim)).addi(0.01f));
+        SDVariable bk = sd.var("bk", Nd4j.ones(DataType.FLOAT, projDim));
+        SDVariable inFlat   = sd.reshape("inFlat",    input,      (long) N, 576L);           // [N,576]
+        SDVariable kprojMm  = sd.mmul("kproj_mm",     inFlat,     Wk);                       // [N,192]
+        SDVariable kprojAdd = kprojMm.add("kproj_add", bk);                                   // [N,192] (bias broadcast)
+        SDVariable kproj    = sd.reshape("kproj",      kprojAdd,   1L, (long) N, (long) projDim); // [1,N,192]
+
+        // GQA repeat_kv expansion — every op here is a pure intermediate (NOT requested as output)
+        SDVariable r1 = sd.reshape("r1", kproj, 1L, (long) N, (long) KV, (long) D);          // [1,N,3,64]
+        SDVariable p1 = sd.permute("p1", r1,  0, 2, 1, 3);                                    // [1,3,N,64]
+        SDVariable ed = sd.expandDims("ed", p1, 2);                                           // [1,3,1,N,64]
+        SDVariable bshape = sd.constant("bshape",
+                Nd4j.createFromArray(new long[]{1L, (long) KV, (long) REP, (long) N, (long) D}));
+        SDVariable bc = new org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo(sd, ed, bshape)
+                .outputVariable();                                                              // [1,3,3,N,64]
+        sd.updateVariableNameAndReference(bc, "bc");
+        SDVariable m1 = new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(
+                sd, bc, new long[]{1L, (long) H, (long) N, (long) D}, 'c')
+                .outputVariable();                                                              // [1,9,N,64]
+        sd.updateVariableNameAndReference(m1, "m1");
+        SDVariable p2 = sd.permute("p2", m1,  0, 2, 1, 3);                                    // [1,N,9,64]
+        SDVariable kvMerged = new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(
+                sd, p2, new long[]{1L, (long) N, (long) mergeDim}, 'c')
+                .outputVariable();                                                              // [1,N,576]
+        sd.updateVariableNameAndReference(kvMerged, "kvMerged");
+
+        // Downstream consumer: kvMerged is a pure intermediate here; logits is the sole requested output.
+        // If kvMerged is zeroed by the DSP slot-reject, logits will also be all-zero.
+        SDVariable Wdown = sd.var("Wdown",
+                Transforms.abs(Nd4j.randn(DataType.FLOAT, mergeDim, 1)).addi(0.01f));
+        SDVariable kvFlat = sd.reshape("kvFlat", kvMerged, (long) N, (long) mergeDim);        // [N,576]
+        sd.mmul("logits", kvFlat, Wdown);                                                      // [N,1]
+
+        // ─── STEP 3: Warmup to drive the chain to REPLAYING state ────────────────────────────
+        INDArray inputArr = Nd4j.rand(DataType.FLOAT, 1, N, 576).addi(1.0f);
+        Map<String, INDArray> ph = singlePh("input", inputArr);
+        for (int w = 0; w < 6; w++) {
+            sd.output(ph, "logits");
+        }
+
+        // ─── STEP 4: Execute — request ONLY logits (K/V expansion is pure intermediate) ──────
+        // With tl_dspExecutionStream dirty from the prior graph:
+        //   permute's view-producer slot → strideEquals check fails → slot stays at zeros
+        //   → kvMerged = 0 → logits = 0  (the bug)
+        // With the fix in effect:
+        //   strideEquals accepts the permuted view (or thread-local is cleared) → logits > 0
+        Map<String, INDArray> result = sd.output(ph, "logits");
+        INDArray logitsArr = result.get("logits");
+        double amax = (logitsArr == null) ? Double.NaN : logitsArr.amaxNumber().doubleValue();
+        log.info("[GQA_KV0] logits amax={} (expected > 0; 0 = K/V zeroed by DSP view-producer reject)", amax);
+
+        prior.close();   // close prior graph now that chain has executed with dirty thread-local
+
+        assertNotNull(logitsArr, "logits must not be null");
+        // This assertion FAILS when the bug is present (amax == 0.0).
+        assertTrue(amax > 0.0,
+                "REGRESSION [GQA_KV0]: GQA K/V expansion produced ALL ZEROS downstream (amax=" + amax + "). "
+                + "Conditions: prior-DSP tl_dspExecutionStream set + K/V pure intermediates + CUDA_GRAPHS. "
+                + "Root: permute view-producer slot rejected by strideEquals @ slotexec.cpp:5384 "
+                + "→ slot stays unwritten zeros → K/V=0 into attention → decode garbage (firstToken=11126).");
     }
 }

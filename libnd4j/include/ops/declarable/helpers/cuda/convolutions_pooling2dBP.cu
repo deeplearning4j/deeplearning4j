@@ -190,15 +190,20 @@ void ConvolutionUtils::pooling2dBP(graph::Context& block, NDArray& input, NDArra
                                   NDArray& gradI, const LongType kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH,
                                   const LongType pW, const LongType dH, const LongType dW, const int poolingMode,
                                   const int extraParam0) {
- // initial zeroing of gradI
- gradI.nullify();
-
  PointersManager manager(block.launchContext(), "pooling2dBP");
 
  auto inputBuff = input.specialBuffer();
  dim3 poolingDims = getPoolingDims(gradO.lengthOf(),gradO.rankOf());
 
+ // Allocate gradI device buffer before zeroing — nullify() skips zeroing
+ // when special()==nullptr (device buffer not yet allocated). On CUDA, the
+ // output array may only have a host buffer at op invocation time; calling
+ // nullify() first is a no-op, then prepareSpecialUse allocates uninitialised
+ // device memory, and the atomicAdd accumulation kernel runs into garbage.
+ // Fix: allocate first via prepareSpecialUse, then zero the device buffer.
  NDArray::prepareSpecialUse({&gradI}, {&input, &gradO});
+ // initial zeroing of gradI (must be after device buffer is allocated)
+ gradI.nullify();
  BUILD_SINGLE_SELECTOR(
      input.dataType(), pooling2dBPCudaLauncher,
      (poolingDims.x, poolingDims.y, poolingDims.z, block.launchContext()->getCudaStream(), input.specialBuffer(),

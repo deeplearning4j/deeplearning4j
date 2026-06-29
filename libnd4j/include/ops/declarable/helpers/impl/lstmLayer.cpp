@@ -38,6 +38,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/activations.h>
 #include <ops/declarable/helpers/lstmLayer.h>
+#include <system/env_functions.h>
 
 
 namespace sd {
@@ -112,38 +113,15 @@ static void activationDeriv(NDArray* x, const int opId, const float alpha, const
       thresholdReluDerivative(x->getContext(), x, alpha, z, z);
       break;
     case 6: {
-      // Direct buffer access to avoid O(n^2) sync from per-element p()/e() calls
-      NDArray::prepareSpecialUse({z}, {x});
-      const bool isDouble = x->dataType() == DataType::DOUBLE;
-      if (isDouble) {
-        auto xBuf = x->bufferAsT<double>();
-        auto zBuf = z->bufferAsT<double>();
-        auto func = PRAGMA_THREADS_FOR {
-          for (sd::LongType i = start; i < stop; ++i) {
-            auto xOffset = x->getOffset(i);
-            auto val = static_cast<double>(beta) * xBuf[xOffset];
-            auto zOffset = z->getOffset(i);
-            zBuf[zOffset] = static_cast<double>(alpha) * static_cast<double>(beta) *
-                            (1.0 - sd::math::sd_tanh<double, double>(val) * sd::math::sd_tanh<double, double>(val));
-          }
-        };
-        samediff::Threads::parallel_for(func, 0, x->lengthOf());
-      } else {
-        auto xBuf = x->bufferAsT<float>();
-        auto zBuf = z->bufferAsT<float>();
-        auto func = PRAGMA_THREADS_FOR {
-          for (sd::LongType i = start; i < stop; ++i) {
-            auto xOffset = x->getOffset(i);
-            auto val = beta * xBuf[xOffset];
-            auto zOffset = z->getOffset(i);
-            zBuf[zOffset] = alpha * beta * (1.f - sd::math::sd_tanh<float, float>(val) * sd::math::sd_tanh<float, float>(val));
-          }
-        };
-        samediff::Threads::parallel_for(func, 0, x->lengthOf());
-      }
-      z->tickWriteHost();
-      z->syncToDevice();
-      NDArray::registerSpecialUse({z}, {x});
+      // Derivative of alpha * tanh(beta * x) = alpha * beta * (1 - tanh(beta*x)^2).
+      // Must use device ops throughout: host-loop writes to a sub-view of a shared DataBuffer
+      // then calling syncToDevice() clobbers device-side values written to other parts of that
+      // same DataBuffer by prior device ops (e.g. sigmoid'(zi) in dLdz[0:nOut]).
+      NDArray *y = x->ulike();
+      x->applyScalar(scalar::Multiply, beta, y);           // y = beta * x  (device op)
+      y->applyTransform(transform::TanhDerivative, z);     // z = 1 - tanh(y)^2  (device op)
+      delete y;
+      z->applyScalar(scalar::Multiply, alpha * beta, z);   // z *= alpha * beta  (device op, in-place)
       break;
     }
     case 7:
@@ -156,37 +134,11 @@ static void activationDeriv(NDArray* x, const int opId, const float alpha, const
       x->applyTransform(transform::SoftSignDerivative, z);
       break;
     case 10: {
-      // Direct buffer access to avoid O(n^2) sync from per-element p()/e() calls
-      NDArray::prepareSpecialUse({z}, {x});
-      const bool isDouble = x->dataType() == DataType::DOUBLE;
-      if (isDouble) {
-        auto xBuf = x->bufferAsT<double>();
-        auto zBuf = z->bufferAsT<double>();
-        auto func = PRAGMA_THREADS_FOR {
-          for (sd::LongType i = start; i < stop; ++i) {
-            auto xOffset = x->getOffset(i);
-            auto val = sd::math::sd_exp<double, double>(xBuf[xOffset]);
-            auto zOffset = z->getOffset(i);
-            zBuf[zOffset] = val / (1.0 + val);
-          }
-        };
-        samediff::Threads::parallel_for(func, 0, x->lengthOf());
-      } else {
-        auto xBuf = x->bufferAsT<float>();
-        auto zBuf = z->bufferAsT<float>();
-        auto func = PRAGMA_THREADS_FOR {
-          for (sd::LongType i = start; i < stop; ++i) {
-            auto xOffset = x->getOffset(i);
-            auto val = sd::math::sd_exp<float, float>(xBuf[xOffset]);
-            auto zOffset = z->getOffset(i);
-            zBuf[zOffset] = val / (1.f + val);
-          }
-        };
-        samediff::Threads::parallel_for(func, 0, x->lengthOf());
-      }
-      z->tickWriteHost();
-      z->syncToDevice();
-      NDArray::registerSpecialUse({z}, {x});
+      // softplus'(x) = sigmoid(x) = exp(x) / (1 + exp(x)).
+      // Must use device op: a host-loop write to a sub-view z of a shared DataBuffer, followed
+      // by syncToDevice(), clobbers device-side values already written to other parts of that
+      // DataBuffer by prior device ops (e.g. sigmoid'(zi) already in dLdz[0:nOut]).
+      x->applyTransform(transform::Sigmoid, z);
       break;
     }
     default:
@@ -198,11 +150,21 @@ static void activationDeriv(NDArray* x, const int opId, const float alpha, const
 static void clipDeriv(const float clipVal, NDArray& c, NDArray& z0, NDArray& z1, NDArray& z2, NDArray& z3) {
   if (clipVal == 0) return;
 
-  // Direct buffer access to avoid O(n^2) sync from per-element p()/e() calls
+  // Direct buffer access to avoid O(n^2) sync from per-element p()/e() calls.
+  // FIX for non-contiguous sub-views: bufferAsT<T>() returns primary() + _offset*sizeof(T),
+  // while getOffset(i) returns _offset + COORDS2INDEX(i). Using both together double-counts
+  // _offset and causes a buffer overrun for gates beyond column 0 (zf/zg/zo with _offset>0).
+  // Correct: keep bufferAsT<T>() for the sync-aware host pointer, subtract NDArray offset()
+  // from getOffset(i) so only COORDS2INDEX(i) is added to the already-offset base pointer.
   NDArray::prepareSpecialUse({&z0, &z1, &z2, &z3}, {&c});
   const bool isDouble = c.dataType() == DataType::DOUBLE;
+  const auto cOff  = c.offset();
+  const auto z0Off = z0.offset();
+  const auto z1Off = z1.offset();
+  const auto z2Off = z2.offset();
+  const auto z3Off = z3.offset();
   if (isDouble) {
-    auto cBuf = c.bufferAsT<double>();
+    auto cBuf  = c.bufferAsT<double>();
     auto z0Buf = z0.bufferAsT<double>();
     auto z1Buf = z1.bufferAsT<double>();
     auto z2Buf = z2.bufferAsT<double>();
@@ -210,19 +172,18 @@ static void clipDeriv(const float clipVal, NDArray& c, NDArray& z0, NDArray& z1,
 
     auto func = PRAGMA_THREADS_FOR {
       for (sd::LongType i = start; i < stop; ++i) {
-        auto cOffset = c.getOffset(i);
-        const auto val = cBuf[cOffset];
+        const auto val = cBuf[c.getOffset(i) - cOff];
         if (val == -static_cast<double>(clipVal) || val == static_cast<double>(clipVal)) {
-          z0Buf[z0.getOffset(i)] = 0.0;
-          z1Buf[z1.getOffset(i)] = 0.0;
-          z2Buf[z2.getOffset(i)] = 0.0;
-          z3Buf[z3.getOffset(i)] = 0.0;
+          z0Buf[z0.getOffset(i) - z0Off] = 0.0;
+          z1Buf[z1.getOffset(i) - z1Off] = 0.0;
+          z2Buf[z2.getOffset(i) - z2Off] = 0.0;
+          z3Buf[z3.getOffset(i) - z3Off] = 0.0;
         }
       }
     };
     samediff::Threads::parallel_for(func, 0, c.lengthOf());
   } else {
-    auto cBuf = c.bufferAsT<float>();
+    auto cBuf  = c.bufferAsT<float>();
     auto z0Buf = z0.bufferAsT<float>();
     auto z1Buf = z1.bufferAsT<float>();
     auto z2Buf = z2.bufferAsT<float>();
@@ -230,13 +191,12 @@ static void clipDeriv(const float clipVal, NDArray& c, NDArray& z0, NDArray& z1,
 
     auto func = PRAGMA_THREADS_FOR {
       for (sd::LongType i = start; i < stop; ++i) {
-        auto cOffset = c.getOffset(i);
-        const auto val = cBuf[cOffset];
+        const auto val = cBuf[c.getOffset(i) - cOff];
         if (val == -clipVal || val == clipVal) {
-          z0Buf[z0.getOffset(i)] = 0.f;
-          z1Buf[z1.getOffset(i)] = 0.f;
-          z2Buf[z2.getOffset(i)] = 0.f;
-          z3Buf[z3.getOffset(i)] = 0.f;
+          z0Buf[z0.getOffset(i) - z0Off] = 0.f;
+          z1Buf[z1.getOffset(i) - z1Off] = 0.f;
+          z2Buf[z2.getOffset(i) - z2Off] = 0.f;
+          z3Buf[z3.getOffset(i) - z3Off] = 0.f;
         }
       }
     };
@@ -617,11 +577,17 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   NDArray *dLdzg = x->rankOf() == 1 ? dLdz({2 * nOut, 3 * nOut}) : dLdz({0, 0, 2 * nOut, 3 * nOut});
   NDArray *dLdzo = x->rankOf() == 1 ? dLdz({3 * nOut, 4 * nOut}) : dLdz({0, 0, 3 * nOut, 4 * nOut});
 
+  // DSP bisect checkpoint: verify zUlike canary before any op group writes to it.
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
+
   // dcdzi = dcdi*didzi, [bS, nOut](or[nOut])
   activationDeriv(zi, params[3], params[4], params[5], dLdzi);  // didzi, inplace
   NDArray *dLdziMulG = (*dLdzi) * (*g);  // dcdi = g*clipDeriv
   dLdzi->assign(dLdziMulG);
   delete dLdziMulG;
+
+  // DSP bisect checkpoint: after activationDeriv(zi).
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
 
   // dcdzf = dcdf*dfdzf, [bS, nOut](or[nOut])
   activationDeriv(zf, params[3], params[4], params[5], dLdzf);  // dfdzf, inplace
@@ -629,11 +595,17 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   dLdzf->assign(dLdzfMulCI);
   delete dLdzfMulCI;
 
+  // DSP bisect checkpoint: after activationDeriv(zf).
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
+
   // dcdzg = dcde*dedzg, [bS, nOut](or[nOut])
   activationDeriv(zg, params[6], params[7], params[8], dLdzg);  // dgdzg, inplace
   NDArray *dLdzgMulI = (*dLdzg) * (*i);  // dcdf = i*clipDeriv
   dLdzg->assign(dLdzgMulI);
   delete dLdzgMulI;
+
+  // DSP bisect checkpoint: after activationDeriv(zg).
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
 
   // dhdzo = dhdo*dodzo = actH(c)*dodzo, [bS, nOut](or[nOut])
   activationDeriv(zo, params[3], params[4], params[5], dLdzo);
@@ -644,11 +616,17 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   dLdzo->assign(dLdzoMulTemp);
   delete dLdzoMulTemp;
 
+  // DSP bisect checkpoint: after activationDeriv(zo).
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
+
   // dcdcI
   NDArray *dcdcI = f->dup();
 
   // take into account possible deposit from clipping derivative
   clipDeriv(params[2], *c, *dLdzi, *dLdzf, *dLdzg, *dcdcI);
+
+  // DSP bisect checkpoint: after clipDeriv.
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
 
   // dhdc
   NDArray *cUlike = c->ulike();
@@ -657,6 +635,9 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   NDArray *dhdcMulO = dhdc * (*o);
   dhdc.assign(dhdcMulO);
   delete dhdcMulO;
+
+  // DSP bisect checkpoint: after activationDeriv(c)/dhdc.
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
 
   if (Wp) {
     NDArray *wpThird = (*Wp)({2 * nOut, 3 * nOut});
@@ -692,31 +673,43 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   *dLdcI += *dLdhIMulDhdc;
   delete dLdhIMulDhdc;
 
+  // DSP bisect checkpoint: after dLdcI accumulation.
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
+
   NDArray *dLdziMulDLdcI = (*dLdzi) * (*dLdcI);  // [bS, nOut](or[nOut])
   dLdzi->assign(dLdziMulDLdcI);
   delete dLdziMulDLdcI;
-  
+
   NDArray *dLdzfMulDLdcI = (*dLdzf) * (*dLdcI);  // [bS, nOut](or[nOut])
   dLdzf->assign(dLdzfMulDLdcI);
   delete dLdzfMulDLdcI;
-  
+
   NDArray *dLdzgMulDLdcI = (*dLdzg) * (*dLdcI);  // [bS, nOut](or[nOut])
   dLdzg->assign(dLdzgMulDLdcI);
   delete dLdzgMulDLdcI;
-  
+
   NDArray *dLdzoMulDLdhI = (*dLdzo) * (*dLdhI);  // [bS, nOut](or[nOut])
   dLdzo->assign(dLdzoMulDLdhI);
   delete dLdzoMulDLdhI;
+
+  // DSP bisect checkpoint: after gate gradient accumulation into dLdz.
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
 
   // dLdx
   NDArray *WxT = Wx->transpose();
   MmulHelper::mmul(&dLdz, WxT,
                    dLdx);  // [bS, 4*nOut] x [4*nOut, nIn] (or [4*nOut] x [4*nOut, nIn]) = [bS, nIn] ( or[nIn] )
 
+  // DSP bisect checkpoint: after dLdx mmul.
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
+
   // dLdhI
   NDArray *WrT = Wr->transpose();
   MmulHelper::mmul(&dLdz, WrT,
                    dLdhI);  // [bS, 4*nOut] x [4*nOut, nOut] (or [4*nOut] x [4*nOut, nOut]) = [bS, nOut] ( or[nOut] )
+
+  // DSP bisect checkpoint: after dLdhI mmul.
+  if (sd::env_isDebug()) zUlike->getDataBuffer()->validateIntegrity();
 
   // dLdcI
   NDArray *dLdcIMulDcdcI = (*dLdcI) * (*dcdcI);

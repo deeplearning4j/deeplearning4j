@@ -307,23 +307,31 @@ void autoregressiveDecode(
 
 
         // ── Step 1b: Pre-unmask the CURRENT position in causal mask ──
-        // The attention op writes KV at cache_position = currentPosition, then attends
-        // to the full buffer including that position. If the causal mask masks the current
-        // position, the token can't attend to its own KV entry → wrong attention output.
-        if (causalMask != nullptr && currentPosition >= 0 && currentPosition < causalMaskLen) {
-            BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskCpu,
-                                  (causalMask->buffer(), currentPosition, causalMaskLen),
-                                  SD_FLOAT_TYPES);
-        }
-        if (attnMaskReformat != nullptr && currentPosition >= 0 && currentPosition < attnMaskReformatLen) {
-            BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskCpu,
-                                  (attnMaskReformat->buffer(), currentPosition, attnMaskReformatLen),
-                                  SD_FLOAT_TYPES);
-        }
-        if (currentPosition >= 0 && currentPosition < maxKvLen) {
-            BUILD_SINGLE_SELECTOR(attentionMask->dataType(), updateAttentionMaskCpu,
-                                  (attentionMask->buffer(), currentPosition, maxKvLen),
-                                  SD_COMMON_TYPES);
+        // GGUF only (planOwnsKvScatter == true): the attention op writes KV at
+        // cache_position = currentPosition in-place, then attends to the full buffer
+        // including that position. Pre-unmasking is required for correct self-attention.
+        //
+        // ONNX/external-scatter path (planOwnsKvScatter == false): KV scatter happens
+        // AFTER execution. Position currentPosition is empty during plan execution —
+        // pre-unmasking it here exposes an empty-KV slot that the Java reference does
+        // not expose, causing logit divergence at the step where currentPosition first
+        // exceeds all positions already unmasked by the Java warmup.
+        if (config->planOwnsKvScatter) {
+            if (causalMask != nullptr && currentPosition >= 0 && currentPosition < causalMaskLen) {
+                BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskCpu,
+                                      (causalMask->buffer(), currentPosition, causalMaskLen),
+                                      SD_FLOAT_TYPES);
+            }
+            if (attnMaskReformat != nullptr && currentPosition >= 0 && currentPosition < attnMaskReformatLen) {
+                BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskCpu,
+                                      (attnMaskReformat->buffer(), currentPosition, attnMaskReformatLen),
+                                      SD_FLOAT_TYPES);
+            }
+            if (currentPosition >= 0 && currentPosition < maxKvLen) {
+                BUILD_SINGLE_SELECTOR(attentionMask->dataType(), updateAttentionMaskCpu,
+                                      (attentionMask->buffer(), currentPosition, maxKvLen),
+                                      SD_COMMON_TYPES);
+            }
         }
 
         // ── Step 2: Execute plan ──
@@ -630,16 +638,22 @@ void autoregressiveDecode(
                                   SD_COMMON_TYPES);
         }
 
-        if (causalMask != nullptr && kvJustWritten >= 0 && kvJustWritten < causalMaskLen) {
-            BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskCpu,
-                                  (causalMask->buffer(), kvJustWritten, causalMaskLen),
-                                  SD_FLOAT_TYPES);
-        }
+        // Causal mask: for ONNX/external-scatter (planOwnsKvScatter == false), unmask
+        // currentPosition (the NEXT write slot), matching Java's advance-one-ahead pattern.
+        // For GGUF (planOwnsKvScatter == true), unmask kvJustWritten.
+        {
+            LongType causalMaskUnmaskPos = config->planOwnsKvScatter ? kvJustWritten : currentPosition;
+            if (causalMask != nullptr && causalMaskUnmaskPos >= 0 && causalMaskUnmaskPos < causalMaskLen) {
+                BUILD_SINGLE_SELECTOR(causalMask->dataType(), updateCausalMaskCpu,
+                                      (causalMask->buffer(), causalMaskUnmaskPos, causalMaskLen),
+                                      SD_FLOAT_TYPES);
+            }
 
-        if (attnMaskReformat != nullptr && kvJustWritten >= 0 && kvJustWritten < attnMaskReformatLen) {
-            BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskCpu,
-                                  (attnMaskReformat->buffer(), kvJustWritten, attnMaskReformatLen),
-                                  SD_FLOAT_TYPES);
+            if (attnMaskReformat != nullptr && causalMaskUnmaskPos >= 0 && causalMaskUnmaskPos < attnMaskReformatLen) {
+                BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskCpu,
+                                      (attnMaskReformat->buffer(), causalMaskUnmaskPos, attnMaskReformatLen),
+                                      SD_FLOAT_TYPES);
+            }
         }
 
         // Update position_ids

@@ -395,9 +395,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
   seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
   seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
   seg.exec.compositeReplaySchedule.units.clear();
-  seg.exec.bumpArgGeneration();
-  seg.exec.addrKeyStableCount = 0;
-  seg.exec.slotAddrStableCount = 0;
+  seg.exec.markArgsStale();
   seg.exec.gapOpsCapturedInGraph = false;
   seg.resolvedCpuBackend = nullptr;
 }
@@ -412,9 +410,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
     seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
     seg.exec.compositeReplaySchedule.units.clear();
-    seg.exec.bumpArgGeneration();
-    seg.exec.addrKeyStableCount = 0;
-    seg.exec.slotAddrStableCount = 0;
+    seg.exec.markArgsStale();
     seg.exec.gapOpsCapturedInGraph = false;
     seg.resolvedCpuBackend = nullptr;
   }
@@ -705,6 +701,33 @@ int NativeDynamicShapePlan::copyStagingToBuffer(int extIdx, sd::DataBuffer* dstD
   // CPU: DataBuffer::memcpy does synchronous H2H copy.
   sd::DataBuffer::memcpy(dstDataBuffer, srcDb, 0, 0, staging->lengthOf());
   return 0;
+}
+
+// ── Graph-baked address pinning — CPU stubs (CudaMemoryPool is CUDA-only) ─────
+// On GPU, writeOutputSlot pins a sealed segment's plan-owned buffer addresses so
+// CudaMemoryPool::free() cannot re-hand them while a live CUDA graph still
+// references them (real implementations in NativeDynamicShapePlan_cuda.cu). CPU
+// has no CudaMemoryPool and no CUDA graph capture, so these are no-ops.
+
+void NativeDynamicShapePlan::platformPinGraphBakedAddress(void* /*ptr*/, int /*deviceId*/) {
+  // No-op on CPU — CudaMemoryPool is CUDA-only.
+}
+
+void NativeDynamicShapePlan::platformFlushGraphBakedPins(void* /*stream*/) {
+  // No-op on CPU — CudaMemoryPool is CUDA-only. Clear graphPinnedAddrs_ defensively
+  // (writeOutputSlot only pins for sealed CUDA-graph segments, so it is normally
+  // empty here) to avoid stale entries across plan lifetimes.
+  graphPinnedAddrs_.clear();
+}
+
+// ── Fingerprint ring: CPU stubs (no-op) ─────────────────────────────────────
+
+void NativeDynamicShapePlan::drainFingerprintRingPublic() {
+  // CPU build: no device ring; nothing to drain.
+}
+
+const char* NativeDynamicShapePlan::getFingerprintJson() {
+  return "null";  // CPU build: fingerprints are CUDA-only
 }
 
 }  // namespace graph

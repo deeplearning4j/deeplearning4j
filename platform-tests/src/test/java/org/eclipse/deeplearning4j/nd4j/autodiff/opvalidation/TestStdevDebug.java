@@ -27,8 +27,6 @@ public class TestStdevDebug {
         Nd4j.getRandom().setSeed(12345);
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
 
         int nOut = 4;
         int minibatch = 10;
@@ -60,8 +58,6 @@ public class TestStdevDebug {
         // Serialize
         java.nio.ByteBuffer serialized = sd.asFlatBuffers(true);
         SameDiff deserialized = SameDiff.fromFlatBuffers(serialized);
-        deserialized.setDspAutoCompileEnabled(false);
-        deserialized.setDspNativeAutoCompileEnabled(false);
 
         // Check deserialized variable
         SDVariable deserIn = deserialized.getVariable("in");
@@ -96,8 +92,6 @@ public class TestStdevDebug {
 
             // SameDiff execution with DSP disabled
             SameDiff sd = SameDiff.create();
-            sd.setDspAutoCompileEnabled(false);
-            sd.setDspNativeAutoCompileEnabled(false);
 
             SDVariable var = sd.var("in", input);
             SDVariable stdev = var.std(true);
@@ -186,8 +180,6 @@ public class TestStdevDebug {
         System.out.println("=== Actual sd.var with view ===");
         INDArray view2 = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         sd.var("test", view2);
         INDArray sdArr = sd.getVariable("test").getArr();
         org.nd4j.linalg.api.device.DeviceMemoryManager.getInstance().ensureHostAccess(sdArr);
@@ -218,8 +210,6 @@ public class TestStdevDebug {
 
             // Serialize through SameDiff
             SameDiff sd = SameDiff.create();
-            sd.setDspAutoCompileEnabled(false);
-            sd.setDspNativeAutoCompileEnabled(false);
             SDVariable var = sd.var("in", arr);
             SDVariable stdev = var.std(false);
 
@@ -231,8 +221,6 @@ public class TestStdevDebug {
             // Serialize
             java.nio.ByteBuffer serialized = sd.asFlatBuffers(true);
             SameDiff deserialized = SameDiff.fromFlatBuffers(serialized);
-            deserialized.setDspAutoCompileEnabled(false);
-            deserialized.setDspNativeAutoCompileEnabled(false);
 
             // Check deserialized variable data
             INDArray deserArr = deserialized.getVariable("in").getArr();
@@ -281,8 +269,6 @@ public class TestStdevDebug {
 
         // Build SameDiff graph
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable input = sd.var("in", inputArr);
         SDVariable loss = sd.math().entropy("loss", input, 0, 1);
 
@@ -296,8 +282,6 @@ public class TestStdevDebug {
 
         // Deserialize
         SameDiff deserialized = SameDiff.fromFlatBuffers(serialized);
-        deserialized.setDspAutoCompileEnabled(false);
-        deserialized.setDspNativeAutoCompileEnabled(false);
 
         // Check deserialized variable
         INDArray deserArr = deserialized.getVariable("in").getArr();

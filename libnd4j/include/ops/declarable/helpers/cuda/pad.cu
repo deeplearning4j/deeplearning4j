@@ -90,7 +90,7 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xS
       if (xzCoord[j] < left || xzCoord[j] >= left + xShape[j]) {
         within = false;
 
-        if (mode != 0) {  // REFLECT or SYMMETRIC
+        if (mode != 0) {  // REFLECT or SYMMETRIC: remap this dimension and continue
           xzCoord[j] = xzCoord[j] - left;
 
           if (xzCoord[j] < 0) {  // Left boundary
@@ -98,9 +98,11 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xS
           } else if (xzCoord[j] >= xShape[j]) {  // Right boundary
             xzCoord[j] = 2 * xShape[j] - xzCoord[j] - shift2;
           }
+          // Do NOT break: all remaining dimensions must also be remapped
+        } else {
+          // CONSTANT mode: no need to compute input coordinates, exit early
+          break;
         }
-
-        break;
       } else {
         xzCoord[j] -= left;
       }
@@ -109,7 +111,7 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xS
     if (within || mode != 0) {
       LongType xOffset;
       COORDS2INDEX(rank, xStride, xzCoord, xOffset);
-      z[zOffset] = within ? x[xOffset] : x[xOffset];  // Handles REFLECT or SYMMETRIC
+      z[zOffset] = x[xOffset];
     } else {
       z[zOffset] = padVal;  // CONSTANT padding
     }

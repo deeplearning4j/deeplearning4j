@@ -1332,4 +1332,22 @@ SD_LIB_EXPORT sd::LongType getBufferPoolTotalAcquired(int deviceId);
 /** Lifetime reuse count (acquires satisfied from pool) on the given device. */
 SD_LIB_EXPORT sd::LongType getBufferPoolTotalReused(int deviceId);
 
+// ========================
+// Sync-free Buffer Fingerprint Ring
+// ========================
+
+/**
+ * Drain the fingerprint ring: D2H copy device→host (synchronous, call ONLY
+ * after the decode loop, never during capture/replay).
+ * No-op if BUF_FP_RING env not set or ring already drained.
+ */
+SD_LIB_EXPORT void drainPlanFingerprintRing(sd::Pointer planHandle);
+
+/**
+ * Return JSON string describing per-step XOR fingerprints of all tracked
+ * buffers. Call after drainPlanFingerprintRing(). Returns "null" if not
+ * enabled or not drained.
+ */
+SD_LIB_EXPORT const char* getPlanFingerprintJson(sd::Pointer planHandle);
+
 #endif // NATIVEOPSDSP_H

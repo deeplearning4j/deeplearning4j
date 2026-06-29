@@ -382,15 +382,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         Map<Integer, Double> ret = new HashMap<>();
         if (labels == null)
             return ret;
-        long nTensors = labels.tensorsAlongDimension(1);
-        for (int i = 0; i < nTensors; i++) {
-            INDArray row = labels.tensorAlongDimension(i, 1);
-            INDArray javaRow = labels.tensorAlongDimension(i, 1);
-            int maxIdx = Nd4j.getBlasWrapper().iamax(row);
-            int maxIdxJava = Nd4j.getBlasWrapper().iamax(javaRow);
-            if (maxIdx < 0)
-                throw new IllegalStateException("Please check the iamax implementation for "
-                        + Nd4j.getBlasWrapper().getClass().getName());
+        // Use Nd4j.argMax along dim 1 for the whole matrix: avoids BLAS iamax
+        // which on CUDA ignores the array's buffer offset (CublasPointer always
+        // starts at buffer position 0), giving wrong results for 'f'-order views.
+        INDArray argMaxResult = Nd4j.argMax(labels, 1);
+        for (int i = 0; i < argMaxResult.length(); i++) {
+            int maxIdx = argMaxResult.getInt(i);
             if (ret.get(maxIdx) == null)
                 ret.put(maxIdx, 1.0);
             else
@@ -609,7 +606,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public int outcome() {
-        return Nd4j.getBlasWrapper().iamax(getLabels());
+        // Use the ND4J argMax op instead of BLAS iamax: the CUDA iamax path
+        // (CublasPointer) does not add the array's buffer offset to the device
+        // pointer, so subview arrays (e.g. a single-row slice of an 'f'-order
+        // labels matrix) produce wrong results on CUDA.  Nd4j.argMax uses the
+        // full shape-info (offset + strides) and works correctly on all backends.
+        return Nd4j.argMax(getLabels(), 1).getInt(0);
     }
 
     /**

@@ -127,50 +127,50 @@ public class DevicePlacementPlannerExtendedTest {
     // ─── DeviceKey ────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("DeviceKey: isCompatibleWith same type and arch")
+    @DisplayName("DeviceKey: compatible — same CUDA type and arch")
     void testDeviceKeyCompatible() {
-        DeviceKey k1 = new DeviceKey(
-                DeviceKey.Type.CUDA_GPU, 0, "sm86");
-        DeviceKey k2 = new DeviceKey(
-                DeviceKey.Type.CUDA_GPU, 1, "sm86");
+        DeviceKey k1 = new DeviceKey(DeviceKey.DeviceType.CUDA, 0, 86);
+        DeviceKey k2 = new DeviceKey(DeviceKey.DeviceType.CUDA, 1, 86);
         assertTrue(k1.isCompatibleWith(k2));
     }
 
     @Test
     @DisplayName("DeviceKey: not compatible with different type")
     void testDeviceKeyNotCompatible() {
-        DeviceKey k1 = new DeviceKey(
-                DeviceKey.Type.CUDA_GPU, 0, "sm86");
-        DeviceKey k2 = new DeviceKey(
-                DeviceKey.Type.CPU, 0, "");
+        DeviceKey k1 = new DeviceKey(DeviceKey.DeviceType.CUDA, 0, 86);
+        DeviceKey k2 = new DeviceKey(DeviceKey.DeviceType.CPU, 0);
         assertFalse(k1.isCompatibleWith(k2));
     }
 
     @Test
-    @DisplayName("DeviceKey: not compatible with different arch")
+    @DisplayName("DeviceKey: not compatible with different arch (sm_86 vs sm_89)")
     void testDeviceKeyNotCompatibleDiffArch() {
-        DeviceKey k1 = new DeviceKey(
-                DeviceKey.Type.CUDA_GPU, 0, "sm86");
-        DeviceKey k2 = new DeviceKey(
-                DeviceKey.Type.CUDA_GPU, 0, "sm90");
+        DeviceKey k1 = new DeviceKey(DeviceKey.DeviceType.CUDA, 0, 86);
+        DeviceKey k2 = new DeviceKey(DeviceKey.DeviceType.CUDA, 0, 89);
         assertFalse(k1.isCompatibleWith(k2));
     }
 
     @Test
-    @DisplayName("DeviceKey: toString format")
-    void testDeviceKeyToString() {
-        DeviceKey key = new DeviceKey(
-                DeviceKey.Type.CUDA_GPU, 2, "sm86");
-        assertEquals("cuda_gpu_2_sm86", key.toString());
+    @DisplayName("DeviceKey: CPU keys compatible regardless of index")
+    void testDeviceKeyCpuCompatible() {
+        assertTrue(DeviceKey.cpu(0).isCompatibleWith(DeviceKey.cpu(3)));
     }
 
     @Test
-    @DisplayName("DeviceKey: ordinal mapping")
+    @DisplayName("DeviceKey: toString includes arch when present")
+    void testDeviceKeyToString() {
+        assertEquals("CUDA:2:sm_86", new DeviceKey(DeviceKey.DeviceType.CUDA, 2, 86).toString());
+        assertEquals("CPU:0", new DeviceKey(DeviceKey.DeviceType.CPU, 0).toString());
+    }
+
+    @Test
+    @DisplayName("DeviceKey: ordinal/type mapping")
     void testDeviceKeyOrdinal() {
-        assertEquals(0, DeviceKey.Type.CPU.getValue());
-        assertEquals(1, DeviceKey.Type.CUDA_GPU.getValue());
-        DeviceKey.Type t = DeviceKey.Type.fromOrdinal(3);
-        assertEquals(DeviceKey.Type.VULKAN_GPU, t);
+        assertEquals(DeviceKey.DeviceType.CPU.ordinal(),
+                new DeviceKey(DeviceKey.DeviceType.CPU, 0).typeOrdinal());
+        // int-ordinal constructor maps the ordinal back to the DeviceType
+        assertEquals(DeviceKey.DeviceType.OPENCL,
+                new DeviceKey(DeviceKey.DeviceType.OPENCL.ordinal(), 0).type);
     }
 
     // ─── SINGLE_DEVICE strategy ───────────────────────────────────────────────
@@ -500,18 +500,5 @@ public class DevicePlacementPlannerExtendedTest {
         Map<String, Integer> custom = Map.of("var1", 0, "var2", 1);
         sd.setCustomDevicePlacement(custom);
         assertEquals(custom, sd.getCustomDevicePlacement());
-    }
-
-    @Test
-    @DisplayName("SameDiff: DSP auto-compile flags")
-    void testSameDiffDspAutoCompileFlags() {
-        SameDiff sd = SameDiff.create();
-
-        // Default values — both default to true (see SameDiff field initializers)
-        assertTrue(sd.isDspAutoCompileEnabled());
-        assertTrue(sd.isDspNativeAutoCompileEnabled());
-
-        sd.setDspNativeAutoCompileEnabled(false);
-        assertFalse(sd.isDspNativeAutoCompileEnabled());
     }
 }

@@ -261,6 +261,12 @@ int executeDynamicShapePlan(
     // This defensive clear ensures the flag is always false before we return
     // to Java, regardless of how execute() exited internally.
     tl_dspReplayActive = false;
+    // Belt-and-suspenders: clear the execution stream TLS at the JNI boundary so
+    // that asyncTransferStream() cannot accidentally route H2D copies to a stale
+    // plan-owned stream on the next call.  platformBeginExecution's DspStreamGuard
+    // would restore to null anyway on a clean exit, but exceptions or aborted
+    // captures may bypass it.
+    tl_dspExecutionStream = nullptr;
 
     if (status != Status::OK) {
       // Preserve the detailed C++ error message (e.g., "CUDA error after segment [X-Y]: 700 (...")
@@ -373,8 +379,9 @@ int executeDynamicShapePlan(
     return 0;
   } catch (const std::exception& e) {
     DSP_DIAG(EXECUTE, "executeDynamicShapePlan: exception: %s", e.what());
-    // Clear DSP replay TLS — exception may have bypassed DspReplayGuard destructor
+    // Clear DSP TLS — exception may have bypassed DspReplayGuard/DspStreamGuard destructors
     tl_dspReplayActive = false;
+    tl_dspExecutionStream = nullptr;
     // Clear any sticky CUDA errors and ensure stream is not in capture mode
     cudaGetLastError();
     // Set error message for Java side
@@ -1000,16 +1007,23 @@ const char* getPlanSegmentStatisticsJson(sd::Pointer planHandle, int segmentIdx)
     replayCount = seg.exec.replayHandle->getStatistics().replayCount;
     replayState = static_cast<int>(seg.exec.replayHandle->getState());
   }
+  const auto& rs = seg.exec.replayStability;
   snprintf(buf, sizeof(buf),
            "{\"numOperations\":%d,\"replayCount\":%d,\"replayState\":%d,"
            "\"backendName\":\"%s\",\"executionCount\":%d,"
            "\"capturable\":%s,\"compilationFailed\":%s,\"compiledByBackend\":\"%s\","
-           "\"mergedGroups\":%d,\"compositeIslands\":%d}",
+           "\"mergedGroups\":%d,\"compositeIslands\":%d,"
+           "\"stabValid\":%d,\"extAddrsStable\":%d,\"createValuesStable\":%d,"
+           "\"shapeKeyStable\":%d,\"hasValueShapeInputs\":%d,\"gapSlotCount\":%d,"
+           "\"isStable\":%d,\"needsArgRefresh\":%d}",
            numOps, replayCount, replayState, backend, seg.exec.executionCount,
            seg.def.isCapturable ? "true" : "false",
            seg.exec.compilationFailed ? "true" : "false",
            seg.exec.compiledByBackend.c_str(),
-           mergedGroups, compositeIslands);
+           mergedGroups, compositeIslands,
+           rs.valid() ? 1 : 0, rs.extAddrsStable() ? 1 : 0, rs.createValuesStable() ? 1 : 0,
+           rs.shapeKeyStable() ? 1 : 0, rs.hasValueShapeInputs() ? 1 : 0, rs.gapSlotCount(),
+           rs.isStable() ? 1 : 0, seg.exec.needsArgRefresh() ? 1 : 0);
   return buf;
 }
 
@@ -2508,6 +2522,18 @@ sd::LongType getBufferPoolTotalAcquired(int deviceId) {
 
 sd::LongType getBufferPoolTotalReused(int deviceId) {
   return static_cast<sd::LongType>(DspBufferPool::forDevice(deviceId).totalReused());
+}
+
+// ── Sync-free buffer fingerprint ring ────────────────────────────────────────
+
+void drainPlanFingerprintRing(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return;
+  reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->drainFingerprintRingPublic();
+}
+
+const char* getPlanFingerprintJson(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return "null";
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getFingerprintJson();
 }
 
 // FrozenPlan API v1 - cache invalidation marker

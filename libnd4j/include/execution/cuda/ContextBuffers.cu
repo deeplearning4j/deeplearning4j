@@ -130,13 +130,15 @@ void ContextBuffers::release() {
       switchedDevice = true;
     }
 
-    // Free workspace buffers allocated with cudaMallocAsync (from pool).
+    // Free workspace buffers — routed through the pool so that both
+    // cudaMallocAsync (primary path) and allocateDirect (906 fallback)
+    // allocations are freed correctly regardless of which path was taken.
     if (_allocationPointer != nullptr) {
-      cudaFreeAsync(_allocationPointer, 0);
+      memory::CudaMemoryPool::getInstance().free(_allocationPointer, _deviceId);
     }
     if (_scalarPointer != nullptr) cudaFreeHost(_scalarPointer);
     if (_reductionPointer != nullptr) {
-      cudaFreeAsync(_reductionPointer, 0);
+      memory::CudaMemoryPool::getInstance().free(_reductionPointer, _deviceId);
     }
 
     if (_execStream != nullptr) {
@@ -228,10 +230,12 @@ void ContextBuffers::initialize() {
   auto res = cudaMallocAsync(&_reductionPointer, 1024 * 1024 * 8, 0);
   if (res == 906) {
     // Error 906 = cudaErrorStreamCaptureImplicit: stream 0 would depend on
-    // a capturing blocking stream. Use cudaMalloc instead (synchronous,
-    // doesn't participate in stream capture).
+    // a capturing blocking stream. Use allocateDirect instead — it allocates
+    // on a dedicated non-capturing stream so it is safe during graph capture
+    // and produces a persistent buffer that survives capture/teardown.
     cudaGetLastError();  // clear error 906
-    res = cudaMalloc(&_reductionPointer, 1024 * 1024 * 8);
+    _reductionPointer = memory::CudaMemoryPool::getInstance().allocateDirect(1024 * 1024 * 8, _deviceId);
+    res = (_reductionPointer != nullptr) ? cudaSuccess : cudaErrorMemoryAllocation;
   }
   if (res != cudaSuccess) {
     _reductionPointer = nullptr;
@@ -246,30 +250,58 @@ void ContextBuffers::initialize() {
     cudaGetLastError();  // clear error
     _scalarPointer = nullptr;
     _allocationPointer = nullptr;
+    // CRITICAL: always create streams even when buffer allocation fails.
+    // getCudaStream() → execStream() → _execStream. If _execStream stays null here,
+    // LaunchContext::getCudaStream() returns null, and DataBuffer::syncToPrimary
+    // null-derefs *streamPtr → SIGSEGV si_addr=0x0.
+    // Streams do NOT participate in pool memory or CUDA graph capture — cudaStreamCreate
+    // is always safe regardless of pool/capture state.
+    _execStream = new cudaStream_t();
+    _specialStream = new cudaStream_t();
+    cudaGetLastError();  // clear any sticky error before stream creation
+    cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_execStream));
+    cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_specialStream));
+    // Set _allocated=true so release()/dtor runs the stream-cleanup block and deletes
+    // the cudaStream_t objects. The buffer pointers are all null so free/cudaFreeHost
+    // on them are no-ops (both check != nullptr before freeing).
+    _allocated = true;
     _initialized = true;
     return;
   }
 
   res = cudaHostAlloc(reinterpret_cast<void**>(&_scalarPointer), 16, cudaHostAllocDefault);
   if (res != cudaSuccess) {
-    cudaFreeAsync(_reductionPointer, 0);
+    memory::CudaMemoryPool::getInstance().free(_reductionPointer, _deviceId);
     _reductionPointer = nullptr;
     _scalarPointer = nullptr;
     _allocationPointer = nullptr;
     sd_printf("WARNING: ContextBuffers: _scalarPointer allocation failed on device %d "
               "(error %d: %s)\n", _deviceId, (int)res, cudaGetErrorString(res));
     cudaGetLastError();
+    // CRITICAL: same as the _reductionPointer path above — create streams so that
+    // getCudaStream() never returns null and syncToPrimary does not null-deref.
+    // Set _allocated=true so release()/dtor cleans up the stream objects.
+    _execStream = new cudaStream_t();
+    _specialStream = new cudaStream_t();
+    cudaGetLastError();
+    cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_execStream));
+    cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_specialStream));
+    _allocated = true;
     _initialized = true;
     return;
   }
 
   res = cudaMallocAsync(&_allocationPointer, 1024 * 1024 * 8, 0);
   if (res == 906) {
+    // Error 906 = cudaErrorStreamCaptureImplicit: same capture-safe fallback
+    // as for _reductionPointer above — allocateDirect uses a dedicated
+    // non-capturing stream, producing a persistent buffer.
     cudaGetLastError();
-    res = cudaMalloc(&_allocationPointer, 1024 * 1024 * 8);
+    _allocationPointer = memory::CudaMemoryPool::getInstance().allocateDirect(1024 * 1024 * 8, _deviceId);
+    res = (_allocationPointer != nullptr) ? cudaSuccess : cudaErrorMemoryAllocation;
   }
   if (res != cudaSuccess) {
-    cudaFreeAsync(_reductionPointer, 0);
+    memory::CudaMemoryPool::getInstance().free(_reductionPointer, _deviceId);
     _reductionPointer = nullptr;
     cudaFreeHost(_scalarPointer);
     _scalarPointer = nullptr;
@@ -277,6 +309,15 @@ void ContextBuffers::initialize() {
     sd_printf("WARNING: ContextBuffers: _allocationPointer allocation failed on device %d "
               "(error %d: %s)\n", _deviceId, (int)res, cudaGetErrorString(res));
     cudaGetLastError();
+    // CRITICAL: same as the other early-return paths — create streams so that
+    // getCudaStream() never returns null and syncToPrimary does not null-deref.
+    // Set _allocated=true so release()/dtor cleans up the stream objects.
+    _execStream = new cudaStream_t();
+    _specialStream = new cudaStream_t();
+    cudaGetLastError();
+    cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_execStream));
+    cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_specialStream));
+    _allocated = true;
     _initialized = true;
     return;
   }

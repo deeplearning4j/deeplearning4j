@@ -20,6 +20,10 @@
 // @author George A. Shulinok <sgazeos@gmail.com>, created on 4/18/2019
 //
 #include <array/NDArrayFactory.h>
+#include <execution/cuda/LaunchDims.h>
+#include <helpers/DebugHelper.h>
+#include <helpers/shape.h>
+#include <math/templatemath.h>
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
 
@@ -249,18 +253,103 @@ BUILD_SINGLE_TEMPLATE( void barnes_edge_forces_,
                       SD_FLOAT_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// barnes_gains kernel: per-element triplewise update
+//   inputs:  x (gains), grad (gradient), eps (previous step / epsilon)
+//   formula: res = (sign(grad) != sign(eps)) ? x + 0.2 : x * 0.8
+//            res = max(res, 0.01)
+//
+template <typename T>
+static SD_KERNEL void barnesGainsCuda(const void* vx,  const LongType* xShapeInfo,
+                                      const void* vg,  const LongType* gShapeInfo,
+                                      const void* ve,  const LongType* eShapeInfo,
+                                      void* vz,        const LongType* zShapeInfo) {
+  const T* x = reinterpret_cast<const T*>(vx);
+  const T* g = reinterpret_cast<const T*>(vg);
+  const T* e = reinterpret_cast<const T*>(ve);
+  T*       z = reinterpret_cast<T*>(vz);
+
+  __shared__ LongType len, totalThreads;
+  __shared__ int rank;
+  __shared__ const LongType *xShape, *gShape, *eShape, *zShape;
+  __shared__ const LongType *xStride, *gStride, *eStride, *zStride;
+
+  if (threadIdx.x == 0) {
+    len          = shape::length(zShapeInfo);
+    totalThreads = gridDim.x * blockDim.x;
+    rank         = shape::rank(zShapeInfo);
+    xShape  = shape::shapeOf(xShapeInfo);
+    gShape  = shape::shapeOf(gShapeInfo);
+    eShape  = shape::shapeOf(eShapeInfo);
+    zShape  = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    gStride = shape::stride(gShapeInfo);
+    eStride = shape::stride(eShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+  }
+  __syncthreads();
+
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  LongType xCoords[SD_MAX_RANK], gCoords[SD_MAX_RANK], eCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
+
+  for (LongType i = tid; i < len; i += totalThreads) {
+    INDEX2COORDS(i, rank, zShape, zCoords);
+    INDEX2COORDS(i, rank, xShape, xCoords);
+    INDEX2COORDS(i, rank, gShape, gCoords);
+    INDEX2COORDS(i, rank, eShape, eCoords);
+
+    LongType xIdx, gIdx, eIdx, zIdx;
+    COORDS2INDEX(rank, xStride, xCoords, xIdx);
+    COORDS2INDEX(rank, gStride, gCoords, gIdx);
+    COORDS2INDEX(rank, eStride, eCoords, eIdx);
+    COORDS2INDEX(rank, zStride, zCoords, zIdx);
+
+    T xVal   = x[xIdx];
+    T gVal   = g[gIdx];
+    T eVal   = e[eIdx];
+
+    T res = (math::sd_sign<T, T>(gVal) != math::sd_sign<T, T>(eVal))
+                ? xVal + static_cast<T>(0.2)
+                : xVal * static_cast<T>(0.8);
+
+    if (res < static_cast<T>(0.01)) res = static_cast<T>(0.01);
+
+    z[zIdx] = res;
+  }
+}
+
+template <typename T>
+static SD_HOST void barnesGainsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+                                            const cudaStream_t* stream,
+                                            const void* vx, const LongType* xShapeInfo,
+                                            const void* vg, const LongType* gShapeInfo,
+                                            const void* ve, const LongType* eShapeInfo,
+                                            void* vz,       const LongType* zShapeInfo) {
+  barnesGainsCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(
+      vx, xShapeInfo, vg, gShapeInfo, ve, eShapeInfo, vz, zShapeInfo);
+  DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream), "barnesGainsCuda failed");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // gains - run a function T((x + 2.) * sd::math::sd_sign<T,T>(grad) != sd::math::sd_sign<T,T>(eps)) + T(x * 0.8 *
 // sd::math::sd_sign<T,T>(grad) != sd::math::sd_sign<T,T>(eps)); for all members in input and put all in output
 //
 template <typename T>
 void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
-  auto gainsInternal = LAMBDA_TTT(x, grad, eps) {
-    T res = math::sd_sign<T, T>(grad) != math::sd_sign<T, T>(eps) ? x + T(.2) : x * T(.8);
-    if (res < .01) res = .01;
-    return res;
-  });
+  NDArray::prepareSpecialUse({output}, {input, gradX, epsilon});
 
-  input->applyTriplewiseLambda(gradX, epsilon, gainsInternal, output);
+  dim3 launchDims = getLaunchDims("barnesGains");
+  auto stream = output->getContext()->getCudaStream();
+
+  BUILD_SINGLE_SELECTOR(input->dataType(), barnesGainsCudaLauncher,
+                        (launchDims.y, launchDims.x, launchDims.z, stream,
+                         input->specialBuffer(),   input->specialShapeInfo(),
+                         gradX->specialBuffer(),   gradX->specialShapeInfo(),
+                         epsilon->specialBuffer(), epsilon->specialShapeInfo(),
+                         output->specialBuffer(),  output->specialShapeInfo()),
+                        SD_NUMERIC_TYPES);
+
+  NDArray::registerSpecialUse({output}, {input, gradX, epsilon});
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

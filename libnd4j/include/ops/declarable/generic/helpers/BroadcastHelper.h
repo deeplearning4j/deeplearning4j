@@ -120,18 +120,12 @@ class BroadcastHelper {
     } else if (!xIsScalar && yIsScalar) {
       x->applyScalarArr(op.s, y, z);
     } else if (xIsScalar && !yIsScalar) {
-      if (z->isSameShape(y)) {
-        x->applyPairwiseTransform(op.p, y, z, extraArgs);
-        return z;
-      } else {
-        // Create output array with y's shape but BOOL dtype for comparison result
-        auto* yShapeVec = y->getShapeAsVector();
-        auto tZ = NDArrayFactory::create(y->ordering(), *yShapeVec, BOOL, z->getContext());
-        delete yShapeVec;
-        // Actually perform the comparison: x (scalar) vs y (array)
-        x->applyPairwiseTransform(op.p, y, tZ, extraArgs);
-        return tZ;
-      }
+      // Scalar x broadcast against array y: use applyTrueBroadcast so every
+      // element of y is compared against x.  applyPairwiseTransform must NOT
+      // be used here because it iterates min(x.length, y.length) = 1 element,
+      // leaving z[1..n-1] untouched (= false for bool output).
+      x->applyTrueBroadcast(op, y, z, true, extraArgs);
+      return z;
     } else if (xIsScalar && yIsScalar) {
       x->applyScalarArr(op.s, y, z);
     } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {

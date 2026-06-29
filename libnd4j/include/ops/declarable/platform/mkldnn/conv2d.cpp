@@ -418,10 +418,21 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
   // for dilated kernels. Route causal conv through the generic CPU path.
   int paddingMode = INT_ARG(8);
 
+  // OneDNN does not support dilated convolutions with stride > 1 on any axis.
+  // Attempting it yields dnnl_unimplemented (status 50). Route to the generic
+  // CPU im2col path instead.
+  sd::LongType sH = INT_ARG(2);
+  sd::LongType sW = INT_ARG(3);
+  sd::LongType dH = INT_ARG(6);
+  sd::LongType dW = INT_ARG(7);
+  bool dilatedWithStride = (dH > 1 || dW > 1) && (sH > 1 || sW > 1);
+
   // conv2d is available for float32, bfloat16, and float16 dtypes
   Requirements req("ONEDNN CONV2d OP");
   req.expectNotEq(makeInfoVariable(paddingMode, "paddingMode"),
                   makeInfoVariable(2, "CAUSAL")) &&
+      req.expectFalse(makeInfoVariable(dilatedWithStride, "dilated+strided"),
+                      "OneDNN does not support dilation>1 with stride>1") &&
       req.expectTrue(makeInfoVariable(isSupportedConv2dType(input->dataType()), TYPE_MSG_INPUT0),
                      "Must be FLOAT32, BFLOAT16, or HALF") &&
       req.expectTrue(makeInfoVariable(isSupportedConv2dType(weights->dataType()), TYPE_MSG_INPUT1),
@@ -509,10 +520,21 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
 
   int paddingMode = INT_ARG(8);
 
+  // OneDNN does not support dilated convolutions with stride > 1 on any axis.
+  // Attempting it yields dnnl_unimplemented (status 50). Route to the generic
+  // CPU im2col path instead.
+  sd::LongType sH = INT_ARG(2);
+  sd::LongType sW = INT_ARG(3);
+  sd::LongType dH = INT_ARG(6);
+  sd::LongType dW = INT_ARG(7);
+  bool dilatedWithStride = (dH > 1 || dW > 1) && (sH > 1 || sW > 1);
+
   // conv2d_bp is available for float32, bfloat16, and float16 dtypes
   Requirements req("ONEDNN CONV2d_BP OP");
   req.expectNotEq(makeInfoVariable(paddingMode, "paddingMode"),
                   makeInfoVariable(2, "CAUSAL")) &&
+      req.expectFalse(makeInfoVariable(dilatedWithStride, "dilated+strided"),
+                      "OneDNN does not support dilation>1 with stride>1") &&
       req.expectTrue(makeInfoVariable(isSupportedConv2dType(input->dataType()), TYPE_MSG_INPUT0),
                      "Must be FLOAT32, BFLOAT16, or HALF") &&
       req.expectTrue(makeInfoVariable(isSupportedConv2dType(weights->dataType()), TYPE_MSG_INPUT1),

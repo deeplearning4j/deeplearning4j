@@ -81,6 +81,15 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &means, output, false);
   output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), &stdev, output, false);
 
+  // Flush the default context stream before the stack NDArrays (means, stdev) are freed.
+  // During DSP REPLAY this op may run as a gap op: tl_graphExecutionActive=true but
+  // tl_graphCaptureStream=nullptr. CudaMemoryPool::free() calls cudaFreeAsync on
+  // tl_dspExecutionStream, which is a different stream than the default context stream
+  // where the CUDA kernels above are enqueued. Without this sync, the frees can race
+  // with the kernel reads. synchronizeExecStream() skips only during CAPTURE (where
+  // cudaStreamSynchronize is illegal).
+  output->synchronizeExecStream("standardize: sync before stack NDArray destruction");
+
   return sd::Status::OK;
 }
 
@@ -167,10 +176,21 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   *output += dldx_s;
 
   output->applyScalar(sd::scalar::ReplaceNans, 0, output);
+
+  // Flush the default context stream BEFORE freeing any NDArrays.
+  // During DSP REPLAY this op runs as a gap op: tl_graphExecutionActive=true,
+  // tl_graphCaptureStream=nullptr. CudaMemoryPool::free() calls cudaFreeAsync on
+  // tl_dspExecutionStream — a different stream than the default context stream where
+  // the CUDA kernels above were enqueued. Without this sync, cudaFreeAsync can reclaim
+  // the device memory of sum/means/stdev/dlds_sum while the default stream kernels
+  // are still reading it. synchronizeExecStream() skips only during CAPTURE.
+  output->synchronizeExecStream("standardize_bp: sync before NDArray destruction");
+
   delete sum;
   delete means;
   delete stdev;
   delete dlds_sum;
+
   return sd::Status::OK;
 }
 

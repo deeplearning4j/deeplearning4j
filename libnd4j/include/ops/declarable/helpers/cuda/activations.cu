@@ -27,6 +27,7 @@
 #include <system/op_boilerplate.h>
 
 #include <numeric>
+#include <type_traits>
 
 #include "execution/cuda/LaunchDims.h"
 
@@ -197,8 +198,6 @@ void SD_HOST preluBPCudaLauncher(const int blocksPerGrid, const int threadsPerBl
 //////////////////////////////////////////////////////////////////////////
 void preluBP(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *dLdO, NDArray *dLdI,
              NDArray *dLdA) {
-  dLdA->nullify();
-
   dim3 launchDims = getLaunchDims("prelu");
   // Cap at 256: preluBPCuda kernel uses __launch_bounds__(256, 2)
   if (launchDims.y > 256) launchDims.y = 256;
@@ -206,7 +205,11 @@ void preluBP(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *dL
   const auto xType = input->dataType();
   const auto zType = alpha->dataType();
 
+  // prepareSpecialUse must come before nullify() to allocate the device buffer first;
+  // dLdA uses atomicAdd accumulation so it must be zero-initialized on device.
+  // nullify() is a no-op on device when special()==nullptr (from Java/JNI side).
   NDArray::prepareSpecialUse({dLdI, dLdA}, {input, alpha, dLdO});
+  dLdA->nullify();
   BUILD_SINGLE_SELECTOR_TWICE(
       xType, preluBPCudaLauncher,
       (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input->specialBuffer(),
@@ -214,7 +217,7 @@ void preluBP(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *dL
           dLdO->specialShapeInfo(), dLdI->specialBuffer(), dLdI->specialShapeInfo(), dLdA->specialBuffer(),
           dLdA->specialShapeInfo()),
       SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({&dLdI, &dLdA}, {input, alpha, dLdO});
+  NDArray::registerSpecialUse({dLdI, dLdA}, {input, alpha, dLdO});
   // Don't sync - let CUDA operations run asynchronously
 }
 
@@ -688,10 +691,6 @@ void softmax(LaunchContext *context, NDArray *input, NDArray *output, const int 
     NDArray::registerSpecialUse({output}, {input});
   }
 
-  // Don't sync here - let CUDA operations run asynchronously
-  // Sync only happens when host needs results
-
-  output->tickWriteDevice();
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -797,20 +796,21 @@ void logSoftMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx,
 
 //////////////////////////////////////////////////////////////////////////
 void logSoftmax(LaunchContext *context, NDArray *input, NDArray *output, const int dimension) {
-  if (!input->isActualOnDeviceSide()) input->syncToDevice();
   const int rank = input->rankOf();
 
   if (input->isVector()) {
     if (rank == 1 || input->sizeAt(dimension) != 1) {
+      NDArray::prepareSpecialUse({output}, {input});
       BUILD_SINGLE_SELECTOR(
           input->dataType(), logSoftMaxForVectorCudaLauncher,
           (context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer()),
           SD_FLOAT_TYPES);
-      input->tickReadDevice();
+      NDArray::registerSpecialUse({output}, {input});
     } else
       *output = 0.;
   } else {
     // log(softmax(x)) = x - max(x) - log(sum(exp(x - max(x))))
+    // All ops below are high-level NDArray operations that manage their own coherence.
     std::vector<LongType> dim = {static_cast<LongType>(dimension)};
     auto maxAlongDim = const_cast<NDArray *>(input)->reduceAlongDimension(reduce::Max, &dim, true);
     auto inputMinusMax = *input - *maxAlongDim;
@@ -823,14 +823,10 @@ void logSoftmax(LaunchContext *context, NDArray *input, NDArray *output, const i
     auto* result = (*inputMinusMax) - (*sumExp);
     output->assign(result);
     delete result;
-    input->tickReadDevice();
     delete maxAlongDim;
     delete inputMinusMax;
     delete sumExp;
   }
-
-  // Don't sync - let CUDA operations run asynchronously
-  output->tickWriteDevice();
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -938,17 +934,18 @@ void softMaxDerivForVectorCudaLauncher(const cudaStream_t *stream, const void *v
 
 ///////////////////////////////////////////////////////////////////
 void softmaxDerivative(LaunchContext *context, NDArray *input, NDArray *output, const int dimension) {
-  if (!input->isActualOnDeviceSide()) input->syncToDevice();
   const int rank = input->rankOf();
   LongType temp;
 
   if (shape::isCommonVector(input->shapeInfo(), temp)) {
+    NDArray::prepareSpecialUse({output}, {input});
     BUILD_SINGLE_SELECTOR(
         input->dataType(), softMaxDerivForVectorCudaLauncher,
         (context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer()),
         SD_FLOAT_TYPES);
-    input->tickReadDevice();
+    NDArray::registerSpecialUse({output}, {input});
   } else {
+    // All ops below are high-level NDArray operations that manage their own coherence.
     std::vector<LongType> dim = {static_cast<LongType>(dimension)};
     auto maxAlongDim = const_cast<NDArray *>(input)->reduceAlongDimension(reduce::Max, &dim, true);
     auto inputMinusMax = *input - *maxAlongDim;
@@ -957,15 +954,11 @@ void softmaxDerivative(LaunchContext *context, NDArray *input, NDArray *output, 
     *output /= *sumAlongDim;
     auto oneMinusOutput = 1.f - *output;
     *output *= *oneMinusOutput;  // derivative
-    input->tickReadDevice();
     delete maxAlongDim;
     delete inputMinusMax;
     delete sumAlongDim;
     delete oneMinusOutput;
   }
-
-  // Don't sync - let CUDA operations run asynchronously
-  output->tickWriteDevice();
 }
 
 template <typename T>
@@ -980,14 +973,10 @@ void thresholdRelu(LaunchContext *context, NDArray *input, double threshold, NDA
 
 template <typename T>
 void thresholdReluDerivative_(NDArray *input, double theta, NDArray *dLdO, NDArray *output) {
-  auto derivative = LAMBDA_TT(_x, grO, theta) {
-    if (_x > theta)
-      return grO;
-    else
-      return static_cast<T>(0);
-  });
-
-  input->applyPairwiseLambda(dLdO, derivative, output);
+  // applyPairwiseLambda is a no-op stub on CUDA (std::function cannot run device-side).
+  // scalar::Step(x, theta) → 1 where x > theta, 0 elsewhere; then multiply by dLdO.
+  input->applyScalar(scalar::Step, static_cast<T>(theta), output);
+  output->applyPairwiseTransform(pairwise::Multiply, dLdO, output);
 }
 
 void thresholdReluDerivative(LaunchContext *context, NDArray *input, double threshold, NDArray *dLdO,

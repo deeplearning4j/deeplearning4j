@@ -22,6 +22,7 @@
 // @author raver119@gmail.com
 //
 #include <ops/declarable/helpers/shift.h>
+#include <system/op_enums.h>
 
 
 namespace sd {
@@ -29,9 +30,7 @@ namespace ops {
 namespace helpers {
 template <typename T>
 void rshift_bits_(LaunchContext *launchContext, NDArray *input, NDArray *output, uint32_t shift) {
-  auto lambda = LAMBDA_T(x, shift) { return x >> shift; });
-
-  input->applyLambda(lambda, output);
+  input->applyScalar<T>(scalar::IntOps::ShiftRight, static_cast<T>(shift), output);
 }
 
 void rshift_bits(LaunchContext *launchContext, NDArray *x, NDArray *z, uint32_t shift) {
@@ -40,9 +39,7 @@ void rshift_bits(LaunchContext *launchContext, NDArray *x, NDArray *z, uint32_t 
 
 template <typename T>
 void shift_bits_(LaunchContext *launchContext, NDArray *input, NDArray *output, uint32_t shift) {
-  auto lambda = LAMBDA_T(x, shift) { return x << shift; });
-
-  input->applyLambda(lambda, output);
+  input->applyScalar<T>(scalar::IntOps::ShiftLeft, static_cast<T>(shift), output);
 }
 
 void shift_bits(LaunchContext *launchContext, NDArray *x, NDArray *z, uint32_t shift) {
@@ -51,10 +48,7 @@ void shift_bits(LaunchContext *launchContext, NDArray *x, NDArray *z, uint32_t s
 
 template <typename T>
 void cyclic_rshift_bits_(LaunchContext *launchContext, NDArray *input, NDArray *output, uint32_t shift) {
-  auto step = (sizeof(T) * 8) - shift;
-  auto lambda = LAMBDA_T(x, shift, step) { return x >> shift | x << step; });
-
-  input->applyLambda(lambda, output);
+  input->applyScalar<T>(scalar::IntOps::CyclicShiftRight, static_cast<T>(shift), output);
 }
 
 void cyclic_rshift_bits(LaunchContext *launchContext, NDArray *x, NDArray *z, uint32_t shift) {
@@ -63,10 +57,7 @@ void cyclic_rshift_bits(LaunchContext *launchContext, NDArray *x, NDArray *z, ui
 
 template <typename T>
 void cyclic_shift_bits_(LaunchContext *launchContext, NDArray *input, NDArray *output, uint32_t shift) {
-  auto step = (sizeof(T) * 8) - shift;
-  auto lambda = LAMBDA_T(x, shift, step) { return x << shift | x >> step; });
-
-  input->applyLambda(lambda, output);
+  input->applyScalar<T>(scalar::IntOps::CyclicShiftLeft, static_cast<T>(shift), output);
 }
 
 void cyclic_shift_bits(LaunchContext *launchContext, NDArray *x, NDArray *z, uint32_t shift) {

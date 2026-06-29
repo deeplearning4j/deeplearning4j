@@ -782,9 +782,23 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_VISION_EMBEDDING_MERGE getEnvVariable("BLOCK_SIZE_VISION_EMBEDDING_MERGE", 256)
 #define SHARED_MEM_SIZE_VISION_EMBEDDING_MERGE getEnvVariable("SHARED_MEM_SIZE_VISION_EMBEDDING_MERGE", 0)
 
+#define GRID_SIZE_AUDIO getEnvVariable("GRID_SIZE_AUDIO", 256)
+#define BLOCK_SIZE_AUDIO getEnvVariable("BLOCK_SIZE_AUDIO", 256)
+#define SHARED_MEM_SIZE_AUDIO getEnvVariable("SHARED_MEM_SIZE_AUDIO", 0)
+
 #define GRID_SIZE_PER_LAYER_EMBEDDING getEnvVariable("GRID_SIZE_PER_LAYER_EMBEDDING", 256)
 #define BLOCK_SIZE_PER_LAYER_EMBEDDING getEnvVariable("BLOCK_SIZE_PER_LAYER_EMBEDDING", 256)
 #define SHARED_MEM_SIZE_PER_LAYER_EMBEDDING getEnvVariable("SHARED_MEM_SIZE_PER_LAYER_EMBEDDING", 0)
+
+// Barnes-Hut t-SNE gains kernel: element-wise gain update across all elements
+#define GRID_SIZE_BARNES_GAINS getEnvVariable("GRID_SIZE_BARNES_GAINS", 256)
+#define BLOCK_SIZE_BARNES_GAINS getEnvVariable("BLOCK_SIZE_BARNES_GAINS", 256)
+#define SHARED_MEM_SIZE_BARNES_GAINS getEnvVariable("SHARED_MEM_SIZE_BARNES_GAINS", 1024)
+
+// Word2Vec (skipgram / cbow) addInfVector kernel: element-wise vector accumulate
+#define GRID_SIZE_WORD2VEC getEnvVariable("GRID_SIZE_WORD2VEC", 128)
+#define BLOCK_SIZE_WORD2VEC getEnvVariable("BLOCK_SIZE_WORD2VEC", 256)
+#define SHARED_MEM_SIZE_WORD2VEC getEnvVariable("SHARED_MEM_SIZE_WORD2VEC", 256)
 
 dim3 getSoftmaxDims(sd::LongType numTads, sd::LongType tadLen);
 

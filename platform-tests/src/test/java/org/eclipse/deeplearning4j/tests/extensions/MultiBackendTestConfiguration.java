@@ -135,15 +135,18 @@ public class MultiBackendTestConfiguration {
 
     private Backend detectCurrentBackend() {
         try {
+            // Check the backend class name FIRST — in multi-backend setups isCPU() can be unreliable
+            // (the native CPU environment may be queried even when JCublasBackend is the active backend,
+            // causing all @BackendTest(backends={CUDA}) tests to be incorrectly skipped).
+            String backendName = Nd4j.getBackend().getClass().getSimpleName().toLowerCase();
+            if (backendName.contains("cuda") || backendName.contains("gpu") || backendName.contains("jcublas")) {
+                log.info("Detected CUDA backend via class name: {}", Nd4j.getBackend().getClass().getSimpleName());
+                return Backend.CUDA;
+            }
             Environment env = Nd4j.getEnvironment();
-            if (env.isCPU()) {
-                return Backend.CPU;
-            } else {
-                // Check for CUDA
-                String backendName = Nd4j.getBackend().getClass().getSimpleName().toLowerCase();
-                if (backendName.contains("cuda") || backendName.contains("gpu")) {
-                    return Backend.CUDA;
-                }
+            if (!env.isCPU()) {
+                // Non-CPU environment flag but no recognized GPU class name — still treat as GPU
+                return Backend.CUDA;
             }
         } catch (Exception e) {
             log.warn("Could not detect backend, defaulting to CPU: {}", e.getMessage());

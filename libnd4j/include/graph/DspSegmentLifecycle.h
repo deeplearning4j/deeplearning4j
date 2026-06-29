@@ -335,14 +335,10 @@ static inline void evictSegmentCapture(GraphSegmentExec& exec,
                             0, 0, "evict_for_oom");
   exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP
   exec.outcome = SegmentExecOutcome::PENDING;
-  exec.cachedShapeKey = 0;
-  exec.capturedInputAddrKey = 0;
-  exec.capturedCreateValueKey = 0;
+  exec.resetCaptureKeys();
   exec.compilationFailed = false;
   exec.gapOpsCapturedInGraph = false;
-  exec.bumpArgGeneration();
-  exec.addrKeyStableCount = 0;
-  exec.slotAddrStableCount = 0;
+  exec.markArgsStale();
   exec.compiledByBackend.clear();
   exec.executionCount = 0;
   exec.lastReplayExecCount = 0;
@@ -362,9 +358,7 @@ static inline void markFunctionalCaptureFailure(GraphSegmentExec& exec,
   exec.replayHandle.reset();
   exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP
   exec.outcome = SegmentExecOutcome::PENDING;
-  exec.bumpArgGeneration();
-  exec.addrKeyStableCount = 0;
-  exec.slotAddrStableCount = 0;
+  exec.markArgsStale();
   exec.lifecycleState = SLS::NEEDS_WARMUP;  // Legacy sync
 }
 
@@ -399,14 +393,9 @@ static inline void invalidateSegmentCaptures(NativeDynamicShapePlan* plan, Graph
   exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP
   exec.outcome = SegmentExecOutcome::PENDING;
   exec.terminalReason = nullptr;
-  exec.cachedShapeKey = 0;
-  exec.capturedInputAddrKey = 0;
-  exec.capturedCreateValueKey = 0;
-  exec.capturedSlotAddrHash = 0;
+  exec.resetCaptureKeys();
   exec.compilationFailed = false;
-  exec.bumpArgGeneration();
-  exec.addrKeyStableCount = 0;
-  exec.slotAddrStableCount = 0;
+  exec.markArgsStale();
   exec.compiledByBackend.clear();
   exec.executionCount = 0;
   exec.lastReplayExecCount = 0;
@@ -462,14 +451,9 @@ static inline void invalidateForRebuild(NativeDynamicShapePlan* plan, GraphSegme
   exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP
   exec.outcome = SegmentExecOutcome::PENDING;
   exec.terminalReason = nullptr;
-  exec.cachedShapeKey = 0;
-  exec.capturedInputAddrKey = 0;
-  exec.capturedCreateValueKey = 0;
-  exec.capturedSlotAddrHash = 0;
+  exec.resetCaptureKeys();
   exec.compilationFailed = false;
-  exec.bumpArgGeneration();
-  exec.addrKeyStableCount = 0;
-  exec.slotAddrStableCount = 0;
+  exec.markArgsStale();
   exec.compiledByBackend.clear();
   exec.executionCount = 0;
   exec.lastReplayExecCount = 0;

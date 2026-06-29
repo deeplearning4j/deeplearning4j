@@ -386,12 +386,15 @@ public class OpTraitTableComprehensiveTest {
                 Arguments.of("shape_of", SHAPE_ONLY | CONST_GEN),
                 Arguments.of("size_at", SHAPE_ONLY | CONST_GEN),
                 Arguments.of("rank", SHAPE_ONLY | CONST_GEN),
-                Arguments.of("zeros_like", SHAPE_ONLY | CONST_GEN),
-                Arguments.of("zeros_as", SHAPE_ONLY | CONST_GEN),
-                Arguments.of("zeroslike", SHAPE_ONLY | CONST_GEN),
-                Arguments.of("ones_like", SHAPE_ONLY | CONST_GEN),
-                Arguments.of("ones_as", SHAPE_ONLY | CONST_GEN),
-                Arguments.of("oneslike", SHAPE_ONLY | CONST_GEN),
+                // Fill ops: CONST_GEN only — SHAPE_ONLY was removed so that
+                // these ops run inside the captured CUDA graph and _writeSpecial
+                // is recorded (preventing spurious H2D zeroing on replay).
+                Arguments.of("zeros_like", CONST_GEN),
+                Arguments.of("zeros_as", CONST_GEN),
+                Arguments.of("zeroslike", CONST_GEN),
+                Arguments.of("ones_like", CONST_GEN),
+                Arguments.of("ones_as", CONST_GEN),
+                Arguments.of("oneslike", CONST_GEN),
 
                 // ── LLM attention (fwd + bp) ──────────────────────────
                 Arguments.of("dot_product_attention", ATTN),
@@ -683,7 +686,11 @@ public class OpTraitTableComprehensiveTest {
     @Test
     @DisplayName("shape-only ops carry CONSTANT_GENERATION")
     public void testShapeOnlyImpliesConstGen() {
-        for (String op : new String[]{"shape_of", "size_at", "rank", "zeros_like", "ones_like"}) {
+        // Only ops that genuinely have SHAPE_ONLY_OUTPUT: shape_of, size_at, rank.
+        // zeros_like/ones_like had SHAPE_ONLY removed so they execute inside the
+        // captured CUDA graph (recording _writeSpecial) rather than being routed
+        // pre-capture as transparent alias outputs.
+        for (String op : new String[]{"shape_of", "size_at", "rank"}) {
             int t = traits(op);
             assertTrue(has(t, OP_TRAIT_SHAPE_ONLY_OUTPUT),
                     op + " should have SHAPE_ONLY_OUTPUT");

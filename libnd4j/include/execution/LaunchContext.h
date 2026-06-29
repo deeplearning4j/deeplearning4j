@@ -131,6 +131,7 @@ class SD_LIB_EXPORT LaunchContext {
   void* getCublasHandle() const;
   void* getCusolverHandle() const;
   void* getCuDnnHandle() const;
+  void* getCusparseHandle() const;
   cudaStream_t* getCudaStream() const;
   cudaStream_t* getCudaSpecialStream() const;
 

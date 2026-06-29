@@ -103,7 +103,8 @@ class SD_LIB_EXPORT MmulHelper {
    * @return true if strided batch GEMM handled the operation
    */
   static bool tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
-                                     double alpha, double beta);
+                                     double alpha, double beta,
+                                     bool transA = false, bool transB = false);
 
   /**
    * Try BLAS batched GEMM (cblas_sgemm_batch/cblas_dgemm_batch)

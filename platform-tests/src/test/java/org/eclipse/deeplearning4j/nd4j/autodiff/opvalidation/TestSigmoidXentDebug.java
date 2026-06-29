@@ -41,8 +41,6 @@ public class TestSigmoidXentDebug {
 
             SameDiff sd = SameDiff.create();
             // Disable DSP to match gradient check conditions
-            sd.setDspAutoCompileEnabled(false);
-            sd.setDspNativeAutoCompileEnabled(false);
 
             SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
             SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, minibatch, nOut);
@@ -99,8 +97,6 @@ public class TestSigmoidXentDebug {
             int nOut = 4;
 
             SameDiff sd = SameDiff.create();
-            sd.setDspAutoCompileEnabled(false);
-            sd.setDspNativeAutoCompileEnabled(false);
 
             SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
             SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, minibatch, nOut);
@@ -151,8 +147,6 @@ public class TestSigmoidXentDebug {
             int nOut = 4;
 
             SameDiff sd = SameDiff.create();
-            sd.setDspAutoCompileEnabled(false);
-            sd.setDspNativeAutoCompileEnabled(false);
 
             SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
             SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, minibatch, nOut);
@@ -243,8 +237,6 @@ public class TestSigmoidXentDebug {
         int nOut = 4;
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
 
         SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
         SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, minibatch, nOut);
@@ -303,8 +295,6 @@ public class TestSigmoidXentDebug {
         int nOut = 4;
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
 
         SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
         SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, minibatch, nOut);
@@ -341,8 +331,6 @@ public class TestSigmoidXentDebug {
         int nOut = 4;
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
 
         SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
         SDVariable labels = sd.var("labels", DataType.DOUBLE, minibatch, nOut);
@@ -379,8 +367,6 @@ public class TestSigmoidXentDebug {
 
         // Test with SUM reduction
         SameDiff sdSum = SameDiff.create();
-        sdSum.setDspAutoCompileEnabled(false);
-        sdSum.setDspNativeAutoCompileEnabled(false);
         SDVariable predSum = sdSum.var("in", predictionsArr.dup());
         SDVariable labSum = sdSum.var("labels", labelsArr.dup());
         SDVariable wSum = sdSum.var("weights", Nd4j.ones(DataType.DOUBLE));
@@ -398,8 +384,6 @@ public class TestSigmoidXentDebug {
 
         // Test with MEAN_BY_WEIGHT reduction
         SameDiff sdMean = SameDiff.create();
-        sdMean.setDspAutoCompileEnabled(false);
-        sdMean.setDspNativeAutoCompileEnabled(false);
         SDVariable predMean = sdMean.var("in", predictionsArr.dup());
         SDVariable labMean = sdMean.var("labels", labelsArr.dup());
         SDVariable wMean = sdMean.var("weights", Nd4j.ones(DataType.DOUBLE));
@@ -422,8 +406,6 @@ public class TestSigmoidXentDebug {
 
         // Also test NONE reduction to get per-element values
         SameDiff sdNone = SameDiff.create();
-        sdNone.setDspAutoCompileEnabled(false);
-        sdNone.setDspNativeAutoCompileEnabled(false);
         SDVariable predNone = sdNone.var("in", predictionsArr.dup());
         SDVariable labNone = sdNone.var("labels", labelsArr.dup());
         SDVariable wNone = sdNone.var("weights", Nd4j.ones(DataType.DOUBLE));
@@ -540,8 +522,6 @@ public class TestSigmoidXentDebug {
         int nOut = 4;
 
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
         SDVariable labels = sd.var("labels", DataType.DOUBLE, -1, nOut);
 
@@ -652,8 +632,6 @@ public class TestSigmoidXentDebug {
 
         // Now test via SameDiff for MEAN_BY_WEIGHT
         SameDiff sd = SameDiff.create();
-        sd.setDspAutoCompileEnabled(false);
-        sd.setDspNativeAutoCompileEnabled(false);
         SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
         SDVariable labels = sd.var("labels", DataType.DOUBLE, -1, nOut);
         SDVariable loss = sd.loss().absoluteDifference("loss", labels, predictions, null, LossReduce.MEAN_BY_WEIGHT);
