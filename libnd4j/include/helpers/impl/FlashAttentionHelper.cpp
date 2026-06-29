@@ -145,7 +145,10 @@ void FlashAttentionHelper::forward3D(
   auto dim = query->sizeAt(2);
   auto seqLenKV = key->sizeAt(1);
 
-  float scale = config.scale > 0.0f ? config.scale : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(dim));
+  // Compute scale in double to avoid float32 truncation of 1/sqrt(dim).
+  // This is critical for DOUBLE inputs: 1/sqrt(3) in float32 loses ~1e-8 relative error.
+  // The kernel receives scale as double and applies it as static_cast<T>(scale) inside.
+  double scale = config.scale > 0.0f ? static_cast<double>(config.scale) : 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(dim));
 
   if (sd::graph::dspIsCudaBuild()) {
     // Use fused CUDA kernel - now supports attention bias!
@@ -283,7 +286,8 @@ void FlashAttentionHelper::forward4D(
   auto seqLenKV = key->sizeAt(1);
   auto numKvHeads = key->sizeAt(2);
 
-  float scale = config.scale > 0.0f ? config.scale : 1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim));
+  // Use double for scale computation — critical for DOUBLE inputs.
+  double scale = config.scale > 0.0f ? static_cast<double>(config.scale) : 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(headDim));
   int headsPerKvHead = numHeads / numKvHeads;
 
   auto workspace = AttentionWorkspace::getInstance();
@@ -306,7 +310,7 @@ void FlashAttentionHelper::forward4D(
     // For HALF: single kernel avoids permute D2D copies that dominate decode latency.
     bool isDecode = (seqLenQ == 1);
     if (supportedType && isDecode && !needScores && !needLogits) {
-      fusedGQADecodeCuda(query, key, value, output, scale, context,
+      fusedGQADecodeCuda(query, key, value, output, static_cast<float>(scale), context,
                          hasAttentionBias ? attentionBias : nullptr);
       if (softmaxLse != nullptr) softmaxLse->nullify();
       return;

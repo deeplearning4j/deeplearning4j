@@ -27,6 +27,7 @@
 #include <array/NDArray.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
+#include <math/templatemath.h>
 
 namespace sd {
 namespace ops {
@@ -43,32 +44,30 @@ SD_DEVICE T deviceApplyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T
 
         // Unary ops
         case FUSED_RELU:      return val > T(0) ? val : T(0);
-        case FUSED_SIGMOID:   return T(1) / (T(1) + __expf(-static_cast<float>(val)));
-        case FUSED_TANH:      return static_cast<T>(tanhf(static_cast<float>(val)));
+        case FUSED_SIGMOID:   return T(1) / (T(1) + sd::math::sd_exp<T, T>(-val));
+        case FUSED_TANH:      return sd::math::sd_tanh<T, T>(val);
         case FUSED_GELU: {
-            float x = static_cast<float>(val);
-            float c = 0.7978845608f; // sqrt(2/pi)
-            float inner = c * (x + 0.044715f * x * x * x);
-            return static_cast<T>(0.5f * x * (1.0f + tanhf(inner)));
+            T c = T(0.7978845608); // sqrt(2/pi)
+            T inner = c * (val + T(0.044715) * val * val * val);
+            return T(0.5) * val * (T(1) + sd::math::sd_tanh<T, T>(inner));
         }
-        case FUSED_EXP:       return static_cast<T>(__expf(static_cast<float>(val)));
-        case FUSED_LOG:       return val > T(0) ? static_cast<T>(__logf(static_cast<float>(val))) : T(-1e38);
+        case FUSED_EXP:       return sd::math::sd_exp<T, T>(val);
+        case FUSED_LOG:       return val > T(0) ? sd::math::sd_log<T, T>(val) : T(-1e38);
         case FUSED_ABS:       return val >= T(0) ? val : -val;
         case FUSED_NEG:       return -val;
         case FUSED_SQUARE:    return val * val;
-        case FUSED_SQRT:      return val >= T(0) ? static_cast<T>(sqrtf(static_cast<float>(val))) : T(0);
+        case FUSED_SQRT:      return val >= T(0) ? sd::math::sd_sqrt<T, T>(val) : T(0);
         case FUSED_SWISH: {
-            float sig = 1.0f / (1.0f + __expf(-static_cast<float>(val)));
-            return static_cast<T>(static_cast<float>(val) * sig);
+            T sig = T(1) / (T(1) + sd::math::sd_exp<T, T>(-val));
+            return val * sig;
         }
         case FUSED_SILU: {
-            float sig = 1.0f / (1.0f + __expf(-static_cast<float>(val)));
-            return static_cast<T>(static_cast<float>(val) * sig);
+            T sig = T(1) / (T(1) + sd::math::sd_exp<T, T>(-val));
+            return val * sig;
         }
         case FUSED_MISH: {
-            float x = static_cast<float>(val);
-            float sp = __logf(1.0f + __expf(x)); // softplus
-            return static_cast<T>(x * tanhf(sp));
+            T sp = sd::math::sd_log<T, T>(T(1) + sd::math::sd_exp<T, T>(val)); // softplus
+            return val * sd::math::sd_tanh<T, T>(sp);
         }
 
         // Parameterized ops

@@ -84,6 +84,7 @@ DECLARE_TYPES(spdiags) {
       ->setAllowedOutputTypes(0, {ALL_FLOATS})  // values
       ->setAllowedOutputTypes(1, {ALL_INTS})    // colIdx
       ->setAllowedOutputTypes(2, {ALL_INTS});   // rowPtr
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

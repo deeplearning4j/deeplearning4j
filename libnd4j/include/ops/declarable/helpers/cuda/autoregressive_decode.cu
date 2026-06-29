@@ -161,29 +161,6 @@ static void updateCausalMaskLauncher(const cudaStream_t* stream,
     updateCausalMaskKernel<T><<<1, 1, 0, *stream>>>(vMask, position, maskLen);
 }
 
-// [MASKTRACE temp] Scan kernel: records highest-0 causal index, highest-1 attn index,
-// currentPosition, and step into maskTrace[step*4..step*4+3].
-static SD_KERNEL void maskTraceKernel(
-        const float* causalBuf, int causalLen,
-        const float* attnBuf,   int attnLen,
-        int currentPos, int step,
-        int* maskTrace) {
-    if (threadIdx.x != 0 || blockIdx.x != 0) return;
-    int causalHi = -1;
-    for (int i = 0; i < causalLen; i++) {
-        if (causalBuf[i] == 0.0f) causalHi = i;
-    }
-    int attnHi = -1;
-    for (int i = 0; i < attnLen; i++) {
-        if (attnBuf[i] == 1.0f) attnHi = i;
-    }
-    int base = step * 4;
-    maskTrace[base + 0] = causalHi;
-    maskTrace[base + 1] = attnHi;
-    maskTrace[base + 2] = currentPos;
-    maskTrace[base + 3] = step;
-}
-
 /**
  * CUDA kernel: build initial attention mask from prefill length.
  *
@@ -514,20 +491,6 @@ void autoregressiveDecode(
             int kvIdx = config->kvInputExtIndices[kv];
             if (kvIdx >= 0) plan->markExternalInputVariable(kvIdx);
         }
-    }
-
-    // [MASKTRACE temp] Allocate device trace array: maxNewTokens * 4 ints, initialized to -1.
-    NDArray* maskTraceDev = nullptr;
-    {
-        std::vector<LongType> traceShape = {static_cast<LongType>(maxNewTokens * 4)};
-        maskTraceDev = NDArrayFactory::create('c', traceShape, DataType::INT32, context);
-        // Force device allocation by calling prepareSpecialUse, then memset to 0xFF (-1 sentinel).
-        NDArray::prepareSpecialUse({maskTraceDev}, {});
-        cudaMemsetAsync(maskTraceDev->specialBuffer(),
-                        0xFF,  // 0xFFFFFFFF = -1 as int32 sentinel
-                        static_cast<size_t>(maxNewTokens * 4) * sizeof(int),
-                        *stream);
-        NDArray::registerSpecialUse({maskTraceDev}, {});
     }
 
     for (int step = 0; step < maxNewTokens; step++) {
@@ -912,9 +875,12 @@ void autoregressiveDecode(
             }
         }
 
-        // Update attn_mask_reformat: same convention as causal mask.
+        // Update attn_mask_reformat: explicit padded bias mirrors attention_mask.
+        // The current query is represented by the final appended slot in the graph,
+        // so after external scatter the newly written static KV position becomes
+        // visible on the next step.
         {
-            LongType attnReformatUnmaskPos = config->planOwnsKvScatter ? kvJustWritten : currentPosition;
+            LongType attnReformatUnmaskPos = kvJustWritten;
             if (attnMaskReformat != nullptr && attnReformatUnmaskPos >= 0 && attnReformatUnmaskPos < attnMaskReformatLen) {
                 NDArray::prepareSpecialUse({attnMaskReformat}, {});
                 BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskLauncher,
@@ -923,32 +889,6 @@ void autoregressiveDecode(
                 NDArray::registerSpecialUse({attnMaskReformat}, {});
             }
         }
-
-        // [MASKTRACE temp] Launch scan kernel to record mask state for this step.
-        // Use causalMask if present; fall back to attnMaskReformat (same additive-mask
-        // convention) when causalMask==nullptr (e.g. SmolLM / ONNX attnReformat-only models).
-        {
-            NDArray* traceFloatMask = (causalMask != nullptr) ? causalMask : attnMaskReformat;
-            int traceFloatLen = (causalMask != nullptr) ? static_cast<int>(causalMaskLen)
-                                                         : static_cast<int>(attnMaskReformatLen);
-            if (maskTraceDev != nullptr && traceFloatMask != nullptr) {
-                maskTraceKernel<<<1, 1, 0, *stream>>>(
-                    reinterpret_cast<const float*>(traceFloatMask->specialBuffer()),
-                    traceFloatLen,
-                    reinterpret_cast<const float*>(attentionMask->specialBuffer()),
-                    static_cast<int>(maxKvLen),
-                    static_cast<int>(currentPosition),
-                    step,
-                    reinterpret_cast<int*>(maskTraceDev->specialBuffer()));
-            }
-        }
-
-        // [MASKTRACE temp] host-side per-step trace (sd_printf IS captured in mvn log; no device sync)
-        sd_printf("[MASKTRACE-H] step=%d currentPos=%lld kvJustWritten=%lld extScatterUnmaskPos=%lld planOwnsKv=%d causalNull=%d attnReformatNull=%d attnMaskNull=%d\n",
-                  step, (long long)currentPosition, (long long)kvJustWritten,
-                  (long long)(config->planOwnsKvScatter ? kvJustWritten : currentPosition),
-                  (int)config->planOwnsKvScatter, (int)(causalMask == nullptr),
-                  (int)(attnMaskReformat == nullptr), (int)(attentionMask == nullptr));
 
         // Update position_ids: set to next step's position
         NDArray::prepareSpecialUse({positionIds}, {});
@@ -1062,25 +1002,6 @@ void autoregressiveDecode(
         }
     }
 
-    // [MASKTRACE temp] D2H readback of trace array (ONE sync after all steps).
-    if (maskTraceDev != nullptr && tokensGenerated > 0) {
-        int traceElems = tokensGenerated * 4;
-        std::vector<int> traceHost(traceElems, -1);
-        cudaMemcpyAsync(traceHost.data(),
-                        maskTraceDev->specialBuffer(),
-                        traceElems * sizeof(int),
-                        cudaMemcpyDeviceToHost, *stream);
-        cudaStreamSynchronize(*stream);
-        for (int s = 0; s < tokensGenerated; s++) {
-            int base = s * 4;
-            sd_printf("[MASKTRACE] step=%d causalHi=%d attnHi=%d pos=%d\n",
-                      traceHost[base + 3],
-                      traceHost[base + 0],
-                      traceHost[base + 1],
-                      traceHost[base + 2]);
-        }
-    }
-
     // ── Final sync ──
     cudaStreamSynchronize(*stream);
 
@@ -1136,11 +1057,6 @@ void autoregressiveDecode(
 
     // ── Cleanup internal allocations ──
     // decodeEmbedding is NOT deleted — it's prefillEmbeddings, owned by the caller.
-    // [MASKTRACE temp] Free trace array.
-    if (maskTraceDev != nullptr) {
-        delete maskTraceDev;
-        maskTraceDev = nullptr;
-    }
     delete sampledToken;
     if (internalMask != nullptr) {
         delete internalMask;

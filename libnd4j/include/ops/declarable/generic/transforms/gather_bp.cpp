@@ -74,7 +74,8 @@ DECLARE_TYPES(gather_bp) {
       ->setAllowedInputTypes(2, {ALL_FLOATS})   // gradOut
       ->setAllowedOutputTypes(0, {ALL_FLOATS}); // dInput
   // Output shape depends on the runtime VALUES of inputShapeVec, not just its shape.
-  getOpDescriptor()->addTraits(OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+  getOpDescriptor()->addTraits(OP_TRAIT_GATHER | OP_TRAIT_BACKWARD |
+                               OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 
 ////////////////////////////////////////////////////////////////////////

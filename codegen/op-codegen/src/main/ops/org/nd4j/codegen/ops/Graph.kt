@@ -715,4 +715,82 @@ fun Graph() = Namespace("Graph") {
             """.trimIndent()
         }
     }
+
+    // -------------------------------------------------------------------------
+    // Graph readout: Set2Set (permutation-invariant pooling)
+    // -------------------------------------------------------------------------
+
+    Op("set2Set") {
+        Input(FLOATING_POINT, "nodeEmb") { description = "Node feature matrix [n, d]" }
+        Input(FLOATING_POINT, "qInit")   { description = "Initial GRU query state [1, d] (caller passes zeros)" }
+        Input(FLOATING_POINT, "wZr")     { description = "Reset-gate weights [2d, d] (inSize=d, numUnits=d)" }
+        Input(FLOATING_POINT, "bZr")     { description = "Reset-gate bias [1, d]" }
+        Input(FLOATING_POINT, "wZu")     { description = "Update-gate weights [2d, d]" }
+        Input(FLOATING_POINT, "bZu")     { description = "Update-gate bias [1, d]" }
+        Input(FLOATING_POINT, "wC")      { description = "Candidate-state weights [2d, d]" }
+        Input(FLOATING_POINT, "bC")      { description = "Candidate-state bias [1, d]" }
+        Arg(INT, "processingSteps")      { description = "Number of Set2Set processing steps (T >= 1)" }
+        Arg(LONG, "d")                   { description = "Node embedding / GRU hidden dimension" }
+        Output(FLOATING_POINT, "readout"){ description = "Permutation-invariant graph readout [1, 2d]" }
+        Composition("""
+            SDVariable h = qInit;
+            SDVariable xKV = sd.reshape(nodeEmb, 1L, -1L, d);
+            SDVariable m = sd.zerosLike(qInit);
+            for (int t = 0; t < processingSteps; t++) {
+                SDVariable qQ = sd.reshape(h, 1L, 1L, d);
+                SDVariable attn3 = sd.nn().dotProductAttentionV2(qQ, xKV, xKV, null, null, 0.0, 0.0, false, false);
+                m = sd.reshape(attn3, 1L, d);
+                SDVariable xh = sd.concat(1, m, h);
+                SDVariable zr = sd.nn().sigmoid(sd.mmul(xh, wZr).add(bZr));
+                SDVariable zu = sd.nn().sigmoid(sd.mmul(xh, wZu).add(bZu));
+                SDVariable rh = sd.concat(1, m, zr.mul(h));
+                SDVariable hh = sd.math().tanh(sd.mmul(rh, wC).add(bC));
+                h = h.mul(zu.mul(-1.0).add(1.0)).add(zu.mul(hh));
+            }
+            SDVariable out = sd.concat(1, m, h);
+        """.trimIndent())
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+            Set2Set graph readout (Vinyals et al. 2016): runs processingSteps rounds of scaled dot-product
+            attention over node embeddings (using the fused sd.nn().dotProductAttentionV2) followed by a GRU
+            state update; produces a permutation-invariant graph-level embedding of size 2d.
+
+            At each step t the query h [1,d] attends over keys/values nodeEmb [n,d] via
+            dotProductAttentionV2([1,1,d], [1,n,d], [1,n,d]) → attended memory m [1,d], then a GRU cell
+            (same concat-weight form as the library's GGNN for correct CUDA backward) updates h from m.
+            Output = concat(m_T, h_T) [1, 2d].
+
+            Weights: wZr, wZu [2d, d] (reset / update gate); wC [2d, d] (candidate); bZr, bZu, bC [1, d].
+            Pass qInit = zeros [1,d] at inference; declare as sd.var for end-to-end training.
+            """.trimIndent()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Self-supervised loss: BGRL (Bootstrap Your Own Latent for Graphs)
+    // -------------------------------------------------------------------------
+
+    Op("bgrlLoss") {
+        Input(FLOATING_POINT, "onlineZ")  { description = "Online encoder node embeddings [n, d]" }
+        Input(FLOATING_POINT, "targetZ")  { description = "Target (stop-grad) node embeddings [n, d]" }
+        Input(FLOATING_POINT, "predW")    { description = "Online predictor weight matrix [d, d]" }
+        Output(FLOATING_POINT, "loss")    { description = "Scalar BGRL loss: mean(2 - 2·cosine(onlineZ·predW, targetZ))" }
+        Composition("""
+            SDVariable pred = sd.mmul(onlineZ, predW);
+            SDVariable predNorm = pred.div(sd.math().sqrt(sd.sum(pred.mul(pred), true, 1).add(1e-12)));
+            SDVariable tNorm = targetZ.div(sd.math().sqrt(sd.sum(targetZ.mul(targetZ), true, 1).add(1e-12)));
+            SDVariable cos = sd.sum(predNorm.mul(tNorm), false, 1);
+            SDVariable out = sd.mean(cos.mul(-2.0).add(2.0));
+        """.trimIndent())
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+            BGRL (Bootstrap Your Own Latent for Graphs, Thakoor et al. 2022) self-supervised loss.
+            Computes the row-normalized cosine similarity between the online prediction (onlineZ @ predW)
+            and the target embedding (targetZ), then takes the mean of (2 - 2·cosine). The minimum loss
+            is 0 (perfect alignment); gradients flow only through onlineZ and predW -- declare targetZ as
+            sd.constant(...) in the calling code to implement the stop-gradient.
+            loss = mean_i( 2 - 2 * cosine( (onlineZ @ predW)_i, targetZ_i ) )
+            """.trimIndent()
+        }
+    }
 }

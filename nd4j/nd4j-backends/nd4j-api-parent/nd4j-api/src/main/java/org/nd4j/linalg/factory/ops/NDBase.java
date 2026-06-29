@@ -493,9 +493,7 @@ public class NDBase {
    * @param dimension Dimension to concatenate on
    * @return output  (NUMERIC type)
    */
-  public INDArray concat(int dimension, INDArray... inputs) {
-    NDValidation.validateNumerical("concat", "inputs", inputs);
-    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+  public INDArray concat(int dimension, INDArray... inputs) {    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     Preconditions.checkArgument(isSameType(inputs), "Input arrays must all be the same datatype");
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Concat(inputs, dimension));
     try {

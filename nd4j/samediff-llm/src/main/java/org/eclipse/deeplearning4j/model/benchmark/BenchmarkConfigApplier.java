@@ -102,6 +102,7 @@ public class BenchmarkConfigApplier {
     public static void apply(BenchmarkConfig config,
                              org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor executor) {
         Environment env = Nd4j.getEnvironment();
+        boolean forceSkipTritonKernels = Boolean.getBoolean("nd4j.triton.skipKernels");
 
         // Reset ALL Triton flags to defaults
         env.setDspBatchZero(false);
@@ -143,7 +144,7 @@ public class BenchmarkConfigApplier {
             env.setTritonCooperativeLaunch(config.isTritonCooperativeLaunch());
             env.setTritonCompileAll(config.isTritonCompileAll());
             env.setTritonExcludeOps(config.getTritonExcludeOps());
-            env.setTritonSkipKernels(config.isTritonSkipKernels());
+            env.setTritonSkipKernels(config.isTritonSkipKernels() || forceSkipTritonKernels);
             env.setTritonVerifyKernels(config.isTritonVerifyKernels());
             env.setTritonVerifyFullSnapshot(config.isTritonVerifyFullSnapshot());
             env.setTritonForceRecapture(config.isTritonForceRecapture());
@@ -218,7 +219,7 @@ public class BenchmarkConfigApplier {
                 config.getExecutionMode(), config.getTritonIncludeTypes(), config.isTritonSectionFusion(),
                 config.isTritonGraphCapture(), config.isTritonConsolidatedArgTable(),
                 config.isTritonArgDirtyTracking(), config.isTritonCooperativeLaunch(),
-                config.isTritonCompileAll(), config.isTritonSkipKernels(), config.isTritonVerifyKernels(),
+                config.isTritonCompileAll(), env.tritonSkipKernels(), config.isTritonVerifyKernels(),
                 env.tritonEnableFpFusion(), env.tritonNumWarps(), env.tritonNumStages(),
                 env.tritonNumCTAs(), env.tritonMaxNreg(), env.tritonMaxSubsegmentOps(),
                 env.tritonMaxSubsegmentSections(), config.getTritonProfile(), config.getCaptureMinExec());
@@ -239,7 +240,7 @@ public class BenchmarkConfigApplier {
                     "tritonCaptureMinExec not applied");
             verify(config.isTritonCompileAll() == env.tritonCompileAll(),
                     "tritonCompileAll not applied");
-            verify(config.isTritonSkipKernels() == env.tritonSkipKernels(),
+            verify((config.isTritonSkipKernels() || forceSkipTritonKernels) == env.tritonSkipKernels(),
                     "tritonSkipKernels not applied");
             verify(config.isTritonVerifyKernels() == env.tritonVerifyKernels(),
                     "tritonVerifyKernels not applied");

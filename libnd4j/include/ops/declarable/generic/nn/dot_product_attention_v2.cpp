@@ -345,10 +345,13 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   bool canUseFlashFast = useFlashAttention && !hasInputMasks && dropout == 0.0;
 
   if (canUseFlashFast) {
-    // Pass nullptr for scores/logits to enable the fastest fused CUDA kernel path.
-    // The fused kernel handles attention bias internally - no fallback needed.
+    // Always materialize attentionScores (softmax weights) and attentionLogits (pre-softmax logits)
+    // so that the backward op (dot_product_attention_v2_bp) has correct non-zero values when
+    // computing gradients via softmax_bp and matmul_bp. Passing nullptr here leaves those output
+    // arrays at their DSP-initialized zero values, which causes the backward pass to produce
+    // dLdq = dLdv = dLdk = 0 via the zero-softmax path.
     FlashAttentionHelper::forward(queries, keys, values, applyScoresOut, config,
-                                  nullptr, nullptr, nullptr,
+                                  nullptr, attentionScores, attentionLogits,
                                   block.launchContext(), attentionBias);
   } else if (!hasInputMasks && dropout == 0.0) {
     // Non-flash or debug path: still use helper implementation so additive attention bias
@@ -704,6 +707,14 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   // Get arguments - T_ARG order: scale, dropout (same as forward pass)
   auto scale = block.numT() > 0 ? T_ARG(0) : 1.0;
   auto dropout = block.numT() > 1 ? T_ARG(1) : 0.0;
+
+  // Mirror the forward's auto-scale logic: when scale <= 0, compute 1/sqrt(headDim).
+  // The forward stores the original T_ARG (may be 0) without updating it, so the backward
+  // must replicate the same auto-scale resolution to apply the correct chain-rule factor.
+  if (scale <= 0.0) {
+    auto dim = queries->rankOf() == 4 ? queries->sizeAt(3) : queries->sizeAt(2);
+    scale = 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(dim));
+  }
 
   // B_ARG order: useCausalMask, training, useFlashAttention (third arg is forward-only)
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;

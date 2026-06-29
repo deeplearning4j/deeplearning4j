@@ -649,9 +649,10 @@ void autoregressiveDecode(
                                       SD_FLOAT_TYPES);
             }
 
-            if (attnMaskReformat != nullptr && causalMaskUnmaskPos >= 0 && causalMaskUnmaskPos < attnMaskReformatLen) {
+            LongType attnReformatUnmaskPos = kvJustWritten;
+            if (attnMaskReformat != nullptr && attnReformatUnmaskPos >= 0 && attnReformatUnmaskPos < attnMaskReformatLen) {
                 BUILD_SINGLE_SELECTOR(attnMaskReformat->dataType(), updateCausalMaskCpu,
-                                      (attnMaskReformat->buffer(), causalMaskUnmaskPos, attnMaskReformatLen),
+                                      (attnMaskReformat->buffer(), attnReformatUnmaskPos, attnMaskReformatLen),
                                       SD_FLOAT_TYPES);
             }
         }

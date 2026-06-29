@@ -121,36 +121,9 @@ public class ImageTiler {
      * @return SplitImageResult containing the frames and metadata
      */
     public static SplitImageResult splitImageForVLM(BufferedImage image, int maxSize, int maxTiles) {
-        // resize_for_vision_encoder — resize so dimensions are multiples of maxSize.
-        // Matches HuggingFace Idefics3 preprocessing the model was trained with.
+        image = resizeForVisionEncoder(image, maxSize);
         int width = image.getWidth();
         int height = image.getHeight();
-        if (height > maxSize || width > maxSize) {
-            double aspectRatio = (double) width / height;
-            int newWidth, newHeight;
-            if (width >= height) {
-                newWidth = (int) Math.ceil((double) width / maxSize) * maxSize;
-                newHeight = (int) (newWidth / aspectRatio);
-                newHeight = (int) Math.ceil((double) newHeight / maxSize) * maxSize;
-            } else {
-                newHeight = (int) Math.ceil((double) height / maxSize) * maxSize;
-                newWidth = (int) (newHeight * aspectRatio);
-                newWidth = (int) Math.ceil((double) newWidth / maxSize) * maxSize;
-            }
-            // Only apply resize if it doesn't upscale the image.
-            // Upscaling increases dimensions but the natural tile crop + pad handles
-            // rectangular images correctly without enlarging them first.
-            if (newWidth <= width && newHeight <= height) {
-                log.info("resize_for_vision_encoder: {}x{} -> {}x{} (multiples of {})",
-                        width, height, newWidth, newHeight, maxSize);
-                image = resizeImage(image, newWidth, newHeight);
-                width = newWidth;
-                height = newHeight;
-            } else {
-                log.info("resize_for_vision_encoder: skipping upscale {}x{} -> {}x{} (tiles will use padding)",
-                        width, height, newWidth, newHeight);
-            }
-        }
         log.info("Splitting image {}x{} into {}x{} tiles (maxTiles={})", width, height, maxSize, maxSize,
                 maxTiles > 0 ? maxTiles : "unlimited");
 
@@ -210,6 +183,7 @@ public class ImageTiler {
      * @return SplitImageResult containing the frames and metadata
      */
     public static SplitImageResult splitImageForVLMParallel(BufferedImage image, int maxSize, int maxTiles, int numThreads) {
+        image = resizeForVisionEncoder(image, maxSize);
         int width = image.getWidth();
         int height = image.getHeight();
         int[] grid = chooseGrid(height, width, maxSize, maxTiles);
@@ -307,6 +281,35 @@ public class ImageTiler {
                 nH, nW, totalTiles, effectiveThreads);
 
         return new SplitImageResult(frames, contentRegions, numSplitsH, numSplitsW);
+    }
+
+    private static BufferedImage resizeForVisionEncoder(BufferedImage image, int maxSize) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        if (height <= maxSize && width <= maxSize) {
+            return image;
+        }
+
+        double aspectRatio = (double) width / height;
+        int newWidth;
+        int newHeight;
+        if (width >= height) {
+            newWidth = (int) Math.ceil((double) width / maxSize) * maxSize;
+            newHeight = (int) (newWidth / aspectRatio);
+            newHeight = (int) Math.ceil((double) newHeight / maxSize) * maxSize;
+        } else {
+            newHeight = (int) Math.ceil((double) height / maxSize) * maxSize;
+            newWidth = (int) (newHeight * aspectRatio);
+            newWidth = (int) Math.ceil((double) newWidth / maxSize) * maxSize;
+        }
+
+        if (newWidth == width && newHeight == height) {
+            return image;
+        }
+
+        log.info("resize_for_vision_encoder: {}x{} -> {}x{} (multiples of {})",
+                width, height, newWidth, newHeight, maxSize);
+        return resizeImage(image, newWidth, newHeight);
     }
 
     private static int[] chooseGrid(int height, int width, int maxSize, int maxTiles) {

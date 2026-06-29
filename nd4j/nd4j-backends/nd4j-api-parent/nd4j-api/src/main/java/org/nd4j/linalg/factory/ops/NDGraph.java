@@ -49,6 +49,31 @@ public class NDGraph {
   }
 
   /**
+   * BGRL (Bootstrap Your Own Latent for Graphs, Thakoor et al. 2022) self-supervised loss.<br>
+   * Computes the row-normalized cosine similarity between the online prediction (onlineZ @ predW)<br>
+   * and the target embedding (targetZ), then takes the mean of (2 - 2·cosine). The minimum loss<br>
+   * is 0 (perfect alignment); gradients flow only through onlineZ and predW -- declare targetZ as<br>
+   * sd.constant(...) in the calling code to implement the stop-gradient.<br>
+   * loss = mean_i( 2 - 2 * cosine( (onlineZ @ predW)_i, targetZ_i ) )<br>
+   *
+   * @param onlineZ Online encoder node embeddings [n, d] (FLOATING_POINT type)
+   * @param targetZ Target (stop-grad) node embeddings [n, d] (FLOATING_POINT type)
+   * @param predW Online predictor weight matrix [d, d] (FLOATING_POINT type)
+   * @return loss Scalar BGRL loss: mean(2 - 2·cosine(onlineZ·predW, targetZ)) (FLOATING_POINT type)
+   */
+  public INDArray bgrlLoss(INDArray onlineZ, INDArray targetZ, INDArray predW) {
+    NDValidation.validateFloatingPoint("bgrlLoss", "onlineZ", onlineZ);
+    NDValidation.validateFloatingPoint("bgrlLoss", "targetZ", targetZ);
+    NDValidation.validateFloatingPoint("bgrlLoss", "predW", predW);
+    INDArray pred = org.nd4j.linalg.factory.Nd4j.base().mmul(onlineZ, predW);
+    INDArray predNorm = pred.div(org.nd4j.linalg.factory.Nd4j.math().sqrt(org.nd4j.linalg.factory.Nd4j.base().sum(pred.mul(pred), true, 1).add(1e-12)));
+    INDArray tNorm = targetZ.div(org.nd4j.linalg.factory.Nd4j.math().sqrt(org.nd4j.linalg.factory.Nd4j.base().sum(targetZ.mul(targetZ), true, 1).add(1e-12)));
+    INDArray cos = org.nd4j.linalg.factory.Nd4j.base().sum(predNorm.mul(tNorm), false, 1);
+    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mean(cos.mul(-2.0).add(2.0));
+    return out;
+  }
+
+  /**
    * Local clustering coefficient per node: C_i = (closed triangles through i) / (possible pairs) =<br>
    * (A^3)_ii / (deg_i (deg_i - 1)). (A^3)_ii counts the length-3 closed walks through node i (= twice<br>
    * its triangle count), computed as diag(A·A·A) via an identity-mask extraction. Measures how<br>
@@ -542,6 +567,59 @@ public class NDGraph {
     INDArray dIm = hRe.mul(sin).add(hIm.mul(cos)).sub(tIm);
     INDArray dist = org.nd4j.linalg.factory.Nd4j.math().sqrt(org.nd4j.linalg.factory.Nd4j.base().sum(dRe.mul(dRe).add(dIm.mul(dIm)), false, 1).add(1e-9));
     INDArray out = org.nd4j.linalg.factory.Nd4j.math().neg(dist);
+    return out;
+  }
+
+  /**
+   * Set2Set graph readout (Vinyals et al. 2016): runs processingSteps rounds of scaled dot-product<br>
+   * attention over node embeddings (using the fused sd.nn().dotProductAttentionV2) followed by a GRU<br>
+   * state update; produces a permutation-invariant graph-level embedding of size 2d.<br>
+   * <br>
+   * At each step t the query h [1,d] attends over keys/values nodeEmb [n,d] via<br>
+   * dotProductAttentionV2([1,1,d], [1,n,d], [1,n,d]) → attended memory m [1,d], then a GRU cell<br>
+   * (same concat-weight form as the library's GGNN for correct CUDA backward) updates h from m.<br>
+   * Output = concat(m_T, h_T) [1, 2d].<br>
+   * <br>
+   * Weights: wZr, wZu [2d, d] (reset / update gate); wC [2d, d] (candidate); bZr, bZu, bC [1, d].<br>
+   * Pass qInit = zeros [1,d] at inference; declare as sd.var for end-to-end training.<br>
+   *
+   * @param nodeEmb Node feature matrix [n, d] (FLOATING_POINT type)
+   * @param qInit Initial GRU query state [1, d] (caller passes zeros) (FLOATING_POINT type)
+   * @param wZr Reset-gate weights [2d, d] (inSize=d, numUnits=d) (FLOATING_POINT type)
+   * @param bZr Reset-gate bias [1, d] (FLOATING_POINT type)
+   * @param wZu Update-gate weights [2d, d] (FLOATING_POINT type)
+   * @param bZu Update-gate bias [1, d] (FLOATING_POINT type)
+   * @param wC Candidate-state weights [2d, d] (FLOATING_POINT type)
+   * @param bC Candidate-state bias [1, d] (FLOATING_POINT type)
+   * @param processingSteps Number of Set2Set processing steps (T >= 1)
+   * @param d Node embedding / GRU hidden dimension
+   * @return readout Permutation-invariant graph readout [1, 2d] (FLOATING_POINT type)
+   */
+  public INDArray set2Set(INDArray nodeEmb, INDArray qInit, INDArray wZr, INDArray bZr,
+      INDArray wZu, INDArray bZu, INDArray wC, INDArray bC, int processingSteps, long d) {
+    NDValidation.validateFloatingPoint("set2Set", "nodeEmb", nodeEmb);
+    NDValidation.validateFloatingPoint("set2Set", "qInit", qInit);
+    NDValidation.validateFloatingPoint("set2Set", "wZr", wZr);
+    NDValidation.validateFloatingPoint("set2Set", "bZr", bZr);
+    NDValidation.validateFloatingPoint("set2Set", "wZu", wZu);
+    NDValidation.validateFloatingPoint("set2Set", "bZu", bZu);
+    NDValidation.validateFloatingPoint("set2Set", "wC", wC);
+    NDValidation.validateFloatingPoint("set2Set", "bC", bC);
+    INDArray h = qInit;
+    INDArray xKV = org.nd4j.linalg.factory.Nd4j.base().reshape(nodeEmb, 1L, -1L, d);
+    INDArray m = org.nd4j.linalg.factory.Nd4j.base().zerosLike(qInit);
+    for (int t = 0; t < processingSteps; t++) {
+        INDArray qQ = org.nd4j.linalg.factory.Nd4j.base().reshape(h, 1L, 1L, d);
+        INDArray attn3 = org.nd4j.linalg.factory.Nd4j.nn().dotProductAttentionV2(qQ, xKV, xKV, null, null, 0.0, 0.0, false, false);
+        m = org.nd4j.linalg.factory.Nd4j.base().reshape(attn3, 1L, d);
+        INDArray xh = org.nd4j.linalg.factory.Nd4j.base().concat(1, m, h);
+        INDArray zr = org.nd4j.linalg.factory.Nd4j.nn().sigmoid(org.nd4j.linalg.factory.Nd4j.base().mmul(xh, wZr).add(bZr));
+        INDArray zu = org.nd4j.linalg.factory.Nd4j.nn().sigmoid(org.nd4j.linalg.factory.Nd4j.base().mmul(xh, wZu).add(bZu));
+        INDArray rh = org.nd4j.linalg.factory.Nd4j.base().concat(1, m, zr.mul(h));
+        INDArray hh = org.nd4j.linalg.factory.Nd4j.math().tanh(org.nd4j.linalg.factory.Nd4j.base().mmul(rh, wC).add(bC));
+        h = h.mul(zu.mul(-1.0).add(1.0)).add(zu.mul(hh));
+    }
+    INDArray out = org.nd4j.linalg.factory.Nd4j.base().concat(1, m, h);
     return out;
   }
 

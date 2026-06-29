@@ -69,6 +69,7 @@ public class ImagePromptBuilder {
             sb.append("\n");
         }
         // Global image last
+        sb.append("\n");
         sb.append(fake).append(global);
         for (int j = 0; j < imageSeqLen; j++) {
             sb.append(image);

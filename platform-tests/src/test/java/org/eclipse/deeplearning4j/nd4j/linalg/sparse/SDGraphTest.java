@@ -338,6 +338,74 @@ public class SDGraphTest extends BaseNd4jTestWithBackends {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Set2Set readout (codegen Composition)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Set2Set gradcheck: N nodes with D-dimensional features, 2 processing steps.
+     * Weights: wZr/wZu [2D, D], bZr/bZu [1, D], wC [2D, D], bC [1, D].
+     * qInit is declared as sd.var (gradient checked).
+     * Output readout [1, 2D] → scalar via sum.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSet2SetGradCheck(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(50L);
+        SameDiff sd = SameDiff.create();
+        try {
+            int d = D;
+            // Well-conditioned inputs: ~unit-scale nodeEmb/qInit give a non-uniform softmax (well-defined
+            // query gradients) and moderate weights keep the sigmoid/tanh gates in their responsive range,
+            // so the deep T-step recurrence gradchecks tightly on CUDA (tiny inputs make grads degenerate).
+            SDVariable nodeEmb = sd.var("nodeEmb", Nd4j.randn(DataType.DOUBLE, N, d));
+            SDVariable qInit   = sd.var("qInit",   Nd4j.randn(DataType.DOUBLE, 1, d));
+            SDVariable wZr     = sd.var("wZr",     Nd4j.randn(DataType.DOUBLE, 2 * d, d).muli(0.5));
+            SDVariable bZr     = sd.var("bZr",     Nd4j.randn(DataType.DOUBLE, 1, d).muli(0.1));
+            SDVariable wZu     = sd.var("wZu",     Nd4j.randn(DataType.DOUBLE, 2 * d, d).muli(0.5));
+            SDVariable bZu     = sd.var("bZu",     Nd4j.randn(DataType.DOUBLE, 1, d).muli(0.1));
+            SDVariable wC      = sd.var("wC",      Nd4j.randn(DataType.DOUBLE, 2 * d, d).muli(0.5));
+            SDVariable bC      = sd.var("bC",      Nd4j.randn(DataType.DOUBLE, 1, d).muli(0.1));
+            SDVariable readout = sd.graph().set2Set(nodeEmb, qInit, wZr, bZr, wZu, bZu, wC, bC,
+                    2, (long) d);
+            scalarLoss(sd, readout);
+            assertTrue(GradCheckUtil.checkGradients(sd, null), "set2Set grad check failed");
+        } finally {
+            sd.close();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // BGRL loss (codegen Composition)
+    // -------------------------------------------------------------------------
+
+    /**
+     * bgrlLoss gradcheck: onlineZ [N,D] and predW [D,D] are trainable; targetZ is
+     * a constant (stop-gradient) as required by the BGRL training scheme.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBgrlLossGradCheck(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(51L);
+        SameDiff sd = SameDiff.create();
+        try {
+            SDVariable onlineZ = sd.var("onlineZ", Nd4j.randn(DataType.DOUBLE, N, D).muli(0.3));
+            SDVariable targetZ = sd.constant("targetZ", Nd4j.randn(DataType.DOUBLE, N, D).muli(0.3));
+            SDVariable predW   = sd.var("predW",   Nd4j.eye(D).castTo(DataType.DOUBLE).addi(
+                    Nd4j.randn(DataType.DOUBLE, D, D).muli(0.05)));
+            SDVariable loss = sd.graph().bgrlLoss(onlineZ, targetZ, predW);
+            sd.sum("loss", loss);
+            sd.setLossVariables("loss");
+            assertTrue(GradCheckUtil.checkGradients(sd, null), "bgrlLoss grad check failed");
+        } finally {
+            sd.close();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Eager (ND) vs SameDiff equivalence for new ops
+    // -------------------------------------------------------------------------
+
     /** The generated eager Nd4j.graph().X must match the SameDiff sd.graph().X (validates ND-wrap codegen). */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -366,5 +434,15 @@ public class SDGraphTest extends BaseNd4jTestWithBackends {
         SameDiff sd3 = SameDiff.create();
         INDArray sdAA = sd3.graph().adamicAdar(sd3.constant(adj.dup())).eval();
         assertTrue(eagerAA.equalsWithEps(sdAA, 1e-9), "eager adamicAdar != SameDiff adamicAdar");
+
+        // bgrlLoss eager vs SameDiff
+        INDArray oz = Nd4j.randn(DataType.DOUBLE, N, D).muli(0.3);
+        INDArray tz = Nd4j.randn(DataType.DOUBLE, N, D).muli(0.3);
+        INDArray pw = Nd4j.eye(D).castTo(DataType.DOUBLE);
+        INDArray eagerBgrl = Nd4j.graph().bgrlLoss(oz, tz, pw);
+        SameDiff sd4 = SameDiff.create();
+        INDArray sdBgrl = sd4.graph().bgrlLoss(sd4.constant(oz.dup()), sd4.constant(tz.dup()),
+                sd4.constant(pw.dup())).eval();
+        assertTrue(eagerBgrl.equalsWithEps(sdBgrl, 1e-9), "eager bgrlLoss != SameDiff bgrlLoss");
     }
 }

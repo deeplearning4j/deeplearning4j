@@ -389,16 +389,17 @@ class SD_LIB_EXPORT FlashAttentionHelper {
 
 // Forward declarations for CUDA fused attention (implemented in cuda/FlashAttentionHelper.cu).
 // CPU builds get inline no-op stubs so callers need no #ifdef SD_CUDA guards.
+// scale is passed as double so that 1/sqrt(dim) is not truncated to float32 precision.
 #if defined(__CUDACC__) || defined(SD_CUDA)
 extern void fusedAttentionCuda(NDArray* query, NDArray* key, NDArray* value,
-                               NDArray* output, float scale, bool isCausal,
+                               NDArray* output, double scale, bool isCausal,
                                LaunchContext* context,
                                NDArray* attentionBias = nullptr);
 
 // Fused attention that also outputs attention scores and logits
 extern void fusedAttentionCudaWithScores(NDArray* query, NDArray* key, NDArray* value,
                                          NDArray* output, NDArray* attentionLogits,
-                                         NDArray* attentionScores, float scale, bool isCausal,
+                                         NDArray* attentionScores, double scale, bool isCausal,
                                          LaunchContext* context);
 
 // In-place causal mask application - replaces create+nullify+fill+add with single kernel
@@ -418,9 +419,9 @@ extern void fusedGQADecodeCuda(NDArray* query, NDArray* key, NDArray* value,
                                 NDArray* attentionBias = nullptr);
 #else  // CPU build — provide no-op stubs so impl/*.cpp files need no #ifdef SD_CUDA
 static inline void fusedAttentionCuda(NDArray*, NDArray*, NDArray*, NDArray*,
-                                      float, bool, LaunchContext*, NDArray* = nullptr) {}
+                                      double, bool, LaunchContext*, NDArray* = nullptr) {}
 static inline void fusedAttentionCudaWithScores(NDArray*, NDArray*, NDArray*, NDArray*,
-                                                NDArray*, NDArray*, float, bool, LaunchContext*) {}
+                                                NDArray*, NDArray*, double, bool, LaunchContext*) {}
 static inline void applyCausalMaskCuda(NDArray*, LaunchContext*) {}
 static inline void fusedCausalMaskSoftmaxCuda(NDArray*, NDArray*, NDArray*,
                                                bool, LaunchContext*) {}

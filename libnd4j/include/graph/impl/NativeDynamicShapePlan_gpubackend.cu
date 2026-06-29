@@ -3638,6 +3638,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                tl_captureWorkspace = newHandle->getWorkspacePtr();
                tl_captureWorkspaceSize = newHandle->getWorkspaceBytes();
                tl_captureWorkspaceOffset = 0;
+               // Pointer-table uploads are CUDA graph nodes. The shared device workspace
+               // is intentionally rewound for each merged graph, so the upload cache must
+               // be scoped to that single graph as well; otherwise a later graph can reuse
+               // a pointer table address without recording its own H2D fill node.
+               tl_captureReplicateCache.clear();
 
                mergedHandle = std::move(newHandle);
                auto* cudaReplay = static_cast<CudaGraphReplayHandle*>(mergedHandle.get());

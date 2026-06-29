@@ -150,8 +150,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaOpClass = "Concat"
         argsFirst = true
         Arg(INT, "dimension"){ description = "Dimension to concatenate on" }
-        val inputs = Input(NUMERIC, "inputs") {count = AtLeast(1); description = "Input variables" }
-        Output(NUMERIC, "output"){ description = "" }
+        val inputs = Input(NDARRAY, "inputs") {count = AtLeast(1); description = "Input variables" }
+        Output(NDARRAY, "output"){ description = "" }
         Constraint("Input arrays must all be the same datatype"){ sameType(inputs) } //TODO: Fix, generates error in java,
         Doc(Language.ANY, DocScope.ALL){
             """

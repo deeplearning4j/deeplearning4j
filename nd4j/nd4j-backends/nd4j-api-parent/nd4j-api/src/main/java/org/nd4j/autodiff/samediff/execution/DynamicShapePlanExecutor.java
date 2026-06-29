@@ -942,6 +942,14 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Idempotent: already frozen, nothing to do.
             return;
         }
+        enterJavaFrozenState("explicit", -1);
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            nativeOps.setPlanShapesFrozen(nativePlanHandle, true);
+        }
+    }
+
+    private void enterJavaFrozenState(String reason, int nativePhaseCode) {
         this.shapesFrozen = true;
         this.wasEverFrozen = true;
         // Register in the global frozen-executor counter (once per executor lifetime).
@@ -951,11 +959,12 @@ public class DynamicShapePlanExecutor implements Closeable {
             GLOBAL_FROZEN_EXECUTOR_COUNT.incrementAndGet();
             registeredAsFrozen = true;
         }
-        log.info("FROZEN_TRANSITION: unfrozen → FROZEN (frozenCallCount reset, plan={}, globalFrozenCount={})",
+        log.info("FROZEN_TRANSITION: unfrozen → FROZEN (reason={}, nativePhase={}, frozenCallCount reset, plan={}, globalFrozenCount={})",
+                reason, nativePhaseCode,
                 nativePlanHandle != null && !nativePlanHandle.isNull() ? "native" : "java",
                 GLOBAL_FROZEN_EXECUTOR_COUNT.get());
         DspDiagnostics.record(DspDiagnostics.SHAPE,
-                "Java: shapes FROZEN (executionCount=" + executionCount + ")");
+                "Java: shapes FROZEN (reason=" + reason + ", executionCount=" + executionCount + ")");
         // Clear frozen-state caches when entering frozen mode. Stale caches from a previous
         // plan/seqLen would cause shape mismatches (e.g., zeroCopyOutputCache has [1,576]
         // from seqLen=1 but new plan needs [6,576] for seqLen=6).
@@ -979,10 +988,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         execStreamCached = false;
         frozenExtBufferSnapshot = null;
         frozenExtShapeSnapshot = null;
-        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
-            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            nativeOps.setPlanShapesFrozen(nativePlanHandle, true);
-        }
     }
 
     public boolean isShapesFrozen() {
@@ -3460,31 +3465,20 @@ public class DynamicShapePlanExecutor implements Closeable {
 
             // Clear native shape caches before each execution — unless shapes are frozen.
             // During autoregressive decoding with dynamic shapes, KV cache dimensions grow
-            // by 1 each step, so shapes are stale. When frozen, clearing is unnecessary
-            // (the C++ side also checks frozen state, but skipping the JNI call saves ~1-2ms).
+            // by 1 each step, so shapes are stale. When frozen, clearing is unnecessary.
+            // Native phases are strictly linear; if a cache-owned native plan is already
+            // SHAPES_FROZEN/REPLAYING while the Java wrapper is not, mirror the native
+            // lifecycle instead of attempting an illegal rollback to SLOT_BY_SLOT.
+            if (!shapesFrozen && nativePlanHandle != null && !nativePlanHandle.isNull()) {
+                int currentNativePhase = nativeOps.getPlanPhase(nativePlanHandle);
+                log.info("SHAPE_RESET_CHECK: !shapesFrozen, C++ phase={}, handle={}", currentNativePhase,
+                        "0x" + Long.toHexString(nativePlanHandle.address()));
+                if (currentNativePhase >= 1) {
+                    enterJavaFrozenState("native-phase-sync-before-execute", currentNativePhase);
+                }
+            }
             if (!shapesFrozen) {
                 nativeOps.clearDynamicShapePlanCaches(nativePlanHandle);
-                // Guard against a stale-frozen C++ plan fetched from the in-memory plan cache
-                // by a fresh Java executor (wasEverFrozen=false after invalidateAllPlanCaches).
-                // Scenario: test-A freezes the C++ plan with shapes [3,6] k=3; test-B (same op
-                // topology but different k or shape) fetches the SAME cached C++ plan which is
-                // already in SHAPES_FROZEN (phase=1) with stale cached output shapes. Without this
-                // reset the C++ plan uses the wrong cached shapes → wrong buffer offsets → NaN.
-                // clearDynamicShapePlanCaches() alone does not reset the C++ plan PHASE (only
-                // shape-inference results), so we must explicitly un-freeze the C++ side.
-                // This is safe: the C++ plan will re-seal to SHAPES_FROZEN after the next
-                // execution once shapes are verified stable, and Java syncs via DSP_PHASE_SYNC.
-                if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
-                    int currentNativePhase = nativeOps.getPlanPhase(nativePlanHandle);
-                    log.info("SHAPE_RESET_CHECK: !shapesFrozen, C++ phase={}, handle={}", currentNativePhase,
-                            "0x" + Long.toHexString(nativePlanHandle.address()));
-                    if (currentNativePhase >= 1) {
-                        nativeOps.setPlanShapesFrozen(nativePlanHandle, false);
-                        log.info("SHAPE_RESET: C++ plan was in native phase={}, reset to SLOT_BY_SLOT " +
-                                "(fresh Java executor + stale-frozen C++ plan — will re-infer shapes from actual inputs)",
-                                currentNativePhase);
-                    }
-                }
             }
 
             // Track frozen call count for input re-set logic

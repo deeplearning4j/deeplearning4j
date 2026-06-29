@@ -693,9 +693,7 @@ public class SDBaseOps {
    * @param dimension Dimension to concatenate on
    * @return output  (NUMERIC type)
    */
-  public SDVariable concat(int dimension, SDVariable... inputs) {
-    SDValidation.validateNumerical("concat", "inputs", inputs);
-    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+  public SDVariable concat(int dimension, SDVariable... inputs) {    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     Preconditions.checkArgument(isSameType(inputs), "Input arrays must all be the same datatype");
     return new org.nd4j.linalg.api.ops.impl.shape.Concat(sd,inputs, dimension).outputVariable();
   }
@@ -713,9 +711,7 @@ public class SDBaseOps {
    * @param inputs Input variables (NUMERIC type)
    * @return output  (NUMERIC type)
    */
-  public SDVariable concat(String name, int dimension, SDVariable... inputs) {
-    SDValidation.validateNumerical("concat", "inputs", inputs);
-    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+  public SDVariable concat(String name, int dimension, SDVariable... inputs) {    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     Preconditions.checkArgument(isSameType(inputs), "Input arrays must all be the same datatype");
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Concat(sd,inputs, dimension).outputVariable();
     return sd.updateVariableNameAndReference(out, name);

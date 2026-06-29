@@ -23,7 +23,6 @@ import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.linalg.api.buffer.DataType
-import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -34,9 +33,8 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 /**
  * Custom handler for ONNX Cast operation.
  *
- * This handler works around a CUDA backend limitation where casting from BOOL
- * to INT64/UINT64 fails. When the source is BOOL and target is an integer type,
- * we cast through INT8 first to avoid the unsupported kernel.
+ * This handler preserves ONNX Cast as SameDiff's dtype Cast op. Cast accepts
+ * NDARRAY inputs, including BOOL tensors produced by comparison ops.
  *
  * @author Adam Gibson
  */
@@ -72,35 +70,11 @@ class Cast : PreImportHook {
     ): Map<String, List<SDVariable>> {
 
         val input = sd.getVariable(op.inputsToOp[0])
-        val inputDtype = input.dataType()
-
         // Get target type from 'to' attribute
         val toOnnxType = (attributes["to"] as? Number)?.toInt() ?: ONNX_FLOAT
         val targetDtype = onnxTypeToNd4j(toOnnxType)
 
-        // Check if this is a BOOL cast that needs workaround
-        // CUDA backend doesn't support direct BOOL -> any other type using Cast/assign kernel
-        // Note: inputDtype may be null during import for dynamically shaped inputs
-        val needsWorkaround = (inputDtype == DataType.BOOL || inputDtype == null) && targetDtype != DataType.BOOL
-
-        val result = if (needsWorkaround && inputDtype == DataType.BOOL) {
-            // For BOOL inputs, use math operations to avoid unsupported Cast kernel
-            // Multiply by 1 to convert: bool * 1 = 0 or 1 as numeric
-            // First create a constant of the target type with value 1
-            val multiplier = sd.constant(Nd4j.scalar(targetDtype, 1.0))
-            // Broadcasting mul with BOOL should work and produce target type
-            val converted = sd.math.mul("${outputNames[0]}_bool_convert", input, multiplier)
-            // If we still need to cast (shouldn't be needed but just in case)
-            if (converted.dataType() != targetDtype) {
-                sd.castTo(outputNames[0], converted, targetDtype)
-            } else {
-                converted.rename(outputNames[0])
-                converted
-            }
-        } else {
-            // Direct cast for non-BOOL inputs
-            sd.castTo(outputNames[0], input, targetDtype)
-        }
+        val result = sd.castTo(outputNames[0], input, targetDtype)
 
         return mapOf(outputNames[0] to listOf(result))
     }

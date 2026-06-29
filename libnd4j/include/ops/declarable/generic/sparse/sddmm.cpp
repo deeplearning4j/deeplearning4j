@@ -105,6 +105,7 @@ DECLARE_TYPES(sddmm) {
       ->setAllowedInputTypes(2, {ALL_FLOATS})   // D1
       ->setAllowedInputTypes(3, {ALL_FLOATS})   // D2
       ->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

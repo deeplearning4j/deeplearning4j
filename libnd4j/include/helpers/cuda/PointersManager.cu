@@ -42,6 +42,12 @@ SD_INLINE cudaStream_t captureSafeStream(const LaunchContext* context) {
   cudaStream_t lcStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
   return DebugHelper::captureSafeStream(lcStream);
 }
+
+SD_INLINE bool recordingCudaGraph(const LaunchContext* context) {
+  if (tl_graphExecutionActive) return true;
+  auto* streamPtr = (context != nullptr) ? context->getCudaStream() : nullptr;
+  return streamPtr != nullptr && DebugHelper::streamIsCapturing(streamPtr);
+}
 }  // namespace
 
 //////////////////////////////////////////////////////////////////////////
@@ -63,7 +69,8 @@ void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
   // each gap op completes, but tl_captureReplicateCache still holds the freed pointer.
   // The next op with identical TAD content gets a cache hit → dangling device pointer →
   // GPU hang on graph replay (DMA reads from freed/remapped memory).
-  if (tl_graphExecutionActive && tl_captureWorkspace != nullptr) {
+  const bool graphRecording = recordingCudaGraph(_context);
+  if (graphRecording && tl_captureWorkspace != nullptr) {
     size_t aligned = (sizeInBytes + 255) & ~255ULL;
     if (tl_captureWorkspaceOffset + aligned <= tl_captureWorkspaceSize) {
       dst = static_cast<char*>(tl_captureWorkspace) + tl_captureWorkspaceOffset;
@@ -72,7 +79,12 @@ void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
       _allocatedPointers.emplace_back(dst, fromCudaMalloc);
       return dst;
     }
-    // Workspace exhausted — fall through to pool allocation
+    THROW_EXCEPTION((_funcName + ": capture workspace exhausted while allocating pointer table (" +
+                     std::to_string(sizeInBytes) + " bytes)").c_str());
+  }
+
+  if (graphRecording) {
+    THROW_EXCEPTION((_funcName + ": CUDA graph capture is active but no capture workspace is set").c_str());
   }
 
   if (_context == nullptr || _context->getWorkspace() == nullptr) {
@@ -120,7 +132,8 @@ static uint64_t fnvHash(const void* data, size_t len) {
 }
 
 void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes) {
-  if (src && tl_graphExecutionActive && numberOfBytes <= 256) {
+  const bool graphRecording = recordingCudaGraph(_context);
+  if (src && graphRecording && numberOfBytes <= 256) {
     // During CUDA graph capture, check if identical content was already uploaded.
     // Dimension/axis arrays (e.g., [0,1] for reduce) are reused by many ops —
     // deduplicating avoids redundant cudaMemcpyAsync graph nodes on every replay.
@@ -136,22 +149,24 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
   // allocateDevMem already tracks the allocation
   void* dst = allocateDevMem(numberOfBytes);
   if (src) {
-    if (tl_graphExecutionActive) {
+    if (graphRecording) {
       // During CUDA graph capture, H2D copies are recorded as graph nodes with the HOST
       // source address baked in. On replay, the graph reads from that same address.
       // If the host data was on the stack or in a temp buffer, it's invalid at replay time.
       // Use capture host workspace bump allocator for persistent pinned copy.
       const void* h2dSrc = src;
-      if (tl_captureHostWorkspace != nullptr) {
-        size_t aligned = (numberOfBytes + 255) & ~255ULL;
-        if (tl_captureHostWorkspaceOffset + aligned <= tl_captureHostWorkspaceSize) {
-          void* pinnedCopy = static_cast<char*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
-          tl_captureHostWorkspaceOffset += aligned;
-          std::memcpy(pinnedCopy, src, numberOfBytes);
-          h2dSrc = pinnedCopy;
-        }
-        // If workspace exhausted, fall through to use src directly (may fail on replay)
+      if (tl_captureHostWorkspace == nullptr) {
+        THROW_EXCEPTION((_funcName + ": CUDA graph capture is active but no capture host workspace is set").c_str());
       }
+      size_t aligned = (numberOfBytes + 255) & ~255ULL;
+      if (tl_captureHostWorkspaceOffset + aligned > tl_captureHostWorkspaceSize) {
+        THROW_EXCEPTION((_funcName + ": capture host workspace exhausted while staging pointer table (" +
+                         std::to_string(numberOfBytes) + " bytes)").c_str());
+      }
+      void* pinnedCopy = static_cast<char*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
+      tl_captureHostWorkspaceOffset += aligned;
+      std::memcpy(pinnedCopy, src, numberOfBytes);
+      h2dSrc = pinnedCopy;
 
       cudaStream_t capturedStream = captureSafeStream(_context);
       cudaMemcpyAsync(dst, h2dSrc, numberOfBytes, cudaMemcpyHostToDevice, capturedStream);
