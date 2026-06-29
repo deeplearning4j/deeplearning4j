@@ -1289,9 +1289,12 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
   if (seqKV < 64 && headDim < 128) threadsPerBlock = 128;
 
   // Shared memory: scores tile (TILE_SIZE=64 elements) + output accumulator (headDim elements)
-  // + warp reduction scratch (2 * 32 floats for max/sum arrays)
+  // in accumulator precision. Double stays double; other floating types use float.
   int tileSizeKV = 64;
-  int sharedMem = (tileSizeKV + headDim) * dtypeSize + 64 * sizeof(float);
+  int accSize = dtypeSize == static_cast<int>(sizeof(double))
+      ? static_cast<int>(sizeof(double))
+      : static_cast<int>(sizeof(float));
+  int sharedMem = (tileSizeKV + headDim) * accSize;
 
   // Allow env variable overrides
   threadsPerBlock = getEnvVariable("BLOCK_SIZE_FUSED_GQA_DECODE", threadsPerBlock);

@@ -912,11 +912,8 @@ struct GraphSegmentExec {
     }
   }
 
-  // Property: kept as a reference that reads from segPhase for old code.
-  // Old code: `exec.lifecycleState = SLS::FAILED;`
-  // Migration: use setLifecycleState() or segPhase.fail() directly.
-  // This #define allows `exec.lifecycleState` reads to compile during migration.
-  // WARNING: This is a temporary bridge. All direct writes to lifecycleState
+  // Legacy mirror kept in sync by SegmentLifecycle helpers for diagnostics and
+  // old call sites that still inspect SegmentLifecycleState. New state changes
   // should use setLifecycleState() or segPhase methods.
   SegmentLifecycleState lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
 

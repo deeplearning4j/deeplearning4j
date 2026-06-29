@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.config.ND4JSystemProperties;
@@ -67,11 +67,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * mid-execution compile, and that the counter increments exactly when shape
  * changes force a recompile.
  *
- * <p><b>JavaCPP binding TODO:</b> these accessors are reached through helper
- * methods on this test class. If the JavaCPP wrapper for
- * {@code NativeDynamicShapePlan} (or the NativeOps default-method shims) does
- * not yet expose them, the test will fail at runtime — that is the signal that
- * the binding still needs to be wired. See helper methods below.
+ * <p>The native plan handle is resolved through {@link DspPlanAssertions};
+ * native counters and seal state are queried directly through {@code NativeOps}.
  *
  * <p>Run from {@code platform-tests}:
  * <pre>
@@ -145,41 +142,11 @@ public class DspCompilationSealTest {
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // Helpers — JavaCPP binding access points
-    //
-    // These wrap the new NativeDynamicShapePlan methods. If the JavaCPP
-    // wiring is not yet in place these helpers will throw at runtime, which
-    // is the intentional signal that bindings are missing.
+    // Helpers — native plan query access points.
     // ──────────────────────────────────────────────────────────────────────
 
-    /**
-     * Resolve the native plan handle for the SameDiff session. This exists
-     * today via {@link DynamicShapePlanExecutor#getNativePlanHandle()} but is
-     * keyed by the session's executor thread-local — fetch via reflection so
-     * we do not depend on internal accessors that may not be public.
-     */
     private static Pointer resolveNativePlanHandle(SameDiff sd) {
-        try {
-            Object session = sd.getClass()
-                    .getMethod("getOrCreateSession")
-                    .invoke(sd);
-            // InferenceSession exposes a thread-local DynamicShapePlanExecutor;
-            // reach it via reflection so the test does not assume a public getter.
-            java.lang.reflect.Field f = session.getClass().getDeclaredField("dynamicShapePlanExecutorTl");
-            f.setAccessible(true);
-            ThreadLocal<?> tl = (ThreadLocal<?>) f.get(session);
-            Object executor = tl.get();
-            if (executor == null) {
-                return null;
-            }
-            return (Pointer) executor.getClass()
-                    .getMethod("getNativePlanHandle")
-                    .invoke(executor);
-        } catch (Throwable t) {
-            // TODO: wire a public SameDiff API for fetching the native plan handle.
-            log.warn("resolveNativePlanHandle reflection failed", t);
-            return null;
-        }
+        return DspPlanAssertions.getPlanHandleForQuery(sd);
     }
 
     private static boolean isCompilationSealed(Pointer planHandle) {

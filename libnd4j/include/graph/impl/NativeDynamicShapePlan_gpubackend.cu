@@ -5830,23 +5830,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // inputs. Monolithic native-only capture BAKES the gap matmuls (embedding/KV -> logits)
   // at capture-time addresses+VALUES into a single graph, so every replay reads frozen
   // capture-time state and the decode self-locks on one token. That freeze is
-  // NON-DETERMINISTIC: a "lucky" capture (buffers already hold sane values) looks varied,
-  // TEMPORARY REVERT: forceNativeCapture=true until composite-replay cast-kernel
-  // SIGSEGV is diagnosed. The composite path causes cudaLaunchKernel SIGSEGV in
-  // batchedGemmCastFloat2Half during compositeReplay (context poisoned by something
-  // in the gap-op live execution path). Monolithic capture avoids this by baking
-  // the cast kernels into the CUDA graph at capture time, so replay never re-enters
-  // executeBatchedGemmGroup live.
-  // forceNativeCapture (monolithic, gaps baked into one CUDA graph) was a TEMPORARY
-  // workaround for the composite-replay batchedGemmCastFloat2Half SIGSEGV — now FIXED at
-  // its root (executeBatchedGemmGroup was passed the raw `stream` void* which it
-  // reinterpret_cast<cudaStream_t>'d = a pointer-vs-value bug → invalid stream → crash;
-  // fixed to pass the stream VALUE). Monolithic capture bakes the gap matmuls
-  // (embedding/KV->logits) at capture-time VALUES → every replay reads frozen state →
-  // decode self-locks on one token (the 27136 freeze). Composite replay (Triton islands +
-  // LIVE gaps) re-executes those gap ops fresh each step → no baked-value freeze, and
-  // preserves REPLAYING/perf. With the crash fixed, force-native is obsolete: keep it
-  // false so gap segments take the composite path.
+  // non-deterministic: a "lucky" capture (buffers already hold sane values) looks varied,
+  // while most captures replay stale state. Composite replay re-executes the gaps
+  // each step and preserves both correctness and REPLAYING performance.
   bool forceNativeCapture = false;
   (void)tritonGapSlotCount;
 

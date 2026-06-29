@@ -34,7 +34,55 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
+struct FusedChainAccType {
+    using type = float;
+};
+template <>
+struct FusedChainAccType<double> {
+    using type = double;
+};
+
+template <typename AccT>
+SD_DEVICE SD_INLINE AccT fusedChainExp(AccT x) {
+    return sd::math::sd_exp<AccT, AccT>(x);
+}
+template <>
+SD_DEVICE SD_INLINE float fusedChainExp<float>(float x) {
+    return __expf(x);
+}
+
+template <typename AccT>
+SD_DEVICE SD_INLINE AccT fusedChainTanh(AccT x) {
+    return sd::math::sd_tanh<AccT, AccT>(x);
+}
+template <>
+SD_DEVICE SD_INLINE float fusedChainTanh<float>(float x) {
+    return tanhf(x);
+}
+
+template <typename AccT>
+SD_DEVICE SD_INLINE AccT fusedChainLog(AccT x) {
+    return sd::math::sd_log<AccT, AccT>(x);
+}
+template <>
+SD_DEVICE SD_INLINE float fusedChainLog<float>(float x) {
+    return __logf(x);
+}
+
+template <typename AccT>
+SD_DEVICE SD_INLINE AccT fusedChainSqrt(AccT x) {
+    return sd::math::sd_sqrt<AccT, AccT>(x);
+}
+template <>
+SD_DEVICE SD_INLINE float fusedChainSqrt<float>(float x) {
+    return sqrtf(x);
+}
+
+template <typename T>
 SD_DEVICE T deviceApplyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T clipMaxVal) {
+    using AccT = typename FusedChainAccType<T>::type;
+    const AccT x = static_cast<AccT>(val);
+
     switch (op) {
         // Binary ops
         case FUSED_ADD:       return val + secondaryVal;
@@ -44,30 +92,30 @@ SD_DEVICE T deviceApplyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T
 
         // Unary ops
         case FUSED_RELU:      return val > T(0) ? val : T(0);
-        case FUSED_SIGMOID:   return T(1) / (T(1) + sd::math::sd_exp<T, T>(-val));
-        case FUSED_TANH:      return sd::math::sd_tanh<T, T>(val);
+        case FUSED_SIGMOID:   return static_cast<T>(AccT(1) / (AccT(1) + fusedChainExp<AccT>(-x)));
+        case FUSED_TANH:      return static_cast<T>(fusedChainTanh<AccT>(x));
         case FUSED_GELU: {
-            T c = T(0.7978845608); // sqrt(2/pi)
-            T inner = c * (val + T(0.044715) * val * val * val);
-            return T(0.5) * val * (T(1) + sd::math::sd_tanh<T, T>(inner));
+            AccT c = AccT(0.7978845608); // sqrt(2/pi)
+            AccT inner = c * (x + AccT(0.044715) * x * x * x);
+            return static_cast<T>(AccT(0.5) * x * (AccT(1) + fusedChainTanh<AccT>(inner)));
         }
-        case FUSED_EXP:       return sd::math::sd_exp<T, T>(val);
-        case FUSED_LOG:       return val > T(0) ? sd::math::sd_log<T, T>(val) : T(-1e38);
+        case FUSED_EXP:       return static_cast<T>(fusedChainExp<AccT>(x));
+        case FUSED_LOG:       return x > AccT(0) ? static_cast<T>(fusedChainLog<AccT>(x)) : static_cast<T>(AccT(-1e38));
         case FUSED_ABS:       return val >= T(0) ? val : -val;
         case FUSED_NEG:       return -val;
         case FUSED_SQUARE:    return val * val;
-        case FUSED_SQRT:      return val >= T(0) ? sd::math::sd_sqrt<T, T>(val) : T(0);
+        case FUSED_SQRT:      return x >= AccT(0) ? static_cast<T>(fusedChainSqrt<AccT>(x)) : T(0);
         case FUSED_SWISH: {
-            T sig = T(1) / (T(1) + sd::math::sd_exp<T, T>(-val));
-            return val * sig;
+            AccT sig = AccT(1) / (AccT(1) + fusedChainExp<AccT>(-x));
+            return static_cast<T>(x * sig);
         }
         case FUSED_SILU: {
-            T sig = T(1) / (T(1) + sd::math::sd_exp<T, T>(-val));
-            return val * sig;
+            AccT sig = AccT(1) / (AccT(1) + fusedChainExp<AccT>(-x));
+            return static_cast<T>(x * sig);
         }
         case FUSED_MISH: {
-            T sp = sd::math::sd_log<T, T>(T(1) + sd::math::sd_exp<T, T>(val)); // softplus
-            return val * sd::math::sd_tanh<T, T>(sp);
+            AccT sp = fusedChainLog<AccT>(AccT(1) + fusedChainExp<AccT>(x)); // softplus
+            return static_cast<T>(x * fusedChainTanh<AccT>(sp));
         }
 
         // Parameterized ops

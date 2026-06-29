@@ -62,6 +62,8 @@ public class BenchmarkConfigApplier {
         // config's auto-compile path (resolveRequestedGraphExecutionMode reads sd.graphExecutionMode
         // when requestedMode is null).
         model.setGraphExecutionMode(GraphExecutionMode.AUTO);
+        model.setDspAutoCompileEnabled(true);
+        model.setDspNativeAutoCompileEnabled(true);
 
         // Invalidate the Triton GPU module cache between configs. Each config
         // creates a new native plan with different segment boundaries, which means
@@ -102,7 +104,6 @@ public class BenchmarkConfigApplier {
     public static void apply(BenchmarkConfig config,
                              org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor executor) {
         Environment env = Nd4j.getEnvironment();
-        boolean forceSkipTritonKernels = Boolean.getBoolean("nd4j.triton.skipKernels");
 
         // Reset ALL Triton flags to defaults
         env.setDspBatchZero(false);
@@ -144,7 +145,7 @@ public class BenchmarkConfigApplier {
             env.setTritonCooperativeLaunch(config.isTritonCooperativeLaunch());
             env.setTritonCompileAll(config.isTritonCompileAll());
             env.setTritonExcludeOps(config.getTritonExcludeOps());
-            env.setTritonSkipKernels(config.isTritonSkipKernels() || forceSkipTritonKernels);
+            env.setTritonSkipKernels(config.isTritonSkipKernels());
             env.setTritonVerifyKernels(config.isTritonVerifyKernels());
             env.setTritonVerifyFullSnapshot(config.isTritonVerifyFullSnapshot());
             env.setTritonForceRecapture(config.isTritonForceRecapture());
@@ -240,7 +241,7 @@ public class BenchmarkConfigApplier {
                     "tritonCaptureMinExec not applied");
             verify(config.isTritonCompileAll() == env.tritonCompileAll(),
                     "tritonCompileAll not applied");
-            verify((config.isTritonSkipKernels() || forceSkipTritonKernels) == env.tritonSkipKernels(),
+            verify(config.isTritonSkipKernels() == env.tritonSkipKernels(),
                     "tritonSkipKernels not applied");
             verify(config.isTritonVerifyKernels() == env.tritonVerifyKernels(),
                     "tritonVerifyKernels not applied");
@@ -432,8 +433,8 @@ public class BenchmarkConfigApplier {
     }
 
     private static GraphExecutionMode compileTritonModel(SameDiff model, String label, List<String> outputs) {
-        model.setDspAutoCompileEnabled(false);
-        model.setDspNativeAutoCompileEnabled(false);
+        model.setDspAutoCompileEnabled(true);
+        model.setDspNativeAutoCompileEnabled(true);
         model.setDspFallbackToAutoIfTritonUnavailable(false);
 
         GraphExecutionMode effectiveMode = outputs.isEmpty()

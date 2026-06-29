@@ -77,17 +77,12 @@ public class GraphicalLasso {
 
         INDArray X = data.castTo(DataType.DOUBLE);
         long n = X.rows();
-        long p = X.columns();
 
         // Center the data
         INDArray mean = X.mean(0);
         X = X.subRowVector(mean);
 
-        // Empirical covariance S = X^T X / n
-        INDArray S = X.mmul(X.transpose()).div(n);
-        // S is [n,n] if we did X [n,p] * X^T [p,n] — that is wrong.
-        // Correct: S [p,p] = X^T [p,n] * X [n,p] / n
-        S = X.transpose().mmul(X).div(n);
+        INDArray S = X.transpose().mmul(X).div(n);
 
         return fitFromCovariance(S, lambda, rho, maxIter, tol);
     }

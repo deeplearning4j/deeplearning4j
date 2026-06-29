@@ -29,7 +29,6 @@ import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -74,7 +73,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *     </ul>
  *   </li>
  *   <li>Pipeline executes stages sequentially, passing output of one as input to next</li>
- *   <li>DSP is disabled during first model compilation (reduces peak memory), re-enabled after</li>
+ *   <li>DSP remains enabled across stage execution when configured</li>
  *   <li>GPU memory pools are trimmed between stages to prevent fragmentation</li>
  * </ul>
  *
@@ -218,9 +217,6 @@ public class MultiModelPipeline implements AutoCloseable {
         PipelineResult result = new PipelineResult();
         String currentInput = input;
 
-        // Track which models have been used for DSP optimization
-        Set<String> usedModels = new HashSet<>();
-
         for (int i = 0; i < stages.size(); i++) {
             PipelineStage stage = stages.get(i);
             log.info("Executing stage {}/{}: {} (model: {})", 
@@ -228,7 +224,7 @@ public class MultiModelPipeline implements AutoCloseable {
 
             try {
                 // Execute the stage
-                StageOutput stageOutput = executeStage(stage, currentInput, result, usedModels);
+                StageOutput stageOutput = executeStage(stage, currentInput, result);
                 result.addStageOutput(stage.getStageId(), stageOutput);
 
                 // Update input for next stage
@@ -248,8 +244,6 @@ public class MultiModelPipeline implements AutoCloseable {
                     trimGpuMemoryPools();
                 }
 
-                usedModels.add(stage.getModelId());
-
             } catch (Exception e) {
                 log.error("Pipeline failed at stage {}/{} ({}): {}", 
                         i + 1, stages.size(), stage.getStageId(), e.getMessage());
@@ -267,7 +261,7 @@ public class MultiModelPipeline implements AutoCloseable {
     /**
      * Execute a single pipeline stage.
      */
-    private StageOutput executeStage(PipelineStage stage, String input, PipelineResult context, Set<String> usedModels) throws IOException {
+    private StageOutput executeStage(PipelineStage stage, String input, PipelineResult context) throws IOException {
         String modelId = stage.getModelId();
         MultiModelPipelineConfig.RegisteredModel registeredModel = modelRegistry.get(modelId);
         
@@ -294,53 +288,25 @@ public class MultiModelPipeline implements AutoCloseable {
         log.debug("Stage {} prompt (first 200 chars): {}", stage.getStageId(), 
                 prompt.length() > 200 ? prompt.substring(0, 200) + "..." : prompt);
 
-        // DSP optimization: disable during first invocation, enable after compilation
-        boolean dspWasEnabled = false;
-        String prevCudaGraphs = null;
-        
-        if (config.isDspEnabled() && !usedModels.contains(modelId)) {
-            // First invocation: disable DSP to reduce peak memory during compilation
-            dspWasEnabled = InferenceSession.isDynamicShapePlanEnabled();
-            prevCudaGraphs = System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
-            InferenceSession.setDynamicShapePlanEnabled(false);
-            System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false");
-            log.debug("DSP disabled for first invocation of model {}", modelId);
-        }
+        GenerationResult generationResult = pipeline.generate(prompt, config.getMaxTokensPerModel());
+        String rawOutput = generationResult.getText();
 
-        try {
-            // Generate output
-            GenerationResult generationResult = pipeline.generate(prompt, config.getMaxTokensPerModel());
-            String rawOutput = generationResult.getText();
+        ModelType.ParsedOutput parsedOutput = modelType.parseOutput(rawOutput);
 
-            // Parse output according to model type
-            ModelType.ParsedOutput parsedOutput = modelType.parseOutput(rawOutput);
+        log.info("Stage {} completed: {} tokens, {} ms",
+                stage.getStageId(),
+                generationResult.getTokenIds() != null ? generationResult.getTokenIds().length : 0,
+                generationResult.getGenerationTimeMs());
 
-            log.info("Stage {} completed: {} tokens, {} ms", 
-                    stage.getStageId(), 
-                    generationResult.getTokenIds() != null ? generationResult.getTokenIds().length : 0,
-                    generationResult.getGenerationTimeMs());
-
-            return StageOutput.builder()
-                    .rawText(rawOutput)
-                    .parsedOutput(parsedOutput)
-                    .stageId(stage.getStageId())
-                    .modelId(modelId)
-                    .modelRole(modelType.getRole())
-                    .durationMs(generationResult.getGenerationTimeMs())
-                    .tokenCount(generationResult.getTokenIds() != null ? generationResult.getTokenIds().length : 0)
-                    .build();
-
-        } finally {
-            // Re-enable DSP after first compilation
-            if (config.isDspEnabled() && !usedModels.contains(modelId)) {
-                InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
-                if (prevCudaGraphs != null) {
-                    System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs);
-                }
-                usedModels.add(modelId);
-                log.debug("DSP re-enabled for model {} after compilation", modelId);
-            }
-        }
+        return StageOutput.builder()
+                .rawText(rawOutput)
+                .parsedOutput(parsedOutput)
+                .stageId(stage.getStageId())
+                .modelId(modelId)
+                .modelRole(modelType.getRole())
+                .durationMs(generationResult.getGenerationTimeMs())
+                .tokenCount(generationResult.getTokenIds() != null ? generationResult.getTokenIds().length : 0)
+                .build();
     }
 
     /**

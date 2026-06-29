@@ -322,6 +322,48 @@ public class FusedElementwiseChainTest extends BaseNd4jTestWithBackends {
     }
 
     @Test
+    public void testHalfMishNonlinearChain() {
+        INDArray x = Nd4j.linspace(-3, 3, 64, DataType.FLOAT).reshape(8, 8).castTo(DataType.HALF);
+        INDArray xFloat = x.castTo(DataType.FLOAT);
+        INDArray softplus = Nd4j.math().log(Nd4j.math().exp(xFloat.dup()).addi(1.0));
+        INDArray expected = xFloat.mul(Nd4j.math().tanh(softplus)).castTo(DataType.HALF);
+
+        INDArray output = Nd4j.createUninitialized(DataType.HALF, x.shape());
+        FusedElementwiseChain op = FusedElementwiseChain.builder()
+                .input(x)
+                .mish()
+                .output(output)
+                .build();
+        Nd4j.exec(op);
+
+        double maxDiff = expected.castTo(DataType.FLOAT).sub(output.castTo(DataType.FLOAT)).amaxNumber().doubleValue();
+        assertTrue(maxDiff < 0.01,
+                "half mish fused should match float reference cast to half. Max diff: " + maxDiff);
+    }
+
+    @Test
+    public void testHalfExpLogSqrtChain() {
+        INDArray x = Nd4j.linspace(0.25, 2.25, 64, DataType.FLOAT).reshape(8, 8).castTo(DataType.HALF);
+        INDArray exp = Nd4j.math().exp(x.castTo(DataType.FLOAT).dup());
+        INDArray log = Nd4j.math().log(exp);
+        INDArray expected = Nd4j.math().sqrt(log).castTo(DataType.HALF);
+
+        INDArray output = Nd4j.createUninitialized(DataType.HALF, x.shape());
+        FusedElementwiseChain op = FusedElementwiseChain.builder()
+                .input(x)
+                .exp()
+                .log()
+                .sqrt()
+                .output(output)
+                .build();
+        Nd4j.exec(op);
+
+        double maxDiff = expected.castTo(DataType.FLOAT).sub(output.castTo(DataType.FLOAT)).amaxNumber().doubleValue();
+        assertTrue(maxDiff < 0.01,
+                "half exp->log->sqrt fused should match float reference cast to half. Max diff: " + maxDiff);
+    }
+
+    @Test
     public void testCodegenApiUnaryOnly() {
         // Test the codegen-generated Nd4j.nn().fusedElementwiseChain() API
         INDArray x = Nd4j.linspace(-3, 3, 100, DataType.FLOAT).reshape(10, 10);

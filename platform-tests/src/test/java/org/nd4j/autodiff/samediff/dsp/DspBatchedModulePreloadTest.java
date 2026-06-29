@@ -32,7 +32,6 @@ import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -56,9 +55,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  *   <li>Compiling a multi-kernel plan with preload enabled (the default).</li>
  *   <li>Running the model and verifying outputs match the SLOT_BY_SLOT
  *       reference. Preload must not change correctness.</li>
- *   <li>Optionally toggling the {@code setBatchPreloadModules(false)} knob
- *       (when the binding is in place) and re-running to confirm both modes
- *       produce identical results.</li>
+ *   <li>Toggling the {@code setBatchPreloadModules(false)} knob and
+ *       re-running to confirm both modes produce identical results.</li>
  * </ol>
  *
  * <p>The original task mentioned timing the first N kernel launches as a
@@ -67,15 +65,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * confounding factors on shared CI hardware. The correctness check is the
  * load-bearing assertion; a separate perf benchmark can track latency
  * deltas.
- *
- * <p><b>JavaCPP binding TODO:</b>
- * <ul>
- *   <li>{@code Nd4j.getEnvironment().setTritonBatchPreloadModules(boolean)}
- *       — add to {@code TritonEnvironmentConfig.java} +
- *       {@code Environment.java}.</li>
- *   <li>{@code Nd4j.getEnvironment().tritonBatchPreloadModules()}
- *       — getter for the same flag.</li>
- * </ul>
  *
  * <p>Run from {@code platform-tests}:
  * <pre>
@@ -216,43 +205,15 @@ public class DspBatchedModulePreloadTest {
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // Helpers — Environment knob accessors with reflective fallback.
-    //
-    // Expected accessors on Environment:
-    //   tritonBatchPreloadModules()    -> boolean
-    //   setTritonBatchPreloadModules(boolean)
-    //
-    // TODO: wire these through TritonEnvironmentConfig.java + Environment.java.
+    // Helpers — Environment knob accessors.
     // ──────────────────────────────────────────────────────────────────────
 
     private static Boolean readBatchPreload() {
-        Environment env = Nd4j.getEnvironment();
-        try {
-            return (Boolean) env.getClass()
-                    .getMethod("tritonBatchPreloadModules")
-                    .invoke(env);
-        } catch (NoSuchMethodException e) {
-            // TODO: wire JavaCPP binding for tritonBatchPreloadModules
-            return null;
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError("tritonBatchPreloadModules invocation failed", e);
-        }
+        return Nd4j.getEnvironment().tritonBatchPreloadModules();
     }
 
     private static void writeBatchPreload(boolean enabled) {
-        Environment env = Nd4j.getEnvironment();
-        try {
-            env.getClass()
-                    .getMethod("setTritonBatchPreloadModules", boolean.class)
-                    .invoke(env, enabled);
-        } catch (NoSuchMethodException e) {
-            // TODO: wire JavaCPP binding for setTritonBatchPreloadModules
-            throw new AssertionError(
-                    "setTritonBatchPreloadModules not yet wired through the Environment "
-                            + "interface — add the binding to TritonEnvironmentConfig.java", e);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError("setTritonBatchPreloadModules invocation failed", e);
-        }
+        Nd4j.getEnvironment().setTritonBatchPreloadModules(enabled);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -269,15 +230,7 @@ public class DspBatchedModulePreloadTest {
         INDArray ref = referenceOutput(sd, in);
 
         // Default — preload should be ON.
-        try {
-            writeBatchPreload(true);
-        } catch (AssertionError e) {
-            // The binding is not yet wired; run the test anyway against
-            // whatever the default preload setting is. The correctness path
-            // below still validates the feature end-to-end.
-            log.warn("setTritonBatchPreloadModules not wired; running with default preload setting", e);
-        }
-
+        writeBatchPreload(true);
         enableDsp(sd);
 
         // First execution: this is when the preload path runs during
@@ -289,7 +242,7 @@ public class DspBatchedModulePreloadTest {
         got.close();
 
         // A second pass should be cheap and still correct.
-        Map<String, INDArray> out2 = sd.output(inputs(), "y");
+        Map<String, INDArray> out2 = sd.output(in, "y");
         INDArray got2 = out2.get("y").dup();
         assertClose(ref, got2, 5e-3, 1e-3,"second execution after batched preload");
         got2.close();
@@ -305,42 +258,26 @@ public class DspBatchedModulePreloadTest {
         INDArray ref = referenceOutput(sd, in);
 
         // Run with preload OFF first.
-        boolean toggleAvailable = true;
-        try {
-            writeBatchPreload(false);
-        } catch (AssertionError e) {
-            // Binding not wired — the test still validates correctness with
-            // the default preload setting only. We record this so the
-            // assertion below skips the cross-mode comparison.
-            log.warn("setTritonBatchPreloadModules not wired; cannot toggle preload off", e);
-            toggleAvailable = false;
-        }
-
+        writeBatchPreload(false);
         enableDsp(sd);
-        Map<String, INDArray> outA = sd.output(inputs(), "y");
+        Map<String, INDArray> outA = sd.output(in, "y");
         INDArray gotA = outA.get("y").dup();
         assertClose(ref, gotA, 5e-3, 1e-3,"preload-off execution");
 
-        if (toggleAvailable) {
-            // Reset the session's plan caches so the next compile happens
-            // under the new preload setting.
-            sd.close();
-            sd = buildMultiKernelGraph();
-            // Reference for the rebuilt graph (different random init).
-            INDArray refB = referenceOutput(sd, inputs());
+        // Reset the session's plan caches so the next compile happens
+        // under the new preload setting.
+        sd.close();
+        sd = buildMultiKernelGraph();
+        Map<String, INDArray> inB = inputs();
+        INDArray refB = referenceOutput(sd, inB);
 
-            try {
-                writeBatchPreload(true);
-            } catch (AssertionError e) {
-                log.warn("setTritonBatchPreloadModules write failed when re-enabling", e);
-            }
-            enableDsp(sd);
-            Map<String, INDArray> outB = sd.output(inputs(), "y");
-            INDArray gotB = outB.get("y").dup();
-            assertClose(refB, gotB, 5e-3, 1e-3,"preload-on execution");
-            gotB.close();
-            refB.close();
-        }
+        writeBatchPreload(true);
+        enableDsp(sd);
+        Map<String, INDArray> outB = sd.output(inB, "y");
+        INDArray gotB = outB.get("y").dup();
+        assertClose(refB, gotB, 5e-3, 1e-3,"preload-on execution");
+        gotB.close();
+        refB.close();
 
         gotA.close();
     }

@@ -141,7 +141,7 @@ SegmentAnalysis CpuIRBuilder::analyzeSegment(NativeSlot* slots, int startSlot, i
     analysis.canCompile = false;
     analysis.failureReason = "Segment contains unsupported ops";
   } else if (analysis.numAttention > 0) {
-    // Fused attention requires specialized kernel structure — skip for now
+    // Fused attention requires specialized CPU MLIR lowering.
     analysis.canCompile = false;
     analysis.failureReason = "Fused attention not yet supported on CPU MLIR";
   } else {

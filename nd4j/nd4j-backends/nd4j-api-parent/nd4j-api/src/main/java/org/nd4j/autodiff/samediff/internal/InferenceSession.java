@@ -1330,8 +1330,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         Set<String> outputSet = new LinkedHashSet<>(requestedOutputs);
 
         // Always check for an existing cached plan first, even when allowCompile=false.
-        // compileTritonModel() sets dspAutoCompileEnabled=false after explicit compilation,
-        // but the compiled plan must still be usable during subsequent output() calls.
+        // An explicitly compiled plan must still be usable during subsequent output() calls.
         // Without this, the decode loop falls through to executeOperations (standard path)
         // which has different cleanup semantics and can close KV cache placeholder arrays.
         DynamicShapePlan plan = dynamicShapePlan;

@@ -72,7 +72,7 @@ public class BenchmarkConfig {
     int tritonBuildThreads = -1;
     String tritonProfile = "BALANCED";
 
-    // Triton segment fusion optimization flags (temporary for testing)
+    // Triton segment fusion optimization flags
     boolean tritonFuseIdentityShapes = true;
     boolean tritonFuseCastChains = true;
     boolean tritonFuseTrivialGather = true;

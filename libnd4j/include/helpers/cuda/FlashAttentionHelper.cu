@@ -50,6 +50,26 @@ constexpr int TILE_SIZE_KV = 64;  // Key/Value tile size (increased from 32)
 constexpr int WARP_SIZE = 32;
 constexpr int DEFAULT_BLOCK_SIZE = 512;  // Increased from 256 for better occupancy
 
+// Attention accumulators follow the same convention as other CUDA transformer
+// kernels: double inputs accumulate in double, all other floating types use FP32.
+template <typename T>
+struct FlashAccType {
+  using type = float;
+};
+template <>
+struct FlashAccType<double> {
+  using type = double;
+};
+
+template <typename AccT>
+SD_DEVICE SD_INLINE AccT flashExp(AccT x) {
+  return sd::math::sd_exp<AccT, AccT>(x);
+}
+template <>
+SD_DEVICE SD_INLINE float flashExp<float>(float x) {
+  return sd_fast_exp(x);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // In-place causal mask kernel - sets scores[b, i, j] = -inf where j > i
 // This replaces: create mask array + nullify + fillAsTriangular + broadcast add
@@ -129,6 +149,7 @@ SD_KERNEL __launch_bounds__(1024, 2) void fusedCausalMaskSoftmaxKernel(
    const LongType seqKV,
    const bool isCausal) {
 
+ using AccT = typename FlashAccType<T>::type;
  const LongType row = blockIdx.x;  // which row (batch*seqQ rows)
  if (row >= batch * seqQ) return;
 
@@ -137,31 +158,31 @@ SD_KERNEL __launch_bounds__(1024, 2) void fusedCausalMaskSoftmaxKernel(
  const LongType causalOffset = (seqKV > seqQ) ? (seqKV - seqQ) : 0;
  const LongType queryPos = queryIdx + causalOffset;
 
- // Shared memory for warp reductions — T-typed for full precision
+ // Shared memory for warp reductions in accumulator precision.
  extern __shared__ char sharedMem[];
- T* sdata = reinterpret_cast<T*>(sharedMem);
+ AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
 
- // Pass 1: Apply causal mask and find max — all arithmetic in T
- T threadMax = -DataTypeUtils::infOrMax<T>();
+ // Pass 1: Apply causal mask and find max.
+ AccT threadMax = -DataTypeUtils::infOrMax<AccT>();
  const LongType maxKV = isCausal ? min(queryPos + 1, seqKV) : seqKV;
 
  for (LongType j = threadIdx.x; j < seqKV; j += blockDim.x) {
-   T val;
+   AccT val;
    if (isCausal && j > queryPos) {
-     val = -DataTypeUtils::infOrMax<T>();
+     val = -DataTypeUtils::infOrMax<AccT>();
    } else {
-     val = input[rowStart + j];
+     val = static_cast<AccT>(input[rowStart + j]);
    }
    // Store masked logits if requested
    if (logitsOut != nullptr) {
-     logitsOut[rowStart + j] = val;
+     logitsOut[rowStart + j] = static_cast<T>(val);
    }
-   threadMax = sd::math::sd_max<T>(threadMax, val);
+   threadMax = sd::math::sd_max<AccT>(threadMax, val);
  }
 
- // Warp reduce max — __shfl_down_sync works for float/double/half on sm70+
+ // Warp reduce max.
  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-   threadMax = sd::math::sd_max<T>(threadMax, __shfl_down_sync(0xffffffff, threadMax, offset));
+   threadMax = sd::math::sd_max<AccT>(threadMax, __shfl_down_sync(0xffffffff, threadMax, offset));
  }
 
  const int lane = threadIdx.x % WARP_SIZE;
@@ -171,13 +192,13 @@ SD_KERNEL __launch_bounds__(1024, 2) void fusedCausalMaskSoftmaxKernel(
  if (lane == 0) sdata[wid] = threadMax;
  __syncthreads();
 
- T rowMax = -DataTypeUtils::infOrMax<T>();
+ AccT rowMax = -DataTypeUtils::infOrMax<AccT>();
  if (threadIdx.x < numWarps) rowMax = sdata[threadIdx.x];
  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-   rowMax = sd::math::sd_max<T>(rowMax, __shfl_down_sync(0xffffffff, rowMax, offset));
+   rowMax = sd::math::sd_max<AccT>(rowMax, __shfl_down_sync(0xffffffff, rowMax, offset));
  }
 
- __shared__ T sharedMax;
+ __shared__ AccT sharedMax;
  if (threadIdx.x == 0) sharedMax = rowMax;
  __syncthreads();
  rowMax = sharedMax;
@@ -187,17 +208,17 @@ SD_KERNEL __launch_bounds__(1024, 2) void fusedCausalMaskSoftmaxKernel(
  // to output here would clobber the original logits that later iterations
  // of the same loop (or other threads) still need to read. Instead, we only
  // accumulate the sum and defer all output writes to Pass 3.
- T threadSum = static_cast<T>(0);
+ AccT threadSum = static_cast<AccT>(0);
  for (LongType j = threadIdx.x; j < seqKV; j += blockDim.x) {
-   T val;
+   AccT val;
    if (logitsOut != nullptr) {
-     val = logitsOut[rowStart + j];
+     val = static_cast<AccT>(logitsOut[rowStart + j]);
    } else if (isCausal && j > queryPos) {
-     val = -DataTypeUtils::infOrMax<T>();
+     val = -DataTypeUtils::infOrMax<AccT>();
    } else {
-     val = input[rowStart + j];
+     val = static_cast<AccT>(input[rowStart + j]);
    }
-   threadSum += sd::math::sd_exp<T,T>(val - rowMax);
+   threadSum += flashExp<AccT>(val - rowMax);
  }
 
  // Warp reduce sum
@@ -207,16 +228,16 @@ SD_KERNEL __launch_bounds__(1024, 2) void fusedCausalMaskSoftmaxKernel(
  if (lane == 0) sdata[wid] = threadSum;
  __syncthreads();
 
- T rowSum = static_cast<T>(0);
+ AccT rowSum = static_cast<AccT>(0);
  if (threadIdx.x < numWarps) rowSum = sdata[threadIdx.x];
  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
    rowSum += __shfl_down_sync(0xffffffff, rowSum, offset);
  }
 
- __shared__ T sharedSum;
+ __shared__ AccT sharedSum;
  if (threadIdx.x == 0) sharedSum = rowSum;
  __syncthreads();
- T invSum = (sharedSum > static_cast<T>(0)) ? (static_cast<T>(1) / sharedSum) : static_cast<T>(0);
+ AccT invSum = (sharedSum > static_cast<AccT>(0)) ? (static_cast<AccT>(1) / sharedSum) : static_cast<AccT>(0);
 
  // Pass 3: Compute exp and normalize in one pass, write to output.
  // Safe for in-place (input == output): each thread reads input[j] then writes
@@ -224,16 +245,16 @@ SD_KERNEL __launch_bounds__(1024, 2) void fusedCausalMaskSoftmaxKernel(
  // (stride = blockDim.x), so no thread reads a location another thread has
  // already written in this pass.
  for (LongType j = threadIdx.x; j < seqKV; j += blockDim.x) {
-   T val;
+   AccT val;
    if (logitsOut != nullptr) {
-     val = logitsOut[rowStart + j];
+     val = static_cast<AccT>(logitsOut[rowStart + j]);
    } else if (isCausal && j > queryPos) {
-     val = -DataTypeUtils::infOrMax<T>();
+     val = -DataTypeUtils::infOrMax<AccT>();
    } else {
-     val = input[rowStart + j];
+     val = static_cast<AccT>(input[rowStart + j]);
    }
-   T expVal = sd::math::sd_exp<T,T>(val - rowMax);
-   output[rowStart + j] = expVal * invSum;
+   AccT expVal = flashExp<AccT>(val - rowMax);
+   output[rowStart + j] = static_cast<T>(expVal * invSum);
  }
 }
 
@@ -245,8 +266,8 @@ static void fusedCausalMaskSoftmaxLauncher(const int blocksPerGrid, const int th
  auto input = reinterpret_cast<const T*>(vInput);
  auto output = reinterpret_cast<T*>(vOutput);
  auto logitsOut = vLogitsOut != nullptr ? reinterpret_cast<T*>(vLogitsOut) : nullptr;
- // Shared mem holds warp-reduction staging array of T — compute sizeof(T) here where T is known
- const size_t sharedMemSize = static_cast<size_t>(numWarps) * sizeof(T);
+ using AccT = typename FlashAccType<T>::type;
+ const size_t sharedMemSize = static_cast<size_t>(numWarps) * sizeof(AccT);
  fusedCausalMaskSoftmaxKernel<T><<<blocksPerGrid, threadsPerBlock, sharedMemSize, *stream>>>(
      input, output, logitsOut, batch, seqQ, seqKV, isCausal);
  DebugHelper::checkGlobalErrorCode("fusedCausalMaskSoftmax failed");
@@ -276,8 +297,8 @@ void fusedCausalMaskSoftmaxCuda(NDArray* input, NDArray* output, NDArray* logits
  }
 
  int numWarps = (threadsPerBlock + WARP_SIZE - 1) / WARP_SIZE;
- // sharedMemSize is computed inside fusedCausalMaskSoftmaxLauncher using sizeof(T)
- // so that double inputs use double-precision shared memory for reduction staging
+ // Shared memory size is computed inside fusedCausalMaskSoftmaxLauncher using
+ // the accumulator type: double for double inputs, FP32 otherwise.
 
  if (logitsOut != nullptr) {
    NDArray::prepareSpecialUse({output, logitsOut}, {input});
@@ -324,26 +345,25 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    const LongType biasStride1,     // Stride for seqQ (or heads) dimension
    const LongType biasStride2) {   // Stride for seqKV dimension
 
+ using AccT = typename FlashAccType<T>::type;
+
  // Each block handles one query position for one batch
  const LongType batchIdx = blockIdx.y;
  const LongType queryIdx = blockIdx.x;
 
  if (batchIdx >= batch || queryIdx >= seqQ) return;
 
- // Shared memory layout (all T-typed for precision):
- // [TILE_SIZE_KV * sizeof(T)] sharedScores
- // [dim * sizeof(T)]           sharedOutput
- // [32 * sizeof(T)]            warpMaxesBuf
- // [32 * sizeof(T)]            warpSumsBuf
+ // Keep tile scores and the running output accumulator in AccT; only the
+ // boundary tensors remain T-typed.
  extern __shared__ char sharedMem[];
- T* sharedScores  = reinterpret_cast<T*>(sharedMem);
- T* sharedOutput  = sharedScores + TILE_SIZE_KV;
- T* warpMaxesBuf  = sharedOutput + dim;
- T* warpSumsBuf   = warpMaxesBuf + 32;
+ AccT* sharedScores  = reinterpret_cast<AccT*>(sharedMem);
+ AccT* sharedOutput  = sharedScores + TILE_SIZE_KV;
+ __shared__ AccT warpMaxesBuf[32];
+ __shared__ AccT warpSumsBuf[32];
 
  // Initialize output accumulator to zero
  for (int d = threadIdx.x; d < dim; d += blockDim.x) {
-   sharedOutput[d] = static_cast<T>(0);
+   sharedOutput[d] = static_cast<AccT>(0);
  }
  __syncthreads();
 
@@ -361,13 +381,13 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    biasRow = attnBias + batchIdx * biasStride0 + queryIdx * biasStride1;
  }
 
- // Global max and sum for this query position — T-typed for full precision
- __shared__ T globalMax;
- __shared__ T globalSum;
- __shared__ T newMax;
+ // Global max and sum for this query position in accumulator precision.
+ __shared__ AccT globalMax;
+ __shared__ AccT globalSum;
+ __shared__ AccT newMax;
  if (threadIdx.x == 0) {
-   globalMax = -DataTypeUtils::infOrMax<T>();
-   globalSum = static_cast<T>(0);
+   globalMax = -DataTypeUtils::infOrMax<AccT>();
+   globalSum = static_cast<AccT>(0);
  }
  __syncthreads();
 
@@ -386,40 +406,40 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    // Defensive: ensure tileSize is valid
    if (tileSize <= 0) continue;
 
-   // Step 1: Compute Q @ K^T for this tile + add attention bias — all arithmetic in T
+   // Step 1: Compute Q @ K^T for this tile + add attention bias.
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
      const LongType kvIdx = kvStart + k;
      const T* Krow = K + kvIdx * dim;
 
-     T score = static_cast<T>(0);
+     AccT score = static_cast<AccT>(0);
      for (LongType d = 0; d < dim; d++) {
-       score += Q[d] * Krow[d];
+       score += static_cast<AccT>(Q[d]) * static_cast<AccT>(Krow[d]);
      }
-     score *= static_cast<T>(scale);
+     score *= static_cast<AccT>(scale);
 
      // Add attention bias if present
      if (biasRow != nullptr) {
-       score += biasRow[kvIdx * biasStride2];
+       score += static_cast<AccT>(biasRow[kvIdx * biasStride2]);
      }
 
      // Apply causal mask
      if (isCausal && kvIdx > queryPos) {
-       score = -DataTypeUtils::infOrMax<T>();
+       score = -DataTypeUtils::infOrMax<AccT>();
      }
 
      sharedScores[k] = score;
    }
    __syncthreads();
 
-   // Step 2: Find max in this tile (for numerical stability) — in T
-   T tileMax = -DataTypeUtils::infOrMax<T>();
+   // Step 2: Find max in this tile (for numerical stability).
+   AccT tileMax = -DataTypeUtils::infOrMax<AccT>();
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-     tileMax = sd::math::sd_max<T>(tileMax, sharedScores[k]);
+     tileMax = sd::math::sd_max<AccT>(tileMax, sharedScores[k]);
    }
 
-   // Warp reduce to find max — __shfl_down_sync works for float/double/half
+   // Warp reduce to find max.
    for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-     tileMax = sd::math::sd_max<T>(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
+     tileMax = sd::math::sd_max<AccT>(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
    }
 
    // First thread in each warp writes to shared memory
@@ -432,20 +452,20 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    if (threadIdx.x < blockDim.x / WARP_SIZE) {
      tileMax = warpMaxesBuf[threadIdx.x];
    } else {
-     tileMax = -DataTypeUtils::infOrMax<T>();
+     tileMax = -DataTypeUtils::infOrMax<AccT>();
    }
    for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-     tileMax = sd::math::sd_max<T>(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
+     tileMax = sd::math::sd_max<AccT>(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
    }
 
    if (threadIdx.x == 0) {
-     newMax = sd::math::sd_max<T>(globalMax, tileMax);
+     newMax = sd::math::sd_max<AccT>(globalMax, tileMax);
    }
    __syncthreads();
 
    // Step 3: Rescale previous output if max changed
    if (newMax > globalMax) {
-     T rescale = sd::math::sd_exp<T,T>(globalMax - newMax);
+     AccT rescale = flashExp<AccT>(globalMax - newMax);
      for (int d = threadIdx.x; d < dim; d += blockDim.x) {
        sharedOutput[d] *= rescale;
      }
@@ -456,10 +476,10 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    }
    __syncthreads();
 
-   // Step 4: Compute exp(score - max) and accumulate sum — in T
-   T tileSum = static_cast<T>(0);
+   // Step 4: Compute exp(score - max) and accumulate sum.
+   AccT tileSum = static_cast<AccT>(0);
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-     T expScore = sd::math::sd_exp<T,T>(sharedScores[k] - globalMax);
+     AccT expScore = flashExp<AccT>(sharedScores[k] - globalMax);
      sharedScores[k] = expScore;
      tileSum += expScore;
    }
@@ -477,7 +497,7 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    if (threadIdx.x < blockDim.x / WARP_SIZE) {
      tileSum = warpSumsBuf[threadIdx.x];
    } else {
-     tileSum = static_cast<T>(0);
+     tileSum = static_cast<AccT>(0);
    }
    for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
      tileSum += __shfl_down_sync(0xffffffff, tileSum, offset);
@@ -488,22 +508,22 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    }
    __syncthreads();
 
-   // Step 5: Accumulate weighted values: output += exp_scores @ V — in T
+   // Step 5: Accumulate weighted values: output += exp_scores @ V.
    for (int d = threadIdx.x; d < dim; d += blockDim.x) {
-     T acc = static_cast<T>(0);
+     AccT acc = static_cast<AccT>(0);
      for (int k = 0; k < tileSize; k++) {
        const LongType kvIdx = kvStart + k;
-       acc += sharedScores[k] * V[kvIdx * dim + d];
+       acc += sharedScores[k] * static_cast<AccT>(V[kvIdx * dim + d]);
      }
      sharedOutput[d] += acc;
    }
    __syncthreads();
  }
 
- // Step 6: Normalize by sum and write output — in T
- T invSum3d = (globalSum > static_cast<T>(0)) ? (static_cast<T>(1) / globalSum) : static_cast<T>(0);
+ // Step 6: Normalize by sum and write output.
+ AccT invSum3d = (globalSum > static_cast<AccT>(0)) ? (static_cast<AccT>(1) / globalSum) : static_cast<AccT>(0);
  for (int d = threadIdx.x; d < dim; d += blockDim.x) {
-   O[d] = sharedOutput[d] * invSum3d;
+   O[d] = static_cast<T>(sharedOutput[d] * invSum3d);
  }
 }
 
@@ -527,6 +547,8 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedAttentionWithScores3DKernel(
    const double scale,
    const bool isCausal) {
 
+ using AccT = typename FlashAccType<T>::type;
+
  // Each block handles one query position for one batch
  const LongType batchIdx = blockIdx.y;
  const LongType queryIdx = blockIdx.x;
@@ -543,43 +565,43 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedAttentionWithScores3DKernel(
  T* scoresRow = attentionScores != nullptr ?
                                            attentionScores + batchIdx * seqQ * seqKV + queryIdx * seqKV : nullptr;
 
- // Shared memory for reductions — T-typed for full precision
+ // Shared memory for reductions in accumulator precision.
  extern __shared__ char sharedMem[];
- T* sharedMax = reinterpret_cast<T*>(sharedMem);   // [32] for warp maxes
- T* sharedSum = sharedMax + 32;                     // [32] for warp sums
+ AccT* sharedMax = reinterpret_cast<AccT*>(sharedMem);   // [32] for warp maxes
+ AccT* sharedSum = sharedMax + 32;                        // [32] for warp sums
 
- // Step 1: Compute all logits for this query row and find max — in T
- T threadMax = -DataTypeUtils::infOrMax<T>();
+ // Step 1: Compute all logits for this query row and find max.
+ AccT threadMax = -DataTypeUtils::infOrMax<AccT>();
  const LongType causalOffset = (seqKV > seqQ) ? (seqKV - seqQ) : 0;
  const LongType queryPos = queryIdx + causalOffset;
  const LongType maxKV = isCausal ? min(queryPos + 1, seqKV) : seqKV;
 
  for (LongType k = threadIdx.x; k < seqKV; k += blockDim.x) {
-   T score;
+   AccT score;
    if (k < maxKV) {
-     // Compute dot product Q[queryIdx] . K[k] — in T
+     // Compute dot product Q[queryIdx] . K[k].
      const T* Krow = K + k * dim;
-     score = static_cast<T>(0);
+     score = static_cast<AccT>(0);
      for (LongType d = 0; d < dim; d++) {
-       score += Q[d] * Krow[d];
+       score += static_cast<AccT>(Q[d]) * static_cast<AccT>(Krow[d]);
      }
-     score *= static_cast<T>(scale);
+     score *= static_cast<AccT>(scale);
    } else {
      // Causal mask: future positions get -inf
-     score = -DataTypeUtils::infOrMax<T>();
+     score = -DataTypeUtils::infOrMax<AccT>();
    }
 
    // Write logits if requested
    if (logitsRow != nullptr) {
-     logitsRow[k] = score;
+     logitsRow[k] = static_cast<T>(score);
    }
 
-   threadMax = sd::math::sd_max<T>(threadMax, score);
+   threadMax = sd::math::sd_max<AccT>(threadMax, score);
  }
 
- // Reduce max across threads — __shfl_down_sync works for float/double/half
+ // Reduce max across threads.
  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-   threadMax = sd::math::sd_max<T>(threadMax, __shfl_down_sync(0xffffffff, threadMax, offset));
+   threadMax = sd::math::sd_max<AccT>(threadMax, __shfl_down_sync(0xffffffff, threadMax, offset));
  }
  if (threadIdx.x % WARP_SIZE == 0) {
    sharedMax[threadIdx.x / WARP_SIZE] = threadMax;
@@ -587,11 +609,11 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedAttentionWithScores3DKernel(
  __syncthreads();
 
  // First warp reduces across all warps
- T globalMax = -DataTypeUtils::infOrMax<T>();
+ AccT globalMax = -DataTypeUtils::infOrMax<AccT>();
  if (threadIdx.x < 32) {
-   T val = (threadIdx.x < blockDim.x / WARP_SIZE) ? sharedMax[threadIdx.x] : -DataTypeUtils::infOrMax<T>();
+   AccT val = (threadIdx.x < blockDim.x / WARP_SIZE) ? sharedMax[threadIdx.x] : -DataTypeUtils::infOrMax<AccT>();
    for (int offset = 16; offset > 0; offset /= 2) {
-     val = sd::math::sd_max<T>(val, __shfl_down_sync(0xffffffff, val, offset));
+     val = sd::math::sd_max<AccT>(val, __shfl_down_sync(0xffffffff, val, offset));
    }
    if (threadIdx.x == 0) {
      sharedMax[0] = val;
@@ -600,30 +622,30 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedAttentionWithScores3DKernel(
  __syncthreads();
  globalMax = sharedMax[0];
 
- // Step 2: Compute exp(score - max) and sum, also write scores — in T
- T threadSum = static_cast<T>(0);
+ // Step 2: Compute exp(score - max) and sum, also write scores.
+ AccT threadSum = static_cast<AccT>(0);
  for (LongType k = threadIdx.x; k < seqKV; k += blockDim.x) {
-   T score;
+   AccT score;
    if (logitsRow != nullptr) {
-     score = logitsRow[k];
+     score = static_cast<AccT>(logitsRow[k]);
    } else if (k < maxKV) {
      // Recompute score if logits not stored
      const T* Krow = K + k * dim;
-     score = static_cast<T>(0);
+     score = static_cast<AccT>(0);
      for (LongType d = 0; d < dim; d++) {
-       score += Q[d] * Krow[d];
+       score += static_cast<AccT>(Q[d]) * static_cast<AccT>(Krow[d]);
      }
-     score *= static_cast<T>(scale);
+     score *= static_cast<AccT>(scale);
    } else {
-     score = -DataTypeUtils::infOrMax<T>();
+     score = -DataTypeUtils::infOrMax<AccT>();
    }
 
-   T expScore = sd::math::sd_exp<T,T>(score - globalMax);
+   AccT expScore = flashExp<AccT>(score - globalMax);
    threadSum += expScore;
 
    // Temporarily store exp score (will normalize after we have sum)
    if (scoresRow != nullptr) {
-     scoresRow[k] = expScore;
+     scoresRow[k] = static_cast<T>(expScore);
    }
  }
 
@@ -636,9 +658,9 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedAttentionWithScores3DKernel(
  }
  __syncthreads();
 
- T globalSum = static_cast<T>(0);
+ AccT globalSum = static_cast<AccT>(0);
  if (threadIdx.x < 32) {
-   T val = (threadIdx.x < blockDim.x / WARP_SIZE) ? sharedSum[threadIdx.x] : static_cast<T>(0);
+   AccT val = (threadIdx.x < blockDim.x / WARP_SIZE) ? sharedSum[threadIdx.x] : static_cast<AccT>(0);
    for (int offset = 16; offset > 0; offset /= 2) {
      val += __shfl_down_sync(0xffffffff, val, offset);
    }
@@ -648,12 +670,12 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedAttentionWithScores3DKernel(
  }
  __syncthreads();
  globalSum = sharedSum[0];
- T invSum = (globalSum > static_cast<T>(0)) ? (static_cast<T>(1) / globalSum) : static_cast<T>(0);
+ AccT invSum = (globalSum > static_cast<AccT>(0)) ? (static_cast<AccT>(1) / globalSum) : static_cast<AccT>(0);
 
- // Step 3: Normalize scores (write to scoresRow if needed) — in T
+ // Step 3: Normalize scores (write to scoresRow if needed).
  if (scoresRow != nullptr) {
    for (LongType k = threadIdx.x; k < seqKV; k += blockDim.x) {
-     scoresRow[k] *= invSum;
+     scoresRow[k] = static_cast<T>(static_cast<AccT>(scoresRow[k]) * invSum);
    }
  }
  __syncthreads();
@@ -661,29 +683,29 @@ SD_KERNEL __launch_bounds__(256, 2) void fusedAttentionWithScores3DKernel(
  // Step 4: Compute output - each thread handles a subset of output dimensions
  // This avoids atomicAdd contention by having each thread own its dimensions
  for (int d = threadIdx.x; d < dim; d += blockDim.x) {
-   T acc = static_cast<T>(0);
+   AccT acc = static_cast<AccT>(0);
    for (LongType k = 0; k < seqKV; k++) {
-     T attnWeight;
+     AccT attnWeight;
      if (scoresRow != nullptr) {
-       attnWeight = scoresRow[k];
+       attnWeight = static_cast<AccT>(scoresRow[k]);
      } else if (logitsRow != nullptr) {
-       T score = logitsRow[k];
-       attnWeight = sd::math::sd_exp<T,T>(score - globalMax) * invSum;
+       AccT score = static_cast<AccT>(logitsRow[k]);
+       attnWeight = flashExp<AccT>(score - globalMax) * invSum;
      } else if (k < maxKV) {
        // Recompute score
        const T* Krow = K + k * dim;
-       T score = static_cast<T>(0);
+       AccT score = static_cast<AccT>(0);
        for (LongType dd = 0; dd < dim; dd++) {
-         score += Q[dd] * Krow[dd];
+         score += static_cast<AccT>(Q[dd]) * static_cast<AccT>(Krow[dd]);
        }
-       score *= static_cast<T>(scale);
-       attnWeight = sd::math::sd_exp<T,T>(score - globalMax) * invSum;
+       score *= static_cast<AccT>(scale);
+       attnWeight = flashExp<AccT>(score - globalMax) * invSum;
      } else {
-       attnWeight = static_cast<T>(0);
+       attnWeight = static_cast<AccT>(0);
      }
-     acc += attnWeight * V[k * dim + d];
+     acc += attnWeight * static_cast<AccT>(V[k * dim + d]);
    }
-   O[d] = acc;
+   O[d] = static_cast<T>(acc);
  }
 }
 
@@ -710,8 +732,8 @@ void launchFusedAttention3DWithScores(
  dim3 grid(seqQ, batch);
  dim3 block(256);
 
- // Shared memory: max array + sum array — T-typed for precision
- size_t sharedMem = 32 * sizeof(T) + 32 * sizeof(T);
+ using AccT = typename FlashAccType<T>::type;
+ size_t sharedMem = 32 * sizeof(AccT) + 32 * sizeof(AccT);
 
  fusedAttentionWithScores3DKernel<T><<<grid, block, sharedMem, stream>>>(
      query, key, value, output, attentionLogits, attentionScores,
@@ -780,12 +802,12 @@ void launchFusedAttention3D(
  if (seqKV < 64 && dim < 128) blockSize = 256;  // Smaller blocks for tiny inputs
  dim3 block(blockSize);
 
- // Shared memory layout (all T-typed):
- // [TILE_SIZE_KV * sizeof(T)] sharedScores
- // [dim * sizeof(T)]           sharedOutput
- // [32 * sizeof(T)]            warpMaxesBuf
- // [32 * sizeof(T)]            warpSumsBuf
- size_t sharedMem = (TILE_SIZE_KV + dim + 64) * sizeof(T);
+ // Dynamic shared memory holds AccT tile scores/output; reduction staging is static
+ // shared AccT inside the kernel.
+ // [TILE_SIZE_KV * sizeof(AccT)] sharedScores
+ // [dim * sizeof(AccT)]          sharedOutput
+ using AccT = typename FlashAccType<T>::type;
+ size_t sharedMem = (TILE_SIZE_KV + dim) * sizeof(AccT);
 
  fusedAttention3DKernel<T><<<grid, block, sharedMem, stream>>>(
      query, key, value, attnBias, output,
@@ -927,6 +949,8 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    const LongType biasStride2,
    const LongType biasStride3) {
 
+ using AccT = typename FlashAccType<T>::type;
+
  const LongType qHead = blockIdx.x;
  const LongType batchIdx = blockIdx.y;
  if (batchIdx >= batch || qHead >= numQHeads) return;
@@ -934,9 +958,10 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
  const LongType kvHead = qHead / headsPerKvHead;
 
  // Shared memory layout: scores tile [TILE_SIZE_KV] + output accumulator [headDim]
+ // in accumulator precision.
  extern __shared__ char sharedMem[];
- T* sharedScores = reinterpret_cast<T*>(sharedMem);
- T* sharedOutput = sharedScores + TILE_SIZE_KV;
+ AccT* sharedScores = reinterpret_cast<AccT*>(sharedMem);
+ AccT* sharedOutput = sharedScores + TILE_SIZE_KV;
 
  // Q pointer: query[batchIdx, 0, qHead, :] — stride-based indexing
  const T* Q = query + batchIdx * qStride0 + qHead * qStride2;
@@ -955,16 +980,16 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
  }
 
  // Online softmax state (block-wide via shared memory)
- __shared__ float globalMax;
- __shared__ float globalSum;
+ __shared__ AccT globalMax;
+ __shared__ AccT globalSum;
  if (threadIdx.x == 0) {
-   globalMax = -INFINITY;
-   globalSum = 0.0f;
+   globalMax = -DataTypeUtils::infOrMax<AccT>();
+   globalSum = static_cast<AccT>(0);
  }
 
  // Initialize output accumulator
  for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-   sharedOutput[d] = static_cast<T>(0);
+   sharedOutput[d] = static_cast<AccT>(0);
  }
  __syncthreads();
 
@@ -982,32 +1007,32 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
      // K[batchIdx, kvIdx, kvHead, d] — use stride-based offset
      const T* Krow = Kbase + kvIdx * kStride1;
 
-     float score = 0.0f;
+     AccT score = static_cast<AccT>(0);
      for (LongType d = 0; d < headDim; d++) {
-       score += static_cast<float>(Q[d * qStride3]) * static_cast<float>(Krow[d * kStride3]);
+       score += static_cast<AccT>(Q[d * qStride3]) * static_cast<AccT>(Krow[d * kStride3]);
      }
-     score *= scale;
+     score *= static_cast<AccT>(scale);
 
      if (biasRow != nullptr) {
-       score += static_cast<float>(biasRow[kvIdx * biasStride3]);
+       score += static_cast<AccT>(biasRow[kvIdx * biasStride3]);
      }
 
-     sharedScores[k] = static_cast<T>(score);
+     sharedScores[k] = score;
    }
    __syncthreads();
 
    // Step 2: Find max in this tile
-   float tileMax = -INFINITY;
+   AccT tileMax = -DataTypeUtils::infOrMax<AccT>();
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-     tileMax = fmaxf(tileMax, static_cast<float>(sharedScores[k]));
+     tileMax = sd::math::sd_max<AccT>(tileMax, sharedScores[k]);
    }
 
    // Warp reduce max
    for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-     tileMax = fmaxf(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
+     tileMax = sd::math::sd_max<AccT>(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
    }
 
-   __shared__ float warpMaxes[32];
+   __shared__ AccT warpMaxes[32];
    if (threadIdx.x % WARP_SIZE == 0) {
      warpMaxes[threadIdx.x / WARP_SIZE] = tileMax;
    }
@@ -1016,23 +1041,23 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    if (threadIdx.x < blockDim.x / WARP_SIZE) {
      tileMax = warpMaxes[threadIdx.x];
    } else {
-     tileMax = -INFINITY;
+     tileMax = -DataTypeUtils::infOrMax<AccT>();
    }
    for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-     tileMax = fmaxf(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
+     tileMax = sd::math::sd_max<AccT>(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
    }
 
-   __shared__ float newMax;
+   __shared__ AccT newMax;
    if (threadIdx.x == 0) {
-     newMax = fmaxf(globalMax, tileMax);
+     newMax = sd::math::sd_max<AccT>(globalMax, tileMax);
    }
    __syncthreads();
 
    // Step 3: Rescale previous output accumulator if max changed
    if (newMax > globalMax) {
-     float rescale = sd_fast_exp(globalMax - newMax);
+     AccT rescale = flashExp<AccT>(globalMax - newMax);
      for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-       sharedOutput[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) * rescale);
+       sharedOutput[d] *= rescale;
      }
      if (threadIdx.x == 0) {
        globalSum *= rescale;
@@ -1042,11 +1067,10 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    __syncthreads();
 
    // Step 4: Compute exp(score - max) and accumulate sum
-   float tileSum = 0.0f;
+   AccT tileSum = static_cast<AccT>(0);
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-     float score = static_cast<float>(sharedScores[k]);
-     float expScore = sd_fast_exp(score - globalMax);
-     sharedScores[k] = static_cast<T>(expScore);
+     AccT expScore = flashExp<AccT>(sharedScores[k] - globalMax);
+     sharedScores[k] = expScore;
      tileSum += expScore;
    }
 
@@ -1055,7 +1079,7 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
      tileSum += __shfl_down_sync(0xffffffff, tileSum, offset);
    }
 
-   __shared__ float warpSums[32];
+   __shared__ AccT warpSums[32];
    if (threadIdx.x % WARP_SIZE == 0) {
      warpSums[threadIdx.x / WARP_SIZE] = tileSum;
    }
@@ -1064,7 +1088,7 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    if (threadIdx.x < blockDim.x / WARP_SIZE) {
      tileSum = warpSums[threadIdx.x];
    } else {
-     tileSum = 0.0f;
+     tileSum = static_cast<AccT>(0);
    }
    for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
      tileSum += __shfl_down_sync(0xffffffff, tileSum, offset);
@@ -1077,13 +1101,13 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
 
    // Step 5: Accumulate weighted V — each thread owns a subset of output dims
    for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-     float acc = 0.0f;
+     AccT acc = static_cast<AccT>(0);
      for (int k = 0; k < tileSize; k++) {
        const LongType kvIdx = kvStart + k;
        // V[batchIdx, kvIdx, kvHead, d] — use stride-based offset
-       acc += static_cast<float>(sharedScores[k]) * static_cast<float>(Vbase[kvIdx * vStride1 + d * vStride3]);
+       acc += sharedScores[k] * static_cast<AccT>(Vbase[kvIdx * vStride1 + d * vStride3]);
      }
-     sharedOutput[d] = static_cast<T>(static_cast<float>(sharedOutput[d]) + acc);
+     sharedOutput[d] += acc;
    }
    __syncthreads();
  }
@@ -1091,9 +1115,9 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
  // Step 6: Normalize by sum and write output
  // Guard against globalSum == 0 (all positions masked → exp sums to 0).
  // Output zeros when nothing is attended to, matching PyTorch behavior.
- float invSum = (globalSum > 0.0f) ? (1.0f / globalSum) : 0.0f;
+ AccT invSum = (globalSum > static_cast<AccT>(0)) ? (static_cast<AccT>(1) / globalSum) : static_cast<AccT>(0);
  for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-   O[d * oStride3] = static_cast<T>(static_cast<float>(sharedOutput[d]) * invSum);
+   O[d * oStride3] = static_cast<T>(sharedOutput[d] * invSum);
  }
 }
 
@@ -1125,8 +1149,10 @@ static void fusedGQADecodeLauncher(
  dim3 grid(numQHeads, batch);
  dim3 block(threadsPerBlock);
 
- // Shared memory: scores tile + output accumulator + warp reduction arrays
- size_t smem = (TILE_SIZE_KV + headDim) * sizeof(T) + 64 * sizeof(float);
+ using AccT = typename FlashAccType<T>::type;
+ size_t smem = sharedMem > 0
+     ? static_cast<size_t>(sharedMem)
+     : static_cast<size_t>(TILE_SIZE_KV + headDim) * sizeof(AccT);
 
  fusedGQADecodeKernel<T><<<grid, block, smem, *stream>>>(
      query, key, value, attnBias, output,
