@@ -88,12 +88,10 @@ public class TestSmolDoclingOptimizedPipeline {
 
     // ─── Configuration matrix: performance-focused configs ──────────────────
     //
-    // BEST CURRENT DEFAULT: compileAll + COMPILE_ALL_TYPES + ATTENTION + GC + argOpt
-    // + dirty tracking + batched GEMM + warps2/stages1.
-    // Batch-zero still regresses decode step 2 badly in SmolDocling
-    // (see TRITON_compileAll_best_ATTN_gc_argOpt_batchOps diagnostic config below).
-    // CUDA_GRAPHS baseline (no Triton) -> 11.40 tok/s (40 tok/s steady)
-    // SLOT_BY_SLOT baseline -> 5.62 tok/s
+    // BEST CURRENT DEFAULT: OPTIMAL / SMOLDOC_IDEAL. Both use compileAll +
+    // CONST_GEN,GATHER,GATHER_ND,CONCAT,SPLIT,SPLIT_V,STACK,STRIDED_SLICE,
+    // NORMALIZATION,ATTENTION,REDUCTION + CUDA graph replay + arg table opts +
+    // dirty tracking + batched GEMM + warps4/stages1.
     //
     // NEVER compile MATMUL (cuBLAS 2.8x faster), NEVER include SPLIT/CONCAT without compileAll
     // Flash attention (+ATTENTION) gives +30% decode speed with CUDA graph capture
@@ -118,6 +116,33 @@ public class TestSmolDoclingOptimizedPipeline {
     private static final String COMPILE_ALL_TYPES_WITH_NORM_AND_MATMUL =
             COMPILE_ALL_TYPES_WITH_NORM + ",MATMUL";
 
+    private static final String[] SMOLDOC_IDEAL_EXPECTED_SUBSTRINGS = {
+            "ythic heroes",
+            "mythic characters",
+            "mythic paths"
+    };
+
+    private static final String DEFAULT_LLM_TRITON_INCLUDE_TYPES =
+            "CONST_GEN,GATHER,GATHER_ND,CONCAT,SPLIT,SPLIT_V,STACK,STRIDED_SLICE,NORMALIZATION,ATTENTION,REDUCTION";
+
+    private static BenchmarkConfig smolDoclingIdealConfig() {
+        return BenchmarkConfig.create("SMOLDOC_IDEAL")
+                .tritonIncludeTypes(DEFAULT_LLM_TRITON_INCLUDE_TYPES)
+                .tritonSectionFusion(true)
+                .tritonCompileAll(true)
+                .tritonGraphCapture(true).tritonAllowFallbackCapture(false)
+                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                .tritonFusionScoring(false)
+                .tritonMergedCaptureThroughViews(true)
+                .tritonNumWarps(4).tritonNumStages(1)
+                .cublasTf32(true).tritonTf32(true)
+                .dspBatchedGemm(true)
+                .dspFreezeMergeSegments(true)
+                .maxTokens(250)
+                .minDiversityPct(0)
+                .expectedSubstrings(SMOLDOC_IDEAL_EXPECTED_SUBSTRINGS);
+    }
+
     private static List<BenchmarkConfig> getAllConfigs() {
         boolean triton = Nd4j.getNativeOps().isTritonAvailable();
         List<BenchmarkConfig> configs = new ArrayList<>();
@@ -125,6 +150,7 @@ public class TestSmolDoclingOptimizedPipeline {
         // Core configs: OPTIMAL (Triton) and SLOT_BY_SLOT (cuBLAS baseline).
         if (triton) {
             configs.add(BenchmarkConfig.optimal());
+            configs.add(smolDoclingIdealConfig());
             // DIAG_TIMING mirrors OPTIMAL but enables per-step native timing instrumentation.
             // Use with: -Dvlm.test.configs=DIAG_TIMING
             // Output: COMPOSITE_REPLAY_TIMING lines with prezero/units/actTick breakdown per step.
@@ -916,9 +942,26 @@ public class TestSmolDoclingOptimizedPipeline {
             double uniqueRatio = (double) uniqueTokens.size() / tokenIds.length;
             log.info("  Token diversity: {}/{} unique ({}%)",
                     uniqueTokens.size(), tokenIds.length, String.format("%.1f", uniqueRatio * 100));
-            assertTrue(uniqueRatio > config.getMinDiversityPct() / 100.0,
-                    name + ": degenerate output: " + uniqueTokens.size() + "/" + tokenIds.length +
-                            " unique (min " + config.getMinDiversityPct() + "%)");
+            if (config.getMinDiversityPct() > 0) {
+                assertTrue(uniqueRatio > config.getMinDiversityPct() / 100.0,
+                        name + ": degenerate output: " + uniqueTokens.size() + "/" + tokenIds.length +
+                                " unique (min " + config.getMinDiversityPct() + "%)");
+            }
+        }
+
+        String[] expectedSubstrings = config.getExpectedSubstrings();
+        if (expectedSubstrings != null && expectedSubstrings.length > 0) {
+            String lowerText = result.getText().toLowerCase(Locale.ROOT);
+            List<String> missing = new ArrayList<>();
+            for (String expected : expectedSubstrings) {
+                if (expected == null || expected.isBlank()) continue;
+                if (!lowerText.contains(expected.toLowerCase(Locale.ROOT))) {
+                    missing.add(expected);
+                }
+            }
+            assertTrue(missing.isEmpty(),
+                    name + ": generated text is not the expected coherent mythic-heroes passage. Missing "
+                            + missing + ". Text: " + trimmed.substring(0, Math.min(500, trimmed.length())));
         }
 
         if (result.getGeneratedTokenCount() >= 5) {
@@ -926,7 +969,7 @@ public class TestSmolDoclingOptimizedPipeline {
                     name + ": throughput too low: " +
                             String.format("%.2f", result.getTokensPerSecond()) + " tok/s");
         }
-        if ("OPTIMAL".equals(name) && result.getGeneratedTokenCount() >= 20) {
+        if (("OPTIMAL".equals(name) || "SMOLDOC_IDEAL".equals(name)) && result.getGeneratedTokenCount() >= 20) {
             double effectiveThroughput = effectiveThroughput(result);
             String throughputLabel = effectiveThroughputLabel(result);
             // Minimum throughput: 55 tok/s late steady-state. Current baseline ~59-65 tok/s.

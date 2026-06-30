@@ -1531,72 +1531,61 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
     // ============== LLM Benchmark Config Presets ==============
 
     /**
-     * Apply the optimal configuration for LLM workloads (inference, training,
+     * Apply the optimal configuration for LLM workloads (inference,
      * embedding, and other GPU-accelerated workflows).
      *
      * Sets Triton compilation flags, cuBLAS TF32, DSP batch optimizations,
      * section fusion, graph capture, and consolidated arg table.
-     * Matches BenchmarkConfig.optimal() from samediff-llm (~86 tok/s on RTX 4090).
-     *
-     * This is the recommended default for any LLM execution.
+     * GenerationPipeline applies this profile automatically when no explicit
+     * benchmark config is supplied. This method remains useful as an explicit
+     * reset hook after tests or tools intentionally modify environment flags.
      *
      * @see org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig#optimal()
      */
     default void applyOptimalLLMConfig() {
-        // ── Reset ALL Triton/DSP flags to clean state ──
-        // Mirrors BenchmarkConfigApplier.apply() reset block exactly
-        setTritonGraphCapture(false);
-        setTritonSectionFusion(false);
-        setTritonConsolidatedArgTable(false);
-        setTritonArgDirtyTracking(false);
+        // Reset diagnostic/debug toggles first, then apply the explicit LLM
+        // execution profile. This is not a native process-wide default; it is
+        // the profile GenerationPipeline selects when the caller does not pass
+        // a benchmark config.
         setTritonSkipKernels(false);
         setTritonVerifyKernels(false);
         setTritonVerifyKeepNative(false);
         setTritonVerifyFullSnapshot(false);
         setTritonForceRecapture(false);
-        setTritonIncludeTypes("");
         setTritonCaptureMinExec(1);
-        setTritonCompileAll(false);
         setTritonExcludeOps("");
         setTritonCooperativeLaunch(false);
         setTritonVerbose(false);
         setTritonDumpSections(false);
         setTritonDumpArgs(false);
         setTritonDumpGraphDot(false);
-        setTritonAllowFallbackCapture(false);
-        setTritonMergedCaptureThroughViews(false);
         setDspBatchZero(false);
         setDspBatchZeroKernel(false);
-        setDspBatchedGemm(false);
         setDspCastSinkMatmul(false);
         setDspFp16Compute(false);
         setDspCastElimination(false);
 
-        // ── BALANCED profile baseline (same as BenchmarkConfigApplier.applyTritonProfile("BALANCED")) ──
         setTritonCacheEnabled(true);
         setTritonAlwaysCompile(false);
         setTritonDisableLineInfo(true);
         setTritonBuildThreads(4);
-        setTritonNumWarps(8);
-        setTritonNumStages(2);
+        setTritonModuleResidencyBudgetBytes(536870912L);
         setTritonNumCTAs(1);
         setTritonEnableFpFusion(true);
 
-        // ── Segment fusion optimization flags (all ON by default for optimal performance) ──
         setTritonFuseIdentityShapes(true);
         setTritonFuseCastChains(true);
         setTritonSpecializePermuteSeq1(true);
         setTritonFuseAttentionNeighborhoods(true);
         setTritonFusedMatmul(false);  // HIGH RISK — disabled by default
 
-        // ── Optimal overrides (matches BenchmarkConfig.optimal() exactly) ──
         // NEVER compile MATMUL (cuBLAS 2.8x faster)
         // Flash attention (+ATTENTION) gives +30% decode speed with CUDA graph capture
-        setTritonIncludeTypes("CONST_GEN,GATHER,GATHER_ND,CONCAT,SPLIT,SPLIT_V,STACK,STRIDED_SLICE,NORMALIZATION,ATTENTION,REDUCTION");
+        setTritonIncludeTypes(TritonEnvironmentConfig.DEFAULT_LLM_TRITON_INCLUDE_TYPES);
         setTritonSectionFusion(true);
         setTritonCompileAll(true);
         setTritonGraphCapture(true);
-        setTritonAllowFallbackCapture(true);
+        setTritonAllowFallbackCapture(false);
         setTritonConsolidatedArgTable(true);
         setTritonArgDirtyTracking(true);
         setTritonFusionScoring(false);
@@ -1606,6 +1595,9 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
         setCublasTf32Enabled(true);
         setTritonTf32Enabled(true);
         setDspBatchedGemm(true);
+        setDspFreezeMergeSegments(true);
+        setDspFreezeRecompile(false);
+        setCublasCaptureWorkspace(true);
     }
 
     /**

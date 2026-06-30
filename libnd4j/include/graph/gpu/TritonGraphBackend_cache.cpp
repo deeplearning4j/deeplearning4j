@@ -24,6 +24,7 @@
 #include <graph/gpu/TritonGraphBackend_internal.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <graph/DspDiagnostics.h>
+#include <build_info.h>
 #include <system/Environment.h>
 #include <helpers/logger.h>
 
@@ -112,6 +113,12 @@ std::string TritonGraphBackend::computeDiskCacheHash(const std::string& ttirText
                                                      int numWarps, int numStages) const {
   auto& env = sd::Environment::getInstance();
   uint64_t hash = FNV1A64_OFFSET_BASIS;
+  static constexpr const char* TRITON_DISK_CACHE_ABI = "triton-disk-cache-v2";
+  mixFNV1a(hash, TRITON_DISK_CACHE_ABI, std::strlen(TRITON_DISK_CACHE_ABI));
+  const char* nativeBuildInfo = buildInfo();
+  if (nativeBuildInfo != nullptr) {
+    mixFNV1a(hash, nativeBuildInfo, std::strlen(nativeBuildInfo));
+  }
   // NOTE: startSlot/endSlot and segmentShapeKey are intentionally EXCLUDED from
   // the disk cache hash.  Slot numbers are plan-lifetime-specific; the same
   // kernel ops get different slot assignments when a plan is destroyed and
@@ -371,6 +378,14 @@ void TritonGraphBackend::writeBinaryToDiskCache(int startSlot, int endSlot,
   }
 
   std::ostringstream meta;
+  meta << "cacheAbi=triton-disk-cache-v2\n";
+  const char* nativeBuildInfo = buildInfo();
+  uint64_t nativeBuildHash = FNV1A64_OFFSET_BASIS;
+  if (nativeBuildInfo != nullptr) {
+    mixFNV1a(nativeBuildHash, nativeBuildInfo, std::strlen(nativeBuildInfo));
+  }
+  meta << "nativeBuildInfoHash=" << std::hex << std::setw(16) << std::setfill('0')
+       << nativeBuildHash << std::dec << std::setfill(' ') << "\n";
   meta << "targetArch=" << binary.targetArch << "\n";
   meta << "numWarps=" << binary.numWarps << "\n";
   meta << "sharedMemBytes=" << binary.sharedMemBytes << "\n";

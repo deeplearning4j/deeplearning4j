@@ -26,6 +26,8 @@ package org.nd4j.linalg.factory.config;
  * so CPU-only backends need not implement them.</p>
  */
 public interface TritonEnvironmentConfig {
+    String DEFAULT_LLM_TRITON_INCLUDE_TYPES =
+            "CONST_GEN,GATHER,GATHER_ND,CONCAT,SPLIT,SPLIT_V,STACK,STRIDED_SLICE,NORMALIZATION,ATTENTION,REDUCTION";
 
     // Build settings
     default int tritonBuildThreads() { return 8; }

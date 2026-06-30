@@ -1288,6 +1288,12 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto rangeM = builder.create<mlir::triton::MakeRangeOp>(loc, i32BmType, 0, blockM);
   auto rangeN = builder.create<mlir::triton::MakeRangeOp>(loc, i32BnType, 0, blockN);
   auto rangeHd = builder.create<mlir::triton::MakeRangeOp>(loc, i32HdType, 0, headDimPadded);
+  mlir::Value rangeHdForPtr = rangeHd;
+  if (needsHdMask) {
+    auto headDimMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, headDim - 1), 32);
+    auto headDimMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32HdType, headDimMinus1);
+    rangeHdForPtr = builder.create<mlir::arith::MinSIOp>(loc, rangeHd, headDimMinus1Splat);
+  }
 
   auto splatQOffset = builder.create<mlir::triton::SplatOp>(loc, i32BmType, qOffset);
   auto qIndices = builder.create<mlir::arith::AddIOp>(loc, splatQOffset, rangeM);
@@ -1364,13 +1370,13 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   }
 
   // Load Q tile [BLOCK_M, headDim]
-  // Q pointer offsets: qBase + qIndicesClamped[:, None] * headDim + rangeHd[None, :]
+  // Q pointer offsets: qBase + qIndicesClamped[:, None] * headDim + clamped(rangeHd)[None, :]
   // Clamp Q indices for pointer computation (same rationale as K clamping above).
   auto seqQMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, seqQ - 1), 32);
   auto seqQMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32BmType, seqQMinus1);
   auto qIndicesClamped = builder.create<mlir::arith::MinSIOp>(loc, qIndices, seqQMinus1Splat);
   auto qMExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndicesClamped, 1);  // [BM, 1]
-  auto hdExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHd, 0);   // [1, HD]
+  auto hdExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHdForPtr, 0);   // [1, HD]
 
   auto i32BmHdType = mlir::RankedTensorType::get({blockM, headDimPadded}, i32Type);
   auto f32BmHdType = mlir::RankedTensorType::get({blockM, headDimPadded}, f32Type);
@@ -1464,7 +1470,7 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   // Load K tile [BLOCK_N, headDim]
   // Use clamped indices for pointer computation, original for mask
   auto kNExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndicesClamped, 1);  // [BN, 1]
-  auto hdExpandedK = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHd, 0);  // [1, HD]
+  auto hdExpandedK = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHdForPtr, 0);  // [1, HD]
 
   auto i32BnHdType = mlir::RankedTensorType::get({blockN, headDimPadded}, i32Type);
   auto f32BnHdType = mlir::RankedTensorType::get({blockN, headDimPadded}, f32Type);
@@ -1916,6 +1922,12 @@ void TritonIRBuilder::emitPresentKvWrite(mlir::OpBuilder& builder, mlir::Locatio
   // Range over headDim (columns)
   auto i32HdType = mlir::RankedTensorType::get({headDimPadded}, i32Type);
   auto rangeHd = builder.create<mlir::triton::MakeRangeOp>(loc, i32HdType, 0, headDimPadded);
+  mlir::Value rangeHdForPtr = rangeHd;
+  if (needsHdMask) {
+    auto headDimMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, headDim - 1), 32);
+    auto headDimMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32HdType, headDimMinus1);
+    rangeHdForPtr = builder.create<mlir::arith::MinSIOp>(loc, rangeHd, headDimMinus1Splat);
+  }
 
   // headDim mask
   mlir::Value hdMask;
@@ -1944,7 +1956,7 @@ void TritonIRBuilder::emitPresentKvWrite(mlir::OpBuilder& builder, mlir::Locatio
       builder.create<mlir::arith::AddIOp>(loc, srcSeqOff, srcHeadOff));
 
   auto srcBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32HdType, srcBase);
-  auto srcOffsets = builder.create<mlir::arith::AddIOp>(loc, srcBaseSplat, rangeHd);
+  auto srcOffsets = builder.create<mlir::arith::AddIOp>(loc, srcBaseSplat, rangeHdForPtr);
 
   auto curPtrType = mlir::cast<mlir::triton::PointerType>(curPtr.getType());
   auto srcPtrTensorType = mlir::RankedTensorType::get({headDimPadded}, curPtrType);
@@ -1977,7 +1989,7 @@ void TritonIRBuilder::emitPresentKvWrite(mlir::OpBuilder& builder, mlir::Locatio
       builder.create<mlir::arith::AddIOp>(loc, dstHeadOff, dstSeqOff));
 
   auto dstBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32HdType, dstBase);
-  auto dstOffsets = builder.create<mlir::arith::AddIOp>(loc, dstBaseSplat, rangeHd);
+  auto dstOffsets = builder.create<mlir::arith::AddIOp>(loc, dstBaseSplat, rangeHdForPtr);
 
   auto presentPtrType = mlir::cast<mlir::triton::PointerType>(presentPtr.getType());
   auto dstPtrTensorType = mlir::RankedTensorType::get({headDimPadded}, presentPtrType);
@@ -2128,9 +2140,18 @@ void TritonIRBuilder::emitFusedAttentionBackwardKernel(
   auto rangeM   = builder.create<mlir::triton::MakeRangeOp>(loc, i32BmType, 0, blockM);
   auto rangeN   = builder.create<mlir::triton::MakeRangeOp>(loc, i32BnType, 0, blockN);
   auto rangeHd  = builder.create<mlir::triton::MakeRangeOp>(loc, i32HdType, 0, headDimPadded);
+  mlir::Value rangeHdForPtr = rangeHd;
+  if (needsHdMask) {
+    auto headDimMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, headDim - 1), 32);
+    auto headDimMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32HdType, headDimMinus1);
+    rangeHdForPtr = builder.create<mlir::arith::MinSIOp>(loc, rangeHd, headDimMinus1Splat);
+  }
 
   auto splatQStart = builder.create<mlir::triton::SplatOp>(loc, i32BmType, qTileStart);
   auto qIndices    = builder.create<mlir::arith::AddIOp>(loc, splatQStart, rangeM);
+  auto seqQMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, seqQ - 1), 32);
+  auto seqQMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32BmType, seqQMinus1);
+  auto qIndicesClamped = builder.create<mlir::arith::MinSIOp>(loc, qIndices, seqQMinus1Splat);
 
   // qMask1D: qIndices < seqQ
   auto seqQSplat = builder.create<mlir::triton::SplatOp>(loc, i32BmType, seqQConst);
@@ -2153,8 +2174,8 @@ void TritonIRBuilder::emitFusedAttentionBackwardKernel(
   // Then add qBase splat → final flat offsets into the buffer.
 
   // ─ Q 2D offsets [BM, HD] ─
-  auto qMExp     = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndices, 1);   // [BM, 1]
-  auto hdExp0    = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHd, 0);    // [1, HD]
+  auto qMExp     = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndicesClamped, 1);   // [BM, 1]
+  auto hdExp0    = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHdForPtr, 0);    // [1, HD]
   auto rowSQ     = builder.create<mlir::triton::SplatOp>(loc, mlir::RankedTensorType::get({blockM, 1}, i32Type), rowStrideQ);
   auto qRowOff   = builder.create<mlir::arith::MulIOp>(loc, qMExp, rowSQ);
   auto qRowBcast = builder.create<mlir::triton::BroadcastOp>(loc, mlir::RankedTensorType::get({blockM, headDimPadded}, i32Type), qRowOff);
@@ -2221,7 +2242,7 @@ void TritonIRBuilder::emitFusedAttentionBackwardKernel(
   auto lseSplat   = builder.create<mlir::triton::SplatOp>(loc, lse1DPtrTT, lsePtr);
   auto lseBaseVal = lseBase;
   auto splatLseBase = builder.create<mlir::triton::SplatOp>(loc, i32BmType, lseBaseVal);
-  auto lseOffsets   = builder.create<mlir::arith::AddIOp>(loc, splatLseBase, qIndices);
+  auto lseOffsets   = builder.create<mlir::arith::AddIOp>(loc, splatLseBase, qIndicesClamped);
   auto lsePtrs      = builder.create<mlir::triton::AddPtrOp>(loc, lse1DPtrTT, lseSplat, lseOffsets);
   auto lseMask      = qMask1D;
   auto lseLoadedRaw = builder.create<mlir::triton::LoadOp>(loc, lsePtrs, lseMask, mlir::Value(),
@@ -2258,6 +2279,9 @@ void TritonIRBuilder::emitFusedAttentionBackwardKernel(
   // K-tile indices [BN]
   auto splatJ   = builder.create<mlir::triton::SplatOp>(loc, i32BnType, jIdx);
   auto kIndices = builder.create<mlir::arith::AddIOp>(loc, splatJ, rangeN);
+  auto seqKMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, seqK - 1), 32);
+  auto seqKMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, seqKMinus1);
+  auto kIndicesClamped = builder.create<mlir::arith::MinSIOp>(loc, kIndices, seqKMinus1Splat);
 
   // kMask1D: kIndices < seqK
   auto seqKSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, seqKConst);
@@ -2265,8 +2289,8 @@ void TritonIRBuilder::emitFusedAttentionBackwardKernel(
                                                          kIndices, seqKSplat);
 
   // K 2D offsets [BN, HD] into K buffer
-  auto kNExp    = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndices, 1);   // [BN, 1]
-  auto hdExpK   = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHd, 0);    // [1, HD]
+  auto kNExp    = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndicesClamped, 1);   // [BN, 1]
+  auto hdExpK   = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHdForPtr, 0);    // [1, HD]
   auto rowSK    = builder.create<mlir::triton::SplatOp>(loc,
                       mlir::RankedTensorType::get({blockN, 1}, i32Type), headDimConst);
   auto kRowOff  = builder.create<mlir::arith::MulIOp>(loc, kNExp, rowSK);

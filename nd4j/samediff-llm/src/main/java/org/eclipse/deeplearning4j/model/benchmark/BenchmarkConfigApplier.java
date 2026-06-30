@@ -70,8 +70,9 @@ public class BenchmarkConfigApplier {
         // different CUmodule/CUfunction handles. If stale CUmodule entries from
         // a prior config remain in the singleton TritonGraphBackend cache, CUDA
         // graph capture can reference invalidated CUfunction pointers, causing
-        // SIGSEGV on cudaGraphLaunch. The Triton disk cache (~/.nd4j/triton_cache/)
-        // is NOT affected — reloading modules from disk (cuModuleLoadDataEx) is fast.
+        // SIGSEGV on cudaGraphLaunch. The Triton disk cache
+        // (~/.kompile/cache/triton/ by default) is NOT affected — reloading modules
+        // from disk (cuModuleLoadDataEx) is fast.
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         if (nativeOps.isTritonAvailable()) {
             nativeOps.invalidateTritonCache();
@@ -105,7 +106,9 @@ public class BenchmarkConfigApplier {
                              org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor executor) {
         Environment env = Nd4j.getEnvironment();
 
-        // Reset ALL Triton flags to defaults
+        // Reset to a neutral baseline, then apply the explicit benchmark config.
+        // The process defaults are intentionally optimal; benchmark configs must
+        // still be isolated from whatever a prior test/config changed.
         env.setDspBatchZero(false);
         env.setDspBatchZeroKernel(false);
         env.setDspBatchedGemm(false);

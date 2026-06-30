@@ -4743,90 +4743,93 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     int seqK = std::max(1, sec.seqK);
     int headDim = std::max(1, sec.headDim);
 
-    // Recover dimensions from runtime shapes when section metadata is incomplete.
-    if (sec.batchSize <= 0 || sec.numHeads <= 0 || sec.seqQ <= 0 || sec.headDim <= 0) {
-      for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-        auto& slot = slots[si];
-        if (getOpCategory(slot.ident.opName) != TritonOpCategory::FUSED_ATTENTION ||
-            slot.wiring.numInputs < 1) {
-          continue;
-        }
-        // Detect DPA v2 (input order Q,V,K) vs standard (Q,K,V)
-        std::string opLowerGrid = slot.ident.opName;
-        std::transform(opLowerGrid.begin(), opLowerGrid.end(), opLowerGrid.begin(), ::tolower);
-        bool isDpaV2Grid = (opLowerGrid.find("dot_product_attention") != std::string::npos);
-        bool opUsesBSHDGrid = isDpaV2Grid;
-        // For DPA v2: input[1]=V, input[2]=K; resolve K for seqK
-        int kInputIdx = isDpaV2Grid ? 2 : 1;
-
-        auto qShape = resolveShape(slot.wiring.inputSourceIndices[0]);
-        if (qShape.size() >= 4) {
-          batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
-          if (opUsesBSHDGrid) {
-            // BSHD: [batch, seqQ, numHeads, headDim]
-            seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
-            numHeads = static_cast<int>(std::max<LongType>(1, qShape[2]));
-          } else {
-            // BHSD: [batch, numHeads, seqQ, headDim]
-            numHeads = static_cast<int>(std::max<LongType>(1, qShape[1]));
-            seqQ = static_cast<int>(std::max<LongType>(1, qShape[2]));
-          }
-          headDim = static_cast<int>(std::max<LongType>(1, qShape[3]));
-          if (slot.wiring.numInputs > kInputIdx) {
-            auto kShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
-            if (kShape.size() >= 3) {
-              // seqK is at dim[1] for BSHD, dim[2] for BHSD
-              int seqKDim = opUsesBSHDGrid ? 1 : 2;
-              if (static_cast<int>(kShape.size()) > seqKDim) {
-                seqK = static_cast<int>(std::max<LongType>(1, kShape[seqKDim]));
-              }
-            }
-          }
-        } else if (qShape.size() == 3) {
-          // 3D Q: [B, seqQ, H*D] — compound attention (onnx_multi_head_attention)
-          batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
-          seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
-          int hidden = static_cast<int>(std::max<LongType>(1, qShape[2]));
-          // numHeads from iArgs[0] (INT_ARG(0) in onnx_multi_head_attention)
-          numHeads = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
-          if (numHeads <= 0) numHeads = 1;
-          headDim = hidden / numHeads;
-
-          // Scan optional inputs for a real past_key tensor.
-          bool hasPastKvGrid = false;
-          for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKvGrid; inp++) {
-            auto candidateShape = resolveShape(slot.wiring.inputSourceIndices[inp]);
-            if (candidateShape.size() == 4) {
-              int candidateKvHeads = static_cast<int>(candidateShape[1]);
-              int candidatePastSeq = static_cast<int>(candidateShape[2]);
-              int candidateHeadDim = static_cast<int>(candidateShape[3]);
-              if (candidateShape[0] > 0 &&
-                  candidatePastSeq > 0 &&
-                  candidateHeadDim == headDim &&
-                  candidateKvHeads > 0 &&
-                  candidateKvHeads <= numHeads &&
-                  numHeads % candidateKvHeads == 0) {
-                hasPastKvGrid = true;
-                int seqKV = 1;
-                if (slot.wiring.numInputs > kInputIdx) {
-                  auto curKShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
-                  if (curKShape.size() == 3) {
-                    seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
-                  }
-                }
-                seqK = candidatePastSeq + seqKV;  // total sequence for attention
-              }
-            }
-          }
-          if (!hasPastKvGrid && slot.wiring.numInputs > kInputIdx) {
-            auto kShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
-            if (kShape.size() >= 2) {
-              seqK = static_cast<int>(std::max<LongType>(1, kShape[1]));
-            }
-          }
-        }
-        break;
+    // Fused attention launch geometry depends on the op's tensor layout.
+    // Prefer the actual Q/K input shapes over section metadata: the section
+    // scanner records generic dimensions, and DPA v2 uses BSHD
+    // [batch, seq, heads, dim] instead of BHSD. Trusting that metadata launched
+    // DPA v2 vision attention as grid=1024x1 for batch=1,heads=12, which lets
+    // program_id(0)=12 map to batchIdx=1 and read past the Q/K/V buffers.
+    for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+      auto& slot = slots[si];
+      if (getOpCategory(slot.ident.opName) != TritonOpCategory::FUSED_ATTENTION ||
+          slot.wiring.numInputs < 1) {
+        continue;
       }
+      // Detect DPA v2 (input order Q,V,K) vs standard (Q,K,V)
+      std::string opLowerGrid = slot.ident.opName;
+      std::transform(opLowerGrid.begin(), opLowerGrid.end(), opLowerGrid.begin(), ::tolower);
+      bool isDpaV2Grid = (opLowerGrid.find("dot_product_attention") != std::string::npos);
+      bool opUsesBSHDGrid = isDpaV2Grid;
+      // For DPA v2: input[1]=V, input[2]=K; resolve K for seqK
+      int kInputIdx = isDpaV2Grid ? 2 : 1;
+
+      auto qShape = resolveShape(slot.wiring.inputSourceIndices[0]);
+      if (qShape.size() >= 4) {
+        batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
+        if (opUsesBSHDGrid) {
+          // BSHD: [batch, seqQ, numHeads, headDim]
+          seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
+          numHeads = static_cast<int>(std::max<LongType>(1, qShape[2]));
+        } else {
+          // BHSD: [batch, numHeads, seqQ, headDim]
+          numHeads = static_cast<int>(std::max<LongType>(1, qShape[1]));
+          seqQ = static_cast<int>(std::max<LongType>(1, qShape[2]));
+        }
+        headDim = static_cast<int>(std::max<LongType>(1, qShape[3]));
+        if (slot.wiring.numInputs > kInputIdx) {
+          auto kShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
+          if (kShape.size() >= 3) {
+            // seqK is at dim[1] for BSHD, dim[2] for BHSD
+            int seqKDim = opUsesBSHDGrid ? 1 : 2;
+            if (static_cast<int>(kShape.size()) > seqKDim) {
+              seqK = static_cast<int>(std::max<LongType>(1, kShape[seqKDim]));
+            }
+          }
+        }
+      } else if (qShape.size() == 3) {
+        // 3D Q: [B, seqQ, H*D] — compound attention (onnx_multi_head_attention)
+        batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
+        seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
+        int hidden = static_cast<int>(std::max<LongType>(1, qShape[2]));
+        // numHeads from iArgs[0] (INT_ARG(0) in onnx_multi_head_attention)
+        numHeads = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 1;
+        if (numHeads <= 0) numHeads = 1;
+        headDim = hidden / numHeads;
+
+        // Scan optional inputs for a real past_key tensor.
+        bool hasPastKvGrid = false;
+        for (int inp = 3; inp < slot.wiring.numInputs && !hasPastKvGrid; inp++) {
+          auto candidateShape = resolveShape(slot.wiring.inputSourceIndices[inp]);
+          if (candidateShape.size() == 4) {
+            int candidateKvHeads = static_cast<int>(candidateShape[1]);
+            int candidatePastSeq = static_cast<int>(candidateShape[2]);
+            int candidateHeadDim = static_cast<int>(candidateShape[3]);
+            if (candidateShape[0] > 0 &&
+                candidatePastSeq > 0 &&
+                candidateHeadDim == headDim &&
+                candidateKvHeads > 0 &&
+                candidateKvHeads <= numHeads &&
+                numHeads % candidateKvHeads == 0) {
+              hasPastKvGrid = true;
+              int seqKV = 1;
+              if (slot.wiring.numInputs > kInputIdx) {
+                auto curKShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
+                if (curKShape.size() == 3) {
+                  seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
+                }
+              }
+              seqK = candidatePastSeq + seqKV;  // total sequence for attention
+            }
+          }
+        }
+        if (!hasPastKvGrid && slot.wiring.numInputs > kInputIdx) {
+          auto kShape = resolveShape(slot.wiring.inputSourceIndices[kInputIdx]);
+          if (kShape.size() >= 2) {
+            seqK = static_cast<int>(std::max<LongType>(1, kShape[1]));
+          }
+        }
+      }
+      break;
     }
 
     auto attnTile = chooseFusedAttentionTileConfig(

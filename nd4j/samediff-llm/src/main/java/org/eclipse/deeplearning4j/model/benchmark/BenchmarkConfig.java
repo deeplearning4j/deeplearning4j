@@ -38,6 +38,9 @@ import org.nd4j.common.config.ND4JSystemProperties;
 @Getter
 public class BenchmarkConfig {
 
+    private static final String DEFAULT_LLM_TRITON_INCLUDE_TYPES =
+            "CONST_GEN,GATHER,GATHER_ND,CONCAT,SPLIT,SPLIT_V,STACK,STRIDED_SLICE,NORMALIZATION,ATTENTION,REDUCTION";
+
     // Identity
     String name;
 
@@ -194,14 +197,14 @@ public class BenchmarkConfig {
 
     /**
      * Returns the best-known benchmark configuration for LLM decode.
-     * This is the single source of truth for optimal inference settings.
+     * Mirrors {@link org.nd4j.linalg.factory.Environment#applyOptimalLLMConfig()}.
      * Intended target: native DSP replay at or above 100 tok/s on the benchmark happy path.
      *
      * @see org.nd4j.linalg.factory.Environment#applyOptimalLLMConfig()
      */
     public static BenchmarkConfig optimal() {
         return create("OPTIMAL")
-                .tritonIncludeTypes("CONST_GEN,GATHER,GATHER_ND,CONCAT,SPLIT,SPLIT_V,STACK,STRIDED_SLICE,NORMALIZATION,ATTENTION,REDUCTION")
+                .tritonIncludeTypes(DEFAULT_LLM_TRITON_INCLUDE_TYPES)
                 .tritonSectionFusion(true)
                 .tritonCompileAll(true)
                 .tritonGraphCapture(true).tritonAllowFallbackCapture(false)

@@ -102,6 +102,8 @@
         <test.prefix></test.prefix>
         <nd4j.triton.verbose></nd4j.triton.verbose>
         <nd4j.triton.alwaysCompile></nd4j.triton.alwaysCompile>
+        <nd4j.triton.compileAll></nd4j.triton.compileAll>
+        <nd4j.triton.includeTypes></nd4j.triton.includeTypes>
         <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
         <test.asan.options></test.asan.options>
@@ -1666,6 +1668,8 @@
                         <ND4J_VERBOSE>${nd4j.verbose}</ND4J_VERBOSE>
                         <ND4J_TRITON_VERBOSE>${nd4j.triton.verbose}</ND4J_TRITON_VERBOSE>
                         <ND4J_TRITON_ALWAYS_COMPILE>${nd4j.triton.alwaysCompile}</ND4J_TRITON_ALWAYS_COMPILE>
+                        <ND4J_TRITON_COMPILE_ALL>${nd4j.triton.compileAll}</ND4J_TRITON_COMPILE_ALL>
+                        <ND4J_TRITON_INCLUDE_TYPES>${nd4j.triton.includeTypes}</ND4J_TRITON_INCLUDE_TYPES>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <!-- libnd4j native test configuration -->
