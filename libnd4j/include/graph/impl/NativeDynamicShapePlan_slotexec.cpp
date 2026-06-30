@@ -5638,41 +5638,49 @@ Status NativeDynamicShapePlan::executeSlotGapFast(
       if (output != nullptr && input0->dataBuffer() != nullptr &&
           output->dataBuffer() == input0->dataBuffer()) {
         output->tickWriteDevice();
+        dirtySlotGenerations_[outSi] = currentDirtyGeneration_;
+        slot.bumpGeneration();
         DSP_DIAG_SLOT(EXECUTE, slotIdx,
             "GAP_FAST_VIEW_REUSE: slot=%d op=%s outSi=%d buffer already shared with input — tick only executeCount=%d",
             slotIdx, slot.ident.opName.c_str(), outSi, executeCount_);
         return Status::OK;
       }
-      // View buffer mismatch — log so stale view issues are visible
+      // View buffer mismatch means this slot may produce a fresh view/wrapper.
+      // The fast path cannot safely adopt replacement wrappers; use the normal
+      // executeSlot path so view-producer detection and output ownership run.
       DSP_DIAG_SLOT(EXECUTE, slotIdx,
           "GAP_FAST_VIEW_MISMATCH: slot=%d op=%s outSi=%d "
-          "outDb=%p inDb=%p — falling through to op execute executeCount=%d",
+          "outDb=%p inDb=%p — using full executeSlot path executeCount=%d",
           slotIdx, slot.ident.opName.c_str(), outSi,
           output != nullptr ? (void*)output->dataBuffer() : nullptr,
           input0->dataBuffer() != nullptr ? (void*)input0->dataBuffer() : nullptr,
           executeCount_);
+      return executeSlot(slotIdx, externalArrays, numExt, nullptr);
     }
   }
 
-  // Disable helper dispatch for ALL ops in steady-state gap execution.
-  // By executeCount_>=5, the auto-tuner has determined the optimal backend.
-  // On CUDA, no gap ops have platform helpers — matmul uses MmulHelper/cuBLAS
-  // (not a platform helper), and all other gap ops (reshape_no_copy, permute,
-  // tile, etc.) use their CUSTOM_OP_IMPL directly. Skipping dispatch saves
-  // ~5-10µs per slot × 129 slots = ~0.6-1.3ms/step by avoiding
-  // KernelDispatchHelper::dispatchWithAutoTune → getAllHelpersForOp linear scans.
-  ctx.allowHelpers(false);
-
   // Execute the op directly.
   Status result = slot.ident.op->execute(&ctx);
-
-  // Restore helpers flag for next use of this context.
-  ctx.allowHelpers(true);
 
   if (DSP_DIAG_ENABLED(EXECUTE) && result != Status::OK) {
     DSP_DIAG_SLOT(EXECUTE, slotIdx,
         "GAP_FAST_EXEC_FAIL: slot=%d op=%s status=%d executeCount=%d",
         slotIdx, slot.ident.opName.c_str(), static_cast<int>(result), executeCount_);
+  }
+  if (result == Status::OK) {
+    auto& fpOut = ctx.fastpath_out();
+    for (int i = 0; i < slot.wiring.numOutputs; i++) {
+      int si = slot.wiring.outputSlotIndices[i];
+      if (si < 0 || si >= totalOutputSlots_) continue;
+      NDArray* out = (i < static_cast<int>(fpOut.size()) && fpOut[i] != nullptr)
+                         ? fpOut[i]
+                         : outputSlots_[si];
+      if (out != nullptr) {
+        platformReconcileOutputActuality("gap-fast", slotIdx, slot, out);
+      }
+      dirtySlotGenerations_[si] = currentDirtyGeneration_;
+    }
+    slot.bumpGeneration();
   }
   return result;
 }
