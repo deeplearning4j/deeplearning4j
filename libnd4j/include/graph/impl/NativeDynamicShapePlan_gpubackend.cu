@@ -856,8 +856,8 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
   const int maxCapturableGapSlots = Environment::getInstance().dspMaxCapturableGapSlots();
   // Configurable via ND4J_DSP_GAP_CAPTURE_BLOCK_EXTERNAL_WORKSPACE env var (default true).
   // When true, ops declaring OP_TRAIT_EXTERNAL_WORKSPACE (cuBLAS matmul, etc.) are
-  // excluded from gap capture. When false, they follow the same semantic safety checks
-  // as other capturable compute ops and use the explicit capture workspace.
+  // excluded from gap capture. When false, the external-workspace capture branch is
+  // exercised, but only for isolated external-workspace compute gaps below.
   const bool blockExtWorkspace = Environment::getInstance().dspGapCaptureBlockExternalWorkspace();
 
   int gapSize = endSlot - startSlot + 1;
@@ -868,6 +868,9 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
     return false;
   }
 
+  int computeSlots = 0;
+  int externalWorkspaceSlots = 0;
+  int firstExternalWorkspaceSlot = -1;
   for (int s = startSlot; s <= endSlot; s++) {
     if (!slots[s].isCapturable(mergeViews)) {
       DSP_DIAG(SEGMENT,
@@ -878,12 +881,17 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
     // Zero-compute ops (view/identity/frozen) are always safe — no GPU kernel nodes.
     if (slots[s].aliasesInput() || slots[s].frozenConstantSlot()) continue;
     bool usesExternalWorkspace = slots[s].hasOpTrait(sd::ops::OP_TRAIT_EXTERNAL_WORKSPACE);
+    computeSlots++;
     if (slots[s].hasOpTrait(sd::ops::OP_TRAIT_ATTENTION)) {
       DSP_DIAG(SEGMENT,
                "isGapRangeCaptureSafe [%d-%d] UNSAFE: slot=%d op='%s' has OP_TRAIT_ATTENTION "
                "(effective=live_gap)",
                startSlot, endSlot, s, slots[s].ident.opName.c_str());
       return false;
+    }
+    if (usesExternalWorkspace) {
+      externalWorkspaceSlots++;
+      if (firstExternalWorkspaceSlot < 0) firstExternalWorkspaceSlot = s;
     }
     if (blockExtWorkspace && usesExternalWorkspace) {
       DSP_DIAG(SEGMENT,
@@ -907,6 +915,21 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
                startSlot, endSlot, s, slots[s].ident.opName.c_str());
       return false;
     }
+  }
+  // External-workspace capture is only replay-simple when the external-workspace
+  // op is the sole compute op in the gap. Mixed gaps combine cuBLAS/workspace
+  // capture state with extra compute/control nodes; those have produced wrong
+  // decode values in the SmolDocling branch. Keep mixed external-workspace gaps
+  // live so correctness degrades only to launch overhead, not corrupt logits.
+  if (!blockExtWorkspace && externalWorkspaceSlots > 0 &&
+      (externalWorkspaceSlots > 1 || computeSlots > externalWorkspaceSlots)) {
+    DSP_DIAG(SEGMENT,
+             "isGapRangeCaptureSafe [%d-%d] UNSAFE: external-workspace gap is not isolated "
+             "(first slot=%d op='%s', extSlots=%d computeSlots=%d, effective=live_gap)",
+             startSlot, endSlot, firstExternalWorkspaceSlot,
+             firstExternalWorkspaceSlot >= 0 ? slots[firstExternalWorkspaceSlot].ident.opName.c_str() : "?",
+             externalWorkspaceSlots, computeSlots);
+    return false;
   }
   return true;
 }
