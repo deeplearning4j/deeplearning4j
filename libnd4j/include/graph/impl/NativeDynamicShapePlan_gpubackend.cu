@@ -512,22 +512,41 @@ static bool validateAndStoreMergedCapture(
              nativeHandle->wasLastInstantiateOom() ? 1 : 0, nodeCount);
     return false;
   }
-  DSP_DIAG(EXECUTE, "%s: group=%d instantiate OK graphExec=%p — launching async validation replay "
-           "on stream=%p cudaStr=%p device=%d",
-           diagPrefix, mergedGroupId, (void*)nativeHandle->getGraphExec(),
-           stream, (void*)cudaStr, nativeHandle->getDeviceId());
+  cudaStream_t requestedStream = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  cudaStream_t validationStream = cudaStr != nullptr ? cudaStr : requestedStream;
+  void* validationStreamArg = static_cast<void*>(&validationStream);
 
-  bool launchOk = handle->replay(stream);
+  DSP_DIAG(EXECUTE, "%s: group=%d instantiate OK graphExec=%p — launching ordered validation replay "
+           "streamArg=%p requestedStream=%p validationStream=%p cudaStr=%p device=%d",
+           diagPrefix, mergedGroupId, (void*)nativeHandle->getGraphExec(),
+           stream, (void*)requestedStream, (void*)validationStream, (void*)cudaStr,
+           nativeHandle->getDeviceId());
+
+  bool launchOk = handle->replay(validationStreamArg);
   if (!launchOk) {
     cudaError_t lastErr = cudaGetLastError();
     DSP_DIAG(EXECUTE, "%s: group=%d validation replay FAILED — cudaGraphLaunch error=%d (%s) "
-             "graphExec=%p nodes=%zu stream=%p",
+             "graphExec=%p nodes=%zu validationStream=%p",
              diagPrefix, mergedGroupId, (int)lastErr, cudaGetErrorString(lastErr),
-             (void*)nativeHandle->getGraphExec(), nodeCount, (void*)cudaStr);
+             (void*)nativeHandle->getGraphExec(), nodeCount, (void*)validationStream);
     return false;
   }
+  if (requestedStream != nullptr && validationStream != nullptr && requestedStream != validationStream) {
+    cudaEvent_t evt = nullptr;
+    cudaError_t evtErr = cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
+    if (evtErr == cudaSuccess && evt != nullptr) {
+      cudaEventRecord(evt, validationStream);
+      cudaStreamWaitEvent(requestedStream, evt, 0);
+      cudaEventDestroy(evt);
+      DSP_DIAG(EXECUTE, "%s: group=%d ordered continuation stream=%p after validationStream=%p",
+               diagPrefix, mergedGroupId, (void*)requestedStream, (void*)validationStream);
+    } else {
+      DSP_DIAG(EXECUTE, "%s: group=%d could not create validation ordering event err=%d (%s)",
+               diagPrefix, mergedGroupId, (int)evtErr, cudaGetErrorString(evtErr));
+    }
+  }
   DSP_DIAG(EXECUTE, "%s: group=%d [%d-%d] VALIDATE_QUEUED nodes=%zu "
-           "(async launch accepted)",
+           "(ordered launch accepted)",
            diagPrefix, mergedGroupId, startSlot, endSlot, nodeCount);
   sched.mergedReplayHandles.push_back(std::move(handle));
   return true;
