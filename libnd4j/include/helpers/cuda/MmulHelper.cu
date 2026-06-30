@@ -272,11 +272,15 @@ static NDArray* castWithPersistentCache(CastCacheSide& side, NDArray* source, Da
   if (index < cache.size()) {
     NDArray* cached = cache[index];
     if (cached != nullptr && cached->dataType() == targetType && cached->isSameShape(source)) {
-      // Skip assign if the source DataBuffer hasn't changed (constant weight optimization).
-      // The DataBuffer pointer is stable for frozen constant arrays across decode steps.
-      const void* srcBufPtr = source->dataBuffer() != nullptr ? static_cast<const void*>(source->dataBuffer()) : nullptr;
+      // Only immutable buffers may skip the refresh. Decode activations keep
+      // stable DataBuffer addresses while their values change every step; using
+      // pointer stability alone causes CUDA graph capture to omit the cast node
+      // and replay stale warmup values from the cached buffer.
+      auto* sourceDb = source->dataBuffer();
+      const void* srcBufPtr = sourceDb != nullptr ? static_cast<const void*>(sourceDb) : nullptr;
+      const bool sourceIsConstant = sourceDb != nullptr && sourceDb->isConstant;
       bool sourceChanged = (index >= srcPtrs.size()) || (srcPtrs[index] != srcBufPtr);
-      if (sourceChanged) {
+      if (!sourceIsConstant || sourceChanged) {
         cached->assign(source);
         // Track the source pointer for next time
         if (index >= srcPtrs.size()) srcPtrs.resize(index + 1, nullptr);
