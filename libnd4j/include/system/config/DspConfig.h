@@ -54,7 +54,7 @@ class SD_LIB_EXPORT DspConfig {
 
   // Gap capture tuning knobs
   std::atomic<int> _maxCapturableGapSlots{32};
-  std::atomic<bool> _gapCaptureBlockExternalWorkspace{true};  // true = block cuBLAS matmul from gap capture (false causes OOM in composite replay)
+  std::atomic<bool> _gapCaptureBlockExternalWorkspace{true};  // true = keep cuBLAS-backed gaps live
   std::atomic<int> _gapCaptureTensorCoreWarmup{5};  // exec count before enabling tensor cores in gaps
 
   // Symbolic shape ranges

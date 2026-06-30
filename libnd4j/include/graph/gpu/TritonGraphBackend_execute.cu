@@ -1386,6 +1386,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   // Compose attention present_key / present_value outputs
   int attnCount = 0;
   for (int si = seg.def.startSlot; si <= seg.def.endSlot; si++) {
+    if (islandFilterActive && (si < tl_islandSlotMin || si > tl_islandSlotMax)) {
+      continue;
+    }
     if (slots[si].ident.opName.empty()) continue;
     bool isAttn = slots[si].ident.op != nullptr &&
                   slots[si].ident.op->getOpDescriptor() != nullptr &&

@@ -813,15 +813,19 @@ static bool findUnsupportedTritonReplayGap(TritonGraphBackend* tritonBackend,
 static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot, bool mergeViews) {
   // A gap is safe to merge into a CUDA graph capture if ALL its slots either:
   //   (a) are zero-compute ops (views, identity, frozen constants), OR
-  //   (b) are non-cuBLAS compute ops whose args are all plan-owned pointers.
+  //   (b) are replay-simple compute ops whose args are all plan-owned pointers.
   //
   // Category (b) is safe because:
   //   - syncToHost() is a no-op during capture (tl_graphExecutionActive guard)
   //   - effectiveExternalsForCapture provides stable staging pointers for ext inputs
   //   - outputSlots_ pointers are stable once pointersStable()=true
-  //   - only cuBLAS ops have external state (handle/workspace) that goes stale
+  //   - cuBLAS/external-workspace gaps are live by default; the opt-in capture
+  //     path uses the explicit capture workspace and the same replay checks
   //   - Gather indices change per step but pointer args don't (data changes, not addresses)
   //   - VALUE_DEPENDENT_SHAPE only affects shape function (not called during capture)
+  //   - Native attention is intentionally excluded below. If attention was not
+  //     compiled as a Triton island, keep its helper live rather than capturing
+  //     its multi-output/scratch/KV composition as generic gap glue.
   //
   // We limit captured gap size to avoid lifecycle conflicts in large gaps.
   // Small gaps (≤8 slots) between islands are "glue" ops (equals, broadcast_to,
@@ -833,8 +837,8 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
   const int maxCapturableGapSlots = Environment::getInstance().dspMaxCapturableGapSlots();
   // Configurable via ND4J_DSP_GAP_CAPTURE_BLOCK_EXTERNAL_WORKSPACE env var (default true).
   // When true, ops declaring OP_TRAIT_EXTERNAL_WORKSPACE (cuBLAS matmul, etc.) are
-  // excluded from gap capture. These ops use external library handles/workspaces that
-  // may not replay correctly in CUDA graphs without explicit workspace pinning.
+  // excluded from gap capture. When false, the external-workspace capture branch is
+  // exercised and must be correct; performance is allowed to vary.
   const bool blockExtWorkspace = Environment::getInstance().dspGapCaptureBlockExternalWorkspace();
 
   int gapSize = endSlot - startSlot + 1;
@@ -845,6 +849,9 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
     return false;
   }
 
+  int computeSlots = 0;
+  int externalWorkspaceSlots = 0;
+  int firstExternalWorkspaceSlot = -1;
   for (int s = startSlot; s <= endSlot; s++) {
     if (!slots[s].isCapturable(mergeViews)) {
       DSP_DIAG(SEGMENT,
@@ -854,12 +861,24 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
     }
     // Zero-compute ops (view/identity/frozen) are always safe — no GPU kernel nodes.
     if (slots[s].aliasesInput() || slots[s].frozenConstantSlot()) continue;
-    // Block ops that use external library workspaces (cuBLAS, etc.) — trait-driven, not op-specific.
-    if (blockExtWorkspace && slots[s].hasOpTrait(sd::ops::OP_TRAIT_EXTERNAL_WORKSPACE)) {
+    computeSlots++;
+    if (slots[s].hasOpTrait(sd::ops::OP_TRAIT_ATTENTION)) {
       DSP_DIAG(SEGMENT,
-               "isGapRangeCaptureSafe [%d-%d] UNSAFE: slot=%d op='%s' has OP_TRAIT_EXTERNAL_WORKSPACE",
+               "isGapRangeCaptureSafe [%d-%d] UNSAFE: slot=%d op='%s' has OP_TRAIT_ATTENTION "
+               "(effective=live_gap)",
                startSlot, endSlot, s, slots[s].ident.opName.c_str());
       return false;
+    }
+    if (blockExtWorkspace && slots[s].hasOpTrait(sd::ops::OP_TRAIT_EXTERNAL_WORKSPACE)) {
+      DSP_DIAG(SEGMENT,
+               "isGapRangeCaptureSafe [%d-%d] UNSAFE: slot=%d op='%s' has OP_TRAIT_EXTERNAL_WORKSPACE "
+               "(effective=live_gap)",
+               startSlot, endSlot, s, slots[s].ident.opName.c_str());
+      return false;
+    }
+    if (slots[s].hasOpTrait(sd::ops::OP_TRAIT_EXTERNAL_WORKSPACE)) {
+      externalWorkspaceSlots++;
+      if (firstExternalWorkspaceSlot < 0) firstExternalWorkspaceSlot = s;
     }
     // Block ops with dynamic output sizes (Where, unique) — they allocate during execution,
     // which poisons CUDA graph capture (cudaStreamCaptureStatusInvalidated).
@@ -876,6 +895,16 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
                startSlot, endSlot, s, slots[s].ident.opName.c_str());
       return false;
     }
+  }
+  if (!blockExtWorkspace && externalWorkspaceSlots > 0 &&
+      (externalWorkspaceSlots > 1 || computeSlots > externalWorkspaceSlots)) {
+    DSP_DIAG(SEGMENT,
+             "isGapRangeCaptureSafe [%d-%d] UNSAFE: external-workspace gap is not isolated "
+             "(first slot=%d op='%s', extSlots=%d computeSlots=%d, effective=live_gap)",
+             startSlot, endSlot, firstExternalWorkspaceSlot,
+             firstExternalWorkspaceSlot >= 0 ? slots[firstExternalWorkspaceSlot].ident.opName.c_str() : "?",
+             externalWorkspaceSlots, computeSlots);
+    return false;
   }
   return true;
 }
@@ -3664,9 +3693,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                         "via syncToDevice+readSpecial (NO writeSpecial poisoning)", islandIdx);
 
                // Set cuBLAS handle to capture stream and provide explicit workspace.
-               // Without this, cuBLAS gap ops (e.g. rms_norm_linear GEMM) during merged
-               // capture either launch on the wrong stream or create internal MemAlloc/MemFree
-               // graph nodes — both cause SIGSEGV on cudaGraphLaunch during validation replay.
+               // Without this, cuBLAS gap ops during merged capture either launch on
+               // the wrong stream or create internal MemAlloc/MemFree graph nodes.
                setCublasWorkspaceForCapture(stream);
 
                bool beginOk = mergedNativeHandle->beginCapture(ctx.cudaStr, cudaStreamCaptureModeThreadLocal);
@@ -3762,7 +3790,6 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  keepCaptureOpen = true;
                }
              }
-
              if (captureStatus == Status::OK && keepCaptureOpen) {
                // Keep capture active — tl_graphExecutionActive stays true
                // tl_islandSlotMin/Max will be updated when the next island is processed

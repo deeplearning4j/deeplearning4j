@@ -30,6 +30,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/specials_cuda.h>
 
+#include <algorithm>
 #include <numeric>
 #include <unordered_map>
 #include <utility>
@@ -121,7 +122,10 @@ struct CastCacheSide {
   }
 
   void resetIndicesTo(size_t hwm) {
-    index = (hwm < cache.size()) ? hwm : 0;
+    // hwm is the first cache slot NOT baked into a captured CUDA graph. If it
+    // equals cache.size(), start appending; wrapping to zero would let live gap
+    // matmuls overwrite captured graph inputs.
+    index = std::min(hwm, cache.size());
     captureCastReuse.clear();
     lastCaptureCastSource = nullptr;
     lastCaptureCastArray = nullptr;

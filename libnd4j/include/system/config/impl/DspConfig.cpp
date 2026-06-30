@@ -77,7 +77,7 @@ void DspConfig::initFromEnvironment() {
   // Gap capture tuning
   {
     int v = readIntEnv("ND4J_DSP_MAX_CAPTURABLE_GAP_SLOTS", -1);
-    if (v > 0) setMaxCapturableGapSlots(v);
+    if (v >= 0) setMaxCapturableGapSlots(v);
   }
   {
     int v = readBoolEnvTriState("ND4J_DSP_GAP_CAPTURE_BLOCK_EXTERNAL_WORKSPACE");
