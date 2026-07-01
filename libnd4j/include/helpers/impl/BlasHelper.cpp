@@ -45,15 +45,14 @@
 namespace {
   struct MklThreadInitializer {
     MklThreadInitializer() {
-      // Check if user explicitly set MKL threads
-      const char* env = std::getenv("MKL_NUM_THREADS");
-      const char* sdEnv = std::getenv("SD_OPENBLAS_THREADS");  // Also check SD env var
-
-      if (env == nullptr && sdEnv == nullptr) {
-        // No explicit thread count - MKL is thread-safe, but limit threads for consistency
-        // Note: MKL handles threading better than OpenBLAS, so we can be less restrictive
-        mkl_set_num_threads(1);
-      }
+      // (no-op for the default case) Leave MKL at its native multi-threaded
+      // default (all cores). Previously this pinned MKL to 1 thread at library
+      // load, which serialized every BLAS-bound op (transformer / embedding
+      // GEMMs) onto a single core. MKL is thread-safe; cross-caller safety comes
+      // from BLAS call serialization (enabled by default, SD_BLAS_SERIALIZE),
+      // not from single-threading. Explicit MKL_NUM_THREADS is honored by MKL
+      // itself; SD_OPENBLAS_THREADS is applied in initializeBlasThreading().
+      // Mirrors the OpenBlasThreadInitializer de-pin below.
     }
   };
   static MklThreadInitializer __mkl_thread_init;
