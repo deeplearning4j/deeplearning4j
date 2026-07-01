@@ -3469,8 +3469,10 @@ public class DynamicShapePlanExecutor implements Closeable {
             // lifecycle instead of attempting an illegal rollback to SLOT_BY_SLOT.
             if (!shapesFrozen && nativePlanHandle != null && !nativePlanHandle.isNull()) {
                 int currentNativePhase = nativeOps.getPlanPhase(nativePlanHandle);
-                log.info("SHAPE_RESET_CHECK: !shapesFrozen, C++ phase={}, handle={}", currentNativePhase,
-                        "0x" + Long.toHexString(nativePlanHandle.address()));
+                if (log.isTraceEnabled()) {
+                    log.trace("SHAPE_RESET_CHECK: !shapesFrozen, C++ phase={}, handle=0x{}", currentNativePhase,
+                            Long.toHexString(nativePlanHandle.address()));
+                }
                 if (currentNativePhase >= 1) {
                     enterJavaFrozenState("native-phase-sync-before-execute", currentNativePhase);
                 }
@@ -3558,16 +3560,20 @@ public class DynamicShapePlanExecutor implements Closeable {
             // spans execute + readback to prevent this race.
             nativeExecLock.lock();
             try {
-            log.info("DSP_EXEC_PRE: handle={} executionCount={} numInputs={} numOutputs={} frozen={}",
-                    nativePlanHandle != null ? "0x" + Long.toHexString(nativePlanHandle.address()) : "null",
-                    executionCount, numInputs, numOutputs, shapesFrozen);
+            if (log.isTraceEnabled()) {
+                log.trace("DSP_EXEC_PRE: handle={} executionCount={} numInputs={} numOutputs={} frozen={}",
+                        nativePlanHandle != null ? "0x" + Long.toHexString(nativePlanHandle.address()) : "null",
+                        executionCount, numInputs, numOutputs, shapesFrozen);
+            }
             long execStart = System.nanoTime();
             int status = nativeOps.executeDynamicShapePlan(
                     nativePlanHandle,
                     opContext,
                     execStream);
             long execMs = (System.nanoTime() - execStart) / 1_000_000;
-            log.info("DSP_EXEC_POST: status={} execMs={} executionCount={}", status, execMs, executionCount);
+            if (log.isTraceEnabled()) {
+                log.trace("DSP_EXEC_POST: status={} execMs={} executionCount={}", status, execMs, executionCount);
+            }
 
             if (status != 0) {
                 String errMsg = nativeOps.lastErrorMessage();
