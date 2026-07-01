@@ -755,7 +755,11 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
     float* V = vPtr + b * vBatchStride;
     float* O = outPtr + b * outBatchStride;
 
-    // Step 1: Q @ K^T -> scores  per head
+    // Step 1: Q @ K^T -> scores  per head. Parallelize ACROSS heads; MKL_DYNAMIC (default)
+    // keeps each nested per-head cblas_sgemm single-threaded inside this OMP region, so we get
+    // head-level parallelism without BLAS-thread oversubscription on the small
+    // [seqQ,headDim]@[headDim,seqKV] GEMMs. Per-head writes to allScores[h] are disjoint.
+    PRAGMA_OMP_PARALLEL_FOR
     for (MKL_INT h = 0; h < numHeads; h++) {
       const MKL_INT g = isGqa ? (h / headsPerGroup) : h;
       float* qHead = Q + h * qHeadStride;    // [seqQ, headDim] with lda=qSeqStride
@@ -804,12 +808,14 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
       }
     }
 
-    // Step 2: softmax with scale
+    // Step 2: softmax with scale — independent per head, parallelize across heads
+    PRAGMA_OMP_PARALLEL_FOR
     for (MKL_INT h = 0; h < numHeads; h++) {
       mklSoftmaxInPlace(allScores + h * scoreSize, seqQ, seqKV, scale);
     }
 
-    // Step 3: scores @ V -> output  per head
+    // Step 3: scores @ V -> output  per head (parallel across heads; see Step 1 note)
+    PRAGMA_OMP_PARALLEL_FOR
     for (MKL_INT h = 0; h < numHeads; h++) {
       const MKL_INT g = isGqa ? (h / headsPerGroup) : h;
       float* sHead = allScores + h * scoreSize; // [seqQ, seqKV] contiguous
