@@ -269,20 +269,38 @@ void NativeDynamicShapePlan::launchBatchMemset(cudaStream_t stream,
                                                 int count) {
   if (count <= 0) return;
 
-  // Ensure device-side arrays are large enough
+  // Ensure device-side arrays are large enough. Track (re)allocation: freshly
+  // allocated device arrays hold no valid data and must be uploaded regardless
+  // of whether the caller's dst/sizes match the previous pinned snapshot.
+  const int allocBefore = batchD2DAllocated_;
   prepareBatchD2DDevice(count, stream);
+  const bool reallocated = (batchD2DAllocated_ != allocBefore);
 
-  // Copy caller-provided arrays into pinned host memory
   auto** pinnedDst = static_cast<void**>(batchD2DHostDstPtrs_);
   auto* pinnedSizes = static_cast<size_t*>(batchD2DHostSizes_);
-  memcpy(pinnedDst, dstPtrsHost, count * sizeof(void*));
-  memcpy(pinnedSizes, sizesHost, count * sizeof(size_t));
 
-  // Upload to device
-  cudaMemcpyAsync(batchD2DDeviceDstPtrs_, pinnedDst,
-                  count * sizeof(void*), cudaMemcpyHostToDevice, stream);
-  cudaMemcpyAsync(batchD2DDeviceSizes_, pinnedSizes,
-                  count * sizeof(size_t), cudaMemcpyHostToDevice, stream);
+  // Static-upload optimization (mirrors launchBatchD2D, which only uploads its
+  // per-step-varying srcPtrs). For gap prezero during frozen replay the target
+  // buffers and their sizes are pointer-stable across decode steps, so the
+  // device dst/sizes arrays only need re-uploading when they actually change
+  // (or when the device arrays were just (re)allocated). The pinned host arrays
+  // hold the last-uploaded snapshot; compare against the incoming arrays and
+  // skip the memcpy + 2x H2D when unchanged. launchBatchMemset is the sole
+  // consumer of these device arrays (launchBatchD2D is unused), so no other
+  // path can clobber them between calls — the skip is safe.
+  const bool changed = reallocated
+      || (memcmp(pinnedDst, dstPtrsHost, count * sizeof(void*)) != 0)
+      || (memcmp(pinnedSizes, sizesHost, count * sizeof(size_t)) != 0);
+
+  if (changed) {
+    memcpy(pinnedDst, dstPtrsHost, count * sizeof(void*));
+    memcpy(pinnedSizes, sizesHost, count * sizeof(size_t));
+    cudaMemcpyAsync(batchD2DDeviceDstPtrs_, pinnedDst,
+                    count * sizeof(void*), cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(batchD2DDeviceSizes_, pinnedSizes,
+                    count * sizeof(size_t), cudaMemcpyHostToDevice, stream);
+    DSP_DIAG(MEMORY, "launchBatchMemset: uploaded dst/sizes for %d buffers (changed)", count);
+  }
 
   constexpr int kThreadsPerBlock = 256;
   batchMemsetKernel<<<count, kThreadsPerBlock, 0, stream>>>(
