@@ -1354,6 +1354,16 @@ DECLARE_CUSTOM_OP(segment_prod, 2, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(segment_prod_bp, 3, 2, false, 0, 0);
 #endif
 /**
+ * segment_softmax: softmax within each sorted segment.
+ * Inputs: logits [N,...] (float), segmentIds [N] (INT32, sorted)
+ * IArgs: K (number of segments)
+ * Output: out [N,...] (same shape as logits)
+ */
+#if NOT_EXCLUDED(OP_segment_softmax)
+DECLARE_CUSTOM_OP(segment_softmax, 2, 1, false, 0, 1);
+DECLARE_CUSTOM_OP(segment_softmax_bp, 4, 1, false, 0, 1);
+#endif
+/**
  * segment_mean op. - make a tensor filled by average of values according to index tensor given.
  *
  * input params:

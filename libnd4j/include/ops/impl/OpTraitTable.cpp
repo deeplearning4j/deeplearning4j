@@ -999,6 +999,34 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         // ── Sparse / compat ops ────────────────────────────────────────────
         {"compat_sparse_to_dense",    DATA_MOVE | DATADEP},
         {"compat_string_split",       DATADEP},
+
+        // ── CSR/CSC/BSR sparse forward ops ────────────────────────────────
+        // These forward ops have data-dependent output shapes (nnz count
+        // depends on runtime values — cannot be determined from input shapes alone).
+        {"dense_to_csc",              DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
+        {"dense_to_csr",              DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
+        {"csr_add",                   DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
+        {"bsr_spmm",                  DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
+        {"csr_sddmm_sparse",          DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
+        {"csr_to_bsr",                DATADEP | OP_TRAIT_DYNAMIC_OUTPUT_SIZE},
+        {"csc_to_dense",              OP_TRAIT_FULLY_WRITING},
+        {"bsr_to_dense",              OP_TRAIT_FULLY_WRITING},
+        {"csr_to_dense",              OP_TRAIT_FULLY_WRITING},
+
+        // ── CSR/CSC/BSR sparse backward ops (gradient) ───────────────────
+        // Backward ops: output shape is determined by INPUT SIZES (lengthOf),
+        // NOT input values. Without entries here the DynamicShapePlanCompiler
+        // heuristic (hasIntLongInputs → shapeDependsOnValues=true) fires
+        // incorrectly, stalling DSP plan compilation.
+        {"csr_add_bp",                BP},
+        {"dense_to_csc_bp",           BP},
+        {"dense_to_csr_bp",           BP},
+        {"bsr_spmm_bp",               BP},
+        {"bsr_to_dense_bp",           BP},
+        {"csc_to_dense_bp",           BP},
+        {"csr_to_bsr_bp",             BP},
+        {"csr_sddmm_sparse_bp",       BP},
+        {"csr_to_dense_bp",           BP},
         {"split_string",              DATADEP},
         {"embedding_lookup",          GATHER},
         {"cbow",                      OP_TRAIT_FULLY_WRITING},

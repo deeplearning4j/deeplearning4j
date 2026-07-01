@@ -27,6 +27,8 @@ import org.nd4j.linalg.api.ndarray.SparseNDArray;
 import org.nd4j.linalg.api.ops.impl.sparse.Semiring;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
+
 /**
  * Classical graph algorithms implemented via GraphBLAS-style semiring SpMV/SpMM operations
  * ({@link SparseNDArray#mvSemiring} and {@link SparseNDArray#mmulSemiring}).
@@ -142,7 +144,7 @@ public final class GraphAlgorithms {
 
         // Initialise: distance = +Inf everywhere except source = 0
         float[] distData = new float[n];
-        java.util.Arrays.fill(distData, Float.POSITIVE_INFINITY);
+        Arrays.fill(distData, Float.POSITIVE_INFINITY);
         distData[source] = 0.0f;
         INDArray dist = Nd4j.createFromArray(distData).castTo(adj.dataType());
 

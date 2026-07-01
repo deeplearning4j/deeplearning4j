@@ -53,23 +53,27 @@ ExtraArguments::~ExtraArguments() {
 template <typename T>
 void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
   auto length = this->length();
+  if (offset < 0 || static_cast<size_t>(offset) > length) {
+    THROW_EXCEPTION("ExtraArguments::convertAndCopy: offset is out of range");
+  }
+  auto outLength = length - static_cast<size_t>(offset);
 
   // Fill a local host buffer then copy to the device pointer.
   // On CPU the "device pointer" IS host memory, so extraArgsCopyH2DDispatch is a plain memcpy.
   // On CUDA it uses the capture-aware async path or cudaMemcpyAsync + sync.
-  auto hostBuf = new T[length];
+  auto hostBuf = new T[outLength];
 
   if (!_fpArgs.empty()) {
     for (size_t e = offset; e < _fpArgs.size(); e++) {
-      hostBuf[e] = static_cast<T>(_fpArgs[e]);
+      hostBuf[e - static_cast<size_t>(offset)] = static_cast<T>(_fpArgs[e]);
     }
-  } else if (_intArgs.empty()) {
+  } else if (!_intArgs.empty()) {
     for (size_t e = offset; e < _intArgs.size(); e++) {
-      hostBuf[e] = static_cast<T>(_intArgs[e]);
+      hostBuf[e - static_cast<size_t>(offset)] = static_cast<T>(_intArgs[e]);
     }
   }
 
-  auto bytes = length * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>());
+  auto bytes = outLength * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>());
   extra_args_detail::extraArgsCopyH2DDispatch(pointer, hostBuf, bytes);
   delete[] hostBuf;
 }

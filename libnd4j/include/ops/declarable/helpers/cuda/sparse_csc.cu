@@ -465,8 +465,8 @@ static SD_KERNEL void inclusivePrefixSumKernel(const I* __restrict__ src,
 }
 
 template <typename X, typename I>
-static void denseToCscCuda_(NDArray& input, NDArray& cscValues, NDArray& cscRowIdx,
-                             NDArray& cscColPtr, double threshold) {
+static void denseToCscCuda_(sd::LaunchContext* context, NDArray& input, NDArray& cscValues,
+                             NDArray& cscRowIdx, NDArray& cscColPtr, double threshold) {
   const LongType rows = input.sizeAt(0);
   const LongType cols = input.sizeAt(1);
   const X        thr  = static_cast<X>(threshold);
@@ -475,7 +475,7 @@ static void denseToCscCuda_(NDArray& input, NDArray& cscValues, NDArray& cscRowI
   const LongType s0   = strides[0];
   const LongType s1   = strides[1];
 
-  auto* ctx    = input.getContext();
+  auto* ctx    = context;
   auto  stream = *ctx->getCudaStream();
   const int devId = ctx->getDeviceID();
 
@@ -520,12 +520,12 @@ static void denseToCscCuda_(NDArray& input, NDArray& cscValues, NDArray& cscRowI
   memory::CudaMemoryPool::getInstance().free(colCountsMem, devId, stream);
 }
 
-void dense_to_csc(NDArray& input, NDArray& cscValues, NDArray& cscRowIdx,
-                  NDArray& cscColPtr, double threshold) {
+void dense_to_csc(sd::LaunchContext* context, NDArray& input, NDArray& cscValues,
+                  NDArray& cscRowIdx, NDArray& cscColPtr, double threshold) {
   NDArray::prepareSpecialUse({&cscValues, &cscRowIdx, &cscColPtr}, {&input});
 
   BUILD_DOUBLE_SELECTOR(input.dataType(), cscRowIdx.dataType(), denseToCscCuda_,
-                        (input, cscValues, cscRowIdx, cscColPtr, threshold),
+                        (context, input, cscValues, cscRowIdx, cscColPtr, threshold),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 
   NDArray::registerSpecialUse({&cscValues, &cscRowIdx, &cscColPtr}, {&input});

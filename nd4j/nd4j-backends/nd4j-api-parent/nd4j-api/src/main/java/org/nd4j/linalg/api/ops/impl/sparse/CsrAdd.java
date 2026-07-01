@@ -122,15 +122,21 @@ public class CsrAdd extends DynamicCustomOp {
         return Arrays.asList(dataTypes.get(0), DataType.INT32, DataType.INT32);
     }
 
-    /**
-     * Autodiff is not yet implemented for csr_add.
-     *
-     * @throws UnsupportedOperationException always
-     */
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grads) {
-        throw new UnsupportedOperationException(
-                "Automatic differentiation is not yet supported for " + opName()
-                + ". This op is forward-only in v1.");
+        SDVariable gradCValues = grads.get(0);
+        long m = iArguments.get(0);
+        long n = iArguments.get(1);
+        SDVariable aColIdx = arg(1);
+        SDVariable aRowPtr = arg(2);
+        SDVariable bColIdx = arg(4);
+        SDVariable bRowPtr = arg(5);
+        SDVariable[] fwdOuts = outputVariables();
+        SDVariable cColIdx = fwdOuts[1];
+        SDVariable cRowPtr = fwdOuts[2];
+        SDVariable[] bpOut = new CsrAddBp(sameDiff, aColIdx, aRowPtr, bColIdx, bRowPtr, cColIdx, cRowPtr, gradCValues, m, n)
+                .outputVariables();
+        return Arrays.asList(bpOut[0], sameDiff.zerosLike(aColIdx), sameDiff.zerosLike(aRowPtr),
+                             bpOut[1], sameDiff.zerosLike(bColIdx), sameDiff.zerosLike(bRowPtr));
     }
 }

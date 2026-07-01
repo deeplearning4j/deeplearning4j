@@ -245,10 +245,12 @@ void fusedElementwiseChain(
         LaunchContext* context) {
 
     if (input == nullptr || output == nullptr || ops == nullptr || numOps <= 0) return;
+    // Hard cap: the fused kernel materializes at most 8 ops (the DSP caller caps chains at
+    // MAX_FUSED_CHAIN=8). A longer chain must be split by the caller — fail loudly rather than
+    // silently dropping the tail ops and returning a wrong result.
     if (numOps > 8) {
-        // Chain too long — fall back to splitting into two calls
-        // (not implemented yet, just process first 8)
-        numOps = 8;
+        THROW_EXCEPTION("fusedElementwiseChain: chain length exceeds the fused-kernel maximum of "
+                        "8 ops; the caller must split the chain into multiple fused calls.");
     }
 
     auto xType = input->dataType();
@@ -263,8 +265,8 @@ void fusedElementwiseChain(
     } else if (xType == DataType::BFLOAT16) {
         fusedChainCudaImpl<bfloat16>(input, output, ops, numOps, secondaryInputs, clipMin, clipMax, context);
     } else {
-        // Unsupported type — should not happen for element-wise chains
-        sd_printf("fusedElementwiseChain: unsupported dtype %d\n", static_cast<int>(xType));
+        // Unsupported dtype: producing no output would be a silent wrong result — fail loudly.
+        THROW_EXCEPTION("fusedElementwiseChain: unsupported input dtype for fused element-wise chain");
     }
 }
 

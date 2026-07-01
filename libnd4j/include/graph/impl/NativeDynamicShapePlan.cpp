@@ -1437,13 +1437,21 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   uint32_t magic = reader.read<uint32_t>();
   if (magic != DSP_MAGIC) {
     DSP_DIAG(COMPILE, "NativeDynamicShapePlan: invalid magic 0x%08x (expected 0x%08x)", magic, DSP_MAGIC);
-    return nullptr;
+    char errbuf[128];
+    snprintf(errbuf, sizeof(errbuf),
+             "DSP fromSerializedPlan: invalid magic 0x%08x (expected 0x%08x, planSize=%lld)",
+             magic, DSP_MAGIC, (long long)size);
+    THROW_EXCEPTION(errbuf);
   }
 
   int32_t version = reader.read<int32_t>();
   if (version < 1 || version > DSP_VERSION_MAX) {
     DSP_DIAG(COMPILE, "NativeDynamicShapePlan: unsupported version %d (expected 1-%d)", version, DSP_VERSION_MAX);
-    return nullptr;
+    char errbuf[128];
+    snprintf(errbuf, sizeof(errbuf),
+             "DSP fromSerializedPlan: unsupported version %d (accepted 1-%d, planSize=%lld)",
+             version, DSP_VERSION_MAX, (long long)size);
+    THROW_EXCEPTION(errbuf);
   }
 
   auto* plan = new NativeDynamicShapePlan();
@@ -1665,8 +1673,16 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     } else if (!slot.ident.op) {
       DSP_DIAG(COMPILE, "NativeDynamicShapePlan: op not found for name '%s' (serialized hash: %lld, legacyType: %d, legacyNum: %d)",
                 slot.ident.opName.c_str(), slot.ident.opHash, slot.legacy.legacyOpType, slot.legacy.legacyOpNum);
+      char errbuf[512];
+      snprintf(errbuf, sizeof(errbuf),
+               "DSP fromSerializedPlan: op not found for name '%s' (slot %d/%d, "
+               "serializedHash=%lld, legacyType=%d, legacyNum=%d). "
+               "Ensure the op is compiled with SD_ALL_OPS and registered via CUSTOM_OP_IMPL.",
+               slot.ident.opName.c_str(), s, plan->numSlots_,
+               (long long)slot.ident.opHash,
+               slot.legacy.legacyOpType, slot.legacy.legacyOpNum);
       delete plan;
-      return nullptr;
+      THROW_EXCEPTION(errbuf);
     }
 
 
@@ -4115,11 +4131,8 @@ Status NativeDynamicShapePlan::phaseFreeze() {
 
   // Reset segment execution state for freeze.
   for (auto& seg : segments_) {
-    seg.exec.executionCount = 0;
+    seg.exec.resetForWarmup();
     seg.exec.markArgsStale();
-    seg.exec.gapOpsCapturedInGraph = false;
-    seg.exec.createOpsExcludedFromGraph = false;
-    seg.exec.resetCaptureKeys();
     // compilationFailed is managed by lifecycle (markFailed/reset) — not reset here
   }
 
@@ -4280,10 +4293,10 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
     // Note: computeSegmentShapeKey hashes small input values (<=32 elements) which
     // requires D2H sync, but this only happens once during warmup.
     if (segment.def.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
-      segment.exec.cachedShapeKey =
-          computeSegmentShapeKey(segment, externalInputs, numExternalInputs);
-      segment.exec.capturedInputAddrKey =
-          computeSegmentInputAddrKeyPortable(segment, externalInputs, numExternalInputs);
+      segment.exec.recordReplayBaselineKeys(
+          computeSegmentShapeKey(segment, externalInputs, numExternalInputs),
+          computeSegmentInputAddrKeyPortable(segment, externalInputs, numExternalInputs),
+          "phase_warmup_emulated_replay");
     }
 
     // Note: We intentionally do NOT call computeSegmentShapeKey for non-EMULATED_REPLAY
@@ -5052,12 +5065,10 @@ Status NativeDynamicShapePlan::dispatchSegment(
   // If syncOverrideDepth_ > 0 while shapes are frozen or replaying, this
   // segment is forced slot-by-slot and CUDA graph replay cannot happen.
   if ((planLifecycle_.isShapesFrozen() || planLifecycle_.isReplaying()) && syncOverrideDepth_ > 0) {
-    DSP_DIAG(EXECUTE, "DSP ERROR: syncOverrideDepth=%d during %s phase",
-             syncOverrideDepth_, planLifecycle_.displayName());
-    sd_printf("DSP ERROR: syncOverrideDepth=%d during %s phase. "
-              "Segment [%d-%d] forced slot-by-slot. This BLOCKS CUDA graph replay.\n",
-              syncOverrideDepth_, planLifecycle_.displayName(),
-              seg.def.startSlot, seg.def.endSlot);
+    DSP_DIAG(EXECUTE, "DSP ERROR: syncOverrideDepth=%d during %s phase — segment [%d-%d] forced "
+             "slot-by-slot, blocking CUDA graph replay",
+             syncOverrideDepth_, planLifecycle_.displayName(),
+             seg.def.startSlot, seg.def.endSlot);
   }
 
   // ── VALIDATION: detect invalid state combinations ──────────────────────

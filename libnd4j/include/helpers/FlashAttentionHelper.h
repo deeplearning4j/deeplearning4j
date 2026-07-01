@@ -414,7 +414,7 @@ extern void fusedCausalMaskSoftmaxCuda(NDArray* input, NDArray* output, NDArray*
 // Q: [batch, 1, numQHeads, headDim], K/V: [batch, seqKV, numKvHeads, headDim]
 // Output: [batch, 1, numQHeads, headDim]
 extern void fusedGQADecodeCuda(NDArray* query, NDArray* key, NDArray* value,
-                                NDArray* output, float scale,
+                                NDArray* output, double scale,
                                 LaunchContext* context,
                                 NDArray* attentionBias = nullptr);
 #else  // CPU build — provide no-op stubs so impl/*.cpp files need no #ifdef SD_CUDA
@@ -426,7 +426,7 @@ static inline void applyCausalMaskCuda(NDArray*, LaunchContext*) {}
 static inline void fusedCausalMaskSoftmaxCuda(NDArray*, NDArray*, NDArray*,
                                                bool, LaunchContext*) {}
 static inline void fusedGQADecodeCuda(NDArray*, NDArray*, NDArray*, NDArray*,
-                                       float, LaunchContext*, NDArray* = nullptr) {}
+                                       double, LaunchContext*, NDArray* = nullptr) {}
 #endif
 
 }  // namespace sd

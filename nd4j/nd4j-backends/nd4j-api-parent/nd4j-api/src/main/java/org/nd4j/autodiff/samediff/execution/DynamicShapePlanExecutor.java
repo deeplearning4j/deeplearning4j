@@ -56,9 +56,13 @@ import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+
 import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Executes a compiled {@link DynamicShapePlan} with pre-wired index-based slot access.
@@ -110,8 +114,8 @@ public class DynamicShapePlanExecutor implements Closeable {
      * <p>InferenceSession queries {@link #hasFrozenExecutors()} before calling
      * {@code clearTADCache()}: if any frozen executor exists, the call is suppressed.
      */
-    private static final java.util.concurrent.atomic.AtomicInteger GLOBAL_FROZEN_EXECUTOR_COUNT =
-            new java.util.concurrent.atomic.AtomicInteger(0);
+    private static final AtomicInteger GLOBAL_FROZEN_EXECUTOR_COUNT =
+            new AtomicInteger(0);
 
     /**
      * Returns true if at least one DynamicShapePlanExecutor process-wide has reached
@@ -202,8 +206,8 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  If thread A's readback (getOutputArrayNative + copyBuffer) races with
      *  thread B's execute (which overwrites the same output slots), A gets
      *  B's results (stale output). This lock spans the execute+readback window. */
-    private final java.util.concurrent.locks.ReentrantLock nativeExecLock =
-            new java.util.concurrent.locks.ReentrantLock();
+    private final ReentrantLock nativeExecLock =
+            new ReentrantLock();
 
     /** Native C++ plan handle. Compiled once from the serialized plan on first native
      *  execution attempt. Freed on close(). null means not yet compiled or compilation failed.
@@ -895,7 +899,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     public INDArray[] getExternalInputsSnapshot() {
         if (externalInputs == null) return null;
-        return java.util.Arrays.copyOf(externalInputs, externalInputs.length);
+        return Arrays.copyOf(externalInputs, externalInputs.length);
     }
 
     /**
@@ -2031,7 +2035,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
 
             log.debug("KV scatter: slot {} ({}) -> static buf shape={}", slotIdx, outputName,
-                    java.util.Arrays.toString(staticBuf.shape()));
+                    Arrays.toString(staticBuf.shape()));
         }
 
         if (presentSlotIndices.isEmpty() || heads < 0) {
@@ -2309,7 +2313,6 @@ public class DynamicShapePlanExecutor implements Closeable {
     private void closeSlotArrayCache() {
         if (slotArrayCache == null) return;
         log.info("    closeSlotArrayCache: START (length={})", slotArrayCache.length);
-        System.out.flush(); System.err.flush();
 
         // Merge any remaining deferred buffers from mid-execution flushes.
         if (!deferredClose.isEmpty()) {
@@ -2377,7 +2380,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
 
         log.info("    closeSlotArrayCache: collected {} buffers, calling freePendingBuffers", collected);
-        System.out.flush(); System.err.flush();
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         Pointer stream = null;
@@ -2393,7 +2395,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         pendingClose.clear();
 
         log.info("    closeSlotArrayCache: freePendingBuffers done ({}/{} freed, {}MB)", stats[0], stats[1], stats[2]);
-        System.out.flush(); System.err.flush();
 
         // Trim memory pool so freed memory is immediately available
         if (stream != null) {
@@ -2407,7 +2408,6 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
         }
         log.info("    closeSlotArrayCache: DONE");
-        System.out.flush(); System.err.flush();
     }
 
     /**
@@ -2435,7 +2435,6 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     public int releaseGpuIntermediates() {
         log.info("releaseGpuIntermediates: START");
-        System.out.flush(); System.err.flush();
 
         // Step 1: Clear Java-side slot array cache (frees Java-managed DataBuffers)
         closeSlotArrayCache();
@@ -2470,7 +2469,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         closeZeroCopyOutputCache();
 
         log.info("releaseGpuIntermediates: DONE (freed {} C++ arrays)", freedCount);
-        System.out.flush(); System.err.flush();
         return freedCount;
     }
 
@@ -2756,7 +2754,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (Nd4j.getEnvironment().isDebug() && extInputs.length > 1331 && extInputs[1331] != null) {
             INDArray ext1331 = extInputs[1331];
             log.info("EXT_INPUT_1331_METADATA: shape={} dtype={} length={} isAttached={}",
-                    java.util.Arrays.toString(ext1331.shape()),
+                    Arrays.toString(ext1331.shape()),
                     ext1331.dataType(),
                     ext1331.length(),
                     ext1331.isAttached());
@@ -2770,7 +2768,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     log.debug("ATTN_DIAG_JAVA: extIdx={} name='{}' rank={} shape={} empty={} length={} dtype={}",
                             i, extKeys[i],
                             arr != null ? arr.rank() : -1,
-                            arr != null ? java.util.Arrays.toString(arr.shape()) : "null",
+                            arr != null ? Arrays.toString(arr.shape()) : "null",
                             arr != null ? arr.isEmpty() : true,
                             arr != null ? arr.length() : 0,
                             arr != null ? arr.dataType() : "null");
@@ -2786,7 +2784,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 } else if (arr.isEmpty() || arr.length() == 0) {
                     emptyCount++;
                     log.debug("EXT_INPUT_WRITE: idx={} name='{}' shape={} empty=true written=false",
-                            i, extKeys[i], java.util.Arrays.toString(arr.shape()));
+                            i, extKeys[i], Arrays.toString(arr.shape()));
                 } else {
                     dataCount++;
                 }
@@ -2990,7 +2988,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             // No sync D2H, no host relay, no pipeline drain.
                             log.info("DSP MIGRATE: ext[{}] '{}' shape={} dtype={} from device {} to {} (placeholder={}, view={})",
                                     i, extKeys != null && i < extKeys.length ? extKeys[i] : "?",
-                                    java.util.Arrays.toString(arr.shape()), arr.dataType(),
+                                    Arrays.toString(arr.shape()), arr.dataType(),
                                     arrDevice, nativeExecutionDevice, isPlaceholder, arr.isView());
                             long startTime = System.nanoTime();
 
@@ -2999,7 +2997,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
                             // Allocate destination buffer on the target device
                             INDArray migrated;
-                            try (org.nd4j.linalg.api.memory.MemoryWorkspace ws =
+                            try (MemoryWorkspace ws =
                                     Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                                 migrated = Nd4j.createUninitialized(srcArr.dataType(), srcArr.shape(), srcArr.ordering());
                             }
@@ -3072,7 +3070,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             if (!isPlaceholder) {
                                 if (staleNonPlaceholderIndices == null) staleNonPlaceholderIndices = new int[16];
                                 if (staleNonPlaceholderCount >= staleNonPlaceholderIndices.length)
-                                    staleNonPlaceholderIndices = java.util.Arrays.copyOf(
+                                    staleNonPlaceholderIndices = Arrays.copyOf(
                                             staleNonPlaceholderIndices, staleNonPlaceholderIndices.length * 2);
                                 staleNonPlaceholderIndices[staleNonPlaceholderCount++] = i;
                             }
@@ -3523,12 +3521,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                             && frozenExtShapeSnapshot[i] != null && extInputs[i].shape() != null) {
                         long[] snapShape = frozenExtShapeSnapshot[i];
                         long[] currShape = extInputs[i].shape();
-                        if (!java.util.Arrays.equals(snapShape, currShape)) {
+                        if (!Arrays.equals(snapShape, currShape)) {
                             throw new IllegalStateException(
                                     "LIFECYCLE_ERROR: external input " + i + " (" + extKeys[i] +
                                     ") shape changed during frozen execution: " +
-                                    java.util.Arrays.toString(snapShape) + " → " +
-                                    java.util.Arrays.toString(currShape) +
+                                    Arrays.toString(snapShape) + " → " +
+                                    Arrays.toString(currShape) +
                                     ". Unfreeze shapes before changing constant/variable shapes.");
                         }
                     }
@@ -3928,7 +3926,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
                 if (Nd4j.getEnvironment().isDebugAndVerbose() && result.rank() >= 2 && result.length() > 0) {
                     log.info("DSP_COPY_VERIFY[{}] shape={} dtype={} len={} asyncCopy=true",
-                            outputName, java.util.Arrays.toString(result.shape()),
+                            outputName, Arrays.toString(result.shape()),
                             result.dataType(), result.length());
                 }
                 results.put(outputName, result);
@@ -3993,7 +3991,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     INDArray arr = entry.getValue();
                     if (arr != null && arr.length() > 0) {
                         StringBuilder sb = new StringBuilder();
-                        sb.append("NATIVE_OUT ").append(name).append(" shape=").append(java.util.Arrays.toString(arr.shape()));
+                        sb.append("NATIVE_OUT ").append(name).append(" shape=").append(Arrays.toString(arr.shape()));
                         sb.append(" first5=[");
                         long limit = Math.min(5, arr.length());
                         for (long j = 0; j < limit; j++) {
@@ -4099,7 +4097,6 @@ public class DynamicShapePlanExecutor implements Closeable {
     @Override
     public void close() {
         log.info("  DSP close() step 1: closeSlotArrayCache");
-        System.out.flush(); System.err.flush();
         closeSlotArrayCache();
         int nativeReplicaCount = nativeConstantReplicaCache != null ? nativeConstantReplicaCache.size() : 0;
         if (nativeReplicaCount > 0) {
@@ -4108,7 +4105,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         int nativeReplicasClosed = closeNativeConstantReplicaCache();
 
         log.info("  DSP close() step 3: outputSlots");
-        System.out.flush(); System.err.flush();
         if (outputSlots != null) {
             Arrays.fill(outputSlots, null);
         }
@@ -4120,7 +4116,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         int zeroCopyEntries = zeroCopyOutputCache != null ? zeroCopyOutputCache.size() : 0;
         if (zeroCopyEntries > 0) {
             log.info("  DSP close() step 4: zeroCopyOutputCache ({} entries)", zeroCopyEntries);
-            System.out.flush(); System.err.flush();
         }
         int zeroCopyClosed = closeZeroCopyOutputCache();
 
@@ -4137,7 +4132,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Free cached OpaqueContext
         if (cachedOpContext != null) {
             log.info("  DSP close() step 5: deleteGraphContext");
-            System.out.flush(); System.err.flush();
             try {
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                 nativeOps.deleteGraphContext(cachedOpContext);
@@ -4164,7 +4158,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         // would free C++ slot arrays that the cache destructor also frees, causing
         // a double free on JVM shutdown.
         log.info("  DSP close() step 6: freeNativePlanHandle");
-        System.out.flush(); System.err.flush();
         freeNativePlanHandle("EXECUTOR_CLOSE");
 
         currentPlan = null;
@@ -4173,7 +4166,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         protectedConstantBuffers = null;
         log.info("  DSP close() complete (nativeReplicasClosed={}, zeroCopyClosed={})",
                 nativeReplicasClosed, zeroCopyClosed);
-        System.out.flush(); System.err.flush();
     }
 
     /**

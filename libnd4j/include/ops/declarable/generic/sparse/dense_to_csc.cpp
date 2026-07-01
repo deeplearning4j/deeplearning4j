@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(dense_to_csc, 1, 3, false, 1, 0) {
   auto cscRowIdx = OUTPUT_VARIABLE(1);
   auto cscColPtr = OUTPUT_VARIABLE(2);
 
-  sd::ops::helpers::dense_to_csc(*dense, *cscValues, *cscRowIdx, *cscColPtr, threshold);
+  sd::ops::helpers::dense_to_csc(block.launchContext(), *dense, *cscValues, *cscRowIdx, *cscColPtr, threshold);
 
   return sd::Status::OK;
 }

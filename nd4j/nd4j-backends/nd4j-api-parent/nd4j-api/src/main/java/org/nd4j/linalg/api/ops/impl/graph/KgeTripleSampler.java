@@ -36,6 +36,9 @@ public final class KgeTripleSampler {
 
     private KgeTripleSampler() { }
 
+    /** Max rejection-sampling attempts to find a filtered negative before failing loudly. */
+    private static final int MAX_CORRUPTION_ATTEMPTS = 100;
+
     private static long encode(int h, int r, int t, int numEntities, int numRelations) {
         return ((long) h * numRelations + r) * (long) numEntities + t;
     }
@@ -81,7 +84,19 @@ public final class KgeTripleSampler {
                         t = rng.nextInt(numEntities);     // corrupt tail
                     }
                     tries++;
-                } while (known != null && known.contains(encode(h, r, t, numEntities, numRelations)) && tries < 50);
+                } while (known != null && known.contains(encode(h, r, t, numEntities, numRelations))
+                        && tries < MAX_CORRUPTION_ATTEMPTS);
+                // Filtered sampling must never emit a known-true triple as a "negative". If we
+                // exhausted the attempt budget, the entity space is too small/saturated to corrupt
+                // this positive — fail loudly rather than poison the batch with a true triple.
+                if (known != null && known.contains(encode(h, r, t, numEntities, numRelations))) {
+                    throw new IllegalStateException(
+                            "Could not sample a filtered negative for triple {" + pos[0] + ", " + r + ", "
+                            + pos[2] + "} after " + MAX_CORRUPTION_ATTEMPTS + " attempts; the entity space"
+                            + " (numEntities=" + numEntities + ") is too small or too saturated for filtered"
+                            + " negative sampling. Increase numEntities, reduce negPerPos, or pass known=null"
+                            + " for unfiltered sampling.");
+                }
                 negs[idx][0] = h;
                 negs[idx][1] = r;
                 negs[idx][2] = t;

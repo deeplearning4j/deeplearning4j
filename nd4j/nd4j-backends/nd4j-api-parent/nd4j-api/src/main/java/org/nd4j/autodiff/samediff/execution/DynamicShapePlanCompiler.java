@@ -47,6 +47,7 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.reduce3.BaseReduce3Op;
@@ -162,7 +163,7 @@ public class DynamicShapePlanCompiler {
                 // Tensor array ops (create_list, stack_list, etc.) are meta-ops handled
                 // by special Java-side logic in InferenceSession. The native executor
                 // has no shape functions for them.
-                if (sdOp.getOp() instanceof org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp) {
+                if (sdOp.getOp() instanceof BaseTensorOp) {
                     log.debug("DSP compile: graph contains tensor array op '{}'. " +
                             "Falling back to standard path.", opNameLower);
                     return null;
@@ -603,8 +604,8 @@ public class DynamicShapePlanCompiler {
             // block.getTArguments() — if tArgs is empty, argumentsAsT() returns nullptr,
             // causing SIGSEGV in op_logic(double, double*).
             // Mirror extraArgs → tArgs so the C++ ExtraArguments is populated.
-            if (!isCustomOp && tArgs.length == 0 && op instanceof org.nd4j.linalg.api.ops.Op) {
-                Object[] extras = ((org.nd4j.linalg.api.ops.Op) op).extraArgs();
+            if (!isCustomOp && tArgs.length == 0 && op instanceof Op) {
+                Object[] extras = ((Op) op).extraArgs();
                 if (extras != null && extras.length > 0) {
                     double[] packedT = new double[extras.length];
                     for (int i = 0; i < extras.length; i++) {
@@ -711,7 +712,7 @@ public class DynamicShapePlanCompiler {
 
             // Determine if this op needs dynamic shape inference
             boolean requiresDynamic = false;
-            if (op instanceof org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp) {
+            if (op instanceof BaseTensorOp) {
                 requiresDynamic = true;
             }
 

@@ -395,6 +395,32 @@ bool slotUsesValueTrackedConstantGeneration(const NativeSlot& slot) {
   return (traits & sd::ops::OP_TRAIT_CONSTANT_GENERATION) != 0 &&
          (traits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0;
 }
+
+bool compositeScheduleRunsSlotLive(const GraphSegment& seg, int slotIdx) {
+  const auto& sched = seg.exec.compositeReplaySchedule;
+  if (sched.units.empty()) return false;
+
+  for (const auto& unit : sched.units) {
+    if (slotIdx < unit.startSlot || slotIdx > unit.endSlot) continue;
+    return unit.kind == REPLAY_UNIT_GAP && unit.mergedGroupId < 0;
+  }
+  return false;
+}
+
+bool shouldTrackCreateValueKey(const GraphSegment& seg, int slotIdx, const NativeSlot& slot) {
+  if (!slotUsesValueTrackedConstantGeneration(slot)) return false;
+
+  // Native-only monolithic capture executes these ops live before graph replay.
+  // Their values are not baked into the graph and therefore are not a replay key.
+  if (seg.exec.createOpsExcludedFromGraph) return false;
+
+  // Composite schedules can leave gap units live. A live gap create op is executed
+  // before downstream graph units every replay, so value changes are handled by
+  // normal execution rather than by invalidating captured CUDA graphs.
+  if (compositeScheduleRunsSlotLive(seg, slotIdx)) return false;
+
+  return true;
+}
 }  // namespace
 
 LongType NativeDynamicShapePlan::computeCreateOpValueKey(
@@ -408,7 +434,7 @@ LongType NativeDynamicShapePlan::computeCreateOpValueKey(
   // Part 1: Hash create op inputs (original logic)
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
-    if (!slotUsesValueTrackedConstantGeneration(slot)) continue;
+    if (!shouldTrackCreateValueKey(seg, s, slot)) continue;
 
     // Track the inputs of any value-tracked constant-generation op.
     // This keeps replay invalidation trait-driven instead of relying on op names.
@@ -1684,11 +1710,11 @@ void NativeDynamicShapePlan::performReplayVerify(
     void* stream, const char* pathLabel) {
   DSP_DIAG(VERIFY, "performReplayVerify ENTERED path=%s execCount=%d",
            pathLabel, seg.exec.executionCount);
-  fflush(stderr);
 
-  // Ensure VERIFY diagnostics are enabled (may have been set after DspDiagnostics construction)
+  // Ensure the VERIFY category is enabled (may have been set after DspDiagnostics construction).
+  // NOTE: do NOT force the global level to DSP_LEVEL_FULL here — that permanently cranks the
+  // verbosity of every category for the rest of the process. Respect the configured level.
   DspDiagnostics::getInstance().enableCategories(DSP_DIAG_VERIFY);
-  DspDiagnostics::getInstance().setLevel(DSP_LEVEL_FULL);
 
   cudaStream_t cudaStr = stream ? *static_cast<cudaStream_t*>(stream) : nullptr;
 

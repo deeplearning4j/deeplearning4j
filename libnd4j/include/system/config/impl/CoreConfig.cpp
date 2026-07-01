@@ -165,6 +165,13 @@ void CoreConfig::initFromEnvironment() {
   }
 #endif
 
+  // NOTE: Do NOT configure OpenBLAS threads here. This runs inside Environment's
+  // construction (Environment ctor -> CoreConfig::initFromEnvironment), and touching
+  // BlasHelper::getInstance() from here re-enters Environment::getInstance() via
+  // BlasHelper's ctor (env_isDebug), deadlocking the singleton's call_once at .so load.
+  // OpenBLAS thread count is owned by BlasHelper (below Environment in init order); its
+  // default was changed there from "pin to 1" to "native multi-threaded default".
+
   if (std::getenv("SD_FORBID_HELPERS") != nullptr) {
     _allowHelpers.store(false);
   }

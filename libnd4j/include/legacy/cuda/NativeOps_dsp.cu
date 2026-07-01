@@ -329,15 +329,19 @@ int executeDynamicShapePlan(
     // (via copyBuffer + syncToPrimary, or direct host-buffer reads).  Without a
     // CPU-blocking sync here, Java reads host buffers before the GPU finishes.
     //
-    // We sync BOTH the DSP stream (where kernels ran) AND the LC default stream
-    // (where platformEndExecution ordered cross-stream work). Gap ops, Triton
-    // compilation, and cross-stream event waits may issue work to the LC stream
-    // that isn't captured by syncing the DSP stream alone.
+    // Sync the actual DSP execution stream, not just the caller/JNI stream
+    // pointer. platformEndExecution orders LC default work through CUDA events;
+    // after the real DSP stream is drained, Java-side readback can safely copy
+    // from completed output buffers.
     {
-      // cudaStream is a void* pointing to a cudaStream_t (i.e. cudaStream_t*).
-      // plan->execute() dereferences it the same way: *static_cast<cudaStream_t*>(stream).
-      cudaStream_t dspStream = (cudaStream != nullptr)
-          ? *static_cast<cudaStream_t*>(cudaStream)
+      // cudaStream is the caller/JNI stream pointer. On the first execution,
+      // platformBeginExecution may create and switch to a plan-owned stream after
+      // Java has already resolved that pointer. Sync the actual plan execution
+      // stream after execute(), falling back to the caller stream only if needed.
+      void* planStream = plan->getExecutionStream();
+      void* syncStreamPtr = (planStream != nullptr) ? planStream : cudaStream;
+      cudaStream_t dspStream = (syncStreamPtr != nullptr)
+          ? *static_cast<cudaStream_t*>(syncStreamPtr)
           : *sd::LaunchContext::defaultContext()->getCudaStream();
       cudaError_t syncErr = cudaStreamSynchronize(dspStream);
       if (syncErr != cudaSuccess) {

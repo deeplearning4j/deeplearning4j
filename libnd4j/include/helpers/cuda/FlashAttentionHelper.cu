@@ -934,7 +934,7 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    const LongType numKvHeads,
    const LongType headDim,
    const LongType headsPerKvHead,
-   const float scale,
+   const double scale,
    // Strides for Q [batch, 1, numQHeads, headDim]
    const LongType qStride0, const LongType qStride2, const LongType qStride3,
    // Strides for K [batch, seqKV, numKvHeads, headDim]
@@ -1131,7 +1131,7 @@ static void fusedGQADecodeLauncher(
    const void* vQuery, const void* vKey, const void* vValue, const void* vAttnBias,
    void* vOutput,
    LongType batch, LongType seqKV, LongType numQHeads, LongType numKvHeads,
-   LongType headDim, LongType headsPerKvHead, float scale,
+   LongType headDim, LongType headsPerKvHead, double scale,
    LongType qStride0, LongType qStride2, LongType qStride3,
    LongType kStride0, LongType kStride1, LongType kStride2, LongType kStride3,
    LongType vStride0, LongType vStride1, LongType vStride2, LongType vStride3,
@@ -1170,7 +1170,7 @@ static void fusedGQADecodeLauncher(
 //////////////////////////////////////////////////////////////////////////////
 void fusedGQADecodeCuda(
    NDArray* query, NDArray* key, NDArray* value,
-   NDArray* output, float scale,
+   NDArray* output, double scale,
    LaunchContext* context, NDArray* attentionBias) {
 
  auto stream = context->getCudaStream();

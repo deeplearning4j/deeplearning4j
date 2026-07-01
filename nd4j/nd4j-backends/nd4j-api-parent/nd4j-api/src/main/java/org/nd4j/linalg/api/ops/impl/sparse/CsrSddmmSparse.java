@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -139,5 +140,30 @@ public class CsrSddmmSparse extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         return Collections.singletonList(dataTypes.get(2));
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grads) {
+        SDVariable gradOut = grads.get(0);
+        long P = iArguments.get(0);
+        long Q = iArguments.get(1);
+        long R = iArguments.get(2);
+        SDVariable targetRowPtr = arg(0);
+        SDVariable targetColIdx = arg(1);
+        SDVariable Lvalues = arg(2);
+        SDVariable LcolIdx = arg(3);
+        SDVariable LrowPtr = arg(4);
+        SDVariable Mvalues = arg(5);
+        SDVariable McolIdx = arg(6);
+        SDVariable MrowPtr = arg(7);
+        SDVariable[] bpOut = new CsrSddmmSparseBp(sameDiff,
+            targetRowPtr, targetColIdx, LcolIdx, LrowPtr, McolIdx, MrowPtr,
+            Lvalues, Mvalues, gradOut, P, Q, R).outputVariables();
+        return Arrays.asList(
+            sameDiff.zerosLike(targetRowPtr), sameDiff.zerosLike(targetColIdx),
+            bpOut[0],
+            sameDiff.zerosLike(LcolIdx), sameDiff.zerosLike(LrowPtr),
+            bpOut[1],
+            sameDiff.zerosLike(McolIdx), sameDiff.zerosLike(MrowPtr));
     }
 }

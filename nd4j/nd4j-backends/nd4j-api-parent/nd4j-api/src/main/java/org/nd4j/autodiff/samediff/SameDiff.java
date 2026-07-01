@@ -151,6 +151,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     private Pointer nativePlanCache;
 
+    /**
+     * External inputs whose contents are mutated in-place between DSP executions.
+     * Native plans must treat these VARIABLE inputs like mutable feeds so frozen
+     * constant detection does not skip slots that depend on their values.
+     */
+    private final Set<String> mutableDynamicShapePlanInputs = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
 
     @Getter
     private Map<String, SameDiff> sameDiffFunctionInstances;
@@ -2248,6 +2255,52 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         dataSet.setCloseable(false);
         return fit(new SingletonMultiDataSetIterator(dataSet), 1, false,
                 null, 1, listeners);
+    }
+
+    /**
+     * Fit the SameDiff instance on a single in-memory minibatch supplied as a placeholder
+     * {@code name -> array} map. This is the training counterpart of
+     * {@link #output(Map, String...)}: the map must contain an array for every feature and
+     * label placeholder named in the {@link TrainingConfig}'s {@code dataSetFeatureMapping}
+     * and {@code dataSetLabelMapping}. The map is converted to a {@link MultiDataSet} (feature
+     * and label arrays ordered per those mappings) and a single training iteration is run.
+     * <br>
+     * A {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before
+     * training can be performed.
+     *
+     * @param placeholders name -> array map holding every feature and label placeholder for one minibatch
+     * @param listeners    additional listeners to use during this operation
+     * @return a {@link History} object containing the history information for this training iteration
+     */
+    public History fit(@NonNull Map<String, INDArray> placeholders, @NonNull Listener... listeners) {
+        Preconditions.checkState(trainingConfig != null,
+                "A TrainingConfig must be set via setTrainingConfig(...) before calling fit(Map<String,INDArray>)");
+        List<String> featureMapping = trainingConfig.getDataSetFeatureMapping();
+        Preconditions.checkState(featureMapping != null && !featureMapping.isEmpty(),
+                "TrainingConfig.dataSetFeatureMapping must be set to map placeholder names to MultiDataSet feature arrays");
+        INDArray[] features = new INDArray[featureMapping.size()];
+        for (int i = 0; i < featureMapping.size(); i++) {
+            String name = featureMapping.get(i);
+            features[i] = placeholders.get(name);
+            Preconditions.checkState(features[i] != null,
+                    "Feature placeholder \"%s\" (from dataSetFeatureMapping) is missing from the supplied map", name);
+        }
+        List<String> labelMapping = trainingConfig.getDataSetLabelMapping();
+        INDArray[] labels;
+        if (labelMapping != null && !labelMapping.isEmpty()) {
+            labels = new INDArray[labelMapping.size()];
+            for (int i = 0; i < labelMapping.size(); i++) {
+                String name = labelMapping.get(i);
+                labels[i] = placeholders.get(name);
+                Preconditions.checkState(labels[i] != null,
+                        "Label placeholder \"%s\" (from dataSetLabelMapping) is missing from the supplied map", name);
+            }
+        } else {
+            labels = new INDArray[0];
+        }
+        // Construct the impl MultiDataSet directly: the simple name "MultiDataSet" resolves to the
+        // org.nd4j.linalg.dataset.api.MultiDataSet interface imported by this class.
+        return fit(new org.nd4j.linalg.dataset.MultiDataSet(features, labels), listeners);
     }
 
     /**
@@ -4675,6 +4728,35 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
+     * Mark variable inputs whose array contents are mutated in-place between DSP
+     * executions. Native plans use this to avoid freezing value-dependent slots
+     * as constants while preserving immutable weight behavior for normal inference.
+     */
+    public void markDynamicShapePlanInputsMutable(Collection<String> variableNames) {
+        if (variableNames == null || variableNames.isEmpty()) {
+            return;
+        }
+
+        for (String variableName : variableNames) {
+            if (variableName != null) {
+                mutableDynamicShapePlanInputs.add(variableName);
+            }
+        }
+
+        if (sameDiffFunctionInstances != null) {
+            for (SameDiff subFn : sameDiffFunctionInstances.values()) {
+                if (subFn != null && subFn != this) {
+                    subFn.markDynamicShapePlanInputsMutable(variableNames);
+                }
+            }
+        }
+    }
+
+    public Set<String> getDynamicShapePlanMutableInputs() {
+        return new LinkedHashSet<>(mutableDynamicShapePlanInputs);
+    }
+
+    /**
      * Invalidate all plan caches: SameDiff-level DSP plan cache AND per-session
      * DAG/plan/constant caches. Call when graph structure changes (e.g., variable
      * type changes from placeholder override) or when input values are mutated
@@ -4682,10 +4764,22 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * next forward pass must see the updated values rather than a cached plan result.
      */
     public void invalidateAllPlanCaches() {
-        clearDynamicShapePlanCache();
-        for (InferenceSession session : sessions.values()) {
-            session.clearAllCaches();
+        try {
+            // Invalidation is also an ordering boundary for in-place CUDA mutations
+            // (for example GradCheckUtil's putScalar perturbations). Drain queued
+            // executioner work before destroying sessions or native plan/cache state.
+            Nd4j.getExecutioner().commit();
+        } catch (Exception e) {
+            log.debug("Executioner commit before DSP cache invalidation failed: {}", e.getMessage());
         }
+
+        // Live InferenceSessions own DynamicShapePlanExecutors whose nativePlanHandle
+        // pointers are entries in nativePlanCache. The executor must release GPU
+        // intermediates and unpin its handle before the owning native cache is cleared;
+        // clearing the cache first leaves dangling executor handles and can corrupt the
+        // next DSP execution during gradcheck perturbation loops.
+        closeAllSessions();
+        clearDynamicShapePlanCache();
         // Also invalidate all sub-function instances (e.g., the grad function built by
         // createGradFunction). The grad function is a separate SameDiff instance that holds
         // its own native plan cache and InferenceSession state. Its C++ plan may hold

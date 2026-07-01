@@ -221,7 +221,7 @@ void PointersManager::synchronize() const {
       THROW_EXCEPTION(msg.c_str());
     }
   } else {
-    sd_printf("<%s> syncStream isn't possible: no stream set!", _funcName.c_str());
+    sd_debug("<%s> syncStream isn't possible: no stream set!", _funcName.c_str());
   }
 }
 

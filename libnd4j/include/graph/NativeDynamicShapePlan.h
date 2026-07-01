@@ -1039,6 +1039,57 @@ struct GraphSegmentExec {
              displayPhaseName(), executionCount);
   }
 
+  void recordReplayBaselineKeys(LongType shapeKey, LongType inputAddrKey, const char* reason) {
+    DSP_DIAG(LIFECYCLE,
+             "REPLAY_BASELINE_KEYS: reason=%s phase=%s exec=%d "
+             "shapeKey %lld -> %lld inputAddrKey %lld -> %lld",
+             reason ? reason : "?", displayPhaseName(), executionCount,
+             (long long)cachedShapeKey, (long long)shapeKey,
+             (long long)capturedInputAddrKey, (long long)inputAddrKey);
+    cachedShapeKey = shapeKey;
+    capturedInputAddrKey = inputAddrKey;
+  }
+
+  void recordReplayInputAddrKey(LongType inputAddrKey, const char* reason) {
+    DSP_DIAG(LIFECYCLE,
+             "REPLAY_INPUT_ADDR_KEY: reason=%s phase=%s exec=%d inputAddrKey %lld -> %lld",
+             reason ? reason : "?", displayPhaseName(), executionCount,
+             (long long)capturedInputAddrKey, (long long)inputAddrKey);
+    capturedInputAddrKey = inputAddrKey;
+  }
+
+  void recordReplayAddressKeys(LongType inputAddrKey, LongType slotAddrHash, const char* reason) {
+    DSP_DIAG(LIFECYCLE,
+             "REPLAY_ADDRESS_KEYS: reason=%s phase=%s exec=%d "
+             "inputAddrKey %lld -> %lld slotAddrHash %lld -> %lld",
+             reason ? reason : "?", displayPhaseName(), executionCount,
+             (long long)capturedInputAddrKey, (long long)inputAddrKey,
+             (long long)capturedSlotAddrHash, (long long)slotAddrHash);
+    capturedInputAddrKey = inputAddrKey;
+    capturedSlotAddrHash = slotAddrHash;
+  }
+
+  void clearGraphContentFlags(const char* reason) {
+    DSP_DIAG(LIFECYCLE,
+             "CLEAR_GRAPH_CONTENT_FLAGS: reason=%s phase=%s exec=%d "
+             "gapsCaptured %d -> 0 createOpsExcluded %d -> 0",
+             reason ? reason : "?", displayPhaseName(), executionCount,
+             gapOpsCapturedInGraph ? 1 : 0,
+             createOpsExcludedFromGraph ? 1 : 0);
+    gapOpsCapturedInGraph = false;
+    createOpsExcludedFromGraph = false;
+  }
+
+  void markCreateOpsExcludedFromGraph(bool excluded, const char* reason, int skippedCount = 0) {
+    DSP_DIAG(LIFECYCLE,
+             "CREATE_OPS_EXCLUDED_FROM_GRAPH: reason=%s phase=%s exec=%d "
+             "skipped=%d createOpsExcluded %d -> %d",
+             reason ? reason : "?", displayPhaseName(), executionCount,
+             skippedCount, createOpsExcludedFromGraph ? 1 : 0,
+             excluded ? 1 : 0);
+    createOpsExcludedFromGraph = excluded;
+  }
+
   // Reset a segment to its WARMUP baseline for re-capture: zero the execution /
   // OOM-retry counters and the capture-identity keys (resetCaptureKeys), and clear
   // the graph-content flags. Does NOT touch lifecycle phase/outcome (the caller
@@ -1050,8 +1101,7 @@ struct GraphSegmentExec {
     captureOomRetries = 0;
     captureRetryAfterExec = 0;
     resetCaptureKeys();
-    gapOpsCapturedInGraph = false;
-    createOpsExcludedFromGraph = false;
+    clearGraphContentFlags("reset_for_warmup");
     DSP_DIAG(LIFECYCLE, "RESET_FOR_WARMUP: counters+keys+graphflags reset phase=%s",
              displayPhaseName());
   }
@@ -1128,11 +1178,27 @@ struct GraphSegmentExec {
   void sealCapture(LongType inputAddrKey, LongType createValueKey,
                    LongType slotAddrHash, const char* backendName,
                    bool gapsCaptured) {
+    const LongType prevInputAddrKey = capturedInputAddrKey;
+    const LongType prevCreateValueKey = capturedCreateValueKey;
+    const LongType prevSlotAddrHash = capturedSlotAddrHash;
+    const bool prevGapsCaptured = gapOpsCapturedInGraph;
+    const bool backendWasEmpty = compiledByBackend.empty();
     capturedInputAddrKey = inputAddrKey;
     capturedCreateValueKey = createValueKey;
     capturedSlotAddrHash = slotAddrHash;
     gapOpsCapturedInGraph = gapsCaptured;
     if (compiledByBackend.empty()) compiledByBackend = backendName;
+    DSP_DIAG(LIFECYCLE,
+             "SEAL_CAPTURE: phase=%s exec=%d backend=%s backendSet=%d "
+             "inputAddrKey %lld -> %lld createValueKey %lld -> %lld "
+             "slotAddrHash %lld -> %lld gapsCaptured %d -> %d",
+             displayPhaseName(), executionCount,
+             backendName ? backendName : "?",
+             backendWasEmpty ? 1 : 0,
+             (long long)prevInputAddrKey, (long long)capturedInputAddrKey,
+             (long long)prevCreateValueKey, (long long)capturedCreateValueKey,
+             (long long)prevSlotAddrHash, (long long)capturedSlotAddrHash,
+             prevGapsCaptured ? 1 : 0, gapOpsCapturedInGraph ? 1 : 0);
   }
 
   // Query: does the monolithic graph include gap ops?
@@ -1198,6 +1264,17 @@ struct GraphSegmentExec {
   int getExecutionPhaseCode() const { return segPhase.toLegacyCode(); }
 
   void reset() {
+    DSP_DIAG(LIFECYCLE,
+             "SEGMENT_EXEC_RESET: before phase=%s exec=%d backend=%s "
+             "inputAddrKey=%lld createValueKey=%lld slotAddrHash=%lld "
+             "gapsCaptured=%d createOpsExcluded=%d",
+             displayPhaseName(), executionCount,
+             compiledByBackend.empty() ? "" : compiledByBackend.c_str(),
+             (long long)capturedInputAddrKey,
+             (long long)capturedCreateValueKey,
+             (long long)capturedSlotAddrHash,
+             gapOpsCapturedInGraph ? 1 : 0,
+             createOpsExcludedFromGraph ? 1 : 0);
     // Primary lifecycle reset
     segPhase.reset();
     // Legacy field sync
@@ -1226,8 +1303,7 @@ struct GraphSegmentExec {
     capturedArgGeneration = 0;
     addrKeyStableCount = 0;
     slotAddrStableCount = 0;
-    gapOpsCapturedInGraph = false;
-    createOpsExcludedFromGraph = false;
+    clearGraphContentFlags("segment_reset");
     handleTracker.reset();
     viewRecipes = ViewRecipeChain();
     compositeReplaySchedule = ReplaySchedule();
@@ -3152,6 +3228,21 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                            bool createValuesStable, bool extAddrsStable,
                            LongType segShapeKey, const char* backendName,
                            bool& handled);
+  void markReplayInvariantInvalidatedForDispatch(GraphSegment& seg,
+                                                 const char* reason,
+                                                 bool& extAddrsStable,
+                                                 bool& hasReplayHandle,
+                                                 bool& replayHandleNull,
+                                                 bool& hasComposite);
+  void markBatchD2DInvalidated(GraphSegment& seg, const char* reason);
+  void markGapOpsCapturedInGraph(GraphSegment& seg, bool captured, const char* reason);
+  void markStaleGapGraphInvalidatedForDispatch(GraphSegment& seg,
+                                               const char* reason,
+                                               int captureMinExec,
+                                               bool& extAddrsStable,
+                                               bool& hasReplayHandle,
+                                               bool& replayHandleNull,
+                                               bool& isTritonCompiled);
 
   // segDispatchCaptureOrDirect — handles CUDA graph capture AND direct
   // (non-capture) Triton execution. Includes TritonOrderedRangeGuard RAII,

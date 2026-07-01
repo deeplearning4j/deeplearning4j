@@ -70,14 +70,12 @@ extern "C" int openblas_get_num_threads(void);
 namespace {
   struct OpenBlasThreadInitializer {
     OpenBlasThreadInitializer() {
-      // Check if user explicitly set OpenBLAS threads
-      const char* env = std::getenv("OPENBLAS_NUM_THREADS");
-      const char* sdEnv = std::getenv("SD_OPENBLAS_THREADS");
-
-      if (env == nullptr && sdEnv == nullptr) {
-        // No explicit thread count - default to single-threaded for safety
-        openblas_set_num_threads(1);
-      }
+      // (no-op) Leave OpenBLAS at its native multi-threaded default (all cores).
+      // Previously this pinned OpenBLAS to 1 thread at library load, which serialized
+      // every BLAS-bound op (transformer / embedding GEMMs) onto a single core.
+      // OPENBLAS_NUM_THREADS is honored by OpenBLAS itself; SD_OPENBLAS_THREADS is applied
+      // in initializeBlasThreading(). Thread-safety comes from BLAS call serialization
+      // (enabled by default), not from single-threading.
     }
   };
   // This global variable's constructor runs at library load time
@@ -683,13 +681,17 @@ void BlasHelper::initializeBlasThreading() {
   }
 
   if (_openblasThreads.load() == 0) {
-    _openblasThreads.store(1);
+    // No explicit override: leave OpenBLAS/MKL at their native multi-threaded default
+    // (all cores) instead of pinning to 1 thread. Pinning to 1 serialized every
+    // BLAS-bound op (transformer / embedding GEMMs) onto a single core. Record the
+    // effective count for getOpenblasThreads(). BLAS call serialization (enabled by
+    // default) provides thread-safety without single-threading.
 #if defined(HAVE_MKL)
-    mkl_set_num_threads(1);
-    sd_debug("MKL threads defaulted to 1 (set MKL_NUM_THREADS to override)\n", "");
+    _openblasThreads.store(mkl_get_max_threads());
+    sd_debug("MKL threads left at native default (set MKL_NUM_THREADS to override)\n", "");
 #elif HAVE_OPENBLAS && !defined(SD_CUDA)
-    openblas_set_num_threads(1);
-    sd_debug("OpenBLAS threads defaulted to 1 to prevent TLS corruption (set OPENBLAS_NUM_THREADS to override)\n", "");
+    _openblasThreads.store(openblas_get_num_threads());
+    sd_debug("OpenBLAS threads left at native default (set OPENBLAS_NUM_THREADS to override)\n", "");
 #endif
   }
 }

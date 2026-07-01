@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
@@ -103,7 +104,7 @@ public class BenchmarkConfigApplier {
      *                 dspExecutionTiming, per-step native timing is enabled on the plan.
      */
     public static void apply(BenchmarkConfig config,
-                             org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor executor) {
+                             DynamicShapePlanExecutor executor) {
         Environment env = Nd4j.getEnvironment();
 
         // Reset to a neutral baseline, then apply the explicit benchmark config.

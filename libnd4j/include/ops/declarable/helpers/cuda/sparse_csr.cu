@@ -232,8 +232,8 @@ static SD_KERNEL void csrScatterKernel(const X* __restrict__ denseData,
 }
 
 template <typename X, typename I>
-static void denseToCsrCuda_(NDArray& input, NDArray& values, NDArray& colIdx, NDArray& rowPtr,
-                             double threshold) {
+static void denseToCsrCuda_(sd::LaunchContext* context, NDArray& input, NDArray& values,
+                             NDArray& colIdx, NDArray& rowPtr, double threshold) {
   const LongType rows = input.sizeAt(0);
   const LongType cols = input.sizeAt(1);
   const X        thr  = static_cast<X>(threshold);
@@ -247,7 +247,7 @@ static void denseToCsrCuda_(NDArray& input, NDArray& values, NDArray& colIdx, ND
   const LongType stride0 = strides[0];
   const LongType stride1 = strides[1];
 
-  const cudaStream_t stream = *input.getContext()->getCudaStream();
+  const cudaStream_t stream = *context->getCudaStream();
 
   // Phase 1: zero rowPtr[0..rows] on device.
   cudaMemsetAsync(dRowPtr, 0, static_cast<size_t>(rows + 1) * sizeof(I), stream);
@@ -282,11 +282,12 @@ static void denseToCsrCuda_(NDArray& input, NDArray& values, NDArray& colIdx, ND
   }
 }
 
-void dense_to_csr(NDArray& input, NDArray& values, NDArray& colIdx, NDArray& rowPtr, double threshold) {
+void dense_to_csr(sd::LaunchContext* context, NDArray& input, NDArray& values,
+                  NDArray& colIdx, NDArray& rowPtr, double threshold) {
   NDArray::prepareSpecialUse({&values, &colIdx, &rowPtr}, {&input});
 
   BUILD_DOUBLE_SELECTOR(input.dataType(), colIdx.dataType(), denseToCsrCuda_,
-                        (input, values, colIdx, rowPtr, threshold),
+                        (context, input, values, colIdx, rowPtr, threshold),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 
   NDArray::registerSpecialUse({&values, &colIdx, &rowPtr}, {&input});

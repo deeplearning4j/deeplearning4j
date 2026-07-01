@@ -209,6 +209,7 @@ public class GradCheckUtil {
             }
 
             String name = s.name();
+            sd.markDynamicShapePlanInputsMutable(Collections.singleton(name));
             INDArray a = s.getArr();
             long n = a.length();
             if(print) {

@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(dense_to_csr, 1, 3, false, 1, 0) {
   auto outColIdx = OUTPUT_VARIABLE(1);
   auto outRowPtr = OUTPUT_VARIABLE(2);
 
-  sd::ops::helpers::dense_to_csr(*dense, *outValues, *outColIdx, *outRowPtr, threshold);
+  sd::ops::helpers::dense_to_csr(block.launchContext(), *dense, *outValues, *outColIdx, *outRowPtr, threshold);
 
   return sd::Status::OK;
 }

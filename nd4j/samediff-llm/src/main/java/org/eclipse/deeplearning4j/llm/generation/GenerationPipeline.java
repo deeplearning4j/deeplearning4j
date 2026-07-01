@@ -54,11 +54,13 @@ import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
+import org.nd4j.autodiff.samediff.optimize.OptimizerSet;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.bytedeco.javacpp.Pointer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -69,6 +71,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
 
 /**
  * Unified LLM inference pipeline that eliminates all manual wiring boilerplate.
@@ -254,20 +259,20 @@ public class GenerationPipeline implements AutoCloseable {
         if (needsDecoderLoad && needsEmbedLoad) {
             // Load both models in parallel — they are independent I/O operations
             long loadStart = System.currentTimeMillis();
-            java.util.concurrent.CompletableFuture<SameDiff> decoderFuture =
-                    java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<SameDiff> decoderFuture =
+                    CompletableFuture.supplyAsync(() -> {
                         try {
                             return loadModel(config.getDecoderPath(), modelLoader);
                         } catch (IOException e) {
-                            throw new java.util.concurrent.CompletionException(e);
+                            throw new CompletionException(e);
                         }
                     });
-            java.util.concurrent.CompletableFuture<SameDiff> embedFuture =
-                    java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<SameDiff> embedFuture =
+                    CompletableFuture.supplyAsync(() -> {
                         try {
                             return loadModel(config.getEmbedTokensPath(), modelLoader);
                         } catch (IOException e) {
-                            throw new java.util.concurrent.CompletionException(e);
+                            throw new CompletionException(e);
                         }
                     });
             try {
@@ -275,7 +280,7 @@ public class GenerationPipeline implements AutoCloseable {
                 ownsDecoder = true;
                 embedTokens = embedFuture.join();
                 ownsEmbedTokens = true;
-            } catch (java.util.concurrent.CompletionException e) {
+            } catch (CompletionException e) {
                 Throwable cause = e.getCause();
                 throw cause instanceof IOException ? (IOException) cause
                         : new IOException("Parallel model loading failed", cause);
@@ -303,10 +308,10 @@ public class GenerationPipeline implements AutoCloseable {
             long optStart = System.currentTimeMillis();
             List<String> outputs = decoder.outputs() != null
                     ? new ArrayList<>(decoder.outputs()) : new ArrayList<>();
-            List<org.nd4j.autodiff.samediff.optimize.OptimizerSet> optimizations =
+            List<OptimizerSet> optimizations =
                     GraphOptimizer.defaultOptimizations().stream()
                             .filter(s -> !(s instanceof org.nd4j.autodiff.samediff.optimize.optimizations.QuantizationOptimizations))
-                            .collect(java.util.stream.Collectors.toList());
+                            .collect(Collectors.toList());
             SameDiff originalDecoder = decoder;
             boolean ownsOriginalDecoder = ownsDecoder;
             SameDiff optimizedDecoder = GraphOptimizer.optimize(decoder, outputs, optimizations);
@@ -396,7 +401,7 @@ public class GenerationPipeline implements AutoCloseable {
                 decoder.getOps().size(),
                 embedTokens != null ? embedTokens.getOps().size() + " ops" : "single-model mode (using decoder)",
                 resolvedHiddenSize,
-                embeddingTable != null ? java.util.Arrays.toString(embeddingTable.shape()) : "null (fallback to SameDiff.output())",
+                embeddingTable != null ? Arrays.toString(embeddingTable.shape()) : "null (fallback to SameDiff.output())",
                 draftDecoder != null ? draftDecoder.getOps().size() + " ops" : "disabled",
                 config.getKvCacheStrategy(),
                 config.isDspEnabled());
@@ -785,7 +790,7 @@ public class GenerationPipeline implements AutoCloseable {
         // ever exports last-position-only [1, 1, vocab] logits on this path too.
         int logitsSamplePos = Math.min(actualPrefillLen - 1, (int) prefillLogits.shape()[1] - 1);
         log.info("[GGUF-KV] Prefill logits shape: {} samplePos={} (actualPrefillLen={})",
-                java.util.Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen);
+                Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen);
         {
             INDArray lastPosLogits = prefillLogits.get(
                     NDArrayIndex.point(0),
@@ -859,8 +864,8 @@ public class GenerationPipeline implements AutoCloseable {
             staticKvBuffers.put(kvInputNames.valueNames.get(i), valBuf);
 
             log.info("[GGUF-KV] Layer {} KV: kRoped shape={} min={} max={}, keyBuf shape={} min={} max={}",
-                    layerIdx, java.util.Arrays.toString(kRoped.shape()), kRoped.minNumber(), kRoped.maxNumber(),
-                    java.util.Arrays.toString(keyBuf.shape()), keyBuf.minNumber(), keyBuf.maxNumber());
+                    layerIdx, Arrays.toString(kRoped.shape()), kRoped.minNumber(), kRoped.maxNumber(),
+                    Arrays.toString(keyBuf.shape()), keyBuf.minNumber(), keyBuf.maxNumber());
             kRoped.close();
             vHeads.close();
         }
@@ -873,7 +878,7 @@ public class GenerationPipeline implements AutoCloseable {
                 recurrentStateBuffers.put(pair.inputName, stateOut.dup());
                 stateOut.close();
                 log.info("[GGUF-KV] Recurrent state {} → {} shape={}", pair.inputName, pair.outputName,
-                        java.util.Arrays.toString(recurrentStateBuffers.get(pair.inputName).shape()));
+                        Arrays.toString(recurrentStateBuffers.get(pair.inputName).shape()));
             } else {
                 log.warn("[GGUF-KV] Missing prefill output for recurrent state '{}'", pair.outputName);
             }
@@ -902,7 +907,7 @@ public class GenerationPipeline implements AutoCloseable {
             // Shape [1,1,1,maxKvLen] is FIXED regardless of actual prompt length.
             decodeCausalMask = DecoderInputBuilder.buildInGraphDecodeMask(firstDecodePos, maxKvLen, maskDtype);
             log.info("[GGUF-KV] Decode mask shape={} dtype={} firstDecodePos={} min={} max={} hasNaN={}",
-                    java.util.Arrays.toString(decodeCausalMask.shape()), decodeCausalMask.dataType(),
+                    Arrays.toString(decodeCausalMask.shape()), decodeCausalMask.dataType(),
                     firstDecodePos,
                     decodeCausalMask.minNumber(), decodeCausalMask.maxNumber(),
                     Double.isNaN(decodeCausalMask.meanNumber().doubleValue()));
@@ -1220,7 +1225,7 @@ public class GenerationPipeline implements AutoCloseable {
 
         for (String opName : var.getInputsForOp()) {
             DifferentialFunction op;
-            try { op = sd.getOpById(opName); } catch (Exception e) { continue; }
+            try { op = sd.getOpById(opName); } catch (Exception e) { log.debug("deriveRecurrentStateShape: getOpById('{}') failed", opName, e); continue; }
             if (op == null) continue;
 
             if (op instanceof GatedDeltaRule) {
@@ -1880,7 +1885,7 @@ public class GenerationPipeline implements AutoCloseable {
         firstLogitsSlice.close();
         log.info("[Native] Prefill firstTokenId={} maxVal={} logitsShape={} samplePos={} (actualPrefillLen={})",
                 firstTokenId, firstMaxVal,
-                java.util.Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen);
+                Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen);
         prefillLogits.close();
 
         // ══════════════════════════════════════════════════════════════════════
@@ -2818,7 +2823,7 @@ public class GenerationPipeline implements AutoCloseable {
                 log.info("Extracted embedding table is {} — casting to FLOAT for decode op", embeddingTable.dataType());
                 embeddingTable = embeddingTable.castTo(DataType.FLOAT);
             }
-            log.info("Extracted embedding table: shape={}", java.util.Arrays.toString(embeddingTable.shape()));
+            log.info("Extracted embedding table: shape={}", Arrays.toString(embeddingTable.shape()));
         } else {
             log.warn("Could not extract embedding table from model");
         }

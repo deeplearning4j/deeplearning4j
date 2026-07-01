@@ -676,8 +676,8 @@ public class SDGNN extends SDOps {
     if (layerNorm) {
         SDVariable lnMean = sd.mean(out, true, 1);
         SDVariable d = out.sub(lnMean);
-        SDVariable var = sd.mean(d.mul(d), true, 1);
-        out = d.div(sd.math().sqrt(var.add(1e-5)));
+        SDVariable variance = sd.mean(d.mul(d), true, 1);
+        out = d.div(sd.math().sqrt(variance.add(1e-5)));
     }
     return out;
   }
@@ -718,8 +718,8 @@ public class SDGNN extends SDOps {
     if (layerNorm) {
         SDVariable lnMean = sd.mean(out, true, 1);
         SDVariable d = out.sub(lnMean);
-        SDVariable var = sd.mean(d.mul(d), true, 1);
-        out = d.div(sd.math().sqrt(var.add(1e-5)));
+        SDVariable variance = sd.mean(d.mul(d), true, 1);
+        out = d.div(sd.math().sqrt(variance.add(1e-5)));
     }
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -758,8 +758,8 @@ public class SDGNN extends SDOps {
     if (layerNorm) {
         SDVariable lnMean = sd.mean(out, true, 1);
         SDVariable d = out.sub(lnMean);
-        SDVariable var = sd.mean(d.mul(d), true, 1);
-        out = d.div(sd.math().sqrt(var.add(1e-5)));
+        SDVariable variance = sd.mean(d.mul(d), true, 1);
+        out = d.div(sd.math().sqrt(variance.add(1e-5)));
     }
     return out;
   }
@@ -799,8 +799,8 @@ public class SDGNN extends SDOps {
     if (layerNorm) {
         SDVariable lnMean = sd.mean(out, true, 1);
         SDVariable d = out.sub(lnMean);
-        SDVariable var = sd.mean(d.mul(d), true, 1);
-        out = d.div(sd.math().sqrt(var.add(1e-5)));
+        SDVariable variance = sd.mean(d.mul(d), true, 1);
+        out = d.div(sd.math().sqrt(variance.add(1e-5)));
     }
     return sd.updateVariableNameAndReference(out, name);
   }

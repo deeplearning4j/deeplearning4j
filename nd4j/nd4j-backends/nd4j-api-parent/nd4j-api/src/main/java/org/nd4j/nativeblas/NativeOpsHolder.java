@@ -180,20 +180,10 @@ public class NativeOpsHolder {
                         getCores(Runtime.getRuntime().availableProcessors()));
         }
 
-        // Configure OpenBLAS threads separately from OMP threads.
-        // Default to 1 thread to prevent SEGV_ACCERR crashes caused by OpenBLAS's
-        // thread-local storage (TLS) corruption when called from Java thread pools.
-        // This can be overridden via ND4J_OPENBLAS_THREADS environment variable.
-        int openBlasThreads = 1; // Safe default
-        String openBlasThreadsString = System.getenv(ND4JEnvironmentVars.ND4J_OPENBLAS_THREADS);
-        if (openBlasThreadsString != null && !openBlasThreadsString.isEmpty()) {
-            try {
-                openBlasThreads = Integer.parseInt(openBlasThreadsString);
-            } catch (NumberFormatException e) {
-                log.warn("Invalid value for ND4J_OPENBLAS_THREADS: '{}', using default of 1", openBlasThreadsString);
-            }
-        }
-        deviceNativeOps.setOpenBlasThreads(openBlasThreads);
+        // OpenBLAS threads are NOT configured here. OpenBLAS follows the single max-threads
+        // setting applied by the native config authority (CoreConfig::initFromEnvironment,
+        // driven by _maxThreads / OMP_NUM_THREADS / SD_MAX_THREADS). There is no
+        // backend-specific OpenBLAS knob to set from Java.
 
         // Configure BLAS call serialization.
         // Default is true (enabled) for safety with OpenBLAS in multi-threaded environments.
@@ -257,8 +247,7 @@ public class NativeOpsHolder {
         }
 
         if (logInit) {
-            log.info("Number of threads used for linear algebra: {}", deviceNativeOps.ompGetMaxThreads());
-            log.info("Number of threads used for OpenBLAS operations: {} (set ND4J_OPENBLAS_THREADS to override)", openBlasThreads);
+            log.info("Number of threads used for linear algebra (incl. OpenBLAS): {}", deviceNativeOps.ompGetMaxThreads());
             log.info("BLAS call serialization: {} (set ND4J_BLAS_SERIALIZE=false to disable)", serializeBlasCalls ? "enabled" : "disabled");
         }
 

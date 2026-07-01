@@ -206,8 +206,8 @@ fun GNN() = Namespace("GNN") {
             if (layerNorm) {
                 SDVariable lnMean = sd.mean(out, true, 1);
                 SDVariable d = out.sub(lnMean);
-                SDVariable var = sd.mean(d.mul(d), true, 1);
-                out = d.div(sd.math().sqrt(var.add(1e-5)));
+                SDVariable variance = sd.mean(d.mul(d), true, 1);
+                out = d.div(sd.math().sqrt(variance.add(1e-5)));
             }
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
@@ -377,6 +377,37 @@ fun GNN() = Namespace("GNN") {
         }
     }
 
+    /**
+     * Batch-aware pairNorm: normalizes node embeddings within each graph in a batch.
+     * Uses batchVec (from graphDisjointUnion) to perform per-graph mean centering.
+     */
+    Op("pairNormBatched") {
+        Input(FLOATING_POINT, "X")        { description = "Node features [sumN, F]" }
+        Input(INT, "batchVec")            { description = "Node-to-graph index [sumN] INT32" }
+        Arg(LONG, "K")                    { description = "Number of graphs" }
+        Arg(FLOATING_POINT, "scale")      { description = "Scale factor (default 1.0)" }
+        Output(FLOATING_POINT, "out")     { description = "Normalized features [sumN, F]" }
+        Composition("""
+            // Segment mean center: subtract per-graph mean
+            SDVariable graphMeans = sd.math().unsortedSegmentMean(X, batchVec, (int)K);  // [K, F]
+            // Gather back to per-node
+            SDVariable nodeMeans = new org.nd4j.linalg.api.ops.impl.shape.Gather(sd, graphMeans, batchVec, 0).outputVariable();  // [sumN, F]
+            SDVariable Xc = X.sub(nodeMeans);
+            SDVariable rowSq = sd.sum(Xc.mul(Xc), true, 1);
+            // Per-graph mean of squared norms
+            SDVariable graphSqMean = sd.math().unsortedSegmentMean(rowSq, batchVec, (int)K);  // [K, 1]
+            SDVariable nodeVarDenom = new org.nd4j.linalg.api.ops.impl.shape.Gather(sd, graphSqMean, batchVec, 0).outputVariable();  // [sumN, 1]
+            SDVariable denom = sd.math().sqrt(nodeVarDenom.add(1e-6));
+            SDVariable out = Xc.mul(scale).div(denom);
+        """.trimIndent())
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+            Batch-aware PairNorm: normalizes within each graph rather than globally.
+            Safe to use with block-diagonal batching (graphDisjointUnion).
+            """.trimIndent()
+        }
+    }
+
     // -------------------------------------------------------------------------
     // GraphNorm
     // -------------------------------------------------------------------------
@@ -403,6 +434,34 @@ fun GNN() = Namespace("GNN") {
             """
             GraphNorm (Cai et al. 2021): learnable graph-level normalisation. Implemented in transposed
             [F, rows] layout for correct CUDA gradient flow on per-feature alpha scaling.
+            """.trimIndent()
+        }
+    }
+
+    /**
+     * Batch-aware graphNorm: instance norm within each graph in a batch.
+     */
+    Op("graphNormBatched") {
+        Input(FLOATING_POINT, "X")        { description = "Node features [sumN, F]" }
+        Input(FLOATING_POINT, "gamma")    { description = "Scale parameter [F]" }
+        Input(FLOATING_POINT, "beta")     { description = "Shift parameter [F]" }
+        Input(INT, "batchVec")            { description = "Node-to-graph index [sumN]" }
+        Arg(LONG, "K")                    { description = "Number of graphs" }
+        Output(FLOATING_POINT, "out")     { description = "Normalized features [sumN, F]" }
+        Composition("""
+            // Per-graph per-feature mean: segmentMean → [K, F], then gather to [sumN, F]
+            SDVariable graphMean = sd.math().unsortedSegmentMean(X, batchVec, (int)K);
+            SDVariable nodeMean  = new org.nd4j.linalg.api.ops.impl.shape.Gather(sd, graphMean, batchVec, 0).outputVariable();
+            SDVariable centered  = X.sub(nodeMean);
+            SDVariable graphVar  = sd.math().unsortedSegmentMean(centered.mul(centered), batchVec, (int)K);
+            SDVariable nodeVar   = new org.nd4j.linalg.api.ops.impl.shape.Gather(sd, graphVar, batchVec, 0).outputVariable();
+            SDVariable normed    = centered.div(sd.math().sqrt(nodeVar.add(1e-5)));
+            SDVariable out       = normed.mul(gamma).add(beta);
+        """.trimIndent())
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+            Batch-aware GraphNorm: normalizes within each graph's node set.
+            Safe to use with block-diagonal batching (graphDisjointUnion).
             """.trimIndent()
         }
     }

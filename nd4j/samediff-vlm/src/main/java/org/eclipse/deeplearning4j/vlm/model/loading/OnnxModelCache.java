@@ -257,12 +257,13 @@ public class OnnxModelCache {
             for (String path : onnxFilePaths) {
                 File onnxFile = new File(path);
                 boolean optimizerEnabled = isOptimizerEnabled();
-                File optSdzFile = getOptimizedSdzCacheFile(onnxFile);
                 File sdzFile = getSdzCacheFile(onnxFile);
-                boolean hasCachedOpt = optimizerEnabled && optSdzFile.exists() &&
-                        optSdzFile.lastModified() >= onnxFile.lastModified();
-                boolean hasCached = sdzFile.exists() && sdzFile.lastModified() >= onnxFile.lastModified();
-                if (!hasCachedOpt && !hasCached) {
+                boolean hasCached = optimizerEnabled
+                        ? SameDiffOptimizationCache.hasValidOptimizedCache(onnxFile, sdzFile, cacheDisabled)
+                        : sdzFile.exists()
+                        && sdzFile.lastModified() >= onnxFile.lastModified()
+                        && SameDiffOptimizationCache.isBuildFingerprintCurrent(sdzFile);
+                if (!hasCached) {
                     allCached = false;
                     break;
                 }

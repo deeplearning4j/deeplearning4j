@@ -112,4 +112,20 @@ public class CsrToBsr extends DynamicCustomOp {
         // Output 1 (bsrColIdx) is INT32; output 2 (bsrRowPtr) is INT32
         return Arrays.asList(dataTypes.get(0), DataType.INT32, DataType.INT32);
     }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grads) {
+        SDVariable gradBsrValues = grads.get(0);
+        long rows     = iArguments.get(0);
+        long cols     = iArguments.get(1);
+        long blockDim = iArguments.get(2);
+        SDVariable csrColIdx = arg(1);
+        SDVariable csrRowPtr = arg(2);
+        SDVariable[] fwdOuts = outputVariables();
+        SDVariable bsrColIdx = fwdOuts[1];
+        SDVariable bsrRowPtr = fwdOuts[2];
+        SDVariable dCsrValues = new CsrToBsrBp(sameDiff, csrColIdx, csrRowPtr, bsrColIdx, bsrRowPtr, gradBsrValues, rows, cols, blockDim)
+                .outputVariables()[0];
+        return Arrays.asList(dCsrValues, sameDiff.zerosLike(csrColIdx), sameDiff.zerosLike(csrRowPtr));
+    }
 }

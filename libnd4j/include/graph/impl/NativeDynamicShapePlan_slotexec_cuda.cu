@@ -34,6 +34,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
+#include <graph/gpu/DspCudaDispatch.h>
 #include <helpers/MmulHelper.h>
 #include <system/Environment.h>
 #include <cuda_runtime.h>
@@ -43,7 +44,15 @@ namespace graph {
 
 // ── Platform prezero: batched cudaMemsetAsync ─────────────────────────────────
 void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& seg, void* stream) {
-  auto cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  // The stream parameter is the Java/JNI stream pointer. On first execution it
+  // can still point at the LaunchContext fallback while platformBeginExecution
+  // has already installed a plan-owned DSP stream for the slot op. Prezero must
+  // run on the same live DSP stream as op->execute(); otherwise the async memset
+  // can race after the sparse kernel and erase freshly-written outputs.
+  void* liveStream = dspGetExecutionStream();
+  auto cudaStr = liveStream != nullptr
+      ? reinterpret_cast<cudaStream_t>(liveStream)
+      : ((stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr);
 
   // Collect qualifying buffers first, then batch-launch a single memset kernel
   // instead of issuing N individual cudaMemsetAsync driver calls.

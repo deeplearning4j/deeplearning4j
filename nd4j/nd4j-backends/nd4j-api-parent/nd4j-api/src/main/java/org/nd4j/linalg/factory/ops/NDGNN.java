@@ -362,8 +362,8 @@ public class NDGNN {
     if (layerNorm) {
         INDArray lnMean = org.nd4j.linalg.factory.Nd4j.base().mean(out, true, 1);
         INDArray d = out.sub(lnMean);
-        INDArray var = org.nd4j.linalg.factory.Nd4j.base().mean(d.mul(d), true, 1);
-        out = d.div(org.nd4j.linalg.factory.Nd4j.math().sqrt(var.add(1e-5)));
+        INDArray variance = org.nd4j.linalg.factory.Nd4j.base().mean(d.mul(d), true, 1);
+        out = d.div(org.nd4j.linalg.factory.Nd4j.math().sqrt(variance.add(1e-5)));
     }
     return out;
   }
@@ -402,8 +402,8 @@ public class NDGNN {
     if (layerNorm) {
         INDArray lnMean = org.nd4j.linalg.factory.Nd4j.base().mean(out, true, 1);
         INDArray d = out.sub(lnMean);
-        INDArray var = org.nd4j.linalg.factory.Nd4j.base().mean(d.mul(d), true, 1);
-        out = d.div(org.nd4j.linalg.factory.Nd4j.math().sqrt(var.add(1e-5)));
+        INDArray variance = org.nd4j.linalg.factory.Nd4j.base().mean(d.mul(d), true, 1);
+        out = d.div(org.nd4j.linalg.factory.Nd4j.math().sqrt(variance.add(1e-5)));
     }
     return out;
   }

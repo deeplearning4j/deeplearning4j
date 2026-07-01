@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -96,5 +97,20 @@ public class DenseToCsc extends DynamicCustomOp {
         // Output 0 (cscValues) has same dtype as the dense input (index 0)
         // Output 1 (cscRowIdx) is INT32; output 2 (cscColPtr) is INT32
         return Arrays.asList(dataTypes.get(0), DataType.INT32, DataType.INT32);
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grads) {
+        SDVariable gradCscValues = grads.get(0);
+        SDVariable dense = arg(0);
+        long[] denseShape = dense.getShape();
+        long rows = denseShape[0];
+        long cols = denseShape[1];
+        SDVariable[] fwdOuts = outputVariables();
+        SDVariable cscRowIdx = fwdOuts[1];
+        SDVariable cscColPtr = fwdOuts[2];
+        SDVariable dDense = new DenseToCscBp(sameDiff, cscRowIdx, cscColPtr, gradCscValues, rows, cols)
+                .outputVariables()[0];
+        return Collections.singletonList(dDense);
     }
 }

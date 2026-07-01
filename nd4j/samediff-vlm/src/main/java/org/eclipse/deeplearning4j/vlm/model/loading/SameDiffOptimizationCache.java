@@ -18,10 +18,12 @@ import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,8 +54,9 @@ public class SameDiffOptimizationCache {
 
     /**
      * Key used in the .opt.sdz.meta sidecar file for the optimizer code fingerprint.
-     * The fingerprint equals the native buildInfo() string which embeds
-     * LIBND4J_BUILD_STAMP (a per-build timestamp injected by GenerateBuildStamp.cmake).
+     * The fingerprint is a single-line SHA-256 digest of the native buildInfo()
+     * string, which embeds LIBND4J_BUILD_STAMP (a per-build timestamp injected
+     * by GenerateBuildStamp.cmake).
      * Any .so rebuild changes this value and forces re-optimization.
      */
     private static final String META_KEY_FINGERPRINT = "optimizerFingerprint";
@@ -73,16 +76,28 @@ public class SameDiffOptimizationCache {
                     try {
                         String info = NativeOpsHolder.getInstance()
                                 .getDeviceNativeOps().buildInfo();
-                        OPTIMIZER_FINGERPRINT = (info != null) ? info : "unavailable";
+                        OPTIMIZER_FINGERPRINT = fingerprintForBuildInfo(info);
                     } catch (Exception e) {
                         log.warn("SameDiffOptimizationCache: could not read native buildInfo(), " +
                                 "optimizer cache fingerprint unavailable: {}", e.getMessage());
-                        OPTIMIZER_FINGERPRINT = "unavailable";
+                        OPTIMIZER_FINGERPRINT = fingerprintForBuildInfo("unavailable");
                     }
                 }
             }
         }
         return OPTIMIZER_FINGERPRINT;
+    }
+
+    private static String fingerprintForBuildInfo(String buildInfo) {
+        String normalized = buildInfo != null ? buildInfo : "unavailable";
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(normalized.getBytes(StandardCharsets.UTF_8));
+            return "sha256:" + Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        } catch (Exception e) {
+            // SHA-256 is required by the JDK; this is only a last-resort fallback.
+            return "raw-hash:" + Integer.toUnsignedString(normalized.hashCode());
+        }
     }
 
     /**
@@ -194,6 +209,36 @@ public class SameDiffOptimizationCache {
     }
 
     /**
+     * Fast validity predicate for model-loading orchestration. This must not load
+     * or delete the cache; it is used to decide whether the parallel "all cached"
+     * path is safe. If optimization is enabled and any optimized cache is missing
+     * or stale, import/optimization must run sequentially.
+     */
+    public static boolean hasValidOptimizedCache(File sourceFile, File baseCacheFile, boolean cacheDisabled) {
+        if (cacheDisabled || !isOptimizerEnabled()) {
+            return false;
+        }
+        File optSdzFile = getOptimizedSdzCacheFile(sourceFile);
+        return isOptimizedCacheCurrent(sourceFile, baseCacheFile, optSdzFile);
+    }
+
+    private static boolean isOptimizedCacheCurrent(File sourceFile, File baseCacheFile, File optSdzFile) {
+        boolean mtimeValid = optSdzFile.exists()
+                && optSdzFile.lastModified() >= sourceFile.lastModified()
+                && (baseCacheFile == null || !baseCacheFile.exists()
+                || optSdzFile.lastModified() >= baseCacheFile.lastModified());
+        if (!mtimeValid) {
+            return false;
+        }
+
+        String cachedFingerprint = readOptSdzFingerprint(optSdzFile);
+        if (cachedFingerprint == null) {
+            return false;
+        }
+        return cachedFingerprint.isEmpty() || getOptimizerFingerprint().equals(cachedFingerprint);
+    }
+
+    /**
      * Load a valid optimized cache if one exists, otherwise delete stale cache files.
      */
     public static SameDiff loadOptimizedIfValid(File sourceFile, File baseCacheFile, boolean cacheDisabled) {
@@ -207,25 +252,23 @@ public class SameDiffOptimizationCache {
                 && optSdzFile.lastModified() >= sourceFile.lastModified()
                 && (baseCacheFile == null || !baseCacheFile.exists()
                 || optSdzFile.lastModified() >= baseCacheFile.lastModified());
-        boolean optValid = mtimeValid;
+        boolean optValid = isOptimizedCacheCurrent(sourceFile, baseCacheFile, optSdzFile);
 
         // Validate optimizer code fingerprint: reject if optimizer code changed
         // since this cache entry was written (catches e.g. ConstantFunctionOptimizations
         // changes silently served by a mtime-only check).
-        if (optValid) {
+        if (mtimeValid && !optValid) {
             String cachedFingerprint = readOptSdzFingerprint(optSdzFile);
             if (cachedFingerprint == null) {
                 // Sidecar absent — legacy cache entry without fingerprint; treat as stale
                 // so we re-optimize and write the sidecar this time.
                 log.info("Stale .opt.sdz detected (no optimizer fingerprint sidecar), " +
                         "will re-optimize: {}", optSdzFile.getName());
-                optValid = false;
             } else if (!cachedFingerprint.isEmpty()) {
                 String currentFingerprint = getOptimizerFingerprint();
                 if (!currentFingerprint.equals(cachedFingerprint)) {
                     log.info("Stale .opt.sdz detected (optimizer fingerprint mismatch), " +
                             "will re-optimize: {}", optSdzFile.getName());
-                    optValid = false;
                 }
             }
         }

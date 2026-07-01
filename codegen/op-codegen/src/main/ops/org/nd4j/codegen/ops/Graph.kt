@@ -218,7 +218,7 @@ fun Graph() = Namespace("Graph") {
             SDVariable rImg = sd.reshape(relation, -1, embH, embW);
             SDVariable stacked = sd.concat(1, hImg, rImg);
             SDVariable img = sd.reshape(stacked, -1, 1, 2L * embH, embW);
-            org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig cfg = org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig.builder().kH(3).kW(3).build();
+            Conv2DConfig cfg = Conv2DConfig.builder().kH(3).kW(3).build();
             SDVariable feat = sd.nn().relu(sd.cnn().conv2d(img, convW, convB, cfg), 0.0);
             long flatDim = (long) channels * (2L * embH - 2) * (embW - 2);
             SDVariable flat = sd.reshape(feat, -1, flatDim);
@@ -791,6 +791,85 @@ fun Graph() = Namespace("Graph") {
             sd.constant(...) in the calling code to implement the stop-gradient.
             loss = mean_i( 2 - 2 * cosine( (onlineZ @ predW)_i, targetZ_i ) )
             """.trimIndent()
+        }
+    }
+
+    /**
+     * Build a block-diagonal batched graph from K variable-size graphs.
+     * Enables variable-size graph minibatching for all GNN ops.
+     *
+     * @param Xs      K node-feature matrices, each [N_k, F]
+     * @param vals    K edge-weight arrays, each [nnz_k]
+     * @param colIdxs K column-index arrays (int), each [nnz_k]
+     * @param rowPtrs K row-pointer arrays (int), each [N_k+1]
+     * @return array of 5 SDVariables: [X_combined, vals_combined, colIdx_combined, rowPtr_combined, batchVec]
+     */
+    Op("graphDisjointUnion") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.sparse"
+        javaOpClass = "GraphDisjointUnion"
+        Input(FLOATING_POINT, "Xs")         { description = "K node-feature matrices ragged [N_k, F]; pass as variadic concat with iArg K" }
+        Input(FLOATING_POINT, "vals")        { description = "K edge-weight arrays [nnz_k]" }
+        Input(INT, "colIdxs")               { description = "K column-index arrays [nnz_k]" }
+        Input(INT, "rowPtrs")               { description = "K row-pointer arrays [N_k+1]" }
+        Arg(INT, "K")                       { description = "Number of graphs in the batch" }
+        Output(FLOATING_POINT, "Xcombined") { description = "Combined node features [sumN, F]" }
+        Output(FLOATING_POINT, "valsCombined") { description = "Combined edge weights [sumNnz]" }
+        Output(INT, "colIdxCombined")       { description = "Combined shifted column indices [sumNnz]" }
+        Output(INT, "rowPtrCombined")       { description = "Combined stitched row pointers [sumN+1]" }
+        Output(INT, "batchVec")             { description = "Node-to-graph assignment [sumN]" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+            Assembles K variable-size graphs into one block-diagonal graph for batched message passing.
+
+            The resulting block-diagonal CSR is compatible with all sd.gnn() message-passing ops.
+            Use batchVec with sd.math().segmentMean/Sum/Max for graph-level readout.
+            """.trimIndent()
+        }
+    }
+
+    /**
+     * Graph-level segment mean pooling: reduces node embeddings to graph-level embeddings.
+     * Wraps sd.math().segmentMean for clarity in the graph namespace.
+     */
+    Op("segmentMeanPool") {
+        Input(FLOATING_POINT, "nodeEmb") { description = "Node embeddings [sumN, F]" }
+        Input(INT, "batchVec")           { description = "Node-to-graph index [sumN] from graphDisjointUnion" }
+        Output(FLOATING_POINT, "graphEmb") { description = "Graph-level embeddings [K, F]" }
+        Composition("""
+            SDVariable graphEmb = sd.math().segmentMean(nodeEmb, batchVec);
+        """)
+        Doc(Language.ANY, DocScope.ALL) {
+            "Segment-mean pooling: produces one embedding per graph from batched node embeddings."
+        }
+    }
+
+    /**
+     * Graph-level segment sum pooling.
+     */
+    Op("segmentSumPool") {
+        Input(FLOATING_POINT, "nodeEmb") { description = "Node embeddings [sumN, F]" }
+        Input(INT, "batchVec")           { description = "Node-to-graph index [sumN]" }
+        Output(FLOATING_POINT, "graphEmb") { description = "Graph-level embeddings [K, F]" }
+        Composition("""
+            SDVariable graphEmb = sd.math().segmentSum(nodeEmb, batchVec);
+        """)
+        Doc(Language.ANY, DocScope.ALL) {
+            "Segment-sum pooling: sums node embeddings per graph."
+        }
+    }
+
+    /**
+     * Graph-level segment max pooling.
+     */
+    Op("segmentMaxPool") {
+        Input(FLOATING_POINT, "nodeEmb") { description = "Node embeddings [sumN, F]" }
+        Input(INT, "batchVec")           { description = "Node-to-graph index [sumN]" }
+        Output(FLOATING_POINT, "graphEmb") { description = "Graph-level embeddings [K, F]" }
+        Composition("""
+            SDVariable graphEmb = sd.math().segmentMax(nodeEmb, batchVec);
+        """)
+        Doc(Language.ANY, DocScope.ALL) {
+            "Segment-max pooling: takes max of node embeddings per graph."
         }
     }
 }

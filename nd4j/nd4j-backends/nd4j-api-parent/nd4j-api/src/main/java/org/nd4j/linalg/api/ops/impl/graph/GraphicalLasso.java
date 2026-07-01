@@ -41,7 +41,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *   <li>Theta-update: closed-form proximal step via eigendecomposition of
  *       (rho*Z - rho*U - S), using {@link Eigen#symmetricGeneralizedEigenvalues(INDArray)}
  *       (BLAS {@code syev}). Each eigenvalue d_i maps to
- *       {@code (-d_i + sqrt(d_i^2 + 4*rho)) / (2*rho)}.</li>
+ *       {@code (d_i + sqrt(d_i^2 + 4*rho)) / (2*rho)}.</li>
  *   <li>Z-update: element-wise soft-thresholding of {@code (Theta + U)} with
  *       threshold {@code lambda/rho} on the off-diagonal; diagonal is unpenalized.</li>
  *   <li>U-update: dual residual accumulation {@code U = U + Theta - Z}.</li>

@@ -44,7 +44,8 @@ SD_LIB_HIDDEN void csr_to_dense(NDArray& values, NDArray& colIdx, NDArray& rowPt
  * @param rowPtr    Output row-ptr array  [rows+1]
  * @param threshold Keep entries where |x| > threshold
  */
-SD_LIB_HIDDEN void dense_to_csr(NDArray& input, NDArray& values, NDArray& colIdx, NDArray& rowPtr, double threshold);
+SD_LIB_HIDDEN void dense_to_csr(sd::LaunchContext* context, NDArray& input, NDArray& values,
+                                 NDArray& colIdx, NDArray& rowPtr, double threshold);
 
 }  // namespace helpers
 }  // namespace ops

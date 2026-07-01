@@ -1779,8 +1779,8 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     // ══════════════════════════════════════════════════════════════════════
     // WARMUP: baseline keys + fusion analysis + capture buffer sizing + DOT
     // ══════════════════════════════════════════════════════════════════════
-    seg.exec.cachedShapeKey = currentShapeKey;
-    seg.exec.capturedInputAddrKey = currentAddrKey;
+    seg.exec.recordReplayBaselineKeys(currentShapeKey, currentAddrKey,
+                                      "emulated_replay_warmup");
     seg.exec.markArgsStale();
 
     DSP_DIAG(EMULATED_REPLAY,
@@ -2039,7 +2039,8 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
       DSP_DIAG(EMULATED_REPLAY,
                "  ** ADDRESS KEY CHANGED: capture buffer D2D copies needed. "
                "Placeholders with new addresses require staging buffer updates.");
-      seg.exec.capturedInputAddrKey = currentAddrKey;
+      seg.exec.recordReplayInputAddrKey(currentAddrKey,
+                                        "emulated_replay_addr_changed");
     }
 
     // Replay readiness assessment

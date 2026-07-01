@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -100,7 +101,7 @@ public class EdgeSplitter {
     public Split split(INDArray edgeList, double trainFrac, double valFrac) {
         if (edgeList.rank() != 2 || edgeList.size(1) != 2) {
             throw new IllegalArgumentException(
-                    "edgeList must have shape [E, 2], got " + java.util.Arrays.toString(edgeList.shape()));
+                    "edgeList must have shape [E, 2], got " + Arrays.toString(edgeList.shape()));
         }
         if (trainFrac <= 0 || trainFrac >= 1) {
             throw new IllegalArgumentException("trainFrac must be in (0,1), got " + trainFrac);

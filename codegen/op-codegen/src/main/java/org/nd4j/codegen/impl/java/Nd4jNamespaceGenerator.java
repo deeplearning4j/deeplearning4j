@@ -47,6 +47,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -111,7 +113,7 @@ public class Nd4jNamespaceGenerator {
             generateOpFactory(namespace, outputDirectory, className, basePackage, StringUtils.EMPTY);
         }
         catch (Exception e) {
-            log.error(e.toString());
+            throw new RuntimeException("Failed to generate op factory for namespace " + namespace.getName(), e);
         }
     }
 
@@ -125,7 +127,7 @@ public class Nd4jNamespaceGenerator {
             generateOpFactory(namespace, outputDirectory, className, basePackage, parentClass);
         }
         catch (Exception e) {
-            log.error(e.toString());
+            throw new RuntimeException("Failed to generate op factory for namespace " + namespace.getName(), e);
         }
     }
 
@@ -310,8 +312,9 @@ public class Nd4jNamespaceGenerator {
                 Output o = outputs.get(0);
                 c.addJavadoc("@return " + o.getName() + " " + (o.getDescription() == null ? "" : DocTokens.processDocText(o.getDescription(), op, DocTokens.GenerationType.ND4J)) + " (" + o.getType() + " type)\n");
             } else {
-                //throw new UnsupportedOperationException("Javadoc for multi-output ops not yet implemented");
-                log.error("Javadoc for multi-output ops not yet implemented");
+                for (Output o : outputs) {
+                    c.addJavadoc("@return " + o.getName() + " " + (o.getDescription() == null ? "" : DocTokens.processDocText(o.getDescription(), op, DocTokens.GenerationType.ND4J)) + " (" + o.getType() + " type)\n");
+                }
             }
         }
     }
@@ -356,11 +359,18 @@ public class Nd4jNamespaceGenerator {
                         else
                             c.addParameter(INDArray[].class, inputName).varargs(isLast);
                     }
-                    // Check for parameter types
+                    // Check for parameter types — skip validation for optional inputs (defaultValue = null)
                     final DataType paramType = i.getType();
                     String validationName = validationMapping.get(paramType);
                     if(validationName != null) {
-                        c.addStatement(CodeBlock.of("$T.$L($S, $S, $L)", isSameDiff ? SDValidation.class : NDValidation.class, validationName, op.getOpName(), inputName, inputName));
+                        boolean isOptional = i.hasDefaultValue() && i.defaultValue() == null;
+                        if (isOptional) {
+                            c.beginControlFlow("if ($L != null)", inputName);
+                            c.addStatement(CodeBlock.of("$T.$L($S, $S, $L)", isSameDiff ? SDValidation.class : NDValidation.class, validationName, op.getOpName(), inputName, inputName));
+                            c.endControlFlow();
+                        } else {
+                            c.addStatement(CodeBlock.of("$T.$L($S, $S, $L)", isSameDiff ? SDValidation.class : NDValidation.class, validationName, op.getOpName(), inputName, inputName));
+                        }
                     }
                     checkParameterCount(c, count, inputName);
                 } else if(p instanceof Arg){
@@ -467,7 +477,12 @@ public class Nd4jNamespaceGenerator {
             String defaults = localDefaults.toString();
             if (isSameDiff) {
                 if (!defaults.isEmpty()) c.addCode("$L", defaults);
-                c.addCode("$L\n", body);
+                List<Object> sdBodyTypeArgs = new ArrayList<>();
+                String sdProcessedBody = injectConfigTypeRefs(body, sdBodyTypeArgs);
+                if (sdBodyTypeArgs.isEmpty())
+                    c.addCode("$L\n", sdProcessedBody);
+                else
+                    c.addCode(sdProcessedBody + "\n", sdBodyTypeArgs.toArray());
                 if (withName)
                     c.addStatement("return sd.updateVariableNameAndReference(out, name)");
                 else
@@ -495,9 +510,16 @@ public class Nd4jNamespaceGenerator {
                         .replace("sd.gather(", "org.nd4j.linalg.factory.Nd4j.base().gather(")
                         .replace("sd.transpose(", "org.nd4j.linalg.factory.Nd4j.base().transpose(")
                         .replace("sd.gnn()", "org.nd4j.linalg.factory.Nd4j.gnn()")
+                        .replace("sd.graph()", "org.nd4j.linalg.factory.Nd4j.graph()")
+                        .replace("sd.kge()", "org.nd4j.linalg.factory.Nd4j.kge()")
                         .replace("new SDVariable[", "new INDArray[");
+                List<Object> ndBodyTypeArgs = new ArrayList<>();
+                ndBody = injectConfigTypeRefs(ndBody, ndBodyTypeArgs);
                 if (!defaults.isEmpty()) c.addCode("$L", defaults);
-                c.addCode("$L\n", ndBody);
+                if (ndBodyTypeArgs.isEmpty())
+                    c.addCode("$L\n", ndBody);
+                else
+                    c.addCode(ndBody + "\n", ndBodyTypeArgs.toArray());
                 c.addStatement("return out");
             }
             return;
@@ -584,17 +606,32 @@ public class Nd4jNamespaceGenerator {
             }
         }
          else{
-            sb.append("return $T.exec(new ")
-                    .append(op.getJavaPackage())
-                    .append(".")
-                    .append(op.getJavaOpClass() == null ? GenUtil.ensureFirstIsCap(op.getOpName()) : op.getJavaOpClass())
-                    .append("(")
-                    .append(String.join(", ", parameters))
-                    .append("))");
-            if (!op.getLegacy() && singleOut)        //Note: legacy ops Nd4j.exec(Op) returns INDArray; Nd4j.exec(CustomOp) returns INDArray[]
-                sb.append("[0]");
-
-            c.addStatement(sb.toString(), Nd4j.class);
+            String ndOpClassName = op.getJavaOpClass() == null ? GenUtil.ensureFirstIsCap(op.getOpName()) : op.getJavaOpClass();
+            Class<?> ndOpClass;
+            try {
+                ndOpClass = Class.forName(op.getJavaPackage() + "." + ndOpClassName);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Could not find op class: " + op.getJavaPackage() + "." + ndOpClassName, e);
+            }
+            if (!op.getLegacy() && singleOut) {
+                // Generate code with proper cleanup for single output from CustomOp (returns INDArray[])
+                c.addStatement("$T[] __tmp = $T.exec(new $T(" + String.join(", ", parameters) + "))", INDArray.class, Nd4j.class, ndOpClass);
+                // Clean up non-returned arrays
+                c.beginControlFlow("try");
+                c.addStatement("return __tmp[0]");
+                c.nextControlFlow("finally");
+                c.beginControlFlow("if(__tmp != null)");
+                c.beginControlFlow("for(int __i = 1; __i < __tmp.length; __i++)");
+                c.beginControlFlow("if(__tmp[__i] != null)");
+                c.addStatement("__tmp[__i].close()");
+                c.endControlFlow();
+                c.endControlFlow();
+                c.endControlFlow();
+                c.endControlFlow();
+            } else {
+                // Legacy ops or multi-output: return directly (no cleanup needed)
+                c.addStatement("return $T.exec(new $T(" + String.join(", ", parameters) + "))", Nd4j.class, ndOpClass);
+            }
         }
     }
 
@@ -1028,6 +1065,39 @@ public class Nd4jNamespaceGenerator {
         }
         getter.addStatement("return this.$L", paramName);
         return getter.build();
+    }
+
+    /**
+     * Replaces config class FQCN and short-name references in a composition body string with
+     * JavaPoet {@code $T} placeholders, appending the corresponding {@link ClassName} to {@code typeArgs}.
+     * This allows JavaPoet to emit proper import statements for those types.
+     */
+    private static String injectConfigTypeRefs(String body, List<Object> typeArgs) {
+        for (TypeName tn : configMapping.values()) {
+            if (!(tn instanceof ClassName)) continue;
+            ClassName cn = (ClassName) tn;
+            // 1) Replace any FQCN occurrences (e.g. org.nd4j...Conv2DConfig)
+            String fqcn = cn.canonicalName();
+            while (body.contains(fqcn)) {
+                body = body.replaceFirst(Pattern.quote(fqcn), "\\$T");
+                typeArgs.add(cn);
+            }
+            // 2) Replace remaining short-name occurrences as a standalone type reference
+            //    (preceded by a non-word char, followed by '.' or ' ' or '(')
+            String simpleName = cn.simpleName();
+            Pattern p = Pattern.compile("(?<![\\w$])" + Pattern.quote(simpleName) + "(?=[. (])");
+            Matcher m = p.matcher(body);
+            if (m.find()) {
+                StringBuffer sbuf = new StringBuffer();
+                do {
+                    m.appendReplacement(sbuf, "\\$T");
+                    typeArgs.add(cn);
+                } while (m.find());
+                m.appendTail(sbuf);
+                body = sbuf.toString();
+            }
+        }
+        return body;
     }
 
     private static String anyToCode(Parameter parameter, Object v){

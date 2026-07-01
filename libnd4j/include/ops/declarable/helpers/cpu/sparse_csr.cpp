@@ -90,7 +90,8 @@ static void denseToCsr_(NDArray& input, NDArray& values, NDArray& colIdx, NDArra
   }
 }
 
-void dense_to_csr(NDArray& input, NDArray& values, NDArray& colIdx, NDArray& rowPtr, double threshold) {
+void dense_to_csr(sd::LaunchContext* /*context*/, NDArray& input, NDArray& values,
+                  NDArray& colIdx, NDArray& rowPtr, double threshold) {
   NDArray::preparePrimaryUse({&values, &colIdx, &rowPtr}, {&input});
 
   BUILD_DOUBLE_SELECTOR(input.dataType(), colIdx.dataType(), denseToCsr_,

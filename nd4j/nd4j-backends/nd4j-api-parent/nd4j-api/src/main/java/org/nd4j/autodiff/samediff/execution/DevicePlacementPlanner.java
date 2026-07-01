@@ -29,6 +29,9 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
+
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -425,8 +428,8 @@ public class DevicePlacementPlanner {
     private static Map<Integer, Long> queryDeviceMemory() {
         Map<Integer, Long> result = new LinkedHashMap<>();
         try {
-            org.nd4j.nativeblas.NativeOps nativeOps =
-                    org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            NativeOps nativeOps =
+                    NativeOpsHolder.getInstance().getDeviceNativeOps();
             int numDevices = nativeOps.getAvailableDevices();
             for (int d = 0; d < numDevices; d++) {
                 long free = nativeOps.getDeviceFreeMemory(d);

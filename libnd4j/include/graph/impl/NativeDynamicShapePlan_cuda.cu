@@ -1815,6 +1815,21 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   // cudaEventRecord in platformEndExecution hits error 400 (invalid handle).
   cudaGetLastError();
 
+  // A top-level DSP execute must not preserve a stale tl_dspExecutionStream
+  // from an earlier plan. DspStreamGuard restores the previous TLS value on
+  // destruction; if that previous value points at a destroyed ownedStream_,
+  // subsequent Java-side putScalar()/syncToDevice() calls can enqueue work on
+  // the dead stream and the next first-execute warmup reads zero/stale inputs.
+  // Active capture/replay scopes legitimately own the TLS, so only clear the
+  // idle leak state before installing this plan's guard.
+  if (tl_dspExecutionStream != nullptr && !tl_graphExecutionActive &&
+      !tl_dspReplayActive && tl_graphCaptureStream == nullptr) {
+    DSP_DIAG(EXECUTE,
+             "platformBeginExecution: clearing stale tl_dspExecutionStream=%p before installing plan guard",
+             tl_dspExecutionStream);
+    tl_dspExecutionStream = nullptr;
+  }
+
   // ── Lazy-create plan-owned CUDA stream ─────────────────────────────────
   // Each plan gets its own stream so that CUDA graph captures (which
   // happen on this stream) don't conflict with Java-side syncToDevice()

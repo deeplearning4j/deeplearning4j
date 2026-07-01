@@ -522,6 +522,84 @@ DECLARE_CUSTOM_OP(csr_subgraph_extract, 4, 3, false, 0, 2);
 DECLARE_CUSTOM_OP(csr_subgraph_extract_bp, 5, 1, false, 0, 2);
 #endif
 
+/**
+ * Backward pass for csr_add: gradient flows to A.values and B.values.
+ * Inputs: aColIdx, aRowPtr, bColIdx, bRowPtr, cColIdx, cRowPtr, gradCValues
+ * IArgs: m, n
+ * Outputs: dAValues, dBValues
+ */
+#if NOT_EXCLUDED(OP_csr_add_bp)
+DECLARE_CUSTOM_OP(csr_add_bp, 7, 2, false, 0, 2);
+#endif
+
+/**
+ * Backward pass for bsr_to_dense.
+ * Inputs: bsrColIdx, bsrRowPtr, gradDense   IArgs: rows, cols, blockDim
+ * Output: dBsrValues
+ */
+#if NOT_EXCLUDED(OP_bsr_to_dense_bp)
+DECLARE_CUSTOM_OP(bsr_to_dense_bp, 3, 1, false, 0, 3);
+#endif
+
+/**
+ * Backward pass for bsr_spmm.
+ * Inputs: bsrValues, bsrColIdx, bsrRowPtr, B, gradC   IArgs: rows, cols, blockDim
+ * Outputs: dBsrValues, dB
+ */
+#if NOT_EXCLUDED(OP_bsr_spmm_bp)
+DECLARE_CUSTOM_OP(bsr_spmm_bp, 5, 2, false, 0, 3);
+#endif
+
+/**
+ * Backward pass for csc_to_dense.
+ * Inputs: cscRowIdx, cscColPtr, gradDense   IArgs: rows, cols
+ * Output: dCscValues
+ */
+#if NOT_EXCLUDED(OP_csc_to_dense_bp)
+DECLARE_CUSTOM_OP(csc_to_dense_bp, 3, 1, false, 0, 2);
+#endif
+
+/**
+ * Backward pass for csr_to_bsr.
+ * Inputs: csrColIdx, csrRowPtr, bsrColIdx, bsrRowPtr, gradBsrValues   IArgs: rows, cols, blockDim
+ * Output: dCsrValues
+ */
+#if NOT_EXCLUDED(OP_csr_to_bsr_bp)
+DECLARE_CUSTOM_OP(csr_to_bsr_bp, 5, 1, false, 0, 3);
+#endif
+
+/**
+ * Backward pass for dense_to_csc.
+ * Inputs: cscRowIdx, cscColPtr, gradCscValues   IArgs: rows, cols
+ * Output: dDense [rows, cols]
+ */
+#if NOT_EXCLUDED(OP_dense_to_csc_bp)
+DECLARE_CUSTOM_OP(dense_to_csc_bp, 3, 1, false, 0, 2);
+#endif
+
+/**
+ * Backward pass for csr_sddmm_sparse.
+ * Inputs: targetRowPtr, targetColIdx, LcolIdx, LrowPtr, McolIdx, MrowPtr, Lvalues, Mvalues, gradOut
+ * IArgs: P, Q, R
+ * Outputs: dLvalues, dMvalues
+ */
+#if NOT_EXCLUDED(OP_csr_sddmm_sparse_bp)
+DECLARE_CUSTOM_OP(csr_sddmm_sparse_bp, 9, 2, false, 0, 3);
+#endif
+
+/**
+ * Build a block-diagonal batched graph from K variable-size graphs.
+ *
+ * Input layout: 4*K inputs (K Xs [N_k,F], K vals [nnz_k], K colIdxs [nnz_k], K rowPtrs [N_k+1])
+ * IArgs: [0] K
+ * Outputs: X_combined [sumN,F], vals_combined [sumNnz], colIdx_combined [sumNnz],
+ *          rowPtr_combined [sumN+1], batchVec [sumN] (INT32)
+ */
+#if NOT_EXCLUDED(OP_graph_disjoint_union)
+DECLARE_CUSTOM_OP(graph_disjoint_union, -2, 5, false, 0, 1);
+DECLARE_CUSTOM_OP(graph_disjoint_union_bp, -2, -2, false, 0, 1);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

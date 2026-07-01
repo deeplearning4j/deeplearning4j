@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -95,5 +96,18 @@ public class BsrToDense extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         // Single dense output matching the bsrValues input dtype (index 0)
         return Collections.singletonList(dataTypes.get(0));
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grads) {
+        SDVariable gradDense = grads.get(0);
+        long rows     = iArguments.get(0);
+        long cols     = iArguments.get(1);
+        long blockDim = iArguments.get(2);
+        SDVariable bsrColIdx = arg(1);
+        SDVariable bsrRowPtr = arg(2);
+        SDVariable dBsrValues = new BsrToDenseBp(sameDiff, bsrColIdx, bsrRowPtr, gradDense, rows, cols, blockDim)
+                .outputVariables()[0];
+        return Arrays.asList(dBsrValues, sameDiff.zerosLike(bsrColIdx), sameDiff.zerosLike(bsrRowPtr));
     }
 }

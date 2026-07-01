@@ -48,6 +48,9 @@ public class SDTraining extends SDOps {
    * @param beta2 Beta2 - exponential decay rate for second moment estimate
    * @param epsilon Epsilon for numerical stability
    * @param iteration Current iteration (used for bias correction)
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateU Updated EMA of squared gradient deviation state (NUMERIC type)
+   * @return updatedStateM Updated first moment state (NUMERIC type)
    */
   public SDVariable[] adaBeliefUpdater(SDVariable gradients, SDVariable stateU, SDVariable stateM,
       double lr, double beta1, double beta2, double epsilon, int iteration) {
@@ -73,6 +76,9 @@ public class SDTraining extends SDOps {
    * @param beta2 Beta2 - exponential decay rate for second moment estimate
    * @param epsilon Epsilon for numerical stability
    * @param iteration Current iteration (used for bias correction)
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateU Updated EMA of squared gradient deviation state (NUMERIC type)
+   * @return updatedStateM Updated first moment state (NUMERIC type)
    */
   public SDVariable[] adaBeliefUpdater(String[] names, SDVariable gradients, SDVariable stateU,
       SDVariable stateM, double lr, double beta1, double beta2, double epsilon, int iteration) {
@@ -93,6 +99,9 @@ public class SDTraining extends SDOps {
    * @param stateMsdx Updater state: mean squared delta x (NUMERIC type)
    * @param rho Decay rate (rho)
    * @param epsilon Epsilon for numerical stability
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateMsg Updated mean squared gradients state (NUMERIC type)
+   * @return updatedStateMsdx Updated mean squared delta x state (NUMERIC type)
    */
   public SDVariable[] adaDeltaUpdater(SDVariable gradients, SDVariable stateMsg,
       SDVariable stateMsdx, double rho, double epsilon) {
@@ -113,6 +122,9 @@ public class SDTraining extends SDOps {
    * @param stateMsdx Updater state: mean squared delta x (NUMERIC type)
    * @param rho Decay rate (rho)
    * @param epsilon Epsilon for numerical stability
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateMsg Updated mean squared gradients state (NUMERIC type)
+   * @return updatedStateMsdx Updated mean squared delta x state (NUMERIC type)
    */
   public SDVariable[] adaDeltaUpdater(String[] names, SDVariable gradients, SDVariable stateMsg,
       SDVariable stateMsdx, double rho, double epsilon) {
@@ -132,6 +144,8 @@ public class SDTraining extends SDOps {
    * @param state Updater state (accumulated squared gradients) (NUMERIC type)
    * @param lr Learning rate
    * @param epsilon Epsilon for numerical stability
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedState Updated accumulated squared gradients state (NUMERIC type)
    */
   public SDVariable[] adaGradUpdater(SDVariable gradients, SDVariable state, double lr,
       double epsilon) {
@@ -150,6 +164,8 @@ public class SDTraining extends SDOps {
    * @param state Updater state (accumulated squared gradients) (NUMERIC type)
    * @param lr Learning rate
    * @param epsilon Epsilon for numerical stability
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedState Updated accumulated squared gradients state (NUMERIC type)
    */
   public SDVariable[] adaGradUpdater(String[] names, SDVariable gradients, SDVariable state,
       double lr, double epsilon) {
@@ -172,6 +188,9 @@ public class SDTraining extends SDOps {
    * @param beta2 Beta2 - exponential decay rate for infinity norm
    * @param epsilon Epsilon for numerical stability
    * @param iteration Current iteration (used for bias correction)
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateU Updated infinity norm state (NUMERIC type)
+   * @return updatedStateM Updated first moment state (NUMERIC type)
    */
   public SDVariable[] adaMaxUpdater(SDVariable gradients, SDVariable stateU, SDVariable stateM,
       double lr, double beta1, double beta2, double epsilon, int iteration) {
@@ -195,6 +214,9 @@ public class SDTraining extends SDOps {
    * @param beta2 Beta2 - exponential decay rate for infinity norm
    * @param epsilon Epsilon for numerical stability
    * @param iteration Current iteration (used for bias correction)
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateU Updated infinity norm state (NUMERIC type)
+   * @return updatedStateM Updated first moment state (NUMERIC type)
    */
   public SDVariable[] adaMaxUpdater(String[] names, SDVariable gradients, SDVariable stateU,
       SDVariable stateM, double lr, double beta1, double beta2, double epsilon, int iteration) {
@@ -218,6 +240,9 @@ public class SDTraining extends SDOps {
    * @param beta2 Beta2 - exponential decay rate for second moment estimate
    * @param epsilon Epsilon for numerical stability
    * @param iteration Current iteration (used for bias correction)
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateU Updated first moment state (NUMERIC type)
+   * @return updatedStateM Updated second moment state (NUMERIC type)
    */
   public SDVariable[] adamUpdater(SDVariable gradients, SDVariable stateU, SDVariable stateM,
       double lr, double beta1, double beta2, double epsilon, int iteration) {
@@ -241,6 +266,9 @@ public class SDTraining extends SDOps {
    * @param beta2 Beta2 - exponential decay rate for second moment estimate
    * @param epsilon Epsilon for numerical stability
    * @param iteration Current iteration (used for bias correction)
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateU Updated first moment state (NUMERIC type)
+   * @return updatedStateM Updated second moment state (NUMERIC type)
    */
   public SDVariable[] adamUpdater(String[] names, SDVariable gradients, SDVariable stateU,
       SDVariable stateM, double lr, double beta1, double beta2, double epsilon, int iteration) {
@@ -266,6 +294,10 @@ public class SDTraining extends SDOps {
    * @param beta2 Beta2 - exponential decay rate for second moment estimate
    * @param epsilon Epsilon for numerical stability
    * @param iteration Current iteration (used for bias correction)
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateV Updated second moment state (NUMERIC type)
+   * @return updatedStateM Updated first moment state (NUMERIC type)
+   * @return updatedStateH Updated maximum second moment state (NUMERIC type)
    */
   public SDVariable[] amsGradUpdater(SDVariable gradients, SDVariable stateV, SDVariable stateM,
       SDVariable stateH, double lr, double beta1, double beta2, double epsilon, int iteration) {
@@ -292,6 +324,10 @@ public class SDTraining extends SDOps {
    * @param beta2 Beta2 - exponential decay rate for second moment estimate
    * @param epsilon Epsilon for numerical stability
    * @param iteration Current iteration (used for bias correction)
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateV Updated second moment state (NUMERIC type)
+   * @return updatedStateM Updated first moment state (NUMERIC type)
+   * @return updatedStateH Updated maximum second moment state (NUMERIC type)
    */
   public SDVariable[] amsGradUpdater(String[] names, SDVariable gradients, SDVariable stateV,
       SDVariable stateM, SDVariable stateH, double lr, double beta1, double beta2, double epsilon,
@@ -316,6 +352,9 @@ public class SDTraining extends SDOps {
    * @param beta2 Beta2 - exponential decay rate for second moment estimate
    * @param epsilon Epsilon for numerical stability
    * @param iteration Current iteration (used for bias correction)
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateV Updated second moment state (NUMERIC type)
+   * @return updatedStateM Updated first moment state (NUMERIC type)
    */
   public SDVariable[] nadamUpdater(SDVariable gradients, SDVariable stateV, SDVariable stateM,
       double lr, double beta1, double beta2, double epsilon, int iteration) {
@@ -338,6 +377,9 @@ public class SDTraining extends SDOps {
    * @param beta2 Beta2 - exponential decay rate for second moment estimate
    * @param epsilon Epsilon for numerical stability
    * @param iteration Current iteration (used for bias correction)
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedStateV Updated second moment state (NUMERIC type)
+   * @return updatedStateM Updated first moment state (NUMERIC type)
    */
   public SDVariable[] nadamUpdater(String[] names, SDVariable gradients, SDVariable stateV,
       SDVariable stateM, double lr, double beta1, double beta2, double epsilon, int iteration) {
@@ -356,6 +398,8 @@ public class SDTraining extends SDOps {
    * @param state Updater state (velocity) (NUMERIC type)
    * @param lr Learning rate
    * @param momentum Momentum coefficient
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedState Updated velocity state (NUMERIC type)
    */
   public SDVariable[] nesterovsUpdater(SDVariable gradients, SDVariable state, double lr,
       double momentum) {
@@ -373,6 +417,8 @@ public class SDTraining extends SDOps {
    * @param state Updater state (velocity) (NUMERIC type)
    * @param lr Learning rate
    * @param momentum Momentum coefficient
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedState Updated velocity state (NUMERIC type)
    */
   public SDVariable[] nesterovsUpdater(String[] names, SDVariable gradients, SDVariable state,
       double lr, double momentum) {
@@ -391,6 +437,8 @@ public class SDTraining extends SDOps {
    * @param lr Learning rate
    * @param decay Decay rate (rho)
    * @param epsilon Epsilon for numerical stability
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedState Updated mean squared gradients state (NUMERIC type)
    */
   public SDVariable[] rmsPropUpdater(SDVariable gradients, SDVariable state, double lr,
       double decay, double epsilon) {
@@ -409,6 +457,8 @@ public class SDTraining extends SDOps {
    * @param lr Learning rate
    * @param decay Decay rate (rho)
    * @param epsilon Epsilon for numerical stability
+   * @return updates Updated gradients (NUMERIC type)
+   * @return updatedState Updated mean squared gradients state (NUMERIC type)
    */
   public SDVariable[] rmsPropUpdater(String[] names, SDVariable gradients, SDVariable state,
       double lr, double decay, double epsilon) {

@@ -368,7 +368,14 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   int tritonMaxSubKernelIndex = Environment::getInstance().tritonMaxSubKernelIndex();
   bool tritonVerifyFullSnapshot = Environment::getInstance().tritonVerifyFullSnapshot();
   if (tritonVerifyKernels || tritonVerifyFullSnapshot) {
-    DSP_DIAG(VERIFY, "TRITON VERIFY: host snapshot compare disabled in async-only DSP execution");
+    // The env flags were explicitly set, but host-snapshot verify is unsupported on the async-only
+    // DSP path. Surface the ignored request once (not per-segment) rather than silently, then disable.
+    static bool verifyUnsupportedWarned = false;
+    if (!verifyUnsupportedWarned) {
+      verifyUnsupportedWarned = true;
+      sd_printf("TRITON VERIFY: ND4J_TRITON_VERIFY_KERNELS / _FULL_SNAPSHOT are not supported on the "
+                "async-only DSP execution path; verify is disabled for this run.\n");
+    }
     tritonVerifyKernels = false;
     tritonVerifyFullSnapshot = false;
   }
@@ -830,16 +837,6 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                       reinterpret_cast<cudaStream_t>(actualStream), seg.exec.executionCount);
       }
 
-      // Debug: log external input 1331 metadata after gap completes, before Triton kernel launch.
-      if (sd::Environment::getInstance().isDebug() && numExternalInputs > 1331
-          && subKernel.startSlot_ == 347) {
-        NDArray* ext = externalInputs[1331];
-        if (ext && ext->specialBuffer() && ext->lengthOf() > 0 && ext->dataType() == FLOAT32) {
-          DSP_DIAG(VERIFY, "POST_GAP_EXT1331: exec=%d addr=%p len=%lld dtype=%d",
-                   seg.exec.executionCount, ext->specialBuffer(),
-                   (long long)ext->lengthOf(), static_cast<int>(ext->dataType()));
-        }
-      }
     }
 
     // Decide whether to skip this sub-kernel: global skip OR per-index cutoff

@@ -218,6 +218,8 @@ public class SDLinalg extends SDOps {
    * @param input input tensor (NUMERIC type)
    * @param minLower lower diagonal count
    * @param maxUpper upper diagonal count
+   * @return output1  (FLOATING_POINT type)
+   * @return output2  (FLOATING_POINT type)
    */
   public SDVariable[] matrixBandPart(SDVariable input, int minLower, int maxUpper) {
     SDValidation.validateNumerical("MatrixBandPart", "input", input);
@@ -231,6 +233,8 @@ public class SDLinalg extends SDOps {
    * @param input input tensor (NUMERIC type)
    * @param minLower lower diagonal count
    * @param maxUpper upper diagonal count
+   * @return output1  (FLOATING_POINT type)
+   * @return output2  (FLOATING_POINT type)
    */
   public SDVariable[] matrixBandPart(String[] names, SDVariable input, int minLower, int maxUpper) {
     SDValidation.validateNumerical("MatrixBandPart", "input", input);
@@ -243,6 +247,8 @@ public class SDLinalg extends SDOps {
    *
    * @param input input tensor (NUMERIC type)
    * @param full full matrices mode
+   * @return outputQ  (FLOATING_POINT type)
+   * @return outputR  (FLOATING_POINT type)
    */
   public SDVariable[] qr(SDVariable input, boolean full) {
     SDValidation.validateNumerical("Qr", "input", input);
@@ -255,6 +261,8 @@ public class SDLinalg extends SDOps {
    * @param names names May be null. Arrays of names for the output variables.
    * @param input input tensor (NUMERIC type)
    * @param full full matrices mode
+   * @return outputQ  (FLOATING_POINT type)
+   * @return outputR  (FLOATING_POINT type)
    */
   public SDVariable[] qr(String[] names, SDVariable input, boolean full) {
     SDValidation.validateNumerical("Qr", "input", input);
@@ -266,6 +274,8 @@ public class SDLinalg extends SDOps {
    * Computes the QR decompositions of input matrix.<br>
    *
    * @param input input tensor (NUMERIC type)
+   * @return outputQ  (FLOATING_POINT type)
+   * @return outputR  (FLOATING_POINT type)
    */
   public SDVariable[] qr(SDVariable input) {
     SDValidation.validateNumerical("Qr", "input", input);
@@ -277,6 +287,8 @@ public class SDLinalg extends SDOps {
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input input tensor (NUMERIC type)
+   * @return outputQ  (FLOATING_POINT type)
+   * @return outputR  (FLOATING_POINT type)
    */
   public SDVariable[] qr(String[] names, SDVariable input) {
     SDValidation.validateNumerical("Qr", "input", input);
@@ -456,6 +468,8 @@ public class SDLinalg extends SDOps {
    * Calculates eigen values<br>
    *
    * @param input  (NUMERIC type)
+   * @return eigenValues  (FLOATING_POINT type)
+   * @return eigenVectors  (FLOATING_POINT type)
    */
   public SDVariable[] eig(SDVariable input) {
     SDValidation.validateNumerical("eig", "input", input);
@@ -467,6 +481,8 @@ public class SDLinalg extends SDOps {
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input  (NUMERIC type)
+   * @return eigenValues  (FLOATING_POINT type)
+   * @return eigenVectors  (FLOATING_POINT type)
    */
   public SDVariable[] eig(String[] names, SDVariable input) {
     SDValidation.validateNumerical("eig", "input", input);

@@ -27,6 +27,7 @@ import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
 import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 
 public class SDGraph extends SDOps {
   public SDGraph(SameDiff sameDiff) {
@@ -277,7 +278,7 @@ public class SDGraph extends SDOps {
     SDVariable rImg = sd.reshape(relation, -1, embH, embW);
     SDVariable stacked = sd.concat(1, hImg, rImg);
     SDVariable img = sd.reshape(stacked, -1, 1, 2L * embH, embW);
-    org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig cfg = org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig.builder().kH(3).kW(3).build();
+    Conv2DConfig cfg = Conv2DConfig.builder().kH(3).kW(3).build();
     SDVariable feat = sd.nn().relu(sd.cnn().conv2d(img, convW, convB, cfg), 0.0);
     long flatDim = (long) channels * (2L * embH - 2) * (embW - 2);
     SDVariable flat = sd.reshape(feat, -1, flatDim);
@@ -318,7 +319,7 @@ public class SDGraph extends SDOps {
     SDVariable rImg = sd.reshape(relation, -1, embH, embW);
     SDVariable stacked = sd.concat(1, hImg, rImg);
     SDVariable img = sd.reshape(stacked, -1, 1, 2L * embH, embW);
-    org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig cfg = org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig.builder().kH(3).kW(3).build();
+    Conv2DConfig cfg = Conv2DConfig.builder().kH(3).kW(3).build();
     SDVariable feat = sd.nn().relu(sd.cnn().conv2d(img, convW, convB, cfg), 0.0);
     long flatDim = (long) channels * (2L * embH - 2) * (embW - 2);
     SDVariable flat = sd.reshape(feat, -1, flatDim);

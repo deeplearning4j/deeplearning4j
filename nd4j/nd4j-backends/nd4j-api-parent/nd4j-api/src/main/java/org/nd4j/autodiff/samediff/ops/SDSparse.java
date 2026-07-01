@@ -129,6 +129,9 @@ public class SDSparse extends SDOps {
    * @param values 1D [nnz] non-zero values (FLOATING_POINT type)
    * @param rows Number of rows in the logical dense shape
    * @param cols Number of columns in the logical dense shape
+   * @return csrValues 1D [nnz] non-zero values in CSR row-major order (FLOATING_POINT type)
+   * @return colIdx 1D [nnz] column indices (INT32) (INT type)
+   * @return rowPtr 1D [rows+1] row pointers (INT32) (INT type)
    */
   public SDVariable[] cooToCsr(SDVariable indices, SDVariable values, int rows, int cols) {
     SDValidation.validateInteger("cooToCsr", "indices", indices);
@@ -145,6 +148,9 @@ public class SDSparse extends SDOps {
    * @param values 1D [nnz] non-zero values (FLOATING_POINT type)
    * @param rows Number of rows in the logical dense shape
    * @param cols Number of columns in the logical dense shape
+   * @return csrValues 1D [nnz] non-zero values in CSR row-major order (FLOATING_POINT type)
+   * @return colIdx 1D [nnz] column indices (INT32) (INT type)
+   * @return rowPtr 1D [rows+1] row pointers (INT32) (INT type)
    */
   public SDVariable[] cooToCsr(String[] names, SDVariable indices, SDVariable values, int rows,
       int cols) {
@@ -205,6 +211,9 @@ public class SDSparse extends SDOps {
    * @param bRowPtr 1D [m+1] row pointers of B (INT32) (INT type)
    * @param m Number of rows (same for A and B)
    * @param n Number of columns (same for A and B)
+   * @return cValues 1D [cnnz] non-zero values of C = A + B (FLOATING_POINT type)
+   * @return cColIdx 1D [cnnz] column indices of C (INT32) (INT type)
+   * @return cRowPtr 1D [m+1] row pointers of C (INT32) (INT type)
    */
   public SDVariable[] csrAdd(SDVariable aValues, SDVariable aColIdx, SDVariable aRowPtr,
       SDVariable bValues, SDVariable bColIdx, SDVariable bRowPtr, int m, int n) {
@@ -231,6 +240,9 @@ public class SDSparse extends SDOps {
    * @param bRowPtr 1D [m+1] row pointers of B (INT32) (INT type)
    * @param m Number of rows (same for A and B)
    * @param n Number of columns (same for A and B)
+   * @return cValues 1D [cnnz] non-zero values of C = A + B (FLOATING_POINT type)
+   * @return cColIdx 1D [cnnz] column indices of C (INT32) (INT type)
+   * @return cRowPtr 1D [m+1] row pointers of C (INT32) (INT type)
    */
   public SDVariable[] csrAdd(String[] names, SDVariable aValues, SDVariable aColIdx,
       SDVariable aRowPtr, SDVariable bValues, SDVariable bColIdx, SDVariable bRowPtr, int m,
@@ -509,6 +521,9 @@ public class SDSparse extends SDOps {
    * @param m Number of rows of A (= rows of C)
    * @param k Number of columns of A (= rows of B)
    * @param n Number of columns of B (= columns of C)
+   * @return cValues 1D [cnnz] non-zero values of C; cnnz is data-dependent (FLOATING_POINT type)
+   * @return cColIdx 1D [cnnz] column indices of C (INT32) (INT type)
+   * @return cRowPtr 1D [m+1] row pointers of C (INT32) (INT type)
    */
   public SDVariable[] csrSpgemm(SDVariable aValues, SDVariable aColIdx, SDVariable aRowPtr,
       SDVariable bValues, SDVariable bColIdx, SDVariable bRowPtr, int m, int k, int n) {
@@ -536,6 +551,9 @@ public class SDSparse extends SDOps {
    * @param m Number of rows of A (= rows of C)
    * @param k Number of columns of A (= rows of B)
    * @param n Number of columns of B (= columns of C)
+   * @return cValues 1D [cnnz] non-zero values of C; cnnz is data-dependent (FLOATING_POINT type)
+   * @return cColIdx 1D [cnnz] column indices of C (INT32) (INT type)
+   * @return cRowPtr 1D [m+1] row pointers of C (INT32) (INT type)
    */
   public SDVariable[] csrSpgemm(String[] names, SDVariable aValues, SDVariable aColIdx,
       SDVariable aRowPtr, SDVariable bValues, SDVariable bColIdx, SDVariable bRowPtr, int m, int k,
@@ -648,6 +666,9 @@ public class SDSparse extends SDOps {
    * @param rows Number of rows (must be a multiple of blockDim)
    * @param cols Number of columns (must be a multiple of blockDim)
    * @param blockDim Square block size; rows and cols must be exact multiples
+   * @return bsrValues 1D [nnzb * blockDim * blockDim] BSR non-zero block values (FLOATING_POINT type)
+   * @return bsrColIdx 1D [nnzb] block-column indices (INT32) (INT type)
+   * @return bsrRowPtr 1D [mb+1] block-row pointers (INT32), mb = rows / blockDim (INT type)
    */
   public SDVariable[] csrToBsr(SDVariable csrValues, SDVariable csrColIdx, SDVariable csrRowPtr,
       int rows, int cols, int blockDim) {
@@ -668,6 +689,9 @@ public class SDSparse extends SDOps {
    * @param rows Number of rows (must be a multiple of blockDim)
    * @param cols Number of columns (must be a multiple of blockDim)
    * @param blockDim Square block size; rows and cols must be exact multiples
+   * @return bsrValues 1D [nnzb * blockDim * blockDim] BSR non-zero block values (FLOATING_POINT type)
+   * @return bsrColIdx 1D [nnzb] block-column indices (INT32) (INT type)
+   * @return bsrRowPtr 1D [mb+1] block-row pointers (INT32), mb = rows / blockDim (INT type)
    */
   public SDVariable[] csrToBsr(String[] names, SDVariable csrValues, SDVariable csrColIdx,
       SDVariable csrRowPtr, int rows, int cols, int blockDim) {
@@ -687,6 +711,9 @@ public class SDSparse extends SDOps {
    * @param rowPtr 1D [rows+1] CSR row pointers (INT32) (INT type)
    * @param rows Number of rows in the logical matrix
    * @param cols Number of columns in the logical matrix
+   * @return cscValues 1D [nnz] non-zero values in column-major order (FLOATING_POINT type)
+   * @return cscRowIdx 1D [nnz] row indices for each non-zero (INT32) (INT type)
+   * @return cscColPtr 1D [cols+1] column pointers (INT32) (INT type)
    */
   public SDVariable[] csrToCsc(SDVariable values, SDVariable colIdx, SDVariable rowPtr, int rows,
       int cols) {
@@ -706,6 +733,9 @@ public class SDSparse extends SDOps {
    * @param rowPtr 1D [rows+1] CSR row pointers (INT32) (INT type)
    * @param rows Number of rows in the logical matrix
    * @param cols Number of columns in the logical matrix
+   * @return cscValues 1D [nnz] non-zero values in column-major order (FLOATING_POINT type)
+   * @return cscRowIdx 1D [nnz] row indices for each non-zero (INT32) (INT type)
+   * @return cscColPtr 1D [cols+1] column pointers (INT32) (INT type)
    */
   public SDVariable[] csrToCsc(String[] names, SDVariable values, SDVariable colIdx,
       SDVariable rowPtr, int rows, int cols) {
@@ -762,6 +792,8 @@ public class SDSparse extends SDOps {
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @return indices 2D [nnz, 2] INT64 row/col index pairs for each non-zero (INT type)
+   * @return values 1D [nnz] non-zero values (FLOATING_POINT type)
    */
   public SDVariable[] denseToCoo(SDVariable dense, double threshold) {
     SDValidation.validateFloatingPoint("denseToCoo", "dense", dense);
@@ -775,6 +807,8 @@ public class SDSparse extends SDOps {
    * @param names names May be null. Arrays of names for the output variables.
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @return indices 2D [nnz, 2] INT64 row/col index pairs for each non-zero (INT type)
+   * @return values 1D [nnz] non-zero values (FLOATING_POINT type)
    */
   public SDVariable[] denseToCoo(String[] names, SDVariable dense, double threshold) {
     SDValidation.validateFloatingPoint("denseToCoo", "dense", dense);
@@ -788,6 +822,9 @@ public class SDSparse extends SDOps {
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @return cscValues 1D [nnz] non-zero values in column-major order (FLOATING_POINT type)
+   * @return cscRowIdx 1D [nnz] row index for each non-zero (INT32) (INT type)
+   * @return cscColPtr 1D [cols+1] column pointers (INT32) (INT type)
    */
   public SDVariable[] denseToCsc(SDVariable dense, double threshold) {
     SDValidation.validateFloatingPoint("denseToCsc", "dense", dense);
@@ -801,6 +838,9 @@ public class SDSparse extends SDOps {
    * @param names names May be null. Arrays of names for the output variables.
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @return cscValues 1D [nnz] non-zero values in column-major order (FLOATING_POINT type)
+   * @return cscRowIdx 1D [nnz] row index for each non-zero (INT32) (INT type)
+   * @return cscColPtr 1D [cols+1] column pointers (INT32) (INT type)
    */
   public SDVariable[] denseToCsc(String[] names, SDVariable dense, double threshold) {
     SDValidation.validateFloatingPoint("denseToCsc", "dense", dense);
@@ -814,6 +854,9 @@ public class SDSparse extends SDOps {
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @return values 1D [nnz] non-zero values (FLOATING_POINT type)
+   * @return colIdx 1D [nnz] column indices (INT32) (INT type)
+   * @return rowPtr 1D [rows+1] row pointers (INT32) (INT type)
    */
   public SDVariable[] denseToCsr(SDVariable dense, double threshold) {
     SDValidation.validateFloatingPoint("denseToCsr", "dense", dense);
@@ -827,6 +870,9 @@ public class SDSparse extends SDOps {
    * @param names names May be null. Arrays of names for the output variables.
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @return values 1D [nnz] non-zero values (FLOATING_POINT type)
+   * @return colIdx 1D [nnz] column indices (INT32) (INT type)
+   * @return rowPtr 1D [rows+1] row pointers (INT32) (INT type)
    */
   public SDVariable[] denseToCsr(String[] names, SDVariable dense, double threshold) {
     SDValidation.validateFloatingPoint("denseToCsr", "dense", dense);
@@ -884,6 +930,9 @@ public class SDSparse extends SDOps {
    *
    * @param diag 1D [n] diagonal values (FLOATING_POINT type)
    * @param n Size of the resulting n×n square matrix
+   * @return values 1D [n] non-zero values (identical to diag) (FLOATING_POINT type)
+   * @return colIdx 1D [n] column indices [0,1,...,n-1] (INT32) (INT type)
+   * @return rowPtr 1D [n+1] row pointers [0,1,...,n] (INT32) (INT type)
    */
   public SDVariable[] spdiags(SDVariable diag, int n) {
     SDValidation.validateFloatingPoint("spdiags", "diag", diag);
@@ -897,6 +946,9 @@ public class SDSparse extends SDOps {
    * @param names names May be null. Arrays of names for the output variables.
    * @param diag 1D [n] diagonal values (FLOATING_POINT type)
    * @param n Size of the resulting n×n square matrix
+   * @return values 1D [n] non-zero values (identical to diag) (FLOATING_POINT type)
+   * @return colIdx 1D [n] column indices [0,1,...,n-1] (INT32) (INT type)
+   * @return rowPtr 1D [n+1] row pointers [0,1,...,n] (INT32) (INT type)
    */
   public SDVariable[] spdiags(String[] names, SDVariable diag, int n) {
     SDValidation.validateFloatingPoint("spdiags", "diag", diag);

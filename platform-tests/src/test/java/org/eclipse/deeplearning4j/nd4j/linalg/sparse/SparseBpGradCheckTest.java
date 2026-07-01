@@ -29,10 +29,17 @@ import org.nd4j.autodiff.validation.GradCheckUtil;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.sparse.BsrSpmm;
+import org.nd4j.linalg.api.ops.impl.sparse.BsrToDense;
 import org.nd4j.linalg.api.ops.impl.sparse.CooToCsr;
+import org.nd4j.linalg.api.ops.impl.sparse.CscToDense;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrAdd;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrSddmmSparse;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrToBsr;
 import org.nd4j.linalg.api.ops.impl.sparse.CsrToCsc;
 import org.nd4j.linalg.api.ops.impl.sparse.CsrToDense;
 import org.nd4j.linalg.api.ops.impl.sparse.DenseToCoo;
+import org.nd4j.linalg.api.ops.impl.sparse.DenseToCsc;
 import org.nd4j.linalg.api.ops.impl.sparse.DenseToCsr;
 import org.nd4j.linalg.api.ops.impl.sparse.Sddmm;
 import org.nd4j.linalg.factory.Nd4j;
@@ -429,6 +436,399 @@ public class SparseBpGradCheckTest extends BaseNd4jTestWithBackends {
             assertTrue(
                     GradCheckUtil.checkGradients(sd, null),
                     "Gradient check failed for dense_to_coo"
+            );
+        } finally {
+            sd.close();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // GROUP A — Test 7: csr_add_bp  (gather from C back to A and B)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Gradient check for {@code csr_add} (elementwise CSR addition: C = A + B).
+     *
+     * <p>Matrix A (2×3) has nonzeros at (0,0)=1.0 and (1,1)=2.0.
+     * Matrix B (2×3) has nonzeros at (0,2)=3.0 and (1,0)=4.0.
+     * A and B have disjoint nonzero patterns so C has exactly 4 entries and the
+     * backward is a clean gather: dA[e] = dC[position of A's entry in C], and
+     * similarly for dB.
+     *
+     * <p>CsrAdd has 3 outputs: [0] cValues (float), [1] cColIdx (INT32), [2] cRowPtr (INT32).
+     * Loss is taken on {@code cValues} (output 0); {@code setLossVariables} is required.
+     *
+     * <p>Differentiates w.r.t. {@code aValues} and {@code bValues}.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCsrAddGradCheck(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(77777);
+
+        SameDiff sd = SameDiff.create();
+        try {
+            // Structural constants (INT32 — not differentiated)
+            SDVariable aColIdx = sd.constant("aColIdx", Nd4j.createFromArray(new int[]{0, 1}));
+            SDVariable aRowPtr = sd.constant("aRowPtr", Nd4j.createFromArray(new int[]{0, 1, 2}));
+            SDVariable bColIdx = sd.constant("bColIdx", Nd4j.createFromArray(new int[]{2, 0}));
+            SDVariable bRowPtr = sd.constant("bRowPtr", Nd4j.createFromArray(new int[]{0, 1, 2}));
+
+            // Differentiable value arrays (DOUBLE, well away from zero)
+            SDVariable aValues = sd.var("aValues", Nd4j.createFromArray(new double[]{1.0, 2.0}));
+            SDVariable bValues = sd.var("bValues", Nd4j.createFromArray(new double[]{3.0, 4.0}));
+
+            // csr_add outputs: [0]=cValues, [1]=cColIdx, [2]=cRowPtr
+            SDVariable cValues = new CsrAdd(sd, aValues, aColIdx, aRowPtr,
+                                            bValues, bColIdx, bRowPtr, 2L, 3L)
+                    .outputVariable();   // output[0] = cValues [cnnz=4]
+
+            sd.mean("loss", cValues);
+            // 3 outputs in graph → set loss explicitly
+            sd.setLossVariables("loss");
+
+            assertTrue(
+                    GradCheckUtil.checkGradients(sd, null),
+                    "Gradient check failed for csr_add"
+            );
+        } finally {
+            sd.close();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // GROUP A — Test 8: bsr_to_dense_bp  (gather blocks)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Gradient check for {@code bsr_to_dense}.
+     *
+     * <p>Uses a 4×4 matrix with blockDim=2 and 2 stored blocks:
+     * <ul>
+     *   <li>Block (0,0) = [[1,2],[3,4]] → rows 0-1, cols 0-1</li>
+     *   <li>Block (1,1) = [[5,6],[7,8]] → rows 2-3, cols 2-3</li>
+     * </ul>
+     * BSR representation: bsrValues=[1..8], bsrColIdx=[0,1], bsrRowPtr=[0,1,2].
+     *
+     * <p>Single dense [4,4] output ⇒ no {@code setLossVariables} needed.
+     * Differentiates w.r.t. {@code bsrValues} [8].
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBsrToDenseGradCheck(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(88888);
+
+        SameDiff sd = SameDiff.create();
+        try {
+            // Structural constants (INT32 — not differentiated)
+            SDVariable bsrColIdx = sd.constant("bsrColIdx", Nd4j.createFromArray(new int[]{0, 1}));
+            SDVariable bsrRowPtr = sd.constant("bsrRowPtr", Nd4j.createFromArray(new int[]{0, 1, 2}));
+
+            // Differentiable block values: 2 blocks × 2×2 elements = 8 values (DOUBLE)
+            SDVariable bsrValues = sd.var("bsrValues",
+                    Nd4j.createFromArray(new double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0}));
+
+            // bsr_to_dense outputs: single dense [4, 4]
+            SDVariable dense = new BsrToDense(sd, bsrValues, bsrColIdx, bsrRowPtr, 4L, 4L, 2L)
+                    .outputVariable();
+
+            // Single output ⇒ no setLossVariables needed
+            sd.mean("loss", dense);
+
+            assertTrue(
+                    GradCheckUtil.checkGradients(sd, null),
+                    "Gradient check failed for bsr_to_dense"
+            );
+        } finally {
+            sd.close();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // GROUP A — Test 9: bsr_spmm_bp  (dBsrValues, dB)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Gradient check for {@code bsr_spmm} (BSR sparse × dense matrix multiply: C = A_bsr · B).
+     *
+     * <p>Reuses the same 4×4 BSR matrix from Test 8 (2 blocks, blockDim=2).
+     * Dense right-hand side B is [4, 2] with all entries = 0.5 (well away from zero).
+     * Output C is [4, 2].
+     *
+     * <p>Single output ⇒ no {@code setLossVariables} needed.
+     * Differentiates w.r.t. both {@code bsrValues} [8] and {@code B} [4, 2].
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBsrSpmmGradCheck(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(99999);
+
+        SameDiff sd = SameDiff.create();
+        try {
+            // Structural constants (INT32 — not differentiated)
+            SDVariable bsrColIdx = sd.constant("bsrColIdx", Nd4j.createFromArray(new int[]{0, 1}));
+            SDVariable bsrRowPtr = sd.constant("bsrRowPtr", Nd4j.createFromArray(new int[]{0, 1, 2}));
+
+            // Differentiable inputs (DOUBLE, well away from zero)
+            SDVariable bsrValues = sd.var("bsrValues",
+                    Nd4j.createFromArray(new double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0}));
+            SDVariable B = sd.var("B", Nd4j.ones(DataType.DOUBLE, 4, 2).muli(0.5));
+
+            // bsr_spmm outputs: single dense C [4, 2]
+            SDVariable C = new BsrSpmm(sd, bsrValues, bsrColIdx, bsrRowPtr, B, 4L, 4L, 2L)
+                    .outputVariable();
+
+            // Single output ⇒ no setLossVariables needed
+            sd.mean("loss", C);
+
+            assertTrue(
+                    GradCheckUtil.checkGradients(sd, null),
+                    "Gradient check failed for bsr_spmm"
+            );
+        } finally {
+            sd.close();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // GROUP A — Test 10: csc_to_dense_bp  (gather)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Gradient check for {@code csc_to_dense}.
+     *
+     * <p>Uses the same logical 3×3 test matrix as the other GROUP A tests:
+     * <pre>
+     *   A = [[1, 0, 2],
+     *        [0, 3, 0],
+     *        [4, 0, 5]]
+     * </pre>
+     * in CSC format (column-major traversal):
+     * <pre>
+     *   col 0: rows [0, 2], values [1, 4]
+     *   col 1: rows [1],    values [3]
+     *   col 2: rows [0, 2], values [2, 5]
+     *   cscValues = [1, 4, 3, 2, 5]   DOUBLE
+     *   cscRowIdx = [0, 2, 1, 0, 2]   INT32
+     *   cscColPtr = [0, 2, 3, 5]      INT32
+     * </pre>
+     *
+     * <p>Single dense [3, 3] output ⇒ no {@code setLossVariables} needed.
+     * Differentiates w.r.t. {@code cscValues} [nnz=5].
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCscToDenseGradCheck(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(10101);
+
+        SameDiff sd = SameDiff.create();
+        try {
+            // Structural constants (INT32 — not differentiated)
+            SDVariable cscRowIdx = sd.constant("cscRowIdx", Nd4j.createFromArray(new int[]{0, 2, 1, 0, 2}));
+            SDVariable cscColPtr = sd.constant("cscColPtr", Nd4j.createFromArray(new int[]{0, 2, 3, 5}));
+
+            // Differentiable values (DOUBLE, well away from zero)
+            SDVariable cscValues = sd.var("cscValues",
+                    Nd4j.createFromArray(new double[]{1.0, 4.0, 3.0, 2.0, 5.0}));
+
+            // csc_to_dense outputs: single dense [3, 3]
+            SDVariable dense = new CscToDense(sd, cscValues, cscRowIdx, cscColPtr, 3L, 3L)
+                    .outputVariable();
+
+            // Single output ⇒ no setLossVariables needed
+            sd.mean("loss", dense);
+
+            assertTrue(
+                    GradCheckUtil.checkGradients(sd, null),
+                    "Gradient check failed for csc_to_dense"
+            );
+        } finally {
+            sd.close();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // GROUP A — Test 11: csr_to_bsr_bp  (scatter CSR→BSR and back)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Gradient check for {@code csr_to_bsr}.
+     *
+     * <p>Uses the same 4×4 diagonal-block matrix as Tests 8/9 but supplied in CSR format:
+     * <pre>
+     *   A[0][0]=1, A[0][1]=2, A[1][0]=3, A[1][1]=4  (block-row 0)
+     *   A[2][2]=5, A[2][3]=6, A[3][2]=7, A[3][3]=8  (block-row 1)
+     *   csrValues = [1,2,3,4,5,6,7,8]  DOUBLE
+     *   csrColIdx = [0,1,0,1,2,3,2,3]  INT32
+     *   csrRowPtr = [0,2,4,6,8]        INT32
+     *   IArgs: rows=4, cols=4, blockDim=2
+     * </pre>
+     *
+     * <p>CsrToBsr has 3 outputs: [0] bsrValues (float), [1] bsrColIdx (INT32),
+     * [2] bsrRowPtr (INT32).  Loss is on {@code bsrValues} (output 0);
+     * {@code setLossVariables} is required.
+     *
+     * <p>Differentiates w.r.t. {@code csrValues} [nnz=8].
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCsrToBsrGradCheck(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(11112);
+
+        SameDiff sd = SameDiff.create();
+        try {
+            // Structural constants (INT32 — not differentiated)
+            SDVariable csrColIdx = sd.constant("csrColIdx",
+                    Nd4j.createFromArray(new int[]{0, 1, 0, 1, 2, 3, 2, 3}));
+            SDVariable csrRowPtr = sd.constant("csrRowPtr",
+                    Nd4j.createFromArray(new int[]{0, 2, 4, 6, 8}));
+
+            // Differentiable CSR values (DOUBLE, well away from zero)
+            SDVariable csrValues = sd.var("csrValues",
+                    Nd4j.createFromArray(new double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0}));
+
+            // csr_to_bsr outputs: [0]=bsrValues, [1]=bsrColIdx, [2]=bsrRowPtr
+            SDVariable bsrValues = new CsrToBsr(sd, csrValues, csrColIdx, csrRowPtr, 4L, 4L, 2L)
+                    .outputVariable();   // output[0] = bsrValues
+
+            sd.mean("loss", bsrValues);
+            // 3 outputs in graph → set loss explicitly
+            sd.setLossVariables("loss");
+
+            assertTrue(
+                    GradCheckUtil.checkGradients(sd, null),
+                    "Gradient check failed for csr_to_bsr"
+            );
+        } finally {
+            sd.close();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // GROUP B — Test 12: dense_to_csc_bp  (scatter-back)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Gradient check for {@code dense_to_csc}.
+     *
+     * <p>The forward op scans the dense input column-by-column and compresses non-zero
+     * entries into CSC format.  The backward op ({@code dense_to_csc_bp}) scatters
+     * {@code gradValues[e]} back into {@code dDense[cscRowIdx[e], col]} for each non-zero.
+     *
+     * <p><b>GROUP B stability requirement:</b>
+     * The CSC sparsity pattern is extracted from the dense input at forward time.
+     * Using a fully-dense input (all entries in [1, 6]) guarantees that no ε perturbation
+     * can push any entry to exactly zero, keeping the pattern stable across all
+     * finite-difference probes.
+     *
+     * <p>Input: dense[2, 3] = [[1,2,3],[4,5,6]] (sd.var, all non-zero).
+     * DenseToCsc has 3 outputs: [0] cscValues (float), [1] cscRowIdx (INT32),
+     * [2] cscColPtr (INT32).  Loss is on cscValues (output 0);
+     * {@code setLossVariables} is required.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDenseToCscGradCheck(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12121);
+
+        // Fully-dense 2x3 input: all entries in [1, 6], none near zero.
+        // Guarantees the extracted CSC pattern is stable under gradcheck's ε perturbations.
+        INDArray denseArr = Nd4j.createFromArray(new double[][]{
+                {1.0, 2.0, 3.0},
+                {4.0, 5.0, 6.0}
+        });
+
+        SameDiff sd = SameDiff.create();
+        try {
+            // Fully-dense input — the only differentiable variable
+            SDVariable dense = sd.var("dense", denseArr);
+
+            // dense_to_csc outputs: [0]=cscValues, [1]=cscRowIdx, [2]=cscColPtr
+            // threshold=0.0 keeps all entries (the default)
+            SDVariable cscValues = new DenseToCsc(sd, dense, 0.0)
+                    .outputVariable();   // output[0] = cscValues [nnz=6]
+
+            sd.mean("loss", cscValues);
+            // 3 outputs in graph → set loss explicitly
+            sd.setLossVariables("loss");
+
+            assertTrue(
+                    GradCheckUtil.checkGradients(sd, null),
+                    "Gradient check failed for dense_to_csc"
+            );
+        } finally {
+            sd.close();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // GROUP A — Test 13: csr_sddmm_sparse_bp  (dLvalues, dMvalues)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Gradient check for {@code csr_sddmm_sparse} (Sampled Dense-Dense Matrix Multiplication
+     * over two CSR sparse matrices).
+     *
+     * <p>For each non-zero position {@code t} at row {@code p}, column {@code q} in the target
+     * pattern, the forward computes:
+     * <pre>
+     *   out[t] = dot(L row p, M row q) = sum_{r=0}^{R-1}  L[p, r] * M[q, r]
+     * </pre>
+     *
+     * <p>Test configuration (P=2, Q=2, R=3):
+     * <ul>
+     *   <li>L is [2, 3] CSR — both rows dense (all 3 cols non-zero):
+     *       Lvalues=[1,2,3,4,5,6], LcolIdx=[0,1,2,0,1,2], LrowPtr=[0,3,6]</li>
+     *   <li>M is [2, 3] CSR — all entries = 0.5 (well away from zero):
+     *       Mvalues=[0.5×6], McolIdx=[0,1,2,0,1,2], MrowPtr=[0,3,6]</li>
+     *   <li>Target sparsity pattern is the full 2×2 grid (4 entries):
+     *       targetRowPtr=[0,2,4], targetColIdx=[0,1,0,1]</li>
+     * </ul>
+     *
+     * <p>Single output outValues [tnnz=4] ⇒ no {@code setLossVariables} needed.
+     * Differentiates w.r.t. {@code Lvalues} [6] and {@code Mvalues} [6].
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCsrSddmmSparseGradCheck(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(13131);
+
+        SameDiff sd = SameDiff.create();
+        try {
+            // Structural constants (INT32 — not differentiated)
+            SDVariable targetRowPtr = sd.constant("targetRowPtr",
+                    Nd4j.createFromArray(new int[]{0, 2, 4}));
+            SDVariable targetColIdx = sd.constant("targetColIdx",
+                    Nd4j.createFromArray(new int[]{0, 1, 0, 1}));
+            SDVariable LcolIdx = sd.constant("LcolIdx",
+                    Nd4j.createFromArray(new int[]{0, 1, 2, 0, 1, 2}));
+            SDVariable LrowPtr = sd.constant("LrowPtr",
+                    Nd4j.createFromArray(new int[]{0, 3, 6}));
+            SDVariable McolIdx = sd.constant("McolIdx",
+                    Nd4j.createFromArray(new int[]{0, 1, 2, 0, 1, 2}));
+            SDVariable MrowPtr = sd.constant("MrowPtr",
+                    Nd4j.createFromArray(new int[]{0, 3, 6}));
+
+            // Differentiable value arrays (DOUBLE, well away from zero)
+            SDVariable Lvalues = sd.var("Lvalues",
+                    Nd4j.createFromArray(new double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}));
+            SDVariable Mvalues = sd.var("Mvalues",
+                    Nd4j.createFromArray(new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5}));
+
+            // csr_sddmm_sparse input order: targetRowPtr, targetColIdx,
+            //   Lvalues, LcolIdx, LrowPtr, Mvalues, McolIdx, MrowPtr, P, Q, R
+            SDVariable outValues = new CsrSddmmSparse(sd,
+                    targetRowPtr, targetColIdx,
+                    Lvalues, LcolIdx, LrowPtr,
+                    Mvalues, McolIdx, MrowPtr,
+                    2L, 2L, 3L)
+                    .outputVariable();   // outValues [tnnz=4]
+
+            // Single output ⇒ no setLossVariables needed
+            sd.mean("loss", outValues);
+
+            assertTrue(
+                    GradCheckUtil.checkGradients(sd, null),
+                    "Gradient check failed for csr_sddmm_sparse"
             );
         } finally {
             sd.close();

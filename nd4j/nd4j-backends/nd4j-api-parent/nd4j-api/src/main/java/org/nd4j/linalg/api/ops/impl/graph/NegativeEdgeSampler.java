@@ -23,6 +23,8 @@ package org.nd4j.linalg.api.ops.impl.graph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -86,7 +88,7 @@ public class NegativeEdgeSampler {
         if (edgeList.rank() != 2 || edgeList.size(1) != 2) {
             throw new IllegalArgumentException(
                     "edgeList must have shape [E, 2], got " +
-                            java.util.Arrays.toString(edgeList.shape()));
+                            Arrays.toString(edgeList.shape()));
         }
         int E = (int) edgeList.size(0);
         Set<Long> existingEdges = new HashSet<>(E * 2);
@@ -189,7 +191,7 @@ public class NegativeEdgeSampler {
     public long getNumNodes() { return numNodes; }
 
     /** Read-only view of the existing-edge set (encoded). */
-    public Set<Long> getExistingEdges() { return java.util.Collections.unmodifiableSet(existingEdges); }
+    public Set<Long> getExistingEdges() { return Collections.unmodifiableSet(existingEdges); }
 
     /**
      * Check whether the given directed edge is in the existing (positive) edge set.

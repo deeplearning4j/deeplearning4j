@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -102,5 +103,20 @@ public class BsrSpmm extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         // Single dense output C matching the bsrValues input dtype (index 0)
         return Collections.singletonList(dataTypes.get(0));
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grads) {
+        SDVariable dC = grads.get(0);
+        long rows     = iArguments.get(0);
+        long cols     = iArguments.get(1);
+        long blockDim = iArguments.get(2);
+        SDVariable bsrValues = arg(0);
+        SDVariable bsrColIdx = arg(1);
+        SDVariable bsrRowPtr = arg(2);
+        SDVariable B         = arg(3);
+        SDVariable[] bpOut = new BsrSpmmBp(sameDiff, bsrValues, bsrColIdx, bsrRowPtr, B, dC, rows, cols, blockDim)
+                .outputVariables();
+        return Arrays.asList(bpOut[0], sameDiff.zerosLike(bsrColIdx), sameDiff.zerosLike(bsrRowPtr), bpOut[1]);
     }
 }

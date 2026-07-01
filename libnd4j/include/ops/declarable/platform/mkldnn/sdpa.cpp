@@ -601,10 +601,17 @@ static void mklSoftmaxInPlace(float* data, MKL_INT rows, MKL_INT cols, float sca
     // Vectorized exp
     vsExp(cols, row, row);
 
-    // Sum and normalize
-    float sum = cblas_sasum(cols, row, 1);
+    // Sum and normalize with SIMD instead of per-row cblas_sasum/cblas_sscal. Those were
+    // two tiny level-1 BLAS calls PER ROW (thousands per attention op) whose call +
+    // OpenBLAS threading overhead dominated the length-`cols` work. After vsExp all values
+    // are >= 0, so a plain sum equals cblas_sasum.
+    float sum = 0.0f;
+    PRAGMA_OMP_SIMD_ARGS(reduction(+:sum))
+    for (MKL_INT c = 0; c < cols; c++) sum += row[c];
     if (sum > 0.0f) {
-      cblas_sscal(cols, 1.0f / sum, row, 1);
+      const float inv = 1.0f / sum;
+      PRAGMA_OMP_SIMD
+      for (MKL_INT c = 0; c < cols; c++) row[c] *= inv;
     }
   }
 }
@@ -771,12 +778,18 @@ static void executeSDPA4D_MKL(NDArray* query, NDArray* key, NDArray* value, NDAr
       for (MKL_INT h = 0; h < numHeads; h++) {
         float* sHead = allScores + h * scoreSize;  // [seqQ, seqKV] contiguous
         for (MKL_INT q = 0; q < seqQ; q++) {
-          // If bias has 1 row, broadcast it to every query position; else use row q
+          // If bias has 1 row, broadcast it to every query position; else use row q.
+          // SIMD add instead of cblas_saxpy: this was seqQ*numHeads tiny level-1 BLAS
+          // calls per attention op (e.g. 6144 for [1,12,512,512]) whose call + OpenBLAS
+          // threading overhead dwarfed the length-seqKV work.
           const float* biasRow = biasPtr + (biasSeqQ == 1 ? 0 : q) * seqKV;
-          cblas_saxpy(seqKV, 1.0f, biasRow, 1, sHead + q * seqKV, 1);
+          float* sRow = sHead + q * seqKV;
+          PRAGMA_OMP_SIMD
+          for (MKL_INT j = 0; j < seqKV; j++) sRow[j] += biasRow[j];
         }
       }
     }
+
 
     // Step 1.75: Apply causal mask — set scores[i][j] = -1e9 where j > i + causalOffset
     if (isCausal) {

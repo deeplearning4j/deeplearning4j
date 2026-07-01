@@ -41,35 +41,6 @@ public class CpuBackend extends Nd4jBackend {
     private static final Logger log = LoggerFactory.getLogger(CpuBackend.class);
     private final static String LINALG_PROPS = "/nd4j-native.properties";
 
-    static {
-        initializeOpenBlasThreading();
-    }
-
-    /**
-     * Initialize OpenBLAS threading configuration.
-     * By default, sets OpenBLAS to single-threaded mode to prevent TLS corruption
-     * when combined with application-level OpenMP threading.
-     * Users can override by setting OPENBLAS_NUM_THREADS or SD_OPENBLAS_THREADS environment variables.
-     */
-    private static void initializeOpenBlasThreading() {
-        try {
-            String openblasThreads = System.getenv("OPENBLAS_NUM_THREADS");
-            String sdOpenblasThreads = System.getenv("SD_OPENBLAS_THREADS");
-
-            if (openblasThreads == null && sdOpenblasThreads == null) {
-                // Neither environment variable is set - configure for single-threaded
-                // to prevent TLS corruption crashes with OpenMP
-                // Create a temporary instance to call the native method
-                new org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu().setOpenBlasThreads(1);
-                log.debug("OpenBLAS configured to single-threaded mode to prevent TLS corruption. " +
-                        "Set OPENBLAS_NUM_THREADS=N to enable multi-threaded OpenBLAS.");
-            }
-        } catch (Throwable t) {
-            // Ignore errors during initialization - the native library might not be fully loaded yet
-            log.debug("Could not configure OpenBLAS threading: {}", t.getMessage());
-        }
-    }
-
     @Override
     public boolean isAvailable() {
         return true;

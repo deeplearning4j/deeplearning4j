@@ -65,8 +65,8 @@ SD_LIB_HIDDEN void csc_to_dense(NDArray& cscValues, NDArray& cscRowIdx, NDArray&
  * @param cscColPtr   1D [cols+1], INT32 output column pointers
  * @param threshold   Keep entries where |x| > threshold
  */
-SD_LIB_HIDDEN void dense_to_csc(NDArray& input, NDArray& cscValues, NDArray& cscRowIdx,
-                                 NDArray& cscColPtr, double threshold);
+SD_LIB_HIDDEN void dense_to_csc(sd::LaunchContext* context, NDArray& input, NDArray& cscValues,
+                                 NDArray& cscRowIdx, NDArray& cscColPtr, double threshold);
 
 }  // namespace helpers
 }  // namespace ops

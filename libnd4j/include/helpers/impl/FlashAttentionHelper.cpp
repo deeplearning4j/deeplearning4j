@@ -310,7 +310,7 @@ void FlashAttentionHelper::forward4D(
     // For HALF: single kernel avoids permute D2D copies that dominate decode latency.
     bool isDecode = (seqLenQ == 1);
     if (supportedType && isDecode && !needScores && !needLogits) {
-      fusedGQADecodeCuda(query, key, value, output, static_cast<float>(scale), context,
+      fusedGQADecodeCuda(query, key, value, output, scale, context,
                          hasAttentionBias ? attentionBias : nullptr);
       if (softmaxLse != nullptr) softmaxLse->nullify();
       return;

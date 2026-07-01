@@ -113,8 +113,9 @@ public class BufferLifecycleManager {
                 try {
                     buf.close();
                     closed++;
-                } catch (Exception ignored) {
+                } catch (Exception e) {
                     // Buffer may already be deallocated or owned elsewhere.
+                    log.trace("Ignoring exception during buffer cleanup", e);
                 }
             }
         }
@@ -151,8 +152,9 @@ public class BufferLifecycleManager {
                 try {
                     buf.close();
                     closed++;
-                } catch (Exception ignored) {
+                } catch (Exception e) {
                     // Buffer may already be deallocated or owned elsewhere.
+                    log.trace("Ignoring exception during buffer cleanup", e);
                 }
             }
         }
@@ -167,8 +169,8 @@ public class BufferLifecycleManager {
      * from being reused in subsequent sessions.
      */
     public void closePooledResources(Map<String, OpContext> activeContexts,
-                                      java.util.Deque<OpContext> pool,
-                                      java.util.Set<Long> freedArrays,
+                                      Deque<OpContext> pool,
+                                      Set<Long> freedArrays,
                                       AbstractDependencyTracker<SDValue, Dep> arrayUseTracker,
                                       Map<Long, Integer> liveDataBufferRefs,
                                       Map<Long, List<DataBuffer>> outputShapeCache,
@@ -181,6 +183,7 @@ public class BufferLifecycleManager {
                     activeClosed++;
                 } catch (Exception e) {
                     // Already closed or invalid; ignore
+                    log.trace("Ignoring exception during buffer cleanup", e);
                 }
             }
         }
@@ -196,6 +199,7 @@ public class BufferLifecycleManager {
                     pooledClosed++;
                 } catch (Exception e) {
                     // Already closed or invalid; ignore
+                    log.trace("Ignoring exception during buffer cleanup", e);
                 }
             }
         }

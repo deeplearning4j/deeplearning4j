@@ -1,0 +1,8 @@
+{
+  "mcpServers" : {
+    "kompile" : {
+      "url" : "http://localhost:8080/mcp/sse",
+      "transport" : "sse"
+    }
+  }
+}

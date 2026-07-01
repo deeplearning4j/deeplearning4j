@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -89,5 +90,17 @@ public class CscToDense extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         // Output dtype matches the values input (index 0)
         return Collections.singletonList(dataTypes.get(0));
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grads) {
+        SDVariable gradDense = grads.get(0);
+        long rows = iArguments.get(0);
+        long cols = iArguments.get(1);
+        SDVariable cscRowIdx = arg(1);
+        SDVariable cscColPtr = arg(2);
+        SDVariable dCscValues = new CscToDenseBp(sameDiff, cscRowIdx, cscColPtr, gradDense, rows, cols)
+                .outputVariables()[0];
+        return Arrays.asList(dCscValues, sameDiff.zerosLike(cscRowIdx), sameDiff.zerosLike(cscColPtr));
     }
 }

@@ -184,8 +184,8 @@ static void denseToCsc_(NDArray& input, NDArray& cscValues, NDArray& cscRowIdx,
   }
 }
 
-void dense_to_csc(NDArray& input, NDArray& cscValues, NDArray& cscRowIdx,
-                  NDArray& cscColPtr, double threshold) {
+void dense_to_csc(sd::LaunchContext* /*context*/, NDArray& input, NDArray& cscValues,
+                  NDArray& cscRowIdx, NDArray& cscColPtr, double threshold) {
   NDArray::preparePrimaryUse({&cscValues, &cscRowIdx, &cscColPtr}, {&input});
 
   BUILD_DOUBLE_SELECTOR(input.dataType(), cscRowIdx.dataType(), denseToCsc_,

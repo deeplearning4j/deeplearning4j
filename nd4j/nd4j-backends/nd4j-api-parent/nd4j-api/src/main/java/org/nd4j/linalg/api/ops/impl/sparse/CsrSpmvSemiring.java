@@ -110,4 +110,11 @@ public class CsrSpmvSemiring extends DynamicCustomOp {
         // Output dtype matches values (input[0]) dtype
         return Collections.singletonList(dataTypes.get(0));
     }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grads) {
+        throw new UnsupportedOperationException(
+            "csr_spmv_semiring is forward-only: semiring ops (min-plus / max-plus / or-and) " +
+            "are non-differentiable and cannot be used in automatic differentiation.");
+    }
 }

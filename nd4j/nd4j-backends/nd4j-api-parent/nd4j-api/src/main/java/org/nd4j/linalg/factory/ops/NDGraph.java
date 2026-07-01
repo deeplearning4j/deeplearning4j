@@ -25,6 +25,7 @@ package org.nd4j.linalg.factory.ops;
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.factory.NDValidation;
 
 public class NDGraph {
@@ -165,7 +166,7 @@ public class NDGraph {
     INDArray rImg = org.nd4j.linalg.factory.Nd4j.base().reshape(relation, -1, embH, embW);
     INDArray stacked = org.nd4j.linalg.factory.Nd4j.base().concat(1, hImg, rImg);
     INDArray img = org.nd4j.linalg.factory.Nd4j.base().reshape(stacked, -1, 1, 2L * embH, embW);
-    org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig cfg = org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig.builder().kH(3).kW(3).build();
+    Conv2DConfig cfg = Conv2DConfig.builder().kH(3).kW(3).build();
     INDArray feat = org.nd4j.linalg.factory.Nd4j.nn().relu(org.nd4j.linalg.factory.Nd4j.cnn().conv2d(img, convW, convB, cfg), 0.0);
     long flatDim = (long) channels * (2L * embH - 2) * (embW - 2);
     INDArray flat = org.nd4j.linalg.factory.Nd4j.base().reshape(feat, -1, flatDim);

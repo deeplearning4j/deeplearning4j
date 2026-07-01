@@ -91,6 +91,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private static final String SCOPE_PANIC_MSG = "If required, arrays in workspaces can be detached using INDArray.detach() before being passed to the SameDiff instance.\n" +
             "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
 
+    /**
+     * Sentinel value passed to {@link org.nd4j.linalg.api.memory.MemoryManager#setAutoGcWindow}
+     * to disable the DeallocatorService's periodic {@code System.gc()} calls during inference.
+     * ND4J rejects 0 (CudaConfiguration.setNoGcWindowMs requires >= 1), so Integer.MAX_VALUE
+     * is used as the agreed-upon "no GC" sentinel.
+     */
+    private static final int GC_DISABLED_WINDOW = Integer.MAX_VALUE;
+
 
     // Matches OP_TRAIT_DATA_DEPENDENT in libnd4j/include/ops/declarable/OpDescriptor.h (1 << 9).
     // Ops carrying this trait have output shapes that depend on input VALUES rather than
@@ -229,8 +237,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * Fields are package-private for direct access from the enclosing class without
      * accessor overhead in hot paths.
      */
+    @Slf4j
     private static class TimingState {
-        private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TimingState.class);
         // Per-call accumulators (reset each output() call)
         long dagLookupNs, initValuesNs, execLoopNs, outputDupNs, cleanupNs;
         // Per-op phase accumulators within executeOperations
@@ -1467,23 +1475,25 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         //   array into a plan-owned buffer with a stable address, so closing the caller's
         //   array is safe.
         //
-        // SOURCE_VARIABLE (model weights) are deliberately NOT marked here. During inference,
-        // weights are constants; marking them variable makes computeSlotVariableDependency()
-        // treat all dependent slots as variable-dependent, PREVENTING detectFrozenConstants()
-        // from freezing them and forcing D2D staging copies that corrupt the CUDA graph's
-        // baked-in addresses — the autoregressive decode then replays a stale token and
-        // repeats it (TestNativeDecodeLoopRegression freeze at step 4). See the matching note
-        // in NativePlanCompiler.cpp (it likewise only auto-marks SOURCE_PLACEHOLDER). The
-        // weights that genuinely change between calls — the optimizer-updated params in
-        // training — are marked via the polymorphic dspMutableExternalInputNames() above:
-        // TrainingSession returns gradVarToVarMap.values(); InferenceSession returns empty.
+        // SOURCE_VARIABLE (model weights) are deliberately NOT auto-marked here. During
+        // inference, weights are constants; marking every weight variable makes
+        // computeSlotVariableDependency() treat all dependent slots as variable-dependent,
+        // PREVENTING detectFrozenConstants() from freezing them and forcing D2D staging
+        // copies that corrupt the CUDA graph's baked-in addresses — the autoregressive
+        // decode then replays a stale token and repeats it (TestNativeDecodeLoopRegression
+        // freeze at step 4). See the matching note in NativePlanCompiler.cpp. Variables
+        // that genuinely change between calls are marked only through explicit paths:
+        // TrainingSession via dspMutableExternalInputNames() and callers that report
+        // SameDiff in-place mutations via markDynamicShapePlanInputsMutable().
         {
             String[] extKeys = plan.getExternalInputKeys();
             byte[] extSourceTypes = plan.getExternalInputSourceTypes();
             if (extKeys != null && extSourceTypes != null && extKeys.length > 0) {
+                Set<String> mutableSameDiffInputs = sameDiff.getDynamicShapePlanMutableInputs();
                 List<String> mutableInputNames = new ArrayList<>();
                 for (int i = 0; i < extKeys.length && i < extSourceTypes.length; i++) {
-                    if (extSourceTypes[i] == DynamicShapeSlot.SOURCE_PLACEHOLDER) {
+                    if (extSourceTypes[i] == DynamicShapeSlot.SOURCE_PLACEHOLDER
+                            || mutableSameDiffInputs.contains(extKeys[i])) {
                         mutableInputNames.add(extKeys[i]);
                     }
                 }
@@ -1639,9 +1649,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // arrays are freed when their last consumer op completes. The DeallocatorService's
         // autoGcWindow (default 100ms) calls System.gc() periodically, causing Full GC pauses
         // that waste time since intermediates are freed explicitly.
-        // Use Integer.MAX_VALUE instead of 0 since CudaConfiguration.setNoGcWindowMs rejects < 1.
+        // Use GC_DISABLED_WINDOW instead of 0 since CudaConfiguration.setNoGcWindowMs rejects < 1.
         int savedAutoGcWindow = Nd4j.getMemoryManager().getAutoGcWindow();
-        Nd4j.getMemoryManager().setAutoGcWindow(Integer.MAX_VALUE);
+        Nd4j.getMemoryManager().setAutoGcWindow(GC_DISABLED_WINDOW);
 
         try {
         // Detect while-loop regions and build skip sets for control flow

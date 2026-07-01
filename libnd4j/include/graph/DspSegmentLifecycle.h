@@ -181,9 +181,8 @@ static inline void markReplaying(GraphSegmentExec& exec) {
 // any -> FAILED (terminal)
 static inline void markFailed(GraphSegmentExec& exec, const char* reason,
                               int startSlot = -1, int endSlot = -1) {
-  sd_printf("DSP ERROR: seg[%d-%d] capture/compilation FAILED. "
-            "reason=%s — permanent slot-by-slot fallback.\n",
-            startSlot, endSlot, reason ? reason : "?");
+  // Failure is recorded via the gated DSP_DIAG below and recordSegmentTerminal (statistics JSON);
+  // no ungated stdout print on the capture path.
   DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> FAILED (reason=%s execCount=%d compiledBy=%s)",
            exec.segPhase.displayName(), reason, exec.executionCount,
            exec.compiledByBackend.c_str());
@@ -225,9 +224,7 @@ static inline void markOomDeferred(GraphSegmentExec& exec, int retryAfterExec) {
 static inline void markZeroKernel(GraphSegmentExec& exec, const char* reason,
                                   int startSlot = -1, int endSlot = -1) {
   SLS_ASSERT_FROM(exec, SLS::CAPTURE_PENDING, "markZeroKernel");
-  sd_printf("DSP WARN: seg[%d-%d] CUDA graph captured ZERO nodes. "
-            "This segment will ALWAYS run slot-by-slot. reason=%s\n",
-            startSlot, endSlot, reason ? reason : "?");
+  // Reported via the gated DSP_DIAG below; no ungated stdout print on the capture path.
   DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> SEALED:ZERO_KERNEL (reason=%s execCount=%d)",
            exec.segPhase.displayName(), reason, exec.executionCount);
   const char* prevPhase = exec.segPhase.displayName();
@@ -337,7 +334,7 @@ static inline void evictSegmentCapture(GraphSegmentExec& exec,
   exec.outcome = SegmentExecOutcome::PENDING;
   exec.resetCaptureKeys();
   exec.compilationFailed = false;
-  exec.gapOpsCapturedInGraph = false;
+  exec.clearGraphContentFlags("evict_for_oom");
   exec.markArgsStale();
   exec.compiledByBackend.clear();
   exec.executionCount = 0;
@@ -526,11 +523,15 @@ struct ReplayVerifyStateGuard {
   int savedExecCount;
   bool savedCompilationFailed;
 
+  // Sentinel exec count that leapfrogs every warmup gate (all `executionCount < N` checks use an
+  // N far below this) so the verify path activates immediately. Restored in the destructor.
+  static constexpr int kSkipWarmupExecCount = 999;
+
   ReplayVerifyStateGuard(GraphSegmentExec& e) : exec(e) {
     savedExecCount = exec.executionCount;
     savedCompilationFailed = exec.compilationFailed;
-    exec.compilationFailed = true;    // Force slot-by-slot
-    exec.executionCount = 999;        // Skip warmup thresholds
+    exec.compilationFailed = true;                 // Force slot-by-slot
+    exec.executionCount = kSkipWarmupExecCount;     // Skip warmup thresholds
   }
   ~ReplayVerifyStateGuard() {
     exec.executionCount = savedExecCount;
