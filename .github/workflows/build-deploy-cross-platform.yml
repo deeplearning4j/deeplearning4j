@@ -303,13 +303,11 @@ jobs:
             PROTOC_PROFILE="-Posx-aarch64-protoc"
           fi
 
-          # nd4j-ggml has a test-scope dep on nd4j-native:<platform> which is only
-          # published by the native build workflows.  Exclude it on platforms where
-          # the classifier JAR is not yet on snapshots.
+          # nd4j-ggml is backend-agnostic (nd4j-api only); its tests live in
+          # platform-tests, so it no longer carries an nd4j-native:<platform>
+          # test dep and builds on every platform without native snapshots.
+          # (The former windows-only GGML_EXCLUDE workaround is obsolete.)
           GGML_EXCLUDE=""
-          if [ "${{ matrix.os }}" == "windows" ]; then
-            GGML_EXCLUDE=",!:nd4j-ggml"
-          fi
 
           # Enable ZLUDA, TPU and Hexagon Java modules on linux-x86_64 (the only
           # platform that publishes nd4j-zluda/nd4j-tpu/nd4j-hexagon artifacts today;
