@@ -1548,20 +1548,48 @@ public class DynamicShapePlanExecutor implements Closeable {
     private long computePlaceholderShapeHash(Map<String, INDArray> placeholderArrays) {
         if (cachedPhKeys == null || cachedPhKeys.length == 0) return 0;
         long hash = 17;
-        for (String phKey : cachedPhKeys) {
-            INDArray arr = placeholderArrays != null ? placeholderArrays.get(phKey) : null;
-            if (arr == null) {
-                SDVariable v = sd.getVariable(phKey);
-                arr = v != null ? v.getArr() : null;
-            }
-            if (arr != null) {
-                long[] shape = arr.shape();
-                for (long dim : shape) {
-                    hash = hash * 31 + dim;
+        // D1a per-token trim: once shapes are frozen, only DYNAMIC-shape external inputs
+        // (placeholders + derived KV/mask + integral control) can change shape between
+        // tokens. Constant weights have fixed shapes, so hashing all ~N ext inputs (incl.
+        // every weight) each token is wasted work (thousands of map lookups/token on VLM).
+        // When the frozen classifier is built, hash only that dynamic subset (indices into
+        // cachedPhKeys, which mirrors getExternalInputKeys()); otherwise fall back to all
+        // keys (pre-freeze / classifier absent). Excluding fixed-shape weights cannot change
+        // the hash's ability to distinguish dynamic-shape configs; the bounds guard + fallback
+        // keep it safe if indices ever misalign.
+        final int[][] dynIdxGroups = (placeholderIndices != null)
+                ? new int[][]{ placeholderIndices, frozenDerivedExternalInputIndices, frozenControlInputIndices }
+                : null;
+        if (dynIdxGroups != null) {
+            for (int[] group : dynIdxGroups) {
+                if (group == null) continue;
+                for (int gi : group) {
+                    if (gi < 0 || gi >= cachedPhKeys.length) continue;
+                    hash = hashPlaceholderKeyShape(placeholderArrays, hash, cachedPhKeys[gi]);
                 }
-                // Include rank as a delimiter to distinguish e.g. [2,3] from [6]
-                hash = hash * 31 + shape.length;
             }
+            return hash;
+        }
+        for (String phKey : cachedPhKeys) {
+            hash = hashPlaceholderKeyShape(placeholderArrays, hash, phKey);
+        }
+        return hash;
+    }
+
+    /** Fold one external-input's shape (dims + rank delimiter) into the running plan-cache hash. */
+    private long hashPlaceholderKeyShape(Map<String, INDArray> placeholderArrays, long hash, String phKey) {
+        INDArray arr = placeholderArrays != null ? placeholderArrays.get(phKey) : null;
+        if (arr == null) {
+            SDVariable v = sd.getVariable(phKey);
+            arr = v != null ? v.getArr() : null;
+        }
+        if (arr != null) {
+            long[] shape = arr.shape();
+            for (long dim : shape) {
+                hash = hash * 31 + dim;
+            }
+            // Include rank as a delimiter to distinguish e.g. [2,3] from [6]
+            hash = hash * 31 + shape.length;
         }
         return hash;
     }
