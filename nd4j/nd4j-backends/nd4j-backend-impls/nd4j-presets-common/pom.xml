@@ -32,6 +32,18 @@
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
         </dependency>
+        <!-- OpExclusionUtils imports org.nd4j.common.config.ND4JSystemProperties and
+             org.slf4j.LoggerFactory; these deps were implicit via a stale local jar but
+             a clean CI checkout compiles this module fresh and needs them declared. -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
