@@ -324,9 +324,9 @@ void kvScatterDynBatched(const KvScatterDynEntry* entries, int numEntries,
  * literal), this kernel is CUDA graph compatible: the pointer ADDRESS is
  * captured, and the VALUE at that address can change between replays.
  */
-template <typename T>
-SD_KERNEL void kvInPlaceWriteKernel(const T* __restrict__ newKv,
-                                     T* __restrict__ pastKv,
+template <typename X, typename Y>
+SD_KERNEL void kvInPlaceWriteKernel(const X* __restrict__ newKv,
+                                     Y* __restrict__ pastKv,
                                      const LongType* __restrict__ cachePosPtr,
                                      LongType batch,
                                      LongType seqKV,
@@ -356,47 +356,43 @@ SD_KERNEL void kvInPlaceWriteKernel(const T* __restrict__ newKv,
 
     // Grid-stride loop over headDim
     for (LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
-        pastKv[dstOffset + d] = newKv[srcOffset + d];
+        pastKv[dstOffset + d] = static_cast<Y>(newKv[srcOffset + d]);
     }
 }
 
-template <typename T>
+template <typename X, typename Y>
 static void kvInPlaceWriteCudaLauncher(const cudaStream_t* stream,
                                         const void* vNewKv, void* vPastKv,
                                         const void* cachePosPtr,
                                         LongType batch, LongType seqKV,
                                         LongType numKvHeads, LongType headDim,
                                         LongType pastMaxSeqLen) {
-    auto newKv = reinterpret_cast<const T*>(vNewKv);
-    auto pastKv = reinterpret_cast<T*>(vPastKv);
+    auto newKv = reinterpret_cast<const X*>(vNewKv);
+    auto pastKv = reinterpret_cast<Y*>(vPastKv);
     auto posPtr = reinterpret_cast<const LongType*>(cachePosPtr);
 
     auto numSlices = batch * seqKV * numKvHeads;
     dim3 launchDims = getLaunchDims("kv_scatter");
 
-    kvInPlaceWriteKernel<T><<<numSlices, launchDims.y, launchDims.z, *stream>>>(
+    kvInPlaceWriteKernel<X, Y><<<numSlices, launchDims.y, launchDims.z, *stream>>>(
         newKv, pastKv, posPtr, batch, seqKV, numKvHeads, headDim, pastMaxSeqLen);
     DebugHelper::checkGlobalErrorCode("kvInPlaceWrite kernel failed");
 }
 
-BUILD_SINGLE_TEMPLATE(void kvInPlaceWriteCudaLauncher,
+BUILD_DOUBLE_TEMPLATE(void kvInPlaceWriteCudaLauncher,
     (const cudaStream_t* stream, const void* vNewKv, void* vPastKv,
      const void* cachePosPtr, LongType batch, LongType seqKV,
      LongType numKvHeads, LongType headDim, LongType pastMaxSeqLen),
-    SD_FLOAT_TYPES);
+    SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
 void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
                      const void* cachePosPtr, LaunchContext* context) {
     auto stream = context->getCudaStream();
 
-    // Auto-cast newKv to match cache dtype (e.g. FLOAT→HALF after FusedRoPE promotion).
-    // Cache dtype is authoritative — it's the persistent storage format.
-    NDArray* castBuf = nullptr;
-    if (pastKv->dataType() != newKv->dataType()) {
-        castBuf = newKv->cast(pastKv->dataType());
-        newKv = castBuf;
-    }
-
+    // newKv (src) and pastKv (cache/dst) may differ in dtype (e.g. FLOAT->HALF after
+    // FusedRoPE promotion). The copy kernel is templated on (src,dst) and casts
+    // per-element, so NO host-side cast()/allocation is done here -- essential for
+    // CUDA-graph capture safety (cudaMallocAsync/cudaFreeAsync are illegal mid-capture).
     // newKv is BSHD [batch, seqKV, numKvHeads, headDim]
     auto batch = newKv->sizeAt(0);
     auto seqKV = newKv->sizeAt(1);
@@ -408,14 +404,12 @@ void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
 
     NDArray::prepareSpecialUse({pastKv}, {newKv});
 
-    BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWriteCudaLauncher,
+    BUILD_DOUBLE_SELECTOR(newKv->dataType(), pastKv->dataType(), kvInPlaceWriteCudaLauncher,
                           (stream, newKv->specialBuffer(), pastKv->specialBuffer(),
                            cachePosPtr, batch, seqKV, numKvHeads, headDim, pastMaxSeqLen),
-                          SD_FLOAT_TYPES);
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({pastKv}, {newKv});
-
-    delete castBuf;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -431,9 +425,9 @@ void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
  * cachePosPtr is dereferenced at kernel runtime (not baked as a literal),
  * making this kernel CUDA graph compatible.
  */
-template <typename T>
-SD_KERNEL void kvInPlaceWriteBSHDKernel(const T* __restrict__ newKv,
-                                         T* __restrict__ cache,
+template <typename X, typename Y>
+SD_KERNEL void kvInPlaceWriteBSHDKernel(const X* __restrict__ newKv,
+                                         Y* __restrict__ cache,
                                          const LongType* __restrict__ cachePosPtr,
                                          LongType batch,
                                          LongType seqKV,
@@ -451,46 +445,42 @@ SD_KERNEL void kvInPlaceWriteBSHDKernel(const T* __restrict__ newKv,
     LongType dstOffset = b * cacheMaxSeqLen * innerSize + (cachePos + s) * innerSize;
 
     for (LongType i = threadIdx.x; i < innerSize; i += blockDim.x) {
-        cache[dstOffset + i] = newKv[srcOffset + i];
+        cache[dstOffset + i] = static_cast<Y>(newKv[srcOffset + i]);
     }
 }
 
-template <typename T>
+template <typename X, typename Y>
 static void kvInPlaceWriteBSHDCudaLauncher(const cudaStream_t* stream,
                                             const void* vNewKv, void* vCache,
                                             const void* cachePosPtr,
                                             LongType batch, LongType seqKV,
                                             LongType innerSize, LongType cacheMaxSeqLen) {
-    auto newKv = reinterpret_cast<const T*>(vNewKv);
-    auto cache = reinterpret_cast<T*>(vCache);
+    auto newKv = reinterpret_cast<const X*>(vNewKv);
+    auto cache = reinterpret_cast<Y*>(vCache);
     auto posPtr = reinterpret_cast<const LongType*>(cachePosPtr);
 
     auto numSlices = batch * seqKV;
     dim3 launchDims = getLaunchDims("kv_scatter");
 
-    kvInPlaceWriteBSHDKernel<T><<<numSlices, launchDims.y, launchDims.z, *stream>>>(
+    kvInPlaceWriteBSHDKernel<X, Y><<<numSlices, launchDims.y, launchDims.z, *stream>>>(
         newKv, cache, posPtr, batch, seqKV, innerSize, cacheMaxSeqLen);
     DebugHelper::checkGlobalErrorCode("kvInPlaceWriteBSHD kernel failed");
 }
 
-BUILD_SINGLE_TEMPLATE(void kvInPlaceWriteBSHDCudaLauncher,
+BUILD_DOUBLE_TEMPLATE(void kvInPlaceWriteBSHDCudaLauncher,
     (const cudaStream_t* stream, const void* vNewKv, void* vCache,
      const void* cachePosPtr, LongType batch, LongType seqKV,
      LongType innerSize, LongType cacheMaxSeqLen),
-    SD_FLOAT_TYPES);
+    SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
 void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
                          const void* cachePosPtr, LaunchContext* context) {
     auto stream = context->getCudaStream();
 
-    // Auto-cast newKv to match cache dtype (e.g. FLOAT→HALF after FusedRoPE promotion).
-    // Cache dtype is authoritative — it's the persistent storage format.
-    NDArray* castBuf = nullptr;
-    if (cache->dataType() != newKv->dataType()) {
-        castBuf = newKv->cast(cache->dataType());
-        newKv = castBuf;
-    }
-
+    // newKv (src) and cache (dst) may differ in dtype (FLOAT->HALF after FusedRoPE
+    // promotion). The copy kernel is templated on (src,dst) and casts per-element,
+    // so NO host-side cast()/allocation is done here -- essential for CUDA-graph
+    // capture safety (cudaMallocAsync/cudaFreeAsync are illegal mid-capture).
     auto batch = newKv->sizeAt(0);
     auto seqKV = newKv->sizeAt(1);
     // innerSize = everything after the seq dimension (heads*dim for rank4, features for rank3)
@@ -503,14 +493,12 @@ void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
 
     NDArray::prepareSpecialUse({cache}, {newKv});
 
-    BUILD_SINGLE_SELECTOR(newKv->dataType(), kvInPlaceWriteBSHDCudaLauncher,
+    BUILD_DOUBLE_SELECTOR(newKv->dataType(), cache->dataType(), kvInPlaceWriteBSHDCudaLauncher,
                           (stream, newKv->specialBuffer(), cache->specialBuffer(),
                            cachePosPtr, batch, seqKV, innerSize, cacheMaxSeqLen),
-                          SD_FLOAT_TYPES);
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({cache}, {newKv});
-
-    delete castBuf;
 }
 
 }  // namespace helpers
