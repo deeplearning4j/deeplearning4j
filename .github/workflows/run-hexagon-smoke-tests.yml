@@ -1,0 +1,120 @@
+name: Hexagon NPU Smoke Tests (hexagon-mlir)
+
+# Runs the Hexagon NPU backend wiring smoke tier. hexagon-mlir is BSD-3 open
+# source (Qualcomm, Dec 2025), so the native libnd4jhexagon.so is buildable from
+# source — but the JVM smoke tier only needs the Java modules + the classpath/SPI
+# contract, so it runs on an ordinary hosted x86_64 runner with NO NPU hardware.
+#
+#   - classpath + SPI registration of nd4j-hexagon
+#   - HexagonBackend.canRun()==false contract lock (until hexagon-mlir bindings land)
+#   - HexagonEnvironment device-info contract
+#   - optional in-process dlopen of a hexagon-mlir runtime (skips unless
+#     HEXAGON_MLIR_PATH / -Dhexagon.library.path points at one)
+#
+# See ADR 0088 (Hexagon MLIR Backend) and ADR 0102.
+
+on:
+  workflow_dispatch:
+    inputs:
+      hexagonLibraryPath:
+        description: 'Optional path to a hexagon-mlir runtime .so (or its directory) to exercise the in-process dlopen check. Empty = skip that leg.'
+        required: false
+        default: ''
+
+      testFilter:
+        description: 'Surefire -Dtest filter. Empty = HexagonBackendSmokeTest only.'
+        required: false
+        default: ''
+
+env:
+  MAVEN_OPTS: -Xmx2g
+
+jobs:
+  hexagon-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    name: hexagon-smoke (hosted, no NPU hardware)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      # -Phexagon puts nd4j-hexagon/-preset in the reactor; -Ptest-hexagon makes
+      # platform-tests depend on nd4j-hexagon so --also-make builds it from source.
+      - name: Build Hexagon Java modules (nd4j-hexagon + preset)
+        shell: bash
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Phexagon,test-hexagon \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dmaven.javadoc.skip=true \
+            -pl :platform-tests --also-make \
+            -pl !:libnd4j \
+            --no-transfer-progress --batch-mode 2>&1 | tee hexagon-build.log
+
+      - name: Run Hexagon wiring smoke tests
+        shell: bash
+        run: |
+          TEST_FILTER="${{ inputs.testFilter }}"
+          if [ -n "$TEST_FILTER" ]; then TEST_FLAGS="-Dtest=${TEST_FILTER}"; else TEST_FLAGS="-Dtest=HexagonBackendSmokeTest"; fi
+          HEX_LIB_ARG=""
+          if [ -n "${{ inputs.hexagonLibraryPath }}" ]; then HEX_LIB_ARG="-Dhexagon.library.path=${{ inputs.hexagonLibraryPath }}"; fi
+          cd platform-tests
+          mvn test \
+            -Ptest-hexagon \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dtest.heap.size=4g -Dtest.offheap.size=6g \
+            -Domp.num.threads=2 \
+            -DskipTestResourceEnforcement=true \
+            ${HEX_LIB_ARG} \
+            ${TEST_FLAGS} \
+            --no-transfer-progress --batch-mode 2>&1 | tee hexagon-smoke-tests.log
+
+      - name: Upload logs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hexagon-smoke
+          path: |
+            platform-tests/target/surefire-reports/
+            platform-tests/hexagon-smoke-tests.log
+            hexagon-build.log
+          retention-days: 14

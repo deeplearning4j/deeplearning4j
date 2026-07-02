@@ -114,8 +114,12 @@ jobs:
           else
             modules=':nd4j-hexagon,:nd4j-hexagon-preset,:libnd4j'
           fi
+          # -Phexagon adds nd4j-hexagon/-preset to the reactor (nd4j-backend-impls 'hexagon'
+          # profile is -P activated, NOT property activated) — without it `-pl :nd4j-hexagon`
+          # cannot resolve. -Dlibnd4j.hexagon separately activates the libnd4j chip=hexagon profile.
           command="mvn ${{ github.event.inputs.mvnFlags }} \
             --no-transfer-progress \
+            -Phexagon \
             -pl ${modules} \
             -Dlibnd4j.hexagon \
             -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \

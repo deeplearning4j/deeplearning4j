@@ -335,23 +335,30 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   op.execute({eps, y}, {dldx}, {alpha, beta}, {transZ, transY ? 0 : 1, transX}, {});
 
   // Rank-mismatch case: x is rank-N (N>2) and y is rank-2, e.g. x=[B,S,H] @ y=[H,V] -> z=[B,S,V].
-  // The intermediate gradient matmul(x^T, eps) produces a batched [B,H,V] (or similar).
-  // We must reduce (sum) over the batch leading dimensions to match y's shape [H,V].
+  // dL/dY = xFlat^T @ epsFlat where xFlat=[B*S,H], epsFlat=[B*S,V] → [H,V] directly.
+  // We call MmulHelper::matmul directly (bypassing op shape validation) on the 2D flattened views.
   const int xRank = x->rankOf();
   const int yRank = y->rankOf();
   if (xRank > 2 && yRank == 2 && !transY && !transZ) {
-    // Compute intermediate [batch..., H, V] = matmul(x^T_2d, eps_2d) over batch dims
-    NDArray* dldyFull = new NDArray('c', ShapeUtils::evalShapeForMatmul(x->shapeInfo(), eps->shapeInfo(),
-                                                                         transX ? 0 : 1, transZ),
-                                    x->dataType(), block.launchContext());
-    op.execute({x, eps}, {dldyFull}, {alpha, beta}, {transX ? 0 : 1, transZ, transY}, {});
-    // Sum over all leading batch dims (all dims except last 2)
-    std::vector<LongType> batchDims;
-    for (int d = 0; d < xRank - 2; d++) batchDims.push_back(d);
-    NDArray* reduced = dldyFull->reduceAlongDimension(reduce::Sum, &batchDims, false);
-    dldy->assign(reduced);
-    delete reduced;
-    delete dldyFull;
+    // For non-transX: x=[B,S,H], H=x->sizeAt(-1), totalBatch=B*S=x->lengthOf()/H
+    // For transX:     x=[B,H,S], H=x->sizeAt(-2), totalBatch=B*S=x->lengthOf()/H
+    LongType H = transX ? x->sizeAt(xRank - 2) : x->sizeAt(xRank - 1);
+    LongType totalBatch = x->lengthOf() / H;
+    LongType V = y->sizeAt(1);  // y=[H,V], dldy=[H,V]
+
+    // Flatten to 2D: [totalBatch, H] and [totalBatch, V]
+    std::vector<LongType> xFlatShape = {totalBatch, H};
+    std::vector<LongType> epsFlatShape = {totalBatch, V};
+    NDArray* xFlat = x->reshape('c', xFlatShape);
+    NDArray* epsFlat = eps->reshape('c', epsFlatShape);
+
+    // dL/dY = xFlat^T @ epsFlat = [H, totalBatch] @ [totalBatch, V] = [H, V]
+    // Use MmulHelper directly to avoid op framework shape-validation overhead.
+    // transX_flat=true (we want xFlat^T), transY_flat=false
+    MmulHelper::matmul(xFlat, epsFlat, dldy, true, false, alpha, beta);
+
+    delete xFlat;
+    delete epsFlat;
   } else {
     op.execute({x, eps}, {dldy}, {alpha, beta}, {transX ? 0 : 1, transZ, transY}, {});
   }

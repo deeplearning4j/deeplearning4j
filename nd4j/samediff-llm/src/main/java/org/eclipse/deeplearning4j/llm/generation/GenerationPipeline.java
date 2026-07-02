@@ -2599,26 +2599,32 @@ public class GenerationPipeline implements AutoCloseable {
      */
     @Override
     public void close() {
+        // Order matters: close() first, THEN freeModelArrays(). The native DSP plan
+        // teardown inside close() (releaseGpuIntermediates) walks slot NDArrays that
+        // reference the model's DataBuffers — freeing those buffers first leaves the
+        // teardown reading freed heap (SIGSEGV in the slot-release loops).
+        // freeModelArrays() after close() is idempotent: already-closed buffers are
+        // skipped via wasClosed().
         if (ownsDecoder && decoder != null) {
             try {
-                SameDiffMemoryUtils.freeModelArrays(decoder);
                 decoder.close();
+                SameDiffMemoryUtils.freeModelArrays(decoder);
             } catch (Exception e) {
                 log.warn("Error closing decoder: {}", e.getMessage());
             }
         }
         if (ownsEmbedTokens && embedTokens != null) {
             try {
-                SameDiffMemoryUtils.freeModelArrays(embedTokens);
                 embedTokens.close();
+                SameDiffMemoryUtils.freeModelArrays(embedTokens);
             } catch (Exception e) {
                 log.warn("Error closing embedTokens: {}", e.getMessage());
             }
         }
         if (ownsDraftDecoder && draftDecoder != null) {
             try {
-                SameDiffMemoryUtils.freeModelArrays(draftDecoder);
                 draftDecoder.close();
+                SameDiffMemoryUtils.freeModelArrays(draftDecoder);
             } catch (Exception e) {
                 log.warn("Error closing draftDecoder: {}", e.getMessage());
             }

@@ -94,7 +94,9 @@ jobs:
         if: ${{ inputs.useNativeArtifact == 'true' }}
         uses: actions/download-artifact@v4
         with:
-          name: sdk-jars-mac-arm64-mps-compile
+          # build-deploy-mac-arm64.yml uploads `sdk-jars-<job>-<helper||default>-<extension||base>`;
+          # for the mps-compile leg (helper=mps-compile, extension="") that resolves to the -base suffix.
+          name: sdk-jars-mac-arm64-mps-compile-base
           path: ${{ runner.temp }}/mps-native
         continue-on-error: true
 
@@ -110,13 +112,13 @@ jobs:
             echo "::warning::mps-compile artifact not found — falling back to Java-wiring smoke (canRun stays false)"
           fi
 
-      # -Pmlx puts nd4j-metal/-preset in the reactor; -Ptest-metal makes
-      # platform-tests depend on nd4j-metal so --also-make builds it from source.
+      # nd4j-metal/-preset are default modules in nd4j-backend-impls (always in the reactor).
+      # -Ptest-metal makes platform-tests depend on nd4j-metal so --also-make builds it from source.
       - name: Build Metal Java modules (nd4j-metal + preset)
         shell: bash
         run: |
           mvn install -DskipTests -DskipTestResourceEnforcement=true \
-            -Pmlx,test-metal \
+            -Ptest-metal \
             -Dbackend.artifactId=nd4j-native \
             -Djavacpp.platform=macosx-arm64 \
             -Dplatform.classifier=macosx-arm64 \

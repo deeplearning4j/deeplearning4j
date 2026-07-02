@@ -144,17 +144,35 @@ void distillationKLLossBp(NDArray* studentLogits, NDArray* teacherLogits,
                             NDArray* dLdStudent, NDArray* dLdTeacher,
                             double temperature, double alpha,
                             LaunchContext* context) {
-    auto batch = studentLogits->sizeAt(0);
-    auto classes = studentLogits->sizeAt(1);
+    // Support rank-2 [batch, classes] and rank-3 [batch, seq, classes].
+    const int rank = studentLogits->rankOf();
+    if (rank < 2 || rank > 3) {
+        throw std::runtime_error("distillationKLLossBp: input rank must be 2 or 3, got " +
+                                 std::to_string(rank));
+    }
+
+    sd::LongType batch, classes;
+    if (rank == 3) {
+        batch = studentLogits->sizeAt(0) * studentLogits->sizeAt(1);
+        classes = studentLogits->sizeAt(2);
+    } else {
+        batch = studentLogits->sizeAt(0);
+        classes = studentLogits->sizeAt(1);
+    }
+
+    if (classes <= 0) {
+        throw std::runtime_error("distillationKLLossBp: class dimension must be > 0");
+    }
 
     double scale = 1.0 / batch;
 
     PRAGMA_OMP_PARALLEL_FOR
     for (sd::LongType b = 0; b < batch; b++) {
         std::vector<double> sLogits(classes), tLogits(classes);
+        const sd::LongType offset = b * classes;
         for (sd::LongType c = 0; c < classes; c++) {
-            sLogits[c] = studentLogits->e<double>(b, c);
-            tLogits[c] = teacherLogits->e<double>(b, c);
+            sLogits[c] = studentLogits->e<double>(offset + c);
+            tLogits[c] = teacherLogits->e<double>(offset + c);
         }
 
         // Softmax of student and teacher at temperature T
@@ -162,40 +180,42 @@ void distillationKLLossBp(NDArray* studentLogits, NDArray* teacherLogits,
         softmaxWithTemp(sLogits.data(), sSoftmax.data(), classes, temperature);
         softmaxWithTemp(tLogits.data(), tSoftmax.data(), classes, temperature);
 
+        // Compute log-softmaxes once per sample (not once per class)
+        std::vector<double> tLogSm(classes), sLogSm(classes);
+        logSoftmaxWithTemp(tLogits.data(), tLogSm.data(), classes, temperature);
+        logSoftmaxWithTemp(sLogits.data(), sLogSm.data(), classes, temperature);
+
+        // Pre-compute KL sum for teacher gradient (avoids O(classes^2) recomputation)
+        double klSum = 0.0;
+        for (sd::LongType j = 0; j < classes; j++) {
+            klSum += tSoftmax[j] * (tLogSm[j] - sLogSm[j]);
+        }
+
+        // Hard-label CE softmax at T=1 (computed once per sample, not per class)
+        std::vector<double> sSm1(classes);
+        sd::LongType hardLabel = -1;
+        if (alpha < 1.0 && hardLabels != nullptr) {
+            softmaxWithTemp(sLogits.data(), sSm1.data(), classes, 1.0);
+            hardLabel = hardLabels->e<sd::LongType>(b);
+        }
+
         for (sd::LongType c = 0; c < classes; c++) {
             // dL/d(student_logits) from KL part:
-            // d/d(s_c) [ alpha * T^2 * sum_j p_t_j * (log p_t_j - log p_s_j) ]
-            // = alpha * T^2 * (-1/T) * (p_t_c / p_s_c * p_s_c - ... ) simplified:
             // = alpha * T * (p_s_c - p_t_c)
             double dKL_student = alpha * temperature * (sSoftmax[c] - tSoftmax[c]);
 
             // Hard-label CE gradient for student
             double dCE_student = 0.0;
-            if (alpha < 1.0 && hardLabels != nullptr) {
-                std::vector<double> sSm1(classes);
-                softmaxWithTemp(sLogits.data(), sSm1.data(), classes, 1.0);
-                auto label = hardLabels->e<sd::LongType>(b);
-                double target = (c == label) ? 1.0 : 0.0;
+            if (alpha < 1.0 && hardLabels != nullptr && hardLabel >= 0 && hardLabel < classes) {
+                double target = (c == hardLabel) ? 1.0 : 0.0;
                 dCE_student = (1.0 - alpha) * (sSm1[c] - target);
             }
 
-            dLdStudent->p(b, c, (dKL_student + dCE_student) * scale);
+            dLdStudent->p(offset + c, (dKL_student + dCE_student) * scale);
 
-            // dL/d(teacher_logits) from KL part:
-            // Gradient through teacher softmax
-            // = alpha * T * (p_t_c * (log p_t_c - log p_s_c + 1) - sum_j p_t_j * (log p_t_j - log p_s_j + 1) * p_t_c)
-            // Simplified: alpha * T * p_t_c * (1 + log(p_t_c/p_s_c) - KL - 1)
-            // For practical purposes, teacher gradient is small since teacher is typically frozen
-            std::vector<double> tLogSm(classes), sLogSm(classes);
-            logSoftmaxWithTemp(tLogits.data(), tLogSm.data(), classes, temperature);
-            logSoftmaxWithTemp(sLogits.data(), sLogSm.data(), classes, temperature);
-
-            double klSum = 0.0;
-            for (sd::LongType j = 0; j < classes; j++) {
-                klSum += tSoftmax[j] * (tLogSm[j] - sLogSm[j]);
-            }
+            // dL/d(teacher_logits) from KL part via teacher softmax gradient
             double dKL_teacher = alpha * temperature * tSoftmax[c] * ((tLogSm[c] - sLogSm[c]) - klSum);
-            dLdTeacher->p(b, c, dKL_teacher * scale);
+            dLdTeacher->p(offset + c, dKL_teacher * scale);
         }
     }
 }

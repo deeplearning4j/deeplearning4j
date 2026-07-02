@@ -116,8 +116,12 @@ jobs:
           else
             modules=':nd4j-tpu,:nd4j-tpu-preset,:libnd4j'
           fi
+          # -Ptpu adds nd4j-tpu/-preset to the reactor (nd4j-backend-impls 'tpu' profile is
+          # -P activated, NOT property activated) — without it `-pl :nd4j-tpu` cannot resolve.
+          # -Dlibnd4j.tpu separately activates the libnd4j chip=tpu profile.
           command="mvn ${{ github.event.inputs.mvnFlags }} \
             --no-transfer-progress \
+            -Ptpu \
             -pl ${modules} \
             -Dlibnd4j.tpu \
             -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \
