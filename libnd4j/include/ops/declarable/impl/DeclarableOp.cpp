@@ -1231,6 +1231,15 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       if (array->isEmpty()) {
         sd_debug("node_%i:%i input  shape: %s; dtype: %s; values: (empty)\n",
                   block->nodeId(), e, shape.c_str(), type.c_str());
+      } else if (dataBuffer->isValid() && array->isView()) {
+        // VIEW: e<T>()/asString() computes parent-relative offsets from the view's
+        // shapeInfo (offset + strides), which OOB a view-length-sized synced host
+        // buffer -> SIGSEGV (SEGV_MAPERR, ~100MB past base). isValid() checks the
+        // buffer magic, not the offset range, so it cannot catch this. Skip the value
+        // preview for views (show shape/dtype/length only); owned/contiguous arrays
+        // below preview safely because e<T>(i) maps within [0,length).
+        sd_debug("node_%i:%i input  shape: %s; dtype: %s; length: %lld; values: (view - host preview skipped)\n",
+                  block->nodeId(), e, shape.c_str(), type.c_str(), (long long)array->lengthOf());
       } else if (dataBuffer->isValid()) {
         // Device-only buffers (view-producer outputs: expand_dims/broadcast/permute) have a null host
         // buffer, so asString() bails out with "nullptr". Allocate host + sync D2H so the values show.
@@ -1306,6 +1315,12 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       if (array->isEmpty()) {
         sd_debug("node_%i:%i result shape: %s; dtype: %s; values: (empty)\n",
                   block->nodeId(), (int)e, shape.c_str(), type.c_str());
+      } else if (dataBuffer->isValid() && array->isView()) {
+        // VIEW: e<T>()/asString() computes parent-relative offsets that OOB a
+        // view-length-sized synced host buffer -> SIGSEGV (SEGV_MAPERR). isValid()
+        // checks buffer magic, not offset range. Skip value preview for views.
+        sd_debug("node_%i:%i result shape: %s; dtype: %s; length: %lld; values: (view - host preview skipped)\n",
+                  block->nodeId(), (int)e, shape.c_str(), type.c_str(), (long long)array->lengthOf());
       } else if (dataBuffer->isValid()) {
         // Device-only buffers (view-producer outputs: expand_dims/broadcast/permute) have a null host
         // buffer, so asString() bails out with "nullptr". Allocate host + sync D2H so the values show.
