@@ -817,8 +817,26 @@ void TritonIRBuilder::emitGatedMLPKernel(
       mlir::triton::PointerType::get(xElemType, 1));
   auto xSplat = builder.create<mlir::triton::SplatOp>(loc, xPtrTensorType, xPtr);
   auto xPtrs = builder.create<mlir::triton::AddPtrOp>(loc, xPtrTensorType, xSplat, xOffsets);
+  // Boundary mask for x tile [blockM, blockK]: mIndices < M && kIndices < K.
+  // Without this, decode (M=1 < blockM) reads OOB rows of x -> illegal memory access.
+  // Mirrors emitMatmulKernel's A-tile masking. Garbage in masked rows is discarded
+  // by the masked output store below, so `other` is left default (matches matmul).
+  auto i1TypeXm = builder.getI1Type();
+  auto mConstXm = builder.create<mlir::arith::ConstantIntOp>(loc, M, 32);
+  auto mConstSplatXm = builder.create<mlir::triton::SplatOp>(loc, i32BmType, mConstXm);
+  auto mMask1Dxm = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      mIndices, mConstSplatXm);
+  auto kConstSplatXm = builder.create<mlir::triton::SplatOp>(loc, i32BkType, kConst);
+  auto kMask1Dxm = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      kIndices, kConstSplatXm);
+  auto i1BmBkTypeXm = mlir::RankedTensorType::get({blockM, blockK}, i1TypeXm);
+  auto mMaskExpXm = builder.create<mlir::triton::ExpandDimsOp>(loc, mMask1Dxm, 1);
+  auto kMaskExpXm = builder.create<mlir::triton::ExpandDimsOp>(loc, kMask1Dxm, 0);
+  auto mMask2Dxm = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBkTypeXm, mMaskExpXm);
+  auto kMask2Dxm = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBkTypeXm, kMaskExpXm);
+  auto xMask = builder.create<mlir::arith::AndIOp>(loc, mMask2Dxm, kMask2Dxm);
   auto xLoaded = builder.create<mlir::triton::LoadOp>(loc,
-      xPtrs.getResult(), /*mask=*/mlir::Value(), /*other=*/mlir::Value(),
+      xPtrs.getResult(), /*mask=*/xMask.getResult(), /*other=*/mlir::Value(),
       mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
 
   // Load W_gate tile [blockK, blockN]
@@ -911,7 +929,27 @@ void TritonIRBuilder::emitGatedMLPKernel(
   auto outSplat = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outPtr);
   auto outPtrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, outSplat, outOffsets);
 
-  builder.create<mlir::triton::StoreOp>(loc, outPtrs, storeVal, /*mask=*/mlir::Value(),
+  // Boundary mask for output tile [blockM, blockN]: mIndices < M && nIndices < N.
+  // Prevents OOB WRITES (memory corruption) when M < blockM (decode) or N not
+  // tile-aligned, and discards the garbage rows produced from masked-off x rows.
+  // mIndices/nIndices/i32Bm/BnType are defined pre-K-loop so they dominate here;
+  // fresh M/N constants are created (the in-loop ones do not dominate after the loop).
+  auto i1TypeOm = builder.getI1Type();
+  auto mConstOm = builder.create<mlir::arith::ConstantIntOp>(loc, M, 32);
+  auto nConstOm = builder.create<mlir::arith::ConstantIntOp>(loc, N, 32);
+  auto mConstSplatOm = builder.create<mlir::triton::SplatOp>(loc, i32BmType, mConstOm);
+  auto nConstSplatOm = builder.create<mlir::triton::SplatOp>(loc, i32BnType, nConstOm);
+  auto mMask1Dom = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      mIndices, mConstSplatOm);
+  auto nMask1Dom = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      nIndices, nConstSplatOm);
+  auto i1BmBnTypeOm = mlir::RankedTensorType::get({blockM, blockN}, i1TypeOm);
+  auto mMaskExpOm = builder.create<mlir::triton::ExpandDimsOp>(loc, mMask1Dom, 1);
+  auto nMaskExpOm = builder.create<mlir::triton::ExpandDimsOp>(loc, nMask1Dom, 0);
+  auto mMask2Dom = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBnTypeOm, mMaskExpOm);
+  auto nMask2Dom = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBnTypeOm, nMaskExpOm);
+  auto outMask = builder.create<mlir::arith::AndIOp>(loc, mMask2Dom, nMask2Dom);
+  builder.create<mlir::triton::StoreOp>(loc, outPtrs, storeVal, /*mask=*/outMask.getResult(),
                                          mlir::triton::CacheModifier::NONE,
                                          mlir::triton::EvictionPolicy::NORMAL);
 
@@ -1054,8 +1092,25 @@ void TritonIRBuilder::emitFusedTwoLayerMLPKernel(
       mlir::triton::PointerType::get(xElemType, 1));
   auto xSplat = builder.create<mlir::triton::SplatOp>(loc, xPtrTensorType, xPtr);
   auto xPtrs = builder.create<mlir::triton::AddPtrOp>(loc, xPtrTensorType, xSplat, xOffsets);
+  // Boundary mask for x tile [blockM, blockK]: mIndices < M && kIndices < D.
+  // Without this, decode (M=1 < blockM) reads OOB rows of x -> illegal memory access.
+  // Garbage in masked rows is discarded by the masked output store below.
+  auto i1TypeXm2 = builder.getI1Type();
+  auto mConstXm2 = builder.create<mlir::arith::ConstantIntOp>(loc, M, 32);
+  auto mConstSplatXm2 = builder.create<mlir::triton::SplatOp>(loc, i32BmType, mConstXm2);
+  auto mMask1Dxm2 = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      mIndices, mConstSplatXm2);
+  auto dConstSplatXm2 = builder.create<mlir::triton::SplatOp>(loc, i32BkType, dConst);
+  auto kMask1Dxm2 = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      kIndices, dConstSplatXm2);
+  auto i1BmBkTypeXm2 = mlir::RankedTensorType::get({blockM, blockK}, i1TypeXm2);
+  auto mMaskExpXm2 = builder.create<mlir::triton::ExpandDimsOp>(loc, mMask1Dxm2, 1);
+  auto kMaskExpXm2 = builder.create<mlir::triton::ExpandDimsOp>(loc, kMask1Dxm2, 0);
+  auto mMask2Dxm2 = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBkTypeXm2, mMaskExpXm2);
+  auto kMask2Dxm2 = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBkTypeXm2, kMaskExpXm2);
+  auto xMask2 = builder.create<mlir::arith::AndIOp>(loc, mMask2Dxm2, kMask2Dxm2);
   auto xLoaded = builder.create<mlir::triton::LoadOp>(loc,
-      xPtrs.getResult(), /*mask=*/mlir::Value(), /*other=*/mlir::Value(),
+      xPtrs.getResult(), /*mask=*/xMask2.getResult(), /*other=*/mlir::Value(),
       mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
 
   // Load W1 tile [blockK, blockH]: W1[k, h] at offset k*H + h
@@ -1214,7 +1269,25 @@ void TritonIRBuilder::emitFusedTwoLayerMLPKernel(
   auto outSplat = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outPtr);
   auto outPtrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, outSplat, outOffsets);
 
-  builder.create<mlir::triton::StoreOp>(loc, outPtrs, storeVal, /*mask=*/mlir::Value(),
+  // Boundary mask for output tile [blockM, blockA]: mIndices < M && aIndices < A.
+  // Prevents OOB WRITES (memory corruption) when M < blockM (decode) or A not
+  // tile-aligned, and discards garbage rows produced from masked-off x rows.
+  auto i1TypeOm2 = builder.getI1Type();
+  auto mConstOm2 = builder.create<mlir::arith::ConstantIntOp>(loc, M, 32);
+  auto aConstOm2 = builder.create<mlir::arith::ConstantIntOp>(loc, A, 32);
+  auto mConstSplatOm2 = builder.create<mlir::triton::SplatOp>(loc, i32BmType, mConstOm2);
+  auto aConstSplatOm2 = builder.create<mlir::triton::SplatOp>(loc, i32BaType, aConstOm2);
+  auto mMask1Dom2 = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      mIndices, mConstSplatOm2);
+  auto aMask1Dom2 = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      aIndices, aConstSplatOm2);
+  auto i1BmBaTypeOm2 = mlir::RankedTensorType::get({blockM, blockA}, i1TypeOm2);
+  auto mMaskExpOm2 = builder.create<mlir::triton::ExpandDimsOp>(loc, mMask1Dom2, 1);
+  auto aMaskExpOm2 = builder.create<mlir::triton::ExpandDimsOp>(loc, aMask1Dom2, 0);
+  auto mMask2Dom2 = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBaTypeOm2, mMaskExpOm2);
+  auto aMask2Dom2 = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBaTypeOm2, aMaskExpOm2);
+  auto outMask2 = builder.create<mlir::arith::AndIOp>(loc, mMask2Dom2, aMask2Dom2);
+  builder.create<mlir::triton::StoreOp>(loc, outPtrs, storeVal, /*mask=*/outMask2.getResult(),
                                          mlir::triton::CacheModifier::NONE,
                                          mlir::triton::EvictionPolicy::NORMAL);
 
