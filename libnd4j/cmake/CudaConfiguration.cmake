@@ -239,11 +239,26 @@ function(configure_cuda_linking main_target_name)
         )
     endif()
 
-    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart CUDA::cublas CUDA::cusolver CUDA::cusparse)
+    # CUDA::toolkit (umbrella) + CUDA::cudart are always created by FindCUDAToolkit.
+    # The per-library targets (cublas/cusolver/cusparse/nvrtc/cuda_driver) are NOT
+    # created on every toolkit layout — notably the Windows CUDA installs used in CI,
+    # where FindCUDAToolkit does not produce CUDA::cusparse. Referencing a missing
+    # imported target makes target_link_libraries a HARD configure error, which broke
+    # every Windows CUDA build. Link each optional target only if it exists; the raw
+    # libs are still reachable via the CUDA::toolkit umbrella link/include dirs.
+    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart)
 
     # NVRTC and CUDA driver API are required for NVRTC JIT and PTX GPU backends.
-    # Use CMake's imported targets for cross-platform compatibility (handles .so/.lib/.dylib).
-    target_link_libraries(${main_target_name} PUBLIC CUDA::nvrtc CUDA::cuda_driver)
+    # Imported targets handle .so/.lib/.dylib; guard each so an install that lacks a
+    # specific target degrades to a warning instead of failing configuration.
+    foreach(_sd_cuda_lib CUDA::cublas CUDA::cusolver CUDA::cusparse CUDA::nvrtc CUDA::cuda_driver)
+        if(TARGET ${_sd_cuda_lib})
+            target_link_libraries(${main_target_name} PUBLIC ${_sd_cuda_lib})
+        else()
+            message(WARNING "CUDA imported target ${_sd_cuda_lib} not found for ${main_target_name}; "
+                            "relying on CUDA::toolkit umbrella (verify the toolkit provides it).")
+        endif()
+    endforeach()
 
     # SD_GCC_FUNCTRACE: Link libdw for stack traces
     if(SD_GCC_FUNCTRACE AND NOT WIN32)

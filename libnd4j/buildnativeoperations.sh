@@ -2272,37 +2272,39 @@ fi
 
 # Fixed auto-detection for Android and ARM platforms
 if [[ -z "$OPENBLAS_PATH" ]]; then
+    # Determine platform-specific JAR patterns based on OS variable. Computed
+    # unconditionally so BOTH the exploded-javacpp-cache detection and the ~/.m2
+    # fallback below can use them.
+    case "$OS" in
+        android-x86_64)
+            JAR_PATTERNS=("openblas-*-android-x86_64.jar" "openblas-*-linux-x86_64.jar")
+            OPENBLAS_SUBPATHS=("android-x86_64" "linux-x86_64")
+            ;;
+        android-arm64)
+            JAR_PATTERNS=("openblas-*-android-arm64.jar" "openblas-*-linux-arm64.jar" "openblas-*-android-aarch64.jar" "openblas-*-linux-aarch64.jar")
+            OPENBLAS_SUBPATHS=("android-arm64" "linux-arm64" "android-aarch64" "linux-aarch64")
+            ;;
+        linux-arm64)
+            JAR_PATTERNS=("openblas-*-linux-arm64.jar" "openblas-*-linux-aarch64.jar")
+            OPENBLAS_SUBPATHS=("linux-arm64" "linux-aarch64")
+            ;;
+        macosx-arm64)
+            JAR_PATTERNS=("openblas-*-macosx-arm64.jar")
+            OPENBLAS_SUBPATHS=("macosx-arm64")
+            ;;
+        macosx-x86_64)
+            JAR_PATTERNS=("openblas-*-macosx-x86_64.jar")
+            OPENBLAS_SUBPATHS=("macosx-x86_64")
+            ;;
+        *)
+            JAR_PATTERNS=("openblas-*-linux-x86_64.jar")
+            OPENBLAS_SUBPATHS=("linux-x86_64")
+            ;;
+    esac
+
     JAVACPP_CACHE="$HOME/.javacpp/cache"
     if [[ -d "$JAVACPP_CACHE" ]]; then
-        # Determine platform-specific JAR patterns based on OS variable
-        case "$OS" in
-            android-x86_64)
-                JAR_PATTERNS=("openblas-*-android-x86_64.jar" "openblas-*-linux-x86_64.jar")
-                OPENBLAS_SUBPATHS=("android-x86_64" "linux-x86_64")
-                ;;
-            android-arm64)
-                JAR_PATTERNS=("openblas-*-android-arm64.jar" "openblas-*-linux-arm64.jar" "openblas-*-android-aarch64.jar" "openblas-*-linux-aarch64.jar")
-                OPENBLAS_SUBPATHS=("android-arm64" "linux-arm64" "android-aarch64" "linux-aarch64")
-                ;;
-            linux-arm64)
-                JAR_PATTERNS=("openblas-*-linux-arm64.jar" "openblas-*-linux-aarch64.jar")
-                OPENBLAS_SUBPATHS=("linux-arm64" "linux-aarch64")
-                ;;
-            macosx-arm64)
-                JAR_PATTERNS=("openblas-*-macosx-arm64.jar")
-                OPENBLAS_SUBPATHS=("macosx-arm64")
-                ;;
-            macosx-x86_64)
-                JAR_PATTERNS=("openblas-*-macosx-x86_64.jar")
-                OPENBLAS_SUBPATHS=("macosx-x86_64")
-                ;;
-            *)
-                JAR_PATTERNS=("openblas-*-linux-x86_64.jar")
-                OPENBLAS_SUBPATHS=("linux-x86_64")
-                ;;
-        esac
-
-        # Try each pattern until we find a working JAR
+        # Try each pattern until we find a working JAR (pre-exploded javacpp cache)
         for pattern in "${JAR_PATTERNS[@]}"; do
             OPENBLAS_JAR=$(find "$JAVACPP_CACHE" -name "$pattern" | head -1)
             if [[ -n "$OPENBLAS_JAR" ]]; then
@@ -2316,10 +2318,39 @@ if [[ -z "$OPENBLAS_PATH" ]]; then
                 done
             fi
         done
+    fi
 
-        if [[ -z "$OPENBLAS_PATH" ]]; then
-            echo "⚠️  Could not auto-detect OpenBLAS for $OS platform"
+    # Fallback: locate the openblas jar in the local maven repo and extract it.
+    # The exploded ~/.javacpp/cache is only populated after javacpp has run once;
+    # in a fresh environment (notably the glibc-compat centos container, where
+    # the missing OpenBLAS triggered MklBlasHelper.h's hard #error) the cache is
+    # empty but maven has already downloaded openblas into ~/.m2. Additive — only
+    # runs if the cache detection above found nothing, so working builds are
+    # unaffected.
+    if [[ -z "$OPENBLAS_PATH" ]]; then
+        M2_OPENBLAS_DIR="${HOME}/.m2/repository/org/bytedeco/openblas"
+        if [[ -d "$M2_OPENBLAS_DIR" ]] && command -v unzip >/dev/null 2>&1; then
+            for pattern in "${JAR_PATTERNS[@]}"; do
+                M2_JAR=$(find "$M2_OPENBLAS_DIR" -name "$pattern" 2>/dev/null | head -1)
+                if [[ -n "$M2_JAR" ]]; then
+                    EXTRACT_DIR="${TMPDIR:-/tmp}/nd4j-openblas-extract"
+                    mkdir -p "$EXTRACT_DIR"
+                    unzip -o -q "$M2_JAR" "org/bytedeco/openblas/*" -d "$EXTRACT_DIR" 2>/dev/null \
+                        || unzip -o -q "$M2_JAR" -d "$EXTRACT_DIR" 2>/dev/null || true
+                    for subpath in "${OPENBLAS_SUBPATHS[@]}"; do
+                        if [[ -f "$EXTRACT_DIR/org/bytedeco/openblas/$subpath/include/cblas.h" ]]; then
+                            export OPENBLAS_PATH="$EXTRACT_DIR/org/bytedeco/openblas/$subpath"
+                            echo "✅ Auto-detected OPENBLAS_PATH from ~/.m2 for $OS: $OPENBLAS_PATH"
+                            break 2
+                        fi
+                    done
+                fi
+            done
         fi
+    fi
+
+    if [[ -z "$OPENBLAS_PATH" ]]; then
+        echo "⚠️  Could not auto-detect OpenBLAS for $OS platform"
     fi
 fi
 
