@@ -71,6 +71,30 @@ static void layerNormMKLDNN(NDArray* x, NDArray* gain, NDArray* bias, NDArray* z
   const int rank = x->rankOf();
   const int lastDim = x->sizeAt(-1);
 
+  // oneDNN layer_norm requires contiguous input/output.
+  // The format tag (getFormat(*x)) is derived from x->ordering(), which is PRESERVED from
+  // the original array through permute/reshape and does NOT change to reflect non-standard
+  // strides in the view.  If we pass a non-contiguous view's buffer() with a contiguous-layout
+  // descriptor, oneDNN will read/write the wrong bytes.
+  //
+  // Fix: materialise a contiguous C-order copy of non-contiguous views, then write results
+  // back via assign() — same approach as transposeMKLDNN().
+  //
+  // Check contiguity: strideDescendingCAscendingF returns true only when strides actually
+  // match the declared ordering (no gaps, correct stride relationships).
+  NDArray* xContig = nullptr;
+  if (!shape::strideDescendingCAscendingF(x->shapeInfo())) {
+    xContig = new NDArray(x->dup('c'));
+    x = xContig;
+  }
+  NDArray* zContig = nullptr;
+  bool zWasView = !shape::strideDescendingCAscendingF(z->shapeInfo());
+  NDArray* zOrig = z;
+  if (zWasView) {
+    zContig = new NDArray(z->dup('c'));
+    z = zContig;
+  }
+
   // Get shapes
   dnnl::memory::dims xDims = *x->getShapeAsFlatVector();
   dnnl::memory::dims statsDims = xDims;
@@ -79,7 +103,7 @@ static void layerNormMKLDNN(NDArray* x, NDArray* gain, NDArray* bias, NDArray* z
   // Get data type - use input type for computation
   auto dType = getOneDnnDataType(x->dataType());
 
-  // Create memory descriptors
+  // Create memory descriptors — now x and z are guaranteed contiguous
   dnnl::memory::desc x_md = dnnl::memory::desc(xDims, dType, onednnUtils::getFormat(*x));
   dnnl::memory::desc z_md = dnnl::memory::desc(xDims, dType, onednnUtils::getFormat(*z));
 
@@ -122,6 +146,15 @@ static void layerNormMKLDNN(NDArray* x, NDArray* gain, NDArray* bias, NDArray* z
   dnnl::layer_normalization_forward(op_prim_desc).execute(stream, args);
 
   stream.wait();
+
+  // Write back result if we had to use a temporary output buffer
+  if (zWasView) {
+    zOrig->assign(z);
+    delete zContig;
+  }
+  if (xContig != nullptr) {
+    delete xContig;
+  }
 }
 
 PLATFORM_IMPL(layer_norm, ENGINE_CPU) {

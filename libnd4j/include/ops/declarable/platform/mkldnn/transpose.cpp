@@ -51,63 +51,18 @@ static dnnl::memory::data_type getDnnlDataType(DataType dt) {
 }
 
 static void transposeMKLDNN(NDArray* x, NDArray* z, const std::vector<LongType>& permutation) {
-  auto xRank = x->rankOf();
-
-  // Build source and destination dimensions
-  dnnl::memory::dims srcDims = *x->getShapeAsFlatVector();
-  dnnl::memory::dims dstDims(xRank);
-
-  for (int i = 0; i < xRank; i++) {
-    dstDims[i] = srcDims[permutation[i]];
-  }
-
-  // Get the appropriate OneDNN data type
-  auto dnnlType = getDnnlDataType(x->dataType());
-
-  // Create memory descriptors
-  // Source uses standard format
-  dnnl::memory::desc src_md = dnnl::memory::desc(srcDims, dnnlType,
-                                                  onednnUtils::getFormat(*x));
-
-  // Destination uses standard format based on output shape
-  dnnl::memory::desc dst_md = dnnl::memory::desc(dstDims, dnnlType,
-                                                  onednnUtils::getFormat(*z));
-
-  auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
-  dnnl::stream stream(engine);
-
-  // Create source memory
-  dnnl::memory src_mem(src_md, engine, x->buffer());
-
-  // Create destination memory
-  dnnl::memory dst_mem(dst_md, engine, z->buffer());
-
-  // Create reorder primitive with permutation
-  // For transpose, we need to create a memory descriptor with permuted strides.
-  // Use actual strides from the input (not hardcoded contiguous) to handle
-  // non-contiguous views (e.g., output of a previous permute).
-  dnnl::memory::dims srcStrides(xRank);
-  for (int i = 0; i < xRank; i++) {
-    srcStrides[i] = x->strideAt(i);
-  }
-
-  // Calculate permuted strides for the source view
-  dnnl::memory::dims permutedStrides(xRank);
-  for (int i = 0; i < xRank; i++) {
-    permutedStrides[i] = srcStrides[permutation[i]];
-  }
-
-  // Create source descriptor with permuted strides (this is our "transposed view")
-  dnnl::memory::desc src_permuted_md = dnnl::memory::desc(dstDims, dnnlType, permutedStrides);
-
-  // Create source memory with permuted view
-  dnnl::memory src_permuted_mem(src_permuted_md, engine, x->buffer());
-
-  // Reorder from permuted source to contiguous destination
-  dnnl::reorder reorder_prim(src_permuted_mem, dst_mem);
-  reorder_prim.execute(stream, src_permuted_mem, dst_mem);
-
-  stream.wait();
+  // The oneDNN reorder path that used to live here mis-materializes non-contiguous permuted
+  // VIEWS: for the SmolDocling patch-embedding weight permute [768,3,16,16] -> [16,16,3,768]
+  // it produced 0.00411987 where the correct (and CUDA) value is 0.01147461, corrupting every
+  // downstream CPU vision feature and yielding degenerate VLM output. The setup looked correct
+  // (permuted-stride source desc + contiguous dst) but the strided-source reorder is wrong for
+  // this case. Materialize via the reference nd4j path used by the generic transpose op
+  // (generic/shape/transpose.cpp): a permuted VIEW + stride-aware assign, which is correct for
+  // any x (contiguous or view) and any permutation.
+  std::vector<LongType> perm(permutation);
+  NDArray* permuted = x->permute(perm, false, false);
+  z->assign(permuted);
+  delete permuted;
 }
 
 PLATFORM_IMPL(transpose, ENGINE_CPU) {

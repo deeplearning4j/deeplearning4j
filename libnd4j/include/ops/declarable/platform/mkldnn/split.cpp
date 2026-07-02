@@ -40,13 +40,27 @@ namespace platforms {
 static void splitMKLDNN(NDArray* input, std::vector<NDArray*>& outputs, int axis) {
   if (axis < 0) axis += input->rankOf();
 
+  // oneDNN builds the input descriptor with getFormat() (contiguous C-order strides). A
+  // non-contiguous VIEW input (e.g. a permuted weight) would then be read with the wrong
+  // strides, silently permuting the data — this corrupted the CPU vision-encoder patch
+  // embedding weight ([768,3,16,16] permuted to a [16,16,3,768] view). Materialize a
+  // contiguous C-order copy for non-contiguous inputs so the descriptor matches the actual
+  // memory layout (same approach as transposeMKLDNN / layerNormMKLDNN).
+  // strideDescendingCAscendingF is true only when the strides are actually contiguous.
+  NDArray* in = input;
+  NDArray* inContig = nullptr;
+  if (!shape::strideDescendingCAscendingF(input->shapeInfo())) {
+    inContig = new NDArray(input->dup('c'));
+    in = inContig;
+  }
+
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
   dnnl::stream stream(engine);
 
-  dnnl::memory::dims inputDims = *input->getShapeAsFlatVector();
+  dnnl::memory::dims inputDims = *in->getShapeAsFlatVector();
   dnnl::memory::desc input_md = dnnl::memory::desc(inputDims, dnnl::memory::data_type::f32,
-                                                    onednnUtils::getFormat(*input));
-  dnnl::memory input_mem(input_md, engine, input->buffer());
+                                                    onednnUtils::getFormat(*in));
+  dnnl::memory input_mem(input_md, engine, in->buffer());
 
   // For each output, create a view (submemory) and copy using reorder
   LongType offset = 0;
@@ -57,14 +71,14 @@ static void splitMKLDNN(NDArray* input, std::vector<NDArray*>& outputs, int axis
                                                     onednnUtils::getFormat(*out));
 
     // Create offset array for submemory
-    dnnl::memory::dims offsets(input->rankOf(), 0);
+    dnnl::memory::dims offsets(in->rankOf(), 0);
     offsets[axis] = offset;
 
     // Create submemory descriptor
     auto submem_md = input_md.submemory_desc(outDims, offsets);
 
     // Create memory objects
-    dnnl::memory submem(submem_md, engine, input->buffer());
+    dnnl::memory submem(submem_md, engine, in->buffer());
     dnnl::memory out_mem(out_md, engine, out->buffer());
 
     // Reorder from submemory to output
@@ -74,6 +88,8 @@ static void splitMKLDNN(NDArray* input, std::vector<NDArray*>& outputs, int axis
   }
 
   stream.wait();
+
+  if (inContig != nullptr) delete inContig;
 }
 
 PLATFORM_IMPL(split, ENGINE_CPU) {
