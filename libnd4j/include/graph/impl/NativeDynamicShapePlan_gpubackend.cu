@@ -2046,7 +2046,14 @@ Status NativeDynamicShapePlan::compositeReplay(
       int idx = unit.islandIndex;
       if (idx < 0 || idx >= static_cast<int>(sched.compositeReplayHandles.size()) ||
           !sched.compositeReplayHandles[idx] || !sched.compositeReplayHandles[idx]->isReady()) {
-        DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: island %d handle not ready — executing slots [%d-%d] slot-by-slot",
+        // F2 (framework-proper): categorize this island-handle-not-ready degrade under the
+        // FALLBACK diagnostic category (was EXECUTE). The framework already counts events per
+        // category, so a SUSTAINED degrade (island never ready after freeze = permanent
+        // slot-by-slot perf cliff) surfaces natively as a high FALLBACK count in the plan
+        // report / JSON — no ad-hoc logging or counter. Enable DSP_DIAG=FALLBACK (or
+        // debug+verbose) for per-island detail.
+        DSP_DIAG(FALLBACK, "COMPOSITE_REPLAY: island %d handle not ready — executing slots [%d-%d] "
+                 "slot-by-slot (degraded; sustained = permanent slot-by-slot perf cliff)",
                  idx, unit.startSlot, unit.endSlot);
         // Fall back to slot-by-slot for this island's slots instead of failing.
         // This handles the case where capture hasn't completed yet (e.g., after

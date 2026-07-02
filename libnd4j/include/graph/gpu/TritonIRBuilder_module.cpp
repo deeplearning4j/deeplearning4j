@@ -953,6 +953,19 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             normPaddedRowLen = 1;
             while (normPaddedRowLen < rowLen) normPaddedRowLen <<= 1;
             blockSize = static_cast<int>(std::min(normPaddedRowLen, (int64_t)4096));
+            // R2: rows wider than the 4096 block cap get only their first 4096 elements
+            // reduced — the softmax/normalization is truncated (wrong results). Latent today
+            // (attention is flash-tiled; vocab softmax is host-side, so norm rows stay <=4096),
+            // but record it via the COMPILE diagnostic category (consistent with the norm diags
+            // below) if a wide-row model ever hits this path, so the truncation is queryable
+            // rather than silent.
+            if (normPaddedRowLen > 4096) {
+              DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: normalization padded row width %lld "
+                       "exceeds block cap 4096 — blockSize clamped to 4096, reducing only a 4096-wide "
+                       "prefix of each row (logical width %lld) and TRUNCATING the result; needs a "
+                       "chunk-loop lowering for correct wide-row normalization",
+                       (long long)normPaddedRowLen, (long long)normLogicalRowLen);
+            }
             if (nRows > 1) {
               normNumRows = nRows;
               normMultiRow = true;
